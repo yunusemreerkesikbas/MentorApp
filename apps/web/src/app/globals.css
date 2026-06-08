@@ -1,0 +1,9 @@
+@import "tailwindcss";
+@import "@mentor/ui/theme.css";
+
+/* Nuton-based base (DESIGN.md §1): white background, near-black text. */
+body {
+  background: var(--color-bg);
+  color: var(--color-body);
+  font-family: var(--font-body);
+}

@@ -1,0 +1,34 @@
+/**
+ * @mentor/ui Tailwind v4 theme layer — DESIGN.md tokens.
+ * Usage (web/admin globals.css):
+ *   @import "tailwindcss";
+ *   @import "@mentor/ui/theme.css";
+ *
+ * Value source: DESIGN.md §2–§5. Nuton: monochrome-forward, black primary
+ * button, white background, single shadow, 10px radius everywhere.
+ */
+@theme {
+  /* Colors */
+  --color-main: #111111;
+  --color-body: #333333;
+  --color-secondary: #666666;
+  --color-btn: #000000;
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-chip: #bea1fe;
+  --color-chip-text: #7c6f97;
+  --color-progress: #55acee;
+  --color-progress-track: #c3d9fd;
+  --color-star: #ffc700;
+  --color-like-active: #ff2dab;
+
+  /* Typography */
+  --font-heading: "League Spartan", sans-serif;
+  --font-body: "Lato", sans-serif;
+
+  /* Radius — uniform */
+  --radius-card: 10px;
+
+  /* Shadow — single token */
+  --shadow-card: 0px 4px 10px rgba(37, 73, 150, 0.1);
+}

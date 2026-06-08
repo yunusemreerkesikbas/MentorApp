@@ -1,0 +1,8 @@
+@import "tailwindcss";
+@import "@mentor/ui/theme.css";
+
+body {
+  background: var(--color-bg);
+  color: var(--color-body);
+  font-family: var(--font-body);
+}

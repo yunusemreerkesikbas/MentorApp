@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Turbo
+.turbo/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+*.local
+*.pem
+
+# Drizzle generated (keep migrations, ignore temp)
+apps/api/drizzle/meta/_journal.tmp
+
+# Expo / mobile (Phase 2)
+.expo/
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+angular-errors.log
+
+# Coverage / tests
+coverage/
+.nyc_output/
+
+# Editor / OS
+.claude/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.tgz
+.vscode/*
+!.vscode/extensions.json
+
+# Agent skill libraries — tool-installed and reproducible from skills-lock.json.
+# Not committed: third-party, large, and ui-ux-pro-max was mirrored 4x.
+# Devs install them locally; the manifest (skills-lock.json) IS tracked.
+# Note: only .github/prompts is ignored — .github/workflows stays tracked.
+.agents/
+.agent/
+.cursor/
+.codex/
+.github/prompts/
