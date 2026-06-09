@@ -3,7 +3,8 @@
 > Canonical guide: [`../AGENTS.md`](../AGENTS.md) · Product decisions: [`../sinav-kocluk-roadmap.md`](../sinav-kocluk-roadmap.md) (Turkish) · Design: [`../DESIGN.md`](../DESIGN.md).
 
 ## Architecture & setup
-- [architecture.md](./architecture.md) — module map, event backbone, AI architecture, dual driver
+- [workstreams.md](./workstreams.md) — **parallel MVP tracks**: ownership boundaries + shared-file rules
+- [architecture.md](./architecture.md) — module map, event backbone, AI architecture
 - [file-structure.md](./file-structure.md) — folder structure + package dependency direction
 - [setup.md](./setup.md) — local setup + troubleshooting
 - [integrations.md](./integrations.md) — connecting Neon/iyzico/Cloudflare/OpenAI/Gemini/Postmark/Sentry

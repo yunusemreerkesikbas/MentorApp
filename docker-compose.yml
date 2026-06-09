@@ -1,0 +1,27 @@
+# Local development infrastructure.
+# Postgres with pgvector — matches the production DB capabilities (Neon + pgvector).
+# Usage: `pnpm db:up` / `pnpm db:down`. The api connects via DATABASE_URL (.env).
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: mentor-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mentor
+      POSTGRES_PASSWORD: mentor
+      POSTGRES_DB: mentor
+    # Host port 5433 (5432 is commonly taken by other local Postgres instances).
+    ports:
+      - "5433:5432"
+    volumes:
+      - mentor-pgdata:/var/lib/postgresql/data
+      # Creates the separate test database on first boot.
+      - ./scripts/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mentor -d mentor"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mentor-pgdata:

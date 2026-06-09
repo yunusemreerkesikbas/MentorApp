@@ -1,0 +1,18 @@
+{
+  "INTERNAL_ERROR": "Something went wrong. Please try again.",
+  "VALIDATION_ERROR": "The submitted data is invalid.",
+  "BAD_REQUEST": "Invalid request.",
+  "UNAUTHORIZED": "You need to sign in for this action.",
+  "FORBIDDEN": "You don't have permission for this action.",
+  "NOT_FOUND": "The requested record was not found.",
+  "CONFLICT": "This action conflicts with an existing record.",
+  "PAYLOAD_TOO_LARGE": "The submitted content is too large.",
+  "TOO_MANY_REQUESTS": "Too many requests. Please wait a moment.",
+  "SERVICE_UNAVAILABLE": "The service is currently unavailable. Please try again shortly.",
+  "AUTH_INVALID_CREDENTIALS": "Incorrect email or password.",
+  "AUTH_EMAIL_IN_USE": "An account with this email already exists.",
+  "AUTH_TOKEN_INVALID": "This link is invalid. Please request a new one.",
+  "AUTH_TOKEN_EXPIRED": "This link has expired. Please request a new one.",
+  "AUTH_TURNSTILE_FAILED": "Security verification failed. Please try again.",
+  "AUTH_ACCOUNT_SUSPENDED": "Your account is suspended. Please contact support."
+}

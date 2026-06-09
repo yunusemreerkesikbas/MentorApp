@@ -13,8 +13,8 @@
 
 ## Data access
 - [ ] DB is accessed **only via a repository** (controllers/services don't write raw SQL).
-- [ ] **Dual-driver rule:** queries needing RLS-session + writes → `createDbPool` (tx-scoped). Simple
-  reads → `createDb` (neon-http).
+- [ ] **Single driver:** `pg` Pool (`drizzle-orm/node-postgres`). RLS-session work uses `withUserContext`
+  (tx-scoped `SET LOCAL`). Works against local Postgres + Neon (dev/prod parity).
 - [ ] Tenancy on every query: `user_id` / `org_id` filter **+** Postgres RLS (double belt). Don't rely on
   the app filter alone.
 - [ ] Schema change → `drizzle-kit generate` migration (not handwritten SQL); migrations in version control.

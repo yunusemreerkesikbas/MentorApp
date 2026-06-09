@@ -57,7 +57,5 @@ admin behind Cloudflare Access · card data at iyzico (PCI not ours).
    ├─ modules (identity/coaching/ai/content/payments/notifications/admin ...)
    ├─ shared/ports → adapters (OpenAI/Gemini/iyzico/R2/Postmark)
    ├─ JobQueuePort: Render Cron + jobs table (MVP) → BullMQ+Redis (Phase 2)
-   └─ Drizzle dual driver → [ Neon Postgres + pgvector (RLS) ]
-        ├─ neon-http  (stateless, simple reads)
-        └─ WebSocket Pool (tx-scoped: RLS-session, writes, queue)
+   └─ Drizzle (pg Pool) → [ Postgres + pgvector (RLS via SET LOCAL) ]   (local docker / Neon)
 ```

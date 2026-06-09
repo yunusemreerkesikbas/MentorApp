@@ -1,0 +1,13 @@
+{
+  "invalid": "Invalid value.",
+  "invalid_type": "Invalid or missing value.",
+  "invalid_string": "Invalid format.",
+  "too_small": "Value is too short/small.",
+  "too_big": "Value is too long/big.",
+  "invalid_enum_value": "Invalid selection.",
+  "invalid_date": "Invalid date.",
+  "not_multiple_of": "Invalid value.",
+  "unrecognized_keys": "Unrecognized field(s).",
+  "invalid_union": "Invalid value.",
+  "custom": "Invalid value."
+}

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-6 px-5 py-16">
@@ -23,13 +25,13 @@ export default function Home() {
         Bu, projenin çalışan web kabuğu — özellikler roadmap&apos;e göre eklenecek.
       </p>
 
-      <button
-        type="button"
+      <Link
+        href="/kayit"
         className="w-fit rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-white"
         style={{ backgroundColor: "var(--color-btn)", boxShadow: "var(--shadow-card)" }}
       >
         Hadi başlayalım
-      </button>
+      </Link>
     </main>
   );
 }

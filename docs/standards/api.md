@@ -57,7 +57,7 @@
 
 | Module | Base path (planned) | Responsibility | Phase | Status |
 |---|---|---|---|---|
-| `identity` | `/v1/auth`, `/v1/users`, `/v1/orgs` | signup/login (JWT), role, org | MVP | ⏳ |
+| `identity` | `/v1/auth/{signup,login,refresh,logout,verify-email,forgot-password,reset-password}`, `/v1/users/me` | own JWT + refresh rotation (httpOnly cookie), roles, org-ready, RLS | MVP | ✅ |
 | `coaching` | `/v1/plans`, `/v1/study-sessions`, `/v1/mock-exams`, `/v1/check-ins` | plan, ritual/Pomodoro, mock analysis, ghost | MVP | ⏳ |
 | `ai` | `/v1/coach` (chat/grounded) | Context Builder + LLM/RAG orchestration | MVP | ⏳ |
 | `content` | `/v1/info-articles`, `/v1/calendar` | knowledge-center A-layer + pgvector RAG | MVP | ⏳ |
@@ -71,3 +71,7 @@
 | (system) | `/v1/health` | liveness | MVP | ✅ |
 
 > Status: ✅ live · ⏳ coming in MVP · ⛔ later phase. A new endpoint → update this catalog + OpenAPI + a devnote.
+
+> **Health probes** (`/v1/health`, `/v1/health/ready`) use the **terminus** response shape
+> (`{ status, info, error, details }`), not the `ApiError` envelope — they are infra for orchestrators,
+> outside the API contract. The global filter passes them through unchanged.

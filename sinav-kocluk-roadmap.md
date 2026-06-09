@@ -474,7 +474,7 @@ Forum dinleyicileri bilmez → yeni tepki = yeni dinleyici, mevcut koda dokunmad
 | Ledger (append-only) | XP/coin | Bakiye=satır toplamı; PENDING/CONFIRMED/REVERSED |
 | Idempotency | iyzico webhook, kuyruk | Çift coin/abonelik engeli |
 | Worker/Queue (port) | LLM, bildirim, analiz | §7 maliyet: ağır iş async. `JobQueuePort` arkasında — **MVP: Render Cron + jobs tablosu** (scale-to-zero korunur); Faz 2: **BullMQ+Redis** (adapter değişir, domain sabit). *(pg-boss elendi: polling scale-to-zero'yu öldürür + zaten Faz 2'de BullMQ ile değişecekti = ortada kalan seçenek.)* |
-| Policy/Guard + RLS | RBAC + tenancy (user_id/org_id) | Erişim kararı tek yer + Postgres RLS çift kemer. **Çift sürücü:** RLS-session (`SET app.user_id`) ve yazılar **tx-scoped Neon WebSocket Pool** (`drizzle/neon-serverless`); basit okumalar stateless `neon-http`. *(Sebep: neon-http her sorgu ayrı HTTP → oturum GUC paylaşmaz, RLS güvenilmez.)* |
+| Policy/Guard + RLS | RBAC + tenancy (user_id/org_id) | Erişim kararı tek yer + Postgres RLS çift kemer. **Tek sürücü:** `pg` Pool (`drizzle-orm/node-postgres`); RLS-session tx-scoped `SET LOCAL` (`withUserContext`). Local Postgres + Neon ikisinde çalışır. *(Önceki neon-http dual-driver sadeleştirildi: API edge değil, Render'da persistent → pooled bağlantı tx/RLS'i doğal destekler; ayrıca local docker Postgres parity. Karar: devnote 0007.)* |
 | Saga (sonra) | ödeme→abonelik, coin pending→confirmed | Çok adımlı akış |
 
 ### API + Realtime

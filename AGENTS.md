@@ -26,7 +26,7 @@ that pain?
 - **Monorepo: Turborepo + pnpm.** `apps/*` + `packages/*`.
 - **DB: Neon Postgres + pgvector · ORM: Drizzle.** RLS on the Postgres side.
 - **Queue: behind `JobQueuePort`** — MVP Cron+jobs table, Phase 2 BullMQ+Redis (rationale: docs/architecture.md).
-- **DB dual driver:** `createDbPool` (tx-scoped) for RLS+writes, `createDb` (neon-http) for simple reads (§8).
+- **DB driver:** single `pg` Pool (`drizzle-orm/node-postgres`) — works local + Neon; tx-scoped RLS via `withUserContext` / `SET LOCAL` (§8).
 - **Edge: Cloudflare** (WAF/RateLimit/Turnstile/R2/Images/Access). **Hosting: Render.**
 - **AI: OpenAI (text, GPT-5) + Gemini Flash (vision)** + rule engine (hybrid) + pgvector RAG.
 - **Auth: own JWT** (refresh rotation, argon2). **Payments: iyzico.** **Email: Postmark.** **Monitoring: Sentry.**
@@ -112,7 +112,11 @@ Structure detail: [`docs/file-structure.md`](./docs/file-structure.md).
 **Mobile (critical):** do NOT use Expo Router API routes — single API = NestJS `/v1` (a second backend breaks it).
 `expo-api-routes` is for EAS hosting/deploy only; all data comes from NestJS via `@mentor/api-client`.
 
-## 9. Phase discipline
+## 9. Phase discipline & parallel work
+
+- **Parallel development:** MVP work is split into tracks with exclusive ownership —
+  **read [`docs/workstreams.md`](./docs/workstreams.md) before picking up work.** Don't write inside
+  another track's module; shared files are append-only per its touch rules.
 
 - **MVP:** responsive web B2C + lean admin. Social/forum/economy/coach/mobile = **Phase 2+**.
 - A feature's phase is set by roadmap §10. Don't do out-of-scope work "by the way" — push it to backlog.

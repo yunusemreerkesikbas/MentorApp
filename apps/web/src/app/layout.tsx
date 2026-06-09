@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthProvider } from "../lib/auth-context";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,7 +15,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr">
-      <body>{children}</body>
+      {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla) inject body
+          attributes pre-hydration; this silences only attribute diffs on <body>. */}
+      <body suppressHydrationWarning>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

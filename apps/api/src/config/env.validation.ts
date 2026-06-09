@@ -3,22 +3,27 @@ import { z } from "zod";
 /**
  * Environment variable schema (§8/§10).
  *
- * SKELETON RULE: so the app can boot without secrets, external service keys are
- * `optional`. In a real implementation the relevant module enforces its own key at
- * runtime (fail-fast inside the adapter). Descriptions of all keys: .env.example +
- * docs/integrations.md.
+ * `DATABASE_URL` is REQUIRED (fail-fast — the app cannot function without it). Other external
+ * service keys stay optional until the relevant module is built; each adapter enforces its own
+ * at runtime. All keys: .env.example + docs/integrations.md.
  */
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3001),
   APP_URL: z.string().url().default("http://localhost:3000"),
 
-  // DB — Neon (§8)
-  DATABASE_URL: z.string().url().optional(),
+  // Comma-separated allowed CORS origins (web/admin). Falls back to dev defaults if unset.
+  CORS_ORIGINS: z.string().optional(),
 
-  // Auth — own JWT (§8)
-  JWT_ACCESS_SECRET: z.string().min(16).optional(),
-  JWT_REFRESH_SECRET: z.string().min(16).optional(),
+  // DB — Postgres (local docker / Neon). Required: the app cannot function without it (fail-fast).
+  DATABASE_URL: z.string().url(),
+
+  // Auth — own JWT (§8). Required since W0 identity (fail-fast).
+  JWT_ACCESS_SECRET: z.string().min(32),
+  /** Access token TTL in seconds (short-lived; client silently refreshes). */
+  JWT_ACCESS_TTL: z.coerce.number().int().positive().default(900),
+  /** Refresh token TTL in seconds (opaque token, httpOnly cookie). */
+  JWT_REFRESH_TTL: z.coerce.number().int().positive().default(2_592_000),
 
   // AI (§8): text = OpenAI, vision = Gemini
   OPENAI_API_KEY: z.string().optional(),

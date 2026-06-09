@@ -6,7 +6,7 @@
 ## Project in 30 seconds
 **Mentor** — an **AI coach + community "companionship platform"** for exam prep (not a knowledge
 platform). Exam-agnostic (KPSS first); exams differ only by content/config. MVP = responsive web
-B2C + lean admin. Stack: TypeScript monorepo · NestJS · Next.js · Neon+Drizzle+pgvector (dual driver)
+B2C + lean admin. Stack: TypeScript monorepo · NestJS · Next.js · Neon/Postgres+Drizzle+pgvector (pg Pool)
 · Cron+jobs queue (`JobQueuePort`) · Cloudflare · Render · iyzico · OpenAI+Gemini · Postmark · Sentry.
 
 ## Frequent commands
@@ -23,6 +23,7 @@ pnpm build | lint | typecheck
 - UI values come from **DESIGN.md tokens** (`@mentor/ui`), not magic numbers.
 - Per-task skill: `senior-architect` / `senior-backend` / `senior-frontend`.
 - Relevant **standard** before coding: `docs/standards/{backend,frontend,mobile,code-review}.md`.
+- Parallel work: your track's boundaries → `docs/workstreams.md` (don't touch other tracks' modules).
 - **After every meaningful development, add `docs/devnotes/NNNN-title.md`** (usage/gotchas) — mandatory.
 - Don't implement out-of-scope ideas inline → backlog (phase discipline, roadmap §10).
 - This repo is **its own git repository** (isolated from the home directory).

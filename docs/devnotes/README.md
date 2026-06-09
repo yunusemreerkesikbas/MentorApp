@@ -27,3 +27,8 @@
 | [0004](./0004-engineering-principles.md) | Engineering principles | SOLID/DRY/KISS/YAGNI, fallbacks, logic-backend-only, localized messages, Definition of Done |
 | [0005](./0005-readme-turkish-overview.md) | README → Turkish overview | README summarizes the roadmap (Turkish, product-facing); setup moved to docs/setup.md |
 | [0006](./0006-gitignore-and-repo-hygiene.md) | .gitignore & repo hygiene | skill libs ignored (~486→109 tracked files), LICENSE added, per-app gitignore removed |
+| [0007](./0007-base-infrastructure.md) | Core/base infrastructure | db(pg Pool)/errors/i18n/logging/security/OpenAPI/health/tests; dual-driver → single driver |
+| [0008](./0008-base-review-fixes.md) | Base review fixes | health filter exclusion, Swagger prod-gate, CORS env, validation i18n, Sentry instrument, negative e2e |
+| [0009](./0009-workstreams.md) | Workstreams | MVP split into 7 parallel tracks with exclusive ownership + shared-file rules |
+| [0010](./0010-identity.md) | W0 · Identity | own JWT + refresh rotation/reuse-detect, RLS policies, guards, orval client, web auth screens |
+| [0011](./0011-identity-review-fixes.md) | W0 review fixes | throttler was a no-op (fixed+verified), examDate 500, signup race, KVKK cast cleanup |

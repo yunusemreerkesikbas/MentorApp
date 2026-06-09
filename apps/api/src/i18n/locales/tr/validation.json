@@ -1,0 +1,13 @@
+{
+  "invalid": "Geçersiz değer.",
+  "invalid_type": "Geçersiz veya eksik değer.",
+  "invalid_string": "Geçersiz biçim.",
+  "too_small": "Değer çok kısa/küçük.",
+  "too_big": "Değer çok uzun/büyük.",
+  "invalid_enum_value": "Geçersiz seçim.",
+  "invalid_date": "Geçersiz tarih.",
+  "not_multiple_of": "Geçersiz değer.",
+  "unrecognized_keys": "Tanınmayan alan(lar).",
+  "invalid_union": "Geçersiz değer.",
+  "custom": "Geçersiz değer."
+}

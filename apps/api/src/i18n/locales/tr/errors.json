@@ -1,0 +1,18 @@
+{
+  "INTERNAL_ERROR": "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.",
+  "VALIDATION_ERROR": "Gönderilen bilgiler geçersiz.",
+  "BAD_REQUEST": "Geçersiz istek.",
+  "UNAUTHORIZED": "Bu işlem için giriş yapman gerekiyor.",
+  "FORBIDDEN": "Bu işlem için yetkin yok.",
+  "NOT_FOUND": "Aradığın kayıt bulunamadı.",
+  "CONFLICT": "Bu işlem mevcut bir kayıtla çakışıyor.",
+  "PAYLOAD_TOO_LARGE": "Gönderilen içerik çok büyük.",
+  "TOO_MANY_REQUESTS": "Çok fazla istek gönderildi. Lütfen biraz bekle.",
+  "SERVICE_UNAVAILABLE": "Servis şu anda kullanılamıyor. Lütfen biraz sonra tekrar dene.",
+  "AUTH_INVALID_CREDENTIALS": "E-posta veya şifre hatalı.",
+  "AUTH_EMAIL_IN_USE": "Bu e-posta adresiyle bir hesap zaten var.",
+  "AUTH_TOKEN_INVALID": "Bu bağlantı geçersiz. Lütfen yeniden talep et.",
+  "AUTH_TOKEN_EXPIRED": "Bu bağlantının süresi dolmuş. Lütfen yeniden talep et.",
+  "AUTH_TURNSTILE_FAILED": "Güvenlik doğrulaması başarısız. Lütfen tekrar dene.",
+  "AUTH_ACCOUNT_SUSPENDED": "Hesabın askıya alınmış. Destek ekibiyle iletişime geç."
+}
