@@ -14,5 +14,17 @@
   "AUTH_TOKEN_INVALID": "This link is invalid. Please request a new one.",
   "AUTH_TOKEN_EXPIRED": "This link has expired. Please request a new one.",
   "AUTH_TURNSTILE_FAILED": "Security verification failed. Please try again.",
-  "AUTH_ACCOUNT_SUSPENDED": "Your account is suspended. Please contact support."
+  "AUTH_ACCOUNT_SUSPENDED": "Your account is suspended. Please contact support.",
+  "COACHING_TASK_NOT_FOUND": "This task was not found.",
+  "COACHING_SESSION_NOT_FOUND": "This study session was not found.",
+  "COACHING_SESSION_ALREADY_CLOSED": "This study session is already completed.",
+  "CONTENT_EXAM_NOT_FOUND": "This exam record was not found.",
+  "CONTENT_ARTICLE_NOT_FOUND": "This article was not found.",
+  "CONTENT_INVALID_EXAM_FAMILY": "Invalid exam type.",
+  "CONTENT_INVALID_ARTICLE_CATEGORY": "Invalid article category.",
+  "PAYMENT_TRIAL_ALREADY_USED": "You have already used your free trial.",
+  "PAYMENT_ALREADY_SUBSCRIBED": "You already have an active subscription.",
+  "PAYMENT_PROVIDER_ERROR": "The payment provider had a problem. Please try again.",
+  "PAYMENT_WEBHOOK_INVALID": "Invalid payment notification.",
+  "PAYMENT_PREMIUM_REQUIRED": "This feature is for Premium members."
 }

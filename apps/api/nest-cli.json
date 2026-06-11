@@ -4,7 +4,7 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true,
-    "assets": ["i18n/locales/**/*"],
+    "assets": ["i18n/locales/**/*", "modules/content/seed/**/*"],
     "watchAssets": true
   }
 }

@@ -14,5 +14,17 @@
   "AUTH_TOKEN_INVALID": "Bu bağlantı geçersiz. Lütfen yeniden talep et.",
   "AUTH_TOKEN_EXPIRED": "Bu bağlantının süresi dolmuş. Lütfen yeniden talep et.",
   "AUTH_TURNSTILE_FAILED": "Güvenlik doğrulaması başarısız. Lütfen tekrar dene.",
-  "AUTH_ACCOUNT_SUSPENDED": "Hesabın askıya alınmış. Destek ekibiyle iletişime geç."
+  "AUTH_ACCOUNT_SUSPENDED": "Hesabın askıya alınmış. Destek ekibiyle iletişime geç.",
+  "COACHING_TASK_NOT_FOUND": "Bu görev bulunamadı.",
+  "COACHING_SESSION_NOT_FOUND": "Bu çalışma seansı bulunamadı.",
+  "COACHING_SESSION_ALREADY_CLOSED": "Bu çalışma seansı zaten tamamlanmış.",
+  "CONTENT_EXAM_NOT_FOUND": "Bu sınav kaydı bulunamadı.",
+  "CONTENT_ARTICLE_NOT_FOUND": "Bu makale bulunamadı.",
+  "CONTENT_INVALID_EXAM_FAMILY": "Geçersiz sınav türü.",
+  "CONTENT_INVALID_ARTICLE_CATEGORY": "Geçersiz makale kategorisi.",
+  "PAYMENT_TRIAL_ALREADY_USED": "Ücretsiz deneme hakkını daha önce kullandın.",
+  "PAYMENT_ALREADY_SUBSCRIBED": "Zaten aktif bir aboneliğin var.",
+  "PAYMENT_PROVIDER_ERROR": "Ödeme sağlayıcısında bir sorun oluştu. Lütfen tekrar dene.",
+  "PAYMENT_WEBHOOK_INVALID": "Geçersiz ödeme bildirimi.",
+  "PAYMENT_PREMIUM_REQUIRED": "Bu özellik Premium üyelere özel."
 }

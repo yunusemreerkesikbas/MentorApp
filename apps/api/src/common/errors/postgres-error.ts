@@ -8,6 +8,13 @@ import { ErrorCode } from "./error-code";
  * client. We only translate the class of failure into a generic code; full detail is logged.
  * Returns null for non-pg / unrecognised errors (→ caller treats as INTERNAL_ERROR).
  */
+/** True when the error (or its cause) is a Postgres unique violation (23505). */
+export function isUniqueViolation(err: unknown): boolean {
+  const code =
+    (err as { code?: string })?.code ?? (err as { cause?: { code?: string } })?.cause?.code;
+  return code === "23505";
+}
+
 export function mapPostgresError(
   err: unknown,
 ): { code: ErrorCode; status: number } | null {

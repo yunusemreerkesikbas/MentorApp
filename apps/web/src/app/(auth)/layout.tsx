@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Card } from "@mentor/ui";
 
 /** Centered auth card — Nuton look (white surface, 10px radius, single shadow). */
 export default function AuthLayout({ children }: { children: ReactNode }) {
@@ -10,12 +11,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       >
         Mentor
       </h1>
-      <div
-        className="flex flex-col gap-4 rounded-[var(--radius-card)] border border-white bg-white/50 p-6"
-        style={{ boxShadow: "var(--shadow-card)" }}
-      >
-        {children}
-      </div>
+      <Card className="flex flex-col gap-4">{children}</Card>
     </main>
   );
 }

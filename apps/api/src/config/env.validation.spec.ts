@@ -4,6 +4,7 @@ import { validateEnv } from "./env.validation";
 const REQUIRED = {
   DATABASE_URL: "postgres://u:p@localhost:5432/db",
   JWT_ACCESS_SECRET: "a".repeat(32),
+  PAYMENTS_WEBHOOK_SECRET: "b".repeat(16),
 };
 
 describe("validateEnv", () => {
@@ -25,5 +26,15 @@ describe("validateEnv", () => {
 
   it("rejects an invalid DATABASE_URL", () => {
     expect(() => validateEnv({ ...REQUIRED, DATABASE_URL: "not-a-url" })).toThrow();
+  });
+
+  it("production lock: PAYMENTS_PROVIDER=fake is forbidden in production", () => {
+    expect(() =>
+      validateEnv({ ...REQUIRED, NODE_ENV: "production", PAYMENTS_PROVIDER: "fake" }),
+    ).toThrow(/forbidden in production/);
+  });
+
+  it("iyzico provider requires its keys", () => {
+    expect(() => validateEnv({ ...REQUIRED, PAYMENTS_PROVIDER: "iyzico" })).toThrow(/IYZICO/);
   });
 });

@@ -1,0 +1,76 @@
+{
+  "exams": [
+    {
+      "slug": "kpss-lisans-2026",
+      "name": "KPSS Lisans 2026",
+      "family": "KPSS",
+      "variant": "LISANS",
+      "isCurrent": true,
+      "netRule": { "kind": "PENALTY", "divisor": 4 },
+      "events": [
+        {
+          "type": "EXAM_DATE",
+          "eventAt": "2026-07-12T06:00:00.000Z",
+          "source": "ÖSYM",
+          "sourceUrl": "https://www.osym.gov.tr",
+          "verifiedAt": "2026-06-01T10:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        }
+      ]
+    },
+    {
+      "slug": "kpss-onlisans-2026",
+      "name": "KPSS Önlisans 2026",
+      "family": "KPSS",
+      "variant": "ONLISANS",
+      "isCurrent": false,
+      "netRule": { "kind": "PENALTY", "divisor": 4 },
+      "events": [
+        {
+          "type": "EXAM_DATE",
+          "eventAt": "2026-07-19T06:00:00.000Z",
+          "source": "ÖSYM",
+          "sourceUrl": "https://www.osym.gov.tr",
+          "verifiedAt": "2026-06-01T10:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        }
+      ]
+    },
+    {
+      "slug": "kpss-ortaogretim-2026",
+      "name": "KPSS Ortaöğretim 2026",
+      "family": "KPSS",
+      "variant": "ORTAOGRETIM",
+      "isCurrent": false,
+      "netRule": { "kind": "PENALTY", "divisor": 4 },
+      "events": [
+        {
+          "type": "EXAM_DATE",
+          "eventAt": "2026-07-26T06:00:00.000Z",
+          "source": "ÖSYM",
+          "sourceUrl": "https://www.osym.gov.tr",
+          "verifiedAt": "2026-06-01T10:00:00.000Z",
+          "verifiedBy": "editorial-seed"
+        }
+      ]
+    },
+    {
+      "slug": "yks-2026",
+      "name": "YKS 2026",
+      "family": "YKS",
+      "variant": null,
+      "isCurrent": true,
+      "netRule": { "kind": "PENALTY", "divisor": 4 },
+      "events": []
+    },
+    {
+      "slug": "lgs-2026",
+      "name": "LGS 2026",
+      "family": "LGS",
+      "variant": null,
+      "isCurrent": true,
+      "netRule": { "kind": "PENALTY", "divisor": 3 },
+      "events": []
+    }
+  ]
+}

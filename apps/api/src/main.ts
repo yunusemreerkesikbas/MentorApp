@@ -40,7 +40,13 @@ async function bootstrap(): Promise<void> {
   app.use(helmet());
   app.use(cookieParser());
   app.enableCors({ origin: corsOrigins(config), credentials: true });
-  app.useBodyParser("json", { limit: "1mb" });
+  app.useBodyParser("json", {
+    limit: "1mb",
+    // Capture the raw body for webhook signature verification (payments).
+    verify: (req: { rawBody?: Buffer }, _res: unknown, buf: Buffer) => {
+      req.rawBody = buf;
+    },
+  });
 
   // OpenAPI at /v1/docs — non-production only (don't expose the API surface in prod).
   if (config.get("NODE_ENV", { infer: true }) !== "production") {

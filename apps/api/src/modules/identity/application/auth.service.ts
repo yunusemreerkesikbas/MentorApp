@@ -12,6 +12,7 @@ import type {
 } from "@mentor/validation";
 import { DomainError, UnauthorizedError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
+import { isUniqueViolation } from "../../../common/errors/postgres-error";
 import type { Env } from "../../../config/env.validation";
 import { EMAIL_PORT, type EmailPort } from "../../../shared/ports/email.port";
 import {
@@ -164,13 +165,6 @@ export class AuthService {
       this.logger.error(`email send failed (${type}): ${String(err)}`);
     }
   }
-}
-
-function isUniqueViolation(err: unknown): boolean {
-  // drizzle wraps the pg error; the SQLSTATE may sit on the error or its cause.
-  const code =
-    (err as { code?: string })?.code ?? (err as { cause?: { code?: string } })?.cause?.code;
-  return code === "23505";
 }
 
 /** Pre-computed argon2 hash of an unguessable value — used to equalize login timing. */

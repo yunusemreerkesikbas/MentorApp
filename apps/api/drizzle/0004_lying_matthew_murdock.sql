@@ -1,0 +1,2 @@
+ALTER TABLE "study_sessions" ALTER COLUMN "status" SET DEFAULT 'IN_PROGRESS';--> statement-breakpoint
+UPDATE "study_sessions" SET "status" = 'IN_PROGRESS' WHERE "ended_at" IS NULL AND "status" = 'COMPLETED';

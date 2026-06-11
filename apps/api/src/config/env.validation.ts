@@ -29,7 +29,11 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
 
-  // Payments — iyzico (§7)
+  // Payments (§7) — provider behind PaymentsPort. `fake` is the dev/test default;
+  // the production lock below makes shipping with fake impossible.
+  PAYMENTS_PROVIDER: z.enum(["fake", "iyzico"]).default("fake"),
+  /** HMAC secret for webhook signature verification (fake provider + dev simulation). */
+  PAYMENTS_WEBHOOK_SECRET: z.string().min(16),
   IYZICO_API_KEY: z.string().optional(),
   IYZICO_SECRET_KEY: z.string().optional(),
   IYZICO_BASE_URL: z.string().url().default("https://sandbox-api.iyzipay.com"),
@@ -50,8 +54,27 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
+/** Cross-field locks that single-field rules can't express. */
+const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
+  // Production safety lock: the fake payments provider must never reach production.
+  if (env.NODE_ENV === "production" && env.PAYMENTS_PROVIDER === "fake") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["PAYMENTS_PROVIDER"],
+      message: "PAYMENTS_PROVIDER=fake is forbidden in production — configure iyzico.",
+    });
+  }
+  if (env.PAYMENTS_PROVIDER === "iyzico" && (!env.IYZICO_API_KEY || !env.IYZICO_SECRET_KEY)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["IYZICO_API_KEY"],
+      message: "IYZICO_API_KEY/IYZICO_SECRET_KEY are required when PAYMENTS_PROVIDER=iyzico.",
+    });
+  }
+});
+
 export function validateEnv(config: Record<string, unknown>): Env {
-  const parsed = envSchema.safeParse(config);
+  const parsed = envSchemaWithLocks.safeParse(config);
   if (!parsed.success) {
     throw new Error(`Invalid environment variables:\n${parsed.error.toString()}`);
   }

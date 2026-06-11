@@ -1,0 +1,55 @@
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { DomainError } from "../../../../common/errors/domain-error";
+import { ErrorCode } from "../../../../common/errors/error-code";
+import type { Env } from "../../../../config/env.validation";
+import type {
+  CheckoutRequest,
+  CheckoutResult,
+  PaymentsPort,
+  ProviderEvent,
+} from "../../../../shared/ports/payments.port";
+
+/**
+ * iyzico Subscription API adapter — ⚠️ UNVERIFIED SKELETON.
+ *
+ * Written against the public API docs (subscription checkout-form initialize / cancel /
+ * webhooks); it CANNOT be exercised until Phase-0 paperwork yields sandbox credentials
+ * (roadmap §7/§12). Selected via PAYMENTS_PROVIDER=iyzico (env lock requires the keys).
+ * Until verified, every call fails loudly rather than pretending to work.
+ */
+@Injectable()
+export class IyzicoPaymentsAdapter implements PaymentsPort {
+  readonly provider = "IYZICO" as const;
+  private readonly logger = new Logger(IyzicoPaymentsAdapter.name);
+
+  constructor(private readonly config: ConfigService<Env, true>) {}
+
+  async createCheckout(req: CheckoutRequest): Promise<CheckoutResult> {
+    // Planned call: POST {IYZICO_BASE_URL}/v2/subscription/checkoutform/initialize
+    //   { pricingPlanReferenceCode, customer{email}, callbackUrl: req.returnUrl }
+    // → { checkoutFormContent | paymentPageUrl, referenceCode }
+    this.notVerified("createCheckout", { planId: req.plan.id });
+  }
+
+  async cancel(providerRef: string): Promise<void> {
+    // Planned call: POST /v2/subscription/subscriptions/{providerRef}/cancel
+    this.notVerified("cancel", { providerRef });
+  }
+
+  verifyWebhook(
+    _rawBody: Buffer,
+    _headers: Record<string, string | string[] | undefined>,
+  ): ProviderEvent {
+    // Planned: validate the iyzico signature header (HMAC-SHA1 of eventType+iyziEventTime+token
+    // per docs), then map iyziEventType → ProviderEventType:
+    //   subscription.order.success → payment_succeeded · subscription.order.failure → payment_failed
+    //   subscription.canceled → subscription_canceled
+    this.notVerified("verifyWebhook");
+  }
+
+  private notVerified(method: string, ctx?: Record<string, unknown>): never {
+    this.logger.error(`IyzicoPaymentsAdapter.${method} called but the adapter is UNVERIFIED ${JSON.stringify(ctx ?? {})}`);
+    throw new DomainError(ErrorCode.PAYMENT_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+  }
+}

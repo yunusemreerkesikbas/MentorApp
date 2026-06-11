@@ -2,9 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
+import { AppNav } from "../../components/app-nav";
 import { useAuth } from "../../lib/auth-context";
 
-/** Auth guard for the app area: anonymous users are redirected to /giris. */
+/**
+ * App shell + auth guard: anonymous users are redirected to /giris.
+ * Layout (DESIGN.md §8): bottom tab bar on mobile, left sidebar ≥1024px.
+ */
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { status } = useAuth();
   const router = useRouter();
@@ -20,5 +24,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </main>
     );
   }
-  return <>{children}</>;
+  return (
+    <>
+      <AppNav />
+      {/* Content: clears the bottom tab bar on mobile, the sidebar on desktop. */}
+      <div className="pb-20 lg:pb-0 lg:pl-60">{children}</div>
+    </>
+  );
 }

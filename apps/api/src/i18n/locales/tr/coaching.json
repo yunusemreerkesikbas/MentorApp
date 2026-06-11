@@ -1,0 +1,13 @@
+{
+  "mood": {
+    "VERY_LOW": "Bugün ağır bir gün, biliyorum. Kendine nazik ol — küçük bir mola da ilerlemenin parçası. Yanındayım.",
+    "LOW": "Zor günler olur. Bugün sadece tek bir küçük adım at, gerisi yarına kalsın. Buradayım.",
+    "OKAY": "İyi gidiyorsun. Bugünü olduğu gibi kabul et ve elinden geleni yap — bu yeterli.",
+    "GOOD": "Enerjin yerinde, harika! Bu motivasyonu bugünkü planına taşı, çok şey başaracaksın.",
+    "GREAT": "Müthiş hissettiğine sevindim! Bu coşkuyla bugün kendine güzel bir ivme kazandır."
+  },
+  "motivation": {
+    "START": "Bugün küçük bir adım at — yeterli. Yanındayım.",
+    "GOING": "İstikrarın harika gidiyor. Bugün de devam edelim, yanındayım."
+  }
+}
