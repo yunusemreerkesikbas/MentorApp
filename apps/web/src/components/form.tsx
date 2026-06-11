@@ -1,37 +1,17 @@
 "use client";
 
-import type { InputHTMLAttributes, ReactNode } from "react";
+import type { ReactNode } from "react";
+import { Button, TextField } from "@mentor/ui";
 
-/* Small form primitives styled with DESIGN.md tokens (radius 10, single shadow, Lato). */
+/* Form helpers — thin wrappers over the @mentor/ui primitives (DESIGN.md §6). */
 
-export function Field({
-  label,
-  ...props
-}: { label: string } & InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
-        {label}
-      </span>
-      <input
-        {...props}
-        className="rounded-[var(--radius-card)] border border-white bg-white/50 px-5 py-3 text-base outline-none focus:ring-2"
-        style={{ color: "var(--color-body)", boxShadow: "var(--shadow-card)" }}
-      />
-    </label>
-  );
-}
+export { TextField as Field };
 
 export function SubmitButton({ children, busy }: { children: ReactNode; busy?: boolean }) {
   return (
-    <button
-      type="submit"
-      disabled={busy}
-      className="rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-white disabled:opacity-60"
-      style={{ backgroundColor: "var(--color-btn)", boxShadow: "var(--shadow-card)" }}
-    >
-      {busy ? "Bekleyin…" : children}
-    </button>
+    <Button type="submit" busy={busy} fullWidth>
+      {children}
+    </Button>
   );
 }
 

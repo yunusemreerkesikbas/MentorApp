@@ -142,6 +142,12 @@ Borrow Nuton's *visual* system; *content* follows the roadmap (companionship pla
 ---
 
 ## 10. Open Items
-- [ ] Verify League Spartan + Lato Turkish glyph coverage; choose fallbacks.
-- [ ] Define desktop breakpoints + hover/focus states.
-- [ ] Map each Nuton screen to one of our screens before generating per-screen prompts.
+- [x] ~~Turkish glyph coverage~~ → **next/font League Spartan + Lato with `latin-ext` subsets** (covers ç ğ ı İ ş ö ü), self-hosted; CSS vars `--font-heading`/`--font-body` (web layout).
+- [x] ~~Desktop breakpoints~~ → **Tailwind defaults; `lg` (1024px) = sidebar switch** (bottom tab bar < 1024 → left sidebar ≥ 1024). Hover: nav `hover:bg-white`, focus: `focus:ring-2` on fields; richer states per-screen.
+- [ ] Map each Nuton screen to one of our screens (first live Figma MCP session).
+
+## 11. Implementation
+Tokens + React primitives live in **`@mentor/ui`**: `theme.css` (Tailwind v4 `@theme`) ·
+`tokens.ts` · components `Button / TextField / Card / Chip / ProgressBar / BackgroundBlobs`
+(each cites its Figma node). App shell: `apps/web/src/components/app-nav.tsx` (tab bar ↔ sidebar).
+Rule: screens compose these primitives — no magic numbers (frontend standard).

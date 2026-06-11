@@ -1,0 +1,46 @@
+{
+  "articles": [
+    {
+      "slug": "kpss-basvuru-sureci",
+      "title": "KPSS Başvuru Süreci",
+      "family": "KPSS",
+      "category": "APPLICATION",
+      "metaTitle": "KPSS Başvuru Süreci | Mentor Bilgi Merkezi",
+      "metaDescription": "KPSS başvurusunun temel adımları ve resmî kaynaklara yönlendirme.",
+      "source": "ÖSYM",
+      "sourceUrl": "https://www.osym.gov.tr",
+      "verifiedAt": "2026-06-01T10:00:00.000Z",
+      "verifiedBy": "editorial-seed",
+      "publishedAt": "2026-06-01T12:00:00.000Z",
+      "body": "## Başvuru özeti\n\nKPSS başvurusu **ÖSYM Aday İşlemleri Sistemi (AİS)** üzerinden yapılır. Başvuru döneminde adaylar sınav tercihlerini ve kişisel bilgilerini sisteme girer.\n\n### Temel adımlar\n\n1. ÖSYM AİS hesabına giriş yapın.\n2. Başvuru formunu eksiksiz doldurun.\n3. Sınav ücretini yatırın ve başvurunuzu onaylayın.\n\n> Resmî tarihler ve duyurular için [ÖSYM](https://www.osym.gov.tr) kaynağını takip edin. Kesin sınav günü için uygulamadaki **Sınav günü** kartına bakın."
+    },
+    {
+      "slug": "kpss-sinav-gunu-kurallari",
+      "title": "KPSS Sınav Günü Kuralları",
+      "family": "KPSS",
+      "category": "EXAM_PROCESS",
+      "metaTitle": "KPSS Sınav Günü Kuralları | Mentor Bilgi Merkezi",
+      "metaDescription": "Sınav gününde adayların bilmesi gereken temel kurallar (resmî kaynaklı özet).",
+      "source": "ÖSYM",
+      "sourceUrl": "https://www.osym.gov.tr",
+      "verifiedAt": "2026-06-01T10:00:00.000Z",
+      "verifiedBy": "editorial-seed",
+      "publishedAt": "2026-06-01T12:00:00.000Z",
+      "body": "## Sınav günü\n\nSınav günü adayların **giriş belgesi** ve **kimlik** belgesini yanlarında bulundurmaları gerekir. Sınav salonuna giriş saatleri ÖSYM tarafından duyurulur.\n\n### Unutmayın\n\n- Sınava geç kalmayın; salon kapıları duyurulan saatte kapanır.\n- Yanınızda yasaklı eşya bulundurmayın.\n- Sınav süresince kurallara uyun.\n\nBu metin genel bir hatırlatmadır; güncel ve bağlayıcı bilgi için **ÖSYM duyurularını** esas alın."
+    },
+    {
+      "slug": "kpss-sonuc-yerlestirme-sureci",
+      "title": "KPSS Sonuç ve Yerleştirme Süreci",
+      "family": "KPSS",
+      "category": "GENERAL",
+      "metaTitle": "KPSS Sonuç ve Yerleştirme | Mentor Bilgi Merkezi",
+      "metaDescription": "Sonuçların açıklanması ve yerleştirme adımlarına genel bakış (tarih içermez).",
+      "source": "ÖSYM",
+      "sourceUrl": "https://www.osym.gov.tr",
+      "verifiedAt": "2026-06-01T10:00:00.000Z",
+      "verifiedBy": "editorial-seed",
+      "publishedAt": "2026-06-01T12:00:00.000Z",
+      "body": "## Sonuç ve yerleştirme\n\nKPSS sonuçları **ÖSYM tarafından duyurulan takvimde** açıklanır. Sonuç açıklandıktan sonra tercih ve yerleştirme süreçleri ayrı duyurularla yürütülür.\n\n### Süreç genel hatları\n\n1. Sınav sonuçlarının ilanı (ÖSYM duyurusu).\n2. Tercih dönemi (varsa, duyuruya göre).\n3. Yerleştirme sonuçlarının açıklanması.\n\n**Bu sayfada kesin tarih verilmez.** Resmî sınav günü için uygulamadaki takvim kartını; sonuç/yerleştirme tarihleri için ÖSYM kaynağını kullanın."
+    }
+  ]
+}

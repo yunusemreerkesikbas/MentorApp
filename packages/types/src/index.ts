@@ -13,6 +13,9 @@ export const UserRole = {
   ORG_ADMIN: "ORG_ADMIN",
   EDITOR: "EDITOR",
   ADMIN: "ADMIN",
+  /** Team/beta accounts: always-premium entitlement WITHOUT a subscription row
+   *  (keeps payment statistics clean; no trial-once side effects). */
+  STAFF: "STAFF",
 } as const;
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
@@ -60,3 +63,6 @@ export interface Paginated<T> {
 }
 
 export * from "./auth.js";
+export * from "./coaching.js";
+export * from "./content.js";
+export * from "./payments.js";

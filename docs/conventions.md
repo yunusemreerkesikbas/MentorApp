@@ -13,8 +13,17 @@
 - Secrets in `.env` (git-ignored). Template `.env.example`. Steps in `docs/integrations.md`.
 
 ## Git
-- **Conventional Commits** (`feat/fix/chore/docs/refactor/test`). `main` protected; `feat/<topic>` → PR → squash.
+- **Conventional Commits** (`feat/fix/chore/docs/refactor/test`). `master` protected; PR → squash.
+- **Branch format:** `feature/APP-NNN-<short-slug>` (NNN = sequential ticket no; registry below).
+  One branch per workstream track — parallel agents must NOT share a branch (see workstreams.md).
+  Fixes: `fix/APP-NNN-<slug>`.
 - Commit/PR only when the user asks; `.env` is never committed.
+
+### Ticket registry (APP-NNN)
+| No | Scope |
+|---|---|
+| APP-001 | Integration: design infra + W1/W2 slices + W4 payments (single PR — pre-branch-discipline batch) |
+> Next number = last row + 1. Add a row when opening a branch.
 
 ## Standards (binding)
 Engineering principles · code-style (naming) · api · backend · frontend · mobile · code-review →

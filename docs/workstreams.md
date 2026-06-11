@@ -9,7 +9,9 @@
 ```
 DONE  Base infrastructure (db/errors/i18n/logging/health/tests)
 DONE  W0 identity (auth + RLS + web auth screens — devnote 0010)
-NOW   W1..W6 may fan out in parallel
+DONE  W4 payments (PaymentsPort fake/iyzico, entitlement+PremiumGuard, /abonelik — devnote 0015)
+PARTIAL W1 content (exam calendar Slice 1 — devnote 0016; knowledge center Slice 2 — devnote 0017) · W2 coaching (daily loop + panel — devnotes 0014, 0013)
+NEXT  W5 notifications · then batch B: W3 ai (PremiumGuard ready) · W6 admin
 ```
 `identity` is the prerequisite for everything (auth guards, RequestContext.userId, RLS policies,
 users/orgs tables). Do it solo; parallelism starts after.
@@ -24,7 +26,7 @@ users/orgs tables). Do it solo; parallelism starts after.
 | **W3 — AI** | Context Builder, memory profile, LLM/RAG orchestration, AI chat/comments, photo→categorize | `modules/ai/**` · `web: koç/chat UI` |
 | **W4 — Payments** | iyzico subscription/trial, idempotent webhook, entitlement service | `modules/payments/**` · `web: abonelik screens` |
 | **W5 — Notifications + Queue** | JobQueuePort cron adapter/runner, web push, email (Postmark), scheduled jobs | `modules/notifications/**` · queue adapter |
-| **W6 — Admin** | admin module (content editor, users, refund, metrics, flags, audit) + **light economy** (earned AI right: invite/quest, coin ledger) | `modules/admin/**`, `modules/economy/**` · `apps/admin/**` |
+| **W6 — Admin** | admin module (content editor, users, refund, metrics, flags, audit) + **light economy** (earned AI right: invite/quest, coin ledger) · **STAFF role assignment endpoint + audit** (entitlement mechanism already live in W4 — until then assignment is manual SQL, see devnote 0015) | `modules/admin/**`, `modules/economy/**` · `apps/admin/**` |
 
 **Cross-track dependencies (consume via contracts, don't block):**
 - W3 needs W1 (RAG source) + W2 (behavior data) + W4 (entitlement) → starts against **ports/stubs**, wires real impls when merged.

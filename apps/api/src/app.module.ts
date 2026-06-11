@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_FILTER, APP_GUARD, APP_PIPE } from "@nestjs/core";
+import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { LoggerModule } from "nestjs-pino";
 import { JwtAuthGuard } from "./common/auth/jwt-auth.guard";
@@ -11,7 +12,10 @@ import { validateEnv } from "./config/env.validation";
 import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
 import { AppI18nModule } from "./i18n/i18n.module";
+import { CoachingModule } from "./modules/coaching/coaching.module";
+import { ContentModule } from "./modules/content/content.module";
 import { IdentityModule } from "./modules/identity/identity.module";
+import { PaymentsModule } from "./modules/payments/payments.module";
 import { buildLoggerConfig } from "./observability/logger.config";
 
 /**
@@ -32,10 +36,15 @@ import { buildLoggerConfig } from "./observability/logger.config";
     // (verified empirically). Global limit is generous (normal traffic unaffected; the real
     // edge rate-limit is Cloudflare in prod); auth endpoints tighten it via @Throttle.
     ThrottlerModule.forRoot({ throttlers: [{ name: "default", ttl: 60_000, limit: 300 }] }),
+    // Domain-event backbone (§8): modules talk via events, not each other's tables.
+    EventEmitterModule.forRoot(),
     AppI18nModule,
     DatabaseModule,
     HealthModule,
+    CoachingModule,
+    ContentModule,
     IdentityModule,
+    PaymentsModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

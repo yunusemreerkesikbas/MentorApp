@@ -6,6 +6,11 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
+    // Required env for module boot in e2e suites (single place — suites don't repeat these).
+    env: {
+      JWT_ACCESS_SECRET: "test-secret-test-secret-test-secret!!",
+      PAYMENTS_WEBHOOK_SECRET: "test-payments-webhook-secret",
+    },
     include: ["src/**/*.spec.ts", "test/**/*.e2e-spec.ts"],
     // e2e files mutate process.env.DATABASE_URL → run files sequentially to avoid races.
     fileParallelism: false,

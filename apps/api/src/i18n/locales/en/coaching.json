@@ -1,0 +1,13 @@
+{
+  "mood": {
+    "VERY_LOW": "I know today feels heavy. Be gentle with yourself — a small break is part of progress too. I'm here with you.",
+    "LOW": "Hard days happen. Just take one small step today and leave the rest for tomorrow. I'm here.",
+    "OKAY": "You're doing fine. Accept today as it is and do what you can — that's enough.",
+    "GOOD": "Your energy is up, great! Carry this motivation into today's plan — you'll get a lot done.",
+    "GREAT": "So glad you feel amazing! Use this momentum to give yourself a strong push today."
+  },
+  "motivation": {
+    "START": "Take one small step today — that's enough. I'm here with you.",
+    "GOING": "Your consistency is going great. Let's keep it up today — I'm with you."
+  }
+}

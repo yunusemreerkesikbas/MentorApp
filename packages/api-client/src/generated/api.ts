@@ -5,6 +5,16 @@
  * OpenAPI spec version: 1.0
  */
 import { http } from '../http';
+export interface CreateMoodCheckinDto { [key: string]: unknown }
+
+export interface CreatePlanTaskDto { [key: string]: unknown }
+
+export interface UpdatePlanTaskDto { [key: string]: unknown }
+
+export interface StartStudySessionDto { [key: string]: unknown }
+
+export interface UpdateStudySessionDto { [key: string]: unknown }
+
 export interface SignupDto { [key: string]: unknown }
 
 export interface LoginDto { [key: string]: unknown }
@@ -16,6 +26,8 @@ export interface ForgotPasswordDto { [key: string]: unknown }
 export interface ResetPasswordDto { [key: string]: unknown }
 
 export interface UpdateMeDto { [key: string]: unknown }
+
+export interface CheckoutDto { [key: string]: unknown }
 
 /**
  * @nullable
@@ -140,6 +152,475 @@ export const getHealthControllerReadinessUrl = () => {
 export const healthControllerReadiness = async ( options?: RequestInit): Promise<healthControllerReadinessResponse> => {
   
   return http<healthControllerReadinessResponse>(getHealthControllerReadinessUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type coachingControllerGetTodayResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type coachingControllerGetTodayResponseSuccess = (coachingControllerGetTodayResponse200) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerGetTodayResponse = (coachingControllerGetTodayResponseSuccess)
+
+export const getCoachingControllerGetTodayUrl = () => {
+
+
+  
+
+  return `/v1/coaching/today`
+}
+
+export const coachingControllerGetToday = async ( options?: RequestInit): Promise<coachingControllerGetTodayResponse> => {
+  
+  return http<coachingControllerGetTodayResponse>(getCoachingControllerGetTodayUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type coachingControllerUpsertMoodResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type coachingControllerUpsertMoodResponseSuccess = (coachingControllerUpsertMoodResponse200) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerUpsertMoodResponse = (coachingControllerUpsertMoodResponseSuccess)
+
+export const getCoachingControllerUpsertMoodUrl = () => {
+
+
+  
+
+  return `/v1/coaching/mood-checkins`
+}
+
+export const coachingControllerUpsertMood = async (createMoodCheckinDto: CreateMoodCheckinDto, options?: RequestInit): Promise<coachingControllerUpsertMoodResponse> => {
+  
+  return http<coachingControllerUpsertMoodResponse>(getCoachingControllerUpsertMoodUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createMoodCheckinDto,)
+  }
+);}
+
+
+
+export type coachingControllerListMoodResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type coachingControllerListMoodResponseSuccess = (coachingControllerListMoodResponse200) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerListMoodResponse = (coachingControllerListMoodResponseSuccess)
+
+export const getCoachingControllerListMoodUrl = () => {
+
+
+  
+
+  return `/v1/coaching/mood-checkins`
+}
+
+export const coachingControllerListMood = async ( options?: RequestInit): Promise<coachingControllerListMoodResponse> => {
+  
+  return http<coachingControllerListMoodResponse>(getCoachingControllerListMoodUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type planTaskControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type planTaskControllerListResponseSuccess = (planTaskControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type planTaskControllerListResponse = (planTaskControllerListResponseSuccess)
+
+export const getPlanTaskControllerListUrl = () => {
+
+
+  
+
+  return `/v1/plan-tasks`
+}
+
+export const planTaskControllerList = async ( options?: RequestInit): Promise<planTaskControllerListResponse> => {
+  
+  return http<planTaskControllerListResponse>(getPlanTaskControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type planTaskControllerCreateResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type planTaskControllerCreateResponseSuccess = (planTaskControllerCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type planTaskControllerCreateResponse = (planTaskControllerCreateResponseSuccess)
+
+export const getPlanTaskControllerCreateUrl = () => {
+
+
+  
+
+  return `/v1/plan-tasks`
+}
+
+export const planTaskControllerCreate = async (createPlanTaskDto: CreatePlanTaskDto, options?: RequestInit): Promise<planTaskControllerCreateResponse> => {
+  
+  return http<planTaskControllerCreateResponse>(getPlanTaskControllerCreateUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createPlanTaskDto,)
+  }
+);}
+
+
+
+export type planTaskControllerUpdateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type planTaskControllerUpdateResponseSuccess = (planTaskControllerUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type planTaskControllerUpdateResponse = (planTaskControllerUpdateResponseSuccess)
+
+export const getPlanTaskControllerUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/plan-tasks/${id}`
+}
+
+export const planTaskControllerUpdate = async (id: string,
+    updatePlanTaskDto: UpdatePlanTaskDto, options?: RequestInit): Promise<planTaskControllerUpdateResponse> => {
+  
+  return http<planTaskControllerUpdateResponse>(getPlanTaskControllerUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updatePlanTaskDto,)
+  }
+);}
+
+
+
+export type planTaskControllerRemoveResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type planTaskControllerRemoveResponseSuccess = (planTaskControllerRemoveResponse204) & {
+  headers: Headers;
+};
+;
+
+export type planTaskControllerRemoveResponse = (planTaskControllerRemoveResponseSuccess)
+
+export const getPlanTaskControllerRemoveUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/plan-tasks/${id}`
+}
+
+export const planTaskControllerRemove = async (id: string, options?: RequestInit): Promise<planTaskControllerRemoveResponse> => {
+  
+  return http<planTaskControllerRemoveResponse>(getPlanTaskControllerRemoveUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type studySessionControllerStartResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type studySessionControllerStartResponseSuccess = (studySessionControllerStartResponse201) & {
+  headers: Headers;
+};
+;
+
+export type studySessionControllerStartResponse = (studySessionControllerStartResponseSuccess)
+
+export const getStudySessionControllerStartUrl = () => {
+
+
+  
+
+  return `/v1/study-sessions`
+}
+
+export const studySessionControllerStart = async (startStudySessionDto: StartStudySessionDto, options?: RequestInit): Promise<studySessionControllerStartResponse> => {
+  
+  return http<studySessionControllerStartResponse>(getStudySessionControllerStartUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      startStudySessionDto,)
+  }
+);}
+
+
+
+export type studySessionControllerFinalizeResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type studySessionControllerFinalizeResponseSuccess = (studySessionControllerFinalizeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type studySessionControllerFinalizeResponse = (studySessionControllerFinalizeResponseSuccess)
+
+export const getStudySessionControllerFinalizeUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/study-sessions/${id}`
+}
+
+export const studySessionControllerFinalize = async (id: string,
+    updateStudySessionDto: UpdateStudySessionDto, options?: RequestInit): Promise<studySessionControllerFinalizeResponse> => {
+  
+  return http<studySessionControllerFinalizeResponse>(getStudySessionControllerFinalizeUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateStudySessionDto,)
+  }
+);}
+
+
+
+export type contentControllerListExamsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type contentControllerListExamsResponseSuccess = (contentControllerListExamsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type contentControllerListExamsResponse = (contentControllerListExamsResponseSuccess)
+
+export const getContentControllerListExamsUrl = () => {
+
+
+  
+
+  return `/v1/content/exams`
+}
+
+export const contentControllerListExams = async ( options?: RequestInit): Promise<contentControllerListExamsResponse> => {
+  
+  return http<contentControllerListExamsResponse>(getContentControllerListExamsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type contentControllerCalendarByFamilyResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type contentControllerCalendarByFamilyResponseSuccess = (contentControllerCalendarByFamilyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type contentControllerCalendarByFamilyResponse = (contentControllerCalendarByFamilyResponseSuccess)
+
+export const getContentControllerCalendarByFamilyUrl = (type: string,) => {
+
+
+  
+
+  return `/v1/content/exams/by-type/${type}/calendar`
+}
+
+export const contentControllerCalendarByFamily = async (type: string, options?: RequestInit): Promise<contentControllerCalendarByFamilyResponse> => {
+  
+  return http<contentControllerCalendarByFamilyResponse>(getContentControllerCalendarByFamilyUrl(type),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type contentControllerCalendarBySlugResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type contentControllerCalendarBySlugResponseSuccess = (contentControllerCalendarBySlugResponse200) & {
+  headers: Headers;
+};
+;
+
+export type contentControllerCalendarBySlugResponse = (contentControllerCalendarBySlugResponseSuccess)
+
+export const getContentControllerCalendarBySlugUrl = (slug: string,) => {
+
+
+  
+
+  return `/v1/content/exams/${slug}/calendar`
+}
+
+export const contentControllerCalendarBySlug = async (slug: string, options?: RequestInit): Promise<contentControllerCalendarBySlugResponse> => {
+  
+  return http<contentControllerCalendarBySlugResponse>(getContentControllerCalendarBySlugUrl(slug),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type infoArticleControllerListArticlesResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type infoArticleControllerListArticlesResponseSuccess = (infoArticleControllerListArticlesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type infoArticleControllerListArticlesResponse = (infoArticleControllerListArticlesResponseSuccess)
+
+export const getInfoArticleControllerListArticlesUrl = () => {
+
+
+  
+
+  return `/v1/content/info-articles`
+}
+
+export const infoArticleControllerListArticles = async ( options?: RequestInit): Promise<infoArticleControllerListArticlesResponse> => {
+  
+  return http<infoArticleControllerListArticlesResponse>(getInfoArticleControllerListArticlesUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type infoArticleControllerGetArticleResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type infoArticleControllerGetArticleResponseSuccess = (infoArticleControllerGetArticleResponse200) & {
+  headers: Headers;
+};
+;
+
+export type infoArticleControllerGetArticleResponse = (infoArticleControllerGetArticleResponseSuccess)
+
+export const getInfoArticleControllerGetArticleUrl = (slug: string,) => {
+
+
+  
+
+  return `/v1/content/info-articles/${slug}`
+}
+
+export const infoArticleControllerGetArticle = async (slug: string, options?: RequestInit): Promise<infoArticleControllerGetArticleResponse> => {
+  
+  return http<infoArticleControllerGetArticleResponse>(getInfoArticleControllerGetArticleUrl(slug),
   {      
     ...options,
     method: 'GET'
@@ -448,5 +929,171 @@ export const usersControllerUpdateMe = async (updateMeDto: UpdateMeDto, options?
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       updateMeDto,)
+  }
+);}
+
+
+
+export type subscriptionsControllerListPlansResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type subscriptionsControllerListPlansResponseSuccess = (subscriptionsControllerListPlansResponse200) & {
+  headers: Headers;
+};
+;
+
+export type subscriptionsControllerListPlansResponse = (subscriptionsControllerListPlansResponseSuccess)
+
+export const getSubscriptionsControllerListPlansUrl = () => {
+
+
+  
+
+  return `/v1/plans`
+}
+
+export const subscriptionsControllerListPlans = async ( options?: RequestInit): Promise<subscriptionsControllerListPlansResponse> => {
+  
+  return http<subscriptionsControllerListPlansResponse>(getSubscriptionsControllerListPlansUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type subscriptionsControllerGetMineResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type subscriptionsControllerGetMineResponseSuccess = (subscriptionsControllerGetMineResponse200) & {
+  headers: Headers;
+};
+;
+
+export type subscriptionsControllerGetMineResponse = (subscriptionsControllerGetMineResponseSuccess)
+
+export const getSubscriptionsControllerGetMineUrl = () => {
+
+
+  
+
+  return `/v1/subscription`
+}
+
+export const subscriptionsControllerGetMine = async ( options?: RequestInit): Promise<subscriptionsControllerGetMineResponse> => {
+  
+  return http<subscriptionsControllerGetMineResponse>(getSubscriptionsControllerGetMineUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type subscriptionsControllerCheckoutResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type subscriptionsControllerCheckoutResponseSuccess = (subscriptionsControllerCheckoutResponse200) & {
+  headers: Headers;
+};
+;
+
+export type subscriptionsControllerCheckoutResponse = (subscriptionsControllerCheckoutResponseSuccess)
+
+export const getSubscriptionsControllerCheckoutUrl = () => {
+
+
+  
+
+  return `/v1/subscription/checkout`
+}
+
+export const subscriptionsControllerCheckout = async (checkoutDto: CheckoutDto, options?: RequestInit): Promise<subscriptionsControllerCheckoutResponse> => {
+  
+  return http<subscriptionsControllerCheckoutResponse>(getSubscriptionsControllerCheckoutUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      checkoutDto,)
+  }
+);}
+
+
+
+export type subscriptionsControllerCancelResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type subscriptionsControllerCancelResponseSuccess = (subscriptionsControllerCancelResponse200) & {
+  headers: Headers;
+};
+;
+
+export type subscriptionsControllerCancelResponse = (subscriptionsControllerCancelResponseSuccess)
+
+export const getSubscriptionsControllerCancelUrl = () => {
+
+
+  
+
+  return `/v1/subscription/cancel`
+}
+
+export const subscriptionsControllerCancel = async ( options?: RequestInit): Promise<subscriptionsControllerCancelResponse> => {
+  
+  return http<subscriptionsControllerCancelResponse>(getSubscriptionsControllerCancelUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type paymentsWebhookControllerHandleResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type paymentsWebhookControllerHandleResponseSuccess = (paymentsWebhookControllerHandleResponse200) & {
+  headers: Headers;
+};
+;
+
+export type paymentsWebhookControllerHandleResponse = (paymentsWebhookControllerHandleResponseSuccess)
+
+export const getPaymentsWebhookControllerHandleUrl = () => {
+
+
+  
+
+  return `/v1/webhooks/payments`
+}
+
+export const paymentsWebhookControllerHandle = async ( options?: RequestInit): Promise<paymentsWebhookControllerHandleResponse> => {
+  
+  return http<paymentsWebhookControllerHandleResponse>(getPaymentsWebhookControllerHandleUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
   }
 );}

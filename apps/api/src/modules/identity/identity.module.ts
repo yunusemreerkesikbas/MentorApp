@@ -40,6 +40,8 @@ import { UsersController } from "./presentation/users.controller";
     // Dev email adapter; W5 swaps in Postmark behind the same port.
     { provide: EMAIL_PORT, useClass: LoggerEmailAdapter },
   ],
-  exports: [UsersRepository],
+  // UsersService is exported as the cross-module accessor for the current user's profile
+  // (e.g. coaching reads displayName + examType via getMe — never by querying `users` directly).
+  exports: [UsersRepository, UsersService],
 })
 export class IdentityModule {}

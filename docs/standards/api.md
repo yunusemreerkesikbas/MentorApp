@@ -58,10 +58,10 @@
 | Module | Base path (planned) | Responsibility | Phase | Status |
 |---|---|---|---|---|
 | `identity` | `/v1/auth/{signup,login,refresh,logout,verify-email,forgot-password,reset-password}`, `/v1/users/me` | own JWT + refresh rotation (httpOnly cookie), roles, org-ready, RLS | MVP | ✅ |
-| `coaching` | `/v1/plans`, `/v1/study-sessions`, `/v1/mock-exams`, `/v1/check-ins` | plan, ritual/Pomodoro, mock analysis, ghost | MVP | ⏳ |
+| `coaching` | `/v1/coaching/today`, `/v1/plan-tasks`, `/v1/study-sessions`, `/v1/coaching/mood-checkins` _(planned: `/v1/mock-exams`)_ | daily loop (plan tasks · countdown · Pomodoro · read-time streak) + rule-based mood; deneme analysis next slice | MVP | ✅ |
 | `ai` | `/v1/coach` (chat/grounded) | Context Builder + LLM/RAG orchestration | MVP | ⏳ |
-| `content` | `/v1/info-articles`, `/v1/calendar` | knowledge-center A-layer + pgvector RAG | MVP | ⏳ |
-| `payments` | `/v1/subscription`, `/v1/webhooks/iyzico` | subscription/trial/refund, e-archive | MVP | ⏳ |
+| `content` | `/v1/content/exams`, `/v1/content/exams/by-type/:type/calendar`, `/v1/content/exams/:slug/calendar`, `/v1/content/info-articles`, `/v1/content/info-articles/:slug` _(planned: pgvector RAG index)_ | editorial exam calendar + knowledge-center A-layer articles (data-card dates, SEO, RAG source) | MVP | ✅ |
+| `payments` | `/v1/plans` *(public)*, `/v1/subscription/{,checkout,cancel}`, `/v1/webhooks/payments` *(signed)* | carded trial + auto-renew (PaymentsPort: fake/iyzico), entitlement (`PremiumGuard`), idempotent webhook, e-archive stub | MVP | ✅ |
 | `notifications` | `/v1/notifications` | web push + email, scheduled | MVP | ⏳ |
 | `admin` | `/v1/admin/*` | content editor, users, refund, metrics, audit, flags | MVP | ⏳ |
 | `economy` | `/v1/economy/*` | XP/Coin ledger, quests/invites | Phase 2 | ⛔ |
@@ -70,7 +70,7 @@
 | `marketplace` | `/v1/marketplace/*` | coach discovery/commission/chat | Phase 3 | ⛔ |
 | (system) | `/v1/health` | liveness | MVP | ✅ |
 
-> Status: ✅ live · ⏳ coming in MVP · ⛔ later phase. A new endpoint → update this catalog + OpenAPI + a devnote.
+> Status: ✅ live · 🟡 partially live (some slices shipped) · ⏳ coming in MVP · ⛔ later phase. A new endpoint → update this catalog + OpenAPI + a devnote.
 
 > **Health probes** (`/v1/health`, `/v1/health/ready`) use the **terminus** response shape
 > (`{ status, info, error, details }`), not the `ApiError` envelope — they are infra for orchestrators,

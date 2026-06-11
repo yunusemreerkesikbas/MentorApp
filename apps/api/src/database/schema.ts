@@ -11,15 +11,18 @@
  */
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   date,
   index,
   integer,
   jsonb,
   pgTable,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
   uuid,
+  vector,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -167,4 +170,311 @@ export const emailTokens = pgTable(
     uniqueIndex("email_tokens_hash_idx").on(t.tokenHash),
     index("email_tokens_user_type_idx").on(t.userId, t.type),
   ],
+);
+
+/* ===================== W1 · content =====================
+ * Exam calendar + (later) knowledge center. Reference data — public read,
+ * editorial/service write. Trust metadata on every event (guardrail §4 #1).
+ * `family` matches identity `users.examType` (KPSS | YKS | LGS); `variant` holds
+ * sub-types (LISANS | ONLISANS | ORTAOGRETIM) for KPSS seed rows.
+ * ========================================================================= */
+
+/** An exam instance (e.g. KPSS Lisans 2026). Global when orgId is null (§4 #7). */
+export const exams = pgTable(
+  "exams",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    /** KPSS | YKS | LGS — matches users.examType. */
+    family: text("family").notNull(),
+    /** KPSS sub-type (LISANS | ONLISANS | ORTAOGRETIM), nullable for non-KPSS rows. */
+    variant: text("variant"),
+    netRule: jsonb("net_rule").notNull(),
+    /** Editorial override when multiple exams share a family (countdown selection). */
+    isCurrent: boolean("is_current").notNull().default(false),
+    orgId: uuid("org_id").references(() => organizations.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("exams_slug_unique_idx").on(t.slug), index("exams_family_idx").on(t.family)],
+);
+
+/** A dated editorial event for an exam (EXAM_DATE first; more types later). */
+export const examEvents = pgTable(
+  "exam_events",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    examId: uuid("exam_id")
+      .notNull()
+      .references(() => exams.id, { onDelete: "cascade" }),
+    /** EXAM_DATE | APPLICATION_START | … (ExamEventType). */
+    type: text("type").notNull(),
+    eventAt: timestamp("event_at", { withTimezone: true }).notNull(),
+    source: text("source").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+    verifiedBy: text("verified_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("exam_events_exam_type_unique_idx").on(t.examId, t.type),
+    index("exam_events_exam_type_idx").on(t.examId, t.type),
+  ],
+);
+
+/** Editorial knowledge-center article (A-layer). Public when publishedAt is set. */
+export const infoArticles = pgTable(
+  "info_articles",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    /** KPSS | YKS | LGS — matches users.examType. */
+    family: text("family").notNull(),
+    /** InfoArticleCategory constant. */
+    category: text("category").notNull(),
+    source: text("source").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+    verifiedBy: text("verified_by").notNull(),
+    metaTitle: text("meta_title"),
+    metaDescription: text("meta_description"),
+    /** pgvector — content only; populated by W3 after ArticlePublished (§4 #6). */
+    embedding: vector("embedding", { dimensions: 1536 }),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("info_articles_slug_unique_idx").on(t.slug),
+    index("info_articles_family_category_idx").on(t.family, t.category),
+  ],
+);
+
+/* ===================== W2 · coaching =====================
+ * Daily loop (plan tasks · Pomodoro/study sessions · daily activity · streak) +
+ * mood check-in (rule-based). All tables are user-scoped behavioral data — RLS
+ * enabled+forced with a per-user policy (app.user_id GUC) in the 0002 migration.
+ *
+ * Cross-track seams (no FK, no cross-module JOIN — workstreams §3):
+ *  - plan_tasks.subject / study_sessions.subject are SOFT refs → content subject taxonomy.
+ *  - "Which exam" is identity-owned (users.examType); the countdown date is read from
+ *    content (ContentPort), never re-stored here and never from users.examDate (plan §6 #5).
+ * Streak is read-time derived for MVP (no cron); daily_activity is the activity ledger.
+ * ========================================================================= */
+
+/** A single planned study item for a day (today's plan). */
+export const planTasks = pgTable(
+  "plan_tasks",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    taskDate: date("task_date").notNull(),
+    title: text("title").notNull(),
+    /** Nullable SOFT ref → content subject slug/name (no FK). */
+    subject: text("subject"),
+    /** PENDING | DONE (PlanTaskStatus). */
+    status: text("status").notNull().default("PENDING"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("plan_tasks_user_date_idx").on(t.userId, t.taskDate)],
+);
+
+/** A Pomodoro/focus session (start → complete/abandon). */
+export const studySessions = pgTable(
+  "study_sessions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    /** "25_5" | "50_10" (SessionPreset). */
+    preset: text("preset").notNull(),
+    actualFocusSeconds: integer("actual_focus_seconds").notNull().default(0),
+    /** Nullable SOFT ref → content subject. */
+    subject: text("subject"),
+    /** IN_PROGRESS | COMPLETED | ABANDONED (StudySessionStatus). */
+    status: text("status").notNull().default("IN_PROGRESS"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("study_sessions_user_started_idx").on(t.userId, t.startedAt)],
+);
+
+/** Per-day activity ledger — the source for read-time streak derivation. */
+export const dailyActivity = pgTable(
+  "daily_activity",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    activityDate: date("activity_date").notNull(),
+    hasSession: boolean("has_session").notNull().default(false),
+    tasksDone: integer("tasks_done").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("daily_activity_user_date_unique_idx").on(t.userId, t.activityDate)],
+);
+
+/** Per-user streak snapshot/cache (current is derived on read; longest is a high-water mark). */
+export const streakState = pgTable(
+  "streak_state",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    currentStreak: integer("current_streak").notNull().default(0),
+    longestStreak: integer("longest_streak").notNull().default(0),
+    freezeTokens: integer("freeze_tokens").notNull().default(2),
+    lastActiveDate: date("last_active_date"),
+    /** "YYYY-MM" — monthly freeze-token reset key. */
+    freezeMonth: text("freeze_month"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("streak_state_user_unique_idx").on(t.userId)],
+);
+
+/** One gentle mood check-in per day (1..5, no free-text — guardrail §4 #5). */
+export const moodCheckins = pgTable(
+  "mood_checkins",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    checkinDate: date("checkin_date").notNull(),
+    mood: smallint("mood").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("mood_checkins_user_date_unique_idx").on(t.userId, t.checkinDate)],
+);
+
+/* ===================== W4 · payments =====================
+ * Subscription billing (§7): plan catalog, subscriptions (state machine),
+ * append-only charge ledger, idempotent webhook event log. Money = integer
+ * minor units (kuruş) — never float. Renewal charging is provider-side
+ * (iyzico subscription product) → our system is webhook-driven (no cron).
+ * RLS (0003 migration): subscriptions/transactions self-read + SERVICE-write;
+ * webhook events SERVICE-only.
+ * ========================================================================= */
+
+/** Plan catalog. PLACEHOLDER prices (Phase-0 WTP research pending — roadmap §12). */
+export const plans = pgTable("plans", {
+  id: text("id").primaryKey(), // e.g. 'premium-monthly'
+  name: text("name").notNull(),
+  periodMonths: integer("period_months").notNull(),
+  /** VAT-inclusive price in kuruş. */
+  priceMinor: integer("price_minor").notNull(),
+  currency: text("currency").notNull().default("TRY"),
+  trialDays: integer("trial_days").notNull().default(7),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Subscription state machine: TRIALING|ACTIVE|PAST_DUE|CANCELED|EXPIRED.
+ * Partial unique index (0003 migration): one non-terminal subscription per user.
+ */
+export const subscriptions = pgTable(
+  "subscriptions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    planId: text("plan_id")
+      .notNull()
+      .references(() => plans.id),
+    status: text("status").notNull().default("TRIALING"),
+    provider: text("provider").notNull(), // FAKE | IYZICO
+    providerRef: text("provider_ref"),
+    trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+    currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
+    currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+    canceledAt: timestamp("canceled_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("subscriptions_user_idx").on(t.userId)],
+);
+
+/** Append-only charge ledger (§3 ledger discipline): rows are never updated/deleted. */
+export const paymentTransactions = pgTable(
+  "payment_transactions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    subscriptionId: uuid("subscription_id")
+      .notNull()
+      .references(() => subscriptions.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    type: text("type").notNull(), // TRIAL_START | RENEWAL | REFUND
+    amountMinor: integer("amount_minor").notNull(),
+    currency: text("currency").notNull().default("TRY"),
+    status: text("status").notNull(), // SUCCEEDED | FAILED | REFUNDED
+    providerEventId: text("provider_event_id").notNull(),
+    raw: jsonb("raw")
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("payment_tx_provider_event_idx").on(t.providerEventId),
+    index("payment_tx_user_idx").on(t.userId),
+  ],
+);
+
+/** Webhook idempotency belt: (provider, eventId) unique — a replayed event is a no-op. */
+export const paymentWebhookEvents = pgTable(
+  "payment_webhook_events",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    provider: text("provider").notNull(),
+    eventId: text("event_id").notNull(),
+    type: text("type").notNull(),
+    payload: jsonb("payload")
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    processedAt: timestamp("processed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("payment_webhook_provider_event_idx").on(t.provider, t.eventId)],
 );

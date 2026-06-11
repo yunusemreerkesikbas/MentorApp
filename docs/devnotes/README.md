@@ -32,3 +32,9 @@
 | [0009](./0009-workstreams.md) | Workstreams | MVP split into 7 parallel tracks with exclusive ownership + shared-file rules |
 | [0010](./0010-identity.md) | W0 · Identity | own JWT + refresh rotation/reuse-detect, RLS policies, guards, orval client, web auth screens |
 | [0011](./0011-identity-review-fixes.md) | W0 review fixes | throttler was a no-op (fixed+verified), examDate 500, signup race, KVKK cast cleanup |
+| [0012](./0012-design-infrastructure.md) | Design infrastructure | @mentor/ui React primitives, fonts (latin-ext), responsive shell (tab bar ↔ sidebar) |
+| [0013](./0013-panel-daily-hub.md) | Panel daily hub UI | /panel ritual screen + 6 ui primitives (W2 slice, mock-backed) |
+| [0014](./0014-w2-coaching-daily-loop.md) | W2 · Coaching daily-loop | plan tasks · calm countdown · sessions · read-time streak · mood (rule-based); ContentPort, RLS |
+| [0015](./0015-payments.md) | W4 · Payments | PaymentsPort fake/iyzico, trial-once state machine, entitlement+PremiumGuard, /abonelik |
+| [0016](./0016-w1-exam-calendar.md) | W1 · Exam calendar (Slice 1) | editorial exams/exam_events, public calendar API, ContentPort adapter, Bilgi data card |
+| [0017](./0017-w1-knowledge-center.md) | W1 · Knowledge center (Slice 2) | info_articles, ArticlePublished event, public SEO `/bilgi/[slug]`, hub article list |

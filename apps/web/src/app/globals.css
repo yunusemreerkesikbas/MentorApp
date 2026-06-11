@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "@mentor/ui/theme.css";
+/* Scan the shared UI package source so its utility classes are generated. */
+@source "../../../../packages/ui/src";
 
 /* Nuton-based base (DESIGN.md §1): white background, near-black text. */
 body {
