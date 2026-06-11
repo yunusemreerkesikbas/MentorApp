@@ -14,7 +14,8 @@ import { DomainError, UnauthorizedError } from "../../../common/errors/domain-er
 import { ErrorCode } from "../../../common/errors/error-code";
 import { isUniqueViolation } from "../../../common/errors/postgres-error";
 import type { Env } from "../../../config/env.validation";
-import { EMAIL_PORT, type EmailPort } from "../../../shared/ports/email.port";
+import { JOB_QUEUE_PORT, type JobQueuePort } from "../../../shared/ports/job-queue.port";
+import { EmailTemplate, JobName } from "../../../shared/notifications/constants";
 import {
   EmailTokenType,
   RESET_PASSWORD_TTL_MS,
@@ -41,7 +42,7 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly turnstile: TurnstileService,
     private readonly config: ConfigService<Env, true>,
-    @Inject(EMAIL_PORT) private readonly email: EmailPort,
+    @Inject(JOB_QUEUE_PORT) private readonly queue: JobQueuePort,
   ) {}
 
   async signup(input: SignupInput): Promise<AuthResult> {
@@ -154,15 +155,18 @@ export class AuthService {
 
     const appUrl = this.config.get("APP_URL", { infer: true });
     const path = type === EmailTokenType.VERIFY_EMAIL ? "eposta-dogrula" : "sifre-sifirla";
+    const template =
+      type === EmailTokenType.VERIFY_EMAIL
+        ? EmailTemplate.VERIFY_EMAIL
+        : EmailTemplate.RESET_PASSWORD;
     try {
-      await this.email.sendTransactional({
+      await this.queue.enqueue(JobName.SEND_EMAIL, {
         to: user.email,
-        template: type,
+        template,
         variables: { displayName: user.displayName, link: `${appUrl}/${path}?token=${raw}` },
       });
     } catch (err) {
-      // Email failures must not break signup/forgot flows; log + continue (W5 adds retries via queue).
-      this.logger.error(`email send failed (${type}): ${String(err)}`);
+      this.logger.error(`email enqueue failed (${type}): ${String(err)}`);
     }
   }
 }

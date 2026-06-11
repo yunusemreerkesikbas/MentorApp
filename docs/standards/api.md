@@ -62,8 +62,8 @@
 | `ai` | `/v1/coach` (chat/grounded) | Context Builder + LLM/RAG orchestration | MVP | ⏳ |
 | `content` | `/v1/content/exams`, `/v1/content/exams/by-type/:type/calendar`, `/v1/content/exams/:slug/calendar`, `/v1/content/info-articles`, `/v1/content/info-articles/:slug` _(planned: pgvector RAG index)_ | editorial exam calendar + knowledge-center A-layer articles (data-card dates, SEO, RAG source) | MVP | ✅ |
 | `payments` | `/v1/plans` *(public)*, `/v1/subscription/{,checkout,cancel}`, `/v1/webhooks/payments` *(signed)* | carded trial + auto-renew (PaymentsPort: fake/iyzico), entitlement (`PremiumGuard`), idempotent webhook, e-archive stub | MVP | ✅ |
-| `notifications` | `/v1/notifications` | web push + email, scheduled | MVP | ⏳ |
-| `admin` | `/v1/admin/*` | content editor, users, refund, metrics, audit, flags | MVP | ⏳ |
+| `notifications` | `/v1/notifications/{push-subscriptions,preferences}`, `/v1/internal/cron/{process-jobs,dispatch-daily-reminders}` *(CRON_SECRET)* | Postgres job queue + cron runner, Postmark email, web push, payment dunning + rule-based daily reminders | MVP | ✅ |
+| `admin` | `/v1/admin/{users,users/:id/roles/staff,audit-log}` *(ADMIN)* _(planned: content editor, refund, metrics, flags)_ | user mgmt + STAFF role assignment, append-only audit log (table+interceptor); rest of admin surface pending | MVP | 🟡 |
 | `economy` | `/v1/economy/*` | XP/Coin ledger, quests/invites | Phase 2 | ⛔ |
 | `forum` | `/v1/forum/*` | zones, verification, C-layer | Phase 2 | ⛔ |
 | `community` | `/v1/neighborhoods/*` | neighborhood, presence/leaderboard, live room | Phase 2 | ⛔ |

@@ -26,5 +26,6 @@
   "PAYMENT_ALREADY_SUBSCRIBED": "You already have an active subscription.",
   "PAYMENT_PROVIDER_ERROR": "The payment provider had a problem. Please try again.",
   "PAYMENT_WEBHOOK_INVALID": "Invalid payment notification.",
-  "PAYMENT_PREMIUM_REQUIRED": "This feature is for Premium members."
+  "PAYMENT_PREMIUM_REQUIRED": "This feature is for Premium members.",
+  "ADMIN_USER_NOT_FOUND": "This user was not found."
 }

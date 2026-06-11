@@ -7,7 +7,9 @@ import { SessionService } from "./application/session.service";
 import { StreakService } from "./application/streak.service";
 import { TodayService } from "./application/today.service";
 import { CONTENT_PORT } from "./domain/content.port";
+import { CoachingQueryAdapter } from "./infrastructure/coaching-query.adapter";
 import { ContentServiceAdapter } from "./infrastructure/content-service.adapter";
+import { COACHING_QUERY_PORT } from "./domain/coaching-query.port";
 import { DailyActivityRepository } from "./infrastructure/daily-activity.repository";
 import { MoodCheckinRepository } from "./infrastructure/mood-checkin.repository";
 import { PlanTaskRepository } from "./infrastructure/plan-task.repository";
@@ -40,6 +42,9 @@ import { StudySessionController } from "./presentation/study-session.controller"
     MoodCheckinRepository,
     // W1 ContentService adapter (ContentPort → editorial calendar).
     { provide: CONTENT_PORT, useClass: ContentServiceAdapter },
+    CoachingQueryAdapter,
+    { provide: COACHING_QUERY_PORT, useExisting: CoachingQueryAdapter },
   ],
+  exports: [COACHING_QUERY_PORT],
 })
 export class CoachingModule {}

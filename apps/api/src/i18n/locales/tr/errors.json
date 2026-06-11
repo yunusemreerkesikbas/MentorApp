@@ -26,5 +26,6 @@
   "PAYMENT_ALREADY_SUBSCRIBED": "Zaten aktif bir aboneliğin var.",
   "PAYMENT_PROVIDER_ERROR": "Ödeme sağlayıcısında bir sorun oluştu. Lütfen tekrar dene.",
   "PAYMENT_WEBHOOK_INVALID": "Geçersiz ödeme bildirimi.",
-  "PAYMENT_PREMIUM_REQUIRED": "Bu özellik Premium üyelere özel."
+  "PAYMENT_PREMIUM_REQUIRED": "Bu özellik Premium üyelere özel.",
+  "ADMIN_USER_NOT_FOUND": "Bu kullanıcı bulunamadı."
 }

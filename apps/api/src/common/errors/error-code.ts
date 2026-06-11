@@ -35,6 +35,8 @@ export const ErrorCode = {
   PAYMENT_PROVIDER_ERROR: "PAYMENT_PROVIDER_ERROR",
   PAYMENT_WEBHOOK_INVALID: "PAYMENT_WEBHOOK_INVALID",
   PAYMENT_PREMIUM_REQUIRED: "PAYMENT_PREMIUM_REQUIRED",
+  // admin (W6) — module-prefixed, append-only (workstreams rule)
+  ADMIN_USER_NOT_FOUND: "ADMIN_USER_NOT_FOUND",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

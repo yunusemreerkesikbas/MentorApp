@@ -11,7 +11,9 @@ DONE  Base infrastructure (db/errors/i18n/logging/health/tests)
 DONE  W0 identity (auth + RLS + web auth screens — devnote 0010)
 DONE  W4 payments (PaymentsPort fake/iyzico, entitlement+PremiumGuard, /abonelik — devnote 0015)
 PARTIAL W1 content (exam calendar Slice 1 — devnote 0016; knowledge center Slice 2 — devnote 0017) · W2 coaching (daily loop + panel — devnotes 0014, 0013)
-NEXT  W5 notifications · then batch B: W3 ai (PremiumGuard ready) · W6 admin
+DONE  W5 notifications (JobQueuePort + cron runner, Postmark email, web push, daily reminders — devnote 0019)
+PARTIAL W6 admin (foundation: STAFF assignment + audit log [table+interceptor] + Duralux admin UI — devnote 0018; economy + content editor/refund/metrics/flags pending)
+NEXT  batch B: W3 ai (PremiumGuard ready) · W6 remaining slices
 ```
 `identity` is the prerequisite for everything (auth guards, RequestContext.userId, RLS policies,
 users/orgs tables). Do it solo; parallelism starts after.

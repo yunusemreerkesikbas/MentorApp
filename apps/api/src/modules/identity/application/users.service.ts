@@ -9,6 +9,15 @@ import { toAuthUser } from "./auth.service";
 export class UsersService {
   constructor(private readonly usersRepo: UsersRepository) {}
 
+  /** Minimal contact fields for async notification jobs (W5 — no table access outside identity). */
+  async getNotificationContact(
+    userId: string,
+  ): Promise<{ email: string; displayName: string } | null> {
+    const user = await this.usersRepo.findByIdService(userId);
+    if (!user) return null;
+    return { email: user.email, displayName: user.displayName };
+  }
+
   async getMe(userId: string): Promise<AuthUser> {
     const user = await this.usersRepo.findSelf(userId);
     if (!user) throw new NotFoundError();

@@ -5,16 +5,6 @@
  * OpenAPI spec version: 1.0
  */
 import { http } from '../http';
-export interface CreateMoodCheckinDto { [key: string]: unknown }
-
-export interface CreatePlanTaskDto { [key: string]: unknown }
-
-export interface UpdatePlanTaskDto { [key: string]: unknown }
-
-export interface StartStudySessionDto { [key: string]: unknown }
-
-export interface UpdateStudySessionDto { [key: string]: unknown }
-
 export interface SignupDto { [key: string]: unknown }
 
 export interface LoginDto { [key: string]: unknown }
@@ -26,6 +16,22 @@ export interface ForgotPasswordDto { [key: string]: unknown }
 export interface ResetPasswordDto { [key: string]: unknown }
 
 export interface UpdateMeDto { [key: string]: unknown }
+
+export interface CreateMoodCheckinDto { [key: string]: unknown }
+
+export interface CreatePlanTaskDto { [key: string]: unknown }
+
+export interface UpdatePlanTaskDto { [key: string]: unknown }
+
+export interface StartStudySessionDto { [key: string]: unknown }
+
+export interface UpdateStudySessionDto { [key: string]: unknown }
+
+export interface PushSubscribeDto { [key: string]: unknown }
+
+export interface PushUnsubscribeDto { [key: string]: unknown }
+
+export interface UpdateNotificationPreferencesDto { [key: string]: unknown }
 
 export interface CheckoutDto { [key: string]: unknown }
 
@@ -157,6 +163,441 @@ export const healthControllerReadiness = async ( options?: RequestInit): Promise
     method: 'GET'
     
     
+  }
+);}
+
+
+
+export type adminUsersControllerSearchUsersResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminUsersControllerSearchUsersResponseSuccess = (adminUsersControllerSearchUsersResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminUsersControllerSearchUsersResponse = (adminUsersControllerSearchUsersResponseSuccess)
+
+export const getAdminUsersControllerSearchUsersUrl = () => {
+
+
+  
+
+  return `/v1/admin/users`
+}
+
+export const adminUsersControllerSearchUsers = async ( options?: RequestInit): Promise<adminUsersControllerSearchUsersResponse> => {
+  
+  return http<adminUsersControllerSearchUsersResponse>(getAdminUsersControllerSearchUsersUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminUsersControllerGrantStaffResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminUsersControllerGrantStaffResponseSuccess = (adminUsersControllerGrantStaffResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminUsersControllerGrantStaffResponse = (adminUsersControllerGrantStaffResponseSuccess)
+
+export const getAdminUsersControllerGrantStaffUrl = (userId: string,) => {
+
+
+  
+
+  return `/v1/admin/users/${userId}/roles/staff`
+}
+
+export const adminUsersControllerGrantStaff = async (userId: string, options?: RequestInit): Promise<adminUsersControllerGrantStaffResponse> => {
+  
+  return http<adminUsersControllerGrantStaffResponse>(getAdminUsersControllerGrantStaffUrl(userId),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type adminUsersControllerRevokeStaffResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminUsersControllerRevokeStaffResponseSuccess = (adminUsersControllerRevokeStaffResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminUsersControllerRevokeStaffResponse = (adminUsersControllerRevokeStaffResponseSuccess)
+
+export const getAdminUsersControllerRevokeStaffUrl = (userId: string,) => {
+
+
+  
+
+  return `/v1/admin/users/${userId}/roles/staff`
+}
+
+export const adminUsersControllerRevokeStaff = async (userId: string, options?: RequestInit): Promise<adminUsersControllerRevokeStaffResponse> => {
+  
+  return http<adminUsersControllerRevokeStaffResponse>(getAdminUsersControllerRevokeStaffUrl(userId),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type adminUsersControllerListAuditLogResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminUsersControllerListAuditLogResponseSuccess = (adminUsersControllerListAuditLogResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminUsersControllerListAuditLogResponse = (adminUsersControllerListAuditLogResponseSuccess)
+
+export const getAdminUsersControllerListAuditLogUrl = () => {
+
+
+  
+
+  return `/v1/admin/audit-log`
+}
+
+export const adminUsersControllerListAuditLog = async ( options?: RequestInit): Promise<adminUsersControllerListAuditLogResponse> => {
+  
+  return http<adminUsersControllerListAuditLogResponse>(getAdminUsersControllerListAuditLogUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type authControllerSignupResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type authControllerSignupResponseSuccess = (authControllerSignupResponse201) & {
+  headers: Headers;
+};
+;
+
+export type authControllerSignupResponse = (authControllerSignupResponseSuccess)
+
+export const getAuthControllerSignupUrl = () => {
+
+
+  
+
+  return `/v1/auth/signup`
+}
+
+export const authControllerSignup = async (signupDto: SignupDto, options?: RequestInit): Promise<authControllerSignupResponse> => {
+  
+  return http<authControllerSignupResponse>(getAuthControllerSignupUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      signupDto,)
+  }
+);}
+
+
+
+export type authControllerLoginResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type authControllerLoginResponseSuccess = (authControllerLoginResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authControllerLoginResponse = (authControllerLoginResponseSuccess)
+
+export const getAuthControllerLoginUrl = () => {
+
+
+  
+
+  return `/v1/auth/login`
+}
+
+export const authControllerLogin = async (loginDto: LoginDto, options?: RequestInit): Promise<authControllerLoginResponse> => {
+  
+  return http<authControllerLoginResponse>(getAuthControllerLoginUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      loginDto,)
+  }
+);}
+
+
+
+export type authControllerRefreshResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type authControllerRefreshResponseSuccess = (authControllerRefreshResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authControllerRefreshResponse = (authControllerRefreshResponseSuccess)
+
+export const getAuthControllerRefreshUrl = () => {
+
+
+  
+
+  return `/v1/auth/refresh`
+}
+
+export const authControllerRefresh = async ( options?: RequestInit): Promise<authControllerRefreshResponse> => {
+  
+  return http<authControllerRefreshResponse>(getAuthControllerRefreshUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type authControllerLogoutResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type authControllerLogoutResponseSuccess = (authControllerLogoutResponse204) & {
+  headers: Headers;
+};
+;
+
+export type authControllerLogoutResponse = (authControllerLogoutResponseSuccess)
+
+export const getAuthControllerLogoutUrl = () => {
+
+
+  
+
+  return `/v1/auth/logout`
+}
+
+export const authControllerLogout = async ( options?: RequestInit): Promise<authControllerLogoutResponse> => {
+  
+  return http<authControllerLogoutResponse>(getAuthControllerLogoutUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type authControllerVerifyEmailResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type authControllerVerifyEmailResponseSuccess = (authControllerVerifyEmailResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authControllerVerifyEmailResponse = (authControllerVerifyEmailResponseSuccess)
+
+export const getAuthControllerVerifyEmailUrl = () => {
+
+
+  
+
+  return `/v1/auth/verify-email`
+}
+
+export const authControllerVerifyEmail = async (verifyEmailDto: VerifyEmailDto, options?: RequestInit): Promise<authControllerVerifyEmailResponse> => {
+  
+  return http<authControllerVerifyEmailResponse>(getAuthControllerVerifyEmailUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      verifyEmailDto,)
+  }
+);}
+
+
+
+export type authControllerForgotPasswordResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type authControllerForgotPasswordResponseSuccess = (authControllerForgotPasswordResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authControllerForgotPasswordResponse = (authControllerForgotPasswordResponseSuccess)
+
+export const getAuthControllerForgotPasswordUrl = () => {
+
+
+  
+
+  return `/v1/auth/forgot-password`
+}
+
+export const authControllerForgotPassword = async (forgotPasswordDto: ForgotPasswordDto, options?: RequestInit): Promise<authControllerForgotPasswordResponse> => {
+  
+  return http<authControllerForgotPasswordResponse>(getAuthControllerForgotPasswordUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      forgotPasswordDto,)
+  }
+);}
+
+
+
+export type authControllerResetPasswordResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type authControllerResetPasswordResponseSuccess = (authControllerResetPasswordResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authControllerResetPasswordResponse = (authControllerResetPasswordResponseSuccess)
+
+export const getAuthControllerResetPasswordUrl = () => {
+
+
+  
+
+  return `/v1/auth/reset-password`
+}
+
+export const authControllerResetPassword = async (resetPasswordDto: ResetPasswordDto, options?: RequestInit): Promise<authControllerResetPasswordResponse> => {
+  
+  return http<authControllerResetPasswordResponse>(getAuthControllerResetPasswordUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      resetPasswordDto,)
+  }
+);}
+
+
+
+export type usersControllerMeResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type usersControllerMeResponseSuccess = (usersControllerMeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type usersControllerMeResponse = (usersControllerMeResponseSuccess)
+
+export const getUsersControllerMeUrl = () => {
+
+
+  
+
+  return `/v1/users/me`
+}
+
+export const usersControllerMe = async ( options?: RequestInit): Promise<usersControllerMeResponse> => {
+  
+  return http<usersControllerMeResponse>(getUsersControllerMeUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type usersControllerUpdateMeResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type usersControllerUpdateMeResponseSuccess = (usersControllerUpdateMeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type usersControllerUpdateMeResponse = (usersControllerUpdateMeResponseSuccess)
+
+export const getUsersControllerUpdateMeUrl = () => {
+
+
+  
+
+  return `/v1/users/me`
+}
+
+export const usersControllerUpdateMe = async (updateMeDto: UpdateMeDto, options?: RequestInit): Promise<usersControllerUpdateMeResponse> => {
+  
+  return http<usersControllerUpdateMeResponse>(getUsersControllerUpdateMeUrl(),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateMeDto,)
   }
 );}
 
@@ -631,97 +1072,29 @@ export const infoArticleControllerGetArticle = async (slug: string, options?: Re
 
 
 
-export type authControllerSignupResponse201 = {
+export type cronControllerProcessJobsResponse201 = {
   data: void
   status: 201
 }
     
-export type authControllerSignupResponseSuccess = (authControllerSignupResponse201) & {
+export type cronControllerProcessJobsResponseSuccess = (cronControllerProcessJobsResponse201) & {
   headers: Headers;
 };
 ;
 
-export type authControllerSignupResponse = (authControllerSignupResponseSuccess)
+export type cronControllerProcessJobsResponse = (cronControllerProcessJobsResponseSuccess)
 
-export const getAuthControllerSignupUrl = () => {
+export const getCronControllerProcessJobsUrl = () => {
 
 
   
 
-  return `/v1/auth/signup`
+  return `/v1/internal/cron/process-jobs`
 }
 
-export const authControllerSignup = async (signupDto: SignupDto, options?: RequestInit): Promise<authControllerSignupResponse> => {
+export const cronControllerProcessJobs = async ( options?: RequestInit): Promise<cronControllerProcessJobsResponse> => {
   
-  return http<authControllerSignupResponse>(getAuthControllerSignupUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      signupDto,)
-  }
-);}
-
-
-
-export type authControllerLoginResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type authControllerLoginResponseSuccess = (authControllerLoginResponse200) & {
-  headers: Headers;
-};
-;
-
-export type authControllerLoginResponse = (authControllerLoginResponseSuccess)
-
-export const getAuthControllerLoginUrl = () => {
-
-
-  
-
-  return `/v1/auth/login`
-}
-
-export const authControllerLogin = async (loginDto: LoginDto, options?: RequestInit): Promise<authControllerLoginResponse> => {
-  
-  return http<authControllerLoginResponse>(getAuthControllerLoginUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      loginDto,)
-  }
-);}
-
-
-
-export type authControllerRefreshResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type authControllerRefreshResponseSuccess = (authControllerRefreshResponse200) & {
-  headers: Headers;
-};
-;
-
-export type authControllerRefreshResponse = (authControllerRefreshResponseSuccess)
-
-export const getAuthControllerRefreshUrl = () => {
-
-
-  
-
-  return `/v1/auth/refresh`
-}
-
-export const authControllerRefresh = async ( options?: RequestInit): Promise<authControllerRefreshResponse> => {
-  
-  return http<authControllerRefreshResponse>(getAuthControllerRefreshUrl(),
+  return http<cronControllerProcessJobsResponse>(getCronControllerProcessJobsUrl(),
   {      
     ...options,
     method: 'POST'
@@ -732,29 +1105,29 @@ export const authControllerRefresh = async ( options?: RequestInit): Promise<aut
 
 
 
-export type authControllerLogoutResponse204 = {
+export type cronControllerDispatchDailyRemindersResponse201 = {
   data: void
-  status: 204
+  status: 201
 }
     
-export type authControllerLogoutResponseSuccess = (authControllerLogoutResponse204) & {
+export type cronControllerDispatchDailyRemindersResponseSuccess = (cronControllerDispatchDailyRemindersResponse201) & {
   headers: Headers;
 };
 ;
 
-export type authControllerLogoutResponse = (authControllerLogoutResponseSuccess)
+export type cronControllerDispatchDailyRemindersResponse = (cronControllerDispatchDailyRemindersResponseSuccess)
 
-export const getAuthControllerLogoutUrl = () => {
+export const getCronControllerDispatchDailyRemindersUrl = () => {
 
 
   
 
-  return `/v1/auth/logout`
+  return `/v1/internal/cron/dispatch-daily-reminders`
 }
 
-export const authControllerLogout = async ( options?: RequestInit): Promise<authControllerLogoutResponse> => {
+export const cronControllerDispatchDailyReminders = async ( options?: RequestInit): Promise<cronControllerDispatchDailyRemindersResponse> => {
   
-  return http<authControllerLogoutResponse>(getAuthControllerLogoutUrl(),
+  return http<cronControllerDispatchDailyRemindersResponse>(getCronControllerDispatchDailyRemindersUrl(),
   {      
     ...options,
     method: 'POST'
@@ -765,131 +1138,97 @@ export const authControllerLogout = async ( options?: RequestInit): Promise<auth
 
 
 
-export type authControllerVerifyEmailResponse200 = {
+export type notificationsControllerSubscribePushResponse201 = {
   data: void
-  status: 200
+  status: 201
 }
     
-export type authControllerVerifyEmailResponseSuccess = (authControllerVerifyEmailResponse200) & {
+export type notificationsControllerSubscribePushResponseSuccess = (notificationsControllerSubscribePushResponse201) & {
   headers: Headers;
 };
 ;
 
-export type authControllerVerifyEmailResponse = (authControllerVerifyEmailResponseSuccess)
+export type notificationsControllerSubscribePushResponse = (notificationsControllerSubscribePushResponseSuccess)
 
-export const getAuthControllerVerifyEmailUrl = () => {
+export const getNotificationsControllerSubscribePushUrl = () => {
 
 
   
 
-  return `/v1/auth/verify-email`
+  return `/v1/notifications/push-subscriptions`
 }
 
-export const authControllerVerifyEmail = async (verifyEmailDto: VerifyEmailDto, options?: RequestInit): Promise<authControllerVerifyEmailResponse> => {
+export const notificationsControllerSubscribePush = async (pushSubscribeDto: PushSubscribeDto, options?: RequestInit): Promise<notificationsControllerSubscribePushResponse> => {
   
-  return http<authControllerVerifyEmailResponse>(getAuthControllerVerifyEmailUrl(),
+  return http<notificationsControllerSubscribePushResponse>(getNotificationsControllerSubscribePushUrl(),
   {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      verifyEmailDto,)
+      pushSubscribeDto,)
   }
 );}
 
 
 
-export type authControllerForgotPasswordResponse200 = {
+export type notificationsControllerUnsubscribePushResponse200 = {
   data: void
   status: 200
 }
     
-export type authControllerForgotPasswordResponseSuccess = (authControllerForgotPasswordResponse200) & {
+export type notificationsControllerUnsubscribePushResponseSuccess = (notificationsControllerUnsubscribePushResponse200) & {
   headers: Headers;
 };
 ;
 
-export type authControllerForgotPasswordResponse = (authControllerForgotPasswordResponseSuccess)
+export type notificationsControllerUnsubscribePushResponse = (notificationsControllerUnsubscribePushResponseSuccess)
 
-export const getAuthControllerForgotPasswordUrl = () => {
+export const getNotificationsControllerUnsubscribePushUrl = () => {
 
 
   
 
-  return `/v1/auth/forgot-password`
+  return `/v1/notifications/push-subscriptions`
 }
 
-export const authControllerForgotPassword = async (forgotPasswordDto: ForgotPasswordDto, options?: RequestInit): Promise<authControllerForgotPasswordResponse> => {
+export const notificationsControllerUnsubscribePush = async (pushUnsubscribeDto: PushUnsubscribeDto, options?: RequestInit): Promise<notificationsControllerUnsubscribePushResponse> => {
   
-  return http<authControllerForgotPasswordResponse>(getAuthControllerForgotPasswordUrl(),
+  return http<notificationsControllerUnsubscribePushResponse>(getNotificationsControllerUnsubscribePushUrl(),
   {      
     ...options,
-    method: 'POST',
+    method: 'DELETE',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      forgotPasswordDto,)
+      pushUnsubscribeDto,)
   }
 );}
 
 
 
-export type authControllerResetPasswordResponse200 = {
+export type notificationsControllerGetPreferencesResponse200 = {
   data: void
   status: 200
 }
     
-export type authControllerResetPasswordResponseSuccess = (authControllerResetPasswordResponse200) & {
+export type notificationsControllerGetPreferencesResponseSuccess = (notificationsControllerGetPreferencesResponse200) & {
   headers: Headers;
 };
 ;
 
-export type authControllerResetPasswordResponse = (authControllerResetPasswordResponseSuccess)
+export type notificationsControllerGetPreferencesResponse = (notificationsControllerGetPreferencesResponseSuccess)
 
-export const getAuthControllerResetPasswordUrl = () => {
+export const getNotificationsControllerGetPreferencesUrl = () => {
 
 
   
 
-  return `/v1/auth/reset-password`
+  return `/v1/notifications/preferences`
 }
 
-export const authControllerResetPassword = async (resetPasswordDto: ResetPasswordDto, options?: RequestInit): Promise<authControllerResetPasswordResponse> => {
+export const notificationsControllerGetPreferences = async ( options?: RequestInit): Promise<notificationsControllerGetPreferencesResponse> => {
   
-  return http<authControllerResetPasswordResponse>(getAuthControllerResetPasswordUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      resetPasswordDto,)
-  }
-);}
-
-
-
-export type usersControllerMeResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type usersControllerMeResponseSuccess = (usersControllerMeResponse200) & {
-  headers: Headers;
-};
-;
-
-export type usersControllerMeResponse = (usersControllerMeResponseSuccess)
-
-export const getUsersControllerMeUrl = () => {
-
-
-  
-
-  return `/v1/users/me`
-}
-
-export const usersControllerMe = async ( options?: RequestInit): Promise<usersControllerMeResponse> => {
-  
-  return http<usersControllerMeResponse>(getUsersControllerMeUrl(),
+  return http<notificationsControllerGetPreferencesResponse>(getNotificationsControllerGetPreferencesUrl(),
   {      
     ...options,
     method: 'GET'
@@ -900,35 +1239,35 @@ export const usersControllerMe = async ( options?: RequestInit): Promise<usersCo
 
 
 
-export type usersControllerUpdateMeResponse200 = {
+export type notificationsControllerUpdatePreferencesResponse200 = {
   data: void
   status: 200
 }
     
-export type usersControllerUpdateMeResponseSuccess = (usersControllerUpdateMeResponse200) & {
+export type notificationsControllerUpdatePreferencesResponseSuccess = (notificationsControllerUpdatePreferencesResponse200) & {
   headers: Headers;
 };
 ;
 
-export type usersControllerUpdateMeResponse = (usersControllerUpdateMeResponseSuccess)
+export type notificationsControllerUpdatePreferencesResponse = (notificationsControllerUpdatePreferencesResponseSuccess)
 
-export const getUsersControllerUpdateMeUrl = () => {
+export const getNotificationsControllerUpdatePreferencesUrl = () => {
 
 
   
 
-  return `/v1/users/me`
+  return `/v1/notifications/preferences`
 }
 
-export const usersControllerUpdateMe = async (updateMeDto: UpdateMeDto, options?: RequestInit): Promise<usersControllerUpdateMeResponse> => {
+export const notificationsControllerUpdatePreferences = async (updateNotificationPreferencesDto: UpdateNotificationPreferencesDto, options?: RequestInit): Promise<notificationsControllerUpdatePreferencesResponse> => {
   
-  return http<usersControllerUpdateMeResponse>(getUsersControllerUpdateMeUrl(),
+  return http<notificationsControllerUpdatePreferencesResponse>(getNotificationsControllerUpdatePreferencesUrl(),
   {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      updateMeDto,)
+      updateNotificationPreferencesDto,)
   }
 );}
 

@@ -12,9 +12,11 @@ import { validateEnv } from "./config/env.validation";
 import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
 import { AppI18nModule } from "./i18n/i18n.module";
+import { AdminModule } from "./modules/admin/admin.module";
 import { CoachingModule } from "./modules/coaching/coaching.module";
 import { ContentModule } from "./modules/content/content.module";
 import { IdentityModule } from "./modules/identity/identity.module";
+import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
 import { buildLoggerConfig } from "./observability/logger.config";
 
@@ -41,9 +43,11 @@ import { buildLoggerConfig } from "./observability/logger.config";
     AppI18nModule,
     DatabaseModule,
     HealthModule,
+    AdminModule,
     CoachingModule,
     ContentModule,
     IdentityModule,
+    NotificationsModule,
     PaymentsModule,
   ],
   providers: [

@@ -50,6 +50,15 @@ const envSchema = z.object({
 
   // Email — Postmark (§8)
   POSTMARK_TOKEN: z.string().optional(),
+  POSTMARK_FROM: z.string().email().optional(),
+
+  // Internal cron (Render Cron → HTTP)
+  CRON_SECRET: z.string().min(32).optional(),
+
+  // Web Push (VAPID)
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().optional(),
 
   // Error monitoring — Sentry (§8)
   SENTRY_DSN: z.string().url().optional(),
@@ -80,6 +89,20 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
       code: z.ZodIssueCode.custom,
       path: ["PAYMENTS_WEBHOOK_SECRET"],
       message: "PAYMENTS_WEBHOOK_SECRET is required when PAYMENTS_PROVIDER=fake.",
+    });
+  }
+  if (env.NODE_ENV === "production" && !env.CRON_SECRET) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["CRON_SECRET"],
+      message: "CRON_SECRET is required in production (Render Cron auth).",
+    });
+  }
+  if (env.NODE_ENV === "production" && !env.POSTMARK_TOKEN) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["POSTMARK_TOKEN"],
+      message: "POSTMARK_TOKEN is required in production.",
     });
   }
 });

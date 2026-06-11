@@ -478,3 +478,96 @@ export const paymentWebhookEvents = pgTable(
   },
   (t) => [uniqueIndex("payment_webhook_provider_event_idx").on(t.provider, t.eventId)],
 );
+
+/* ===================== W5 · notifications =====================
+ * Web push subscriptions, user notification preferences, delivery dedupe log.
+ * RLS: user-scoped self access (0007 migration). Jobs table is platform-level (no RLS).
+ * ========================================================================= */
+
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("push_subscriptions_endpoint_unique_idx").on(t.endpoint),
+    index("push_subscriptions_user_idx").on(t.userId),
+  ],
+);
+
+export const notificationPreferences = pgTable("notification_preferences", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  emailEnabled: boolean("email_enabled").notNull().default(true),
+  pushEnabled: boolean("push_enabled").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Idempotent delivery log — prevents duplicate daily reminders etc. */
+export const notificationDeliveries = pgTable(
+  "notification_deliveries",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    channel: text("channel").notNull(), // EMAIL | PUSH
+    template: text("template").notNull(),
+    dedupeKey: text("dedupe_key").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("notification_deliveries_dedupe_idx").on(t.userId, t.channel, t.template, t.dedupeKey),
+  ],
+);
+
+/* ================================ W6 · admin ================================
+ * admin_audit_log: every admin mutation (who/what/when) — append-only (§9), never
+ * updated, never deleted. Written by AdminAuditInterceptor in SERVICE context.
+ * RLS: SERVICE/ADMIN only (admin services run cross-user in service context).
+ *
+ * NOTE — economy seam (NOT built in this slice): the light economy lands later as an
+ * append-only `ledger_entries` (XP ≠ Coin, coin is non-monetary/capped — §3/§4) plus
+ * invite/quest tables. Reserved here so the schema stays org/ledger-ready from day one.
+ * ========================================================================= */
+
+/** Append-only admin action trail (§9). `before`/`after` capture sensitive diffs (roles). */
+export const adminAuditLog = pgTable(
+  "admin_audit_log",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    /** The admin who performed the action (req.user.id). */
+    actorUserId: uuid("actor_user_id")
+      .notNull()
+      .references(() => users.id),
+    /** Stable action key, e.g. "staff.assign" / "staff.revoke". */
+    action: text("action").notNull(),
+    /** What kind of entity was acted on, e.g. "user" (null for non-targeted actions). */
+    targetType: text("target_type"),
+    targetId: text("target_id"),
+    /** Optional value snapshots for sensitive mutations (e.g. roles before/after). */
+    before: jsonb("before"),
+    after: jsonb("after"),
+    ip: text("ip"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("admin_audit_log_created_at_idx").on(t.createdAt),
+    index("admin_audit_log_action_idx").on(t.action),
+  ],
+);
