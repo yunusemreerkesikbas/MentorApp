@@ -47,7 +47,9 @@ export class FakePaymentsAdapter implements PaymentsPort {
   ): ProviderEvent {
     const given = headers["x-fake-signature"];
     const signature = Array.isArray(given) ? given[0] : given;
+    // Guaranteed present by the env lock when PAYMENTS_PROVIDER=fake (this adapter's only mode).
     const secret = this.config.get("PAYMENTS_WEBHOOK_SECRET", { infer: true });
+    if (!secret) throw new DomainError(ErrorCode.PAYMENT_WEBHOOK_INVALID, HttpStatus.INTERNAL_SERVER_ERROR);
     const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
 
     if (

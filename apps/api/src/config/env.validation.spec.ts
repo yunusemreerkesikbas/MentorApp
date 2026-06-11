@@ -37,4 +37,21 @@ describe("validateEnv", () => {
   it("iyzico provider requires its keys", () => {
     expect(() => validateEnv({ ...REQUIRED, PAYMENTS_PROVIDER: "iyzico" })).toThrow(/IYZICO/);
   });
+
+  it("fake provider requires the webhook secret", () => {
+    const { PAYMENTS_WEBHOOK_SECRET: _omit, ...noSecret } = REQUIRED;
+    expect(() => validateEnv(noSecret)).toThrow(/PAYMENTS_WEBHOOK_SECRET/);
+  });
+
+  it("iyzico provider does not require the webhook secret (it signs with IYZICO_SECRET_KEY)", () => {
+    const { PAYMENTS_WEBHOOK_SECRET: _omit, ...noSecret } = REQUIRED;
+    const env = validateEnv({
+      ...noSecret,
+      PAYMENTS_PROVIDER: "iyzico",
+      IYZICO_API_KEY: "k",
+      IYZICO_SECRET_KEY: "s",
+    });
+    expect(env.PAYMENTS_PROVIDER).toBe("iyzico");
+    expect(env.PAYMENTS_WEBHOOK_SECRET).toBeUndefined();
+  });
 });

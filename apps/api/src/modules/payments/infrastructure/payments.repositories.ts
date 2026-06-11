@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, desc, eq, notInArray } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
-import type { Database } from "../../../database/drizzle";
+import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import { paymentTransactions, paymentWebhookEvents, plans, subscriptions } from "../../../database/schema";
 import { SubscriptionStatus } from "@mentor/types";
@@ -9,6 +9,20 @@ import type { TxStatus, TxType } from "../domain/payments.constants";
 
 export type PlanRow = typeof plans.$inferSelect;
 export type SubscriptionRow = typeof subscriptions.$inferSelect;
+
+/**
+ * Webhook-path methods accept an optional caller transaction so record + state-apply +
+ * ledger run atomically in ONE service-context tx (see WebhookService). Without a `tx`,
+ * each method opens its own `withServiceContext` as before (other callers unchanged).
+ */
+type Exec = DatabaseTx;
+function onServiceTx<T>(
+  db: Database,
+  tx: Exec | undefined,
+  fn: (tx: Exec) => Promise<T>,
+): Promise<T> {
+  return tx ? fn(tx) : withServiceContext(db, fn);
+}
 
 const TERMINAL = [SubscriptionStatus.EXPIRED];
 
@@ -21,8 +35,10 @@ export class PlansRepository {
     return this.db.select().from(plans).where(eq(plans.isActive, true));
   }
 
-  async findById(id: string): Promise<PlanRow | undefined> {
-    const rows = await this.db.select().from(plans).where(eq(plans.id, id)).limit(1);
+  /** `plans` has no RLS → reads via the caller tx (webhook path) or the pool directly. */
+  async findById(id: string, tx?: Exec): Promise<PlanRow | undefined> {
+    const exec = tx ?? this.db;
+    const rows = await exec.select().from(plans).where(eq(plans.id, id)).limit(1);
     return rows[0];
   }
 }
@@ -55,9 +71,9 @@ export class SubscriptionsRepository {
     });
   }
 
-  async findByProviderRef(providerRef: string): Promise<SubscriptionRow | undefined> {
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx
+  async findByProviderRef(providerRef: string, tx?: Exec): Promise<SubscriptionRow | undefined> {
+    return onServiceTx(this.db, tx, async (exec) => {
+      const rows = await exec
         .select()
         .from(subscriptions)
         .where(eq(subscriptions.providerRef, providerRef))
@@ -76,9 +92,10 @@ export class SubscriptionsRepository {
   async update(
     id: string,
     patch: Partial<typeof subscriptions.$inferInsert>,
+    tx?: Exec,
   ): Promise<SubscriptionRow | undefined> {
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx
+    return onServiceTx(this.db, tx, async (exec) => {
+      const rows = await exec
         .update(subscriptions)
         .set(patch)
         .where(eq(subscriptions.id, id))
@@ -96,14 +113,17 @@ export class PaymentEventsRepository {
    * Idempotency belt: record the webhook event; returns false when (provider,eventId)
    * was already processed (ON CONFLICT DO NOTHING → no row returned).
    */
-  async recordWebhookOnce(input: {
-    provider: string;
-    eventId: string;
-    type: string;
-    payload: unknown;
-  }): Promise<boolean> {
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx
+  async recordWebhookOnce(
+    input: {
+      provider: string;
+      eventId: string;
+      type: string;
+      payload: unknown;
+    },
+    tx?: Exec,
+  ): Promise<boolean> {
+    return onServiceTx(this.db, tx, async (exec) => {
+      const rows = await exec
         .insert(paymentWebhookEvents)
         .values({
           provider: input.provider,
@@ -117,30 +137,22 @@ export class PaymentEventsRepository {
     });
   }
 
-  /** Crash-safety rollback of the idempotency record when applying the event failed (F1). */
-  async deleteWebhookRecord(provider: string, eventId: string): Promise<void> {
-    await withServiceContext(this.db, async (tx) => {
-      await tx
-        .delete(paymentWebhookEvents)
-        .where(
-          and(eq(paymentWebhookEvents.provider, provider), eq(paymentWebhookEvents.eventId, eventId)),
-        );
-    });
-  }
-
   /** Append-only charge ledger (never updated, never deleted — §3). */
-  async appendTransaction(input: {
-    subscriptionId: string;
-    userId: string;
-    type: TxType;
-    amountMinor: number;
-    currency: string;
-    status: TxStatus;
-    providerEventId: string;
-    raw?: unknown;
-  }): Promise<void> {
-    await withServiceContext(this.db, async (tx) => {
-      await tx
+  async appendTransaction(
+    input: {
+      subscriptionId: string;
+      userId: string;
+      type: TxType;
+      amountMinor: number;
+      currency: string;
+      status: TxStatus;
+      providerEventId: string;
+      raw?: unknown;
+    },
+    tx?: Exec,
+  ): Promise<void> {
+    await onServiceTx(this.db, tx, async (exec) => {
+      await exec
         .insert(paymentTransactions)
         .values({ ...input, raw: (input.raw ?? {}) as object })
         .onConflictDoNothing(); // providerEventId unique → replayed charge is a no-op

@@ -11,6 +11,7 @@ import {
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { isUniqueViolation } from "../../../common/errors/postgres-error";
+import type { DatabaseTx } from "../../../database/drizzle";
 import type { Env } from "../../../config/env.validation";
 import { INVOICE_PORT, type InvoicePort } from "../../../shared/ports/invoice.port";
 import {
@@ -35,6 +36,18 @@ import {
 import { EntitlementService } from "./entitlement.service";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** A domain event to publish after the webhook transaction commits. */
+interface DomainEmit {
+  topic: string;
+  payload: object;
+}
+
+/** Post-commit side-effects of a webhook apply (never run inside the tx → rollback emits nothing). */
+export interface WebhookSideEffects {
+  emits: DomainEmit[];
+  invoice?: { sub: SubscriptionRow; event: ProviderEvent; plan: PlanRow | undefined };
+}
 
 @Injectable()
 export class SubscriptionsService {
@@ -145,84 +158,131 @@ export class SubscriptionsService {
     return this.getView(userId, rolesHint);
   }
 
-  /** Apply a verified, deduplicated provider event to the state machine. */
-  async applyProviderEvent(event: ProviderEvent): Promise<void> {
-    const sub = await this.subsRepo.findByProviderRef(event.providerRef);
+  /**
+   * Apply a verified, deduplicated provider event to the state machine within the
+   * caller's transaction (`tx`). Side-effects that must NOT happen on rollback —
+   * domain-event emits + invoice issuance — are returned for the caller to run AFTER
+   * commit (see WebhookService), keeping the DB mutation atomic with the idempotency record.
+   */
+  async applyProviderEvent(event: ProviderEvent, tx: DatabaseTx): Promise<WebhookSideEffects> {
+    const none: WebhookSideEffects = { emits: [] };
+    const sub = await this.subsRepo.findByProviderRef(event.providerRef, tx);
     if (!sub) {
       // Unknown ref: log loudly; never 500 the provider (it would retry forever).
       this.logger.warn(`webhook for unknown providerRef=${event.providerRef} (${event.type})`);
-      return;
+      return none;
     }
-    const plan = await this.plansRepo.findById(sub.planId);
+    const plan = await this.plansRepo.findById(sub.planId, tx);
 
     switch (event.type) {
       case "trial_started": {
-        await this.eventsRepo.appendTransaction({
-          subscriptionId: sub.id,
-          userId: sub.userId,
-          type: TxType.TRIAL_START,
-          amountMinor: 0,
-          currency: plan?.currency ?? "TRY",
-          status: TxStatus.SUCCEEDED,
-          providerEventId: event.eventId,
-        });
-        return;
+        await this.eventsRepo.appendTransaction(
+          {
+            subscriptionId: sub.id,
+            userId: sub.userId,
+            type: TxType.TRIAL_START,
+            amountMinor: 0,
+            currency: plan?.currency ?? "TRY",
+            status: TxStatus.SUCCEEDED,
+            providerEventId: event.eventId,
+          },
+          tx,
+        );
+        return none;
       }
       case "payment_succeeded": {
         const now = new Date();
-        const periodEnd = addMonths(now, plan?.periodMonths ?? 1);
-        await this.subsRepo.update(sub.id, {
-          status: sub.cancelAtPeriodEnd ? SubscriptionStatus.CANCELED : SubscriptionStatus.ACTIVE,
-          currentPeriodStart: now,
-          currentPeriodEnd: periodEnd,
-        });
-        await this.eventsRepo.appendTransaction({
-          subscriptionId: sub.id,
-          userId: sub.userId,
-          type: TxType.RENEWAL,
-          amountMinor: event.amountMinor ?? plan?.priceMinor ?? 0,
-          currency: plan?.currency ?? "TRY",
-          status: TxStatus.SUCCEEDED,
-          providerEventId: event.eventId,
-          raw: event,
-        });
-        await this.issueInvoiceSafely(sub, event, plan);
-        this.events.emit(
-          PaymentsEventTopic.SUBSCRIPTION_ACTIVATED,
-          new SubscriptionActivated(sub.userId, sub.id, sub.planId),
+        // Extend from the later of now / current period end so a late renewal webhook
+        // never shortens already-paid time (review #2).
+        const periodEnd = nextPeriodEnd(now, sub.currentPeriodEnd, plan?.periodMonths ?? 1);
+        await this.subsRepo.update(
+          sub.id,
+          {
+            status: sub.cancelAtPeriodEnd ? SubscriptionStatus.CANCELED : SubscriptionStatus.ACTIVE,
+            currentPeriodStart: now,
+            currentPeriodEnd: periodEnd,
+          },
+          tx,
         );
-        return;
+        await this.eventsRepo.appendTransaction(
+          {
+            subscriptionId: sub.id,
+            userId: sub.userId,
+            type: TxType.RENEWAL,
+            amountMinor: event.amountMinor ?? plan?.priceMinor ?? 0,
+            currency: plan?.currency ?? "TRY",
+            status: TxStatus.SUCCEEDED,
+            providerEventId: event.eventId,
+            raw: event,
+          },
+          tx,
+        );
+        return {
+          emits: [
+            {
+              topic: PaymentsEventTopic.SUBSCRIPTION_ACTIVATED,
+              payload: new SubscriptionActivated(sub.userId, sub.id, sub.planId),
+            },
+          ],
+          invoice: { sub, event, plan },
+        };
       }
       case "payment_failed": {
-        await this.subsRepo.update(sub.id, { status: SubscriptionStatus.PAST_DUE });
-        await this.eventsRepo.appendTransaction({
-          subscriptionId: sub.id,
-          userId: sub.userId,
-          type: TxType.RENEWAL,
-          amountMinor: event.amountMinor ?? plan?.priceMinor ?? 0,
-          currency: plan?.currency ?? "TRY",
-          status: TxStatus.FAILED,
-          providerEventId: event.eventId,
-          raw: event,
-        });
-        const base = sub.currentPeriodEnd ?? new Date();
-        this.events.emit(
-          PaymentsEventTopic.PAYMENT_FAILED,
-          new PaymentFailed(sub.userId, sub.id, new Date(base.getTime() + GRACE_PERIOD_DAYS * DAY_MS)),
+        await this.subsRepo.update(sub.id, { status: SubscriptionStatus.PAST_DUE }, tx);
+        await this.eventsRepo.appendTransaction(
+          {
+            subscriptionId: sub.id,
+            userId: sub.userId,
+            type: TxType.RENEWAL,
+            amountMinor: event.amountMinor ?? plan?.priceMinor ?? 0,
+            currency: plan?.currency ?? "TRY",
+            status: TxStatus.FAILED,
+            providerEventId: event.eventId,
+            raw: event,
+          },
+          tx,
         );
-        return;
+        const base = sub.currentPeriodEnd ?? new Date();
+        return {
+          emits: [
+            {
+              topic: PaymentsEventTopic.PAYMENT_FAILED,
+              payload: new PaymentFailed(
+                sub.userId,
+                sub.id,
+                new Date(base.getTime() + GRACE_PERIOD_DAYS * DAY_MS),
+              ),
+            },
+          ],
+        };
       }
       case "subscription_canceled": {
-        await this.subsRepo.update(sub.id, {
-          status: SubscriptionStatus.EXPIRED,
-          canceledAt: sub.canceledAt ?? new Date(),
-        });
-        this.events.emit(
-          PaymentsEventTopic.SUBSCRIPTION_CANCELED,
-          new SubscriptionCanceled(sub.userId, sub.id, false),
+        await this.subsRepo.update(
+          sub.id,
+          {
+            status: SubscriptionStatus.EXPIRED,
+            canceledAt: sub.canceledAt ?? new Date(),
+          },
+          tx,
         );
-        return;
+        return {
+          emits: [
+            {
+              topic: PaymentsEventTopic.SUBSCRIPTION_CANCELED,
+              payload: new SubscriptionCanceled(sub.userId, sub.id, false),
+            },
+          ],
+        };
       }
+    }
+    return none;
+  }
+
+  /** Run the post-commit side-effects returned by {@link applyProviderEvent}. */
+  async runSideEffects(effects: WebhookSideEffects): Promise<void> {
+    for (const e of effects.emits) this.events.emit(e.topic, e.payload);
+    if (effects.invoice) {
+      await this.issueInvoiceSafely(effects.invoice.sub, effects.invoice.event, effects.invoice.plan);
     }
   }
 
@@ -252,6 +312,16 @@ function addMonths(date: Date, months: number): Date {
   const d = new Date(date);
   d.setMonth(d.getMonth() + months);
   return d;
+}
+
+/**
+ * Next period end for a renewal: extend from the LATER of `now` and the current period end,
+ * so a late-arriving renewal webhook never shortens already-paid time (review #2). A first
+ * charge (no prior period, or an expired one) extends from `now`.
+ */
+export function nextPeriodEnd(now: Date, currentPeriodEnd: Date | null, months: number): Date {
+  const base = currentPeriodEnd && currentPeriodEnd.getTime() > now.getTime() ? currentPeriodEnd : now;
+  return addMonths(base, months);
 }
 
 function toPlanDto(row: PlanRow): PlanDto {

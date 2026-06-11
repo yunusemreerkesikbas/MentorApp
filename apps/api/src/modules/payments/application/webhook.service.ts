@@ -1,11 +1,15 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { DRIZZLE } from "../../../database/database.constants";
+import type { Database } from "../../../database/drizzle";
+import { withServiceContext } from "../../../database/rls";
 import { PAYMENTS_PORT, type PaymentsPort } from "../../../shared/ports/payments.port";
 import { PaymentEventsRepository } from "../infrastructure/payments.repositories";
-import { SubscriptionsService } from "./subscriptions.service";
+import { SubscriptionsService, type WebhookSideEffects } from "./subscriptions.service";
 
 /**
- * Webhook pipeline (§7/§8): verify signature → record-once (idempotency belt) → apply.
- * A replayed event is acknowledged with 200 but applied exactly once.
+ * Webhook pipeline (§7/§8): verify signature → record-once + apply in ONE transaction
+ * (idempotency record and state mutation commit or roll back together) → publish
+ * side-effects after commit. A replayed event is acknowledged with 200 but applied exactly once.
  */
 @Injectable()
 export class WebhookService {
@@ -13,6 +17,7 @@ export class WebhookService {
 
   constructor(
     @Inject(PAYMENTS_PORT) private readonly provider: PaymentsPort,
+    @Inject(DRIZZLE) private readonly db: Database,
     private readonly eventsRepo: PaymentEventsRepository,
     private readonly subscriptions: SubscriptionsService,
   ) {}
@@ -24,33 +29,30 @@ export class WebhookService {
     // Throws PAYMENT_WEBHOOK_INVALID (401/400) on a bad signature/payload — never processed.
     const event = this.provider.verifyWebhook(rawBody, headers);
 
-    // Fast-path duplicate check (cheap select via the unique belt's table).
-    const isFirst = await this.eventsRepo.recordWebhookOnce({
-      provider: this.provider.provider,
-      eventId: event.eventId,
-      type: event.type,
-      payload: event,
+    // Record + apply atomically: if the apply throws, the idempotency row rolls back with it,
+    // so the provider's retry is processed afresh (no event lost, none double-recorded). The
+    // ledger's unique providerEventId keeps a retried re-apply a no-op.
+    const sideEffects = await withServiceContext(this.db, async (tx): Promise<WebhookSideEffects | null> => {
+      const isFirst = await this.eventsRepo.recordWebhookOnce(
+        {
+          provider: this.provider.provider,
+          eventId: event.eventId,
+          type: event.type,
+          payload: event,
+        },
+        tx,
+      );
+      if (!isFirst) return null; // duplicate — nothing applied
+      return this.subscriptions.applyProviderEvent(event, tx);
     });
-    if (!isFirst) {
+
+    if (!sideEffects) {
       this.logger.warn(`duplicate webhook ignored: ${event.eventId}`);
       return { received: true, duplicate: true };
     }
 
-    try {
-      await this.subscriptions.applyProviderEvent(event);
-    } catch (err) {
-      // CRASH-SAFETY (review F1): if applying fails, the event must NOT stay marked as
-      // processed — otherwise the provider's retry would be swallowed as a "duplicate"
-      // and the event would be lost forever. Un-record so the retry goes through.
-      // (A retried re-apply is safe: the tx ledger dedupes on providerEventId and the
-      // status transitions are convergent; worst case is a duplicate domain-event emit.)
-      await this.eventsRepo
-        .deleteWebhookRecord(this.provider.provider, event.eventId)
-        .catch((cleanupErr) =>
-          this.logger.error(`webhook un-record failed for ${event.eventId}: ${String(cleanupErr)}`),
-        );
-      throw err;
-    }
+    // Domain-event emits + invoice issuance run only after the tx committed.
+    await this.subscriptions.runSideEffects(sideEffects);
     return { received: true, duplicate: false };
   }
 }

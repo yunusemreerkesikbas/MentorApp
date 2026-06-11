@@ -48,6 +48,7 @@ export class SubscriptionsController {
   @ApiBearerAuth()
   @Post("subscription/cancel")
   @HttpCode(200)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   cancel(@CurrentUser() user: RequestUser): Promise<SubscriptionView> {
     return this.subscriptions.cancel(user.id, user.roles);
   }

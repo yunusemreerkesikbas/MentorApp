@@ -10,7 +10,8 @@
   fake webhooks via `signFakeWebhook`) · `iyzico` adapter = **UNVERIFIED skeleton** (fails loudly until
   Phase-0 sandbox keys). **Prod lock:** `fake` in production fails env validation at boot.
 - **State machine (webhook-driven, no cron):** checkout→TRIALING (trial **once** per user — returning
-  users re-subscribe trial-less) · `payment_succeeded`→ACTIVE+period advance · `payment_failed`→PAST_DUE
+  users re-subscribe trial-less) · `payment_succeeded`→ACTIVE + period extended from the later of
+  now / current period end (a late webhook never shortens paid time) · `payment_failed`→PAST_DUE
   (premium continues `GRACE_PERIOD_DAYS=3`) · cancel→CANCELED (access until period end, idempotent) ·
   `subscription_canceled`→EXPIRED. Domain events: `payments.subscription.activated/canceled`,
   `payments.payment.failed` (W5 consumes).
@@ -19,8 +20,8 @@
 - **e-Arşiv:** `InvoicePort` + logger stub called on successful charges (real integrator post Phase-0).
 - **Web:** `/abonelik` (status card, plan catalog, **explicit trial-consent checkbox** §7, cancel) +
   `/abonelik/sonuc`. EventEmitter backbone registered globally (`@nestjs/event-emitter`).
-- **Tests:** entitlement matrix (pure fn), fake-adapter signature, **e2e 11/11 full lifecycle** incl.
-  idempotent replay + invalid-signature 401 + trial-once re-subscribe.
+- **Tests:** entitlement matrix (pure fn), `nextPeriodEnd` renewal-base (pure fn), fake-adapter signature,
+  **e2e 12/12 full lifecycle** incl. idempotent replay + invalid-signature 401 + trial-once re-subscribe.
 
 - **STAFF entitlement (team/beta premium):** users with the `STAFF` role are always PREMIUM
   (`reason: "STAFF"`, no expiry) **without a subscription row** → billing statistics stay clean and
@@ -42,9 +43,11 @@ pnpm --filter @mentor/api dev    # PAYMENTS_PROVIDER=fake (apps/api/.env)
 - Gate a premium route: `@UseGuards(PremiumGuard)` (import from PaymentsModule).
 
 ## Code-review fixes (post-implementation)
-- **F1 webhook crash-safety:** if applying a verified event fails, the idempotency record is now
-  **un-recorded** so the provider's retry isn't swallowed as a duplicate (re-apply is convergent;
-  tx ledger dedupes on providerEventId).
+- **F1 webhook crash-safety:** the idempotency record + state-apply run in **one** `withServiceContext`
+  transaction — if applying fails, the record rolls back with it, so the provider's retry is processed
+  afresh (never swallowed as a duplicate). Domain-event emits + invoice issuance run **after commit** so a
+  rollback publishes nothing. Ledger dedupes on `providerEventId`, so a retried re-apply is a no-op.
+  _(Superseded the earlier "un-record on failure" approach — PR #1 review.)_
 - **F3 checkout race:** concurrent double-checkout hitting the partial-unique index now maps to
   `PAYMENT_ALREADY_SUBSCRIBED` (mirrors the signup race fix). `isUniqueViolation` moved to
   `common/errors/postgres-error.ts` (shared with identity — DRY, no cross-module import).

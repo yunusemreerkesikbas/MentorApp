@@ -119,6 +119,10 @@ describe("payments (e2e)", () => {
   });
 
   it("payment_succeeded webhook → ACTIVE; replay is idempotent", async () => {
+    // Capture the trial period end so we can assert the renewal extends (never shortens) it.
+    const before = await request(app.getHttpServer()).get("/v1/subscription").set(auth());
+    const priorPeriodEnd = new Date(before.body.subscription.currentPeriodEnd).getTime();
+
     const { body, headers } = signFakeWebhook(SECRET, {
       eventId: evt("renew"),
       type: "payment_succeeded",
@@ -142,6 +146,8 @@ describe("payments (e2e)", () => {
     const view = await request(app.getHttpServer()).get("/v1/subscription").set(auth());
     expect(view.body.subscription.status).toBe("ACTIVE");
     expect(view.body.entitlement.reason).toBe("ACTIVE");
+    // Renewal extends forward from the prior period end (review #2 — no lost paid time).
+    expect(new Date(view.body.subscription.currentPeriodEnd).getTime()).toBeGreaterThan(priorPeriodEnd);
   });
 
   it("payment_failed → PAST_DUE but premium continues (grace, §7)", async () => {

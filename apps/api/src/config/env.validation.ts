@@ -32,8 +32,11 @@ const envSchema = z.object({
   // Payments (§7) — provider behind PaymentsPort. `fake` is the dev/test default;
   // the production lock below makes shipping with fake impossible.
   PAYMENTS_PROVIDER: z.enum(["fake", "iyzico"]).default("fake"),
-  /** HMAC secret for webhook signature verification (fake provider + dev simulation). */
-  PAYMENTS_WEBHOOK_SECRET: z.string().min(16),
+  /**
+   * HMAC secret for the fake provider's webhook signature (dev/test simulation). Required
+   * only when PAYMENTS_PROVIDER=fake (enforced in the lock below); iyzico signs with IYZICO_SECRET_KEY.
+   */
+  PAYMENTS_WEBHOOK_SECRET: z.string().min(16).optional(),
   IYZICO_API_KEY: z.string().optional(),
   IYZICO_SECRET_KEY: z.string().optional(),
   IYZICO_BASE_URL: z.string().url().default("https://sandbox-api.iyzipay.com"),
@@ -69,6 +72,14 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
       code: z.ZodIssueCode.custom,
       path: ["IYZICO_API_KEY"],
       message: "IYZICO_API_KEY/IYZICO_SECRET_KEY are required when PAYMENTS_PROVIDER=iyzico.",
+    });
+  }
+  // The fake provider signs/verifies webhooks with this HMAC secret — required in that mode.
+  if (env.PAYMENTS_PROVIDER === "fake" && !env.PAYMENTS_WEBHOOK_SECRET) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["PAYMENTS_WEBHOOK_SECRET"],
+      message: "PAYMENTS_WEBHOOK_SECRET is required when PAYMENTS_PROVIDER=fake.",
     });
   }
 });

@@ -69,7 +69,9 @@ export function computeEntitlement(sub: SubscriptionRow | null, now: Date): Enti
       return premium("ACTIVE", until);
     }
     case SubscriptionStatus.PAST_DUE: {
-      // Grace runs from the period end the failed renewal was meant to extend.
+      // Grace runs from the period end the failed renewal was meant to extend. PAST_DUE
+      // normally always has currentPeriodEnd; `?? updatedAt` is an explicit safety net for a
+      // malformed row (still bounded — never an unbounded grace), not a silent fallback.
       const base = sub.currentPeriodEnd ?? sub.updatedAt;
       const graceUntil = new Date(base.getTime() + GRACE_PERIOD_DAYS * DAY_MS);
       if (graceUntil.getTime() <= now.getTime()) return free("EXPIRED");
