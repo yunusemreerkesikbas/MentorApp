@@ -57,6 +57,14 @@ export class JobRepository {
       .returning();
   }
 
+  /** Force a job straight to DEAD (no retry) — for permanent failures like a missing handler. */
+  async markDead(tx: DatabaseTx, id: string, error: string): Promise<void> {
+    await tx
+      .update(jobs)
+      .set({ status: JobStatus.DEAD, lastError: error.slice(0, 2000), updatedAt: new Date() })
+      .where(eq(jobs.id, id));
+  }
+
   async markCompleted(tx: DatabaseTx, id: string): Promise<void> {
     await tx
       .update(jobs)

@@ -55,9 +55,11 @@ export class JobRunnerService {
   private async dispatch(job: JobRow): Promise<"completed" | "retry" | "dead"> {
     const handler = this.handlers.get(job.name);
     if (!handler) {
+      // A missing handler is a permanent failure — retrying won't register one. Mark DEAD
+      // directly so the result count matches the row state (markFailed would reschedule).
       this.logger.error(`No handler for job ${job.name} (${job.id})`);
       await withServiceContext(this.db, async (tx) => {
-        await this.jobs.markFailed(tx, job, `No handler registered for ${job.name}`);
+        await this.jobs.markDead(tx, job.id, `No handler registered for ${job.name}`);
       });
       return "dead";
     }

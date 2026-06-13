@@ -15,10 +15,20 @@ export class NotificationPreferencesRepository {
       .limit(1);
     if (existing[0]) return existing[0];
 
-    const rows = await tx
+    // onConflictDoNothing guards a concurrent insert for the same user (two tabs); if the
+    // race lost, `returning()` is empty and we read the row the other writer created.
+    const inserted = await tx
       .insert(notificationPreferences)
       .values({ userId })
+      .onConflictDoNothing({ target: notificationPreferences.userId })
       .returning();
+    if (inserted[0]) return inserted[0];
+
+    const rows = await tx
+      .select()
+      .from(notificationPreferences)
+      .where(eq(notificationPreferences.userId, userId))
+      .limit(1);
     return rows[0]!;
   }
 

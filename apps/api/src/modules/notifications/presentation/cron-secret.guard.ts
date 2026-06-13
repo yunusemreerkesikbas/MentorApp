@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { timingSafeEqual } from "node:crypto";
 import type { Request } from "express";
 import type { Env } from "../../../config/env.validation";
 
@@ -23,9 +24,17 @@ export class CronSecretGuard implements CanActivate {
       req.header("x-cron-secret") ??
       req.header("authorization")?.replace(/^Bearer\s+/i, "") ??
       "";
-    if (provided !== expected) {
+    if (!this.safeEqual(provided, expected)) {
       throw new UnauthorizedException();
     }
     return true;
+  }
+
+  /** Constant-time comparison — avoids leaking the secret via response timing. */
+  private safeEqual(provided: string, expected: string): boolean {
+    const a = Buffer.from(provided);
+    const b = Buffer.from(expected);
+    // timingSafeEqual throws on length mismatch; the length check itself is not secret.
+    return a.length === b.length && timingSafeEqual(a, b);
   }
 }

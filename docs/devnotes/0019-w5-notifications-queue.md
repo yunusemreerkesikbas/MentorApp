@@ -56,3 +56,11 @@ pnpm --filter @mentor/api test
 - `CoachingQueryPort` moved to `coaching/domain`; shared `todayIso` from coaching.
 - Drizzle `0007_snapshot.json` restored; `0008` prevId chain fixed.
 - Unit tests: daily reminder matrix, payments listener; FE uses `@mentor/api-client` with toggle rollback.
+
+## Review fixes (2026-06-13)
+- `JobRunnerService`: missing-handler jobs now go straight to DEAD via `JobRepository.markDead`
+  (previously `markFailed` rescheduled them, so the row was retried 5× while the result counted
+  it as `dead` — count now matches row state).
+- `CronSecretGuard`: secret comparison is constant-time (`crypto.timingSafeEqual`).
+- `NotificationPreferencesRepository.getOrCreate`: insert uses `onConflictDoNothing` + re-select to
+  survive a concurrent same-user create (two tabs) instead of throwing a PK violation.

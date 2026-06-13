@@ -50,6 +50,7 @@ describe("JobRunnerService", () => {
       claimBatch: vi.fn().mockResolvedValue([makeJob({ name: "unknown.job" })]),
       markCompleted: vi.fn(),
       markFailed: vi.fn(),
+      markDead: vi.fn(),
     };
     const db = {
       transaction: async <T>(cb: (tx: unknown) => Promise<T>) =>
@@ -60,5 +61,8 @@ describe("JobRunnerService", () => {
     const result = await runner.processBatch(1);
 
     expect(result.dead).toBe(1);
+    // Missing handler is permanent: marked DEAD directly, never rescheduled via markFailed.
+    expect(jobs.markDead).toHaveBeenCalledOnce();
+    expect(jobs.markFailed).not.toHaveBeenCalled();
   });
 });
