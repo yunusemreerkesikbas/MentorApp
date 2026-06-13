@@ -158,4 +158,62 @@ describe("coaching (e2e)", () => {
     const afterToday = await request(app.getHttpServer()).get("/v1/coaching/today").set(authA());
     expect(afterToday.body.streak.currentStreak).toBeGreaterThanOrEqual(streakMid);
   });
+
+  it("mock exam POST computes net → GET analysis returns trend", async () => {
+    const exams = await request(app.getHttpServer()).get("/v1/content/exams?page=1&pageSize=20");
+    expect(exams.status).toBe(200);
+    const exam = exams.body.items.find((e: { slug: string }) => e.slug === "kpss-lisans-2026");
+    expect(exam?.id).toBeTruthy();
+
+    const subjects = await request(app.getHttpServer()).get(
+      `/v1/content/exams/kpss-lisans-2026/subjects`,
+    );
+    expect(subjects.status).toBe(200);
+    expect(subjects.body.length).toBeGreaterThan(0);
+
+    const turkce = subjects.body.find((s: { slug: string }) => s.slug === "turkce");
+    expect(turkce).toBeTruthy();
+
+    const create = await request(app.getHttpServer())
+      .post("/v1/mock-exams")
+      .set(authA())
+      .send({
+        examId: exam.id,
+        subjects: [{ subjectRef: "turkce", correct: 20, wrong: 4, blank: 6 }],
+      });
+    expect(create.status).toBe(201);
+    expect(create.body.totalNet).toBe("19.00");
+
+    const analysis = await request(app.getHttpServer())
+      .get("/v1/coaching/analysis")
+      .set(authA());
+    expect(analysis.status).toBe(200);
+    expect(analysis.body.trend.some((t: { id: string }) => t.id === create.body.id)).toBe(true);
+    expect(analysis.body.trend[0].totalNet).toBe("19.00");
+  });
+
+  it("mock exam data is isolated per user (RLS)", async () => {
+    const exams = await request(app.getHttpServer()).get("/v1/content/exams?page=1&pageSize=20");
+    const exam = exams.body.items.find((e: { slug: string }) => e.slug === "kpss-lisans-2026");
+
+    const createA = await request(app.getHttpServer())
+      .post("/v1/mock-exams")
+      .set(authA())
+      .send({
+        examId: exam.id,
+        subjects: [{ subjectRef: "turkce", correct: 15, wrong: 2, blank: 13 }],
+      });
+    expect(createA.status).toBe(201);
+
+    const analysisB = await request(app.getHttpServer())
+      .get("/v1/coaching/analysis")
+      .set(authB());
+    expect(analysisB.status).toBe(200);
+    expect(analysisB.body.trend.some((t: { id: string }) => t.id === createA.body.id)).toBe(false);
+
+    const getByIdCross = await request(app.getHttpServer())
+      .get(`/v1/mock-exams/${createA.body.id}`)
+      .set(authB());
+    expect([403, 404]).toContain(getByIdCross.status);
+  });
 });

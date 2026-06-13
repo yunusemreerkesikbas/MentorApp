@@ -34,7 +34,9 @@ export class AdminAuditInterceptor implements NestInterceptor {
       concatMap(async (data) => {
         const ctx = req.auditContext ?? {};
         await this.audit.record({
-          actorUserId: req.user?.id ?? "",
+          // Guaranteed present: this interceptor only runs on @Roles(ADMIN) routes behind
+          // JwtAuthGuard. Assert rather than fabricate a "" that would hit the FK and confuse.
+          actorUserId: req.user!.id,
           action,
           targetType: ctx.targetType ?? null,
           targetId: ctx.targetId ?? null,

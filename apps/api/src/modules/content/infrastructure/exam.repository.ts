@@ -90,4 +90,9 @@ export class ExamRepository {
     if (typeof obj.kind !== "string" || typeof obj.divisor !== "number") return null;
     return { kind: obj.kind, divisor: obj.divisor };
   }
+
+  async findById(db: Database | DatabaseTx, id: string): Promise<ExamRow | undefined> {
+    const rows = await db.select().from(exams).where(eq(exams.id, id)).limit(1);
+    return rows[0];
+  }
 }

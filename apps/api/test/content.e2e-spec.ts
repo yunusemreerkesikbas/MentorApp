@@ -86,6 +86,15 @@ describe("content (e2e)", () => {
     expect(typeof res.body.countdown.daysRemaining).toBe("number");
   });
 
+  it("GET /v1/content/exams/:slug/subjects returns KPSS Lisans taxonomy (public)", async () => {
+    const res = await request(app.getHttpServer()).get("/v1/content/exams/kpss-lisans-2026/subjects");
+    expect(res.status).toBe(200);
+    expect(res.body.length).toBeGreaterThanOrEqual(1);
+    expect(res.body.some((s: { slug: string }) => s.slug === "turkce")).toBe(true);
+    const turkce = res.body.find((s: { slug: string }) => s.slug === "turkce");
+    expect(turkce.questionCount).toBe(30);
+  });
+
   it("GET /v1/content/info-articles?family=KPSS returns seeded articles (public)", async () => {
     const res = await request(app.getHttpServer()).get("/v1/content/info-articles?family=KPSS");
     expect(res.status).toBe(200);

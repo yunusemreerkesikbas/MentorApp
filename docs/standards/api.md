@@ -58,13 +58,13 @@
 | Module | Base path (planned) | Responsibility | Phase | Status |
 |---|---|---|---|---|
 | `identity` | `/v1/auth/{signup,login,refresh,logout,verify-email,forgot-password,reset-password}`, `/v1/users/me` | own JWT + refresh rotation (httpOnly cookie), roles, org-ready, RLS | MVP | ✅ |
-| `coaching` | `/v1/coaching/today`, `/v1/plan-tasks`, `/v1/study-sessions`, `/v1/coaching/mood-checkins` _(planned: `/v1/mock-exams`)_ | daily loop (plan tasks · countdown · Pomodoro · read-time streak) + rule-based mood; deneme analysis next slice | MVP | ✅ |
+| `coaching` | `/v1/coaching/today`, `/v1/coaching/analysis`, `/v1/plan-tasks`, `/v1/study-sessions`, `/v1/mock-exams`, `/v1/coaching/mood-checkins` | daily loop + deneme analysis (server-computed net, personal trend) + rule-based mood | MVP | ✅ |
 | `ai` | `/v1/coach` (chat/grounded) | Context Builder + LLM/RAG orchestration | MVP | ⏳ |
-| `content` | `/v1/content/exams`, `/v1/content/exams/by-type/:type/calendar`, `/v1/content/exams/:slug/calendar`, `/v1/content/info-articles`, `/v1/content/info-articles/:slug` _(planned: pgvector RAG index)_ | editorial exam calendar + knowledge-center A-layer articles (data-card dates, SEO, RAG source) | MVP | ✅ |
+| `content` | `/v1/content/exams`, `/v1/content/exams/by-type/:type/calendar`, `/v1/content/exams/:slug/calendar`, `/v1/content/exams/:slug/subjects`, `/v1/content/info-articles`, `/v1/content/info-articles/:slug` _(planned: pgvector RAG index)_ | editorial exam calendar + subject taxonomy + knowledge-center articles | MVP | ✅ |
 | `payments` | `/v1/plans` *(public)*, `/v1/subscription/{,checkout,cancel}`, `/v1/webhooks/payments` *(signed)* | carded trial + auto-renew (PaymentsPort: fake/iyzico), entitlement (`PremiumGuard`), idempotent webhook, e-archive stub | MVP | ✅ |
 | `notifications` | `/v1/notifications/{push-subscriptions,preferences}`, `/v1/internal/cron/{process-jobs,dispatch-daily-reminders}` *(CRON_SECRET)* | Postgres job queue + cron runner, Postmark email, web push, payment dunning + rule-based daily reminders | MVP | ✅ |
-| `admin` | `/v1/admin/{users,users/:id/roles/staff,audit-log}` *(ADMIN)* _(planned: content editor, refund, metrics, flags)_ | user mgmt + STAFF role assignment, append-only audit log (table+interceptor); rest of admin surface pending | MVP | 🟡 |
-| `economy` | `/v1/economy/*` | XP/Coin ledger, quests/invites | Phase 2 | ⛔ |
+| `admin` | `/v1/admin/{users,users/:id,users/:id/roles/staff,users/:id/status,users/:id/export,users/:id/anonymize,audit-log,config,config/:key}` *(ADMIN)* _(planned: content editor, refund, metrics)_ | user mgmt (search/detail, STAFF role, graduated status, KVKK export+anonymize), append-only audit log, **config registry + feature flags**; rest of admin surface pending | MVP | 🟡 |
+| `economy` | `/v1/economy/{balance,ledger}` *(self, flag-gated)* · `/v1/admin/users/:id/economy{,/adjust}` *(ADMIN)* _(planned: quests/invite earning, spend→AI)_ | append-only XP/Coin ledger (balance=sum), capped reward engine, admin manual adjust; earning automation + spending pending | MVP (light) | 🟡 |
 | `forum` | `/v1/forum/*` | zones, verification, C-layer | Phase 2 | ⛔ |
 | `community` | `/v1/neighborhoods/*` | neighborhood, presence/leaderboard, live room | Phase 2 | ⛔ |
 | `marketplace` | `/v1/marketplace/*` | coach discovery/commission/chat | Phase 3 | ⛔ |

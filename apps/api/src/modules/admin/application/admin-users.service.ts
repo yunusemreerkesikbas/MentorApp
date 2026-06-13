@@ -22,6 +22,22 @@ export interface RoleChangeResult {
   after: string[];
 }
 
+/** Fuller view for the user detail screen (still secret-free). */
+export interface AdminUserDetail extends AdminUserView {
+  organizationId: string | null;
+  examType: string | null;
+  examDate: string | null;
+  emailVerified: boolean;
+  updatedAt: string;
+}
+
+/** Generic before/after change result (status / anonymize) for the audit trail. */
+export interface FieldChangeResult<T> {
+  user: AdminUserView;
+  before: T;
+  after: T;
+}
+
 function toView(row: AdminUserRow): AdminUserView {
   return {
     id: row.id,
@@ -31,6 +47,17 @@ function toView(row: AdminUserRow): AdminUserView {
     status: row.status,
     isStaff: row.roles.includes(UserRole.STAFF),
     createdAt: row.createdAt.toISOString(),
+  };
+}
+
+function toDetail(row: AdminUserRow): AdminUserDetail {
+  return {
+    ...toView(row),
+    organizationId: row.organizationId,
+    examType: row.examType,
+    examDate: row.examDate,
+    emailVerified: row.emailVerifiedAt !== null,
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 
@@ -68,5 +95,57 @@ export class AdminUsersService {
     }
     const row = await this.repo.findById(userId);
     return { user: toView(row!), before: change.before, after: change.after };
+  }
+
+  /** Full (secret-free) detail for the user screen. */
+  async getDetail(userId: string): Promise<AdminUserDetail> {
+    const row = await this.repo.findById(userId);
+    if (!row) throw new DomainError(ErrorCode.ADMIN_USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    return toDetail(row);
+  }
+
+  /** Graduated status change (§9). Admins cannot change their own status (self-lockout guard). */
+  async setStatus(
+    actorId: string,
+    userId: string,
+    status: string,
+  ): Promise<FieldChangeResult<string>> {
+    this.assertNotSelf(actorId, userId);
+    const change = await this.repo.updateStatus(userId, status);
+    if (!change) throw new DomainError(ErrorCode.ADMIN_USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    const row = await this.repo.findById(userId);
+    return { user: toView(row!), before: change.before, after: change.after };
+  }
+
+  /** KVKK data export — the user's own identity data (no secrets). Cross-module data: later slice. */
+  async exportData(userId: string): Promise<Record<string, unknown>> {
+    const row = await this.repo.findById(userId);
+    if (!row) throw new DomainError(ErrorCode.ADMIN_USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    const { passwordHash: _omit, ...rest } = row;
+    return {
+      ...rest,
+      kvkkAcceptedAt: row.kvkkAcceptedAt?.toISOString() ?? null,
+      emailVerifiedAt: row.emailVerifiedAt?.toISOString() ?? null,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
+  /** KVKK erasure by anonymization (soft). Admins cannot anonymize themselves. */
+  async anonymize(
+    actorId: string,
+    userId: string,
+  ): Promise<FieldChangeResult<Record<string, unknown>>> {
+    this.assertNotSelf(actorId, userId);
+    const change = await this.repo.anonymize(userId);
+    if (!change) throw new DomainError(ErrorCode.ADMIN_USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+    const row = await this.repo.findById(userId);
+    return { user: toView(row!), before: change.before, after: change.after };
+  }
+
+  private assertNotSelf(actorId: string, userId: string): void {
+    if (actorId === userId) {
+      throw new DomainError(ErrorCode.ADMIN_CANNOT_MODIFY_SELF, HttpStatus.FORBIDDEN);
+    }
   }
 }

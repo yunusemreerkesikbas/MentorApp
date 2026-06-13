@@ -1,10 +1,8 @@
 /**
  * ContentPort — coaching's cross-track seam to W1 content (plan §4 contract #1, #2).
  *
- * The content module does not exist yet, so coaching owns this interface and binds a
- * temporary in-module stub (see `infrastructure/content-stub.adapter.ts`). When W1 ships
- * `ContentService`, the binding flips to an adapter delegating to it — this interface and
- * every coaching call site stay unchanged (Ports & Adapters, AGENTS §3).
+ * Coaching owns this interface; {@link ContentServiceAdapter} delegates to W1
+ * `ContentService`. Content never imports coaching (Ports & Adapters, AGENTS §3).
  *
  * Contract rules:
  *  - "Which exam" is identity-owned (`users.examType`); coaching passes it here, never re-stores it.
@@ -31,6 +29,20 @@ export interface NetRule {
   divisor: number;
 }
 
+export interface ExamRef {
+  id: string;
+  slug: string;
+  name: string;
+  netRule: NetRule;
+}
+
+export interface ExamSubjectRef {
+  slug: string;
+  name: string;
+  questionCount: number | null;
+  sortOrder: number;
+}
+
 export interface ContentPort {
   /**
    * Resolve the verified exam calendar for an exam type, or `null` when no exam type is set
@@ -41,4 +53,10 @@ export interface ContentPort {
 
   /** Net-scoring rule for an exam type (reserved for W2-b; not used in this slice). */
   getNetRule(examType: string | null | undefined): Promise<NetRule | null>;
+
+  /** Resolve an exam by id (for mock-exam net computation). */
+  getExamById(examId: string): Promise<ExamRef | null>;
+
+  /** Subject taxonomy for an exam (soft-ref validation). */
+  listExamSubjects(examId: string): Promise<ExamSubjectRef[]>;
 }

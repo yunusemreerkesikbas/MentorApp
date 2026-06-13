@@ -16,6 +16,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgTable,
   smallint,
   text,
@@ -260,6 +261,41 @@ export const infoArticles = pgTable(
   ],
 );
 
+/** Global subject taxonomy (e.g. Tarih, Matematik). */
+export const subjects = pgTable(
+  "subjects",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("subjects_slug_unique_idx").on(t.slug)],
+);
+
+/** Exam ↔ subject link (question count + display order). */
+export const examSubjects = pgTable(
+  "exam_subjects",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    examId: uuid("exam_id")
+      .notNull()
+      .references(() => exams.id, { onDelete: "cascade" }),
+    subjectId: uuid("subject_id")
+      .notNull()
+      .references(() => subjects.id, { onDelete: "cascade" }),
+    questionCount: integer("question_count"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("exam_subjects_pair_idx").on(t.examId, t.subjectId)],
+);
+
 /* ===================== W2 · coaching =====================
  * Daily loop (plan tasks · Pomodoro/study sessions · daily activity · streak) +
  * mood check-in (rule-based). All tables are user-scoped behavioral data — RLS
@@ -377,6 +413,52 @@ export const moodCheckins = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("mood_checkins_user_date_unique_idx").on(t.userId, t.checkinDate)],
+);
+
+/** A deneme (mock exam) attempt — per-user behavioral data. */
+export const mockExams = pgTable(
+  "mock_exams",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** SOFT ref → content.exams (no FK). */
+    examId: uuid("exam_id").notNull(),
+    takenAt: timestamp("taken_at", { withTimezone: true }).notNull(),
+    /** Server-computed total net (stored for trend queries). */
+    totalNet: numeric("total_net", { precision: 7, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("mock_exams_user_taken_idx").on(t.userId, t.takenAt)],
+);
+
+/** Per-subject breakdown for a mock exam. */
+export const mockExamSubjects = pgTable(
+  "mock_exam_subjects",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    mockExamId: uuid("mock_exam_id")
+      .notNull()
+      .references(() => mockExams.id, { onDelete: "cascade" }),
+    /** SOFT ref → content subject slug. */
+    subjectRef: text("subject_ref").notNull(),
+    correct: integer("correct").notNull(),
+    wrong: integer("wrong").notNull(),
+    blank: integer("blank").notNull(),
+    /** Server-computed net for this subject. */
+    net: numeric("net", { precision: 6, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("mock_exam_subjects_mock_idx").on(t.mockExamId),
+    uniqueIndex("mock_exam_subjects_pair_idx").on(t.mockExamId, t.subjectRef),
+  ],
 );
 
 /* ===================== W4 · payments =====================
@@ -569,5 +651,58 @@ export const adminAuditLog = pgTable(
   (t) => [
     index("admin_audit_log_created_at_idx").on(t.createdAt),
     index("admin_audit_log_action_idx").on(t.action),
+  ],
+);
+
+/**
+ * Config registry overrides (§9 + engineering-principles §2/§8). The catalog (keys, Zod schemas,
+ * defaults) lives in code (`common/config/config.catalog.ts`); this table stores only the
+ * admin-set OVERRIDE for a key. Effective value = override ?? catalog default. Feature flags are
+ * boolean-typed catalog entries. RLS: SERVICE/ADMIN only. Edits are audited (admin_audit_log).
+ */
+export const configOverrides = pgTable("config_overrides", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedBy: uuid("updated_by").references(() => users.id),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/* ============================== W6 · economy ==============================
+ * Light economy (§3): XP (reputation, never spent) + Coin (non-monetary, capped, → AI right).
+ * append-only LEDGER — balance = sum of rows, NEVER a single number, NEVER updated/deleted (§4 #3).
+ * Coin reversibility (forum, Phase 2): status PENDING→CONFIRMED/REVERSED; spendable coin = CONFIRMED.
+ * RLS: self-read + SERVICE/ADMIN; insert SERVICE/ADMIN; no UPDATE/DELETE policy ⇒ immutable.
+ * ========================================================================= */
+export const ledgerEntries = pgTable(
+  "ledger_entries",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    /** XP | COIN (Currency). */
+    unit: text("unit").notNull(),
+    /** Signed minor unit: + earn, - spend/revert. */
+    amount: integer("amount").notNull(),
+    /** Action key, e.g. "admin.manual-adjust", "invite.converted", "quest.onboarding". */
+    reason: text("reason").notNull(),
+    /** PENDING | CONFIRMED | REVERSED (LedgerStatus). Spendable coin = CONFIRMED only. */
+    status: text("status").notNull().default("CONFIRMED"),
+    /** Idempotency / provenance: a grant for (refType,refId) is applied at most once. */
+    refType: text("ref_type"),
+    refId: text("ref_id"),
+    note: text("note"),
+    /** Admin/actor for manual adjustments (null for system grants). */
+    createdBy: uuid("created_by").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("ledger_entries_user_unit_idx").on(t.userId, t.unit),
+    index("ledger_entries_user_created_idx").on(t.userId, t.createdAt),
+    uniqueIndex("ledger_entries_ref_unique_idx")
+      .on(t.refType, t.refId)
+      .where(sql`${t.refId} is not null`),
   ],
 );

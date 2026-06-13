@@ -15,7 +15,10 @@ describe("admin (e2e)", () => {
   let pool: Pool;
   let adminToken = "";
   let plainToken = "";
+  let plainUserId = "";
   let targetUserId = "";
+  let targetEmail = "";
+  let adminUserId = "";
 
   const signup = async (label: string) => {
     const email = `w6-${label}-${Date.now()}@test.local`;
@@ -57,7 +60,10 @@ describe("admin (e2e)", () => {
     const plain = await signup("plain");
     const target = await signup("target");
     plainToken = plain.accessToken;
+    plainUserId = plain.user.id;
     targetUserId = target.user.id;
+    targetEmail = target.email;
+    adminUserId = admin.user.id;
 
     await promoteToAdmin(admin.user.id);
     // Re-login so the freshly-issued JWT carries the granted ADMIN role.
@@ -124,5 +130,172 @@ describe("admin (e2e)", () => {
       .set(asAdmin());
     expect(res.status).toBe(404);
     expect(res.body.code).toBe("ADMIN_USER_NOT_FOUND");
+  });
+
+  it("returns user detail (no secrets)", async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/admin/users/${targetUserId}`)
+      .set(asAdmin());
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(targetUserId);
+    expect(res.body).not.toHaveProperty("passwordHash");
+    expect(res.body).toHaveProperty("emailVerified");
+  });
+
+  it("changes status (suspend) and audits it", async () => {
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/admin/users/${targetUserId}/status`)
+      .set(asAdmin())
+      .send({ status: "SUSPENDED" });
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("SUSPENDED");
+
+    const audit = await request(app.getHttpServer()).get("/v1/admin/audit-log").set(asAdmin());
+    const entry = audit.body.find(
+      (e: { action: string; targetId: string }) => e.action === "user.status" && e.targetId === targetUserId,
+    );
+    expect(entry.after).toEqual({ status: "SUSPENDED" });
+  });
+
+  it("rejects changing your own status (ADMIN_CANNOT_MODIFY_SELF)", async () => {
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/admin/users/${adminUserId}/status`)
+      .set(asAdmin())
+      .send({ status: "SUSPENDED" });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("ADMIN_CANNOT_MODIFY_SELF");
+  });
+
+  it("rejects an invalid status value", async () => {
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/admin/users/${targetUserId}/status`)
+      .set(asAdmin())
+      .send({ status: "NOPE" });
+    expect(res.status).toBe(400);
+  });
+
+  it("exports the user's identity data (no secrets)", async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/admin/users/${targetUserId}/export`)
+      .set(asAdmin());
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(targetUserId);
+    expect(res.body).toHaveProperty("email");
+    expect(res.body).not.toHaveProperty("passwordHash");
+  });
+
+  it("anonymizes (KVKK) — scrubs PII, bans, and does NOT leak PII into the audit log", async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/admin/users/${targetUserId}/anonymize`)
+      .set(asAdmin());
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe("BANNED");
+    expect(res.body.email).toContain("anonymized.local");
+
+    // KVKK guardrail: the append-only audit must record THAT it happened, not the erased PII.
+    const audit = await request(app.getHttpServer()).get("/v1/admin/audit-log").set(asAdmin());
+    const entry = audit.body.find(
+      (e: { action: string; targetId: string }) =>
+        e.action === "user.kvkk-anonymize" && e.targetId === targetUserId,
+    );
+    expect(entry).toBeTruthy();
+    expect(entry.after).toMatchObject({ anonymized: true });
+    expect(JSON.stringify(entry)).not.toContain(targetEmail);
+  });
+
+  it("lists config (feature flags) with defaults", async () => {
+    const res = await request(app.getHttpServer()).get("/v1/admin/config").set(asAdmin());
+    expect(res.status).toBe(200);
+    const ai = res.body.find((e: { key: string }) => e.key === "ai.enabled");
+    expect(ai).toMatchObject({ category: "feature-flags", type: "boolean" });
+  });
+
+  it("rejects config from non-admins (403)", async () => {
+    const res = await request(app.getHttpServer())
+      .get("/v1/admin/config")
+      .set({ Authorization: `Bearer ${plainToken}` });
+    expect(res.status).toBe(403);
+  });
+
+  it("updates a flag, reflects it, and audits the change", async () => {
+    const patch = await request(app.getHttpServer())
+      .patch("/v1/admin/config/economy.enabled")
+      .set(asAdmin())
+      .send({ value: true });
+    expect(patch.status).toBe(200);
+    const economy = patch.body.find((e: { key: string }) => e.key === "economy.enabled");
+    expect(economy.value).toBe(true);
+
+    const audit = await request(app.getHttpServer()).get("/v1/admin/audit-log").set(asAdmin());
+    const entry = audit.body.find(
+      (e: { action: string; targetId: string }) =>
+        e.action === "config.update" && e.targetId === "economy.enabled",
+    );
+    expect(entry.after).toEqual({ value: true });
+  });
+
+  it("rejects an invalid config value (400)", async () => {
+    const res = await request(app.getHttpServer())
+      .patch("/v1/admin/config/ai.enabled")
+      .set(asAdmin())
+      .send({ value: "nope" });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("ADMIN_CONFIG_INVALID_VALUE");
+  });
+
+  it("rejects an unknown config key (404)", async () => {
+    const res = await request(app.getHttpServer())
+      .patch("/v1/admin/config/does.not.exist")
+      .set(asAdmin())
+      .send({ value: true });
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("ADMIN_CONFIG_KEY_NOT_FOUND");
+  });
+
+  // ---- economy (W6 light economy slice 1) ----
+  const setEconomyEnabled = (on: boolean) =>
+    request(app.getHttpServer())
+      .patch("/v1/admin/config/economy.enabled")
+      .set(asAdmin())
+      .send({ value: on });
+
+  it("user economy balance is 404 when economy is disabled", async () => {
+    await setEconomyEnabled(false);
+    const res = await request(app.getHttpServer())
+      .get("/v1/economy/balance")
+      .set({ Authorization: `Bearer ${plainToken}` });
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("ECONOMY_DISABLED");
+  });
+
+  it("admin adjust credits coin, the user sees it, and it is audited", async () => {
+    await setEconomyEnabled(true);
+    const adjust = await request(app.getHttpServer())
+      .post(`/v1/admin/users/${plainUserId}/economy/adjust`)
+      .set(asAdmin())
+      .send({ unit: "COIN", amount: 25, reason: "e2e-grant" });
+    expect(adjust.status).toBe(201);
+    expect(adjust.body.coinConfirmed).toBe(25);
+
+    const balance = await request(app.getHttpServer())
+      .get("/v1/economy/balance")
+      .set({ Authorization: `Bearer ${plainToken}` });
+    expect(balance.status).toBe(200);
+    expect(balance.body.coinConfirmed).toBe(25);
+
+    const audit = await request(app.getHttpServer()).get("/v1/admin/audit-log").set(asAdmin());
+    const entry = audit.body.find(
+      (e: { action: string; targetId: string }) =>
+        e.action === "economy.adjust" && e.targetId === plainUserId,
+    );
+    expect(entry).toBeTruthy();
+  });
+
+  it("rejects an invalid economy adjust (zero amount → 400)", async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/v1/admin/users/${plainUserId}/economy/adjust`)
+      .set(asAdmin())
+      .send({ unit: "COIN", amount: 0, reason: "bad" });
+    expect(res.status).toBe(400);
   });
 });

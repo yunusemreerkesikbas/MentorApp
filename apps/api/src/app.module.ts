@@ -7,6 +7,7 @@ import { LoggerModule } from "nestjs-pino";
 import { JwtAuthGuard } from "./common/auth/jwt-auth.guard";
 import { RolesGuard } from "./common/auth/roles.guard";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
+import { ConfigRegistryModule } from "./common/config/config.module";
 import { ZodValidationPipe } from "./common/validation/zod-validation.pipe";
 import { validateEnv } from "./config/env.validation";
 import { DatabaseModule } from "./database/database.module";
@@ -15,6 +16,7 @@ import { AppI18nModule } from "./i18n/i18n.module";
 import { AdminModule } from "./modules/admin/admin.module";
 import { CoachingModule } from "./modules/coaching/coaching.module";
 import { ContentModule } from "./modules/content/content.module";
+import { EconomyModule } from "./modules/economy/economy.module";
 import { IdentityModule } from "./modules/identity/identity.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
@@ -41,11 +43,13 @@ import { buildLoggerConfig } from "./observability/logger.config";
     // Domain-event backbone (§8): modules talk via events, not each other's tables.
     EventEmitterModule.forRoot(),
     AppI18nModule,
+    ConfigRegistryModule,
     DatabaseModule,
     HealthModule,
     AdminModule,
     CoachingModule,
     ContentModule,
+    EconomyModule,
     IdentityModule,
     NotificationsModule,
     PaymentsModule,

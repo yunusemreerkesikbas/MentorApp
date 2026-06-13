@@ -76,3 +76,27 @@ export type CreateMoodCheckinInput = z.infer<typeof createMoodCheckinSchema>;
 
 export const listMoodCheckinsQuerySchema = paginationQuerySchema;
 export type ListMoodCheckinsQuery = z.infer<typeof listMoodCheckinsQuerySchema>;
+
+/* -------------------------------- mock exams -------------------------------- */
+
+export const mockExamSubjectInputSchema = z.object({
+  subjectRef: z.string().trim().min(1).max(80),
+  correct: z.coerce.number().int().min(0).max(500),
+  wrong: z.coerce.number().int().min(0).max(500),
+  blank: z.coerce.number().int().min(0).max(500),
+});
+
+export const createMockExamSchema = z
+  .object({
+    examId: z.string().uuid(),
+    takenAt: z.string().datetime({ offset: true }).optional(),
+    subjects: z.array(mockExamSubjectInputSchema).min(1).max(20),
+  })
+  .refine(
+    (data) => new Set(data.subjects.map((s) => s.subjectRef)).size === data.subjects.length,
+    { message: "duplicate_subject_ref" },
+  );
+export type CreateMockExamInput = z.infer<typeof createMockExamSchema>;
+
+export const listMockExamsQuerySchema = paginationQuerySchema;
+export type ListMockExamsQuery = z.infer<typeof listMockExamsQuerySchema>;

@@ -75,6 +75,7 @@ function buildService(overrides?: {
     }),
     listFamilyCandidates: vi.fn(async () => candidates),
     findNetRuleForFamily: vi.fn(async () => ({ kind: "PENALTY", divisor: 4 })),
+    findById: vi.fn(async (_db: unknown, id: string) => candidates.find((c) => c.exam.id === id)?.exam),
     upsertBySlug: vi.fn(),
   };
 
@@ -95,6 +96,14 @@ function buildService(overrides?: {
 
   const eventEmitter = { emit: vi.fn() };
 
+  const subjects = {
+    listByExamId: vi.fn(async () => []),
+    findSlugsForExam: vi.fn(async () => new Set<string>()),
+    upsertBySlug: vi.fn(),
+    upsertExamSubject: vi.fn(),
+    findBySlug: vi.fn(),
+  };
+
   const db = {
     transaction: async <T>(cb: (tx: unknown) => Promise<T>): Promise<T> =>
       cb({ execute: async () => undefined }),
@@ -104,9 +113,10 @@ function buildService(overrides?: {
     exams as never,
     events as never,
     articles as never,
+    subjects as never,
     eventEmitter as never,
   );
-  return { service, exams, events, articles, eventEmitter };
+  return { service, exams, events, articles, subjects, eventEmitter };
 }
 
 describe("ContentService — exam calendar resolution", () => {

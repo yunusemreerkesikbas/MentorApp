@@ -40,3 +40,5 @@
 | [0017](./0017-w1-knowledge-center.md) | W1 · Knowledge center (Slice 2) | info_articles, ArticlePublished event, public SEO `/bilgi/[slug]`, hub article list |
 | [0018](./0018-w6-admin-foundation.md) | W6 · Admin foundation | STAFF assignment + audit log (table+interceptor), admin module, Duralux admin UI (Bootstrap/JS) |
 | [0019](./0019-w5-notifications-queue.md) | W5 · Notifications + Queue | JobQueuePort Postgres adapter, cron runner, Postmark email, web push, daily reminders |
+| [0020](./0020-w6-config-registry.md) | W6 · Config Registry + Feature Flags | code catalog + config_overrides + cache, ConfigRegistryService, admin /config UI, flags (ai/economy/signup) |
+| [0021](./0021-w6-light-economy.md) | W6 · Light Economy (Slice 1) | append-only ledger_entries (XP/Coin), EconomyService (capped grant), user balance/ledger API, admin manual adjust |
