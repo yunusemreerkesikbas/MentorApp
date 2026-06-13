@@ -49,6 +49,10 @@ export const ErrorCode = {
   // economy (W6) — module-prefixed, append-only (workstreams rule)
   ECONOMY_DISABLED: "ECONOMY_DISABLED",
   ECONOMY_LIMIT_EXCEEDED: "ECONOMY_LIMIT_EXCEEDED",
+  INVITE_CODE_INVALID: "INVITE_CODE_INVALID",
+  INVITE_SELF: "INVITE_SELF",
+  INVITE_ALREADY_REDEEMED: "INVITE_ALREADY_REDEEMED",
+  INVITE_ALREADY_PREMIUM: "INVITE_ALREADY_PREMIUM",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

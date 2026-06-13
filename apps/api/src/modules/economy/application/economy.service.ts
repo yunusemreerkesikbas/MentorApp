@@ -33,10 +33,7 @@ export class EconomyService {
 
   /** Append a ledger entry (idempotent on refType/refId). Returns the user's fresh balance. */
   async grant(userId: string, unit: Currency, amount: number, opts: GrantOptions): Promise<Balance> {
-    if ((opts.enforceLimits ?? true) && unit === Currency.COIN && amount > 0) {
-      await this.assertWithinCoinLimits(userId, amount);
-    }
-    await this.repo.append({
+    const entry = {
       userId,
       unit,
       amount,
@@ -46,29 +43,33 @@ export class EconomyService {
       refId: opts.refId ?? null,
       note: opts.note ?? null,
       createdBy: opts.actorId ?? null,
-    });
-    return this.repo.balanceService(userId);
-  }
+    };
 
-  private async assertWithinCoinLimits(userId: string, amount: number): Promise<void> {
-    const minXp = await this.config.get("economy.coin.min_xp_for_coin");
-    if (minXp > 0) {
-      const { xp } = await this.repo.balanceService(userId);
-      if (xp < minXp) {
-        throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
-      }
+    if ((opts.enforceLimits ?? true) && unit === Currency.COIN && amount > 0) {
+      // Cap-check + append in ONE service transaction so concurrent grants can't both pass the
+      // check and exceed the cap (no TOCTOU race).
+      const minXp = await this.config.get("economy.coin.min_xp_for_coin");
+      const dailyCap = await this.config.get("economy.coin.daily_cap");
+      const weeklyCap = await this.config.get("economy.coin.weekly_cap");
+      const now = Date.now();
+      await this.repo.withServiceTx(async (tx) => {
+        if (minXp > 0 && (await this.repo.balanceService(userId, tx)).xp < minXp) {
+          throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        const earnedDay = await this.repo.coinEarnedSince(userId, new Date(now - DAY_MS), tx);
+        if (earnedDay + amount > dailyCap) {
+          throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        const earnedWeek = await this.repo.coinEarnedSince(userId, new Date(now - 7 * DAY_MS), tx);
+        if (earnedWeek + amount > weeklyCap) {
+          throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        await this.repo.append(entry, tx);
+      });
+    } else {
+      await this.repo.append(entry);
     }
-    const now = Date.now();
-    const dailyCap = await this.config.get("economy.coin.daily_cap");
-    const earnedDay = await this.repo.coinEarnedSince(userId, new Date(now - DAY_MS));
-    if (earnedDay + amount > dailyCap) {
-      throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
-    }
-    const weeklyCap = await this.config.get("economy.coin.weekly_cap");
-    const earnedWeek = await this.repo.coinEarnedSince(userId, new Date(now - 7 * DAY_MS));
-    if (earnedWeek + amount > weeklyCap) {
-      throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
-    }
+    return this.repo.balanceService(userId);
   }
 
   getSelfBalance(userId: string): Promise<Balance> {

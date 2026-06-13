@@ -38,5 +38,9 @@
   "ADMIN_CONFIG_KEY_NOT_FOUND": "This config key was not found.",
   "ADMIN_CONFIG_INVALID_VALUE": "The config value is invalid.",
   "ECONOMY_DISABLED": "The economy feature is currently disabled.",
-  "ECONOMY_LIMIT_EXCEEDED": "The coin earning limit has been exceeded."
+  "ECONOMY_LIMIT_EXCEEDED": "The coin earning limit has been exceeded.",
+  "INVITE_CODE_INVALID": "The invite code is invalid.",
+  "INVITE_SELF": "You can't use your own invite code.",
+  "INVITE_ALREADY_REDEEMED": "You have already used an invite code.",
+  "INVITE_ALREADY_PREMIUM": "Premium users can't redeem an invite code."
 }

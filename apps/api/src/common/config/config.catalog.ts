@@ -66,6 +66,7 @@ export const CONFIG_CATALOG = {
   "economy.coin.daily_cap": economyCount(50, 100000, "Max coin a user can earn per day (abuse shield)."),
   "economy.coin.weekly_cap": economyCount(200, 1000000, "Max coin a user can earn per week (abuse shield)."),
   "economy.coin.min_xp_for_coin": economyCount(0, 1000000, "Min XP required before a user can earn coin (anti-Sybil)."),
+  "economy.invite.reward_coin": economyCount(20, 100000, "Coin granted to the inviter when an invited user converts."),
 } as const satisfies Record<string, ConfigEntryDef>;
 
 export type ConfigKey = keyof typeof CONFIG_CATALOG;

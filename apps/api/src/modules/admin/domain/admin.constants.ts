@@ -12,6 +12,9 @@ export const AuditAction = {
   USER_KVKK_ANONYMIZE: "user.kvkk-anonymize",
   CONFIG_UPDATE: "config.update",
   ECONOMY_ADJUST: "economy.adjust",
+  CONTENT_ARTICLE_UPSERT: "content.article.upsert",
+  CONTENT_ARTICLE_PUBLISH: "content.article.publish",
+  CONTENT_ARTICLE_UNPUBLISH: "content.article.unpublish",
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 
