@@ -38,3 +38,5 @@
 | [0015](./0015-payments.md) | W4 · Payments | PaymentsPort fake/iyzico, trial-once state machine, entitlement+PremiumGuard, /abonelik |
 | [0016](./0016-w1-exam-calendar.md) | W1 · Exam calendar (Slice 1) | editorial exams/exam_events, public calendar API, ContentPort adapter, Bilgi data card |
 | [0017](./0017-w1-knowledge-center.md) | W1 · Knowledge center (Slice 2) | info_articles, ArticlePublished event, public SEO `/bilgi/[slug]`, hub article list |
+| [0018](./0018-w6-admin-foundation.md) | W6 · Admin foundation | STAFF assignment + audit log (table+interceptor), admin module, Duralux admin UI (Bootstrap/JS) |
+| [0019](./0019-w5-notifications-queue.md) | W5 · Notifications + Queue | JobQueuePort Postgres adapter, cron runner, Postmark email, web push, daily reminders |

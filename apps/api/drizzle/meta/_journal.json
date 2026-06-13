@@ -45,10 +45,17 @@
       "breakpoints": true
     },
     {
-      "idx": 6,
+      "idx": 7,
       "version": "7",
-      "when": 1781132837321,
-      "tag": "0006_info_articles",
+      "when": 1781136000000,
+      "tag": "0007_w5_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1781215899842,
+      "tag": "0008_w6_admin_audit_log",
       "breakpoints": true
     }
   ]
