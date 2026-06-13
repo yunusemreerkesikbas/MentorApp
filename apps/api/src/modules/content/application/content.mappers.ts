@@ -1,6 +1,7 @@
 import type {
   ExamCalendarDto,
   ExamEventDto,
+  ExamSubjectDto,
   ExamSummaryDto,
   InfoArticleDto,
   InfoArticleSummaryDto,
@@ -12,6 +13,7 @@ import { daysBetween, formatTurkishDate, toIsoDate, todayIso } from "../domain/d
 
 export function toExamSummary(row: ExamRow): ExamSummaryDto {
   return {
+    id: row.id,
     slug: row.slug,
     name: row.name,
     family: row.family,
@@ -86,4 +88,18 @@ export function toPaginatedInfoArticles(
   pageSize: number,
 ): Paginated<InfoArticleSummaryDto> {
   return { items: items.map(toInfoArticleSummary), total, page, pageSize };
+}
+
+export function toExamSubjectDto(row: {
+  slug: string;
+  name: string;
+  questionCount: number | null;
+  sortOrder: number;
+}): ExamSubjectDto {
+  return {
+    slug: row.slug,
+    name: row.name,
+    questionCount: row.questionCount,
+    sortOrder: row.sortOrder,
+  };
 }

@@ -75,6 +75,47 @@ export interface MoodCheckinDto {
   message: string;
 }
 
+/* ------------------------------- mock exams --------------------------------- */
+
+export interface MockExamSubjectDto {
+  subjectRef: string;
+  subjectName: string;
+  correct: number;
+  wrong: number;
+  blank: number;
+  /** Server-computed net (string transport). */
+  net: string;
+}
+
+export interface MockExamDto {
+  id: string;
+  examId: string;
+  examName: string;
+  takenAt: string;
+  totalNet: string;
+  subjects: MockExamSubjectDto[];
+}
+
+export interface MockExamTrendPointDto {
+  id: string;
+  takenAt: string;
+  totalNet: string;
+  examName: string;
+}
+
+export interface SubjectStrengthDto {
+  subjectRef: string;
+  subjectName: string;
+  averageNet: string;
+  attemptCount: number;
+}
+
+/** Personal deneme analysis — no ranking (guardrail §0). */
+export interface CoachingAnalysisDto {
+  trend: MockExamTrendPointDto[];
+  subjects: SubjectStrengthDto[];
+}
+
 /** Composite panel payload — one request → whole daily hub. */
 export interface TodayPanelResponse {
   greetingName: string;

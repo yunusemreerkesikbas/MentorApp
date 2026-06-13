@@ -3,8 +3,10 @@ import { ContentService } from "./application/content.service";
 import { ExamEventRepository } from "./infrastructure/exam-event.repository";
 import { ExamRepository } from "./infrastructure/exam.repository";
 import { ContentSeedService } from "./infrastructure/content-seed.service";
+import { SubjectSeedService } from "./infrastructure/subject-seed.service";
 import { ArticleSeedService } from "./infrastructure/article-seed.service";
 import { InfoArticleRepository } from "./infrastructure/info-article.repository";
+import { SubjectRepository } from "./infrastructure/subject.repository";
 import { ContentController } from "./presentation/content.controller";
 import { InfoArticleController } from "./presentation/info-article.controller";
 
@@ -19,7 +21,9 @@ import { InfoArticleController } from "./presentation/info-article.controller";
     ExamRepository,
     ExamEventRepository,
     InfoArticleRepository,
+    SubjectRepository,
     ContentSeedService,
+    SubjectSeedService,
     ArticleSeedService,
   ],
   exports: [ContentService],

@@ -1,10 +1,13 @@
 import { Module } from "@nestjs/common";
+import { EconomyModule } from "../economy/economy.module";
 import { IdentityModule } from "../identity/identity.module";
 import { AdminAuditService } from "./application/admin-audit.service";
 import { AdminUsersService } from "./application/admin-users.service";
 import { AdminAuditRepository } from "./infrastructure/admin-audit.repository";
 import { AdminUsersRepository } from "./infrastructure/admin-users.repository";
 import { AdminAuditInterceptor } from "./presentation/admin-audit.interceptor";
+import { AdminConfigController } from "./presentation/admin-config.controller";
+import { AdminEconomyController } from "./presentation/admin-economy.controller";
 import { AdminUsersController } from "./presentation/admin-users.controller";
 
 /**
@@ -15,8 +18,8 @@ import { AdminUsersController } from "./presentation/admin-users.controller";
  * reuse the same append-only audit trail. Economy (coin/XP/invite/quest) lands in a later slice.
  */
 @Module({
-  imports: [IdentityModule],
-  controllers: [AdminUsersController],
+  imports: [IdentityModule, EconomyModule],
+  controllers: [AdminUsersController, AdminConfigController, AdminEconomyController],
   providers: [
     AdminUsersService,
     AdminAuditService,

@@ -1,8 +1,9 @@
 import { Body, Controller, Get, HttpCode, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { MoodCheckinDto, Paginated, TodayPanelResponse } from "@mentor/types";
+import type { MoodCheckinDto, Paginated, TodayPanelResponse, CoachingAnalysisDto } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { MoodService } from "../application/mood.service";
+import { MockExamService } from "../application/mock-exam.service";
 import { TodayService } from "../application/today.service";
 import { CreateMoodCheckinDto, ListMoodCheckinsQueryDto } from "./coaching.dto";
 
@@ -14,12 +15,19 @@ export class CoachingController {
   constructor(
     private readonly today: TodayService,
     private readonly mood: MoodService,
+    private readonly mockExams: MockExamService,
   ) {}
 
   /** Composite daily-hub payload for the Panel (one round-trip). */
   @Get("today")
   getToday(@CurrentUser() user: RequestUser): Promise<TodayPanelResponse> {
     return this.today.getToday(user.id);
+  }
+
+  /** Personal deneme analysis — net trend + subject strength/weakness (no ranking). */
+  @Get("analysis")
+  getAnalysis(@CurrentUser() user: RequestUser): Promise<CoachingAnalysisDto> {
+    return this.mockExams.getAnalysis(user.id);
   }
 
   /** Upsert today's mood → returns the rule-based, localized encouragement. */

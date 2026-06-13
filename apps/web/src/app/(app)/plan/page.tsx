@@ -1,11 +1,5 @@
-import { ComingSoon } from "../../../components/coming-soon";
+import { PlanShell } from "./_components/plan-shell";
 
-// Owned by W2 (coaching) — shell placeholder until that track lands.
 export default function PlanPage() {
-  return (
-    <ComingSoon
-      title="Çalışma Planı"
-      note="Sınava kadar olan yol haritan, haftalık hedeflerin ve günlük görevlerin burada olacak."
-    />
-  );
+  return <PlanShell />;
 }

@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ContentModule } from "../content/content.module";
 import { IdentityModule } from "../identity/identity.module";
 import { MoodService } from "./application/mood.service";
+import { MockExamService } from "./application/mock-exam.service";
 import { PlanService } from "./application/plan.service";
 import { SessionService } from "./application/session.service";
 import { StreakService } from "./application/streak.service";
@@ -15,7 +16,9 @@ import { MoodCheckinRepository } from "./infrastructure/mood-checkin.repository"
 import { PlanTaskRepository } from "./infrastructure/plan-task.repository";
 import { StreakStateRepository } from "./infrastructure/streak-state.repository";
 import { StudySessionRepository } from "./infrastructure/study-session.repository";
+import { MockExamRepository } from "./infrastructure/mock-exam.repository";
 import { CoachingController } from "./presentation/coaching.controller";
+import { MockExamController } from "./presentation/mock-exam.controller";
 import { PlanTaskController } from "./presentation/plan-task.controller";
 import { StudySessionController } from "./presentation/study-session.controller";
 
@@ -28,15 +31,17 @@ import { StudySessionController } from "./presentation/study-session.controller"
  */
 @Module({
   imports: [ContentModule, IdentityModule],
-  controllers: [CoachingController, PlanTaskController, StudySessionController],
+  controllers: [CoachingController, PlanTaskController, StudySessionController, MockExamController],
   providers: [
     PlanService,
     SessionService,
     StreakService,
     MoodService,
+    MockExamService,
     TodayService,
     PlanTaskRepository,
     StudySessionRepository,
+    MockExamRepository,
     DailyActivityRepository,
     StreakStateRepository,
     MoodCheckinRepository,

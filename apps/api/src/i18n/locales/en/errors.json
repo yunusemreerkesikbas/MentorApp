@@ -18,7 +18,13 @@
   "COACHING_TASK_NOT_FOUND": "This task was not found.",
   "COACHING_SESSION_NOT_FOUND": "This study session was not found.",
   "COACHING_SESSION_ALREADY_CLOSED": "This study session is already completed.",
+  "COACHING_MOCK_EXAM_NOT_FOUND": "This mock exam record was not found.",
+  "COACHING_INVALID_SUBJECT_REF": "Invalid subject selection.",
+  "COACHING_DUPLICATE_SUBJECT_REF": "The same subject cannot be added more than once.",
+  "COACHING_INVALID_MOCK_EXAM_SCORES": "Correct, wrong, and blank totals cannot exceed the subject question count.",
   "CONTENT_EXAM_NOT_FOUND": "This exam record was not found.",
+  "CONTENT_INVALID_NET_RULE": "Exam net scoring rule is invalid.",
+  "CONTENT_SUBJECT_NOT_FOUND": "This subject record was not found.",
   "CONTENT_ARTICLE_NOT_FOUND": "This article was not found.",
   "CONTENT_INVALID_EXAM_FAMILY": "Invalid exam type.",
   "CONTENT_INVALID_ARTICLE_CATEGORY": "Invalid article category.",
@@ -27,5 +33,10 @@
   "PAYMENT_PROVIDER_ERROR": "The payment provider had a problem. Please try again.",
   "PAYMENT_WEBHOOK_INVALID": "Invalid payment notification.",
   "PAYMENT_PREMIUM_REQUIRED": "This feature is for Premium members.",
-  "ADMIN_USER_NOT_FOUND": "This user was not found."
+  "ADMIN_USER_NOT_FOUND": "This user was not found.",
+  "ADMIN_CANNOT_MODIFY_SELF": "You can't perform this action on your own account.",
+  "ADMIN_CONFIG_KEY_NOT_FOUND": "This config key was not found.",
+  "ADMIN_CONFIG_INVALID_VALUE": "The config value is invalid.",
+  "ECONOMY_DISABLED": "The economy feature is currently disabled.",
+  "ECONOMY_LIMIT_EXCEEDED": "The coin earning limit has been exceeded."
 }

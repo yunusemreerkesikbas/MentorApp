@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { ContentPort, ExamCalendar, NetRule } from "../domain/content.port";
+import type { ContentPort, ExamCalendar, ExamRef, ExamSubjectRef, NetRule } from "../domain/content.port";
 import { ContentService } from "../../content/application/content.service";
 
 /**
@@ -16,5 +16,13 @@ export class ContentServiceAdapter implements ContentPort {
 
   async getNetRule(examType: string | null | undefined): Promise<NetRule | null> {
     return this.content.getNetRuleByFamily(examType);
+  }
+
+  async getExamById(examId: string): Promise<ExamRef | null> {
+    return this.content.getExamById(examId);
+  }
+
+  async listExamSubjects(examId: string): Promise<ExamSubjectRef[]> {
+    return this.content.listExamSubjectsByExamId(examId);
   }
 }

@@ -1,0 +1,82 @@
+import { z, type ZodTypeAny } from "zod";
+
+/**
+ * Config registry catalog (§9, engineering-principles §2/§8).
+ *
+ * The catalog is the single source of truth for tunable, admin-editable values + feature flags.
+ * Each key declares its Zod schema (validation + bounds), default, category, UI type, sensitivity,
+ * and description. The DB (`config_overrides`) only stores admin overrides; the effective value is
+ * `override ?? default`. Admins cannot invent keys — only keys defined here are editable.
+ *
+ * YAGNI: seed only keys with a real purpose now. Other modules (economy, moderation, …) append
+ * their own keys here when their slice lands.
+ *
+ * GUARDRAIL: NEVER put secrets here (API keys, tokens, passwords). Config values are stored in
+ * plaintext in `config_overrides` AND written to the admin audit trail (before/after). Secrets live
+ * only in env (`config/env.validation.ts`). This registry is for non-secret business config + flags.
+ *
+ * SCOPE: this is GLOBAL platform config (by design). Per-org/B2B overrides belong in
+ * `organizations.settings` (already org-ready, §4 #7) — not here; `config_overrides` has no org_id.
+ */
+export const ConfigCategory = {
+  FEATURE_FLAGS: "feature-flags",
+  ECONOMY: "economy",
+} as const;
+
+export const ConfigValueType = {
+  BOOLEAN: "boolean",
+  NUMBER: "number",
+  STRING: "string",
+} as const;
+export type ConfigValueType = (typeof ConfigValueType)[keyof typeof ConfigValueType];
+
+export interface ConfigEntryDef {
+  category: string;
+  /** UI hint so the admin panel renders the right control. */
+  type: ConfigValueType;
+  schema: ZodTypeAny;
+  default: unknown;
+  /** Sensitive (money/coin/commission) → bounds + extra confirmation in the UI. */
+  sensitive: boolean;
+  description: string;
+}
+
+const flag = (def: boolean, description: string): ConfigEntryDef => ({
+  category: ConfigCategory.FEATURE_FLAGS,
+  type: ConfigValueType.BOOLEAN,
+  schema: z.boolean(),
+  default: def,
+  sensitive: false,
+  description,
+});
+
+const economyCount = (def: number, max: number, description: string): ConfigEntryDef => ({
+  category: ConfigCategory.ECONOMY,
+  type: ConfigValueType.NUMBER,
+  schema: z.number().int().min(0).max(max),
+  default: def,
+  sensitive: true, // economy values (caps/thresholds) → bounds + audit (§9)
+  description,
+});
+
+export const CONFIG_CATALOG = {
+  "ai.enabled": flag(true, "Global AI kill-switch (§4/§8) — turn off all AI features."),
+  "economy.enabled": flag(false, "Gate for the light-economy module (user-facing balance/earning)."),
+  "signup.enabled": flag(true, "Registration kill-switch — disable new sign-ups."),
+  "economy.coin.daily_cap": economyCount(50, 100000, "Max coin a user can earn per day (abuse shield)."),
+  "economy.coin.weekly_cap": economyCount(200, 1000000, "Max coin a user can earn per week (abuse shield)."),
+  "economy.coin.min_xp_for_coin": economyCount(0, 1000000, "Min XP required before a user can earn coin (anti-Sybil)."),
+} as const satisfies Record<string, ConfigEntryDef>;
+
+export type ConfigKey = keyof typeof CONFIG_CATALOG;
+
+/** Stable flag key constants for consumers (e.g. `configRegistry.get(FeatureFlag.AI_ENABLED)`). */
+export const FeatureFlag = {
+  AI_ENABLED: "ai.enabled",
+  ECONOMY_ENABLED: "economy.enabled",
+  SIGNUP_ENABLED: "signup.enabled",
+} as const satisfies Record<string, ConfigKey>;
+
+export function isConfigKey(key: string): key is ConfigKey {
+  return Object.prototype.hasOwnProperty.call(CONFIG_CATALOG, key);
+}

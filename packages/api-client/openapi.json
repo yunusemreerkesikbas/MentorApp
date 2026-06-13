@@ -202,6 +202,128 @@
         ]
       }
     },
+    "/v1/admin/users/{userId}": {
+      "get": {
+        "operationId": "AdminUsersController_getUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/users/{userId}/status": {
+      "patch": {
+        "operationId": "AdminUsersController_setStatus",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/users/{userId}/export": {
+      "get": {
+        "operationId": "AdminUsersController_exportUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/users/{userId}/anonymize": {
+      "post": {
+        "operationId": "AdminUsersController_anonymizeUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/admin/users/{userId}/roles/staff": {
       "post": {
         "operationId": "AdminUsersController_grantStaff",
@@ -262,6 +384,129 @@
         "parameters": [],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/config": {
+      "get": {
+        "operationId": "AdminConfigController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/config/{key}": {
+      "patch": {
+        "operationId": "AdminConfigController_update",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateConfigDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/users/{userId}/economy": {
+      "get": {
+        "operationId": "AdminEconomyController_overview",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/users/{userId}/economy/adjust": {
+      "post": {
+        "operationId": "AdminEconomyController_adjust",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjustEconomyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": ""
           }
         },
@@ -469,9 +714,66 @@
         ]
       }
     },
+    "/v1/economy/balance": {
+      "get": {
+        "operationId": "EconomyController_balance",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
+    "/v1/economy/ledger": {
+      "get": {
+        "operationId": "EconomyController_ledger",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
     "/v1/coaching/today": {
       "get": {
         "operationId": "CoachingController_getToday",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/analysis": {
+      "get": {
+        "operationId": "CoachingController_getAnalysis",
         "parameters": [],
         "responses": {
           "200": {
@@ -711,6 +1013,80 @@
         ]
       }
     },
+    "/v1/mock-exams": {
+      "post": {
+        "operationId": "MockExamController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMockExamDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      },
+      "get": {
+        "operationId": "MockExamController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/mock-exams/{id}": {
+      "get": {
+        "operationId": "MockExamController_getById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
     "/v1/content/exams": {
       "get": {
         "operationId": "ContentController_listExams",
@@ -751,6 +1127,29 @@
     "/v1/content/exams/{slug}/calendar": {
       "get": {
         "operationId": "ContentController_calendarBySlug",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/exams/{slug}/subjects": {
+      "get": {
+        "operationId": "ContentController_subjectsBySlug",
         "parameters": [
           {
             "name": "slug",
@@ -1031,6 +1430,18 @@
       }
     },
     "schemas": {
+      "UpdateUserStatusDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateConfigDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AdjustEconomyDto": {
+        "type": "object",
+        "properties": {}
+      },
       "SignupDto": {
         "type": "object",
         "properties": {}
@@ -1072,6 +1483,10 @@
         "properties": {}
       },
       "UpdateStudySessionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateMockExamDto": {
         "type": "object",
         "properties": {}
       },

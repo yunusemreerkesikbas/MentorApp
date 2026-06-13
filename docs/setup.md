@@ -11,8 +11,10 @@
 # 1) Dependencies (from root — entire workspace)
 pnpm install
 
-# 2) Environment (api reads apps/api/.env)
-cp .env.example apps/api/.env   # DATABASE_URL defaults to the local docker DB
+# 2) Environment
+cp .env.example apps/api/.env   # API secrets + W5 vars (see below)
+# Web push needs a separate file (Next.js reads apps/web only):
+#   apps/web/.env.local → NEXT_PUBLIC_API_URL + NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
 # 3) Local database (docker — Postgres 16 + pgvector, host port 5433)
 pnpm db:up                      # start; `pnpm db:down` to stop
@@ -23,6 +25,35 @@ pnpm dev                    # api:3001/v1 · web:3000 · admin:3002
 #    or a single app
 pnpm --filter @mentor/web dev
 ```
+
+## W5 · Notifications (local smoke test)
+
+Queue + email + push live in the **notifications** module (devnote [`0019-w5-notifications-queue.md`](devnotes/0019-w5-notifications-queue.md)).
+
+**Env files (git-ignored)**
+
+| File | Variables |
+|---|---|
+| `apps/api/.env` | `CRON_SECRET` (≥32 chars), optional `POSTMARK_TOKEN` + `POSTMARK_FROM`, `VAPID_*` |
+| `apps/web/.env.local` | `NEXT_PUBLIC_API_URL=http://localhost:3001/v1`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (= API public key) |
+
+Copy W5 keys from [`.env.example`](../.env.example). Generate VAPID: `npx web-push generate-vapid-keys`.
+
+Without `POSTMARK_TOKEN`, emails are **logged** (not sent). Without VAPID, push jobs log only; profil shows a config hint until web public key is set. Restart `pnpm dev` after env changes.
+
+**Run the job runner manually** (Render Cron equivalent):
+
+```bash
+# Process queued jobs (signup mail, payment mail, push, …)
+curl -X POST http://localhost:3001/v1/internal/cron/process-jobs \
+  -H "x-cron-secret: $CRON_SECRET"
+
+# Rule-based daily reminders → enqueues email/push jobs (then run process-jobs again)
+curl -X POST http://localhost:3001/v1/internal/cron/dispatch-daily-reminders \
+  -H "x-cron-secret: $CRON_SECRET"
+```
+
+Quick checks: register a user → job row in `jobs` → `process-jobs` → completed; `/profil` → enable push → dispatch + process cron.
 
 ## Tests
 ```bash

@@ -18,7 +18,13 @@
   "COACHING_TASK_NOT_FOUND": "Bu görev bulunamadı.",
   "COACHING_SESSION_NOT_FOUND": "Bu çalışma seansı bulunamadı.",
   "COACHING_SESSION_ALREADY_CLOSED": "Bu çalışma seansı zaten tamamlanmış.",
+  "COACHING_MOCK_EXAM_NOT_FOUND": "Bu deneme kaydı bulunamadı.",
+  "COACHING_INVALID_SUBJECT_REF": "Geçersiz ders seçimi.",
+  "COACHING_DUPLICATE_SUBJECT_REF": "Aynı ders birden fazla kez eklenemez.",
+  "COACHING_INVALID_MOCK_EXAM_SCORES": "Doğru, yanlış ve boş toplamı ders soru sayısını aşamaz.",
   "CONTENT_EXAM_NOT_FOUND": "Bu sınav kaydı bulunamadı.",
+  "CONTENT_INVALID_NET_RULE": "Sınav net hesaplama kuralı geçersiz.",
+  "CONTENT_SUBJECT_NOT_FOUND": "Bu ders kaydı bulunamadı.",
   "CONTENT_ARTICLE_NOT_FOUND": "Bu makale bulunamadı.",
   "CONTENT_INVALID_EXAM_FAMILY": "Geçersiz sınav türü.",
   "CONTENT_INVALID_ARTICLE_CATEGORY": "Geçersiz makale kategorisi.",
@@ -27,5 +33,10 @@
   "PAYMENT_PROVIDER_ERROR": "Ödeme sağlayıcısında bir sorun oluştu. Lütfen tekrar dene.",
   "PAYMENT_WEBHOOK_INVALID": "Geçersiz ödeme bildirimi.",
   "PAYMENT_PREMIUM_REQUIRED": "Bu özellik Premium üyelere özel.",
-  "ADMIN_USER_NOT_FOUND": "Bu kullanıcı bulunamadı."
+  "ADMIN_USER_NOT_FOUND": "Bu kullanıcı bulunamadı.",
+  "ADMIN_CANNOT_MODIFY_SELF": "Kendi hesabın üzerinde bu işlemi yapamazsın.",
+  "ADMIN_CONFIG_KEY_NOT_FOUND": "Bu ayar anahtarı bulunamadı.",
+  "ADMIN_CONFIG_INVALID_VALUE": "Ayar değeri geçersiz.",
+  "ECONOMY_DISABLED": "Ekonomi özelliği şu anda kapalı.",
+  "ECONOMY_LIMIT_EXCEEDED": "Coin kazanım sınırı aşıldı."
 }

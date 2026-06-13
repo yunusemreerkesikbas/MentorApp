@@ -5,6 +5,12 @@
  * OpenAPI spec version: 1.0
  */
 import { http } from '../http';
+export interface UpdateUserStatusDto { [key: string]: unknown }
+
+export interface UpdateConfigDto { [key: string]: unknown }
+
+export interface AdjustEconomyDto { [key: string]: unknown }
+
 export interface SignupDto { [key: string]: unknown }
 
 export interface LoginDto { [key: string]: unknown }
@@ -26,6 +32,8 @@ export interface UpdatePlanTaskDto { [key: string]: unknown }
 export interface StartStudySessionDto { [key: string]: unknown }
 
 export interface UpdateStudySessionDto { [key: string]: unknown }
+
+export interface CreateMockExamDto { [key: string]: unknown }
 
 export interface PushSubscribeDto { [key: string]: unknown }
 
@@ -201,6 +209,140 @@ export const adminUsersControllerSearchUsers = async ( options?: RequestInit): P
 
 
 
+export type adminUsersControllerGetUserResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminUsersControllerGetUserResponseSuccess = (adminUsersControllerGetUserResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminUsersControllerGetUserResponse = (adminUsersControllerGetUserResponseSuccess)
+
+export const getAdminUsersControllerGetUserUrl = (userId: string,) => {
+
+
+  
+
+  return `/v1/admin/users/${userId}`
+}
+
+export const adminUsersControllerGetUser = async (userId: string, options?: RequestInit): Promise<adminUsersControllerGetUserResponse> => {
+  
+  return http<adminUsersControllerGetUserResponse>(getAdminUsersControllerGetUserUrl(userId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminUsersControllerSetStatusResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminUsersControllerSetStatusResponseSuccess = (adminUsersControllerSetStatusResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminUsersControllerSetStatusResponse = (adminUsersControllerSetStatusResponseSuccess)
+
+export const getAdminUsersControllerSetStatusUrl = (userId: string,) => {
+
+
+  
+
+  return `/v1/admin/users/${userId}/status`
+}
+
+export const adminUsersControllerSetStatus = async (userId: string,
+    updateUserStatusDto: UpdateUserStatusDto, options?: RequestInit): Promise<adminUsersControllerSetStatusResponse> => {
+  
+  return http<adminUsersControllerSetStatusResponse>(getAdminUsersControllerSetStatusUrl(userId),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateUserStatusDto,)
+  }
+);}
+
+
+
+export type adminUsersControllerExportUserResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminUsersControllerExportUserResponseSuccess = (adminUsersControllerExportUserResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminUsersControllerExportUserResponse = (adminUsersControllerExportUserResponseSuccess)
+
+export const getAdminUsersControllerExportUserUrl = (userId: string,) => {
+
+
+  
+
+  return `/v1/admin/users/${userId}/export`
+}
+
+export const adminUsersControllerExportUser = async (userId: string, options?: RequestInit): Promise<adminUsersControllerExportUserResponse> => {
+  
+  return http<adminUsersControllerExportUserResponse>(getAdminUsersControllerExportUserUrl(userId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminUsersControllerAnonymizeUserResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminUsersControllerAnonymizeUserResponseSuccess = (adminUsersControllerAnonymizeUserResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminUsersControllerAnonymizeUserResponse = (adminUsersControllerAnonymizeUserResponseSuccess)
+
+export const getAdminUsersControllerAnonymizeUserUrl = (userId: string,) => {
+
+
+  
+
+  return `/v1/admin/users/${userId}/anonymize`
+}
+
+export const adminUsersControllerAnonymizeUser = async (userId: string, options?: RequestInit): Promise<adminUsersControllerAnonymizeUserResponse> => {
+  
+  return http<adminUsersControllerAnonymizeUserResponse>(getAdminUsersControllerAnonymizeUserUrl(userId),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
 export type adminUsersControllerGrantStaffResponse201 = {
   data: void
   status: 201
@@ -295,6 +437,142 @@ export const adminUsersControllerListAuditLog = async ( options?: RequestInit): 
     method: 'GET'
     
     
+  }
+);}
+
+
+
+export type adminConfigControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminConfigControllerListResponseSuccess = (adminConfigControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminConfigControllerListResponse = (adminConfigControllerListResponseSuccess)
+
+export const getAdminConfigControllerListUrl = () => {
+
+
+  
+
+  return `/v1/admin/config`
+}
+
+export const adminConfigControllerList = async ( options?: RequestInit): Promise<adminConfigControllerListResponse> => {
+  
+  return http<adminConfigControllerListResponse>(getAdminConfigControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminConfigControllerUpdateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminConfigControllerUpdateResponseSuccess = (adminConfigControllerUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminConfigControllerUpdateResponse = (adminConfigControllerUpdateResponseSuccess)
+
+export const getAdminConfigControllerUpdateUrl = (key: string,) => {
+
+
+  
+
+  return `/v1/admin/config/${key}`
+}
+
+export const adminConfigControllerUpdate = async (key: string,
+    updateConfigDto: UpdateConfigDto, options?: RequestInit): Promise<adminConfigControllerUpdateResponse> => {
+  
+  return http<adminConfigControllerUpdateResponse>(getAdminConfigControllerUpdateUrl(key),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateConfigDto,)
+  }
+);}
+
+
+
+export type adminEconomyControllerOverviewResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminEconomyControllerOverviewResponseSuccess = (adminEconomyControllerOverviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminEconomyControllerOverviewResponse = (adminEconomyControllerOverviewResponseSuccess)
+
+export const getAdminEconomyControllerOverviewUrl = (userId: string,) => {
+
+
+  
+
+  return `/v1/admin/users/${userId}/economy`
+}
+
+export const adminEconomyControllerOverview = async (userId: string, options?: RequestInit): Promise<adminEconomyControllerOverviewResponse> => {
+  
+  return http<adminEconomyControllerOverviewResponse>(getAdminEconomyControllerOverviewUrl(userId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminEconomyControllerAdjustResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminEconomyControllerAdjustResponseSuccess = (adminEconomyControllerAdjustResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminEconomyControllerAdjustResponse = (adminEconomyControllerAdjustResponseSuccess)
+
+export const getAdminEconomyControllerAdjustUrl = (userId: string,) => {
+
+
+  
+
+  return `/v1/admin/users/${userId}/economy/adjust`
+}
+
+export const adminEconomyControllerAdjust = async (userId: string,
+    adjustEconomyDto: AdjustEconomyDto, options?: RequestInit): Promise<adminEconomyControllerAdjustResponse> => {
+  
+  return http<adminEconomyControllerAdjustResponse>(getAdminEconomyControllerAdjustUrl(userId),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      adjustEconomyDto,)
   }
 );}
 
@@ -603,6 +881,72 @@ export const usersControllerUpdateMe = async (updateMeDto: UpdateMeDto, options?
 
 
 
+export type economyControllerBalanceResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type economyControllerBalanceResponseSuccess = (economyControllerBalanceResponse200) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerBalanceResponse = (economyControllerBalanceResponseSuccess)
+
+export const getEconomyControllerBalanceUrl = () => {
+
+
+  
+
+  return `/v1/economy/balance`
+}
+
+export const economyControllerBalance = async ( options?: RequestInit): Promise<economyControllerBalanceResponse> => {
+  
+  return http<economyControllerBalanceResponse>(getEconomyControllerBalanceUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type economyControllerLedgerResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type economyControllerLedgerResponseSuccess = (economyControllerLedgerResponse200) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerLedgerResponse = (economyControllerLedgerResponseSuccess)
+
+export const getEconomyControllerLedgerUrl = () => {
+
+
+  
+
+  return `/v1/economy/ledger`
+}
+
+export const economyControllerLedger = async ( options?: RequestInit): Promise<economyControllerLedgerResponse> => {
+  
+  return http<economyControllerLedgerResponse>(getEconomyControllerLedgerUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
 export type coachingControllerGetTodayResponse200 = {
   data: void
   status: 200
@@ -626,6 +970,39 @@ export const getCoachingControllerGetTodayUrl = () => {
 export const coachingControllerGetToday = async ( options?: RequestInit): Promise<coachingControllerGetTodayResponse> => {
   
   return http<coachingControllerGetTodayResponse>(getCoachingControllerGetTodayUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type coachingControllerGetAnalysisResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type coachingControllerGetAnalysisResponseSuccess = (coachingControllerGetAnalysisResponse200) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerGetAnalysisResponse = (coachingControllerGetAnalysisResponseSuccess)
+
+export const getCoachingControllerGetAnalysisUrl = () => {
+
+
+  
+
+  return `/v1/coaching/analysis`
+}
+
+export const coachingControllerGetAnalysis = async ( options?: RequestInit): Promise<coachingControllerGetAnalysisResponse> => {
+  
+  return http<coachingControllerGetAnalysisResponse>(getCoachingControllerGetAnalysisUrl(),
   {      
     ...options,
     method: 'GET'
@@ -907,6 +1284,106 @@ export const studySessionControllerFinalize = async (id: string,
 
 
 
+export type mockExamControllerCreateResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type mockExamControllerCreateResponseSuccess = (mockExamControllerCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type mockExamControllerCreateResponse = (mockExamControllerCreateResponseSuccess)
+
+export const getMockExamControllerCreateUrl = () => {
+
+
+  
+
+  return `/v1/mock-exams`
+}
+
+export const mockExamControllerCreate = async (createMockExamDto: CreateMockExamDto, options?: RequestInit): Promise<mockExamControllerCreateResponse> => {
+  
+  return http<mockExamControllerCreateResponse>(getMockExamControllerCreateUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createMockExamDto,)
+  }
+);}
+
+
+
+export type mockExamControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mockExamControllerListResponseSuccess = (mockExamControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mockExamControllerListResponse = (mockExamControllerListResponseSuccess)
+
+export const getMockExamControllerListUrl = () => {
+
+
+  
+
+  return `/v1/mock-exams`
+}
+
+export const mockExamControllerList = async ( options?: RequestInit): Promise<mockExamControllerListResponse> => {
+  
+  return http<mockExamControllerListResponse>(getMockExamControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mockExamControllerGetByIdResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mockExamControllerGetByIdResponseSuccess = (mockExamControllerGetByIdResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mockExamControllerGetByIdResponse = (mockExamControllerGetByIdResponseSuccess)
+
+export const getMockExamControllerGetByIdUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/mock-exams/${id}`
+}
+
+export const mockExamControllerGetById = async (id: string, options?: RequestInit): Promise<mockExamControllerGetByIdResponse> => {
+  
+  return http<mockExamControllerGetByIdResponse>(getMockExamControllerGetByIdUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
 export type contentControllerListExamsResponse200 = {
   data: void
   status: 200
@@ -996,6 +1473,39 @@ export const getContentControllerCalendarBySlugUrl = (slug: string,) => {
 export const contentControllerCalendarBySlug = async (slug: string, options?: RequestInit): Promise<contentControllerCalendarBySlugResponse> => {
   
   return http<contentControllerCalendarBySlugResponse>(getContentControllerCalendarBySlugUrl(slug),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type contentControllerSubjectsBySlugResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type contentControllerSubjectsBySlugResponseSuccess = (contentControllerSubjectsBySlugResponse200) & {
+  headers: Headers;
+};
+;
+
+export type contentControllerSubjectsBySlugResponse = (contentControllerSubjectsBySlugResponseSuccess)
+
+export const getContentControllerSubjectsBySlugUrl = (slug: string,) => {
+
+
+  
+
+  return `/v1/content/exams/${slug}/subjects`
+}
+
+export const contentControllerSubjectsBySlug = async (slug: string, options?: RequestInit): Promise<contentControllerSubjectsBySlugResponse> => {
+  
+  return http<contentControllerSubjectsBySlugResponse>(getContentControllerSubjectsBySlugUrl(slug),
   {      
     ...options,
     method: 'GET'

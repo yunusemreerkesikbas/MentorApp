@@ -2,6 +2,7 @@ import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import type {
   ExamCalendarDto,
+  ExamSubjectDto,
   ExamSummaryDto,
   InfoArticleDto,
   InfoArticleSummaryDto,
@@ -24,9 +25,11 @@ import { ExamEventType, InfoArticleCategory } from "../domain/content.constants"
 import { ExamEventRepository } from "../infrastructure/exam-event.repository";
 import { ExamRepository } from "../infrastructure/exam.repository";
 import { InfoArticleRepository } from "../infrastructure/info-article.repository";
+import { SubjectRepository } from "../infrastructure/subject.repository";
 import { ArticlePublished, ContentEventTopic } from "../domain/content.events";
 import {
   toExamCalendarDto,
+  toExamSubjectDto,
   toInfoArticleDto,
   toPaginatedExams,
   toPaginatedInfoArticles,
@@ -52,6 +55,7 @@ export class ContentService {
     private readonly exams: ExamRepository,
     private readonly events: ExamEventRepository,
     private readonly articles: InfoArticleRepository,
+    private readonly subjects: SubjectRepository,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -67,6 +71,95 @@ export class ContentService {
     }
     const eventRows = await this.events.listByExamId(this.db, exam.id);
     return toExamCalendarDto(exam, eventRows);
+  }
+
+  async listExamSubjectsBySlug(slug: string): Promise<ExamSubjectDto[]> {
+    const exam = await this.exams.findBySlug(this.db, slug);
+    if (!exam) {
+      throw new DomainError(ErrorCode.CONTENT_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND, { slug });
+    }
+    const rows = await this.subjects.listByExamId(this.db, exam.id);
+    return rows.map(toExamSubjectDto);
+  }
+
+  async getExamById(examId: string): Promise<{
+    id: string;
+    slug: string;
+    name: string;
+    netRule: { kind: string; divisor: number };
+  } | null> {
+    const exam = await this.exams.findById(this.db, examId);
+    if (!exam) return null;
+    return {
+      id: exam.id,
+      slug: exam.slug,
+      name: exam.name,
+      netRule: this.parseNetRule(exam.id, exam.netRule),
+    };
+  }
+
+  /** Validates editorial net_rule JSON — throws when malformed (not a missing exam). */
+  private parseNetRule(
+    examId: string,
+    raw: unknown,
+  ): { kind: string; divisor: number } {
+    const rule = raw as { kind?: string; divisor?: number };
+    if (typeof rule?.kind !== "string" || typeof rule?.divisor !== "number") {
+      throw new DomainError(ErrorCode.CONTENT_INVALID_NET_RULE, HttpStatus.INTERNAL_SERVER_ERROR, {
+        examId,
+      });
+    }
+    if (rule.kind !== "PENALTY") {
+      throw new DomainError(ErrorCode.CONTENT_INVALID_NET_RULE, HttpStatus.INTERNAL_SERVER_ERROR, {
+        examId,
+        kind: rule.kind,
+      });
+    }
+    return { kind: rule.kind, divisor: rule.divisor };
+  }
+
+  async listExamSubjectsByExamId(examId: string): Promise<ExamSubjectDto[]> {
+    const rows = await this.subjects.listByExamId(this.db, examId);
+    return rows.map(toExamSubjectDto);
+  }
+
+  async getValidSubjectSlugsForExam(examId: string): Promise<Set<string>> {
+    return this.subjects.findSlugsForExam(this.db, examId);
+  }
+
+  /** Idempotent editorial upsert (seed + future W6 admin). */
+  async upsertSubject(data: { slug: string; name: string }): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await this.subjects.upsertBySlug(tx, { slug: data.slug, name: data.name });
+    });
+  }
+
+  async linkExamSubject(data: {
+    examSlug: string;
+    subjectSlug: string;
+    questionCount?: number | null;
+    sortOrder: number;
+  }): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      const exam = await this.exams.findBySlug(tx, data.examSlug);
+      if (!exam) {
+        throw new DomainError(ErrorCode.CONTENT_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND, {
+          slug: data.examSlug,
+        });
+      }
+      const subject = await this.subjects.findBySlug(tx, data.subjectSlug);
+      if (!subject) {
+        throw new DomainError(ErrorCode.CONTENT_SUBJECT_NOT_FOUND, HttpStatus.NOT_FOUND, {
+          slug: data.subjectSlug,
+        });
+      }
+      await this.subjects.upsertExamSubject(tx, {
+        examId: exam.id,
+        subjectId: subject.id,
+        questionCount: data.questionCount ?? null,
+        sortOrder: data.sortOrder,
+      });
+    });
   }
 
   /** Authoritative countdown source: family = users.examType (KPSS | YKS | LGS). */

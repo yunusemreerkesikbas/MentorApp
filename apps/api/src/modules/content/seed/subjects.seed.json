@@ -1,0 +1,18 @@
+{
+  "subjects": [
+    { "slug": "turkce", "name": "Türkçe" },
+    { "slug": "matematik", "name": "Matematik" },
+    { "slug": "tarih", "name": "Tarih" },
+    { "slug": "cografya", "name": "Coğrafya" },
+    { "slug": "vatandaslik", "name": "Vatandaşlık" },
+    { "slug": "guncel", "name": "Güncel Bilgiler" }
+  ],
+  "examSubjects": [
+    { "examSlug": "kpss-lisans-2026", "subjectSlug": "turkce", "questionCount": 30, "sortOrder": 0 },
+    { "examSlug": "kpss-lisans-2026", "subjectSlug": "matematik", "questionCount": 30, "sortOrder": 1 },
+    { "examSlug": "kpss-lisans-2026", "subjectSlug": "tarih", "questionCount": 27, "sortOrder": 2 },
+    { "examSlug": "kpss-lisans-2026", "subjectSlug": "cografya", "questionCount": 18, "sortOrder": 3 },
+    { "examSlug": "kpss-lisans-2026", "subjectSlug": "vatandaslik", "questionCount": 9, "sortOrder": 4 },
+    { "examSlug": "kpss-lisans-2026", "subjectSlug": "guncel", "questionCount": 6, "sortOrder": 5 }
+  ]
+}

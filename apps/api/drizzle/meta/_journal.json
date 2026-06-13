@@ -57,6 +57,34 @@
       "when": 1781215899842,
       "tag": "0008_w6_admin_audit_log",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1781275575768,
+      "tag": "0009_w6_config_overrides",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1781293055597,
+      "tag": "0010_w6_economy_ledger",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1781350000000,
+      "tag": "0011_w1_subjects_w2_mock_exams",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1781360000000,
+      "tag": "0012_w1_subjects_rls_mock_exam_unique",
+      "breakpoints": true
     }
   ]
 }

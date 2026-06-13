@@ -36,6 +36,25 @@ function makeRepoFake(users: Map<string, AdminUserRow>) {
       users.set(id, { ...row, roles: after });
       return { before, after };
     },
+    updateStatus: async (id: string, status: string) => {
+      const row = users.get(id);
+      if (!row) return undefined;
+      const before = row.status;
+      users.set(id, { ...row, status });
+      return { before, after: status };
+    },
+    anonymize: async (id: string) => {
+      const row = users.get(id);
+      if (!row) return undefined;
+      const before = { email: row.email, displayName: row.displayName, status: row.status };
+      const after = {
+        email: `deleted+${id}@anonymized.local`,
+        displayName: "Silinmiş Kullanıcı",
+        status: "BANNED",
+      };
+      users.set(id, { ...row, ...after, examType: null, examDate: null });
+      return { before, after };
+    },
   };
 }
 
@@ -83,5 +102,36 @@ describe("AdminUsersService", () => {
   it("never exposes the password hash in the view", async () => {
     const res = await service.grantStaff("u1");
     expect(res.user).not.toHaveProperty("passwordHash");
+  });
+
+  it("getDetail returns identity fields without secrets", async () => {
+    const d = await service.getDetail("u1");
+    expect(d.email).toBe("u1@test.local");
+    expect(d).not.toHaveProperty("passwordHash");
+    expect(d.emailVerified).toBe(false);
+  });
+
+  it("setStatus changes status with before/after", async () => {
+    const res = await service.setStatus("admin", "u1", "SUSPENDED");
+    expect(res.before).toBe("ACTIVE");
+    expect(res.after).toBe("SUSPENDED");
+    expect(res.user.status).toBe("SUSPENDED");
+  });
+
+  it("setStatus rejects acting on self (ADMIN_CANNOT_MODIFY_SELF)", async () => {
+    await expect(service.setStatus("u1", "u1", "BANNED")).rejects.toMatchObject({
+      constructor: DomainError,
+      code: ErrorCode.ADMIN_CANNOT_MODIFY_SELF,
+    });
+  });
+
+  it("anonymize scrubs PII and bans, rejecting self", async () => {
+    const res = await service.anonymize("admin", "u1");
+    expect(res.after).toMatchObject({ status: "BANNED", displayName: "Silinmiş Kullanıcı" });
+    expect(res.user.email).toContain("anonymized.local");
+    expect(res.user.status).toBe("BANNED");
+    await expect(service.anonymize("u1", "u1")).rejects.toMatchObject({
+      code: ErrorCode.ADMIN_CANNOT_MODIFY_SELF,
+    });
   });
 });

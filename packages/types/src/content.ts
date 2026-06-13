@@ -4,6 +4,7 @@
  */
 
 export interface ExamSummaryDto {
+  id: string;
   slug: string;
   name: string;
   family: string;
@@ -52,4 +53,12 @@ export interface InfoArticleSummaryDto {
 export interface InfoArticleDto extends InfoArticleSummaryDto {
   body: string;
   metaDescription: string | null;
+}
+
+/** Subject in the exam taxonomy (editorial reference data). */
+export interface ExamSubjectDto {
+  slug: string;
+  name: string;
+  questionCount: number | null;
+  sortOrder: number;
 }
