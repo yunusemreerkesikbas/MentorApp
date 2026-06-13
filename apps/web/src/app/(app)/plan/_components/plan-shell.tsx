@@ -75,7 +75,7 @@ export function PlanShell() {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: nextStatus } : t)));
     setBusyId(id);
     try {
-      const updated = (await updatePlanTask(id, { status: nextStatus })) as unknown as PlanTaskDto;
+      const updated = await updatePlanTask(id, { status: nextStatus });
       setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
     } catch (err) {
       setTasks(previous);
@@ -97,11 +97,11 @@ export function PlanShell() {
     setAdding(true);
     setError(null);
     try {
-      const created = (await createPlanTask({
+      const created = await createPlanTask({
         title: title.trim(),
         taskDate: date,
         ...(subject.trim() ? { subject: subject.trim() } : {}),
-      })) as unknown as PlanTaskDto;
+      });
       setTasks((prev) => [...prev, created]);
       setTitle("");
       setSubject("");

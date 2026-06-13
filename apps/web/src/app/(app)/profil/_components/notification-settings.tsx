@@ -9,15 +9,19 @@ import {
   notificationsControllerSubscribePush,
   notificationsControllerUpdatePreferences,
 } from "@mentor/api-client";
-import { FormError } from "../../../components/form";
+import { FormError } from "../../../../components/form";
 
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const raw = atob(base64);
-  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+  // Build over a concrete ArrayBuffer so the result satisfies BufferSource (pushManager.subscribe's
+  // applicationServerKey) — `Uint8Array.from` yields a `Uint8Array<ArrayBufferLike>` which doesn't.
+  const output = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
+  return output;
 }
 
 export function NotificationSettings() {

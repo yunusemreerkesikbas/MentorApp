@@ -15,9 +15,23 @@ export async function listPlanTasksForDate(date: string, pageSize = 50): Promise
   return res.items;
 }
 
-export {
-  planTaskControllerCreate as createPlanTask,
-  planTaskControllerUpdate as updatePlanTask,
-  planTaskControllerRemove as deletePlanTask,
-};
+/**
+ * Typed wrappers over the generated plan-task client. The API DTOs are `type` aliases, so the
+ * orval-generated client types mutation responses as `void`; we assert the real `PlanTaskDto` shape
+ * here (one place) so components stay cast-free. (Backlog: Swagger response classes API-wide.)
+ */
+export async function createPlanTask(
+  input: Parameters<typeof planTaskControllerCreate>[0],
+): Promise<PlanTaskDto> {
+  return (await planTaskControllerCreate(input)) as unknown as PlanTaskDto;
+}
+
+export async function updatePlanTask(
+  id: string,
+  input: Parameters<typeof planTaskControllerUpdate>[1],
+): Promise<PlanTaskDto> {
+  return (await planTaskControllerUpdate(id, input)) as unknown as PlanTaskDto;
+}
+
+export { planTaskControllerRemove as deletePlanTask };
 export type { CreatePlanTaskInput, UpdatePlanTaskInput };

@@ -15,7 +15,11 @@ export interface SubjectScoreInput {
   blank: number;
 }
 
-/** Compute net for one subject from D/Y/Boş and the exam's net_rule. */
+/**
+ * Compute net for one subject from D/Y/Boş and the exam's net_rule.
+ * Note: a per-subject net is intentionally NOT floored at 0 — ÖSYM lets a negative subject net
+ * reduce the total score (editorial decision); clamping would overstate the total.
+ */
 export function computeSubjectNet(input: SubjectScoreInput, rule: NetRule): number {
   if (rule.kind === "PENALTY") {
     return input.correct - input.wrong / rule.divisor;

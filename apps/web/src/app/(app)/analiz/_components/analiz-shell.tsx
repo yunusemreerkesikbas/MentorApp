@@ -71,7 +71,7 @@ export function AnalizShell() {
       const calendar = calendarRes as unknown as ExamCalendarDto | null;
       const current = calendar?.exam ?? null;
       setExam(current);
-      setAnalysis(analysisRes as CoachingAnalysisDto);
+      setAnalysis(analysisRes);
 
       if (current) {
         const subjectRows = (await contentControllerSubjectsBySlug(
@@ -125,12 +125,12 @@ export function AnalizShell() {
           blank: Number(scores[s.slug]?.blank || 0),
         })),
       };
-      const result = (await http<MockExamDto>(getMockExamsUrl(), {
+      const result = await http<MockExamDto>(getMockExamsUrl(), {
         method: "POST",
         body: JSON.stringify(payload),
-      })) as MockExamDto;
+      });
       setLastResult(result);
-      const analysisRes = (await http<CoachingAnalysisDto>(getAnalysisUrl())) as CoachingAnalysisDto;
+      const analysisRes = await http<CoachingAnalysisDto>(getAnalysisUrl());
       setAnalysis(analysisRes);
       setScores(
         Object.fromEntries(

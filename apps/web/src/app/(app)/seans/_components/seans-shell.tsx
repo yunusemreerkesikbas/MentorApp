@@ -1,17 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { SessionPresetDto, StudySessionDto } from "@mentor/types";
-import {
-  ApiClientError,
-  coachingControllerGetToday,
-  studySessionControllerFinalize,
-  studySessionControllerStart,
-} from "@mentor/api-client";
+import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
 import { Button, Card, Chip } from "@mentor/ui";
 import { FormError } from "../../../../components/form";
+import { finalizeStudySession, startStudySession } from "../../../../lib/study-sessions";
 
 type Phase = "idle" | "focus" | "break" | "done";
 
@@ -39,14 +35,15 @@ export function SeansShell() {
 
   const [presets, setPresets] = useState<SessionPresetDto[]>(DEFAULT_PRESETS);
   const [presetNotice, setPresetNotice] = useState<string | null>(null);
-  const [selectedPreset, setSelectedPreset] = useState<string>("25_5");
+  const [selectedPreset, setSelectedPreset] = useState<string>(
+    presetParam === "50_10" ? "50_10" : "25_5",
+  );
   const [phase, setPhase] = useState<Phase>("idle");
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [session, setSession] = useState<StudySessionDto | null>(null);
   const [focusElapsed, setFocusElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     coachingControllerGetToday()
@@ -67,52 +64,45 @@ export function SeansShell() {
       });
   }, []);
 
-  useEffect(() => {
-    if (presetParam === "25_5" || presetParam === "50_10") {
-      setSelectedPreset(presetParam);
-    }
-  }, [presetParam]);
-
   const presetList = presets;
 
   const activePreset = presetList.find((p) => p.id === selectedPreset) ?? presetList[0]!;
 
-  const clearTick = useCallback(() => {
-    if (tickRef.current) {
-      clearInterval(tickRef.current);
-      tickRef.current = null;
-    }
-  }, []);
+  // Absolute end-of-phase timestamp; the interval derives the countdown from it (drift-free) and
+  // owns the focus→break transition. Using a ref keeps the transition out of an effect body, and
+  // the per-phase effect's cleanup tears the timer down so a re-mount can never leak an interval.
+  const phaseEndsAtRef = useRef(0);
 
-  useEffect(() => () => clearTick(), [clearTick]);
+  const beginPhase = (next: "focus" | "break", seconds: number) => {
+    phaseEndsAtRef.current = Date.now() + seconds * 1000;
+    setSecondsLeft(seconds);
+    setPhase(next);
+  };
+
+  useEffect(() => {
+    if (phase !== "focus" && phase !== "break") return;
+    const id = setInterval(() => {
+      const remaining = Math.max(0, Math.round((phaseEndsAtRef.current - Date.now()) / 1000));
+      setSecondsLeft(remaining);
+      if (phase === "focus") setFocusElapsed((e) => e + 1);
+      if (remaining <= 0 && phase === "focus") {
+        // Roll into the break from inside the timer callback (not the effect body).
+        beginPhase("break", presetSeconds(activePreset.breakMinutes));
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [phase, activePreset]);
 
   async function startSession() {
     setError(null);
     setBusy(true);
     try {
-      const started = (await studySessionControllerStart({
+      const started: StudySessionDto = await startStudySession({
         preset: selectedPreset as "25_5" | "50_10",
-      })) as unknown as StudySessionDto;
+      });
       setSession(started);
       setFocusElapsed(0);
-      setSecondsLeft(presetSeconds(activePreset.focusMinutes));
-      setPhase("focus");
-      clearTick();
-      tickRef.current = setInterval(() => {
-        setSecondsLeft((s) => {
-          if (s <= 1) {
-            clearTick();
-            setPhase("break");
-            setSecondsLeft(presetSeconds(activePreset.breakMinutes));
-            tickRef.current = setInterval(() => {
-              setSecondsLeft((b) => (b <= 1 ? 0 : b - 1));
-            }, 1000);
-            return 0;
-          }
-          return s - 1;
-        });
-        setFocusElapsed((e) => e + 1);
-      }, 1000);
+      beginPhase("focus", presetSeconds(activePreset.focusMinutes));
     } catch (err) {
       setError(
         err instanceof ApiClientError
@@ -128,14 +118,11 @@ export function SeansShell() {
 
   async function finalize(status: "COMPLETED" | "ABANDONED") {
     if (!session) return;
-    clearTick();
     setBusy(true);
     setError(null);
     try {
-      await studySessionControllerFinalize(session.id, {
-        status,
-        actualFocusSeconds: focusElapsed,
-      });
+      await finalizeStudySession(session.id, { status, actualFocusSeconds: focusElapsed });
+      // Leaving the focus/break phase stops the ticking effect.
       setPhase("done");
     } catch (err) {
       setError(
@@ -151,7 +138,6 @@ export function SeansShell() {
   }
 
   function reset() {
-    clearTick();
     setPhase("idle");
     setSession(null);
     setFocusElapsed(0);
