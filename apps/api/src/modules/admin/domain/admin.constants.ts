@@ -22,5 +22,6 @@ export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 export const AuditTargetType = {
   USER: "user",
   CONFIG: "config",
+  ARTICLE: "article",
 } as const;
 export type AuditTargetType = (typeof AuditTargetType)[keyof typeof AuditTargetType];
