@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, notInArray } from "drizzle-orm";
+import { and, desc, eq, gte, notInArray, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
@@ -111,6 +111,30 @@ export class SubscriptionsRepository {
   async lockById(id: string, tx: Exec): Promise<void> {
     await tx.select({ id: subscriptions.id }).from(subscriptions).where(eq(subscriptions.id, id)).for("update");
   }
+
+  /** Admin metrics (W6) — subscription counts by status, single scan (SERVICE context). */
+  async countByStatus(): Promise<{
+    trialing: number;
+    active: number;
+    pastDue: number;
+    canceled: number;
+    expired: number;
+    total: number;
+  }> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({
+          trialing: sql<number>`count(*) filter (where ${subscriptions.status} = 'TRIALING')::int`,
+          active: sql<number>`count(*) filter (where ${subscriptions.status} = 'ACTIVE')::int`,
+          pastDue: sql<number>`count(*) filter (where ${subscriptions.status} = 'PAST_DUE')::int`,
+          canceled: sql<number>`count(*) filter (where ${subscriptions.status} = 'CANCELED')::int`,
+          expired: sql<number>`count(*) filter (where ${subscriptions.status} = 'EXPIRED')::int`,
+          total: sql<number>`count(*)::int`,
+        })
+        .from(subscriptions);
+      return rows[0]!;
+    });
+  }
 }
 
 @Injectable()
@@ -191,5 +215,46 @@ export class PaymentEventsRepository {
         .orderBy(desc(paymentTransactions.createdAt))
         .limit(limit),
     );
+  }
+
+  /** Admin metrics (W6) — Σ successful renewal revenue since `since` (minor units). SERVICE ctx. */
+  async sumRenewalSince(since: Date): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ total: sql<number>`coalesce(sum(${paymentTransactions.amountMinor}), 0)::int` })
+        .from(paymentTransactions)
+        .where(
+          and(
+            eq(paymentTransactions.type, "RENEWAL"),
+            eq(paymentTransactions.status, "SUCCEEDED"),
+            gte(paymentTransactions.createdAt, since),
+          ),
+        );
+      return rows[0]?.total ?? 0;
+    });
+  }
+
+  /** Admin metrics (W6) — Σ refunded amount since `since` (positive minor units). SERVICE ctx. */
+  async sumRefundedSince(since: Date): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({
+          total: sql<number>`coalesce(sum(abs(${paymentTransactions.amountMinor})), 0)::int`,
+        })
+        .from(paymentTransactions)
+        .where(and(eq(paymentTransactions.type, "REFUND"), gte(paymentTransactions.createdAt, since)));
+      return rows[0]?.total ?? 0;
+    });
+  }
+
+  /** Admin metrics (W6) — distinct subscriptions that have ever had a successful charge. SERVICE ctx. */
+  async countPayingSubscriptions(): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ n: sql<number>`count(distinct ${paymentTransactions.subscriptionId})::int` })
+        .from(paymentTransactions)
+        .where(and(eq(paymentTransactions.type, "RENEWAL"), eq(paymentTransactions.status, "SUCCEEDED")));
+      return rows[0]?.n ?? 0;
+    });
   }
 }

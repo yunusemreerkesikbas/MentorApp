@@ -102,4 +102,9 @@ export class InviteService {
     const counts = await this.repo.countsByInviter(inviterUserId);
     return { code: invite?.code ?? null, ...counts };
   }
+
+  /** Admin metrics (W6) — global invite totals across all users. */
+  getGlobalStats(): Promise<{ invited: number; converted: number }> {
+    return this.repo.conversionStatsGlobal();
+  }
 }

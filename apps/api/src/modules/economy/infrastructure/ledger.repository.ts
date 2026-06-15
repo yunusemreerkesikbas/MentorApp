@@ -112,4 +112,22 @@ export class LedgerRepository {
         .limit(limit),
     );
   }
+
+  /**
+   * Admin metrics (W6) — Σ positive CONFIRMED grants for a unit across all users (SERVICE context).
+   * "Issued" = confirmed positive amount (pending coin isn't issued yet).
+   */
+  async sumIssued(unit: Currency, since?: Date): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const conds = [eq(ledgerEntries.unit, unit), eq(ledgerEntries.status, LedgerStatus.CONFIRMED)];
+      if (since) conds.push(gte(ledgerEntries.createdAt, since));
+      const rows = await tx
+        .select({
+          total: sql<number>`coalesce(sum(${ledgerEntries.amount}) filter (where ${ledgerEntries.amount} > 0), 0)::int`,
+        })
+        .from(ledgerEntries)
+        .where(and(...conds));
+      return rows[0]?.total ?? 0;
+    });
+  }
 }

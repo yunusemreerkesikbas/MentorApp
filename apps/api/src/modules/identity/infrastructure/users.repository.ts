@@ -65,4 +65,39 @@ export class UsersRepository {
       return rows[0];
     });
   }
+
+  /**
+   * Admin metrics aggregate (W6) — cross-tenant counts in a single scan (SERVICE context).
+   * Read-only; role-gated at the controller.
+   */
+  async statsSnapshot(): Promise<{
+    total: number;
+    new7d: number;
+    new30d: number;
+    verified: number;
+    active: number;
+    suspended: number;
+    banned: number;
+    kpss: number;
+    yks: number;
+    lgs: number;
+  }> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({
+          total: sql<number>`count(*)::int`,
+          new7d: sql<number>`count(*) filter (where ${users.createdAt} >= now() - interval '7 days')::int`,
+          new30d: sql<number>`count(*) filter (where ${users.createdAt} >= now() - interval '30 days')::int`,
+          verified: sql<number>`count(*) filter (where ${users.emailVerifiedAt} is not null)::int`,
+          active: sql<number>`count(*) filter (where ${users.status} = 'ACTIVE')::int`,
+          suspended: sql<number>`count(*) filter (where ${users.status} = 'SUSPENDED')::int`,
+          banned: sql<number>`count(*) filter (where ${users.status} = 'BANNED')::int`,
+          kpss: sql<number>`count(*) filter (where ${users.examType} = 'KPSS')::int`,
+          yks: sql<number>`count(*) filter (where ${users.examType} = 'YKS')::int`,
+          lgs: sql<number>`count(*) filter (where ${users.examType} = 'LGS')::int`,
+        })
+        .from(users);
+      return rows[0]!;
+    });
+  }
 }

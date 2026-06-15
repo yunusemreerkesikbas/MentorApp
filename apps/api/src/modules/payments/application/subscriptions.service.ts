@@ -79,6 +79,23 @@ export interface RefundResult {
   remainingAfter: number;
 }
 
+/** Admin metrics: subscription + revenue snapshot (W6). Money in minor units (kuruş). */
+export interface SubscriptionStats {
+  byStatus: {
+    trialing: number;
+    active: number;
+    pastDue: number;
+    canceled: number;
+    expired: number;
+    total: number;
+  };
+  revenueMinor30d: number; // Σ successful renewals, last 30 days (trailing revenue, not normalized MRR)
+  refundedMinor: number; // Σ refunds, last 30 days
+  payingSubscriptions: number;
+  /** payingSubscriptions / total subscriptions (honest "reached paid" ratio, not full trial funnel). */
+  conversionRate: number;
+}
+
 @Injectable()
 export class SubscriptionsService {
   private readonly logger = new Logger(SubscriptionsService.name);
@@ -125,6 +142,19 @@ export class SubscriptionsService {
       entitlement: view.entitlement,
       transactions: txs.map(toTxDto),
     };
+  }
+
+  /** Admin metrics (W6): subscription counts + 30-day revenue/refunds + conversion. Read-only. */
+  async getSubscriptionStats(): Promise<SubscriptionStats> {
+    const since30 = new Date(Date.now() - 30 * DAY_MS);
+    const [byStatus, revenueMinor30d, refundedMinor, payingSubscriptions] = await Promise.all([
+      this.subsRepo.countByStatus(),
+      this.eventsRepo.sumRenewalSince(since30),
+      this.eventsRepo.sumRefundedSince(since30),
+      this.eventsRepo.countPayingSubscriptions(),
+    ]);
+    const conversionRate = byStatus.total > 0 ? payingSubscriptions / byStatus.total : 0;
+    return { byStatus, revenueMinor30d, refundedMinor, payingSubscriptions, conversionRate };
   }
 
   /**

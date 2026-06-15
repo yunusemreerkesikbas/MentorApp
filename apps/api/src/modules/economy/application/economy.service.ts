@@ -84,4 +84,13 @@ export class EconomyService {
   getAdminLedger(userId: string, limit: number): Promise<LedgerRow[]> {
     return this.repo.listService(userId, limit);
   }
+
+  /** Admin metrics (W6) — total coin & XP issued (confirmed positive grants) across all users. */
+  async getEconomyStats(): Promise<{ coinIssued: number; xpIssued: number }> {
+    const [coinIssued, xpIssued] = await Promise.all([
+      this.repo.sumIssued(Currency.COIN),
+      this.repo.sumIssued(Currency.XP),
+    ]);
+    return { coinIssued, xpIssued };
+  }
 }

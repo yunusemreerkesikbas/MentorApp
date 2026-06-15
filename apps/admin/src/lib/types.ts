@@ -120,6 +120,30 @@ export interface AdminSubscriptionView {
     transactions: AdminSubscriptionTx[];
 }
 
+export interface AdminMetrics {
+    users: {
+        total: number;
+        new7d: number;
+        new30d: number;
+        verified: number;
+        byStatus: { active: number; suspended: number; banned: number };
+        byExamType: { kpss: number; yks: number; lgs: number };
+    };
+    subscriptions: {
+        byStatus: { trialing: number; active: number; pastDue: number; canceled: number; expired: number; total: number };
+        revenueMinor30d: number;
+        refundedMinor: number;
+        payingSubscriptions: number;
+        conversionRate: number;
+    };
+    economy: {
+        coinIssued: number;
+        xpIssued: number;
+        invite: { invited: number; converted: number };
+    };
+    generatedAt: string;
+}
+
 export interface ConfigEntry {
     key: string;
     category: string;

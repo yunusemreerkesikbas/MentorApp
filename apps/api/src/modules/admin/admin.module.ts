@@ -12,6 +12,7 @@ import { AdminConfigController } from "./presentation/admin-config.controller";
 import { AdminContentController } from "./presentation/admin-content.controller";
 import { AdminEconomyController } from "./presentation/admin-economy.controller";
 import { AdminExamCalendarController } from "./presentation/admin-exam-calendar.controller";
+import { AdminMetricsController } from "./presentation/admin-metrics.controller";
 import { AdminSubscriptionController } from "./presentation/admin-subscription.controller";
 import { AdminUsersController } from "./presentation/admin-users.controller";
 
@@ -31,6 +32,7 @@ import { AdminUsersController } from "./presentation/admin-users.controller";
     AdminContentController,
     AdminExamCalendarController,
     AdminSubscriptionController,
+    AdminMetricsController,
   ],
   providers: [
     AdminUsersService,
