@@ -1,12 +1,13 @@
-import { Controller, Get, HttpStatus, Query } from "@nestjs/common";
+import { Body, Controller, Get, HttpStatus, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { EconomyService } from "../application/economy.service";
+import { InviteService } from "../application/invite.service";
 import type { LedgerRow, Balance } from "../infrastructure/ledger.repository";
-import { EconomyLedgerQueryDto } from "./economy.dto";
+import { EconomyLedgerQueryDto, RedeemInviteDto } from "./economy.dto";
 
 export interface LedgerEntryView {
   id: string;
@@ -38,6 +39,7 @@ const toView = (r: LedgerRow): LedgerEntryView => ({
 export class EconomyController {
   constructor(
     private readonly economy: EconomyService,
+    private readonly invites: InviteService,
     private readonly config: ConfigRegistryService,
   ) {}
 
@@ -61,5 +63,20 @@ export class EconomyController {
     await this.assertEnabled();
     const rows = await this.economy.getSelfLedger(user.id, query.page, query.pageSize);
     return rows.map(toView);
+  }
+
+  @Get("invite")
+  async invite(@CurrentUser() user: RequestUser): Promise<{ code: string }> {
+    await this.assertEnabled();
+    return { code: await this.invites.getOrCreateCode(user.id) };
+  }
+
+  @Post("invite/redeem")
+  async redeem(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: RedeemInviteDto,
+  ): Promise<{ status: string }> {
+    await this.assertEnabled();
+    return this.invites.redeem(user.id, dto.code);
   }
 }

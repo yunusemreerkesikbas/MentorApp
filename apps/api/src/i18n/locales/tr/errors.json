@@ -38,5 +38,9 @@
   "ADMIN_CONFIG_KEY_NOT_FOUND": "Bu ayar anahtarı bulunamadı.",
   "ADMIN_CONFIG_INVALID_VALUE": "Ayar değeri geçersiz.",
   "ECONOMY_DISABLED": "Ekonomi özelliği şu anda kapalı.",
-  "ECONOMY_LIMIT_EXCEEDED": "Coin kazanım sınırı aşıldı."
+  "ECONOMY_LIMIT_EXCEEDED": "Coin kazanım sınırı aşıldı.",
+  "INVITE_CODE_INVALID": "Davet kodu geçersiz.",
+  "INVITE_SELF": "Kendi davet kodunu kullanamazsın.",
+  "INVITE_ALREADY_REDEEMED": "Zaten bir davet kodu kullandın.",
+  "INVITE_ALREADY_PREMIUM": "Premium kullanıcılar davet kodu kullanamaz."
 }

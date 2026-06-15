@@ -18,55 +18,62 @@ export interface Balance {
 /**
  * Append-only ledger access (§4 #3). Writes/aggregations for the system/admin run in SERVICE
  * context; a user's own reads run in user context (RLS self-read belt). Balance = sum of rows.
+ *
+ * Service-context methods accept an optional `exec` (an in-flight SERVICE tx) so the reward engine
+ * can run its cap-check + append atomically in ONE transaction (no TOCTOU race — see EconomyService).
  */
 @Injectable()
 export class LedgerRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
+  /** Run `fn` in a fresh SERVICE transaction (for atomic check-then-write in the service). */
+  withServiceTx<T>(fn: (tx: DatabaseTx) => Promise<T>): Promise<T> {
+    return withServiceContext(this.db, fn);
+  }
+
+  private onService<T>(exec: DatabaseTx | undefined, fn: (tx: DatabaseTx) => Promise<T>): Promise<T> {
+    return exec ? fn(exec) : withServiceContext(this.db, fn);
+  }
+
   /** Append one immutable entry. Idempotent on (refType,refId): a duplicate is a no-op. */
-  async append(entry: NewLedgerEntry): Promise<void> {
-    await withServiceContext(this.db, async (tx) => {
+  async append(entry: NewLedgerEntry, exec?: DatabaseTx): Promise<void> {
+    await this.onService(exec, async (tx) => {
       await tx.insert(ledgerEntries).values(entry).onConflictDoNothing();
     });
   }
 
-  private async aggregate(userId: string, scope: "self" | "service"): Promise<Balance> {
-    const compute = async (tx: DatabaseTx): Promise<Balance> => {
-      const rows = await tx
-        .select({
-          unit: ledgerEntries.unit,
-          status: ledgerEntries.status,
-          total: sql<number>`coalesce(sum(${ledgerEntries.amount}), 0)::int`,
-        })
-        .from(ledgerEntries)
-        .where(eq(ledgerEntries.userId, userId))
-        .groupBy(ledgerEntries.unit, ledgerEntries.status);
+  private async computeBalance(userId: string, tx: DatabaseTx): Promise<Balance> {
+    const rows = await tx
+      .select({
+        unit: ledgerEntries.unit,
+        status: ledgerEntries.status,
+        total: sql<number>`coalesce(sum(${ledgerEntries.amount}), 0)::int`,
+      })
+      .from(ledgerEntries)
+      .where(eq(ledgerEntries.userId, userId))
+      .groupBy(ledgerEntries.unit, ledgerEntries.status);
 
-      const balance: Balance = { xp: 0, coinConfirmed: 0, coinPending: 0 };
-      for (const r of rows) {
-        if (r.unit === Currency.XP) balance.xp += r.total;
-        else if (r.unit === Currency.COIN) {
-          if (r.status === LedgerStatus.CONFIRMED) balance.coinConfirmed += r.total;
-          else if (r.status === LedgerStatus.PENDING) balance.coinPending += r.total;
-        }
+    const balance: Balance = { xp: 0, coinConfirmed: 0, coinPending: 0 };
+    for (const r of rows) {
+      if (r.unit === Currency.XP) balance.xp += r.total;
+      else if (r.unit === Currency.COIN) {
+        if (r.status === LedgerStatus.CONFIRMED) balance.coinConfirmed += r.total;
+        else if (r.status === LedgerStatus.PENDING) balance.coinPending += r.total;
       }
-      return balance;
-    };
-    return scope === "self"
-      ? withUserContext(this.db, { userId }, compute)
-      : withServiceContext(this.db, compute);
+    }
+    return balance;
   }
 
   balanceSelf(userId: string): Promise<Balance> {
-    return this.aggregate(userId, "self");
+    return withUserContext(this.db, { userId }, (tx) => this.computeBalance(userId, tx));
   }
-  balanceService(userId: string): Promise<Balance> {
-    return this.aggregate(userId, "service");
+  balanceService(userId: string, exec?: DatabaseTx): Promise<Balance> {
+    return this.onService(exec, (tx) => this.computeBalance(userId, tx));
   }
 
   /** Sum of positive COIN grants since `since` (for daily/weekly earning caps). */
-  async coinEarnedSince(userId: string, since: Date): Promise<number> {
-    return withServiceContext(this.db, async (tx) => {
+  async coinEarnedSince(userId: string, since: Date, exec?: DatabaseTx): Promise<number> {
+    return this.onService(exec, async (tx) => {
       const rows = await tx
         .select({
           total: sql<number>`coalesce(sum(${ledgerEntries.amount}) filter (where ${ledgerEntries.amount} > 0), 0)::int`,

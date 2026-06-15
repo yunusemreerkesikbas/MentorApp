@@ -42,3 +42,5 @@
 | [0019](./0019-w5-notifications-queue.md) | W5 · Notifications + Queue | JobQueuePort Postgres adapter, cron runner, Postmark email, web push, daily reminders |
 | [0020](./0020-w6-config-registry.md) | W6 · Config Registry + Feature Flags | code catalog + config_overrides + cache, ConfigRegistryService, admin /config UI, flags (ai/economy/signup) |
 | [0021](./0021-w6-light-economy.md) | W6 · Light Economy (Slice 1) | append-only ledger_entries (XP/Coin), EconomyService (capped grant), user balance/ledger API, admin manual adjust |
+| [0022](./0022-w6-light-economy-invite.md) | W6 · Light Economy (Slice 2a) | invite code/redeem, conversion listener (payments event) → inviter coin (idempotent, capped), admin invite summary |
+| [0023](./0023-w6-admin-content-editor.md) | W6 · Admin Content Editor | knowledge-center article CRUD + publish/unpublish (ADMIN/EDITOR, trust metadata required), role-gated admin menu |

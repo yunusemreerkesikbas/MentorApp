@@ -63,10 +63,31 @@ export class InfoArticleRepository {
     return rows[0]!;
   }
 
+  /** Admin listing — ALL articles (incl. drafts), optionally filtered by family. */
+  async listAll(
+    db: Database | DatabaseTx,
+    family: string | undefined,
+    page: number,
+    pageSize: number,
+  ): Promise<{ items: InfoArticleRow[]; total: number }> {
+    const where = family ? eq(infoArticles.family, family) : undefined;
+    const [items, totalRow] = await Promise.all([
+      db
+        .select()
+        .from(infoArticles)
+        .where(where)
+        .orderBy(desc(infoArticles.updatedAt))
+        .limit(pageSize)
+        .offset((page - 1) * pageSize),
+      db.select({ count: sql<number>`count(*)::int` }).from(infoArticles).where(where),
+    ]);
+    return { items, total: totalRow[0]?.count ?? 0 };
+  }
+
   async setPublishedAt(
     tx: DatabaseTx,
     slug: string,
-    publishedAt: Date,
+    publishedAt: Date | null,
   ): Promise<InfoArticleRow | undefined> {
     const rows = await tx
       .update(infoArticles)

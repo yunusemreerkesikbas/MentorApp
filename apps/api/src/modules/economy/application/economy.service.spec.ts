@@ -25,6 +25,8 @@ function makeRepoFake() {
   });
   return {
     rows,
+    // The enforced-grant path runs check+append inside withServiceTx; the fake just runs the fn.
+    withServiceTx: async <T>(fn: (tx: unknown) => Promise<T>) => fn({}),
     append: async (entry: NewLedgerEntry) => {
       if (entry.refId && rows.some((r) => r.refType === entry.refType && r.refId === entry.refId)) {
         return; // idempotent no-op

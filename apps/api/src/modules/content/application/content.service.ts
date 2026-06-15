@@ -8,7 +8,7 @@ import type {
   InfoArticleSummaryDto,
   Paginated,
 } from "@mentor/types";
-import type { ListInfoArticlesQuery, PaginationQuery } from "@mentor/validation";
+import type { AdminListArticlesQuery, ListInfoArticlesQuery, PaginationQuery } from "@mentor/validation";
 import { infoArticleSlugParamSchema } from "@mentor/validation";
 import { ExamType } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
@@ -24,7 +24,7 @@ import {
 import { ExamEventType, InfoArticleCategory } from "../domain/content.constants";
 import { ExamEventRepository } from "../infrastructure/exam-event.repository";
 import { ExamRepository } from "../infrastructure/exam.repository";
-import { InfoArticleRepository } from "../infrastructure/info-article.repository";
+import { InfoArticleRepository, type InfoArticleRow } from "../infrastructure/info-article.repository";
 import { SubjectRepository } from "../infrastructure/subject.repository";
 import { ArticlePublished, ContentEventTopic } from "../domain/content.events";
 import {
@@ -34,6 +34,47 @@ import {
   toPaginatedExams,
   toPaginatedInfoArticles,
 } from "./content.mappers";
+
+/** Admin-facing article view (incl. drafts + trust metadata; no embedding/secrets). */
+export interface AdminArticleView {
+  id: string;
+  slug: string;
+  title: string;
+  body: string;
+  family: string;
+  category: string;
+  source: string;
+  sourceUrl: string;
+  verifiedAt: string;
+  verifiedBy: string;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  isPublished: boolean;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function toAdminArticleView(row: InfoArticleRow): AdminArticleView {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    body: row.body,
+    family: row.family,
+    category: row.category,
+    source: row.source,
+    sourceUrl: row.sourceUrl,
+    verifiedAt: row.verifiedAt.toISOString(),
+    verifiedBy: row.verifiedBy,
+    metaTitle: row.metaTitle,
+    metaDescription: row.metaDescription,
+    isPublished: row.publishedAt !== null,
+    publishedAt: row.publishedAt?.toISOString() ?? null,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
 
 /** Resolved calendar row used by the coaching ContentPort adapter. */
 export interface ResolvedExamCalendar {
@@ -277,6 +318,44 @@ export class ContentService {
       throw new DomainError(ErrorCode.CONTENT_ARTICLE_NOT_FOUND, HttpStatus.NOT_FOUND, { slug });
     }
     return toInfoArticleDto(row);
+  }
+
+  /**
+   * Admin article list — includes drafts. MUST run in SERVICE context: the info_articles RLS
+   * `public_read` policy only exposes published rows to anon/pool reads; SERVICE/ADMIN sees drafts.
+   */
+  async listArticlesForAdmin(query: AdminListArticlesQuery): Promise<Paginated<AdminArticleView>> {
+    if (query.family) this.assertValidFamily(query.family);
+    const { items, total } = await withServiceContext(this.db, (tx) =>
+      this.articles.listAll(tx, query.family, query.page, query.pageSize),
+    );
+    return {
+      items: items.map(toAdminArticleView),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
+  }
+
+  /** Admin article detail — includes drafts (SERVICE context; see listArticlesForAdmin). */
+  async getArticleForAdmin(slug: string): Promise<AdminArticleView> {
+    const validSlug = this.parseArticleSlug(slug);
+    const row = await withServiceContext(this.db, (tx) => this.articles.findBySlug(tx, validSlug));
+    if (!row) {
+      throw new DomainError(ErrorCode.CONTENT_ARTICLE_NOT_FOUND, HttpStatus.NOT_FOUND, { slug });
+    }
+    return toAdminArticleView(row);
+  }
+
+  /** Unpublish (back to draft). Hides it from the public knowledge center. */
+  async unpublishArticle(slug: string): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      const existing = await this.articles.findBySlug(tx, slug);
+      if (!existing) {
+        throw new DomainError(ErrorCode.CONTENT_ARTICLE_NOT_FOUND, HttpStatus.NOT_FOUND, { slug });
+      }
+      await this.articles.setPublishedAt(tx, slug, null);
+    });
   }
 
   /** Idempotent editorial upsert (seed + future W6 admin). */

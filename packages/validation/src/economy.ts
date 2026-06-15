@@ -20,3 +20,9 @@ export const economyAdjustSchema = z.object({
   note: z.string().trim().max(500).optional(),
 });
 export type EconomyAdjust = z.infer<typeof economyAdjustSchema>;
+
+/** Redeem an invite code (post-signup). Code format is opaque; server validates existence. */
+export const redeemInviteSchema = z.object({
+  code: z.string().trim().min(4).max(64),
+});
+export type RedeemInvite = z.infer<typeof redeemInviteSchema>;

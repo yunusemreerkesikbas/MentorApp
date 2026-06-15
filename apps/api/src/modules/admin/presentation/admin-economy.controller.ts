@@ -4,6 +4,7 @@ import { UserRole, type Currency } from "@mentor/types";
 import { Roles } from "../../../common/auth/roles.decorator";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { EconomyService } from "../../economy/application/economy.service";
+import { InviteService, type InviteSummary } from "../../economy/application/invite.service";
 import type { Balance } from "../../economy/infrastructure/ledger.repository";
 import { AuditAction, AuditTargetType } from "../domain/admin.constants";
 import { AdminAuditInterceptor } from "./admin-audit.interceptor";
@@ -22,18 +23,23 @@ import { AdjustEconomyDto } from "./admin.dto";
 @UseInterceptors(AdminAuditInterceptor)
 @Controller("admin/users/:userId/economy")
 export class AdminEconomyController {
-  constructor(private readonly economy: EconomyService) {}
+  constructor(
+    private readonly economy: EconomyService,
+    private readonly invites: InviteService,
+  ) {}
 
   @Get()
   async overview(@Param("userId", ParseUUIDPipe) userId: string): Promise<{
     balance: Balance;
     ledger: Awaited<ReturnType<EconomyService["getAdminLedger"]>>;
+    invite: InviteSummary;
   }> {
-    const [balance, ledger] = await Promise.all([
+    const [balance, ledger, invite] = await Promise.all([
       this.economy.getAdminBalance(userId),
       this.economy.getAdminLedger(userId, 20),
+      this.invites.summary(userId),
     ]);
-    return { balance, ledger };
+    return { balance, ledger, invite };
   }
 
   @Post("adjust")

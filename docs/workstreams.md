@@ -3,6 +3,7 @@
 > Multiple agents develop in parallel (same worktree). This doc splits the MVP into **tracks with
 > exclusive ownership boundaries** so agents don't step on each other. Read before picking up work.
 > Step plans per track still follow the standards (`docs/standards/*`) + devnote rule.
+> **Current progress snapshot → [`mvp-status.md`](./mvp-status.md)** (done vs pending, one page).
 
 ## 0. Sequencing — what must come first
 
@@ -12,7 +13,7 @@ DONE  W0 identity (auth + RLS + web auth screens — devnote 0010)
 DONE  W4 payments (PaymentsPort fake/iyzico, entitlement+PremiumGuard, /abonelik — devnote 0015)
 PARTIAL W1 content (exam calendar — 0016; knowledge center — 0017; subject taxonomy + exam subjects — 0022) · W2 coaching (daily loop + panel — 0014, 0013; plan/seans UI — 0021; mock-exam analysis — 0022)
 DONE  W5 notifications (JobQueuePort + cron runner, Postmark email, web push, daily reminders — devnote 0019)
-PARTIAL W6 admin (STAFF assignment + audit log + user mgmt/KVKK + Duralux admin UI — devnote 0018; config registry + feature flags — devnote 0020; light economy ledger substrate + admin adjust — devnote 0021; economy earning/spend + content editor/refund/metrics/moderation pending)
+PARTIAL W6 admin (STAFF assignment + audit log + user mgmt/KVKK + Duralux admin UI — devnote 0018; config registry + feature flags — devnote 0020; light economy ledger substrate + admin adjust — devnote 0021; invite→conversion→coin — devnote 0022; content editor (article CRUD+publish, ADMIN/EDITOR) — devnote 0023; economy quests/spend + refund/metrics/moderation pending)
 NEXT  batch B: W3 ai (PremiumGuard ready) · W6 remaining slices
 ```
 `identity` is the prerequisite for everything (auth guards, RequestContext.userId, RLS policies,

@@ -706,3 +706,44 @@ export const ledgerEntries = pgTable(
       .where(sql`${t.refId} is not null`),
   ],
 );
+
+/* --- Invite (§3 light economy slice 2a): davet → dönüşürse coin -------------
+ * One stable code per inviter. A user can be invited at most once (unique). Reward fires only on
+ * the invited user's subscription activation (forward-only) — see economy InviteEventsListener.
+ * RLS: invites self-read (inviter) + SERVICE/ADMIN; redemptions SERVICE/ADMIN. */
+export const invites = pgTable(
+  "invites",
+  {
+    inviterUserId: uuid("inviter_user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("invites_code_unique_idx").on(t.code)],
+);
+
+export const inviteRedemptions = pgTable(
+  "invite_redemptions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    inviterUserId: uuid("inviter_user_id")
+      .notNull()
+      .references(() => users.id),
+    /** A user can be invited at most once (anti-abuse). */
+    invitedUserId: uuid("invited_user_id")
+      .notNull()
+      .references(() => users.id),
+    code: text("code").notNull(),
+    /** PENDING → CONVERTED (on the invited user's subscription activation). */
+    status: text("status").notNull().default("PENDING"),
+    redeemedAt: timestamp("redeemed_at", { withTimezone: true }).notNull().defaultNow(),
+    convertedAt: timestamp("converted_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("invite_redemptions_invited_unique_idx").on(t.invitedUserId),
+    index("invite_redemptions_inviter_idx").on(t.inviterUserId),
+  ],
+);
