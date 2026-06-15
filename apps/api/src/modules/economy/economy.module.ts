@@ -1,10 +1,14 @@
 import { Module } from "@nestjs/common";
+import { IdentityModule } from "../identity/identity.module";
 import { PaymentsModule } from "../payments/payments.module";
 import { EconomyService } from "./application/economy.service";
 import { InviteService } from "./application/invite.service";
 import { InviteEventsListener } from "./application/invite-events.listener";
+import { QuestService } from "./application/quest.service";
+import { QuestEventsListener } from "./application/quest-events.listener";
 import { LedgerRepository } from "./infrastructure/ledger.repository";
 import { InviteRepository } from "./infrastructure/invite.repository";
+import { QuestRepository } from "./infrastructure/quest.repository";
 import { EconomyController } from "./presentation/economy.controller";
 
 /**
@@ -13,7 +17,7 @@ import { EconomyController } from "./presentation/economy.controller";
  * Earning quests + spending (→ AI right) are later slices. `ConfigRegistryService` is global.
  */
 @Module({
-  imports: [PaymentsModule],
+  imports: [PaymentsModule, IdentityModule],
   controllers: [EconomyController],
   providers: [
     EconomyService,
@@ -21,7 +25,10 @@ import { EconomyController } from "./presentation/economy.controller";
     InviteService,
     InviteRepository,
     InviteEventsListener,
+    QuestService,
+    QuestRepository,
+    QuestEventsListener,
   ],
-  exports: [EconomyService, InviteService],
+  exports: [EconomyService, InviteService, QuestService],
 })
 export class EconomyModule {}

@@ -74,7 +74,14 @@ describe("InviteService", () => {
       },
     };
     const config = { get: async () => 20 };
-    return new InviteService(repo as never, entitlement as never, economy as never, config as never);
+    const quests = { evaluateAndGrant: async () => undefined };
+    return new InviteService(
+      repo as never,
+      entitlement as never,
+      economy as never,
+      quests as never,
+      config as never,
+    );
   };
 
   beforeEach(() => {

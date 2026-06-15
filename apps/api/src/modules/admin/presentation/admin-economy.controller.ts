@@ -5,6 +5,7 @@ import { Roles } from "../../../common/auth/roles.decorator";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { EconomyService } from "../../economy/application/economy.service";
 import { InviteService, type InviteSummary } from "../../economy/application/invite.service";
+import { QuestService, type QuestProgressView } from "../../economy/application/quest.service";
 import type { Balance } from "../../economy/infrastructure/ledger.repository";
 import { AuditAction, AuditTargetType } from "../domain/admin.constants";
 import { AdminAuditInterceptor } from "./admin-audit.interceptor";
@@ -26,6 +27,7 @@ export class AdminEconomyController {
   constructor(
     private readonly economy: EconomyService,
     private readonly invites: InviteService,
+    private readonly quests: QuestService,
   ) {}
 
   @Get()
@@ -33,13 +35,15 @@ export class AdminEconomyController {
     balance: Balance;
     ledger: Awaited<ReturnType<EconomyService["getAdminLedger"]>>;
     invite: InviteSummary;
+    quests: QuestProgressView[];
   }> {
-    const [balance, ledger, invite] = await Promise.all([
+    const [balance, ledger, invite, quests] = await Promise.all([
       this.economy.getAdminBalance(userId),
       this.economy.getAdminLedger(userId, 20),
       this.invites.summary(userId),
+      this.quests.getAdminProgress(userId),
     ]);
-    return { balance, ledger, invite };
+    return { balance, ledger, invite, quests };
   }
 
   @Post("adjust")

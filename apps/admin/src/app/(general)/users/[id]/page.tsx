@@ -337,6 +337,19 @@ export default function UserDetailPage() {
                                             </tbody>
                                         </table>
                                     </div>
+                                    {econ && econ.quests.length > 0 && (
+                                        <div className="mt-3">
+                                            <div className="fs-12 text-muted mb-2">Görevler (onboarding)</div>
+                                            <div className="d-flex flex-column gap-1">
+                                                {econ.quests.map((q) => (
+                                                    <div key={q.id} className="d-flex align-items-center gap-2 fs-12">
+                                                        <span className={q.completed ? "text-success" : "text-muted"}>{q.completed ? "✓" : "○"}</span>
+                                                        <span className={q.completed ? "" : "text-muted"}>{q.title}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

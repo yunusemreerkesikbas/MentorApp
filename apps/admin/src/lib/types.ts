@@ -43,10 +43,19 @@ export interface InviteSummary {
     converted: number;
 }
 
+export interface AdminQuestProgress {
+    id: string;
+    type: string;
+    title: string;
+    completed: boolean;
+    completedAt: string | null;
+}
+
 export interface AdminEconomyOverview {
     balance: EconomyBalance;
     ledger: EconomyLedgerEntry[];
     invite: InviteSummary;
+    quests: AdminQuestProgress[];
 }
 
 export interface AdminArticle {

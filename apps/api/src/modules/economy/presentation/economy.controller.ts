@@ -6,6 +6,7 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { EconomyService } from "../application/economy.service";
 import { InviteService } from "../application/invite.service";
+import { QuestService, type QuestProgressView } from "../application/quest.service";
 import type { LedgerRow, Balance } from "../infrastructure/ledger.repository";
 import { EconomyLedgerQueryDto, RedeemInviteDto } from "./economy.dto";
 
@@ -40,6 +41,7 @@ export class EconomyController {
   constructor(
     private readonly economy: EconomyService,
     private readonly invites: InviteService,
+    private readonly quests: QuestService,
     private readonly config: ConfigRegistryService,
   ) {}
 
@@ -69,6 +71,13 @@ export class EconomyController {
   async invite(@CurrentUser() user: RequestUser): Promise<{ code: string }> {
     await this.assertEnabled();
     return { code: await this.invites.getOrCreateCode(user.id) };
+  }
+
+  /** Onboarding quests + progress (lazy-evaluates and grants newly-completed ones). */
+  @Get("quests")
+  async questsList(@CurrentUser() user: RequestUser): Promise<QuestProgressView[]> {
+    await this.assertEnabled();
+    return this.quests.getUserProgress(user.id);
   }
 
   @Post("invite/redeem")

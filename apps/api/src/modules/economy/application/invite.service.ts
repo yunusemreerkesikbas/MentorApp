@@ -6,6 +6,7 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { EconomyService } from "./economy.service";
+import { QuestService } from "./quest.service";
 import { InviteRepository } from "../infrastructure/invite.repository";
 
 export interface InviteSummary {
@@ -28,6 +29,7 @@ export class InviteService {
     private readonly repo: InviteRepository,
     private readonly entitlement: EntitlementService,
     private readonly economy: EconomyService,
+    private readonly quests: QuestService,
     private readonly config: ConfigRegistryService,
   ) {}
 
@@ -60,6 +62,13 @@ export class InviteService {
     const redemption = await this.repo.createRedemption(invite.inviterUserId, invitedUserId, code);
     // Race: a concurrent redeem inserted first (unique invited) → onConflictDoNothing returned none.
     if (!redemption) throw new DomainError(ErrorCode.INVITE_ALREADY_REDEEMED, HttpStatus.CONFLICT);
+    // The invited user just satisfied the "invite-redeemed" onboarding quest — grant inline (idempotent).
+    // Best-effort: the redemption is already committed, so a quest-eval failure must NOT fail the redeem.
+    try {
+      await this.quests.evaluateAndGrant(invitedUserId);
+    } catch (err) {
+      this.logger.error({ err, invitedUserId }, "quest eval after redeem failed (redemption recorded)");
+    }
     return { status: redemption.status };
   }
 

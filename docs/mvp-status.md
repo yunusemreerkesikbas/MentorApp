@@ -30,7 +30,7 @@
 | Exam-calendar editor: exam upsert + calendar events upsert/delete (ADMIN/EDITOR, trust metadata) | ✅ | [0024](./devnotes/0024-w6-admin-exam-calendar-editor.md) |
 | Refund + subscription admin view (record-only refund + cancel, ADMIN, audited) | ✅ | [0025](./devnotes/0025-w6-admin-refund-subscription.md) |
 | Metrics dashboard (users + subscriptions/revenue + economy KPI snapshot, ADMIN) | ✅ | [0026](./devnotes/0026-w6-admin-metrics-dashboard.md) |
-| Economy: onboarding/habit/milestone quests | ⏳ | — |
+| Economy: onboarding quests (auto-grant, capped, idempotent; habit/milestone backlog) | ✅ | [0027](./devnotes/0027-w6-economy-quests.md) |
 | Fine admin sub-roles (MODERATOR/SUPPORT/FINANCE/SUPER_ADMIN) | ⏳ | coarse ADMIN/EDITOR/STAFF live |
 | Moderation queue (forum/community content) | ⛔ | needs forum (Phase 2) |
 
