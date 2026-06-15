@@ -8,7 +8,12 @@ import type {
   InfoArticleSummaryDto,
   Paginated,
 } from "@mentor/types";
-import type { AdminListArticlesQuery, ListInfoArticlesQuery, PaginationQuery } from "@mentor/validation";
+import type {
+  AdminListArticlesQuery,
+  AdminListExamsQuery,
+  ListInfoArticlesQuery,
+  PaginationQuery,
+} from "@mentor/validation";
 import { infoArticleSlugParamSchema } from "@mentor/validation";
 import { ExamType } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
@@ -22,8 +27,8 @@ import {
   toExamCandidates,
 } from "../domain/calendar.util";
 import { ExamEventType, InfoArticleCategory } from "../domain/content.constants";
-import { ExamEventRepository } from "../infrastructure/exam-event.repository";
-import { ExamRepository } from "../infrastructure/exam.repository";
+import { ExamEventRepository, type ExamEventRow } from "../infrastructure/exam-event.repository";
+import { ExamRepository, type ExamRow } from "../infrastructure/exam.repository";
 import { InfoArticleRepository, type InfoArticleRow } from "../infrastructure/info-article.repository";
 import { SubjectRepository } from "../infrastructure/subject.repository";
 import { ArticlePublished, ContentEventTopic } from "../domain/content.events";
@@ -76,6 +81,70 @@ function toAdminArticleView(row: InfoArticleRow): AdminArticleView {
   };
 }
 
+/** Admin-facing exam view (editorial metadata; no embedding/secrets). */
+export interface AdminExamView {
+  id: string;
+  slug: string;
+  name: string;
+  family: string;
+  variant: string | null;
+  netRule: { kind: string; divisor: number };
+  isCurrent: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Admin-facing exam event view (raw editorial entry, incl. trust metadata). */
+export interface AdminExamEventView {
+  id: string;
+  type: string;
+  eventAt: string;
+  source: string;
+  sourceUrl: string;
+  verifiedAt: string;
+  verifiedBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Exam + its calendar events for the admin editor. */
+export interface AdminExamDetailView {
+  exam: AdminExamView;
+  events: AdminExamEventView[];
+}
+
+function toAdminExamView(row: ExamRow): AdminExamView {
+  const rule = (row.netRule ?? {}) as { kind?: unknown; divisor?: unknown };
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    family: row.family,
+    variant: row.variant,
+    netRule: {
+      kind: typeof rule.kind === "string" ? rule.kind : "",
+      divisor: typeof rule.divisor === "number" ? rule.divisor : 0,
+    },
+    isCurrent: row.isCurrent,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+function toAdminExamEventView(row: ExamEventRow): AdminExamEventView {
+  return {
+    id: row.id,
+    type: row.type,
+    eventAt: row.eventAt.toISOString(),
+    source: row.source,
+    sourceUrl: row.sourceUrl,
+    verifiedAt: row.verifiedAt.toISOString(),
+    verifiedBy: row.verifiedBy,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
 /** Resolved calendar row used by the coaching ContentPort adapter. */
 export interface ResolvedExamCalendar {
   examType: string;
@@ -101,7 +170,12 @@ export class ContentService {
   ) {}
 
   async listExams(query: PaginationQuery): Promise<Paginated<ExamSummaryDto>> {
-    const { items, total } = await this.exams.listPaged(this.db, query.page, query.pageSize);
+    const { items, total } = await this.exams.listPaged(
+      this.db,
+      undefined,
+      query.page,
+      query.pageSize,
+    );
     return toPaginatedExams(items, total, query.page, query.pageSize);
   }
 
@@ -257,6 +331,7 @@ export class ContentService {
     isCurrent?: boolean;
     orgId?: string | null;
   }): Promise<void> {
+    this.assertValidFamily(data.family);
     await withServiceContext(this.db, async (tx) => {
       await this.exams.upsertBySlug(tx, {
         slug: data.slug,
@@ -281,6 +356,7 @@ export class ContentService {
       verifiedBy: string;
     },
   ): Promise<void> {
+    this.assertValidEventType(data.type);
     await withServiceContext(this.db, async (tx) => {
       const exam = await this.exams.findBySlug(tx, examSlug);
       if (!exam) {
@@ -297,6 +373,53 @@ export class ContentService {
         verifiedAt: new Date(data.verifiedAt),
         verifiedBy: data.verifiedBy,
       });
+    });
+  }
+
+  /**
+   * Admin exam list. Runs in SERVICE context for parity with the article editor (exams are
+   * public-read today, but writes/reads stay on the same trusted path).
+   */
+  async listExamsForAdmin(query: AdminListExamsQuery): Promise<Paginated<AdminExamView>> {
+    if (query.family) this.assertValidFamily(query.family);
+    const { items, total } = await withServiceContext(this.db, (tx) =>
+      this.exams.listPaged(tx, query.family, query.page, query.pageSize),
+    );
+    return {
+      items: items.map(toAdminExamView),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
+  }
+
+  /** Admin exam detail + its raw calendar events (all types, not countdown-resolved). */
+  async getExamForAdminWithEvents(slug: string): Promise<AdminExamDetailView> {
+    return withServiceContext(this.db, async (tx) => {
+      const exam = await this.exams.findBySlug(tx, slug);
+      if (!exam) {
+        throw new DomainError(ErrorCode.CONTENT_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND, { slug });
+      }
+      const events = await this.events.listByExamId(tx, exam.id);
+      return { exam: toAdminExamView(exam), events: events.map(toAdminExamEventView) };
+    });
+  }
+
+  /** Delete one calendar event (admin). Throws when the exam or event is missing. */
+  async deleteExamEvent(slug: string, type: string): Promise<void> {
+    this.assertValidEventType(type);
+    await withServiceContext(this.db, async (tx) => {
+      const exam = await this.exams.findBySlug(tx, slug);
+      if (!exam) {
+        throw new DomainError(ErrorCode.CONTENT_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND, { slug });
+      }
+      const removed = await this.events.deleteByExamAndType(tx, exam.id, type);
+      if (!removed) {
+        throw new DomainError(ErrorCode.CONTENT_EXAM_EVENT_NOT_FOUND, HttpStatus.NOT_FOUND, {
+          slug,
+          type,
+        });
+      }
     });
   }
 
@@ -427,6 +550,15 @@ export class ContentService {
     if (!allowed.includes(category)) {
       throw new DomainError(ErrorCode.CONTENT_INVALID_ARTICLE_CATEGORY, HttpStatus.BAD_REQUEST, {
         category,
+      });
+    }
+  }
+
+  private assertValidEventType(type: string): void {
+    const allowed = Object.values(ExamEventType) as string[];
+    if (!allowed.includes(type)) {
+      throw new DomainError(ErrorCode.CONTENT_INVALID_EXAM_EVENT_TYPE, HttpStatus.BAD_REQUEST, {
+        type,
       });
     }
   }

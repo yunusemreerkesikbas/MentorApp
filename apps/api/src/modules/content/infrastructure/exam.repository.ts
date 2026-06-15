@@ -19,17 +19,20 @@ export class ExamRepository {
 
   async listPaged(
     db: Database | DatabaseTx,
+    family: string | undefined,
     page: number,
     pageSize: number,
   ): Promise<{ items: ExamRow[]; total: number }> {
+    const where = family ? eq(exams.family, family) : undefined;
     const [items, totalRow] = await Promise.all([
       db
         .select()
         .from(exams)
+        .where(where)
         .orderBy(asc(exams.family), asc(exams.name))
         .limit(pageSize)
         .offset((page - 1) * pageSize),
-      db.select({ count: sql<number>`count(*)::int` }).from(exams),
+      db.select({ count: sql<number>`count(*)::int` }).from(exams).where(where),
     ]);
     return { items, total: totalRow[0]?.count ?? 0 };
   }

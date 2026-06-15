@@ -10,12 +10,12 @@
 |---|---|---|---|
 | **Base infra** | ✅ | db (pg Pool) · errors · i18n · logging · health · OpenAPI · tests ([0007](./devnotes/0007-base-infrastructure.md), [0008](./devnotes/0008-base-review-fixes.md)) | — |
 | **W0 Identity** | ✅ | JWT + refresh rotation, RLS policies, guards, web auth screens ([0010](./devnotes/0010-identity.md), [0011](./devnotes/0011-identity-review-fixes.md)) | — |
-| **W1 Content** | 🟡 | exam calendar ([0016](./devnotes/0016-w1-exam-calendar.md)) · knowledge center ([0017](./devnotes/0017-w1-knowledge-center.md)) · subjects/exam-subjects | pgvector RAG index (with W3); exam calendar admin editor |
+| **W1 Content** | 🟡 | exam calendar ([0016](./devnotes/0016-w1-exam-calendar.md)) · knowledge center ([0017](./devnotes/0017-w1-knowledge-center.md)) · subjects/exam-subjects · exam-calendar admin editor ([0024](./devnotes/0024-w6-admin-exam-calendar-editor.md)) | pgvector RAG index (with W3) |
 | **W2 Coaching** | 🟡 | daily loop · panel ([0013](./devnotes/0013-panel-daily-hub.md), [0014](./devnotes/0014-w2-coaching-daily-loop.md)) · plan/seans UI · mock-exam analysis | mood polish, vision board / ghost (per roadmap) |
 | **W3 AI** | ⏳ | — (PremiumGuard + ContentPort + economy coin ready as inputs) | Context Builder, LLM/RAG, AI chat, photo→categorize, **coin→AI-right spend** |
 | **W4 Payments** | ✅ | PaymentsPort fake/iyzico, trial state machine, entitlement + PremiumGuard, idempotent webhook, /abonelik ([0015](./devnotes/0015-payments.md)) | iyzico prod keys + e-archive (Phase-0 ops) |
 | **W5 Notifications** | ✅ | JobQueuePort + cron runner, Postmark email, web push, daily reminders ([0019](./devnotes/0019-w5-notifications-queue.md)) | — |
-| **W6 Admin + Economy** | 🟡 | see breakdown below | refund · metrics · moderation · exam-calendar editor · economy quests/spend |
+| **W6 Admin + Economy** | 🟡 | see breakdown below | refund · metrics · moderation · economy quests/spend |
 
 ## W6 breakdown (this stream's focus)
 | Slice | Status | Devnote |
@@ -27,10 +27,10 @@
 | Light economy substrate: append-only XP/Coin ledger, capped reward engine, admin manual adjust | ✅ | [0021](./devnotes/0021-w6-light-economy.md) |
 | Light economy: invite → conversion → coin (idempotent, capped) | ✅ | [0022](./devnotes/0022-w6-light-economy-invite.md) |
 | Content editor: knowledge-center article CRUD + publish/unpublish (ADMIN/EDITOR, trust metadata) | ✅ | [0023](./devnotes/0023-w6-admin-content-editor.md) |
-| Refund + subscription admin view | ⏳ | — |
+| Exam-calendar editor: exam upsert + calendar events upsert/delete (ADMIN/EDITOR, trust metadata) | ✅ | [0024](./devnotes/0024-w6-admin-exam-calendar-editor.md) |
+| Refund + subscription admin view (record-only refund + cancel, ADMIN, audited) | ✅ | [0025](./devnotes/0025-w6-admin-refund-subscription.md) |
 | Metrics dashboard (retention/conversion/LLM-cost) | ⏳ | — |
 | Economy: onboarding/habit/milestone quests | ⏳ | — |
-| Exam-calendar editor (admin) | ⏳ | — |
 | Fine admin sub-roles (MODERATOR/SUPPORT/FINANCE/SUPER_ADMIN) | ⏳ | coarse ADMIN/EDITOR/STAFF live |
 | Moderation queue (forum/community content) | ⛔ | needs forum (Phase 2) |
 

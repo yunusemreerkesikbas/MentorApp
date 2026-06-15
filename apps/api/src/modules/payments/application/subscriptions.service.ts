@@ -1,9 +1,11 @@
+import { randomUUID } from "node:crypto";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   SubscriptionStatus,
   type CheckoutSession,
+  type EntitlementDto,
   type PlanDto,
   type SubscriptionDto,
   type SubscriptionView,
@@ -11,7 +13,9 @@ import {
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { isUniqueViolation } from "../../../common/errors/postgres-error";
-import type { DatabaseTx } from "../../../database/drizzle";
+import { DRIZZLE } from "../../../database/database.constants";
+import type { Database, DatabaseTx } from "../../../database/drizzle";
+import { withServiceContext } from "../../../database/rls";
 import type { Env } from "../../../config/env.validation";
 import { INVOICE_PORT, type InvoicePort } from "../../../shared/ports/invoice.port";
 import {
@@ -49,11 +53,38 @@ export interface WebhookSideEffects {
   invoice?: { sub: SubscriptionRow; event: ProviderEvent; plan: PlanRow | undefined };
 }
 
+/** One billing-ledger row as exposed to the admin (no raw provider payload). */
+export interface PaymentTransactionDto {
+  id: string;
+  type: string;
+  amountMinor: number;
+  currency: string;
+  status: string;
+  createdAt: string;
+}
+
+/** Admin-facing subscription overview for a user (W6: read state + refund history). */
+export interface AdminSubscriptionView {
+  subscription: SubscriptionDto | null;
+  plan: PlanDto | null;
+  entitlement: EntitlementDto;
+  transactions: PaymentTransactionDto[];
+}
+
+/** Result of an admin refund — the refreshed view + audit-relevant detail (L3). */
+export interface RefundResult {
+  view: AdminSubscriptionView;
+  subscriptionId: string;
+  amountMinor: number;
+  remainingAfter: number;
+}
+
 @Injectable()
 export class SubscriptionsService {
   private readonly logger = new Logger(SubscriptionsService.name);
 
   constructor(
+    @Inject(DRIZZLE) private readonly db: Database,
     private readonly plansRepo: PlansRepository,
     private readonly subsRepo: SubscriptionsRepository,
     private readonly eventsRepo: PaymentEventsRepository,
@@ -75,6 +106,89 @@ export class SubscriptionsService {
       subscription: sub ? toSubscriptionDto(sub) : null,
       // EntitlementService owns the STAFF short-circuit + state machine.
       entitlement: await this.entitlement.getEntitlement(userId, rolesHint),
+    };
+  }
+
+  /**
+   * Admin (W6): a user's subscription + entitlement + recent billing ledger (incl. refunds).
+   * Read-only; consumed by the role-gated admin controller.
+   */
+  async getAdminView(userId: string): Promise<AdminSubscriptionView> {
+    const view = await this.getView(userId);
+    const plan = view.subscription
+      ? await this.plansRepo.findById(view.subscription.planId)
+      : undefined;
+    const txs = await this.eventsRepo.listForUserAdmin(userId, 50);
+    return {
+      subscription: view.subscription,
+      plan: plan ? toPlanDto(plan) : null,
+      entitlement: view.entitlement,
+      transactions: txs.map(toTxDto),
+    };
+  }
+
+  /**
+   * Admin (W6): record-only refund of the user's last successful charge. Appends a negative-amount
+   * REFUND row to the append-only ledger (§3) — never touches the original charge, and does NOT
+   * change entitlement (use {@link cancel} to end access). Capped to the remaining refundable amount
+   * (last charge − prior refunds). The actual money movement happens in the provider panel until the
+   * iyzico refund API is wired (devnote 0015 backlog).
+   */
+  async refundLastCharge(
+    userId: string,
+    amountMinor: number,
+    reason: string,
+    actorId: string,
+  ): Promise<RefundResult> {
+    // Atomic: read → lock the subscription → re-read cap → append, all in ONE service tx. The
+    // FOR UPDATE lock serializes concurrent refunds on the same subscription so the cap can't be
+    // raced (TOCTOU). getAdminView (fresh reads) runs after commit.
+    const result = await withServiceContext(this.db, async (tx) => {
+      const charges = await this.eventsRepo.listForUserAdmin(userId, 200, tx);
+      const lastCharge = charges.find(
+        (t) => t.type === TxType.RENEWAL && t.status === TxStatus.SUCCEEDED && t.amountMinor > 0,
+      );
+      if (!lastCharge) {
+        throw new DomainError(ErrorCode.PAYMENT_REFUND_NO_CHARGE, HttpStatus.CONFLICT, { userId });
+      }
+
+      await this.subsRepo.lockById(lastCharge.subscriptionId, tx);
+
+      // Re-read AFTER acquiring the lock so a concurrent refund that committed first is counted.
+      const locked = await this.eventsRepo.listForUserAdmin(userId, 200, tx);
+      const refundedSoFar = locked
+        .filter((t) => t.type === TxType.REFUND && t.subscriptionId === lastCharge.subscriptionId)
+        .reduce((sum, t) => sum + Math.abs(t.amountMinor), 0);
+      const remaining = lastCharge.amountMinor - refundedSoFar;
+      if (amountMinor > remaining) {
+        throw new DomainError(ErrorCode.PAYMENT_REFUND_EXCEEDS_CHARGE, HttpStatus.BAD_REQUEST, {
+          amountMinor,
+          remaining,
+        });
+      }
+
+      await this.eventsRepo.appendTransaction(
+        {
+          subscriptionId: lastCharge.subscriptionId,
+          userId,
+          type: TxType.REFUND,
+          amountMinor: -amountMinor,
+          currency: lastCharge.currency,
+          status: TxStatus.REFUNDED,
+          providerEventId: `admin-refund:${randomUUID()}`,
+          raw: { reason, actorId },
+        },
+        tx,
+      );
+
+      return { subscriptionId: lastCharge.subscriptionId, remainingAfter: remaining - amountMinor };
+    });
+
+    return {
+      view: await this.getAdminView(userId),
+      subscriptionId: result.subscriptionId,
+      amountMinor,
+      remainingAfter: result.remainingAfter,
     };
   }
 
@@ -332,6 +446,19 @@ function toPlanDto(row: PlanRow): PlanDto {
     priceMinor: row.priceMinor,
     currency: row.currency as "TRY",
     trialDays: row.trialDays,
+  };
+}
+
+function toTxDto(
+  row: Awaited<ReturnType<PaymentEventsRepository["listForUserAdmin"]>>[number],
+): PaymentTransactionDto {
+  return {
+    id: row.id,
+    type: row.type,
+    amountMinor: row.amountMinor,
+    currency: row.currency,
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
   };
 }
 

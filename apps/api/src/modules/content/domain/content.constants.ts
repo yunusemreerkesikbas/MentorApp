@@ -1,6 +1,13 @@
-/** Editorial exam event types — extend when adding application/result windows. */
+/**
+ * Editorial exam event types. EXAM_DATE drives the countdown (`listFamilyCandidates`); the
+ * application/result windows are admin-editable calendar entries (web rendering of the extra
+ * types is a separate frontend task).
+ */
 export const ExamEventType = {
   EXAM_DATE: "EXAM_DATE",
+  APPLICATION_START: "APPLICATION_START",
+  APPLICATION_END: "APPLICATION_END",
+  RESULT_DATE: "RESULT_DATE",
 } as const;
 export type ExamEventType = (typeof ExamEventType)[keyof typeof ExamEventType];
 
