@@ -28,6 +28,8 @@
   "CONTENT_ARTICLE_NOT_FOUND": "Bu makale bulunamadı.",
   "CONTENT_INVALID_EXAM_FAMILY": "Geçersiz sınav türü.",
   "CONTENT_INVALID_ARTICLE_CATEGORY": "Geçersiz makale kategorisi.",
+  "CONTENT_EXAM_EVENT_NOT_FOUND": "Bu takvim etkinliği bulunamadı.",
+  "CONTENT_INVALID_EXAM_EVENT_TYPE": "Geçersiz takvim etkinliği türü.",
   "PAYMENT_TRIAL_ALREADY_USED": "Ücretsiz deneme hakkını daha önce kullandın.",
   "PAYMENT_ALREADY_SUBSCRIBED": "Zaten aktif bir aboneliğin var.",
   "PAYMENT_PROVIDER_ERROR": "Ödeme sağlayıcısında bir sorun oluştu. Lütfen tekrar dene.",

@@ -10,6 +10,7 @@ import { AdminAuditInterceptor } from "./presentation/admin-audit.interceptor";
 import { AdminConfigController } from "./presentation/admin-config.controller";
 import { AdminContentController } from "./presentation/admin-content.controller";
 import { AdminEconomyController } from "./presentation/admin-economy.controller";
+import { AdminExamCalendarController } from "./presentation/admin-exam-calendar.controller";
 import { AdminUsersController } from "./presentation/admin-users.controller";
 
 /**
@@ -26,6 +27,7 @@ import { AdminUsersController } from "./presentation/admin-users.controller";
     AdminConfigController,
     AdminEconomyController,
     AdminContentController,
+    AdminExamCalendarController,
   ],
   providers: [
     AdminUsersService,

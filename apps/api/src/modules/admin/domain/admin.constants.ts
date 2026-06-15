@@ -15,6 +15,9 @@ export const AuditAction = {
   CONTENT_ARTICLE_UPSERT: "content.article.upsert",
   CONTENT_ARTICLE_PUBLISH: "content.article.publish",
   CONTENT_ARTICLE_UNPUBLISH: "content.article.unpublish",
+  CONTENT_EXAM_UPSERT: "content.exam.upsert",
+  CONTENT_EXAM_EVENT_UPSERT: "content.exam-event.upsert",
+  CONTENT_EXAM_EVENT_DELETE: "content.exam-event.delete",
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 
@@ -23,5 +26,7 @@ export const AuditTargetType = {
   USER: "user",
   CONFIG: "config",
   ARTICLE: "article",
+  EXAM: "exam",
+  EXAM_EVENT: "exam-event",
 } as const;
 export type AuditTargetType = (typeof AuditTargetType)[keyof typeof AuditTargetType];

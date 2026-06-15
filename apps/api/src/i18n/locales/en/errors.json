@@ -28,6 +28,8 @@
   "CONTENT_ARTICLE_NOT_FOUND": "This article was not found.",
   "CONTENT_INVALID_EXAM_FAMILY": "Invalid exam type.",
   "CONTENT_INVALID_ARTICLE_CATEGORY": "Invalid article category.",
+  "CONTENT_EXAM_EVENT_NOT_FOUND": "This calendar event was not found.",
+  "CONTENT_INVALID_EXAM_EVENT_TYPE": "Invalid calendar event type.",
   "PAYMENT_TRIAL_ALREADY_USED": "You have already used your free trial.",
   "PAYMENT_ALREADY_SUBSCRIBED": "You already have an active subscription.",
   "PAYMENT_PROVIDER_ERROR": "The payment provider had a problem. Please try again.",

@@ -42,4 +42,13 @@ export class ExamEventRepository {
   async listByExamId(db: Database | DatabaseTx, examId: string): Promise<ExamEventRow[]> {
     return db.select().from(examEvents).where(eq(examEvents.examId, examId));
   }
+
+  /** Delete one event by (exam, type). Returns true when a row was removed. */
+  async deleteByExamAndType(tx: DatabaseTx, examId: string, type: string): Promise<boolean> {
+    const rows = await tx
+      .delete(examEvents)
+      .where(and(eq(examEvents.examId, examId), eq(examEvents.type, type)))
+      .returning({ id: examEvents.id });
+    return rows.length > 0;
+  }
 }
