@@ -35,6 +35,8 @@
   "PAYMENT_PROVIDER_ERROR": "The payment provider had a problem. Please try again.",
   "PAYMENT_WEBHOOK_INVALID": "Invalid payment notification.",
   "PAYMENT_PREMIUM_REQUIRED": "This feature is for Premium members.",
+  "PAYMENT_REFUND_NO_CHARGE": "No successful charge to refund was found.",
+  "PAYMENT_REFUND_EXCEEDS_CHARGE": "The refund amount exceeds the remaining refundable amount.",
   "ADMIN_USER_NOT_FOUND": "This user was not found.",
   "ADMIN_CANNOT_MODIFY_SELF": "You can't perform this action on your own account.",
   "ADMIN_CONFIG_KEY_NOT_FOUND": "This config key was not found.",

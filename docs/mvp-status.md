@@ -28,7 +28,7 @@
 | Light economy: invite → conversion → coin (idempotent, capped) | ✅ | [0022](./devnotes/0022-w6-light-economy-invite.md) |
 | Content editor: knowledge-center article CRUD + publish/unpublish (ADMIN/EDITOR, trust metadata) | ✅ | [0023](./devnotes/0023-w6-admin-content-editor.md) |
 | Exam-calendar editor: exam upsert + calendar events upsert/delete (ADMIN/EDITOR, trust metadata) | ✅ | [0024](./devnotes/0024-w6-admin-exam-calendar-editor.md) |
-| Refund + subscription admin view | ⏳ | — |
+| Refund + subscription admin view (record-only refund + cancel, ADMIN, audited) | ✅ | [0025](./devnotes/0025-w6-admin-refund-subscription.md) |
 | Metrics dashboard (retention/conversion/LLM-cost) | ⏳ | — |
 | Economy: onboarding/habit/milestone quests | ⏳ | — |
 | Fine admin sub-roles (MODERATOR/SUPPORT/FINANCE/SUPER_ADMIN) | ⏳ | coarse ADMIN/EDITOR/STAFF live |

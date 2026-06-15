@@ -40,6 +40,9 @@ angular-errors.log
 coverage/
 .nyc_output/
 
+# MCP / tooling artifacts (Playwright MCP traces, etc.)
+.playwright-mcp/
+
 # Editor / OS
 .claude/
 .idea/

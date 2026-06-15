@@ -48,6 +48,6 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
     },
     { provide: INVOICE_PORT, useClass: LoggerInvoiceAdapter },
   ],
-  exports: [EntitlementService, PremiumGuard],
+  exports: [EntitlementService, PremiumGuard, SubscriptionsService],
 })
 export class PaymentsModule {}

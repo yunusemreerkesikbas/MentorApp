@@ -35,6 +35,8 @@
   "PAYMENT_PROVIDER_ERROR": "Ödeme sağlayıcısında bir sorun oluştu. Lütfen tekrar dene.",
   "PAYMENT_WEBHOOK_INVALID": "Geçersiz ödeme bildirimi.",
   "PAYMENT_PREMIUM_REQUIRED": "Bu özellik Premium üyelere özel.",
+  "PAYMENT_REFUND_NO_CHARGE": "İade edilecek başarılı bir ödeme bulunamadı.",
+  "PAYMENT_REFUND_EXCEEDS_CHARGE": "İade tutarı, kalan iade edilebilir tutarı aşıyor.",
   "ADMIN_USER_NOT_FOUND": "Bu kullanıcı bulunamadı.",
   "ADMIN_CANNOT_MODIFY_SELF": "Kendi hesabın üzerinde bu işlemi yapamazsın.",
   "ADMIN_CONFIG_KEY_NOT_FOUND": "Bu ayar anahtarı bulunamadı.",

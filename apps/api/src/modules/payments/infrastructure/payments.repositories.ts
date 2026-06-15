@@ -103,6 +103,14 @@ export class SubscriptionsRepository {
       return rows[0];
     });
   }
+
+  /**
+   * Row-lock a subscription for the duration of the caller tx (`SELECT … FOR UPDATE`).
+   * Serializes concurrent admin refunds on the same subscription so the cap can't be raced.
+   */
+  async lockById(id: string, tx: Exec): Promise<void> {
+    await tx.select({ id: subscriptions.id }).from(subscriptions).where(eq(subscriptions.id, id)).for("update");
+  }
 }
 
 @Injectable()
@@ -167,6 +175,21 @@ export class PaymentEventsRepository {
         .from(paymentTransactions)
         .where(eq(paymentTransactions.userId, userId))
         .orderBy(desc(paymentTransactions.createdAt)),
+    );
+  }
+
+  /**
+   * Admin cross-user read of a user's billing history (SERVICE context; role-gated controller).
+   * Accepts a caller tx so the refund use-case can read + cap + append atomically (one tx).
+   */
+  async listForUserAdmin(userId: string, limit = 50, tx?: Exec) {
+    return onServiceTx(this.db, tx, async (exec) =>
+      exec
+        .select()
+        .from(paymentTransactions)
+        .where(eq(paymentTransactions.userId, userId))
+        .orderBy(desc(paymentTransactions.createdAt))
+        .limit(limit),
     );
   }
 }
