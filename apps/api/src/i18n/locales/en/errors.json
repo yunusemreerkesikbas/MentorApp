@@ -41,6 +41,7 @@
   "ADMIN_CANNOT_MODIFY_SELF": "You can't perform this action on your own account.",
   "ADMIN_CONFIG_KEY_NOT_FOUND": "This config key was not found.",
   "ADMIN_CONFIG_INVALID_VALUE": "The config value is invalid.",
+  "ADMIN_ROLE_NOT_ASSIGNABLE": "This role cannot be assigned.",
   "ECONOMY_DISABLED": "The economy feature is currently disabled.",
   "ECONOMY_LIMIT_EXCEEDED": "The coin earning limit has been exceeded.",
   "INVITE_CODE_INVALID": "The invite code is invalid.",

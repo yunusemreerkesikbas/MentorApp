@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type { AuthUser } from "@mentor/types";
 import apiClient from "@/lib/apiClient";
 import { clearToken, getToken } from "@/lib/auth";
+import { canEnterPanel } from "@/lib/roles";
 
 interface AuthContextValue {
     admin: AuthUser | null;
@@ -39,9 +40,9 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
             .get<AuthUser>("/users/me")
             .then(({ data }) => {
                 if (!active) return;
-                // Panel access: ADMIN (full) or EDITOR (content only — role-gated menu/endpoints).
-                const allowed = data?.roles?.some((r) => r === "ADMIN" || r === "EDITOR");
-                if (!allowed) {
+                // Panel access: any admin role (ADMIN/SUPER_ADMIN/EDITOR/SUPPORT/FINANCE/MODERATOR);
+                // menu items + API endpoints are further role-gated (§9 fine sub-roles).
+                if (!canEnterPanel(data?.roles)) {
                     clearToken();
                     router.replace("/login");
                     return;

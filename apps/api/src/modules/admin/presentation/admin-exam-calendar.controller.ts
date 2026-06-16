@@ -34,7 +34,7 @@ import { AdminListExamsQueryDto, UpsertExamDto, UpsertExamEventDto } from "./adm
  */
 @ApiTags("admin")
 @ApiBearerAuth()
-@Roles(UserRole.ADMIN, UserRole.EDITOR)
+@Roles(UserRole.EDITOR)
 @UseInterceptors(AdminAuditInterceptor)
 @Controller("admin/content/exams")
 export class AdminExamCalendarController {

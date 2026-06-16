@@ -7,6 +7,8 @@
 export const AuditAction = {
   STAFF_ASSIGN: "staff.assign",
   STAFF_REVOKE: "staff.revoke",
+  ROLE_ASSIGN: "role.assign",
+  ROLE_REVOKE: "role.revoke",
   USER_STATUS: "user.status",
   USER_KVKK_EXPORT: "user.kvkk-export",
   USER_KVKK_ANONYMIZE: "user.kvkk-anonymize",

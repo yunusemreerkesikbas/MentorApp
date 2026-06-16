@@ -16,8 +16,29 @@ export const UserRole = {
   /** Team/beta accounts: always-premium entitlement WITHOUT a subscription row
    *  (keeps payment statistics clean; no trial-once side effects). */
   STAFF: "STAFF",
+  // --- Fine admin sub-roles (§9 panel RBAC). ADMIN stays as the legacy full-access alias;
+  //     SUPER_ADMIN is the new explicit top. SUPPORT/FINANCE/MODERATOR are scoped admin roles. ---
+  /** Scoped: user management (search/detail/status). */
+  SUPPORT: "SUPPORT",
+  /** Scoped: subscriptions/refunds + economy adjustments + revenue metrics. */
+  FINANCE: "FINANCE",
+  /** Scoped: forum/community moderation (Phase 2 — reserved, no endpoints yet). */
+  MODERATOR: "MODERATOR",
+  /** Full admin access (umbrella). Can assign other roles. */
+  SUPER_ADMIN: "SUPER_ADMIN",
 } as const;
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
+
+/**
+ * Admin sub-roles a SUPER_ADMIN may assign via the API (§9). Excludes SUPER_ADMIN/ADMIN
+ * (no privilege escalation — bootstrap the first super-admin via SQL) and STAFF (own endpoint).
+ */
+export const ASSIGNABLE_ADMIN_ROLES = [
+  UserRole.EDITOR,
+  UserRole.SUPPORT,
+  UserRole.FINANCE,
+  UserRole.MODERATOR,
+] as const;
 
 // --- Exam-agnostic core (§0): exams differ only by content/config ---
 export const ExamType = {

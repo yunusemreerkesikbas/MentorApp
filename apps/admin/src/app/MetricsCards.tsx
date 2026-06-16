@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { FiUsers, FiUserPlus, FiCreditCard, FiDollarSign, FiGift, FiAward } from "react-icons/fi";
 import apiClient from "@/lib/apiClient";
 import { useAuth } from "@/contentApi/authProvider";
+import { canSee } from "@/lib/roles";
 import type { AdminMetrics } from "@/lib/types";
 
 const fmtTry = (minor: number) => `${(minor / 100).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺`;
@@ -31,12 +32,13 @@ function Kpi({ icon, value, label }: { icon: ReactNode; value: string | number; 
 // endpoint is ADMIN-gated). Money comes from the API in minor units; we only format here.
 export default function MetricsCards() {
     const { admin } = useAuth();
-    const isAdmin = (admin?.roles ?? []).includes("ADMIN");
+    // Metrics are visible to SUPPORT/FINANCE + the full-access umbrella (mirrors the API gate).
+    const canView = canSee(["SUPPORT", "FINANCE"], admin?.roles);
     const [m, setM] = useState<AdminMetrics | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!isAdmin) return;
+        if (!canView) return;
         let active = true;
         apiClient
             .get<AdminMetrics>("/admin/metrics")
@@ -44,9 +46,9 @@ export default function MetricsCards() {
             .catch(() => { if (active) setM(null); })
             .finally(() => { if (active) setLoading(false); });
         return () => { active = false; };
-    }, [isAdmin]);
+    }, [canView]);
 
-    if (!isAdmin) return null;
+    if (!canView) return null;
     if (loading) return <div className="text-muted mb-4">Metrikler yükleniyor…</div>;
     if (!m) return null;
 

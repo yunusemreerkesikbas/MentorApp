@@ -24,7 +24,7 @@ interface AdminMetrics {
  */
 @ApiTags("admin")
 @ApiBearerAuth()
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.SUPPORT, UserRole.FINANCE)
 @Controller("admin/metrics")
 export class AdminMetricsController {
   constructor(

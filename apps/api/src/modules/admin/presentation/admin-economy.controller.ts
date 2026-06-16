@@ -20,7 +20,7 @@ import { AdjustEconomyDto } from "./admin.dto";
  */
 @ApiTags("admin")
 @ApiBearerAuth()
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.SUPPORT, UserRole.FINANCE)
 @UseInterceptors(AdminAuditInterceptor)
 @Controller("admin/users/:userId/economy")
 export class AdminEconomyController {
@@ -47,6 +47,7 @@ export class AdminEconomyController {
   }
 
   @Post("adjust")
+  @Roles(UserRole.FINANCE)
   @Audit(AuditAction.ECONOMY_ADJUST)
   async adjust(
     @CurrentUser() actor: RequestUser,

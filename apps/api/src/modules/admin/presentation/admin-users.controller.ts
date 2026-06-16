@@ -28,12 +28,14 @@ import { setAuditContext, type AuditableRequest } from "./audit-context";
 import { AuditLogQueryDto, SearchUsersQueryDto, UpdateUserStatusDto } from "./admin.dto";
 
 /**
- * Admin user management (W6). Team-only: global JwtAuthGuard + RolesGuard require the ADMIN
- * role; in prod the app also sits behind Cloudflare Access (§9). Every mutation is audited.
+ * Admin user management (W6, §9 panel RBAC). Team-only: global JwtAuthGuard + RolesGuard. Class
+ * default = SUPPORT/FINANCE (shared read/navigation); sensitive methods override to SUPER_ADMIN
+ * (KVKK, role assignment, audit log) or narrow to SUPPORT (status). ADMIN/SUPER_ADMIN pass any via
+ * the guard umbrella. In prod the app also sits behind Cloudflare Access. Every mutation is audited.
  */
 @ApiTags("admin")
 @ApiBearerAuth()
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.SUPPORT, UserRole.FINANCE)
 @UseInterceptors(AdminAuditInterceptor)
 @Controller("admin")
 export class AdminUsersController {
@@ -53,6 +55,7 @@ export class AdminUsersController {
   }
 
   @Patch("users/:userId/status")
+  @Roles(UserRole.SUPPORT)
   @Audit(AuditAction.USER_STATUS)
   async setStatus(
     @CurrentUser() actor: RequestUser,
@@ -71,6 +74,7 @@ export class AdminUsersController {
   }
 
   @Get("users/:userId/export")
+  @Roles(UserRole.SUPER_ADMIN)
   @Audit(AuditAction.USER_KVKK_EXPORT)
   async exportUser(
     @Param("userId", ParseUUIDPipe) userId: string,
@@ -82,6 +86,7 @@ export class AdminUsersController {
   }
 
   @Post("users/:userId/anonymize")
+  @Roles(UserRole.SUPER_ADMIN)
   @Audit(AuditAction.USER_KVKK_ANONYMIZE)
   async anonymizeUser(
     @CurrentUser() actor: RequestUser,
@@ -100,6 +105,7 @@ export class AdminUsersController {
   }
 
   @Post("users/:userId/roles/staff")
+  @Roles(UserRole.SUPER_ADMIN)
   @Audit(AuditAction.STAFF_ASSIGN)
   async grantStaff(
     @Param("userId", ParseUUIDPipe) userId: string,
@@ -116,6 +122,7 @@ export class AdminUsersController {
   }
 
   @Delete("users/:userId/roles/staff")
+  @Roles(UserRole.SUPER_ADMIN)
   @Audit(AuditAction.STAFF_REVOKE)
   async revokeStaff(
     @Param("userId", ParseUUIDPipe) userId: string,
@@ -131,7 +138,49 @@ export class AdminUsersController {
     return result.user;
   }
 
+  /**
+   * Grant a fine admin sub-role (EDITOR/SUPPORT/FINANCE/MODERATOR). SUPER_ADMIN only; an
+   * unassignable role (SUPER_ADMIN/ADMIN/STAFF/…) → 400. Declared AFTER the static `roles/staff`
+   * routes so those keep precedence over this `:role` param route.
+   */
+  @Post("users/:userId/roles/:role")
+  @Roles(UserRole.SUPER_ADMIN)
+  @Audit(AuditAction.ROLE_ASSIGN)
+  async grantRole(
+    @Param("userId", ParseUUIDPipe) userId: string,
+    @Param("role") role: string,
+    @Req() req: AuditableRequest,
+  ): Promise<AdminUserView> {
+    const result = await this.users.grantRole(userId, role);
+    setAuditContext(req, {
+      targetType: AuditTargetType.USER,
+      targetId: userId,
+      before: { roles: result.before },
+      after: { roles: result.after, role },
+    });
+    return result.user;
+  }
+
+  @Delete("users/:userId/roles/:role")
+  @Roles(UserRole.SUPER_ADMIN)
+  @Audit(AuditAction.ROLE_REVOKE)
+  async revokeRole(
+    @Param("userId", ParseUUIDPipe) userId: string,
+    @Param("role") role: string,
+    @Req() req: AuditableRequest,
+  ): Promise<AdminUserView> {
+    const result = await this.users.revokeRole(userId, role);
+    setAuditContext(req, {
+      targetType: AuditTargetType.USER,
+      targetId: userId,
+      before: { roles: result.before },
+      after: { roles: result.after, role },
+    });
+    return result.user;
+  }
+
   @Get("audit-log")
+  @Roles(UserRole.SUPER_ADMIN)
   listAuditLog(@Query() query: AuditLogQueryDto): Promise<AuditEntryView[]> {
     return this.audit.list(query.page, query.pageSize);
   }

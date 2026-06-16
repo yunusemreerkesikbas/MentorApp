@@ -15,7 +15,7 @@
 | **W3 AI** | ⏳ | — (PremiumGuard + ContentPort + economy coin ready as inputs) | Context Builder, LLM/RAG, AI chat, photo→categorize, **coin→AI-right spend** |
 | **W4 Payments** | ✅ | PaymentsPort fake/iyzico, trial state machine, entitlement + PremiumGuard, idempotent webhook, /abonelik ([0015](./devnotes/0015-payments.md)) | iyzico prod keys + e-archive (Phase-0 ops) |
 | **W5 Notifications** | ✅ | JobQueuePort + cron runner, Postmark email, web push, daily reminders ([0019](./devnotes/0019-w5-notifications-queue.md)) | — |
-| **W6 Admin + Economy** | 🟡 | see breakdown below | refund · metrics · moderation · economy quests/spend |
+| **W6 Admin + Economy** | ✅ | see breakdown below — all MVP slices shipped | Phase 2: moderation queue · coin spend→AI · habit/milestone quests |
 
 ## W6 breakdown (this stream's focus)
 | Slice | Status | Devnote |
@@ -31,7 +31,7 @@
 | Refund + subscription admin view (record-only refund + cancel, ADMIN, audited) | ✅ | [0025](./devnotes/0025-w6-admin-refund-subscription.md) |
 | Metrics dashboard (users + subscriptions/revenue + economy KPI snapshot, ADMIN) | ✅ | [0026](./devnotes/0026-w6-admin-metrics-dashboard.md) |
 | Economy: onboarding quests (auto-grant, capped, idempotent; habit/milestone backlog) | ✅ | [0027](./devnotes/0027-w6-economy-quests.md) |
-| Fine admin sub-roles (MODERATOR/SUPPORT/FINANCE/SUPER_ADMIN) | ⏳ | coarse ADMIN/EDITOR/STAFF live |
+| Fine admin sub-roles (SUPPORT/FINANCE/SUPER_ADMIN gating + assignment; MODERATOR reserved) | ✅ | [0028](./devnotes/0028-w6-admin-sub-roles.md) |
 | Moderation queue (forum/community content) | ⛔ | needs forum (Phase 2) |
 
 ## Cross-cutting / known issues
