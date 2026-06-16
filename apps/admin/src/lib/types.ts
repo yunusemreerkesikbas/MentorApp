@@ -43,10 +43,19 @@ export interface InviteSummary {
     converted: number;
 }
 
+export interface AdminQuestProgress {
+    id: string;
+    type: string;
+    title: string;
+    completed: boolean;
+    completedAt: string | null;
+}
+
 export interface AdminEconomyOverview {
     balance: EconomyBalance;
     ledger: EconomyLedgerEntry[];
     invite: InviteSummary;
+    quests: AdminQuestProgress[];
 }
 
 export interface AdminArticle {
@@ -118,6 +127,30 @@ export interface AdminSubscriptionView {
     plan: { id: string; name: string; periodMonths: number; priceMinor: number; currency: string } | null;
     entitlement: { isPremium: boolean; validUntil: string | null; reason: string };
     transactions: AdminSubscriptionTx[];
+}
+
+export interface AdminMetrics {
+    users: {
+        total: number;
+        new7d: number;
+        new30d: number;
+        verified: number;
+        byStatus: { active: number; suspended: number; banned: number };
+        byExamType: { kpss: number; yks: number; lgs: number };
+    };
+    subscriptions: {
+        byStatus: { trialing: number; active: number; pastDue: number; canceled: number; expired: number; total: number };
+        revenueMinor30d: number;
+        refundedMinor: number;
+        payingSubscriptions: number;
+        conversionRate: number;
+    };
+    economy: {
+        coinIssued: number;
+        xpIssued: number;
+        invite: { invited: number; converted: number };
+    };
+    generatedAt: string;
 }
 
 export interface ConfigEntry {

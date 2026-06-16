@@ -5,6 +5,8 @@ import Link from "next/link";
 import Swal from "sweetalert2";
 import PageHeader from "@/components/shared/pageHeader/PageHeader";
 import apiClient from "@/lib/apiClient";
+import { useAuth } from "@/contentApi/authProvider";
+import { ASSIGNABLE_ROLES, isFullAccess } from "@/lib/roles";
 import type { AdminUserDetail, AdminEconomyOverview, AdminSubscriptionView } from "@/lib/types";
 
 type Status = "ACTIVE" | "SUSPENDED" | "BANNED";
@@ -212,6 +214,35 @@ export default function UserDetailPage() {
         }
     };
 
+    // ---- fine sub-role assignment (W6, SUPER_ADMIN; ADMIN umbrella) ----
+    const { admin } = useAuth();
+    const canManageRoles = isFullAccess(admin?.roles);
+
+    const toggleRole = async (role: string) => {
+        if (!user) return;
+        const has = (user.roles as string[]).includes(role);
+        const confirm = await Swal.fire({
+            title: has ? "Rol kaldırılsın mı?" : "Rol verilsin mi?",
+            text: `${user.email} → ${role}`,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: has ? "Kaldır" : "Ver",
+            cancelButtonText: "Vazgeç",
+        });
+        if (!confirm.isConfirmed) return;
+        setBusy(true);
+        try {
+            if (has) await apiClient.delete(`/admin/users/${id}/roles/${role}`);
+            else await apiClient.post(`/admin/users/${id}/roles/${role}`);
+            await load();
+            Swal.fire({ icon: "success", title: "Güncellendi", timer: 1000, showConfirmButton: false });
+        } catch (err) {
+            Swal.fire({ icon: "error", title: "Hata", text: errMsg(err) });
+        } finally {
+            setBusy(false);
+        }
+    };
+
     const anonymize = async () => {
         const confirm = await Swal.fire({
             title: "Anonimleştirilsin mi?",
@@ -278,13 +309,34 @@ export default function UserDetailPage() {
                                     )}
                                 </div>
                             </div>
-                            <div className="card stretch stretch-full">
+                            <div className="card stretch stretch-full mb-4">
                                 <div className="card-header"><h6 className="mb-0">KVKK</h6></div>
                                 <div className="card-body d-flex flex-column gap-2">
                                     <button className="btn btn-outline-primary" onClick={exportData}>Verileri dışa aktar (JSON)</button>
                                     <button className="btn btn-danger" disabled={busy} onClick={anonymize}>Anonimleştir (silme hakkı)</button>
                                 </div>
                             </div>
+                            {canManageRoles && (
+                                <div className="card stretch stretch-full">
+                                    <div className="card-header"><h6 className="mb-0">Roller</h6></div>
+                                    <div className="card-body d-flex flex-column gap-2">
+                                        <div className="fs-12 text-muted mb-1">Alt-rol ver/al (SUPER_ADMIN). STAFF kullanıcı listesinden yönetilir.</div>
+                                        {ASSIGNABLE_ROLES.map((role) => {
+                                            const has = user.roles.includes(role);
+                                            return (
+                                                <button
+                                                    key={role}
+                                                    className={`btn btn-sm ${has ? "btn-outline-danger" : "btn-outline-success"}`}
+                                                    disabled={busy}
+                                                    onClick={() => toggleRole(role)}
+                                                >
+                                                    {has ? `${role} kaldır` : `${role} ver`}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         <div className="col-12">
                             <div className="card stretch stretch-full">
@@ -337,6 +389,19 @@ export default function UserDetailPage() {
                                             </tbody>
                                         </table>
                                     </div>
+                                    {econ && econ.quests.length > 0 && (
+                                        <div className="mt-3">
+                                            <div className="fs-12 text-muted mb-2">Görevler (onboarding)</div>
+                                            <div className="d-flex flex-column gap-1">
+                                                {econ.quests.map((q) => (
+                                                    <div key={q.id} className="d-flex align-items-center gap-2 fs-12">
+                                                        <span className={q.completed ? "text-success" : "text-muted"}>{q.completed ? "✓" : "○"}</span>
+                                                        <span className={q.completed ? "" : "text-muted"}>{q.title}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

@@ -17,7 +17,7 @@ import { AdminListArticlesQueryDto, UpsertArticleDto } from "./admin.dto";
  */
 @ApiTags("admin")
 @ApiBearerAuth()
-@Roles(UserRole.ADMIN, UserRole.EDITOR)
+@Roles(UserRole.EDITOR)
 @UseInterceptors(AdminAuditInterceptor)
 @Controller("admin/content/articles")
 export class AdminContentController {

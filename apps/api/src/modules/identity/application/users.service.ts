@@ -5,9 +5,32 @@ import { NotFoundError } from "../../../common/errors/domain-error";
 import { UsersRepository } from "../infrastructure/users.repository";
 import { toAuthUser } from "./auth.service";
 
+/** Admin metrics: user-base snapshot (W6). */
+export interface UserStats {
+  total: number;
+  new7d: number;
+  new30d: number;
+  verified: number;
+  byStatus: { active: number; suspended: number; banned: number };
+  byExamType: { kpss: number; yks: number; lgs: number };
+}
+
 @Injectable()
 export class UsersService {
   constructor(private readonly usersRepo: UsersRepository) {}
+
+  /** Admin metrics dashboard (W6) — read-only user-base aggregate. */
+  async getUserStats(): Promise<UserStats> {
+    const s = await this.usersRepo.statsSnapshot();
+    return {
+      total: s.total,
+      new7d: s.new7d,
+      new30d: s.new30d,
+      verified: s.verified,
+      byStatus: { active: s.active, suspended: s.suspended, banned: s.banned },
+      byExamType: { kpss: s.kpss, yks: s.yks, lgs: s.lgs },
+    };
+  }
 
   /** Minimal contact fields for async notification jobs (W5 — no table access outside identity). */
   async getNotificationContact(

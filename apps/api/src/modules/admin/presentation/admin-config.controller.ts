@@ -20,7 +20,7 @@ import { UpdateConfigDto } from "./admin.dto";
  */
 @ApiTags("admin")
 @ApiBearerAuth()
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.SUPER_ADMIN)
 @UseInterceptors(AdminAuditInterceptor)
 @Controller("admin/config")
 export class AdminConfigController {

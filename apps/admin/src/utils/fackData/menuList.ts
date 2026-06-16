@@ -24,7 +24,7 @@ export const menuList: MenuItem[] = [
         path: "/content/articles",
         icon: "feather-book-open",
         dropdownMenu: false,
-        roles: ["ADMIN", "EDITOR"],
+        roles: ["EDITOR"],
     },
     {
         id: 5,
@@ -32,7 +32,7 @@ export const menuList: MenuItem[] = [
         path: "/content/exams",
         icon: "feather-calendar",
         dropdownMenu: false,
-        roles: ["ADMIN", "EDITOR"],
+        roles: ["EDITOR"],
     },
     {
         id: 1,
@@ -40,7 +40,7 @@ export const menuList: MenuItem[] = [
         path: "/users",
         icon: "feather-users",
         dropdownMenu: false,
-        roles: ["ADMIN"],
+        roles: ["SUPPORT", "FINANCE"],
     },
     {
         id: 2,
@@ -48,7 +48,7 @@ export const menuList: MenuItem[] = [
         path: "/audit-log",
         icon: "feather-file-text",
         dropdownMenu: false,
-        roles: ["ADMIN"],
+        roles: ["SUPER_ADMIN"],
     },
     {
         id: 3,
@@ -56,6 +56,6 @@ export const menuList: MenuItem[] = [
         path: "/config",
         icon: "feather-sliders",
         dropdownMenu: false,
-        roles: ["ADMIN"],
+        roles: ["SUPER_ADMIN"],
     },
 ];

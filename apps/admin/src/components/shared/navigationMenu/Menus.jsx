@@ -6,13 +6,12 @@ import getIcon from "@/utils/getIcon";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contentApi/authProvider";
+import { canSee } from "@/lib/roles";
 
 const Menus = () => {
     const { admin } = useAuth();
-    // Role-gated: an item with `roles` shows only if the signed-in user holds one of them.
-    const items = menuList.filter(
-        (m) => !m.roles || m.roles.some((r) => admin?.roles?.includes(r)),
-    );
+    // Role-gated (§9): item shows if the user holds one of its roles OR a full-access role (umbrella).
+    const items = menuList.filter((m) => canSee(m.roles, admin?.roles));
     const [openDropdown, setOpenDropdown] = useState(null);
     const [openSubDropdown, setOpenSubDropdown] = useState(null);
     const [activeParent, setActiveParent] = useState("");

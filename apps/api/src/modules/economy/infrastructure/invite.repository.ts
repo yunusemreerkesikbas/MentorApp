@@ -75,6 +75,19 @@ export class InviteRepository {
     });
   }
 
+  /** Admin metrics (W6) — global invite totals across all inviters (SERVICE context). */
+  conversionStatsGlobal(): Promise<{ invited: number; converted: number }> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({
+          invited: sql<number>`count(*)::int`,
+          converted: sql<number>`count(*) filter (where ${inviteRedemptions.status} = 'CONVERTED')::int`,
+        })
+        .from(inviteRedemptions);
+      return rows[0] ?? { invited: 0, converted: 0 };
+    });
+  }
+
   countsByInviter(inviterUserId: string): Promise<{ invited: number; converted: number }> {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx

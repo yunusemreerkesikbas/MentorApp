@@ -32,7 +32,7 @@ import { RefundSubscriptionDto } from "./admin.dto";
  */
 @ApiTags("admin")
 @ApiBearerAuth()
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.SUPPORT, UserRole.FINANCE)
 @UseInterceptors(AdminAuditInterceptor)
 @Controller("admin/users/:userId/subscription")
 export class AdminSubscriptionController {
@@ -45,6 +45,7 @@ export class AdminSubscriptionController {
 
   /** Record-only refund of the last successful charge (capped to the remaining refundable amount). */
   @Post("refund")
+  @Roles(UserRole.FINANCE)
   @Audit(AuditAction.SUBSCRIPTION_REFUND)
   async refund(
     @CurrentUser() actor: RequestUser,
@@ -68,6 +69,7 @@ export class AdminSubscriptionController {
 
   /** Cancel the user's subscription (renewal stops; access until period end). Idempotent. */
   @Post("cancel")
+  @Roles(UserRole.FINANCE)
   @HttpCode(HttpStatus.OK)
   @Audit(AuditAction.SUBSCRIPTION_CANCEL)
   async cancel(

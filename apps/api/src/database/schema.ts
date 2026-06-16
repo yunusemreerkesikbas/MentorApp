@@ -747,3 +747,28 @@ export const inviteRedemptions = pgTable(
     index("invite_redemptions_inviter_idx").on(t.inviterUserId),
   ],
 );
+
+/* --- Onboarding quests (§3 light economy): a completed quest → coin (capped, idempotent).
+ * One row per (user, quest) recorded on completion; the reward is a ledger entry
+ * (refType="quest", refId=row id). Evaluated by the economy QuestService.
+ * RLS: self-read (the user) + SERVICE/ADMIN; eval/grant run in SERVICE context. */
+export const userQuestProgress = pgTable(
+  "user_quest_progress",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** Stable quest id from the static catalog (e.g. "onboarding.profile-setup"). */
+    questId: text("quest_id").notNull(),
+    status: text("status").notNull().default("COMPLETED"),
+    completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("user_quest_progress_user_quest_unique_idx").on(t.userId, t.questId),
+    index("user_quest_progress_user_idx").on(t.userId),
+  ],
+);

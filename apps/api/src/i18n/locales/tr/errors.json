@@ -41,6 +41,7 @@
   "ADMIN_CANNOT_MODIFY_SELF": "Kendi hesabın üzerinde bu işlemi yapamazsın.",
   "ADMIN_CONFIG_KEY_NOT_FOUND": "Bu ayar anahtarı bulunamadı.",
   "ADMIN_CONFIG_INVALID_VALUE": "Ayar değeri geçersiz.",
+  "ADMIN_ROLE_NOT_ASSIGNABLE": "Bu rol atanamaz.",
   "ECONOMY_DISABLED": "Ekonomi özelliği şu anda kapalı.",
   "ECONOMY_LIMIT_EXCEEDED": "Coin kazanım sınırı aşıldı.",
   "INVITE_CODE_INVALID": "Davet kodu geçersiz.",
