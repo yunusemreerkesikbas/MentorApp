@@ -8,6 +8,7 @@ import { z } from "zod";
 
 export * from "./pagination.js";
 export * from "./admin.js";
+export * from "./ai.js";
 export * from "./auth.js";
 export * from "./coaching.js";
 export * from "./content.js";

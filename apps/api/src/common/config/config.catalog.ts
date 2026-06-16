@@ -21,6 +21,7 @@ import { z, type ZodTypeAny } from "zod";
 export const ConfigCategory = {
   FEATURE_FLAGS: "feature-flags",
   ECONOMY: "economy",
+  AI: "ai",
 } as const;
 
 export const ConfigValueType = {
@@ -59,6 +60,15 @@ const economyCount = (def: number, max: number, description: string): ConfigEntr
   description,
 });
 
+const aiCount = (def: number, max: number, description: string): ConfigEntryDef => ({
+  category: ConfigCategory.AI,
+  type: ConfigValueType.NUMBER,
+  schema: z.number().int().min(0).max(max),
+  default: def,
+  sensitive: true, // cost-bearing AI limits → bounds + audit (§7)
+  description,
+});
+
 export const CONFIG_CATALOG = {
   "ai.enabled": flag(true, "Global AI kill-switch (§4/§8) — turn off all AI features."),
   "economy.enabled": flag(false, "Gate for the light-economy module (user-facing balance/earning)."),
@@ -68,6 +78,7 @@ export const CONFIG_CATALOG = {
   "economy.coin.min_xp_for_coin": economyCount(0, 1000000, "Min XP required before a user can earn coin (anti-Sybil)."),
   "economy.invite.reward_coin": economyCount(20, 100000, "Coin granted to the inviter when an invited user converts."),
   "economy.quest.onboarding_reward_coin": economyCount(10, 100000, "Coin granted per completed onboarding quest."),
+  "ai.chat.daily_limit": aiCount(30, 100000, "Max AI coach chat messages a premium user may send per day (cost cap §7)."),
 } as const satisfies Record<string, ConfigEntryDef>;
 
 export type ConfigKey = keyof typeof CONFIG_CATALOG;

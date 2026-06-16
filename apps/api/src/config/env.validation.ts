@@ -25,8 +25,10 @@ const envSchema = z.object({
   /** Refresh token TTL in seconds (opaque token, httpOnly cookie). */
   JWT_REFRESH_TTL: z.coerce.number().int().positive().default(2_592_000),
 
-  // AI (§8): text = OpenAI, vision = Gemini
+  // AI (§8): text = OpenAI, vision = Gemini. Provider behind LlmPort; `fake` is the dev/test default.
+  AI_PROVIDER: z.enum(["fake", "openai"]).default("fake"),
   OPENAI_API_KEY: z.string().optional(),
+  OPENAI_MODEL: z.string().default("gpt-4o-mini"),
   GEMINI_API_KEY: z.string().optional(),
 
   // Payments (§7) — provider behind PaymentsPort. `fake` is the dev/test default;
@@ -89,6 +91,15 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
       code: z.ZodIssueCode.custom,
       path: ["PAYMENTS_WEBHOOK_SECRET"],
       message: "PAYMENTS_WEBHOOK_SECRET is required when PAYMENTS_PROVIDER=fake.",
+    });
+  }
+  // The OpenAI LLM adapter needs a key; the fake adapter (dev/test) does not. (AI is additionally
+  // gated by the `ai.enabled` flag, so prod may ship with fake until the key/launch is ready.)
+  if (env.AI_PROVIDER === "openai" && !env.OPENAI_API_KEY) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["OPENAI_API_KEY"],
+      message: "OPENAI_API_KEY is required when AI_PROVIDER=openai.",
     });
   }
   if (env.NODE_ENV === "production" && !env.CRON_SECRET) {

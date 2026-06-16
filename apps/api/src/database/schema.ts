@@ -772,3 +772,26 @@ export const userQuestProgress = pgTable(
     index("user_quest_progress_user_idx").on(t.userId),
   ],
 );
+
+/* --- AI usage metering (W3, §7 cost cap): one row per LLM call. Powers the premium daily
+ * rate-limit + (later) the metrics LLM-cost KPI. NOT chat history (single-turn, stateless).
+ * §4 #6: stores token/cost meta only — never the prompt/reply text or any PII.
+ * RLS: self-read + SERVICE/ADMIN; writes run in SERVICE context. */
+export const aiUsage = pgTable(
+  "ai_usage",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    model: text("model").notNull(),
+    promptTokens: integer("prompt_tokens").notNull().default(0),
+    completionTokens: integer("completion_tokens").notNull().default(0),
+    /** Estimated cost in micro-USD (integer; per-call cost is far below 1 minor unit). */
+    costMicros: integer("cost_micros").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("ai_usage_user_created_idx").on(t.userId, t.createdAt)],
+);

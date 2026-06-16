@@ -12,7 +12,7 @@
 | **W0 Identity** | ✅ | JWT + refresh rotation, RLS policies, guards, web auth screens ([0010](./devnotes/0010-identity.md), [0011](./devnotes/0011-identity-review-fixes.md)) | — |
 | **W1 Content** | 🟡 | exam calendar ([0016](./devnotes/0016-w1-exam-calendar.md)) · knowledge center ([0017](./devnotes/0017-w1-knowledge-center.md)) · subjects/exam-subjects · exam-calendar admin editor ([0024](./devnotes/0024-w6-admin-exam-calendar-editor.md)) | pgvector RAG index (with W3) |
 | **W2 Coaching** | 🟡 | daily loop · panel ([0013](./devnotes/0013-panel-daily-hub.md), [0014](./devnotes/0014-w2-coaching-daily-loop.md)) · plan/seans UI · mock-exam analysis | mood polish, vision board / ghost (per roadmap) |
-| **W3 AI** | ⏳ | — (PremiumGuard + ContentPort + economy coin ready as inputs) | Context Builder, LLM/RAG, AI chat, photo→categorize, **coin→AI-right spend** |
+| **W3 AI** | 🟡 | premium AI coach chat (single-turn, refusal-grounded, LlmPort fake/OpenAI, usage meter + rate-limit) ([0030](./devnotes/0030-w3-ai-coach-chat-slice1.md)) | vector RAG + source links, web koç UI, multi-turn, photo→categorize, **coin→AI-right spend** |
 | **W4 Payments** | ✅ | PaymentsPort fake/iyzico, trial state machine, entitlement + PremiumGuard, idempotent webhook, /abonelik ([0015](./devnotes/0015-payments.md)) | iyzico prod keys + e-archive (Phase-0 ops) |
 | **W5 Notifications** | ✅ | JobQueuePort + cron runner, Postmark email, web push, daily reminders ([0019](./devnotes/0019-w5-notifications-queue.md)) | — |
 | **W6 Admin + Economy** | ✅ | see breakdown below — all MVP slices shipped | Phase 2: moderation queue · coin spend→AI · habit/milestone quests |

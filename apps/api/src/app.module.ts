@@ -14,6 +14,7 @@ import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
 import { AppI18nModule } from "./i18n/i18n.module";
 import { AdminModule } from "./modules/admin/admin.module";
+import { AiModule } from "./modules/ai/ai.module";
 import { CoachingModule } from "./modules/coaching/coaching.module";
 import { ContentModule } from "./modules/content/content.module";
 import { EconomyModule } from "./modules/economy/economy.module";
@@ -47,6 +48,7 @@ import { buildLoggerConfig } from "./observability/logger.config";
     DatabaseModule,
     HealthModule,
     AdminModule,
+    AiModule,
     CoachingModule,
     ContentModule,
     EconomyModule,

@@ -102,7 +102,8 @@ Structure detail: [`docs/file-structure.md`](./docs/file-structure.md).
 
 - **senior-architect** → module boundaries, event design, tech decisions, diagrams.
 - **senior-backend** → NestJS modules/endpoints, Drizzle schema/queries, auth, payments, queue.
-- **senior-frontend** → Next.js pages/components, state, applying DESIGN.md.
+- **senior-frontend** → Next.js pages/components, state, applying DESIGN.md. **Read `apps/web/AGENTS.md` or `apps/admin/AGENTS.md`** depending on which app you're in (admin has accepted stack deviations).
+- **code-reviewer** → PR checklist, guardrails §4, merge readiness ([code-review.md](./docs/standards/code-review.md)).
 - **vercel-react-best-practices** → **performance constitution** for all React/Next.js code
   (priority: async-waterfall → bundle → server → client → re-render). New FE code follows it.
 - **ui-ux-pro-max / frontend-design** → screen design (stay faithful to DESIGN.md tokens).

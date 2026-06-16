@@ -99,6 +99,13 @@
       "when": 1781559264506,
       "tag": "0014_quick_dagger",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1781599075812,
+      "tag": "0015_jittery_leopardon",
+      "breakpoints": true
     }
   ]
 }
