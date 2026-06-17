@@ -10,7 +10,7 @@
 
 export type PlanTaskStatus = "PENDING" | "DONE";
 export type StudySessionStatus = "IN_PROGRESS" | "COMPLETED" | "ABANDONED";
-export type SessionPresetId = "25_5" | "50_10";
+export type SessionPresetId = "25_5" | "50_10" | "custom";
 
 /** Projection of a `plan_tasks` row. */
 export interface PlanTaskDto {
@@ -32,6 +32,8 @@ export interface StudySessionDto {
   startedAt: string; // ISO datetime
   endedAt: string | null; // ISO datetime
   actualFocusSeconds: number;
+  /** Set when `preset === "custom"`; null for fixed Pomodoro presets. */
+  plannedFocusMinutes: number | null;
 }
 
 /** Streak summary derived server-side from `daily_activity` / `streak_state`. */

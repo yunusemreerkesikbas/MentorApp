@@ -20,6 +20,7 @@ export type StudySessionStatus = (typeof StudySessionStatus)[keyof typeof StudyS
 export const SessionPreset = {
   POMODORO_25_5: "25_5",
   DEEP_50_10: "50_10",
+  CUSTOM: "custom",
 } as const;
 export type SessionPreset = (typeof SessionPreset)[keyof typeof SessionPreset];
 

@@ -10,6 +10,7 @@ export * from "./components/text-field.js";
 export * from "./components/card.js";
 export * from "./components/chip.js";
 export * from "./components/progress-bar.js";
+export * from "./components/circular-timer-ring.js";
 export * from "./components/background-blobs.js";
 export * from "./components/section-heading.js";
 export * from "./components/data-card.js";

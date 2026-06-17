@@ -143,6 +143,7 @@ describe("coaching (e2e)", () => {
     expect(start.status).toBe(201);
     expect(start.body.status).toBe("IN_PROGRESS");
     expect(start.body.endedAt).toBeNull();
+    expect(start.body.plannedFocusMinutes).toBeNull();
 
     const midToday = await request(app.getHttpServer()).get("/v1/coaching/today").set(authA());
     const streakMid = midToday.body.streak.currentStreak;
@@ -157,6 +158,22 @@ describe("coaching (e2e)", () => {
 
     const afterToday = await request(app.getHttpServer()).get("/v1/coaching/today").set(authA());
     expect(afterToday.body.streak.currentStreak).toBeGreaterThanOrEqual(streakMid);
+  });
+
+  it("custom preset requires focusMinutes and persists plannedFocusMinutes", async () => {
+    const missing = await request(app.getHttpServer())
+      .post("/v1/study-sessions")
+      .set(authA())
+      .send({ preset: "custom" });
+    expect(missing.status).toBe(400);
+
+    const start = await request(app.getHttpServer())
+      .post("/v1/study-sessions")
+      .set(authA())
+      .send({ preset: "custom", focusMinutes: 35 });
+    expect(start.status).toBe(201);
+    expect(start.body.preset).toBe("custom");
+    expect(start.body.plannedFocusMinutes).toBe(35);
   });
 
   it("mock exam POST computes net → GET analysis returns trend", async () => {

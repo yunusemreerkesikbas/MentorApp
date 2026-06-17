@@ -343,8 +343,10 @@ export const studySessions = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     endedAt: timestamp("ended_at", { withTimezone: true }),
-    /** "25_5" | "50_10" (SessionPreset). */
+    /** "25_5" | "50_10" | "custom" (SessionPreset). */
     preset: text("preset").notNull(),
+    /** User-chosen focus length when preset is custom; null for fixed presets. */
+    plannedFocusMinutes: integer("planned_focus_minutes"),
     actualFocusSeconds: integer("actual_focus_seconds").notNull().default(0),
     /** Nullable SOFT ref → content subject. */
     subject: text("subject"),
