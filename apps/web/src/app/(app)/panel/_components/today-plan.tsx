@@ -2,10 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 import type { PlanTaskDto, PlanTaskStatus } from "@mentor/types";
 import { ApiClientError, planTaskControllerUpdate } from "@mentor/api-client";
 import { Card, PlanListItem, ProgressBar, SectionHeading } from "@mentor/ui";
 import { FormError } from "../../../../components/form";
+import { staggerItemVariants } from "../../../../lib/stagger-motion";
 
 /**
  * Today's plan — client container for the panel's task list.
@@ -20,6 +22,7 @@ export function TodayPlan({
   tasks: PlanTaskDto[];
   onTasksChanged?: () => void;
 }) {
+  const reduceMotion = useReducedMotion();
   const [tasks, setTasks] = useState(initialTasks);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -71,21 +74,35 @@ export function TodayPlan({
         <EmptyState />
       ) : (
         <>
-          <div className="mt-4">
+          <motion.div
+            className="mt-4"
+            key={completion}
+            initial={reduceMotion ? false : { opacity: 0.6, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2 }}
+          >
             <ProgressBar value={completion} />
-          </div>
-          <ul className="mt-3 flex flex-col gap-1">
+          </motion.div>
+          <motion.ul
+            className="mt-3 flex flex-col gap-1"
+            initial={reduceMotion ? false : "hidden"}
+            animate={reduceMotion ? undefined : "show"}
+            variants={{
+              hidden: { opacity: 0 },
+              show: { opacity: 1, transition: { staggerChildren: 0.06 } },
+            }}
+          >
             {tasks.map((task) => (
-              <li key={task.id}>
+              <motion.li key={task.id} variants={reduceMotion ? undefined : staggerItemVariants}>
                 <PlanListItem
                   title={task.title}
                   subject={task.subject}
                   done={task.status === "DONE"}
                   onToggle={() => void toggle(task.id)}
                 />
-              </li>
+              </motion.li>
             ))}
-          </ul>
+          </motion.ul>
         </>
       )}
     </Card>
@@ -99,10 +116,7 @@ function AddTaskLink() {
       className="flex min-h-[44px] items-center gap-1.5 rounded-[var(--radius-card)] px-3 text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
       style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
+      <PlusIcon />
       Görev ekle
     </Link>
   );
@@ -110,21 +124,47 @@ function AddTaskLink() {
 
 function EmptyState() {
   return (
-    <div className="mt-4 flex flex-col items-center gap-3 py-6 text-center">
+    <div className="mt-4 flex flex-col items-center gap-4 py-6 text-center">
+      <span
+        className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold capitalize"
+        style={{
+          backgroundColor: "color-mix(in srgb, var(--color-chip) 30%, transparent)",
+          color: "var(--color-chip-text)",
+          fontFamily: "var(--font-body)",
+        }}
+      >
+        Plan boş
+      </span>
       <p className="text-base" style={{ color: "var(--color-secondary)" }}>
-        Bugüne henüz görev eklemedin.
+        Bugüne henüz görev eklemedin. Küçük bir adım bile yeterli.
       </p>
       <Link
         href="/plan"
         className="flex min-h-[44px] items-center gap-1.5 rounded-[var(--radius-card)] px-4 text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
         style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
+        <PlusIcon />
         İlk görevini ekle
       </Link>
     </div>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
   );
 }

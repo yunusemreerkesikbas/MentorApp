@@ -11,6 +11,14 @@ export interface UpdateConfigDto { [key: string]: unknown }
 
 export interface AdjustEconomyDto { [key: string]: unknown }
 
+export interface UpsertArticleDto { [key: string]: unknown }
+
+export interface UpsertExamDto { [key: string]: unknown }
+
+export interface UpsertExamEventDto { [key: string]: unknown }
+
+export interface RefundSubscriptionDto { [key: string]: unknown }
+
 export interface SignupDto { [key: string]: unknown }
 
 export interface LoginDto { [key: string]: unknown }
@@ -22,6 +30,12 @@ export interface ForgotPasswordDto { [key: string]: unknown }
 export interface ResetPasswordDto { [key: string]: unknown }
 
 export interface UpdateMeDto { [key: string]: unknown }
+
+export interface RedeemInviteDto { [key: string]: unknown }
+
+export interface CheckoutDto { [key: string]: unknown }
+
+export interface AiChatDto { [key: string]: unknown }
 
 export interface CreateMoodCheckinDto { [key: string]: unknown }
 
@@ -40,8 +54,6 @@ export interface PushSubscribeDto { [key: string]: unknown }
 export interface PushUnsubscribeDto { [key: string]: unknown }
 
 export interface UpdateNotificationPreferencesDto { [key: string]: unknown }
-
-export interface CheckoutDto { [key: string]: unknown }
 
 /**
  * @nullable
@@ -409,6 +421,76 @@ export const adminUsersControllerRevokeStaff = async (userId: string, options?: 
 
 
 
+export type adminUsersControllerGrantRoleResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminUsersControllerGrantRoleResponseSuccess = (adminUsersControllerGrantRoleResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminUsersControllerGrantRoleResponse = (adminUsersControllerGrantRoleResponseSuccess)
+
+export const getAdminUsersControllerGrantRoleUrl = (userId: string,
+    role: string,) => {
+
+
+  
+
+  return `/v1/admin/users/${userId}/roles/${role}`
+}
+
+export const adminUsersControllerGrantRole = async (userId: string,
+    role: string, options?: RequestInit): Promise<adminUsersControllerGrantRoleResponse> => {
+  
+  return http<adminUsersControllerGrantRoleResponse>(getAdminUsersControllerGrantRoleUrl(userId,role),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type adminUsersControllerRevokeRoleResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminUsersControllerRevokeRoleResponseSuccess = (adminUsersControllerRevokeRoleResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminUsersControllerRevokeRoleResponse = (adminUsersControllerRevokeRoleResponseSuccess)
+
+export const getAdminUsersControllerRevokeRoleUrl = (userId: string,
+    role: string,) => {
+
+
+  
+
+  return `/v1/admin/users/${userId}/roles/${role}`
+}
+
+export const adminUsersControllerRevokeRole = async (userId: string,
+    role: string, options?: RequestInit): Promise<adminUsersControllerRevokeRoleResponse> => {
+  
+  return http<adminUsersControllerRevokeRoleResponse>(getAdminUsersControllerRevokeRoleUrl(userId,role),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
 export type adminUsersControllerListAuditLogResponse200 = {
   data: void
   status: 200
@@ -573,6 +655,476 @@ export const adminEconomyControllerAdjust = async (userId: string,
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       adjustEconomyDto,)
+  }
+);}
+
+
+
+export type adminContentControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminContentControllerListResponseSuccess = (adminContentControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminContentControllerListResponse = (adminContentControllerListResponseSuccess)
+
+export const getAdminContentControllerListUrl = () => {
+
+
+  
+
+  return `/v1/admin/content/articles`
+}
+
+export const adminContentControllerList = async ( options?: RequestInit): Promise<adminContentControllerListResponse> => {
+  
+  return http<adminContentControllerListResponse>(getAdminContentControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminContentControllerUpsertResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminContentControllerUpsertResponseSuccess = (adminContentControllerUpsertResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminContentControllerUpsertResponse = (adminContentControllerUpsertResponseSuccess)
+
+export const getAdminContentControllerUpsertUrl = () => {
+
+
+  
+
+  return `/v1/admin/content/articles`
+}
+
+export const adminContentControllerUpsert = async (upsertArticleDto: UpsertArticleDto, options?: RequestInit): Promise<adminContentControllerUpsertResponse> => {
+  
+  return http<adminContentControllerUpsertResponse>(getAdminContentControllerUpsertUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      upsertArticleDto,)
+  }
+);}
+
+
+
+export type adminContentControllerGetResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminContentControllerGetResponseSuccess = (adminContentControllerGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminContentControllerGetResponse = (adminContentControllerGetResponseSuccess)
+
+export const getAdminContentControllerGetUrl = (slug: string,) => {
+
+
+  
+
+  return `/v1/admin/content/articles/${slug}`
+}
+
+export const adminContentControllerGet = async (slug: string, options?: RequestInit): Promise<adminContentControllerGetResponse> => {
+  
+  return http<adminContentControllerGetResponse>(getAdminContentControllerGetUrl(slug),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminContentControllerPublishResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminContentControllerPublishResponseSuccess = (adminContentControllerPublishResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminContentControllerPublishResponse = (adminContentControllerPublishResponseSuccess)
+
+export const getAdminContentControllerPublishUrl = (slug: string,) => {
+
+
+  
+
+  return `/v1/admin/content/articles/${slug}/publish`
+}
+
+export const adminContentControllerPublish = async (slug: string, options?: RequestInit): Promise<adminContentControllerPublishResponse> => {
+  
+  return http<adminContentControllerPublishResponse>(getAdminContentControllerPublishUrl(slug),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type adminContentControllerUnpublishResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminContentControllerUnpublishResponseSuccess = (adminContentControllerUnpublishResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminContentControllerUnpublishResponse = (adminContentControllerUnpublishResponseSuccess)
+
+export const getAdminContentControllerUnpublishUrl = (slug: string,) => {
+
+
+  
+
+  return `/v1/admin/content/articles/${slug}/unpublish`
+}
+
+export const adminContentControllerUnpublish = async (slug: string, options?: RequestInit): Promise<adminContentControllerUnpublishResponse> => {
+  
+  return http<adminContentControllerUnpublishResponse>(getAdminContentControllerUnpublishUrl(slug),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type adminExamCalendarControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminExamCalendarControllerListResponseSuccess = (adminExamCalendarControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminExamCalendarControllerListResponse = (adminExamCalendarControllerListResponseSuccess)
+
+export const getAdminExamCalendarControllerListUrl = () => {
+
+
+  
+
+  return `/v1/admin/content/exams`
+}
+
+export const adminExamCalendarControllerList = async ( options?: RequestInit): Promise<adminExamCalendarControllerListResponse> => {
+  
+  return http<adminExamCalendarControllerListResponse>(getAdminExamCalendarControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminExamCalendarControllerUpsertResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminExamCalendarControllerUpsertResponseSuccess = (adminExamCalendarControllerUpsertResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminExamCalendarControllerUpsertResponse = (adminExamCalendarControllerUpsertResponseSuccess)
+
+export const getAdminExamCalendarControllerUpsertUrl = () => {
+
+
+  
+
+  return `/v1/admin/content/exams`
+}
+
+export const adminExamCalendarControllerUpsert = async (upsertExamDto: UpsertExamDto, options?: RequestInit): Promise<adminExamCalendarControllerUpsertResponse> => {
+  
+  return http<adminExamCalendarControllerUpsertResponse>(getAdminExamCalendarControllerUpsertUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      upsertExamDto,)
+  }
+);}
+
+
+
+export type adminExamCalendarControllerGetResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminExamCalendarControllerGetResponseSuccess = (adminExamCalendarControllerGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminExamCalendarControllerGetResponse = (adminExamCalendarControllerGetResponseSuccess)
+
+export const getAdminExamCalendarControllerGetUrl = (slug: string,) => {
+
+
+  
+
+  return `/v1/admin/content/exams/${slug}`
+}
+
+export const adminExamCalendarControllerGet = async (slug: string, options?: RequestInit): Promise<adminExamCalendarControllerGetResponse> => {
+  
+  return http<adminExamCalendarControllerGetResponse>(getAdminExamCalendarControllerGetUrl(slug),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminExamCalendarControllerUpsertEventResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminExamCalendarControllerUpsertEventResponseSuccess = (adminExamCalendarControllerUpsertEventResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminExamCalendarControllerUpsertEventResponse = (adminExamCalendarControllerUpsertEventResponseSuccess)
+
+export const getAdminExamCalendarControllerUpsertEventUrl = (slug: string,) => {
+
+
+  
+
+  return `/v1/admin/content/exams/${slug}/events`
+}
+
+export const adminExamCalendarControllerUpsertEvent = async (slug: string,
+    upsertExamEventDto: UpsertExamEventDto, options?: RequestInit): Promise<adminExamCalendarControllerUpsertEventResponse> => {
+  
+  return http<adminExamCalendarControllerUpsertEventResponse>(getAdminExamCalendarControllerUpsertEventUrl(slug),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      upsertExamEventDto,)
+  }
+);}
+
+
+
+export type adminExamCalendarControllerDeleteEventResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type adminExamCalendarControllerDeleteEventResponseSuccess = (adminExamCalendarControllerDeleteEventResponse204) & {
+  headers: Headers;
+};
+;
+
+export type adminExamCalendarControllerDeleteEventResponse = (adminExamCalendarControllerDeleteEventResponseSuccess)
+
+export const getAdminExamCalendarControllerDeleteEventUrl = (slug: string,
+    type: string,) => {
+
+
+  
+
+  return `/v1/admin/content/exams/${slug}/events/${type}`
+}
+
+export const adminExamCalendarControllerDeleteEvent = async (slug: string,
+    type: string, options?: RequestInit): Promise<adminExamCalendarControllerDeleteEventResponse> => {
+  
+  return http<adminExamCalendarControllerDeleteEventResponse>(getAdminExamCalendarControllerDeleteEventUrl(slug,type),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type adminSubscriptionControllerOverviewResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminSubscriptionControllerOverviewResponseSuccess = (adminSubscriptionControllerOverviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminSubscriptionControllerOverviewResponse = (adminSubscriptionControllerOverviewResponseSuccess)
+
+export const getAdminSubscriptionControllerOverviewUrl = (userId: string,) => {
+
+
+  
+
+  return `/v1/admin/users/${userId}/subscription`
+}
+
+export const adminSubscriptionControllerOverview = async (userId: string, options?: RequestInit): Promise<adminSubscriptionControllerOverviewResponse> => {
+  
+  return http<adminSubscriptionControllerOverviewResponse>(getAdminSubscriptionControllerOverviewUrl(userId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminSubscriptionControllerRefundResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminSubscriptionControllerRefundResponseSuccess = (adminSubscriptionControllerRefundResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminSubscriptionControllerRefundResponse = (adminSubscriptionControllerRefundResponseSuccess)
+
+export const getAdminSubscriptionControllerRefundUrl = (userId: string,) => {
+
+
+  
+
+  return `/v1/admin/users/${userId}/subscription/refund`
+}
+
+export const adminSubscriptionControllerRefund = async (userId: string,
+    refundSubscriptionDto: RefundSubscriptionDto, options?: RequestInit): Promise<adminSubscriptionControllerRefundResponse> => {
+  
+  return http<adminSubscriptionControllerRefundResponse>(getAdminSubscriptionControllerRefundUrl(userId),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      refundSubscriptionDto,)
+  }
+);}
+
+
+
+export type adminSubscriptionControllerCancelResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminSubscriptionControllerCancelResponseSuccess = (adminSubscriptionControllerCancelResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminSubscriptionControllerCancelResponse = (adminSubscriptionControllerCancelResponseSuccess)
+
+export const getAdminSubscriptionControllerCancelUrl = (userId: string,) => {
+
+
+  
+
+  return `/v1/admin/users/${userId}/subscription/cancel`
+}
+
+export const adminSubscriptionControllerCancel = async (userId: string, options?: RequestInit): Promise<adminSubscriptionControllerCancelResponse> => {
+  
+  return http<adminSubscriptionControllerCancelResponse>(getAdminSubscriptionControllerCancelUrl(userId),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type adminMetricsControllerOverviewResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminMetricsControllerOverviewResponseSuccess = (adminMetricsControllerOverviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminMetricsControllerOverviewResponse = (adminMetricsControllerOverviewResponseSuccess)
+
+export const getAdminMetricsControllerOverviewUrl = () => {
+
+
+  
+
+  return `/v1/admin/metrics`
+}
+
+export const adminMetricsControllerOverview = async ( options?: RequestInit): Promise<adminMetricsControllerOverviewResponse> => {
+  
+  return http<adminMetricsControllerOverviewResponse>(getAdminMetricsControllerOverviewUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
   }
 );}
 
@@ -942,6 +1494,504 @@ export const economyControllerLedger = async ( options?: RequestInit): Promise<e
     method: 'GET'
     
     
+  }
+);}
+
+
+
+export type economyControllerInviteResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type economyControllerInviteResponseSuccess = (economyControllerInviteResponse200) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerInviteResponse = (economyControllerInviteResponseSuccess)
+
+export const getEconomyControllerInviteUrl = () => {
+
+
+  
+
+  return `/v1/economy/invite`
+}
+
+export const economyControllerInvite = async ( options?: RequestInit): Promise<economyControllerInviteResponse> => {
+  
+  return http<economyControllerInviteResponse>(getEconomyControllerInviteUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type economyControllerQuestsListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type economyControllerQuestsListResponseSuccess = (economyControllerQuestsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerQuestsListResponse = (economyControllerQuestsListResponseSuccess)
+
+export const getEconomyControllerQuestsListUrl = () => {
+
+
+  
+
+  return `/v1/economy/quests`
+}
+
+export const economyControllerQuestsList = async ( options?: RequestInit): Promise<economyControllerQuestsListResponse> => {
+  
+  return http<economyControllerQuestsListResponse>(getEconomyControllerQuestsListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type economyControllerRedeemResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type economyControllerRedeemResponseSuccess = (economyControllerRedeemResponse201) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerRedeemResponse = (economyControllerRedeemResponseSuccess)
+
+export const getEconomyControllerRedeemUrl = () => {
+
+
+  
+
+  return `/v1/economy/invite/redeem`
+}
+
+export const economyControllerRedeem = async (redeemInviteDto: RedeemInviteDto, options?: RequestInit): Promise<economyControllerRedeemResponse> => {
+  
+  return http<economyControllerRedeemResponse>(getEconomyControllerRedeemUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      redeemInviteDto,)
+  }
+);}
+
+
+
+export type subscriptionsControllerListPlansResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type subscriptionsControllerListPlansResponseSuccess = (subscriptionsControllerListPlansResponse200) & {
+  headers: Headers;
+};
+;
+
+export type subscriptionsControllerListPlansResponse = (subscriptionsControllerListPlansResponseSuccess)
+
+export const getSubscriptionsControllerListPlansUrl = () => {
+
+
+  
+
+  return `/v1/plans`
+}
+
+export const subscriptionsControllerListPlans = async ( options?: RequestInit): Promise<subscriptionsControllerListPlansResponse> => {
+  
+  return http<subscriptionsControllerListPlansResponse>(getSubscriptionsControllerListPlansUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type subscriptionsControllerGetMineResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type subscriptionsControllerGetMineResponseSuccess = (subscriptionsControllerGetMineResponse200) & {
+  headers: Headers;
+};
+;
+
+export type subscriptionsControllerGetMineResponse = (subscriptionsControllerGetMineResponseSuccess)
+
+export const getSubscriptionsControllerGetMineUrl = () => {
+
+
+  
+
+  return `/v1/subscription`
+}
+
+export const subscriptionsControllerGetMine = async ( options?: RequestInit): Promise<subscriptionsControllerGetMineResponse> => {
+  
+  return http<subscriptionsControllerGetMineResponse>(getSubscriptionsControllerGetMineUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type subscriptionsControllerCheckoutResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type subscriptionsControllerCheckoutResponseSuccess = (subscriptionsControllerCheckoutResponse200) & {
+  headers: Headers;
+};
+;
+
+export type subscriptionsControllerCheckoutResponse = (subscriptionsControllerCheckoutResponseSuccess)
+
+export const getSubscriptionsControllerCheckoutUrl = () => {
+
+
+  
+
+  return `/v1/subscription/checkout`
+}
+
+export const subscriptionsControllerCheckout = async (checkoutDto: CheckoutDto, options?: RequestInit): Promise<subscriptionsControllerCheckoutResponse> => {
+  
+  return http<subscriptionsControllerCheckoutResponse>(getSubscriptionsControllerCheckoutUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      checkoutDto,)
+  }
+);}
+
+
+
+export type subscriptionsControllerCancelResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type subscriptionsControllerCancelResponseSuccess = (subscriptionsControllerCancelResponse200) & {
+  headers: Headers;
+};
+;
+
+export type subscriptionsControllerCancelResponse = (subscriptionsControllerCancelResponseSuccess)
+
+export const getSubscriptionsControllerCancelUrl = () => {
+
+
+  
+
+  return `/v1/subscription/cancel`
+}
+
+export const subscriptionsControllerCancel = async ( options?: RequestInit): Promise<subscriptionsControllerCancelResponse> => {
+  
+  return http<subscriptionsControllerCancelResponse>(getSubscriptionsControllerCancelUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type paymentsWebhookControllerHandleResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type paymentsWebhookControllerHandleResponseSuccess = (paymentsWebhookControllerHandleResponse200) & {
+  headers: Headers;
+};
+;
+
+export type paymentsWebhookControllerHandleResponse = (paymentsWebhookControllerHandleResponseSuccess)
+
+export const getPaymentsWebhookControllerHandleUrl = () => {
+
+
+  
+
+  return `/v1/webhooks/payments`
+}
+
+export const paymentsWebhookControllerHandle = async ( options?: RequestInit): Promise<paymentsWebhookControllerHandleResponse> => {
+  
+  return http<paymentsWebhookControllerHandleResponse>(getPaymentsWebhookControllerHandleUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type contentControllerListExamsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type contentControllerListExamsResponseSuccess = (contentControllerListExamsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type contentControllerListExamsResponse = (contentControllerListExamsResponseSuccess)
+
+export const getContentControllerListExamsUrl = () => {
+
+
+  
+
+  return `/v1/content/exams`
+}
+
+export const contentControllerListExams = async ( options?: RequestInit): Promise<contentControllerListExamsResponse> => {
+  
+  return http<contentControllerListExamsResponse>(getContentControllerListExamsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type contentControllerCalendarByFamilyResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type contentControllerCalendarByFamilyResponseSuccess = (contentControllerCalendarByFamilyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type contentControllerCalendarByFamilyResponse = (contentControllerCalendarByFamilyResponseSuccess)
+
+export const getContentControllerCalendarByFamilyUrl = (type: string,) => {
+
+
+  
+
+  return `/v1/content/exams/by-type/${type}/calendar`
+}
+
+export const contentControllerCalendarByFamily = async (type: string, options?: RequestInit): Promise<contentControllerCalendarByFamilyResponse> => {
+  
+  return http<contentControllerCalendarByFamilyResponse>(getContentControllerCalendarByFamilyUrl(type),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type contentControllerCalendarBySlugResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type contentControllerCalendarBySlugResponseSuccess = (contentControllerCalendarBySlugResponse200) & {
+  headers: Headers;
+};
+;
+
+export type contentControllerCalendarBySlugResponse = (contentControllerCalendarBySlugResponseSuccess)
+
+export const getContentControllerCalendarBySlugUrl = (slug: string,) => {
+
+
+  
+
+  return `/v1/content/exams/${slug}/calendar`
+}
+
+export const contentControllerCalendarBySlug = async (slug: string, options?: RequestInit): Promise<contentControllerCalendarBySlugResponse> => {
+  
+  return http<contentControllerCalendarBySlugResponse>(getContentControllerCalendarBySlugUrl(slug),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type contentControllerSubjectsBySlugResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type contentControllerSubjectsBySlugResponseSuccess = (contentControllerSubjectsBySlugResponse200) & {
+  headers: Headers;
+};
+;
+
+export type contentControllerSubjectsBySlugResponse = (contentControllerSubjectsBySlugResponseSuccess)
+
+export const getContentControllerSubjectsBySlugUrl = (slug: string,) => {
+
+
+  
+
+  return `/v1/content/exams/${slug}/subjects`
+}
+
+export const contentControllerSubjectsBySlug = async (slug: string, options?: RequestInit): Promise<contentControllerSubjectsBySlugResponse> => {
+  
+  return http<contentControllerSubjectsBySlugResponse>(getContentControllerSubjectsBySlugUrl(slug),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type infoArticleControllerListArticlesResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type infoArticleControllerListArticlesResponseSuccess = (infoArticleControllerListArticlesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type infoArticleControllerListArticlesResponse = (infoArticleControllerListArticlesResponseSuccess)
+
+export const getInfoArticleControllerListArticlesUrl = () => {
+
+
+  
+
+  return `/v1/content/info-articles`
+}
+
+export const infoArticleControllerListArticles = async ( options?: RequestInit): Promise<infoArticleControllerListArticlesResponse> => {
+  
+  return http<infoArticleControllerListArticlesResponse>(getInfoArticleControllerListArticlesUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type infoArticleControllerGetArticleResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type infoArticleControllerGetArticleResponseSuccess = (infoArticleControllerGetArticleResponse200) & {
+  headers: Headers;
+};
+;
+
+export type infoArticleControllerGetArticleResponse = (infoArticleControllerGetArticleResponseSuccess)
+
+export const getInfoArticleControllerGetArticleUrl = (slug: string,) => {
+
+
+  
+
+  return `/v1/content/info-articles/${slug}`
+}
+
+export const infoArticleControllerGetArticle = async (slug: string, options?: RequestInit): Promise<infoArticleControllerGetArticleResponse> => {
+  
+  return http<infoArticleControllerGetArticleResponse>(getInfoArticleControllerGetArticleUrl(slug),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type aiChatControllerReplyResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type aiChatControllerReplyResponseSuccess = (aiChatControllerReplyResponse201) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerReplyResponse = (aiChatControllerReplyResponseSuccess)
+
+export const getAiChatControllerReplyUrl = () => {
+
+
+  
+
+  return `/v1/coach/chat`
+}
+
+export const aiChatControllerReply = async (aiChatDto: AiChatDto, options?: RequestInit): Promise<aiChatControllerReplyResponse> => {
+  
+  return http<aiChatControllerReplyResponse>(getAiChatControllerReplyUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      aiChatDto,)
   }
 );}
 
@@ -1384,204 +2434,6 @@ export const mockExamControllerGetById = async (id: string, options?: RequestIni
 
 
 
-export type contentControllerListExamsResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type contentControllerListExamsResponseSuccess = (contentControllerListExamsResponse200) & {
-  headers: Headers;
-};
-;
-
-export type contentControllerListExamsResponse = (contentControllerListExamsResponseSuccess)
-
-export const getContentControllerListExamsUrl = () => {
-
-
-  
-
-  return `/v1/content/exams`
-}
-
-export const contentControllerListExams = async ( options?: RequestInit): Promise<contentControllerListExamsResponse> => {
-  
-  return http<contentControllerListExamsResponse>(getContentControllerListExamsUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type contentControllerCalendarByFamilyResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type contentControllerCalendarByFamilyResponseSuccess = (contentControllerCalendarByFamilyResponse200) & {
-  headers: Headers;
-};
-;
-
-export type contentControllerCalendarByFamilyResponse = (contentControllerCalendarByFamilyResponseSuccess)
-
-export const getContentControllerCalendarByFamilyUrl = (type: string,) => {
-
-
-  
-
-  return `/v1/content/exams/by-type/${type}/calendar`
-}
-
-export const contentControllerCalendarByFamily = async (type: string, options?: RequestInit): Promise<contentControllerCalendarByFamilyResponse> => {
-  
-  return http<contentControllerCalendarByFamilyResponse>(getContentControllerCalendarByFamilyUrl(type),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type contentControllerCalendarBySlugResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type contentControllerCalendarBySlugResponseSuccess = (contentControllerCalendarBySlugResponse200) & {
-  headers: Headers;
-};
-;
-
-export type contentControllerCalendarBySlugResponse = (contentControllerCalendarBySlugResponseSuccess)
-
-export const getContentControllerCalendarBySlugUrl = (slug: string,) => {
-
-
-  
-
-  return `/v1/content/exams/${slug}/calendar`
-}
-
-export const contentControllerCalendarBySlug = async (slug: string, options?: RequestInit): Promise<contentControllerCalendarBySlugResponse> => {
-  
-  return http<contentControllerCalendarBySlugResponse>(getContentControllerCalendarBySlugUrl(slug),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type contentControllerSubjectsBySlugResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type contentControllerSubjectsBySlugResponseSuccess = (contentControllerSubjectsBySlugResponse200) & {
-  headers: Headers;
-};
-;
-
-export type contentControllerSubjectsBySlugResponse = (contentControllerSubjectsBySlugResponseSuccess)
-
-export const getContentControllerSubjectsBySlugUrl = (slug: string,) => {
-
-
-  
-
-  return `/v1/content/exams/${slug}/subjects`
-}
-
-export const contentControllerSubjectsBySlug = async (slug: string, options?: RequestInit): Promise<contentControllerSubjectsBySlugResponse> => {
-  
-  return http<contentControllerSubjectsBySlugResponse>(getContentControllerSubjectsBySlugUrl(slug),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type infoArticleControllerListArticlesResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type infoArticleControllerListArticlesResponseSuccess = (infoArticleControllerListArticlesResponse200) & {
-  headers: Headers;
-};
-;
-
-export type infoArticleControllerListArticlesResponse = (infoArticleControllerListArticlesResponseSuccess)
-
-export const getInfoArticleControllerListArticlesUrl = () => {
-
-
-  
-
-  return `/v1/content/info-articles`
-}
-
-export const infoArticleControllerListArticles = async ( options?: RequestInit): Promise<infoArticleControllerListArticlesResponse> => {
-  
-  return http<infoArticleControllerListArticlesResponse>(getInfoArticleControllerListArticlesUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type infoArticleControllerGetArticleResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type infoArticleControllerGetArticleResponseSuccess = (infoArticleControllerGetArticleResponse200) & {
-  headers: Headers;
-};
-;
-
-export type infoArticleControllerGetArticleResponse = (infoArticleControllerGetArticleResponseSuccess)
-
-export const getInfoArticleControllerGetArticleUrl = (slug: string,) => {
-
-
-  
-
-  return `/v1/content/info-articles/${slug}`
-}
-
-export const infoArticleControllerGetArticle = async (slug: string, options?: RequestInit): Promise<infoArticleControllerGetArticleResponse> => {
-  
-  return http<infoArticleControllerGetArticleResponse>(getInfoArticleControllerGetArticleUrl(slug),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
 export type cronControllerProcessJobsResponse201 = {
   data: void
   status: 201
@@ -1778,171 +2630,5 @@ export const notificationsControllerUpdatePreferences = async (updateNotificatio
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       updateNotificationPreferencesDto,)
-  }
-);}
-
-
-
-export type subscriptionsControllerListPlansResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type subscriptionsControllerListPlansResponseSuccess = (subscriptionsControllerListPlansResponse200) & {
-  headers: Headers;
-};
-;
-
-export type subscriptionsControllerListPlansResponse = (subscriptionsControllerListPlansResponseSuccess)
-
-export const getSubscriptionsControllerListPlansUrl = () => {
-
-
-  
-
-  return `/v1/plans`
-}
-
-export const subscriptionsControllerListPlans = async ( options?: RequestInit): Promise<subscriptionsControllerListPlansResponse> => {
-  
-  return http<subscriptionsControllerListPlansResponse>(getSubscriptionsControllerListPlansUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type subscriptionsControllerGetMineResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type subscriptionsControllerGetMineResponseSuccess = (subscriptionsControllerGetMineResponse200) & {
-  headers: Headers;
-};
-;
-
-export type subscriptionsControllerGetMineResponse = (subscriptionsControllerGetMineResponseSuccess)
-
-export const getSubscriptionsControllerGetMineUrl = () => {
-
-
-  
-
-  return `/v1/subscription`
-}
-
-export const subscriptionsControllerGetMine = async ( options?: RequestInit): Promise<subscriptionsControllerGetMineResponse> => {
-  
-  return http<subscriptionsControllerGetMineResponse>(getSubscriptionsControllerGetMineUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type subscriptionsControllerCheckoutResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type subscriptionsControllerCheckoutResponseSuccess = (subscriptionsControllerCheckoutResponse200) & {
-  headers: Headers;
-};
-;
-
-export type subscriptionsControllerCheckoutResponse = (subscriptionsControllerCheckoutResponseSuccess)
-
-export const getSubscriptionsControllerCheckoutUrl = () => {
-
-
-  
-
-  return `/v1/subscription/checkout`
-}
-
-export const subscriptionsControllerCheckout = async (checkoutDto: CheckoutDto, options?: RequestInit): Promise<subscriptionsControllerCheckoutResponse> => {
-  
-  return http<subscriptionsControllerCheckoutResponse>(getSubscriptionsControllerCheckoutUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      checkoutDto,)
-  }
-);}
-
-
-
-export type subscriptionsControllerCancelResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type subscriptionsControllerCancelResponseSuccess = (subscriptionsControllerCancelResponse200) & {
-  headers: Headers;
-};
-;
-
-export type subscriptionsControllerCancelResponse = (subscriptionsControllerCancelResponseSuccess)
-
-export const getSubscriptionsControllerCancelUrl = () => {
-
-
-  
-
-  return `/v1/subscription/cancel`
-}
-
-export const subscriptionsControllerCancel = async ( options?: RequestInit): Promise<subscriptionsControllerCancelResponse> => {
-  
-  return http<subscriptionsControllerCancelResponse>(getSubscriptionsControllerCancelUrl(),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
-
-export type paymentsWebhookControllerHandleResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type paymentsWebhookControllerHandleResponseSuccess = (paymentsWebhookControllerHandleResponse200) & {
-  headers: Headers;
-};
-;
-
-export type paymentsWebhookControllerHandleResponse = (paymentsWebhookControllerHandleResponseSuccess)
-
-export const getPaymentsWebhookControllerHandleUrl = () => {
-
-
-  
-
-  return `/v1/webhooks/payments`
-}
-
-export const paymentsWebhookControllerHandle = async ( options?: RequestInit): Promise<paymentsWebhookControllerHandleResponse> => {
-  
-  return http<paymentsWebhookControllerHandleResponse>(getPaymentsWebhookControllerHandleUrl(),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
   }
 );}

@@ -18,6 +18,8 @@
   --color-chip: #bea1fe;
   --color-chip-text: #7c6f97;
   --color-progress: #55acee;
+  /** Calm blue accent — links, secondary CTAs (alias of progress; DESIGN.md §2.3). */
+  --color-accent: #55acee;
   --color-progress-track: #c3d9fd;
   --color-star: #ffc700;
   --color-like-active: #ff2dab;

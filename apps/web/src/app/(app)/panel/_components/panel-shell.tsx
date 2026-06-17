@@ -1,13 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import type { SessionPresetDto, TodayPanelResponse } from "@mentor/types";
+import { useEffect, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import type { TodayPanelResponse } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
-import { Card, CountdownCard, StreakBadge } from "@mentor/ui";
+import { CountdownCard, StreakBadge } from "@mentor/ui";
 import { FormError } from "../../../../components/form";
-import { TodayPlan } from "./today-plan";
+import { staggerItemVariants, staggerListVariants } from "../../../../lib/stagger-motion";
+import { CountdownPlaceholder } from "./countdown-placeholder";
 import { MoodCheckin } from "./mood-checkin";
+import { StartSessionCta } from "./start-session-cta";
+import { TodayPlan } from "./today-plan";
 
 type LoadState =
   | { status: "loading" }
@@ -17,16 +20,20 @@ type LoadState =
 /**
  * Panel data loader — client fetch because the access token lives in memory
  * (AuthProvider); the httpOnly refresh cookie is scoped to `/v1/auth` only.
- * App layout already gates on `status === "authenticated"`, so the bearer is set
- * when this mounts. Matches the abonelik page pattern.
  */
 export function PanelShell() {
+  const reduceMotion = useReducedMotion();
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
-  const loadToday = useCallback(() => {
-    return coachingControllerGetToday()
-      .then((res) => setState({ status: "ready", data: res as unknown as TodayPanelResponse }))
-      .catch((err: unknown) =>
+  useEffect(() => {
+    let active = true;
+    coachingControllerGetToday()
+      .then((res) => {
+        if (!active) return;
+        setState({ status: "ready", data: res as unknown as TodayPanelResponse });
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
         setState({
           status: "error",
           message:
@@ -35,15 +42,14 @@ export function PanelShell() {
               : err instanceof Error
                 ? err.message
                 : "Bir hata oluştu.",
-        }),
-      );
+        });
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
-  useEffect(() => {
-    void loadToday();
-  }, [loadToday]);
-
-  const refreshAfterTaskChange = useCallback(() => {
+  function refreshAfterTaskChange() {
     if (state.status !== "ready") return;
     coachingControllerGetToday()
       .then((res) => {
@@ -65,7 +71,7 @@ export function PanelShell() {
       .catch(() => {
         /* Keep optimistic task state; streak refresh is best-effort. */
       });
-  }, [state.status]);
+  }
 
   if (state.status === "loading") {
     return (
@@ -86,9 +92,24 @@ export function PanelShell() {
   const { greetingName, motivationalLine, countdown, streak, tasks, sessionPresets, mood } =
     state.data;
 
+  const headerMotion = reduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } },
+      };
+
+  const gridMotion = reduceMotion
+    ? {}
+    : {
+        initial: "hidden" as const,
+        animate: "show" as const,
+        variants: staggerListVariants,
+      };
+
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
-      <header className="mb-6 lg:mb-8">
+      <motion.header className="mb-6 lg:mb-8" {...headerMotion}>
         <h1
           className="text-3xl font-bold"
           style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
@@ -98,16 +119,22 @@ export function PanelShell() {
         <p className="mt-1 text-base" style={{ color: "var(--color-secondary)" }}>
           {motivationalLine}
         </p>
-      </header>
+      </motion.header>
 
-      <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
-        <section className="order-2 flex flex-col gap-6 lg:order-1 lg:col-span-2">
+      <motion.div className="grid gap-6 lg:grid-cols-3 lg:items-start" {...gridMotion}>
+        <motion.section
+          className="order-2 flex flex-col gap-6 lg:order-1 lg:col-span-2"
+          variants={reduceMotion ? undefined : staggerItemVariants}
+        >
           <TodayPlan tasks={tasks} onTasksChanged={refreshAfterTaskChange} />
           <StartSessionCta presets={sessionPresets} />
           <MoodCheckin initial={mood} />
-        </section>
+        </motion.section>
 
-        <aside className="order-1 flex flex-col gap-6 lg:order-2">
+        <motion.aside
+          className="order-1 flex flex-col gap-6 lg:order-2"
+          variants={reduceMotion ? undefined : staggerItemVariants}
+        >
           {countdown ? (
             <CountdownCard
               daysRemaining={countdown.daysRemaining}
@@ -119,64 +146,8 @@ export function PanelShell() {
             <CountdownPlaceholder />
           )}
           <StreakBadge currentStreak={streak.currentStreak} freezeTokens={streak.freezeTokens} />
-        </aside>
-      </div>
+        </motion.aside>
+      </motion.div>
     </main>
-  );
-}
-
-function CountdownPlaceholder() {
-  return (
-    <Card>
-      <p
-        className="text-base font-bold"
-        style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-      >
-        Sınava kalan
-      </p>
-      <p className="mt-2 text-sm" style={{ color: "var(--color-secondary)" }}>
-        Sınav tarihi henüz ayarlanmadı. Profilden sınav türünü seçtiğinde geri sayım burada
-        görünecek.
-      </p>
-    </Card>
-  );
-}
-
-function StartSessionCta({ presets }: { presets: SessionPresetDto[] }) {
-  return (
-    <Card>
-      <div className="flex flex-col gap-4">
-        <div>
-          <p
-            className="text-base font-bold"
-            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-          >
-            Odaklanma zamanı
-          </p>
-          <p className="mt-1 text-sm" style={{ color: "var(--color-secondary)" }}>
-            Kısa, net bir Pomodoro seansıyla başla.
-          </p>
-        </div>
-
-        <Link
-          href="/seans"
-          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-          style={{
-            backgroundColor: "var(--color-btn)",
-            boxShadow: "var(--shadow-card)",
-            fontFamily: "var(--font-body)",
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-            <polygon points="6 4 20 12 6 20 6 4" />
-          </svg>
-          Çalışmaya başla
-        </Link>
-
-        <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
-          Süre: {presets.map((p) => p.label).join(" · ")}
-        </p>
-      </div>
-    </Card>
   );
 }

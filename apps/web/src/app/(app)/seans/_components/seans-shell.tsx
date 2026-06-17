@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import type { SessionPresetDto, StudySessionDto } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
-import { Button, Card, Chip } from "@mentor/ui";
+import { Button, Card, Chip, SectionHeading } from "@mentor/ui";
 import { FormError } from "../../../../components/form";
 import { finalizeStudySession, startStudySession } from "../../../../lib/study-sessions";
 
@@ -30,6 +31,7 @@ function formatTime(seconds: number): string {
  * Pomodoro session UI — start via API, timer runs client-side, finalize on complete/abandon.
  */
 export function SeansShell() {
+  const reduceMotion = useReducedMotion();
   const searchParams = useSearchParams();
   const presetParam = searchParams.get("preset");
 
@@ -46,8 +48,10 @@ export function SeansShell() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    let active = true;
     coachingControllerGetToday()
       .then((res) => {
+        if (!active) return;
         const data = res as { sessionPresets?: SessionPresetDto[] };
         if (data.sessionPresets?.length) {
           setPresets(data.sessionPresets);
@@ -55,6 +59,7 @@ export function SeansShell() {
         }
       })
       .catch((err: unknown) => {
+        if (!active) return;
         setPresets(DEFAULT_PRESETS);
         setPresetNotice(
           err instanceof ApiClientError
@@ -62,15 +67,15 @@ export function SeansShell() {
             : "Oturum süreleri sunucudan alınamadı; varsayılan Pomodoro süreleri kullanılıyor.",
         );
       });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const presetList = presets;
 
   const activePreset = presetList.find((p) => p.id === selectedPreset) ?? presetList[0]!;
 
-  // Absolute end-of-phase timestamp; the interval derives the countdown from it (drift-free) and
-  // owns the focus→break transition. Using a ref keeps the transition out of an effect body, and
-  // the per-phase effect's cleanup tears the timer down so a re-mount can never leak an interval.
   const phaseEndsAtRef = useRef(0);
 
   const beginPhase = (next: "focus" | "break", seconds: number) => {
@@ -86,7 +91,6 @@ export function SeansShell() {
       setSecondsLeft(remaining);
       if (phase === "focus") setFocusElapsed((e) => e + 1);
       if (remaining <= 0 && phase === "focus") {
-        // Roll into the break from inside the timer callback (not the effect body).
         beginPhase("break", presetSeconds(activePreset.breakMinutes));
       }
     }, 1000);
@@ -122,7 +126,6 @@ export function SeansShell() {
     setError(null);
     try {
       await finalizeStudySession(session.id, { status, actualFocusSeconds: focusElapsed });
-      // Leaving the focus/break phase stops the ticking effect.
       setPhase("done");
     } catch (err) {
       setError(
@@ -144,9 +147,24 @@ export function SeansShell() {
     setSecondsLeft(0);
   }
 
+  const headerMotion = reduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } },
+      };
+
+  const phaseMotion = reduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 10 },
+        animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" as const } },
+        exit: { opacity: 0, y: -6, transition: { duration: 0.15 } },
+      };
+
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-5 py-8 lg:px-8 lg:py-10">
-      <header>
+      <motion.header {...headerMotion}>
         <h1
           className="text-3xl font-bold"
           style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
@@ -156,108 +174,134 @@ export function SeansShell() {
         <p className="mt-1 text-base" style={{ color: "var(--color-secondary)" }}>
           Odaklan, molanı al, serini koru.
         </p>
-      </header>
+      </motion.header>
 
       <FormError message={error} />
       {presetNotice && (
-        <p className="mb-4 text-sm" style={{ color: "var(--color-secondary)" }} role="status">
+        <p className="text-sm" style={{ color: "var(--color-secondary)" }} role="status">
           {presetNotice}
         </p>
       )}
 
       <Card className="flex flex-col items-center gap-6 py-10">
-        {phase === "idle" && (
-          <>
-            <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-              Süre seç
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {presetList.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setSelectedPreset(p.id)}
-                  className="focus-visible:outline-none focus-visible:ring-2"
-                >
-                  <Chip
-                    className={
-                      selectedPreset === p.id ? "ring-2 ring-[var(--color-main)] ring-offset-1" : ""
-                    }
+        <AnimatePresence mode="wait">
+          {phase === "idle" && (
+            <motion.div
+              key="idle"
+              className="flex w-full flex-col items-center gap-6"
+              {...phaseMotion}
+            >
+              <SectionHeading subtitle="Odak ve mola süresini seç">Süre</SectionHeading>
+              <div className="flex flex-wrap justify-center gap-2">
+                {presetList.map((p) => (
+                  <motion.button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelectedPreset(p.id)}
+                    className="focus-visible:outline-none focus-visible:ring-2"
+                    whileTap={reduceMotion ? undefined : { scale: 0.97 }}
                   >
-                    {p.label}
-                  </Chip>
-                </button>
-              ))}
-            </div>
-            <Button onClick={() => void startSession()} busy={busy} fullWidth>
-              Başla
-            </Button>
-          </>
-        )}
+                    <Chip
+                      className={
+                        selectedPreset === p.id ? "ring-2 ring-[var(--color-main)] ring-offset-1" : ""
+                      }
+                    >
+                      {p.label}
+                    </Chip>
+                  </motion.button>
+                ))}
+              </div>
+              <Button onClick={() => void startSession()} busy={busy} fullWidth>
+                Başla
+              </Button>
+            </motion.div>
+          )}
 
-        {(phase === "focus" || phase === "break") && (
-          <>
-            <p
-              className="text-sm font-semibold uppercase tracking-wide"
-              style={{ color: "var(--color-secondary)", fontFamily: "var(--font-heading)" }}
+          {(phase === "focus" || phase === "break") && (
+            <motion.div
+              key={phase}
+              className="flex w-full flex-col items-center gap-6"
+              {...phaseMotion}
             >
-              {phase === "focus" ? "Odaklan" : "Mola"}
-            </p>
-            <p
-              className="text-6xl font-bold tabular-nums"
-              style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-              aria-live="polite"
-            >
-              {formatTime(secondsLeft)}
-            </p>
-            <div className="flex w-full flex-col gap-3">
-              {phase === "focus" && (
-                <Button onClick={() => void finalize("COMPLETED")} busy={busy} fullWidth>
-                  Seansı bitir
-                </Button>
-              )}
-              <Button
-                onClick={() => void finalize("ABANDONED")}
-                busy={busy}
-                fullWidth
-                className="!bg-white/60 !text-[var(--color-main)]"
+              <p
+                className="text-sm font-semibold uppercase tracking-wide"
+                style={{ color: "var(--color-secondary)", fontFamily: "var(--font-heading)" }}
               >
-                Erken bırak
-              </Button>
-            </div>
-          </>
-        )}
+                {phase === "focus" ? "Odaklan" : "Mola"}
+              </p>
+              <motion.p
+                className="text-6xl font-bold tabular-nums"
+                style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+                aria-live="polite"
+                initial={reduceMotion ? false : { scale: 0.92, opacity: 0.5 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              >
+                {formatTime(secondsLeft)}
+              </motion.p>
+              <div className="flex w-full flex-col gap-3">
+                {phase === "focus" && (
+                  <Button onClick={() => void finalize("COMPLETED")} busy={busy} fullWidth>
+                    Seansı bitir
+                  </Button>
+                )}
+                <Button
+                  onClick={() => void finalize("ABANDONED")}
+                  busy={busy}
+                  fullWidth
+                  className="!bg-white/60 !text-[var(--color-main)]"
+                >
+                  Erken bırak
+                </Button>
+              </div>
+            </motion.div>
+          )}
 
-        {phase === "done" && (
-          <>
-            <p
-              className="text-xl font-bold"
-              style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+          {phase === "done" && (
+            <motion.div
+              key="done"
+              className="flex w-full flex-col items-center gap-6 text-center"
+              {...phaseMotion}
             >
-              Tebrikler, seans kaydedildi!
-            </p>
-            <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-              {Math.floor(focusElapsed / 60)} dakika odaklandın.
-            </p>
-            <div className="flex w-full flex-col gap-3">
-              <Button onClick={reset} fullWidth>
-                Yeni seans
-              </Button>
-              <Link
-                href="/panel"
-                className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2"
+              <span
+                className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold"
+                style={{
+                  backgroundColor: "color-mix(in srgb, var(--color-chip) 30%, transparent)",
+                  color: "var(--color-chip-text)",
+                  fontFamily: "var(--font-body)",
+                }}
+              >
+                Seans kaydedildi
+              </span>
+              <p
+                className="text-xl font-bold"
                 style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
               >
-                Panele dön
-              </Link>
-            </div>
-          </>
-        )}
+                Güzel iş çıkardın
+              </p>
+              <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+                {Math.floor(focusElapsed / 60)} dakika odaklandın.
+              </p>
+              <div className="flex w-full flex-col gap-3">
+                <Button onClick={reset} fullWidth>
+                  Yeni seans
+                </Button>
+                <Link
+                  href="/panel"
+                  className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+                  style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+                >
+                  Panele dön
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Card>
 
       <Link
         href="/plan"
-        className="text-center text-sm font-semibold transition-colors hover:opacity-80"
+        className="flex min-h-[44px] items-center justify-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
         style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
       >
         ← Plana dön

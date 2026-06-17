@@ -9,11 +9,11 @@
 | Track | Status | Shipped | Pending (MVP) |
 |---|---|---|---|
 | **Base infra** | ✅ | db (pg Pool) · errors · i18n · logging · health · OpenAPI · tests ([0007](./devnotes/0007-base-infrastructure.md), [0008](./devnotes/0008-base-review-fixes.md)) | — |
-| **W0 Identity** | ✅ | JWT + refresh rotation, RLS policies, guards, web auth screens ([0010](./devnotes/0010-identity.md), [0011](./devnotes/0011-identity-review-fixes.md)) | — |
-| **W1 Content** | 🟡 | exam calendar ([0016](./devnotes/0016-w1-exam-calendar.md)) · knowledge center ([0017](./devnotes/0017-w1-knowledge-center.md)) · subjects/exam-subjects · exam-calendar admin editor ([0024](./devnotes/0024-w6-admin-exam-calendar-editor.md)) | pgvector RAG index (with W3) |
-| **W2 Coaching** | 🟡 | daily loop · panel ([0013](./devnotes/0013-panel-daily-hub.md), [0014](./devnotes/0014-w2-coaching-daily-loop.md)) · plan/seans UI · mock-exam analysis | mood polish, vision board / ghost (per roadmap) |
-| **W3 AI** | 🟡 | premium AI coach chat (single-turn, refusal-grounded, LlmPort fake/OpenAI, usage meter + rate-limit) ([0030](./devnotes/0030-w3-ai-coach-chat-slice1.md)) | vector RAG + source links, web koç UI, multi-turn, photo→categorize, **coin→AI-right spend** |
-| **W4 Payments** | ✅ | PaymentsPort fake/iyzico, trial state machine, entitlement + PremiumGuard, idempotent webhook, /abonelik ([0015](./devnotes/0015-payments.md)) | iyzico prod keys + e-archive (Phase-0 ops) |
+| **W0 Identity** | ✅ | JWT + refresh rotation, RLS policies, guards, web auth screens ([0010](./devnotes/0010-identity.md), [0011](./devnotes/0011-identity-review-fixes.md)), auth UI polish ([0036](./devnotes/0036-web-auth-ui-polish.md)) | — |
+| **W1 Content** | 🟡 | exam calendar ([0016](./devnotes/0016-w1-exam-calendar.md)) · knowledge center ([0017](./devnotes/0017-w1-knowledge-center.md)), **bilgi UI polish** ([0039](./devnotes/0039-w1-web-bilgi-ui-polish.md)) · subjects/exam-subjects · exam-calendar admin editor ([0024](./devnotes/0024-w6-admin-exam-calendar-editor.md)) | pgvector RAG index (with W3) |
+| **W2 Coaching** | 🟡 | daily loop · panel ([0013](./devnotes/0013-panel-daily-hub.md), [0014](./devnotes/0014-w2-coaching-daily-loop.md), UI polish [0033](./devnotes/0033-w2-web-panel-ui-polish.md)) · plan/seans UI polish ([0037](./devnotes/0037-w2-web-plan-seans-ui-polish.md)) · mock-exam **analiz** UI polish ([0038](./devnotes/0038-w2-web-analiz-ui-polish.md)) · **web profil** (exam-type picker, account hub) ([0032](./devnotes/0032-w3-web-profil-ui.md)) | mood polish, vision board / ghost (per roadmap) |
+| **W3 AI** | 🟡 | premium AI coach chat ([0030](./devnotes/0030-w3-ai-coach-chat-slice1.md)) + **web koç UI** (`/koc`, ephemeral transcript, premium gate) ([0031](./devnotes/0031-w3-web-koc-ui.md), UI polish [0034](./devnotes/0034-w3-web-koc-ui-polish.md)) | vector RAG + source links, multi-turn/streaming, photo→categorize, **coin→AI-right spend** |
+| **W4 Payments** | ✅ | PaymentsPort fake/iyzico, trial state machine, entitlement + PremiumGuard, idempotent webhook, /abonelik ([0015](./devnotes/0015-payments.md)), **abonelik UI polish** ([0040](./devnotes/0040-w4-web-abonelik-ui-polish.md)) | iyzico prod keys + e-archive (Phase-0 ops) |
 | **W5 Notifications** | ✅ | JobQueuePort + cron runner, Postmark email, web push, daily reminders ([0019](./devnotes/0019-w5-notifications-queue.md)) | — |
 | **W6 Admin + Economy** | ✅ | see breakdown below — all MVP slices shipped | Phase 2: moderation queue · coin spend→AI · habit/milestone quests |
 
@@ -35,6 +35,10 @@
 | Moderation queue (forum/community content) | ⛔ | needs forum (Phase 2) |
 
 ## Cross-cutting / known issues
+- **B2C web landing** (`/`) — marketing hero + **KPSS editorial links** ([0035](./devnotes/0035-web-landing-page.md), [0039](./devnotes/0039-w1-web-bilgi-ui-polish.md)).
+- **B2C web auth** (`/giris`, `/kayit`, …) — Nuton shell + motion polish ([0036](./devnotes/0036-web-auth-ui-polish.md)); aligned with landing funnel CTAs.
+- **B2C app shell** — tab bar / sidebar nav polish + `/panel` vs `/plan` active fix ([0041](./devnotes/0041-web-app-shell-nav-polish.md)).
+- **B2C web UI polish** — series complete; cross-cutting sweep ([0042](./devnotes/0042-web-b2c-ui-polish-sweep.md)).
 - **`apps/admin` not yet committed** — to be sent as a separate commit/PR (per owner).
 - **B2C web economy/invite UI** (`apps/web`) — backend APIs ready (`/economy/*`); user-facing screens
   are a separate frontend task, **not scheduled**.

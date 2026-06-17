@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState, type FormEvent } from "react";
 import { authControllerResetPassword } from "@mentor/api-client";
+import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, FormSuccess, SubmitButton } from "../../../components/form";
+import { AuthNavLink } from "../_components/auth-nav-link";
 
 function ResetPasswordForm() {
   const token = useSearchParams().get("token") ?? "";
@@ -30,17 +31,14 @@ function ResetPasswordForm() {
   if (!token) {
     return <FormError message="Geçersiz bağlantı. Lütfen e-postandaki bağlantıyı kullan." />;
   }
+
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <h2 className="text-lg font-bold" style={{ color: "var(--color-main)" }}>
-        Yeni şifre belirle
-      </h2>
+      <SectionHeading as="h2">Yeni şifre belirle</SectionHeading>
       {done ? (
         <>
           <FormSuccess message="Şifren güncellendi. Artık yeni şifrenle giriş yapabilirsin." />
-          <Link href="/giris" className="text-sm underline" style={{ color: "var(--color-secondary)" }}>
-            Girişe dön
-          </Link>
+          <AuthNavLink href="/giris">Girişe dön</AuthNavLink>
         </>
       ) : (
         <>
