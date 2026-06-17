@@ -2,7 +2,7 @@ import { Body, Controller, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { PremiumGuard } from "../../payments/presentation/premium.guard";
-import { ChatService } from "../application/chat.service";
+import { ChatService, type CoachReplyResult } from "../application/chat.service";
 import { AiChatDto } from "./ai.dto";
 
 /**
@@ -17,10 +17,7 @@ export class AiChatController {
   constructor(private readonly chat: ChatService) {}
 
   @Post("chat")
-  reply(
-    @CurrentUser() user: RequestUser,
-    @Body() dto: AiChatDto,
-  ): Promise<{ reply: string; model: string }> {
+  reply(@CurrentUser() user: RequestUser, @Body() dto: AiChatDto): Promise<CoachReplyResult> {
     return this.chat.reply(user.id, dto.message);
   }
 }

@@ -5,9 +5,16 @@ import { aiChatControllerReply } from "@mentor/api-client";
  * object (no DTO class), so the orval client types it loosely — we assert the known shape here, in one
  * place (mirrors the `study-sessions.ts` wrapper). Single-turn: each call is independent.
  */
+export interface CoachSource {
+  title: string;
+  slug: string;
+  url: string;
+}
+
 export interface CoachReply {
   reply: string;
   model: string;
+  sources: CoachSource[];
 }
 
 export async function sendCoachMessage(message: string): Promise<CoachReply> {

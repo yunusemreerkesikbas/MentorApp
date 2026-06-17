@@ -29,6 +29,7 @@ const envSchema = z.object({
   AI_PROVIDER: z.enum(["fake", "openai"]).default("fake"),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),
+  OPENAI_EMBED_MODEL: z.string().default("text-embedding-3-small"),
   GEMINI_API_KEY: z.string().optional(),
 
   // Payments (§7) — provider behind PaymentsPort. `fake` is the dev/test default;

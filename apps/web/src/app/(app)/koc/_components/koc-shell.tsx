@@ -54,8 +54,8 @@ export function KocShell() {
     setMessages((m) => [...m, { id: newId(), role: "user", text: trimmed }]);
     setBusy(true);
     try {
-      const { reply } = await sendCoachMessage(trimmed);
-      setMessages((m) => [...m, { id: newId(), role: "coach", text: reply }]);
+      const { reply, sources } = await sendCoachMessage(trimmed);
+      setMessages((m) => [...m, { id: newId(), role: "coach", text: reply, sources }]);
     } catch (err) {
       setChatError(err instanceof ApiClientError ? err.body.message : "Bir hata oluştu.");
     } finally {

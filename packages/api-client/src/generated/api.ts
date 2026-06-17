@@ -1997,6 +1997,39 @@ export const aiChatControllerReply = async (aiChatDto: AiChatDto, options?: Requ
 
 
 
+export type adminEmbeddingControllerReembedResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminEmbeddingControllerReembedResponseSuccess = (adminEmbeddingControllerReembedResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminEmbeddingControllerReembedResponse = (adminEmbeddingControllerReembedResponseSuccess)
+
+export const getAdminEmbeddingControllerReembedUrl = () => {
+
+
+  
+
+  return `/v1/admin/ai/reembed`
+}
+
+export const adminEmbeddingControllerReembed = async ( options?: RequestInit): Promise<adminEmbeddingControllerReembedResponse> => {
+  
+  return http<adminEmbeddingControllerReembedResponse>(getAdminEmbeddingControllerReembedUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
 export type coachingControllerGetTodayResponse200 = {
   data: void
   status: 200

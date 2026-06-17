@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
+import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { FormError } from "../../../../components/form";
+import type { CoachSource } from "../../../../lib/coach";
 
 export interface ChatMessage {
   id: string;
   role: "user" | "coach";
   text: string;
+  sources?: CoachSource[];
 }
 
 const SUGGESTIONS = [
@@ -87,7 +90,10 @@ export function CoachTranscript({
       )}
 
       {messages.map((m) => (
-        <MessageBubble key={m.id} message={m} reduceMotion={reduceMotion} />
+        <Fragment key={m.id}>
+          <MessageBubble message={m} reduceMotion={reduceMotion} />
+          {m.role === "coach" && m.sources ? <SourceChips sources={m.sources} /> : null}
+        </Fragment>
       ))}
 
       {busy && <TypingBubble reduceMotion={reduceMotion} />}
@@ -128,6 +134,29 @@ function MessageBubble({
         {message.text}
       </div>
     </motion.div>
+  );
+}
+
+function SourceChips({ sources }: { sources: CoachSource[] }) {
+  if (sources.length === 0) return null;
+  return (
+    <div className="flex justify-start">
+      <div className="flex max-w-[85%] flex-wrap gap-2">
+        <span className="self-center text-xs" style={{ color: "var(--color-secondary)" }}>
+          Kaynak:
+        </span>
+        {sources.map((s) => (
+          <Link
+            key={s.slug}
+            href={`/bilgi/${s.slug}`}
+            className="min-h-8 rounded-[var(--radius-card)] border border-white bg-white/50 px-3 py-1 text-xs font-bold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            style={{ color: "var(--color-chip-text)", boxShadow: "var(--shadow-card)" }}
+          >
+            {s.title}
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
 

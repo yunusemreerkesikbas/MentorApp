@@ -7,10 +7,15 @@ import { PaymentsModule } from "../payments/payments.module";
 import { LLM_PORT } from "./domain/llm.port";
 import { ChatService } from "./application/chat.service";
 import { ContextBuilder } from "./application/context-builder.service";
+import { EmbeddingService } from "./application/embedding.service";
+import { ArticleEmbeddingListener } from "./application/article-embedding.listener";
+import { AiJobRegistrar } from "./application/ai-job.registrar";
+import { EmbedArticleHandler } from "./application/handlers/embed-article.handler";
 import { AiUsageRepository } from "./infrastructure/ai-usage.repository";
 import { FakeLlmAdapter } from "./infrastructure/adapters/fake-llm.adapter";
 import { OpenAiLlmAdapter } from "./infrastructure/adapters/openai-llm.adapter";
 import { AiChatController } from "./presentation/ai-chat.controller";
+import { AdminEmbeddingController } from "./presentation/admin-embedding.controller";
 
 /**
  * W3 — AI bounded context. Slice 1: premium AI coach chat (single-turn, refusal-grounded). LLM
@@ -20,11 +25,15 @@ import { AiChatController } from "./presentation/ai-chat.controller";
  */
 @Module({
   imports: [IdentityModule, ContentModule, PaymentsModule],
-  controllers: [AiChatController],
+  controllers: [AiChatController, AdminEmbeddingController],
   providers: [
     ChatService,
     ContextBuilder,
     AiUsageRepository,
+    EmbeddingService,
+    ArticleEmbeddingListener,
+    AiJobRegistrar,
+    EmbedArticleHandler,
     FakeLlmAdapter,
     OpenAiLlmAdapter,
     {

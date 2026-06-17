@@ -22,4 +22,22 @@ export class FakeLlmAdapter implements LlmPort {
       model: "fake",
     };
   }
+
+  /**
+   * Deterministic lexical embedding: token-hash into 1536 buckets + L2-normalize. Not semantic, but
+   * shared tokens → overlapping buckets → higher cosine similarity, so RAG retrieval is testable in
+   * dev/test without a real embeddings API.
+   */
+  async embed(text: string): Promise<number[]> {
+    const v = new Array<number>(1536).fill(0);
+    const tokens = text.toLowerCase().split(/[^a-z0-9çğıöşü]+/i).filter(Boolean);
+    for (const t of tokens) {
+      let h = 0;
+      for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0;
+      const idx = h % 1536;
+      v[idx] = (v[idx] ?? 0) + 1;
+    }
+    const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1;
+    return v.map((x) => x / norm);
+  }
 }

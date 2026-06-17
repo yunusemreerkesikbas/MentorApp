@@ -19,4 +19,6 @@ export interface LlmResult {
 
 export interface LlmPort {
   complete(input: LlmCompleteInput): Promise<LlmResult>;
+  /** Embed text into a 1536-dim vector (RAG, §1). Content-only — never behavioral/PII data (§4 #6). */
+  embed(text: string): Promise<number[]>;
 }

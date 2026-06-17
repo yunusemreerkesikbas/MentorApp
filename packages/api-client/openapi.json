@@ -1524,6 +1524,25 @@
         ]
       }
     },
+    "/v1/admin/ai/reembed": {
+      "post": {
+        "operationId": "AdminEmbeddingController_reembed",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/coaching/today": {
       "get": {
         "operationId": "CoachingController_getToday",

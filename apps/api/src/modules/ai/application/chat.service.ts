@@ -1,12 +1,19 @@
-import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { FeatureFlag } from "../../../common/config/config.catalog";
+import { ContentService } from "../../content/application/content.service";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
-import { buildSystemPrompt, estimateCostMicros } from "../domain/ai.constants";
+import { buildSystemPrompt, estimateCostMicros, RAG_MAX_DISTANCE, RAG_TOP_K } from "../domain/ai.constants";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
+
+export interface CoachReplyResult {
+  reply: string;
+  model: string;
+  sources: { title: string; slug: string; url: string }[];
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -17,14 +24,17 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  */
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name);
+
   constructor(
     @Inject(LLM_PORT) private readonly llm: LlmPort,
     private readonly context: ContextBuilder,
     private readonly usage: AiUsageRepository,
+    private readonly content: ContentService,
     private readonly config: ConfigRegistryService,
   ) {}
 
-  async reply(userId: string, message: string): Promise<{ reply: string; model: string }> {
+  async reply(userId: string, message: string): Promise<CoachReplyResult> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
@@ -36,7 +46,28 @@ export class ChatService {
     }
 
     const ctx = await this.context.build(userId);
-    const result = await this.llm.complete({ system: buildSystemPrompt(ctx), user: message });
+
+    // RAG (§1): retrieve verified articles in the user's exam family to ground the answer. Embed
+    // failure must not break the chat — fall back to ungrounded (the prompt then forbids fabrication).
+    let retrieved: { title: string; slug: string; sourceUrl: string; snippet: string }[] = [];
+    if (ctx.examType) {
+      try {
+        const vector = await this.llm.embed(message);
+        retrieved = await this.content.searchSimilarArticles(
+          ctx.examType,
+          vector,
+          RAG_TOP_K,
+          RAG_MAX_DISTANCE,
+        );
+      } catch (err) {
+        this.logger.warn(`RAG retrieval skipped: ${String(err)}`);
+      }
+    }
+
+    const result = await this.llm.complete({
+      system: buildSystemPrompt(ctx, retrieved),
+      user: message,
+    });
 
     await this.usage.append({
       userId,
@@ -46,6 +77,10 @@ export class ChatService {
       costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
     });
 
-    return { reply: result.text, model: result.model };
+    return {
+      reply: result.text,
+      model: result.model,
+      sources: retrieved.map((s) => ({ title: s.title, slug: s.slug, url: s.sourceUrl })),
+    };
   }
 }

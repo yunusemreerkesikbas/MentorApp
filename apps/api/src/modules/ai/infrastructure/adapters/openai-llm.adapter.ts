@@ -7,6 +7,7 @@ import type { LlmCompleteInput, LlmPort, LlmResult } from "../../domain/llm.port
 import { AI_MAX_OUTPUT_TOKENS, AI_REQUEST_TIMEOUT_MS, AI_TEMPERATURE } from "../../domain/ai.constants";
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+const OPENAI_EMBED_URL = "https://api.openai.com/v1/embeddings";
 
 /**
  * Real OpenAI Chat Completions adapter (fetch — no extra dependency). Skeleton: it needs
@@ -60,6 +61,36 @@ export class OpenAiLlmAdapter implements LlmPort {
     } catch (err) {
       if (err instanceof DomainError) throw err;
       this.logger.error(`OpenAI request failed: ${String(err)}`);
+      throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+  }
+
+  async embed(text: string): Promise<number[]> {
+    const apiKey = this.config.get("OPENAI_API_KEY", { infer: true });
+    if (!apiKey) {
+      throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    const model = this.config.get("OPENAI_EMBED_MODEL", { infer: true });
+    try {
+      const res = await fetch(OPENAI_EMBED_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
+        body: JSON.stringify({ model, input: text }),
+      });
+      if (!res.ok) {
+        this.logger.error(`OpenAI embed ${res.status}: ${await res.text().catch(() => "")}`);
+        throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      const data = (await res.json()) as { data?: { embedding?: number[] }[] };
+      const vector = data.data?.[0]?.embedding;
+      if (!vector?.length) {
+        throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      return vector;
+    } catch (err) {
+      if (err instanceof DomainError) throw err;
+      this.logger.error(`OpenAI embed failed: ${String(err)}`);
       throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
     }
   }
