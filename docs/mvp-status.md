@@ -9,13 +9,13 @@
 | Track | Status | Shipped | Pending (MVP) |
 |---|---|---|---|
 | **Base infra** | ✅ | db (pg Pool) · errors · i18n · logging · health · OpenAPI · tests ([0007](./devnotes/0007-base-infrastructure.md), [0008](./devnotes/0008-base-review-fixes.md)) | — |
-| **W0 Identity** | ✅ | JWT + refresh rotation, RLS policies, guards, web auth screens ([0010](./devnotes/0010-identity.md), [0011](./devnotes/0011-identity-review-fixes.md)) | — |
-| **W1 Content** | 🟡 | exam calendar ([0016](./devnotes/0016-w1-exam-calendar.md)) · knowledge center ([0017](./devnotes/0017-w1-knowledge-center.md)) · subjects/exam-subjects · exam-calendar admin editor ([0024](./devnotes/0024-w6-admin-exam-calendar-editor.md)) | pgvector RAG index (with W3) |
-| **W2 Coaching** | 🟡 | daily loop · panel ([0013](./devnotes/0013-panel-daily-hub.md), [0014](./devnotes/0014-w2-coaching-daily-loop.md)) · plan/seans UI · mock-exam analysis | mood polish, vision board / ghost (per roadmap) |
-| **W3 AI** | ⏳ | — (PremiumGuard + ContentPort + economy coin ready as inputs) | Context Builder, LLM/RAG, AI chat, photo→categorize, **coin→AI-right spend** |
-| **W4 Payments** | ✅ | PaymentsPort fake/iyzico, trial state machine, entitlement + PremiumGuard, idempotent webhook, /abonelik ([0015](./devnotes/0015-payments.md)) | iyzico prod keys + e-archive (Phase-0 ops) |
+| **W0 Identity** | ✅ | JWT + refresh rotation, RLS policies, guards, web auth screens ([0010](./devnotes/0010-identity.md), [0011](./devnotes/0011-identity-review-fixes.md)), auth UI polish ([0036](./devnotes/0036-web-auth-ui-polish.md)) | — |
+| **W1 Content** | 🟡 | exam calendar ([0016](./devnotes/0016-w1-exam-calendar.md)) · knowledge center ([0017](./devnotes/0017-w1-knowledge-center.md)), **bilgi UI polish** ([0039](./devnotes/0039-w1-web-bilgi-ui-polish.md)) · subjects/exam-subjects · exam-calendar admin editor ([0024](./devnotes/0024-w6-admin-exam-calendar-editor.md)) · pgvector RAG embeddings ([0043](./devnotes/0043-w3-ai-rag-grounding.md)) | — (HNSW index at scale = backlog) |
+| **W2 Coaching** | 🟡 | daily loop · panel ([0013](./devnotes/0013-panel-daily-hub.md), [0014](./devnotes/0014-w2-coaching-daily-loop.md), UI polish [0033](./devnotes/0033-w2-web-panel-ui-polish.md)) · plan/seans UI polish ([0037](./devnotes/0037-w2-web-plan-seans-ui-polish.md)) · mock-exam **analiz** UI polish ([0038](./devnotes/0038-w2-web-analiz-ui-polish.md)) · **web profil** (exam-type picker, account hub) ([0032](./devnotes/0032-w3-web-profil-ui.md)) | mood polish, vision board / ghost (per roadmap) |
+| **W3 AI** | 🟡 | premium AI coach chat ([0030](./devnotes/0030-w3-ai-coach-chat-slice1.md)) + **web koç UI** (`/koc`, ephemeral transcript, premium gate) ([0031](./devnotes/0031-w3-web-koc-ui.md), UI polish [0034](./devnotes/0034-w3-web-koc-ui-polish.md)) · **RAG grounding + source links** ([0043](./devnotes/0043-w3-ai-rag-grounding.md)) · **coin→AI chat spend** ([0045](./devnotes/0045-w3-coin-ai-chat-spend.md)) | multi-turn/streaming, photo→categorize, Gemini |
+| **W4 Payments** | ✅ | PaymentsPort fake/iyzico, trial state machine, entitlement + PremiumGuard, idempotent webhook, /abonelik ([0015](./devnotes/0015-payments.md)), **abonelik UI polish** ([0040](./devnotes/0040-w4-web-abonelik-ui-polish.md)) | iyzico prod keys + e-archive (Phase-0 ops) |
 | **W5 Notifications** | ✅ | JobQueuePort + cron runner, Postmark email, web push, daily reminders ([0019](./devnotes/0019-w5-notifications-queue.md)) | — |
-| **W6 Admin + Economy** | ✅ | see breakdown below — all MVP slices shipped | Phase 2: moderation queue · coin spend→AI · habit/milestone quests |
+| **W6 Admin + Economy** | ✅ | see breakdown below — all MVP slices shipped | Phase 2: moderation queue · habit/milestone quests |
 
 ## W6 breakdown (this stream's focus)
 | Slice | Status | Devnote |
@@ -31,13 +31,17 @@
 | Refund + subscription admin view (record-only refund + cancel, ADMIN, audited) | ✅ | [0025](./devnotes/0025-w6-admin-refund-subscription.md) |
 | Metrics dashboard (users + subscriptions/revenue + economy KPI snapshot, ADMIN) | ✅ | [0026](./devnotes/0026-w6-admin-metrics-dashboard.md) |
 | Economy: onboarding quests (auto-grant, capped, idempotent; habit/milestone backlog) | ✅ | [0027](./devnotes/0027-w6-economy-quests.md) |
+| Economy: coin spend → AI chat (`EconomyService.spend`; integrated by W3) | ✅ | [0045](./devnotes/0045-w3-coin-ai-chat-spend.md) |
 | Fine admin sub-roles (SUPPORT/FINANCE/SUPER_ADMIN gating + assignment; MODERATOR reserved) | ✅ | [0028](./devnotes/0028-w6-admin-sub-roles.md) |
 | Moderation queue (forum/community content) | ⛔ | needs forum (Phase 2) |
 
 ## Cross-cutting / known issues
+- **B2C web landing** (`/`) — marketing hero + **KPSS editorial links** ([0035](./devnotes/0035-web-landing-page.md), [0039](./devnotes/0039-w1-web-bilgi-ui-polish.md)).
+- **B2C web auth** (`/giris`, `/kayit`, …) — Nuton shell + motion polish ([0036](./devnotes/0036-web-auth-ui-polish.md)); aligned with landing funnel CTAs.
+- **B2C app shell** — tab bar / sidebar nav polish + `/panel` vs `/plan` active fix ([0041](./devnotes/0041-web-app-shell-nav-polish.md)).
+- **B2C web UI polish** — series complete; cross-cutting sweep ([0042](./devnotes/0042-web-b2c-ui-polish-sweep.md)).
 - **`apps/admin` not yet committed** — to be sent as a separate commit/PR (per owner).
-- **B2C web economy/invite UI** (`apps/web`) — backend APIs ready (`/economy/*`); user-facing screens
-  are a separate frontend task, **not scheduled**.
+- **B2C web economy/invite UI** (`apps/web`) — earn hub on `/profil` (balance, quests, invite) ([0046](./devnotes/0046-web-profil-economy-ui.md)); ledger history UI = slice 2 backlog. Requires `economy.enabled=true`.
 - **Migration journal drift** — parallel tracks shipped migrations without snapshots / with future
   `when` timestamps, causing skipped migrations on local DBs (info_articles, etc.). Team action: commit
   each migration **with its snapshot + real timestamps**; reconcile local dev journals.

@@ -536,6 +536,54 @@ export class ContentService {
     });
   }
 
+  /* ----------------------- RAG embedding seam (W3) ----------------------- */
+
+  /** Fetch an article's embeddable text (title+body) by id — for the embed job. */
+  async getArticleForEmbedding(
+    id: string,
+  ): Promise<{ id: string; title: string; body: string; family: string } | null> {
+    const row = await withServiceContext(this.db, (tx) => this.articles.findById(tx, id));
+    if (!row) return null;
+    return { id: row.id, title: row.title, body: row.body, family: row.family };
+  }
+
+  /** Store the RAG embedding (content owns the column; AI computes the vector). */
+  async setArticleEmbedding(id: string, embedding: number[]): Promise<void> {
+    await withServiceContext(this.db, (tx) => this.articles.setEmbedding(tx, id, embedding));
+  }
+
+  /** Ids of published articles still missing an embedding (backfill). */
+  async listPublishedNeedingEmbedding(): Promise<string[]> {
+    const rows = await withServiceContext(this.db, (tx) =>
+      this.articles.listPublishedWithoutEmbedding(tx),
+    );
+    return rows.map((r) => r.id);
+  }
+
+  /**
+   * RAG retrieval: top-K published articles in `family` similar to `vector`, within `maxDistance`
+   * (cosine). Returns a short snippet + source for grounding/citation (no embedding leaked).
+   */
+  async searchSimilarArticles(
+    family: string,
+    vector: number[],
+    topK: number,
+    maxDistance: number,
+  ): Promise<{ title: string; slug: string; sourceUrl: string; snippet: string }[]> {
+    this.assertValidFamily(family);
+    const rows = await withServiceContext(this.db, (tx) =>
+      this.articles.searchSimilar(tx, family, vector, topK),
+    );
+    return rows
+      .filter((r) => r.distance <= maxDistance)
+      .map((r) => ({
+        title: r.title,
+        slug: r.slug,
+        sourceUrl: r.sourceUrl,
+        snippet: r.body.slice(0, 400),
+      }));
+  }
+
   private assertValidFamily(family: string): void {
     const allowed = Object.values(ExamType) as string[];
     if (!allowed.includes(family)) {

@@ -35,6 +35,7 @@ export function toStudySessionDto(row: StudySessionRow): StudySessionDto {
     startedAt: row.startedAt.toISOString(),
     endedAt: row.endedAt ? row.endedAt.toISOString() : null,
     actualFocusSeconds: row.actualFocusSeconds,
+    plannedFocusMinutes: row.plannedFocusMinutes ?? null,
   };
 }
 

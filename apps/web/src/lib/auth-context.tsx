@@ -28,6 +28,8 @@ interface AuthContextValue {
   login: (input: LoginInput) => Promise<void>;
   signup: (input: SignupInput) => Promise<void>;
   logout: () => Promise<void>;
+  /** Sync in-memory user after profile PATCH (greeting, examType, etc.). */
+  setUserFromServer: (user: AuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -55,6 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setStatus("anonymous");
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
+  }, []);
+
+  const setUserFromServer = useCallback((next: AuthUser) => {
+    setUser(next);
+    setStatus("authenticated");
   }, []);
 
   const applySession = useCallback((session: AuthSession) => {
@@ -105,8 +112,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await authControllerLogout().catch(() => undefined); // idempotent server-side
         clearSession();
       },
+      setUserFromServer,
     }),
-    [status, user, applySession, clearSession],
+    [status, user, applySession, clearSession, setUserFromServer],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

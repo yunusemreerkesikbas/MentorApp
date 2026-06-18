@@ -44,3 +44,6 @@
 | [0021](./0021-w6-light-economy.md) | W6 · Light Economy (Slice 1) | append-only ledger_entries (XP/Coin), EconomyService (capped grant), user balance/ledger API, admin manual adjust |
 | [0022](./0022-w6-light-economy-invite.md) | W6 · Light Economy (Slice 2a) | invite code/redeem, conversion listener (payments event) → inviter coin (idempotent, capped), admin invite summary |
 | [0023](./0023-w6-admin-content-editor.md) | W6 · Admin Content Editor | knowledge-center article CRUD + publish/unpublish (ADMIN/EDITOR, trust metadata required), role-gated admin menu |
+| [0029](./0029-agent-skills-standards-integration.md) | Agent skills ↔ standards | senior-frontend/backend/architect + code-reviewer rewritten with binding rules from docs/standards |
+| [0045](./0045-w3-coin-ai-chat-spend.md) | W3 · Coin → AI chat spend | EconomyService.spend, GET /coach/access, free coin path + /koc gate (no coin in chat §4 #3) |
+| [0046](./0046-web-profil-economy-ui.md) | Web · Profil economy UI | Earn hub: balance, quests, invite on /profil; hidden when economy.enabled off |

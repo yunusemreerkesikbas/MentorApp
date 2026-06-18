@@ -28,11 +28,14 @@ export class SessionService {
 
   async start(userId: string, input: StartStudySessionInput): Promise<StudySessionDto> {
     const startedAt = input.startedAt ? new Date(input.startedAt) : new Date();
+    const plannedFocusMinutes =
+      input.preset === "custom" ? (input.focusMinutes ?? null) : null;
     return withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.sessions.create(tx, {
         userId,
         startedAt,
         preset: input.preset,
+        plannedFocusMinutes,
         subject: input.subject ?? null,
       });
       return toStudySessionDto(row);

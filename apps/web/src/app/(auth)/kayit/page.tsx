@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "../../../components/form";
 import { useAuth } from "../../../lib/auth-context";
+import { AuthNavLink } from "../_components/auth-nav-link";
 
 export default function SignupPage() {
   const { signup } = useAuth();
@@ -39,9 +40,9 @@ export default function SignupPage() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <h2 className="text-lg font-bold" style={{ color: "var(--color-main)" }}>
+      <SectionHeading as="h2" subtitle="Ücretsiz başla — sınav yolunda yanında olalım.">
         Hesap oluştur
-      </h2>
+      </SectionHeading>
       <Field label="Ad Soyad" name="displayName" autoComplete="name" required minLength={2} />
       <Field label="E-posta" name="email" type="email" autoComplete="email" required />
       <Field
@@ -52,8 +53,11 @@ export default function SignupPage() {
         required
         minLength={8}
       />
-      <label className="flex items-start gap-2 text-sm" style={{ color: "var(--color-body)" }}>
-        <input type="checkbox" name="kvkk" required className="mt-1" />
+      <label
+        className="flex min-h-11 cursor-pointer items-start gap-3 text-sm"
+        style={{ color: "var(--color-body)" }}
+      >
+        <input type="checkbox" name="kvkk" required className="mt-1 h-5 w-5 shrink-0" />
         <span>
           KVKK aydınlatma metnini okudum, kişisel verilerimin işlenmesini kabul ediyorum.
         </span>
@@ -61,10 +65,7 @@ export default function SignupPage() {
       <FormError message={error} />
       <SubmitButton busy={busy}>Kayıt ol</SubmitButton>
       <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-        Zaten hesabın var mı?{" "}
-        <Link href="/giris" className="underline">
-          Giriş yap
-        </Link>
+        Zaten hesabın var mı? <AuthNavLink href="/giris">Giriş yap</AuthNavLink>
       </p>
     </form>
   );

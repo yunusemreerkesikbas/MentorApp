@@ -2,16 +2,18 @@
 
 > Canonical context: [`../../AGENTS.md`](../../AGENTS.md) · Design: [`../../DESIGN.md`](../../DESIGN.md).
 > Performance constitution: the **`vercel-react-best-practices`** skill (priority order below).
+> **Scope:** `apps/web` (B2C). **`apps/admin`** is a deliberate exception — see [`apps/admin/AGENTS.md`](../../apps/admin/AGENTS.md) (Bootstrap, axios, Next 14).
 
 ## Rendering & data
 - [ ] **Server Component by default**; `"use client"` only when interaction/browser API is needed.
-- [ ] Data from the **single API**: `@mentor/api-client` (NestJS `/v1`). No `fetch` scattered across pages,
-  no separate backend logic.
+- [ ] Data from the **single API** (NestJS `/v1`). Authenticated flows → `@mentor/api-client`. Public/SEO
+  fetch may live in centralized `src/lib/*` helpers (with `revalidate`) — not scattered in page components.
 - [ ] **No business logic/calculations on the client** (§principles): the backend returns computed,
   ready-to-render data; FE only shapes/displays it. Never recompute net/score/coin/pricing on FE.
 - [ ] **User-facing dynamic/validation messages come localized from the backend** (`message` + `code`) and are
   displayed directly. FE owns only static chrome copy (labels/buttons), Turkish in MVP.
-- [ ] Client-side data → SWR/React Query (dedup + cache). Prefer fetching in RSC on the server when possible.
+- [ ] Prefer fetching in RSC on the server. Client mutations via `@mentor/api-client`. (SWR/React Query not
+  in use yet — don't add without an explicit decision.)
 - [ ] **No waterfalls:** independent requests via `Promise.all`; stream with Suspense. (vercel: `async-*`
   rules — highest priority.)
 

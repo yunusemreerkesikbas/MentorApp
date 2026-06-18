@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "../../../components/form";
 import { useAuth } from "../../../lib/auth-context";
+import { AuthNavLink } from "../_components/auth-nav-link";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -32,9 +33,9 @@ export default function LoginPage() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <h2 className="text-lg font-bold" style={{ color: "var(--color-main)" }}>
+      <SectionHeading as="h2" subtitle="Devam etmek için giriş yap.">
         Giriş yap
-      </h2>
+      </SectionHeading>
       <Field label="E-posta" name="email" type="email" autoComplete="email" required />
       <Field
         label="Şifre"
@@ -45,13 +46,9 @@ export default function LoginPage() {
       />
       <FormError message={error} />
       <SubmitButton busy={busy}>Giriş yap</SubmitButton>
-      <div className="flex justify-between text-sm" style={{ color: "var(--color-secondary)" }}>
-        <Link href="/kayit" className="underline">
-          Hesap oluştur
-        </Link>
-        <Link href="/sifremi-unuttum" className="underline">
-          Şifremi unuttum
-        </Link>
+      <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+        <AuthNavLink href="/kayit">Hesap oluştur</AuthNavLink>
+        <AuthNavLink href="/sifremi-unuttum">Şifremi unuttum</AuthNavLink>
       </div>
     </form>
   );

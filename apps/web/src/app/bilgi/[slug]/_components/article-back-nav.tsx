@@ -11,7 +11,11 @@ export function ArticleBackNav() {
 
   return (
     <nav className="mb-4">
-      <Link href={href} className="text-sm" style={{ color: "var(--color-accent)" }}>
+      <Link
+        href={href}
+        className="inline-flex min-h-[44px] items-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+        style={{ color: "var(--color-accent)", fontFamily: "var(--font-heading)" }}
+      >
         {label}
       </Link>
     </nav>

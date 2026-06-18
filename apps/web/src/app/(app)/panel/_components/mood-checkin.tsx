@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import type { MoodCheckinDto } from "@mentor/types";
 import { coachingControllerUpsertMood } from "@mentor/api-client";
-import { Card, MoodPicker } from "@mentor/ui";
+import { Card, MoodPicker, SectionHeading } from "@mentor/ui";
 import { FormError } from "../../../../components/form";
 
 /**
@@ -13,6 +14,7 @@ import { FormError } from "../../../../components/form";
  * verbatim from the response (rule-based + backend-localized).
  */
 export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
+  const reduceMotion = useReducedMotion();
   const [mood, setMood] = useState<number | null>(initial?.mood ?? null);
   const [message, setMessage] = useState<string | null>(initial?.message ?? null);
   const [error, setError] = useState<string | null>(null);
@@ -36,20 +38,27 @@ export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
 
   return (
     <Card>
-      <p
-        className="text-base font-bold"
-        style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-      >
+      <SectionHeading subtitle="Kısa bir check-in — yargılamıyoruz.">
         Bugün nasılsın?
-      </p>
-      <div className="mt-4" aria-busy={busy}>
+      </SectionHeading>
+      <div
+        className={`mt-4 ${busy ? "pointer-events-none opacity-60" : ""}`}
+        aria-busy={busy}
+      >
         <MoodPicker value={mood} onChange={(v) => void onMoodChange(v)} />
       </div>
       <FormError message={error} />
       {message ? (
-        <p role="status" className="mt-4 text-sm" style={{ color: "var(--color-body)" }}>
+        <motion.p
+          role="status"
+          className="mt-4 text-sm"
+          style={{ color: "var(--color-body)" }}
+          initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+        >
           {message}
-        </p>
+        </motion.p>
       ) : null}
     </Card>
   );

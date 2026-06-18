@@ -343,8 +343,10 @@ export const studySessions = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     endedAt: timestamp("ended_at", { withTimezone: true }),
-    /** "25_5" | "50_10" (SessionPreset). */
+    /** "25_5" | "50_10" | "custom" (SessionPreset). */
     preset: text("preset").notNull(),
+    /** User-chosen focus length when preset is custom; null for fixed presets. */
+    plannedFocusMinutes: integer("planned_focus_minutes"),
     actualFocusSeconds: integer("actual_focus_seconds").notNull().default(0),
     /** Nullable SOFT ref → content subject. */
     subject: text("subject"),
@@ -458,6 +460,31 @@ export const mockExamSubjects = pgTable(
   (t) => [
     index("mock_exam_subjects_mock_idx").on(t.mockExamId),
     uniqueIndex("mock_exam_subjects_pair_idx").on(t.mockExamId, t.subjectRef),
+  ],
+);
+
+/** Premium photo → subject classification rows (vision, categorize-not-solve §4 #2). */
+export const mockExamPhotoCategorizations = pgTable(
+  "mock_exam_photo_categorizations",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    mockExamId: uuid("mock_exam_id")
+      .notNull()
+      .references(() => mockExams.id, { onDelete: "cascade" }),
+    subjectRef: text("subject_ref").notNull(),
+    storageKey: text("storage_key").notNull(),
+    clientRequestId: uuid("client_request_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("mock_exam_photo_cat_user_created_idx").on(t.userId, t.createdAt),
+    index("mock_exam_photo_cat_mock_idx").on(t.mockExamId),
+    uniqueIndex("mock_exam_photo_cat_client_req_idx").on(t.userId, t.clientRequestId),
   ],
 );
 
@@ -771,4 +798,27 @@ export const userQuestProgress = pgTable(
     uniqueIndex("user_quest_progress_user_quest_unique_idx").on(t.userId, t.questId),
     index("user_quest_progress_user_idx").on(t.userId),
   ],
+);
+
+/* --- AI usage metering (W3, §7 cost cap): one row per LLM call. Powers the premium daily
+ * rate-limit + (later) the metrics LLM-cost KPI. NOT chat history (single-turn, stateless).
+ * §4 #6: stores token/cost meta only — never the prompt/reply text or any PII.
+ * RLS: self-read + SERVICE/ADMIN; writes run in SERVICE context. */
+export const aiUsage = pgTable(
+  "ai_usage",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    model: text("model").notNull(),
+    promptTokens: integer("prompt_tokens").notNull().default(0),
+    completionTokens: integer("completion_tokens").notNull().default(0),
+    /** Estimated cost in micro-USD (integer; per-call cost is far below 1 minor unit). */
+    costMicros: integer("cost_micros").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("ai_usage_user_created_idx").on(t.userId, t.createdAt)],
 );

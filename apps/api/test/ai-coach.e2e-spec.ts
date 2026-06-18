@@ -1,0 +1,246 @@
+import type { INestApplication } from "@nestjs/common";
+import { Test } from "@nestjs/testing";
+import cookieParser from "cookie-parser";
+import { Pool } from "pg";
+import request from "supertest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { UserRole } from "@mentor/types";
+import { buildSystemPrompt } from "../src/modules/ai/domain/ai.constants";
+
+const RUN = Date.now();
+
+/**
+ * W3 AI coach chat (e2e, fake LLM): premium flat + earned-coin path, access probe, rate-limits,
+ * usage metering. Real Postgres (RLS active). §4 #1 refusal verified on the prompt.
+ */
+describe("ai coach chat (e2e)", () => {
+  let app: INestApplication;
+  let pool: Pool;
+  let freeToken = "";
+  let freeId = "";
+  let premiumToken = "";
+  let premiumId = "";
+  let adminToken = "";
+  let brokeToken = "";
+  let brokeId = "";
+  let rlToken = "";
+
+  const signup = async (label: string) => {
+    const email = `ai-${label}-${RUN}@test.local`;
+    const res = await request(app.getHttpServer())
+      .post("/v1/auth/signup")
+      .send({ email, password: "Sifre1234", displayName: `AI ${label}`, kvkkAccepted: true });
+    return { email, ...(res.body as { accessToken: string; user: { id: string } }) };
+  };
+
+  const grantRole = async (userId: string, role: string) => {
+    const c = await pool.connect();
+    try {
+      await c.query("begin");
+      await c.query("select set_config('app.role','SERVICE',true)");
+      await c.query("update users set roles = array_append(roles,$1) where id=$2", [role, userId]);
+      await c.query("commit");
+    } finally {
+      c.release();
+    }
+  };
+
+  const grantCoin = async (userId: string, amount: number) => {
+    const c = await pool.connect();
+    try {
+      await c.query("select set_config('app.role','SERVICE',true)");
+      await c.query(
+        `insert into ledger_entries (user_id, unit, amount, reason, status)
+         values ($1, 'COIN', $2, 'test.grant', 'CONFIRMED')`,
+        [userId, amount],
+      );
+    } finally {
+      c.release();
+    }
+  };
+
+  const coinBalance = async (userId: string): Promise<number> => {
+    const c = await pool.connect();
+    try {
+      await c.query("select set_config('app.role','SERVICE',true)");
+      const res = await c.query(
+        `select coalesce(sum(amount),0)::int as n from ledger_entries
+         where user_id=$1 and unit='COIN' and status='CONFIRMED'`,
+        [userId],
+      );
+      return res.rows[0]?.n ?? 0;
+    } finally {
+      c.release();
+    }
+  };
+
+  const login = async (email: string): Promise<string> => {
+    const res = await request(app.getHttpServer())
+      .post("/v1/auth/login")
+      .send({ email, password: "Sifre1234" });
+    return res.body.accessToken;
+  };
+
+  const setConfig = (key: string, value: unknown) =>
+    request(app.getHttpServer())
+      .patch(`/v1/admin/config/${key}`)
+      .set({ Authorization: `Bearer ${adminToken}` })
+      .send({ value });
+
+  const aiUsageCount = async (userId: string): Promise<number> => {
+    const c = await pool.connect();
+    try {
+      await c.query("select set_config('app.role','SERVICE',true)");
+      const res = await c.query("select count(*)::int as n from ai_usage where user_id=$1", [userId]);
+      return res.rows[0]?.n ?? 0;
+    } finally {
+      c.release();
+    }
+  };
+
+  beforeAll(async () => {
+    process.env.DATABASE_URL =
+      process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
+    pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+    const { AppModule } = await import("../src/app.module");
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = moduleRef.createNestApplication({ logger: false });
+    app.setGlobalPrefix("v1");
+    app.use(cookieParser());
+    await app.init();
+
+    const free = await signup("free");
+    freeToken = free.accessToken;
+    freeId = free.user.id;
+
+    const premium = await signup("premium");
+    premiumId = premium.user.id;
+    await grantRole(premiumId, UserRole.STAFF);
+    premiumToken = await login(premium.email);
+
+    const admin = await signup("admin");
+    await grantRole(admin.user.id, UserRole.ADMIN);
+    adminToken = await login(admin.email);
+
+    const broke = await signup("broke");
+    brokeToken = broke.accessToken;
+    brokeId = broke.user.id;
+    await grantCoin(brokeId, 2);
+
+    const rl = await signup("rl");
+    await grantRole(rl.user.id, UserRole.STAFF);
+    rlToken = await login(rl.email);
+  }, 90_000);
+
+  afterAll(async () => {
+    await app?.close();
+    await pool?.end();
+  });
+
+  const chat = (
+    token: string,
+    message = "Bugün nasıl çalışmalıyım?",
+    clientMessageId?: string,
+  ) =>
+    request(app.getHttpServer())
+      .post("/v1/coach/chat")
+      .set({ Authorization: `Bearer ${token}` })
+      .send({ message, ...(clientMessageId ? { clientMessageId } : {}) });
+
+  const access = (token: string) =>
+    request(app.getHttpServer()).get("/v1/coach/access").set({ Authorization: `Bearer ${token}` });
+
+  it("§4 #1: the system prompt forbids generating official info", () => {
+    const prompt = buildSystemPrompt({ examType: "KPSS", daysRemaining: 90, examDateLabel: null });
+    expect(prompt).toMatch(/Resmî bilgi ÜRETME/);
+    expect(prompt).toContain("/bilgi");
+    expect(prompt).toContain("KPSS");
+  });
+
+  it("free user with economy off is blocked (403)", async () => {
+    await setConfig("economy.enabled", false);
+    expect((await chat(freeToken)).status).toBe(403);
+  });
+
+  it("GET /coach/access reflects premium vs coin vs none", async () => {
+    await setConfig("economy.enabled", true);
+    await grantCoin(freeId, 20);
+
+    const premiumAccess = await access(premiumToken);
+    expect(premiumAccess.status).toBe(200);
+    expect(premiumAccess.body.mode).toBe("PREMIUM");
+    expect(premiumAccess.body.canChat).toBe(true);
+
+    const coinAccess = await access(freeToken);
+    expect(coinAccess.status).toBe(200);
+    expect(coinAccess.body.mode).toBe("COIN");
+    expect(coinAccess.body.canChat).toBe(true);
+    expect(coinAccess.body.chatCost).toBe(5);
+  });
+
+  it("premium user gets a reply and coin ledger is unchanged", async () => {
+    const before = await coinBalance(premiumId);
+    const res = await chat(premiumToken);
+    expect(res.status).toBe(201);
+    expect(typeof res.body.reply).toBe("string");
+    expect(res.body.reply.length).toBeGreaterThan(0);
+    expect(res.body.model).toBe("fake");
+    expect(await aiUsageCount(premiumId)).toBeGreaterThan(0);
+    expect(await coinBalance(premiumId)).toBe(before);
+  });
+
+  it("free user with coin spends on chat (201, balance drops)", async () => {
+    await setConfig("economy.enabled", true);
+    await grantCoin(freeId, 20);
+    const before = await coinBalance(freeId);
+    const res = await chat(freeToken);
+    expect(res.status).toBe(201);
+    expect(await coinBalance(freeId)).toBe(before - 5);
+  });
+
+  it("free user with insufficient coin → 422 INSUFFICIENT_COIN", async () => {
+    await setConfig("economy.enabled", true);
+    const res = await chat(brokeToken);
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe("INSUFFICIENT_COIN");
+  });
+
+  it("free coin daily rate-limit → 429 after the cap", async () => {
+    await setConfig("economy.enabled", true);
+    await grantCoin(brokeId, 100);
+    await setConfig("ai.chat.free_coin_daily_limit", 1);
+    try {
+      expect((await chat(brokeToken)).status).toBe(201);
+      expect((await chat(brokeToken)).status).toBe(429);
+    } finally {
+      await setConfig("ai.chat.free_coin_daily_limit", 5);
+    }
+  });
+
+  it("clientMessageId is idempotent (no double spend)", async () => {
+    await setConfig("economy.enabled", true);
+    await grantCoin(brokeId, 20);
+    const msgId = "00000000-0000-4000-8000-000000000001";
+    expect((await chat(brokeToken, "Merhaba", msgId)).status).toBe(201);
+    const afterFirstBal = await coinBalance(brokeId);
+    expect((await chat(brokeToken, "Merhaba tekrar", msgId)).status).toBe(201);
+    expect(await coinBalance(brokeId)).toBe(afterFirstBal);
+  });
+
+  it("ai.enabled=false → 404 (global kill-switch)", async () => {
+    await setConfig("ai.enabled", false);
+    expect((await chat(premiumToken)).status).toBe(404);
+    await setConfig("ai.enabled", true);
+  });
+
+  it("premium daily rate-limit → 429 after the cap", async () => {
+    await setConfig("ai.chat.daily_limit", 1);
+    try {
+      expect((await chat(rlToken)).status).toBe(201);
+      expect((await chat(rlToken)).status).toBe(429);
+    } finally {
+      await setConfig("ai.chat.daily_limit", 30);
+    }
+  });
+});

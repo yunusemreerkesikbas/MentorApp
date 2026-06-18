@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { authControllerForgotPassword } from "@mentor/api-client";
+import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, FormSuccess, SubmitButton } from "../../../components/form";
+import { AuthNavLink } from "../_components/auth-nav-link";
 
 export default function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +18,7 @@ export default function ForgotPasswordPage() {
     const data = new FormData(e.currentTarget);
     try {
       await authControllerForgotPassword({ email: String(data.get("email")) });
-      setDone(true); // backend always returns 200 (no enumeration)
+      setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Bir hata oluştu.");
     } finally {
@@ -27,9 +28,9 @@ export default function ForgotPasswordPage() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <h2 className="text-lg font-bold" style={{ color: "var(--color-main)" }}>
+      <SectionHeading as="h2" subtitle="E-postana sıfırlama bağlantısı göndeririz.">
         Şifremi unuttum
-      </h2>
+      </SectionHeading>
       {done ? (
         <FormSuccess message="Bu e-posta kayıtlıysa, şifre sıfırlama bağlantısı gönderildi. Gelen kutunu kontrol et." />
       ) : (
@@ -39,9 +40,7 @@ export default function ForgotPasswordPage() {
           <SubmitButton busy={busy}>Sıfırlama bağlantısı gönder</SubmitButton>
         </>
       )}
-      <Link href="/giris" className="text-sm underline" style={{ color: "var(--color-secondary)" }}>
-        Girişe dön
-      </Link>
+      <AuthNavLink href="/giris">Girişe dön</AuthNavLink>
     </form>
   );
 }

@@ -2,21 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 import type { AuthUser, ExamCalendarDto, InfoArticleSummaryDto } from "@mentor/types";
 import {
   ApiClientError,
   contentControllerCalendarByFamily,
   usersControllerMe,
 } from "@mentor/api-client";
-import { Card, DataCard } from "@mentor/ui";
+import { Card, Chip, DataCard, SectionHeading } from "@mentor/ui";
 import { FormError } from "../../../../components/form";
+import { INFO_ARTICLE_CATEGORY_LABELS } from "../../../../lib/content-labels";
 import { fetchInfoArticlesByFamily } from "../../../../lib/content-api";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  APPLICATION: "Başvuru",
-  EXAM_PROCESS: "Sınav süreci",
-  GENERAL: "Genel",
-};
+import { staggerItemVariants, staggerListVariants } from "../../../../lib/stagger-motion";
 
 type LoadState =
   | { status: "loading" }
@@ -31,10 +28,10 @@ type LoadState =
 
 /** Bilgi Merkezi — exam-day data card + editorial article list (guardrail #1). */
 export function BilgiShell() {
+  const reduceMotion = useReducedMotion();
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
   const load = useCallback(() => {
-    setState({ status: "loading" });
     usersControllerMe()
       .then(async (meRes) => {
         const me = meRes as unknown as AuthUser;
@@ -67,9 +64,6 @@ export function BilgiShell() {
       );
   }, []);
 
-  // Mount-time load goes through a ref: `load` sets state synchronously (fine from the
-  // retry button's event handler), but the react-compiler rule forbids that call chain
-  // directly inside an effect (same pattern as lib/auth-context.tsx).
   const loadRef = useRef(load);
   useEffect(() => {
     loadRef.current = load;
@@ -77,6 +71,21 @@ export function BilgiShell() {
   useEffect(() => {
     loadRef.current();
   }, []);
+
+  const headerMotion = reduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } },
+      };
+
+  const gridMotion = reduceMotion
+    ? {}
+    : {
+        initial: "hidden" as const,
+        animate: "show" as const,
+        variants: staggerListVariants,
+      };
 
   if (state.status === "loading") {
     return (
@@ -88,26 +97,38 @@ export function BilgiShell() {
 
   if (state.status === "error") {
     return (
-      <main className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8">
+      <main className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
         <FormError message={state.message} />
+        <button
+          type="button"
+          onClick={() => {
+            setState({ status: "loading" });
+            loadRef.current();
+          }}
+          className="mt-4 flex min-h-[44px] items-center rounded-[var(--radius-card)] px-4 text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+        >
+          Tekrar dene
+        </button>
       </main>
     );
   }
 
   if (state.status === "no_exam_type") {
     return (
-      <main className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8">
-        <h1
-          className="mb-4 text-2xl font-bold"
-          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-        >
-          Bilgi Merkezi
-        </h1>
-        <Card>
-          <p className="text-base" style={{ color: "var(--color-secondary)" }}>
-            Hedef sınavını profilden seçtiğinde resmî sınav tarihi ve makaleler burada görünecek.
+      <main className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
+        <motion.header className="mb-6" {...headerMotion}>
+          <h1
+            className="text-2xl font-bold lg:text-3xl"
+            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+          >
+            Bilgi Merkezi
+          </h1>
+          <p className="mt-1 text-base" style={{ color: "var(--color-secondary)" }}>
+            Resmî bilgi — kaynaklı ve doğrulanmış içerik.
           </p>
-        </Card>
+        </motion.header>
+        <ExamTypeGate />
       </main>
     );
   }
@@ -124,7 +145,7 @@ export function BilgiShell() {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
-      <header className="mb-6">
+      <motion.header className="mb-6" {...headerMotion}>
         <h1
           className="text-2xl font-bold lg:text-3xl"
           style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
@@ -134,80 +155,162 @@ export function BilgiShell() {
         <p className="mt-1 text-base" style={{ color: "var(--color-secondary)" }}>
           Resmî bilgi — kaynaklı ve doğrulanmış içerik.
         </p>
-      </header>
+      </motion.header>
 
-      {calendar ? (
-        <DataCard
-          label="Sınav günü"
-          value={calendar.examDateLabel}
-          caption={
-            <>
-              <span className="font-semibold" style={{ color: "var(--color-main)" }}>
-                {calendar.exam.name}
-              </span>
-              {calendar.daysRemaining !== null ? (
-                <span className="mt-1 block">
-                  Sınava {calendar.daysRemaining} gün kaldı.
+      <motion.div className="flex flex-col gap-6" {...gridMotion}>
+        <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+          {calendar ? (
+            <DataCard
+              label="Sınav günü"
+              value={calendar.examDateLabel}
+              caption={
+                <>
+                  <span className="font-semibold" style={{ color: "var(--color-main)" }}>
+                    {calendar.exam.name}
+                  </span>
+                  {calendar.daysRemaining !== null ? (
+                    <span className="mt-1 block">
+                      Sınava {calendar.daysRemaining} gün kaldı.
+                    </span>
+                  ) : null}
+                  {verifiedLabel ? (
+                    <span className="mt-1 block text-xs" style={{ color: "var(--color-secondary)" }}>
+                      Son doğrulama: {verifiedLabel}
+                    </span>
+                  ) : null}
+                </>
+              }
+              source={
+                examDateEvent
+                  ? { label: examDateEvent.source, url: examDateEvent.sourceUrl }
+                  : undefined
+              }
+            />
+          ) : (
+            <Card>
+              <div className="flex flex-col items-center gap-4 py-4 text-center">
+                <span
+                  className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold capitalize"
+                  style={{
+                    backgroundColor: "color-mix(in srgb, var(--color-chip) 30%, transparent)",
+                    color: "var(--color-chip-text)",
+                    fontFamily: "var(--font-body)",
+                  }}
+                >
+                  Takvim bekleniyor
                 </span>
-              ) : null}
-              {verifiedLabel ? (
-                <span className="mt-1 block text-xs" style={{ color: "var(--color-secondary)" }}>
-                  Son doğrulama: {verifiedLabel}
-                </span>
-              ) : null}
-            </>
-          }
-          source={
-            examDateEvent
-              ? { label: examDateEvent.source, url: examDateEvent.sourceUrl }
-              : undefined
-          }
-        />
-      ) : (
-        <Card className="mb-6">
-          <p className="text-base" style={{ color: "var(--color-secondary)" }}>
-            Sınav takvimi henüz yayımlanmadı.
-          </p>
-        </Card>
-      )}
+                <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+                  Sınav takvimi henüz yayımlanmadı. Duyurulduğunda burada görünecek.
+                </p>
+              </div>
+            </Card>
+          )}
+        </motion.div>
 
-      <section className="mt-8">
-        <h2
-          className="mb-4 text-lg font-bold"
-          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-        >
-          Makaleler
-        </h2>
-        {articles.length === 0 ? (
-          <Card>
-            <p className="text-base" style={{ color: "var(--color-secondary)" }}>
-              Bu sınav için henüz makale yok.
-            </p>
-          </Card>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {articles.map((article) => (
-              <li key={article.slug}>
-                <Link href={`/bilgi/${article.slug}`}>
-                  <Card className="transition-opacity hover:opacity-90">
-                    <p
-                      className="text-base font-semibold"
-                      style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-                    >
-                      {article.title}
-                    </p>
-                    <p className="mt-1 text-sm" style={{ color: "var(--color-secondary)" }}>
-                      {CATEGORY_LABELS[article.category] ?? article.category}
-                      {" · "}
-                      Kaynak: {article.source}
-                    </p>
-                  </Card>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        <motion.section variants={reduceMotion ? undefined : staggerItemVariants}>
+          <SectionHeading subtitle="Editoryal makaleler — okuma ücretsiz">
+            Makaleler
+          </SectionHeading>
+          {articles.length === 0 ? (
+            <Card className="mt-4">
+              <div className="flex flex-col items-center gap-4 py-6 text-center">
+                <span
+                  className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold capitalize"
+                  style={{
+                    backgroundColor: "color-mix(in srgb, var(--color-chip) 30%, transparent)",
+                    color: "var(--color-chip-text)",
+                    fontFamily: "var(--font-body)",
+                  }}
+                >
+                  Henüz makale yok
+                </span>
+                <p className="text-base" style={{ color: "var(--color-secondary)" }}>
+                  Bu sınav için makaleler yakında eklenecek.
+                </p>
+              </div>
+            </Card>
+          ) : (
+            <motion.ul
+              className="mt-4 flex flex-col gap-3"
+              initial={reduceMotion ? false : "hidden"}
+              animate={reduceMotion ? undefined : "show"}
+              variants={{
+                hidden: { opacity: 0 },
+                show: { opacity: 1, transition: { staggerChildren: 0.06 } },
+              }}
+            >
+              {articles.map((article) => (
+                <motion.li key={article.slug} variants={reduceMotion ? undefined : staggerItemVariants}>
+                  <Link
+                    href={`/bilgi/${article.slug}`}
+                    className="block rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+                  >
+                    <Card className="transition-opacity hover:opacity-90 motion-reduce:transition-none">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <p
+                          className="text-base font-semibold"
+                          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+                        >
+                          {article.title}
+                        </p>
+                        <Chip className="shrink-0 px-3 py-1 text-xs">
+                          {INFO_ARTICLE_CATEGORY_LABELS[article.category] ?? article.category}
+                        </Chip>
+                      </div>
+                      <p className="mt-2 text-sm" style={{ color: "var(--color-secondary)" }}>
+                        Kaynak: {article.source}
+                      </p>
+                    </Card>
+                  </Link>
+                </motion.li>
+              ))}
+            </motion.ul>
+          )}
+        </motion.section>
+
+        <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+          <Link
+            href="/panel"
+            className="flex min-h-[44px] items-center justify-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+          >
+            ← Panele dön
+          </Link>
+        </motion.div>
+      </motion.div>
     </main>
+  );
+}
+
+function ExamTypeGate() {
+  return (
+    <Card>
+      <div className="flex flex-col items-center gap-4 py-4 text-center">
+        <span
+          className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold capitalize"
+          style={{
+            backgroundColor: "color-mix(in srgb, var(--color-chip) 30%, transparent)",
+            color: "var(--color-chip-text)",
+            fontFamily: "var(--font-body)",
+          }}
+        >
+          Sınav türü gerekli
+        </span>
+        <p className="text-base" style={{ color: "var(--color-secondary)" }}>
+          Hedef sınavını profilden seçtiğinde resmî sınav tarihi ve makaleler burada görünecek.
+        </p>
+        <Link
+          href="/profil"
+          className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none sm:w-auto"
+          style={{
+            backgroundColor: "var(--color-btn)",
+            boxShadow: "var(--shadow-card)",
+            fontFamily: "var(--font-body)",
+          }}
+        >
+          Sınav türünü seç
+        </Link>
+      </div>
+    </Card>
   );
 }

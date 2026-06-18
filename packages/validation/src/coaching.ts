@@ -19,7 +19,7 @@ export const isoDateSchema = z
   );
 
 export const PLAN_TASK_STATUSES = ["PENDING", "DONE"] as const;
-export const SESSION_PRESETS = ["25_5", "50_10"] as const;
+export const SESSION_PRESETS = ["25_5", "50_10", "custom"] as const;
 export const STUDY_SESSION_STATUSES = ["IN_PROGRESS", "COMPLETED", "ABANDONED"] as const;
 /** Status values allowed when finalizing a session (complete / abandon). */
 export const FINAL_STUDY_SESSION_STATUSES = ["COMPLETED", "ABANDONED"] as const;
@@ -52,12 +52,30 @@ export type ListPlanTasksQuery = z.infer<typeof listPlanTasksQuerySchema>;
 
 /* ------------------------------- study sessions ------------------------------- */
 
-export const startStudySessionSchema = z.object({
-  preset: z.enum(SESSION_PRESETS),
-  subject: z.string().trim().min(1).max(80).nullish(),
-  /** ISO datetime; defaults to server "now" when omitted. */
-  startedAt: z.string().datetime({ offset: true }).optional(),
-});
+export const startStudySessionSchema = z
+  .object({
+    preset: z.enum(SESSION_PRESETS),
+    /** Required when preset is `custom`; 5-minute steps from 5 to 120. */
+    focusMinutes: z.coerce
+      .number()
+      .int()
+      .min(5)
+      .max(120)
+      .refine((v) => v % 5 === 0, { message: "invalid_focus_minutes_step" })
+      .optional(),
+    subject: z.string().trim().min(1).max(80).nullish(),
+    /** ISO datetime; defaults to server "now" when omitted. */
+    startedAt: z.string().datetime({ offset: true }).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.preset === "custom" && data.focusMinutes == null) {
+      ctx.addIssue({
+        code: "custom",
+        message: "focus_minutes_required",
+        path: ["focusMinutes"],
+      });
+    }
+  });
 export type StartStudySessionInput = z.infer<typeof startStudySessionSchema>;
 
 export const updateStudySessionSchema = z.object({

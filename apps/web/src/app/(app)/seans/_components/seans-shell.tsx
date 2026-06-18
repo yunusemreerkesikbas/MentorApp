@@ -1,53 +1,81 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
-import type { SessionPresetDto, StudySessionDto } from "@mentor/types";
+import type { SessionPresetDto } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
-import { Button, Card, Chip } from "@mentor/ui";
+import { Card, SectionHeading } from "@mentor/ui";
 import { FormError } from "../../../../components/form";
-import { finalizeStudySession, startStudySession } from "../../../../lib/study-sessions";
-
-type Phase = "idle" | "focus" | "break" | "done";
+import { SessionControls } from "./session-controls";
+import { SessionDoneState } from "./session-done-state";
+import { SessionTimerRing } from "./session-timer-ring";
+import { useSessionTimer } from "./use-session-timer";
 
 const DEFAULT_PRESETS: SessionPresetDto[] = [
   { id: "25_5", label: "25 / 5 dk", focusMinutes: 25, breakMinutes: 5 },
   { id: "50_10", label: "50 / 10 dk", focusMinutes: 50, breakMinutes: 10 },
 ];
 
-function presetSeconds(minutes: number): number {
-  return minutes * 60;
+function parseInitialMinutes(presetParam: string | null, minutesParam: string | null): number {
+  if (minutesParam) {
+    const n = Number.parseInt(minutesParam, 10);
+    if (!Number.isNaN(n) && n >= 5 && n <= 120 && n % 5 === 0) return n;
+  }
+  if (presetParam === "50_10") return 50;
+  return 25;
 }
 
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+function parseInitialPreset(
+  presetParam: string | null,
+  minutesParam: string | null,
+): "25_5" | "50_10" | "custom" {
+  if (minutesParam) {
+    const n = Number.parseInt(minutesParam, 10);
+    if (!Number.isNaN(n) && n >= 5 && n <= 120 && n % 5 === 0) return "custom";
+  }
+  if (presetParam === "50_10") return "50_10";
+  return "25_5";
+}
+
+function parseInitialSelectedPresetId(
+  presetParam: string | null,
+  minutesParam: string | null,
+): string | null {
+  if (minutesParam) {
+    const n = Number.parseInt(minutesParam, 10);
+    if (!Number.isNaN(n) && n >= 5 && n <= 120 && n % 5 === 0) return null;
+  }
+  if (presetParam === "50_10") return "50_10";
+  return "25_5";
 }
 
 /**
- * Pomodoro session UI — start via API, timer runs client-side, finalize on complete/abandon.
+ * Pomodoro session UI — circular dial, pause/resume, API start/finalize.
  */
 export function SeansShell() {
+  const reduceMotion = useReducedMotion();
   const searchParams = useSearchParams();
   const presetParam = searchParams.get("preset");
+  const minutesParam = searchParams.get("minutes");
 
   const [presets, setPresets] = useState<SessionPresetDto[]>(DEFAULT_PRESETS);
   const [presetNotice, setPresetNotice] = useState<string | null>(null);
-  const [selectedPreset, setSelectedPreset] = useState<string>(
-    presetParam === "50_10" ? "50_10" : "25_5",
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(() =>
+    parseInitialSelectedPresetId(presetParam, minutesParam),
   );
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [secondsLeft, setSecondsLeft] = useState(0);
-  const [session, setSession] = useState<StudySessionDto | null>(null);
-  const [focusElapsed, setFocusElapsed] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+
+  const timer = useSessionTimer({
+    initialMinutes: parseInitialMinutes(presetParam, minutesParam),
+    initialPreset: parseInitialPreset(presetParam, minutesParam),
+  });
 
   useEffect(() => {
+    let active = true;
     coachingControllerGetToday()
       .then((res) => {
+        if (!active) return;
         const data = res as { sessionPresets?: SessionPresetDto[] };
         if (data.sessionPresets?.length) {
           setPresets(data.sessionPresets);
@@ -55,6 +83,7 @@ export function SeansShell() {
         }
       })
       .catch((err: unknown) => {
+        if (!active) return;
         setPresets(DEFAULT_PRESETS);
         setPresetNotice(
           err instanceof ApiClientError
@@ -62,91 +91,56 @@ export function SeansShell() {
             : "Oturum süreleri sunucudan alınamadı; varsayılan Pomodoro süreleri kullanılıyor.",
         );
       });
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const presetList = presets;
+  const {
+    phase,
+    focusMinutes,
+    secondsLeft,
+    focusElapsed,
+    isPaused,
+    isTimerComplete,
+    busy,
+    error,
+    setFocusMinutes,
+    selectPreset,
+    startSession,
+    togglePause,
+    finalize,
+    reset,
+  } = timer;
 
-  const activePreset = presetList.find((p) => p.id === selectedPreset) ?? presetList[0]!;
-
-  // Absolute end-of-phase timestamp; the interval derives the countdown from it (drift-free) and
-  // owns the focus→break transition. Using a ref keeps the transition out of an effect body, and
-  // the per-phase effect's cleanup tears the timer down so a re-mount can never leak an interval.
-  const phaseEndsAtRef = useRef(0);
-
-  const beginPhase = (next: "focus" | "break", seconds: number) => {
-    phaseEndsAtRef.current = Date.now() + seconds * 1000;
-    setSecondsLeft(seconds);
-    setPhase(next);
+  const handleMinutesChange = (minutes: number) => {
+    setFocusMinutes(minutes);
+    setSelectedPresetId(null);
   };
 
-  useEffect(() => {
-    if (phase !== "focus" && phase !== "break") return;
-    const id = setInterval(() => {
-      const remaining = Math.max(0, Math.round((phaseEndsAtRef.current - Date.now()) / 1000));
-      setSecondsLeft(remaining);
-      if (phase === "focus") setFocusElapsed((e) => e + 1);
-      if (remaining <= 0 && phase === "focus") {
-        // Roll into the break from inside the timer callback (not the effect body).
-        beginPhase("break", presetSeconds(activePreset.breakMinutes));
-      }
-    }, 1000);
-    return () => clearInterval(id);
-  }, [phase, activePreset]);
+  const handlePresetSelect = (presetId: "25_5" | "50_10", minutes: number) => {
+    selectPreset(presetId, minutes);
+    setSelectedPresetId(presetId);
+  };
 
-  async function startSession() {
-    setError(null);
-    setBusy(true);
-    try {
-      const started: StudySessionDto = await startStudySession({
-        preset: selectedPreset as "25_5" | "50_10",
-      });
-      setSession(started);
-      setFocusElapsed(0);
-      beginPhase("focus", presetSeconds(activePreset.focusMinutes));
-    } catch (err) {
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Bir hata oluştu.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
+  const headerMotion = reduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 8 },
+        animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } },
+      };
 
-  async function finalize(status: "COMPLETED" | "ABANDONED") {
-    if (!session) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await finalizeStudySession(session.id, { status, actualFocusSeconds: focusElapsed });
-      // Leaving the focus/break phase stops the ticking effect.
-      setPhase("done");
-    } catch (err) {
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Bir hata oluştu.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function reset() {
-    setPhase("idle");
-    setSession(null);
-    setFocusElapsed(0);
-    setSecondsLeft(0);
-  }
+  const phaseMotion = reduceMotion
+    ? {}
+    : {
+        initial: { opacity: 0, y: 10 },
+        animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" as const } },
+        exit: { opacity: 0, y: -6, transition: { duration: 0.15 } },
+      };
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-5 py-8 lg:px-8 lg:py-10">
-      <header>
+      <motion.header {...headerMotion}>
         <h1
           className="text-3xl font-bold"
           style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
@@ -156,108 +150,69 @@ export function SeansShell() {
         <p className="mt-1 text-base" style={{ color: "var(--color-secondary)" }}>
           Odaklan, molanı al, serini koru.
         </p>
-      </header>
+      </motion.header>
 
       <FormError message={error} />
       {presetNotice && (
-        <p className="mb-4 text-sm" style={{ color: "var(--color-secondary)" }} role="status">
+        <p className="text-sm" style={{ color: "var(--color-secondary)" }} role="status">
           {presetNotice}
         </p>
       )}
 
       <Card className="flex flex-col items-center gap-6 py-10">
-        {phase === "idle" && (
-          <>
-            <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-              Süre seç
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {presetList.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setSelectedPreset(p.id)}
-                  className="focus-visible:outline-none focus-visible:ring-2"
-                >
-                  <Chip
-                    className={
-                      selectedPreset === p.id ? "ring-2 ring-[var(--color-main)] ring-offset-1" : ""
-                    }
-                  >
-                    {p.label}
-                  </Chip>
-                </button>
-              ))}
-            </div>
-            <Button onClick={() => void startSession()} busy={busy} fullWidth>
-              Başla
-            </Button>
-          </>
-        )}
-
-        {(phase === "focus" || phase === "break") && (
-          <>
-            <p
-              className="text-sm font-semibold uppercase tracking-wide"
-              style={{ color: "var(--color-secondary)", fontFamily: "var(--font-heading)" }}
+        <AnimatePresence mode="wait">
+          {phase !== "done" && (
+            <motion.div
+              key={phase === "focus" ? "focus" : "idle"}
+              className="flex w-full flex-col items-center gap-6"
+              {...phaseMotion}
             >
-              {phase === "focus" ? "Odaklan" : "Mola"}
-            </p>
-            <p
-              className="text-6xl font-bold tabular-nums"
-              style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-              aria-live="polite"
-            >
-              {formatTime(secondsLeft)}
-            </p>
-            <div className="flex w-full flex-col gap-3">
-              {phase === "focus" && (
-                <Button onClick={() => void finalize("COMPLETED")} busy={busy} fullWidth>
-                  Seansı bitir
-                </Button>
+              {phase === "idle" && (
+                <SectionHeading subtitle="Süreyi halkadan ayarla veya kısayol seç">
+                  Süre
+                </SectionHeading>
               )}
-              <Button
-                onClick={() => void finalize("ABANDONED")}
+              {phase === "focus" && (
+                <p
+                  className="text-sm font-semibold uppercase tracking-wide"
+                  style={{ color: "var(--color-secondary)", fontFamily: "var(--font-heading)" }}
+                >
+                  {isPaused ? "Duraklatıldı" : "Odaklan"}
+                </p>
+              )}
+              <SessionTimerRing
+                phase={phase}
+                focusMinutes={focusMinutes}
+                secondsLeft={secondsLeft}
+                presets={presets}
+                selectedPresetId={selectedPresetId}
+                onMinutesChange={handleMinutesChange}
+                onPresetSelect={handlePresetSelect}
+              />
+              <SessionControls
+                phase={phase}
                 busy={busy}
-                fullWidth
-                className="!bg-white/60 !text-[var(--color-main)]"
-              >
-                Erken bırak
-              </Button>
-            </div>
-          </>
-        )}
+                isPaused={isPaused}
+                isTimerComplete={isTimerComplete}
+                onStart={() => void startSession()}
+                onTogglePause={togglePause}
+                onComplete={() => void finalize("COMPLETED")}
+                onAbandon={() => void finalize("ABANDONED")}
+              />
+            </motion.div>
+          )}
 
-        {phase === "done" && (
-          <>
-            <p
-              className="text-xl font-bold"
-              style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-            >
-              Tebrikler, seans kaydedildi!
-            </p>
-            <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-              {Math.floor(focusElapsed / 60)} dakika odaklandın.
-            </p>
-            <div className="flex w-full flex-col gap-3">
-              <Button onClick={reset} fullWidth>
-                Yeni seans
-              </Button>
-              <Link
-                href="/panel"
-                className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2"
-                style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-              >
-                Panele dön
-              </Link>
-            </div>
-          </>
-        )}
+          {phase === "done" && (
+            <motion.div key="done" className="w-full" {...phaseMotion}>
+              <SessionDoneState focusElapsed={focusElapsed} onReset={reset} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Card>
 
       <Link
         href="/plan"
-        className="text-center text-sm font-semibold transition-colors hover:opacity-80"
+        className="flex min-h-[44px] items-center justify-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
         style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
       >
         ← Plana dön

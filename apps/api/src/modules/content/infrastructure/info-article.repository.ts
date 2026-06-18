@@ -1,10 +1,20 @@
 import { Injectable } from "@nestjs/common";
-import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { infoArticles } from "../../../database/schema";
 
 export type InfoArticleRow = typeof infoArticles.$inferSelect;
 export type NewInfoArticle = typeof infoArticles.$inferInsert;
+
+/** One RAG hit (W3): published article ranked by cosine distance to the query embedding. */
+export interface SimilarArticleRow {
+  id: string;
+  slug: string;
+  title: string;
+  body: string;
+  sourceUrl: string;
+  distance: number;
+}
 
 /** Data access for editorial `info_articles` rows. */
 @Injectable()
@@ -95,5 +105,56 @@ export class InfoArticleRepository {
       .where(eq(infoArticles.slug, slug))
       .returning();
     return rows[0];
+  }
+
+  async findById(db: Database | DatabaseTx, id: string): Promise<InfoArticleRow | undefined> {
+    const rows = await db.select().from(infoArticles).where(eq(infoArticles.id, id)).limit(1);
+    return rows[0];
+  }
+
+  /** Store the RAG embedding (W3 — content owns the column; AI computes the vector). */
+  async setEmbedding(tx: DatabaseTx, id: string, embedding: number[]): Promise<void> {
+    await tx.update(infoArticles).set({ embedding }).where(eq(infoArticles.id, id));
+  }
+
+  /** Published articles still missing an embedding — for the backfill job. */
+  async listPublishedWithoutEmbedding(db: Database | DatabaseTx): Promise<{ id: string }[]> {
+    return db
+      .select({ id: infoArticles.id })
+      .from(infoArticles)
+      .where(and(isNotNull(infoArticles.publishedAt), isNull(infoArticles.embedding)));
+  }
+
+  /**
+   * RAG retrieval (W3): published articles in `family` ranked by cosine distance to `vector`
+   * (pgvector `<=>`). The vector is bound as a text param cast to `::vector` (no injection — floats).
+   */
+  async searchSimilar(
+    db: Database | DatabaseTx,
+    family: string,
+    vector: number[],
+    topK: number,
+  ): Promise<SimilarArticleRow[]> {
+    const literal = `[${vector.join(",")}]`;
+    const distance = sql<number>`${infoArticles.embedding} <=> ${literal}::vector`;
+    return db
+      .select({
+        id: infoArticles.id,
+        slug: infoArticles.slug,
+        title: infoArticles.title,
+        body: infoArticles.body,
+        sourceUrl: infoArticles.sourceUrl,
+        distance,
+      })
+      .from(infoArticles)
+      .where(
+        and(
+          eq(infoArticles.family, family),
+          isNotNull(infoArticles.publishedAt),
+          isNotNull(infoArticles.embedding),
+        ),
+      )
+      .orderBy(distance)
+      .limit(topK);
   }
 }
