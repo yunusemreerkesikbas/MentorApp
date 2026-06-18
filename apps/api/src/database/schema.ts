@@ -484,7 +484,11 @@ export const mockExamPhotoCategorizations = pgTable(
   (t) => [
     index("mock_exam_photo_cat_user_created_idx").on(t.userId, t.createdAt),
     index("mock_exam_photo_cat_mock_idx").on(t.mockExamId),
-    uniqueIndex("mock_exam_photo_cat_client_req_idx").on(t.userId, t.clientRequestId),
+    uniqueIndex("mock_exam_photo_cat_client_req_idx").on(
+      t.userId,
+      t.clientRequestId,
+      t.subjectRef,
+    ),
   ],
 );
 

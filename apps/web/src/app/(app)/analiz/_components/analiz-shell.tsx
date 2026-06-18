@@ -21,6 +21,9 @@ import {
 import { Button, Card, ProgressBar, SectionHeading, TextField } from "@mentor/ui";
 import { FormError } from "../../../../components/form";
 import { staggerItemVariants, staggerListVariants } from "../../../../lib/stagger-motion";
+import { fetchPhotoAccess } from "../../../../lib/analiz";
+import type { PhotoAccessDto } from "@mentor/types";
+import { PhotoCategorizeCard } from "./photo-categorize-card";
 
 interface SubjectScores {
   correct: string;
@@ -67,6 +70,21 @@ export function AnalizShell() {
   const [lastResult, setLastResult] = useState<MockExamDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [photoAccess, setPhotoAccess] = useState<PhotoAccessDto | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void fetchPhotoAccess()
+      .then((a) => {
+        if (active) setPhotoAccess(a);
+      })
+      .catch(() => {
+        if (active) setPhotoAccess({ canCategorize: false, reason: "AI_DISABLED" });
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -137,6 +155,17 @@ export function AnalizShell() {
     [analysis],
   );
 
+  const activeMockExamId = lastResult?.id ?? analysis?.trend[0]?.id ?? null;
+
+  async function refreshAnalysis() {
+    if (!exam || loadState.status !== "ready") return;
+    const analysisRes = await http<CoachingAnalysisDto>(getAnalysisUrl());
+    setLoadState({
+      status: "ready",
+      data: { exam, subjects, analysis: analysisRes },
+    });
+  }
+
   const headerMotion = reduceMotion
     ? {}
     : {
@@ -179,11 +208,7 @@ export function AnalizShell() {
         body: JSON.stringify(payload),
       });
       setLastResult(result);
-      const analysisRes = await http<CoachingAnalysisDto>(getAnalysisUrl());
-      setLoadState({
-        status: "ready",
-        data: { exam, subjects, analysis: analysisRes },
-      });
+      await refreshAnalysis();
       setScores(emptyScores(subjects));
     } catch (err) {
       setError(
@@ -269,6 +294,20 @@ export function AnalizShell() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {activeMockExamId && photoAccess ? (
+            <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+              <PhotoCategorizeCard
+                mockExamId={activeMockExamId}
+                access={photoAccess}
+                onCategorized={() => {
+                  void refreshAnalysis().then(() =>
+                    fetchPhotoAccess().then(setPhotoAccess).catch(() => undefined),
+                  );
+                }}
+              />
+            </motion.div>
+          ) : null}
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <Card>
@@ -380,6 +419,29 @@ export function AnalizShell() {
                       <span style={{ color: "var(--color-body)" }}>{s.subjectName}</span>
                       <span className="tabular-nums" style={{ color: "var(--color-secondary)" }}>
                         Ort. {s.averageNet} · {s.attemptCount} deneme
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            </motion.div>
+          )}
+
+          {analysis && analysis.photoSubjectSignals.length > 0 && (
+            <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+              <Card>
+                <SectionHeading subtitle="Foto analizinden gelen ipuçları">
+                  Ders sinyalleri
+                </SectionHeading>
+                <ul className="mt-4 flex flex-col gap-3">
+                  {analysis.photoSubjectSignals.map((s) => (
+                    <li
+                      key={s.subjectRef}
+                      className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] px-3 py-2 text-sm"
+                    >
+                      <span style={{ color: "var(--color-body)" }}>{s.subjectName}</span>
+                      <span className="tabular-nums" style={{ color: "var(--color-secondary)" }}>
+                        {s.count} foto
                       </span>
                     </li>
                   ))}

@@ -13,6 +13,10 @@ import {
   type MockExamRow,
   type MockExamSubjectRow,
 } from "../infrastructure/mock-exam.repository";
+import {
+  MockExamPhotoRepository,
+  type MockExamPhotoRow,
+} from "../infrastructure/mock-exam-photo.repository";
 import { toMockExamDto } from "./coaching.mappers";
 
 /**
@@ -25,6 +29,7 @@ export class MockExamService {
     @Inject(DRIZZLE) private readonly db: Database,
     @Inject(CONTENT_PORT) private readonly content: ContentPort,
     private readonly mockExams: MockExamRepository,
+    private readonly photoRows: MockExamPhotoRepository,
   ) {}
 
   async create(userId: string, input: CreateMockExamInput): Promise<MockExamDto> {
@@ -152,7 +157,60 @@ export class MockExamService {
         attemptCount: row.attemptCount,
       }));
 
-      return { trend, subjects };
+      const photoSignals = await this.photoRows.listPhotoSubjectSignals(tx, userId);
+      const photoSubjectSignals = photoSignals.map((row) => ({
+        subjectRef: row.subjectRef,
+        subjectName: slugToName.get(row.subjectRef) ?? row.subjectRef,
+        count: row.count,
+      }));
+
+      return { trend, subjects, photoSubjectSignals };
+    });
+  }
+
+  /** Count photo categorizations in the rolling window (premium rate-limit). */
+  async countPhotoCategorizationsSince(userId: string, since: Date): Promise<number> {
+    return withUserContext(this.db, { userId }, async (tx) =>
+      this.photoRows.countSince(tx, userId, since),
+    );
+  }
+
+  async findPhotoCategorizationsByClientRequestId(
+    userId: string,
+    clientRequestId: string,
+  ): Promise<MockExamPhotoRow[]> {
+    return withUserContext(this.db, { userId }, async (tx) =>
+      this.photoRows.findByClientRequestId(tx, userId, clientRequestId),
+    );
+  }
+
+  async getOwnedMockExam(userId: string, mockExamId: string): Promise<MockExamRow> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const row = await this.mockExams.findById(tx, userId, mockExamId);
+      if (!row) {
+        throw new DomainError(ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND);
+      }
+      return row.exam;
+    });
+  }
+
+  async recordPhotoCategorizations(
+    userId: string,
+    mockExamId: string,
+    subjectSlugs: string[],
+    storageKey: string,
+    clientRequestId?: string,
+  ): Promise<void> {
+    await withUserContext(this.db, { userId }, async (tx) => {
+      for (const slug of subjectSlugs) {
+        await this.photoRows.insert(tx, {
+          userId,
+          mockExamId,
+          subjectRef: slug,
+          storageKey,
+          clientRequestId,
+        });
+      }
     });
   }
 

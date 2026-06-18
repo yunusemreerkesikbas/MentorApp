@@ -85,6 +85,11 @@ export const CONFIG_CATALOG = {
     100000,
     "Max AI coach chat messages a free user may send per day via coin (abuse shield; premium limit is separate).",
   ),
+  "ai.photo.monthly_limit": aiCount(
+    30,
+    100000,
+    "Max photo→subject categorizations a premium user may run per rolling 30-day window.",
+  ),
 } as const satisfies Record<string, ConfigEntryDef>;
 
 export type ConfigKey = keyof typeof CONFIG_CATALOG;

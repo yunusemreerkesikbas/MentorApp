@@ -1543,6 +1543,92 @@
         ]
       }
     },
+    "/v1/coach/photo-access": {
+      "get": {
+        "operationId": "AiPhotoController_getPhotoAccess",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/mock-exams/photo-upload-url": {
+      "post": {
+        "operationId": "AiMockExamPhotoController_createPhotoUploadUrl",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/mock-exams/{id}/categorize-photo": {
+      "post": {
+        "operationId": "AiMockExamPhotoController_categorizePhoto",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategorizePhotoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/admin/ai/reembed": {
       "post": {
         "operationId": "AdminEmbeddingController_reembed",
@@ -2086,6 +2172,14 @@
         "properties": {}
       },
       "AiChatDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "PhotoUploadUrlDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CategorizePhotoDto": {
         "type": "object",
         "properties": {}
       },

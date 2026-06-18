@@ -25,3 +25,24 @@ export interface CoachChatReplyDto {
   model: string;
   sources: { title: string; slug: string; url: string }[];
 }
+
+/** GET /v1/coach/photo-access — premium photo categorize gate. */
+export interface PhotoAccessDto {
+  canCategorize: boolean;
+  reason?: string;
+  monthlyLimit?: number;
+  remainingThisMonth?: number;
+}
+
+/** POST /v1/mock-exams/photo-upload-url response. */
+export interface PhotoUploadUrlDto {
+  uploadUrl: string;
+  key: string;
+  expiresAt: string;
+  maxBytes: number;
+}
+
+/** POST /v1/mock-exams/{id}/categorize-photo response — classification only (§4 #2). */
+export interface CategorizePhotoResultDto {
+  subjectRefs: { slug: string; name: string }[];
+}
