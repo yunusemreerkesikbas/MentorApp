@@ -37,6 +37,16 @@ function makeRepoFake() {
     balanceSelf: async (userId: string) => balance(userId),
     coinEarnedSince: async (userId: string) =>
       sum((r) => r.userId === userId && r.unit === Currency.COIN && r.amount > 0),
+    coinChatSpendsSince: async (userId: string, reason?: string) =>
+      rows.filter(
+        (r) =>
+          r.userId === userId &&
+          r.unit === Currency.COIN &&
+          r.amount < 0 &&
+          (!reason || r.reason === reason),
+      ).length,
+    existsByRef: async (refType: string, refId: string) =>
+      rows.some((r) => r.refType === refType && r.refId === refId),
   };
 }
 
@@ -105,5 +115,32 @@ describe("EconomyService", () => {
     await svc.grant("u1", Currency.COIN, 10, { reason: "invite", refType: "invite", refId: "inv1", enforceLimits: false });
     const bal = await svc.getAdminBalance("u1");
     expect(bal.coinConfirmed).toBe(10);
+  });
+
+  it("spends coin when balance is sufficient", async () => {
+    const svc = service();
+    await svc.grant("u1", Currency.COIN, 10, { reason: "test", enforceLimits: false });
+    const result = await svc.spend("u1", 5, {
+      reason: "ai.chat.spend",
+      refType: "ai_chat",
+      refId: "msg-1",
+    });
+    expect(result.alreadySpent).toBe(false);
+    expect(result.balance.coinConfirmed).toBe(5);
+  });
+
+  it("rejects spend when balance is insufficient (INSUFFICIENT_COIN)", async () => {
+    await expect(
+      service().spend("u1", 5, { reason: "ai.chat.spend", refType: "ai_chat", refId: "msg-2" }),
+    ).rejects.toMatchObject({ code: ErrorCode.INSUFFICIENT_COIN });
+  });
+
+  it("spend is idempotent on refType/refId", async () => {
+    const svc = service();
+    await svc.grant("u1", Currency.COIN, 10, { reason: "test", enforceLimits: false });
+    await svc.spend("u1", 5, { reason: "ai.chat.spend", refType: "ai_chat", refId: "msg-3" });
+    const second = await svc.spend("u1", 5, { reason: "ai.chat.spend", refType: "ai_chat", refId: "msg-3" });
+    expect(second.alreadySpent).toBe(true);
+    expect(second.balance.coinConfirmed).toBe(5);
   });
 });

@@ -2,10 +2,12 @@ import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Env } from "../../config/env.validation";
 import { ContentModule } from "../content/content.module";
+import { EconomyModule } from "../economy/economy.module";
 import { IdentityModule } from "../identity/identity.module";
 import { PaymentsModule } from "../payments/payments.module";
 import { LLM_PORT } from "./domain/llm.port";
 import { ChatService } from "./application/chat.service";
+import { CoachAccessService } from "./application/coach-access.service";
 import { ContextBuilder } from "./application/context-builder.service";
 import { EmbeddingService } from "./application/embedding.service";
 import { ArticleEmbeddingListener } from "./application/article-embedding.listener";
@@ -20,14 +22,15 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
 /**
  * W3 — AI bounded context. Slice 1: premium AI coach chat (single-turn, refusal-grounded). LLM
  * behind LlmPort (fake = dev/test default; openai = production, env-gated). Consumes IdentityModule
- * (profile) + ContentModule (countdown) public services and PaymentsModule (PremiumGuard).
- * RAG/web-UI/coin-spend = later slices.
+ * (profile) + ContentModule (countdown) + PaymentsModule (entitlement) + EconomyModule (coin spend).
+ * RAG + web gate + earned coin → AI chat (premium flat vs coin path in ChatService).
  */
 @Module({
-  imports: [IdentityModule, ContentModule, PaymentsModule],
+  imports: [IdentityModule, ContentModule, PaymentsModule, EconomyModule],
   controllers: [AiChatController, AdminEmbeddingController],
   providers: [
     ChatService,
+    CoachAccessService,
     ContextBuilder,
     AiUsageRepository,
     EmbeddingService,

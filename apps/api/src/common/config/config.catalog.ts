@@ -78,7 +78,13 @@ export const CONFIG_CATALOG = {
   "economy.coin.min_xp_for_coin": economyCount(0, 1000000, "Min XP required before a user can earn coin (anti-Sybil)."),
   "economy.invite.reward_coin": economyCount(20, 100000, "Coin granted to the inviter when an invited user converts."),
   "economy.quest.onboarding_reward_coin": economyCount(10, 100000, "Coin granted per completed onboarding quest."),
+  "economy.coin.ai_chat_cost": economyCount(5, 100000, "Coin debited per AI coach chat message (free earned-right path)."),
   "ai.chat.daily_limit": aiCount(30, 100000, "Max AI coach chat messages a premium user may send per day (cost cap §7)."),
+  "ai.chat.free_coin_daily_limit": aiCount(
+    5,
+    100000,
+    "Max AI coach chat messages a free user may send per day via coin (abuse shield; premium limit is separate).",
+  ),
 } as const satisfies Record<string, ConfigEntryDef>;
 
 export type ConfigKey = keyof typeof CONFIG_CATALOG;

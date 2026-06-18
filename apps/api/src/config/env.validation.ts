@@ -31,6 +31,10 @@ const envSchema = z.object({
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),
   OPENAI_EMBED_MODEL: z.string().default("text-embedding-3-small"),
   GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default("gemini-2.0-flash"),
+  VISION_PROVIDER: z.enum(["fake", "gemini"]).default("fake"),
+  STORAGE_PROVIDER: z.enum(["fake", "r2"]).default("fake"),
+  R2_PUBLIC_BASE_URL: z.string().url().optional(),
 
   // Payments (§7) — provider behind PaymentsPort. `fake` is the dev/test default;
   // the production lock below makes shipping with fake impossible.
@@ -102,6 +106,22 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
       path: ["OPENAI_API_KEY"],
       message: "OPENAI_API_KEY is required when AI_PROVIDER=openai.",
     });
+  }
+  if (env.VISION_PROVIDER === "gemini" && !env.GEMINI_API_KEY) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["GEMINI_API_KEY"],
+      message: "GEMINI_API_KEY is required when VISION_PROVIDER=gemini.",
+    });
+  }
+  if (env.STORAGE_PROVIDER === "r2") {
+    if (!env.R2_ACCOUNT_ID || !env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY || !env.R2_BUCKET) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["R2_BUCKET"],
+        message: "R2_* vars are required when STORAGE_PROVIDER=r2.",
+      });
+    }
   }
   if (env.NODE_ENV === "production" && !env.CRON_SECRET) {
     ctx.addIssue({

@@ -1,9 +1,9 @@
-import { aiChatControllerReply } from "@mentor/api-client";
+import type { CoachAccessDto, CoachChatReplyDto } from "@mentor/types";
+import { http } from "@mentor/api-client";
 
 /**
- * Typed wrapper over the generated AI coach client. The API returns `{ reply, model }` from an inline
- * object (no DTO class), so the orval client types it loosely — we assert the known shape here, in one
- * place (mirrors the `study-sessions.ts` wrapper). Single-turn: each call is independent.
+ * Typed wrappers over the AI coach endpoints. Regen api-client when OpenAPI updates;
+ * shapes are asserted here in one place (mirrors study-sessions pattern).
  */
 export interface CoachSource {
   title: string;
@@ -11,12 +11,18 @@ export interface CoachSource {
   url: string;
 }
 
-export interface CoachReply {
-  reply: string;
-  model: string;
-  sources: CoachSource[];
+export type CoachReply = CoachChatReplyDto;
+
+export async function fetchCoachAccess(): Promise<CoachAccessDto> {
+  return (await http<CoachAccessDto>("/v1/coach/access")) as CoachAccessDto;
 }
 
-export async function sendCoachMessage(message: string): Promise<CoachReply> {
-  return (await aiChatControllerReply({ message })) as unknown as CoachReply;
+export async function sendCoachMessage(
+  message: string,
+  clientMessageId?: string,
+): Promise<CoachReply> {
+  return (await http<CoachReply>("/v1/coach/chat", {
+    method: "POST",
+    body: JSON.stringify({ message, ...(clientMessageId ? { clientMessageId } : {}) }),
+  })) as CoachReply;
 }

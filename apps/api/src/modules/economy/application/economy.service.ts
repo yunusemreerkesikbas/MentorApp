@@ -17,6 +17,19 @@ export interface GrantOptions {
   enforceLimits?: boolean;
 }
 
+export interface SpendOptions {
+  reason: string;
+  refType: string;
+  refId: string;
+  note?: string;
+}
+
+export interface SpendResult {
+  balance: Balance;
+  /** True when (refType, refId) was already debited — idempotent retry. */
+  alreadySpent: boolean;
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -83,6 +96,48 @@ export class EconomyService {
   }
   getAdminLedger(userId: string, limit: number): Promise<LedgerRow[]> {
     return this.repo.listService(userId, limit);
+  }
+
+  /**
+   * Debit confirmed coin (append-only negative row). Atomic balance check in one SERVICE tx.
+   * Idempotent on (refType, refId): a duplicate spend is a no-op with `alreadySpent: true`.
+   */
+  async spend(userId: string, cost: number, opts: SpendOptions): Promise<SpendResult> {
+    if (cost <= 0) {
+      throw new DomainError(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST);
+    }
+    let alreadySpent = false;
+    await this.repo.withServiceTx(async (tx) => {
+      if (await this.repo.existsByRef(opts.refType, opts.refId, tx)) {
+        alreadySpent = true;
+        return;
+      }
+      const balance = await this.repo.balanceService(userId, tx);
+      if (balance.coinConfirmed < cost) {
+        throw new DomainError(ErrorCode.INSUFFICIENT_COIN, HttpStatus.UNPROCESSABLE_ENTITY);
+      }
+      await this.repo.append(
+        {
+          userId,
+          unit: Currency.COIN,
+          amount: -cost,
+          reason: opts.reason,
+          status: LedgerStatus.CONFIRMED,
+          refType: opts.refType,
+          refId: opts.refId,
+          note: opts.note ?? null,
+          createdBy: null,
+        },
+        tx,
+      );
+    });
+    const balance = await this.repo.balanceService(userId);
+    return { balance, alreadySpent };
+  }
+
+  /** Rolling 24h count of AI chat coin spends (free-coin daily limit). */
+  coinChatSpendsSince(userId: string, since: Date): Promise<number> {
+    return this.repo.coinChatSpendsSince(userId, since);
   }
 
   /** Admin metrics (W6) — total coin & XP issued (confirmed positive grants) across all users. */

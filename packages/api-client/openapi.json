@@ -1495,6 +1495,25 @@
         ]
       }
     },
+    "/v1/coach/access": {
+      "get": {
+        "operationId": "AiChatController_getAccess",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/coach/chat": {
       "post": {
         "operationId": "AiChatController_reply",

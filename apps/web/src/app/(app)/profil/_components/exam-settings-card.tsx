@@ -18,7 +18,13 @@ const EXAM_OPTIONS: { value: ExamType; label: string; description: string }[] = 
  * Exam family picker — identity-owned `examType` unlocks countdown, bilgi, analiz.
  * Official exam dates come from editorial content (guardrail §1), not this control.
  */
-export function ExamSettingsCard({ user }: { user: AuthUser }) {
+export function ExamSettingsCard({
+  user,
+  onSaved,
+}: {
+  user: AuthUser;
+  onSaved?: () => void;
+}) {
   const { setUserFromServer } = useAuth();
   const reduceMotion = useReducedMotion();
   const [selected, setSelected] = useState<ExamType | null>(user.examType);
@@ -37,6 +43,7 @@ export function ExamSettingsCard({ user }: { user: AuthUser }) {
       const updated = (await usersControllerUpdateMe({ examType })) as unknown as AuthUser;
       setUserFromServer(updated);
       setSavedHint("Kaydedildi");
+      onSaved?.();
     } catch (err) {
       setSelected(prev);
       setError(err instanceof ApiClientError ? err.body.message : "Kaydedilemedi.");

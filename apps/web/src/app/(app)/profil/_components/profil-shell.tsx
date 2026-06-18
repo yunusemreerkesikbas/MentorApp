@@ -8,6 +8,7 @@ import { Card } from "@mentor/ui";
 import { FormError } from "../../../../components/form";
 import { useAuth } from "../../../../lib/auth-context";
 import { AccountLinksCard } from "./account-links-card";
+import { EconomySection } from "./economy-section";
 import { ExamSettingsCard } from "./exam-settings-card";
 import { NotificationSettings } from "./notification-settings";
 import { ProfileHeader } from "./profile-header";
@@ -25,6 +26,8 @@ export function ProfilShell() {
   const { setUserFromServer } = useAuth();
   const reduceMotion = useReducedMotion();
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [economyRefreshKey, setEconomyRefreshKey] = useState(0);
+  const [economyVisible, setEconomyVisible] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -87,7 +90,9 @@ export function ProfilShell() {
           Profil
         </h1>
         <p className="mt-1 text-base" style={{ color: "var(--color-secondary)" }}>
-          Hesap ve bildirim tercihlerin.
+          {economyVisible
+            ? "Hesap, kazanılmış hak ve bildirim tercihlerin."
+            : "Hesap ve bildirim tercihlerin."}
         </p>
       </header>
 
@@ -99,7 +104,17 @@ export function ProfilShell() {
         </motion.div>
 
         <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-          <ExamSettingsCard user={user} />
+          <ExamSettingsCard
+            user={user}
+            onSaved={() => setEconomyRefreshKey((k) => k + 1)}
+          />
+        </motion.div>
+
+        <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+          <EconomySection
+            refreshKey={economyRefreshKey}
+            onVisibilityChange={setEconomyVisible}
+          />
         </motion.div>
 
         <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>

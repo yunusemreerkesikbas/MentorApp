@@ -10,16 +10,20 @@ import { buildSystemPrompt } from "../src/modules/ai/domain/ai.constants";
 const RUN = Date.now();
 
 /**
- * W3 AI coach chat slice 1 (e2e, fake LLM): premium-gated single-turn chat, ai.enabled kill-switch,
- * daily rate-limit, usage metering. Real Postgres (RLS active). §4 #1 refusal verified on the prompt.
+ * W3 AI coach chat (e2e, fake LLM): premium flat + earned-coin path, access probe, rate-limits,
+ * usage metering. Real Postgres (RLS active). §4 #1 refusal verified on the prompt.
  */
 describe("ai coach chat (e2e)", () => {
   let app: INestApplication;
   let pool: Pool;
   let freeToken = "";
+  let freeId = "";
   let premiumToken = "";
   let premiumId = "";
   let adminToken = "";
+  let brokeToken = "";
+  let brokeId = "";
+  let rlToken = "";
 
   const signup = async (label: string) => {
     const email = `ai-${label}-${RUN}@test.local`;
@@ -36,6 +40,35 @@ describe("ai coach chat (e2e)", () => {
       await c.query("select set_config('app.role','SERVICE',true)");
       await c.query("update users set roles = array_append(roles,$1) where id=$2", [role, userId]);
       await c.query("commit");
+    } finally {
+      c.release();
+    }
+  };
+
+  const grantCoin = async (userId: string, amount: number) => {
+    const c = await pool.connect();
+    try {
+      await c.query("select set_config('app.role','SERVICE',true)");
+      await c.query(
+        `insert into ledger_entries (user_id, unit, amount, reason, status)
+         values ($1, 'COIN', $2, 'test.grant', 'CONFIRMED')`,
+        [userId, amount],
+      );
+    } finally {
+      c.release();
+    }
+  };
+
+  const coinBalance = async (userId: string): Promise<number> => {
+    const c = await pool.connect();
+    try {
+      await c.query("select set_config('app.role','SERVICE',true)");
+      const res = await c.query(
+        `select coalesce(sum(amount),0)::int as n from ledger_entries
+         where user_id=$1 and unit='COIN' and status='CONFIRMED'`,
+        [userId],
+      );
+      return res.rows[0]?.n ?? 0;
     } finally {
       c.release();
     }
@@ -79,15 +112,25 @@ describe("ai coach chat (e2e)", () => {
 
     const free = await signup("free");
     freeToken = free.accessToken;
+    freeId = free.user.id;
 
     const premium = await signup("premium");
     premiumId = premium.user.id;
-    await grantRole(premiumId, UserRole.STAFF); // STAFF = always-premium entitlement
+    await grantRole(premiumId, UserRole.STAFF);
     premiumToken = await login(premium.email);
 
     const admin = await signup("admin");
     await grantRole(admin.user.id, UserRole.ADMIN);
     adminToken = await login(admin.email);
+
+    const broke = await signup("broke");
+    brokeToken = broke.accessToken;
+    brokeId = broke.user.id;
+    await grantCoin(brokeId, 2);
+
+    const rl = await signup("rl");
+    await grantRole(rl.user.id, UserRole.STAFF);
+    rlToken = await login(rl.email);
   }, 90_000);
 
   afterAll(async () => {
@@ -95,8 +138,18 @@ describe("ai coach chat (e2e)", () => {
     await pool?.end();
   });
 
-  const chat = (token: string, message = "Bugün nasıl çalışmalıyım?") =>
-    request(app.getHttpServer()).post("/v1/coach/chat").set({ Authorization: `Bearer ${token}` }).send({ message });
+  const chat = (
+    token: string,
+    message = "Bugün nasıl çalışmalıyım?",
+    clientMessageId?: string,
+  ) =>
+    request(app.getHttpServer())
+      .post("/v1/coach/chat")
+      .set({ Authorization: `Bearer ${token}` })
+      .send({ message, ...(clientMessageId ? { clientMessageId } : {}) });
+
+  const access = (token: string) =>
+    request(app.getHttpServer()).get("/v1/coach/access").set({ Authorization: `Bearer ${token}` });
 
   it("§4 #1: the system prompt forbids generating official info", () => {
     const prompt = buildSystemPrompt({ examType: "KPSS", daysRemaining: 90, examDateLabel: null });
@@ -105,35 +158,89 @@ describe("ai coach chat (e2e)", () => {
     expect(prompt).toContain("KPSS");
   });
 
-  it("free user is blocked (403, no AI on free)", async () => {
+  it("free user with economy off is blocked (403)", async () => {
+    await setConfig("economy.enabled", false);
     expect((await chat(freeToken)).status).toBe(403);
   });
 
-  it("premium user gets a reply and a usage row is metered", async () => {
+  it("GET /coach/access reflects premium vs coin vs none", async () => {
+    await setConfig("economy.enabled", true);
+    await grantCoin(freeId, 20);
+
+    const premiumAccess = await access(premiumToken);
+    expect(premiumAccess.status).toBe(200);
+    expect(premiumAccess.body.mode).toBe("PREMIUM");
+    expect(premiumAccess.body.canChat).toBe(true);
+
+    const coinAccess = await access(freeToken);
+    expect(coinAccess.status).toBe(200);
+    expect(coinAccess.body.mode).toBe("COIN");
+    expect(coinAccess.body.canChat).toBe(true);
+    expect(coinAccess.body.chatCost).toBe(5);
+  });
+
+  it("premium user gets a reply and coin ledger is unchanged", async () => {
+    const before = await coinBalance(premiumId);
     const res = await chat(premiumToken);
     expect(res.status).toBe(201);
     expect(typeof res.body.reply).toBe("string");
     expect(res.body.reply.length).toBeGreaterThan(0);
     expect(res.body.model).toBe("fake");
     expect(await aiUsageCount(premiumId)).toBeGreaterThan(0);
+    expect(await coinBalance(premiumId)).toBe(before);
+  });
+
+  it("free user with coin spends on chat (201, balance drops)", async () => {
+    await setConfig("economy.enabled", true);
+    await grantCoin(freeId, 20);
+    const before = await coinBalance(freeId);
+    const res = await chat(freeToken);
+    expect(res.status).toBe(201);
+    expect(await coinBalance(freeId)).toBe(before - 5);
+  });
+
+  it("free user with insufficient coin → 422 INSUFFICIENT_COIN", async () => {
+    await setConfig("economy.enabled", true);
+    const res = await chat(brokeToken);
+    expect(res.status).toBe(422);
+    expect(res.body.code).toBe("INSUFFICIENT_COIN");
+  });
+
+  it("free coin daily rate-limit → 429 after the cap", async () => {
+    await setConfig("economy.enabled", true);
+    await grantCoin(brokeId, 100);
+    await setConfig("ai.chat.free_coin_daily_limit", 1);
+    try {
+      expect((await chat(brokeToken)).status).toBe(201);
+      expect((await chat(brokeToken)).status).toBe(429);
+    } finally {
+      await setConfig("ai.chat.free_coin_daily_limit", 5);
+    }
+  });
+
+  it("clientMessageId is idempotent (no double spend)", async () => {
+    await setConfig("economy.enabled", true);
+    await grantCoin(brokeId, 20);
+    const msgId = "00000000-0000-4000-8000-000000000001";
+    expect((await chat(brokeToken, "Merhaba", msgId)).status).toBe(201);
+    const afterFirstBal = await coinBalance(brokeId);
+    expect((await chat(brokeToken, "Merhaba tekrar", msgId)).status).toBe(201);
+    expect(await coinBalance(brokeId)).toBe(afterFirstBal);
   });
 
   it("ai.enabled=false → 404 (global kill-switch)", async () => {
     await setConfig("ai.enabled", false);
     expect((await chat(premiumToken)).status).toBe(404);
-    await setConfig("ai.enabled", true); // restore
+    await setConfig("ai.enabled", true);
   });
 
-  it("daily rate-limit → 429 after the cap", async () => {
-    const rl = await signup("rl");
-    await grantRole(rl.user.id, UserRole.STAFF);
-    const rlToken = await login(rl.email);
+  it("premium daily rate-limit → 429 after the cap", async () => {
     await setConfig("ai.chat.daily_limit", 1);
     try {
       expect((await chat(rlToken)).status).toBe(201);
       expect((await chat(rlToken)).status).toBe(429);
     } finally {
-      await setConfig("ai.chat.daily_limit", 30); // restore
+      await setConfig("ai.chat.daily_limit", 30);
     }
   });
 });

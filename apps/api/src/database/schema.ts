@@ -463,6 +463,31 @@ export const mockExamSubjects = pgTable(
   ],
 );
 
+/** Premium photo → subject classification rows (vision, categorize-not-solve §4 #2). */
+export const mockExamPhotoCategorizations = pgTable(
+  "mock_exam_photo_categorizations",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    mockExamId: uuid("mock_exam_id")
+      .notNull()
+      .references(() => mockExams.id, { onDelete: "cascade" }),
+    subjectRef: text("subject_ref").notNull(),
+    storageKey: text("storage_key").notNull(),
+    clientRequestId: uuid("client_request_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("mock_exam_photo_cat_user_created_idx").on(t.userId, t.createdAt),
+    index("mock_exam_photo_cat_mock_idx").on(t.mockExamId),
+    uniqueIndex("mock_exam_photo_cat_client_req_idx").on(t.userId, t.clientRequestId),
+  ],
+);
+
 /* ===================== W4 · payments =====================
  * Subscription billing (§7): plan catalog, subscriptions (state machine),
  * append-only charge ledger, idempotent webhook event log. Money = integer

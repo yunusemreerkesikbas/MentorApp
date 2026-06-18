@@ -84,7 +84,9 @@ export interface Paginated<T> {
 }
 
 export * from "./auth.js";
+export * from "./ai.js";
 export * from "./coaching.js";
 export * from "./content.js";
+export * from "./economy.js";
 export * from "./payments.js";
 export * from "./notifications.js";

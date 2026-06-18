@@ -1963,6 +1963,39 @@ export const infoArticleControllerGetArticle = async (slug: string, options?: Re
 
 
 
+export type aiChatControllerGetAccessResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type aiChatControllerGetAccessResponseSuccess = (aiChatControllerGetAccessResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerGetAccessResponse = (aiChatControllerGetAccessResponseSuccess)
+
+export const getAiChatControllerGetAccessUrl = () => {
+
+
+  
+
+  return `/v1/coach/access`
+}
+
+export const aiChatControllerGetAccess = async ( options?: RequestInit): Promise<aiChatControllerGetAccessResponse> => {
+  
+  return http<aiChatControllerGetAccessResponse>(getAiChatControllerGetAccessUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
 export type aiChatControllerReplyResponse201 = {
   data: void
   status: 201

@@ -5,6 +5,7 @@ import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import { ledgerEntries } from "../../../database/schema";
+import { EconomyLedger } from "../domain/economy.constants";
 
 export type LedgerRow = typeof ledgerEntries.$inferSelect;
 export type NewLedgerEntry = typeof ledgerEntries.$inferInsert;
@@ -87,6 +88,36 @@ export class LedgerRepository {
           ),
         );
       return rows[0]?.total ?? 0;
+    });
+  }
+
+  /** Count of AI chat coin spends since `since` (free-coin daily limit). */
+  async coinChatSpendsSince(userId: string, since: Date, exec?: DatabaseTx): Promise<number> {
+    return this.onService(exec, async (tx) => {
+      const rows = await tx
+        .select({ total: sql<number>`count(*)::int` })
+        .from(ledgerEntries)
+        .where(
+          and(
+            eq(ledgerEntries.userId, userId),
+            eq(ledgerEntries.unit, Currency.COIN),
+            eq(ledgerEntries.reason, EconomyLedger.AI_CHAT_SPEND_REASON),
+            gte(ledgerEntries.createdAt, since),
+          ),
+        );
+      return rows[0]?.total ?? 0;
+    });
+  }
+
+  /** True when a ledger row already exists for (refType, refId). */
+  async existsByRef(refType: string, refId: string, exec?: DatabaseTx): Promise<boolean> {
+    return this.onService(exec, async (tx) => {
+      const rows = await tx
+        .select({ id: ledgerEntries.id })
+        .from(ledgerEntries)
+        .where(and(eq(ledgerEntries.refType, refType), eq(ledgerEntries.refId, refId)))
+        .limit(1);
+      return rows.length > 0;
     });
   }
 
