@@ -1,4 +1,5 @@
 /** AI coach domain constants (W3): system prompt (§4 guardrails) + cost model + request limits. */
+import type { GhostComparisonDto } from "@mentor/types";
 
 /** Max completion tokens per call — bounds per-call cost (§7). */
 export const AI_MAX_OUTPUT_TOKENS = 600;
@@ -18,6 +19,10 @@ export interface CoachContext {
   examType: string | null;
   daysRemaining: number | null;
   examDateLabel: string | null;
+  /** Coarse subjective signal from today's mood check-in (1..5; null if not checked in). */
+  moodLevel: number | null;
+  /** Optional user-typed "zorlandığın konu" from today's check-in (null if none). */
+  struggleNote: string | null;
 }
 
 /** A retrieved, verified article used to ground the answer (RAG, §1). */
@@ -26,6 +31,15 @@ export interface CoachSource {
   sourceUrl: string;
   snippet: string;
 }
+
+/** 1..5 mood → short Turkish label for grounding/reflection prompts (mirrors coaching MoodLevel). */
+const MOOD_LABEL: Record<number, string> = {
+  1: "çok düşük",
+  2: "düşük",
+  3: "orta",
+  4: "iyi",
+  5: "çok iyi",
+};
 
 /**
  * Base coach persona + the non-negotiable §4 guardrails. The hardest rule (#1): the LLM must NEVER
@@ -53,6 +67,12 @@ export function buildSystemPrompt(ctx: CoachContext, sources: CoachSource[] = []
       ? `Sınava kalan gün: ${ctx.daysRemaining}${ctx.examDateLabel ? ` (${ctx.examDateLabel})` : ""}`
       : "Sınav tarihi: bilinmiyor",
   ];
+  if (ctx.moodLevel != null) {
+    lines.push(
+      `Bugünkü ruh hali: ${MOOD_LABEL[ctx.moodLevel] ?? "orta"} (${ctx.moodLevel}/5)` +
+        (ctx.struggleNote ? `, zorlandığı konu: "${ctx.struggleNote}"` : ""),
+    );
+  }
   let prompt = `${COACH_SYSTEM_BASE}\n\nBAĞLAM:\n${lines.join("\n")}`;
 
   if (sources.length > 0) {
@@ -69,6 +89,71 @@ export function buildSystemPrompt(ctx: CoachContext, sources: CoachSource[] = []
       " içerik bulamadım, Bilgi Merkezi'ne (/bilgi) bak' de. Yalnız genel çalışma koçluğu yap.";
   }
   return prompt;
+}
+
+/**
+ * Premium AI-adaptive mood reflection prompt (§4 #5 premium-only). Warm, brief, empathetic; reuses
+ * the hard guardrails (#1 no official info, #4 no medical/legal advice → professional on serious
+ * signals). Grounds only on PII-free context + today's mood level + the optional user note.
+ */
+export function buildMoodReflectionPrompt(
+  ctx: CoachContext,
+  mood: number,
+  struggleNote: string | null,
+): { system: string; user: string } {
+  const system = [
+    "Sen Mentor uygulamasının sınav hazırlık koçusun. Öğrencinin bugünkü ruh haline KISA (2-3 cümle),",
+    "sıcak ve motive edici bir karşılık ver. Yargılama; küçük ve uygulanabilir tek bir öneriyle bitir.",
+    "KESİN KURALLAR:",
+    "1) Resmî bilgi (sınav tarihi, başvuru/süreç, yerleştirme, kontenjan, puan) ÜRETME/UYDURMA;",
+    "   gerekirse Bilgi Merkezi'ne (/bilgi) yönlendir.",
+    "2) Tıbbi/psikolojik teşhis veya tedavi önerme. Ciddi sıkıntı/umutsuzluk sinyali varsa, nazikçe",
+    "   güvendiği biriyle veya bir uzmanla konuşmaya teşvik et.",
+    "3) Ödeme/abonelik/coin veya teknik konulara girme. Kişisel veri isteme.",
+  ].join("\n");
+
+  const ctxLine =
+    ctx.daysRemaining != null ? ` Sınava kalan gün: ${ctx.daysRemaining}.` : "";
+  const noteLine = struggleNote ? ` Bugün en çok zorlandığı konu: "${struggleNote}".` : "";
+  const user = `Öğrencinin bugünkü ruh hali: ${MOOD_LABEL[mood] ?? "orta"} (${mood}/5).${noteLine}${ctxLine}`;
+
+  return { system, user };
+}
+
+/**
+ * Premium AI "ghost" (geçmiş-ben) progress narration prompt (§4 #5 premium-only). Warm, brief,
+ * grounded ONLY on the user's own net deltas (§0 no cross-user ranking; §4 #1 no official info;
+ * §4 #6 PII-free — numbers + subject names only).
+ */
+export function buildGhostPrompt(ghost: GhostComparisonDto): { system: string; user: string } {
+  const system = [
+    "Sen Mentor uygulamasının sınav hazırlık koçusun. Öğrencinin KENDİ geçmiş performansına göre",
+    "ilerlemesini KISA (2-3 cümle), sıcak ve motive edici şekilde anlat. Başka kişiyle kıyaslama yok.",
+    "İlerleme varsa kutla; düşüş varsa tek denemeye takılmadan trende ve bir sonraki adıma odakla.",
+    "KESİN KURALLAR:",
+    "1) Resmî bilgi (sınav tarihi, başvuru, yerleştirme, puan, kontenjan) ÜRETME; gerekirse Bilgi",
+    "   Merkezi'ne (/bilgi) yönlendir.",
+    "2) Tıbbi/psikolojik teşhis veya tavsiye verme. Kişisel veri isteme.",
+  ].join("\n");
+
+  const movers = ghost.subjects
+    .filter((s) => s.delta != null && s.delta !== "0.00")
+    .slice(0, 4)
+    .map((s) => `${s.subjectName} ${s.delta}`)
+    .join(", ");
+
+  const user = [
+    `Son deneme toplam net: ${ghost.latest.totalNet}.`,
+    `Geçen denemeye göre: ${ghost.previousDelta} net.`,
+    ghost.isNewRecord
+      ? `Bu yeni bir kişisel rekor (önceki en iyi: ${ghost.bestPreviousNet}).`
+      : `Kişisel rekora göre: ${ghost.recordDelta} net (rekor: ${ghost.bestPreviousNet}).`,
+    movers ? `Ders bazlı değişim: ${movers}.` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return { system, user };
 }
 
 /**

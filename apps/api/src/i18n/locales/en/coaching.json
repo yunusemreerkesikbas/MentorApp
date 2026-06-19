@@ -9,5 +9,11 @@
   "motivation": {
     "START": "Take one small step today — that's enough. I'm here with you.",
     "GOING": "Your consistency is going great. Let's keep it up today — I'm with you."
+  },
+  "ghost": {
+    "NEW_RECORD": "New record! You beat your best net so far. You've officially left your past self behind.",
+    "BEAT_PREVIOUS": "You beat your last attempt — past-you is defeated. The momentum is with you.",
+    "TIED": "You're level with your last attempt. Consistency is a win too; one small step puts you ahead.",
+    "BELOW_PREVIOUS": "A little behind this time — it happens. Don't dwell on one attempt; look at your trend. I'm here."
   }
 }

@@ -48,3 +48,5 @@
 | [0045](./0045-w3-coin-ai-chat-spend.md) | W3 · Coin → AI chat spend | EconomyService.spend, GET /coach/access, free coin path + /koc gate (no coin in chat §4 #3) |
 | [0046](./0046-web-profil-economy-ui.md) | Web · Profil economy UI | Earn hub: balance, quests, invite on /profil; hidden when economy.enabled off |
 | [0047](./0047-w3-photo-subject-categorize.md) | W3 · Photo subject categorize | Premium foto→ders (Gemini/fake vision), /analiz UI, photoSubjectSignals |
+| [0048](./0048-w3-mood-ai-adaptive.md) | W3/W2 · Mood AI-adaptive | struggle note, premium mood reflection, context grounding, migration drift reconcile |
+| [0049](./0049-w2-ghost-comparison-ai-narration.md) | W2/W3 · Ghost comparison + AI narration | geçmiş-ben rule-based comparison, premium AI narration, /analiz GhostCard |

@@ -9,5 +9,11 @@
   "motivation": {
     "START": "Bugün küçük bir adım at — yeterli. Yanındayım.",
     "GOING": "İstikrarın harika gidiyor. Bugün de devam edelim, yanındayım."
+  },
+  "ghost": {
+    "NEW_RECORD": "Yeni rekor! Şimdiye kadarki en iyi netini geçtin. Geçmiş-ben'i resmen geride bıraktın.",
+    "BEAT_PREVIOUS": "Geçen denemeni geçtin — geçmiş-ben'i yendin. İvme seninle.",
+    "TIED": "Geçen denemenle aynı seviyedesin. İstikrar da bir kazanç; küçük bir adımla öne geç.",
+    "BELOW_PREVIOUS": "Bu sefer biraz geride kaldın, olur böyle. Tek bir denemeye takılma — trendine bak, yanındayım."
   }
 }

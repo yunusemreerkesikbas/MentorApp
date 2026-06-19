@@ -46,8 +46,12 @@ function makeRepoFake() {
     listTrend: vi.fn(),
     listSubjectBreakdown: vi.fn(),
     listSubjectsByMockExamIds: vi.fn(),
+    maxNetExcluding: vi.fn(),
+    setGhostNarration: vi.fn(),
   };
 }
+
+const i18nFake = { translate: (key: string) => key } as never;
 
 describe("MockExamService", () => {
   let repo: ReturnType<typeof makeRepoFake>;
@@ -56,12 +60,18 @@ describe("MockExamService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     repo = makeRepoFake();
-    service = new MockExamService(fakeDb, contentPort as never, repo as never, {
-      countSince: vi.fn(),
-      findByClientRequestId: vi.fn(),
-      insert: vi.fn(),
-      listPhotoSubjectSignals: vi.fn(),
-    } as never);
+    service = new MockExamService(
+      fakeDb,
+      contentPort as never,
+      repo as never,
+      {
+        countSince: vi.fn(),
+        findByClientRequestId: vi.fn(),
+        insert: vi.fn(),
+        listPhotoSubjectSignals: vi.fn(),
+      } as never,
+      i18nFake,
+    );
     contentPort.getExamById.mockResolvedValue({
       id: EXAM_ID,
       slug: "kpss-lisans-2026",
@@ -111,5 +121,37 @@ describe("MockExamService", () => {
         subjects: [{ subjectRef: "turkce", correct: 25, wrong: 5, blank: 5 }],
       }),
     ).rejects.toMatchObject({ code: ErrorCode.COACHING_INVALID_MOCK_EXAM_SCORES });
+  });
+
+  it("getGhostComparison returns null with fewer than 2 attempts", async () => {
+    repo.listTrend.mockResolvedValue([{ id: "m1", examId: EXAM_ID, totalNet: "20.00" }]);
+    expect(await service.getGhostComparison(USER)).toBeNull();
+  });
+
+  it("getGhostComparison builds the latest-vs-past comparison with the cached narration", async () => {
+    repo.listTrend.mockResolvedValue([
+      { id: "m2", examId: EXAM_ID, takenAt: new Date("2026-06-19T10:00:00Z"), totalNet: "42.00", aiGhostNarration: "cached-story" },
+      { id: "m1", examId: EXAM_ID, takenAt: new Date("2026-06-12T10:00:00Z"), totalNet: "39.00", aiGhostNarration: null },
+    ]);
+    repo.maxNetExcluding.mockResolvedValue("40.00");
+    repo.listSubjectsByMockExamIds.mockResolvedValue(
+      new Map([
+        ["m2", [{ subjectRef: "turkce", net: "25.00" }]],
+        ["m1", [{ subjectRef: "turkce", net: "22.00" }]],
+      ]),
+    );
+
+    const ghost = await service.getGhostComparison(USER);
+    expect(ghost?.previousDelta).toBe("+3.00");
+    expect(ghost?.isNewRecord).toBe(true);
+    expect(ghost?.headline).toBe("coaching.ghost.NEW_RECORD"); // i18n fake echoes the key
+    expect(ghost?.subjects[0]?.delta).toBe("+3.00");
+    expect(ghost?.aiNarration).toBe("cached-story");
+  });
+
+  it("setLatestGhostNarration caches on the latest attempt", async () => {
+    repo.listTrend.mockResolvedValue([{ id: "m2", examId: EXAM_ID, totalNet: "42.00" }]);
+    await service.setLatestGhostNarration(USER, "story", "fake");
+    expect(repo.setGhostNarration).toHaveBeenCalledWith(expect.anything(), "m2", "story", "fake");
   });
 });

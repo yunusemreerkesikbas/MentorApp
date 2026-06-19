@@ -26,6 +26,24 @@ export interface CoachChatReplyDto {
   sources: { title: string; slug: string; url: string }[];
 }
 
+/**
+ * POST /v1/coach/mood-reflection response — premium AI-adaptive reflection on today's mood
+ * (§4 #5 premium-only; warm/short coaching, never official info §4 #1).
+ */
+export interface MoodReflectionDto {
+  reflection: string;
+  model: string;
+}
+
+/**
+ * POST /v1/coach/ghost-narration response — premium AI narration of the user's progress vs their
+ * own past (§4 #5 premium-only; warm/short, never official info §4 #1). `model` is "cache" on a hit.
+ */
+export interface GhostNarrationDto {
+  narration: string;
+  model: string;
+}
+
 /** GET /v1/coach/photo-access — premium photo categorize gate. */
 export interface PhotoAccessDto {
   canCategorize: boolean;

@@ -89,6 +89,8 @@ export type UpdateStudySessionInput = z.infer<typeof updateStudySessionSchema>;
 export const createMoodCheckinSchema = z.object({
   /** 1 (very low) .. 5 (great). */
   mood: z.coerce.number().int().min(1).max(5),
+  /** Optional subjective signal ("bugün seni en çok zorlayan konu"); blank → omitted. */
+  struggleNote: z.string().trim().max(280).optional(),
 });
 export type CreateMoodCheckinInput = z.infer<typeof createMoodCheckinSchema>;
 

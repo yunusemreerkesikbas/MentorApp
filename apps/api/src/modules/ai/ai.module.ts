@@ -10,6 +10,8 @@ import { LLM_PORT } from "./domain/llm.port";
 import { VISION_PORT } from "./domain/vision.port";
 import { ChatService } from "./application/chat.service";
 import { CoachAccessService } from "./application/coach-access.service";
+import { MoodReflectionService } from "./application/mood-reflection.service";
+import { GhostNarrationService } from "./application/ghost-narration.service";
 import { PhotoAccessService } from "./application/photo-access.service";
 import { PhotoCategorizeService } from "./application/photo-categorize.service";
 import { PhotoUploadService } from "./application/photo-upload.service";
@@ -24,6 +26,8 @@ import { OpenAiLlmAdapter } from "./infrastructure/adapters/openai-llm.adapter";
 import { FakeVisionAdapter } from "./infrastructure/adapters/fake-vision.adapter";
 import { GeminiVisionAdapter } from "./infrastructure/adapters/gemini-vision.adapter";
 import { AiChatController } from "./presentation/ai-chat.controller";
+import { AiMoodController } from "./presentation/ai-mood.controller";
+import { AiGhostController } from "./presentation/ai-ghost.controller";
 import { AiMockExamPhotoController } from "./presentation/ai-mock-exam-photo.controller";
 import { AiPhotoController } from "./presentation/ai-photo.controller";
 import { AdminEmbeddingController } from "./presentation/admin-embedding.controller";
@@ -35,6 +39,8 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
   imports: [IdentityModule, ContentModule, PaymentsModule, EconomyModule, CoachingModule],
   controllers: [
     AiChatController,
+    AiMoodController,
+    AiGhostController,
     AiPhotoController,
     AiMockExamPhotoController,
     AdminEmbeddingController,
@@ -42,6 +48,8 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
   providers: [
     ChatService,
     CoachAccessService,
+    MoodReflectionService,
+    GhostNarrationService,
     PhotoAccessService,
     PhotoCategorizeService,
     PhotoUploadService,

@@ -23,11 +23,28 @@ export class MoodService {
     private readonly i18n: I18nService,
   ) {}
 
-  async upsertToday(userId: string, mood: number): Promise<MoodCheckinDto> {
+  async upsertToday(
+    userId: string,
+    mood: number,
+    struggleNote?: string,
+  ): Promise<MoodCheckinDto> {
     const today = todayIso();
+    const trimmed = struggleNote?.trim();
+    const note = trimmed ? trimmed : null;
     return withUserContext(this.db, { userId }, async (tx) => {
-      const row = await this.moods.upsert(tx, userId, today, mood);
+      const row = await this.moods.upsert(tx, userId, today, mood, note);
       return this.toDto(row);
+    });
+  }
+
+  /**
+   * Cache today's premium AI-adaptive reflection (written by W3 via the public service surface,
+   * so the `mood_checkins` table is only ever mutated inside coaching — workstreams §2).
+   */
+  async setTodayAiReflection(userId: string, reflection: string, model: string): Promise<void> {
+    const today = todayIso();
+    await withUserContext(this.db, { userId }, async (tx) => {
+      await this.moods.setAiReflection(tx, userId, today, reflection, model);
     });
   }
 
