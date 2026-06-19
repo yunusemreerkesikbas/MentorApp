@@ -52,6 +52,6 @@ import { StudySessionController } from "./presentation/study-session.controller"
     CoachingQueryAdapter,
     { provide: COACHING_QUERY_PORT, useExisting: CoachingQueryAdapter },
   ],
-  exports: [COACHING_QUERY_PORT, MockExamService],
+  exports: [COACHING_QUERY_PORT, MockExamService, MoodService],
 })
 export class CoachingModule {}

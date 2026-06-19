@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { mockExamSubjects, mockExams } from "../../../database/schema";
 
@@ -116,6 +116,32 @@ export class MockExamRepository {
       map.set(row.mockExamId, list);
     }
     return map;
+  }
+
+  /** All-time best total net for the user, EXCLUDING one attempt (the latest) — drives "rekor". */
+  async maxNetExcluding(
+    db: Database | DatabaseTx,
+    userId: string,
+    excludeId: string,
+  ): Promise<string | null> {
+    const rows = await db
+      .select({ max: sql<string | null>`MAX(${mockExams.totalNet})::text` })
+      .from(mockExams)
+      .where(and(eq(mockExams.userId, userId), ne(mockExams.id, excludeId)));
+    return rows[0]?.max ?? null;
+  }
+
+  /** Cache the premium ghost narration on a specific attempt (tx owns RLS). */
+  async setGhostNarration(
+    tx: DatabaseTx,
+    id: string,
+    narration: string,
+    model: string,
+  ): Promise<void> {
+    await tx
+      .update(mockExams)
+      .set({ aiGhostNarration: narration, aiGhostModel: model, aiGhostAt: new Date() })
+      .where(eq(mockExams.id, id));
   }
 
   async listTrend(db: Database | DatabaseTx, userId: string, limit = 12): Promise<MockExamRow[]> {

@@ -1,5 +1,6 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
-import type { CoachingAnalysisDto, MockExamDto, Paginated } from "@mentor/types";
+import { I18nContext, I18nService } from "nestjs-i18n";
+import type { CoachingAnalysisDto, GhostComparisonDto, MockExamDto, Paginated } from "@mentor/types";
 import type { CreateMockExamInput, ListMockExamsQuery } from "@mentor/validation";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
@@ -7,6 +8,7 @@ import { withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { CONTENT_PORT, type ContentPort, type ExamRef } from "../domain/content.port";
+import { computeGhost } from "../domain/ghost";
 import { computeSubjectNet, computeTotalNet, formatNet } from "../domain/net";
 import {
   MockExamRepository,
@@ -30,6 +32,7 @@ export class MockExamService {
     @Inject(CONTENT_PORT) private readonly content: ContentPort,
     private readonly mockExams: MockExamRepository,
     private readonly photoRows: MockExamPhotoRepository,
+    private readonly i18n: I18nService,
   ) {}
 
   async create(userId: string, input: CreateMockExamInput): Promise<MockExamDto> {
@@ -164,8 +167,69 @@ export class MockExamService {
         count: row.count,
       }));
 
-      return { trend, subjects, photoSubjectSignals };
+      const ghost = await this.buildGhost(tx, userId);
+
+      return { trend, subjects, photoSubjectSignals, ghost };
     });
+  }
+
+  /** Rule-based "geçmiş-ben" comparison (also exposed to W3 for the premium AI narration). */
+  async getGhostComparison(userId: string): Promise<GhostComparisonDto | null> {
+    return withUserContext(this.db, { userId }, (tx) => this.buildGhost(tx, userId));
+  }
+
+  /**
+   * Cache the premium ghost narration on the user's latest attempt (table write stays in coaching —
+   * workstreams §2; the AI module calls this instead of touching `mock_exams`).
+   */
+  async setLatestGhostNarration(userId: string, narration: string, model: string): Promise<void> {
+    await withUserContext(this.db, { userId }, async (tx) => {
+      const latest = await this.mockExams.listTrend(tx, userId, 1);
+      if (latest.length === 0) return;
+      await this.mockExams.setGhostNarration(tx, latest[0]!.id, narration, model);
+    });
+  }
+
+  /** Build the latest-vs-own-past comparison (null when fewer than 2 attempts). */
+  private async buildGhost(tx: DatabaseTx, userId: string): Promise<GhostComparisonDto | null> {
+    const latest2 = await this.mockExams.listTrend(tx, userId, 2);
+    if (latest2.length < 2) return null;
+    const latest = latest2[0]!;
+    const previous = latest2[1]!;
+
+    const [bestPrev, subjMap, exam, taxonomy] = await Promise.all([
+      this.mockExams.maxNetExcluding(tx, userId, latest.id),
+      this.mockExams.listSubjectsByMockExamIds(tx, [latest.id, previous.id]),
+      this.content.getExamById(latest.examId),
+      this.content.listExamSubjects(latest.examId),
+    ]);
+    const slugToName = new Map(taxonomy.map((s) => [s.slug, s.name]));
+
+    const { headlineKey, ...rest } = computeGhost({
+      latest: {
+        id: latest.id,
+        takenAt: latest.takenAt,
+        totalNet: latest.totalNet,
+        examName: exam?.name ?? "Deneme",
+      },
+      previousNet: previous.totalNet,
+      bestPreviousNet: bestPrev ?? previous.totalNet,
+      latestSubjects: (subjMap.get(latest.id) ?? []).map((r) => ({
+        subjectRef: r.subjectRef,
+        net: r.net,
+      })),
+      previousSubjects: (subjMap.get(previous.id) ?? []).map((r) => ({
+        subjectRef: r.subjectRef,
+        net: r.net,
+      })),
+      subjectName: (ref) => slugToName.get(ref) ?? ref,
+    });
+
+    const headline = this.i18n.translate(headlineKey, {
+      lang: I18nContext.current()?.lang,
+    }) as unknown as string;
+
+    return { ...rest, headline, aiNarration: latest.aiGhostNarration };
   }
 
   /** Count photo categorizations in the rolling window (premium rate-limit). */

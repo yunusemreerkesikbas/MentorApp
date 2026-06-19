@@ -37,7 +37,7 @@ export class CoachingController {
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateMoodCheckinDto,
   ): Promise<MoodCheckinDto> {
-    return this.mood.upsertToday(user.id, dto.mood);
+    return this.mood.upsertToday(user.id, dto.mood, dto.struggleNote);
   }
 
   /** Mood trend (paginated, self). */

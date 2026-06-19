@@ -16,6 +16,10 @@ describe("notifications queue (e2e)", () => {
       process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
     process.env.JWT_ACCESS_SECRET ??= "test-secret-test-secret-test-secret!!";
     process.env.CRON_SECRET = cronSecret;
+    // Force the no-op (logger) email adapter regardless of a local .env POSTMARK_TOKEN, so the
+    // send-email job completes deterministically (matches CI, where no token is set). An empty
+    // value is kept by dotenv (it never overrides an already-set process.env var).
+    process.env.POSTMARK_TOKEN = "";
 
     const { AppModule } = await import("../src/app.module");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -42,19 +46,27 @@ describe("notifications queue (e2e)", () => {
       variables: { displayName: "Test", link: "http://localhost/verify" },
     });
 
-    const res = await request(app.getHttpServer())
-      .post("/v1/internal/cron/process-jobs")
-      .set("x-cron-secret", cronSecret);
-
-    expect(res.status).toBeGreaterThanOrEqual(200);
-    expect(res.status).toBeLessThan(300);
-    expect(res.body.completed).toBeGreaterThanOrEqual(1);
-
     const { JobRepository } = await import(
       "../src/modules/notifications/infrastructure/job.repository"
     );
     const repo = app.get(JobRepository);
-    const row = await repo.findById(jobId);
+
+    // Production runs the cron periodically: a job enqueued at run_at=now() is picked up on a
+    // following tick. Mirror that here (poll a few times) instead of assuming a single immediate
+    // call wins the sub-millisecond enqueue→claim boundary.
+    let row: Awaited<ReturnType<typeof repo.findById>>;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const res = await request(app.getHttpServer())
+        .post("/v1/internal/cron/process-jobs")
+        .set("x-cron-secret", cronSecret);
+      expect(res.status).toBeGreaterThanOrEqual(200);
+      expect(res.status).toBeLessThan(300);
+
+      row = await repo.findById(jobId);
+      if (row?.status === JobStatus.COMPLETED) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
     expect(row?.status).toBe(JobStatus.COMPLETED);
   });
 });

@@ -37,3 +37,12 @@ export function computeTotalNet(subjectNets: number[]): number {
 export function formatNet(value: number): string {
   return value.toFixed(2);
 }
+
+/**
+ * Format a signed net delta for display (e.g. "+3.25", "-1.50", "0.00"). Rounds to 2 decimals first
+ * to drop float artifacts. Positive values get an explicit "+"; zero is unsigned.
+ */
+export function formatNetDelta(value: number): string {
+  const rounded = Math.round(value * 100) / 100;
+  return rounded > 0 ? `+${rounded.toFixed(2)}` : rounded.toFixed(2);
+}

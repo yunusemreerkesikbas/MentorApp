@@ -75,6 +75,10 @@ export interface MoodCheckinDto {
   code: string;
   /** Backend-localized encouraging line (display verbatim). */
   message: string;
+  /** Optional user-typed subjective signal ("zorlandığın konu"); never AI-generated. */
+  struggleNote: string | null;
+  /** Cached premium AI-adaptive reflection for today (premium-only; null for free / not yet generated). */
+  aiReflection: string | null;
 }
 
 /* ------------------------------- mock exams --------------------------------- */
@@ -119,11 +123,46 @@ export interface PhotoSubjectSignalDto {
   count: number;
 }
 
+/** Per-subject "geçmiş-ben" delta: this attempt's subject net vs the previous attempt's. */
+export interface GhostSubjectDeltaDto {
+  subjectRef: string;
+  subjectName: string;
+  latestNet: string;
+  /** Same subject's net in the immediately prior attempt; `null` if it's a new subject. */
+  previousNet: string | null;
+  /** Signed delta (`latestNet − previousNet`, e.g. "+3.25"); `null` when there's no previous. */
+  delta: string | null;
+}
+
+/**
+ * "Geçmiş-ben" (ghost) — the latest attempt measured against the user's OWN past (§0 no ranking
+ * vs others). `null` until there are ≥2 attempts. Free reads the rule-based comparison; the premium
+ * AI narration arrives via `POST /v1/coach/ghost-narration` and is cached in `aiNarration`.
+ */
+export interface GhostComparisonDto {
+  latest: { id: string; takenAt: string; totalNet: string; examName: string };
+  /** Immediately prior attempt's total net + signed delta + did-you-beat-it flag. */
+  previousNet: string;
+  previousDelta: string;
+  beatPrevious: boolean;
+  /** All-time best total net BEFORE the latest attempt + signed delta + new-record flag. */
+  bestPreviousNet: string;
+  recordDelta: string;
+  isNewRecord: boolean;
+  /** Backend-localized encouraging headline (display verbatim). */
+  headline: string;
+  subjects: GhostSubjectDeltaDto[];
+  /** Cached premium AI progress narration (premium-only; null for free / not generated). */
+  aiNarration: string | null;
+}
+
 /** Personal deneme analysis — no ranking (guardrail §0). */
 export interface CoachingAnalysisDto {
   trend: MockExamTrendPointDto[];
   subjects: SubjectStrengthDto[];
   photoSubjectSignals: PhotoSubjectSignalDto[];
+  /** Latest-vs-own-past comparison; `null` when fewer than 2 attempts. */
+  ghost: GhostComparisonDto | null;
 }
 
 /** Composite panel payload — one request → whole daily hub. */

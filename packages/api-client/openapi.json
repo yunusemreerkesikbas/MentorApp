@@ -1543,6 +1543,44 @@
         ]
       }
     },
+    "/v1/coach/mood-reflection": {
+      "post": {
+        "operationId": "AiMoodController_reflect",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/ghost-narration": {
+      "post": {
+        "operationId": "AiGhostController_narrate",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/coach/photo-access": {
       "get": {
         "operationId": "AiPhotoController_getPhotoAccess",

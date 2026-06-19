@@ -2034,6 +2034,72 @@ export const aiChatControllerReply = async (aiChatDto: AiChatDto, options?: Requ
 
 
 
+export type aiMoodControllerReflectResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type aiMoodControllerReflectResponseSuccess = (aiMoodControllerReflectResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiMoodControllerReflectResponse = (aiMoodControllerReflectResponseSuccess)
+
+export const getAiMoodControllerReflectUrl = () => {
+
+
+  
+
+  return `/v1/coach/mood-reflection`
+}
+
+export const aiMoodControllerReflect = async ( options?: RequestInit): Promise<aiMoodControllerReflectResponse> => {
+  
+  return http<aiMoodControllerReflectResponse>(getAiMoodControllerReflectUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type aiGhostControllerNarrateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type aiGhostControllerNarrateResponseSuccess = (aiGhostControllerNarrateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiGhostControllerNarrateResponse = (aiGhostControllerNarrateResponseSuccess)
+
+export const getAiGhostControllerNarrateUrl = () => {
+
+
+  
+
+  return `/v1/coach/ghost-narration`
+}
+
+export const aiGhostControllerNarrate = async ( options?: RequestInit): Promise<aiGhostControllerNarrateResponse> => {
+  
+  return http<aiGhostControllerNarrateResponse>(getAiGhostControllerNarrateUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
 export type aiPhotoControllerGetPhotoAccessResponse200 = {
   data: void
   status: 200

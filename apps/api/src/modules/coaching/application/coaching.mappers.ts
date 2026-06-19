@@ -50,6 +50,8 @@ export function toMoodCheckinDto(
     mood: row.mood,
     code,
     message,
+    struggleNote: row.struggleNote,
+    aiReflection: row.aiReflection,
   };
 }
 

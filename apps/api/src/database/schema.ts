@@ -399,7 +399,12 @@ export const streakState = pgTable(
   (t) => [uniqueIndex("streak_state_user_unique_idx").on(t.userId)],
 );
 
-/** One gentle mood check-in per day (1..5, no free-text — guardrail §4 #5). */
+/**
+ * One gentle mood check-in per day (1..5). `struggleNote` is an OPTIONAL, user-typed subjective
+ * signal ("bugün seni en çok zorlayan konu") — never AI-generated. The `ai*` columns cache the
+ * premium AI-adaptive reflection (one per day; regenerated in place). Free tier reads only the
+ * rule-based encouragement (§4 #5) — the AI reflection is premium-only.
+ */
 export const moodCheckins = pgTable(
   "mood_checkins",
   {
@@ -411,6 +416,10 @@ export const moodCheckins = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     checkinDate: date("checkin_date").notNull(),
     mood: smallint("mood").notNull(),
+    struggleNote: text("struggle_note"),
+    aiReflection: text("ai_reflection"),
+    aiModel: text("ai_model"),
+    aiReflectedAt: timestamp("ai_reflected_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -432,6 +441,14 @@ export const mockExams = pgTable(
     takenAt: timestamp("taken_at", { withTimezone: true }).notNull(),
     /** Server-computed total net (stored for trend queries). */
     totalNet: numeric("total_net", { precision: 7, scale: 2 }).notNull(),
+    /**
+     * Cached premium AI-adaptive "ghost" (geçmiş-ben) progress narration for THIS attempt vs the
+     * user's own past (premium-only; null for free / not yet generated). Naturally invalidated when
+     * a newer attempt becomes the latest.
+     */
+    aiGhostNarration: text("ai_ghost_narration"),
+    aiGhostModel: text("ai_ghost_model"),
+    aiGhostAt: timestamp("ai_ghost_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
