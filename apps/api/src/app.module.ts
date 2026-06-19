@@ -21,6 +21,7 @@ import { EconomyModule } from "./modules/economy/economy.module";
 import { IdentityModule } from "./modules/identity/identity.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
+import { StorageModule } from "./shared/storage/storage.module";
 import { buildLoggerConfig } from "./observability/logger.config";
 
 /**
@@ -46,6 +47,7 @@ import { buildLoggerConfig } from "./observability/logger.config";
     AppI18nModule,
     ConfigRegistryModule,
     DatabaseModule,
+    StorageModule,
     HealthModule,
     AdminModule,
     AiModule,

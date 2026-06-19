@@ -207,6 +207,7 @@ describe("coaching (e2e)", () => {
     expect(analysis.status).toBe(200);
     expect(analysis.body.trend.some((t: { id: string }) => t.id === create.body.id)).toBe(true);
     expect(analysis.body.trend[0].totalNet).toBe("19.00");
+    expect(Array.isArray(analysis.body.photoSubjectSignals)).toBe(true);
   });
 
   it("mock exam data is isolated per user (RLS)", async () => {

@@ -78,6 +78,8 @@ export function buildSystemPrompt(ctx: CoachContext, sources: CoachSource[] = []
 export const MODEL_PRICING_MICROS_PER_TOKEN: Record<string, { input: number; output: number }> = {
   "gpt-4o-mini": { input: 0.15, output: 0.6 },
   fake: { input: 0, output: 0 },
+  "fake-vision": { input: 0, output: 0 },
+  "gemini-2.0-flash": { input: 0.05, output: 0.15 },
 };
 
 export function estimateCostMicros(

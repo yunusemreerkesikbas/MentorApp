@@ -123,6 +123,20 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
       });
     }
   }
+  if (env.NODE_ENV === "production" && env.VISION_PROVIDER === "fake") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["VISION_PROVIDER"],
+      message: "VISION_PROVIDER=fake is forbidden in production — configure gemini.",
+    });
+  }
+  if (env.NODE_ENV === "production" && env.STORAGE_PROVIDER === "fake") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["STORAGE_PROVIDER"],
+      message: "STORAGE_PROVIDER=fake is forbidden in production — configure r2.",
+    });
+  }
   if (env.NODE_ENV === "production" && !env.CRON_SECRET) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

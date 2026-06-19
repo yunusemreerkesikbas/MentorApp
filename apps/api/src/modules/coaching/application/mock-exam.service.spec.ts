@@ -56,7 +56,12 @@ describe("MockExamService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     repo = makeRepoFake();
-    service = new MockExamService(fakeDb, contentPort as never, repo as never);
+    service = new MockExamService(fakeDb, contentPort as never, repo as never, {
+      countSince: vi.fn(),
+      findByClientRequestId: vi.fn(),
+      insert: vi.fn(),
+      listPhotoSubjectSignals: vi.fn(),
+    } as never);
     contentPort.getExamById.mockResolvedValue({
       id: EXAM_ID,
       slug: "kpss-lisans-2026",

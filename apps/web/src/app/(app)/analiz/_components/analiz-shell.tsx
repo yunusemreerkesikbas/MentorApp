@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type {
@@ -21,6 +21,10 @@ import {
 import { Button, Card, ProgressBar, SectionHeading, TextField } from "@mentor/ui";
 import { FormError } from "../../../../components/form";
 import { staggerItemVariants, staggerListVariants } from "../../../../lib/stagger-motion";
+import { fetchPhotoAccess } from "../../../../lib/analiz";
+import type { PhotoAccessDto } from "@mentor/types";
+import { PhotoCategorizeCard } from "./photo-categorize-card";
+import { GhostCard } from "./ghost-card";
 
 interface SubjectScores {
   correct: string;
@@ -67,6 +71,8 @@ export function AnalizShell() {
   const [lastResult, setLastResult] = useState<MockExamDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [photoAccess, setPhotoAccess] = useState<PhotoAccessDto | null>(null);
+  const [photoAccessError, setPhotoAccessError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -81,11 +87,27 @@ export function AnalizShell() {
           return;
         }
 
-        const [calendarRes, analysisRes] = await Promise.all([
+        const [calendarRes, analysisRes, photoAccessResult] = await Promise.all([
           contentControllerCalendarByFamily(me.examType),
           http<CoachingAnalysisDto>(getAnalysisUrl()),
+          fetchPhotoAccess().catch((err: unknown) => ({ error: err })),
         ]);
         if (!active) return;
+
+        if ("error" in photoAccessResult) {
+          const err = photoAccessResult.error;
+          setPhotoAccess(null);
+          setPhotoAccessError(
+            err instanceof ApiClientError
+              ? err.message
+              : err instanceof Error
+                ? err.message
+                : "Foto analizi erişimi yüklenemedi.",
+          );
+        } else {
+          setPhotoAccess(photoAccessResult);
+          setPhotoAccessError(null);
+        }
 
         const calendar = calendarRes as unknown as ExamCalendarDto | null;
         const current = calendar?.exam ?? null;
@@ -126,7 +148,7 @@ export function AnalizShell() {
 
   const readyData = loadState.status === "ready" ? loadState.data : null;
   const exam = readyData?.exam ?? null;
-  const subjects = readyData?.subjects ?? [];
+  const subjects = useMemo(() => readyData?.subjects ?? [], [readyData?.subjects]);
   const analysis = readyData?.analysis ?? null;
 
   const maxTrendNet = useMemo(
@@ -136,6 +158,38 @@ export function AnalizShell() {
         : 0,
     [analysis],
   );
+
+  const activeMockExamId = lastResult?.id ?? analysis?.trend[0]?.id ?? null;
+
+  const refreshAnalysis = useCallback(async () => {
+    if (!exam || loadState.status !== "ready") return;
+    const analysisRes = await http<CoachingAnalysisDto>(getAnalysisUrl());
+    setLoadState({
+      status: "ready",
+      data: { exam, subjects, analysis: analysisRes },
+    });
+  }, [exam, loadState.status, subjects]);
+
+  const handlePhotoCategorized = useCallback(() => {
+    void Promise.all([
+      refreshAnalysis(),
+      fetchPhotoAccess()
+        .then((access) => {
+          setPhotoAccess(access);
+          setPhotoAccessError(null);
+        })
+        .catch((err: unknown) => {
+          setPhotoAccess(null);
+          setPhotoAccessError(
+            err instanceof ApiClientError
+              ? err.message
+              : err instanceof Error
+                ? err.message
+                : "Foto analizi erişimi yüklenemedi.",
+          );
+        }),
+    ]);
+  }, [refreshAnalysis]);
 
   const headerMotion = reduceMotion
     ? {}
@@ -179,11 +233,7 @@ export function AnalizShell() {
         body: JSON.stringify(payload),
       });
       setLastResult(result);
-      const analysisRes = await http<CoachingAnalysisDto>(getAnalysisUrl());
-      setLoadState({
-        status: "ready",
-        data: { exam, subjects, analysis: analysisRes },
-      });
+      await refreshAnalysis();
       setScores(emptyScores(subjects));
     } catch (err) {
       setError(
@@ -269,6 +319,34 @@ export function AnalizShell() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {activeMockExamId ? (
+            <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+              {photoAccessError ? (
+                <Card className="flex flex-col gap-3">
+                  <SectionHeading as="h2" subtitle="Foto analizi şu an kullanılamıyor.">
+                    Foto ile ders tahmini
+                  </SectionHeading>
+                  <FormError message={photoAccessError} />
+                </Card>
+              ) : photoAccess ? (
+                <PhotoCategorizeCard
+                  mockExamId={activeMockExamId}
+                  access={photoAccess}
+                  onCategorized={handlePhotoCategorized}
+                />
+              ) : null}
+            </motion.div>
+          ) : null}
+
+          {analysis?.ghost ? (
+            <motion.div
+              key={analysis.ghost.latest.id}
+              variants={reduceMotion ? undefined : staggerItemVariants}
+            >
+              <GhostCard ghost={analysis.ghost} />
+            </motion.div>
+          ) : null}
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <Card>
@@ -380,6 +458,29 @@ export function AnalizShell() {
                       <span style={{ color: "var(--color-body)" }}>{s.subjectName}</span>
                       <span className="tabular-nums" style={{ color: "var(--color-secondary)" }}>
                         Ort. {s.averageNet} · {s.attemptCount} deneme
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            </motion.div>
+          )}
+
+          {analysis && analysis.photoSubjectSignals.length > 0 && (
+            <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+              <Card>
+                <SectionHeading subtitle="Foto analizinden gelen ipuçları">
+                  Ders sinyalleri
+                </SectionHeading>
+                <ul className="mt-4 flex flex-col gap-3">
+                  {analysis.photoSubjectSignals.map((s) => (
+                    <li
+                      key={s.subjectRef}
+                      className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] px-3 py-2 text-sm"
+                    >
+                      <span style={{ color: "var(--color-body)" }}>{s.subjectName}</span>
+                      <span className="tabular-nums" style={{ color: "var(--color-secondary)" }}>
+                        {s.count} foto
                       </span>
                     </li>
                   ))}

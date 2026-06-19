@@ -6,11 +6,13 @@ import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import cookieParser from "cookie-parser";
+import express from "express";
 import helmet from "helmet";
 import { Logger } from "nestjs-pino";
 import { AppModule } from "./app.module";
 import type { Env } from "./config/env.validation";
 import { setupSwagger } from "./observability/swagger";
+import { PHOTO_MAX_BYTES } from "./modules/ai/domain/photo-classify.constants";
 
 function corsOrigins(config: ConfigService<Env, true>): string[] {
   const raw = config.get("CORS_ORIGINS", { infer: true });
@@ -40,6 +42,10 @@ async function bootstrap(): Promise<void> {
   app.use(helmet());
   app.use(cookieParser());
   app.enableCors({ origin: corsOrigins(config), credentials: true });
+  app.use(
+    "/v1/storage/fake-upload",
+    express.raw({ type: ["image/jpeg", "image/png"], limit: PHOTO_MAX_BYTES }),
+  );
   app.useBodyParser("json", {
     limit: "1mb",
     // Capture the raw body for webhook signature verification (payments).

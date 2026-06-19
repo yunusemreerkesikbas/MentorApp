@@ -17,6 +17,7 @@ import { PlanTaskRepository } from "./infrastructure/plan-task.repository";
 import { StreakStateRepository } from "./infrastructure/streak-state.repository";
 import { StudySessionRepository } from "./infrastructure/study-session.repository";
 import { MockExamRepository } from "./infrastructure/mock-exam.repository";
+import { MockExamPhotoRepository } from "./infrastructure/mock-exam-photo.repository";
 import { CoachingController } from "./presentation/coaching.controller";
 import { MockExamController } from "./presentation/mock-exam.controller";
 import { PlanTaskController } from "./presentation/plan-task.controller";
@@ -42,6 +43,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     PlanTaskRepository,
     StudySessionRepository,
     MockExamRepository,
+    MockExamPhotoRepository,
     DailyActivityRepository,
     StreakStateRepository,
     MoodCheckinRepository,
@@ -50,6 +52,6 @@ import { StudySessionController } from "./presentation/study-session.controller"
     CoachingQueryAdapter,
     { provide: COACHING_QUERY_PORT, useExisting: CoachingQueryAdapter },
   ],
-  exports: [COACHING_QUERY_PORT],
+  exports: [COACHING_QUERY_PORT, MockExamService],
 })
 export class CoachingModule {}

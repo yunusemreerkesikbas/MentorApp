@@ -34,6 +34,36 @@ describe("validateEnv", () => {
     ).toThrow(/forbidden in production/);
   });
 
+  it("production lock: VISION_PROVIDER=fake is forbidden in production", () => {
+    expect(() =>
+      validateEnv({
+        ...REQUIRED,
+        NODE_ENV: "production",
+        PAYMENTS_PROVIDER: "iyzico",
+        IYZICO_API_KEY: "k",
+        IYZICO_SECRET_KEY: "s",
+        CRON_SECRET: "c".repeat(32),
+        POSTMARK_TOKEN: "noreply@mentor.test",
+        VISION_PROVIDER: "fake",
+      }),
+    ).toThrow(/VISION_PROVIDER=fake/);
+  });
+
+  it("production lock: STORAGE_PROVIDER=fake is forbidden in production", () => {
+    expect(() =>
+      validateEnv({
+        ...REQUIRED,
+        NODE_ENV: "production",
+        PAYMENTS_PROVIDER: "iyzico",
+        IYZICO_API_KEY: "k",
+        IYZICO_SECRET_KEY: "s",
+        CRON_SECRET: "c".repeat(32),
+        POSTMARK_TOKEN: "noreply@mentor.test",
+        STORAGE_PROVIDER: "fake",
+      }),
+    ).toThrow(/STORAGE_PROVIDER=fake/);
+  });
+
   it("iyzico provider requires its keys", () => {
     expect(() => validateEnv({ ...REQUIRED, PAYMENTS_PROVIDER: "iyzico" })).toThrow(/IYZICO/);
   });

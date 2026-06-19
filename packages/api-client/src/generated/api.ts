@@ -37,6 +37,10 @@ export interface CheckoutDto { [key: string]: unknown }
 
 export interface AiChatDto { [key: string]: unknown }
 
+export interface PhotoUploadUrlDto { [key: string]: unknown }
+
+export interface CategorizePhotoDto { [key: string]: unknown }
+
 export interface CreateMoodCheckinDto { [key: string]: unknown }
 
 export interface CreatePlanTaskDto { [key: string]: unknown }
@@ -2025,6 +2029,108 @@ export const aiChatControllerReply = async (aiChatDto: AiChatDto, options?: Requ
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       aiChatDto,)
+  }
+);}
+
+
+
+export type aiPhotoControllerGetPhotoAccessResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type aiPhotoControllerGetPhotoAccessResponseSuccess = (aiPhotoControllerGetPhotoAccessResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiPhotoControllerGetPhotoAccessResponse = (aiPhotoControllerGetPhotoAccessResponseSuccess)
+
+export const getAiPhotoControllerGetPhotoAccessUrl = () => {
+
+
+  
+
+  return `/v1/coach/photo-access`
+}
+
+export const aiPhotoControllerGetPhotoAccess = async ( options?: RequestInit): Promise<aiPhotoControllerGetPhotoAccessResponse> => {
+  
+  return http<aiPhotoControllerGetPhotoAccessResponse>(getAiPhotoControllerGetPhotoAccessUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type aiMockExamPhotoControllerCreatePhotoUploadUrlResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type aiMockExamPhotoControllerCreatePhotoUploadUrlResponseSuccess = (aiMockExamPhotoControllerCreatePhotoUploadUrlResponse201) & {
+  headers: Headers;
+};
+;
+
+export type aiMockExamPhotoControllerCreatePhotoUploadUrlResponse = (aiMockExamPhotoControllerCreatePhotoUploadUrlResponseSuccess)
+
+export const getAiMockExamPhotoControllerCreatePhotoUploadUrlUrl = () => {
+
+
+  
+
+  return `/v1/mock-exams/photo-upload-url`
+}
+
+export const aiMockExamPhotoControllerCreatePhotoUploadUrl = async (photoUploadUrlDto: PhotoUploadUrlDto, options?: RequestInit): Promise<aiMockExamPhotoControllerCreatePhotoUploadUrlResponse> => {
+  
+  return http<aiMockExamPhotoControllerCreatePhotoUploadUrlResponse>(getAiMockExamPhotoControllerCreatePhotoUploadUrlUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      photoUploadUrlDto,)
+  }
+);}
+
+
+
+export type aiMockExamPhotoControllerCategorizePhotoResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type aiMockExamPhotoControllerCategorizePhotoResponseSuccess = (aiMockExamPhotoControllerCategorizePhotoResponse201) & {
+  headers: Headers;
+};
+;
+
+export type aiMockExamPhotoControllerCategorizePhotoResponse = (aiMockExamPhotoControllerCategorizePhotoResponseSuccess)
+
+export const getAiMockExamPhotoControllerCategorizePhotoUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/mock-exams/${id}/categorize-photo`
+}
+
+export const aiMockExamPhotoControllerCategorizePhoto = async (id: string,
+    categorizePhotoDto: CategorizePhotoDto, options?: RequestInit): Promise<aiMockExamPhotoControllerCategorizePhotoResponse> => {
+  
+  return http<aiMockExamPhotoControllerCategorizePhotoResponse>(getAiMockExamPhotoControllerCategorizePhotoUrl(id),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      categorizePhotoDto,)
   }
 );}
 

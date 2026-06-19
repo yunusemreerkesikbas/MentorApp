@@ -40,6 +40,8 @@
   "AI_DISABLED": "The AI feature is currently unavailable.",
   "AI_PROVIDER_ERROR": "Could not reach the AI provider. Please try again later.",
   "AI_RATE_LIMITED": "You've reached your daily AI message limit. Please try again tomorrow.",
+  "AI_PHOTO_RATE_LIMITED": "You've reached your monthly photo analysis limit. Please try again later or upgrade.",
+  "AI_PHOTO_INVALID_IMAGE": "The photo could not be processed. Use JPEG or PNG under 5 MB.",
   "ADMIN_USER_NOT_FOUND": "This user was not found.",
   "ADMIN_CANNOT_MODIFY_SELF": "You can't perform this action on your own account.",
   "ADMIN_CONFIG_KEY_NOT_FOUND": "This config key was not found.",

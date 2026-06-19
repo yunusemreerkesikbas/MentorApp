@@ -12,7 +12,7 @@ ALTER TABLE "mock_exam_photo_categorizations" ADD CONSTRAINT "mock_exam_photo_ca
 ALTER TABLE "mock_exam_photo_categorizations" ADD CONSTRAINT "mock_exam_photo_categorizations_mock_exam_id_mock_exams_id_fk" FOREIGN KEY ("mock_exam_id") REFERENCES "public"."mock_exams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "mock_exam_photo_cat_user_created_idx" ON "mock_exam_photo_categorizations" USING btree ("user_id","created_at");--> statement-breakpoint
 CREATE INDEX "mock_exam_photo_cat_mock_idx" ON "mock_exam_photo_categorizations" USING btree ("mock_exam_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "mock_exam_photo_cat_client_req_idx" ON "mock_exam_photo_categorizations" USING btree ("user_id","client_request_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "mock_exam_photo_cat_client_req_idx" ON "mock_exam_photo_categorizations" USING btree ("user_id","client_request_id","subject_ref");--> statement-breakpoint
 -- ===================== RLS (mock_exam_photo_categorizations — per-user behavioral data) =====================
 ALTER TABLE "mock_exam_photo_categorizations" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "mock_exam_photo_categorizations" FORCE ROW LEVEL SECURITY;--> statement-breakpoint

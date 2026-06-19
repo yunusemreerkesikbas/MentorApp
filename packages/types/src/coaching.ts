@@ -112,10 +112,18 @@ export interface SubjectStrengthDto {
   attemptCount: number;
 }
 
+/** Foto analizinden gelen ders sinyalleri (zayıflık ipucu; net ortalamasından ayrı). */
+export interface PhotoSubjectSignalDto {
+  subjectRef: string;
+  subjectName: string;
+  count: number;
+}
+
 /** Personal deneme analysis — no ranking (guardrail §0). */
 export interface CoachingAnalysisDto {
   trend: MockExamTrendPointDto[];
   subjects: SubjectStrengthDto[];
+  photoSubjectSignals: PhotoSubjectSignalDto[];
 }
 
 /** Composite panel payload — one request → whole daily hub. */
