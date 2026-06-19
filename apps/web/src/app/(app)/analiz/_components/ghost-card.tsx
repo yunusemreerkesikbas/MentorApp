@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import type { CoachAccessDto, GhostComparisonDto, GhostNarrationDto } from "@mentor/types";
@@ -18,6 +18,21 @@ export function GhostCard({ ghost }: { ghost: GhostComparisonDto }) {
   const [premium, setPremium] = useState<boolean | null>(null);
   const [narration, setNarration] = useState<string | null>(ghost.aiNarration);
   const [narrating, setNarrating] = useState(false);
+
+  const generate = useCallback(async () => {
+    setNarrating(true);
+    try {
+      const res = (await aiGhostControllerNarrate()) as unknown as
+        | { data?: GhostNarrationDto }
+        | GhostNarrationDto;
+      const dto = (res as { data?: GhostNarrationDto }).data ?? (res as GhostNarrationDto);
+      if (dto?.narration) setNarration(dto.narration);
+    } catch {
+      /* Narration is a premium enhancement; fall back to the rule-based comparison. */
+    } finally {
+      setNarrating(false);
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -37,24 +52,7 @@ export function GhostCard({ ghost }: { ghost: GhostComparisonDto }) {
     return () => {
       active = false;
     };
-    // ghost.aiNarration is stable for a given mounted attempt.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function generate() {
-    setNarrating(true);
-    try {
-      const res = (await aiGhostControllerNarrate()) as unknown as
-        | { data?: GhostNarrationDto }
-        | GhostNarrationDto;
-      const dto = (res as { data?: GhostNarrationDto }).data ?? (res as GhostNarrationDto);
-      if (dto?.narration) setNarration(dto.narration);
-    } catch {
-      /* Narration is a premium enhancement; fall back to the rule-based comparison. */
-    } finally {
-      setNarrating(false);
-    }
-  }
+  }, [generate, ghost.aiNarration]);
 
   const movers = ghost.subjects.filter((s) => s.delta && s.delta !== "0.00");
 

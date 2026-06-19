@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import type { CoachAccessDto, MoodCheckinDto, MoodReflectionDto } from "@mentor/types";
@@ -32,13 +32,33 @@ export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const generateReflection = useCallback(async () => {
+    setReflecting(true);
+    try {
+      const res = (await aiMoodControllerReflect()) as unknown as
+        | { data?: MoodReflectionDto }
+        | MoodReflectionDto;
+      const dto = (res as { data?: MoodReflectionDto }).data ?? (res as MoodReflectionDto);
+      if (dto?.reflection) setReflection(dto.reflection);
+    } catch {
+      /* Fall back to the rule-based message; reflection is a premium enhancement, not critical. */
+    } finally {
+      setReflecting(false);
+    }
+  }, []);
+
   useEffect(() => {
     let active = true;
     aiChatControllerGetAccess()
       .then((res) => {
         if (!active) return;
         const access = (res as unknown as { data?: CoachAccessDto }).data ?? (res as unknown as CoachAccessDto);
-        setPremium(access?.mode === "PREMIUM");
+        const isPremium = access?.mode === "PREMIUM";
+        setPremium(isPremium);
+        // Fetch cached reflection on load when premium + mood set but no reflection yet.
+        if (isPremium && initial?.mood != null && initial.aiReflection == null) {
+          void generateReflection();
+        }
       })
       .catch(() => {
         if (active) setPremium(false);
@@ -46,7 +66,7 @@ export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [generateReflection, initial?.aiReflection, initial?.mood]);
 
   async function saveMood(value: number, struggleNote: string) {
     setError(null);
@@ -64,21 +84,6 @@ export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
       setError(err instanceof Error ? err.message : "Bir hata oluştu.");
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function generateReflection() {
-    setReflecting(true);
-    try {
-      const res = (await aiMoodControllerReflect()) as unknown as
-        | { data?: MoodReflectionDto }
-        | MoodReflectionDto;
-      const dto = (res as { data?: MoodReflectionDto }).data ?? (res as MoodReflectionDto);
-      if (dto?.reflection) setReflection(dto.reflection);
-    } catch {
-      /* Fall back to the rule-based message; reflection is a premium enhancement, not critical. */
-    } finally {
-      setReflecting(false);
     }
   }
 
