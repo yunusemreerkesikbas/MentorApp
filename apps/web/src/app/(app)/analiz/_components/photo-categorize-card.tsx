@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { PhotoAccessDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button, Card, Chip, SectionHeading } from "@mentor/ui";
+import { FormError } from "../../../../components/form";
 import {
   categorizeMockExamPhoto,
   createPhotoUploadUrl,
@@ -71,13 +72,15 @@ export function PhotoCategorizeCard({ mockExamId, access, onCategorized }: Photo
           as="h2"
           subtitle={
             isRateLimited
-              ? "Bu ay için foto analiz limitine ulaştın. Premium ile devam edebilir veya sonra tekrar deneyebilirsin."
+              ? "Bu ay için foto analiz limitine ulaştın. Yeni dönem başladığında tekrar deneyebilirsin."
               : "Yanlış soru fotoğrafını ders bazında sınıflandırmak Premium özelliği."
           }
         >
           {isRateLimited ? "Aylık limit doldu" : "Foto analizi — Premium"}
         </SectionHeading>
-        <Button onClick={() => router.push("/abonelik")}>Premium&apos;a yükselt</Button>
+        {isRateLimited ? null : (
+          <Button onClick={() => router.push("/abonelik")}>Premium&apos;a yükselt</Button>
+        )}
       </Card>
     );
   }
@@ -95,9 +98,7 @@ export function PhotoCategorizeCard({ mockExamId, access, onCategorized }: Photo
           Bu ay kalan analiz: {access.remainingThisMonth}
         </p>
       )}
-      {error ? (
-        <p className="text-sm" style={{ color: "var(--color-error, #c0392b)" }}>{error}</p>
-      ) : null}
+      <FormError message={error} />
       <label className="flex flex-col gap-2">
         <span className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
           Soru fotoğrafı (JPEG/PNG)

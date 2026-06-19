@@ -1,0 +1,21 @@
+{
+  "extends": "next/core-web-vitals",
+  "ignorePatterns": [
+    "node_modules/",
+    ".next/",
+    "src/app/authentication/**",
+    "src/app/settings/**",
+    "src/components/**/*.jsx",
+    "src/app/(general)/help/**",
+    "src/app/(general)/applications/**",
+    "src/app/(general)/analytics/**",
+    "src/app/(general)/crm/**",
+    "src/app/(general)/dashboard/**",
+    "src/app/(general)/projects/**",
+    "src/app/(general)/proposal/**",
+    "src/app/(general)/reports/**",
+    "src/app/(general)/widgets/**",
+    "src/hooks/**",
+    "src/utils/**"
+  ]
+}

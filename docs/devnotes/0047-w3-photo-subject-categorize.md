@@ -62,3 +62,10 @@ pnpm --filter @mentor/api dev && pnpm --filter @mentor/web dev
 - Prod env locks: `VISION_PROVIDER=fake` / `STORAGE_PROVIDER=fake` forbidden in production.
 - Unit tests: `photo-access.service.spec.ts`, `photo-categorize.service.spec.ts`.
 - FE: file size check uses `upload.maxBytes` from API (no local `MAX_BYTES` duplicate).
+
+## Review follow-ups (2026-06-20 — PR #8 merge blockers)
+
+- **Admin CI:** `.eslintrc.json` + scoped `next lint --dir …` (Mentor-owned paths only; Duralux template excluded).
+- **FE photo-access:** no silent `AI_DISABLED` fallback on fetch failure — `FormError` inline in `/analiz`.
+- **FE errors:** `photo-categorize-card` uses shared `FormError` (no magic hex / `--color-error`).
+- **FE rate-limit gate:** premium users at monthly cap no longer see "Premium'a yükselt" CTA.

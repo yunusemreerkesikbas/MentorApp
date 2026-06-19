@@ -42,10 +42,8 @@ export class PhotoCategorizeService {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
 
-    if (!isValidPhotoStorageKey(userId, input.storageKey)) {
-      throw new DomainError(ErrorCode.AI_PHOTO_INVALID_IMAGE, HttpStatus.BAD_REQUEST);
-    }
-
+    // Idempotent retry: return the already-recorded result without re-gating or re-running vision
+    // (a retry of the user's own prior categorization, so no premium/cap re-check needed).
     if (input.clientRequestId) {
       const existing = await this.mockExams.findPhotoCategorizationsByClientRequestId(
         userId,
@@ -69,7 +67,13 @@ export class PhotoCategorizeService {
       }
     }
 
+    // Authorize (premium + monthly cap) BEFORE validating resource details for a NEW categorization,
+    // so free users get a consistent PAYMENT_PREMIUM_REQUIRED (403), not input-validation behavior.
     await this.photoAccess.assertCanCategorize(userId, rolesHint);
+
+    if (!isValidPhotoStorageKey(userId, input.storageKey)) {
+      throw new DomainError(ErrorCode.AI_PHOTO_INVALID_IMAGE, HttpStatus.BAD_REQUEST);
+    }
 
     const owned = await this.mockExams.getOwnedMockExam(userId, mockExamId);
 

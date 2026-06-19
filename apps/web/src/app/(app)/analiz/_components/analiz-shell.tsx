@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type {
@@ -24,6 +24,7 @@ import { staggerItemVariants, staggerListVariants } from "../../../../lib/stagge
 import { fetchPhotoAccess } from "../../../../lib/analiz";
 import type { PhotoAccessDto } from "@mentor/types";
 import { PhotoCategorizeCard } from "./photo-categorize-card";
+import { GhostCard } from "./ghost-card";
 
 interface SubjectScores {
   correct: string;
@@ -71,20 +72,7 @@ export function AnalizShell() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [photoAccess, setPhotoAccess] = useState<PhotoAccessDto | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void fetchPhotoAccess()
-      .then((a) => {
-        if (active) setPhotoAccess(a);
-      })
-      .catch(() => {
-        if (active) setPhotoAccess({ canCategorize: false, reason: "AI_DISABLED" });
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const [photoAccessError, setPhotoAccessError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -99,11 +87,27 @@ export function AnalizShell() {
           return;
         }
 
-        const [calendarRes, analysisRes] = await Promise.all([
+        const [calendarRes, analysisRes, photoAccessResult] = await Promise.all([
           contentControllerCalendarByFamily(me.examType),
           http<CoachingAnalysisDto>(getAnalysisUrl()),
+          fetchPhotoAccess().catch((err: unknown) => ({ error: err })),
         ]);
         if (!active) return;
+
+        if ("error" in photoAccessResult) {
+          const err = photoAccessResult.error;
+          setPhotoAccess(null);
+          setPhotoAccessError(
+            err instanceof ApiClientError
+              ? err.message
+              : err instanceof Error
+                ? err.message
+                : "Foto analizi erişimi yüklenemedi.",
+          );
+        } else {
+          setPhotoAccess(photoAccessResult);
+          setPhotoAccessError(null);
+        }
 
         const calendar = calendarRes as unknown as ExamCalendarDto | null;
         const current = calendar?.exam ?? null;
@@ -144,7 +148,7 @@ export function AnalizShell() {
 
   const readyData = loadState.status === "ready" ? loadState.data : null;
   const exam = readyData?.exam ?? null;
-  const subjects = readyData?.subjects ?? [];
+  const subjects = useMemo(() => readyData?.subjects ?? [], [readyData?.subjects]);
   const analysis = readyData?.analysis ?? null;
 
   const maxTrendNet = useMemo(
@@ -157,14 +161,35 @@ export function AnalizShell() {
 
   const activeMockExamId = lastResult?.id ?? analysis?.trend[0]?.id ?? null;
 
-  async function refreshAnalysis() {
+  const refreshAnalysis = useCallback(async () => {
     if (!exam || loadState.status !== "ready") return;
     const analysisRes = await http<CoachingAnalysisDto>(getAnalysisUrl());
     setLoadState({
       status: "ready",
       data: { exam, subjects, analysis: analysisRes },
     });
-  }
+  }, [exam, loadState.status, subjects]);
+
+  const handlePhotoCategorized = useCallback(() => {
+    void Promise.all([
+      refreshAnalysis(),
+      fetchPhotoAccess()
+        .then((access) => {
+          setPhotoAccess(access);
+          setPhotoAccessError(null);
+        })
+        .catch((err: unknown) => {
+          setPhotoAccess(null);
+          setPhotoAccessError(
+            err instanceof ApiClientError
+              ? err.message
+              : err instanceof Error
+                ? err.message
+                : "Foto analizi erişimi yüklenemedi.",
+          );
+        }),
+    ]);
+  }, [refreshAnalysis]);
 
   const headerMotion = reduceMotion
     ? {}
@@ -295,17 +320,31 @@ export function AnalizShell() {
             )}
           </AnimatePresence>
 
-          {activeMockExamId && photoAccess ? (
+          {activeMockExamId ? (
             <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-              <PhotoCategorizeCard
-                mockExamId={activeMockExamId}
-                access={photoAccess}
-                onCategorized={() => {
-                  void refreshAnalysis().then(() =>
-                    fetchPhotoAccess().then(setPhotoAccess).catch(() => undefined),
-                  );
-                }}
-              />
+              {photoAccessError ? (
+                <Card className="flex flex-col gap-3">
+                  <SectionHeading as="h2" subtitle="Foto analizi şu an kullanılamıyor.">
+                    Foto ile ders tahmini
+                  </SectionHeading>
+                  <FormError message={photoAccessError} />
+                </Card>
+              ) : photoAccess ? (
+                <PhotoCategorizeCard
+                  mockExamId={activeMockExamId}
+                  access={photoAccess}
+                  onCategorized={handlePhotoCategorized}
+                />
+              ) : null}
+            </motion.div>
+          ) : null}
+
+          {analysis?.ghost ? (
+            <motion.div
+              key={analysis.ghost.latest.id}
+              variants={reduceMotion ? undefined : staggerItemVariants}
+            >
+              <GhostCard ghost={analysis.ghost} />
             </motion.div>
           ) : null}
 
