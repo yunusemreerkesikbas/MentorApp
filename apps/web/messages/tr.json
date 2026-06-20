@@ -1,0 +1,398 @@
+{
+  "common": {
+    "loading": "Yükleniyor…",
+    "error_unknown": "Beklenmeyen bir hata oluştu.",
+    "back_panel": "← Panele dön",
+    "back_plan": "← Plana dön"
+  },
+  "landing": {
+    "header": {
+      "nav_label": "Hesap",
+      "login": "Giriş",
+      "register": "Kayıt ol"
+    },
+    "hero": {
+      "chip": "Sınav yoldaşın",
+      "title": "Sınav yolunda yalnız değilsin.",
+      "description": "Seni anlayan, devam ettiren ve yalnız bırakmayan bir AI koç. Günlük ritüel, plan ve bilgi merkezi — tek bir yol arkadaşında.",
+      "cta_start": "Hadi başlayalım",
+      "cta_login": "Giriş yap",
+      "tagline": "KPSS, YKS, LGS — aynı koç, sınavına özel içerik."
+    },
+    "features": {
+      "heading": "Üç katman, tek yol",
+      "subtitle": "Bilgi platformu değil — yoldaşlık platformu.",
+      "ai_coach_title": "AI Koç",
+      "ai_coach_desc": "Plan, motivasyon ve sınav kaygısı için yanında. Resmî tarihler editoryal içerikten — asla uydurma bilgi.",
+      "ritual_title": "Günlük ritüel",
+      "ritual_desc": "Bugünün planı, odak seansı ve streak. Küçük adımlarla alışkanlık — yargılama yok.",
+      "knowledge_title": "Bilgi merkezi",
+      "knowledge_desc": "Küratörlü makaleler ve güvenilir takvim kaynakları. Okuma ücretsiz; koç yanıtları premium derinlikte."
+    },
+    "editorial": {
+      "heading": "Bilgi merkezinden",
+      "subtitle": "Resmî süreçler — kaynak gösterilmiş, ücretsiz okuma.",
+      "source_label": "Kaynak"
+    },
+    "cta": {
+      "heading": "Bugün küçük bir adım yeter.",
+      "subtitle": "Ücretsiz başla; premium ile koç derinliğini dene.",
+      "button": "Ücretsiz kayıt"
+    },
+    "footer": {
+      "disclaimer": "Resmî sınav bilgileri editoryal içerikten gelir — koç asla tarih uydurmaz."
+    }
+  },
+  "auth": {
+    "shell": {
+      "tagline": "Sınav yolunda yanında.",
+      "back_home": "Ana sayfaya dön"
+    },
+    "login": {
+      "title": "Giriş yap",
+      "subtitle": "Devam etmek için giriş yap.",
+      "email": "E-posta",
+      "password": "Şifre",
+      "submit": "Giriş yap",
+      "register_link": "Hesap oluştur",
+      "forgot_link": "Şifremi unuttum"
+    },
+    "register": {
+      "title": "Hesap oluştur",
+      "subtitle": "Ücretsiz başla — sınav yolunda yanında olalım.",
+      "name": "Ad Soyad",
+      "email": "E-posta",
+      "password": "Şifre (en az 8 karakter, harf + rakam)",
+      "kvkk": "KVKK aydınlatma metnini okudum, kişisel verilerimin işlenmesini kabul ediyorum.",
+      "kvkk_error": "Devam etmek için KVKK metnini kabul etmelisin.",
+      "submit": "Kayıt ol",
+      "login_prompt": "Zaten hesabın var mı?",
+      "login_link": "Giriş yap"
+    },
+    "forgot_password": {
+      "title": "Şifremi unuttum",
+      "subtitle": "E-postana sıfırlama bağlantısı göndeririz.",
+      "email": "E-posta",
+      "submit": "Sıfırlama bağlantısı gönder",
+      "success": "Bu e-posta kayıtlıysa, şifre sıfırlama bağlantısı gönderildi. Gelen kutunu kontrol et.",
+      "back_login": "Girişe dön"
+    },
+    "verify_email": {
+      "title": "E-posta doğrulama",
+      "invalid_link": "Geçersiz bağlantı. Lütfen e-postandaki bağlantıyı kullan.",
+      "verifying": "Doğrulanıyor…",
+      "success": "E-postan doğrulandı. Hoş geldin!",
+      "back_login": "Girişe dön"
+    },
+    "reset_password": {
+      "title": "Yeni şifre belirle",
+      "invalid_link": "Geçersiz bağlantı. Lütfen e-postandaki bağlantıyı kullan.",
+      "password": "Yeni şifre (en az 8 karakter, harf + rakam)",
+      "submit": "Şifreyi güncelle",
+      "success": "Şifren güncellendi. Artık yeni şifrenle giriş yapabilirsin.",
+      "back_login": "Girişe dön"
+    }
+  },
+  "nav": {
+    "aria_label": "Ana menü",
+    "home": "Anasayfa",
+    "plan": "Plan",
+    "coach": "Koç",
+    "analysis": "Analiz",
+    "knowledge": "Bilgi",
+    "profile": "Profil",
+    "language_toggle_label": "Dil seç"
+  },
+  "panel": {
+    "loading": "Yükleniyor…",
+    "greeting": "Merhaba, {name}"
+  },
+  "today_plan": {
+    "title": "Bugünün planı",
+    "progress": "{done} / {total} tamamlandı",
+    "add_task": "Görev ekle",
+    "empty_chip": "Plan boş",
+    "empty_desc": "Bugüne henüz görev eklemedin. Küçük bir adım bile yeterli.",
+    "add_first": "İlk görevini ekle"
+  },
+  "mood": {
+    "title": "Bugün nasılsın?",
+    "subtitle": "Kısa bir check-in — yargılamıyoruz.",
+    "struggle_label": "Bugün seni en çok ne zorladı? (isteğe bağlı)",
+    "struggle_placeholder": "Örn. matematik problemleri, odaklanma…",
+    "coach_thinking": "Koçun düşünüyor…",
+    "coach_chip": "Koçun",
+    "premium_nudge": "Premium koç, ruh haline göre kişisel bir not bırakır →"
+  },
+  "coach": {
+    "loading": "Yükleniyor…",
+    "title": "Sınav Koçu",
+    "subtitle_coin": "Kazanılmış hakla koçunla sohbet ediyorsun.",
+    "subtitle_premium": "Yalnız değilsin — sor, planla, motive ol.",
+    "gate": {
+      "header_subtitle": "Premium ile veya kazanılmış hakla koçunla sohbet et.",
+      "rate_limited_subtitle": "Bugünkü kazanılmış hak limitine ulaştın. Yarın tekrar deneyebilir veya Premium'a geçebilirsin.",
+      "insufficient_coin_subtitle": "Profilinden görevleri tamamla, arkadaş davet et veya Premium'a geçerek koçunla sohbet et.",
+      "default_subtitle": "Premium ile koçunla sohbet et — ya da profilinden görevleri tamamla ve davet et.",
+      "chip_rate_limited": "Günlük limit",
+      "chip_insufficient": "Hak gerekli",
+      "chip_premium": "Premium",
+      "heading_rate_limited": "Bugünlük yeterli",
+      "heading_insufficient": "Koç için hak kazan",
+      "heading_default": "AI koç seninle",
+      "upgrade": "Premium'a yükselt",
+      "go_profile": "Profilime git"
+    }
+  },
+  "profile": {
+    "loading": "Yükleniyor…",
+    "title": "Profil",
+    "subtitle_with_economy": "Hesap, kazanılmış hak ve bildirim tercihlerin.",
+    "subtitle_basic": "Hesap ve bildirim tercihlerin.",
+    "email_verified": "E-posta doğrulandı",
+    "email_not_verified": "E-posta henüz doğrulanmadı.",
+    "exam_settings": {
+      "title": "Sınav türü",
+      "subtitle": "Resmi sınav tarihi bilgi merkezinden gelir; burada hedef sınav ailesini seçiyorsun.",
+      "aria_label": "Sınav türü",
+      "saved": "Kaydedildi",
+      "save_error": "Kaydedilemedi.",
+      "kpss_desc": "Kamu Personeli Seçme Sınavı",
+      "yks_desc": "Yükseköğretim Kurumları Sınavı",
+      "lgs_desc": "Liselere Geçiş Sistemi"
+    },
+    "account": {
+      "title": "Hesap",
+      "subscription": "Abonelik",
+      "logout": "Çıkış yap"
+    },
+    "notifications": {
+      "title": "Bildirim ayarları",
+      "loading": "Bildirim ayarları yükleniyor…",
+      "load_error": "Ayarlar yüklenemedi.",
+      "save_error": "Ayarlar kaydedilemedi.",
+      "email": "E-posta hatırlatmaları",
+      "push": "Push bildirimleri",
+      "push_permission": "Push izni ver",
+      "push_not_configured": "Push yapılandırması henüz hazır değil.",
+      "push_not_supported": "Tarayıcın web push desteklemiyor.",
+      "push_denied": "Bildirim izni verilmedi.",
+      "push_subscribe_error": "Abonelik oluşturulamadı.",
+      "push_enabled": "Push bildirimleri açıldı."
+    }
+  },
+  "subscription": {
+    "loading": "Yükleniyor…",
+    "title": "Abonelik",
+    "subtitle": "Premium ile AI koç ve derinlemesine analiz — deneme süreni buradan başlat.",
+    "status_title": "Durum",
+    "status_premium": "Premium erişim aktif",
+    "status_free": "Ücretsiz planda",
+    "chip_premium": "Premium",
+    "chip_free": "Ücretsiz",
+    "chip_cancel": "Dönem sonunda iptal",
+    "valid_until": "Erişimin {date} tarihine kadar geçerli.",
+    "upgrade_prompt": "Premium ile AI koç, deneme yorumları ve foto analizi açılır.",
+    "cancel_button": "Aboneliği iptal et",
+    "cancel_confirm": "Aboneliğin dönem sonunda sona erecek. Emin misin?",
+    "trial_consent": "7 gün ücretsiz deneme sonrası seçtiğim planın ücreti kartımdan otomatik tahsil edilir; istediğim an iptal edebilirim. Bunu anladım ve onaylıyorum.",
+    "period_suffix": "/ {months} ay · KDV dahil",
+    "trial_days": "{days} gün ücretsiz deneme",
+    "start_trial": "Denemeyi başlat",
+    "back_panel": "← Panele dön"
+  },
+  "plan": {
+    "title": "Çalışma Planı",
+    "subtitle": "Günlük görevlerini ekle, tamamla ve ilerlemeni takip et.",
+    "today": "Bugün",
+    "prev_day_aria": "Önceki gün",
+    "next_day_aria": "Sonraki gün",
+    "tasks_title": "Görevler",
+    "progress": "{done} / {total} tamamlandı",
+    "loading": "Yükleniyor…",
+    "empty_chip": "Plan boş",
+    "empty_desc": "Bu güne henüz görev eklemedin. Küçük bir adım bile yeterli.",
+    "delete_aria": "{title} görevini sil",
+    "delete": "Sil",
+    "new_task": "Yeni görev",
+    "task_placeholder": "Örn. Tarih tekrar",
+    "subject": "Ders (isteğe bağlı)",
+    "subject_placeholder": "Örn. Tarih",
+    "add_task": "Görev ekle",
+    "back_panel": "← Panele dön"
+  },
+  "analysis": {
+    "loading": "Yükleniyor…",
+    "title": "Deneme Analizi",
+    "subtitle": "Deneme sonuçlarını gir; netini ve gelişimini birlikte takip edelim.",
+    "saved_chip": "Deneme kaydedildi",
+    "total_net": "Toplam net: {net}",
+    "photo_section_title": "Foto ile ders tahmini",
+    "photo_unavailable": "Foto analizi şu an kullanılamıyor.",
+    "photo_access_error": "Foto analizi erişimi yüklenemedi.",
+    "result_entry_title": "Deneme sonucu gir",
+    "questions_count": "({count} soru)",
+    "correct": "Doğru",
+    "wrong": "Yanlış",
+    "blank": "Boş",
+    "save": "Kaydet",
+    "trend_title": "Net trendi",
+    "trend_subtitle": "Kişisel gelişim — sıralama yok",
+    "subject_avg_title": "Ders bazlı ortalamalar",
+    "subject_avg_subtitle": "Kişisel ortalamalar — sıralama yok",
+    "avg_template": "Ort. {avg} · {count} deneme",
+    "photo_signals_title": "Ders sinyalleri",
+    "photo_signals_subtitle": "Foto analizinden gelen ipuçları",
+    "photo_count": "{count} foto",
+    "back_panel": "← Panele dön",
+    "needs_exam_chip": "Sınav türü gerekli",
+    "needs_exam_desc": "Profilinden sınav türünü seçmelisin.",
+    "needs_exam_cta": "Sınav türünü seç",
+    "empty_trend_chip": "Henüz deneme yok",
+    "empty_trend_desc": "İlk deneme sonucunu girdikten sonra trend burada görünecek.",
+    "no_seed_chip": "Ders listesi bekleniyor",
+    "no_seed_desc": "Sınav takvimi veya ders listesi henüz yayımlanmadı. Editorial içerik güncellendiğinde form burada açılacak."
+  },
+  "session": {
+    "title": "Çalışma Seansı",
+    "subtitle": "Odaklan, molanı al, serini koru.",
+    "duration_title": "Süre",
+    "duration_subtitle": "Süreyi halkadan ayarla veya kısayol seç",
+    "paused": "Duraklatıldı",
+    "focusing": "Odaklan",
+    "back_plan": "← Plana dön",
+    "preset_fallback": "Oturum süreleri sunucudan alınamadı; varsayılan Pomodoro süreleri kullanılıyor.",
+    "done_chip": "Seans kaydedildi",
+    "done_title": "Güzel iş çıkardın",
+    "done_elapsed": "{minutes} dakika odaklandın.",
+    "new_session": "Yeni seans",
+    "back_panel": "Panele dön"
+  },
+  "knowledge": {
+    "loading": "Yükleniyor…",
+    "title": "Bilgi Merkezi",
+    "subtitle": "Resmî bilgi — kaynaklı ve doğrulanmış içerik.",
+    "retry": "Tekrar dene",
+    "exam_day": "Sınav günü",
+    "days_remaining": "Sınava {days} gün kaldı.",
+    "last_verified": "Son doğrulama: {date}",
+    "calendar_pending_chip": "Takvim bekleniyor",
+    "calendar_pending_desc": "Sınav takvimi henüz yayımlanmadı. Duyurulduğunda burada görünecek.",
+    "articles_title": "Makaleler",
+    "articles_subtitle": "Editoryal makaleler — okuma ücretsiz",
+    "articles_empty_chip": "Henüz makale yok",
+    "articles_empty_desc": "Bu sınav için makaleler yakında eklenecek.",
+    "source_label": "Kaynak",
+    "back_panel": "← Panele dön",
+    "no_exam_chip": "Sınav türü gerekli",
+    "no_exam_desc": "Hedef sınavını profilden seçtiğinde resmî sınav tarihi ve makaleler burada görünecek.",
+    "no_exam_cta": "Sınav türünü seç"
+  },
+  "checkout": {
+    "chip_success": "Abonelik başladı",
+    "chip_error": "Ödeme tamamlanamadı",
+    "title_success": "Hoş geldin",
+    "title_error": "Bir sorun oluştu",
+    "card_success": "Premium açık",
+    "card_error": "Tekrar deneyebilirsin",
+    "desc_success": "Deneme süren başladı. AI koç ve tüm Premium özellikler kullanıma hazır.",
+    "desc_error": "Ödeme sağlayıcısından onay alamadık. Kart bilgilerini kontrol edip tekrar deneyebilirsin.",
+    "go_coach": "Koça git",
+    "back_panel": "Panele dön",
+    "back_subscription": "Abonelik sayfasına dön"
+  },
+  "ghost": {
+    "subtitle": "Kendi geçmişinle yarış — sıralama yok",
+    "title": "Geçmiş-ben",
+    "previous_delta": "{delta} net (geçen deneme)",
+    "new_record": "🏆 Yeni rekor",
+    "record_delta": "Rekora {delta}",
+    "by_subject": "Ders bazlı:",
+    "narrating": "Koçun ilerlemeni yorumluyor…",
+    "coach_chip": "Koçun",
+    "premium_nudge": "Premium koç, ilerlemeni kişisel bir hikayeyle anlatır →"
+  },
+  "photo": {
+    "error_type": "Yalnızca JPEG veya PNG yükleyebilirsin.",
+    "error_too_big": "Fotoğraf çok büyük.",
+    "error_failed": "Fotoğraf işlenemedi.",
+    "chip_rate_limited": "Aylık limit",
+    "chip_premium": "Premium",
+    "locked_rate_limited_subtitle": "Bu ay için foto analiz limitine ulaştın. Yeni dönem başladığında tekrar deneyebilirsin.",
+    "locked_premium_subtitle": "Yanlış soru fotoğrafını ders bazında sınıflandırmak Premium özelliği.",
+    "locked_rate_limited_title": "Aylık limit doldu",
+    "locked_premium_title": "Foto analizi — Premium",
+    "upgrade": "Premium'a yükselt",
+    "upload_subtitle": "Yanlış sorunun fotoğrafını yükle; hangi derse ait olduğunu tahmin ederiz (çözüm yok).",
+    "upload_title": "Foto ile ders tahmini",
+    "remaining": "Bu ay kalan analiz: {count}",
+    "file_label": "Soru fotoğrafı (JPEG/PNG)",
+    "analyzing": "Analiz ediliyor…",
+    "result_prefix": "Bu soru muhtemelen:"
+  },
+  "coach_chat": {
+    "input_label": "Koçuna mesaj yaz",
+    "input_placeholder": "Koçuna bir şey sor…",
+    "send": "Gönder",
+    "disclaimer": "Koç resmî sınav tarihi/süreç bilgisi vermez — bunlar için Bilgi Merkezi'ne bak.",
+    "transcript_label": "Koç sohbeti",
+    "empty_prompt": "Koçuna bir şey sor — çalışma planı, motivasyon ya da sınav kaygısı.",
+    "suggestion_1": "Bugün nasıl çalışmalıyım?",
+    "suggestion_2": "Sınav kaygımı nasıl yönetirim?",
+    "suggestion_3": "Bana çalışma planı öner",
+    "source_label": "Kaynak:",
+    "typing": "Koç yazıyor"
+  },
+  "countdown": {
+    "title": "Sınava kalan",
+    "no_calendar": "Resmi sınav takvimi henüz yayımlanmadı. Bilgi merkezinden duyurulduğunda geri sayım burada görünecek.",
+    "no_exam_type": "Sınav tarihi henüz ayarlanmadı. Profilden sınav türünü seçtiğinde geri sayım burada görünecek.",
+    "select_exam": "Sınav türünü seç"
+  },
+  "start_session": {
+    "title": "Odaklanma zamanı",
+    "subtitle": "Kısa, net bir Pomodoro seansıyla başla.",
+    "cta": "Çalışmaya başla",
+    "duration_prefix": "Süre: {durations}"
+  },
+  "session_controls": {
+    "start": "Başla",
+    "time_up": "Süre doldu — seansı kaydetmek için bitir.",
+    "resume": "Devam et",
+    "pause": "Duraklat",
+    "finish": "Seansı bitir",
+    "abandon": "Erken bırak"
+  },
+  "economy": {
+    "balance_subtitle": "Kazanılmış hak — nakit değildir; koç sohbeti ve ilerideki özellikler için kullanılır.",
+    "balance_title": "Bakiyen",
+    "xp": "XP",
+    "confirmed": "Onaylı hak",
+    "pending": "+{count} beklemede",
+    "go_coach": "Koça git",
+    "invite_subtitle": "Arkadaşın kayıt olup aktif olunca ikiniz de kazanırsınız.",
+    "invite_title": "Davet et",
+    "copy": "Kodu kopyala",
+    "copied": "Kopyalandı",
+    "copy_failed": "Kopyalanamadı",
+    "have_code": "Bir davet kodun var mı?",
+    "redeem_invalid": "Geçerli bir davet kodu gir.",
+    "redeem_pending": "Davet kodun kaydedildi. Ödül, koşullar sağlandığında hesabına yansır.",
+    "redeem_saved": "Davet kodun kaydedildi.",
+    "redeem_failed": "Kaydedilemedi.",
+    "redeeming": "Kaydediliyor…",
+    "use_code": "Kodu kullan",
+    "quests_subtitle": "Görevleri tamamla, kazanılmış hak kazan. Ödüller otomatik işlenir.",
+    "quests_title": "Görevler",
+    "quest_completed": "Tamamlandı",
+    "quest_in_progress": "Devam ediyor"
+  },
+  "article": {
+    "not_found_title": "Makale bulunamadı | Mentor",
+    "source_label": "Kaynak:",
+    "last_verified": "· Son doğrulama: {date}",
+    "trust_badge": "Doğrulanmış içerik",
+    "trust_body": "Bu içerik editorial ekibimiz tarafından kaynak gösterilerek doğrulanmıştır. Resmî süreç ve tarihler ilgili kurum kaynaklarından alınır; değişiklik olursa güncellenir.",
+    "login": "Giriş yap"
+  }
+}

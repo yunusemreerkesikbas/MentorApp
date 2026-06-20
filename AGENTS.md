@@ -23,6 +23,7 @@ that pain?
 - **Single language: TypeScript.** Single API (`/v1`, versioned, backward-compatible).
 - **Backend: NestJS modular monolith.** Clear module boundaries; extract to services later if needed.
 - **Web/Admin: Next.js** (App Router). **Mobile: Expo** (Phase 2).
+- **i18n: `apps/web` is TR/EN** (URL-based, next-intl; `tr` default). All FE static copy via `useTranslations`/`getTranslations`, internal nav via `@/i18n/navigation`, keys mirrored in `messages/{tr,en}.json` — details in `docs/standards/frontend.md` §i18n + `docs/devnotes/0050-web-i18n-next-intl.md`.
 - **Monorepo: Turborepo + pnpm.** `apps/*` + `packages/*`.
 - **DB: Neon Postgres + pgvector · ORM: Drizzle.** RLS on the Postgres side.
 - **Queue: behind `JobQueuePort`** — MVP Cron+jobs table, Phase 2 BullMQ+Redis (rationale: docs/architecture.md).
