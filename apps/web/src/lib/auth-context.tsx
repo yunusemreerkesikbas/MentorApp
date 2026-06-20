@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useLocale } from "next-intl";
 import type { AuthSession, AuthUser } from "@mentor/types";
 import {
   authControllerLogin,
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Breaks the applySession ↔ silentRefresh cycle (timer calls through the ref).
   const silentRefreshRef = useRef<() => void>(() => {});
+  const locale = useLocale();
 
   const clearSession = useCallback(() => {
     accessTokenRef.current = null;
@@ -89,24 +91,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     silentRefreshRef.current = () => void silentRefresh();
   }, [silentRefresh]);
 
+  // Silent refresh runs once on mount — locale changes do not re-trigger it.
+  useEffect(() => {
+    silentRefreshRef.current();
+  }, []);
+
+  // Re-configure the API client whenever the locale changes so all subsequent
+  // requests carry the correct Accept-Language / locale header.
   useEffect(() => {
     configureApiClient({
       baseUrl: apiBaseUrl(),
       getAccessToken: () => accessTokenRef.current,
+      getLocale: () => locale,
     });
-    // Through the ref (set by the effect above — declaration order guarantees it).
-    silentRefreshRef.current();
-  }, []);
+  }, [locale]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
       user,
       login: async (input) => {
-        applySession((await authControllerLogin(input)) as unknown as AuthSession);
+        applySession(
+          (await authControllerLogin(input)) as unknown as AuthSession,
+        );
       },
       signup: async (input) => {
-        applySession((await authControllerSignup(input)) as unknown as AuthSession);
+        applySession(
+          (await authControllerSignup(input)) as unknown as AuthSession,
+        );
       },
       logout: async () => {
         await authControllerLogout().catch(() => undefined); // idempotent server-side

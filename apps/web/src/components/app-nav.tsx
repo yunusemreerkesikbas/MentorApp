@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { isNavActive } from "../lib/nav-active";
+import { useTranslations } from "next-intl";
+import { Link, usePathname } from "@/i18n/navigation";
+import { isNavActive } from "@/lib/nav-active";
+import { LanguageToggle } from "@/components/language-toggle";
 
 /**
  * App navigation (DESIGN.md §6 Tab bar + §8 adaptation):
@@ -12,28 +13,32 @@ import { isNavActive } from "../lib/nav-active";
  */
 
 const NAV_ITEMS = [
-  { href: "/panel", label: "Anasayfa", icon: HomeIcon },
-  { href: "/plan", label: "Plan", icon: CalendarIcon },
-  { href: "/koc", label: "Koç", icon: CoachIcon },
-  { href: "/analiz", label: "Analiz", icon: ChartIcon },
-  { href: "/bilgi", label: "Bilgi", icon: BookIcon },
-  { href: "/profil", label: "Profil", icon: UserIcon },
+  { href: "/panel", labelKey: "home", icon: HomeIcon },
+  { href: "/plan", labelKey: "plan", icon: CalendarIcon },
+  { href: "/koc", labelKey: "coach", icon: CoachIcon },
+  { href: "/analiz", labelKey: "analysis", icon: ChartIcon },
+  { href: "/bilgi", labelKey: "knowledge", icon: BookIcon },
+  { href: "/profil", labelKey: "profile", icon: UserIcon },
 ] as const;
 
 export function AppNav() {
   const pathname = usePathname();
+  const t = useTranslations("nav");
 
   return (
     <>
       <aside
         className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col gap-1 border-r border-white bg-white/50 p-6 backdrop-blur lg:flex"
         style={{ boxShadow: "var(--shadow-card)" }}
-        aria-label="Ana menü"
+        aria-label={t("aria_label")}
       >
         <Link
           href="/panel"
           className="mb-6 inline-flex min-h-[44px] items-center text-2xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+          style={{
+            color: "var(--color-main)",
+            fontFamily: "var(--font-heading)",
+          }}
         >
           Mentor
         </Link>
@@ -41,20 +46,29 @@ export function AppNav() {
           <NavLink
             key={item.href}
             item={item}
+            label={t(item.labelKey)}
             active={isNavActive(pathname, item.href)}
             variant="side"
           />
         ))}
+
+        <div
+          className="mt-auto border-t pt-4"
+          style={{ borderColor: "var(--color-secondary-light, #e5e7eb)" }}
+        >
+          <LanguageToggle />
+        </div>
       </aside>
 
       <nav
         className="fixed inset-x-0 bottom-0 z-20 flex min-h-[63px] border-t border-black/10 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
-        aria-label="Ana menü"
+        aria-label={t("aria_label")}
       >
         {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.href}
             item={item}
+            label={t(item.labelKey)}
             active={isNavActive(pathname, item.href)}
             variant="tab"
           />
@@ -66,10 +80,12 @@ export function AppNav() {
 
 function NavLink({
   item,
+  label,
   active,
   variant,
 }: {
   item: (typeof NAV_ITEMS)[number];
+  label: string;
   active: boolean;
   variant: "side" | "tab";
 }) {
@@ -91,7 +107,7 @@ function NavLink({
         }}
       >
         <Icon active={active} />
-        {item.label}
+        {label}
       </Link>
     );
   }
@@ -100,7 +116,7 @@ function NavLink({
     <Link
       href={item.href}
       aria-current={active ? "page" : undefined}
-      aria-label={item.label}
+      aria-label={label}
       className="relative flex min-h-[63px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset motion-reduce:transition-none"
       style={{ color }}
     >
@@ -116,7 +132,7 @@ function NavLink({
         className="max-w-full truncate text-[9px] font-semibold uppercase tracking-wide"
         style={{ fontFamily: "var(--font-heading)" }}
       >
-        {item.label}
+        {label}
       </span>
     </Link>
   );

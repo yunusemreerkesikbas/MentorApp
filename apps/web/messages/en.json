@@ -1,0 +1,398 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "error_unknown": "An unexpected error occurred.",
+    "back_panel": "← Back to Dashboard",
+    "back_plan": "← Back to Plan"
+  },
+  "landing": {
+    "header": {
+      "nav_label": "Account",
+      "login": "Sign in",
+      "register": "Sign up"
+    },
+    "hero": {
+      "chip": "Your exam companion",
+      "title": "You're not alone on the road to your exam.",
+      "description": "An AI coach that understands you, keeps you going, and never leaves you alone. Daily rituals, plans, and a knowledge hub — all in one companion.",
+      "cta_start": "Let's get started",
+      "cta_login": "Sign in",
+      "tagline": "KPSS, YKS, LGS — same coach, content tailored to your exam."
+    },
+    "features": {
+      "heading": "Three layers, one path",
+      "subtitle": "Not a knowledge platform — a companionship platform.",
+      "ai_coach_title": "AI Coach",
+      "ai_coach_desc": "Here for your plans, motivation, and exam anxiety. Official dates come from editorial content — no fabrication.",
+      "ritual_title": "Daily ritual",
+      "ritual_desc": "Today's plan, focus sessions, and streaks. Build habits in small steps — no judgment.",
+      "knowledge_title": "Knowledge hub",
+      "knowledge_desc": "Curated articles and reliable calendar sources. Reading is free; coach answers go premium-deep."
+    },
+    "editorial": {
+      "heading": "From the knowledge hub",
+      "subtitle": "Official processes — sourced and free to read.",
+      "source_label": "Source"
+    },
+    "cta": {
+      "heading": "One small step today is enough.",
+      "subtitle": "Start free; try coach depth with premium.",
+      "button": "Sign up free"
+    },
+    "footer": {
+      "disclaimer": "Official exam information comes from editorial content — the coach never fabricates dates."
+    }
+  },
+  "auth": {
+    "shell": {
+      "tagline": "With you on the road to your exam.",
+      "back_home": "Back to home"
+    },
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Sign in to continue.",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "register_link": "Create account",
+      "forgot_link": "Forgot password"
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "Start free — let us be with you on the road to your exam.",
+      "name": "Full Name",
+      "email": "Email",
+      "password": "Password (at least 8 characters, letters + numbers)",
+      "kvkk": "I have read the KVKK disclosure text and consent to the processing of my personal data.",
+      "kvkk_error": "You must accept the KVKK text to continue.",
+      "submit": "Sign up",
+      "login_prompt": "Already have an account?",
+      "login_link": "Sign in"
+    },
+    "forgot_password": {
+      "title": "Forgot password",
+      "subtitle": "We'll send a reset link to your email.",
+      "email": "Email",
+      "submit": "Send reset link",
+      "success": "If this email is registered, a password reset link has been sent. Check your inbox.",
+      "back_login": "Back to sign in"
+    },
+    "verify_email": {
+      "title": "Email verification",
+      "invalid_link": "Invalid link. Please use the link in your email.",
+      "verifying": "Verifying…",
+      "success": "Your email has been verified. Welcome!",
+      "back_login": "Back to sign in"
+    },
+    "reset_password": {
+      "title": "Set new password",
+      "invalid_link": "Invalid link. Please use the link in your email.",
+      "password": "New password (at least 8 characters, letters + numbers)",
+      "submit": "Update password",
+      "success": "Your password has been updated. You can now sign in with your new password.",
+      "back_login": "Back to sign in"
+    }
+  },
+  "nav": {
+    "aria_label": "Main menu",
+    "home": "Home",
+    "plan": "Plan",
+    "coach": "Coach",
+    "analysis": "Analysis",
+    "knowledge": "Knowledge",
+    "profile": "Profile",
+    "language_toggle_label": "Select language"
+  },
+  "panel": {
+    "loading": "Loading…",
+    "greeting": "Hello, {name}"
+  },
+  "today_plan": {
+    "title": "Today's plan",
+    "progress": "{done} / {total} completed",
+    "add_task": "Add task",
+    "empty_chip": "Plan empty",
+    "empty_desc": "You haven't added any tasks for today. Even one small step is enough.",
+    "add_first": "Add your first task"
+  },
+  "mood": {
+    "title": "How are you today?",
+    "subtitle": "A quick check-in — no judgment.",
+    "struggle_label": "What challenged you most today? (optional)",
+    "struggle_placeholder": "e.g. math problems, focusing…",
+    "coach_thinking": "Your coach is thinking…",
+    "coach_chip": "Your coach",
+    "premium_nudge": "Premium coach leaves a personal note based on your mood →"
+  },
+  "coach": {
+    "loading": "Loading…",
+    "title": "Exam Coach",
+    "subtitle_coin": "You're chatting with your coach using earned rights.",
+    "subtitle_premium": "You're not alone — ask, plan, get motivated.",
+    "gate": {
+      "header_subtitle": "Chat with your coach via premium or earned rights.",
+      "rate_limited_subtitle": "You've reached today's earned-rights limit. Try again tomorrow or go Premium.",
+      "insufficient_coin_subtitle": "Complete quests in your profile, invite friends, or go Premium to chat with your coach.",
+      "default_subtitle": "Chat with your coach via premium — or complete quests and invite friends from your profile.",
+      "chip_rate_limited": "Daily limit",
+      "chip_insufficient": "Rights needed",
+      "chip_premium": "Premium",
+      "heading_rate_limited": "That's enough for today",
+      "heading_insufficient": "Earn rights for coach",
+      "heading_default": "AI coach is with you",
+      "upgrade": "Upgrade to Premium",
+      "go_profile": "Go to my profile"
+    }
+  },
+  "profile": {
+    "loading": "Loading…",
+    "title": "Profile",
+    "subtitle_with_economy": "Your account, earned rights, and notification preferences.",
+    "subtitle_basic": "Your account and notification preferences.",
+    "email_verified": "Email verified",
+    "email_not_verified": "Email not yet verified.",
+    "exam_settings": {
+      "title": "Exam type",
+      "subtitle": "Official exam date comes from the knowledge hub; here you choose your target exam family.",
+      "aria_label": "Exam type",
+      "saved": "Saved",
+      "save_error": "Could not save.",
+      "kpss_desc": "Civil Servant Selection Exam",
+      "yks_desc": "Higher Education Institutions Exam",
+      "lgs_desc": "High School Transition System"
+    },
+    "account": {
+      "title": "Account",
+      "subscription": "Subscription",
+      "logout": "Sign out"
+    },
+    "notifications": {
+      "title": "Notification settings",
+      "loading": "Loading notification settings…",
+      "load_error": "Could not load settings.",
+      "save_error": "Could not save settings.",
+      "email": "Email reminders",
+      "push": "Push notifications",
+      "push_permission": "Allow push notifications",
+      "push_not_configured": "Push configuration is not ready yet.",
+      "push_not_supported": "Your browser doesn't support web push.",
+      "push_denied": "Notification permission was denied.",
+      "push_subscribe_error": "Subscription could not be created.",
+      "push_enabled": "Push notifications enabled."
+    }
+  },
+  "subscription": {
+    "loading": "Loading…",
+    "title": "Subscription",
+    "subtitle": "AI coach and in-depth analysis with Premium — start your trial here.",
+    "status_title": "Status",
+    "status_premium": "Premium access active",
+    "status_free": "On Free plan",
+    "chip_premium": "Premium",
+    "chip_free": "Free",
+    "chip_cancel": "Cancels at period end",
+    "valid_until": "Your access is valid until {date}.",
+    "upgrade_prompt": "Premium unlocks AI coach, mock exam insights, and photo analysis.",
+    "cancel_button": "Cancel subscription",
+    "cancel_confirm": "Your subscription will end at the current period. Are you sure?",
+    "trial_consent": "After the 7-day free trial, the fee for my chosen plan will be automatically charged to my card; I can cancel at any time. I understand and agree.",
+    "period_suffix": "/ {months} mo · VAT incl.",
+    "trial_days": "{days}-day free trial",
+    "start_trial": "Start trial",
+    "back_panel": "← Back to Dashboard"
+  },
+  "plan": {
+    "title": "Study Plan",
+    "subtitle": "Add daily tasks, complete them, and track your progress.",
+    "today": "Today",
+    "prev_day_aria": "Previous day",
+    "next_day_aria": "Next day",
+    "tasks_title": "Tasks",
+    "progress": "{done} / {total} completed",
+    "loading": "Loading…",
+    "empty_chip": "Plan empty",
+    "empty_desc": "You haven't added any tasks for this day. Even one small step is enough.",
+    "delete_aria": "Delete task {title}",
+    "delete": "Delete",
+    "new_task": "New task",
+    "task_placeholder": "e.g. History review",
+    "subject": "Subject (optional)",
+    "subject_placeholder": "e.g. History",
+    "add_task": "Add task",
+    "back_panel": "← Back to Dashboard"
+  },
+  "analysis": {
+    "loading": "Loading…",
+    "title": "Mock Exam Analysis",
+    "subtitle": "Enter your mock exam results; let's track your score and progress together.",
+    "saved_chip": "Mock exam saved",
+    "total_net": "Total net: {net}",
+    "photo_section_title": "Subject prediction from photo",
+    "photo_unavailable": "Photo analysis is currently unavailable.",
+    "photo_access_error": "Could not load photo analysis access.",
+    "result_entry_title": "Enter mock exam results",
+    "questions_count": "({count} questions)",
+    "correct": "Correct",
+    "wrong": "Wrong",
+    "blank": "Blank",
+    "save": "Save",
+    "trend_title": "Score trend",
+    "trend_subtitle": "Personal progress — no rankings",
+    "subject_avg_title": "Subject averages",
+    "subject_avg_subtitle": "Personal averages — no rankings",
+    "avg_template": "Avg. {avg} · {count} exams",
+    "photo_signals_title": "Subject signals",
+    "photo_signals_subtitle": "Hints from photo analysis",
+    "photo_count": "{count} photos",
+    "back_panel": "← Back to Dashboard",
+    "needs_exam_chip": "Exam type required",
+    "needs_exam_desc": "You must select your exam type from your profile.",
+    "needs_exam_cta": "Select exam type",
+    "empty_trend_chip": "No exams yet",
+    "empty_trend_desc": "Your score trend will appear here after your first mock exam.",
+    "no_seed_chip": "Subject list pending",
+    "no_seed_desc": "The exam calendar or subject list hasn't been published yet. The form will appear here when editorial content is updated."
+  },
+  "session": {
+    "title": "Study Session",
+    "subtitle": "Focus, take your break, stay composed.",
+    "duration_title": "Duration",
+    "duration_subtitle": "Adjust duration on the ring or choose a preset",
+    "paused": "Paused",
+    "focusing": "Focus",
+    "back_plan": "← Back to Plan",
+    "preset_fallback": "Could not load session presets from server; using default Pomodoro timings.",
+    "done_chip": "Session saved",
+    "done_title": "Great work",
+    "done_elapsed": "You focused for {minutes} minutes.",
+    "new_session": "New session",
+    "back_panel": "Back to Dashboard"
+  },
+  "knowledge": {
+    "loading": "Loading…",
+    "title": "Knowledge Hub",
+    "subtitle": "Official information — sourced and verified content.",
+    "retry": "Try again",
+    "exam_day": "Exam day",
+    "days_remaining": "{days} days until the exam.",
+    "last_verified": "Last verified: {date}",
+    "calendar_pending_chip": "Calendar pending",
+    "calendar_pending_desc": "Exam schedule has not been published yet. It will appear here when announced.",
+    "articles_title": "Articles",
+    "articles_subtitle": "Editorial articles — free to read",
+    "articles_empty_chip": "No articles yet",
+    "articles_empty_desc": "Articles for this exam will be added soon.",
+    "source_label": "Source",
+    "back_panel": "← Back to Dashboard",
+    "no_exam_chip": "Exam type required",
+    "no_exam_desc": "Once you choose your target exam from your profile, the official exam date and articles will appear here.",
+    "no_exam_cta": "Select exam type"
+  },
+  "checkout": {
+    "chip_success": "Subscription started",
+    "chip_error": "Payment could not be completed",
+    "title_success": "Welcome",
+    "title_error": "Something went wrong",
+    "card_success": "Premium unlocked",
+    "card_error": "You can try again",
+    "desc_success": "Your trial has started. The AI coach and all Premium features are ready to use.",
+    "desc_error": "We couldn't get confirmation from the payment provider. Check your card details and try again.",
+    "go_coach": "Go to coach",
+    "back_panel": "Back to dashboard",
+    "back_subscription": "Back to subscription"
+  },
+  "ghost": {
+    "subtitle": "Compete with your own past — no ranking",
+    "title": "Past-you",
+    "previous_delta": "{delta} net (previous attempt)",
+    "new_record": "🏆 New record",
+    "record_delta": "{delta} to record",
+    "by_subject": "By subject:",
+    "narrating": "Your coach is interpreting your progress…",
+    "coach_chip": "Your coach",
+    "premium_nudge": "The Premium coach narrates your progress as a personal story →"
+  },
+  "photo": {
+    "error_type": "You can only upload JPEG or PNG.",
+    "error_too_big": "The photo is too large.",
+    "error_failed": "The photo could not be processed.",
+    "chip_rate_limited": "Monthly limit",
+    "chip_premium": "Premium",
+    "locked_rate_limited_subtitle": "You've reached this month's photo analysis limit. You can try again when the new period starts.",
+    "locked_premium_subtitle": "Classifying a wrong-question photo by subject is a Premium feature.",
+    "locked_rate_limited_title": "Monthly limit reached",
+    "locked_premium_title": "Photo analysis — Premium",
+    "upgrade": "Upgrade to Premium",
+    "upload_subtitle": "Upload a photo of the wrong question; we'll guess which subject it belongs to (no solution).",
+    "upload_title": "Subject guess from photo",
+    "remaining": "Remaining analyses this month: {count}",
+    "file_label": "Question photo (JPEG/PNG)",
+    "analyzing": "Analyzing…",
+    "result_prefix": "This question is likely:"
+  },
+  "coach_chat": {
+    "input_label": "Write a message to your coach",
+    "input_placeholder": "Ask your coach something…",
+    "send": "Send",
+    "disclaimer": "The coach doesn't provide official exam dates/process info — check the Knowledge Center for those.",
+    "transcript_label": "Coach chat",
+    "empty_prompt": "Ask your coach something — a study plan, motivation, or exam anxiety.",
+    "suggestion_1": "How should I study today?",
+    "suggestion_2": "How do I manage my exam anxiety?",
+    "suggestion_3": "Suggest a study plan for me",
+    "source_label": "Source:",
+    "typing": "Coach is typing"
+  },
+  "countdown": {
+    "title": "Time to exam",
+    "no_calendar": "The official exam calendar hasn't been published yet. The countdown will appear here once it's announced in the Knowledge Center.",
+    "no_exam_type": "Your exam date isn't set yet. The countdown will appear here once you pick your exam type in your profile.",
+    "select_exam": "Choose exam type"
+  },
+  "start_session": {
+    "title": "Focus time",
+    "subtitle": "Start with a short, focused Pomodoro session.",
+    "cta": "Start studying",
+    "duration_prefix": "Duration: {durations}"
+  },
+  "session_controls": {
+    "start": "Start",
+    "time_up": "Time's up — finish to save the session.",
+    "resume": "Resume",
+    "pause": "Pause",
+    "finish": "Finish session",
+    "abandon": "End early"
+  },
+  "economy": {
+    "balance_subtitle": "Earned credit — not cash; used for coach chat and upcoming features.",
+    "balance_title": "Your balance",
+    "xp": "XP",
+    "confirmed": "Confirmed credit",
+    "pending": "+{count} pending",
+    "go_coach": "Go to coach",
+    "invite_subtitle": "When your friend signs up and becomes active, you both earn.",
+    "invite_title": "Invite",
+    "copy": "Copy code",
+    "copied": "Copied",
+    "copy_failed": "Couldn't copy",
+    "have_code": "Have an invite code?",
+    "redeem_invalid": "Enter a valid invite code.",
+    "redeem_pending": "Your invite code is saved. The reward will be credited once the conditions are met.",
+    "redeem_saved": "Your invite code is saved.",
+    "redeem_failed": "Couldn't save.",
+    "redeeming": "Saving…",
+    "use_code": "Use code",
+    "quests_subtitle": "Complete quests to earn credit. Rewards are processed automatically.",
+    "quests_title": "Quests",
+    "quest_completed": "Completed",
+    "quest_in_progress": "In progress"
+  },
+  "article": {
+    "not_found_title": "Article not found | Mentor",
+    "source_label": "Source:",
+    "last_verified": "· Last verified: {date}",
+    "trust_badge": "Verified content",
+    "trust_body": "This content has been verified with cited sources by our editorial team. Official processes and dates are taken from the relevant institutions' sources and updated if they change.",
+    "login": "Log in"
+  }
+}
