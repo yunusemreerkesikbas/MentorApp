@@ -1,10 +1,29 @@
 import type { Metadata } from "next";
+import { Lato, League_Spartan } from "next/font/google";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages } from "next-intl/server";
+import { getMessages, setRequestLocale } from "next-intl/server";
 import { BackgroundBlobs } from "@mentor/ui";
 import { routing } from "@/i18n/routing";
 import { AuthProvider } from "@/lib/auth-context";
+import "../globals.css";
+
+/* DESIGN.md §3 — headings: League Spartan, body: Lato. latin-ext covers Turkish glyphs
+   (ç ğ ı İ ş ö ü). The CSS variables override the @theme defaults in @mentor/ui/theme.css. */
+const heading = League_Spartan({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-heading",
+});
+const body = Lato({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "700"],
+  variable: "--font-body",
+});
+
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
 
 const META = {
   tr: {
@@ -40,8 +59,9 @@ export async function generateMetadata({
 }
 
 /**
- * Locale layout — wraps all pages with NextIntlClientProvider + AuthProvider.
- * Metadata is locale-aware via generateMetadata above.
+ * Root document layout (the `[locale]` segment owns `<html>`/`<body>` so `lang` is set
+ * from the awaited param — no dynamic `getLocale()` that would force every page dynamic).
+ * Wraps all pages with NextIntlClientProvider + AuthProvider.
  */
 export default async function LocaleLayout({
   children,
@@ -53,14 +73,19 @@ export default async function LocaleLayout({
   const { locale } = await params;
   // Reject unknown first segments (e.g. /xyz) instead of rendering them as the default locale.
   if (!(routing.locales as readonly string[]).includes(locale)) notFound();
+  setRequestLocale(locale);
   const messages = await getMessages();
 
   return (
-    <>
-      <BackgroundBlobs />
-      <NextIntlClientProvider locale={locale} messages={messages}>
-        <AuthProvider>{children}</AuthProvider>
-      </NextIntlClientProvider>
-    </>
+    <html lang={locale} className={`${heading.variable} ${body.variable}`}>
+      {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla) inject body
+          attributes pre-hydration; this silences only attribute diffs on <body>. */}
+      <body suppressHydrationWarning>
+        <BackgroundBlobs />
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <AuthProvider>{children}</AuthProvider>
+        </NextIntlClientProvider>
+      </body>
+    </html>
   );
 }

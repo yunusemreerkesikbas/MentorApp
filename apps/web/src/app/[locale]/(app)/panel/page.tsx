@@ -1,3 +1,4 @@
+import { setRequestLocale } from "next-intl/server";
 import { PanelShell } from "./_components/panel-shell";
 
 /**
@@ -8,6 +9,12 @@ import { PanelShell } from "./_components/panel-shell";
  *
  * Layout (DESIGN.md §8): mobile single column; ≥lg a main column + right rail.
  */
-export default function PanelPage() {
+export default async function PanelPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
   return <PanelShell />;
 }

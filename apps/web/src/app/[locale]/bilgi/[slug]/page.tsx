@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { fetchInfoArticleBySlug } from "@/lib/content-api";
 import { ArticleContent } from "./_components/article-content";
 import { PublicArticleChrome } from "./_components/article-markdown";
 
-type PageProps = { params: Promise<{ slug: string }> };
+export const revalidate = 3600;
+
+type PageProps = { params: Promise<{ locale: string; slug: string }> };
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
+  const { locale, slug } = await params;
+  setRequestLocale(locale);
   const article = await fetchInfoArticleBySlug(slug);
   if (!article) {
     const translate = await getTranslations("article");
@@ -30,11 +33,11 @@ export async function generateMetadata({
 }
 
 export default async function PublicArticlePage({ params }: PageProps) {
-  const { slug } = await params;
+  const { locale, slug } = await params;
+  setRequestLocale(locale);
   const article = await fetchInfoArticleBySlug(slug);
   if (!article) notFound();
 
-  const locale = await getLocale();
   const verifiedLabel = new Date(article.verifiedAt).toLocaleDateString(
     locale,
     {

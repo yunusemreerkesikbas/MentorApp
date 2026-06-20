@@ -1,8 +1,14 @@
 import { Suspense } from "react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { SeansShell } from "./_components/seans-shell";
 
-export default async function SeansPage() {
+export default async function SeansPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
   const translate = await getTranslations("common");
   return (
     <Suspense
