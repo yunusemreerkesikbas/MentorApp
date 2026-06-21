@@ -155,12 +155,11 @@ export function VisionBoardCard() {
           </p>
           <Link
             href="/hedef"
-            className="flex min-h-[44px] w-fit items-center rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            className="inline-flex min-h-11 w-fit items-center rounded-[var(--radius-card)] border px-4 text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
             style={{
-              backgroundColor: "var(--color-btn)",
-              color: "#fff",
-              boxShadow: "var(--shadow-card)",
-              fontFamily: "var(--font-body)",
+              color: "var(--color-main)",
+              borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",
+              fontFamily: "var(--font-heading)",
             }}
           >
             {translate("set_cta")}

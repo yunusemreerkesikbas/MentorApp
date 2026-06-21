@@ -12,6 +12,8 @@ export interface CountdownCardProps {
   examDateLabel?: string;
   /** Verified source attribution (guardrail #1), e.g. { label: "ÖSYM", url }. */
   source?: { label: string; url?: string };
+  /** Pre-localized labels (i18n lives in the app; ui is presentational). */
+  labels: { remaining: string; dayUnit: string; today: string; sourcePrefix: string };
   className?: string;
 }
 
@@ -52,6 +54,7 @@ export function CountdownCard({
   examName,
   examDateLabel,
   source,
+  labels,
   className,
 }: CountdownCardProps) {
   const isToday = daysRemaining <= 0;
@@ -61,21 +64,21 @@ export function CountdownCard({
     <DataCard
       className={className}
       icon={<CalendarGlyph />}
-      label="Sınava kalan"
+      label={labels.remaining}
       value={
         isToday ? (
-          "Bugün"
+          labels.today
         ) : (
           <span>
             {daysRemaining}{" "}
             <span className="text-base font-bold" style={{ color: "var(--color-secondary)" }}>
-              gün
+              {labels.dayUnit}
             </span>
           </span>
         )
       }
       caption={caption}
-      source={source}
+      source={source ? { ...source, prefix: labels.sourcePrefix } : undefined}
     />
   );
 }

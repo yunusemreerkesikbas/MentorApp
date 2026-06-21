@@ -9,7 +9,8 @@ import { useAuth } from "@/lib/auth-context";
 import { AuthNavLink } from "../_components/auth-nav-link";
 
 export default function LoginPage() {
-  const t = useTranslations("auth.login");
+  const translate = useTranslations("auth.login");
+  const ui = useTranslations("common");
   const { login } = useAuth();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -35,28 +36,30 @@ export default function LoginPage() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <SectionHeading as="h2" subtitle={t("subtitle")}>
-        {t("title")}
+      <SectionHeading as="h2" subtitle={translate("subtitle")}>
+        {translate("title")}
       </SectionHeading>
       <Field
-        label={t("email")}
+        label={translate("email")}
         name="email"
         type="email"
         autoComplete="email"
+        autoFocus
         required
       />
       <Field
-        label={t("password")}
+        label={translate("password")}
         name="password"
         type="password"
         autoComplete="current-password"
         required
+        revealLabels={{ show: ui("show_password"), hide: ui("hide_password") }}
       />
       <FormError message={error} />
-      <SubmitButton busy={busy}>{t("submit")}</SubmitButton>
+      <SubmitButton busy={busy}>{translate("submit")}</SubmitButton>
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-        <AuthNavLink href="/kayit">{t("register_link")}</AuthNavLink>
-        <AuthNavLink href="/sifremi-unuttum">{t("forgot_link")}</AuthNavLink>
+        <AuthNavLink href="/kayit">{translate("register_link")}</AuthNavLink>
+        <AuthNavLink href="/sifremi-unuttum">{translate("forgot_link")}</AuthNavLink>
       </div>
     </form>
   );

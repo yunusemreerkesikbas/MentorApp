@@ -1,10 +1,12 @@
 import { Card } from "./card.js";
 
 export interface StreakBadgeProps {
-  /** Current streak in days (computed server-side from daily activity). */
-  currentStreak: number;
-  /** Remaining streak-freeze tokens this month (anti-shaming safety net). */
-  freezeTokens?: number;
+  /** Pre-localized title — e.g. "5 günlük seri" or, at zero, "Serini bugün başlat". */
+  title: string;
+  /** Pre-localized supporting line. */
+  subline: string;
+  /** Optional pre-localized freeze-token reassurance (anti-shaming safety net). */
+  freezeNote?: string;
   className?: string;
 }
 
@@ -33,17 +35,11 @@ function FlameGlyph() {
 }
 
 /**
- * Streak badge (DESIGN.md §9 "streak / progress"; AGENTS §0 anti-shaming tone).
- * A streak of 0 is framed as an invitation, never a failure. Freeze tokens are shown as
- * a reassuring safety net. Values are derived server-side (frontend standard — no logic here).
+ * Streak badge (DESIGN.md §9 "streak / progress"; AGENTS §0 anti-shaming tone). Presentational:
+ * copy is localized in the app and passed in (a streak of 0 is framed as an invitation, never a
+ * failure; freeze tokens as a reassuring safety net). Values derived server-side — no logic here.
  */
-export function StreakBadge({ currentStreak, freezeTokens, className }: StreakBadgeProps) {
-  const hasStreak = currentStreak > 0;
-  const title = hasStreak ? `${currentStreak} günlük seri` : "Serini bugün başlat";
-  const subline = hasStreak
-    ? "Harika gidiyorsun — devam et."
-    : "Tek bir görev bile seriyi başlatır.";
-
+export function StreakBadge({ title, subline, freezeNote, className }: StreakBadgeProps) {
   return (
     <Card className={className}>
       <div className="flex items-center gap-4">
@@ -58,9 +54,9 @@ export function StreakBadge({ currentStreak, freezeTokens, className }: StreakBa
           <span className="text-sm" style={{ color: "var(--color-secondary)" }}>
             {subline}
           </span>
-          {typeof freezeTokens === "number" && freezeTokens > 0 ? (
+          {freezeNote ? (
             <span className="mt-1 text-xs" style={{ color: "var(--color-secondary)" }}>
-              {freezeTokens} dondurma hakkın var — bir günü kaçırsan seri bozulmaz.
+              {freezeNote}
             </span>
           ) : null}
         </div>

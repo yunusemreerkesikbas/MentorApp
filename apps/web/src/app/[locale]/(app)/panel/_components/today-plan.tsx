@@ -144,26 +144,26 @@ function AddTaskLink() {
 function EmptyState() {
   const t = useTranslations("today_plan");
   return (
-    <div className="mt-4 flex flex-col items-center gap-4 py-6 text-center">
+    <div className="mt-4 flex flex-col items-center gap-3 py-6 text-center">
       <span
-        className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold capitalize"
+        aria-hidden
+        className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-card)]"
         style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--color-chip) 30%, transparent)",
+          backgroundColor: "color-mix(in srgb, var(--color-chip) 22%, transparent)",
           color: "var(--color-chip-text)",
-          fontFamily: "var(--font-body)",
         }}
       >
-        {t("empty_chip")}
+        <PlusIcon />
       </span>
-      <p className="text-base" style={{ color: "var(--color-secondary)" }}>
+      <p className="max-w-xs text-base" style={{ color: "var(--color-secondary)" }}>
         {t("empty_desc")}
       </p>
       <Link
         href="/plan"
-        className="flex min-h-[44px] items-center gap-1.5 rounded-[var(--radius-card)] px-4 text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-card)] border px-4 text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
         style={{
           color: "var(--color-main)",
+          borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",
           fontFamily: "var(--font-heading)",
         }}
       >

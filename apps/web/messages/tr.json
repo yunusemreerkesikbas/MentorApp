@@ -3,7 +3,10 @@
     "loading": "Yükleniyor…",
     "error_unknown": "Beklenmeyen bir hata oluştu.",
     "back_panel": "← Panele dön",
-    "back_plan": "← Plana dön"
+    "back_plan": "← Plana dön",
+    "show_password": "Şifreyi göster",
+    "hide_password": "Şifreyi gizle",
+    "source_prefix": "Kaynak:"
   },
   "landing": {
     "header": {
@@ -111,7 +114,6 @@
     "title": "Bugünün planı",
     "progress": "{done} / {total} tamamlandı",
     "add_task": "Görev ekle",
-    "empty_chip": "Plan boş",
     "empty_desc": "Bugüne henüz görev eklemedin. Küçük bir adım bile yeterli.",
     "add_first": "İlk görevini ekle"
   },
@@ -345,9 +347,18 @@
   },
   "countdown": {
     "title": "Sınava kalan",
+    "day_unit": "gün",
+    "today": "Bugün",
     "no_calendar": "Resmi sınav takvimi henüz yayımlanmadı. Bilgi merkezinden duyurulduğunda geri sayım burada görünecek.",
     "no_exam_type": "Sınav tarihi henüz ayarlanmadı. Profilden sınav türünü seçtiğinde geri sayım burada görünecek.",
     "select_exam": "Sınav türünü seç"
+  },
+  "streak": {
+    "start_title": "Serini bugün başlat",
+    "start_sub": "Tek bir görev bile seriyi başlatır.",
+    "active_title": "{count} günlük seri",
+    "active_sub": "Harika gidiyorsun — devam et.",
+    "freeze_note": "{count} dondurma hakkın var — bir günü kaçırsan seri bozulmaz."
   },
   "start_session": {
     "title": "Odaklanma zamanı",

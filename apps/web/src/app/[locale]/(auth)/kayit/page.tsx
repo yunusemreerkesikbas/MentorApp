@@ -9,7 +9,8 @@ import { useAuth } from "@/lib/auth-context";
 import { AuthNavLink } from "../_components/auth-nav-link";
 
 export default function SignupPage() {
-  const t = useTranslations("auth.register");
+  const translate = useTranslations("auth.register");
+  const ui = useTranslations("common");
   const { signup } = useAuth();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +22,7 @@ export default function SignupPage() {
     setBusy(true);
     const data = new FormData(e.currentTarget);
     if (data.get("kvkk") !== "on") {
-      setError(t("kvkk_error"));
+      setError(translate("kvkk_error"));
       setBusy(false);
       return;
     }
@@ -42,30 +43,32 @@ export default function SignupPage() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <SectionHeading as="h2" subtitle={t("subtitle")}>
-        {t("title")}
+      <SectionHeading as="h2" subtitle={translate("subtitle")}>
+        {translate("title")}
       </SectionHeading>
       <Field
-        label={t("name")}
+        label={translate("name")}
         name="displayName"
         autoComplete="name"
+        autoFocus
         required
         minLength={2}
       />
       <Field
-        label={t("email")}
+        label={translate("email")}
         name="email"
         type="email"
         autoComplete="email"
         required
       />
       <Field
-        label={t("password")}
+        label={translate("password")}
         name="password"
         type="password"
         autoComplete="new-password"
         required
         minLength={8}
+        revealLabels={{ show: ui("show_password"), hide: ui("hide_password") }}
       />
       <label
         className="flex min-h-11 cursor-pointer items-start gap-3 text-sm"
@@ -77,13 +80,13 @@ export default function SignupPage() {
           required
           className="mt-1 h-5 w-5 shrink-0"
         />
-        <span>{t("kvkk")}</span>
+        <span>{translate("kvkk")}</span>
       </label>
       <FormError message={error} />
-      <SubmitButton busy={busy}>{t("submit")}</SubmitButton>
+      <SubmitButton busy={busy}>{translate("submit")}</SubmitButton>
       <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-        {t("login_prompt")}{" "}
-        <AuthNavLink href="/giris">{t("login_link")}</AuthNavLink>
+        {translate("login_prompt")}{" "}
+        <AuthNavLink href="/giris">{translate("login_link")}</AuthNavLink>
       </p>
     </form>
   );

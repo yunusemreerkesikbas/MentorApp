@@ -3,7 +3,10 @@
     "loading": "Loading…",
     "error_unknown": "An unexpected error occurred.",
     "back_panel": "← Back to Dashboard",
-    "back_plan": "← Back to Plan"
+    "back_plan": "← Back to Plan",
+    "show_password": "Show password",
+    "hide_password": "Hide password",
+    "source_prefix": "Source:"
   },
   "landing": {
     "header": {
@@ -111,7 +114,6 @@
     "title": "Today's plan",
     "progress": "{done} / {total} completed",
     "add_task": "Add task",
-    "empty_chip": "Plan empty",
     "empty_desc": "You haven't added any tasks for today. Even one small step is enough.",
     "add_first": "Add your first task"
   },
@@ -345,9 +347,18 @@
   },
   "countdown": {
     "title": "Time to exam",
+    "day_unit": "days",
+    "today": "Today",
     "no_calendar": "The official exam calendar hasn't been published yet. The countdown will appear here once it's announced in the Knowledge Center.",
     "no_exam_type": "Your exam date isn't set yet. The countdown will appear here once you pick your exam type in your profile.",
     "select_exam": "Choose exam type"
+  },
+  "streak": {
+    "start_title": "Start your streak today",
+    "start_sub": "Even one task starts a streak.",
+    "active_title": "{count}-day streak",
+    "active_sub": "You're doing great — keep going.",
+    "freeze_note": "You have {count} streak freeze(s) — miss a day and your streak stays safe."
   },
   "start_session": {
     "title": "Focus time",

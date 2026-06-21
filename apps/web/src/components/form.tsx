@@ -19,7 +19,7 @@ export function SubmitButton({ children, busy }: { children: ReactNode; busy?: b
 export function FormError({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p role="alert" className="text-sm" style={{ color: "var(--color-like-active)" }}>
+    <p role="alert" className="text-sm" style={{ color: "var(--color-danger)" }}>
       {message}
     </p>
   );

@@ -23,6 +23,11 @@
   --color-progress-track: #c3d9fd;
   --color-star: #ffc700;
   --color-like-active: #ff2dab;
+  /* Semantic state tokens (DESIGN.md §2.4). danger: errors/destructive — deep, accessible
+     red (≥4.5:1 on white), calm not alarming (anti-shaming tone). focus-ring: keyboard
+     focus indicator — darkened accent (≥3:1 for UI components). */
+  --color-danger: #b42318;
+  --color-focus-ring: #1d6fbf;
 
   /* Typography */
   --font-heading: "League Spartan", sans-serif;
