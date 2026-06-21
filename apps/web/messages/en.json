@@ -394,5 +394,27 @@
     "trust_badge": "Verified content",
     "trust_body": "This content has been verified with cited sources by our editorial team. Official processes and dates are taken from the relevant institutions' sources and updated if they change.",
     "login": "Log in"
+  },
+  "vision": {
+    "card_title": "Your goal",
+    "card_subtitle": "Why you're here — keep your goal in sight",
+    "empty": "Set your goal to give your journey meaning.",
+    "set_cta": "Set your goal",
+    "edit": "Edit",
+    "coach_chip": "Your coach",
+    "generating": "Your coach is preparing a note for you…",
+    "premium_nudge": "The Premium coach leaves a note tailored to your goal →",
+    "page_title": "Goal Board",
+    "page_subtitle": "Write your goal, city, and reason; your coach and dashboard will motivate you around it.",
+    "goal_label": "Your goal",
+    "goal_placeholder": "e.g. Become a teacher, Law at Marmara…",
+    "city_label": "Target city (optional)",
+    "city_placeholder": "e.g. Istanbul",
+    "motivation_label": "Why? (optional)",
+    "motivation_placeholder": "The reason that drives you…",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "save_error": "Couldn't save."
   }
 }

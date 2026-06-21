@@ -157,6 +157,35 @@ export function buildGhostPrompt(ghost: GhostComparisonDto): { system: string; u
 }
 
 /**
+ * Premium AI vision/goal-board ("hayal/hedef panosu") motivation note (§4 #5 premium-only). Warm,
+ * brief, grounded ONLY on the user's own goal + PII-free context (§4 #1 no official info; §4 #6
+ * no behavioral data / no personal data requests).
+ */
+export function buildVisionNotePrompt(
+  ctx: CoachContext,
+  goalTitle: string,
+  targetCity: string | null,
+  motivation: string | null,
+): { system: string; user: string } {
+  const system = [
+    "Sen Mentor uygulamasının sınav hazırlık koçusun. Öğrencinin hedefini hatırlatan KISA (2-3 cümle),",
+    "sıcak ve motive edici bir not yaz. Hedefi somut ve ulaşılabilir hissettir; tek küçük bir adım öner.",
+    "KESİN KURALLAR:",
+    "1) Resmî bilgi (sınav tarihi, başvuru/süreç, yerleştirme, kontenjan, puan) ÜRETME/UYDURMA;",
+    "   gerekirse Bilgi Merkezi'ne (/bilgi) yönlendir.",
+    "2) Tıbbi/psikolojik teşhis veya tedavi önerme. Kişisel veri isteme.",
+    "3) Ödeme/abonelik/coin veya teknik konulara girme.",
+  ].join("\n");
+
+  const cityLine = targetCity ? ` Hedef şehir: ${targetCity}.` : "";
+  const whyLine = motivation ? ` Nedeni: "${motivation}".` : "";
+  const ctxLine = ctx.daysRemaining != null ? ` Sınava kalan gün: ${ctx.daysRemaining}.` : "";
+  const user = `Öğrencinin hedefi: "${goalTitle}".${cityLine}${whyLine}${ctxLine}`;
+
+  return { system, user };
+}
+
+/**
  * Per-model price in micro-USD per token (input/output). Used to estimate `cost_micros` per call
  * (§7 cost visibility). `fake` is zero-cost. Update when models/pricing change.
  */

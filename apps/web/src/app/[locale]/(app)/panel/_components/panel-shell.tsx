@@ -12,6 +12,7 @@ import { CountdownPlaceholder } from "./countdown-placeholder";
 import { MoodCheckin } from "./mood-checkin";
 import { StartSessionCta } from "./start-session-cta";
 import { TodayPlan } from "./today-plan";
+import { VisionBoardCard } from "./vision-board-card";
 
 type LoadState =
   | { status: "loading" }
@@ -153,6 +154,7 @@ export function PanelShell() {
         >
           <TodayPlan tasks={tasks} onTasksChanged={refreshAfterTaskChange} />
           <StartSessionCta presets={sessionPresets} />
+          <VisionBoardCard />
           <MoodCheckin initial={mood} />
         </motion.section>
 

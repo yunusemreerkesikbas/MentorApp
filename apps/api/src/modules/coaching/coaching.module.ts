@@ -7,6 +7,7 @@ import { PlanService } from "./application/plan.service";
 import { SessionService } from "./application/session.service";
 import { StreakService } from "./application/streak.service";
 import { TodayService } from "./application/today.service";
+import { VisionService } from "./application/vision.service";
 import { CONTENT_PORT } from "./domain/content.port";
 import { CoachingQueryAdapter } from "./infrastructure/coaching-query.adapter";
 import { ContentServiceAdapter } from "./infrastructure/content-service.adapter";
@@ -18,6 +19,7 @@ import { StreakStateRepository } from "./infrastructure/streak-state.repository"
 import { StudySessionRepository } from "./infrastructure/study-session.repository";
 import { MockExamRepository } from "./infrastructure/mock-exam.repository";
 import { MockExamPhotoRepository } from "./infrastructure/mock-exam-photo.repository";
+import { VisionBoardRepository } from "./infrastructure/vision-board.repository";
 import { CoachingController } from "./presentation/coaching.controller";
 import { MockExamController } from "./presentation/mock-exam.controller";
 import { PlanTaskController } from "./presentation/plan-task.controller";
@@ -40,6 +42,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     MoodService,
     MockExamService,
     TodayService,
+    VisionService,
     PlanTaskRepository,
     StudySessionRepository,
     MockExamRepository,
@@ -47,11 +50,12 @@ import { StudySessionController } from "./presentation/study-session.controller"
     DailyActivityRepository,
     StreakStateRepository,
     MoodCheckinRepository,
+    VisionBoardRepository,
     // W1 ContentService adapter (ContentPort → editorial calendar).
     { provide: CONTENT_PORT, useClass: ContentServiceAdapter },
     CoachingQueryAdapter,
     { provide: COACHING_QUERY_PORT, useExisting: CoachingQueryAdapter },
   ],
-  exports: [COACHING_QUERY_PORT, MockExamService, MoodService],
+  exports: [COACHING_QUERY_PORT, MockExamService, MoodService, VisionService],
 })
 export class CoachingModule {}

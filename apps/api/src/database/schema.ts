@@ -426,6 +426,32 @@ export const moodCheckins = pgTable(
   (t) => [uniqueIndex("mood_checkins_user_date_unique_idx").on(t.userId, t.checkinDate)],
 );
 
+/**
+ * Vision/goal board ("hayal/hedef panosu") — one text-based goal anchor per user (W2). Free tier
+ * reads the goal + reuses the existing countdown; the AI motivation note (ai_note) is premium-only
+ * (§4 #5), regenerated in place when the goal/motivation changes.
+ */
+export const visionBoards = pgTable(
+  "vision_boards",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    goalTitle: text("goal_title").notNull(),
+    targetCity: text("target_city"),
+    motivation: text("motivation"),
+    aiNote: text("ai_note"),
+    aiModel: text("ai_model"),
+    aiNoteAt: timestamp("ai_note_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("vision_boards_user_unique_idx").on(t.userId)],
+);
+
 /** A deneme (mock exam) attempt — per-user behavioral data. */
 export const mockExams = pgTable(
   "mock_exams",

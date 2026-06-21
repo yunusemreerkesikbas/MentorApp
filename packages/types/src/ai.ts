@@ -36,6 +36,15 @@ export interface MoodReflectionDto {
 }
 
 /**
+ * POST /v1/coach/vision-note response — premium AI motivation note grounded on the user's vision
+ * board (goal + city + "why") + PII-free context (§4 #5 premium-only; never official info §4 #1).
+ */
+export interface VisionNoteDto {
+  note: string;
+  model: string;
+}
+
+/**
  * POST /v1/coach/ghost-narration response — premium AI narration of the user's progress vs their
  * own past (§4 #5 premium-only; warm/short, never official info §4 #1). `model` is "cache" on a hit.
  */

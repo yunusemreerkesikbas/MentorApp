@@ -1,11 +1,18 @@
 import { Body, Controller, Get, HttpCode, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { MoodCheckinDto, Paginated, TodayPanelResponse, CoachingAnalysisDto } from "@mentor/types";
+import type {
+  MoodCheckinDto,
+  Paginated,
+  TodayPanelResponse,
+  CoachingAnalysisDto,
+  VisionDto,
+} from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { MoodService } from "../application/mood.service";
 import { MockExamService } from "../application/mock-exam.service";
 import { TodayService } from "../application/today.service";
-import { CreateMoodCheckinDto, ListMoodCheckinsQueryDto } from "./coaching.dto";
+import { VisionService } from "../application/vision.service";
+import { CreateMoodCheckinDto, ListMoodCheckinsQueryDto, UpsertVisionDto } from "./coaching.dto";
 
 /** Coaching composite + mood endpoints. Authenticated self resource (global JwtAuthGuard applies). */
 @ApiTags("coaching")
@@ -16,6 +23,7 @@ export class CoachingController {
     private readonly today: TodayService,
     private readonly mood: MoodService,
     private readonly mockExams: MockExamService,
+    private readonly vision: VisionService,
   ) {}
 
   /** Composite daily-hub payload for the Panel (one round-trip). */
@@ -47,5 +55,21 @@ export class CoachingController {
     @Query() query: ListMoodCheckinsQueryDto,
   ): Promise<Paginated<MoodCheckinDto>> {
     return this.mood.list(user.id, query);
+  }
+
+  /** The user's vision/goal board ("hayal/hedef panosu"); `null` when not set yet. */
+  @Get("vision")
+  getVision(@CurrentUser() user: RequestUser): Promise<VisionDto | null> {
+    return this.vision.getMine(user.id);
+  }
+
+  /** Upsert the user's single vision/goal board (idempotent by user; mirrors mood's POST+200). */
+  @Post("vision")
+  @HttpCode(200)
+  upsertVision(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: UpsertVisionDto,
+  ): Promise<VisionDto> {
+    return this.vision.upsert(user.id, dto);
   }
 }

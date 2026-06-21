@@ -97,6 +97,16 @@ export type CreateMoodCheckinInput = z.infer<typeof createMoodCheckinSchema>;
 export const listMoodCheckinsQuerySchema = paginationQuerySchema;
 export type ListMoodCheckinsQuery = z.infer<typeof listMoodCheckinsQuerySchema>;
 
+/* -------------------------------- vision board -------------------------------- */
+
+/** One text-based goal anchor per user ("hayal/hedef panosu"); upsert (idempotent per user). */
+export const upsertVisionSchema = z.object({
+  goalTitle: z.string().trim().min(1).max(120),
+  targetCity: z.string().trim().min(1).max(80).nullish(),
+  motivation: z.string().trim().min(1).max(500).nullish(),
+});
+export type UpsertVisionInput = z.infer<typeof upsertVisionSchema>;
+
 /* -------------------------------- mock exams -------------------------------- */
 
 export const mockExamSubjectInputSchema = z.object({

@@ -394,5 +394,27 @@
     "trust_badge": "Doğrulanmış içerik",
     "trust_body": "Bu içerik editorial ekibimiz tarafından kaynak gösterilerek doğrulanmıştır. Resmî süreç ve tarihler ilgili kurum kaynaklarından alınır; değişiklik olursa güncellenir.",
     "login": "Giriş yap"
+  },
+  "vision": {
+    "card_title": "Hedefin",
+    "card_subtitle": "Neden buradasın — hedefini hatırla",
+    "empty": "Hedefini belirle, yolculuğun anlam kazansın.",
+    "set_cta": "Hedefini belirle",
+    "edit": "Düzenle",
+    "coach_chip": "Koçun",
+    "generating": "Koçun sana özel bir not hazırlıyor…",
+    "premium_nudge": "Premium koç, hedefine özel bir not bırakır →",
+    "page_title": "Hedef Panosu",
+    "page_subtitle": "Hedefini, şehrini ve nedenini yaz; koçun ve panelin seni buna göre motive etsin.",
+    "goal_label": "Hedefin",
+    "goal_placeholder": "Örn. Öğretmen olmak, Marmara Hukuk…",
+    "city_label": "Hedef şehir (isteğe bağlı)",
+    "city_placeholder": "Örn. İstanbul",
+    "motivation_label": "Neden? (isteğe bağlı)",
+    "motivation_placeholder": "Seni motive eden sebep…",
+    "save": "Kaydet",
+    "saving": "Kaydediliyor…",
+    "saved": "Kaydedildi",
+    "save_error": "Kaydedilemedi."
   }
 }
