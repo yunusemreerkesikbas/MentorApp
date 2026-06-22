@@ -53,5 +53,7 @@
   "INVITE_CODE_INVALID": "The invite code is invalid.",
   "INVITE_SELF": "You can't use your own invite code.",
   "INVITE_ALREADY_REDEEMED": "You have already used an invite code.",
-  "INVITE_ALREADY_PREMIUM": "Premium users can't redeem an invite code."
+  "INVITE_ALREADY_PREMIUM": "Premium users can't redeem an invite code.",
+  "FORUM_DISABLED": "The forum feature is currently disabled.",
+  "FORUM_ZONE_NOT_FOUND": "This room was not found."
 }

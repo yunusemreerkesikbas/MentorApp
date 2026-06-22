@@ -65,6 +65,9 @@ export const ErrorCode = {
   INVITE_SELF: "INVITE_SELF",
   INVITE_ALREADY_REDEEMED: "INVITE_ALREADY_REDEEMED",
   INVITE_ALREADY_PREMIUM: "INVITE_ALREADY_PREMIUM",
+  // forum (Phase-2→MVP) — module-prefixed, append-only (workstreams rule)
+  FORUM_DISABLED: "FORUM_DISABLED",
+  FORUM_ZONE_NOT_FOUND: "FORUM_ZONE_NOT_FOUND",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

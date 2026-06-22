@@ -72,6 +72,7 @@ const aiCount = (def: number, max: number, description: string): ConfigEntryDef 
 export const CONFIG_CATALOG = {
   "ai.enabled": flag(true, "Global AI kill-switch (§4/§8) — turn off all AI features."),
   "economy.enabled": flag(false, "Gate for the light-economy module (user-facing balance/earning)."),
+  "forum.enabled": flag(false, "Gate for the forum/community module (zones, threads, moderation)."),
   "signup.enabled": flag(true, "Registration kill-switch — disable new sign-ups."),
   "economy.coin.daily_cap": economyCount(50, 100000, "Max coin a user can earn per day (abuse shield)."),
   "economy.coin.weekly_cap": economyCount(200, 1000000, "Max coin a user can earn per week (abuse shield)."),
@@ -98,6 +99,7 @@ export type ConfigKey = keyof typeof CONFIG_CATALOG;
 export const FeatureFlag = {
   AI_ENABLED: "ai.enabled",
   ECONOMY_ENABLED: "economy.enabled",
+  FORUM_ENABLED: "forum.enabled",
   SIGNUP_ENABLED: "signup.enabled",
 } as const satisfies Record<string, ConfigKey>;
 
