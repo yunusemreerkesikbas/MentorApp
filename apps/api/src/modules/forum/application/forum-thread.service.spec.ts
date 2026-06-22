@@ -7,7 +7,10 @@ const threadRow = (over: Partial<Record<string, unknown>> = {}) => ({
   id: "t1",
   zoneId: "z1",
   authorId: "author",
+  title: null,
   body: "merhaba",
+  status: "OPEN",
+  acceptedPostId: null,
   isPinned: false,
   deletedAt: null,
   deletedBy: null,
@@ -66,7 +69,12 @@ describe("ForumThreadService", () => {
     const zoneRepo = makeZoneRepo(ZoneType.CHAT, ZoneMemberStatus.ACTIVE);
     const view = await svc(zoneRepo).postThread(actor([UserRole.STUDENT]), "z1", { body: "hi" });
     expect(view.id).toBe("t1");
-    expect(threadRepo.createThread).toHaveBeenCalledWith({ zoneId: "z1", authorId: "u1", body: "hi" });
+    expect(threadRepo.createThread).toHaveBeenCalledWith({
+      zoneId: "z1",
+      authorId: "u1",
+      body: "hi",
+      title: null,
+    });
     expect(events.emit).toHaveBeenCalledWith("forum.thread.posted", expect.objectContaining({ threadId: "t1" }));
   });
 

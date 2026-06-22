@@ -35,11 +35,28 @@ export const zoneMembersQuerySchema = z.object({
 });
 export type ZoneMembersQuery = z.infer<typeof zoneMembersQuerySchema>;
 
-/** Post a feed item (CHAT message / ANNOUNCEMENT). Body only — flat feed, no title in MVP. */
+/**
+ * Post a thread. CHAT/ANNOUNCEMENT use body only; a QA question also carries a `title` (the
+ * service requires a non-empty title when the zone is QA and rejects it otherwise).
+ */
 export const createThreadSchema = z.object({
   body: z.string().trim().min(1).max(4000),
+  title: z.string().trim().min(5).max(200).optional(),
 });
 export type CreateThread = z.infer<typeof createThreadSchema>;
+
+/** Post an answer to a QA question. */
+export const createAnswerSchema = z.object({
+  body: z.string().trim().min(1).max(4000),
+});
+export type CreateAnswer = z.infer<typeof createAnswerSchema>;
+
+/** Full-text search over QA questions (title + body). Offset-paginated. */
+export const searchQuerySchema = paginationQuerySchema.extend({
+  q: z.string().trim().min(2).max(120),
+  zone: z.string().trim().max(80).optional(),
+});
+export type SearchQuery = z.infer<typeof searchQuerySchema>;
 
 /** Cursor feed query. `before` = ISO createdAt of the last seen item (load older). */
 export const feedQuerySchema = z.object({

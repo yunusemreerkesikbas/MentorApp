@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { IdentityModule } from "../identity/identity.module";
 import { PaymentsModule } from "../payments/payments.module";
 import { EconomyService } from "./application/economy.service";
+import { ForumEventsListener } from "./application/forum-events.listener";
 import { InviteService } from "./application/invite.service";
 import { InviteEventsListener } from "./application/invite-events.listener";
 import { QuestService } from "./application/quest.service";
@@ -28,6 +29,7 @@ import { EconomyController } from "./presentation/economy.controller";
     QuestService,
     QuestRepository,
     QuestEventsListener,
+    ForumEventsListener,
   ],
   exports: [EconomyService, InviteService, QuestService],
 })

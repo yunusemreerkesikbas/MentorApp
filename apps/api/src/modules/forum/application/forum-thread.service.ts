@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import { type ThreadFeed, type ThreadView, type ZoneRole } from "@mentor/types";
+import { type ThreadFeed, type ThreadView, ZoneRole, ZoneType } from "@mentor/types";
 import type { CreateThread, FeedQuery } from "@mentor/validation";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -64,7 +64,12 @@ export class ForumThreadService {
     if (!canPostInZone(forumActor, zone.type, memberStatus)) {
       throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
-    const row = await this.threads.createThread({ zoneId, authorId: actor.id, body: dto.body });
+    // A QA question needs a title; chat/announcement items must not carry one.
+    if (zone.type === ZoneType.QA && !dto.title?.trim()) {
+      throw new DomainError(ErrorCode.FORUM_QUESTION_TITLE_REQUIRED, HttpStatus.BAD_REQUEST);
+    }
+    const title = zone.type === ZoneType.QA ? dto.title : null;
+    const row = await this.threads.createThread({ zoneId, authorId: actor.id, body: dto.body, title });
     this.events.emit(ForumEventTopic.THREAD_POSTED, {
       zoneId,
       threadId: row.id,
@@ -143,7 +148,10 @@ export class ForumThreadService {
       id: t.id,
       zoneId: t.zoneId,
       authorId: t.authorId,
+      title: t.title,
       body: t.body,
+      status: t.status as ThreadView["status"],
+      acceptedPostId: t.acceptedPostId,
       isPinned: t.isPinned,
       reactionCounts,
       myReactions,

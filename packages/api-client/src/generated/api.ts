@@ -67,6 +67,8 @@ export interface PinThreadDto { [key: string]: unknown }
 
 export interface ReactionDto { [key: string]: unknown }
 
+export interface CreateAnswerDto { [key: string]: unknown }
+
 export interface PushSubscribeDto { [key: string]: unknown }
 
 export interface PushUnsubscribeDto { [key: string]: unknown }
@@ -3160,6 +3162,39 @@ export const forumThreadControllerRemove = async (threadId: string, options?: Re
 
 
 
+export type forumQaControllerQuestionResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumQaControllerQuestionResponseSuccess = (forumQaControllerQuestionResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumQaControllerQuestionResponse = (forumQaControllerQuestionResponseSuccess)
+
+export const getForumQaControllerQuestionUrl = (threadId: string,) => {
+
+
+  
+
+  return `/v1/forum/threads/${threadId}`
+}
+
+export const forumQaControllerQuestion = async (threadId: string, options?: RequestInit): Promise<forumQaControllerQuestionResponse> => {
+  
+  return http<forumQaControllerQuestionResponse>(getForumQaControllerQuestionUrl(threadId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
 export type forumThreadControllerReactResponse200 = {
   data: void
   status: 200
@@ -3225,6 +3260,175 @@ export const forumThreadControllerUnreact = async (threadId: string,
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       reactionDto,)
+  }
+);}
+
+
+
+export type forumQaControllerSearchResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumQaControllerSearchResponseSuccess = (forumQaControllerSearchResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumQaControllerSearchResponse = (forumQaControllerSearchResponseSuccess)
+
+export const getForumQaControllerSearchUrl = () => {
+
+
+  
+
+  return `/v1/forum/search`
+}
+
+export const forumQaControllerSearch = async ( options?: RequestInit): Promise<forumQaControllerSearchResponse> => {
+  
+  return http<forumQaControllerSearchResponse>(getForumQaControllerSearchUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type forumQaControllerAnswersResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumQaControllerAnswersResponseSuccess = (forumQaControllerAnswersResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumQaControllerAnswersResponse = (forumQaControllerAnswersResponseSuccess)
+
+export const getForumQaControllerAnswersUrl = (threadId: string,) => {
+
+
+  
+
+  return `/v1/forum/threads/${threadId}/answers`
+}
+
+export const forumQaControllerAnswers = async (threadId: string, options?: RequestInit): Promise<forumQaControllerAnswersResponse> => {
+  
+  return http<forumQaControllerAnswersResponse>(getForumQaControllerAnswersUrl(threadId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type forumQaControllerAnswerResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type forumQaControllerAnswerResponseSuccess = (forumQaControllerAnswerResponse201) & {
+  headers: Headers;
+};
+;
+
+export type forumQaControllerAnswerResponse = (forumQaControllerAnswerResponseSuccess)
+
+export const getForumQaControllerAnswerUrl = (threadId: string,) => {
+
+
+  
+
+  return `/v1/forum/threads/${threadId}/answers`
+}
+
+export const forumQaControllerAnswer = async (threadId: string,
+    createAnswerDto: CreateAnswerDto, options?: RequestInit): Promise<forumQaControllerAnswerResponse> => {
+  
+  return http<forumQaControllerAnswerResponse>(getForumQaControllerAnswerUrl(threadId),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createAnswerDto,)
+  }
+);}
+
+
+
+export type forumQaControllerAcceptResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type forumQaControllerAcceptResponseSuccess = (forumQaControllerAcceptResponse201) & {
+  headers: Headers;
+};
+;
+
+export type forumQaControllerAcceptResponse = (forumQaControllerAcceptResponseSuccess)
+
+export const getForumQaControllerAcceptUrl = (threadId: string,
+    postId: string,) => {
+
+
+  
+
+  return `/v1/forum/threads/${threadId}/accept/${postId}`
+}
+
+export const forumQaControllerAccept = async (threadId: string,
+    postId: string, options?: RequestInit): Promise<forumQaControllerAcceptResponse> => {
+  
+  return http<forumQaControllerAcceptResponse>(getForumQaControllerAcceptUrl(threadId,postId),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type forumQaControllerRemoveAnswerResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type forumQaControllerRemoveAnswerResponseSuccess = (forumQaControllerRemoveAnswerResponse204) & {
+  headers: Headers;
+};
+;
+
+export type forumQaControllerRemoveAnswerResponse = (forumQaControllerRemoveAnswerResponseSuccess)
+
+export const getForumQaControllerRemoveAnswerUrl = (postId: string,) => {
+
+
+  
+
+  return `/v1/forum/answers/${postId}`
+}
+
+export const forumQaControllerRemoveAnswer = async (postId: string, options?: RequestInit): Promise<forumQaControllerRemoveAnswerResponse> => {
+  
+  return http<forumQaControllerRemoveAnswerResponse>(getForumQaControllerRemoveAnswerUrl(postId),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
   }
 );}
 

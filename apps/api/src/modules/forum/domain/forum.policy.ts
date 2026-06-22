@@ -53,10 +53,16 @@ export function canPostInZone(
   memberStatus: string | null,
 ): boolean {
   if (zoneType === ZoneType.ANNOUNCEMENT) return canModerateZone(actor);
-  if (zoneType === ZoneType.CHAT) {
+  // CHAT messages + QA questions/answers: any ACTIVE member, or owner/mod/staff.
+  if (zoneType === ZoneType.CHAT || zoneType === ZoneType.QA) {
     return memberStatus === ZoneMemberStatus.ACTIVE || canModerateZone(actor);
   }
   return false;
+}
+
+/** Only the question's author may accept an answer (asker-only; no staff override in MVP). */
+export function canAcceptAnswer(actor: ForumActor, questionAuthorId: string): boolean {
+  return actor.userId === questionAuthorId;
 }
 
 /** Delete a thread: its author, or a zone owner/mod / platform staff (moderation). */

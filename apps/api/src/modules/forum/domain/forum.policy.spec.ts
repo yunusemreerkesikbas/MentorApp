@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { UserRole, ZoneMemberStatus, ZoneRole, ZoneType } from "@mentor/types";
 import {
+  canAcceptAnswer,
   canApproveMember,
   canCreateZone,
   canDeleteThread,
@@ -59,6 +60,24 @@ describe("forum.policy", () => {
       expect(
         canPostInZone(actor([UserRole.MODERATOR], null), ZoneType.ANNOUNCEMENT, null),
       ).toBe(true);
+    });
+  });
+
+  describe("canPostInZone — QA", () => {
+    it("QA needs an ACTIVE member (or staff), like CHAT", () => {
+      const member = actor([UserRole.STUDENT], ZoneRole.MEMBER);
+      expect(canPostInZone(member, ZoneType.QA, ZoneMemberStatus.ACTIVE)).toBe(true);
+      expect(canPostInZone(member, ZoneType.QA, ZoneMemberStatus.PENDING)).toBe(false);
+      expect(canPostInZone(member, ZoneType.QA, null)).toBe(false);
+      expect(canPostInZone(actor([UserRole.ADMIN], null), ZoneType.QA, null)).toBe(true);
+    });
+  });
+
+  describe("canAcceptAnswer", () => {
+    it("only the question author may accept (no staff override)", () => {
+      expect(canAcceptAnswer(actor([UserRole.STUDENT]), "u1")).toBe(true); // actor.userId === "u1"
+      expect(canAcceptAnswer(actor([UserRole.STUDENT]), "someoneElse")).toBe(false);
+      expect(canAcceptAnswer(actor([UserRole.ADMIN]), "someoneElse")).toBe(false);
     });
   });
 

@@ -68,12 +68,27 @@ export interface ZoneMemberView {
 export const FORUM_REACTION_EMOJIS = ["👍", "❤️", "💪", "🎉", "😮"] as const;
 export type ForumReactionEmoji = (typeof FORUM_REACTION_EMOJIS)[number];
 
-/** GET /v1/forum/zones/:id/threads — one feed item (CHAT message / ANNOUNCEMENT broadcast). */
+/** Thread status — meaningful only for QA questions (chat/announcement stay OPEN). */
+export const ThreadStatus = {
+  OPEN: "OPEN",
+  ANSWERED: "ANSWERED",
+} as const;
+export type ThreadStatus = (typeof ThreadStatus)[keyof typeof ThreadStatus];
+
+/**
+ * A thread — a CHAT message / ANNOUNCEMENT broadcast, or a QA question. For non-QA items
+ * `title`/`acceptedPostId` are null and `status` is always OPEN.
+ */
 export interface ThreadView {
   id: string;
   zoneId: string;
   authorId: string;
+  /** QA question headline; null for chat/announcement. */
+  title: string | null;
   body: string;
+  status: ThreadStatus;
+  /** Accepted answer's post id (QA only); null otherwise. */
+  acceptedPostId: string | null;
   isPinned: boolean;
   /** emoji → count over all users. */
   reactionCounts: Record<string, number>;
@@ -86,4 +101,20 @@ export interface ThreadView {
 export interface ThreadFeed {
   items: ThreadView[];
   nextCursor: string | null;
+}
+
+/** A QA answer (forum_posts row). */
+export interface AnswerView {
+  id: string;
+  threadId: string;
+  authorId: string;
+  body: string;
+  isAccepted: boolean;
+  createdAt: string;
+}
+
+/** GET /v1/forum/threads/:id — a QA question with its answers (accepted first). */
+export interface QuestionDetail {
+  question: ThreadView;
+  answers: AnswerView[];
 }

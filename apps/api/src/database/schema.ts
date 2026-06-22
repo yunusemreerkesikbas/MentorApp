@@ -946,7 +946,13 @@ export const forumThreads = pgTable(
     authorId: uuid("author_id")
       .notNull()
       .references(() => users.id),
+    /** QA question headline (slice 3). Null for chat/announcement. */
+    title: text("title"),
     body: text("body").notNull(),
+    /** ThreadStatus: OPEN | ANSWERED (QA only; chat/announcement stay OPEN). */
+    status: text("status").notNull().default("OPEN"),
+    /** Accepted answer's forum_posts.id (QA). No FK: avoids circular threads↔posts FK — app-enforced. */
+    acceptedPostId: uuid("accepted_post_id"),
     isPinned: boolean("is_pinned").notNull().default(false),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     deletedBy: uuid("deleted_by").references(() => users.id),
@@ -957,6 +963,30 @@ export const forumThreads = pgTable(
     index("forum_threads_zone_created_idx").on(t.zoneId, t.createdAt),
     index("forum_threads_zone_pinned_idx").on(t.zoneId).where(sql`${t.isPinned}`),
   ],
+);
+
+/* Slice 3 — QA answers. Question = a `forum_threads` row in a QA zone; answers live here.
+ * Soft-delete mirrors threads; `is_accepted` set when the asker accepts (one-shot). */
+export const forumPosts = pgTable(
+  "forum_posts",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    threadId: uuid("thread_id")
+      .notNull()
+      .references(() => forumThreads.id),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    body: text("body").notNull(),
+    isAccepted: boolean("is_accepted").notNull().default(false),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("forum_posts_thread_created_idx").on(t.threadId, t.createdAt)],
 );
 
 /** One reaction per (thread, user, emoji). Emoji constrained to FORUM_REACTION_EMOJIS in app. */

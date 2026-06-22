@@ -1,11 +1,13 @@
 import {
   approveMemberSchema,
   assignOwnerSchema,
+  createAnswerSchema,
   createThreadSchema,
   createZoneSchema,
   feedQuerySchema,
   pinThreadSchema,
   reactionSchema,
+  searchQuerySchema,
   zoneListQuerySchema,
   zoneMembersQuerySchema,
 } from "@mentor/validation";
@@ -20,3 +22,5 @@ export class CreateThreadDto extends createZodDto(createThreadSchema) {}
 export class FeedQueryDto extends createZodDto(feedQuerySchema) {}
 export class ReactionDto extends createZodDto(reactionSchema) {}
 export class PinThreadDto extends createZodDto(pinThreadSchema) {}
+export class CreateAnswerDto extends createZodDto(createAnswerSchema) {}
+export class SearchQueryDto extends createZodDto(searchQuerySchema) {}

@@ -1,9 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, inArray, isNull, lt, sql } from "drizzle-orm";
+import { ZoneType } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { forumReactions, forumThreads } from "../../../database/schema";
+import { forumReactions, forumThreads, forumZones } from "../../../database/schema";
 
 export type ThreadRow = typeof forumThreads.$inferSelect;
 
@@ -16,11 +17,21 @@ export type ThreadRow = typeof forumThreads.$inferSelect;
 export class ForumThreadRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
-  async createThread(input: { zoneId: string; authorId: string; body: string }): Promise<ThreadRow> {
+  async createThread(input: {
+    zoneId: string;
+    authorId: string;
+    body: string;
+    title?: string | null;
+  }): Promise<ThreadRow> {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx
         .insert(forumThreads)
-        .values({ zoneId: input.zoneId, authorId: input.authorId, body: input.body })
+        .values({
+          zoneId: input.zoneId,
+          authorId: input.authorId,
+          body: input.body,
+          title: input.title ?? null,
+        })
         .returning();
       return rows[0]!;
     });
@@ -76,6 +87,50 @@ export class ForumThreadRepository {
         .update(forumThreads)
         .set({ deletedAt: new Date(), deletedBy: byUserId, updatedAt: new Date() })
         .where(eq(forumThreads.id, threadId));
+    });
+  }
+
+  /** QA: mark the accepted answer + close the question (slice 3). */
+  async setQaAccepted(threadId: string, postId: string): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await tx
+        .update(forumThreads)
+        .set({ acceptedPostId: postId, status: "ANSWERED", updatedAt: new Date() })
+        .where(eq(forumThreads.id, threadId));
+    });
+  }
+
+  /**
+   * Full-text search over QA questions (title + body) via the expression GIN index. User-context →
+   * RLS limits to visible (PUBLIC, non-archived) QA zones + non-deleted threads. Ranked by relevance.
+   */
+  async searchQuestions(
+    viewerId: string,
+    opts: { q: string; zoneSlug?: string; page: number; pageSize: number },
+  ): Promise<{ items: ThreadRow[]; total: number }> {
+    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+      const match = sql`to_tsvector('turkish', coalesce(${forumThreads.title}, '') || ' ' || ${forumThreads.body}) @@ websearch_to_tsquery('turkish', ${opts.q})`;
+      const conds = [eq(forumZones.type, ZoneType.QA), isNull(forumThreads.deletedAt), match];
+      if (opts.zoneSlug) conds.push(eq(forumZones.slug, opts.zoneSlug));
+      const where = and(...conds);
+      const items = await tx
+        .select(getTableColumns(forumThreads))
+        .from(forumThreads)
+        .innerJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
+        .where(where)
+        .orderBy(
+          desc(
+            sql`ts_rank(to_tsvector('turkish', coalesce(${forumThreads.title}, '') || ' ' || ${forumThreads.body}), websearch_to_tsquery('turkish', ${opts.q}))`,
+          ),
+        )
+        .limit(opts.pageSize)
+        .offset((opts.page - 1) * opts.pageSize);
+      const countRows = await tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(forumThreads)
+        .innerJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
+        .where(where);
+      return { items, total: countRows[0]?.count ?? 0 };
     });
   }
 

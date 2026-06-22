@@ -306,4 +306,103 @@ describe("forum zones (e2e)", () => {
       .set(asUser());
     expect(feed.body.items.map((t: { id: string }) => t.id)).not.toContain(threadId);
   });
+
+  // ---- Slice 3: Q&A (questions, answers, accept→XP, search) ----
+
+  const setConfig = (key: string, value: unknown) =>
+    request(app.getHttpServer())
+      .patch(`/v1/admin/config/${key}`)
+      .set(asAdmin())
+      .send({ value });
+
+  it("QA: ask → answer → accept grants XP, re-accept 409, search + delete", async () => {
+    await setForumEnabled(true);
+    await setConfig("economy.enabled", true);
+
+    const zoneId = await createZone(ZoneType.QA, "KPSS Soru-Cevap");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+
+    // One fresh user serves as both the non-member (before joining) and the answerer (after),
+    // keeping the suite under the signup @Throttle(5/min).
+    const answerer = await signup("qa-answerer");
+    const answererAuth = { Authorization: `Bearer ${answerer.accessToken}` };
+
+    // Ask (member, QA zone requires a title). Distinctive token → searchable.
+    const tag = `bursluluk${RUN}`;
+    const asked = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ title: `${tag} memuriyet farkı nedir`, body: "4/A ve 4/B ayrımı" });
+    expect(asked.status).toBe(201);
+    expect(asked.body.title).toContain(tag);
+    const threadId = asked.body.id as string;
+
+    // A non-member cannot answer (the answerer has not joined yet).
+    const nonMember = await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${threadId}/answers`)
+      .set(answererAuth)
+      .send({ body: "yetkisiz cevap" });
+    expect(nonMember.status).toBe(403);
+
+    // Join, then answer.
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(answererAuth);
+    const ans = await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${threadId}/answers`)
+      .set(answererAuth)
+      .send({ body: "4/B sözleşmeli, 4/A kadrolu." });
+    expect(ans.status).toBe(201);
+    const postId = ans.body.id as string;
+
+    // Only the asker may accept — the answerer cannot.
+    const wrongAccept = await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${threadId}/accept/${postId}`)
+      .set(answererAuth);
+    expect(wrongAccept.status).toBe(403);
+
+    // Asker accepts → answerer earns XP (granted synchronously via emitAsync).
+    const accepted = await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${threadId}/accept/${postId}`)
+      .set(asUser());
+    expect(accepted.status).toBe(201);
+
+    const balance = await request(app.getHttpServer()).get("/v1/economy/balance").set(answererAuth);
+    expect(balance.status).toBe(200);
+    expect(balance.body.xp).toBeGreaterThanOrEqual(25);
+
+    // One-shot: a second accept is rejected.
+    const reAccept = await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${threadId}/accept/${postId}`)
+      .set(asUser());
+    expect(reAccept.status).toBe(409);
+
+    // Question detail reflects the accepted answer + ANSWERED status.
+    const detail = await request(app.getHttpServer())
+      .get(`/v1/forum/threads/${threadId}`)
+      .set(asUser());
+    expect(detail.body.question.status).toBe("ANSWERED");
+    expect(detail.body.answers.find((a: { id: string }) => a.id === postId).isAccepted).toBe(true);
+
+    // Full-text search finds the question by its distinctive token.
+    const found = await request(app.getHttpServer())
+      .get(`/v1/forum/search?q=${tag}`)
+      .set(asUser());
+    expect(found.status).toBe(200);
+    expect(found.body.items.map((t: { id: string }) => t.id)).toContain(threadId);
+
+    // A non-matching query does not.
+    const empty = await request(app.getHttpServer())
+      .get(`/v1/forum/search?q=zzzqxnotthere${RUN}`)
+      .set(asUser());
+    expect(empty.body.items.map((t: { id: string }) => t.id)).not.toContain(threadId);
+
+    // Author soft-deletes their answer → drops from the answer list.
+    await request(app.getHttpServer())
+      .delete(`/v1/forum/answers/${postId}`)
+      .set(answererAuth)
+      .expect(204);
+    const answersAfter = await request(app.getHttpServer())
+      .get(`/v1/forum/threads/${threadId}/answers`)
+      .set(asUser());
+    expect(answersAfter.body.map((a: { id: string }) => a.id)).not.toContain(postId);
+  });
 });
