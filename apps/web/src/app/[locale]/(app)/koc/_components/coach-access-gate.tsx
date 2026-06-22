@@ -88,14 +88,7 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
             </Button>
             {isInsufficientCoin ||
             access.reason === "PAYMENT_PREMIUM_REQUIRED" ? (
-              <Button
-                className="!bg-transparent !text-[var(--color-main)]"
-                style={{
-                  boxShadow: "none",
-                  border: "1px solid var(--color-border, #ccc)",
-                }}
-                onClick={() => router.push("/profil")}
-              >
+              <Button variant="secondary" onClick={() => router.push("/profil")}>
                 {t("go_profile")}
               </Button>
             ) : null}

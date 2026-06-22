@@ -1581,6 +1581,25 @@
         ]
       }
     },
+    "/v1/coach/vision-note": {
+      "post": {
+        "operationId": "AiVisionController_note",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/coach/photo-access": {
       "get": {
         "operationId": "AiPhotoController_getPhotoAccess",
@@ -1755,6 +1774,52 @@
       "get": {
         "operationId": "CoachingController_listMood",
         "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/vision": {
+      "get": {
+        "operationId": "CoachingController_getVision",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      },
+      "post": {
+        "operationId": "CoachingController_upsertVision",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertVisionDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -2222,6 +2287,10 @@
         "properties": {}
       },
       "CreateMoodCheckinDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpsertVisionDto": {
         "type": "object",
         "properties": {}
       },

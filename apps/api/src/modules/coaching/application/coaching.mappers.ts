@@ -8,12 +8,14 @@ import type {
   SessionPresetId,
   StudySessionDto,
   StudySessionStatus,
+  VisionDto,
 } from "@mentor/types";
 import type { MockExamSubjectRow } from "../infrastructure/mock-exam.repository";
 import type { MockExamRow } from "../infrastructure/mock-exam.repository";
 import type { MoodCheckinRow } from "../infrastructure/mood-checkin.repository";
 import type { PlanTaskRow } from "../infrastructure/plan-task.repository";
 import type { StudySessionRow } from "../infrastructure/study-session.repository";
+import type { VisionBoardRow } from "../infrastructure/vision-board.repository";
 
 export function toPlanTaskDto(row: PlanTaskRow): PlanTaskDto {
   return {
@@ -52,6 +54,18 @@ export function toMoodCheckinDto(
     message,
     struggleNote: row.struggleNote,
     aiReflection: row.aiReflection,
+  };
+}
+
+/** Vision board row → DTO. No rule-based message; `aiNote` is the premium AI line (null for free). */
+export function toVisionDto(row: VisionBoardRow): VisionDto {
+  return {
+    goalTitle: row.goalTitle,
+    targetCity: row.targetCity,
+    motivation: row.motivation,
+    aiNote: row.aiNote,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 

@@ -178,3 +178,17 @@ export interface TodayPanelResponse {
   /** Today's mood check-in if the user already checked in, else `null`. */
   mood: MoodCheckinDto | null;
 }
+
+/**
+ * Vision/goal board ("hayal/hedef panosu") — one text-based goal anchor per user. `null` when the
+ * user hasn't set a goal yet. `aiNote` is the cached premium AI motivation line (premium-only;
+ * null for free / not yet generated).
+ */
+export interface VisionDto {
+  goalTitle: string;
+  targetCity: string | null;
+  motivation: string | null;
+  aiNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

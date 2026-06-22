@@ -12,6 +12,7 @@ import { ChatService } from "./application/chat.service";
 import { CoachAccessService } from "./application/coach-access.service";
 import { MoodReflectionService } from "./application/mood-reflection.service";
 import { GhostNarrationService } from "./application/ghost-narration.service";
+import { VisionNoteService } from "./application/vision-note.service";
 import { PhotoAccessService } from "./application/photo-access.service";
 import { PhotoCategorizeService } from "./application/photo-categorize.service";
 import { PhotoUploadService } from "./application/photo-upload.service";
@@ -28,6 +29,7 @@ import { GeminiVisionAdapter } from "./infrastructure/adapters/gemini-vision.ada
 import { AiChatController } from "./presentation/ai-chat.controller";
 import { AiMoodController } from "./presentation/ai-mood.controller";
 import { AiGhostController } from "./presentation/ai-ghost.controller";
+import { AiVisionController } from "./presentation/ai-vision.controller";
 import { AiMockExamPhotoController } from "./presentation/ai-mock-exam-photo.controller";
 import { AiPhotoController } from "./presentation/ai-photo.controller";
 import { AdminEmbeddingController } from "./presentation/admin-embedding.controller";
@@ -41,6 +43,7 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     AiChatController,
     AiMoodController,
     AiGhostController,
+    AiVisionController,
     AiPhotoController,
     AiMockExamPhotoController,
     AdminEmbeddingController,
@@ -50,6 +53,7 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     CoachAccessService,
     MoodReflectionService,
     GhostNarrationService,
+    VisionNoteService,
     PhotoAccessService,
     PhotoCategorizeService,
     PhotoUploadService,

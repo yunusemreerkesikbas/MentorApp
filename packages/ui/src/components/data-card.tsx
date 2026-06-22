@@ -6,6 +6,8 @@ export interface DataCardSource {
   label: string;
   /** Optional source link (opens in a new tab). */
   url?: string;
+  /** Pre-localized prefix, e.g. "Kaynak:" / "Source:" (i18n lives in the app). */
+  prefix?: string;
 }
 
 export interface DataCardProps {
@@ -65,7 +67,7 @@ export function DataCard({
           {children}
           {source ? (
             <p className="mt-2 text-xs" style={{ color: "var(--color-secondary)" }}>
-              Kaynak:{" "}
+              {source.prefix ? `${source.prefix} ` : null}
               {source.url ? (
                 <a
                   href={source.url}

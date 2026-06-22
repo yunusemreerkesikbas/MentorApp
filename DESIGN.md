@@ -55,6 +55,17 @@ Base canvas: **375 px** wide. Content column **335 px** → **20 px** side gutte
 
 > Note: there is **no single saturated "primary brand" color**. Emphasis comes from **black/#111** (buttons, active states) plus **soft pastel accents**. Earlier assumptions of a violet primary were incorrect.
 
+### 2.4 Semantic state tokens
+
+Nuton has no error/focus colors; these complete the product state vocabulary (forms, validation, keyboard focus). Calm, not alarming (anti-shaming tone). Defined in `@mentor/ui` `theme.css`.
+
+| Token | Hex | Usage |
+|---|---|---|
+| `danger` | `#b42318` | Error/destructive text + field borders (`FormError`, `TextField error`). Deep red, **≥4.5:1 on white** (accessible body text). |
+| `focus-ring` | `#1d6fbf` | Keyboard focus ring (`focus-visible:ring-2`) on buttons/fields/toggles. Darkened accent, **≥3:1** for UI indicators. |
+
+> Errors use `danger` — **not** `like-active` (#ff2dab is the wishlist/like pink, not a state color).
+
 ---
 
 ## 3. Typography

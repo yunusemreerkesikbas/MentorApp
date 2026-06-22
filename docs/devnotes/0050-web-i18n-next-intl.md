@@ -18,19 +18,37 @@
 
 - **`[locale]/layout.tsx`** — geçersiz segment reddi: `!routing.locales.includes(locale)` → `notFound()`.
   `hasLocale` next-intl v3.26'da public export **değil** (v4'te geldi), manuel kontrol kullanıldı.
-- **`src/app/layout.tsx`** — root layout `<html lang>` için `getLocale()` çağırıyor; bu `[locale]` segmenti
-  dışında (global `/_not-found` statik prerender'ı) throw eder → `try/catch` ile `routing.defaultLocale`'e düşülür.
-  Bu olmadan `next build`, `/_not-found` için "Couldn't find next-intl config file" ile patlıyordu.
-- **Render modu: tümü dynamic (ƒ).** Statik render bilinçli olarak açılmadı: next-intl v3'te statik prerender her
-  page'de `setRequestLocale(locale)` ister; bu ayrı/incremental bir iş (her sayfaya tek tek eklenmeli). O zamana
-  kadar `generateStaticParams`/`setRequestLocale` eklemeyin — aksi halde build prerender hatası verir.
+### Statik render (ON — v4 olmadan)
+
+Statik render / ISR **açık**; v4 gerekmedi. İki parça gerekti:
+
+1. **Turbopack alias.** next-intl 3.26 plugin'i Turbopack config alias'ını (`next-intl/config`) **`experimental.turbo`**
+   key'ine yazıyor; Next 16 bu key'i okumuyor (`turbopack` oldu) → statik export "Couldn't find next-intl config file"
+   verir. Çözüm: `next.config.ts`'te alias'ı doğru key'de elle ver:
+   ```ts
+   turbopack: { resolveAlias: { "next-intl/config": "./src/i18n/request.ts" } }
+   ```
+   (Plugin eski key'i de set ettiği için "Unrecognized key 'turbo'" uyarısı kalır — zararsız, v4'te gider.)
+2. **`<html>`'i `[locale]/layout.tsx` sahiplenir.** Eskiden root `app/layout.tsx` `<html lang>` için `await getLocale()`
+   çağırıyordu; bu `[locale]` dışında `setRequestLocale`'siz çalıştığı için **tüm ağacı dinamiğe zorluyordu** (sayfalar
+   prerender edilse bile `ƒ`). `app/layout.tsx` **kaldırıldı**; `<html>`/`<body>` + fontlar + `globals.css` artık
+   `[locale]/layout.tsx`'te (`locale` awaited param'dan — dinamik okuma yok). Global `/_not-found` ayrı root'a gerek
+   kalmadan statik (`○`) üretiliyor.
+
+Bunlarla `setRequestLocale(locale)` **her server page/layout'ta** çağrılır:
+- `(app)` layout **client** → her `(app)` page'i (panel, profil, … 9 sayfa) awaited `params`'tan locale alır.
+- `(auth)` layout **server** → tek noktada 5 auth (client) sayfasını kapsar.
+- landing (`●`/ISR `revalidate=3600`) + `bilgi/[slug]` (on-demand ISR, `ƒ`). `fetchInfoArticlesByFamily` server'da
+  `{ revalidate }`, client'ta (`bilgi-shell`) `no-store`.
+- **Yeni `[locale]` server page/layout eklerken `setRequestLocale(locale)` çağır** — yoksa o sayfa `ƒ`'ye düşer.
 
 ### Directory restructure
 
 Tüm `src/app/` içeriği `src/app/[locale]/` altına taşındı:
 ```
-src/app/layout.tsx          → minimal root (font injection + getLocale → lang attr)
-src/app/[locale]/layout.tsx → NextIntlClientProvider + AuthProvider + BackgroundBlobs
+src/app/[locale]/layout.tsx → root document: <html lang>/<body> + fontlar + globals +
+                              NextIntlClientProvider + AuthProvider + BackgroundBlobs
+                              (ayrı src/app/layout.tsx YOK — bkz. Statik render)
 src/app/[locale]/(app)/     → kimlik doğrulamalı rotalar
 src/app/[locale]/(auth)/    → auth rotaları
 src/app/[locale]/_components/ → landing bileşenleri
@@ -81,7 +99,7 @@ const t = await getTranslations("panel");
 - `messages/` dizini `apps/web/` root'unda (src/ içinde değil)
 - `@/i18n/navigation`'dan `Link` import edilmeli — `next/link` değil
 - `useSearchParams` hâlâ `next/navigation`'dan (next-intl override etmiyor)
-- `[locale]/layout.tsx` `<html>`/`<body>` render etmiyor — bunlar root layout'ta; `lang` attribute root layout'ta `getLocale()` ile set ediliyor
+- `[locale]/layout.tsx` `<html lang={locale}>`/`<body>`'yi sahiplenir (awaited `params`'tan); ayrı `src/app/layout.tsx` yok
 - Yeni string eklenmesi gerekirse hem `messages/tr.json` hem `messages/en.json` güncellenmeli
 - Backend zaten TR/EN locale desteğine sahip; frontend `Accept-Language` header gönderdiği için mesajlar otomatik locale'de geliyor
 

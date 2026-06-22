@@ -43,6 +43,8 @@ export interface CategorizePhotoDto { [key: string]: unknown }
 
 export interface CreateMoodCheckinDto { [key: string]: unknown }
 
+export interface UpsertVisionDto { [key: string]: unknown }
+
 export interface CreatePlanTaskDto { [key: string]: unknown }
 
 export interface UpdatePlanTaskDto { [key: string]: unknown }
@@ -2100,6 +2102,39 @@ export const aiGhostControllerNarrate = async ( options?: RequestInit): Promise<
 
 
 
+export type aiVisionControllerNoteResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type aiVisionControllerNoteResponseSuccess = (aiVisionControllerNoteResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiVisionControllerNoteResponse = (aiVisionControllerNoteResponseSuccess)
+
+export const getAiVisionControllerNoteUrl = () => {
+
+
+  
+
+  return `/v1/coach/vision-note`
+}
+
+export const aiVisionControllerNote = async ( options?: RequestInit): Promise<aiVisionControllerNoteResponse> => {
+  
+  return http<aiVisionControllerNoteResponse>(getAiVisionControllerNoteUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
 export type aiPhotoControllerGetPhotoAccessResponse200 = {
   data: void
   status: 200
@@ -2363,6 +2398,73 @@ export const coachingControllerListMood = async ( options?: RequestInit): Promis
     method: 'GET'
     
     
+  }
+);}
+
+
+
+export type coachingControllerGetVisionResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type coachingControllerGetVisionResponseSuccess = (coachingControllerGetVisionResponse200) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerGetVisionResponse = (coachingControllerGetVisionResponseSuccess)
+
+export const getCoachingControllerGetVisionUrl = () => {
+
+
+  
+
+  return `/v1/coaching/vision`
+}
+
+export const coachingControllerGetVision = async ( options?: RequestInit): Promise<coachingControllerGetVisionResponse> => {
+  
+  return http<coachingControllerGetVisionResponse>(getCoachingControllerGetVisionUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type coachingControllerUpsertVisionResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type coachingControllerUpsertVisionResponseSuccess = (coachingControllerUpsertVisionResponse200) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerUpsertVisionResponse = (coachingControllerUpsertVisionResponseSuccess)
+
+export const getCoachingControllerUpsertVisionUrl = () => {
+
+
+  
+
+  return `/v1/coaching/vision`
+}
+
+export const coachingControllerUpsertVision = async (upsertVisionDto: UpsertVisionDto, options?: RequestInit): Promise<coachingControllerUpsertVisionResponse> => {
+  
+  return http<coachingControllerUpsertVisionResponse>(getCoachingControllerUpsertVisionUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      upsertVisionDto,)
   }
 );}
 

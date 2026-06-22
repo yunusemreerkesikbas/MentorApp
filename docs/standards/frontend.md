@@ -47,8 +47,11 @@
   `next/link` or `next/navigation` for in-app links (those drop the locale prefix). `useSearchParams` + `notFound`
   stay on `next/navigation`.
 - [ ] **Locale-aware formatting:** dates/numbers via the active `locale` (`useLocale()` / `getLocale()`), not a hardcoded `"tr-TR"`.
-- [ ] Pages render **dynamically** (no `setRequestLocale`/`generateStaticParams` yet — enabling static rendering
-  requires `setRequestLocale` in *every* page, tracked as follow-up). Unknown locale segments → `notFound()`.
+- [ ] **Static rendering on** (pages `●`/ISR). Every server page/layout calls `setRequestLocale(locale)` (from awaited
+  `params`); `[locale]/layout.tsx` owns `<html>`/`<body>` + has `generateStaticParams`. Client `(app)` pages → call it
+  in the page; `(auth)` → in the layout. Public pages (landing, `bilgi/[slug]`) use ISR (`export const revalidate = 3600`).
+  Unknown locale → `notFound()`. Turbopack needs `turbopack.resolveAlias` for `next-intl/config` in `next.config.ts`
+  (next-intl 3.x writes it to the wrong key) — see [devnote 0050](../devnotes/0050-web-i18n-next-intl.md).
 
 ## Don't
 - ❌ off-DESIGN magic numbers/colors · ❌ needless client components · ❌ barrel imports · ❌ derived state in

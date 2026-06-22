@@ -1,8 +1,14 @@
 import { Suspense } from "react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { CheckoutResultContent } from "./_components/checkout-result-content";
 
-export default async function CheckoutResultPage() {
+export default async function CheckoutResultPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
   const translate = await getTranslations("common");
   return (
     <Suspense

@@ -34,6 +34,7 @@ type LoadState =
 /** Bilgi Merkezi — exam-day data card + editorial article list (guardrail #1). */
 export function BilgiShell() {
   const t = useTranslations("knowledge");
+  const ui = useTranslations("common");
   const locale = useLocale();
   const reduceMotion = useReducedMotion();
   const [state, setState] = useState<LoadState>({ status: "loading" });
@@ -217,6 +218,7 @@ export function BilgiShell() {
                   ? {
                       label: examDateEvent.source,
                       url: examDateEvent.sourceUrl,
+                      prefix: ui("source_prefix"),
                     }
                   : undefined
               }
