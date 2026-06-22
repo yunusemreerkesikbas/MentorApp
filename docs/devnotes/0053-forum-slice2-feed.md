@@ -51,8 +51,12 @@ DELETE /v1/forum/threads/:threadId/reactions    { "emoji": "👍" } # → 204
   wire `forum.post.rate_per_min` once abuse data warrants. No per-message Turnstile (a captcha can't
   be solved per message); rate-limit is the control.
 - `forum_reactions` has **no `updated_at`** → no `set_updated_at` trigger (only `forum_threads` gets one).
-- Pinned ordering: feed sorts `is_pinned desc, created_at desc`; the `before` cursor filters purely on
-  `created_at`, so pinned items show on the first (no-cursor) page.
+- Pinned ordering: feed sorts `is_pinned desc, created_at desc`. Cursor pages (`before` present)
+  **exclude pinned** so an old pinned thread doesn't re-float onto every page; pinned items therefore
+  appear only on the first (no-cursor) page (`ponytail:` assumes #pins ≤ limit).
+- Zone-visibility belt: pin/remove/react fetch the thread directly, so `requireThread` also re-fetches
+  the parent zone (RLS-gated to PUBLIC/non-archived) — without it the visibility guard that
+  postThread/listFeed get for free would be bypassed once PRIVATE zones land.
 
 ## Tests
 

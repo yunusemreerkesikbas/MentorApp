@@ -34,7 +34,13 @@ export class ForumThreadRepository {
   ): Promise<ThreadRow[]> {
     return withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const conds = [eq(forumThreads.zoneId, zoneId), isNull(forumThreads.deletedAt)];
-      if (opts.before) conds.push(lt(forumThreads.createdAt, new Date(opts.before)));
+      if (opts.before) {
+        // Pinned items live on the first (no-cursor) page only; excluding them on cursor pages
+        // prevents an old pinned thread from re-floating to the top of every subsequent page.
+        // ponytail: assumes #pins <= limit (pins are few); revisit if a zone needs many pins.
+        conds.push(lt(forumThreads.createdAt, new Date(opts.before)));
+        conds.push(eq(forumThreads.isPinned, false));
+      }
       return tx
         .select()
         .from(forumThreads)

@@ -126,6 +126,11 @@ export class ForumThreadService {
   private async requireThread(threadId: string, viewerId: string): Promise<ThreadRow> {
     const thread = await this.threads.findById(threadId, viewerId);
     if (!thread) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
+    // Zone-visibility belt: the parent zone must be visible to the viewer (RLS-gated to PUBLIC,
+    // non-archived). pin/remove/react fetch the thread directly, so without this the visibility
+    // guard that postThread/listFeed get for free would be bypassed once PRIVATE zones land.
+    const zone = await this.zones.findById(thread.zoneId, viewerId);
+    if (!zone) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
     return thread;
   }
 

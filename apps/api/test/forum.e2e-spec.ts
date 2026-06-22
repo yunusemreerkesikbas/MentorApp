@@ -252,6 +252,41 @@ describe("forum zones (e2e)", () => {
     expect(feed.body.items[0].isPinned).toBe(true);
   });
 
+  it("a pinned thread is not duplicated onto cursor pages", async () => {
+    const zoneId = await createZone(ZoneType.CHAT, "Sayfalama Odası");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+    const oldest = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "en eski" });
+    await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "orta" });
+    await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "en yeni" });
+    await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${oldest.body.id}/pin`)
+      .set(asAdmin())
+      .send({ pinned: true })
+      .expect(201);
+
+    // Page 1 (limit 2): pinned-oldest floats to top.
+    const page1 = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/threads?limit=2`)
+      .set(asUser());
+    expect(page1.body.items[0].id).toBe(oldest.body.id);
+    expect(page1.body.nextCursor).toBeTruthy();
+
+    // Page 2: the pinned thread must NOT reappear.
+    const page2 = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/threads?limit=2&before=${encodeURIComponent(page1.body.nextCursor)}`)
+      .set(asUser());
+    expect(page2.body.items.map((t: { id: string }) => t.id)).not.toContain(oldest.body.id);
+  });
+
   it("author soft-delete removes the item from the feed", async () => {
     const zoneId = await createZone(ZoneType.CHAT, "Silme Odası");
     await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
