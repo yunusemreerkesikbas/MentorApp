@@ -55,6 +55,18 @@ export interface UpdateStudySessionDto { [key: string]: unknown }
 
 export interface CreateMockExamDto { [key: string]: unknown }
 
+export interface CreateZoneDto { [key: string]: unknown }
+
+export interface AssignOwnerDto { [key: string]: unknown }
+
+export interface ApproveMemberDto { [key: string]: unknown }
+
+export interface CreateThreadDto { [key: string]: unknown }
+
+export interface PinThreadDto { [key: string]: unknown }
+
+export interface ReactionDto { [key: string]: unknown }
+
 export interface PushSubscribeDto { [key: string]: unknown }
 
 export interface PushUnsubscribeDto { [key: string]: unknown }
@@ -2769,6 +2781,450 @@ export const mockExamControllerGetById = async (id: string, options?: RequestIni
     method: 'GET'
     
     
+  }
+);}
+
+
+
+export type forumControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumControllerListResponseSuccess = (forumControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumControllerListResponse = (forumControllerListResponseSuccess)
+
+export const getForumControllerListUrl = () => {
+
+
+  
+
+  return `/v1/forum/zones`
+}
+
+export const forumControllerList = async ( options?: RequestInit): Promise<forumControllerListResponse> => {
+  
+  return http<forumControllerListResponse>(getForumControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type forumControllerCreateResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type forumControllerCreateResponseSuccess = (forumControllerCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type forumControllerCreateResponse = (forumControllerCreateResponseSuccess)
+
+export const getForumControllerCreateUrl = () => {
+
+
+  
+
+  return `/v1/forum/zones`
+}
+
+export const forumControllerCreate = async (createZoneDto: CreateZoneDto, options?: RequestInit): Promise<forumControllerCreateResponse> => {
+  
+  return http<forumControllerCreateResponse>(getForumControllerCreateUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createZoneDto,)
+  }
+);}
+
+
+
+export type forumControllerGetResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumControllerGetResponseSuccess = (forumControllerGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumControllerGetResponse = (forumControllerGetResponseSuccess)
+
+export const getForumControllerGetUrl = (slug: string,) => {
+
+
+  
+
+  return `/v1/forum/zones/${slug}`
+}
+
+export const forumControllerGet = async (slug: string, options?: RequestInit): Promise<forumControllerGetResponse> => {
+  
+  return http<forumControllerGetResponse>(getForumControllerGetUrl(slug),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type forumControllerAssignOwnerResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type forumControllerAssignOwnerResponseSuccess = (forumControllerAssignOwnerResponse201) & {
+  headers: Headers;
+};
+;
+
+export type forumControllerAssignOwnerResponse = (forumControllerAssignOwnerResponseSuccess)
+
+export const getForumControllerAssignOwnerUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/forum/zones/${id}/owner`
+}
+
+export const forumControllerAssignOwner = async (id: string,
+    assignOwnerDto: AssignOwnerDto, options?: RequestInit): Promise<forumControllerAssignOwnerResponse> => {
+  
+  return http<forumControllerAssignOwnerResponse>(getForumControllerAssignOwnerUrl(id),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      assignOwnerDto,)
+  }
+);}
+
+
+
+export type forumControllerJoinResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type forumControllerJoinResponseSuccess = (forumControllerJoinResponse201) & {
+  headers: Headers;
+};
+;
+
+export type forumControllerJoinResponse = (forumControllerJoinResponseSuccess)
+
+export const getForumControllerJoinUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/forum/zones/${id}/join`
+}
+
+export const forumControllerJoin = async (id: string, options?: RequestInit): Promise<forumControllerJoinResponse> => {
+  
+  return http<forumControllerJoinResponse>(getForumControllerJoinUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type forumControllerMembersResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumControllerMembersResponseSuccess = (forumControllerMembersResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumControllerMembersResponse = (forumControllerMembersResponseSuccess)
+
+export const getForumControllerMembersUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/forum/zones/${id}/members`
+}
+
+export const forumControllerMembers = async (id: string, options?: RequestInit): Promise<forumControllerMembersResponse> => {
+  
+  return http<forumControllerMembersResponse>(getForumControllerMembersUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type forumControllerApproveResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type forumControllerApproveResponseSuccess = (forumControllerApproveResponse201) & {
+  headers: Headers;
+};
+;
+
+export type forumControllerApproveResponse = (forumControllerApproveResponseSuccess)
+
+export const getForumControllerApproveUrl = (id: string,
+    userId: string,) => {
+
+
+  
+
+  return `/v1/forum/zones/${id}/members/${userId}/approve`
+}
+
+export const forumControllerApprove = async (id: string,
+    userId: string,
+    approveMemberDto: ApproveMemberDto, options?: RequestInit): Promise<forumControllerApproveResponse> => {
+  
+  return http<forumControllerApproveResponse>(getForumControllerApproveUrl(id,userId),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      approveMemberDto,)
+  }
+);}
+
+
+
+export type forumThreadControllerPostResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type forumThreadControllerPostResponseSuccess = (forumThreadControllerPostResponse201) & {
+  headers: Headers;
+};
+;
+
+export type forumThreadControllerPostResponse = (forumThreadControllerPostResponseSuccess)
+
+export const getForumThreadControllerPostUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/forum/zones/${id}/threads`
+}
+
+export const forumThreadControllerPost = async (id: string,
+    createThreadDto: CreateThreadDto, options?: RequestInit): Promise<forumThreadControllerPostResponse> => {
+  
+  return http<forumThreadControllerPostResponse>(getForumThreadControllerPostUrl(id),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createThreadDto,)
+  }
+);}
+
+
+
+export type forumThreadControllerFeedResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumThreadControllerFeedResponseSuccess = (forumThreadControllerFeedResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumThreadControllerFeedResponse = (forumThreadControllerFeedResponseSuccess)
+
+export const getForumThreadControllerFeedUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/forum/zones/${id}/threads`
+}
+
+export const forumThreadControllerFeed = async (id: string, options?: RequestInit): Promise<forumThreadControllerFeedResponse> => {
+  
+  return http<forumThreadControllerFeedResponse>(getForumThreadControllerFeedUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type forumThreadControllerPinResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type forumThreadControllerPinResponseSuccess = (forumThreadControllerPinResponse201) & {
+  headers: Headers;
+};
+;
+
+export type forumThreadControllerPinResponse = (forumThreadControllerPinResponseSuccess)
+
+export const getForumThreadControllerPinUrl = (threadId: string,) => {
+
+
+  
+
+  return `/v1/forum/threads/${threadId}/pin`
+}
+
+export const forumThreadControllerPin = async (threadId: string,
+    pinThreadDto: PinThreadDto, options?: RequestInit): Promise<forumThreadControllerPinResponse> => {
+  
+  return http<forumThreadControllerPinResponse>(getForumThreadControllerPinUrl(threadId),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      pinThreadDto,)
+  }
+);}
+
+
+
+export type forumThreadControllerRemoveResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type forumThreadControllerRemoveResponseSuccess = (forumThreadControllerRemoveResponse204) & {
+  headers: Headers;
+};
+;
+
+export type forumThreadControllerRemoveResponse = (forumThreadControllerRemoveResponseSuccess)
+
+export const getForumThreadControllerRemoveUrl = (threadId: string,) => {
+
+
+  
+
+  return `/v1/forum/threads/${threadId}`
+}
+
+export const forumThreadControllerRemove = async (threadId: string, options?: RequestInit): Promise<forumThreadControllerRemoveResponse> => {
+  
+  return http<forumThreadControllerRemoveResponse>(getForumThreadControllerRemoveUrl(threadId),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type forumThreadControllerReactResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumThreadControllerReactResponseSuccess = (forumThreadControllerReactResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumThreadControllerReactResponse = (forumThreadControllerReactResponseSuccess)
+
+export const getForumThreadControllerReactUrl = (threadId: string,) => {
+
+
+  
+
+  return `/v1/forum/threads/${threadId}/reactions`
+}
+
+export const forumThreadControllerReact = async (threadId: string,
+    reactionDto: ReactionDto, options?: RequestInit): Promise<forumThreadControllerReactResponse> => {
+  
+  return http<forumThreadControllerReactResponse>(getForumThreadControllerReactUrl(threadId),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reactionDto,)
+  }
+);}
+
+
+
+export type forumThreadControllerUnreactResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type forumThreadControllerUnreactResponseSuccess = (forumThreadControllerUnreactResponse204) & {
+  headers: Headers;
+};
+;
+
+export type forumThreadControllerUnreactResponse = (forumThreadControllerUnreactResponseSuccess)
+
+export const getForumThreadControllerUnreactUrl = (threadId: string,) => {
+
+
+  
+
+  return `/v1/forum/threads/${threadId}/reactions`
+}
+
+export const forumThreadControllerUnreact = async (threadId: string,
+    reactionDto: ReactionDto, options?: RequestInit): Promise<forumThreadControllerUnreactResponse> => {
+  
+  return http<forumThreadControllerUnreactResponse>(getForumThreadControllerUnreactUrl(threadId),
+  {      
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reactionDto,)
   }
 );}
 

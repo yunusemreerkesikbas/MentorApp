@@ -135,4 +135,140 @@ describe("forum zones (e2e)", () => {
       .send({ approve: true });
     expect(approved.status).toBe(201);
   });
+
+  // ---- Slice 2: thread feed + reactions + pin ----
+
+  const createZone = async (type: string, title: string) => {
+    const res = await request(app.getHttpServer())
+      .post("/v1/forum/zones")
+      .set(asAdmin())
+      .send({ type, title, joinPolicy: ZoneJoinPolicy.OPEN });
+    return res.body.id as string;
+  };
+
+  it("ACTIVE member posts in CHAT and the item appears in the feed", async () => {
+    const zoneId = await createZone(ZoneType.CHAT, "Sohbet Odası");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+
+    const posted = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "merhaba arkadaşlar" });
+    expect(posted.status).toBe(201);
+    expect(posted.body.body).toBe("merhaba arkadaşlar");
+
+    const feed = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser());
+    expect(feed.status).toBe(200);
+    expect(feed.body.items.map((t: { id: string }) => t.id)).toContain(posted.body.id);
+  });
+
+  it("a non-member cannot post in a CHAT zone (403)", async () => {
+    const zoneId = await createZone(ZoneType.CHAT, "Üyesiz Sohbet");
+    const outsider = await signup("outsider");
+    const res = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set({ Authorization: `Bearer ${outsider.accessToken}` })
+      .send({ body: "ben üye değilim" });
+    expect(res.status).toBe(403);
+  });
+
+  it("ANNOUNCEMENT: a member cannot post but staff can", async () => {
+    const zoneId = await createZone(ZoneType.ANNOUNCEMENT, "Duyurular");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+
+    const byMember = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "üye duyurusu" });
+    expect(byMember.status).toBe(403);
+
+    const byStaff = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asAdmin())
+      .send({ body: "resmi duyuru" });
+    expect(byStaff.status).toBe(201);
+  });
+
+  it("react / unreact toggles the reaction count and myReactions", async () => {
+    const zoneId = await createZone(ZoneType.CHAT, "Tepki Odası");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+    const posted = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "tepki ver" });
+    const threadId = posted.body.id as string;
+
+    await request(app.getHttpServer())
+      .put(`/v1/forum/threads/${threadId}/reactions`)
+      .set(asUser())
+      .send({ emoji: "👍" })
+      .expect(200);
+
+    let feed = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser());
+    let item = feed.body.items.find((t: { id: string }) => t.id === threadId);
+    expect(item.reactionCounts["👍"]).toBe(1);
+    expect(item.myReactions).toContain("👍");
+
+    await request(app.getHttpServer())
+      .delete(`/v1/forum/threads/${threadId}/reactions`)
+      .set(asUser())
+      .send({ emoji: "👍" })
+      .expect(204);
+
+    feed = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser());
+    item = feed.body.items.find((t: { id: string }) => t.id === threadId);
+    expect(item.reactionCounts["👍"] ?? 0).toBe(0);
+    expect(item.myReactions).not.toContain("👍");
+  });
+
+  it("staff pin floats a thread to the top of the feed", async () => {
+    const zoneId = await createZone(ZoneType.CHAT, "Pin Odası");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+    const first = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "ilk mesaj" });
+    await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "ikinci mesaj" });
+
+    await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${first.body.id}/pin`)
+      .set(asAdmin())
+      .send({ pinned: true })
+      .expect(201);
+
+    const feed = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser());
+    expect(feed.body.items[0].id).toBe(first.body.id);
+    expect(feed.body.items[0].isPinned).toBe(true);
+  });
+
+  it("author soft-delete removes the item from the feed", async () => {
+    const zoneId = await createZone(ZoneType.CHAT, "Silme Odası");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+    const posted = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "silinecek mesaj" });
+    const threadId = posted.body.id as string;
+
+    await request(app.getHttpServer())
+      .delete(`/v1/forum/threads/${threadId}`)
+      .set(asUser())
+      .expect(204);
+
+    const feed = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser());
+    expect(feed.body.items.map((t: { id: string }) => t.id)).not.toContain(threadId);
+  });
 });

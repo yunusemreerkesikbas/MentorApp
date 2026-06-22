@@ -930,3 +930,53 @@ export const forumZoneMembers = pgTable(
     index("forum_zone_members_zone_status_idx").on(t.zoneId, t.status),
   ],
 );
+
+/* Slice 2 — flat feed item (CHAT message / ANNOUNCEMENT broadcast). No `kind`: behaviour is
+ * derived from the parent zone's type. Replies/QA answers (forum_posts) arrive in Slice 3.
+ * Soft-delete (deleted_at) keeps the row for moderation audit; feed reads filter it out. */
+export const forumThreads = pgTable(
+  "forum_threads",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    zoneId: uuid("zone_id")
+      .notNull()
+      .references(() => forumZones.id),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    body: text("body").notNull(),
+    isPinned: boolean("is_pinned").notNull().default(false),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("forum_threads_zone_created_idx").on(t.zoneId, t.createdAt),
+    index("forum_threads_zone_pinned_idx").on(t.zoneId).where(sql`${t.isPinned}`),
+  ],
+);
+
+/** One reaction per (thread, user, emoji). Emoji constrained to FORUM_REACTION_EMOJIS in app. */
+export const forumReactions = pgTable(
+  "forum_reactions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    threadId: uuid("thread_id")
+      .notNull()
+      .references(() => forumThreads.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    emoji: text("emoji").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_reactions_unique_idx").on(t.threadId, t.userId, t.emoji),
+    index("forum_reactions_thread_idx").on(t.threadId),
+  ],
+);

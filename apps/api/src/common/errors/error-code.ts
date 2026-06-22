@@ -68,6 +68,7 @@ export const ErrorCode = {
   // forum (Phase-2→MVP) — module-prefixed, append-only (workstreams rule)
   FORUM_DISABLED: "FORUM_DISABLED",
   FORUM_ZONE_NOT_FOUND: "FORUM_ZONE_NOT_FOUND",
+  FORUM_THREAD_NOT_FOUND: "FORUM_THREAD_NOT_FOUND",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

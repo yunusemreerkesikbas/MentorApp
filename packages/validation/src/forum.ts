@@ -2,7 +2,7 @@
  * Forum schemas (Phase-2 pulled into MVP) — shared FE+BE (§8). User-facing copy localized by the backend.
  */
 import { z } from "zod";
-import { ZoneJoinPolicy, ZoneMemberStatus, ZoneType } from "@mentor/types";
+import { FORUM_REACTION_EMOJIS, ZoneJoinPolicy, ZoneMemberStatus, ZoneType } from "@mentor/types";
 import { paginationQuerySchema } from "./pagination.js";
 
 /** Staff-only zone creation (curated). Slug is derived server-side, not accepted from the client. */
@@ -34,3 +34,26 @@ export const zoneMembersQuerySchema = z.object({
   status: z.nativeEnum(ZoneMemberStatus).optional(),
 });
 export type ZoneMembersQuery = z.infer<typeof zoneMembersQuerySchema>;
+
+/** Post a feed item (CHAT message / ANNOUNCEMENT). Body only — flat feed, no title in MVP. */
+export const createThreadSchema = z.object({
+  body: z.string().trim().min(1).max(4000),
+});
+export type CreateThread = z.infer<typeof createThreadSchema>;
+
+/** Cursor feed query. `before` = ISO createdAt of the last seen item (load older). */
+export const feedQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+  before: z.string().datetime().optional(),
+});
+export type FeedQuery = z.infer<typeof feedQuerySchema>;
+
+/** Add/remove a reaction — emoji must be one of the fixed allowed set. */
+export const reactionSchema = z.object({
+  emoji: z.enum(FORUM_REACTION_EMOJIS),
+});
+export type Reaction = z.infer<typeof reactionSchema>;
+
+/** Pin/unpin a thread (owner/mod). */
+export const pinThreadSchema = z.object({ pinned: z.boolean() });
+export type PinThread = z.infer<typeof pinThreadSchema>;

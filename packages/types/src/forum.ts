@@ -63,3 +63,27 @@ export interface ZoneMemberView {
   status: ZoneMemberStatus;
   createdAt: string;
 }
+
+/** Allowed reactions (fixed, positive set — §3 "pozitif çerçevele"). Config-extensible later. */
+export const FORUM_REACTION_EMOJIS = ["👍", "❤️", "💪", "🎉", "😮"] as const;
+export type ForumReactionEmoji = (typeof FORUM_REACTION_EMOJIS)[number];
+
+/** GET /v1/forum/zones/:id/threads — one feed item (CHAT message / ANNOUNCEMENT broadcast). */
+export interface ThreadView {
+  id: string;
+  zoneId: string;
+  authorId: string;
+  body: string;
+  isPinned: boolean;
+  /** emoji → count over all users. */
+  reactionCounts: Record<string, number>;
+  /** emoji the viewer themselves reacted with. */
+  myReactions: string[];
+  createdAt: string;
+}
+
+/** Cursor-paginated feed envelope. `nextCursor` is null when there are no older items. */
+export interface ThreadFeed {
+  items: ThreadView[];
+  nextCursor: string | null;
+}

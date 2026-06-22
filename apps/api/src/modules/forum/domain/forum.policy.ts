@@ -1,4 +1,4 @@
-import { UserRole, ZoneRole } from "@mentor/types";
+import { UserRole, ZoneMemberStatus, ZoneRole, ZoneType } from "@mentor/types";
 
 /**
  * Two-plane authz (design 2026-06-22, §3). Framework-free pure logic — no NestJS/Drizzle.
@@ -40,3 +40,29 @@ export function canModerateZone(actor: ForumActor): boolean {
 
 /** Approving a pending join request is a moderation action. */
 export const canApproveMember = canModerateZone;
+
+/**
+ * Who may post a feed item (Slice 2):
+ *  - ANNOUNCEMENT → broadcast: only owner/mod or platform staff.
+ *  - CHAT → any ACTIVE member (join-to-participate), or owner/mod/staff.
+ * (QA posting rules arrive in Slice 3.)
+ */
+export function canPostInZone(
+  actor: ForumActor,
+  zoneType: string,
+  memberStatus: string | null,
+): boolean {
+  if (zoneType === ZoneType.ANNOUNCEMENT) return canModerateZone(actor);
+  if (zoneType === ZoneType.CHAT) {
+    return memberStatus === ZoneMemberStatus.ACTIVE || canModerateZone(actor);
+  }
+  return false;
+}
+
+/** Delete a thread: its author, or a zone owner/mod / platform staff (moderation). */
+export function canDeleteThread(actor: ForumActor, authorId: string): boolean {
+  return actor.userId === authorId || canModerateZone(actor);
+}
+
+/** Pin/unpin is a moderation action. */
+export const canPinThread = canModerateZone;
