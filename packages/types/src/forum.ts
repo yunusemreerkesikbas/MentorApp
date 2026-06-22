@@ -118,3 +118,38 @@ export interface QuestionDetail {
   question: ThreadView;
   answers: AnswerView[];
 }
+
+/** Moderation (slice 5) — what can be reported. */
+export const ModerationTargetType = {
+  THREAD: "THREAD",
+  POST: "POST",
+} as const;
+export type ModerationTargetType = (typeof ModerationTargetType)[keyof typeof ModerationTargetType];
+
+export const ReportReason = {
+  SPAM: "SPAM",
+  HARASSMENT: "HARASSMENT",
+  OFF_TOPIC: "OFF_TOPIC",
+  OTHER: "OTHER",
+} as const;
+export type ReportReason = (typeof ReportReason)[keyof typeof ReportReason];
+
+export const ReportStatus = {
+  OPEN: "OPEN",
+  RESOLVED: "RESOLVED",
+  DISMISSED: "DISMISSED",
+} as const;
+export type ReportStatus = (typeof ReportStatus)[keyof typeof ReportStatus];
+
+/** GET /v1/forum/{zones/:id/reports,reports} — a moderation-queue item (owner/mod or staff). */
+export interface ReportView {
+  id: string;
+  targetType: ModerationTargetType;
+  targetId: string;
+  zoneId: string;
+  reporterId: string;
+  reason: ReportReason;
+  note: string | null;
+  status: ReportStatus;
+  createdAt: string;
+}

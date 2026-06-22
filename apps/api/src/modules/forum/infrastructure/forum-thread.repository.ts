@@ -90,6 +90,24 @@ export class ForumThreadRepository {
     });
   }
 
+  /** Reverse a hide (moderation RESTORE). */
+  async restore(threadId: string): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await tx
+        .update(forumThreads)
+        .set({ deletedAt: null, deletedBy: null, updatedAt: new Date() })
+        .where(eq(forumThreads.id, threadId));
+    });
+  }
+
+  /** Service-context fetch incl. soft-deleted rows (for restore — RLS user-read hides them). */
+  async findByIdIncludingDeleted(threadId: string): Promise<ThreadRow | null> {
+    return withServiceContext(this.db, async (tx) => {
+      const [row] = await tx.select().from(forumThreads).where(eq(forumThreads.id, threadId)).limit(1);
+      return row ?? null;
+    });
+  }
+
   /**
    * QA: atomically claim the accepted answer + close the question (one-shot). The `accepted_post_id
    * IS NULL` guard makes check-and-set a single statement, so concurrent accepts can't both win

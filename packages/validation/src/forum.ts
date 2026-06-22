@@ -2,7 +2,15 @@
  * Forum schemas (Phase-2 pulled into MVP) — shared FE+BE (§8). User-facing copy localized by the backend.
  */
 import { z } from "zod";
-import { FORUM_REACTION_EMOJIS, ZoneJoinPolicy, ZoneMemberStatus, ZoneType } from "@mentor/types";
+import {
+  FORUM_REACTION_EMOJIS,
+  ModerationTargetType,
+  ReportReason,
+  ReportStatus,
+  ZoneJoinPolicy,
+  ZoneMemberStatus,
+  ZoneType,
+} from "@mentor/types";
 import { paginationQuerySchema } from "./pagination.js";
 
 /** Staff-only zone creation (curated). Slug is derived server-side, not accepted from the client. */
@@ -74,3 +82,24 @@ export type Reaction = z.infer<typeof reactionSchema>;
 /** Pin/unpin a thread (owner/mod). */
 export const pinThreadSchema = z.object({ pinned: z.boolean() });
 export type PinThread = z.infer<typeof pinThreadSchema>;
+
+/** Report a thread or answer (slice 5). Any authed user who can see the target. */
+export const createReportSchema = z.object({
+  targetType: z.nativeEnum(ModerationTargetType),
+  targetId: z.string().uuid(),
+  reason: z.nativeEnum(ReportReason),
+  note: z.string().trim().max(500).optional(),
+});
+export type CreateReport = z.infer<typeof createReportSchema>;
+
+/** Moderation queue filter (owner/mod or staff). */
+export const reportsQuerySchema = paginationQuerySchema.extend({
+  status: z.nativeEnum(ReportStatus).optional(),
+});
+export type ReportsQuery = z.infer<typeof reportsQuerySchema>;
+
+/** Resolve a report: hide the content (soft-delete) or dismiss the report. */
+export const resolveReportSchema = z.object({
+  action: z.enum(["HIDE", "DISMISS"]),
+});
+export type ResolveReport = z.infer<typeof resolveReportSchema>;

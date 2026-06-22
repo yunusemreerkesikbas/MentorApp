@@ -405,4 +405,71 @@ describe("forum zones (e2e)", () => {
       .set(asUser());
     expect(afterDelete.body.answers.map((a: { id: string }) => a.id)).not.toContain(postId);
   });
+
+  // ---- Slice 5: reports → moderation ----
+
+  it("report → queue → resolve HIDE → restore", async () => {
+    const zoneId = await createZone(ZoneType.CHAT, "Moderasyon Odası");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+    const posted = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "şikayet edilecek mesaj" });
+    const threadId = posted.body.id as string;
+
+    // A user reports it; a re-report is idempotent.
+    await request(app.getHttpServer())
+      .post("/v1/forum/reports")
+      .set(asUser())
+      .send({ targetType: "THREAD", targetId: threadId, reason: "SPAM" })
+      .expect(201);
+    await request(app.getHttpServer())
+      .post("/v1/forum/reports")
+      .set(asUser())
+      .send({ targetType: "THREAD", targetId: threadId, reason: "SPAM" })
+      .expect(201);
+
+    // Platform staff see it in the global queue; the zone queue shows it too.
+    const globalQueue = await request(app.getHttpServer())
+      .get("/v1/forum/reports?status=OPEN")
+      .set(asAdmin());
+    expect(globalQueue.status).toBe(200);
+    const reportItem = globalQueue.body.items.find(
+      (r: { targetId: string }) => r.targetId === threadId,
+    );
+    expect(reportItem).toBeTruthy();
+
+    const zoneQueue = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/reports?status=OPEN`)
+      .set(asAdmin());
+    expect(zoneQueue.body.items.map((r: { targetId: string }) => r.targetId)).toContain(threadId);
+
+    // A non-moderator cannot resolve.
+    const forbidden = await request(app.getHttpServer())
+      .post(`/v1/forum/reports/${reportItem.id}/resolve`)
+      .set(asUser())
+      .send({ action: "HIDE" });
+    expect(forbidden.status).toBe(403);
+
+    // Staff resolves HIDE → the thread drops out of the feed (hidden = soft-deleted).
+    await request(app.getHttpServer())
+      .post(`/v1/forum/reports/${reportItem.id}/resolve`)
+      .set(asAdmin())
+      .send({ action: "HIDE" })
+      .expect(201);
+    const feedAfterHide = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser());
+    expect(feedAfterHide.body.items.map((t: { id: string }) => t.id)).not.toContain(threadId);
+
+    // Restore → the thread is back in the feed.
+    await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${threadId}/restore`)
+      .set(asAdmin())
+      .expect(201);
+    const feedAfterRestore = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser());
+    expect(feedAfterRestore.body.items.map((t: { id: string }) => t.id)).toContain(threadId);
+  });
 });

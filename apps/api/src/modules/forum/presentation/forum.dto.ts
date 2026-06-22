@@ -2,11 +2,14 @@ import {
   approveMemberSchema,
   assignOwnerSchema,
   createAnswerSchema,
+  createReportSchema,
   createThreadSchema,
   createZoneSchema,
   feedQuerySchema,
   pinThreadSchema,
   reactionSchema,
+  reportsQuerySchema,
+  resolveReportSchema,
   searchQuerySchema,
   zoneListQuerySchema,
   zoneMembersQuerySchema,
@@ -24,3 +27,6 @@ export class ReactionDto extends createZodDto(reactionSchema) {}
 export class PinThreadDto extends createZodDto(pinThreadSchema) {}
 export class CreateAnswerDto extends createZodDto(createAnswerSchema) {}
 export class SearchQueryDto extends createZodDto(searchQuerySchema) {}
+export class CreateReportDto extends createZodDto(createReportSchema) {}
+export class ReportsQueryDto extends createZodDto(reportsQuerySchema) {}
+export class ResolveReportDto extends createZodDto(resolveReportSchema) {}

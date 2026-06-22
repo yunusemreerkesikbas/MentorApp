@@ -1010,3 +1010,62 @@ export const forumReactions = pgTable(
     index("forum_reactions_thread_idx").on(t.threadId),
   ],
 );
+
+/* Slice 5 — moderation. Reports flag a thread/post; the zone owner/mod (or platform staff) act on
+ * them. "Hide" reuses the soft-delete (deleted_at) on threads/posts; the action log is the history.
+ * zone_id is denormalized so the queue can filter per zone without a join. */
+export const forumReports = pgTable(
+  "forum_reports",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    /** ModerationTargetType: THREAD | POST */
+    targetType: text("target_type").notNull(),
+    targetId: uuid("target_id").notNull(),
+    zoneId: uuid("zone_id")
+      .notNull()
+      .references(() => forumZones.id),
+    reporterId: uuid("reporter_id")
+      .notNull()
+      .references(() => users.id),
+    /** ReportReason: SPAM | HARASSMENT | OFF_TOPIC | OTHER */
+    reason: text("reason").notNull(),
+    note: text("note"),
+    /** ReportStatus: OPEN | RESOLVED | DISMISSED */
+    status: text("status").notNull().default("OPEN"),
+    resolvedBy: uuid("resolved_by").references(() => users.id),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_reports_unique_idx").on(t.targetType, t.targetId, t.reporterId),
+    index("forum_reports_zone_status_idx").on(t.zoneId, t.status),
+    index("forum_reports_status_idx").on(t.status),
+  ],
+);
+
+/** Append-only moderation audit (who hid/restored/dismissed what, why). Never edited/deleted. */
+export const forumModerationActions = pgTable(
+  "forum_moderation_actions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => users.id),
+    /** ROOM (zone owner/mod) | PLATFORM (staff override). */
+    actorScope: text("actor_scope").notNull(),
+    /** HIDE | RESTORE | DISMISS */
+    action: text("action").notNull(),
+    targetType: text("target_type").notNull(),
+    targetId: uuid("target_id").notNull(),
+    zoneId: uuid("zone_id")
+      .notNull()
+      .references(() => forumZones.id),
+    reason: text("reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("forum_moderation_actions_zone_created_idx").on(t.zoneId, t.createdAt)],
+);

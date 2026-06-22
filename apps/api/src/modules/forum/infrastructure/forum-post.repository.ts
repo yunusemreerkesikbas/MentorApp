@@ -60,4 +60,22 @@ export class ForumPostRepository {
         .where(eq(forumPosts.id, postId));
     });
   }
+
+  /** Reverse a hide (moderation RESTORE). */
+  async restore(postId: string): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await tx
+        .update(forumPosts)
+        .set({ deletedAt: null, deletedBy: null, updatedAt: new Date() })
+        .where(eq(forumPosts.id, postId));
+    });
+  }
+
+  /** Service-context fetch incl. soft-deleted rows (for restore — RLS user-read hides them). */
+  async findByIdIncludingDeleted(postId: string): Promise<PostRow | null> {
+    return withServiceContext(this.db, async (tx) => {
+      const [row] = await tx.select().from(forumPosts).where(eq(forumPosts.id, postId)).limit(1);
+      return row ?? null;
+    });
+  }
 }
