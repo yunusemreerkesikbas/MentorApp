@@ -869,3 +869,64 @@ export const aiUsage = pgTable(
   },
   (t) => [index("ai_usage_user_created_idx").on(t.userId, t.createdAt)],
 );
+
+/* ============================== forum ==============================
+ * Zone primitive (announcement/chat/qa) + scoped membership (owner/mod/member).
+ * Design 2026-06-22. org_id nullable from day one; visibility PUBLIC in MVP
+ * (PRIVATE reserved for Phase 2 invite/closed/mahalle). Phase 2 appends
+ * threads/posts/reactions/reports/moderation_actions to this block.
+ * RLS: read PUBLIC non-archived zones (any authed) + own membership rows;
+ * privileged writes/member-lists run in SERVICE context (policy-checked in app).
+ * ================================================================== */
+export const forumZones = pgTable(
+  "forum_zones",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    /** ZoneType: ANNOUNCEMENT | CHAT | QA */
+    type: text("type").notNull(),
+    title: text("title").notNull(),
+    slug: text("slug").notNull(),
+    description: text("description"),
+    /** ZoneVisibility — PUBLIC in MVP; PRIVATE reserved. */
+    visibility: text("visibility").notNull().default("PUBLIC"),
+    /** ZoneJoinPolicy: OPEN (instant) | REQUEST (owner-approved). */
+    joinPolicy: text("join_policy").notNull().default("OPEN"),
+    examType: text("exam_type"),
+    organizationId: uuid("organization_id").references(() => organizations.id),
+    createdBy: uuid("created_by").references(() => users.id),
+    isArchived: boolean("is_archived").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_zones_slug_idx").on(t.slug),
+    index("forum_zones_type_idx").on(t.type),
+  ],
+);
+
+export const forumZoneMembers = pgTable(
+  "forum_zone_members",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    zoneId: uuid("zone_id")
+      .notNull()
+      .references(() => forumZones.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    /** ZoneRole: OWNER | MODERATOR | MEMBER (per-zone scoped — not a platform role). */
+    role: text("role").notNull().default("MEMBER"),
+    /** ZoneMemberStatus: ACTIVE | PENDING. */
+    status: text("status").notNull().default("ACTIVE"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_zone_members_unique_idx").on(t.zoneId, t.userId),
+    index("forum_zone_members_zone_status_idx").on(t.zoneId, t.status),
+  ],
+);

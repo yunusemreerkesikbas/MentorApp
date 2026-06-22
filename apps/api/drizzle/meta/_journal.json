@@ -148,6 +148,13 @@
       "when": 1781999452099,
       "tag": "0020_tranquil_shard",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1782126274989,
+      "tag": "0021_flashy_vance_astro",
+      "breakpoints": true
     }
   ]
 }
