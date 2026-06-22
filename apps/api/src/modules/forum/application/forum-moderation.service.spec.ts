@@ -23,7 +23,9 @@ const makeReports = () => ({
   findById: vi.fn().mockResolvedValue(report()),
   listByZone: vi.fn().mockResolvedValue([report()]),
   listAll: vi.fn().mockResolvedValue([report()]),
-  setResolved: vi.fn().mockResolvedValue(undefined),
+  countByZone: vi.fn().mockResolvedValue(1),
+  countAll: vi.fn().mockResolvedValue(1),
+  setResolvedByTarget: vi.fn().mockResolvedValue(undefined),
   appendAction: vi.fn().mockResolvedValue(undefined),
 });
 const makeThreads = () => ({
@@ -98,14 +100,14 @@ describe("ForumModerationService", () => {
     await svc(ZoneRole.OWNER).resolve(actor("owner"), "r1", { action: "HIDE" });
     expect(posts.softDelete).toHaveBeenCalledWith("p1", "owner");
     expect(reports.appendAction).toHaveBeenCalledWith(expect.objectContaining({ action: "HIDE", actorScope: "ROOM" }));
-    expect(reports.setResolved).toHaveBeenCalledWith("r1", "RESOLVED", "owner");
+    expect(reports.setResolvedByTarget).toHaveBeenCalledWith("POST", "p1", "RESOLVED", "owner");
   });
 
   it("resolve DISMISS logs DISMISS and marks DISMISSED without hiding", async () => {
     await svc(ZoneRole.OWNER).resolve(actor("owner"), "r1", { action: "DISMISS" });
     expect(posts.softDelete).not.toHaveBeenCalled();
     expect(reports.appendAction).toHaveBeenCalledWith(expect.objectContaining({ action: "DISMISS" }));
-    expect(reports.setResolved).toHaveBeenCalledWith("r1", "DISMISSED", "owner");
+    expect(reports.setResolvedByTarget).toHaveBeenCalledWith("POST", "p1", "DISMISSED", "owner");
   });
 
   it("a non-moderator cannot resolve", async () => {

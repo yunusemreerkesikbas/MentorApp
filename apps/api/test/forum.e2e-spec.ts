@@ -462,6 +462,12 @@ describe("forum zones (e2e)", () => {
       .set(asUser());
     expect(feedAfterHide.body.items.map((t: { id: string }) => t.id)).not.toContain(threadId);
 
+    // The report leaves the OPEN queue (target's reports are closed on resolve).
+    const openAfter = await request(app.getHttpServer())
+      .get("/v1/forum/reports?status=OPEN")
+      .set(asAdmin());
+    expect(openAfter.body.items.map((r: { targetId: string }) => r.targetId)).not.toContain(threadId);
+
     // Restore → the thread is back in the feed.
     await request(app.getHttpServer())
       .post(`/v1/forum/threads/${threadId}/restore`)

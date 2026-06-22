@@ -88,12 +88,11 @@ export class ForumModerationService {
     if (!canModerateZone(forumActor)) {
       throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
-    const rows = await this.reports.listByZone(zoneId, {
-      status: q.status,
-      page: q.page,
-      pageSize: q.pageSize,
-    });
-    return { items: rows.map((r) => this.toView(r)), total: rows.length, page: q.page, pageSize: q.pageSize };
+    const [rows, total] = await Promise.all([
+      this.reports.listByZone(zoneId, { status: q.status, page: q.page, pageSize: q.pageSize }),
+      this.reports.countByZone(zoneId, q.status),
+    ]);
+    return this.toPage(rows, total, q);
   }
 
   async listAllReports(actor: ThreadActor, q: ReportsQuery): Promise<Paginated<ReportView>> {
@@ -101,8 +100,11 @@ export class ForumModerationService {
     if (!isPlatformStaff(actor.roles)) {
       throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
-    const rows = await this.reports.listAll({ status: q.status, page: q.page, pageSize: q.pageSize });
-    return { items: rows.map((r) => this.toView(r)), total: rows.length, page: q.page, pageSize: q.pageSize };
+    const [rows, total] = await Promise.all([
+      this.reports.listAll({ status: q.status, page: q.page, pageSize: q.pageSize }),
+      this.reports.countAll(q.status),
+    ]);
+    return this.toPage(rows, total, q);
   }
 
   async resolve(actor: ThreadActor, reportId: string, dto: ResolveReport): Promise<void> {
@@ -114,30 +116,26 @@ export class ForumModerationService {
       throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
     const scope = isPlatformStaff(actor.roles) ? "PLATFORM" : "ROOM";
-    if (dto.action === "HIDE") {
+    const action = dto.action === "HIDE" ? "HIDE" : "DISMISS";
+    if (action === "HIDE") {
       await this.hideTarget(report.targetType, report.targetId, actor.id);
-      await this.reports.appendAction({
-        actorId: actor.id,
-        actorScope: scope,
-        action: "HIDE",
-        targetType: report.targetType,
-        targetId: report.targetId,
-        zoneId: report.zoneId,
-        reason: report.reason,
-      });
-      await this.reports.setResolved(reportId, ReportStatus.RESOLVED, actor.id);
-    } else {
-      await this.reports.appendAction({
-        actorId: actor.id,
-        actorScope: scope,
-        action: "DISMISS",
-        targetType: report.targetType,
-        targetId: report.targetId,
-        zoneId: report.zoneId,
-        reason: report.reason,
-      });
-      await this.reports.setResolved(reportId, ReportStatus.DISMISSED, actor.id);
     }
+    await this.reports.appendAction({
+      actorId: actor.id,
+      actorScope: scope,
+      action,
+      targetType: report.targetType,
+      targetId: report.targetId,
+      zoneId: report.zoneId,
+      reason: report.reason,
+    });
+    // Close ALL open reports for this target (not just this row) so siblings aren't orphaned.
+    await this.reports.setResolvedByTarget(
+      report.targetType,
+      report.targetId,
+      action === "HIDE" ? ReportStatus.RESOLVED : ReportStatus.DISMISSED,
+      actor.id,
+    );
   }
 
   async restore(actor: ThreadActor, targetType: string, targetId: string): Promise<void> {
@@ -184,6 +182,10 @@ export class ForumModerationService {
     const thread = await this.threads.findByIdIncludingDeleted(post.threadId);
     if (!thread) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
     return thread.zoneId;
+  }
+
+  private toPage(rows: ReportRow[], total: number, q: ReportsQuery): Paginated<ReportView> {
+    return { items: rows.map((r) => this.toView(r)), total, page: q.page, pageSize: q.pageSize };
   }
 
   private toView(r: ReportRow): ReportView {

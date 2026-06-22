@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -77,12 +77,49 @@ export class ForumReportRepository {
     });
   }
 
-  async setResolved(id: string, status: string, byUserId: string): Promise<void> {
+  async countByZone(zoneId: string, status?: string): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const conds = [eq(forumReports.zoneId, zoneId)];
+      if (status) conds.push(eq(forumReports.status, status));
+      const rows = await tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(forumReports)
+        .where(and(...conds));
+      return rows[0]?.count ?? 0;
+    });
+  }
+
+  async countAll(status?: string): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(forumReports)
+        .where(status ? eq(forumReports.status, status) : undefined);
+      return rows[0]?.count ?? 0;
+    });
+  }
+
+  /**
+   * Resolve EVERY still-open report for a target in one shot, so a HIDE/DISMISS doesn't leave
+   * sibling reports (other users flagging the same content) orphaned as OPEN in the queue.
+   */
+  async setResolvedByTarget(
+    targetType: string,
+    targetId: string,
+    status: string,
+    byUserId: string,
+  ): Promise<void> {
     await withServiceContext(this.db, async (tx) => {
       await tx
         .update(forumReports)
         .set({ status, resolvedBy: byUserId, resolvedAt: new Date() })
-        .where(eq(forumReports.id, id));
+        .where(
+          and(
+            eq(forumReports.targetType, targetType),
+            eq(forumReports.targetId, targetId),
+            eq(forumReports.status, "OPEN"),
+          ),
+        );
     });
   }
 
