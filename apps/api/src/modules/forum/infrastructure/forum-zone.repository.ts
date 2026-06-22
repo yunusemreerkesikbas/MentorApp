@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { ZoneMemberStatus } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
@@ -99,6 +99,36 @@ export class ForumZoneRepository {
         })
         .returning();
       return rows[0]!;
+    });
+  }
+
+  /** Batched ACTIVE member counts for a page of zones (avoids N+1 in listZones). */
+  async memberCountsByZone(zoneIds: string[]): Promise<Map<string, number>> {
+    if (zoneIds.length === 0) return new Map();
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ zoneId: forumZoneMembers.zoneId, count: sql<number>`count(*)::int` })
+        .from(forumZoneMembers)
+        .where(
+          and(
+            inArray(forumZoneMembers.zoneId, zoneIds),
+            eq(forumZoneMembers.status, ZoneMemberStatus.ACTIVE),
+          ),
+        )
+        .groupBy(forumZoneMembers.zoneId);
+      return new Map(rows.map((r) => [r.zoneId, r.count]));
+    });
+  }
+
+  /** Batched viewer memberships for a page of zones (avoids N+1 in listZones). */
+  async findMembershipsByZone(zoneIds: string[], userId: string): Promise<Map<string, MemberRow>> {
+    if (zoneIds.length === 0) return new Map();
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const rows = await tx
+        .select()
+        .from(forumZoneMembers)
+        .where(and(inArray(forumZoneMembers.zoneId, zoneIds), eq(forumZoneMembers.userId, userId)));
+      return new Map(rows.map((r) => [r.zoneId, r]));
     });
   }
 

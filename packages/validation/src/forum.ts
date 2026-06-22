@@ -2,7 +2,7 @@
  * Forum schemas (Phase-2 pulled into MVP) — shared FE+BE (§8). User-facing copy localized by the backend.
  */
 import { z } from "zod";
-import { ZoneJoinPolicy, ZoneType } from "@mentor/types";
+import { ZoneJoinPolicy, ZoneMemberStatus, ZoneType } from "@mentor/types";
 import { paginationQuerySchema } from "./pagination.js";
 
 /** Staff-only zone creation (curated). Slug is derived server-side, not accepted from the client. */
@@ -28,3 +28,9 @@ export const zoneListQuerySchema = paginationQuerySchema.extend({
   examType: z.string().trim().max(32).optional(),
 });
 export type ZoneListQuery = z.infer<typeof zoneListQuerySchema>;
+
+/** Filter the member list (owner/mod) — typically `PENDING` to review join requests. */
+export const zoneMembersQuerySchema = z.object({
+  status: z.nativeEnum(ZoneMemberStatus).optional(),
+});
+export type ZoneMembersQuery = z.infer<typeof zoneMembersQuerySchema>;

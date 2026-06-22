@@ -1,27 +1,41 @@
 import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { type Paginated, UserRole, type ZoneMemberStatus, type ZoneView } from "@mentor/types";
+import {
+  type Paginated,
+  type ZoneMemberStatus,
+  type ZoneMemberView,
+  type ZoneRole,
+  type ZoneView,
+} from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
-import { Roles } from "../../../common/auth/roles.decorator";
-import type { ZoneRole } from "@mentor/types";
 import { ForumService } from "../application/forum.service";
 import {
   ApproveMemberDto,
   AssignOwnerDto,
   CreateZoneDto,
   ZoneListQueryDto,
+  ZoneMembersQueryDto,
 } from "./forum.dto";
 
 /**
  * Forum/community (design 2026-06-22). All routes under /v1/forum. Reads are open to any authed
- * user (RLS-gated); zone creation + OWNER assignment are curated (platform staff, @Roles); member
- * approval is policy-checked in the service (owner/mod or staff). Feature-flag gated in the service.
+ * user (RLS-gated). Authorization for mutations is decided in one place — `forum.policy` via the
+ * service (curated zone creation = platform staff; member approval = zone owner/mod or staff) —
+ * so there is no second, divergent `@Roles` list here. Feature-flag gated in the service.
  */
 @ApiTags("forum")
 @ApiBearerAuth()
 @Controller("forum")
 export class ForumController {
   constructor(private readonly forum: ForumService) {}
+
+  private actor(user: RequestUser, zoneRole: ZoneRole | null): {
+    userId: string;
+    platformRoles: string[];
+    zoneRole: ZoneRole | null;
+  } {
+    return { userId: user.id, platformRoles: user.roles, zoneRole };
+  }
 
   @Get("zones")
   list(
@@ -37,13 +51,11 @@ export class ForumController {
   }
 
   @Post("zones")
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.MODERATOR, UserRole.EDITOR)
   create(@CurrentUser() user: RequestUser, @Body() dto: CreateZoneDto): Promise<ZoneView> {
     return this.forum.createZone(user.roles, user.id, dto);
   }
 
   @Post("zones/:id/owner")
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.MODERATOR)
   async assignOwner(
     @CurrentUser() user: RequestUser,
     @Param("id") id: string,
@@ -58,8 +70,22 @@ export class ForumController {
     @CurrentUser() user: RequestUser,
     @Param("id") id: string,
   ): Promise<{ status: ZoneMemberStatus }> {
-    const zone = await this.forum.getZoneById(id, user.id);
-    return this.forum.join(id, user.id, zone.joinPolicy);
+    const joinPolicy = await this.forum.getJoinPolicy(id, user.id);
+    return this.forum.join(id, user.id, joinPolicy);
+  }
+
+  @Get("zones/:id/members")
+  async members(
+    @CurrentUser() user: RequestUser,
+    @Param("id") id: string,
+    @Query() q: ZoneMembersQueryDto,
+  ): Promise<ZoneMemberView[]> {
+    const membership = await this.forum.getActorMembership(id, user.id);
+    return this.forum.listMembers(
+      this.actor(user, (membership?.role as ZoneRole | undefined) ?? null),
+      id,
+      q.status,
+    );
   }
 
   @Post("zones/:id/members/:userId/approve")
@@ -71,11 +97,7 @@ export class ForumController {
   ): Promise<{ status: string }> {
     const membership = await this.forum.getActorMembership(id, user.id);
     await this.forum.approveMember(
-      {
-        userId: user.id,
-        platformRoles: user.roles,
-        zoneRole: (membership?.role as ZoneRole | undefined) ?? null,
-      },
+      this.actor(user, (membership?.role as ZoneRole | undefined) ?? null),
       id,
       targetUserId,
       dto.approve,

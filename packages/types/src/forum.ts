@@ -55,3 +55,11 @@ export interface ZoneView {
   myStatus: ZoneMemberStatus | null;
   createdAt: string;
 }
+
+/** GET /v1/forum/zones/:id/members — owner/mod view (e.g. pending join requests to approve). */
+export interface ZoneMemberView {
+  userId: string;
+  role: ZoneRole;
+  status: ZoneMemberStatus;
+  createdAt: string;
+}

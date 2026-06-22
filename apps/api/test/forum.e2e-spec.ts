@@ -122,6 +122,13 @@ describe("forum zones (e2e)", () => {
       .set({ Authorization: `Bearer ${user.accessToken}` });
     expect(joined.body.status).toBe(ZoneMemberStatus.PENDING);
 
+    // Staff/owner can see the pending request (so they have a userId to approve).
+    const pending = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/members?status=${ZoneMemberStatus.PENDING}`)
+      .set(asAdmin());
+    expect(pending.status).toBe(200);
+    expect(pending.body.map((m: { userId: string }) => m.userId)).toContain(user.user.id);
+
     const approved = await request(app.getHttpServer())
       .post(`/v1/forum/zones/${zoneId}/members/${user.user.id}/approve`)
       .set(asAdmin())

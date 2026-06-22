@@ -3,6 +3,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   type Paginated,
   ZoneMemberStatus,
+  type ZoneMemberView,
   ZoneRole,
   type ZoneView,
 } from "@mentor/types";
@@ -10,7 +11,12 @@ import type { CreateZone, ZoneListQuery } from "@mentor/validation";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { canApproveMember, canCreateZone, type ForumActor } from "../domain/forum.policy";
+import {
+  canApproveMember,
+  canCreateZone,
+  canModerateZone,
+  type ForumActor,
+} from "../domain/forum.policy";
 import { ForumEventTopic } from "../domain/forum.events";
 import {
   ForumZoneRepository,
@@ -120,16 +126,35 @@ export class ForumService {
   async listZones(viewerId: string, q: ZoneListQuery): Promise<Paginated<ZoneView>> {
     await this.assertEnabled();
     const { items, total } = await this.repo.listPublic(viewerId, q);
-    const views = await Promise.all(
-      items.map(async (z) => {
-        const [m, count] = await Promise.all([
-          this.repo.findMembership(z.id, viewerId),
-          this.repo.memberCount(z.id),
-        ]);
-        return this.toView(z, count, m?.status ?? null);
-      }),
+    const ids = items.map((z) => z.id);
+    // Two batched lookups instead of 2-per-zone (no N+1).
+    const [counts, memberships] = await Promise.all([
+      this.repo.memberCountsByZone(ids),
+      this.repo.findMembershipsByZone(ids, viewerId),
+    ]);
+    const views = items.map((z) =>
+      this.toView(z, counts.get(z.id) ?? 0, memberships.get(z.id)?.status ?? null),
     );
     return { items: views, total, page: q.page, pageSize: q.pageSize };
+  }
+
+  /** Owner/mod (or staff) member list — typically PENDING, to review join requests. */
+  async listMembers(
+    actor: ForumActor,
+    zoneId: string,
+    status?: string,
+  ): Promise<ZoneMemberView[]> {
+    await this.assertEnabled();
+    if (!canModerateZone(actor)) {
+      throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
+    }
+    const rows = await this.repo.listMembers(zoneId, status);
+    return rows.map((m) => ({
+      userId: m.userId,
+      role: m.role as ZoneRole,
+      status: m.status as ZoneMemberStatus,
+      createdAt: m.createdAt.toISOString(),
+    }));
   }
 
   async getZone(viewerId: string, slug: string): Promise<ZoneView> {
@@ -143,12 +168,12 @@ export class ForumService {
     return this.toView(row, count, m?.status ?? null);
   }
 
-  /** Controller helper: resolve a zone by id (for the join policy) — keeps the controller logic-free. */
-  async getZoneById(zoneId: string, viewerId: string): Promise<ZoneView> {
+  /** Controller helper: the zone's join policy (for the join call) — no member-count round-trip. */
+  async getJoinPolicy(zoneId: string, viewerId: string): Promise<string> {
     await this.assertEnabled();
     const row = await this.repo.findById(zoneId, viewerId);
     if (!row) throw new DomainError(ErrorCode.FORUM_ZONE_NOT_FOUND, HttpStatus.NOT_FOUND);
-    return this.toView(row, await this.repo.memberCount(row.id), null);
+    return row.joinPolicy;
   }
 
   /** Controller helper: the actor's own membership (→ their zoneRole for the policy). */

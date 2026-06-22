@@ -18,8 +18,9 @@ PATCH /v1/admin/config/forum.enabled { "value": true }
 POST /v1/forum/zones { "type": "QA", "title": "KPSS Genel", "joinPolicy": "OPEN" }
 # hand a zone to an external community leader
 POST /v1/forum/zones/:id/owner { "userId": "<uuid>" }
-# user joins (OPEN→ACTIVE, REQUEST→PENDING); owner/staff approves a pending request
+# user joins (OPEN→ACTIVE, REQUEST→PENDING); owner/staff lists pending then approves
 POST /v1/forum/zones/:id/join
+GET  /v1/forum/zones/:id/members?status=PENDING        # owner/mod/staff
 POST /v1/forum/zones/:id/members/:userId/approve { "approve": true }
 GET  /v1/forum/zones?type=QA&examType=KPSS&page=1&pageSize=20
 ```
