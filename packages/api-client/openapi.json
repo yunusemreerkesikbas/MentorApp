@@ -2550,32 +2550,6 @@
       }
     },
     "/v1/forum/threads/{threadId}/answers": {
-      "get": {
-        "operationId": "ForumQaController_answers",
-        "parameters": [
-          {
-            "name": "threadId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      },
       "post": {
         "operationId": "ForumQaController_answer",
         "parameters": [

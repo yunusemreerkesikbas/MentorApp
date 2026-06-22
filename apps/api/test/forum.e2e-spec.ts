@@ -395,14 +395,14 @@ describe("forum zones (e2e)", () => {
       .set(asUser());
     expect(empty.body.items.map((t: { id: string }) => t.id)).not.toContain(threadId);
 
-    // Author soft-deletes their answer → drops from the answer list.
+    // Author soft-deletes their answer → drops from the question detail's answer list.
     await request(app.getHttpServer())
       .delete(`/v1/forum/answers/${postId}`)
       .set(answererAuth)
       .expect(204);
-    const answersAfter = await request(app.getHttpServer())
-      .get(`/v1/forum/threads/${threadId}/answers`)
+    const afterDelete = await request(app.getHttpServer())
+      .get(`/v1/forum/threads/${threadId}`)
       .set(asUser());
-    expect(answersAfter.body.map((a: { id: string }) => a.id)).not.toContain(postId);
+    expect(afterDelete.body.answers.map((a: { id: string }) => a.id)).not.toContain(postId);
   });
 });

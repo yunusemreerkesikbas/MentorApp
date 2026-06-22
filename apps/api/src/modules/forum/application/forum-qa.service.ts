@@ -21,8 +21,9 @@ import {
 import { ForumEventTopic } from "../domain/forum.events";
 import { ForumZoneRepository } from "../infrastructure/forum-zone.repository";
 import { ForumThreadRepository, type ThreadRow } from "../infrastructure/forum-thread.repository";
-import { ForumPostRepository, type PostRow } from "../infrastructure/forum-post.repository";
+import { ForumPostRepository } from "../infrastructure/forum-post.repository";
 import type { ThreadActor } from "./forum-thread.service";
+import { postRowToAnswerView, threadRowToView } from "./forum.mappers";
 
 /**
  * QA behaviour (slice 3): answer / accept / question-detail / search for QA zones. Questions are
@@ -70,7 +71,7 @@ export class ForumQaService {
       throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
     const post = await this.posts.createAnswer({ threadId, authorId: actor.id, body: dto.body });
-    return this.toAnswerView(post);
+    return postRowToAnswerView(post);
   }
 
   async accept(actor: ThreadActor, threadId: string, postId: string): Promise<void> {
@@ -80,16 +81,17 @@ export class ForumQaService {
     if (!canAcceptAnswer(forumActor, thread.authorId)) {
       throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
-    // One-shot: a question can be accepted exactly once (no un-accept/switch in MVP).
-    if (thread.status === "ANSWERED" || thread.acceptedPostId) {
-      throw new DomainError(ErrorCode.FORUM_ALREADY_ANSWERED, HttpStatus.CONFLICT);
-    }
     const post = await this.posts.findById(postId, actor.id);
     if (!post || post.threadId !== threadId) {
       throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
+    // Atomic one-shot claim: the conditional UPDATE wins exactly once. Concurrent accepts (or a
+    // re-accept) get `false` → 409. setAccepted/emit run only for the winner (no double XP grant).
+    const claimed = await this.threads.setQaAccepted(threadId, postId);
+    if (!claimed) {
+      throw new DomainError(ErrorCode.FORUM_ALREADY_ANSWERED, HttpStatus.CONFLICT);
+    }
     await this.posts.setAccepted(postId, true);
-    await this.threads.setQaAccepted(threadId, postId);
     // emitAsync: await the XP grant so the answerer's balance reflects the accept by the time we
     // return (the listener is idempotent + flag-guarded). Keeps forum decoupled from economy.
     await this.events.emitAsync(ForumEventTopic.ANSWER_ACCEPTED, {
@@ -109,16 +111,9 @@ export class ForumQaService {
       this.posts.listByThread(threadId, viewerId),
     ]);
     return {
-      question: this.toThreadView(thread, counts.get(threadId) ?? {}, mine.get(threadId) ?? []),
-      answers: answers.map((a) => this.toAnswerView(a)),
+      question: threadRowToView(thread, counts.get(threadId) ?? {}, mine.get(threadId) ?? []),
+      answers: answers.map((a) => postRowToAnswerView(a)),
     };
-  }
-
-  async listAnswers(viewerId: string, threadId: string): Promise<AnswerView[]> {
-    await this.assertEnabled();
-    await this.requireQuestion(threadId, viewerId);
-    const answers = await this.posts.listByThread(threadId, viewerId);
-    return answers.map((a) => this.toAnswerView(a));
   }
 
   async search(viewerId: string, q: SearchQuery): Promise<Paginated<ThreadView>> {
@@ -135,7 +130,7 @@ export class ForumQaService {
       this.threads.myReactionsByThread(ids, viewerId),
     ]);
     const views = items.map((t) =>
-      this.toThreadView(t, counts.get(t.id) ?? {}, mine.get(t.id) ?? []),
+      threadRowToView(t, counts.get(t.id) ?? {}, mine.get(t.id) ?? []),
     );
     return { items: views, total, page: q.page, pageSize: q.pageSize };
   }
@@ -156,36 +151,5 @@ export class ForumQaService {
       throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
     await this.posts.softDelete(postId, actor.id);
-  }
-
-  private toThreadView(
-    t: ThreadRow,
-    reactionCounts: Record<string, number>,
-    myReactions: string[],
-  ): ThreadView {
-    return {
-      id: t.id,
-      zoneId: t.zoneId,
-      authorId: t.authorId,
-      title: t.title,
-      body: t.body,
-      status: t.status as ThreadView["status"],
-      acceptedPostId: t.acceptedPostId,
-      isPinned: t.isPinned,
-      reactionCounts,
-      myReactions,
-      createdAt: t.createdAt.toISOString(),
-    };
-  }
-
-  private toAnswerView(p: PostRow): AnswerView {
-    return {
-      id: p.id,
-      threadId: p.threadId,
-      authorId: p.authorId,
-      body: p.body,
-      isAccepted: p.isAccepted,
-      createdAt: p.createdAt.toISOString(),
-    };
   }
 }

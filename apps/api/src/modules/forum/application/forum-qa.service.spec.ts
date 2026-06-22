@@ -34,7 +34,7 @@ const answer = (over: Record<string, unknown> = {}) => ({
 
 const makeThreadRepo = () => ({
   findById: vi.fn().mockResolvedValue(question()),
-  setQaAccepted: vi.fn().mockResolvedValue(undefined),
+  setQaAccepted: vi.fn().mockResolvedValue(true),
   searchQuestions: vi.fn().mockResolvedValue({ items: [], total: 0 }),
 });
 const makePostRepo = () => ({
@@ -97,10 +97,10 @@ describe("ForumQaService", () => {
     );
   });
 
-  it("a second accept is rejected (one-shot, 409)", async () => {
-    threads.findById.mockResolvedValue(question({ status: "ANSWERED", acceptedPostId: "a1" }));
+  it("a second accept is rejected (one-shot, 409) — atomic claim returns false", async () => {
+    threads.setQaAccepted.mockResolvedValue(false); // already claimed by a prior accept
     await expect(
-      svc(makeZoneRepo()).accept(actor("asker"), "q1", "a2"),
+      svc(makeZoneRepo()).accept(actor("asker"), "q1", "a1"),
     ).rejects.toMatchObject({ httpStatus: HttpStatus.CONFLICT });
     expect(events.emitAsync).not.toHaveBeenCalled();
   });

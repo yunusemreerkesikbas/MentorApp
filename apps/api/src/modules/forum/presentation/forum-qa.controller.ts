@@ -33,14 +33,6 @@ export class ForumQaController {
     return this.qa.getQuestion(user.id, threadId);
   }
 
-  @Get("threads/:threadId/answers")
-  answers(
-    @CurrentUser() user: RequestUser,
-    @Param("threadId") threadId: string,
-  ): Promise<AnswerView[]> {
-    return this.qa.listAnswers(user.id, threadId);
-  }
-
   // ponytail: static rate-limit; config-driven once abuse data warrants (shared note with thread post).
   @Post("threads/:threadId/answers")
   @Throttle({ default: { limit: 20, ttl: 60_000 } })

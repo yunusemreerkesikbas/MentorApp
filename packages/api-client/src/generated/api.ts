@@ -3298,39 +3298,6 @@ export const forumQaControllerSearch = async ( options?: RequestInit): Promise<f
 
 
 
-export type forumQaControllerAnswersResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumQaControllerAnswersResponseSuccess = (forumQaControllerAnswersResponse200) & {
-  headers: Headers;
-};
-;
-
-export type forumQaControllerAnswersResponse = (forumQaControllerAnswersResponseSuccess)
-
-export const getForumQaControllerAnswersUrl = (threadId: string,) => {
-
-
-  
-
-  return `/v1/forum/threads/${threadId}/answers`
-}
-
-export const forumQaControllerAnswers = async (threadId: string, options?: RequestInit): Promise<forumQaControllerAnswersResponse> => {
-  
-  return http<forumQaControllerAnswersResponse>(getForumQaControllerAnswersUrl(threadId),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
 export type forumQaControllerAnswerResponse201 = {
   data: void
   status: 201

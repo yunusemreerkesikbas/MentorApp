@@ -90,13 +90,19 @@ export class ForumThreadRepository {
     });
   }
 
-  /** QA: mark the accepted answer + close the question (slice 3). */
-  async setQaAccepted(threadId: string, postId: string): Promise<void> {
-    await withServiceContext(this.db, async (tx) => {
-      await tx
+  /**
+   * QA: atomically claim the accepted answer + close the question (one-shot). The `accepted_post_id
+   * IS NULL` guard makes check-and-set a single statement, so concurrent accepts can't both win
+   * (no TOCTOU double-grant). Returns true iff this call did the claim.
+   */
+  async setQaAccepted(threadId: string, postId: string): Promise<boolean> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
         .update(forumThreads)
         .set({ acceptedPostId: postId, status: "ANSWERED", updatedAt: new Date() })
-        .where(eq(forumThreads.id, threadId));
+        .where(and(eq(forumThreads.id, threadId), isNull(forumThreads.acceptedPostId)))
+        .returning({ id: forumThreads.id });
+      return rows.length > 0;
     });
   }
 

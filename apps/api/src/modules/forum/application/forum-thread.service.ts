@@ -14,6 +14,7 @@ import {
 import { ForumEventTopic } from "../domain/forum.events";
 import { ForumZoneRepository } from "../infrastructure/forum-zone.repository";
 import { ForumThreadRepository, type ThreadRow } from "../infrastructure/forum-thread.repository";
+import { threadRowToView } from "./forum.mappers";
 
 /** Minimal authenticated principal the controller passes in (id + platform roles). */
 export interface ThreadActor {
@@ -75,7 +76,7 @@ export class ForumThreadService {
       threadId: row.id,
       authorId: actor.id,
     });
-    return this.toView(row, {}, []);
+    return threadRowToView(row, {}, []);
   }
 
   async listFeed(viewerId: string, zoneId: string, q: FeedQuery): Promise<ThreadFeed> {
@@ -89,7 +90,7 @@ export class ForumThreadService {
       this.threads.reactionCountsByThread(ids),
       this.threads.myReactionsByThread(ids, viewerId),
     ]);
-    const items = rows.map((r) => this.toView(r, counts.get(r.id) ?? {}, mine.get(r.id) ?? []));
+    const items = rows.map((r) => threadRowToView(r, counts.get(r.id) ?? {}, mine.get(r.id) ?? []));
     // ponytail: heuristic cursor — a full page may have more; worst case one empty trailing fetch.
     const last = items.at(-1);
     const nextCursor = rows.length === q.limit && last ? last.createdAt : null;
@@ -137,25 +138,5 @@ export class ForumThreadService {
     const zone = await this.zones.findById(thread.zoneId, viewerId);
     if (!zone) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
     return thread;
-  }
-
-  private toView(
-    t: ThreadRow,
-    reactionCounts: Record<string, number>,
-    myReactions: string[],
-  ): ThreadView {
-    return {
-      id: t.id,
-      zoneId: t.zoneId,
-      authorId: t.authorId,
-      title: t.title,
-      body: t.body,
-      status: t.status as ThreadView["status"],
-      acceptedPostId: t.acceptedPostId,
-      isPinned: t.isPinned,
-      reactionCounts,
-      myReactions,
-      createdAt: t.createdAt.toISOString(),
-    };
   }
 }
