@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { fetchPublicQuestion, questionUrl } from "@/lib/forum-public";
+import { jsonLdHtml } from "@/lib/json-ld";
 
 export const revalidate = 3600;
 
@@ -55,7 +56,7 @@ export default async function PublicQuestionPage({ params }: PageProps) {
     <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg)" }}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
       <header
         className="border-b px-5 py-4 lg:px-8"
