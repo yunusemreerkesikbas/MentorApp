@@ -9,9 +9,11 @@ import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { ReportButton } from "../../_components/report-button";
 import {
+  deleteThread,
   getZone,
   isForumDisabled,
   listThreads,
+  pinThread,
   postThread,
   reactThread,
   unreactThread,
@@ -102,6 +104,38 @@ export function ZoneShell({ slug }: { slug: string }) {
     [patchReady],
   );
 
+  const onPinThread = useCallback(
+    (threadId: string, pinned: boolean) => {
+      patchReady((r) => ({
+        ...r,
+        threads: r.threads
+          .map((th) => (th.id === threadId ? { ...th, isPinned: pinned } : th))
+          .sort((a, b) =>
+            a.isPinned === b.isPinned
+              ? b.createdAt.localeCompare(a.createdAt)
+              : a.isPinned
+                ? -1
+                : 1,
+          ),
+      }));
+      pinThread(threadId, pinned).catch(() => {
+        patchReady((r) => ({
+          ...r,
+          threads: r.threads.map((th) => (th.id === threadId ? { ...th, isPinned: !pinned } : th)),
+        }));
+      });
+    },
+    [patchReady],
+  );
+
+  const onDeleteThread = useCallback(
+    (threadId: string) => {
+      patchReady((r) => ({ ...r, threads: r.threads.filter((th) => th.id !== threadId) }));
+      void deleteThread(threadId);
+    },
+    [patchReady],
+  );
+
   const onLoadMore = useCallback(async () => {
     const ready = state.status === "ready" ? state : null;
     if (!ready || !ready.nextCursor) return;
@@ -153,7 +187,18 @@ export function ZoneShell({ slug }: { slug: string }) {
           </h1>
           <Chip>{t(`type_${zone.type.toLowerCase()}` as `type_${string}`)}</Chip>
         </div>
-        <JoinButton zoneId={zone.id} myStatus={zone.myStatus} onJoined={onJoined} />
+        <div className="flex flex-col items-end gap-2">
+          <JoinButton zoneId={zone.id} myStatus={zone.myStatus} onJoined={onJoined} />
+          {zone.canModerate ? (
+            <Link
+              href={`/topluluk/${zone.slug}/yonetim`}
+              className="text-sm underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              style={{ color: "var(--color-secondary)" }}
+            >
+              {t("manage_link")}
+            </Link>
+          ) : null}
+        </div>
       </header>
 
       {/* Composer (members only). ANNOUNCEMENT posts may 403 for non-mods → ThreadComposer surfaces it. */}
@@ -189,6 +234,9 @@ export function ZoneShell({ slug }: { slug: string }) {
                   thread={th}
                   onToggleReaction={(emoji, adding) => onToggleReaction(th.id, emoji, adding)}
                   actions={<ReportButton targetType={ModerationTargetType.THREAD} targetId={th.id} />}
+                  canModerate={zone.canModerate}
+                  onPin={(pinned) => onPinThread(th.id, pinned)}
+                  onDelete={() => onDeleteThread(th.id)}
                 />
               ))}
         </div>

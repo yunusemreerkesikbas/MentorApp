@@ -4,9 +4,11 @@ import type {
   Paginated,
   QuestionDetail,
   ReportReason,
+  ReportView,
   ThreadFeed,
   ThreadView,
   ZoneMemberStatus,
+  ZoneMemberView,
   ZoneView,
 } from "@mentor/types";
 import { ApiClientError, http } from "@mentor/api-client";
@@ -87,6 +89,73 @@ export async function createReport(
     method: "POST",
     body: JSON.stringify({ targetType, targetId, reason, ...(note ? { note } : {}) }),
   });
+}
+
+export async function searchQuestions(q: string): Promise<Paginated<ThreadView>> {
+  const qs = new URLSearchParams({ q, pageSize: "30" });
+  return (await http<Paginated<ThreadView>>(`/v1/forum/search?${qs.toString()}`)) as Paginated<ThreadView>;
+}
+
+// --- Moderation surfaces (owner/mod or platform staff; backend authz-gated) ---
+
+export async function listZoneMembers(
+  zoneId: string,
+  status?: ZoneMemberStatus,
+): Promise<ZoneMemberView[]> {
+  const qs = status ? `?status=${status}` : "";
+  return (await http<ZoneMemberView[]>(`/v1/forum/zones/${zoneId}/members${qs}`)) as ZoneMemberView[];
+}
+
+export async function approveMember(
+  zoneId: string,
+  userId: string,
+  approve: boolean,
+): Promise<void> {
+  await http(`/v1/forum/zones/${zoneId}/members/${userId}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ approve }),
+  });
+}
+
+export async function listZoneReports(
+  zoneId: string,
+  status?: string,
+): Promise<Paginated<ReportView>> {
+  const qs = new URLSearchParams({ pageSize: "50" });
+  if (status) qs.set("status", status);
+  return (await http<Paginated<ReportView>>(
+    `/v1/forum/zones/${zoneId}/reports?${qs.toString()}`,
+  )) as Paginated<ReportView>;
+}
+
+export async function resolveReport(reportId: string, action: "HIDE" | "DISMISS"): Promise<void> {
+  await http(`/v1/forum/reports/${reportId}/resolve`, {
+    method: "POST",
+    body: JSON.stringify({ action }),
+  });
+}
+
+export async function restoreThread(threadId: string): Promise<void> {
+  await http(`/v1/forum/threads/${threadId}/restore`, { method: "POST" });
+}
+
+export async function restoreAnswer(postId: string): Promise<void> {
+  await http(`/v1/forum/answers/${postId}/restore`, { method: "POST" });
+}
+
+export async function pinThread(threadId: string, pinned: boolean): Promise<void> {
+  await http(`/v1/forum/threads/${threadId}/pin`, {
+    method: "POST",
+    body: JSON.stringify({ pinned }),
+  });
+}
+
+export async function deleteThread(threadId: string): Promise<void> {
+  await http(`/v1/forum/threads/${threadId}`, { method: "DELETE" });
+}
+
+export async function deleteAnswer(postId: string): Promise<void> {
+  await http(`/v1/forum/answers/${postId}`, { method: "DELETE" });
 }
 
 /** True when the forum feature flag is off — entry card / screens render their disabled state. */

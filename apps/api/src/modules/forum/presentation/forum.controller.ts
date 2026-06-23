@@ -42,12 +42,12 @@ export class ForumController {
     @CurrentUser() user: RequestUser,
     @Query() q: ZoneListQueryDto,
   ): Promise<Paginated<ZoneView>> {
-    return this.forum.listZones(user.id, q);
+    return this.forum.listZones(user.id, user.roles, q);
   }
 
   @Get("zones/:slug")
   get(@CurrentUser() user: RequestUser, @Param("slug") slug: string): Promise<ZoneView> {
-    return this.forum.getZone(user.id, slug);
+    return this.forum.getZone(user.id, user.roles, slug);
   }
 
   @Post("zones")

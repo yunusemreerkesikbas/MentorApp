@@ -35,7 +35,7 @@ describe("ForumService", () => {
 
   it("404s when the feature flag is off", async () => {
     config.get.mockResolvedValue(false);
-    await expect(svc.listZones("u1", { page: 1, pageSize: 20 } as never)).rejects.toMatchObject({
+    await expect(svc.listZones("u1", [], { page: 1, pageSize: 20 } as never)).rejects.toMatchObject({
       httpStatus: HttpStatus.NOT_FOUND,
     });
   });

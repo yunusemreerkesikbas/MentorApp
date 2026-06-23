@@ -15,6 +15,7 @@ import {
   canApproveMember,
   canCreateZone,
   canModerateZone,
+  isPlatformStaff,
   type ForumActor,
 } from "../domain/forum.policy";
 import { ForumEventTopic } from "../domain/forum.events";
@@ -71,7 +72,7 @@ export class ForumService {
       joinPolicy: dto.joinPolicy,
       createdBy: actorId,
     });
-    return this.toView(row, 0, null);
+    return this.toView(row, 0, null, actorRoles);
   }
 
   async assignOwner(actorRoles: string[], zoneId: string, targetUserId: string): Promise<void> {
@@ -123,7 +124,11 @@ export class ForumService {
     );
   }
 
-  async listZones(viewerId: string, q: ZoneListQuery): Promise<Paginated<ZoneView>> {
+  async listZones(
+    viewerId: string,
+    actorRoles: string[],
+    q: ZoneListQuery,
+  ): Promise<Paginated<ZoneView>> {
     await this.assertEnabled();
     const { items, total } = await this.repo.listPublic(viewerId, q);
     const ids = items.map((z) => z.id);
@@ -133,7 +138,7 @@ export class ForumService {
       this.repo.findMembershipsByZone(ids, viewerId),
     ]);
     const views = items.map((z) =>
-      this.toView(z, counts.get(z.id) ?? 0, memberships.get(z.id)?.status ?? null),
+      this.toView(z, counts.get(z.id) ?? 0, memberships.get(z.id) ?? null, actorRoles),
     );
     return { items: views, total, page: q.page, pageSize: q.pageSize };
   }
@@ -157,7 +162,7 @@ export class ForumService {
     }));
   }
 
-  async getZone(viewerId: string, slug: string): Promise<ZoneView> {
+  async getZone(viewerId: string, actorRoles: string[], slug: string): Promise<ZoneView> {
     await this.assertEnabled();
     const row = await this.repo.findBySlug(slug, viewerId);
     if (!row) throw new DomainError(ErrorCode.FORUM_ZONE_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -165,7 +170,7 @@ export class ForumService {
       this.repo.findMembership(row.id, viewerId),
       this.repo.memberCount(row.id),
     ]);
-    return this.toView(row, count, m?.status ?? null);
+    return this.toView(row, count, m ?? null, actorRoles);
   }
 
   /** Controller helper: the zone's join policy (for the join call) — no member-count round-trip. */
@@ -181,7 +186,15 @@ export class ForumService {
     return this.repo.findMembership(zoneId, userId);
   }
 
-  private toView(z: ZoneRow, memberCount: number, myStatus: string | null): ZoneView {
+  private toView(
+    z: ZoneRow,
+    memberCount: number,
+    membership: MemberRow | null,
+    actorRoles: string[],
+  ): ZoneView {
+    const myRole = (membership?.role as ZoneRole | undefined) ?? null;
+    const canModerate =
+      isPlatformStaff(actorRoles) || myRole === ZoneRole.OWNER || myRole === ZoneRole.MODERATOR;
     return {
       id: z.id,
       type: z.type as ZoneView["type"],
@@ -193,7 +206,9 @@ export class ForumService {
       examType: z.examType,
       isArchived: z.isArchived,
       memberCount,
-      myStatus: myStatus as ZoneView["myStatus"],
+      myStatus: (membership?.status as ZoneMemberStatus | undefined) ?? null,
+      myRole,
+      canModerate,
       createdAt: z.createdAt.toISOString(),
     };
   }

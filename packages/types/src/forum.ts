@@ -53,6 +53,10 @@ export interface ZoneView {
   memberCount: number;
   /** Viewer's membership status; null when not a member. */
   myStatus: ZoneMemberStatus | null;
+  /** Viewer's role in this zone; null when not a member. */
+  myRole: ZoneRole | null;
+  /** True when the viewer may moderate this zone (owner/mod here, or platform staff). */
+  canModerate: boolean;
   createdAt: string;
 }
 

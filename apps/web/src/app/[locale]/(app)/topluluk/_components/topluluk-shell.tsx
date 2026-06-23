@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { ZoneView } from "@mentor/types";
+import type { ThreadView, ZoneView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { SectionHeading } from "@mentor/ui";
+import { Button, SectionHeading, TextField } from "@mentor/ui";
 import { FormError } from "@/components/form";
-import { isForumDisabled, listZones } from "@/lib/forum";
+import { isForumDisabled, listZones, searchQuestions } from "@/lib/forum";
+import { QuestionListItem } from "../[slug]/_components/question-list-item";
 import { ZoneCard } from "./zone-card";
 
 type State =
@@ -68,27 +69,97 @@ export function ToplulukShell() {
         <EmptyState title={t("soon_title")} desc={t("soon_desc")} />
       ) : state.status === "error" ? (
         <FormError message={state.message} />
-      ) : state.zones.length === 0 ? (
-        <EmptyState title={t("empty")} />
       ) : (
-        <div className="flex flex-col gap-8">
-          {GROUPS.map(({ type, key }) => {
-            const zones = state.zones.filter((z) => z.type === type);
-            if (zones.length === 0) return null;
-            return (
-              <section key={type} className="flex flex-col gap-4">
-                <SectionHeading>{t(key)}</SectionHeading>
-                <div className="flex flex-col gap-4">
-                  {zones.map((z) => (
-                    <ZoneCard key={z.id} zone={z} />
-                  ))}
-                </div>
-              </section>
-            );
-          })}
-        </div>
+        <ReadyContent zones={state.zones} />
       )}
     </main>
+  );
+}
+
+/** Ready state: a QA search bar + the grouped zone list (or search results when a query is active). */
+function ReadyContent({ zones }: { zones: ZoneView[] }) {
+  const t = useTranslations("topluluk");
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<ThreadView[] | null>(null);
+  const [searching, setSearching] = useState(false);
+
+  const runSearch = async () => {
+    const q = query.trim();
+    if (q.length < 2) return;
+    setSearching(true);
+    try {
+      const res = await searchQuestions(q);
+      setResults(res.items);
+    } catch {
+      setResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const clear = () => {
+    setQuery("");
+    setResults(null);
+  };
+
+  return (
+    <div className="flex flex-col gap-8">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void runSearch();
+        }}
+        className="flex items-end gap-2"
+      >
+        <div className="flex-1">
+          <TextField
+            label={t("search_placeholder")}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+        <Button type="submit" busy={searching}>
+          {t("search_results")}
+        </Button>
+        {results !== null ? (
+          <Button type="button" variant="secondary" onClick={clear}>
+            {t("report_cancel")}
+          </Button>
+        ) : null}
+      </form>
+
+      {results !== null ? (
+        results.length === 0 ? (
+          <p style={{ color: "var(--color-secondary)" }}>{t("search_no_results")}</p>
+        ) : (
+          <section className="flex flex-col gap-4">
+            <SectionHeading>{t("search_results")}</SectionHeading>
+            <div className="flex flex-col gap-4">
+              {results.map((q) => (
+                <QuestionListItem key={q.id} question={q} />
+              ))}
+            </div>
+          </section>
+        )
+      ) : zones.length === 0 ? (
+        <EmptyState title={t("empty")} />
+      ) : (
+        GROUPS.map(({ type, key }) => {
+          const groupZones = zones.filter((z) => z.type === type);
+          if (groupZones.length === 0) return null;
+          return (
+            <section key={type} className="flex flex-col gap-4">
+              <SectionHeading>{t(key)}</SectionHeading>
+              <div className="flex flex-col gap-4">
+                {groupZones.map((z) => (
+                  <ZoneCard key={z.id} zone={z} />
+                ))}
+              </div>
+            </section>
+          );
+        })
+      )}
+    </div>
   );
 }
 
