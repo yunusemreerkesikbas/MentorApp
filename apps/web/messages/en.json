@@ -170,7 +170,6 @@
     "manage_title": "Room management",
     "pending_title": "Pending requests",
     "approve": "Approve",
-    "reject": "Reject",
     "no_pending": "No pending requests.",
     "queue_title": "Report queue",
     "queue_open": "Open",
@@ -185,8 +184,10 @@
     "pin": "Pin",
     "unpin": "Unpin",
     "delete": "Delete",
+    "delete_confirm": "Are you sure you want to delete this content?",
     "deleted": "Deleted",
     "search_placeholder": "Search questions…",
+    "search_submit": "Search",
     "search_results": "Results",
     "search_no_results": "No matching questions.",
     "not_authorized": "You don't have access to this page."

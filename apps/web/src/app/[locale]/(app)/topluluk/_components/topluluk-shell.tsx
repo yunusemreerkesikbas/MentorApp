@@ -119,7 +119,7 @@ function ReadyContent({ zones }: { zones: ZoneView[] }) {
           />
         </div>
         <Button type="submit" busy={searching}>
-          {t("search_results")}
+          {t("search_submit")}
         </Button>
         {results !== null ? (
           <Button type="button" variant="secondary" onClick={clear}>

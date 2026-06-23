@@ -170,7 +170,6 @@
     "manage_title": "Oda yönetimi",
     "pending_title": "Bekleyen katılımlar",
     "approve": "Onayla",
-    "reject": "Reddet",
     "no_pending": "Bekleyen istek yok.",
     "queue_title": "Şikayet kuyruğu",
     "queue_open": "Açık",
@@ -185,8 +184,10 @@
     "pin": "Sabitle",
     "unpin": "Sabiti kaldır",
     "delete": "Sil",
+    "delete_confirm": "Bu içeriği silmek istediğine emin misin?",
     "deleted": "Silindi",
     "search_placeholder": "Sorularda ara…",
+    "search_submit": "Ara",
     "search_results": "Sonuçlar",
     "search_no_results": "Eşleşen soru bulunamadı.",
     "not_authorized": "Bu sayfa için yetkin yok."

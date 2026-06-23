@@ -130,10 +130,13 @@ export function ZoneShell({ slug }: { slug: string }) {
 
   const onDeleteThread = useCallback(
     (threadId: string) => {
+      // Native confirm (no modal infra). Note: an un-reported inline delete has no in-UI restore
+      // path today (restore lives on the report queue) — a mod's own-deletions view is a later slice.
+      if (!window.confirm(t("delete_confirm"))) return;
       patchReady((r) => ({ ...r, threads: r.threads.filter((th) => th.id !== threadId) }));
       void deleteThread(threadId);
     },
-    [patchReady],
+    [patchReady, t],
   );
 
   const onLoadMore = useCallback(async () => {

@@ -31,6 +31,7 @@ actorRoles)` computes them via `isPlatformStaff`; `getZone`/`listZones` now take
 - **Approve-only (no Reject):** the backend `approveMember(false)` is a no-op (leaves PENDING — slice-1 C5); member removal has no endpoint yet, so a Reject button would mislead. Deferred until a removal endpoint exists.
 - **Restore lives in the queue:** hidden content (soft-deleted) isn't visible in the member feed, so the only reachable restore is the RESOLVED tab of the report queue.
 - **Inline mod = feed only:** `zone.canModerate` is known on the zone detail; the QA question-detail screen has no zone-role context, so QA content is moderated via the report queue (not inline).
+- **Inline delete is `window.confirm`-gated** (no modal infra). Restore-gap: a mod's inline delete of an **un-reported** thread has no in-UI restore path (restore lives on the report queue's RESOLVED tab, which needs a report row). Backend `POST /threads/:id/restore` exists; a "my deletions" mod view is a later slice.
 - **`react-hooks` setState-in-effect:** effects use the inline `.then`/async-IIFE pattern (no synchronous `setState` in the effect body, no named-callback fetch) — calling a setState-ing fn directly from an effect trips the rule.
 - **api-client not regenerated** (Docker/Postgres was down → `openapi:export` couldn't boot). Harmless here: the web `http<T>` wrappers read `ZoneView` straight from `@mentor/types`, not generated types. Regen the client when the stack is back so `openapi.json` reflects `myRole`/`canModerate`.
 
