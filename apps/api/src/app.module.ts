@@ -18,6 +18,7 @@ import { AiModule } from "./modules/ai/ai.module";
 import { CoachingModule } from "./modules/coaching/coaching.module";
 import { ContentModule } from "./modules/content/content.module";
 import { EconomyModule } from "./modules/economy/economy.module";
+import { ForumModule } from "./modules/forum/forum.module";
 import { IdentityModule } from "./modules/identity/identity.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
@@ -54,6 +55,7 @@ import { buildLoggerConfig } from "./observability/logger.config";
     CoachingModule,
     ContentModule,
     EconomyModule,
+    ForumModule,
     IdentityModule,
     NotificationsModule,
     PaymentsModule,

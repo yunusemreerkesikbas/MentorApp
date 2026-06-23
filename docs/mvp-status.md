@@ -15,7 +15,8 @@
 | **W3 AI** | 🟡 | premium AI coach chat ([0030](./devnotes/0030-w3-ai-coach-chat-slice1.md)) + **web koç UI** (`/koc`, ephemeral transcript, premium gate) ([0031](./devnotes/0031-w3-web-koc-ui.md), UI polish [0034](./devnotes/0034-w3-web-koc-ui-polish.md)) · **RAG grounding + source links** ([0043](./devnotes/0043-w3-ai-rag-grounding.md)) · **coin→AI chat spend** ([0045](./devnotes/0045-w3-coin-ai-chat-spend.md)) · **photo→subject categorize** ([0047](./devnotes/0047-w3-photo-subject-categorize.md)) · **mood AI-adaptive reflection + mood grounding in coach context** ([0048](./devnotes/0048-w3-mood-ai-adaptive.md)) · **ghost AI narration** ([0049](./devnotes/0049-w2-ghost-comparison-ai-narration.md)) | multi-turn/streaming, topic-level vision |
 | **W4 Payments** | ✅ | PaymentsPort fake/iyzico, trial state machine, entitlement + PremiumGuard, idempotent webhook, /abonelik ([0015](./devnotes/0015-payments.md)), **abonelik UI polish** ([0040](./devnotes/0040-w4-web-abonelik-ui-polish.md)) | iyzico prod keys + e-archive (Phase-0 ops) |
 | **W5 Notifications** | ✅ | JobQueuePort + cron runner, Postmark email, web push, daily reminders ([0019](./devnotes/0019-w5-notifications-queue.md)) | — |
-| **W6 Admin + Economy** | ✅ | see breakdown below — all MVP slices shipped | Phase 2: moderation queue · habit/milestone quests |
+| **W6 Admin + Economy** | ✅ | see breakdown below — all MVP slices shipped | Phase 2: habit/milestone quests |
+| **W7 Forum / Community** | ✅ | Phase-2 feature **pulled into MVP** (design [`plans/2026-06-22`](./plans/2026-06-22-forum-community-design.md)) — see breakdown below. Backend (zones · feed · QA+XP+search · moderation · public SEO) + web (participation · moderation tools · public QA pages). **51 backend tests green.** Behind `forum.enabled` flag | Phase 2: verification tiers · coin rewards · C-layer (AI ingest) · mahalle/live rooms · Tier-1 auto-moderation · author display names |
 
 ## W6 breakdown (this stream's focus)
 | Slice | Status | Devnote |
@@ -33,7 +34,18 @@
 | Economy: onboarding quests (auto-grant, capped, idempotent; habit/milestone backlog) | ✅ | [0027](./devnotes/0027-w6-economy-quests.md) |
 | Economy: coin spend → AI chat (`EconomyService.spend`; integrated by W3) | ✅ | [0045](./devnotes/0045-w3-coin-ai-chat-spend.md) |
 | Fine admin sub-roles (SUPPORT/FINANCE/SUPER_ADMIN gating + assignment; MODERATOR reserved) | ✅ | [0028](./devnotes/0028-w6-admin-sub-roles.md) |
-| Moderation queue (forum/community content) | ⛔ | needs forum (Phase 2) |
+| Moderation queue (forum/community content) | ✅ | shipped with forum (W7) — [0056](./devnotes/0056-forum-slice5-moderation.md) |
+
+## W7 breakdown — Forum / Community (Phase-2 → MVP, behind `forum.enabled`)
+| Slice | Status | Devnote |
+|---|---|---|
+| Slice 1 — Zones + scoped membership (curated staff creation, external OWNER, OPEN/REQUEST join, two-plane authz) | ✅ | [0052](./devnotes/0052-forum-slice1-zones.md) |
+| Slice 2 — Flat feed (threads) + reactions + pin (CHAT/ANNOUNCEMENT) | ✅ | [0053](./devnotes/0053-forum-slice2-feed.md) |
+| Slice 3 — Q&A: questions/answers + asker one-shot accept → XP (event→economy) + full-text search | ✅ | [0054](./devnotes/0054-forum-slice3-qa.md) |
+| Slice 5 — Reports → moderation queue (room owner/mod + platform override, hide/restore/dismiss, append-only audit) | ✅ | [0056](./devnotes/0056-forum-slice5-moderation.md) |
+| Web A — Core participation UI (`/topluluk`: zone list · feed · QA · join · report) | ✅ | [0057](./devnotes/0057-web-forum-core-ui.md) |
+| Web B — Moderation tools + approvals + search (`/topluluk/[slug]/yonetim`, inline pin/delete, index search) | ✅ | [0058](./devnotes/0058-web-forum-moderation-ui.md) |
+| Slice 6 — SEO: public QA pages (SSR + `QAPage` JSON-LD) + sitemap + robots (TR-index) | ✅ | [0059](./devnotes/0059-forum-slice6-seo.md) |
 
 ## Cross-cutting / known issues
 - **B2C web landing** (`/`) — marketing hero + **KPSS editorial links** ([0035](./devnotes/0035-web-landing-page.md), [0039](./devnotes/0039-w1-web-bilgi-ui-polish.md)).
@@ -53,8 +65,16 @@
   design); outbox/retry = Phase 2. Coin reversal (churn/refund) = Phase 2.
 - **Local RLS masking** — local `mentor` DB user is superuser → RLS bypassed locally; always verify
   RLS-sensitive reads (admin drafts, etc.) run in the right context (caught for content editor).
+- **Forum / community (W7)** — entire surface gated by `forum.enabled` (default **off**); flip per
+  environment to go live. Public SEO QA reads run in **service context** (forum tables are RLS-forced)
+  hard-filtered to indexable QA (`PublicQuestionView` omits PII). Backlogs: author **display names**
+  (views carry only `authorId`); a member-**reject/removal** endpoint (web shows approve-only);
+  forum endpoints have **no OpenAPI response schema** (web uses raw `fetch` + `@mentor/types`, so
+  api-client regen is a no-op). `NEXT_PUBLIC_SITE_URL` drives canonical/sitemap/robots.
 
 ## Guardrails honored (AGENTS §4)
 Coin non-monetary/capped · append-only ledgers (never edited/deleted) · reward tied to verified action ·
 no coin in chat · LLM never generates official info (editorial + trust metadata) · every admin mutation
 audited · org/coach-ready schema · KVKK erasure via anonymization.
+**Forum (W7):** no coin anywhere · forum XP only on accepted answer (idempotent) · moderation actions
+append-only audit · public QA omits PII (no `authorId`) · forum content not LLM-ingested (C-layer = Phase 2).

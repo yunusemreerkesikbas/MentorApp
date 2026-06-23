@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { fetchInfoArticleBySlug } from "@/lib/content-api";
+import { jsonLdHtml } from "@/lib/json-ld";
 import { ArticleContent } from "./_components/article-content";
 import { PublicArticleChrome } from "./_components/article-markdown";
 
@@ -60,7 +61,7 @@ export default async function PublicArticlePage({ params }: PageProps) {
     <PublicArticleChrome>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />
       <ArticleContent article={article} verifiedLabel={verifiedLabel} />
     </PublicArticleChrome>

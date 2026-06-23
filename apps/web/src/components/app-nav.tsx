@@ -18,8 +18,12 @@ const NAV_ITEMS = [
   { href: "/koc", labelKey: "coach", icon: CoachIcon },
   { href: "/analiz", labelKey: "analysis", icon: ChartIcon },
   { href: "/bilgi", labelKey: "knowledge", icon: BookIcon },
+  // Sidebar-only (desktop): the mobile tab bar stays at 6; community entry on mobile is the panel card.
+  { href: "/topluluk", labelKey: "community", icon: CommunityIcon, sidebarOnly: true },
   { href: "/profil", labelKey: "profile", icon: UserIcon },
 ] as const;
+
+const TAB_ITEMS = NAV_ITEMS.filter((i) => !("sidebarOnly" in i && i.sidebarOnly));
 
 export function AppNav() {
   const pathname = usePathname();
@@ -64,7 +68,7 @@ export function AppNav() {
         className="fixed inset-x-0 bottom-0 z-20 flex min-h-[63px] border-t border-black/10 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
         aria-label={t("aria_label")}
       >
-        {NAV_ITEMS.map((item) => (
+        {TAB_ITEMS.map((item) => (
           <NavLink
             key={item.href}
             item={item}
@@ -194,6 +198,16 @@ function UserIcon({ active }: IconProps) {
     <svg {...iconProps(active)}>
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+function CommunityIcon({ active }: IconProps) {
+  return (
+    <svg {...iconProps(active)}>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }

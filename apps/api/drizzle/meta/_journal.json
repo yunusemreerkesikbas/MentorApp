@@ -148,6 +148,34 @@
       "when": 1781999452099,
       "tag": "0020_tranquil_shard",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1782126274989,
+      "tag": "0021_flashy_vance_astro",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1782155793394,
+      "tag": "0022_daffy_ben_urich",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1782157732210,
+      "tag": "0023_wealthy_jack_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1782166589295,
+      "tag": "0024_stale_kinsey_walden",
+      "breakpoints": true
     }
   ]
 }

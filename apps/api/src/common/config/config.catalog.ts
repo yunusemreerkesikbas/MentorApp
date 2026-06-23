@@ -72,6 +72,7 @@ const aiCount = (def: number, max: number, description: string): ConfigEntryDef 
 export const CONFIG_CATALOG = {
   "ai.enabled": flag(true, "Global AI kill-switch (§4/§8) — turn off all AI features."),
   "economy.enabled": flag(false, "Gate for the light-economy module (user-facing balance/earning)."),
+  "forum.enabled": flag(false, "Gate for the forum/community module (zones, threads, moderation)."),
   "signup.enabled": flag(true, "Registration kill-switch — disable new sign-ups."),
   "economy.coin.daily_cap": economyCount(50, 100000, "Max coin a user can earn per day (abuse shield)."),
   "economy.coin.weekly_cap": economyCount(200, 1000000, "Max coin a user can earn per week (abuse shield)."),
@@ -79,6 +80,7 @@ export const CONFIG_CATALOG = {
   "economy.invite.reward_coin": economyCount(20, 100000, "Coin granted to the inviter when an invited user converts."),
   "economy.quest.onboarding_reward_coin": economyCount(10, 100000, "Coin granted per completed onboarding quest."),
   "economy.coin.ai_chat_cost": economyCount(5, 100000, "Coin debited per AI coach chat message (free earned-right path)."),
+  "forum.xp.accepted_answer": economyCount(25, 1000, "XP granted to a user when their forum answer is accepted (slice 3)."),
   "ai.chat.daily_limit": aiCount(30, 100000, "Max AI coach chat messages a premium user may send per day (cost cap §7)."),
   "ai.chat.free_coin_daily_limit": aiCount(
     5,
@@ -98,6 +100,7 @@ export type ConfigKey = keyof typeof CONFIG_CATALOG;
 export const FeatureFlag = {
   AI_ENABLED: "ai.enabled",
   ECONOMY_ENABLED: "economy.enabled",
+  FORUM_ENABLED: "forum.enabled",
   SIGNUP_ENABLED: "signup.enabled",
 } as const satisfies Record<string, ConfigKey>;
 

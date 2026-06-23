@@ -88,5 +88,6 @@ export * from "./ai.js";
 export * from "./coaching.js";
 export * from "./content.js";
 export * from "./economy.js";
+export * from "./forum.js";
 export * from "./payments.js";
 export * from "./notifications.js";

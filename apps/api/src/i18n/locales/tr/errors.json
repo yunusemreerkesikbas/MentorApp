@@ -53,5 +53,7 @@
   "INVITE_CODE_INVALID": "Davet kodu geçersiz.",
   "INVITE_SELF": "Kendi davet kodunu kullanamazsın.",
   "INVITE_ALREADY_REDEEMED": "Zaten bir davet kodu kullandın.",
-  "INVITE_ALREADY_PREMIUM": "Premium kullanıcılar davet kodu kullanamaz."
+  "INVITE_ALREADY_PREMIUM": "Premium kullanıcılar davet kodu kullanamaz.",
+  "FORUM_DISABLED": "Forum özelliği şu anda kapalı.",
+  "FORUM_ZONE_NOT_FOUND": "Bu oda bulunamadı."
 }

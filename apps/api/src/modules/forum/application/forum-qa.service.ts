@@ -1,0 +1,155 @@
+import { HttpStatus, Injectable } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
+import {
+  type AnswerView,
+  type Paginated,
+  type QuestionDetail,
+  type ThreadView,
+  ZoneRole,
+  ZoneType,
+} from "@mentor/types";
+import type { CreateAnswer, SearchQuery } from "@mentor/validation";
+import { ConfigRegistryService } from "../../../common/config/config-registry.service";
+import { DomainError } from "../../../common/errors/domain-error";
+import { ErrorCode } from "../../../common/errors/error-code";
+import {
+  canAcceptAnswer,
+  canDeleteThread,
+  canPostInZone,
+  type ForumActor,
+} from "../domain/forum.policy";
+import { ForumEventTopic } from "../domain/forum.events";
+import { ForumZoneRepository } from "../infrastructure/forum-zone.repository";
+import { ForumThreadRepository, type ThreadRow } from "../infrastructure/forum-thread.repository";
+import { ForumPostRepository } from "../infrastructure/forum-post.repository";
+import type { ThreadActor } from "./forum-thread.service";
+import { postRowToAnswerView, threadRowToView } from "./forum.mappers";
+
+/**
+ * QA behaviour (slice 3): answer / accept / question-detail / search for QA zones. Questions are
+ * created via ForumThreadService.postThread (title-enforced). Accept is asker-only + one-shot and
+ * emits `forum.answer.accepted` → economy grants XP (no forum→economy coupling). No coin (§4 #3).
+ */
+@Injectable()
+export class ForumQaService {
+  constructor(
+    private readonly threads: ForumThreadRepository,
+    private readonly posts: ForumPostRepository,
+    private readonly zones: ForumZoneRepository,
+    private readonly config: ConfigRegistryService,
+    private readonly events: EventEmitter2,
+  ) {}
+
+  private async assertEnabled(): Promise<void> {
+    if (!(await this.config.get("forum.enabled"))) {
+      throw new DomainError(ErrorCode.FORUM_DISABLED, HttpStatus.NOT_FOUND);
+    }
+  }
+
+  /** Load a QA question visible to the viewer, or throw. Returns the thread + its zone. */
+  private async requireQuestion(threadId: string, viewerId: string): Promise<ThreadRow> {
+    const thread = await this.threads.findById(threadId, viewerId);
+    if (!thread) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
+    const zone = await this.zones.findById(thread.zoneId, viewerId);
+    if (!zone) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
+    if (zone.type !== ZoneType.QA) {
+      throw new DomainError(ErrorCode.FORUM_NOT_A_QUESTION, HttpStatus.BAD_REQUEST);
+    }
+    return thread;
+  }
+
+  async answer(actor: ThreadActor, threadId: string, dto: CreateAnswer): Promise<AnswerView> {
+    await this.assertEnabled();
+    const thread = await this.requireQuestion(threadId, actor.id);
+    const membership = await this.zones.findMembership(thread.zoneId, actor.id);
+    const forumActor: ForumActor = {
+      userId: actor.id,
+      platformRoles: actor.roles,
+      zoneRole: (membership?.role as ZoneRole | undefined) ?? null,
+    };
+    if (!canPostInZone(forumActor, ZoneType.QA, membership?.status ?? null)) {
+      throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
+    }
+    const post = await this.posts.createAnswer({ threadId, authorId: actor.id, body: dto.body });
+    return postRowToAnswerView(post);
+  }
+
+  async accept(actor: ThreadActor, threadId: string, postId: string): Promise<void> {
+    await this.assertEnabled();
+    const thread = await this.requireQuestion(threadId, actor.id);
+    const forumActor: ForumActor = { userId: actor.id, platformRoles: actor.roles, zoneRole: null };
+    if (!canAcceptAnswer(forumActor, thread.authorId)) {
+      throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
+    }
+    const post = await this.posts.findById(postId, actor.id);
+    if (!post || post.threadId !== threadId) {
+      throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    // Atomic one-shot claim: the conditional UPDATE wins exactly once. Concurrent accepts (or a
+    // re-accept) get `false` → 409. setAccepted/emit run only for the winner (no double XP grant).
+    const claimed = await this.threads.setQaAccepted(threadId, postId);
+    if (!claimed) {
+      throw new DomainError(ErrorCode.FORUM_ALREADY_ANSWERED, HttpStatus.CONFLICT);
+    }
+    await this.posts.setAccepted(postId, true);
+    // emitAsync: await the XP grant so the answerer's balance reflects the accept by the time we
+    // return (the listener is idempotent + flag-guarded). Keeps forum decoupled from economy.
+    await this.events.emitAsync(ForumEventTopic.ANSWER_ACCEPTED, {
+      threadId,
+      postId,
+      answerAuthorId: post.authorId,
+      askerId: actor.id,
+    });
+  }
+
+  async getQuestion(viewerId: string, threadId: string): Promise<QuestionDetail> {
+    await this.assertEnabled();
+    const thread = await this.requireQuestion(threadId, viewerId);
+    const [counts, mine, answers] = await Promise.all([
+      this.threads.reactionCountsByThread([threadId]),
+      this.threads.myReactionsByThread([threadId], viewerId),
+      this.posts.listByThread(threadId, viewerId),
+    ]);
+    return {
+      question: threadRowToView(thread, counts.get(threadId) ?? {}, mine.get(threadId) ?? []),
+      answers: answers.map((a) => postRowToAnswerView(a)),
+    };
+  }
+
+  async search(viewerId: string, q: SearchQuery): Promise<Paginated<ThreadView>> {
+    await this.assertEnabled();
+    const { items, total } = await this.threads.searchQuestions(viewerId, {
+      q: q.q,
+      zoneSlug: q.zone,
+      page: q.page,
+      pageSize: q.pageSize,
+    });
+    const ids = items.map((t) => t.id);
+    const [counts, mine] = await Promise.all([
+      this.threads.reactionCountsByThread(ids),
+      this.threads.myReactionsByThread(ids, viewerId),
+    ]);
+    const views = items.map((t) =>
+      threadRowToView(t, counts.get(t.id) ?? {}, mine.get(t.id) ?? []),
+    );
+    return { items: views, total, page: q.page, pageSize: q.pageSize };
+  }
+
+  async removeAnswer(actor: ThreadActor, postId: string): Promise<void> {
+    await this.assertEnabled();
+    const post = await this.posts.findById(postId, actor.id);
+    if (!post) throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
+    const thread = await this.threads.findById(post.threadId, actor.id);
+    if (!thread) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
+    const membership = await this.zones.findMembership(thread.zoneId, actor.id);
+    const forumActor: ForumActor = {
+      userId: actor.id,
+      platformRoles: actor.roles,
+      zoneRole: (membership?.role as ZoneRole | undefined) ?? null,
+    };
+    if (!canDeleteThread(forumActor, post.authorId)) {
+      throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
+    }
+    await this.posts.softDelete(postId, actor.id);
+  }
+}

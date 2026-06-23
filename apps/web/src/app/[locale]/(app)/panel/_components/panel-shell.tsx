@@ -8,6 +8,7 @@ import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
 import { CountdownCard, StreakBadge } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import { CommunityCard } from "./community-card";
 import { CountdownPlaceholder } from "./countdown-placeholder";
 import { MoodCheckin } from "./mood-checkin";
 import { StartSessionCta } from "./start-session-cta";
@@ -215,6 +216,7 @@ export function PanelShell() {
             }
           />
           <VisionBoardCard />
+          <CommunityCard />
         </motion.aside>
       </motion.div>
     </main>

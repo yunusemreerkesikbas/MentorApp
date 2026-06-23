@@ -1,0 +1,47 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import type { AnswerView } from "@mentor/types";
+import { Card, Chip } from "@mentor/ui";
+
+/** One answer. Accepted answers are highlighted; `accept`/`report` are slots filled by the shell. */
+export function AnswerItem({
+  answer,
+  accept,
+  report,
+}: {
+  answer: AnswerView;
+  accept?: ReactNode;
+  report?: ReactNode;
+}) {
+  const t = useTranslations("topluluk");
+  const locale = useLocale();
+  const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(
+    new Date(answer.createdAt),
+  );
+
+  return (
+    <Card solid={answer.isAccepted}>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
+          {when}
+        </span>
+        {answer.isAccepted ? (
+          <Chip>
+            <span style={{ color: "var(--color-progress)" }}>✓ {t("accepted")}</span>
+          </Chip>
+        ) : null}
+      </div>
+      <p className="mt-2 whitespace-pre-wrap text-base" style={{ color: "var(--color-main)" }}>
+        {answer.body}
+      </p>
+      {accept || report ? (
+        <div className="mt-3 flex items-center gap-3">
+          {accept}
+          {report}
+        </div>
+      ) : null}
+    </Card>
+  );
+}

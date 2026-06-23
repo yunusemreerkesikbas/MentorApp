@@ -869,3 +869,203 @@ export const aiUsage = pgTable(
   },
   (t) => [index("ai_usage_user_created_idx").on(t.userId, t.createdAt)],
 );
+
+/* ============================== forum ==============================
+ * Zone primitive (announcement/chat/qa) + scoped membership (owner/mod/member).
+ * Design 2026-06-22. org_id nullable from day one; visibility PUBLIC in MVP
+ * (PRIVATE reserved for Phase 2 invite/closed/mahalle). Phase 2 appends
+ * threads/posts/reactions/reports/moderation_actions to this block.
+ * RLS: read PUBLIC non-archived zones (any authed) + own membership rows;
+ * privileged writes/member-lists run in SERVICE context (policy-checked in app).
+ * ================================================================== */
+export const forumZones = pgTable(
+  "forum_zones",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    /** ZoneType: ANNOUNCEMENT | CHAT | QA */
+    type: text("type").notNull(),
+    title: text("title").notNull(),
+    slug: text("slug").notNull(),
+    description: text("description"),
+    /** ZoneVisibility — PUBLIC in MVP; PRIVATE reserved. */
+    visibility: text("visibility").notNull().default("PUBLIC"),
+    /** ZoneJoinPolicy: OPEN (instant) | REQUEST (owner-approved). */
+    joinPolicy: text("join_policy").notNull().default("OPEN"),
+    examType: text("exam_type"),
+    organizationId: uuid("organization_id").references(() => organizations.id),
+    createdBy: uuid("created_by").references(() => users.id),
+    isArchived: boolean("is_archived").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_zones_slug_idx").on(t.slug),
+    index("forum_zones_type_idx").on(t.type),
+  ],
+);
+
+export const forumZoneMembers = pgTable(
+  "forum_zone_members",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    zoneId: uuid("zone_id")
+      .notNull()
+      .references(() => forumZones.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    /** ZoneRole: OWNER | MODERATOR | MEMBER (per-zone scoped — not a platform role). */
+    role: text("role").notNull().default("MEMBER"),
+    /** ZoneMemberStatus: ACTIVE | PENDING. */
+    status: text("status").notNull().default("ACTIVE"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_zone_members_unique_idx").on(t.zoneId, t.userId),
+    index("forum_zone_members_zone_status_idx").on(t.zoneId, t.status),
+  ],
+);
+
+/* Slice 2 — flat feed item (CHAT message / ANNOUNCEMENT broadcast). No `kind`: behaviour is
+ * derived from the parent zone's type. Replies/QA answers (forum_posts) arrive in Slice 3.
+ * Soft-delete (deleted_at) keeps the row for moderation audit; feed reads filter it out. */
+export const forumThreads = pgTable(
+  "forum_threads",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    zoneId: uuid("zone_id")
+      .notNull()
+      .references(() => forumZones.id),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    /** QA question headline (slice 3). Null for chat/announcement. */
+    title: text("title"),
+    body: text("body").notNull(),
+    /** ThreadStatus: OPEN | ANSWERED (QA only; chat/announcement stay OPEN). */
+    status: text("status").notNull().default("OPEN"),
+    /** Accepted answer's forum_posts.id (QA). No FK: avoids circular threads↔posts FK — app-enforced. */
+    acceptedPostId: uuid("accepted_post_id"),
+    isPinned: boolean("is_pinned").notNull().default(false),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("forum_threads_zone_created_idx").on(t.zoneId, t.createdAt),
+    index("forum_threads_zone_pinned_idx").on(t.zoneId).where(sql`${t.isPinned}`),
+  ],
+);
+
+/* Slice 3 — QA answers. Question = a `forum_threads` row in a QA zone; answers live here.
+ * Soft-delete mirrors threads; `is_accepted` set when the asker accepts (one-shot). */
+export const forumPosts = pgTable(
+  "forum_posts",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    threadId: uuid("thread_id")
+      .notNull()
+      .references(() => forumThreads.id),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    body: text("body").notNull(),
+    isAccepted: boolean("is_accepted").notNull().default(false),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    deletedBy: uuid("deleted_by").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("forum_posts_thread_created_idx").on(t.threadId, t.createdAt)],
+);
+
+/** One reaction per (thread, user, emoji). Emoji constrained to FORUM_REACTION_EMOJIS in app. */
+export const forumReactions = pgTable(
+  "forum_reactions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    threadId: uuid("thread_id")
+      .notNull()
+      .references(() => forumThreads.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    emoji: text("emoji").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_reactions_unique_idx").on(t.threadId, t.userId, t.emoji),
+    index("forum_reactions_thread_idx").on(t.threadId),
+  ],
+);
+
+/* Slice 5 — moderation. Reports flag a thread/post; the zone owner/mod (or platform staff) act on
+ * them. "Hide" reuses the soft-delete (deleted_at) on threads/posts; the action log is the history.
+ * zone_id is denormalized so the queue can filter per zone without a join. */
+export const forumReports = pgTable(
+  "forum_reports",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    /** ModerationTargetType: THREAD | POST */
+    targetType: text("target_type").notNull(),
+    targetId: uuid("target_id").notNull(),
+    zoneId: uuid("zone_id")
+      .notNull()
+      .references(() => forumZones.id),
+    reporterId: uuid("reporter_id")
+      .notNull()
+      .references(() => users.id),
+    /** ReportReason: SPAM | HARASSMENT | OFF_TOPIC | OTHER */
+    reason: text("reason").notNull(),
+    note: text("note"),
+    /** ReportStatus: OPEN | RESOLVED | DISMISSED */
+    status: text("status").notNull().default("OPEN"),
+    resolvedBy: uuid("resolved_by").references(() => users.id),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_reports_unique_idx").on(t.targetType, t.targetId, t.reporterId),
+    index("forum_reports_zone_status_idx").on(t.zoneId, t.status),
+    index("forum_reports_status_idx").on(t.status),
+  ],
+);
+
+/** Append-only moderation audit (who hid/restored/dismissed what, why). Never edited/deleted. */
+export const forumModerationActions = pgTable(
+  "forum_moderation_actions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => users.id),
+    /** ROOM (zone owner/mod) | PLATFORM (staff override). */
+    actorScope: text("actor_scope").notNull(),
+    /** HIDE | RESTORE | DISMISS */
+    action: text("action").notNull(),
+    targetType: text("target_type").notNull(),
+    targetId: uuid("target_id").notNull(),
+    zoneId: uuid("zone_id")
+      .notNull()
+      .references(() => forumZones.id),
+    reason: text("reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("forum_moderation_actions_zone_created_idx").on(t.zoneId, t.createdAt)],
+);
