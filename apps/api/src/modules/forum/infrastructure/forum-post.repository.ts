@@ -36,6 +36,17 @@ export class ForumPostRepository {
     });
   }
 
+  /** Public (SEO) answers for a question — service-context, non-deleted, accepted-first. */
+  async listPublicAnswers(threadId: string): Promise<PostRow[]> {
+    return withServiceContext(this.db, async (tx) => {
+      return tx
+        .select()
+        .from(forumPosts)
+        .where(and(eq(forumPosts.threadId, threadId), isNull(forumPosts.deletedAt)))
+        .orderBy(desc(forumPosts.isAccepted), asc(forumPosts.createdAt));
+    });
+  }
+
   async findById(postId: string, viewerId: string): Promise<PostRow | null> {
     return withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const [row] = await tx.select().from(forumPosts).where(eq(forumPosts.id, postId)).limit(1);

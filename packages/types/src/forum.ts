@@ -123,6 +123,28 @@ export interface QuestionDetail {
   answers: AnswerView[];
 }
 
+/** Public (anonymous, SEO) QA shapes — no authorId/PII. Only indexable QA questions are exposed. */
+export interface PublicAnswerView {
+  id: string;
+  body: string;
+  isAccepted: boolean;
+  createdAt: string;
+}
+
+export interface PublicQuestionView {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  answers: PublicAnswerView[];
+}
+
+/** Sitemap entry for an indexable QA question. */
+export interface PublicQuestionRef {
+  id: string;
+  updatedAt: string;
+}
+
 /** Moderation (slice 5) — what can be reported. */
 export const ModerationTargetType = {
   THREAD: "THREAD",

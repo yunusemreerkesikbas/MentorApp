@@ -218,4 +218,43 @@ export class ForumThreadRepository {
       return map;
     });
   }
+
+  // --- Public (SEO) reads: service-context, hard-filtered to INDEXABLE QA questions ---
+  // Indexable = QA zone, PUBLIC, not archived, thread not deleted, AND has ≥1 non-deleted answer.
+
+  private indexableWhere() {
+    return and(
+      eq(forumZones.type, ZoneType.QA),
+      eq(forumZones.visibility, "PUBLIC"),
+      eq(forumZones.isArchived, false),
+      isNull(forumThreads.deletedAt),
+      sql`EXISTS (SELECT 1 FROM forum_posts fp WHERE fp.thread_id = ${forumThreads.id} AND fp.deleted_at IS NULL)`,
+    );
+  }
+
+  /** A single indexable QA question (or null). */
+  async findPublicQuestion(threadId: string): Promise<ThreadRow | null> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select(getTableColumns(forumThreads))
+        .from(forumThreads)
+        .innerJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
+        .where(and(eq(forumThreads.id, threadId), this.indexableWhere()))
+        .limit(1);
+      return rows[0] ?? null;
+    });
+  }
+
+  /** Indexable QA questions for the sitemap (id + updatedAt, newest-updated first). */
+  async listPublicQuestionRefs(limit: number): Promise<{ id: string; updatedAt: Date }[]> {
+    return withServiceContext(this.db, async (tx) => {
+      return tx
+        .select({ id: forumThreads.id, updatedAt: forumThreads.updatedAt })
+        .from(forumThreads)
+        .innerJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
+        .where(this.indexableWhere())
+        .orderBy(desc(forumThreads.updatedAt))
+        .limit(limit);
+    });
+  }
 }

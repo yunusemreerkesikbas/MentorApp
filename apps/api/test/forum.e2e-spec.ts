@@ -478,4 +478,49 @@ describe("forum zones (e2e)", () => {
       .set(asUser());
     expect(feedAfterRestore.body.items.map((t: { id: string }) => t.id)).toContain(threadId);
   });
+
+  // ---- Slice 6: public (SEO) reads ----
+
+  it("public QA endpoint: indexable question anon-readable; non-indexable → 404", async () => {
+    const zoneId = await createZone(ZoneType.QA, "Public SEO QA");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+    const asked = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ title: "Public görünür soru başlığı", body: "gövde" });
+    const threadId = asked.body.id as string;
+
+    // No answer yet → not indexable (anonymous, no auth header).
+    const before = await request(app.getHttpServer()).get(`/v1/forum/public/questions/${threadId}`);
+    expect(before.status).toBe(404);
+
+    await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${threadId}/answers`)
+      .set(asUser())
+      .send({ body: "bir cevap" });
+
+    // Now indexable — readable with NO auth, and exposes no authorId.
+    const pub = await request(app.getHttpServer()).get(`/v1/forum/public/questions/${threadId}`);
+    expect(pub.status).toBe(200);
+    expect(pub.body.title).toBe("Public görünür soru başlığı");
+    expect(pub.body.answers.length).toBeGreaterThanOrEqual(1);
+    expect(pub.body.authorId).toBeUndefined();
+
+    // A CHAT thread is never indexable.
+    const chatZoneId = await createZone(ZoneType.CHAT, "Public SEO Chat");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${chatZoneId}/join`).set(asUser());
+    const chat = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${chatZoneId}/threads`)
+      .set(asUser())
+      .send({ body: "mesaj" });
+    const chatRes = await request(app.getHttpServer()).get(
+      `/v1/forum/public/questions/${chat.body.id}`,
+    );
+    expect(chatRes.status).toBe(404);
+
+    // Sitemap list (anon) includes the indexable question.
+    const list = await request(app.getHttpServer()).get("/v1/forum/public/questions");
+    expect(list.status).toBe(200);
+    expect(list.body.map((r: { id: string }) => r.id)).toContain(threadId);
+  });
 });
