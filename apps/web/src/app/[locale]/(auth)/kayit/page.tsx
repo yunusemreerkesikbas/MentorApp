@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
+import { postAuthDestination } from "@/lib/post-auth-destination";
 import { AuthNavLink } from "../_components/auth-nav-link";
 
 export default function SignupPage() {
@@ -27,13 +28,13 @@ export default function SignupPage() {
       return;
     }
     try {
-      await signup({
+      const user = await signup({
         displayName: String(data.get("displayName")),
         email: String(data.get("email")),
         password: String(data.get("password")),
         kvkkAccepted: true,
       });
-      router.push("/panel");
+      router.push(postAuthDestination(user));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {

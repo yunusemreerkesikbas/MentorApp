@@ -12,15 +12,18 @@ import { useAuth } from "@/lib/auth-context";
  * Layout (DESIGN.md §8): bottom tab bar on mobile, left sidebar ≥1024px.
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const router = useRouter();
   const t = useTranslations("panel");
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/giris");
-  }, [status, router]);
+    if (status === "authenticated" && !user?.examType) {
+      router.replace("/onboarding");
+    }
+  }, [status, user, router]);
 
-  if (status !== "authenticated") {
+  if (status !== "authenticated" || !user?.examType) {
     return (
       <main
         className="flex min-h-screen items-center justify-center px-5"

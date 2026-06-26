@@ -1,15 +1,22 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
 import { Card } from "@mentor/ui";
+import { isWelcomeSeen } from "@/lib/welcome-seen";
 
-/** Centered auth chrome — matches landing header + motion card entrance. */
+/** Centered auth chrome — matches welcome + motion card entrance. */
 export function AuthShell({ children }: { children: ReactNode }) {
   const t = useTranslations("auth.shell");
   const reduceMotion = useReducedMotion();
+  const [showBackHome, setShowBackHome] = useState(false);
+
+  useEffect(() => {
+    setShowBackHome(!isWelcomeSeen());
+  }, []);
 
   const headerMotion = reduceMotion
     ? {}
@@ -53,17 +60,19 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <motion.div {...cardMotion}>
         <Card className="flex flex-col gap-4">{children}</Card>
       </motion.div>
-      <p
-        className="mt-6 text-center text-xs"
-        style={{ color: "var(--color-secondary)" }}
-      >
-        <Link
-          href="/"
-          className="underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2"
+      {showBackHome ? (
+        <p
+          className="mt-6 text-center text-xs"
+          style={{ color: "var(--color-secondary)" }}
         >
-          {t("back_home")}
-        </Link>
-      </p>
+          <Link
+            href="/"
+            className="underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2"
+          >
+            {t("back_home")}
+          </Link>
+        </p>
+      ) : null}
     </main>
   );
 }

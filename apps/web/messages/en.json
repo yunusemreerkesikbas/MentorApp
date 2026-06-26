@@ -8,42 +8,25 @@
     "hide_password": "Hide password",
     "source_prefix": "Source:"
   },
-  "landing": {
-    "header": {
-      "nav_label": "Account",
-      "login": "Sign in",
-      "register": "Sign up"
-    },
-    "hero": {
-      "chip": "Your exam companion",
+  "welcome": {
+    "loading": "Loading…",
+    "back_aria": "Go to previous slide",
+    "progress_aria": "Intro slide {current} of {total}",
+    "continue": "Continue",
+    "skip": "Skip",
+    "register": "Sign up",
+    "login": "Sign in",
+    "slide1": {
       "title": "You're not alone on the road to your exam.",
-      "description": "An AI coach that understands you, keeps you going, and never leaves you alone. Daily rituals, plans, and a knowledge hub — all in one companion.",
-      "cta_start": "Let's get started",
-      "cta_login": "Sign in",
-      "tagline": "KPSS, YKS, LGS — same coach, content tailored to your exam."
+      "subtitle": "Not a knowledge platform — a companionship platform that understands you, keeps you going, and never leaves you alone."
     },
-    "features": {
-      "heading": "Three layers, one path",
-      "subtitle": "Not a knowledge platform — a companionship platform.",
-      "ai_coach_title": "AI Coach",
-      "ai_coach_desc": "Here for your plans, motivation, and exam anxiety. Official dates come from editorial content — no fabrication.",
-      "ritual_title": "Daily ritual",
-      "ritual_desc": "Today's plan, focus sessions, and streaks. Build habits in small steps — no judgment.",
-      "knowledge_title": "Knowledge hub",
-      "knowledge_desc": "Curated articles and reliable calendar sources. Reading is free; coach answers go premium-deep."
+    "slide2": {
+      "title": "Your AI coach is with you.",
+      "subtitle": "Support for plans, motivation, and anxious moments. Official dates come from editorial content — never fabricated."
     },
-    "editorial": {
-      "heading": "From the knowledge hub",
-      "subtitle": "Official processes — sourced and free to read.",
-      "source_label": "Source"
-    },
-    "cta": {
-      "heading": "One small step today is enough.",
-      "subtitle": "Start free; try coach depth with premium.",
-      "button": "Sign up free"
-    },
-    "footer": {
-      "disclaimer": "Official exam information comes from editorial content — the coach never fabricates dates."
+    "slide3": {
+      "title": "Together with the community.",
+      "subtitle": "Ask questions, share experiences — move forward without feeling alone on your exam journey."
     }
   },
   "auth": {
@@ -487,6 +470,38 @@
     "trust_badge": "Verified content",
     "trust_body": "This content has been verified with cited sources by our editorial team. Official processes and dates are taken from the relevant institutions' sources and updated if they change.",
     "login": "Log in"
+  },
+  "onboarding": {
+    "loading": "Loading…",
+    "back": "Back",
+    "back_aria": "Go to previous step",
+    "progress_aria": "Onboarding step {current} of {total}",
+    "progress_label": "Step {current} of {total}",
+    "welcome": {
+      "title": "Hello, {name}!",
+      "subtitle": "We're with you on the long exam journey. We'll take small steps together.",
+      "continue": "Continue"
+    },
+    "exam": {
+      "title": "Which exam are you preparing for?",
+      "subtitle": "Official dates come from the knowledge hub; here you choose your target exam family.",
+      "continue": "Continue",
+      "save_error": "Couldn't save."
+    },
+    "goal": {
+      "title": "Remember your goal",
+      "subtitle": "Optional — why are you on this path?",
+      "hint": "Only your goal is required; city is optional.",
+      "save": "Save and continue",
+      "skip": "Skip for now",
+      "save_error": "Couldn't save."
+    },
+    "complete": {
+      "title": "You're ready!",
+      "subtitle": "Your countdown and today's plan are waiting on the dashboard.",
+      "countdown_teaser": "Your exam countdown is on the dashboard — from the verified official calendar.",
+      "go_panel": "Go to dashboard"
+    }
   },
   "vision": {
     "card_title": "Your goal",

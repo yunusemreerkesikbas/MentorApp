@@ -8,42 +8,25 @@
     "hide_password": "Şifreyi gizle",
     "source_prefix": "Kaynak:"
   },
-  "landing": {
-    "header": {
-      "nav_label": "Hesap",
-      "login": "Giriş",
-      "register": "Kayıt ol"
-    },
-    "hero": {
-      "chip": "Sınav yoldaşın",
+  "welcome": {
+    "loading": "Yükleniyor…",
+    "back_aria": "Önceki slayta dön",
+    "progress_aria": "Tanıtım slaytı {current} / {total}",
+    "continue": "Devam",
+    "skip": "Atla",
+    "register": "Kayıt ol",
+    "login": "Giriş yap",
+    "slide1": {
       "title": "Sınav yolunda yalnız değilsin.",
-      "description": "Seni anlayan, devam ettiren ve yalnız bırakmayan bir AI koç. Günlük ritüel, plan ve bilgi merkezi — tek bir yol arkadaşında.",
-      "cta_start": "Hadi başlayalım",
-      "cta_login": "Giriş yap",
-      "tagline": "KPSS, YKS, LGS — aynı koç, sınavına özel içerik."
+      "subtitle": "Bilgi platformu değil — seni anlayan, devam ettiren ve yalnız bırakmayan bir yoldaşlık platformu."
     },
-    "features": {
-      "heading": "Üç katman, tek yol",
-      "subtitle": "Bilgi platformu değil — yoldaşlık platformu.",
-      "ai_coach_title": "AI Koç",
-      "ai_coach_desc": "Plan, motivasyon ve sınav kaygısı için yanında. Resmî tarihler editoryal içerikten — asla uydurma bilgi.",
-      "ritual_title": "Günlük ritüel",
-      "ritual_desc": "Bugünün planı, odak seansı ve streak. Küçük adımlarla alışkanlık — yargılama yok.",
-      "knowledge_title": "Bilgi merkezi",
-      "knowledge_desc": "Küratörlü makaleler ve güvenilir takvim kaynakları. Okuma ücretsiz; koç yanıtları premium derinlikte."
+    "slide2": {
+      "title": "AI koçun yanında.",
+      "subtitle": "Plan, motivasyon ve kaygı anlarında destek. Resmî tarihler editoryal içerikten — asla uydurma bilgi."
     },
-    "editorial": {
-      "heading": "Bilgi merkezinden",
-      "subtitle": "Resmî süreçler — kaynak gösterilmiş, ücretsiz okuma.",
-      "source_label": "Kaynak"
-    },
-    "cta": {
-      "heading": "Bugün küçük bir adım yeter.",
-      "subtitle": "Ücretsiz başla; premium ile koç derinliğini dene.",
-      "button": "Ücretsiz kayıt"
-    },
-    "footer": {
-      "disclaimer": "Resmî sınav bilgileri editoryal içerikten gelir — koç asla tarih uydurmaz."
+    "slide3": {
+      "title": "Toplulukla birlikte.",
+      "subtitle": "Sorularını sor, deneyim paylaş — sınav yolunda yalnız kalmadan ilerle."
     }
   },
   "auth": {
@@ -487,6 +470,38 @@
     "trust_badge": "Doğrulanmış içerik",
     "trust_body": "Bu içerik editorial ekibimiz tarafından kaynak gösterilerek doğrulanmıştır. Resmî süreç ve tarihler ilgili kurum kaynaklarından alınır; değişiklik olursa güncellenir.",
     "login": "Giriş yap"
+  },
+  "onboarding": {
+    "loading": "Yükleniyor…",
+    "back": "Geri",
+    "back_aria": "Önceki adıma dön",
+    "progress_aria": "Onboarding adımı {current} / {total}",
+    "progress_label": "Adım {current} / {total}",
+    "welcome": {
+      "title": "Merhaba, {name}!",
+      "subtitle": "Uzun sınav yolculuğunda yanındayız. Birlikte küçük adımlarla ilerleyeceğiz.",
+      "continue": "Devam"
+    },
+    "exam": {
+      "title": "Hangi sınava hazırlanıyorsun?",
+      "subtitle": "Resmî tarih bilgi merkezinden gelir; burada hedef sınav ailesini seçiyorsun.",
+      "continue": "Devam",
+      "save_error": "Kaydedilemedi."
+    },
+    "goal": {
+      "title": "Hedefini hatırla",
+      "subtitle": "İsteğe bağlı — neden bu yoldasın?",
+      "hint": "Sadece hedefin zorunlu; şehir isteğe bağlı.",
+      "save": "Kaydet ve devam",
+      "skip": "Şimdilik atla",
+      "save_error": "Kaydedilemedi."
+    },
+    "complete": {
+      "title": "Hazırsın!",
+      "subtitle": "Panelinde geri sayım ve bugünün planı seni bekliyor.",
+      "countdown_teaser": "Sınav geri sayımın panelde — kaynak gösterilmiş resmî takvimden.",
+      "go_panel": "Panele git"
+    }
   },
   "vision": {
     "card_title": "Hedefin",

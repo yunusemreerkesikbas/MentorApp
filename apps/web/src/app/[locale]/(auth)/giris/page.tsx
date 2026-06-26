@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
+import { postAuthDestination } from "@/lib/post-auth-destination";
 import { AuthNavLink } from "../_components/auth-nav-link";
 
 export default function LoginPage() {
@@ -22,11 +23,11 @@ export default function LoginPage() {
     setBusy(true);
     const data = new FormData(e.currentTarget);
     try {
-      await login({
+      const user = await login({
         email: String(data.get("email")),
         password: String(data.get("password")),
       });
-      router.push("/panel");
+      router.push(postAuthDestination(user));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
