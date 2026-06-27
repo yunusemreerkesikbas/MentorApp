@@ -183,6 +183,13 @@
       "when": 1782557655952,
       "tag": "0025_w5_in_app_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1782700000000,
+      "tag": "0026_w5_notification_link_url",
+      "breakpoints": true
     }
   ]
 }

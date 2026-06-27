@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
@@ -8,15 +8,17 @@ import type { ReactNode } from "react";
 import { Card } from "@mentor/ui";
 import { isWelcomeSeen } from "@/lib/welcome-seen";
 
+const subscribeWelcomeSeen = () => () => undefined;
+
 /** Centered auth chrome — matches welcome + motion card entrance. */
 export function AuthShell({ children }: { children: ReactNode }) {
   const t = useTranslations("auth.shell");
   const reduceMotion = useReducedMotion();
-  const [showBackHome, setShowBackHome] = useState(false);
-
-  useEffect(() => {
-    setShowBackHome(!isWelcomeSeen());
-  }, []);
+  const showBackHome = useSyncExternalStore(
+    subscribeWelcomeSeen,
+    () => !isWelcomeSeen(),
+    () => false,
+  );
 
   const headerMotion = reduceMotion
     ? {}

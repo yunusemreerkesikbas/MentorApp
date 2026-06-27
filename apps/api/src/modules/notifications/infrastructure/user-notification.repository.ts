@@ -17,6 +17,7 @@ export class UserNotificationRepository {
       category: NotificationCategory;
       title: string;
       body: string;
+      linkUrl?: string;
     },
   ): Promise<UserNotificationRow> {
     const rows = await tx.insert(userNotifications).values(data).returning();
@@ -77,6 +78,21 @@ export class UserNotificationRepository {
       .update(userNotifications)
       .set({ readAt: now })
       .where(and(eq(userNotifications.userId, userId), isNull(userNotifications.readAt)));
+  }
+
+  async markUnread(tx: DatabaseTx, userId: string, id: string): Promise<UserNotificationRow | null> {
+    const rows = await tx
+      .update(userNotifications)
+      .set({ readAt: null })
+      .where(and(eq(userNotifications.id, id), eq(userNotifications.userId, userId)))
+      .returning();
+    return rows[0] ?? null;
+  }
+
+  async delete(tx: DatabaseTx, userId: string, id: string): Promise<void> {
+    await tx
+      .delete(userNotifications)
+      .where(and(eq(userNotifications.id, id), eq(userNotifications.userId, userId)));
   }
 
   // ponytail: purge older than 90 days — backlog, not MVP

@@ -102,6 +102,7 @@ export function DialogProvider({ children }: DialogProviderProps) {
       id: createDialogId(),
       title: options.title,
       message: options.message,
+      content: options.content,
       layout: options.layout ?? "standard",
       hero: options.hero,
       leading: options.leading,

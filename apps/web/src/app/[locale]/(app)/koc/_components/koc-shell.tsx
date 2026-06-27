@@ -10,6 +10,7 @@ import { fetchCoachAccess, sendCoachMessage } from "@/lib/coach";
 import { CoachAccessGate } from "./coach-access-gate";
 import { CoachComposer } from "./coach-composer";
 import { CoachTranscript, type ChatMessage } from "./coach-transcript";
+import { KocChatSkeleton } from "./koc-content-skeleton";
 
 type LoadState =
   | { status: "loading" }
@@ -96,26 +97,7 @@ export function KocShell() {
   }
 
   if (state.status === "loading") {
-    return (
-      <main
-        className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-2xl flex-col lg:min-h-screen"
-        aria-busy
-        aria-label={t("loading")}
-      >
-        <div className="px-5 pt-8">
-          <SkeletonBar className="h-7 w-40" />
-          <SkeletonBar className="mt-2 h-4 w-64 max-w-full" />
-        </div>
-        <div className="flex flex-1 flex-col gap-3 px-5 py-6">
-          <SkeletonBubble align="left" className="w-3/5" />
-          <SkeletonBubble align="right" className="w-2/5" />
-          <SkeletonBubble align="left" className="w-1/2" />
-        </div>
-        <div className="border-t border-white px-5 py-3">
-          <SkeletonBar className="h-11 w-full" />
-        </div>
-      </main>
-    );
+    return <KocChatSkeleton />;
   }
 
   if (state.status === "error") {
@@ -176,33 +158,5 @@ export function KocShell() {
         busy={busy}
       />
     </main>
-  );
-}
-
-/* --- Loading skeletons (DESIGN.md tokens; product register: skeletons, not a centered spinner). --- */
-
-function SkeletonBar({ className }: { className?: string }) {
-  return (
-    <div
-      aria-hidden
-      className={`animate-pulse rounded-[var(--radius-card)] bg-white/60 motion-reduce:animate-none ${className ?? ""}`}
-    />
-  );
-}
-
-function SkeletonBubble({
-  align,
-  className,
-}: {
-  align: "left" | "right";
-  className?: string;
-}) {
-  return (
-    <div className={`flex ${align === "right" ? "justify-end" : "justify-start"}`}>
-      <div
-        aria-hidden
-        className={`h-12 animate-pulse rounded-[var(--radius-card)] bg-white/60 motion-reduce:animate-none ${className ?? ""}`}
-      />
-    </div>
   );
 }

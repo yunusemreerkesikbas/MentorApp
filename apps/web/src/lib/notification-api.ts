@@ -28,3 +28,16 @@ export async function markNotificationRead(id: string): Promise<UserNotification
 export async function markAllNotificationsRead(): Promise<void> {
   await http<void>("/v1/notifications/read-all", { method: "PATCH" });
 }
+
+export async function markNotificationUnread(id: string): Promise<UserNotificationDto> {
+  return http<UserNotificationDto>(`/v1/notifications/${encodeURIComponent(id)}/unread`, { method: "PATCH" });
+}
+
+export async function deleteNotification(id: string): Promise<void> {
+  await http<void>(`/v1/notifications/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+export async function getNotificationStreamToken(): Promise<string> {
+  const res = await http<{ token: string }>("/v1/notifications/stream-token", { method: "POST" });
+  return res.token;
+}

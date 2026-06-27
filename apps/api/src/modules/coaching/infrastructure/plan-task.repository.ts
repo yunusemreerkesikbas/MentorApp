@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
 import { planTasks } from "../../../database/schema";
 
@@ -42,6 +42,27 @@ export class PlanTaskRepository {
       tx.select({ count: sql<number>`count(*)::int` }).from(planTasks).where(where),
     ]);
     return { items, total: totalRow[0]?.count ?? 0 };
+  }
+
+  /** Distinct task dates in an inclusive range — for calendar dot indicators. */
+  async listDistinctDatesInRange(
+    tx: DatabaseTx,
+    userId: string,
+    from: string,
+    to: string,
+  ): Promise<string[]> {
+    const rows = await tx
+      .selectDistinct({ taskDate: planTasks.taskDate })
+      .from(planTasks)
+      .where(
+        and(
+          eq(planTasks.userId, userId),
+          gte(planTasks.taskDate, from),
+          lte(planTasks.taskDate, to),
+        ),
+      )
+      .orderBy(asc(planTasks.taskDate));
+    return rows.map((row) => row.taskDate);
   }
 
   async findById(tx: DatabaseTx, userId: string, id: string): Promise<PlanTaskRow | undefined> {
@@ -92,6 +113,15 @@ export class PlanTaskRepository {
           eq(planTasks.status, "DONE"),
         ),
       );
+    return rows[0]?.count ?? 0;
+  }
+
+  /** Count of ALL tasks for a date regardless of status. */
+  async countTotal(tx: DatabaseTx, userId: string, date: string): Promise<number> {
+    const rows = await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(planTasks)
+      .where(and(eq(planTasks.userId, userId), eq(planTasks.taskDate, date)));
     return rows[0]?.count ?? 0;
   }
 }

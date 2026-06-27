@@ -704,6 +704,7 @@ export const userNotifications = pgTable(
     title: text("title").notNull(),
     body: text("body").notNull(),
     readAt: timestamp("read_at", { withTimezone: true }),
+    linkUrl: text("link_url"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("user_notifications_user_created_idx").on(t.userId, t.createdAt)],

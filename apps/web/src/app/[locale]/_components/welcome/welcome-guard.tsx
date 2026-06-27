@@ -1,18 +1,24 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { postAuthDestination } from "@/lib/post-auth-destination";
 import { isWelcomeSeen } from "@/lib/welcome-seen";
 
+const subscribeWelcomeSeen = () => () => undefined;
+
 /** Redirect authenticated users and return visitors who already saw the welcome slider. */
 export function WelcomeGuard({ children }: { children: ReactNode }) {
   const t = useTranslations("welcome");
   const router = useRouter();
   const { status, user } = useAuth();
-  const [ready, setReady] = useState(false);
+  const welcomeSeen = useSyncExternalStore(
+    subscribeWelcomeSeen,
+    isWelcomeSeen,
+    () => false,
+  );
 
   useEffect(() => {
     if (status === "loading") return;
@@ -20,14 +26,12 @@ export function WelcomeGuard({ children }: { children: ReactNode }) {
       router.replace(postAuthDestination(user));
       return;
     }
-    if (isWelcomeSeen()) {
+    if (welcomeSeen) {
       router.replace("/giris");
-      return;
     }
-    setReady(true);
-  }, [status, user, router]);
+  }, [status, user, router, welcomeSeen]);
 
-  if (status === "loading" || !ready) {
+  if (status !== "anonymous" || welcomeSeen) {
     return (
       <main
         className="flex min-h-screen items-center justify-center px-5"

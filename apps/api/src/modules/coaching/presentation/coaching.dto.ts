@@ -5,6 +5,7 @@ import {
   listMockExamsQuerySchema,
   listMoodCheckinsQuerySchema,
   listPlanTasksQuerySchema,
+  planTaskCalendarQuerySchema,
   startStudySessionSchema,
   updatePlanTaskSchema,
   updateStudySessionSchema,
@@ -15,6 +16,7 @@ import { createZodDto } from "../../../common/validation/zod-dto";
 export class CreatePlanTaskDto extends createZodDto(createPlanTaskSchema) {}
 export class UpdatePlanTaskDto extends createZodDto(updatePlanTaskSchema) {}
 export class ListPlanTasksQueryDto extends createZodDto(listPlanTasksQuerySchema) {}
+export class PlanTaskCalendarQueryDto extends createZodDto(planTaskCalendarQuerySchema) {}
 export class StartStudySessionDto extends createZodDto(startStudySessionSchema) {}
 export class UpdateStudySessionDto extends createZodDto(updateStudySessionSchema) {}
 export class CreateMoodCheckinDto extends createZodDto(createMoodCheckinSchema) {}

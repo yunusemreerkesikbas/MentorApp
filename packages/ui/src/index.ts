@@ -21,4 +21,6 @@ export * from "./components/plan-list-item.js";
 export * from "./components/mood-picker.js";
 export * from "./components/toast/index.js";
 export * from "./components/dialog/index.js";
+export * from "./components/bottom-sheet/index.js";
 export * from "./components/notification-drawer/index.js";
+export * from "./components/skeleton/index.js";

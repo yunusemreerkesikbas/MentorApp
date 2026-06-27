@@ -36,8 +36,8 @@ export function PuhuImage({
       height={size}
       aria-hidden
       priority
-      className={`h-auto max-w-full ${className ?? ""}`}
-      style={{ width: size, height: "auto" }}
+      className={className}
+      style={{ width: size, height: "auto", maxWidth: "100%" }}
     />
   );
 }

@@ -124,4 +124,21 @@ describe("PlanService — task toggle keeps daily_activity in sync", () => {
       service.update(USER, "missing", { status: "DONE" }),
     ).rejects.toBeInstanceOf(DomainError);
   });
+
+  it("rejects create/update/delete on past task dates", async () => {
+    const past = "2020-01-01";
+    await expect(
+      service.create(USER, { title: "Old task", taskDate: past }),
+    ).rejects.toMatchObject({ code: "COACHING_TASK_DATE_READONLY" });
+
+    const created = await service.create(USER, { title: "Today task" });
+    planRepo.rows[0]!.taskDate = past;
+
+    await expect(service.update(USER, created.id, { status: "DONE" })).rejects.toMatchObject({
+      code: "COACHING_TASK_DATE_READONLY",
+    });
+    await expect(service.remove(USER, created.id)).rejects.toMatchObject({
+      code: "COACHING_TASK_DATE_READONLY",
+    });
+  });
 });

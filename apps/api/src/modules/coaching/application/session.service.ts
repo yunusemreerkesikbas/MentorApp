@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { StudySessionDto } from "@mentor/types";
 import type { StartStudySessionInput, UpdateStudySessionInput } from "@mentor/validation";
 import { DRIZZLE } from "../../../database/database.constants";
@@ -7,6 +8,7 @@ import { withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { toIsoDate } from "../domain/date.util";
+import { CoachingEventTopic, FirstSessionOfDay } from "../domain/coaching.events";
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
 import { StudySessionRepository } from "../infrastructure/study-session.repository";
 import { toStudySessionDto } from "./coaching.mappers";
@@ -24,6 +26,7 @@ export class SessionService {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly sessions: StudySessionRepository,
     private readonly activity: DailyActivityRepository,
+    private readonly events: EventEmitter2,
   ) {}
 
   async start(userId: string, input: StartStudySessionInput): Promise<StudySessionDto> {
@@ -47,7 +50,8 @@ export class SessionService {
     id: string,
     input: UpdateStudySessionInput,
   ): Promise<StudySessionDto> {
-    return withUserContext(this.db, { userId }, async (tx) => {
+    let firstSessionToday = false;
+    const result = await withUserContext(this.db, { userId }, async (tx) => {
       const existing = await this.sessions.findById(tx, userId, id);
       if (!existing) {
         throw new DomainError(ErrorCode.COACHING_SESSION_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -62,9 +66,15 @@ export class SessionService {
       });
       // Recompute the day's session flag (robust against abandon/re-complete) — same tx.
       const date = toIsoDate(existing.startedAt);
+      const prior = await this.activity.findByDate(tx, userId, date);
       const hasSession = await this.sessions.hasCompletedOnDate(tx, userId, date);
       await this.activity.upsertHasSession(tx, userId, date, hasSession);
+      if (!prior?.hasSession && hasSession) firstSessionToday = true;
       return toStudySessionDto(updated!);
     });
+    if (firstSessionToday) {
+      this.events.emit(CoachingEventTopic.FIRST_SESSION, new FirstSessionOfDay(userId));
+    }
+    return result;
   }
 }

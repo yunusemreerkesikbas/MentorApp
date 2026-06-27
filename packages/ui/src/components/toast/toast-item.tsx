@@ -1,24 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
+import X from "lucide-react/dist/esm/icons/x.mjs";
 import type { ToastRecord } from "./types.js";
-
-function CloseIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      aria-hidden
-    >
-      <path d="M18 6 6 18M6 6l12 12" />
-    </svg>
-  );
-}
 
 export interface ToastItemProps {
   toast: ToastRecord;
@@ -59,7 +43,7 @@ export function ToastItem({
     >
       <div className="flex items-start p-3">
         {leading ? (
-          <div className="mt-1 h-10 w-10 shrink-0">{leading}</div>
+          <div className="mt-1 flex shrink-0 items-center justify-center">{leading}</div>
         ) : null}
         <div className={`min-w-0 flex-1 ${leading ? "ml-3" : ""}`}>
           <h4
@@ -86,7 +70,7 @@ export function ToastItem({
           aria-label={toast.dismissLabel}
           className="-mr-2 -mt-2 flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] text-[var(--color-secondary)] outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 motion-reduce:transition-none"
         >
-          <CloseIcon />
+          <X size={20} strokeWidth={2} aria-hidden />
         </button>
       </div>
       {showProgress ? (

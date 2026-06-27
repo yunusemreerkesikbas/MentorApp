@@ -1,3 +1,4 @@
+import Flame from "lucide-react/dist/esm/icons/flame.mjs";
 import { Card } from "./card.js";
 
 export interface StreakBadgeProps {
@@ -18,18 +19,7 @@ function FlameGlyph() {
       className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-card)]"
       style={{ backgroundColor: "color-mix(in srgb, var(--color-star) 22%, transparent)" }}
     >
-      <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="var(--color-star)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M12 2c1 3-1.5 4.5-1.5 7A3.5 3.5 0 0 0 14 12c0-1 .5-2 .5-2 .8 1 2.5 2.6 2.5 5a5 5 0 1 1-10 0c0-3.5 4-5.5 5-13z" />
-      </svg>
+      <Flame size={24} color="var(--color-star)" strokeWidth={2} />
     </span>
   );
 }

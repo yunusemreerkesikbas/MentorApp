@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { StreakSummaryDto } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
@@ -6,6 +7,7 @@ import { withUserContext } from "../../../database/rls";
 import { FREEZE_TOKENS_PER_MONTH, STREAK_LOOKBACK_DAYS } from "../domain/coaching.constants";
 import { addDays, monthKey, todayIso } from "../domain/date.util";
 import { deriveStreak } from "../domain/streak";
+import { CoachingEventTopic, STREAK_MILESTONES, StreakBroken, StreakMilestone } from "../domain/coaching.events";
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
 import { StreakStateRepository } from "../infrastructure/streak-state.repository";
 
@@ -24,6 +26,7 @@ export class StreakService {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly activity: DailyActivityRepository,
     private readonly streak: StreakStateRepository,
+    private readonly events: EventEmitter2,
   ) {}
 
   async getSummary(userId: string): Promise<StreakSummaryDto> {
@@ -31,7 +34,11 @@ export class StreakService {
     const since = addDays(today, -STREAK_LOOKBACK_DAYS);
     const currentMonth = monthKey(today);
 
-    return withUserContext(this.db, { userId }, async (tx) => {
+    let previousStreak = 0;
+    let streakJustBroke = false;
+    let milestoneReached: number | null = null;
+
+    const result = await withUserContext(this.db, { userId }, async (tx) => {
       const activeDatesList = await this.activity.listActiveDatesSince(tx, userId, since);
       const activeDates = new Set(activeDatesList);
 
@@ -50,6 +57,15 @@ export class StreakService {
           ? activeDatesList.reduce((a, b) => (a > b ? a : b))
           : null;
 
+      if (existing && existing.currentStreak > 0 && currentStreak === 0) {
+        streakJustBroke = true;
+        previousStreak = existing.currentStreak;
+      }
+
+      const prevStreak = existing?.currentStreak ?? 0;
+      const crossed = STREAK_MILESTONES.find((m) => currentStreak >= m && prevStreak < m);
+      if (crossed) milestoneReached = crossed;
+
       await this.streak.upsert(tx, userId, {
         currentStreak,
         longestStreak,
@@ -60,5 +76,15 @@ export class StreakService {
 
       return { currentStreak, longestStreak, freezeTokens };
     });
+
+    // Emit after tx commit — prevents event firing if upsert rolls back
+    if (streakJustBroke) {
+      this.events.emit(CoachingEventTopic.STREAK_BROKEN, new StreakBroken(userId, previousStreak));
+    }
+    if (milestoneReached !== null) {
+      this.events.emit(CoachingEventTopic.STREAK_MILESTONE, new StreakMilestone(userId, milestoneReached));
+    }
+
+    return result;
   }
 }

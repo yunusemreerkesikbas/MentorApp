@@ -50,6 +50,26 @@ export const listPlanTasksQuerySchema = paginationQuerySchema.extend({
 });
 export type ListPlanTasksQuery = z.infer<typeof listPlanTasksQuerySchema>;
 
+/** Calendar dot map — distinct task dates in an inclusive range (max 62 days). */
+export const planTaskCalendarQuerySchema = z
+  .object({
+    from: isoDateSchema,
+    to: isoDateSchema,
+  })
+  .superRefine((data, ctx) => {
+    if (data.from > data.to) {
+      ctx.addIssue({ code: "custom", message: "invalid_range", path: ["to"] });
+      return;
+    }
+    const fromMs = new Date(`${data.from}T12:00:00`).getTime();
+    const toMs = new Date(`${data.to}T12:00:00`).getTime();
+    const dayCount = Math.floor((toMs - fromMs) / 86_400_000) + 1;
+    if (dayCount > 62) {
+      ctx.addIssue({ code: "custom", message: "range_too_large", path: ["to"] });
+    }
+  });
+export type PlanTaskCalendarQuery = z.infer<typeof planTaskCalendarQuerySchema>;
+
 /* ------------------------------- study sessions ------------------------------- */
 
 export const startStudySessionSchema = z

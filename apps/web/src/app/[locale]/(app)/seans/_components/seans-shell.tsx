@@ -96,7 +96,7 @@ export function SeansShell() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [t]);
 
   const {
     phase,

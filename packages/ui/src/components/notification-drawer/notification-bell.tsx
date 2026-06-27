@@ -1,5 +1,6 @@
 "use client";
 
+import Bell from "lucide-react/dist/esm/icons/bell.mjs";
 import { useNotificationDrawer } from "./notification-drawer-context.js";
 
 export interface NotificationBellProps {
@@ -24,9 +25,7 @@ export function NotificationBell({ label = "Notifications", unreadLabel = "unrea
       onClick={toggle}
       className="relative flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-black/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 active:scale-95"
     >
-      <span className="material-symbols-outlined text-[24px]" style={{ color: "var(--color-main)" }}>
-        notifications
-      </span>
+      <Bell size={24} color="var(--color-main)" strokeWidth={2} aria-hidden />
 
       {unreadCount > 0 && (
         <span

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import CircleAlert from "lucide-react/dist/esm/icons/circle-alert.mjs";
 import type { ToastVariant } from "@mentor/ui";
 import { PuhuImage, type PuhuVariant } from "@/components/puhu-image";
 
@@ -13,19 +14,7 @@ export function ErrorLeading() {
       className="flex h-10 w-10 items-center justify-center rounded-full"
       style={{ backgroundColor: "var(--color-error-container)" }}
     >
-      <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="var(--color-danger)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        aria-hidden
-      >
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 8v4M12 16h.01" />
-      </svg>
+      <CircleAlert size={24} color="var(--color-danger)" strokeWidth={2} aria-hidden />
     </div>
   );
 }

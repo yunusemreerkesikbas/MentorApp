@@ -67,9 +67,11 @@ export function DialogPanel({ dialog, onAction }: DialogPanelProps) {
         >
           {dialog.message}
         </p>
-      ) : (
+      ) : dialog.content ? null : (
         <div className={isPromo ? "mb-4" : "mb-6"} />
       )}
+
+      {dialog.content ? <div className={isPromo ? "mb-4 w-full" : "mb-6 w-full"}>{dialog.content}</div> : null}
 
       {dialog.badge ? (
         <Chip className={`mb-6 text-xs normal-case ${isPromo ? "" : "self-start"}`}>

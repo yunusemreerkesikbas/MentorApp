@@ -1,7 +1,16 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
+import BookOpen from "lucide-react/dist/esm/icons/book-open.mjs";
+import Calendar from "lucide-react/dist/esm/icons/calendar.mjs";
+import ChartColumn from "lucide-react/dist/esm/icons/chart-column.mjs";
+import House from "lucide-react/dist/esm/icons/house.mjs";
+import MessageCircle from "lucide-react/dist/esm/icons/message-circle.mjs";
+import User from "lucide-react/dist/esm/icons/user.mjs";
+import Users from "lucide-react/dist/esm/icons/users.mjs";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
+import { NotificationBell } from "@mentor/ui";
 import { isNavActive } from "@/lib/nav-active";
 import { LanguageToggle } from "@/components/language-toggle";
 
@@ -13,14 +22,14 @@ import { LanguageToggle } from "@/components/language-toggle";
  */
 
 const NAV_ITEMS = [
-  { href: "/panel", labelKey: "home", icon: HomeIcon },
-  { href: "/plan", labelKey: "plan", icon: CalendarIcon },
-  { href: "/koc", labelKey: "coach", icon: CoachIcon },
-  { href: "/analiz", labelKey: "analysis", icon: ChartIcon },
-  { href: "/bilgi", labelKey: "knowledge", icon: BookIcon },
+  { href: "/panel", labelKey: "home", icon: House },
+  { href: "/plan", labelKey: "plan", icon: Calendar },
+  { href: "/koc", labelKey: "coach", icon: MessageCircle },
+  { href: "/analiz", labelKey: "analysis", icon: ChartColumn },
+  { href: "/bilgi", labelKey: "knowledge", icon: BookOpen },
   // Sidebar-only (desktop): the mobile tab bar stays at 6; community entry on mobile is the panel card.
-  { href: "/topluluk", labelKey: "community", icon: CommunityIcon, sidebarOnly: true },
-  { href: "/profil", labelKey: "profile", icon: UserIcon },
+  { href: "/topluluk", labelKey: "community", icon: Users, sidebarOnly: true },
+  { href: "/profil", labelKey: "profile", icon: User },
 ] as const;
 
 const TAB_ITEMS = NAV_ITEMS.filter((i) => !("sidebarOnly" in i && i.sidebarOnly));
@@ -28,6 +37,7 @@ const TAB_ITEMS = NAV_ITEMS.filter((i) => !("sidebarOnly" in i && i.sidebarOnly)
 export function AppNav() {
   const pathname = usePathname();
   const t = useTranslations("nav");
+  const ui = useTranslations("common");
 
   return (
     <>
@@ -36,16 +46,22 @@ export function AppNav() {
         style={{ boxShadow: "var(--shadow-card)" }}
         aria-label={t("aria_label")}
       >
-        <Link
-          href="/panel"
-          className="mb-6 inline-flex min-h-[44px] items-center text-2xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          Mentor
-        </Link>
+        <div className="mb-6 flex items-center justify-between">
+          <Link
+            href="/panel"
+            className="inline-flex min-h-[44px] items-center text-2xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            style={{
+              color: "var(--color-main)",
+              fontFamily: "var(--font-heading)",
+            }}
+          >
+            Mentor
+          </Link>
+          <NotificationBell
+            label={ui("notifications_label")}
+            unreadLabel={ui("notifications_unread_label")}
+          />
+        </div>
         {NAV_ITEMS.map((item) => (
           <NavLink
             key={item.href}
@@ -63,6 +79,21 @@ export function AppNav() {
           <LanguageToggle />
         </div>
       </aside>
+
+      {/* Mobile top bar */}
+      <header className="fixed inset-x-0 top-0 z-20 flex h-14 items-center justify-between border-b border-black/10 bg-white/80 px-4 backdrop-blur lg:hidden">
+        <Link
+          href="/panel"
+          className="text-xl font-bold"
+          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+        >
+          Mentor
+        </Link>
+        <NotificationBell
+          label={ui("notifications_label")}
+          unreadLabel={ui("notifications_unread_label")}
+        />
+      </header>
 
       <nav
         className="fixed inset-x-0 bottom-0 z-20 flex min-h-[63px] border-t border-black/10 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
@@ -110,7 +141,7 @@ function NavLink({
           fontWeight: active ? 700 : 400,
         }}
       >
-        <Icon active={active} />
+        <NavIcon icon={Icon} active={active} />
         {label}
       </Link>
     );
@@ -131,7 +162,7 @@ function NavLink({
           aria-hidden
         />
       ) : null}
-      <Icon active={active} />
+      <NavIcon icon={Icon} active={active} />
       <span
         className="max-w-full truncate text-[9px] font-semibold uppercase tracking-wide"
         style={{ fontFamily: "var(--font-heading)" }}
@@ -142,79 +173,6 @@ function NavLink({
   );
 }
 
-type IconProps = { active?: boolean };
-
-function iconProps(active?: boolean) {
-  return {
-    width: 22,
-    height: 22,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: active ? 2.25 : 2,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    "aria-hidden": true as const,
-  };
-}
-
-function HomeIcon({ active }: IconProps) {
-  return (
-    <svg {...iconProps(active)}>
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
-    </svg>
-  );
-}
-function CalendarIcon({ active }: IconProps) {
-  return (
-    <svg {...iconProps(active)}>
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
-    </svg>
-  );
-}
-function ChartIcon({ active }: IconProps) {
-  return (
-    <svg {...iconProps(active)}>
-      <line x1="18" y1="20" x2="18" y2="10" />
-      <line x1="12" y1="20" x2="12" y2="4" />
-      <line x1="6" y1="20" x2="6" y2="14" />
-    </svg>
-  );
-}
-function BookIcon({ active }: IconProps) {
-  return (
-    <svg {...iconProps(active)}>
-      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-    </svg>
-  );
-}
-function UserIcon({ active }: IconProps) {
-  return (
-    <svg {...iconProps(active)}>
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
-function CommunityIcon({ active }: IconProps) {
-  return (
-    <svg {...iconProps(active)}>
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-function CoachIcon({ active }: IconProps) {
-  return (
-    <svg {...iconProps(active)}>
-      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z" />
-    </svg>
-  );
+function NavIcon({ icon: Icon, active }: { icon: LucideIcon; active: boolean }) {
+  return <Icon size={22} strokeWidth={active ? 2.25 : 2} aria-hidden />;
 }

@@ -42,3 +42,53 @@
   /* Shadow — single token */
   --shadow-card: 0px 4px 10px rgba(37, 73, 150, 0.1);
 }
+
+/* --- Skeleton shimmer (DESIGN.md progress-track; product register: skeletons not spinners) --- */
+
+@keyframes mentor-skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes mentor-skeleton-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mentor-skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-progress-track) 38%, transparent) 0%,
+    color-mix(in srgb, var(--color-progress-track) 72%, white) 50%,
+    color-mix(in srgb, var(--color-progress-track) 38%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: mentor-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.mentor-skeleton-enter,
+.animate-skeleton-enter {
+  animation: mentor-skeleton-enter 0.28s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mentor-skeleton-shimmer {
+    animation: none;
+    background: color-mix(in srgb, var(--color-progress-track) 45%, transparent);
+  }
+
+  .mentor-skeleton-enter,
+  .animate-skeleton-enter {
+    animation: none;
+  }
+}

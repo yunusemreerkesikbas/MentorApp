@@ -16,6 +16,7 @@ export interface DialogAction {
 export interface DialogShowOptions {
   title: string;
   message?: string;
+  content?: ReactNode;
   layout?: DialogLayout;
   hero?: ReactNode;
   leading?: ReactNode;

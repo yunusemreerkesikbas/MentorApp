@@ -34,7 +34,10 @@ export function NotificationDrawerProvider({
   items: itemsProp,
   unreadCount,
   onMarkRead,
+  onMarkUnread,
   onMarkAllRead,
+  onDelete,
+  onNotificationClick,
   renderIcon,
   emptyState,
   labels,
@@ -71,14 +74,37 @@ export function NotificationDrawerProvider({
   const markAllRead = useCallback(() => {
     const now = new Date().toISOString();
     setItems((prev) => prev.map((n) => ({ ...n, readAt: n.readAt ?? now })));
-    onMarkAllRead?.().catch(() => {
-      setItems(itemsProp);
-    });
+    onMarkAllRead?.().catch(() => { setItems(itemsProp); });
   }, [onMarkAllRead, itemsProp]);
 
+  const markUnread = useCallback(
+    (id: string) => {
+      setItems((prev) => prev.map((n) => n.id === id ? { ...n, readAt: null } : n));
+      onMarkUnread?.(id).catch(() => { setItems(itemsProp); });
+    },
+    [onMarkUnread, itemsProp],
+  );
+
+  const deleteItem = useCallback(
+    (id: string) => {
+      setItems((prev) => prev.filter((n) => n.id !== id));
+      onDelete?.(id).catch(() => { setItems(itemsProp); });
+    },
+    [onDelete, itemsProp],
+  );
+
+  const clickItem = useCallback(
+    (notification: UserNotificationDto) => {
+      if (notification.readAt === null) markRead(notification.id);
+      close();
+      onNotificationClick?.(notification);
+    },
+    [markRead, close, onNotificationClick],
+  );
+
   const value = useMemo<NotificationDrawerContextValue>(
-    () => ({ isOpen, open, close, toggle, items, unreadCount, activeTab, setActiveTab, markRead, markAllRead }),
-    [isOpen, open, close, toggle, items, unreadCount, activeTab, markRead, markAllRead],
+    () => ({ isOpen, open, close, toggle, items, unreadCount, activeTab, setActiveTab, markRead, markUnread, markAllRead, deleteItem, clickItem }),
+    [isOpen, open, close, toggle, items, unreadCount, activeTab, markRead, markUnread, markAllRead, deleteItem, clickItem],
   );
 
   const panelProps: NotificationDrawerPanelProps = {
@@ -89,7 +115,10 @@ export function NotificationDrawerProvider({
     activeTab,
     onTabChange: setActiveTab,
     onMarkRead: markRead,
+    onMarkUnread: markUnread,
     onMarkAllRead: markAllRead,
+    onDelete: deleteItem,
+    onClickItem: clickItem,
     renderIcon,
     emptyState,
     labels,

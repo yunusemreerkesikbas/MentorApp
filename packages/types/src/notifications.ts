@@ -24,6 +24,7 @@ export interface UserNotificationDto {
   title: string;
   body: string;
   readAt: string | null;
+  linkUrl: string | null;
   createdAt: string;
 }
 

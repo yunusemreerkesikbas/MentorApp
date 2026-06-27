@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import X from "lucide-react/dist/esm/icons/x.mjs";
 import type { NotificationCategory, UserNotificationDto } from "@mentor/types";
 import { NotificationDrawerItem } from "./notification-drawer-item.js";
 import type { NotificationDrawerLabels, NotificationTab } from "./types.js";
@@ -14,7 +15,10 @@ export interface NotificationDrawerPanelProps {
   activeTab: NotificationTab;
   onTabChange(tab: NotificationTab): void;
   onMarkRead(id: string): void;
+  onMarkUnread(id: string): void;
   onMarkAllRead(): void;
+  onDelete(id: string): void;
+  onClickItem(notification: UserNotificationDto): void;
   renderIcon?: (category: NotificationCategory) => ReactNode;
   emptyState?: ReactNode;
   labels: NotificationDrawerLabels;
@@ -36,7 +40,10 @@ export function NotificationDrawerPanel({
   activeTab,
   onTabChange,
   onMarkRead,
+  onMarkUnread,
   onMarkAllRead,
+  onDelete,
+  onClickItem,
   renderIcon,
   emptyState,
   labels,
@@ -98,13 +105,15 @@ export function NotificationDrawerPanel({
 
   const panel = (
     <>
-      {/* ── Mobile only: full-screen backdrop ── */}
+      {/* ── Mobile: blurred backdrop ── */}
       <div
         aria-hidden
         className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[6px] lg:hidden"
         style={{ animation: closing ? "none" : "drawer-backdrop-enter 200ms ease-out forwards" }}
         onClick={handleClose}
       />
+      {/* ── Desktop: transparent click-away overlay ── */}
+      <div aria-hidden className="fixed inset-0 z-40 hidden lg:block" onClick={handleClose} />
 
       {/* ── Panel ── */}
       <div
@@ -117,8 +126,8 @@ export function NotificationDrawerPanel({
           "fixed inset-y-0 right-0 z-50 flex w-[85vw] max-w-[320px] flex-col bg-white",
           "max-lg:rounded-l-[16px]",
           "shadow-[-8px_0_24px_rgba(0,0,0,0.10)]",
-          // Desktop: popover below the bell
-          "lg:inset-y-auto lg:right-4 lg:top-16",
+          // Desktop: popover to the right of the sidebar, aligned with the bell at the top
+          "lg:inset-y-auto lg:right-auto lg:left-64 lg:top-4",
           "lg:h-auto lg:max-h-[560px] lg:w-[380px] lg:max-w-none",
           "lg:rounded-[var(--radius-card)] lg:shadow-[0_8px_32px_rgba(0,0,0,0.14)]",
           closing
@@ -132,7 +141,7 @@ export function NotificationDrawerPanel({
           style={{ borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)" }}
         >
           <h2
-            className="text-xl font-bold leading-tight"
+            className="text-base font-bold leading-tight"
             style={{ fontFamily: "var(--font-heading)", color: "var(--color-main)" }}
           >
             {labels.title}
@@ -140,22 +149,33 @@ export function NotificationDrawerPanel({
               <span
                 className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold text-white"
                 style={{ backgroundColor: "var(--color-progress)" }}
-                aria-label={`${unreadCount} okunmamış`}
               >
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}
           </h2>
 
-          {unreadCount > 0 && (
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={onMarkAllRead}
+                className="text-xs font-bold transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-1"
+                style={{ color: "var(--color-progress)", fontFamily: "var(--font-body)" }}
+              >
+                {labels.markAllRead}
+              </button>
+            )}
             <button
-              onClick={onMarkAllRead}
-              className="shrink-0 text-xs font-bold transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2"
-              style={{ color: "var(--color-progress)", fontFamily: "var(--font-body)" }}
+              type="button"
+              onClick={handleClose}
+              aria-label={labels.close}
+              className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-1"
+              style={{ color: "var(--color-secondary)" }}
             >
-              {labels.markAllRead}
+              <X size={18} aria-hidden />
             </button>
-          )}
+          </div>
         </div>
 
         {/* Tabs */}
@@ -221,6 +241,9 @@ export function NotificationDrawerPanel({
                 key={n.id}
                 notification={n}
                 onMarkRead={onMarkRead}
+                onMarkUnread={onMarkUnread}
+                onDelete={onDelete}
+                onClickItem={onClickItem}
                 renderIcon={renderIcon}
                 labels={labels}
               />
@@ -228,26 +251,6 @@ export function NotificationDrawerPanel({
           )}
         </div>
 
-        {/* Close footer */}
-        <div
-          className="shrink-0 border-t p-3 pb-safe"
-          style={{ borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)" }}
-        >
-          <button
-            onClick={handleClose}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] border text-sm font-medium transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2"
-            style={{
-              fontFamily: "var(--font-body)",
-              color: "var(--color-secondary)",
-              borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",
-            }}
-          >
-            <span className="material-symbols-outlined text-[18px]" aria-hidden>
-              close
-            </span>
-            {labels.close}
-          </button>
-        </div>
       </div>
     </>
   );

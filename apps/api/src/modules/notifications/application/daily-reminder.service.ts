@@ -43,7 +43,7 @@ export class DailyReminderService {
       const body = "Küçük bir çalışma veya mood check-in bile yeter. Seninle buradayız.";
 
       // In-app inbox is a separate channel — always create regardless of email/push prefs
-      await this.notifications.createInApp(user.userId, "COACH", title, body);
+      await this.notifications.createInApp(user.userId, "COACH", title, body, "/seans");
 
       if (!emailOn && !pushOn) {
         skipped += 1;

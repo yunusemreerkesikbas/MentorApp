@@ -6,6 +6,7 @@ import { useEffect, type ReactNode } from "react";
 import { AppNav } from "@/components/app-nav";
 import { MOBILE_TAB_BAR_PADDING_CLASS } from "@/lib/app-shell";
 import { useAuth } from "@/lib/auth-context";
+import { NotificationDrawerShell } from "@/lib/notification-drawer-shell";
 
 /**
  * App shell + auth guard: anonymous users are redirected to /giris.
@@ -35,16 +36,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ backgroundColor: "var(--color-bg)" }}
-    >
-      <AppNav />
+    <NotificationDrawerShell>
       <div
-        className={`min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0 lg:pl-60`}
+        className="min-h-screen"
+        style={{ backgroundColor: "var(--color-bg)" }}
       >
-        {children}
+        <AppNav />
+        <div
+          className={`min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0 lg:pl-60`}
+        >
+          {children}
+        </div>
       </div>
-    </div>
+    </NotificationDrawerShell>
   );
 }

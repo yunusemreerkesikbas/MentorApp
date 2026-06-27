@@ -16,6 +16,7 @@
   "AUTH_TURNSTILE_FAILED": "Security verification failed. Please try again.",
   "AUTH_ACCOUNT_SUSPENDED": "Your account is suspended. Please contact support.",
   "COACHING_TASK_NOT_FOUND": "This task was not found.",
+  "COACHING_TASK_DATE_READONLY": "Past days are read-only; only today and future days can be edited.",
   "COACHING_SESSION_NOT_FOUND": "This study session was not found.",
   "COACHING_SESSION_ALREADY_CLOSED": "This study session is already completed.",
   "COACHING_MOCK_EXAM_NOT_FOUND": "This mock exam record was not found.",
