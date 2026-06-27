@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { TodayPanelResponse } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
-import { CountdownCard, StreakBadge } from "@mentor/ui";
+import { CountdownCard, NotificationBell, StreakBadge } from "@mentor/ui";
 import { FormError } from "@/components/form";
+import { useMentorToast } from "@/lib/mentor-toast";
+import { NotificationDrawerShell } from "@/lib/notification-drawer-shell";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { CommunityCard } from "./community-card";
 import { CountdownPlaceholder } from "./countdown-placeholder";
 import { MoodCheckin } from "./mood-checkin";
 import { StartSessionCta } from "./start-session-cta";
-import { TodayPlan } from "./today-plan";
+import { TodayPlan, type TodayPlanTasksChangedOptions } from "./today-plan";
 import { VisionBoardCard } from "./vision-board-card";
 
 type LoadState =
@@ -30,7 +32,20 @@ export function PanelShell() {
   const tCountdown = useTranslations("countdown");
   const tStreak = useTranslations("streak");
   const ui = useTranslations("common");
+  const { success: showSuccessToast } = useMentorToast();
+  const welcomeToastShown = useRef(false);
   const [state, setState] = useState<LoadState>({ status: "loading" });
+
+  useEffect(() => {
+    if (state.status !== "ready") return;
+    if (welcomeToastShown.current) return;
+    welcomeToastShown.current = true;
+    showSuccessToast({
+      title: t("welcome_toast_title"),
+      message: t("welcome_toast_message"),
+      duration: 3000,
+    });
+  }, [state.status, showSuccessToast, t]);
 
   useEffect(() => {
     let active = true;
@@ -59,7 +74,7 @@ export function PanelShell() {
     };
   }, []);
 
-  function refreshAfterTaskChange() {
+  function refreshAfterTaskChange(opts?: TodayPlanTasksChangedOptions) {
     if (state.status !== "ready") return;
     coachingControllerGetToday()
       .then((res) => {
@@ -77,6 +92,17 @@ export function PanelShell() {
               }
             : prev,
         );
+        if (opts?.celebrateDone) {
+          const count = data.streak.currentStreak;
+          showSuccessToast({
+            title: t("task_done_title"),
+            message:
+              count > 0
+                ? t("task_done_streak", { count })
+                : t("task_done_message"),
+            duration: 3000,
+          });
+        }
       })
       .catch(() => {
         /* Keep optimistic task state; streak refresh is best-effort. */
@@ -146,23 +172,29 @@ export function PanelShell() {
       };
 
   return (
+    <NotificationDrawerShell>
     <main className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
-      <motion.header className="mb-6 lg:mb-8" {...headerMotion}>
-        <h1
-          className="text-3xl font-bold"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          {t("greeting", { name: greetingName })}
-        </h1>
-        <p
-          className="mt-1 text-base"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {motivationalLine}
-        </p>
+      <motion.header className="mb-6 flex items-start justify-between lg:mb-8" {...headerMotion}>
+        <div>
+          <h1
+            className="text-3xl font-bold"
+            style={{
+              color: "var(--color-main)",
+              fontFamily: "var(--font-heading)",
+            }}
+          >
+            {t("greeting", { name: greetingName })}
+          </h1>
+          <p
+            className="mt-1 text-base"
+            style={{ color: "var(--color-secondary)" }}
+          >
+            {motivationalLine}
+          </p>
+        </div>
+        <div className="relative ml-2 shrink-0">
+          <NotificationBell label={ui("notifications_label")} unreadLabel={ui("notifications_unread_label")} />
+        </div>
       </motion.header>
 
       <motion.div
@@ -220,6 +252,7 @@ export function PanelShell() {
         </motion.aside>
       </motion.div>
     </main>
+    </NotificationDrawerShell>
   );
 }
 

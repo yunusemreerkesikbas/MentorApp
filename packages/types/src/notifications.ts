@@ -13,3 +13,22 @@ export interface PushSubscriptionInput {
   endpoint: string;
   keys: PushSubscriptionKeysDto;
 }
+
+// --- In-app notification inbox (W5 extension) ---
+
+export type NotificationCategory = "COACH" | "PLAN" | "CONTENT";
+
+export interface UserNotificationDto {
+  id: string;
+  category: NotificationCategory;
+  title: string;
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationListDto {
+  items: UserNotificationDto[];
+  unreadCount: number;
+  hasMore: boolean;
+}

@@ -1,0 +1,112 @@
+"use client";
+
+import type { ReactNode } from "react";
+import type { ToastRecord } from "./types.js";
+
+function CloseIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+export interface ToastItemProps {
+  toast: ToastRecord;
+  stackIndex: number;
+  onDismiss: (id: string) => void;
+  /** Optional default leading when toast.leading is unset (web bridge supplies Puhu/icons). */
+  renderLeading?: (variant: ToastRecord["variant"]) => ReactNode;
+}
+
+/** Older stack entries fade slightly (Stitch stacked toast spec). */
+const STACK_OPACITY: Record<number, string> = {
+  0: "opacity-100",
+  1: "opacity-70",
+  2: "opacity-50",
+};
+
+/**
+ * Single toast card (Stitch Prompt 01): translucent surface, optional leading,
+ * title + message, dismiss, optional auto-dismiss progress bar.
+ */
+export function ToastItem({
+  toast,
+  stackIndex,
+  onDismiss,
+  renderLeading,
+}: ToastItemProps) {
+  const leading = toast.leading ?? renderLeading?.(toast.variant);
+  const showProgress = toast.duration > 0;
+  const stackOpacity = STACK_OPACITY[stackIndex] ?? STACK_OPACITY[2];
+
+  return (
+    <div
+      role={toast.variant === "error" ? "alert" : "status"}
+      data-toast-id={toast.id}
+      data-exiting={toast.exiting ? "" : undefined}
+      className={`pointer-events-auto relative w-full overflow-hidden rounded-[var(--radius-card)] border border-white bg-white/85 backdrop-blur-sm transition-opacity duration-200 motion-reduce:transition-none ${stackOpacity} ${toast.exiting ? "!opacity-0" : stackIndex === 0 ? "animate-toast-enter motion-reduce:animate-none" : ""}`}
+      style={{ boxShadow: "var(--shadow-card)" }}
+    >
+      <div className="flex items-start p-3">
+        {leading ? (
+          <div className="mt-1 h-10 w-10 shrink-0">{leading}</div>
+        ) : null}
+        <div className={`min-w-0 flex-1 ${leading ? "ml-3" : ""}`}>
+          <h4
+            className="text-sm font-bold leading-snug"
+            style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
+          >
+            {toast.title}
+          </h4>
+          {toast.message ? (
+            <p
+              className="mt-0.5 line-clamp-2 text-sm leading-snug"
+              style={{
+                color: "var(--color-secondary)",
+                fontFamily: "var(--font-body)",
+              }}
+            >
+              {toast.message}
+            </p>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          onClick={() => onDismiss(toast.id)}
+          aria-label={toast.dismissLabel}
+          className="-mr-2 -mt-2 flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] text-[var(--color-secondary)] outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 motion-reduce:transition-none"
+        >
+          <CloseIcon />
+        </button>
+      </div>
+      {showProgress ? (
+        <div
+          aria-hidden
+          className="absolute bottom-0 left-0 h-1 w-full"
+          style={{
+            backgroundColor:
+              "color-mix(in srgb, var(--color-progress-track) 30%, transparent)",
+          }}
+        >
+          <div
+            className="h-full motion-reduce:w-0"
+            style={{
+              backgroundColor: "var(--color-progress)",
+              animation: `toast-progress ${toast.duration}ms linear forwards`,
+            }}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}

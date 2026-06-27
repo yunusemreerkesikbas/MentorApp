@@ -27,3 +27,17 @@ export const updateNotificationPreferencesSchema = z
 export type UpdateNotificationPreferencesInput = z.infer<
   typeof updateNotificationPreferencesSchema
 >;
+
+export const notificationCategorySchema = z.enum(["COACH", "PLAN", "CONTENT"]);
+export type NotificationCategoryInput = z.infer<typeof notificationCategorySchema>;
+
+export const listNotificationsSchema = z.object({
+  category: notificationCategorySchema.optional(),
+  page: z.coerce.number().int().min(1).default(1),
+});
+export type ListNotificationsInput = z.infer<typeof listNotificationsSchema>;
+
+export const notificationIdParamSchema = z.object({
+  id: z.string().uuid(),
+});
+export type NotificationIdParamInput = z.infer<typeof notificationIdParamSchema>;

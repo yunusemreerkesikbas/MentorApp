@@ -2,11 +2,20 @@
   "common": {
     "loading": "Yükleniyor…",
     "error_unknown": "Beklenmeyen bir hata oluştu.",
+    "error_title": "Bir sorun oluştu",
     "back_panel": "← Panele dön",
     "back_plan": "← Plana dön",
     "show_password": "Şifreyi göster",
     "hide_password": "Şifreyi gizle",
-    "source_prefix": "Kaynak:"
+    "source_prefix": "Kaynak:",
+    "notifications_label": "Bildirimler",
+    "notifications_unread_label": "okunmamış",
+    "toast": {
+      "dismiss": "Bildirimi kapat"
+    },
+    "dialog": {
+      "close": "Kapat"
+    }
   },
   "welcome": {
     "loading": "Yükleniyor…",
@@ -92,7 +101,12 @@
   },
   "panel": {
     "loading": "Yükleniyor…",
-    "greeting": "Merhaba, {name}"
+    "greeting": "Merhaba, {name}",
+    "welcome_toast_title": "Hoş geldin!",
+    "welcome_toast_message": "Bugün de birlikte ilerleyelim.",
+    "task_done_title": "Harika!",
+    "task_done_streak": "{count} günlük serini korudun. Devam et!",
+    "task_done_message": "Görev tamamlandı."
   },
   "topluluk": {
     "title": "Topluluk",
@@ -223,6 +237,8 @@
       "subtitle": "Resmi sınav tarihi bilgi merkezinden gelir; burada hedef sınav ailesini seçiyorsun.",
       "aria_label": "Sınav türü",
       "saved": "Kaydedildi",
+      "saved_toast_title": "Sınav türü kaydedildi",
+      "saved_toast_message": "Geri sayım ve içerikler buna göre güncellenecek.",
       "save_error": "Kaydedilemedi.",
       "kpss_desc": "Kamu Personeli Seçme Sınavı",
       "yks_desc": "Yükseköğretim Kurumları Sınavı",
@@ -261,7 +277,13 @@
     "valid_until": "Erişimin {date} tarihine kadar geçerli.",
     "upgrade_prompt": "Premium ile AI koç, deneme yorumları ve foto analizi açılır.",
     "cancel_button": "Aboneliği iptal et",
-    "cancel_confirm": "Aboneliğin dönem sonunda sona erecek. Emin misin?",
+    "cancel_confirm_title": "Aboneliği iptal et?",
+    "cancel_confirm_message": "Aboneliğin dönem sonunda sona erecek. Premium özellikler o tarihe kadar açık kalır.",
+    "cancel_confirm_yes": "Evet, iptal et",
+    "cancel_confirm_no": "Vazgeç",
+    "cancel_success_title": "İptal talebin alındı",
+    "cancel_success_message": "Erişimin dönem sonuna kadar devam eder.",
+    "cancel_success_ok": "Tamam",
     "trial_consent": "7 gün ücretsiz deneme sonrası seçtiğim planın ücreti kartımdan otomatik tahsil edilir; istediğim an iptal edebilirim. Bunu anladım ve onaylıyorum.",
     "period_suffix": "/ {months} ay · KDV dahil",
     "trial_days": "{days} gün ücretsiz deneme",
@@ -523,6 +545,25 @@
     "save": "Kaydet",
     "saving": "Kaydediliyor…",
     "saved": "Kaydedildi",
+    "saved_info_title": "Hedefin kaydedildi",
+    "saved_info_message": "Koçun ve panelin buna göre seni motive edecek.",
+    "saved_info_ok": "Tamam",
     "save_error": "Kaydedilemedi."
+  },
+  "notifications": {
+    "title": "Bildirimler",
+    "mark_all_read": "Tümünü okundu işaretle",
+    "close": "Kapat",
+    "tab_all": "TÜMÜ",
+    "tab_coach": "KOÇ",
+    "tab_plan": "PLAN",
+    "empty_title": "Henüz bildirim yok",
+    "empty_body": "Planına başladığında burada görürsün",
+    "bell_label": "Bildirimleri aç",
+    "time_just_now": "Az önce",
+    "time_hours_ago": "{count} saat önce",
+    "time_yesterday": "Dün",
+    "time_days_ago": "{count} gün önce",
+    "unread_label": "okunmamış"
   }
 }

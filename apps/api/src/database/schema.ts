@@ -690,6 +690,25 @@ export const notificationDeliveries = pgTable(
   ],
 );
 
+/** In-app notification inbox — user-visible, browsable, markable as read. RLS: user-scoped. */
+export const userNotifications = pgTable(
+  "user_notifications",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    category: text("category").notNull(), // NotificationCategory: COACH | PLAN | CONTENT
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("user_notifications_user_created_idx").on(t.userId, t.createdAt)],
+);
+
 /* ================================ W6 · admin ================================
  * admin_audit_log: every admin mutation (who/what/when) — append-only (§9), never
  * updated, never deleted. Written by AdminAuditInterceptor in SERVICE context.

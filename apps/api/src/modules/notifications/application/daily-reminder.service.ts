@@ -10,6 +10,7 @@ import {
 import { EmailTemplate, JobName } from "../domain/notifications.constants";
 import { NotificationDeliveryRepository } from "../infrastructure/notification-delivery.repository";
 import { NotificationPreferencesRepository } from "../infrastructure/notification-preferences.repository";
+import { NotificationsService } from "./notifications.service";
 import { todayIso } from "../../coaching/domain/date.util";
 
 /** Rule-based daily study reminder — coaching data, no AI (W3 deferred). */
@@ -21,6 +22,7 @@ export class DailyReminderService {
     @Inject(COACHING_QUERY_PORT) private readonly coaching: CoachingQueryPort,
     private readonly preferences: NotificationPreferencesRepository,
     private readonly deliveries: NotificationDeliveryRepository,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async dispatchForToday(): Promise<{ enqueued: number; skipped: number }> {
@@ -35,14 +37,18 @@ export class DailyReminderService {
       );
       const emailOn = prefs?.emailEnabled ?? true;
       const pushOn = prefs?.pushEnabled ?? true;
-      if (!emailOn && !pushOn) {
-        skipped += 1;
-        continue;
-      }
 
       const dedupeKey = `daily-reminder:${dateIso}`;
       const title = "Bugün bir adım at";
       const body = "Küçük bir çalışma veya mood check-in bile yeter. Seninle buradayız.";
+
+      // In-app inbox is a separate channel — always create regardless of email/push prefs
+      await this.notifications.createInApp(user.userId, "COACH", title, body);
+
+      if (!emailOn && !pushOn) {
+        skipped += 1;
+        continue;
+      }
 
       if (emailOn) {
         const ok = await withServiceContext(this.db, async (tx) =>
@@ -74,6 +80,7 @@ export class DailyReminderService {
         });
         enqueued += 1;
       }
+
     }
 
     return { enqueued, skipped };

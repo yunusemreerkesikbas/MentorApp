@@ -21,6 +21,7 @@ import { NotificationDeliveryRepository } from "./infrastructure/notification-de
 import { NotificationPreferencesRepository } from "./infrastructure/notification-preferences.repository";
 import { PostgresJobQueueAdapter } from "./infrastructure/postgres-job-queue.adapter";
 import { PushSubscriptionRepository } from "./infrastructure/push-subscription.repository";
+import { UserNotificationRepository } from "./infrastructure/user-notification.repository";
 import { CronController } from "./presentation/cron.controller";
 import { CronSecretGuard } from "./presentation/cron-secret.guard";
 import { NotificationsController } from "./presentation/notifications.controller";
@@ -46,6 +47,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     NotificationPreferencesRepository,
     PushSubscriptionRepository,
     NotificationDeliveryRepository,
+    UserNotificationRepository,
     CronSecretGuard,
     LoggerEmailAdapter,
     PostmarkEmailAdapter,

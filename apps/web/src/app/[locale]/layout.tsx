@@ -6,6 +6,8 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { BackgroundBlobs } from "@mentor/ui";
 import { routing } from "@/i18n/routing";
 import { AuthProvider } from "@/lib/auth-context";
+import { ToastProviderShell } from "@/lib/toast-provider-shell";
+import { DialogProviderShell } from "@/lib/dialog-provider-shell";
 import "../globals.css";
 
 /* DESIGN.md §3 — headings: League Spartan, body: Lato. latin-ext covers Turkish glyphs
@@ -78,12 +80,23 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} className={`${heading.variable} ${body.variable}`}>
+      <head>
+        {/* Material Symbols Outlined — used by notification drawer icons */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        />
+      </head>
       {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla) inject body
           attributes pre-hydration; this silences only attribute diffs on <body>. */}
       <body suppressHydrationWarning>
         <BackgroundBlobs />
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <AuthProvider>{children}</AuthProvider>
+          <ToastProviderShell>
+            <DialogProviderShell>
+              <AuthProvider>{children}</AuthProvider>
+            </DialogProviderShell>
+          </ToastProviderShell>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -176,6 +176,13 @@
       "when": 1782166589295,
       "tag": "0024_stale_kinsey_walden",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1782557655952,
+      "tag": "0025_w5_in_app_notifications",
+      "breakpoints": true
     }
   ]
 }

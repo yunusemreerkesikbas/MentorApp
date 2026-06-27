@@ -11,11 +11,12 @@ import type {
 import {
   aiChatControllerGetAccess,
   aiMoodControllerReflect,
+  ApiClientError,
   coachingControllerUpsertMood,
 } from "@mentor/api-client";
 import { Card, Chip, MoodPicker, SectionHeading } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
-import { FormError } from "@/components/form";
+import { useMentorToast } from "@/lib/mentor-toast";
 
 /**
  * Mood check-in — gentle daily prompt (plan §3 Slice 5 + W3 mood AI-adaptive layer).
@@ -28,6 +29,8 @@ import { FormError } from "@/components/form";
 export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
   const reduceMotion = useReducedMotion();
   const t = useTranslations("mood");
+  const tCommon = useTranslations("common");
+  const { error: showErrorToast } = useMentorToast();
   const router = useRouter();
   const [premium, setPremium] = useState<boolean | null>(null);
   const [mood, setMood] = useState<number | null>(initial?.mood ?? null);
@@ -39,7 +42,6 @@ export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
     initial?.aiReflection ?? null,
   );
   const [reflecting, setReflecting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const generateReflection = useCallback(async () => {
@@ -87,7 +89,6 @@ export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
   }, [generateReflection, initial?.aiReflection, initial?.mood]);
 
   async function saveMood(value: number, struggleNote: string) {
-    setError(null);
     setBusy(true);
     try {
       const result = (await coachingControllerUpsertMood({
@@ -99,7 +100,16 @@ export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
       setReflection(null); // mood/note changed → stale reflection cleared server-side too
       if (premium) await generateReflection();
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      showErrorToast({
+        title: tCommon("error_title"),
+        message:
+          err instanceof ApiClientError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : tCommon("error_unknown"),
+        duration: 3000,
+      });
     } finally {
       setBusy(false);
     }
@@ -142,8 +152,6 @@ export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
           />
         </label>
       ) : null}
-
-      <FormError message={error} />
 
       {reflecting ? (
         <p

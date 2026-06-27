@@ -8,7 +8,6 @@ import type { SessionPresetDto } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
 import { Card, SectionHeading } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
-import { FormError } from "@/components/form";
 import { SessionControls } from "./session-controls";
 import { SessionDoneState } from "./session-done-state";
 import { SessionTimerRing } from "./session-timer-ring";
@@ -107,7 +106,6 @@ export function SeansShell() {
     isPaused,
     isTimerComplete,
     busy,
-    error,
     setFocusMinutes,
     selectPreset,
     startSession,
@@ -169,7 +167,6 @@ export function SeansShell() {
         </p>
       </motion.header>
 
-      <FormError message={error} />
       {presetNotice && (
         <p
           className="text-sm"

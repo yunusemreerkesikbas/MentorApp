@@ -14,6 +14,7 @@ import {
 import { Button, Card, Chip, SectionHeading } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
+import { useMentorDialog } from "@/lib/mentor-dialog";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 
 /** VAT-inclusive display (server sends minor units; this is pure display shaping). */
@@ -34,6 +35,7 @@ export function AbonelikShell() {
   const reduceMotion = useReducedMotion();
   const t = useTranslations("subscription");
   const locale = useLocale();
+  const { confirm, info } = useMentorDialog();
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [view, setView] = useState<SubscriptionView | null>(null);
   const [consent, setConsent] = useState(false);
@@ -93,7 +95,14 @@ export function AbonelikShell() {
   }
 
   async function cancel() {
-    if (!window.confirm(t("cancel_confirm"))) return;
+    const ok = await confirm({
+      title: t("cancel_confirm_title"),
+      message: t("cancel_confirm_message"),
+      confirmLabel: t("cancel_confirm_yes"),
+      cancelLabel: t("cancel_confirm_no"),
+    });
+    if (!ok) return;
+
     setError(null);
     setBusy(true);
     try {
@@ -107,6 +116,11 @@ export function AbonelikShell() {
           view: updated,
         });
       }
+      await info({
+        title: t("cancel_success_title"),
+        message: t("cancel_success_message"),
+        okLabel: t("cancel_success_ok"),
+      });
     } catch (err) {
       setError(
         err instanceof ApiClientError

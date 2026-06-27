@@ -2,11 +2,20 @@
   "common": {
     "loading": "Loading…",
     "error_unknown": "An unexpected error occurred.",
+    "error_title": "Something went wrong",
     "back_panel": "← Back to Dashboard",
     "back_plan": "← Back to Plan",
     "show_password": "Show password",
     "hide_password": "Hide password",
-    "source_prefix": "Source:"
+    "source_prefix": "Source:",
+    "notifications_label": "Notifications",
+    "notifications_unread_label": "unread",
+    "toast": {
+      "dismiss": "Dismiss notification"
+    },
+    "dialog": {
+      "close": "Close"
+    }
   },
   "welcome": {
     "loading": "Loading…",
@@ -92,7 +101,12 @@
   },
   "panel": {
     "loading": "Loading…",
-    "greeting": "Hello, {name}"
+    "greeting": "Hello, {name}",
+    "welcome_toast_title": "Welcome!",
+    "welcome_toast_message": "Let's keep moving forward together today.",
+    "task_done_title": "Nice work!",
+    "task_done_streak": "You kept your {count}-day streak going. Keep it up!",
+    "task_done_message": "Task completed."
   },
   "topluluk": {
     "title": "Community",
@@ -222,8 +236,13 @@
       "title": "Exam type",
       "subtitle": "Official exam date comes from the knowledge hub; here you choose your target exam family.",
       "aria_label": "Exam type",
-      "saved": "Saved",
-      "save_error": "Could not save.",
+    "saved": "Saved",
+    "saved_toast_title": "Exam type saved",
+    "saved_toast_message": "Countdown and content will update to match.",
+    "saved_info_title": "Goal saved",
+    "saved_info_message": "Your coach and dashboard will motivate you around this goal.",
+    "saved_info_ok": "OK",
+    "save_error": "Could not save.",
       "kpss_desc": "Civil Servant Selection Exam",
       "yks_desc": "Higher Education Institutions Exam",
       "lgs_desc": "High School Transition System"
@@ -261,7 +280,13 @@
     "valid_until": "Your access is valid until {date}.",
     "upgrade_prompt": "Premium unlocks AI coach, mock exam insights, and photo analysis.",
     "cancel_button": "Cancel subscription",
-    "cancel_confirm": "Your subscription will end at the current period. Are you sure?",
+    "cancel_confirm_title": "Cancel subscription?",
+    "cancel_confirm_message": "Your subscription will end at the current period. Premium features stay active until then.",
+    "cancel_confirm_yes": "Yes, cancel",
+    "cancel_confirm_no": "Keep plan",
+    "cancel_success_title": "Cancellation received",
+    "cancel_success_message": "You keep access until the end of your billing period.",
+    "cancel_success_ok": "OK",
     "trial_consent": "After the 7-day free trial, the fee for my chosen plan will be automatically charged to my card; I can cancel at any time. I understand and agree.",
     "period_suffix": "/ {months} mo · VAT incl.",
     "trial_days": "{days}-day free trial",
@@ -524,5 +549,21 @@
     "saving": "Saving…",
     "saved": "Saved",
     "save_error": "Couldn't save."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "mark_all_read": "Mark all as read",
+    "close": "Close",
+    "tab_all": "ALL",
+    "tab_coach": "COACH",
+    "tab_plan": "PLAN",
+    "empty_title": "No notifications yet",
+    "empty_body": "You'll see updates here when your plan kicks off",
+    "bell_label": "Open notifications",
+    "time_just_now": "Just now",
+    "time_hours_ago": "{count}h ago",
+    "time_yesterday": "Yesterday",
+    "time_days_ago": "{count} days ago",
+    "unread_label": "unread"
   }
 }

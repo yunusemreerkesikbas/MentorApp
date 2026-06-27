@@ -7,8 +7,12 @@ import type { PlanTaskDto, PlanTaskStatus } from "@mentor/types";
 import { ApiClientError, planTaskControllerUpdate } from "@mentor/api-client";
 import { Card, PlanListItem, ProgressBar, SectionHeading } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
-import { FormError } from "@/components/form";
+import { useMentorToast } from "@/lib/mentor-toast";
 import { staggerItemVariants } from "@/lib/stagger-motion";
+
+export type TodayPlanTasksChangedOptions = {
+  celebrateDone?: boolean;
+};
 
 /**
  * Today's plan — client container for the panel's task list.
@@ -21,12 +25,13 @@ export function TodayPlan({
   onTasksChanged,
 }: {
   tasks: PlanTaskDto[];
-  onTasksChanged?: () => void;
+  onTasksChanged?: (opts?: TodayPlanTasksChangedOptions) => void;
 }) {
   const reduceMotion = useReducedMotion();
   const t = useTranslations("today_plan");
+  const tCommon = useTranslations("common");
+  const { error: showErrorToast } = useMentorToast();
   const [tasks, setTasks] = useState(initialTasks);
-  const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const doneCount = useMemo(
@@ -44,7 +49,6 @@ export function TodayPlan({
       task.status === "DONE" ? "PENDING" : "DONE";
     const previous = tasks;
 
-    setError(null);
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, status: nextStatus } : t)),
     );
@@ -55,16 +59,21 @@ export function TodayPlan({
         status: nextStatus,
       })) as unknown as PlanTaskDto;
       setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
-      onTasksChanged?.();
+      onTasksChanged?.(
+        nextStatus === "DONE" ? { celebrateDone: true } : undefined,
+      );
     } catch (err) {
       setTasks(previous);
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : err instanceof Error
+      showErrorToast({
+        title: tCommon("error_title"),
+        message:
+          err instanceof ApiClientError
             ? err.message
-            : String(err),
-      );
+            : err instanceof Error
+              ? err.message
+              : tCommon("error_unknown"),
+        duration: 3000,
+      });
     } finally {
       setBusyId(null);
     }
@@ -82,8 +91,6 @@ export function TodayPlan({
       >
         {t("title")}
       </SectionHeading>
-
-      <FormError message={error} />
 
       {tasks.length === 0 ? (
         <EmptyState />
