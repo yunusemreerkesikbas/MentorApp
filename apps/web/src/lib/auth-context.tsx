@@ -26,8 +26,8 @@ type Status = "loading" | "authenticated" | "anonymous";
 interface AuthContextValue {
   status: Status;
   user: AuthUser | null;
-  login: (input: LoginInput) => Promise<void>;
-  signup: (input: SignupInput) => Promise<void>;
+  login: (input: LoginInput) => Promise<AuthUser>;
+  signup: (input: SignupInput) => Promise<AuthUser>;
   logout: () => Promise<void>;
   /** Sync in-memory user after profile PATCH (greeting, examType, etc.). */
   setUserFromServer: (user: AuthUser) => void;
@@ -96,29 +96,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     silentRefreshRef.current();
   }, []);
 
-  // Re-configure the API client whenever the locale changes so all subsequent
-  // requests carry the correct Accept-Language / locale header.
-  useEffect(() => {
-    configureApiClient({
-      baseUrl: apiBaseUrl(),
-      getAccessToken: () => accessTokenRef.current,
-      getLocale: () => locale,
-    });
-  }, [locale]);
+  // ponytail: sync call so baseUrl is set before the mount-effect silentRefresh fires.
+  // Idempotent (sets a module-level singleton); safe to call on every render.
+  configureApiClient({
+    baseUrl: apiBaseUrl(),
+    getAccessToken: () => accessTokenRef.current,
+    getLocale: () => locale,
+  });
 
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
       user,
       login: async (input) => {
-        applySession(
-          (await authControllerLogin(input)) as unknown as AuthSession,
-        );
+        const session = (await authControllerLogin(
+          input,
+        )) as unknown as AuthSession;
+        applySession(session);
+        return session.user;
       },
       signup: async (input) => {
-        applySession(
-          (await authControllerSignup(input)) as unknown as AuthSession,
-        );
+        const session = (await authControllerSignup(
+          input,
+        )) as unknown as AuthSession;
+        applySession(session);
+        return session.user;
       },
       logout: async () => {
         await authControllerLogout().catch(() => undefined); // idempotent server-side
