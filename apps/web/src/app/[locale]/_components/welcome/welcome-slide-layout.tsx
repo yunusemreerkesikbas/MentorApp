@@ -2,31 +2,13 @@
 
 import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
+import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left.mjs";
 import { Button } from "@mentor/ui";
 import { DashProgress } from "@/components/dash-progress";
 import type { PuhuVariant } from "@/components/puhu-image";
 import { PuhuImage } from "@/components/puhu-image";
 
 const TOTAL = 3;
-
-function BackIcon() {
-  return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M19 12H5" />
-      <path d="M12 19l-7-7 7-7" />
-    </svg>
-  );
-}
 
 /** Pre-auth welcome slide chrome — onboarding centered mode parity. */
 export function WelcomeSlideLayout({
@@ -78,7 +60,7 @@ export function WelcomeSlideLayout({
           className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
           style={{ color: "var(--color-main)" }}
         >
-          <BackIcon />
+          <ArrowLeft size={24} strokeWidth={2} aria-hidden />
         </button>
       ) : (
         <div className="min-w-11" aria-hidden />

@@ -1,21 +1,96 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, NotFoundException, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
+import { randomUUID } from "node:crypto";
+import { interval, merge, Observable, Subject } from "rxjs";
+import { finalize, map } from "rxjs/operators";
+import type { MessageEvent } from "@nestjs/common";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
-import { withUserContext } from "../../../database/rls";
+import { withServiceContext, withUserContext } from "../../../database/rls";
+import { notificationCategorySchema } from "@mentor/validation";
 import type {
+  NotificationCategory,
+  NotificationListDto,
   NotificationPreferencesDto,
   PushSubscriptionInput,
+  UserNotificationDto,
 } from "@mentor/types";
 import { NotificationPreferencesRepository } from "../infrastructure/notification-preferences.repository";
 import { PushSubscriptionRepository } from "../infrastructure/push-subscription.repository";
+import { NOTIFICATION_PAGE_SIZE, UserNotificationRepository } from "../infrastructure/user-notification.repository";
+
+const STREAM_TOKEN_TTL_MS = 60_000;
+const HEARTBEAT_INTERVAL_MS = 25_000;
 
 @Injectable()
-export class NotificationsService {
+export class NotificationsService implements OnModuleInit, OnModuleDestroy {
+  private readonly streamTokens = new Map<string, { userId: string; exp: number }>();
+  private readonly streams = new Map<string, Set<Subject<MessageEvent>>>();
+  private tokenCleanupTimer?: ReturnType<typeof setInterval>;
+
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly pushSubs: PushSubscriptionRepository,
     private readonly preferences: NotificationPreferencesRepository,
+    private readonly userNotifs: UserNotificationRepository,
   ) {}
+
+  onModuleInit(): void {
+    // Purge expired stream tokens every 60s to prevent unbounded Map growth
+    this.tokenCleanupTimer = setInterval(() => {
+      const now = Date.now();
+      for (const [token, entry] of this.streamTokens) {
+        if (entry.exp < now) this.streamTokens.delete(token);
+      }
+    }, 60_000);
+  }
+
+  onModuleDestroy(): void {
+    clearInterval(this.tokenCleanupTimer);
+  }
+
+  // --- SSE streaming ---
+
+  createStreamToken(userId: string): string {
+    const token = randomUUID();
+    this.streamTokens.set(token, { userId, exp: Date.now() + STREAM_TOKEN_TTL_MS });
+    return token;
+  }
+
+  validateAndConsumeStreamToken(token: string): string | null {
+    const entry = this.streamTokens.get(token);
+    if (!entry || entry.exp < Date.now()) {
+      this.streamTokens.delete(token);
+      return null;
+    }
+    this.streamTokens.delete(token); // one-time use
+    return entry.userId;
+  }
+
+  createStream(userId: string): Observable<MessageEvent> {
+    const subject = new Subject<MessageEvent>();
+    let set = this.streams.get(userId);
+    if (!set) { set = new Set(); this.streams.set(userId, set); }
+    set.add(subject);
+
+    // ponytail: heartbeat prevents proxy timeout at 30s; upgrade to per-connection if needed
+    const heartbeat = interval(HEARTBEAT_INTERVAL_MS).pipe(
+      map(() => ({ data: "" } as MessageEvent)),
+    );
+
+    return merge(subject.asObservable(), heartbeat).pipe(
+      finalize(() => {
+        set?.delete(subject);
+        if (set?.size === 0) this.streams.delete(userId);
+      }),
+    );
+  }
+
+  private pushToStreams(userId: string): void {
+    const set = this.streams.get(userId);
+    if (!set) return;
+    const event: MessageEvent = { data: { event: "new_notification" } };
+    for (const s of set) s.next(event);
+  }
 
   async subscribePush(userId: string, input: PushSubscriptionInput): Promise<void> {
     await withUserContext(this.db, { userId }, async (tx) => {
@@ -56,4 +131,84 @@ export class NotificationsService {
       };
     });
   }
+
+  // --- In-app notification inbox ---
+
+  /** Called by DailyReminderService and future event listeners (SERVICE context). */
+  async createInApp(
+    userId: string,
+    category: NotificationCategory,
+    title: string,
+    body: string,
+    linkUrl?: string,
+  ): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await this.userNotifs.create(tx, { userId, category, title, body, linkUrl });
+    });
+    this.pushToStreams(userId);
+  }
+
+  async listInApp(
+    userId: string,
+    category: NotificationCategory | undefined,
+    page: number,
+  ): Promise<NotificationListDto> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const [rows, unreadCount] = await Promise.all([
+        this.userNotifs.listByUser(tx, userId, category, page),
+        this.userNotifs.countUnread(tx, userId),
+      ]);
+      const hasMore = rows.length > NOTIFICATION_PAGE_SIZE;
+      const items = rows.slice(0, NOTIFICATION_PAGE_SIZE).map(toDto);
+      return { items, unreadCount, hasMore };
+    });
+  }
+
+  async markRead(userId: string, id: string): Promise<UserNotificationDto> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const row = await this.userNotifs.markRead(tx, userId, id);
+      if (!row) throw new NotFoundException("notification.not_found");
+      return toDto(row);
+    });
+  }
+
+  async markAllRead(userId: string): Promise<void> {
+    await withUserContext(this.db, { userId }, async (tx) => {
+      await this.userNotifs.markAllRead(tx, userId);
+    });
+  }
+
+  async markUnread(userId: string, id: string): Promise<UserNotificationDto> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const row = await this.userNotifs.markUnread(tx, userId, id);
+      if (!row) throw new NotFoundException("notification.not_found");
+      return toDto(row);
+    });
+  }
+
+  async deleteNotification(userId: string, id: string): Promise<void> {
+    await withUserContext(this.db, { userId }, async (tx) => {
+      await this.userNotifs.delete(tx, userId, id);
+    });
+  }
+}
+
+function toDto(row: {
+  id: string;
+  category: string;
+  title: string;
+  body: string;
+  readAt: Date | null;
+  linkUrl: string | null;
+  createdAt: Date;
+}): UserNotificationDto {
+  return {
+    id: row.id,
+    category: notificationCategorySchema.parse(row.category),
+    title: row.title,
+    body: row.body,
+    readAt: row.readAt?.toISOString() ?? null,
+    linkUrl: row.linkUrl ?? null,
+    createdAt: row.createdAt.toISOString(),
+  };
 }

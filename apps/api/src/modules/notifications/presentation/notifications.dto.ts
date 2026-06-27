@@ -1,5 +1,7 @@
 import { createZodDto } from "../../../common/validation/zod-dto";
 import {
+  listNotificationsSchema,
+  notificationIdParamSchema,
   pushSubscribeSchema,
   pushUnsubscribeSchema,
   updateNotificationPreferencesSchema,
@@ -10,3 +12,5 @@ export class PushUnsubscribeDto extends createZodDto(pushUnsubscribeSchema) {}
 export class UpdateNotificationPreferencesDto extends createZodDto(
   updateNotificationPreferencesSchema,
 ) {}
+export class ListNotificationsDto extends createZodDto(listNotificationsSchema) {}
+export class NotificationIdParamDto extends createZodDto(notificationIdParamSchema) {}

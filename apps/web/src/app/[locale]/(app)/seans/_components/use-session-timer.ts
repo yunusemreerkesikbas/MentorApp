@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { StudySessionDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { finalizeStudySession, startStudySession } from "@/lib/study-sessions";
+import { useMentorToast } from "@/lib/mentor-toast";
 
 export type SessionPhase = "idle" | "focus" | "done";
 
@@ -23,7 +25,6 @@ export interface UseSessionTimerResult {
   isTimerComplete: boolean;
   session: StudySessionDto | null;
   busy: boolean;
-  error: string | null;
   startSession: () => Promise<void>;
   togglePause: () => void;
   finalize: (status: "COMPLETED" | "ABANDONED") => Promise<void>;
@@ -41,6 +42,8 @@ export function useSessionTimer(
   options: UseSessionTimerOptions = {},
 ): UseSessionTimerResult {
   const { initialMinutes = 25, initialPreset = "25_5" } = options;
+  const tCommon = useTranslations("common");
+  const { error: showErrorToast } = useMentorToast();
 
   const [phase, setPhase] = useState<SessionPhase>("idle");
   const [focusMinutes, setFocusMinutesState] = useState(initialMinutes);
@@ -50,7 +53,6 @@ export function useSessionTimer(
   const [isTimerComplete, setIsTimerComplete] = useState(false);
   const [session, setSession] = useState<StudySessionDto | null>(null);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const phaseEndsAtRef = useRef(0);
   const pausedAtRef = useRef(0);
@@ -100,8 +102,23 @@ export function useSessionTimer(
     return () => clearInterval(id);
   }, [phase, isPaused]);
 
+  const showSessionError = useCallback(
+    (err: unknown) => {
+      showErrorToast({
+        title: tCommon("error_title"),
+        message:
+          err instanceof ApiClientError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : tCommon("error_unknown"),
+        duration: 3000,
+      });
+    },
+    [showErrorToast, tCommon],
+  );
+
   const startSession = useCallback(async () => {
-    setError(null);
     setBusy(true);
     try {
       const preset = selectedPresetRef.current;
@@ -114,23 +131,16 @@ export function useSessionTimer(
       setFocusElapsed(0);
       beginFocus(presetSeconds(focusMinutes));
     } catch (err) {
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Bir hata oluştu.",
-      );
+      showSessionError(err);
     } finally {
       setBusy(false);
     }
-  }, [focusMinutes, beginFocus]);
+  }, [focusMinutes, beginFocus, showSessionError]);
 
   const finalize = useCallback(
     async (status: "COMPLETED" | "ABANDONED") => {
       if (!session) return;
       setBusy(true);
-      setError(null);
       try {
         await finalizeStudySession(session.id, {
           status,
@@ -138,18 +148,12 @@ export function useSessionTimer(
         });
         setPhase("done");
       } catch (err) {
-        setError(
-          err instanceof ApiClientError
-            ? err.message
-            : err instanceof Error
-              ? err.message
-              : "Bir hata oluştu.",
-        );
+        showSessionError(err);
       } finally {
         setBusy(false);
       }
     },
-    [session, focusElapsed],
+    [session, focusElapsed, showSessionError],
   );
 
   const reset = useCallback(() => {
@@ -180,7 +184,6 @@ export function useSessionTimer(
     isTimerComplete,
     session,
     busy,
-    error,
     startSession,
     togglePause,
     finalize,

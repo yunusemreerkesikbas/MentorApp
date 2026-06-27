@@ -1,21 +1,8 @@
 import { useTranslations } from "next-intl";
+import Play from "lucide-react/dist/esm/icons/play.mjs";
 import { Link } from "@/i18n/navigation";
 import type { SessionPresetDto } from "@mentor/types";
 import { Card } from "@mentor/ui";
-
-function PlayIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden
-    >
-      <polygon points="6 4 20 12 6 20 6 4" />
-    </svg>
-  );
-}
 
 /**
  * Pomodoro entry CTA — Link styled with primary Button tokens (valid HTML: no nested button).
@@ -52,7 +39,7 @@ export function StartSessionCta({ presets }: { presets: SessionPresetDto[] }) {
             fontFamily: "var(--font-body)",
           }}
         >
-          <PlayIcon />
+          <Play size={20} fill="currentColor" strokeWidth={0} aria-hidden />
           {translate("cta")}
         </Link>
 

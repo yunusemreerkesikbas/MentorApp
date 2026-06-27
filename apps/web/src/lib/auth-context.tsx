@@ -91,18 +91,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     silentRefreshRef.current = () => void silentRefresh();
   }, [silentRefresh]);
 
+  // Configure before the mount-effect silent refresh below; operation calls read the latest ref lazily.
+  useEffect(() => {
+    configureApiClient({
+      baseUrl: apiBaseUrl(),
+      getAccessToken: () => accessTokenRef.current,
+      getLocale: () => locale,
+    });
+  }, [locale]);
+
   // Silent refresh runs once on mount — locale changes do not re-trigger it.
   useEffect(() => {
     silentRefreshRef.current();
   }, []);
-
-  // ponytail: sync call so baseUrl is set before the mount-effect silentRefresh fires.
-  // Idempotent (sets a module-level singleton); safe to call on every render.
-  configureApiClient({
-    baseUrl: apiBaseUrl(),
-    getAccessToken: () => accessTokenRef.current,
-    getLocale: () => locale,
-  });
 
   const value = useMemo<AuthContextValue>(
     () => ({

@@ -4,8 +4,304 @@
 @source "../../../../packages/ui/src";
 
 /* Nuton-based base (DESIGN.md §1): white background, near-black text. */
+html {
+  scrollbar-gutter: stable;
+}
+
+html.mentor-dialog-open {
+  overflow: hidden;
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-body);
   font-family: var(--font-body);
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.animate-toast-enter {
+  animation: toast-enter 280ms ease-out forwards;
+}
+
+@keyframes dialog-backdrop-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-dialog-enter {
+  animation: dialog-enter 280ms ease-out forwards;
+}
+
+@keyframes dialog-exit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.animate-dialog-exit {
+  animation: dialog-exit 200ms ease-in forwards;
+}
+
+.animate-dialog-backdrop-enter {
+  animation: dialog-backdrop-enter 200ms ease-out forwards;
+}
+
+/* Notification drawer — mobile slide-in/out, desktop popover fade */
+@keyframes drawer-backdrop-enter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes drawer-slide-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes drawer-slide-out {
+  from { transform: translateX(0); }
+  to   { transform: translateX(100%); }
+}
+
+@keyframes popover-enter {
+  from { opacity: 0; transform: scale(0.97) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+@keyframes popover-exit {
+  from { opacity: 1; transform: scale(1)    translateY(0); }
+  to   { opacity: 0; transform: scale(0.97) translateY(-4px); }
+}
+
+.animate-drawer-in  { animation: drawer-slide-in  280ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-drawer-out { animation: drawer-slide-out  220ms cubic-bezier(0.4, 0, 1, 1)   forwards; }
+
+@media (min-width: 1024px) {
+  .lg\:animate-popover-in  { animation: popover-enter 200ms ease-out forwards; }
+  .lg\:animate-popover-out { animation: popover-exit  160ms ease-in  forwards; }
+}
+
+html.mentor-drawer-open {
+  overflow: hidden;
+}
+
+html.mentor-sheet-open {
+  overflow: hidden;
+}
+
+@keyframes sheet-enter {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheet-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+.animate-sheet-enter {
+  animation: sheet-enter 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-sheet-exit {
+  animation: sheet-exit 240ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* Plan date sheet — react-day-picker overrides (DESIGN.md tokens) */
+.mentor-plan-day-picker-wrap {
+  border: 1px solid color-mix(in srgb, var(--color-main) 12%, transparent);
+  border-radius: var(--radius-card);
+  margin-inline: auto;
+  max-width: 20rem;
+  padding: 0.75rem 0.625rem 0.625rem;
+  width: 100%;
+}
+
+.mentor-plan-day-picker-today {
+  background-color: color-mix(
+    in srgb,
+    var(--color-progress-track) 45%,
+    transparent
+  );
+  border: none;
+  border-radius: 9999px;
+  color: var(--color-progress);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 0.625rem;
+  padding: 0.25rem 0.625rem;
+  transition: opacity 150ms ease;
+}
+
+.mentor-plan-day-picker-today:hover {
+  opacity: 0.8;
+}
+
+.mentor-plan-day-picker-today:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.mentor-plan-day-picker {
+  --rdp-accent-color: var(--color-progress);
+  --rdp-accent-background-color: color-mix(
+    in srgb,
+    var(--color-progress-track) 45%,
+    transparent
+  );
+  --rdp-day_button-border-radius: 9999px;
+  --rdp-day_button-border: 2px solid transparent;
+  --rdp-selected-border: 2px solid var(--color-btn);
+  --rdp-today-color: var(--color-progress);
+  --rdp-day-height: 44px;
+  --rdp-day-width: 44px;
+  --rdp-day_button-height: 44px;
+  --rdp-day_button-width: 44px;
+  --rdp-nav_button-height: 2.75rem;
+  --rdp-nav_button-width: 2.75rem;
+  --rdp-outside-opacity: 0.35;
+  --rdp-weekday-opacity: 1;
+  width: 100%;
+}
+
+.mentor-plan-day-picker .rdp-month {
+  border: none;
+  padding: 0;
+  position: relative;
+}
+
+.mentor-plan-day-picker .rdp-month_caption {
+  color: var(--color-main);
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.mentor-plan-day-picker .rdp-button_next,
+.mentor-plan-day-picker .rdp-button_previous {
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-card);
+  color: var(--color-main);
+  transition: background-color 150ms ease;
+}
+
+.mentor-plan-day-picker .rdp-button_next:hover:not(:disabled):not([aria-disabled="true"]),
+.mentor-plan-day-picker .rdp-button_previous:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: color-mix(in srgb, var(--color-main) 4%, transparent);
+}
+
+.mentor-plan-day-picker .rdp-chevron {
+  display: none;
+}
+
+.mentor-plan-day-picker .rdp-weekday {
+  color: var(--color-secondary);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.mentor-plan-day-picker .rdp-day_button {
+  position: relative;
+  color: var(--color-body);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.mentor-plan-day-picker .rdp-today:not(.rdp-outside) .rdp-day_button {
+  color: var(--color-progress);
+}
+
+.mentor-plan-day-picker .rdp-selected {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.mentor-plan-day-picker .rdp-selected .rdp-day_button {
+  background-color: var(--color-btn);
+  border-color: var(--color-btn);
+  color: #ffffff;
+}
+
+.mentor-plan-day-picker .rdp-selected.rdp-today .rdp-day_button {
+  color: #ffffff;
+}
+
+.mentor-plan-day-picker .rdp-day.mentor-plan-day .rdp-day_button::after {
+  background-color: var(--color-progress);
+  border-radius: 50%;
+  bottom: 7px;
+  content: "";
+  height: 4px;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%);
+  width: 4px;
+}
+
+.mentor-plan-day-picker .rdp-day.rdp-selected.mentor-plan-day .rdp-day_button::after {
+  background-color: #ffffff;
+}
+
+.mentor-plan-day-picker .rdp-day_button:focus-visible,
+.mentor-plan-day-picker .rdp-button_next:focus-visible,
+.mentor-plan-day-picker .rdp-button_previous:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }

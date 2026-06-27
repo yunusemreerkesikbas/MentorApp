@@ -1,72 +1,75 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import type { PlanTaskDto, PlanTaskStatus } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import {
-  Button,
-  Card,
-  PlanListItem,
-  ProgressBar,
-  SectionHeading,
-  TextField,
-} from "@mentor/ui";
+import { Button } from "@mentor/ui";
+import Plus from "lucide-react/dist/esm/icons/plus.mjs";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
-import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import { MOBILE_TAB_BAR_STICKY_BOTTOM_CLASS } from "@/lib/app-shell";
+import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
+import { useMentorDialog } from "@/lib/mentor-dialog";
+import { useMentorToast } from "@/lib/mentor-toast";
 import {
   createPlanTask,
   deletePlanTask,
   listPlanTasksForDate,
+  listPlanTasksForWeek,
   updatePlanTask,
 } from "@/lib/plan-tasks";
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function shiftDate(iso: string, days: number): string {
-  const d = new Date(`${iso}T12:00:00`);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-function formatDateLabel(
-  iso: string,
-  locale: string,
-  todayLabel: string,
-): string {
-  const today = todayIso();
-  if (iso === today) return todayLabel;
-  const d = new Date(`${iso}T12:00:00`);
-  return d.toLocaleDateString(locale === "en" ? "en-GB" : "tr-TR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-}
+import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import { PlanAddTaskForm, type PlanAddTaskFormHandle } from "./plan-add-task-form";
+import { PlanDateNav } from "./plan-date-nav";
+import { PlanDatePickerSheet, type PlanDatePickerSheetHandle } from "./plan-date-picker-sheet";
+import { PlanListView } from "./plan-list-view";
+import { PlanTimelineView } from "./plan-timeline-view";
+import { PlanViewSwitcher } from "./plan-view-switcher";
+import { PlanWeekView } from "./plan-week-view";
+import {
+  persistViewMode,
+  readStoredViewMode,
+  taskStats,
+  todayIso,
+  isPastDate,
+  type PlanViewMode,
+  weekStart,
+} from "./plan-utils";
 
 /**
- * Full plan CRUD — list/create/update/delete tasks for a selected day.
+ * Plan page — three toggleable views (Liste / Timeline / Hafta) with shared CRUD.
  */
 export function PlanShell() {
   const reduceMotion = useReducedMotion();
   const t = useTranslations("plan");
-  const locale = useLocale();
+  const tCommon = useTranslations("common");
+  const { filterSheet, actionSheet } = useMentorBottomSheet();
+  const { confirm } = useMentorDialog();
+  const { error: showErrorToast } = useMentorToast();
+
+  const [viewMode, setViewMode] = useState<PlanViewMode>("list");
   const [date, setDate] = useState(todayIso);
+  const [weekAnchor, setWeekAnchor] = useState(() => weekStart(todayIso()));
   const [tasks, setTasks] = useState<PlanTaskDto[]>([]);
+  const [weekTasks, setWeekTasks] = useState<Record<string, PlanTaskDto[]>>({});
   const [loadedDate, setLoadedDate] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [subject, setSubject] = useState("");
+  const [loadedWeek, setLoadedWeek] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
-
-  const loading = loadedDate !== date;
+  const addFormRef = useRef<PlanAddTaskFormHandle>(null);
 
   useEffect(() => {
+    setViewMode(readStoredViewMode());
+  }, []);
+
+  const dayLoading = loadedDate !== date;
+  const weekLoading = loadedWeek !== weekAnchor;
+  const readOnly = isPastDate(date);
+
+  useEffect(() => {
+    if (viewMode === "week") return;
     let active = true;
     listPlanTasksForDate(date)
       .then((data) => {
@@ -79,28 +82,252 @@ export function PlanShell() {
         if (!active) return;
         setTasks([]);
         setLoadedDate(date);
-        setError(
-          err instanceof ApiClientError
-            ? err.message
-            : err instanceof Error
-              ? err.message
-              : String(err),
-        );
+        setError(readError(err));
       });
     return () => {
       active = false;
     };
-  }, [date]);
+  }, [date, viewMode]);
 
-  const doneCount = useMemo(
-    () => tasks.filter((t) => t.status === "DONE").length,
-    [tasks],
+  useEffect(() => {
+    if (viewMode !== "week") return;
+    let active = true;
+    listPlanTasksForWeek(weekAnchor)
+      .then((data) => {
+        if (!active) return;
+        setWeekTasks(data);
+        setLoadedWeek(weekAnchor);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        setWeekTasks({});
+        setLoadedWeek(weekAnchor);
+        setError(readError(err));
+      });
+    return () => {
+      active = false;
+    };
+  }, [viewMode, weekAnchor]);
+
+  const activeTasks = useMemo(() => {
+    if (viewMode === "week") return weekTasks[date] ?? [];
+    return tasks;
+  }, [viewMode, weekTasks, date, tasks]);
+
+  const datePickerRef = useRef<PlanDatePickerSheetHandle>(null);
+
+  const openCalendarSheet = useCallback(async () => {
+    const seedPlannedDates =
+      viewMode === "week"
+        ? Object.entries(weekTasks)
+            .filter(([, list]) => list.length > 0)
+            .map(([iso]) => iso)
+        : tasks.length > 0
+          ? [date]
+          : [];
+
+    await filterSheet({
+      title: t("date_sheet_title"),
+      applyLabel: t("date_sheet_apply"),
+      children: (
+        <PlanDatePickerSheet
+          ref={datePickerRef}
+          defaultValue={date}
+          seedPlannedDates={seedPlannedDates}
+        />
+      ),
+      onApply: () => {
+        const picked = datePickerRef.current?.getValue() ?? date;
+        setDate(picked);
+        if (viewMode === "week") setWeekAnchor(weekStart(picked));
+      },
+    });
+  }, [date, filterSheet, t, tasks, viewMode, weekTasks]);
+
+  function readError(err: unknown): string {
+    return err instanceof ApiClientError
+      ? err.message
+      : err instanceof Error
+        ? err.message
+        : String(err);
+  }
+
+  function reportActionError(err: unknown) {
+    showErrorToast({
+      title: tCommon("error_title"),
+      message:
+        err instanceof ApiClientError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : tCommon("error_unknown"),
+      duration: 3000,
+    });
+  }
+
+  function handleViewChange(mode: PlanViewMode) {
+    setViewMode(mode);
+    persistViewMode(mode);
+    if (mode === "week") {
+      setWeekAnchor(weekStart(date));
+    }
+  }
+
+  function patchTaskLists(updated: PlanTaskDto) {
+    setTasks((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+    setWeekTasks((prev) => {
+      const next = { ...prev };
+      for (const key of Object.keys(next)) {
+        next[key] = next[key]!.map((x) => (x.id === updated.id ? updated : x));
+      }
+      return next;
+    });
+  }
+
+  function removeTaskFromLists(id: string) {
+    setTasks((prev) => prev.filter((x) => x.id !== id));
+    setWeekTasks((prev) => {
+      const next = { ...prev };
+      for (const key of Object.keys(next)) {
+        next[key] = next[key]!.filter((x) => x.id !== id);
+      }
+      return next;
+    });
+  }
+
+  function appendTask(created: PlanTaskDto) {
+    if (created.taskDate === date) {
+      setTasks((prev) => [...prev, created]);
+    }
+    setWeekTasks((prev) => {
+      const day = created.taskDate;
+      const list = prev[day] ?? [];
+      return { ...prev, [day]: [...list, created] };
+    });
+  }
+
+  async function toggle(id: string) {
+    if (readOnly) return;
+    const task = activeTasks.find((x) => x.id === id) ?? tasks.find((x) => x.id === id);
+    if (!task || busyId) return;
+    const nextStatus: PlanTaskStatus = task.status === "DONE" ? "PENDING" : "DONE";
+    const previousTasks = tasks;
+    const previousWeek = weekTasks;
+    setError(null);
+    setTasks((prev) =>
+      prev.map((x) => (x.id === id ? { ...x, status: nextStatus } : x)),
+    );
+    setWeekTasks((prev) => {
+      const next = { ...prev };
+      for (const key of Object.keys(next)) {
+        next[key] = next[key]!.map((x) =>
+          x.id === id ? { ...x, status: nextStatus } : x,
+        );
+      }
+      return next;
+    });
+    setBusyId(id);
+    try {
+      const updated = await updatePlanTask(id, { status: nextStatus });
+      patchTaskLists(updated);
+    } catch (err) {
+      setTasks(previousTasks);
+      setWeekTasks(previousWeek);
+      reportActionError(err);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function remove(id: string) {
+    if (readOnly) return;
+    if (busyId) return;
+    setBusyId(id);
+    setError(null);
+    const previousTasks = tasks;
+    const previousWeek = weekTasks;
+    removeTaskFromLists(id);
+    try {
+      await deletePlanTask(id);
+    } catch (err) {
+      setTasks(previousTasks);
+      setWeekTasks(previousWeek);
+      reportActionError(err);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function openTaskMenu(task: PlanTaskDto) {
+    if (readOnly || busyId) return;
+    const isDone = task.status === "DONE";
+    const result = await actionSheet({
+      title: t("task_sheet_title"),
+      actions: [
+        {
+          id: isDone ? "toggle_pending" : "toggle_done",
+          label: isDone
+            ? t("task_action_toggle_pending")
+            : t("task_action_toggle_done"),
+          icon: "check-circle",
+        },
+        {
+          id: "delete",
+          label: t("task_action_delete"),
+          icon: "delete",
+          destructive: true,
+          showChevron: false,
+        },
+      ],
+    });
+    if (result === "cancel") return;
+    if (result === "toggle_done" || result === "toggle_pending") {
+      await toggle(task.id);
+      return;
+    }
+    if (result === "delete") {
+      const ok = await confirm({
+        title: t("task_delete_confirm_title"),
+        message: t("task_delete_confirm_message"),
+        confirmLabel: t("task_delete_confirm_yes"),
+        cancelLabel: t("task_delete_confirm_no"),
+      });
+      if (ok) await remove(task.id);
+    }
+  }
+
+  const openAddSheet = useCallback(async () => {
+    if (readOnly) return;
+    await filterSheet({
+      title: t("add_sheet_title"),
+      applyLabel: t("add_task"),
+      children: <PlanAddTaskForm ref={addFormRef} />,
+      onApply: async () => {
+        if (!addFormRef.current?.validate()) throw new Error("validation");
+        const { title, subject } = addFormRef.current.getValues();
+        const created = await createPlanTask({
+          title: title.trim(),
+          taskDate: date,
+          ...(subject.trim() ? { subject: subject.trim() } : {}),
+        });
+        appendTask(created);
+        setError(null);
+      },
+    });
+  }, [date, filterSheet, readOnly, t]);
+
+  const dayProgress = taskStats(dayLoading ? [] : tasks);
+  const weekDayProgress = taskStats(
+    weekLoading ? [] : (weekTasks[date] ?? []),
   );
-  const completion =
-    tasks.length === 0 ? 0 : Math.round((doneCount / tasks.length) * 100);
-  const visibleTasks = loading ? [] : tasks;
-  const visibleDoneCount = loading ? 0 : doneCount;
-  const visibleCompletion = visibleTasks.length === 0 ? 0 : completion;
+  const dateProgress =
+    viewMode === "week"
+      ? weekDayProgress
+      : dayProgress;
+
+  const contentKey =
+    viewMode === "week" ? `week-${weekAnchor}-${date}` : `${viewMode}-${date}`;
 
   const headerMotion = reduceMotion
     ? {}
@@ -121,281 +348,149 @@ export function PlanShell() {
         variants: staggerListVariants,
       };
 
-  async function toggle(id: string) {
-    const task = tasks.find((t) => t.id === id);
-    if (!task || busyId) return;
-    const nextStatus: PlanTaskStatus =
-      task.status === "DONE" ? "PENDING" : "DONE";
-    const previous = tasks;
-    setError(null);
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status: nextStatus } : t)),
-    );
-    setBusyId(id);
-    try {
-      const updated = await updatePlanTask(id, { status: nextStatus });
-      setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
-    } catch (err) {
-      setTasks(previous);
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : String(err),
-      );
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function addTask(e: React.FormEvent) {
-    e.preventDefault();
-    if (!title.trim() || adding) return;
-    setAdding(true);
-    setError(null);
-    try {
-      const created = await createPlanTask({
-        title: title.trim(),
-        taskDate: date,
-        ...(subject.trim() ? { subject: subject.trim() } : {}),
-      });
-      setTasks((prev) => [...prev, created]);
-      setTitle("");
-      setSubject("");
-    } catch (err) {
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : String(err),
-      );
-    } finally {
-      setAdding(false);
-    }
-  }
-
-  async function remove(id: string) {
-    if (busyId) return;
-    setBusyId(id);
-    setError(null);
-    const previous = tasks;
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-    try {
-      await deletePlanTask(id);
-    } catch (err) {
-      setTasks(previous);
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : String(err),
-      );
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   return (
-    <main className="mx-auto w-full max-w-2xl px-5 py-8 lg:px-8 lg:py-10">
-      <motion.header className="mb-6" {...headerMotion}>
-        <h1
-          className="text-3xl font-bold"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          {t("title")}
-        </h1>
-        <p
-          className="mt-1 text-base"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {t("subtitle")}
-        </p>
-      </motion.header>
-
-      <motion.div className="flex flex-col gap-6" {...gridMotion}>
-        <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-          <Card>
-            <div className="flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => setDate((d) => shiftDate(d, -1))}
-                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-card)] px-3 text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-                style={{
-                  color: "var(--color-main)",
-                  fontFamily: "var(--font-heading)",
-                }}
-                aria-label={t("prev_day_aria")}
-              >
-                ←
-              </button>
-              <p
-                className="text-center text-base font-bold"
-                style={{
-                  color: "var(--color-main)",
-                  fontFamily: "var(--font-heading)",
-                }}
-              >
-                {formatDateLabel(date, locale, t("today"))}
-              </p>
-              <button
-                type="button"
-                onClick={() => setDate((d) => shiftDate(d, 1))}
-                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-card)] px-3 text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-                style={{
-                  color: "var(--color-main)",
-                  fontFamily: "var(--font-heading)",
-                }}
-                aria-label={t("next_day_aria")}
-              >
-                →
-              </button>
-            </div>
-          </Card>
-        </motion.div>
-
-        <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-          <Card>
-            <SectionHeading
-              subtitle={
-                visibleTasks.length > 0
-                  ? t("progress", {
-                      done: visibleDoneCount,
-                      total: visibleTasks.length,
-                    })
-                  : undefined
-              }
-            >
-              {t("tasks_title")}
-            </SectionHeading>
-
-            <FormError message={error} />
-
-            {loading ? (
-              <p
-                className="mt-4 text-sm"
-                style={{ color: "var(--color-secondary)" }}
-              >
-                {t("loading")}
-              </p>
-            ) : visibleTasks.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <>
-                <motion.div
-                  className="mt-4"
-                  key={visibleCompletion}
-                  initial={reduceMotion ? false : { opacity: 0.6, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ProgressBar value={visibleCompletion} />
-                </motion.div>
-                <motion.ul
-                  className="mt-3 flex flex-col gap-1"
-                  initial={reduceMotion ? false : "hidden"}
-                  animate={reduceMotion ? undefined : "show"}
-                  variants={{
-                    hidden: { opacity: 0 },
-                    show: { opacity: 1, transition: { staggerChildren: 0.06 } },
-                  }}
-                >
-                  {visibleTasks.map((task) => (
-                    <motion.li
-                      key={task.id}
-                      className="flex items-center gap-2"
-                      variants={reduceMotion ? undefined : staggerItemVariants}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <PlanListItem
-                          title={task.title}
-                          subject={task.subject}
-                          done={task.status === "DONE"}
-                          onToggle={() => void toggle(task.id)}
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => void remove(task.id)}
-                        disabled={busyId === task.id}
-                        className="flex min-h-[44px] shrink-0 items-center px-2 text-xs font-semibold transition-opacity hover:opacity-70 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-                        style={{ color: "var(--color-secondary)" }}
-                        aria-label={t("delete_aria", { title: task.title })}
-                      >
-                        {t("delete")}
-                      </button>
-                    </motion.li>
-                  ))}
-                </motion.ul>
-              </>
-            )}
-
-            <form
-              onSubmit={(e) => void addTask(e)}
-              className="mt-6 flex flex-col gap-3 border-t border-white/40 pt-6"
-            >
-              <TextField
-                label={t("new_task")}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={t("task_placeholder")}
-                maxLength={200}
-                required
-              />
-              <TextField
-                label={t("subject")}
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder={t("subject_placeholder")}
-                maxLength={80}
-              />
-              <Button type="submit" busy={adding} fullWidth>
-                {t("add_task")}
-              </Button>
-            </form>
-          </Card>
-        </motion.div>
-
-        <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-          <Link
-            href="/panel"
-            className="flex min-h-[44px] items-center justify-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+    <>
+      <main className="mx-auto w-full max-w-2xl px-5 py-6 lg:max-w-3xl lg:px-8 lg:py-10">
+        <motion.header className="mb-5" {...headerMotion}>
+          <h1
+            className="text-[28px] font-bold lg:text-[32px]"
             style={{
               color: "var(--color-main)",
               fontFamily: "var(--font-heading)",
             }}
           >
-            {t("back_panel")}
-          </Link>
-        </motion.div>
-      </motion.div>
-    </main>
-  );
-}
+            {t("title")}
+          </h1>
+          <p
+            className="mt-1 text-base"
+            style={{ color: "var(--color-secondary)" }}
+          >
+            {t("subtitle")}
+          </p>
+        </motion.header>
 
-function EmptyState() {
-  const t = useTranslations("plan");
-  return (
-    <div className="mt-4 flex flex-col items-center gap-4 py-6 text-center">
-      <span
-        className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold capitalize"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-          color: "var(--color-chip-text)",
-          fontFamily: "var(--font-body)",
-        }}
-      >
-        {t("empty_chip")}
-      </span>
-      <p className="text-base" style={{ color: "var(--color-secondary)" }}>
-        {t("empty_desc")}
-      </p>
-    </div>
+        <motion.div className="flex flex-col gap-5 pb-28 lg:pb-8" {...gridMotion}>
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <PlanViewSwitcher value={viewMode} onChange={handleViewChange} />
+          </motion.div>
+
+          <FormError message={error} />
+
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <PlanDateNav
+              date={date}
+              viewMode={viewMode}
+              weekStartDate={weekAnchor}
+              weekTasks={weekTasks}
+              progress={
+                dateProgress.total > 0
+                  ? dateProgress
+                  : undefined
+              }
+              onDateChange={setDate}
+              onWeekChange={setWeekAnchor}
+              onOpenCalendar={() => void openCalendarSheet()}
+            />
+          </motion.div>
+
+          {readOnly ? (
+            <motion.p
+              className="rounded-[var(--radius-card)] px-3 py-2.5 text-sm"
+              style={{
+                backgroundColor:
+                  "color-mix(in srgb, var(--color-progress-track) 35%, transparent)",
+                color: "var(--color-body)",
+                fontFamily: "var(--font-body)",
+              }}
+              variants={reduceMotion ? undefined : staggerItemVariants}
+            >
+              {t("past_readonly_notice")}
+            </motion.p>
+          ) : null}
+
+          <motion.div
+            key={contentKey}
+            initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={
+              reduceMotion
+                ? undefined
+                : { duration: 0.22, ease: "easeOut" as const }
+            }
+          >
+            {viewMode === "list" ? (
+              <PlanListView
+                tasks={tasks}
+                loading={dayLoading}
+                busyId={busyId}
+                readOnly={readOnly}
+                onToggle={(id) => void toggle(id)}
+                onMenu={(task) => void openTaskMenu(task)}
+              />
+            ) : null}
+            {viewMode === "timeline" ? (
+              <PlanTimelineView
+                date={date}
+                tasks={tasks}
+                loading={dayLoading}
+                busyId={busyId}
+                readOnly={readOnly}
+                onMenu={(task) => void openTaskMenu(task)}
+              />
+            ) : null}
+            {viewMode === "week" ? (
+              <PlanWeekView
+                selectedDate={date}
+                weekTasks={weekTasks}
+                loading={weekLoading}
+                busyId={busyId}
+                readOnly={readOnly}
+                onToggle={(id) => void toggle(id)}
+                onMenu={(task) => void openTaskMenu(task)}
+              />
+            ) : null}
+          </motion.div>
+
+          {!readOnly ? (
+            <motion.div
+              className="hidden lg:block"
+              variants={reduceMotion ? undefined : staggerItemVariants}
+            >
+              <Button type="button" onClick={() => void openAddSheet()} className="min-w-[200px]">
+                <Plus size={18} strokeWidth={2.5} aria-hidden />
+                {t("add_task")}
+              </Button>
+            </motion.div>
+          ) : null}
+
+          <motion.div
+            className="lg:hidden"
+            variants={reduceMotion ? undefined : staggerItemVariants}
+          >
+            <Link
+              href="/panel"
+              className="flex min-h-11 items-center justify-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2"
+              style={{
+                color: "var(--color-main)",
+                fontFamily: "var(--font-heading)",
+              }}
+            >
+              {t("back_panel")}
+            </Link>
+          </motion.div>
+        </motion.div>
+      </main>
+
+      {!readOnly ? (
+        <div
+          className={`fixed left-0 right-0 z-30 mx-auto w-full max-w-2xl px-5 lg:hidden ${MOBILE_TAB_BAR_STICKY_BOTTOM_CLASS}`}
+        >
+          <Button type="button" fullWidth onClick={() => void openAddSheet()}>
+            <Plus size={18} strokeWidth={2.5} aria-hidden />
+            {t("add_task")}
+          </Button>
+        </div>
+      ) : null}
+    </>
   );
 }

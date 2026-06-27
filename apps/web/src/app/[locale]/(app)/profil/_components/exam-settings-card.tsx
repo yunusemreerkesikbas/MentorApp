@@ -8,6 +8,7 @@ import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
 import { Card, SectionHeading } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
+import { useMentorToast } from "@/lib/mentor-toast";
 
 /**
  * Exam family picker — identity-owned `examType` unlocks countdown, bilgi, analiz.
@@ -22,11 +23,11 @@ export function ExamSettingsCard({
 }) {
   const t = useTranslations("profile.exam_settings");
   const { setUserFromServer } = useAuth();
+  const { success: showSuccessToast } = useMentorToast();
   const reduceMotion = useReducedMotion();
   const [selected, setSelected] = useState<ExamType | null>(user.examType);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedHint, setSavedHint] = useState<string | null>(null);
 
   const EXAM_OPTIONS: {
     value: ExamType;
@@ -43,14 +44,17 @@ export function ExamSettingsCard({
     const prev = selected;
     setSelected(examType);
     setError(null);
-    setSavedHint(null);
     setSaving(true);
     try {
       const updated = (await usersControllerUpdateMe({
         examType,
       })) as unknown as AuthUser;
       setUserFromServer(updated);
-      setSavedHint(t("saved"));
+      showSuccessToast({
+        title: t("saved_toast_title"),
+        message: t("saved_toast_message"),
+        duration: 3000,
+      });
       onSaved?.();
     } catch (err) {
       setSelected(prev);
@@ -147,16 +151,6 @@ export function ExamSettingsCard({
           );
         })}
       </div>
-
-      {savedHint ? (
-        <p
-          className="mt-3 text-sm"
-          style={{ color: "var(--color-secondary)" }}
-          role="status"
-        >
-          {savedHint}
-        </p>
-      ) : null}
     </Card>
   );
 }

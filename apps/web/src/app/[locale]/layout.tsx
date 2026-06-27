@@ -6,6 +6,9 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { BackgroundBlobs } from "@mentor/ui";
 import { routing } from "@/i18n/routing";
 import { AuthProvider } from "@/lib/auth-context";
+import { ToastProviderShell } from "@/lib/toast-provider-shell";
+import { DialogProviderShell } from "@/lib/dialog-provider-shell";
+import { BottomSheetProviderShell } from "@/lib/bottom-sheet-provider-shell";
 import "../globals.css";
 
 /* DESIGN.md §3 — headings: League Spartan, body: Lato. latin-ext covers Turkish glyphs
@@ -83,7 +86,13 @@ export default async function LocaleLayout({
       <body suppressHydrationWarning>
         <BackgroundBlobs />
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <AuthProvider>{children}</AuthProvider>
+          <ToastProviderShell>
+            <DialogProviderShell>
+              <BottomSheetProviderShell>
+                <AuthProvider>{children}</AuthProvider>
+              </BottomSheetProviderShell>
+            </DialogProviderShell>
+          </ToastProviderShell>
         </NextIntlClientProvider>
       </body>
     </html>

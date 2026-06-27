@@ -23,6 +23,11 @@ export interface PlanTaskDto {
   taskDate: string; // yyyy-mm-dd
 }
 
+/** Distinct calendar dates that have ≥1 plan task (datepicker dots). */
+export interface PlanTaskCalendarDto {
+  dates: string[];
+}
+
 /** Projection of a `study_sessions` row. */
 export interface StudySessionDto {
   id: string;

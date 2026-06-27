@@ -1,6 +1,7 @@
 "use client";
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import LoaderCircle from "lucide-react/dist/esm/icons/loader-circle.mjs";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -14,21 +15,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 /** Inline loading spinner (thin-line, DESIGN.md §7); respects reduced motion via CSS. */
 function Spinner() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      className="animate-spin motion-reduce:animate-none"
-      aria-hidden
-    >
-      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-    </svg>
-  );
+  return <LoaderCircle size={18} strokeWidth={2.5} className="animate-spin motion-reduce:animate-none" aria-hidden />;
 }
 
 /**

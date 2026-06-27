@@ -17,6 +17,8 @@ export const colors = {
   progressTrack: "#C3D9FD",
   star: "#FFC700",
   likeActive: "#FF2DAB",
+  errorContainer: "#ffdad6",
+  danger: "#B42318",
 } as const;
 
 export const typography = {

@@ -1,5 +1,6 @@
 "use client";
 
+import Check from "lucide-react/dist/esm/icons/check.mjs";
 import { Chip } from "./chip.js";
 
 export interface PlanListItemProps {
@@ -40,11 +41,7 @@ export function PlanListItem({ title, done = false, subject, onToggle, className
           backgroundColor: done ? "var(--color-progress)" : "transparent",
         }}
       >
-        {done ? (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        ) : null}
+        {done ? <Check size={14} color="#fff" strokeWidth={3} aria-hidden /> : null}
       </span>
 
       <span

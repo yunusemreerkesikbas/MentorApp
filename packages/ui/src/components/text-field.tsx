@@ -1,6 +1,8 @@
 "use client";
 
 import { useId, useState, type InputHTMLAttributes } from "react";
+import Eye from "lucide-react/dist/esm/icons/eye.mjs";
+import EyeOff from "lucide-react/dist/esm/icons/eye-off.mjs";
 
 export interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
@@ -8,27 +10,6 @@ export interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string | null;
   /** On a `type="password"` field, renders a show/hide toggle with these localized labels. */
   revealLabels?: { show: string; hide: string };
-}
-
-/** Thin-line eye / eye-off icon (DESIGN.md §7). */
-function EyeIcon({ off }: { off: boolean }) {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-      <circle cx="12" cy="12" r="3" />
-      {off ? <line x1="3" y1="3" x2="21" y2="21" /> : null}
-    </svg>
-  );
 }
 
 /**
@@ -86,7 +67,11 @@ export function TextField({
             className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[var(--radius-card)] outline-none transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
             style={{ color: "var(--color-secondary)" }}
           >
-            <EyeIcon off={revealed} />
+            {revealed ? (
+              <EyeOff size={20} strokeWidth={2} aria-hidden />
+            ) : (
+              <Eye size={20} strokeWidth={2} aria-hidden />
+            )}
           </button>
         ) : null}
       </div>

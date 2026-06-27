@@ -11,6 +11,7 @@ import {
 import { Button, Card, SectionHeading } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
+import { useMentorDialog } from "@/lib/mentor-dialog";
 
 const inputStyle = {
   borderColor: "var(--color-border, #e2e2e2)",
@@ -22,13 +23,13 @@ const inputStyle = {
 export function HedefShell() {
   const translate = useTranslations("vision");
   const common = useTranslations("common");
+  const { info } = useMentorDialog();
   const [goalTitle, setGoalTitle] = useState("");
   const [targetCity, setTargetCity] = useState("");
   const [motivation, setMotivation] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedHint, setSavedHint] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -59,7 +60,6 @@ export function HedefShell() {
     e.preventDefault();
     if (saving || goalTitle.trim().length === 0) return;
     setError(null);
-    setSavedHint(null);
     setSaving(true);
     try {
       await coachingControllerUpsertVision({
@@ -67,10 +67,16 @@ export function HedefShell() {
         targetCity: targetCity.trim() || null,
         motivation: motivation.trim() || null,
       });
-      setSavedHint(translate("saved"));
+      await info({
+        title: translate("saved_info_title"),
+        message: translate("saved_info_message"),
+        okLabel: translate("saved_info_ok"),
+      });
     } catch (err) {
       setError(
-        err instanceof ApiClientError ? err.body.message : translate("save_error"),
+        err instanceof ApiClientError
+          ? err.body.message
+          : translate("save_error"),
       );
     } finally {
       setSaving(false);
@@ -148,11 +154,6 @@ export function HedefShell() {
             </label>
 
             <FormError message={error} />
-            {savedHint ? (
-              <p className="text-sm" role="status" style={{ color: "var(--color-secondary)" }}>
-                {savedHint}
-              </p>
-            ) : null}
 
             <Button type="submit" disabled={saving || goalTitle.trim().length === 0}>
               {saving ? translate("saving") : translate("save")}

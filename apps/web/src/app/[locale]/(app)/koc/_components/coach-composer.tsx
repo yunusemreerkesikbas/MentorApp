@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, type KeyboardEvent } from "react";
+import Send from "lucide-react/dist/esm/icons/send.mjs";
 import { useTranslations } from "next-intl";
 import { Button } from "@mentor/ui";
 import { MOBILE_TAB_BAR_STICKY_BOTTOM_CLASS } from "@/lib/app-shell";
@@ -61,20 +62,7 @@ export const CoachComposer = forwardRef<
           aria-label={translate("send")}
           className="flex h-11 w-11 shrink-0 items-center justify-center !px-0 !py-0"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <line x1="22" y1="2" x2="11" y2="13" />
-            <polygon points="22 2 15 22 11 13 2 9 22 2" />
-          </svg>
+          <Send size={20} strokeWidth={2} aria-hidden />
         </Button>
       </div>
       <p

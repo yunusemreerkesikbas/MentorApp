@@ -11,12 +11,13 @@ import {
   Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { Paginated, PlanTaskDto } from "@mentor/types";
+import type { Paginated, PlanTaskCalendarDto, PlanTaskDto } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { PlanService } from "../application/plan.service";
 import {
   CreatePlanTaskDto,
   ListPlanTasksQueryDto,
+  PlanTaskCalendarQueryDto,
   UpdatePlanTaskDto,
 } from "./coaching.dto";
 
@@ -33,6 +34,14 @@ export class PlanTaskController {
     @Query() query: ListPlanTasksQueryDto,
   ): Promise<Paginated<PlanTaskDto>> {
     return this.plan.list(user.id, query);
+  }
+
+  @Get("calendar")
+  listCalendar(
+    @CurrentUser() user: RequestUser,
+    @Query() query: PlanTaskCalendarQueryDto,
+  ): Promise<PlanTaskCalendarDto> {
+    return this.plan.listCalendarDates(user.id, query);
   }
 
   @Post()

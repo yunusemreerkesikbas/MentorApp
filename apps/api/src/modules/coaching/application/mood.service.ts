@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { I18nContext, I18nService } from "nestjs-i18n";
 import type { MoodCheckinDto, Paginated } from "@mentor/types";
 import type { ListMoodCheckinsQuery } from "@mentor/validation";
@@ -7,6 +8,7 @@ import type { Database } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
 import { todayIso } from "../domain/date.util";
 import { mapMood } from "../domain/mood";
+import { CoachingEventTopic, MoodLow } from "../domain/coaching.events";
 import { MoodCheckinRepository, type MoodCheckinRow } from "../infrastructure/mood-checkin.repository";
 import { toMoodCheckinDto } from "./coaching.mappers";
 
@@ -21,6 +23,7 @@ export class MoodService {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly moods: MoodCheckinRepository,
     private readonly i18n: I18nService,
+    private readonly events: EventEmitter2,
   ) {}
 
   async upsertToday(
@@ -31,10 +34,13 @@ export class MoodService {
     const today = todayIso();
     const trimmed = struggleNote?.trim();
     const note = trimmed ? trimmed : null;
-    return withUserContext(this.db, { userId }, async (tx) => {
-      const row = await this.moods.upsert(tx, userId, today, mood, note);
-      return this.toDto(row);
+    const row = await withUserContext(this.db, { userId }, async (tx) => {
+      return this.moods.upsert(tx, userId, today, mood, note);
     });
+    if (mood <= 2) {
+      this.events.emit(CoachingEventTopic.MOOD_LOW, new MoodLow(userId, mood));
+    }
+    return this.toDto(row);
   }
 
   /**

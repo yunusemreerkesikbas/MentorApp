@@ -33,6 +33,7 @@ describe("DailyReminderService", () => {
     const deliveries = {
       tryRecord: vi.fn().mockResolvedValue(overrides.emailDedupeOk ?? true),
     };
+    const notificationsService = { createInApp: vi.fn().mockResolvedValue(undefined) };
 
     const service = new DailyReminderService(
       db,
@@ -40,6 +41,7 @@ describe("DailyReminderService", () => {
       coaching as never,
       preferences as never,
       deliveries as never,
+      notificationsService as never,
     );
     return { service, queue, deliveries, preferences };
   }
