@@ -23,8 +23,8 @@ pnpm build | lint | typecheck
 - UI values come from **DESIGN.md tokens** (`@mentor/ui`), not magic numbers.
 - Per-task skill: `senior-architect` / `senior-backend` / `senior-frontend`.
 - Relevant **standard** before coding: `docs/standards/{backend,frontend,mobile,code-review}.md`.
-- Parallel work: your track's boundaries → `docs/workstreams.md` (don't touch other tracks' modules).
-- **After every meaningful development, add `docs/devnotes/NNNN-title.md`** (usage/gotchas) — mandatory.
+- Parallel work: your track's boundaries → `docs/core/workstreams.md` (don't touch other tracks' modules).
+- **After every meaningful development, append a timeline entry to the matching feature doc under `docs/features/`** (usage/gotchas) — mandatory.
 - Don't implement out-of-scope ideas inline → backlog (phase discipline, roadmap §10).
 - This repo is **its own git repository** (isolated from the home directory).
 

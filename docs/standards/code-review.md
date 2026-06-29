@@ -6,8 +6,8 @@
 ## PR rules
 - [ ] Small, focused PR; **Conventional Commits** (`feat/fix/chore/docs/refactor/test`).
 - [ ] CI green: `lint` + `typecheck` + `build`. No merge on red.
-- [ ] **Devnote added** (`docs/devnotes/`) — see [devnotes](../devnotes/README.md). Every meaningful
-  development leaves a note.
+- [ ] **Feature doc updated** — see [features](../features/README.md). Every meaningful development
+  appends a dated entry to the matching feature doc's "Geliştirmeler (timeline)" section.
 - [ ] No out-of-scope work added "by the way" (phase discipline §10) → backlog.
 
 ## Reviewer checklist
@@ -37,6 +37,8 @@
 
 **Quality & design**
 - [ ] DESIGN tokens (no magic numbers) · shared types/schemas used (no copy-paste).
+- [ ] **Loading states use page skeletons** (`*-content-skeleton.tsx`) with global `.mentor-skeleton-shimmer` /
+  `.mentor-skeleton-enter` only — no spinners or `animate-pulse` for content placeholders.
 - [ ] Critical paths tested; names clear; **dead code removed for the touched scope**; no stray TODO/FIXME.
 
 ## Blocking findings (prevent merge)

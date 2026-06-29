@@ -1,6 +1,6 @@
 # Backend Standards (NestJS · Drizzle · Neon)
 
-> Canonical context: [`../../AGENTS.md`](../../AGENTS.md) · Architecture: [`../architecture.md`](../architecture.md).
+> Canonical context: [`../../AGENTS.md`](../../AGENTS.md) · Architecture: [`../core/architecture.md`](../core/architecture.md).
 > This list is **binding**; checked in PR review (see [code-review.md](./code-review.md)).
 
 ## Modules & layers

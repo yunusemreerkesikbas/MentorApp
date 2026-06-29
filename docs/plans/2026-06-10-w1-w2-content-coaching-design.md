@@ -1,7 +1,7 @@
 # W1 (Content) + W2 (Coaching) — Development Design / Plan
 
 > Date: 2026-06-10 · Status: design (pre-implementation) · Scope: `apps/api` (`modules/content`, `modules/coaching`), `apps/web` (`bilgi`, `(app)/{plan,analiz,panel}`, public `bilgi/[slug]`), `packages/{ui,validation,types}`
-> Canonical context: [`AGENTS.md`](../../AGENTS.md) (guardrails §4) · [`docs/workstreams.md`](../workstreams.md) (W1/W2 boundaries) · [`DESIGN.md`](../../DESIGN.md) (tokens) · [`sinav-kocluk-roadmap.md`](../../sinav-kocluk-roadmap.md) (product) · standards under [`docs/standards/`](../standards).
+> Canonical context: [`AGENTS.md`](../../AGENTS.md) (guardrails §4) · [`docs/core/workstreams.md`](../core/workstreams.md) (W1/W2 boundaries) · [`DESIGN.md`](../../DESIGN.md) (tokens) · [`sinav-kocluk-roadmap.md`](../../sinav-kocluk-roadmap.md) (product) · standards under [`docs/standards/`](../standards).
 > Product decisions in this doc are **LOCKED** by the product owner. This document only grounds them in the current codebase and turns them into an implementation plan; it does not change them.
 
 ---
@@ -356,7 +356,7 @@ export const moodCheckins = pgTable(
 2. **`net_rule` + subject taxonomy live in content/config.** Net divisor and per-exam subject list are data owned by W1; W2's net computation reads `net_rule` via `ContentService` and uses `coaching/domain/net.ts` for the pure math. Single source of truth → exam-agnostic (§4 #7).
 3. **`ArticlePublished` domain event (W1 → W3).** Embedding generation is decoupled: W1 emits, W3 consumes (`JobQueuePort` → `ai.embed-article`). W1 ships the `embedding` column + event with **zero OpenAI dependency**.
 4. **`JobQueuePort` (W1/W2 → W5).** Streak nightly recompute and article embedding are **latency-tolerant** and belong on the queue (`shared/ports/job-queue.port.ts`). **Only W5 implements the runner** (`docs/workstreams.md §1`). See §6 for the "no adapter bound yet" gap.
-5. **Append-only shared surfaces** (`docs/workstreams.md §2`): `database/schema.ts` (per-track commented blocks), `drizzle/` (sequential migrations, forward-only), `app.module.ts` (one alphabetical import line per module: `ContentModule`, `CoachingModule`), `@mentor/{validation,types}` (only genuinely shared contracts; feature types stay in-module), `docs/standards/api.md` service-catalog row (flip `content`/`coaching` status when shipped), `docs/devnotes/` (next free `NNNN`).
+5. **Append-only shared surfaces** (`docs/workstreams.md §2`): `database/schema.ts` (per-track commented blocks), `drizzle/` (sequential migrations, forward-only), `app.module.ts` (one alphabetical import line per module: `ContentModule`, `CoachingModule`), `@mentor/{validation,types}` (only genuinely shared contracts; feature types stay in-module), `docs/standards/api.md` service-catalog row (flip `content`/`coaching` status when shipped), `docs/features/{content,coaching}.md` (append a dated timeline entry per shipped slice).
 
 ---
 
@@ -402,7 +402,7 @@ W2-c Mood (independent; ships last per locked order)
 
 ## 7. Devnote & DoD reminders
 
-- **Per-track devnote (mandatory, binding).** Each shipped slice adds a `docs/devnotes/NNNN-*.md` from `_template.md` (next free number — last is `0012`, so W1-a ≈ `0013`, etc.): *what was done · how to use · gotchas · related files*. A meaningful PR without a devnote is not merged (`AGENTS.md §10`).
+- **Per-track feature-doc entry (mandatory, binding).** Each shipped slice appends a dated entry to the matching feature doc under `docs/features/` (`content.md` / `coaching.md`) "Geliştirmeler (timeline)" section: *what was done · how to use · gotchas · related files*. A meaningful PR without a feature-doc entry is not merged (`AGENTS.md §10`).
 - **Update the service catalog** row/status in `docs/standards/api.md` (`content` ⏳→✅, `coaching` ⏳→✅) and regenerate OpenAPI → `@mentor/api-client` when endpoints ship.
 - **Definition of Done** (engineering-principles §6): edge/negative cases handled; **no business logic on FE** (net/streak/countdown computed server-side, FE displays); no magic numbers (DESIGN tokens / config registry; net divisor from `net_rule`); user-facing messages localized from backend; dead code removed; tests for domain logic (`net.ts`, `streak.ts`) + repository integration; `pnpm typecheck && lint && build && test` green; no stray `TODO/FIXME`.
 - **Standards checklist** (backend/frontend/code-style/api/code-review): RLS + `user_id` filter (double belt) on every coaching query; paginated lists; Zod at boundary; `ApiError` envelope; forward-only migrations; Server Components by default; tone calm/anti-shaming; loading/empty/error states on every screen.

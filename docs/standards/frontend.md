@@ -30,6 +30,25 @@
 - [ ] **Tone (§0):** encouraging, anti-shaming. Calm countdown (not alarm-red), no result ranking.
 - [ ] Every screen: loading / empty / error states.
 
+## Loading skeletons (binding)
+
+> Detail + API: [`../core/design-system.md`](../core/design-system.md) § Skeleton pattern.
+
+While **client or server data is in flight** (API / `lib/*` fetch not yet resolved), show a **page-specific
+skeleton layout** that mirrors the loaded UI — not a centered spinner, not plain “Yükleniyor…” text alone.
+
+| Layer | Owner | Rule |
+|---|---|---|
+| **Animation** | Global `@mentor/ui/theme.css` | **Same classes everywhere:** `.mentor-skeleton-shimmer` (shimmer blocks), `.mentor-skeleton-enter` (region fade-in). No `animate-pulse`, no per-screen gradient/keyframe copies. |
+| **Layout / shape** | Each screen | `*-content-skeleton.tsx` next to the feature (e.g. `plan-content-skeleton.tsx`, `koc-content-skeleton.tsx`). Match real cards, rows, headers; size/radius via `className` + DESIGN tokens. |
+| **A11y** | `@mentor/ui` | Wrap regions in `<SkeletonGroup label={t("loading")}>` (`role="status"`, `aria-busy`). Blocks: `<Skeleton className="h-4 w-32 rounded-[var(--radius-card)]" />`. |
+
+**Client fetch pattern:** derive `loading` from fetch state (e.g. `loadedDate !== date`); when `loading`,
+render the screen skeleton component instead of empty content.
+
+**Do not:** put screen-specific skeleton shapes in `@mentor/ui`; duplicate shimmer CSS in `globals.css`; use
+spinners for content placeholders (button `LoaderCircle` for in-flight actions is still OK).
+
 ## Forms & state
 - [ ] Form validation with **shared Zod** (`@mentor/validation`) — same schema as BE.
 - [ ] Minimal state: **derive during render** what's derivable (don't store via effects). No needless `useEffect`.
@@ -39,7 +58,7 @@
 - [ ] Knowledge-center pages static + `metadata` + structured data; reading is free (grounded AI is premium).
 
 ## Internationalization (i18n) — TR/EN
-> Setup & gotchas: [`../devnotes/0050-web-i18n-next-intl.md`](../devnotes/0050-web-i18n-next-intl.md). `apps/web` is URL-based TR/EN via **next-intl** (`tr` default, no prefix; `en` → `/en/…`).
+> Setup & gotchas: [`../features/i18n.md`](../features/i18n.md). `apps/web` is URL-based TR/EN via **next-intl** (`tr` default, no prefix; `en` → `/en/…`).
 - [ ] **No hardcoded user-facing strings.** All static chrome copy goes through `useTranslations` (client) /
   `getTranslations` (server/RSC). Backend-localized dynamic messages still display directly (above).
 - [ ] **Every new/changed key updates BOTH** `messages/tr.json` **and** `messages/en.json` (keys must stay at parity).
@@ -51,7 +70,7 @@
   `params`); `[locale]/layout.tsx` owns `<html>`/`<body>` + has `generateStaticParams`. Client `(app)` pages → call it
   in the page; `(auth)` → in the layout. Public pages (landing, `bilgi/[slug]`) use ISR (`export const revalidate = 3600`).
   Unknown locale → `notFound()`. Turbopack needs `turbopack.resolveAlias` for `next-intl/config` in `next.config.ts`
-  (next-intl 3.x writes it to the wrong key) — see [devnote 0050](../devnotes/0050-web-i18n-next-intl.md).
+  (next-intl 3.x writes it to the wrong key) — see [i18n feature doc](../features/i18n.md).
 
 ## Don't
 - ❌ off-DESIGN magic numbers/colors · ❌ needless client components · ❌ barrel imports · ❌ derived state in
