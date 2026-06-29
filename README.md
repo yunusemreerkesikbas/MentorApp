@@ -91,10 +91,10 @@ packages/  types · validation · core · api-client · ui · config
 | **[AGENTS.md](./AGENTS.md)** | Mühendislik & agent yönergesi (kanonik) — stack, modül haritası, koruyucu kurallar |
 | **[docs/](./docs/README.md)** | Mimari · dosya yapısı · konvansiyonlar · kurulum · entegrasyonlar |
 | **[docs/standards/](./docs/standards/code-review.md)** | engineering-principles · code-style · api · backend · frontend · mobile · code-review |
-| **[docs/devnotes/](./docs/devnotes/README.md)** | Geliştirme günlüğü (her geliştirme sonrası kısa kayıt) |
+| **[docs/features/](./docs/features/README.md)** | Özellik dokümanları ve geliştirme günlüğü (timeline) |
 | **[DESIGN.md](./DESIGN.md)** | Tasarım sistemi (Nuton tabanlı) |
 
-**Kurulum & çalıştırma:** [docs/setup.md](./docs/setup.md) (`pnpm install` → `pnpm dev` → api:3001 · web:3000 · admin:3002).
+**Kurulum & çalıştırma:** [docs/core/setup.md](./docs/core/setup.md) (`pnpm install` → `pnpm dev` → api:3001 · web:3000 · admin:3002).
 
 ---
 

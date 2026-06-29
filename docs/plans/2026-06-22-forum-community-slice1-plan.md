@@ -869,7 +869,7 @@ git commit -m "feature/APP-012 forum slice1: controller + module wiring + e2e"
 **Files:**
 - Regenerate: `@mentor/api-client` (orval) from updated OpenAPI.
 - Modify: `docs/standards/api.md` (service catalog: add forum endpoints).
-- Create: `docs/devnotes/00NN-forum-slice1-zones.md`.
+- Create: append a dated entry to `docs/features/forum.md` ("Geliştirmeler" section).
 
 - [ ] **Step 1:** Run the OpenAPI + orval codegen script (repo's `pnpm --filter @mentor/api openapi` / api-client `generate` — check `package.json`).
 - [ ] **Step 2:** Add forum endpoints to `docs/standards/api.md` service catalog.

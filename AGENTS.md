@@ -23,10 +23,10 @@ that pain?
 - **Single language: TypeScript.** Single API (`/v1`, versioned, backward-compatible).
 - **Backend: NestJS modular monolith.** Clear module boundaries; extract to services later if needed.
 - **Web/Admin: Next.js** (App Router). **Mobile: Expo** (Phase 2).
-- **i18n: `apps/web` is TR/EN** (URL-based, next-intl; `tr` default). All FE static copy via `useTranslations`/`getTranslations`, internal nav via `@/i18n/navigation`, keys mirrored in `messages/{tr,en}.json` — details in `docs/standards/frontend.md` §i18n + `docs/devnotes/0050-web-i18n-next-intl.md`.
+- **i18n: `apps/web` is TR/EN** (URL-based, next-intl; `tr` default). All FE static copy via `useTranslations`/`getTranslations`, internal nav via `@/i18n/navigation`, keys mirrored in `messages/{tr,en}.json` — details in `docs/standards/frontend.md` §i18n + [`docs/features/i18n.md`](./docs/features/i18n.md).
 - **Monorepo: Turborepo + pnpm.** `apps/*` + `packages/*`.
 - **DB: Neon Postgres + pgvector · ORM: Drizzle.** RLS on the Postgres side.
-- **Queue: behind `JobQueuePort`** — MVP Cron+jobs table, Phase 2 BullMQ+Redis (rationale: docs/architecture.md).
+- **Queue: behind `JobQueuePort`** — MVP Cron+jobs table, Phase 2 BullMQ+Redis (rationale: docs/core/architecture.md).
 - **DB driver:** single `pg` Pool (`drizzle-orm/node-postgres`) — works local + Neon; tx-scoped RLS via `withUserContext` / `SET LOCAL` (§8).
 - **Edge: Cloudflare** (WAF/RateLimit/Turnstile/R2/Images/Access). **Hosting: Render.**
 - **AI: OpenAI (text, GPT-5) + Gemini Flash (vision)** + rule engine (hybrid) + pgvector RAG.
@@ -47,7 +47,7 @@ Detail: [`apps/api/src/modules/README.md`](./apps/api/src/modules/README.md).
 
 Repository+DI · Ports & Adapters (`shared/ports`) · Domain Events (loose coupling) · append-only **Ledger**
 (XP/coin, never delete) · Idempotency (webhook/jobs) · Outbox (economy/payments) · Strategy (AI routing/rewards/
-verification) · Policy/Guard + RLS (tenancy). Full table + where: [docs/architecture.md](./docs/architecture.md), [backend.md](./docs/standards/backend.md).
+verification) · Policy/Guard + RLS (tenancy). Full table + where: [docs/core/architecture.md](./docs/core/architecture.md), [backend.md](./docs/standards/backend.md).
 
 **Pragmatic Clean:** layer depth scales with the work. Simple CRUD → controller+service+repo. Critical domain
 (economy/payments/ai/forum-verification) → full layering.
@@ -84,7 +84,7 @@ pnpm build | lint | typecheck         # turbo pipeline
 pnpm --filter @mentor/api db:generate # generate Drizzle migration
 ```
 Packages: `@mentor/{types,validation,core,api-client,ui,config}`. Path alias `@mentor/*`.
-Structure detail: [`docs/file-structure.md`](./docs/file-structure.md).
+Structure detail: [`docs/core/file-structure.md`](./docs/core/file-structure.md).
 
 ## 7. Conventions
 
@@ -97,7 +97,7 @@ Structure detail: [`docs/file-structure.md`](./docs/file-structure.md).
 - **Branches:** `main` protected; work on `feat/<topic>`, merge via PR.
 - **Design:** UI values come from DESIGN.md tokens (`@mentor/ui`), no magic numbers.
 - **Config:** tunable parameters in a central registry (§9) — not magic numbers.
-- Full list: [`docs/conventions.md`](./docs/conventions.md).
+- Full list: [`docs/core/conventions.md`](./docs/core/conventions.md).
 
 ## 8. Skill usage (when developing in this repo)
 
@@ -117,7 +117,7 @@ Structure detail: [`docs/file-structure.md`](./docs/file-structure.md).
 ## 9. Phase discipline & parallel work
 
 - **Parallel development:** MVP work is split into tracks with exclusive ownership —
-  **read [`docs/workstreams.md`](./docs/workstreams.md) before picking up work.** Don't write inside
+  **read [`docs/core/workstreams.md`](./docs/core/workstreams.md) before picking up work.** Don't write inside
   another track's module; shared files are append-only per its touch rules.
 
 - **MVP:** responsive web B2C + lean admin. Social/forum/economy/coach/mobile = **Phase 2+**.
@@ -134,7 +134,7 @@ Read the relevant standard before writing code; PR review checks these ([code-re
 - **Mobile:** [`docs/standards/mobile.md`](./docs/standards/mobile.md)
 - **Code review:** [`docs/standards/code-review.md`](./docs/standards/code-review.md)
 
-**Devnote rule (mandatory):** After every meaningful development, add a **short/clear/explanatory**
-note under [`docs/devnotes/`](./docs/devnotes/README.md) (`NNNN-title.md`): *what was done · how to use
-(usage) · gotchas · related files*. Copy from `_template.md`. A meaningful PR without a devnote is not
-merged. Full doc index: [`docs/README.md`](./docs/README.md).
+**Feature-doc rule (mandatory):** After every meaningful development, append a **short/clear/explanatory**
+entry to the matching feature doc under [`docs/features/`](./docs/features/README.md) ("Geliştirmeler (timeline)"
+section): *what was done · how to use (usage) · gotchas · related files*. A meaningful PR without a
+feature-doc entry is not merged. Full doc index: [`docs/README.md`](./docs/README.md).

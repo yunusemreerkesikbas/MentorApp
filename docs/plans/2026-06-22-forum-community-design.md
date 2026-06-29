@@ -1,14 +1,14 @@
 # Forum / Community — Development Design / Plan
 
 > Date: 2026-06-22 · Status: design (pre-implementation) · Scope: `apps/api` (`modules/forum` — greenfield), `apps/web` (public `/forum/**` + in-app forum screens), `apps/admin` (moderation queue), `packages/{ui,validation,types}`
-> Canonical context: [`AGENTS.md`](../../AGENTS.md) (guardrails §4) · [`docs/architecture.md`](../architecture.md) (module map) · [`docs/workstreams.md`](../workstreams.md) · [`DESIGN.md`](../../DESIGN.md) (tokens) · [`sinav-kocluk-roadmap.md`](../../sinav-kocluk-roadmap.md) (§2 forum, §4 moderation, §9 data model) · standards under [`docs/standards/`](../standards).
+> Canonical context: [`AGENTS.md`](../../AGENTS.md) (guardrails §4) · [`docs/core/architecture.md`](../core/architecture.md) (module map) · [`docs/core/workstreams.md`](../core/workstreams.md) · [`DESIGN.md`](../../DESIGN.md) (tokens) · [`sinav-kocluk-roadmap.md`](../../sinav-kocluk-roadmap.md) (§2 forum, §4 moderation, §9 data model) · standards under [`docs/standards/`](../standards).
 > Product decisions in this doc are **LOCKED** by the product owner (brainstorming session 2026-06-22). This doc grounds them in the current codebase and turns them into an implementation plan.
 
 ---
 
 ## 1. Overview & scope
 
-Forum/community was Phase 2 in [`docs/mvp-status.md`](../mvp-status.md); the product owner pulled a **lazy, scoped slice into the MVP**. The driver is an existing audience (e.g. large WhatsApp KPSS groups) to migrate — which removes the classic "empty forum" cold-start risk that originally justified deferral.
+Forum/community was Phase 2 in [`docs/core/mvp-status.md`](../core/mvp-status.md); the product owner pulled a **lazy, scoped slice into the MVP**. The driver is an existing audience (e.g. large WhatsApp KPSS groups) to migrate — which removes the classic "empty forum" cold-start risk that originally justified deferral.
 
 **Core decision: one `Zone` primitive, three behaviours.** Forum, chat rooms, and announcements are not separate domains — they are one table differentiated by `type`. "Mahalle" (closed cohort) is **not built now**; it is a future *configuration* of the same model (`visibility=PRIVATE` + auto-assign), not new code.
 
@@ -25,7 +25,7 @@ Forum/community was Phase 2 in [`docs/mvp-status.md`](../mvp-status.md); the pro
 - No `ModerationAction` table/module exists anywhere (`apps/api/src` grep: only config-catalog thresholds). The moderation surface is **introduced by this work** — confirms mvp-status "Moderation queue ⛔ needs forum".
 - `EconomyService.grant(userId, Currency.XP, amount, { reason, refType, refId })` exists and is **idempotent on `(refType, refId)`** — XP reward path is reused as-is, no economy change.
 - Cross-module triggers use `@OnEvent(Topic)` listeners; event types live in `<module>/domain/<module>.events.ts`.
-- `pgvector` enabled; Postgres full-text (`tsvector`) needs no extension. Next.js App Router already does SSR + public ISR ([devnote 0050](../devnotes/0050-web-i18n-next-intl.md)).
+- `pgvector` enabled; Postgres full-text (`tsvector`) needs no extension. Next.js App Router already does SSR + public ISR ([i18n feature doc](../features/i18n.md)).
 
 **MVP boundary (locked):**
 
