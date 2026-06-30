@@ -7,6 +7,7 @@ import {
   canDeleteThread,
   canModerateZone,
   canPostInZone,
+  canRemoveMember,
   isPlatformStaff,
 } from "./forum.policy";
 
@@ -78,6 +79,27 @@ describe("forum.policy", () => {
       expect(canAcceptAnswer(actor([UserRole.STUDENT]), "u1")).toBe(true); // actor.userId === "u1"
       expect(canAcceptAnswer(actor([UserRole.STUDENT]), "someoneElse")).toBe(false);
       expect(canAcceptAnswer(actor([UserRole.ADMIN]), "someoneElse")).toBe(false);
+    });
+  });
+
+  describe("canRemoveMember", () => {
+    it("OWNER cannot be removed by anyone", () => {
+      expect(canRemoveMember(actor([UserRole.ADMIN], null), ZoneRole.OWNER)).toBe(false);
+      expect(canRemoveMember(actor([UserRole.STUDENT], ZoneRole.OWNER), ZoneRole.OWNER)).toBe(false);
+    });
+
+    it("zone owner/mod can remove a regular MEMBER", () => {
+      expect(canRemoveMember(actor([UserRole.STUDENT], ZoneRole.OWNER), ZoneRole.MEMBER)).toBe(true);
+      expect(canRemoveMember(actor([UserRole.STUDENT], ZoneRole.MODERATOR), ZoneRole.MEMBER)).toBe(true);
+    });
+
+    it("platform staff can remove a MEMBER or MODERATOR", () => {
+      expect(canRemoveMember(actor([UserRole.ADMIN], null), ZoneRole.MEMBER)).toBe(true);
+      expect(canRemoveMember(actor([UserRole.ADMIN], null), ZoneRole.MODERATOR)).toBe(true);
+    });
+
+    it("a plain MEMBER cannot remove anyone", () => {
+      expect(canRemoveMember(actor([UserRole.STUDENT], ZoneRole.MEMBER), ZoneRole.MEMBER)).toBe(false);
     });
   });
 

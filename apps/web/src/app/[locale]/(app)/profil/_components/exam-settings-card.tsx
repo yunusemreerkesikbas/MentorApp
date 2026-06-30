@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import type { AuthUser, ExamType } from "@mentor/types";
 import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
 import { Card, SectionHeading } from "@mentor/ui";
+import Check from "lucide-react/dist/esm/icons/check.mjs";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
 import { useMentorToast } from "@/lib/mentor-toast";
@@ -67,14 +68,14 @@ export function ExamSettingsCard({
   }
 
   return (
-    <Card>
+    <Card id="exam-settings">
       <SectionHeading subtitle={t("subtitle")}>{t("title")}</SectionHeading>
 
       {error ? <FormError message={error} /> : null}
       <div
         role="radiogroup"
         aria-label={t("aria_label")}
-        className="mt-4 flex flex-col gap-3"
+        className="mt-4 grid gap-3 sm:grid-cols-3"
         onKeyDown={(e) => {
           const idx = EXAM_OPTIONS.findIndex((o) => o.value === selected);
           if (e.key === "ArrowDown" || e.key === "ArrowRight") {
@@ -101,52 +102,45 @@ export function ExamSettingsCard({
               aria-checked={active}
               disabled={saving}
               onClick={() => void handleSelect(opt.value)}
-              className="flex min-h-[56px] w-full items-center justify-between gap-3 rounded-[var(--radius-card)] px-4 py-3 text-left transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 disabled:opacity-60 motion-reduce:transition-none"
+              className="flex min-h-24 w-full flex-col items-start justify-between gap-3 rounded-[var(--radius-card)] border px-4 py-4 text-left transition-colors hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60 motion-reduce:transition-none"
               style={{
-                border: active
-                  ? "2px solid var(--color-main)"
-                  : "1px solid #ffffff",
-                backgroundColor: active
-                  ? "color-mix(in srgb, var(--color-chip) 20%, transparent)"
-                  : "rgba(255,255,255,0.35)",
-                boxShadow: "var(--shadow-card)",
+                borderColor: active
+                  ? "var(--color-main)"
+                  : "color-mix(in srgb, var(--color-main) 12%, transparent)",
+                backgroundColor: active ? "var(--color-main)" : "white",
+                color: active ? "white" : "var(--color-main)",
               }}
               animate={
                 reduceMotion
                   ? undefined
                   : {
-                      scale: active ? 1.02 : 1,
+                      y: active ? -2 : 0,
                       opacity: saving && !active ? 0.7 : 1,
                     }
               }
               transition={{ duration: 0.2 }}
             >
-              <div className="flex flex-col gap-0.5">
+              <div className="flex w-full items-start justify-between gap-3">
                 <span
-                  className="text-base font-bold"
+                  className="text-lg font-bold"
                   style={{
-                    color: "var(--color-main)",
                     fontFamily: "var(--font-body)",
                   }}
                 >
                   {opt.label}
                 </span>
-                <span
-                  className="text-sm"
-                  style={{ color: "var(--color-secondary)" }}
-                >
-                  {opt.description}
-                </span>
+                {active ? (
+                  <span
+                    className="grid size-6 shrink-0 place-items-center rounded-full bg-white text-[var(--color-main)]"
+                    aria-hidden
+                  >
+                    <Check size={16} strokeWidth={3} />
+                  </span>
+                ) : null}
               </div>
-              {active ? (
-                <span
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-                  style={{ backgroundColor: "var(--color-main)" }}
-                  aria-hidden
-                >
-                  ✓
-                </span>
-              ) : null}
+              <span className={active ? "text-sm text-white/75" : "text-sm text-[var(--color-secondary)]"}>
+                {opt.description}
+              </span>
             </motion.button>
           );
         })}

@@ -190,6 +190,13 @@
       "when": 1782700000000,
       "tag": "0026_w5_notification_link_url",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1782819066439,
+      "tag": "0027_silly_princess_powerful",
+      "breakpoints": true
     }
   ]
 }

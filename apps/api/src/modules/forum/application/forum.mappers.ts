@@ -1,10 +1,10 @@
 import type { AnswerView, ThreadView } from "@mentor/types";
-import type { ThreadRow } from "../infrastructure/forum-thread.repository";
-import type { PostRow } from "../infrastructure/forum-post.repository";
+import type { ThreadWithAuthor } from "../infrastructure/forum-thread.repository";
+import type { PostWithAuthor } from "../infrastructure/forum-post.repository";
 
 /** Row → ThreadView (shared by the feed + QA services). */
 export function threadRowToView(
-  t: ThreadRow,
+  t: ThreadWithAuthor,
   reactionCounts: Record<string, number>,
   myReactions: string[],
 ): ThreadView {
@@ -12,6 +12,7 @@ export function threadRowToView(
     id: t.id,
     zoneId: t.zoneId,
     authorId: t.authorId,
+    authorName: t.authorName,
     title: t.title,
     body: t.body,
     status: t.status as ThreadView["status"],
@@ -24,11 +25,12 @@ export function threadRowToView(
 }
 
 /** Row → AnswerView (QA). */
-export function postRowToAnswerView(p: PostRow): AnswerView {
+export function postRowToAnswerView(p: PostWithAuthor): AnswerView {
   return {
     id: p.id,
     threadId: p.threadId,
     authorId: p.authorId,
+    authorName: p.authorName,
     body: p.body,
     isAccepted: p.isAccepted,
     createdAt: p.createdAt.toISOString(),

@@ -2,7 +2,6 @@
 
 import { FORUM_REACTION_EMOJIS } from "@mentor/types";
 
-/** Fixed emoji reaction row; the viewer's own reactions are highlighted. Toggle is optimistic. */
 export function ReactionBar({
   counts,
   mine,
@@ -13,7 +12,7 @@ export function ReactionBar({
   onToggle: (emoji: string, adding: boolean) => void;
 }) {
   return (
-    <div className="mt-3 flex flex-wrap gap-2">
+    <div className="mt-3 flex flex-wrap gap-1.5">
       {FORUM_REACTION_EMOJIS.map((emoji) => {
         const count = counts[emoji] ?? 0;
         const reacted = mine.includes(emoji);
@@ -23,20 +22,23 @@ export function ReactionBar({
             type="button"
             aria-pressed={reacted}
             onClick={() => onToggle(emoji, !reacted)}
-            className="inline-flex min-h-[32px] items-center gap-1 rounded-[var(--radius-card)] border px-2 py-1 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] active:scale-95 motion-reduce:transition-none"
             style={{
-              borderColor: reacted
-                ? "color-mix(in srgb, var(--color-main) 30%, transparent)"
-                : "color-mix(in srgb, var(--color-main) 10%, transparent)",
-              backgroundColor: reacted
-                ? "color-mix(in srgb, var(--color-chip) 30%, transparent)"
-                : "transparent",
+              background: reacted
+                ? "color-mix(in srgb, var(--color-chip) 28%, white)"
+                : "rgba(0,0,0,0.05)",
+              border: reacted
+                ? "1px solid color-mix(in srgb, var(--color-chip) 60%, transparent)"
+                : "1px solid transparent",
+              color: reacted ? "var(--color-chip-text)" : "var(--color-secondary)",
             }}
           >
-            <span aria-hidden>{emoji}</span>
-            {count > 0 ? (
-              <span style={{ color: "var(--color-secondary)" }}>{count}</span>
-            ) : null}
+            <span aria-hidden className="text-sm leading-none">{emoji}</span>
+            {count > 0 && (
+              <span style={{ color: reacted ? "var(--color-chip-text)" : "var(--color-secondary)" }}>
+                {count}
+              </span>
+            )}
           </button>
         );
       })}

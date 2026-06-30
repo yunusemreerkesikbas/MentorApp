@@ -1,11 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, isNull, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { forumPosts } from "../../../database/schema";
+import { forumPosts, users } from "../../../database/schema";
 
 export type PostRow = typeof forumPosts.$inferSelect;
+export type PostWithAuthor = PostRow & { authorName: string };
 
 /**
  * QA answer access (slice 3). Reads run in user context (RLS belt: non-deleted answers to any
@@ -26,11 +27,15 @@ export class ForumPostRepository {
   }
 
   /** Answers for a question — accepted first, then oldest-first. */
-  async listByThread(threadId: string, viewerId: string): Promise<PostRow[]> {
+  async listByThread(threadId: string, viewerId: string): Promise<PostWithAuthor[]> {
     return withUserContext(this.db, { userId: viewerId }, async (tx) => {
       return tx
-        .select()
+        .select({
+          ...getTableColumns(forumPosts),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+        })
         .from(forumPosts)
+        .leftJoin(users, eq(forumPosts.authorId, users.id))
         .where(and(eq(forumPosts.threadId, threadId), isNull(forumPosts.deletedAt)))
         .orderBy(desc(forumPosts.isAccepted), asc(forumPosts.createdAt));
     });
@@ -47,9 +52,17 @@ export class ForumPostRepository {
     });
   }
 
-  async findById(postId: string, viewerId: string): Promise<PostRow | null> {
+  async findById(postId: string, viewerId: string): Promise<PostWithAuthor | null> {
     return withUserContext(this.db, { userId: viewerId }, async (tx) => {
-      const [row] = await tx.select().from(forumPosts).where(eq(forumPosts.id, postId)).limit(1);
+      const [row] = await tx
+        .select({
+          ...getTableColumns(forumPosts),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+        })
+        .from(forumPosts)
+        .leftJoin(users, eq(forumPosts.authorId, users.id))
+        .where(eq(forumPosts.id, postId))
+        .limit(1);
       return row ?? null;
     });
   }

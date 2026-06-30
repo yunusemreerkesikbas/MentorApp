@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Fragment, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -15,29 +16,22 @@ export interface ChatMessage {
 }
 
 /**
- * Ephemeral chat transcript (client-state only). `role="log"` + `aria-live="polite"` so a new coach
- * reply is announced to screen readers. Empty state offers suggestion chips; while busy a "yazıyor…"
- * affordance shows (static under prefers-reduced-motion).
+ * Chat transcript for /koc/chat. Empty state is a minimal hint (hub owns shortcuts).
  */
 export function CoachTranscript({
   messages,
   busy,
   error,
-  onPickSuggestion,
+  emptyHint,
 }: {
   messages: ChatMessage[];
   busy: boolean;
   error: string | null;
-  onPickSuggestion: (text: string) => void;
+  emptyHint: string;
 }) {
   const reduceMotion = useReducedMotion();
   const translate = useTranslations("coach_chat");
   const bottomRef = useRef<HTMLDivElement>(null);
-  const suggestions = [
-    translate("suggestion_1"),
-    translate("suggestion_2"),
-    translate("suggestion_3"),
-  ];
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
@@ -54,42 +48,30 @@ export function CoachTranscript({
       aria-live="polite"
       aria-relevant="additions"
       aria-label={translate("transcript_label")}
-      className="flex flex-1 flex-col gap-3 px-5 py-6"
+      className="flex flex-1 flex-col gap-3 px-5 py-4"
     >
-      {isEmpty && (
+      {isEmpty ? (
         <motion.div
-          className="flex flex-col gap-4 py-8"
+          className="flex flex-1 flex-col items-center justify-center gap-3 py-12 text-center"
           initial={reduceMotion ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
         >
-          <p className="text-base" style={{ color: "var(--color-secondary)" }}>
-            {translate("empty_prompt")}
+          <Image
+            src="/mascot/puhu/puhu-default.png"
+            alt=""
+            width={32}
+            height={32}
+            aria-hidden
+          />
+          <p
+            className="max-w-xs text-base"
+            style={{ color: "var(--color-secondary)" }}
+          >
+            {emptyHint}
           </p>
-          <div className="flex flex-wrap gap-2">
-            {suggestions.map((s, i) => (
-              <motion.button
-                key={s}
-                type="button"
-                onClick={() => onPickSuggestion(s)}
-                className="min-h-11 cursor-pointer rounded-[var(--radius-card)] px-4 py-2 text-left text-sm font-bold capitalize transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-                style={{
-                  backgroundColor:
-                    "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-                  color: "var(--color-chip-text)",
-                  fontFamily: "var(--font-body)",
-                  boxShadow: "var(--shadow-card)",
-                }}
-                initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08, duration: 0.2 }}
-              >
-                {s}
-              </motion.button>
-            ))}
-          </div>
         </motion.div>
-      )}
+      ) : null}
 
       {messages.map((m) => (
         <Fragment key={m.id}>
@@ -100,7 +82,7 @@ export function CoachTranscript({
         </Fragment>
       ))}
 
-      {busy && <TypingBubble reduceMotion={reduceMotion} />}
+      {busy ? <TypingBubble reduceMotion={reduceMotion} /> : null}
 
       {error ? <FormError message={error} /> : null}
 
@@ -119,11 +101,21 @@ function MessageBubble({
   const isUser = message.role === "user";
   return (
     <motion.div
-      className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+      className={`flex ${isUser ? "justify-end" : "justify-start gap-2"}`}
       initial={reduceMotion ? false : { opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.22, ease: "easeOut" }}
     >
+      {!isUser ? (
+        <Image
+          src="/mascot/puhu/puhu-default.png"
+          alt=""
+          width={32}
+          height={32}
+          className="mt-1 shrink-0 self-end"
+          aria-hidden
+        />
+      ) : null}
       <div
         className={`max-w-[85%] whitespace-pre-wrap rounded-[var(--radius-card)] px-4 py-2.5 text-base leading-relaxed ${
           isUser ? "text-white" : "border border-white bg-white/50"
@@ -145,7 +137,7 @@ function SourceChips({ sources }: { sources: CoachSource[] }) {
   const translate = useTranslations("coach_chat");
   if (sources.length === 0) return null;
   return (
-    <div className="flex justify-start">
+    <div className="flex justify-start pl-10">
       <div className="flex max-w-[85%] flex-wrap gap-2">
         <span
           className="self-center text-xs"
@@ -175,11 +167,19 @@ function TypingBubble({ reduceMotion }: { reduceMotion: boolean | null }) {
   const translate = useTranslations("coach_chat");
   return (
     <motion.div
-      className="flex justify-start"
+      className="flex justify-start gap-2"
       initial={reduceMotion ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
     >
+      <Image
+        src="/mascot/puhu/puhu-default.png"
+        alt=""
+        width={32}
+        height={32}
+        className="shrink-0 self-end"
+        aria-hidden
+      />
       <div
         className="rounded-[var(--radius-card)] border border-white bg-white/50 px-4 py-2.5"
         style={{ boxShadow: "var(--shadow-card)" }}

@@ -8,10 +8,10 @@ import {
   StreakBroken,
   StreakMilestone,
 } from "../../../coaching/domain/coaching.events";
-import { DRIZZLE } from "../../../database/database.constants";
-import type { Database } from "../../../database/drizzle";
-import { withServiceContext } from "../../../database/rls";
-import { todayIso } from "../../../modules/coaching/domain/date.util";
+import { DRIZZLE } from "../../../../database/database.constants";
+import type { Database } from "../../../../database/drizzle";
+import { withServiceContext } from "../../../../database/rls";
+import { todayIso } from "../../../coaching/domain/date.util";
 import { NotificationDeliveryRepository } from "../../infrastructure/notification-delivery.repository";
 import { NotificationsService } from "../notifications.service";
 

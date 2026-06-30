@@ -43,6 +43,14 @@ export const menuList: MenuItem[] = [
         roles: ["SUPPORT", "FINANCE"],
     },
     {
+        id: 6,
+        name: "Topluluk",
+        path: "/forum",
+        icon: "feather-message-circle",
+        dropdownMenu: false,
+        roles: ["SUPER_ADMIN", "ADMIN"],
+    },
+    {
         id: 2,
         name: "Audit Log",
         path: "/audit-log",

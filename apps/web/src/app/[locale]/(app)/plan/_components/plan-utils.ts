@@ -2,6 +2,9 @@ export type PlanViewMode = "list" | "timeline" | "week";
 
 const VIEW_STORAGE_KEY = "mentor.plan.viewMode";
 
+/** Timeline task column scrolls after this many cards (≈4 visible rows). */
+export const PLAN_TIMELINE_SCROLL_AFTER_TASKS = 4;
+
 export function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -122,6 +125,23 @@ export function taskStats(tasks: { status: string }[]): {
 } {
   const total = tasks.length;
   const done = tasks.filter((t) => t.status === "DONE").length;
+  const percent = total === 0 ? 0 : Math.round((done / total) * 100);
+  return { done, total, percent };
+}
+
+/** Aggregate completion across a Monday-start week. */
+export function weekCompletionStats(
+  weekTasks: Record<string, { status: string }[]>,
+  weekStartDate: string,
+): { done: number; total: number; percent: number } {
+  const days = weekDates(weekStartDate);
+  let done = 0;
+  let total = 0;
+  for (const iso of days) {
+    const stats = taskStats(weekTasks[iso] ?? []);
+    done += stats.done;
+    total += stats.total;
+  }
   const percent = total === 0 ? 0 : Math.round((done / total) * 100);
   return { done, total, percent };
 }

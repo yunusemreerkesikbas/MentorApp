@@ -914,6 +914,7 @@ export const forumZones = pgTable(
     /** ZoneJoinPolicy: OPEN (instant) | REQUEST (owner-approved). */
     joinPolicy: text("join_policy").notNull().default("OPEN"),
     examType: text("exam_type"),
+    emoji: text("emoji"),
     organizationId: uuid("organization_id").references(() => organizations.id),
     createdBy: uuid("created_by").references(() => users.id),
     isArchived: boolean("is_archived").notNull().default(false),

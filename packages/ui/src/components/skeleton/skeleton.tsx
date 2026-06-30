@@ -3,7 +3,7 @@
 import type { CSSProperties, HTMLAttributes } from "react";
 import { MENTOR_SKELETON_SHIMMER_CLASS } from "./skeleton-classes.js";
 
-export interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {}
+export type SkeletonProps = HTMLAttributes<HTMLDivElement>;
 
 /**
  * Shimmer placeholder — animation only (`mentor-skeleton-shimmer`).

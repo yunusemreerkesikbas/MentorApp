@@ -137,6 +137,27 @@ pnpm --filter @mentor/api test
   white label; days with tasks show a progress dot under the number. Calendar dots =
   **one** `GET /v1/plan-tasks/calendar?from=&to=` per visible month (not N day fetches). Files:
   `apps/web/src/app/[locale]/(app)/plan/_components/*`.
+- **Plan Hafta wave (deferred backlog)** — `GET /v1/plan-tasks?from=&to=` (max 62 days, mutually
+  exclusive with `date`) replaces 7 parallel day fetches in `listPlanTasksForWeek`. **Hafta mobile:**
+  dedicated `PlanWeekNavCard` (week strip) + `PlanWeekView` (selected-day tasks + progress). **Hafta
+  desktop (`lg:`):** `PlanWeekDesktopLayout` — sticky mini calendar + week summary list + task panel
+  (`max-w-6xl`). Add-task sheet: `PlanSubjectPicker` loads exam taxonomy via
+  `GET /v1/content/exams/:slug/subjects` (fallback free-text when `examType` missing). Files:
+  `plan-week-*.tsx`, `plan-subject-picker.tsx`, `plan.service`/`plan-task.repository` range list.
+- **Plan Hafta desktop dedup** — removed `PlanWeekStrip` from the right panel (was duplicating week
+  range, 7-day picker, and week summary). Left sidebar = mini calendar + summary list with inline
+  week arrows + merged week progress footer; right panel = selected-day tasks only. Task row ⋮ menu
+  always visible on desktop; mini-calendar “Bugün” button uses shared picker tokens. Files:
+  `plan-week-desktop-layout.tsx`, `plan-week-mini-calendar.tsx`, `plan-week-nav-button.tsx`,
+  `globals.css` (`.mentor-plan-week-mini-calendar`).
+- **Plan mini calendar polish** — fixed selected-day contrast (solid black fill beats week-range
+  tint; `aria-selected` fallback), centered task dots, weekday column alignment, flat wrap inside
+  Card (no double border). Today = soft progress pill; week band excludes selected/today. Files:
+  `globals.css`, `plan-week-mini-calendar.tsx`.
+- **Plan Timeline UX** — task column scrolls after 4 cards (`PLAN_TIMELINE_SCROLL_AFTER_TASKS`);
+  sticky date badge on rail; bottom fade hint. `PlanProgress` uses `scaleX` fill animation
+  (520ms ease-out; reduced-motion safe). Files: `plan-timeline-view.tsx`, `plan-progress.tsx`,
+  `globals.css`.
 - **Mock exam + analysis** — `subjects`/`exam_subjects` seed + KPSS taxonomy endpoint; `mock_exams`/
   `mock_exam_subjects`; `domain/net.ts` (KPSS penalty rule); `/analiz` UI (per-subject D/Y/Boş,
   ProgressBar trend — no chart lib). *(0022-w2.)*

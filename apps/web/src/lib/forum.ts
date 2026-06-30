@@ -117,6 +117,10 @@ export async function approveMember(
   });
 }
 
+export async function removeMember(zoneId: string, userId: string): Promise<void> {
+  await http(`/v1/forum/zones/${zoneId}/members/${userId}`, { method: "DELETE" });
+}
+
 export async function listZoneReports(
   zoneId: string,
   status?: string,

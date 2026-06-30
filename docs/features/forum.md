@@ -63,6 +63,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `POST /v1/forum/zones/:id/join` | Join zone (OPEN→ACTIVE, REQUEST→PENDING) |
 | `GET /v1/forum/zones/:id/members` | List members (owner/mod) |
 | `POST /v1/forum/zones/:id/members/:userId/approve` | Approve pending member |
+| `DELETE /v1/forum/zones/:id/members/:userId` | Reject pending or remove active member (owner/mod/staff; OWNER protected) |
 | `POST /v1/forum/zones/:id/threads` | Post thread/ask question |
 | `GET /v1/forum/zones/:id/threads` | Cursor feed (pinned first) |
 | `POST /v1/forum/threads/:threadId/answers` | Post QA answer |
@@ -94,23 +95,25 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 - **Web B — Mod tools + search** — `/topluluk/[slug]/yonetim` (pending members, report queue),
   inline pin/delete, QA search. *(0058.)*
 - **Slice 6 — SEO** — `@Public` QA reads, SSR page, `QAPage` JSON-LD, sitemap, robots (TR-only index). *(0059.)*
+- **Admin UI — Zone yönetimi** — Admin panele "Topluluk" menüsü eklendi (`SUPER_ADMIN`/`ADMIN`). `/forum` zone listesi, `/forum/new` zone oluşturma formu. Backend'e dokunulmadı — mevcut `POST /v1/forum/zones` staff authz'u kullanılıyor. *(APP-016)*
+- **Unified Layout + Author Display (APP-016)** — Discord benzeri zone sidebar (in-flow, masaüstü) + CSS transform mobile drawer; `ThreadView`/`AnswerView`'e `authorName: string` eklendi (LEFT JOIN users); `ZoneView`'e `emoji` alanı eklendi (DB migration + admin form); zone detail sayfasına sağ panel (zone bilgisi + pinned gönderiler); `AuthorAvatar` (deterministik pastel, initials); `relativeTime` helper (`Intl.RelativeTimeFormat`); `zone-shell-skeleton`. *(APP-016)*
+- **Member reject & removal (APP-017)** — `DELETE /v1/forum/zones/:id/members/:userId` endpoint eklendi (aktif üye çıkarma + pending reddetme). `approveMember(false)` artık satırı PENDING'de bırakmak yerine siliyor. Policy'e `canRemoveMember` (OWNER çıkarılamaz). Repo'ya `findMembershipPrivileged` eklendi (`withServiceContext` — servis bağlamında güvenli role lookup). Web `/yonetim` sayfası iki tab'a genişledi: Bekleyenler (onayla/reddet) + Aktif Üyeler (kaldır); tab butonlarına `aria-pressed` eklendi. DB migration yok. Unit test: 37 → 45 (policy × 4 + service × 4). *(APP-017)*
 
 ## Gotchas / Known issues
 
 - **`forum.enabled` default off** — flip per-environment to go live.
+- **Zone olmadan B2C boş görünür** — `forum.enabled = true` olsa bile `forum_zones` tablosu boşsa `/topluluk` "Henüz bir alan yok" gösterir. Üretime çıkmadan önce admin panelinden (`/forum/new`) en az bir zone oluştur.
 - **Slug is server-derived** from title + `Date.now()` base-36 suffix (curated, low volume).
 - **Accept is one-shot/final** — no un-accept/switch (anti-farm). 409 on re-accept.
 - **`accepted_post_id` has no FK** — avoids circular threads↔posts constraint; app-enforced.
-- **Author identity not shown** — `ThreadView`/`AnswerView` carry only `authorId` (no display name);
-  author mini-card needs a backend identity join → Phase 2.
-- **Moderation: approve-only, no reject** — member removal has no endpoint yet; reject button would
-  mislead (backend `approveMember(false)` is a no-op).
+- **Author identity** — `ThreadView`/`AnswerView` include `authorName` via LEFT JOIN `users.displayName` (coalesced to `""`). UI shows `t("unknown_author")` when empty.
+- **Member removal: OWNER çıkarılamaz** — `canRemoveMember` OWNER rolünü bloklar; OWNER devri ayrı feature (backlog).
 - **Restore lives in the queue** — hidden content isn't visible in the member feed; the only
   reachable restore is the RESOLVED tab of the report queue.
 - **Forum endpoints have no OpenAPI response schema** — web uses raw `fetch` + `@mentor/types`.
 - **Migration not auto-applied in some setups** — run `pnpm db:up && pnpm db:migrate` once.
 - **Tests need the DB** — vitest `globalSetup` migrates real Postgres before any spec.
-- **51 backend tests green** (policy + zone + thread + QA + moderation + economy listener + e2e).
+- **Unit tests: 45 green** (forum module spec'leri — policy + zone + thread + QA + moderation). E2E testler ayrı çalışır (`pnpm db:up && pnpm db:migrate` sonrası).
 
 ## Related
 

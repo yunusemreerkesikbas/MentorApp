@@ -63,6 +63,12 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **Profil premium hesap merkezi** — `/profil` panel overview tekrarından arındırıldı; desktopta
+  ana hesap ayarları + sağ yan hesap/hak rayı, mobilde referanslardaki compact profil ayar akışı.
+  `ProfilShell` yalnız `GET /v1/users/me` yükler, sayfa-özel skeleton gösterir; cover'lı profil hero,
+  kompakt sınav seçimi, custom notification toggles ve ikonlu hesap satırları render eder.
+  Backend/migration yok; economy flag kapalıysa kazanılmış hak bölümü gizli kalır. Related:
+  `apps/web/src/app/[locale]/(app)/profil/_components/*`, `apps/web/messages/{tr,en}.json`.
 - **Lucide icon standard** — `apps/web` + web-facing `@mentor/ui` general icons now use
   `lucide-react` with direct `dist/esm/icons/*.mjs` imports (nav, back/add/play/send/chevron,
   notification, toast, form, button, streak/countdown glyphs). Admin `react-icons` remains out of
@@ -140,6 +146,10 @@ http://localhost:3000/panel               # daily ritual hub
   for a11y + enter fade. **Layout/shape is page-owned** — compose per screen in
   `*-content-skeleton.tsx` (e.g. `plan-content-skeleton.tsx`, `koc-content-skeleton.tsx`). Animations
   live in `theme.css`; `prefers-reduced-motion` respected. *(0068.)*
+- **Skeleton shimmer tone** — `.mentor-skeleton-shimmer` uses `--color-surface-container` (#f0edec,
+  same warm gray as passive tab rail) instead of `--color-progress-track` blue. Token added to
+  `packages/ui/src/theme.css`. *(plan/koç loading states.)*
+- **Topluluk inner layout (Discord-like)** — `apps/web/src/app/[locale]/(app)/topluluk/layout.tsx` adds a second sidebar layer **inside** the existing `(app)` `lg:pl-60` content area. Desktop: in-flow `w-60` zone sidebar (`lg:flex`) + `min-w-0 flex-1` content. Mobile: CSS transform slide-in drawer (`ZoneDrawer`, `z-30`) triggered by hamburger bar (`sticky top-14 z-10`), closes on Escape or backdrop click. Zone detail adds a third column (`xl:w-72` right panel) inside `zone-shell.tsx`. Pattern: nested flex layouts all use `min-w-0` to prevent overflow; no fixed positioning inside content area. *(APP-016)*
 
 ## Gotchas / Known issues
 
@@ -159,6 +169,7 @@ http://localhost:3000/panel               # daily ritual hub
   info toast). `gentle-error` variant still missing — error toast uses inline SVG. Remaining overlay
   primitives (`bottom-sheet`, `drawer`, etc.) follow same Stitch → `@mentor/ui` pattern as toast/dialog.
 - **Economy/invite UI was backlog** at this sweep — now covered in [economy.md](./economy.md).
+- **Koç nested routes** — tab nav `href="/koc"` returns to hub from `/koc/chat` (`isNavActive` matches nested paths). Panel coach shortcut → `/koc/chat?seed=…`. See [ai.md](./ai.md) hub/chat split. *(2026-06-30.)*
 
 ## Related
 

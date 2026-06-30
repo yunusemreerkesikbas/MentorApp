@@ -4,9 +4,10 @@ import { ZoneType } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { forumReactions, forumThreads, forumZones } from "../../../database/schema";
+import { forumReactions, forumThreads, forumZones, users } from "../../../database/schema";
 
 export type ThreadRow = typeof forumThreads.$inferSelect;
+export type ThreadWithAuthor = ThreadRow & { authorName: string };
 
 /**
  * Feed-thread + reaction access (Slice 2). Reads run in user context (RLS belt: non-deleted +
@@ -42,7 +43,7 @@ export class ForumThreadRepository {
     viewerId: string,
     zoneId: string,
     opts: { limit: number; before?: string },
-  ): Promise<ThreadRow[]> {
+  ): Promise<ThreadWithAuthor[]> {
     return withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const conds = [eq(forumThreads.zoneId, zoneId), isNull(forumThreads.deletedAt)];
       if (opts.before) {
@@ -53,19 +54,27 @@ export class ForumThreadRepository {
         conds.push(eq(forumThreads.isPinned, false));
       }
       return tx
-        .select()
+        .select({
+          ...getTableColumns(forumThreads),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+        })
         .from(forumThreads)
+        .leftJoin(users, eq(forumThreads.authorId, users.id))
         .where(and(...conds))
         .orderBy(desc(forumThreads.isPinned), desc(forumThreads.createdAt))
         .limit(opts.limit);
     });
   }
 
-  async findById(threadId: string, viewerId: string): Promise<ThreadRow | null> {
+  async findById(threadId: string, viewerId: string): Promise<ThreadWithAuthor | null> {
     return withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const [row] = await tx
-        .select()
+        .select({
+          ...getTableColumns(forumThreads),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+        })
         .from(forumThreads)
+        .leftJoin(users, eq(forumThreads.authorId, users.id))
         .where(eq(forumThreads.id, threadId))
         .limit(1);
       return row ?? null;
@@ -131,16 +140,20 @@ export class ForumThreadRepository {
   async searchQuestions(
     viewerId: string,
     opts: { q: string; zoneSlug?: string; page: number; pageSize: number },
-  ): Promise<{ items: ThreadRow[]; total: number }> {
+  ): Promise<{ items: ThreadWithAuthor[]; total: number }> {
     return withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const match = sql`to_tsvector('turkish', coalesce(${forumThreads.title}, '') || ' ' || ${forumThreads.body}) @@ websearch_to_tsquery('turkish', ${opts.q})`;
       const conds = [eq(forumZones.type, ZoneType.QA), isNull(forumThreads.deletedAt), match];
       if (opts.zoneSlug) conds.push(eq(forumZones.slug, opts.zoneSlug));
       const where = and(...conds);
       const items = await tx
-        .select(getTableColumns(forumThreads))
+        .select({
+          ...getTableColumns(forumThreads),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+        })
         .from(forumThreads)
         .innerJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
+        .leftJoin(users, eq(forumThreads.authorId, users.id))
         .where(where)
         .orderBy(
           desc(

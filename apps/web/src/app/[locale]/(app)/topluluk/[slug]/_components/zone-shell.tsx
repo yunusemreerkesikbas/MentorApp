@@ -8,6 +8,7 @@ import { Button, Chip } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { ReportButton } from "../../_components/report-button";
+import { ZONE_TYPE_ICONS } from "../../_components/zone-icons";
 import {
   deleteThread,
   getZone,
@@ -21,8 +22,10 @@ import {
 import { AskComposer } from "./ask-composer";
 import { JoinButton } from "./join-button";
 import { QuestionListItem } from "./question-list-item";
+import { RightPanel } from "./right-panel";
 import { ThreadComposer } from "./thread-composer";
 import { ThreadItem } from "./thread-item";
+import { ZoneShellSkeleton } from "./zone-shell-skeleton";
 
 interface Ready {
   zone: ZoneView;
@@ -157,14 +160,14 @@ export function ZoneShell({ slug }: { slug: string }) {
   }, [state, patchReady]);
 
   if (state.status === "loading") {
-    return <Centered>{t("loading")}</Centered>;
+    return <ZoneShellSkeleton label={t("loading")} />;
   }
   if (state.status === "disabled") {
     return <Centered>{t("soon_title")}</Centered>;
   }
   if (state.status === "error") {
     return (
-      <main className="mx-auto w-full max-w-3xl px-5 py-8 lg:px-8">
+      <main className="px-5 py-8 lg:px-6">
         <FormError message={state.message} />
       </main>
     );
@@ -173,86 +176,107 @@ export function ZoneShell({ slug }: { slug: string }) {
   const { zone, threads, nextCursor, loadingMore } = state;
   const isMember = zone.myStatus === "ACTIVE";
   const isQa = zone.type === "QA";
+  const pinnedThreads = threads.filter((t) => t.isPinned).slice(0, 3);
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-5 py-8 lg:px-8 lg:py-10">
-      <Link href="/topluluk" className="text-sm" style={{ color: "var(--color-secondary)" }}>
-        {t("back")}
-      </Link>
+    <div className="flex gap-0 xl:gap-5">
+      {/* Feed column */}
+      <main className="min-w-0 flex-1 px-4 py-6 lg:px-6 lg:py-8">
+        {/* Back link — hidden on lg+ since zone sidebar is visible */}
+        <Link href="/topluluk" className="mb-4 flex items-center gap-1 text-sm lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]" style={{ color: "var(--color-secondary)" }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+          {t("back")}
+        </Link>
 
-      <header className="mt-3 mb-6 flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-2">
-          <h1
-            className="text-2xl font-bold"
-            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-          >
-            {zone.title}
-          </h1>
-          <Chip>{t(`type_${zone.type.toLowerCase()}` as `type_${string}`)}</Chip>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <JoinButton zoneId={zone.id} myStatus={zone.myStatus} onJoined={onJoined} />
-          {zone.canModerate ? (
-            <Link
-              href={`/topluluk/${zone.slug}/yonetim`}
-              className="text-sm underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-              style={{ color: "var(--color-secondary)" }}
+        <header className="mb-5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-xl"
+              style={{ background: "color-mix(in srgb, var(--color-chip) 18%, white)" }}
             >
-              {t("manage_link")}
-            </Link>
-          ) : null}
-        </div>
-      </header>
-
-      {/* Composer (members only). ANNOUNCEMENT posts may 403 for non-mods → ThreadComposer surfaces it. */}
-      {isMember ? (
-        isQa ? (
-          <div className="mb-6">
-            <AskComposer zoneId={zone.id} />
+              {zone.emoji ?? ZONE_TYPE_ICONS[zone.type]}
+            </span>
+            <div>
+              <h1
+                className="text-lg font-bold leading-tight"
+                style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+              >
+                {zone.title}
+              </h1>
+              <Chip>{t(`type_${zone.type.toLowerCase()}` as `type_${string}`)}</Chip>
+            </div>
           </div>
+          <div className="flex flex-col items-end gap-2 xl:hidden">
+            <JoinButton zoneId={zone.id} myStatus={zone.myStatus} onJoined={onJoined} />
+            {zone.canModerate ? (
+              <Link
+                href={`/topluluk/${zone.slug}/yonetim`}
+                className="text-sm underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                style={{ color: "var(--color-secondary)" }}
+              >
+                {t("manage_link")}
+              </Link>
+            ) : null}
+          </div>
+        </header>
+
+        {/* Composer (members only). ANNOUNCEMENT posts may 403 for non-mods → ThreadComposer surfaces it. */}
+        {isMember ? (
+          isQa ? (
+            <div className="mb-6">
+              <AskComposer zoneId={zone.id} />
+            </div>
+          ) : (
+            <div className="mb-6">
+              <ThreadComposer
+                placeholder={t("compose_placeholder")}
+                submitLabel={t("compose_send")}
+                onSubmit={onPost}
+              />
+            </div>
+          )
         ) : (
-          <div className="mb-6">
-            <ThreadComposer
-              placeholder={t("compose_placeholder")}
-              submitLabel={t("compose_send")}
-              onSubmit={onPost}
-            />
+          <p className="mb-6 text-sm" style={{ color: "var(--color-secondary)" }}>
+            {t("compose_join_first")}
+          </p>
+        )}
+
+        {threads.length === 0 ? (
+          <p className="py-8 text-center text-sm" style={{ color: "var(--color-secondary)" }}>
+            {isQa ? t("qa_empty") : t("feed_empty")}
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {isQa
+              ? threads.map((q) => <QuestionListItem key={q.id} question={q} />)
+              : threads.map((th) => (
+                  <ThreadItem
+                    key={th.id}
+                    thread={th}
+                    onToggleReaction={(emoji, adding) => onToggleReaction(th.id, emoji, adding)}
+                    actions={<ReportButton targetType={ModerationTargetType.THREAD} targetId={th.id} />}
+                    canModerate={zone.canModerate}
+                    onPin={(pinned) => onPinThread(th.id, pinned)}
+                    onDelete={() => onDeleteThread(th.id)}
+                  />
+                ))}
           </div>
-        )
-      ) : (
-        <p className="mb-6 text-sm" style={{ color: "var(--color-secondary)" }}>
-          {t("compose_join_first")}
-        </p>
-      )}
+        )}
 
-      {threads.length === 0 ? (
-        <p style={{ color: "var(--color-secondary)" }}>{isQa ? t("qa_empty") : t("feed_empty")}</p>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {isQa
-            ? threads.map((q) => <QuestionListItem key={q.id} question={q} />)
-            : threads.map((th) => (
-                <ThreadItem
-                  key={th.id}
-                  thread={th}
-                  onToggleReaction={(emoji, adding) => onToggleReaction(th.id, emoji, adding)}
-                  actions={<ReportButton targetType={ModerationTargetType.THREAD} targetId={th.id} />}
-                  canModerate={zone.canModerate}
-                  onPin={(pinned) => onPinThread(th.id, pinned)}
-                  onDelete={() => onDeleteThread(th.id)}
-                />
-              ))}
-        </div>
-      )}
+        {nextCursor ? (
+          <div className="mt-5 flex justify-center">
+            <Button variant="secondary" busy={loadingMore} onClick={() => void onLoadMore()}>
+              {t("load_more")}
+            </Button>
+          </div>
+        ) : null}
+      </main>
 
-      {nextCursor ? (
-        <div className="mt-6 flex justify-center">
-          <Button variant="secondary" busy={loadingMore} onClick={() => void onLoadMore()}>
-            {t("load_more")}
-          </Button>
-        </div>
-      ) : null}
-    </main>
+      {/* Right panel — xl+ only */}
+      <aside className="hidden xl:block xl:w-64 xl:flex-shrink-0 xl:py-6 xl:pr-5">
+        <RightPanel zone={zone} pinned={pinnedThreads} />
+      </aside>
+    </div>
   );
 }
 

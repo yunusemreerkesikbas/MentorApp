@@ -34,7 +34,9 @@ function PlanPickerChevron({
   orientation?: "up" | "down" | "left" | "right";
   disabled?: boolean;
 }) {
-  if (orientation === "up" || orientation === "down") return null;
+  if (orientation === "up" || orientation === "down") {
+    return <span className="sr-only" aria-hidden />;
+  }
   const Icon = orientation === "left" ? ChevronLeft : ChevronRight;
   return (
     <Icon

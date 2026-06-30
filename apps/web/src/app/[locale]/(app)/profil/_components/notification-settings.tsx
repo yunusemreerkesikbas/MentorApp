@@ -1,33 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { Button, Card } from "@mentor/ui";
+import { Card, SectionHeading, Skeleton } from "@mentor/ui";
 import type { NotificationPreferencesDto } from "@mentor/types";
+import Bell from "lucide-react/dist/esm/icons/bell.mjs";
+import Mail from "lucide-react/dist/esm/icons/mail.mjs";
+import Smartphone from "lucide-react/dist/esm/icons/smartphone.mjs";
 import {
   ApiClientError,
   notificationsControllerGetPreferences,
-  notificationsControllerSubscribePush,
   notificationsControllerUpdatePreferences,
 } from "@mentor/api-client";
 import { FormError } from "@/components/form";
-
-const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const raw = atob(base64);
-  const output = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i);
-  return output;
-}
 
 export function NotificationSettings() {
   const t = useTranslations("profile.notifications");
   const [emailEnabled, setEmailEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(true);
-  const [pushStatus, setPushStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -75,83 +66,38 @@ export function NotificationSettings() {
     }
   };
 
-  const enablePush = async () => {
-    if (!vapidPublicKey) {
-      setPushStatus(t("push_not_configured"));
-      return;
-    }
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      setPushStatus(t("push_not_supported"));
-      return;
-    }
-
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-      setPushStatus(t("push_denied"));
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
-    try {
-      const reg = await navigator.serviceWorker.register("/sw.js");
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-      });
-      const json = sub.toJSON();
-      if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
-        setPushStatus(t("push_subscribe_error"));
-        return;
-      }
-
-      await notificationsControllerSubscribePush({
-        endpoint: json.endpoint,
-        keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
-      });
-      await savePreferences({ pushEnabled: true }, { pushEnabled });
-      setPushStatus(t("push_enabled"));
-    } catch (err) {
-      setError(
-        err instanceof ApiClientError ? err.message : t("push_subscribe_error"),
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
   if (loading) {
     return (
       <Card>
-        <p style={{ color: "var(--color-secondary)" }}>{t("loading")}</p>
+        <Skeleton className="h-6 w-44 rounded-[var(--radius-card)]" />
+        <Skeleton className="mt-4 h-14 rounded-[var(--radius-card)]" />
+        <Skeleton className="mt-3 h-14 rounded-[var(--radius-card)]" />
       </Card>
     );
   }
 
   return (
-    <Card>
-      <h2
-        className="mb-3 text-lg font-bold"
-        style={{
-          color: "var(--color-main)",
-          fontFamily: "var(--font-heading)",
-        }}
+    <Card id="notification-settings">
+      <SectionHeading
+        subtitle={t("subtitle")}
+        action={
+          <span className="grid size-10 place-items-center rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)] text-[var(--color-progress)]">
+            <Bell size={20} aria-hidden />
+          </span>
+        }
       >
         {t("title")}
-      </h2>
+      </SectionHeading>
       {error ? <FormError message={error} /> : null}
-      <label
-        className="mb-3 flex min-h-11 cursor-pointer items-center gap-3 text-base"
-        style={{ color: "var(--color-main)" }}
-      >
-        <input
-          type="checkbox"
-          className="h-5 w-5 shrink-0"
+      <div className="mt-5 grid gap-3">
+        <ToggleRow
           checked={emailEnabled}
+          description={t("email_desc")}
           disabled={saving}
-          onChange={(e) => {
+          icon={<Mail size={20} aria-hidden />}
+          label={t("email")}
+          onChange={(next) => {
             const prev = emailEnabled;
-            const next = e.target.checked;
             setEmailEnabled(next);
             void savePreferences(
               { emailEnabled: next },
@@ -159,34 +105,75 @@ export function NotificationSettings() {
             );
           }}
         />
-        {t("email")}
-      </label>
-      <label
-        className="mb-4 flex min-h-11 cursor-pointer items-center gap-3 text-base"
-        style={{ color: "var(--color-main)" }}
-      >
-        <input
-          type="checkbox"
-          className="h-5 w-5 shrink-0"
+        <ToggleRow
           checked={pushEnabled}
+          description={t("push_desc")}
           disabled={saving}
-          onChange={(e) => {
+          icon={<Smartphone size={20} aria-hidden />}
+          label={t("push")}
+          onChange={(next) => {
             const prev = pushEnabled;
-            const next = e.target.checked;
             setPushEnabled(next);
             void savePreferences({ pushEnabled: next }, { pushEnabled: prev });
           }}
         />
-        {t("push")}
-      </label>
-      <Button type="button" disabled={saving} onClick={() => void enablePush()}>
-        {t("push_permission")}
-      </Button>
-      {pushStatus ? (
-        <p className="mt-3 text-sm" style={{ color: "var(--color-secondary)" }}>
-          {pushStatus}
-        </p>
-      ) : null}
+      </div>
     </Card>
+  );
+}
+
+function ToggleRow({
+  checked,
+  description,
+  disabled,
+  icon,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  description: string;
+  disabled: boolean;
+  icon: ReactNode;
+  label: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex min-h-16 cursor-pointer items-center justify-between gap-4 rounded-[var(--radius-card)] border border-black/10 bg-white px-4 py-3 transition-colors hover:bg-black/[0.03] focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)] focus-within:ring-offset-2">
+      <span className="flex min-w-0 items-center gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)] text-[var(--color-progress)]">
+          {icon}
+        </span>
+        <span className="min-w-0">
+          <span className="block text-base font-bold text-[var(--color-main)]">
+            {label}
+          </span>
+          <span className="mt-0.5 block text-sm leading-5 text-[var(--color-secondary)]">
+            {description}
+          </span>
+        </span>
+      </span>
+      <input
+        type="checkbox"
+        className="sr-only"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span
+        className={[
+          "relative h-7 w-12 shrink-0 rounded-full transition-colors",
+          checked ? "bg-[var(--color-main)]" : "bg-black/15",
+          disabled ? "opacity-60" : "",
+        ].join(" ")}
+        aria-hidden
+      >
+        <span
+          className={[
+            "absolute left-1 top-1 size-5 rounded-full bg-white transition-transform",
+            checked ? "translate-x-5" : "",
+          ].join(" ")}
+        />
+      </span>
+    </label>
   );
 }

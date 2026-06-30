@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, SectionHeading, Skeleton, SkeletonGroup, skeletonStaggerStyle } from "@mentor/ui";
+import { Card, Skeleton, SkeletonGroup, skeletonStaggerStyle } from "@mentor/ui";
 import { useTranslations } from "next-intl";
 
 const LIST_ROW_COUNT = 4;
@@ -28,8 +28,8 @@ export function PlanListSkeleton() {
 
   return (
     <Card>
-      <SectionHeading>{t("tasks_title")}</SectionHeading>
-      <SkeletonGroup label={t("loading")} className="mt-3 flex flex-col">
+      <Skeleton className="mb-3 h-5 w-24 rounded-[var(--radius-card)]" />
+      <SkeletonGroup label={t("loading")} className="flex flex-col">
         {Array.from({ length: LIST_ROW_COUNT }, (_, index) => (
           <PlanTaskRowSkeleton key={index} index={index} />
         ))}
@@ -71,21 +71,49 @@ export function PlanTimelineSkeleton() {
               />
             ))}
           </div>
-          <Skeleton
-            className="mb-3 mt-8 h-4 w-28 rounded-[var(--radius-card)]"
-            style={skeletonStaggerStyle(TIMELINE_CARD_COUNT + 1)}
-          />
-          <Skeleton
-            className="h-[64px] w-full rounded-[var(--radius-card)]"
-            style={skeletonStaggerStyle(TIMELINE_CARD_COUNT + 2)}
-          />
         </div>
       </SkeletonGroup>
     </Card>
   );
 }
 
-/** Hafta görünümü — seçili gün listesi. */
+/** Mobile Hafta — nav card + task card skeletons. */
 export function PlanWeekSkeleton() {
-  return <PlanListSkeleton />;
+  const t = useTranslations("plan");
+
+  return (
+    <div className="flex flex-col gap-5 lg:hidden">
+      <Card>
+        <SkeletonGroup label={t("loading")} className="flex flex-col gap-3">
+          <Skeleton className="mx-auto h-4 w-40 rounded-[var(--radius-card)]" />
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: 7 }, (_, index) => (
+              <Skeleton
+                key={index}
+                className="h-[52px] rounded-[var(--radius-card)]"
+                style={skeletonStaggerStyle(index)}
+              />
+            ))}
+          </div>
+          <Skeleton className="mx-auto h-3 w-48 rounded-[var(--radius-card)]" />
+        </SkeletonGroup>
+      </Card>
+      <PlanListSkeleton />
+    </div>
+  );
+}
+
+/** Desktop Hafta skeleton — simplified two-column blocks. */
+export function PlanWeekDesktopSkeleton() {
+  const t = useTranslations("plan");
+
+  return (
+    <div className="hidden lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-6">
+      <SkeletonGroup label={t("loading")} className="flex flex-col gap-4">
+        <Skeleton className="h-[320px] rounded-[var(--radius-card)]" />
+        <Skeleton className="h-[280px] rounded-[var(--radius-card)]" />
+      </SkeletonGroup>
+      <Skeleton className="min-h-[400px] rounded-[var(--radius-card)]" />
+    </div>
+  );
 }

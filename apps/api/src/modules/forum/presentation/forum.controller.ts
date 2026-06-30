@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   type Paginated,
@@ -85,6 +85,21 @@ export class ForumController {
       this.actor(user, (membership?.role as ZoneRole | undefined) ?? null),
       id,
       q.status,
+    );
+  }
+
+  @Delete("zones/:id/members/:userId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeMember(
+    @CurrentUser() user: RequestUser,
+    @Param("id") id: string,
+    @Param("userId") userId: string,
+  ): Promise<void> {
+    const membership = await this.forum.getActorMembership(id, user.id);
+    await this.forum.removeMember(
+      this.actor(user, (membership?.role as ZoneRole | undefined) ?? null),
+      id,
+      userId,
     );
   }
 

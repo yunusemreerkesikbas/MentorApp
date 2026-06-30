@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
 import type { AuthUser } from "@mentor/types";
 import { ApiClientError, usersControllerMe } from "@mentor/api-client";
-import { Card } from "@mentor/ui";
+import { Card, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
 import { AccountLinksCard } from "./account-links-card";
@@ -21,7 +21,7 @@ type LoadState =
   | { status: "ready"; user: AuthUser };
 
 /**
- * /profil orchestrator — loads fresh user snapshot, syncs auth context, staggered section entrance.
+ * /profil orchestrator — account hub only; panel overview stays on /panel.
  */
 export function ProfilShell() {
   const t = useTranslations("profile");
@@ -34,9 +34,9 @@ export function ProfilShell() {
   useEffect(() => {
     let active = true;
     usersControllerMe()
-      .then((res) => {
+      .then((userRes) => {
         if (!active) return;
-        const user = res as unknown as AuthUser;
+        const user = userRes as unknown as AuthUser;
         setUserFromServer(user);
         setState({ status: "ready", user });
       })
@@ -58,11 +58,7 @@ export function ProfilShell() {
   }, [setUserFromServer]);
 
   if (state.status === "loading") {
-    return (
-      <main className="mx-auto flex min-h-[40vh] w-full max-w-6xl items-center justify-center px-5 py-8 lg:px-8">
-        <p style={{ color: "var(--color-secondary)" }}>{t("loading")}</p>
-      </main>
-    );
+    return <ProfileContentSkeleton label={t("loading")} />;
   }
 
   if (state.status === "error") {
@@ -83,8 +79,8 @@ export function ProfilShell() {
       };
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
-      <header className="mb-6">
+    <main className="mx-auto w-full max-w-6xl px-5 py-6 lg:px-8 lg:py-10">
+      <header className="mb-8">
         <h1
           className="text-2xl font-bold lg:text-3xl"
           style={{
@@ -102,35 +98,97 @@ export function ProfilShell() {
         </p>
       </header>
 
-      <motion.div className="flex flex-col gap-6" {...motionProps}>
-        <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-          <Card>
+      <motion.div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]" {...motionProps}>
+        <section className="flex flex-col gap-6">
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <ProfileHeader user={user} />
-          </Card>
-        </motion.div>
+          </motion.div>
 
-        <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-          <ExamSettingsCard
-            user={user}
-            onSaved={() => setEconomyRefreshKey((k) => k + 1)}
-          />
-        </motion.div>
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <ExamSettingsCard
+              user={user}
+              onSaved={() => setEconomyRefreshKey((k) => k + 1)}
+            />
+          </motion.div>
 
-        <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-          <EconomySection
-            refreshKey={economyRefreshKey}
-            onVisibilityChange={setEconomyVisible}
-          />
-        </motion.div>
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <NotificationSettings />
+          </motion.div>
+        </section>
 
-        <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-          <AccountLinksCard />
-        </motion.div>
+        <aside className="flex flex-col gap-6 xl:sticky xl:top-8 xl:self-start">
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <AccountLinksCard />
+          </motion.div>
 
-        <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-          <NotificationSettings />
-        </motion.div>
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <EconomySection
+              refreshKey={economyRefreshKey}
+              onVisibilityChange={setEconomyVisible}
+            />
+          </motion.div>
+        </aside>
       </motion.div>
+    </main>
+  );
+}
+
+function ProfileContentSkeleton({ label }: { label: string }) {
+  return (
+    <main className="mx-auto w-full max-w-6xl px-5 py-6 lg:px-8 lg:py-10">
+      <SkeletonGroup
+        label={label}
+        className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]"
+      >
+        <section className="flex flex-col gap-6">
+          <Card solid className="overflow-hidden p-0">
+            <Skeleton className="h-28 rounded-none" />
+            <div className="p-6">
+              <Skeleton className="-mt-14 h-24 w-24 rounded-[var(--radius-card)]" />
+              <Skeleton className="mt-5 h-7 w-60 max-w-full rounded-[var(--radius-card)]" />
+              <Skeleton className="mt-3 h-4 w-72 max-w-full rounded-[var(--radius-card)]" />
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <Skeleton className="h-14 rounded-[var(--radius-card)]" />
+                <Skeleton className="h-14 rounded-[var(--radius-card)]" />
+              </div>
+            </div>
+          </Card>
+          <Card>
+            <Skeleton className="h-6 w-40 rounded-[var(--radius-card)]" />
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              {[0, 1, 2].map((item) => (
+                <Skeleton
+                  key={item}
+                  className="h-20 rounded-[var(--radius-card)]"
+                />
+              ))}
+            </div>
+          </Card>
+          <Card>
+            <Skeleton className="h-6 w-48 rounded-[var(--radius-card)]" />
+            <div className="mt-4 grid gap-2">
+              {[0, 1, 2].map((item) => (
+                <Skeleton
+                  key={item}
+                  className="h-12 rounded-[var(--radius-card)]"
+                />
+              ))}
+            </div>
+          </Card>
+        </section>
+        <aside className="flex flex-col gap-6">
+          <Card>
+            <Skeleton className="h-6 w-44 rounded-[var(--radius-card)]" />
+            <Skeleton className="mt-4 h-12 rounded-[var(--radius-card)]" />
+            <Skeleton className="mt-3 h-12 rounded-[var(--radius-card)]" />
+          </Card>
+          <Card>
+            <Skeleton className="h-6 w-24 rounded-[var(--radius-card)]" />
+            <Skeleton className="mt-4 h-12 rounded-[var(--radius-card)]" />
+            <Skeleton className="mt-3 h-12 rounded-[var(--radius-card)]" />
+          </Card>
+        </aside>
+      </SkeletonGroup>
     </main>
   );
 }

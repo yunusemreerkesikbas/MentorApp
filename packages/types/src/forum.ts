@@ -49,6 +49,7 @@ export interface ZoneView {
   visibility: ZoneVisibility;
   joinPolicy: ZoneJoinPolicy;
   examType: string | null;
+  emoji?: string | null;
   isArchived: boolean;
   memberCount: number;
   /** Viewer's membership status; null when not a member. */
@@ -87,6 +88,7 @@ export interface ThreadView {
   id: string;
   zoneId: string;
   authorId: string;
+  authorName: string;
   /** QA question headline; null for chat/announcement. */
   title: string | null;
   body: string;
@@ -112,6 +114,7 @@ export interface AnswerView {
   id: string;
   threadId: string;
   authorId: string;
+  authorName: string;
   body: string;
   isAccepted: boolean;
   createdAt: string;

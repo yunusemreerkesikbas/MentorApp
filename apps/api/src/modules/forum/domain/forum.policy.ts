@@ -41,6 +41,12 @@ export function canModerateZone(actor: ForumActor): boolean {
 /** Approving a pending join request is a moderation action. */
 export const canApproveMember = canModerateZone;
 
+/** Remove an active member or reject a pending request. OWNER cannot be removed. */
+export function canRemoveMember(actor: ForumActor, targetRole: ZoneRole): boolean {
+  if (targetRole === ZoneRole.OWNER) return false;
+  return canModerateZone(actor);
+}
+
 /**
  * Who may post a feed item (Slice 2):
  *  - ANNOUNCEMENT → broadcast: only owner/mod or platform staff.

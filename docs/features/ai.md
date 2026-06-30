@@ -90,6 +90,8 @@ pnpm --filter @mentor/api test -- --grep "ai"
   daily idempotent cache, coach chat mood-aware. *(0048.)*
 - **Ghost AI narration** — premium AI narration on latest mock-exam attempt, rule-based comparison for
   all users. *(0049.)*
+- **Koç hub + chat split** — `/koc` hub (greeting, shortcut cards, session recent pills, start/continue CTAs) and `/koc/chat` (back header, transcript, composer). `CoachSessionProvider` in `koc/layout.tsx` persists messages + recent topics in `sessionStorage` (`mentor:coach-session:v1`) for the browser tab only — no backend history. Hub shortcuts and panel coach CTA deep-link via `?seed=` (composer pre-fill). Gate blocks both routes when `canChat=false`. Puhu avatar on coach bubbles; Encouraging Puhu on gate. *(2026-06-30.)*
+- **Puhu coach bubble** — reusable `PuhuCoachBubble` (`apps/web/src/components/puhu-coach-bubble.tsx`): white speech card + tail (`.mentor-coach-bubble`), dismiss X, optional bounce; wired on `/koc` gate (reason-specific copy) and hub welcome. *(2026-06-30.)*
 
 ## Gotchas / Known issues
 

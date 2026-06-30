@@ -529,8 +529,14 @@ function TodayFocusCard({
 
 function CoachShortcutsCard() {
   const t = useTranslations("panel");
+  const tChat = useTranslations("coach_chat");
+  const studySeed = encodeURIComponent(tChat("suggestion_1"));
   const shortcuts = [
-    { href: "/koc", label: t("coach_shortcut_study"), icon: <Brain className="size-4" aria-hidden /> },
+    {
+      href: `/koc/chat?seed=${studySeed}`,
+      label: t("coach_shortcut_study"),
+      icon: <Brain className="size-4" aria-hidden />,
+    },
     { href: "/plan", label: t("coach_shortcut_plan"), icon: <CalendarDays className="size-4" aria-hidden /> },
     { href: "/analiz", label: t("coach_shortcut_analysis"), icon: <BarChart3 className="size-4" aria-hidden /> },
   ];

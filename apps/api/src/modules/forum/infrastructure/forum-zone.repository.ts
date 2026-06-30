@@ -24,6 +24,7 @@ export class ForumZoneRepository {
     slug: string;
     description?: string | null;
     examType?: string | null;
+    emoji?: string | null;
     joinPolicy: string;
     createdBy: string;
   }): Promise<ZoneRow> {
@@ -36,6 +37,7 @@ export class ForumZoneRepository {
           slug: input.slug,
           description: input.description ?? null,
           examType: input.examType ?? null,
+          emoji: input.emoji ?? null,
           joinPolicy: input.joinPolicy,
           createdBy: input.createdBy,
         })
@@ -161,6 +163,26 @@ export class ForumZoneRepository {
       await tx
         .update(forumZoneMembers)
         .set({ status, updatedAt: new Date() })
+        .where(and(eq(forumZoneMembers.zoneId, zoneId), eq(forumZoneMembers.userId, userId)));
+    });
+  }
+
+  /** SERVICE context — look up any member's row for policy checks (caller holds authz). */
+  async findMembershipPrivileged(zoneId: string, userId: string): Promise<MemberRow | null> {
+    return withServiceContext(this.db, async (tx) => {
+      const [row] = await tx
+        .select()
+        .from(forumZoneMembers)
+        .where(and(eq(forumZoneMembers.zoneId, zoneId), eq(forumZoneMembers.userId, userId)))
+        .limit(1);
+      return row ?? null;
+    });
+  }
+
+  async deleteMember(zoneId: string, userId: string): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await tx
+        .delete(forumZoneMembers)
         .where(and(eq(forumZoneMembers.zoneId, zoneId), eq(forumZoneMembers.userId, userId)));
     });
   }

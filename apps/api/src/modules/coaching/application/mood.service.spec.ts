@@ -63,7 +63,7 @@ describe("MoodService", () => {
 
   beforeEach(() => {
     moods = makeMoodsFake();
-    service = new MoodService(fakeDb, moods as never, i18nFake);
+    service = new MoodService(fakeDb, moods as never, i18nFake, { emit: () => {} } as never);
   });
 
   it("upserts today's mood and returns the rule-based code + localized message", async () => {

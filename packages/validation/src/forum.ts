@@ -19,6 +19,7 @@ export const createZoneSchema = z.object({
   title: z.string().trim().min(2).max(120),
   description: z.string().trim().max(2000).optional(),
   examType: z.string().trim().max(32).optional(),
+  emoji: z.string().trim().max(8).optional(),
   joinPolicy: z.nativeEnum(ZoneJoinPolicy).default(ZoneJoinPolicy.OPEN),
 });
 export type CreateZone = z.infer<typeof createZoneSchema>;

@@ -20,7 +20,7 @@ import {
 } from "../domain/forum.policy";
 import { ForumEventTopic } from "../domain/forum.events";
 import { ForumZoneRepository } from "../infrastructure/forum-zone.repository";
-import { ForumThreadRepository, type ThreadRow } from "../infrastructure/forum-thread.repository";
+import { ForumThreadRepository, type ThreadWithAuthor } from "../infrastructure/forum-thread.repository";
 import { ForumPostRepository } from "../infrastructure/forum-post.repository";
 import type { ThreadActor } from "./forum-thread.service";
 import { postRowToAnswerView, threadRowToView } from "./forum.mappers";
@@ -47,7 +47,7 @@ export class ForumQaService {
   }
 
   /** Load a QA question visible to the viewer, or throw. Returns the thread + its zone. */
-  private async requireQuestion(threadId: string, viewerId: string): Promise<ThreadRow> {
+  private async requireQuestion(threadId: string, viewerId: string): Promise<ThreadWithAuthor> {
     const thread = await this.threads.findById(threadId, viewerId);
     if (!thread) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
     const zone = await this.zones.findById(thread.zoneId, viewerId);
@@ -71,7 +71,10 @@ export class ForumQaService {
       throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
     const post = await this.posts.createAnswer({ threadId, authorId: actor.id, body: dto.body });
-    return postRowToAnswerView(post);
+    // fetch with JOIN so authorName is populated in the immediate response
+    const postWithAuthor = await this.posts.findById(post.id, actor.id);
+    if (!postWithAuthor) throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
+    return postRowToAnswerView(postWithAuthor);
   }
 
   async accept(actor: ThreadActor, threadId: string, postId: string): Promise<void> {

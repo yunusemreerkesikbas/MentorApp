@@ -1,5 +1,5 @@
 import { setRequestLocale } from "next-intl/server";
-import { KocShell } from "./_components/koc-shell";
+import { KocHub } from "./_components/koc-hub";
 
 export default async function KocPage({
   params,
@@ -8,5 +8,5 @@ export default async function KocPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <KocShell />;
+  return <KocHub />;
 }

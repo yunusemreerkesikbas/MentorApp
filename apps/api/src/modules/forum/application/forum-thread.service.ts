@@ -13,7 +13,7 @@ import {
 } from "../domain/forum.policy";
 import { ForumEventTopic } from "../domain/forum.events";
 import { ForumZoneRepository } from "../infrastructure/forum-zone.repository";
-import { ForumThreadRepository, type ThreadRow } from "../infrastructure/forum-thread.repository";
+import { ForumThreadRepository, type ThreadWithAuthor } from "../infrastructure/forum-thread.repository";
 import { threadRowToView } from "./forum.mappers";
 
 /** Minimal authenticated principal the controller passes in (id + platform roles). */
@@ -76,7 +76,10 @@ export class ForumThreadService {
       threadId: row.id,
       authorId: actor.id,
     });
-    return threadRowToView(row, {}, []);
+    // fetch with JOIN so authorName is populated in the immediate response
+    const rowWithAuthor = await this.threads.findById(row.id, actor.id);
+    if (!rowWithAuthor) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
+    return threadRowToView(rowWithAuthor, {}, []);
   }
 
   async listFeed(viewerId: string, zoneId: string, q: FeedQuery): Promise<ThreadFeed> {
@@ -129,7 +132,7 @@ export class ForumThreadService {
     await this.threads.removeReaction(threadId, userId, emoji);
   }
 
-  private async requireThread(threadId: string, viewerId: string): Promise<ThreadRow> {
+  private async requireThread(threadId: string, viewerId: string): Promise<ThreadWithAuthor> {
     const thread = await this.threads.findById(threadId, viewerId);
     if (!thread) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
     // Zone-visibility belt: the parent zone must be visible to the viewer (RLS-gated to PUBLIC,

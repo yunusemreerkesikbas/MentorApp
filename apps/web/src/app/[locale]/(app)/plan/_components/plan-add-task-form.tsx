@@ -4,6 +4,7 @@ import { forwardRef, useImperativeHandle, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TextField } from "@mentor/ui";
 import { FormError } from "@/components/form";
+import { PlanSubjectPicker } from "./plan-subject-picker";
 
 export type PlanAddTaskFormHandle = {
   getValues: () => { title: string; subject: string };
@@ -43,13 +44,7 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle>(
           maxLength={200}
           required
         />
-        <TextField
-          label={t("subject")}
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          placeholder={t("subject_placeholder")}
-          maxLength={80}
-        />
+        <PlanSubjectPicker value={subject} onChange={setSubject} />
       </div>
     );
   },

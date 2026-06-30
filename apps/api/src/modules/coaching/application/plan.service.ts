@@ -8,7 +8,7 @@ import type {
   UpdatePlanTaskInput,
 } from "@mentor/validation";
 import { DRIZZLE } from "../../../database/database.constants";
-import type { Database, DatabaseTx } from "../../../database/drizzle";
+import type { Database } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -33,8 +33,24 @@ export class PlanService {
   ) {}
 
   async list(userId: string, query: ListPlanTasksQuery): Promise<Paginated<PlanTaskDto>> {
-    const date = query.date ?? todayIso();
     return withUserContext(this.db, { userId }, async (tx) => {
+      if (query.from && query.to) {
+        const { items, total } = await this.tasks.listByDateRangePaged(
+          tx,
+          userId,
+          query.from,
+          query.to,
+          query.page,
+          query.pageSize,
+        );
+        return {
+          items: items.map(toPlanTaskDto),
+          total,
+          page: query.page,
+          pageSize: query.pageSize,
+        };
+      }
+      const date = query.date ?? todayIso();
       const { items, total } = await this.tasks.listByDatePaged(
         tx,
         userId,
@@ -98,13 +114,11 @@ export class PlanService {
       });
       // Status change can flip the day's done-count → keep daily_activity in sync (same tx).
       if (input.status !== undefined) {
-        await this.syncTasksDone(tx, userId, existing.taskDate);
+        const doneCount = await this.tasks.countDone(tx, userId, existing.taskDate);
+        await this.activity.upsertTasksDone(tx, userId, existing.taskDate, doneCount);
         if (input.status === "DONE" && existing.taskDate === todayIso()) {
-          const [done, total] = await Promise.all([
-            this.tasks.countDone(tx, userId, existing.taskDate),
-            this.tasks.countTotal(tx, userId, existing.taskDate),
-          ]);
-          if (total > 0 && done === total) planCompleted = total;
+          const total = await this.tasks.countTotal(tx, userId, existing.taskDate);
+          if (total > 0 && doneCount === total) planCompleted = total;
         }
       }
       return toPlanTaskDto(updated!);
@@ -124,17 +138,12 @@ export class PlanService {
       this.assertTaskDateMutable(existing.taskDate);
       await this.tasks.delete(tx, userId, id);
       // A removed DONE task lowers the day's count → recompute.
-      await this.syncTasksDone(tx, userId, existing.taskDate);
+      const doneCount = await this.tasks.countDone(tx, userId, existing.taskDate);
+      await this.activity.upsertTasksDone(tx, userId, existing.taskDate, doneCount);
     });
   }
 
-  /** Recompute and persist `daily_activity.tasks_done` for a day from the current DONE count. */
-  private async syncTasksDone(tx: DatabaseTx, userId: string, date: string): Promise<void> {
-    const doneCount = await this.tasks.countDone(tx, userId, date);
-    await this.activity.upsertTasksDone(tx, userId, date, doneCount);
-  }
-
-  /** Past calendar days are view-only — prevents retroactive streak/plan edits. */
+/** Past calendar days are view-only — prevents retroactive streak/plan edits. */
   private assertTaskDateMutable(taskDate: string): void {
     if (taskDate < todayIso()) {
       throw new DomainError(ErrorCode.COACHING_TASK_DATE_READONLY, HttpStatus.FORBIDDEN);

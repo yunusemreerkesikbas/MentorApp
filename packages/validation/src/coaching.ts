@@ -45,9 +45,47 @@ export const updatePlanTaskSchema = z
   .refine((v) => Object.keys(v).length > 0, { message: "empty" });
 export type UpdatePlanTaskInput = z.infer<typeof updatePlanTaskSchema>;
 
-export const listPlanTasksQuerySchema = paginationQuerySchema.extend({
-  date: isoDateSchema.optional(),
-});
+export const listPlanTasksQuerySchema = paginationQuerySchema
+  .extend({
+    /** Single-day filter — mutually exclusive with `from`/`to`. */
+    date: isoDateSchema.optional(),
+    /** Inclusive range start — requires `to`. */
+    from: isoDateSchema.optional(),
+    /** Inclusive range end — requires `from`. Max 62 days. */
+    to: isoDateSchema.optional(),
+  })
+  .superRefine((data, ctx) => {
+    const hasDate = data.date !== undefined;
+    const hasFrom = data.from !== undefined;
+    const hasTo = data.to !== undefined;
+
+    if (hasDate && (hasFrom || hasTo)) {
+      ctx.addIssue({ code: "custom", message: "date_or_range", path: ["date"] });
+      return;
+    }
+
+    if (hasFrom !== hasTo) {
+      ctx.addIssue({
+        code: "custom",
+        message: "from_to_pair",
+        path: hasFrom ? ["to"] : ["from"],
+      });
+      return;
+    }
+
+    if (hasFrom && hasTo) {
+      if (data.from! > data.to!) {
+        ctx.addIssue({ code: "custom", message: "invalid_range", path: ["to"] });
+        return;
+      }
+      const fromMs = new Date(`${data.from}T12:00:00`).getTime();
+      const toMs = new Date(`${data.to}T12:00:00`).getTime();
+      const dayCount = Math.floor((toMs - fromMs) / 86_400_000) + 1;
+      if (dayCount > 62) {
+        ctx.addIssue({ code: "custom", message: "range_too_large", path: ["to"] });
+      }
+    }
+  });
 export type ListPlanTasksQuery = z.infer<typeof listPlanTasksQuerySchema>;
 
 /** Calendar dot map — distinct task dates in an inclusive range (max 62 days). */

@@ -82,7 +82,7 @@ export function PlanTaskRow({
           type="button"
           onClick={onMenu}
           disabled={busy}
-          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[var(--radius-card)] transition-colors hover:bg-white/60 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-visible:opacity-100 motion-reduce:transition-none"
+          className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-colors hover:bg-white/60 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
           style={{ color: "var(--color-secondary)" }}
           aria-label={t("task_menu_aria", { title: task.title })}
         >

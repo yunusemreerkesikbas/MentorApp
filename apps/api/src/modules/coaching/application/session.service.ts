@@ -66,8 +66,10 @@ export class SessionService {
       });
       // Recompute the day's session flag (robust against abandon/re-complete) — same tx.
       const date = toIsoDate(existing.startedAt);
-      const prior = await this.activity.findByDate(tx, userId, date);
-      const hasSession = await this.sessions.hasCompletedOnDate(tx, userId, date);
+      const [prior, hasSession] = await Promise.all([
+        this.activity.findByDate(tx, userId, date),
+        this.sessions.hasCompletedOnDate(tx, userId, date),
+      ]);
       await this.activity.upsertHasSession(tx, userId, date, hasSession);
       if (!prior?.hasSession && hasSession) firstSessionToday = true;
       return toStudySessionDto(updated!);
