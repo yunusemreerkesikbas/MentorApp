@@ -19,6 +19,7 @@ export const createZoneSchema = z.object({
   title: z.string().trim().min(2).max(120),
   description: z.string().trim().max(2000).optional(),
   examType: z.string().trim().max(32).optional(),
+  emoji: z.string().trim().max(8).optional(),
   joinPolicy: z.nativeEnum(ZoneJoinPolicy).default(ZoneJoinPolicy.OPEN),
 });
 export type CreateZone = z.infer<typeof createZoneSchema>;
@@ -66,10 +67,14 @@ export const searchQuerySchema = paginationQuerySchema.extend({
 });
 export type SearchQuery = z.infer<typeof searchQuerySchema>;
 
-/** Cursor feed query. `before` = ISO createdAt of the last seen item (load older). */
+/**
+ * Feed query. `recent` = cursor feed (`before` = ISO createdAt of the last seen item, loads older);
+ * `popular` = top items by like+comment score (single page, no deep pagination).
+ */
 export const feedQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(30),
   before: z.string().datetime().optional(),
+  sort: z.enum(["recent", "popular"]).default("recent"),
 });
 export type FeedQuery = z.infer<typeof feedQuerySchema>;
 

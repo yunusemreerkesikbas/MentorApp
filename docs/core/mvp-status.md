@@ -16,7 +16,7 @@
 | **W4 Payments** | ✅ | PaymentsPort fake/iyzico, trial state machine, entitlement + PremiumGuard, idempotent webhook, /abonelik, abonelik UI polish ([payments](../features/payments.md)) | iyzico prod keys + e-archive (Phase-0 ops) |
 | **W5 Notifications** | ✅ | JobQueuePort + cron runner, Postmark email, web push, daily reminders; in-app inbox + SSE real-time bell; notification tap navigation (linkUrl); contextual motivational notifications (streak milestone / low mood / first session / plan completed — event-driven, template, deduped) ([notifications](../features/notifications.md)) | Phase 2: AI frekans ayarı |
 | **W6 Admin + Economy** | ✅ | see breakdown below — all MVP slices shipped ([admin](../features/admin.md) · [economy](../features/economy.md)) | Phase 2: habit/milestone quests |
-| **W7 Forum / Community** | ✅ | Phase-2 feature **pulled into MVP** (design [`plans/2026-06-22`](../plans/2026-06-22-forum-community-design.md)) — see breakdown below. Backend (zones · feed · QA+XP+search · moderation · public SEO) + web (participation · moderation tools · public QA pages). **51 backend tests green.** Behind `forum.enabled` flag ([forum](../features/forum.md)) | Phase 2: verification tiers · coin rewards · C-layer (AI ingest) · mahalle/live rooms · Tier-1 auto-moderation · author display names |
+| **W7 Forum / Community** | ✅ | Phase-2 feature **pulled into MVP** (design [`plans/2026-06-22`](../plans/2026-06-22-forum-community-design.md)) — see breakdown below. Backend (zones · feed · QA+XP+search · moderation · public SEO) + web (participation · moderation tools · public QA pages · unified layout + author display). **51 backend tests green.** Behind `forum.enabled` flag ([forum](../features/forum.md)) | Phase 2: verification tiers · coin rewards · C-layer (AI ingest) · mahalle/live rooms · Tier-1 auto-moderation |
 
 ## W6 breakdown (this stream's focus)
 | Slice | Status | Feature doc |
@@ -46,6 +46,7 @@
 | Web A — Core participation UI (`/topluluk`: zone list · feed · QA · join · report) | ✅ | [forum](../features/forum.md) |
 | Web B — Moderation tools + approvals + search (`/topluluk/[slug]/yonetim`, inline pin/delete, index search) | ✅ | [forum](../features/forum.md) |
 | Slice 6 — SEO: public QA pages (SSR + `QAPage` JSON-LD) + sitemap + robots (TR-index) | ✅ | [forum](../features/forum.md) |
+| APP-016 — Unified layout + author display: zone sidebar (in-flow desktop) + CSS transform mobile drawer; `authorName` LEFT JOIN (`ThreadView`/`AnswerView`); `emoji` on zones; right panel; `AuthorAvatar`; `relativeTime`; admin emoji field | ✅ | [forum](../features/forum.md) |
 
 ## Cross-cutting / known issues
 - **B2C web welcome** (`/`) — pre-auth 3-slide Puhu intro; first visit → then `/giris` ([web-shell](../features/web-shell.md)). Marketing landing removed (future route TBD).
@@ -68,8 +69,7 @@
   RLS-sensitive reads (admin drafts, etc.) run in the right context (caught for content editor).
 - **Forum / community (W7)** — entire surface gated by `forum.enabled` (default **off**); flip per
   environment to go live. Public SEO QA reads run in **service context** (forum tables are RLS-forced)
-  hard-filtered to indexable QA (`PublicQuestionView` omits PII). Backlogs: author **display names**
-  (views carry only `authorId`); a member-**reject/removal** endpoint (web shows approve-only);
+  hard-filtered to indexable QA (`PublicQuestionView` omits PII). Backlogs: a member-**reject/removal** endpoint (web shows approve-only);
   forum endpoints have **no OpenAPI response schema** (web uses raw `fetch` + `@mentor/types`, so
   api-client regen is a no-op). `NEXT_PUBLIC_SITE_URL` drives canonical/sitemap/robots.
 

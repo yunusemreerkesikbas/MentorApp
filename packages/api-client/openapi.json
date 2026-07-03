@@ -1175,6 +1175,54 @@
         ]
       }
     },
+    "/v1/users/me/avatar-upload-url": {
+      "post": {
+        "operationId": "UsersController_createAvatarUploadUrl",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvatarUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/v1/users/me/verification-email": {
+      "post": {
+        "operationId": "UsersController_resendVerificationEmail",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/v1/economy/balance": {
       "get": {
         "operationId": "EconomyController_balance",
@@ -1881,6 +1929,25 @@
         ]
       }
     },
+    "/v1/plan-tasks/calendar": {
+      "get": {
+        "operationId": "PlanTaskController_listCalendar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
     "/v1/plan-tasks/{id}": {
       "patch": {
         "operationId": "PlanTaskController_update",
@@ -2254,6 +2321,42 @@
         ]
       }
     },
+    "/v1/forum/zones/{id}/members/{userId}": {
+      "delete": {
+        "operationId": "ForumController_removeMember",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
     "/v1/forum/zones/{id}/members/{userId}/approve": {
       "post": {
         "operationId": "ForumController_approve",
@@ -2351,6 +2454,192 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/threads/{threadId}/detail": {
+      "get": {
+        "operationId": "ForumThreadController_detail",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/threads/{threadId}/comments": {
+      "post": {
+        "operationId": "ForumThreadController_comment",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnswerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/posts/{postId}": {
+      "get": {
+        "operationId": "ForumThreadController_commentDetail",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/posts/{postId}/replies": {
+      "post": {
+        "operationId": "ForumThreadController_reply",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnswerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/posts/{postId}/reactions": {
+      "put": {
+        "operationId": "ForumThreadController_likePost",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "delete": {
+        "operationId": "ForumThreadController_unlikePost",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
             "description": ""
           }
         },
@@ -2819,6 +3108,52 @@
         ]
       }
     },
+    "/v1/forum/public/questions": {
+      "get": {
+        "operationId": "ForumPublicController_questions",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/public/questions/{id}": {
+      "get": {
+        "operationId": "ForumPublicController_question",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "forum"
+        ]
+      }
+    },
     "/v1/internal/cron/process-jobs": {
       "post": {
         "operationId": "CronController_processJobs",
@@ -2928,6 +3263,140 @@
           "notifications"
         ]
       }
+    },
+    "/v1/notifications/stream-token": {
+      "post": {
+        "operationId": "NotificationsController_createStreamToken",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/v1/notifications/stream": {
+      "get": {
+        "operationId": "NotificationsController_stream",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/v1/notifications": {
+      "get": {
+        "operationId": "NotificationsController_listNotifications",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/v1/notifications/read-all": {
+      "patch": {
+        "operationId": "NotificationsController_markAllRead",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/v1/notifications/{id}/read": {
+      "patch": {
+        "operationId": "NotificationsController_markRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/v1/notifications/{id}/unread": {
+      "patch": {
+        "operationId": "NotificationsController_markUnread",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/v1/notifications/{id}": {
+      "delete": {
+        "operationId": "NotificationsController_deleteNotification",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
+        ]
+      }
     }
   },
   "info": {
@@ -2999,6 +3468,10 @@
         "type": "object",
         "properties": {}
       },
+      "AvatarUploadUrlDto": {
+        "type": "object",
+        "properties": {}
+      },
       "RedeemInviteDto": {
         "type": "object",
         "properties": {}
@@ -3063,15 +3536,15 @@
         "type": "object",
         "properties": {}
       },
+      "CreateAnswerDto": {
+        "type": "object",
+        "properties": {}
+      },
       "PinThreadDto": {
         "type": "object",
         "properties": {}
       },
       "ReactionDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "CreateAnswerDto": {
         "type": "object",
         "properties": {}
       },

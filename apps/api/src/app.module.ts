@@ -33,7 +33,7 @@ import { buildLoggerConfig } from "./observability/logger.config";
  * @Public routes), roles guard, throttling (per-route @Throttle on auth endpoints).
  *
  * Bounded-context feature modules are imported here as they are implemented (one line per track —
- * docs/workstreams.md).
+ * docs/core/workstreams.md).
  */
 @Module({
   imports: [

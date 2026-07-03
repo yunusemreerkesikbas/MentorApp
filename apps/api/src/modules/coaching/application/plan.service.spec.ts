@@ -32,6 +32,22 @@ function makePlanRepoFake(rows: TaskRow[]) {
       const items = rows.filter((r) => r.userId === userId && r.taskDate === date);
       return { items, total: items.length };
     },
+    listByDateRangePaged: async (
+      _tx: unknown,
+      userId: string,
+      from: string,
+      to: string,
+    ) => {
+      const items = rows
+        .filter((r) => r.userId === userId && r.taskDate >= from && r.taskDate <= to)
+        .sort(
+          (a, b) =>
+            a.taskDate.localeCompare(b.taskDate) ||
+            a.sortOrder - b.sortOrder ||
+            a.createdAt.getTime() - b.createdAt.getTime(),
+        );
+      return { items, total: items.length };
+    },
     findById: async (_tx: unknown, userId: string, id: string) =>
       rows.find((r) => r.id === id && r.userId === userId),
     create: async (_tx: unknown, data: Partial<TaskRow>) => {
@@ -61,6 +77,8 @@ function makePlanRepoFake(rows: TaskRow[]) {
     },
     countDone: async (_tx: unknown, userId: string, date: string) =>
       rows.filter((r) => r.userId === userId && r.taskDate === date && r.status === "DONE").length,
+    countTotal: async (_tx: unknown, userId: string, date: string) =>
+      rows.filter((r) => r.userId === userId && r.taskDate === date).length,
   };
 }
 
@@ -87,7 +105,7 @@ describe("PlanService — task toggle keeps daily_activity in sync", () => {
   beforeEach(() => {
     planRepo = makePlanRepoFake([]);
     activity = makeActivityFake();
-    service = new PlanService(fakeDb, planRepo as never, activity as never);
+    service = new PlanService(fakeDb, planRepo as never, activity as never, { emit: () => {} } as never);
   });
 
   it("marking a task DONE bumps daily_activity.tasks_done", async () => {
@@ -123,6 +141,54 @@ describe("PlanService — task toggle keeps daily_activity in sync", () => {
     await expect(
       service.update(USER, "missing", { status: "DONE" }),
     ).rejects.toBeInstanceOf(DomainError);
+  });
+
+  it("lists tasks in an inclusive date range", async () => {
+    planRepo.rows.push(
+      {
+        id: "t1",
+        userId: USER,
+        taskDate: "2025-06-23",
+        title: "Mon",
+        subject: null,
+        status: "PENDING",
+        sortOrder: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "t2",
+        userId: USER,
+        taskDate: "2025-06-25",
+        title: "Wed",
+        subject: null,
+        status: "DONE",
+        sortOrder: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "t3",
+        userId: USER,
+        taskDate: "2025-06-30",
+        title: "Out of range",
+        subject: null,
+        status: "PENDING",
+        sortOrder: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    );
+
+    const result = await service.list(USER, {
+      from: "2025-06-23",
+      to: "2025-06-29",
+      page: 1,
+      pageSize: 50,
+    });
+
+    expect(result.items).toHaveLength(2);
+    expect(result.items.map((t) => t.taskDate)).toEqual(["2025-06-23", "2025-06-25"]);
   });
 
   it("rejects create/update/delete on past task dates", async () => {

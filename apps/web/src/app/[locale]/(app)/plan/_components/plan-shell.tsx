@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { PlanTaskDto, PlanTaskStatus } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
@@ -27,6 +27,8 @@ import { PlanDatePickerSheet, type PlanDatePickerSheetHandle } from "./plan-date
 import { PlanListView } from "./plan-list-view";
 import { PlanTimelineView } from "./plan-timeline-view";
 import { PlanViewSwitcher } from "./plan-view-switcher";
+import { PlanWeekDesktopLayout } from "./plan-week-desktop-layout";
+import { PlanWeekNavCard } from "./plan-week-nav-card";
 import { PlanWeekView } from "./plan-week-view";
 import {
   persistViewMode,
@@ -34,8 +36,10 @@ import {
   taskStats,
   todayIso,
   isPastDate,
+  formatWeekdayShort,
   type PlanViewMode,
   weekStart,
+  weekDates,
 } from "./plan-utils";
 
 /**
@@ -45,6 +49,7 @@ export function PlanShell() {
   const reduceMotion = useReducedMotion();
   const t = useTranslations("plan");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
   const { filterSheet, actionSheet } = useMentorBottomSheet();
   const { confirm } = useMentorDialog();
   const { error: showErrorToast } = useMentorToast();
@@ -329,6 +334,31 @@ export function PlanShell() {
   const contentKey =
     viewMode === "week" ? `week-${weekAnchor}-${date}` : `${viewMode}-${date}`;
 
+  function handleWeekChange(anchor: string) {
+    setWeekAnchor(anchor);
+    const days = weekDates(anchor);
+    if (!days.includes(date)) {
+      const today = todayIso();
+      setDate(days.includes(today) ? today : anchor);
+    }
+  }
+
+  function handleWeekDateChange(iso: string) {
+    setDate(iso);
+    setWeekAnchor(weekStart(iso));
+  }
+
+  const weekAddCaption = useMemo(
+    () =>
+      t("week_add_caption", {
+        weekday: formatWeekdayShort(date, locale),
+      }),
+    [date, locale, t],
+  );
+
+  const mainMaxWidth =
+    viewMode === "week" ? "lg:max-w-6xl" : "lg:max-w-3xl";
+
   const headerMotion = reduceMotion
     ? {}
     : {
@@ -350,7 +380,9 @@ export function PlanShell() {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-2xl px-5 py-6 lg:max-w-3xl lg:px-8 lg:py-10">
+      <main
+        className={`mx-auto w-full max-w-2xl px-5 py-6 lg:px-8 lg:py-10 ${mainMaxWidth}`}
+      >
         <motion.header className="mb-5" {...headerMotion}>
           <h1
             className="text-[28px] font-bold lg:text-[32px]"
@@ -377,20 +409,24 @@ export function PlanShell() {
           <FormError message={error} />
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-            <PlanDateNav
-              date={date}
-              viewMode={viewMode}
-              weekStartDate={weekAnchor}
-              weekTasks={weekTasks}
-              progress={
-                dateProgress.total > 0
-                  ? dateProgress
-                  : undefined
-              }
-              onDateChange={setDate}
-              onWeekChange={setWeekAnchor}
-              onOpenCalendar={() => void openCalendarSheet()}
-            />
+            {viewMode !== "week" ? (
+              <PlanDateNav
+                date={date}
+                progress={
+                  dateProgress.total > 0 ? dateProgress : undefined
+                }
+                onDateChange={setDate}
+                onOpenCalendar={() => void openCalendarSheet()}
+              />
+            ) : (
+              <PlanWeekNavCard
+                weekStartDate={weekAnchor}
+                selectedDate={date}
+                weekTasks={weekTasks}
+                onWeekChange={handleWeekChange}
+                onDateChange={handleWeekDateChange}
+              />
+            )}
           </motion.div>
 
           {readOnly ? (
@@ -439,19 +475,34 @@ export function PlanShell() {
               />
             ) : null}
             {viewMode === "week" ? (
-              <PlanWeekView
-                selectedDate={date}
-                weekTasks={weekTasks}
-                loading={weekLoading}
-                busyId={busyId}
-                readOnly={readOnly}
-                onToggle={(id) => void toggle(id)}
-                onMenu={(task) => void openTaskMenu(task)}
-              />
+              <>
+                <PlanWeekDesktopLayout
+                  selectedDate={date}
+                  weekStartDate={weekAnchor}
+                  weekTasks={weekTasks}
+                  loading={weekLoading}
+                  busyId={busyId}
+                  readOnly={readOnly}
+                  onDateChange={handleWeekDateChange}
+                  onWeekChange={handleWeekChange}
+                  onToggle={(id) => void toggle(id)}
+                  onMenu={(task) => void openTaskMenu(task)}
+                  onAddTask={() => void openAddSheet()}
+                />
+                <PlanWeekView
+                  selectedDate={date}
+                  weekTasks={weekTasks}
+                  loading={weekLoading}
+                  busyId={busyId}
+                  readOnly={readOnly}
+                  onToggle={(id) => void toggle(id)}
+                  onMenu={(task) => void openTaskMenu(task)}
+                />
+              </>
             ) : null}
           </motion.div>
 
-          {!readOnly ? (
+          {!readOnly && viewMode !== "week" ? (
             <motion.div
               className="hidden lg:block"
               variants={reduceMotion ? undefined : staggerItemVariants}
@@ -485,6 +536,14 @@ export function PlanShell() {
         <div
           className={`fixed left-0 right-0 z-30 mx-auto w-full max-w-2xl px-5 lg:hidden ${MOBILE_TAB_BAR_STICKY_BOTTOM_CLASS}`}
         >
+          {viewMode === "week" ? (
+            <p
+              className="mb-1.5 text-center text-xs"
+              style={{ color: "var(--color-secondary)" }}
+            >
+              {weekAddCaption}
+            </p>
+          ) : null}
           <Button type="button" fullWidth onClick={() => void openAddSheet()}>
             <Plus size={18} strokeWidth={2.5} aria-hidden />
             {t("add_task")}

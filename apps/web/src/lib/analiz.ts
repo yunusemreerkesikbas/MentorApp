@@ -4,6 +4,7 @@ import type {
   PhotoUploadUrlDto,
 } from "@mentor/types";
 import { http } from "@mentor/api-client";
+import { resolveApiUrl } from "./api-base";
 
 export async function fetchPhotoAccess(): Promise<PhotoAccessDto> {
   return (await http<PhotoAccessDto>("/v1/coach/photo-access")) as PhotoAccessDto;
@@ -36,7 +37,7 @@ export async function putPhotoToSignedUrl(
   file: File,
   contentType: string,
 ): Promise<void> {
-  const res = await fetch(uploadUrl, {
+  const res = await fetch(resolveApiUrl(uploadUrl), {
     method: "PUT",
     headers: { "Content-Type": contentType },
     body: file,

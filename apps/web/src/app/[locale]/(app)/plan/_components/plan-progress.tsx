@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState, type CSSProperties } from "react";
+
 /** Plan page progress — 8px track (Stitch mock), DESIGN.md token colors. */
 export function PlanProgress({
   value,
@@ -9,6 +11,15 @@ export function PlanProgress({
   className?: string;
 }) {
   const clamped = Math.min(100, Math.max(0, value));
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const ratio = ready ? clamped / 100 : 0;
+
   return (
     <div
       role="progressbar"
@@ -19,11 +30,8 @@ export function PlanProgress({
       style={{ backgroundColor: "var(--color-progress-track)" }}
     >
       <div
-        className="h-full rounded-full transition-[width] duration-300 ease-out motion-reduce:transition-none"
-        style={{
-          width: `${clamped}%`,
-          backgroundColor: "var(--color-progress)",
-        }}
+        className="mentor-plan-progress-fill"
+        style={{ "--plan-progress-ratio": ratio } as CSSProperties}
       />
     </div>
   );

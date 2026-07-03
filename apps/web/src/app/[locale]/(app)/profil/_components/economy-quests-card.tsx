@@ -22,13 +22,13 @@ export function EconomyQuestsCard({ quests }: EconomyQuestsCardProps) {
         {quests.map((quest) => (
           <li
             key={quest.id}
-            className="flex min-h-[52px] items-center justify-between gap-3 rounded-[var(--radius-card)] px-3 py-2"
+            className="flex min-h-[52px] min-w-0 flex-col items-start gap-2 rounded-[var(--radius-card)] px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
             style={{ backgroundColor: "var(--color-surface-muted, rgba(0,0,0,0.03))" }}
           >
-            <span className="text-base" style={{ color: "var(--color-main)" }}>
+            <span className="min-w-0 text-base" style={{ color: "var(--color-main)" }}>
               {quest.title}
             </span>
-            <Chip>
+            <Chip className="shrink-0">
               {quest.completed
                 ? translate("quest_completed")
                 : translate("quest_in_progress")}

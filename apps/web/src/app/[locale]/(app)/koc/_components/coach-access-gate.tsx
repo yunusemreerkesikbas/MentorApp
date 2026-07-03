@@ -1,14 +1,20 @@
 "use client";
 
+import BookOpen from "lucide-react/dist/esm/icons/book-open.mjs";
+import Check from "lucide-react/dist/esm/icons/check.mjs";
+import Heart from "lucide-react/dist/esm/icons/heart.mjs";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import type { CoachAccessDto } from "@mentor/types";
 import { Button, Card, Chip, SectionHeading } from "@mentor/ui";
+import { PuhuCoachBubble } from "@/components/puhu-coach-bubble";
 
 interface CoachAccessGateProps {
   access: CoachAccessDto;
 }
+
+const VALUE_ICONS = [Check, BookOpen, Heart] as const;
 
 /**
  * /koc gate when the user cannot chat yet. Coin counts stay off the chat composer (§4 #3).
@@ -39,6 +45,15 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
       ? t("insufficient_coin_subtitle")
       : t("default_subtitle");
 
+  const valueKeys = ["value_plan", "value_sources", "value_motivation"] as const;
+  const teaserKeys = ["teaser_study", "teaser_anxiety", "teaser_subject"] as const;
+
+  const bubbleMessage = isRateLimited
+    ? t("bubble_rate_limited")
+    : isInsufficientCoin
+      ? t("bubble_insufficient")
+      : t("bubble_default");
+
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-5 py-10">
       <motion.header
@@ -66,8 +81,17 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
           {t("header_subtitle")}
         </p>
       </motion.header>
-      <motion.div {...cardMotion}>
-        <Card className="flex flex-col items-start gap-3">
+
+      <motion.div className="flex w-full flex-col items-center gap-5" {...cardMotion}>
+        <PuhuCoachBubble
+          message={bubbleMessage}
+          variant="encouraging"
+          puhuSize={120}
+          bounce
+          dismissLabel={t("bubble_dismiss")}
+          className="flex flex-col items-center"
+        />
+        <Card className="flex w-full flex-col items-start gap-3">
           <Chip>
             {isRateLimited
               ? t("chip_rate_limited")
@@ -82,6 +106,27 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
                 ? t("heading_insufficient")
                 : t("heading_default")}
           </SectionHeading>
+
+          <ul className="flex w-full flex-col gap-2">
+            {valueKeys.map((key, i) => {
+              const Icon = VALUE_ICONS[i];
+              return (
+                <li
+                  key={key}
+                  className="flex items-start gap-2 text-sm leading-relaxed"
+                  style={{ color: "var(--color-body)" }}
+                >
+                  <Icon
+                    className="mt-0.5 size-4 shrink-0"
+                    style={{ color: "var(--color-progress)" }}
+                    aria-hidden
+                  />
+                  {t(key)}
+                </li>
+              );
+            })}
+          </ul>
+
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => router.push("/abonelik")}>
               {t("upgrade")}
@@ -95,6 +140,29 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
           </div>
         </Card>
       </motion.div>
+
+      <section className="px-1">
+        <h3
+          className="text-sm font-bold"
+          style={{
+            color: "var(--color-main)",
+            fontFamily: "var(--font-heading)",
+          }}
+        >
+          {t("teaser_title")}
+        </h3>
+        <ul className="mt-3 flex flex-col gap-2">
+          {teaserKeys.map((key) => (
+            <li
+              key={key}
+              className="text-sm leading-relaxed"
+              style={{ color: "var(--color-secondary)" }}
+            >
+              {t(key)}
+            </li>
+          ))}
+        </ul>
+      </section>
     </main>
   );
 }

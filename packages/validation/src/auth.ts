@@ -14,6 +14,14 @@ export const passwordSchema = z
   .regex(/[a-zA-Z]/)
   .regex(/[0-9]/);
 
+export const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3)
+  .max(24)
+  .regex(/^[a-z0-9_]+$/);
+
 export const signupSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
@@ -46,6 +54,8 @@ export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export const updateMeSchema = z
   .object({
     displayName: z.string().trim().min(2).max(64).optional(),
+    username: usernameSchema.optional(),
+    avatarStorageKey: z.string().trim().min(1).max(512).nullable().optional(),
     examType: z.enum(["KPSS", "YKS", "LGS"]).optional(),
     /** ISO date (yyyy-mm-dd) of the target exam — must be a real calendar date. */
     examDate: z
@@ -56,3 +66,8 @@ export const updateMeSchema = z
   })
   .refine((v) => Object.keys(v).length > 0, { message: "empty" });
 export type UpdateMeInput = z.infer<typeof updateMeSchema>;
+
+export const avatarUploadUrlSchema = z.object({
+  contentType: z.enum(["image/jpeg", "image/png"]),
+});
+export type AvatarUploadUrlInput = z.infer<typeof avatarUploadUrlSchema>;

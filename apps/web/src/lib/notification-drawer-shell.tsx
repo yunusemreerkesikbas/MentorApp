@@ -17,6 +17,7 @@ import {
   markNotificationRead,
   markNotificationUnread,
 } from "./notification-api";
+import { apiBaseUrl } from "./api-base";
 
 const ICON_BY_CATEGORY = {
   COACH: Brain,
@@ -62,7 +63,7 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
 
   // SSE: real-time bell updates — connect once on mount, reconnect on visibility
   useEffect(() => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace(/\/v1\/?$/, "") ?? "http://localhost:3001";
+    const apiBase = apiBaseUrl();
     let es: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;

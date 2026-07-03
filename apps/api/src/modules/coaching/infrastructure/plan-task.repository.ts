@@ -44,6 +44,37 @@ export class PlanTaskRepository {
     return { items, total: totalRow[0]?.count ?? 0 };
   }
 
+  /** Paginated list for an inclusive date range (week/calendar views). */
+  async listByDateRangePaged(
+    tx: DatabaseTx,
+    userId: string,
+    from: string,
+    to: string,
+    page: number,
+    pageSize: number,
+  ): Promise<{ items: PlanTaskRow[]; total: number }> {
+    const where = and(
+      eq(planTasks.userId, userId),
+      gte(planTasks.taskDate, from),
+      lte(planTasks.taskDate, to),
+    );
+    const [items, totalRow] = await Promise.all([
+      tx
+        .select()
+        .from(planTasks)
+        .where(where)
+        .orderBy(
+          asc(planTasks.taskDate),
+          asc(planTasks.sortOrder),
+          asc(planTasks.createdAt),
+        )
+        .limit(pageSize)
+        .offset((page - 1) * pageSize),
+      tx.select({ count: sql<number>`count(*)::int` }).from(planTasks).where(where),
+    ]);
+    return { items, total: totalRow[0]?.count ?? 0 };
+  }
+
   /** Distinct task dates in an inclusive range — for calendar dot indicators. */
   async listDistinctDatesInRange(
     tx: DatabaseTx,

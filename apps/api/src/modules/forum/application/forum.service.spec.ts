@@ -1,6 +1,6 @@
 import { HttpStatus } from "@nestjs/common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { UserRole, ZoneJoinPolicy, ZoneMemberStatus, ZoneType } from "@mentor/types";
+import { UserRole, ZoneJoinPolicy, ZoneMemberStatus, ZoneRole, ZoneType } from "@mentor/types";
 import { ForumService } from "./forum.service";
 
 const makeRepo = () => ({
@@ -14,8 +14,10 @@ const makeRepo = () => ({
   listPublic: vi.fn(),
   upsertMember: vi.fn().mockResolvedValue({}),
   findMembership: vi.fn().mockResolvedValue(null),
+  findMembershipPrivileged: vi.fn().mockResolvedValue(null),
   listMembers: vi.fn(),
   setMemberStatus: vi.fn(),
+  deleteMember: vi.fn(),
   memberCount: vi.fn().mockResolvedValue(0),
 });
 
@@ -80,5 +82,33 @@ describe("ForumService", () => {
     await expect(
       svc.approveMember({ userId: "u1", platformRoles: [UserRole.STUDENT], zoneRole: null }, "z1", "u2", true),
     ).rejects.toMatchObject({ httpStatus: HttpStatus.FORBIDDEN });
+  });
+
+  it("approveMember(false) deletes the membership row instead of setting PENDING", async () => {
+    await svc.approveMember({ userId: "u1", platformRoles: [UserRole.ADMIN], zoneRole: null }, "z1", "u2", false);
+    expect(repo.deleteMember).toHaveBeenCalledWith("z1", "u2");
+    expect(repo.setMemberStatus).not.toHaveBeenCalled();
+  });
+
+  describe("removeMember", () => {
+    it("returns NOT_FOUND when target is not a member", async () => {
+      repo.findMembershipPrivileged.mockResolvedValue(null);
+      await expect(
+        svc.removeMember({ userId: "u1", platformRoles: [UserRole.ADMIN], zoneRole: null }, "z1", "u2"),
+      ).rejects.toMatchObject({ httpStatus: HttpStatus.NOT_FOUND });
+    });
+
+    it("returns FORBIDDEN when target is OWNER", async () => {
+      repo.findMembershipPrivileged.mockResolvedValue({ role: ZoneRole.OWNER, status: "ACTIVE" });
+      await expect(
+        svc.removeMember({ userId: "u1", platformRoles: [UserRole.ADMIN], zoneRole: null }, "z1", "u2"),
+      ).rejects.toMatchObject({ httpStatus: HttpStatus.FORBIDDEN });
+    });
+
+    it("removes a regular member successfully", async () => {
+      repo.findMembershipPrivileged.mockResolvedValue({ role: ZoneRole.MEMBER, status: "ACTIVE" });
+      await svc.removeMember({ userId: "u1", platformRoles: [UserRole.ADMIN], zoneRole: null }, "z1", "u2");
+      expect(repo.deleteMember).toHaveBeenCalledWith("z1", "u2");
+    });
   });
 });

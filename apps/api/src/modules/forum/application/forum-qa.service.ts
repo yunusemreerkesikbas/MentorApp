@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   type AnswerView,
@@ -12,6 +12,7 @@ import type { CreateAnswer, SearchQuery } from "@mentor/validation";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
+import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import {
   canAcceptAnswer,
   canDeleteThread,
@@ -20,7 +21,7 @@ import {
 } from "../domain/forum.policy";
 import { ForumEventTopic } from "../domain/forum.events";
 import { ForumZoneRepository } from "../infrastructure/forum-zone.repository";
-import { ForumThreadRepository, type ThreadRow } from "../infrastructure/forum-thread.repository";
+import { ForumThreadRepository, type ThreadWithAuthor } from "../infrastructure/forum-thread.repository";
 import { ForumPostRepository } from "../infrastructure/forum-post.repository";
 import type { ThreadActor } from "./forum-thread.service";
 import { postRowToAnswerView, threadRowToView } from "./forum.mappers";
@@ -38,6 +39,7 @@ export class ForumQaService {
     private readonly zones: ForumZoneRepository,
     private readonly config: ConfigRegistryService,
     private readonly events: EventEmitter2,
+    @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
 
   private async assertEnabled(): Promise<void> {
@@ -47,7 +49,7 @@ export class ForumQaService {
   }
 
   /** Load a QA question visible to the viewer, or throw. Returns the thread + its zone. */
-  private async requireQuestion(threadId: string, viewerId: string): Promise<ThreadRow> {
+  private async requireQuestion(threadId: string, viewerId: string): Promise<ThreadWithAuthor> {
     const thread = await this.threads.findById(threadId, viewerId);
     if (!thread) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
     const zone = await this.zones.findById(thread.zoneId, viewerId);
@@ -71,7 +73,10 @@ export class ForumQaService {
       throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
     const post = await this.posts.createAnswer({ threadId, authorId: actor.id, body: dto.body });
-    return postRowToAnswerView(post);
+    // fetch with JOIN so authorName is populated in the immediate response
+    const postWithAuthor = await this.posts.findById(post.id, actor.id);
+    if (!postWithAuthor) throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
+    return postRowToAnswerView(postWithAuthor, this.storage);
   }
 
   async accept(actor: ThreadActor, threadId: string, postId: string): Promise<void> {
@@ -111,8 +116,14 @@ export class ForumQaService {
       this.posts.listByThread(threadId, viewerId),
     ]);
     return {
-      question: threadRowToView(thread, counts.get(threadId) ?? {}, mine.get(threadId) ?? []),
-      answers: answers.map((a) => postRowToAnswerView(a)),
+      question: threadRowToView(
+        thread,
+        counts.get(threadId) ?? {},
+        mine.get(threadId) ?? [],
+        this.storage,
+        answers.length,
+      ),
+      answers: answers.map((a) => postRowToAnswerView(a, this.storage)),
     };
   }
 
@@ -125,12 +136,19 @@ export class ForumQaService {
       pageSize: q.pageSize,
     });
     const ids = items.map((t) => t.id);
-    const [counts, mine] = await Promise.all([
+    const [counts, mine, commentCounts] = await Promise.all([
       this.threads.reactionCountsByThread(ids),
       this.threads.myReactionsByThread(ids, viewerId),
+      this.threads.commentCountsByThread(ids),
     ]);
     const views = items.map((t) =>
-      threadRowToView(t, counts.get(t.id) ?? {}, mine.get(t.id) ?? []),
+      threadRowToView(
+        t,
+        counts.get(t.id) ?? {},
+        mine.get(t.id) ?? [],
+        this.storage,
+        commentCounts.get(t.id) ?? 0,
+      ),
     );
     return { items: views, total, page: q.page, pageSize: q.pageSize };
   }

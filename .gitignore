@@ -8,6 +8,7 @@ build/
 .next/
 out/
 *.tsbuildinfo
+.fake-storage/
 next-env.d.ts
 
 # Turbo

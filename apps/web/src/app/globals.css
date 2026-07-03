@@ -217,6 +217,26 @@ html.mentor-sheet-open {
   width: 100%;
 }
 
+.mentor-plan-day-picker .rdp-month_grid {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.mentor-plan-day-picker .rdp-weekdays {
+  margin-bottom: 0.25rem;
+}
+
+.mentor-plan-day-picker .rdp-weekday {
+  color: var(--color-secondary);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  padding-block: 0.375rem;
+  text-align: center;
+  text-transform: none;
+}
+
 .mentor-plan-day-picker .rdp-month {
   border: none;
   padding: 0;
@@ -248,12 +268,12 @@ html.mentor-sheet-open {
   display: none;
 }
 
-.mentor-plan-day-picker .rdp-weekday {
-  color: var(--color-secondary);
-  font-family: var(--font-body);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: none;
+.mentor-plan-day-picker .rdp-day {
+  height: var(--rdp-day-height);
+  padding: 0;
+  text-align: center;
+  vertical-align: middle;
+  width: var(--rdp-day-width);
 }
 
 .mentor-plan-day-picker .rdp-day_button {
@@ -262,6 +282,7 @@ html.mentor-sheet-open {
   font-family: var(--font-body);
   font-size: 0.875rem;
   font-weight: 600;
+  line-height: 1;
 }
 
 .mentor-plan-day-picker .rdp-today:not(.rdp-outside) .rdp-day_button {
@@ -273,23 +294,27 @@ html.mentor-sheet-open {
   font-weight: inherit;
 }
 
-.mentor-plan-day-picker .rdp-selected .rdp-day_button {
+.mentor-plan-day-picker .rdp-day.rdp-selected .rdp-day_button,
+.mentor-plan-day-picker .rdp-day_button[aria-selected="true"] {
   background-color: var(--color-btn);
   border-color: var(--color-btn);
   color: #ffffff;
+  font-weight: 700;
 }
 
-.mentor-plan-day-picker .rdp-selected.rdp-today .rdp-day_button {
+.mentor-plan-day-picker .rdp-day.rdp-selected.rdp-today .rdp-day_button,
+.mentor-plan-day-picker .rdp-day.rdp-selected.mentor-plan-day-today .rdp-day_button {
   color: #ffffff;
 }
 
 .mentor-plan-day-picker .rdp-day.mentor-plan-day .rdp-day_button::after {
   background-color: var(--color-progress);
   border-radius: 50%;
-  bottom: 7px;
+  bottom: 5px;
   content: "";
   height: 4px;
   left: 50%;
+  pointer-events: none;
   position: absolute;
   transform: translateX(-50%);
   width: 4px;
@@ -304,4 +329,154 @@ html.mentor-sheet-open {
 .mentor-plan-day-picker .rdp-button_previous:focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
+}
+
+.mentor-plan-week-mini-calendar .mentor-plan-day-picker {
+  --rdp-day-height: 38px;
+  --rdp-day-width: 38px;
+  --rdp-day_button-height: 34px;
+  --rdp-day_button-width: 34px;
+}
+
+.mentor-plan-week-mini-calendar.mentor-plan-day-picker-wrap {
+  background: transparent;
+  border: none;
+  max-width: none;
+  padding: 0;
+}
+
+.mentor-plan-week-mini-calendar .rdp-month_caption {
+  font-size: 0.9375rem;
+  margin-bottom: 0.625rem;
+}
+
+.mentor-plan-week-mini-calendar .rdp-weekdays {
+  margin-bottom: 0.125rem;
+}
+
+.mentor-plan-week-mini-calendar .rdp-weekday {
+  font-size: 0.6875rem;
+  letter-spacing: 0.01em;
+  padding-block: 0.25rem;
+}
+
+.mentor-plan-week-mini-calendar .rdp-day.mentor-plan-day .rdp-day_button::after {
+  bottom: 3px;
+  height: 3px;
+  width: 3px;
+}
+
+.mentor-plan-week-mini-calendar .mentor-plan-week-mini-today {
+  display: block;
+  margin-bottom: 0;
+  margin-top: 0.875rem;
+  min-height: 2.75rem;
+  padding-block: 0.5rem;
+  width: 100%;
+}
+
+.mentor-plan-day-picker .rdp-day.mentor-plan-week-range:not(.rdp-outside):not(.rdp-selected) .rdp-day_button {
+  background: color-mix(in srgb, var(--color-progress) 10%, transparent);
+}
+
+.mentor-plan-day-picker .rdp-day.mentor-plan-day-today:not(.rdp-selected):not(.rdp-outside) .rdp-day_button {
+  background: color-mix(in srgb, var(--color-progress-track) 50%, transparent);
+  color: var(--color-progress);
+  font-weight: 700;
+}
+
+/* Plan progress — smooth fill (date nav + week views) */
+.mentor-plan-progress-fill {
+  background-color: var(--color-progress);
+  border-radius: 9999px;
+  height: 100%;
+  transform: scaleX(var(--plan-progress-ratio, 0));
+  transform-origin: left center;
+  transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mentor-plan-progress-fill {
+    transition: none;
+  }
+}
+
+/* Plan timeline — scrollable task column after threshold */
+.mentor-plan-timeline-scroll {
+  max-height: min(24rem, 55vh);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding-bottom: 0.5rem;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+}
+
+.mentor-plan-timeline-scroll:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mentor-plan-timeline-scroll {
+    scroll-behavior: auto;
+  }
+}
+
+/* Puhu coach bubble — tail toward mascot (Stitch Prompt 6) */
+.mentor-coach-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 20px;
+  border-width: 10px 10px 0;
+  border-style: solid;
+  border-color: #fff transparent transparent transparent;
+  width: 0;
+  height: 0;
+  display: block;
+  filter: drop-shadow(0 2px 2px rgba(37, 73, 150, 0.06));
+}
+
+@keyframes mentor-puhu-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.mentor-puhu-bounce {
+  animation: mentor-puhu-bounce 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mentor-puhu-bounce {
+    animation: none;
+  }
+}
+
+/* Forum like button — one-shot pop when a post is liked (remounted via key on toggle). */
+@keyframes forum-like-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.forum-like-pop {
+  animation: forum-like-pop 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forum-like-pop {
+    animation: none;
+  }
 }

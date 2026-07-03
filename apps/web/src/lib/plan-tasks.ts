@@ -43,19 +43,48 @@ export async function updatePlanTask(
   return (await planTaskControllerUpdate(id, input)) as unknown as PlanTaskDto;
 }
 
-/** ponytail: 7 parallel day fetches; add `from`/`to` list API when week view traffic grows. */
+/** Group flat task list by ISO taskDate. */
+export function groupPlanTasksByDate(
+  items: PlanTaskDto[],
+): Record<string, PlanTaskDto[]> {
+  const grouped: Record<string, PlanTaskDto[]> = {};
+  for (const task of items) {
+    const list = grouped[task.taskDate] ?? [];
+    list.push(task);
+    grouped[task.taskDate] = list;
+  }
+  return grouped;
+}
+
+/** List plan tasks in an inclusive date range — single request. */
+export async function listPlanTasksForRange(
+  from: string,
+  to: string,
+  pageSize = 100,
+): Promise<PlanTaskDto[]> {
+  const url = `${getPlanTaskControllerListUrl()}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&page=1&pageSize=${pageSize}`;
+  const res = (await http<Paginated<PlanTaskDto>>(url)) as Paginated<PlanTaskDto>;
+  return res.items;
+}
+
+/** Week tasks keyed by ISO date (Monday-start week). */
 export async function listPlanTasksForWeek(
   weekStartDate: string,
 ): Promise<Record<string, PlanTaskDto[]>> {
-  const dates = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(`${weekStartDate}T12:00:00`);
-    d.setDate(d.getDate() + i);
-    return d.toISOString().slice(0, 10);
-  });
-  const entries = await Promise.all(
-    dates.map(async (date) => [date, await listPlanTasksForDate(date)] as const),
+  const end = new Date(`${weekStartDate}T12:00:00`);
+  end.setDate(end.getDate() + 6);
+  const weekEnd = end.toISOString().slice(0, 10);
+  const grouped = groupPlanTasksByDate(
+    await listPlanTasksForRange(weekStartDate, weekEnd),
   );
-  return Object.fromEntries(entries);
+  const start = new Date(`${weekStartDate}T12:00:00`);
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const iso = d.toISOString().slice(0, 10);
+    if (!grouped[iso]) grouped[iso] = [];
+  }
+  return grouped;
 }
 
 export { planTaskControllerRemove as deletePlanTask };

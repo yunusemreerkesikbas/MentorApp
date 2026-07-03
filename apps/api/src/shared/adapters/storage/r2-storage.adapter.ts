@@ -1,6 +1,12 @@
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { Env } from "../../../config/env.validation";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -63,19 +69,35 @@ export class R2StorageAdapter implements StoragePort {
     return `${this.publicBaseUrl!.replace(/\/$/, "")}/${key}`;
   }
 
-  async readObject(key: string): Promise<Buffer | null> {
+  async readObject(key: string, maxBytes?: number): Promise<Buffer | null> {
     this.ensureReady();
     try {
+      if (maxBytes !== undefined) {
+        const head = await this.client!.send(
+          new HeadObjectCommand({ Bucket: this.bucket!, Key: key }),
+        );
+        if (head.ContentLength == null || head.ContentLength > maxBytes) return null;
+      }
       const res = await this.client!.send(
         new GetObjectCommand({ Bucket: this.bucket!, Key: key }),
       );
       const body = res.Body;
       if (!body) return null;
       const bytes = await body.transformToByteArray();
+      if (maxBytes !== undefined && bytes.length > maxBytes) return null;
       return Buffer.from(bytes);
     } catch (err) {
       this.logger.warn(`R2 getObject failed for ${key}: ${String(err)}`);
       return null;
+    }
+  }
+
+  async deleteObject(key: string): Promise<void> {
+    this.ensureReady();
+    try {
+      await this.client!.send(new DeleteObjectCommand({ Bucket: this.bucket!, Key: key }));
+    } catch (err) {
+      this.logger.warn(`R2 deleteObject failed for ${key}: ${String(err)}`);
     }
   }
 }

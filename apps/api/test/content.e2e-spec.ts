@@ -99,11 +99,15 @@ describe("content (e2e)", () => {
     const res = await request(app.getHttpServer()).get("/v1/content/info-articles?family=KPSS");
     expect(res.status).toBe(200);
     expect(res.body.total).toBeGreaterThanOrEqual(3);
-    expect(res.body.items.some((a: { slug: string }) => a.slug === "kpss-basvuru-sureci")).toBe(true);
-    const first = res.body.items[0];
-    expect(first.source).toBe("ÖSYM");
-    expect(first.verifiedBy).toBe("editorial-seed");
-    expect(first.body).toBeUndefined();
+    // Assert on a known seeded article by slug — not items[0] (feed order is publishedAt-desc and
+    // other e2e files sharing this DB may insert newer KPSS articles that would sort ahead).
+    const seeded = res.body.items.find(
+      (a: { slug: string }) => a.slug === "kpss-basvuru-sureci",
+    );
+    expect(seeded).toBeDefined();
+    expect(seeded.source).toBe("ÖSYM");
+    expect(seeded.verifiedBy).toBe("editorial-seed");
+    expect(seeded.body).toBeUndefined();
   });
 
   it("GET /v1/content/info-articles/:slug returns full article with trust metadata", async () => {

@@ -273,7 +273,7 @@ export function DialogProvider({ children }: DialogProviderProps) {
     const frame = requestAnimationFrame(() => {
       const panel = document.querySelector("[data-mentor-dialog-panel]");
       const focusable = panel?.querySelector<HTMLElement>(
-        'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+        'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
       );
       focusable?.focus();
     });

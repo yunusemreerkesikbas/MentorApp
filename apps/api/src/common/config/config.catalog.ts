@@ -22,6 +22,7 @@ export const ConfigCategory = {
   FEATURE_FLAGS: "feature-flags",
   ECONOMY: "economy",
   AI: "ai",
+  IDENTITY: "identity",
 } as const;
 
 export const ConfigValueType = {
@@ -69,11 +70,30 @@ const aiCount = (def: number, max: number, description: string): ConfigEntryDef 
   description,
 });
 
+const identityCount = (def: number, max: number, description: string): ConfigEntryDef => ({
+  category: ConfigCategory.IDENTITY,
+  type: ConfigValueType.NUMBER,
+  schema: z.number().int().min(0).max(max),
+  default: def,
+  sensitive: false,
+  description,
+});
+
 export const CONFIG_CATALOG = {
   "ai.enabled": flag(true, "Global AI kill-switch (§4/§8) — turn off all AI features."),
   "economy.enabled": flag(false, "Gate for the light-economy module (user-facing balance/earning)."),
   "forum.enabled": flag(false, "Gate for the forum/community module (zones, threads, moderation)."),
   "signup.enabled": flag(true, "Registration kill-switch — disable new sign-ups."),
+  "identity.verification_email.resend_limit": identityCount(
+    3,
+    100,
+    "Max verification email resend attempts per user within the resend window.",
+  ),
+  "identity.verification_email.resend_window_seconds": identityCount(
+    180,
+    86400,
+    "Verification email resend rate-limit window in seconds.",
+  ),
   "economy.coin.daily_cap": economyCount(50, 100000, "Max coin a user can earn per day (abuse shield)."),
   "economy.coin.weekly_cap": economyCount(200, 1000000, "Max coin a user can earn per week (abuse shield)."),
   "economy.coin.min_xp_for_coin": economyCount(0, 1000000, "Min XP required before a user can earn coin (anti-Sybil)."),

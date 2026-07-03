@@ -1,5 +1,5 @@
 import { setRequestLocale } from "next-intl/server";
-import { ToplulukShell } from "./_components/topluluk-shell";
+import { GeneralFeed } from "./_components/general-feed";
 
 export default async function ToplulukPage({
   params,
@@ -8,5 +8,5 @@ export default async function ToplulukPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <ToplulukShell />;
+  return <GeneralFeed />;
 }

@@ -3,10 +3,12 @@ import { UserRole, ZoneMemberStatus, ZoneRole, ZoneType } from "@mentor/types";
 import {
   canAcceptAnswer,
   canApproveMember,
+  canCommentInZone,
   canCreateZone,
   canDeleteThread,
   canModerateZone,
   canPostInZone,
+  canRemoveMember,
   isPlatformStaff,
 } from "./forum.policy";
 
@@ -63,6 +65,24 @@ describe("forum.policy", () => {
     });
   });
 
+  describe("canCommentInZone", () => {
+    it("CHAT + ANNOUNCEMENT: any ACTIVE member (or staff) may comment; announcement discussion is open", () => {
+      const member = actor([UserRole.STUDENT], ZoneRole.MEMBER);
+      expect(canCommentInZone(member, ZoneType.CHAT, ZoneMemberStatus.ACTIVE)).toBe(true);
+      // Unlike posting, a plain member CAN comment on an announcement.
+      expect(canCommentInZone(member, ZoneType.ANNOUNCEMENT, ZoneMemberStatus.ACTIVE)).toBe(true);
+      expect(canCommentInZone(member, ZoneType.CHAT, ZoneMemberStatus.PENDING)).toBe(false);
+      expect(canCommentInZone(member, ZoneType.CHAT, null)).toBe(false);
+      expect(canCommentInZone(actor([UserRole.ADMIN], null), ZoneType.ANNOUNCEMENT, null)).toBe(true);
+    });
+
+    it("QA is not a comment surface (answers path only)", () => {
+      expect(
+        canCommentInZone(actor([UserRole.STUDENT], ZoneRole.MEMBER), ZoneType.QA, ZoneMemberStatus.ACTIVE),
+      ).toBe(false);
+    });
+  });
+
   describe("canPostInZone — QA", () => {
     it("QA needs an ACTIVE member (or staff), like CHAT", () => {
       const member = actor([UserRole.STUDENT], ZoneRole.MEMBER);
@@ -78,6 +98,27 @@ describe("forum.policy", () => {
       expect(canAcceptAnswer(actor([UserRole.STUDENT]), "u1")).toBe(true); // actor.userId === "u1"
       expect(canAcceptAnswer(actor([UserRole.STUDENT]), "someoneElse")).toBe(false);
       expect(canAcceptAnswer(actor([UserRole.ADMIN]), "someoneElse")).toBe(false);
+    });
+  });
+
+  describe("canRemoveMember", () => {
+    it("OWNER cannot be removed by anyone", () => {
+      expect(canRemoveMember(actor([UserRole.ADMIN], null), ZoneRole.OWNER)).toBe(false);
+      expect(canRemoveMember(actor([UserRole.STUDENT], ZoneRole.OWNER), ZoneRole.OWNER)).toBe(false);
+    });
+
+    it("zone owner/mod can remove a regular MEMBER", () => {
+      expect(canRemoveMember(actor([UserRole.STUDENT], ZoneRole.OWNER), ZoneRole.MEMBER)).toBe(true);
+      expect(canRemoveMember(actor([UserRole.STUDENT], ZoneRole.MODERATOR), ZoneRole.MEMBER)).toBe(true);
+    });
+
+    it("platform staff can remove a MEMBER or MODERATOR", () => {
+      expect(canRemoveMember(actor([UserRole.ADMIN], null), ZoneRole.MEMBER)).toBe(true);
+      expect(canRemoveMember(actor([UserRole.ADMIN], null), ZoneRole.MODERATOR)).toBe(true);
+    });
+
+    it("a plain MEMBER cannot remove anyone", () => {
+      expect(canRemoveMember(actor([UserRole.STUDENT], ZoneRole.MEMBER), ZoneRole.MEMBER)).toBe(false);
     });
   });
 

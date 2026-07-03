@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import { Pool } from "pg";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { UserRole, ZoneJoinPolicy, ZoneMemberStatus, ZoneType } from "@mentor/types";
+import { FORUM_LIKE_EMOJI, UserRole, ZoneJoinPolicy, ZoneMemberStatus, ZoneType } from "@mentor/types";
 
 const RUN = Date.now();
 
@@ -203,28 +203,28 @@ describe("forum zones (e2e)", () => {
     await request(app.getHttpServer())
       .put(`/v1/forum/threads/${threadId}/reactions`)
       .set(asUser())
-      .send({ emoji: "👍" })
+      .send({ emoji: FORUM_LIKE_EMOJI })
       .expect(200);
 
     let feed = await request(app.getHttpServer())
       .get(`/v1/forum/zones/${zoneId}/threads`)
       .set(asUser());
     let item = feed.body.items.find((t: { id: string }) => t.id === threadId);
-    expect(item.reactionCounts["👍"]).toBe(1);
-    expect(item.myReactions).toContain("👍");
+    expect(item.reactionCounts[FORUM_LIKE_EMOJI]).toBe(1);
+    expect(item.myReactions).toContain(FORUM_LIKE_EMOJI);
 
     await request(app.getHttpServer())
       .delete(`/v1/forum/threads/${threadId}/reactions`)
       .set(asUser())
-      .send({ emoji: "👍" })
+      .send({ emoji: FORUM_LIKE_EMOJI })
       .expect(204);
 
     feed = await request(app.getHttpServer())
       .get(`/v1/forum/zones/${zoneId}/threads`)
       .set(asUser());
     item = feed.body.items.find((t: { id: string }) => t.id === threadId);
-    expect(item.reactionCounts["👍"] ?? 0).toBe(0);
-    expect(item.myReactions).not.toContain("👍");
+    expect(item.reactionCounts[FORUM_LIKE_EMOJI] ?? 0).toBe(0);
+    expect(item.myReactions).not.toContain(FORUM_LIKE_EMOJI);
   });
 
   it("staff pin floats a thread to the top of the feed", async () => {

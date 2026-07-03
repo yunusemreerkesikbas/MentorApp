@@ -15,6 +15,7 @@ import {
   canApproveMember,
   canCreateZone,
   canModerateZone,
+  canRemoveMember,
   isPlatformStaff,
   type ForumActor,
 } from "../domain/forum.policy";
@@ -69,6 +70,7 @@ export class ForumService {
       slug: this.slugify(dto.title),
       description: dto.description,
       examType: dto.examType,
+      emoji: dto.emoji,
       joinPolicy: dto.joinPolicy,
       createdBy: actorId,
     });
@@ -106,7 +108,7 @@ export class ForumService {
     return { status };
   }
 
-  /** Owner/mod (or platform staff) approves/rejects a pending join. Reject leaves it PENDING. */
+  /** Owner/mod (or platform staff) approves or rejects a pending join request. */
   async approveMember(
     actor: ForumActor,
     zoneId: string,
@@ -117,11 +119,22 @@ export class ForumService {
     if (!canApproveMember(actor)) {
       throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
-    await this.repo.setMemberStatus(
-      zoneId,
-      targetUserId,
-      approve ? ZoneMemberStatus.ACTIVE : ZoneMemberStatus.PENDING,
-    );
+    if (approve) {
+      await this.repo.setMemberStatus(zoneId, targetUserId, ZoneMemberStatus.ACTIVE);
+    } else {
+      await this.repo.deleteMember(zoneId, targetUserId);
+    }
+  }
+
+  /** Owner/mod (or platform staff) removes an active member. OWNER cannot be removed. */
+  async removeMember(actor: ForumActor, zoneId: string, targetUserId: string): Promise<void> {
+    await this.assertEnabled();
+    const membership = await this.repo.findMembershipPrivileged(zoneId, targetUserId);
+    if (!membership) throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+    if (!canRemoveMember(actor, membership.role as ZoneRole)) {
+      throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
+    }
+    await this.repo.deleteMember(zoneId, targetUserId);
   }
 
   async listZones(
@@ -204,6 +217,7 @@ export class ForumService {
       visibility: z.visibility as ZoneView["visibility"],
       joinPolicy: z.joinPolicy as ZoneView["joinPolicy"],
       examType: z.examType,
+      emoji: z.emoji,
       isArchived: z.isArchived,
       memberCount,
       myStatus: (membership?.status as ZoneMemberStatus | undefined) ?? null,

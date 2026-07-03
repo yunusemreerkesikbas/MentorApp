@@ -8,8 +8,11 @@ import CheckCircle2 from "lucide-react/dist/esm/icons/check-circle-2.mjs";
 import EllipsisVertical from "lucide-react/dist/esm/icons/ellipsis-vertical.mjs";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { formatMonthDayShort } from "./plan-utils";
 import { PlanTimelineSkeleton } from "./plan-content-skeleton";
+import {
+  formatMonthDayShort,
+  PLAN_TIMELINE_SCROLL_AFTER_TASKS,
+} from "./plan-utils";
 
 export function PlanTimelineView({
   date,
@@ -32,6 +35,7 @@ export function PlanTimelineView({
   const pending = visible.filter((task) => task.status !== "DONE");
   const done = visible.filter((task) => task.status === "DONE");
   const { day, month } = formatMonthDayShort(date, locale);
+  const scrollable = visible.length > PLAN_TIMELINE_SCROLL_AFTER_TASKS;
 
   if (loading) {
     return <PlanTimelineSkeleton />;
@@ -39,8 +43,10 @@ export function PlanTimelineView({
 
   return (
     <Card className="relative overflow-hidden">
-      <div className="relative flex min-h-[280px]">
-        <div className="relative flex w-12 shrink-0 flex-col items-center">
+      <div
+        className={`relative flex items-stretch ${scrollable ? "" : "min-h-[280px]"}`}
+      >
+        <div className="relative flex w-12 shrink-0 flex-col items-center self-stretch">
           <div
             className="absolute bottom-0 top-0 w-0.5 -translate-x-1/2"
             style={{
@@ -50,7 +56,7 @@ export function PlanTimelineView({
             aria-hidden
           />
           <div
-            className="relative z-10 mt-1 flex h-11 w-11 flex-col items-center justify-center rounded-full border-2 border-white text-center shadow-[var(--shadow-card)]"
+            className="sticky top-0 z-10 mt-1 flex h-11 w-11 flex-col items-center justify-center rounded-full border-2 border-white text-center shadow-[var(--shadow-card)]"
             style={{ backgroundColor: "var(--color-progress)" }}
           >
             <span
@@ -64,7 +70,11 @@ export function PlanTimelineView({
           </div>
         </div>
 
-        <div className="min-w-0 flex-1 pl-3">
+        <div
+          className={`min-w-0 flex-1 pl-3 ${scrollable ? "mentor-plan-timeline-scroll" : ""}`}
+          tabIndex={scrollable ? 0 : undefined}
+          aria-label={scrollable ? t("timeline_scroll_aria") : undefined}
+        >
           <TimelineSection
             title={t("pending_section", { count: pending.length })}
             dotColor="var(--color-progress)"
@@ -104,6 +114,17 @@ export function PlanTimelineView({
           </TimelineSection>
         </div>
       </div>
+
+      {scrollable ? (
+        <div
+          className="pointer-events-none absolute bottom-0 left-12 right-0 h-10"
+          style={{
+            background:
+              "linear-gradient(to top, color-mix(in srgb, var(--color-surface) 94%, transparent), transparent)",
+          }}
+          aria-hidden
+        />
+      ) : null}
     </Card>
   );
 }
@@ -161,7 +182,7 @@ function TimelineTaskCard({
       className="relative rounded-[var(--radius-card)] border border-white/40 p-3 shadow-[var(--shadow-card)]"
       style={{
         backgroundColor: isDone
-          ? "color-mix(in srgb, var(--color-surface-container, #f0edec) 80%, transparent)"
+          ? "color-mix(in srgb, var(--color-surface-container) 80%, transparent)"
           : "rgba(255,255,255,0.85)",
         opacity: isDone ? 0.92 : 1,
       }}
@@ -216,7 +237,7 @@ function TimelineTaskCard({
             type="button"
             onClick={onMenu}
             disabled={busy}
-            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[var(--radius-card)] transition-colors hover:bg-white/60 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2"
+            className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-colors hover:bg-white/60 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2"
             style={{ color: "var(--color-secondary)" }}
             aria-label={t("task_menu_aria", { title: task.title })}
           >

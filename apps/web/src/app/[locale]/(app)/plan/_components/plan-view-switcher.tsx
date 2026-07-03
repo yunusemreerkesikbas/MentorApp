@@ -20,7 +20,7 @@ export function PlanViewSwitcher({
       aria-label={t("view_switch_aria")}
       className="flex w-full rounded-[12px] border border-white/40 p-1"
       style={{
-        backgroundColor: "color-mix(in srgb, var(--color-surface-container, #f0edec) 80%, transparent)",
+        backgroundColor: "color-mix(in srgb, var(--color-surface-container) 80%, transparent)",
       }}
     >
       {MODES.map((mode) => {

@@ -8,6 +8,8 @@ export interface AuthUser {
   id: string;
   email: string;
   displayName: string;
+  username: string | null;
+  avatarUrl: string | null;
   roles: UserRole[];
   organizationId: string | null;
   examType: ExamType | null;
@@ -22,4 +24,12 @@ export interface AuthSession {
   /** Seconds until the access token expires (client schedules silent refresh). */
   expiresIn: number;
   user: AuthUser;
+}
+
+/** POST /v1/users/me/avatar-upload-url response. */
+export interface AvatarUploadUrlDto {
+  uploadUrl: string;
+  key: string;
+  expiresAt: string;
+  maxBytes: number;
 }

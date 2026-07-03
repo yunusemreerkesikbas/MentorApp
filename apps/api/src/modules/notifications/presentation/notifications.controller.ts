@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, MessageEvent, Param, Patch, Post, Query, Sse, UnauthorizedException } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, MessageEvent, Param, ParseUUIDPipe, Patch, Post, Query, Sse, UnauthorizedException } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import type { Observable } from "rxjs";
 import type {
@@ -11,7 +11,6 @@ import { CurrentUser, type RequestUser } from "../../../common/auth/current-user
 import { NotificationsService } from "../application/notifications.service";
 import {
   ListNotificationsDto,
-  NotificationIdParamDto,
   PushSubscribeDto,
   PushUnsubscribeDto,
   UpdateNotificationPreferencesDto,
@@ -85,25 +84,25 @@ export class NotificationsController {
   @Patch(":id/read")
   markRead(
     @CurrentUser() user: RequestUser,
-    @Param() params: NotificationIdParamDto,
+    @Param("id", new ParseUUIDPipe()) id: string,
   ): Promise<UserNotificationDto> {
-    return this.notifications.markRead(user.id, params.id);
+    return this.notifications.markRead(user.id, id);
   }
 
   @Patch(":id/unread")
   markUnread(
     @CurrentUser() user: RequestUser,
-    @Param() params: NotificationIdParamDto,
+    @Param("id", new ParseUUIDPipe()) id: string,
   ): Promise<UserNotificationDto> {
-    return this.notifications.markUnread(user.id, params.id);
+    return this.notifications.markUnread(user.id, id);
   }
 
   @Delete(":id")
   @HttpCode(204)
   deleteNotification(
     @CurrentUser() user: RequestUser,
-    @Param() params: NotificationIdParamDto,
+    @Param("id", new ParseUUIDPipe()) id: string,
   ): Promise<void> {
-    return this.notifications.deleteNotification(user.id, params.id);
+    return this.notifications.deleteNotification(user.id, id);
   }
 }

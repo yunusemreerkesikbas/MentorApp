@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import type {
   EconomyBalance,
   InviteCodeView,
   QuestProgressView,
 } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
+import { Card, SectionHeading } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import {
   fetchEconomyBalance,
@@ -14,9 +16,14 @@ import {
   fetchQuests,
   isEconomyDisabled,
 } from "@/lib/economy";
+import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { EconomyBalanceCard } from "./economy-balance-card";
 import { EconomyInviteCard } from "./economy-invite-card";
 import { EconomyQuestsCard } from "./economy-quests-card";
+import { ListRow } from "./account-links-card";
+import Coins from "lucide-react/dist/esm/icons/coins.mjs";
+import Gift from "lucide-react/dist/esm/icons/gift.mjs";
+import ListChecks from "lucide-react/dist/esm/icons/list-checks.mjs";
 
 type EconomyState =
   | { status: "probing" }
@@ -57,6 +64,9 @@ export function EconomySection({
   refreshKey = 0,
   onVisibilityChange,
 }: EconomySectionProps) {
+  const t = useTranslations("economy");
+  const profile = useTranslations("profile.earned");
+  const sheet = useMentorBottomSheet();
   const [state, setState] = useState<EconomyState>({ status: "probing" });
   const economyDisabledRef = useRef(false);
 
@@ -129,14 +139,72 @@ export function EconomySection({
     return <FormError message={state.message} />;
   }
 
+  const completedQuests = state.quests.filter((quest) => quest.completed).length;
+
+  function showBalance() {
+    if (state.status !== "ready") return;
+    sheet.show({
+      title: t("balance_title"),
+      layout: "filter",
+      children: <EconomyBalanceCard balance={state.balance} />,
+    });
+  }
+
+  function showQuests() {
+    if (state.status !== "ready") return;
+    sheet.show({
+      title: t("quests_title"),
+      layout: "filter",
+      children: <EconomyQuestsCard quests={state.quests} />,
+    });
+  }
+
+  function showInvite() {
+    if (state.status !== "ready") return;
+    sheet.show({
+      title: t("invite_title"),
+      layout: "filter",
+      children: (
+        <EconomyInviteCard
+          code={state.invite.code}
+          onRedeemed={() => void reload()}
+        />
+      ),
+    });
+  }
+
   return (
-    <div className="flex flex-col gap-6">
-      <EconomyBalanceCard balance={state.balance} />
-      <EconomyQuestsCard quests={state.quests} />
-      <EconomyInviteCard
-        code={state.invite.code}
-        onRedeemed={() => void reload()}
-      />
-    </div>
+    <Card solid className="p-4">
+      <SectionHeading>{profile("title")}</SectionHeading>
+      <div className="mt-3 divide-y divide-black/10 overflow-hidden rounded-[var(--radius-card)]">
+        <ListRow
+          icon={<Coins size={22} aria-hidden />}
+          onClick={showBalance}
+          description={profile("balance_summary", {
+            xp: state.balance.xp,
+            coin: state.balance.coinConfirmed,
+          })}
+        >
+          {t("balance_title")}
+        </ListRow>
+        <ListRow
+          icon={<ListChecks size={22} aria-hidden />}
+          onClick={showQuests}
+          description={profile("quests_summary", {
+            done: completedQuests,
+            total: state.quests.length,
+          })}
+        >
+          {t("quests_title")}
+        </ListRow>
+        <ListRow
+          icon={<Gift size={22} aria-hidden />}
+          onClick={showInvite}
+          description={state.invite.code}
+        >
+          {t("invite_title")}
+        </ListRow>
+      </div>
+    </Card>
   );
 }

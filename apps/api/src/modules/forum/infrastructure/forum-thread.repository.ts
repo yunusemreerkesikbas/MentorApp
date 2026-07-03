@@ -4,9 +4,14 @@ import { ZoneType } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { forumReactions, forumThreads, forumZones } from "../../../database/schema";
+import { forumPosts, forumReactions, forumThreads, forumZones, users } from "../../../database/schema";
 
 export type ThreadRow = typeof forumThreads.$inferSelect;
+export type ThreadWithAuthor = ThreadRow & {
+  authorName: string;
+  authorUsername: string | null;
+  authorAvatarStorageKey: string | null;
+};
 
 /**
  * Feed-thread + reaction access (Slice 2). Reads run in user context (RLS belt: non-deleted +
@@ -42,7 +47,7 @@ export class ForumThreadRepository {
     viewerId: string,
     zoneId: string,
     opts: { limit: number; before?: string },
-  ): Promise<ThreadRow[]> {
+  ): Promise<ThreadWithAuthor[]> {
     return withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const conds = [eq(forumThreads.zoneId, zoneId), isNull(forumThreads.deletedAt)];
       if (opts.before) {
@@ -53,19 +58,58 @@ export class ForumThreadRepository {
         conds.push(eq(forumThreads.isPinned, false));
       }
       return tx
-        .select()
+        .select({
+          ...getTableColumns(forumThreads),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+          authorUsername: sql<string | null>`${users.username}`,
+          authorAvatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+        })
         .from(forumThreads)
+        .leftJoin(users, eq(forumThreads.authorId, users.id))
         .where(and(...conds))
         .orderBy(desc(forumThreads.isPinned), desc(forumThreads.createdAt))
         .limit(opts.limit);
     });
   }
 
-  async findById(threadId: string, viewerId: string): Promise<ThreadRow | null> {
+  /**
+   * Popular feed: top `limit` threads by engagement score (reactions + non-deleted comments),
+   * pinned first, newest as tiebreak. Single page — no cursor (popularity isn't monotonic in time).
+   * ponytail: two correlated subqueries per row; fine for zone-sized feeds, revisit with a
+   * denormalized counter if a zone ever holds tens of thousands of threads.
+   */
+  async listPopular(viewerId: string, zoneId: string, limit: number): Promise<ThreadWithAuthor[]> {
+    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+      const score = sql<number>`(
+        (select count(*) from ${forumReactions} fr where fr.thread_id = ${forumThreads.id})
+        + (select count(*) from ${forumPosts} fp where fp.thread_id = ${forumThreads.id} and fp.deleted_at is null)
+      )`;
+      return tx
+        .select({
+          ...getTableColumns(forumThreads),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+          authorUsername: sql<string | null>`${users.username}`,
+          authorAvatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+        })
+        .from(forumThreads)
+        .leftJoin(users, eq(forumThreads.authorId, users.id))
+        .where(and(eq(forumThreads.zoneId, zoneId), isNull(forumThreads.deletedAt)))
+        .orderBy(desc(forumThreads.isPinned), desc(score), desc(forumThreads.createdAt))
+        .limit(limit);
+    });
+  }
+
+  async findById(threadId: string, viewerId: string): Promise<ThreadWithAuthor | null> {
     return withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const [row] = await tx
-        .select()
+        .select({
+          ...getTableColumns(forumThreads),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+          authorUsername: sql<string | null>`${users.username}`,
+          authorAvatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+        })
         .from(forumThreads)
+        .leftJoin(users, eq(forumThreads.authorId, users.id))
         .where(eq(forumThreads.id, threadId))
         .limit(1);
       return row ?? null;
@@ -131,16 +175,22 @@ export class ForumThreadRepository {
   async searchQuestions(
     viewerId: string,
     opts: { q: string; zoneSlug?: string; page: number; pageSize: number },
-  ): Promise<{ items: ThreadRow[]; total: number }> {
+  ): Promise<{ items: ThreadWithAuthor[]; total: number }> {
     return withUserContext(this.db, { userId: viewerId }, async (tx) => {
       const match = sql`to_tsvector('turkish', coalesce(${forumThreads.title}, '') || ' ' || ${forumThreads.body}) @@ websearch_to_tsquery('turkish', ${opts.q})`;
       const conds = [eq(forumZones.type, ZoneType.QA), isNull(forumThreads.deletedAt), match];
       if (opts.zoneSlug) conds.push(eq(forumZones.slug, opts.zoneSlug));
       const where = and(...conds);
       const items = await tx
-        .select(getTableColumns(forumThreads))
+        .select({
+          ...getTableColumns(forumThreads),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+          authorUsername: sql<string | null>`${users.username}`,
+          authorAvatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+        })
         .from(forumThreads)
         .innerJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
+        .leftJoin(users, eq(forumThreads.authorId, users.id))
         .where(where)
         .orderBy(
           desc(
@@ -196,6 +246,60 @@ export class ForumThreadRepository {
         const entry = map.get(r.threadId) ?? {};
         entry[r.emoji] = r.count;
         map.set(r.threadId, entry);
+      }
+      return map;
+    });
+  }
+
+  /** Batched: non-deleted comment/answer count per thread (one query, service context). */
+  async commentCountsByThread(threadIds: string[]): Promise<Map<string, number>> {
+    if (threadIds.length === 0) return new Map();
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({
+          threadId: forumPosts.threadId,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(forumPosts)
+        .where(and(inArray(forumPosts.threadId, threadIds), isNull(forumPosts.deletedAt)))
+        .groupBy(forumPosts.threadId);
+      const map = new Map<string, number>();
+      for (const r of rows) map.set(r.threadId, r.count);
+      return map;
+    });
+  }
+
+  /**
+   * Batched: up to `perThread` recent distinct commenter names per thread (for the replier-avatar
+   * cluster). DISTINCT ON dedupes authors keeping their latest comment; JS then ranks + trims.
+   */
+  async recentCommentersByThread(
+    threadIds: string[],
+    perThread = 3,
+  ): Promise<Map<string, string[]>> {
+    if (threadIds.length === 0) return new Map();
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .selectDistinctOn([forumPosts.threadId, forumPosts.authorId], {
+          threadId: forumPosts.threadId,
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+          authorUsername: sql<string | null>`${users.username}`,
+          createdAt: forumPosts.createdAt,
+        })
+        .from(forumPosts)
+        .leftJoin(users, eq(forumPosts.authorId, users.id))
+        .where(and(inArray(forumPosts.threadId, threadIds), isNull(forumPosts.deletedAt)))
+        .orderBy(forumPosts.threadId, forumPosts.authorId, desc(forumPosts.createdAt));
+      const byThread = new Map<string, { name: string; at: Date }[]>();
+      for (const r of rows) {
+        const arr = byThread.get(r.threadId) ?? [];
+        arr.push({ name: r.authorName, at: r.createdAt });
+        byThread.set(r.threadId, arr);
+      }
+      const map = new Map<string, string[]>();
+      for (const [threadId, arr] of byThread) {
+        arr.sort((a, b) => b.at.getTime() - a.at.getTime());
+        map.set(threadId, arr.slice(0, perThread).map((x) => x.name));
       }
       return map;
     });

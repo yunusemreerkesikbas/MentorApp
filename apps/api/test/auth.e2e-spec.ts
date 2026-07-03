@@ -1,8 +1,10 @@
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
+import express from "express";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { AVATAR_MAX_BYTES } from "../src/modules/identity/domain/avatar";
 
 /**
  * W0 identity e2e — full auth lifecycle against a real Postgres (RLS active).
@@ -26,6 +28,10 @@ describe("identity (e2e)", () => {
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());
+    app.use(
+      "/v1/storage/fake-upload",
+      express.raw({ type: ["image/jpeg", "image/png"], limit: AVATAR_MAX_BYTES }),
+    );
     await app.init();
   });
 
@@ -96,6 +102,67 @@ describe("identity (e2e)", () => {
     expect(res.status).toBe(200);
     expect(res.body.examType).toBe("KPSS");
     expect(res.body.examDate).toBe("2026-07-26");
+  });
+
+  it("avatar upload URL requires auth", async () => {
+    const res = await request(app.getHttpServer())
+      .post("/v1/users/me/avatar-upload-url")
+      .send({ contentType: "image/png" });
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects unsupported avatar image types", async () => {
+    const res = await request(app.getHttpServer())
+      .post("/v1/users/me/avatar-upload-url")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ contentType: "image/gif" });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("rejects unsupported fake storage upload content types", async () => {
+    const res = await request(app.getHttpServer())
+      .put("/v1/storage/fake-upload?key=avatars/test/bad.gif&contentType=image/gif")
+      .set("Content-Type", "image/png")
+      .send(Buffer.from("bad"));
+    expect(res.status).toBe(400);
+  });
+
+  it("uploads, saves, serves, and removes the current user's avatar", async () => {
+    const uploadUrlRes = await request(app.getHttpServer())
+      .post("/v1/users/me/avatar-upload-url")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ contentType: "image/png" });
+    expect(uploadUrlRes.status).toBe(201);
+    expect(uploadUrlRes.body.key).toMatch(/^avatars\/.+\/.+\.png$/);
+    expect(uploadUrlRes.body.maxBytes).toBe(2 * 1024 * 1024);
+
+    const bytes = Buffer.from("avatar-bytes");
+    const putRes = await request(app.getHttpServer())
+      .put(uploadUrlRes.body.uploadUrl)
+      .set("Content-Type", "image/png")
+      .send(bytes);
+    expect(putRes.status).toBe(200);
+
+    const saved = await request(app.getHttpServer())
+      .patch("/v1/users/me")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ avatarStorageKey: uploadUrlRes.body.key });
+    expect(saved.status).toBe(200);
+    expect(saved.body.avatarUrl).toContain("/v1/storage/fake-object");
+
+    const objectPath = saved.body.avatarUrl.replace(/^https?:\/\/[^/]+/, "");
+    const objectRes = await request(app.getHttpServer()).get(objectPath);
+    expect(objectRes.status).toBe(200);
+    expect(objectRes.headers["cross-origin-resource-policy"]).toBe("cross-origin");
+    expect(objectRes.headers["content-type"]).toContain("image/png");
+
+    const removed = await request(app.getHttpServer())
+      .patch("/v1/users/me")
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ avatarStorageKey: null });
+    expect(removed.status).toBe(200);
+    expect(removed.body.avatarUrl).toBeNull();
   });
 
   it("unknown email and wrong password return the SAME generic 401 (no enumeration)", async () => {
