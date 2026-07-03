@@ -66,6 +66,20 @@ export function canPostInZone(
   return false;
 }
 
+/**
+ * Who may comment on a CHAT/ANNOUNCEMENT thread (APP-017). Unlike posting, commenting on an
+ * ANNOUNCEMENT is open to any ACTIVE member (broadcast stays mod-only; discussion under it does not).
+ * QA replies keep their own path (`canPostInZone` + answer flow), so this covers CHAT + ANNOUNCEMENT.
+ */
+export function canCommentInZone(
+  actor: ForumActor,
+  zoneType: string,
+  memberStatus: string | null,
+): boolean {
+  if (zoneType !== ZoneType.CHAT && zoneType !== ZoneType.ANNOUNCEMENT) return false;
+  return memberStatus === ZoneMemberStatus.ACTIVE || canModerateZone(actor);
+}
+
 /** Only the question's author may accept an answer (asker-only; no staff override in MVP). */
 export function canAcceptAnswer(actor: ForumActor, questionAuthorId: string): boolean {
   return actor.userId === questionAuthorId;

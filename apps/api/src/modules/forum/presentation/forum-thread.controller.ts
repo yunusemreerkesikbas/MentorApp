@@ -11,10 +11,10 @@ import {
 } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { ThreadFeed, ThreadView } from "@mentor/types";
+import type { CommentDetail, CommentView, ThreadDetail, ThreadFeed, ThreadView } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { ForumThreadService } from "../application/forum-thread.service";
-import { CreateThreadDto, FeedQueryDto, PinThreadDto, ReactionDto } from "./forum.dto";
+import { CreateAnswerDto, CreateThreadDto, FeedQueryDto, PinThreadDto, ReactionDto } from "./forum.dto";
 
 /**
  * Forum feed (Slice 2): post/list/pin/delete threads + reactions. Reading is open to any authed
@@ -44,6 +44,61 @@ export class ForumThreadController {
     @Query() q: FeedQueryDto,
   ): Promise<ThreadFeed> {
     return this.threads.listFeed(user.id, zoneId, q);
+  }
+
+  @Get("threads/:threadId/detail")
+  detail(
+    @CurrentUser() user: RequestUser,
+    @Param("threadId") threadId: string,
+  ): Promise<ThreadDetail> {
+    return this.threads.getThreadDetail(user.id, threadId);
+  }
+
+  // ponytail: static rate-limit; mirror the thread-post limit until abuse data warrants config.
+  @Post("threads/:threadId/comments")
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  comment(
+    @CurrentUser() user: RequestUser,
+    @Param("threadId") threadId: string,
+    @Body() dto: CreateAnswerDto,
+  ): Promise<CommentView> {
+    return this.threads.comment({ id: user.id, roles: user.roles }, threadId, dto);
+  }
+
+  @Get("posts/:postId")
+  commentDetail(
+    @CurrentUser() user: RequestUser,
+    @Param("postId") postId: string,
+  ): Promise<CommentDetail> {
+    return this.threads.getCommentDetail(user.id, postId);
+  }
+
+  @Post("posts/:postId/replies")
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  reply(
+    @CurrentUser() user: RequestUser,
+    @Param("postId") postId: string,
+    @Body() dto: CreateAnswerDto,
+  ): Promise<CommentView> {
+    return this.threads.replyToComment({ id: user.id, roles: user.roles }, postId, dto);
+  }
+
+  @Put("posts/:postId/reactions")
+  async likePost(
+    @CurrentUser() user: RequestUser,
+    @Param("postId") postId: string,
+  ): Promise<{ status: string }> {
+    await this.threads.likePost(user.id, postId);
+    return { status: "ok" };
+  }
+
+  @Delete("posts/:postId/reactions")
+  @HttpCode(204)
+  async unlikePost(
+    @CurrentUser() user: RequestUser,
+    @Param("postId") postId: string,
+  ): Promise<void> {
+    await this.threads.unlikePost(user.id, postId);
   }
 
   @Post("threads/:threadId/pin")

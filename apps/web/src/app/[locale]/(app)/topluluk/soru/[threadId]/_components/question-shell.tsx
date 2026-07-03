@@ -78,7 +78,12 @@ export function QuestionShell({ threadId }: { threadId: string }) {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-8 lg:px-8 lg:py-10">
-      <Link href="/topluluk" className="text-sm" style={{ color: "var(--color-secondary)" }}>
+      <Link
+        href="/topluluk"
+        className="flex items-center gap-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        style={{ color: "var(--color-secondary)" }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
         {t("back")}
       </Link>
 

@@ -60,7 +60,9 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 | POST | `/v1/auth/verify-email` | Consumes `email_tokens` |
 | POST | `/v1/auth/forgot-password` | Always 200 (hides existence) |
 | POST | `/v1/auth/reset-password` | Revokes all sessions |
-| GET / PATCH | `/v1/users/me` | Minimal onboarding: displayName / examType / examDate |
+| GET / PATCH | `/v1/users/me` | Minimal onboarding: displayName / username / examType / examDate |
+| POST | `/v1/users/me/verification-email` | Authenticated resend for the current user's verification email |
+| POST | `/v1/users/me/avatar-upload-url` | Signed upload URL for current user's JPEG/PNG avatar |
 
 ## API
 
@@ -68,10 +70,45 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 |---|---|
 | `POST /v1/auth/{signup,login,refresh,logout,verify-email,forgot-password,reset-password}` | Auth lifecycle |
 | `GET /v1/users/me` | Current user (consumed by coaching, notifications, admin) |
-| `PATCH /v1/users/me` | Onboarding (displayName, examType, examDate) |
+| `PATCH /v1/users/me` | Onboarding/profile (displayName, username, examType, examDate, avatarStorageKey) |
+| `POST /v1/users/me/verification-email` | Resend verification email for current user |
+| `POST /v1/users/me/avatar-upload-url` | Create user-scoped avatar upload URL |
 
 ## Geliştirmeler (timeline)
 
+- **Profile avatar V1** — `users.avatar_storage_key` nullable kolonu eklendi; auth/session ve
+  `GET/PATCH /v1/users/me` artık `avatarUrl` döner. Akış: client
+  `POST /v1/users/me/avatar-upload-url` ile JPEG/PNG için user-scoped key alır
+  (`avatars/{userId}/{uuid}.jpg|png`, max 2 MB), dosyayı storage URL'ine PUT eder, sonra
+  `PATCH /v1/users/me` ile `avatarStorageKey` kaydeder veya `null` göndererek kaldırır. Gotcha:
+  eski avatar object'i best-effort silinir; silme hatası profil kaydını bozmaz. Local fake storage
+  preview için disk-backed `GET /v1/storage/fake-object?key=...` public dev endpoint'i kullanılır ve
+  web origin'inden `<img>` render edilebilmesi için sadece bu dev object response'u
+  `Cross-Origin-Resource-Policy: cross-origin` döner. Related:
+  `UsersService`, `FakeStorageController`, `StoragePort`, `packages/{types,validation}/src/auth.ts`,
+  `apps/api/drizzle/0031_perfect_leech.sql`. *(2026-07-03.)*
+- **Profile verification resend** — `/profil` üzerindeki "Doğrulama bekliyor" chip'i artık
+  auth'lu `POST /v1/users/me/verification-email` çağırır; backend mevcut verification token email
+  kuyruğunu tekrar kullanır ve kullanıcı zaten doğrulanmışsa no-op döner. Usage: kullanıcı avatar
+  üzerindeki doğrulama badge'ine dokunur, e-postadaki bağlantıya tıklaması gerektiğini anlatan bilgi
+  dialog'unu görür. Rate limit admin config'ten yönetilir:
+  `identity.verification_email.resend_limit` (default 3) ve
+  `identity.verification_email.resend_window_seconds` (default 180). Gotcha: rate limit yalnızca
+  resend denemelerini sayar; signup sırasında gönderilen ilk doğrulama e-postası bu pencereye dahil
+  değildir. Email adresi body'de taşınmaz. Related: `AuthService.resendVerificationEmail`,
+  `UsersController`, `email_verification_resend_attempts`,
+  `profile-header.tsx`, `@mentor/api-client`. *(2026-07-03.)*
+- **Silent refresh race fix** — Web `AuthProvider` refresh isteklerini tek uçuşta birleştirir ve
+  eski refresh sonuçlarının daha yeni login/signup/profile state'ini ezmesini engeller. Usage:
+  uygulama ilk açıldığında `/v1/auth/refresh` login ile yarışsa bile başarılı login oturumu
+  korunur. Gotcha: refresh cookie hâlâ tek kullanımlık rotasyon + reuse detection kullanır; client
+  sadece aynı tab içindeki benign yarışı söndürür. Related: `apps/web/src/lib/auth-context.tsx`.
+  *(2026-07-03.)*
+- **Username alanı** — `users.username` nullable + unique eklendi; `PATCH /v1/users/me` username
+  günceller, `GET /v1/users/me` `AuthUser.username` döner. Format: `a-z`, `0-9`, `_`, 3-24
+  karakter; duplicate → `AUTH_USERNAME_IN_USE`. Forum author görünümü `username ?? displayName`
+  kullanır, KVKK anonymize username'i null'a çeker. Related: `apps/api/src/database/schema.ts`,
+  `apps/api/drizzle/0028_users_username.sql`, `packages/{types,validation}/src/auth.ts`.
 - **W0 Identity (auth + RLS + web auth screens)** — schema 0001 (users/organizations/refresh_tokens/
   email_tokens, RLS ENABLE+FORCE); own JWT + opaque refresh (httpOnly cookie, rotation + reuse
   detection); enumeration-safe login; argon2id; KVKK consent; Turnstile; global JwtAuthGuard +

@@ -1,12 +1,16 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, getTableColumns, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, inArray, isNull, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { forumPosts, users } from "../../../database/schema";
+import { forumPostReactions, forumPosts, users } from "../../../database/schema";
 
 export type PostRow = typeof forumPosts.$inferSelect;
-export type PostWithAuthor = PostRow & { authorName: string };
+export type PostWithAuthor = PostRow & {
+  authorName: string;
+  authorUsername: string | null;
+  authorAvatarStorageKey: string | null;
+};
 
 /**
  * QA answer access (slice 3). Reads run in user context (RLS belt: non-deleted answers to any
@@ -16,13 +20,128 @@ export type PostWithAuthor = PostRow & { authorName: string };
 export class ForumPostRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
-  async createAnswer(input: { threadId: string; authorId: string; body: string }): Promise<PostRow> {
+  async createAnswer(input: {
+    threadId: string;
+    authorId: string;
+    body: string;
+    /** Set for a reply to another comment (APP-017); null/undefined = top-level comment/answer. */
+    parentPostId?: string | null;
+  }): Promise<PostRow> {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx
         .insert(forumPosts)
-        .values({ threadId: input.threadId, authorId: input.authorId, body: input.body })
+        .values({
+          threadId: input.threadId,
+          authorId: input.authorId,
+          body: input.body,
+          parentPostId: input.parentPostId ?? null,
+        })
         .returning();
       return rows[0]!;
+    });
+  }
+
+  /** Top-level comments on a thread (no parent) — oldest first. */
+  async listTopLevel(threadId: string, viewerId: string): Promise<PostWithAuthor[]> {
+    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+      return tx
+        .select({
+          ...getTableColumns(forumPosts),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+          authorUsername: sql<string | null>`${users.username}`,
+          authorAvatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+        })
+        .from(forumPosts)
+        .leftJoin(users, eq(forumPosts.authorId, users.id))
+        .where(
+          and(
+            eq(forumPosts.threadId, threadId),
+            isNull(forumPosts.parentPostId),
+            isNull(forumPosts.deletedAt),
+          ),
+        )
+        .orderBy(asc(forumPosts.createdAt));
+    });
+  }
+
+  /** Direct replies to a comment — oldest first. */
+  async listReplies(parentPostId: string, viewerId: string): Promise<PostWithAuthor[]> {
+    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+      return tx
+        .select({
+          ...getTableColumns(forumPosts),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+          authorUsername: sql<string | null>`${users.username}`,
+          authorAvatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+        })
+        .from(forumPosts)
+        .leftJoin(users, eq(forumPosts.authorId, users.id))
+        .where(and(eq(forumPosts.parentPostId, parentPostId), isNull(forumPosts.deletedAt)))
+        .orderBy(asc(forumPosts.createdAt));
+    });
+  }
+
+  // --- Comment likes (forum_post_reactions) + count aggregates (APP-017) ---
+
+  async addPostReaction(postId: string, userId: string, emoji: string): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await tx.insert(forumPostReactions).values({ postId, userId, emoji }).onConflictDoNothing();
+    });
+  }
+
+  async removePostReaction(postId: string, userId: string, emoji: string): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await tx
+        .delete(forumPostReactions)
+        .where(
+          and(
+            eq(forumPostReactions.postId, postId),
+            eq(forumPostReactions.userId, userId),
+            eq(forumPostReactions.emoji, emoji),
+          ),
+        );
+    });
+  }
+
+  /** Batched like count per post (service context — cross-user aggregate). */
+  async likeCountsByPost(postIds: string[]): Promise<Map<string, number>> {
+    if (postIds.length === 0) return new Map();
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ postId: forumPostReactions.postId, count: sql<number>`count(*)::int` })
+        .from(forumPostReactions)
+        .where(inArray(forumPostReactions.postId, postIds))
+        .groupBy(forumPostReactions.postId);
+      const map = new Map<string, number>();
+      for (const r of rows) map.set(r.postId, r.count);
+      return map;
+    });
+  }
+
+  /** Batched: which posts the viewer has liked (their own rows, RLS user context). */
+  async myLikedPosts(postIds: string[], userId: string): Promise<Set<string>> {
+    if (postIds.length === 0) return new Set();
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const rows = await tx
+        .select({ postId: forumPostReactions.postId })
+        .from(forumPostReactions)
+        .where(and(inArray(forumPostReactions.postId, postIds), eq(forumPostReactions.userId, userId)));
+      return new Set(rows.map((r) => r.postId));
+    });
+  }
+
+  /** Batched: non-deleted direct-reply count per post. */
+  async replyCountsByPost(postIds: string[]): Promise<Map<string, number>> {
+    if (postIds.length === 0) return new Map();
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ parentPostId: forumPosts.parentPostId, count: sql<number>`count(*)::int` })
+        .from(forumPosts)
+        .where(and(inArray(forumPosts.parentPostId, postIds), isNull(forumPosts.deletedAt)))
+        .groupBy(forumPosts.parentPostId);
+      const map = new Map<string, number>();
+      for (const r of rows) if (r.parentPostId) map.set(r.parentPostId, r.count);
+      return map;
     });
   }
 
@@ -33,6 +152,8 @@ export class ForumPostRepository {
         .select({
           ...getTableColumns(forumPosts),
           authorName: sql<string>`coalesce(${users.displayName}, '')`,
+          authorUsername: sql<string | null>`${users.username}`,
+          authorAvatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
         })
         .from(forumPosts)
         .leftJoin(users, eq(forumPosts.authorId, users.id))
@@ -58,6 +179,8 @@ export class ForumPostRepository {
         .select({
           ...getTableColumns(forumPosts),
           authorName: sql<string>`coalesce(${users.displayName}, '')`,
+          authorUsername: sql<string | null>`${users.username}`,
+          authorAvatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
         })
         .from(forumPosts)
         .leftJoin(users, eq(forumPosts.authorId, users.id))

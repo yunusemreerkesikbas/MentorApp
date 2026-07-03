@@ -13,8 +13,8 @@ export function QuestionListItem({ question }: { question: ThreadView }) {
   return (
     <Link
       href={`/topluluk/soru/${question.id}`}
-      className="block rounded-xl bg-white px-5 py-4 transition-shadow duration-150 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-      style={{ boxShadow: "0px 1px 4px rgba(37,73,150,0.07)" }}
+      className="block rounded-2xl bg-white px-5 py-4 transition-shadow duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+      style={{ border: "1px solid rgba(0,0,0,0.08)" }}
     >
       <div className="flex items-start justify-between gap-3">
         <h3
@@ -29,7 +29,7 @@ export function QuestionListItem({ question }: { question: ThreadView }) {
         {question.body}
       </p>
       <div className="mt-3 flex items-center gap-2">
-        <AuthorAvatar name={question.authorName} size={20} />
+        <AuthorAvatar name={question.authorName} size={20} src={question.authorAvatarUrl} />
         <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
           {question.authorName || t("unknown_author")}
         </span>

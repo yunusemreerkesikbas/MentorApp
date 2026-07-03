@@ -1,10 +1,7 @@
 import type { PublicQuestionRef, PublicQuestionView } from "@mentor/types";
+import { apiBaseUrl } from "./api-base";
 
-/** Strips a trailing /v1 — API paths include the prefix. Mirrors content-api.ts. */
-export function publicApiBase(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-  return raw.replace(/\/v1\/?$/, "");
-}
+export const publicApiBase = apiBaseUrl;
 
 /** Public site origin (canonical URLs, sitemap, robots). No trailing slash. */
 export function siteUrl(): string {

@@ -88,7 +88,12 @@ export class AdminUsersRepository {
   ): Promise<{ before: Record<string, unknown>; after: Record<string, unknown> } | undefined> {
     return withServiceContext(this.db, async (tx: DatabaseTx) => {
       const rows = await tx
-        .select({ email: users.email, displayName: users.displayName, status: users.status })
+        .select({
+          email: users.email,
+          displayName: users.displayName,
+          username: users.username,
+          status: users.status,
+        })
         .from(users)
         .where(eq(users.id, id))
         .for("update")
@@ -96,7 +101,12 @@ export class AdminUsersRepository {
       const current = rows[0];
       if (!current) return undefined;
       const anonEmail = `deleted+${id}@anonymized.local`;
-      const after = { email: anonEmail, displayName: "Silinmiş Kullanıcı", status: "BANNED" };
+      const after = {
+        email: anonEmail,
+        displayName: "Silinmiş Kullanıcı",
+        username: null,
+        status: "BANNED",
+      };
       await tx
         .update(users)
         .set({ ...after, examType: null, examDate: null })

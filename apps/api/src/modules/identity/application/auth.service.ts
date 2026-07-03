@@ -13,8 +13,10 @@ import type {
 import { DomainError, UnauthorizedError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { isUniqueViolation } from "../../../common/errors/postgres-error";
+import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import type { Env } from "../../../config/env.validation";
 import { JOB_QUEUE_PORT, type JobQueuePort } from "../../../shared/ports/job-queue.port";
+import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import { EmailTemplate, JobName } from "../../../shared/notifications/constants";
 import {
   EmailTokenType,
@@ -42,7 +44,9 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly turnstile: TurnstileService,
     private readonly config: ConfigService<Env, true>,
+    private readonly configRegistry: ConfigRegistryService,
     @Inject(JOB_QUEUE_PORT) private readonly queue: JobQueuePort,
+    @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
 
   async signup(input: SignupInput): Promise<AuthResult> {
@@ -76,7 +80,7 @@ export class AuthService {
       roles: user.roles,
       organizationId: user.organizationId,
     });
-    return { user: toAuthUser(user), tokens };
+    return { user: toAuthUser(user, this.storage), tokens };
   }
 
   async login(input: LoginInput): Promise<AuthResult> {
@@ -100,14 +104,14 @@ export class AuthService {
       roles: user.roles,
       organizationId: user.organizationId,
     });
-    return { user: toAuthUser(user), tokens };
+    return { user: toAuthUser(user, this.storage), tokens };
   }
 
   async refresh(rawRefreshToken: string): Promise<AuthResult> {
     const { tokens, userId } = await this.tokenService.rotate(rawRefreshToken);
     const user = await this.usersRepo.findByIdService(userId);
     if (!user) throw new UnauthorizedError();
-    return { user: toAuthUser(user), tokens };
+    return { user: toAuthUser(user, this.storage), tokens };
   }
 
   async logout(rawRefreshToken: string | undefined): Promise<void> {
@@ -122,6 +126,32 @@ export class AuthService {
       throw new DomainError(ErrorCode.AUTH_TOKEN_EXPIRED, HttpStatus.BAD_REQUEST);
     }
     await this.usersRepo.updateService(row.userId, { emailVerifiedAt: new Date() });
+  }
+
+  async resendVerificationEmail(userId: string): Promise<void> {
+    const user = await this.usersRepo.findByIdService(userId);
+    if (!user) throw new UnauthorizedError();
+    if (user.emailVerifiedAt) return;
+
+    const [limit, windowSeconds] = await Promise.all([
+      this.configRegistry.get("identity.verification_email.resend_limit"),
+      this.configRegistry.get("identity.verification_email.resend_window_seconds"),
+    ]);
+    const since = new Date(Date.now() - windowSeconds * 1000);
+    const attempts =
+      await this.emailTokenRepo.countVerificationResendAttemptsSince(
+        user.id,
+        since,
+      );
+    if (attempts >= limit) {
+      throw new DomainError(
+        ErrorCode.TOO_MANY_REQUESTS,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    await this.emailTokenRepo.createVerificationResendAttempt(user.id);
+    await this.sendEmailToken(user, EmailTokenType.VERIFY_EMAIL);
   }
 
   /** Always resolves 200 — whether the email exists is never revealed. */
@@ -175,11 +205,17 @@ export class AuthService {
 const DUMMY_HASH =
   "$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRzb21lc2FsdA$RdescudvJCsgt3ub+b+dWRWJTmaaJObG";
 
-export function toAuthUser(user: UserRow): AuthUser {
+export function toAuthUser(
+  user: UserRow,
+  storage?: Pick<StoragePort, "getPublicUrl">,
+): AuthUser {
   return {
     id: user.id,
     email: user.email,
     displayName: user.displayName,
+    username: user.username ?? null,
+    avatarUrl:
+      user.avatarStorageKey && storage ? storage.getPublicUrl(user.avatarStorageKey) : null,
     roles: user.roles as AuthUser["roles"],
     organizationId: user.organizationId,
     examType: (user.examType as AuthUser["examType"]) ?? null,

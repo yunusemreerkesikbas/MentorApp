@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ModerationTargetType, type ThreadView, type ZoneMemberStatus, type ZoneView } from "@mentor/types";
+import { type ThreadView, type ZoneMemberStatus, type ZoneView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, Chip } from "@mentor/ui";
+import { Button } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
-import { ReportButton } from "../../_components/report-button";
 import { ZONE_TYPE_ICONS } from "../../_components/zone-icons";
 import {
   deleteThread,
@@ -17,12 +16,12 @@ import {
   pinThread,
   postThread,
   reactThread,
+  type ThreadSort,
   unreactThread,
 } from "@/lib/forum";
 import { AskComposer } from "./ask-composer";
 import { JoinButton } from "./join-button";
 import { QuestionListItem } from "./question-list-item";
-import { RightPanel } from "./right-panel";
 import { ThreadComposer } from "./thread-composer";
 import { ThreadItem } from "./thread-item";
 import { ZoneShellSkeleton } from "./zone-shell-skeleton";
@@ -32,6 +31,7 @@ interface Ready {
   threads: ThreadView[];
   nextCursor: string | null;
   loadingMore: boolean;
+  sort: ThreadSort;
 }
 type State =
   | { status: "loading" }
@@ -56,6 +56,7 @@ export function ZoneShell({ slug }: { slug: string }) {
             threads: feed.items,
             nextCursor: feed.nextCursor,
             loadingMore: false,
+            sort: "recent",
           });
         }
       } catch (err) {
@@ -147,7 +148,7 @@ export function ZoneShell({ slug }: { slug: string }) {
     if (!ready || !ready.nextCursor) return;
     patchReady((r) => ({ ...r, loadingMore: true }));
     try {
-      const feed = await listThreads(ready.zone.id, ready.nextCursor);
+      const feed = await listThreads(ready.zone.id, ready.nextCursor, ready.sort);
       patchReady((r) => ({
         ...r,
         threads: [...r.threads, ...feed.items],
@@ -158,6 +159,26 @@ export function ZoneShell({ slug }: { slug: string }) {
       patchReady((r) => ({ ...r, loadingMore: false }));
     }
   }, [state, patchReady]);
+
+  const onChangeSort = useCallback(
+    (sort: ThreadSort) => {
+      const ready = state.status === "ready" ? state : null;
+      if (!ready || ready.sort === sort) return;
+      // Keep the current list visible while the new order loads (no flash of empty).
+      patchReady((r) => ({ ...r, sort, loadingMore: true }));
+      listThreads(ready.zone.id, undefined, sort)
+        .then((feed) =>
+          patchReady((r) => ({
+            ...r,
+            threads: feed.items,
+            nextCursor: feed.nextCursor,
+            loadingMore: false,
+          })),
+        )
+        .catch(() => patchReady((r) => ({ ...r, loadingMore: false })));
+    },
+    [state, patchReady],
+  );
 
   if (state.status === "loading") {
     return <ZoneShellSkeleton label={t("loading")} />;
@@ -173,110 +194,158 @@ export function ZoneShell({ slug }: { slug: string }) {
     );
   }
 
-  const { zone, threads, nextCursor, loadingMore } = state;
+  const { zone, threads, nextCursor, loadingMore, sort } = state;
   const isMember = zone.myStatus === "ACTIVE";
   const isQa = zone.type === "QA";
-  const pinnedThreads = threads.filter((t) => t.isPinned).slice(0, 3);
 
   return (
-    <div className="flex gap-0 xl:gap-5">
-      {/* Feed column */}
-      <main className="min-w-0 flex-1 px-4 py-6 lg:px-6 lg:py-8">
-        {/* Back link — hidden on lg+ since zone sidebar is visible */}
-        <Link href="/topluluk" className="mb-4 flex items-center gap-1 text-sm lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]" style={{ color: "var(--color-secondary)" }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
-          {t("back")}
-        </Link>
+    <main className="mx-auto min-w-0 max-w-2xl px-4 py-6 lg:px-8 lg:py-8">
+      {/* Back link — hidden on lg+ since zone sidebar is visible */}
+      <Link href="/topluluk" className="mb-4 flex items-center gap-1 text-sm lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]" style={{ color: "var(--color-secondary)" }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+        {t("back")}
+      </Link>
 
-        <header className="mb-5 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span
-              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-xl"
-              style={{ background: "color-mix(in srgb, var(--color-chip) 18%, white)" }}
+      <header className="mb-6 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-2xl"
+            style={{ background: "color-mix(in srgb, var(--color-chip) 18%, white)" }}
+          >
+            {zone.emoji ?? ZONE_TYPE_ICONS[zone.type]}
+          </span>
+          <div className="min-w-0">
+            {/* Eyebrow category — plain uppercase label, not a button (Trending Topics layout) */}
+            <p
+              className="text-[10px] font-semibold uppercase"
+              style={{ color: "var(--color-secondary)", letterSpacing: "0.08em" }}
             >
-              {zone.emoji ?? ZONE_TYPE_ICONS[zone.type]}
-            </span>
-            <div>
-              <h1
-                className="text-lg font-bold leading-tight"
-                style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-              >
-                {zone.title}
-              </h1>
-              <Chip>{t(`type_${zone.type.toLowerCase()}` as `type_${string}`)}</Chip>
-            </div>
+              {t(`type_${zone.type.toLowerCase()}` as `type_${string}`)}
+            </p>
+            <h1
+              className="text-xl font-bold leading-tight sm:text-2xl"
+              style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+            >
+              {zone.title}
+            </h1>
+            <p className="mt-0.5 text-xs" style={{ color: "var(--color-secondary)" }}>
+              {t("members", { count: zone.memberCount })}
+            </p>
           </div>
-          <div className="flex flex-col items-end gap-2 xl:hidden">
-            <JoinButton zoneId={zone.id} myStatus={zone.myStatus} onJoined={onJoined} />
-            {zone.canModerate ? (
-              <Link
-                href={`/topluluk/${zone.slug}/yonetim`}
-                className="text-sm underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                style={{ color: "var(--color-secondary)" }}
-              >
-                {t("manage_link")}
-              </Link>
-            ) : null}
-          </div>
-        </header>
+        </div>
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <JoinButton zoneId={zone.id} myStatus={zone.myStatus} onJoined={onJoined} />
+          {zone.canModerate ? (
+            <Link
+              href={`/topluluk/${zone.slug}/yonetim`}
+              aria-label={t("manage_link")}
+              title={t("manage_link")}
+              className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              style={{ borderColor: "rgba(0,0,0,0.10)", color: "var(--color-secondary)" }}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </Link>
+          ) : null}
+        </div>
+      </header>
 
-        {/* Composer (members only). ANNOUNCEMENT posts may 403 for non-mods → ThreadComposer surfaces it. */}
-        {isMember ? (
-          isQa ? (
-            <div className="mb-6">
-              <AskComposer zoneId={zone.id} />
+        {isQa ? (
+          <>
+            {/* Composer (members only). */}
+            {isMember ? (
+              <div className="mb-6">
+                <AskComposer zoneId={zone.id} />
+              </div>
+            ) : (
+              <p className="mb-6 text-sm" style={{ color: "var(--color-secondary)" }}>
+                {t("compose_join_first")}
+              </p>
+            )}
+            {threads.length === 0 ? (
+              <p className="py-8 text-center text-sm" style={{ color: "var(--color-secondary)" }}>
+                {t("qa_empty")}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {threads.map((q) => (
+                  <QuestionListItem key={q.id} question={q} />
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+          {/* Sort toggle — recent (cursor) vs popular (top by likes+comments). */}
+          {threads.length > 0 && (
+            <div className="mb-3 flex items-center gap-1" role="tablist" aria-label={t("sort_label")}>
+              {(["recent", "popular"] as const).map((s) => {
+                const active = sort === s;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => onChangeSort(s)}
+                    className="rounded-full px-3 py-1 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                    style={{
+                      background: active ? "var(--color-main)" : "transparent",
+                      color: active ? "#fff" : "var(--color-secondary)",
+                    }}
+                  >
+                    {t(`sort_${s}` as "sort_recent" | "sort_popular")}
+                  </button>
+                );
+              })}
             </div>
-          ) : (
-            <div className="mb-6">
+          )}
+          {/* Flat feed — no card chrome, just border-b dividers directly on the page (Figma 1:262/1:270/1:281). */}
+          <div className="divide-y divide-[rgba(0,0,0,0.08)] border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+            {/* Composer (members only). ANNOUNCEMENT posts may 403 for non-mods → ThreadComposer surfaces it. */}
+            {isMember ? (
               <ThreadComposer
                 placeholder={t("compose_placeholder")}
                 submitLabel={t("compose_send")}
                 onSubmit={onPost}
               />
-            </div>
-          )
-        ) : (
-          <p className="mb-6 text-sm" style={{ color: "var(--color-secondary)" }}>
-            {t("compose_join_first")}
-          </p>
+            ) : (
+              <p className="px-3 py-4 text-sm" style={{ color: "var(--color-secondary)" }}>
+                {t("compose_join_first")}
+              </p>
+            )}
+
+            {threads.length === 0 ? (
+              <p className="px-3 py-10 text-center text-sm" style={{ color: "var(--color-secondary)" }}>
+                {t("feed_empty")}
+              </p>
+            ) : (
+              threads.map((th) => (
+                <ThreadItem
+                  key={th.id}
+                  thread={th}
+                  onToggleReaction={(emoji, adding) => onToggleReaction(th.id, emoji, adding)}
+                  canModerate={zone.canModerate}
+                  onPin={(pinned) => onPinThread(th.id, pinned)}
+                  onDelete={() => onDeleteThread(th.id)}
+                  clickable
+                />
+              ))
+            )}
+          </div>
+          </>
         )}
 
-        {threads.length === 0 ? (
-          <p className="py-8 text-center text-sm" style={{ color: "var(--color-secondary)" }}>
-            {isQa ? t("qa_empty") : t("feed_empty")}
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {isQa
-              ? threads.map((q) => <QuestionListItem key={q.id} question={q} />)
-              : threads.map((th) => (
-                  <ThreadItem
-                    key={th.id}
-                    thread={th}
-                    onToggleReaction={(emoji, adding) => onToggleReaction(th.id, emoji, adding)}
-                    actions={<ReportButton targetType={ModerationTargetType.THREAD} targetId={th.id} />}
-                    canModerate={zone.canModerate}
-                    onPin={(pinned) => onPinThread(th.id, pinned)}
-                    onDelete={() => onDeleteThread(th.id)}
-                  />
-                ))}
-          </div>
-        )}
-
-        {nextCursor ? (
-          <div className="mt-5 flex justify-center">
-            <Button variant="secondary" busy={loadingMore} onClick={() => void onLoadMore()}>
-              {t("load_more")}
-            </Button>
-          </div>
-        ) : null}
-      </main>
-
-      {/* Right panel — xl+ only */}
-      <aside className="hidden xl:block xl:w-64 xl:flex-shrink-0 xl:py-6 xl:pr-5">
-        <RightPanel zone={zone} pinned={pinnedThreads} />
-      </aside>
-    </div>
+      {nextCursor ? (
+        <div className="mt-5 flex justify-center">
+          <Button variant="secondary" busy={loadingMore} onClick={() => void onLoadMore()}>
+            {t("load_more")}
+          </Button>
+        </div>
+      ) : null}
+    </main>
   );
 }
 

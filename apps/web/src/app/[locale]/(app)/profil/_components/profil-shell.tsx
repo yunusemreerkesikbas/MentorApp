@@ -9,11 +9,13 @@ import { Card, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
 import { AccountLinksCard } from "./account-links-card";
+import { ApplicationSupportCard } from "./application-support-card";
 import { EconomySection } from "./economy-section";
-import { ExamSettingsCard } from "./exam-settings-card";
 import { NotificationSettings } from "./notification-settings";
 import { ProfileHeader } from "./profile-header";
+import { SocialFollowCard } from "./social-follow-card";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import { getProfileLinks } from "@/lib/profile-links";
 
 type LoadState =
   | { status: "loading" }
@@ -70,6 +72,11 @@ export function ProfilShell() {
   }
 
   const { user } = state;
+  const hasSocialLinks = getProfileLinks().social.length > 0;
+  const handleUserSaved = (next: AuthUser) => {
+    setUserFromServer(next);
+    setState({ status: "ready", user: next });
+  };
   const motionProps = reduceMotion
     ? {}
     : {
@@ -79,8 +86,8 @@ export function ProfilShell() {
       };
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-5 py-6 lg:px-8 lg:py-10">
-      <header className="mb-8">
+    <main className="mx-auto w-full max-w-6xl overflow-x-hidden px-5 py-6 lg:px-8 lg:py-10">
+      <header className="mb-8 hidden lg:block">
         <h1
           className="text-2xl font-bold lg:text-3xl"
           style={{
@@ -98,33 +105,49 @@ export function ProfilShell() {
         </p>
       </header>
 
-      <motion.div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]" {...motionProps}>
-        <section className="flex flex-col gap-6">
+      <motion.div className="grid min-w-0 gap-5 lg:gap-6 xl:grid-cols-[minmax(0,1fr)_360px]" {...motionProps}>
+        <section className="flex min-w-0 flex-col gap-5 lg:gap-6">
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-            <ProfileHeader user={user} />
-          </motion.div>
-
-          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-            <ExamSettingsCard
+            <ProfileHeader
               user={user}
-              onSaved={() => setEconomyRefreshKey((k) => k + 1)}
+              onSaved={(next) => {
+                handleUserSaved(next);
+                setEconomyRefreshKey((k) => k + 1);
+              }}
             />
           </motion.div>
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <NotificationSettings />
           </motion.div>
+
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <ApplicationSupportCard />
+          </motion.div>
         </section>
 
-        <aside className="flex flex-col gap-6 xl:sticky xl:top-8 xl:self-start">
-          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-            <AccountLinksCard />
-          </motion.div>
+        <aside className="flex min-w-0 flex-col gap-5 lg:gap-6 xl:sticky xl:top-8 xl:self-start">
+
+          {hasSocialLinks ? (
+            <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+              <SocialFollowCard />
+            </motion.div>
+          ) : null}
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <EconomySection
               refreshKey={economyRefreshKey}
               onVisibilityChange={setEconomyVisible}
+            />
+          </motion.div>
+
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <AccountLinksCard
+              user={user}
+              onSaved={(next) => {
+                handleUserSaved(next);
+                setEconomyRefreshKey((k) => k + 1);
+              }}
             />
           </motion.div>
         </aside>
@@ -154,17 +177,6 @@ function ProfileContentSkeleton({ label }: { label: string }) {
             </div>
           </Card>
           <Card>
-            <Skeleton className="h-6 w-40 rounded-[var(--radius-card)]" />
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {[0, 1, 2].map((item) => (
-                <Skeleton
-                  key={item}
-                  className="h-20 rounded-[var(--radius-card)]"
-                />
-              ))}
-            </div>
-          </Card>
-          <Card>
             <Skeleton className="h-6 w-48 rounded-[var(--radius-card)]" />
             <div className="mt-4 grid gap-2">
               {[0, 1, 2].map((item) => (
@@ -184,6 +196,11 @@ function ProfileContentSkeleton({ label }: { label: string }) {
           </Card>
           <Card>
             <Skeleton className="h-6 w-24 rounded-[var(--radius-card)]" />
+            <Skeleton className="mt-4 h-12 rounded-[var(--radius-card)]" />
+            <Skeleton className="mt-3 h-12 rounded-[var(--radius-card)]" />
+          </Card>
+          <Card>
+            <Skeleton className="h-6 w-32 rounded-[var(--radius-card)]" />
             <Skeleton className="mt-4 h-12 rounded-[var(--radius-card)]" />
             <Skeleton className="mt-3 h-12 rounded-[var(--radius-card)]" />
           </Card>

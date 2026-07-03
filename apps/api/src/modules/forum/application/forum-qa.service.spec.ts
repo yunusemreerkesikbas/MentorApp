@@ -52,6 +52,7 @@ const makeZoneRepo = (memberStatus: string | null = ZoneMemberStatus.ACTIVE) => 
 });
 const config = { get: vi.fn().mockResolvedValue(true) };
 const events = { emit: vi.fn(), emitAsync: vi.fn().mockResolvedValue([]) };
+const storage = { getPublicUrl: vi.fn((key: string) => `/v1/storage/fake-object?key=${encodeURIComponent(key)}`) };
 const actor = (id: string, roles: string[] = [UserRole.STUDENT]) => ({ id, roles });
 
 describe("ForumQaService", () => {
@@ -66,7 +67,14 @@ describe("ForumQaService", () => {
   });
 
   const svc = (zoneRepo: ReturnType<typeof makeZoneRepo>) =>
-    new ForumQaService(threads as never, posts as never, zoneRepo as never, config as never, events as never);
+    new ForumQaService(
+      threads as never,
+      posts as never,
+      zoneRepo as never,
+      config as never,
+      events as never,
+      storage as never,
+    );
 
   it("rejects a non-member answering", async () => {
     await expect(

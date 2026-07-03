@@ -99,7 +99,10 @@ export class AdminUsersController {
     setAuditContext(req, {
       targetType: AuditTargetType.USER,
       targetId: userId,
-      after: { anonymized: true, scrubbedFields: ["email", "displayName", "examType", "examDate"] },
+      after: {
+        anonymized: true,
+        scrubbedFields: ["email", "displayName", "username", "examType", "examDate"],
+      },
     });
     return result.user;
   }

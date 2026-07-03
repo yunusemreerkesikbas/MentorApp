@@ -457,3 +457,26 @@ html.mentor-sheet-open {
     animation: none;
   }
 }
+
+/* Forum like button — one-shot pop when a post is liked (remounted via key on toggle). */
+@keyframes forum-like-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.forum-like-pop {
+  animation: forum-like-pop 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forum-like-pop {
+    animation: none;
+  }
+}

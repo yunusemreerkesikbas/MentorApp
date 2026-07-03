@@ -1,3 +1,5 @@
+import { resolveAvatarUrl } from "@/lib/avatar";
+
 const COLORS = ["#BEA1FE", "#9BC1FB", "#BDEBFF", "#DDACE5", "#D6DBFD"];
 
 function colorFor(name: string): string {
@@ -11,9 +13,32 @@ function initials(name: string): string {
   return (parts[0][0]! + (parts[1]?.[0] ?? "")).toUpperCase();
 }
 
-export function AuthorAvatar({ name, size = 36 }: { name: string; size?: number }) {
+export function AuthorAvatar({
+  name,
+  size = 36,
+  src,
+}: {
+  name: string;
+  size?: number;
+  src?: string | null;
+}) {
+  const resolvedSrc = resolveAvatarUrl(src ?? null);
+  if (resolvedSrc) {
+    return (
+      // ponytail: forum avatars can be fake/R2 object URLs; plain img avoids next/image config.
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={resolvedSrc}
+        alt=""
+        className="flex-shrink-0 rounded-full object-cover"
+        style={{ width: size, height: size, minWidth: size }}
+        aria-hidden="true"
+      />
+    );
+  }
+
   const bg = colorFor(name || "?");
-  const fontSize = size <= 28 ? 10 : size <= 36 ? 12 : 14;
+  const fontSize = Math.max(10, Math.round(size * 0.36));
   return (
     <span
       className="flex flex-shrink-0 items-center justify-center rounded-full font-bold"

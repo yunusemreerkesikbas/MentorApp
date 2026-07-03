@@ -20,6 +20,7 @@ import {
   configureApiClient,
 } from "@mentor/api-client";
 import type { LoginInput, SignupInput } from "@mentor/validation";
+import { apiBaseUrl } from "./api-base";
 
 type Status = "loading" | "authenticated" | "anonymous";
 
@@ -35,12 +36,6 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-/** Strips a trailing /v1 — generated operation URLs already include the prefix. */
-function apiBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-  return raw.replace(/\/v1\/?$/, "");
-}
-
 /**
  * Access token lives ONLY in memory (XSS can't read httpOnly refresh cookie; we never
  * persist tokens to storage). On mount we attempt a silent refresh — the cookie decides.
@@ -50,11 +45,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const accessTokenRef = useRef<string | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshInFlightRef = useRef<Promise<AuthSession> | null>(null);
+  const sessionVersionRef = useRef(0);
   // Breaks the applySession ↔ silentRefresh cycle (timer calls through the ref).
   const silentRefreshRef = useRef<() => void>(() => {});
   const locale = useLocale();
 
   const clearSession = useCallback(() => {
+    sessionVersionRef.current += 1;
     accessTokenRef.current = null;
     setUser(null);
     setStatus("anonymous");
@@ -62,11 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setUserFromServer = useCallback((next: AuthUser) => {
+    sessionVersionRef.current += 1;
     setUser(next);
     setStatus("authenticated");
   }, []);
 
   const applySession = useCallback((session: AuthSession) => {
+    sessionVersionRef.current += 1;
     accessTokenRef.current = session.accessToken;
     setUser(session.user);
     setStatus("authenticated");
@@ -79,11 +79,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const silentRefresh = useCallback(async () => {
+    const startedAtVersion = sessionVersionRef.current;
     try {
-      const session = (await authControllerRefresh()) as unknown as AuthSession;
-      applySession(session);
+      refreshInFlightRef.current ??= (
+        authControllerRefresh() as unknown as Promise<AuthSession>
+      ).finally(() => {
+        refreshInFlightRef.current = null;
+      });
+      const session = await refreshInFlightRef.current;
+      if (sessionVersionRef.current === startedAtVersion) applySession(session);
     } catch {
-      clearSession(); // no/expired cookie → anonymous (expected, not an error)
+      // no/expired cookie → anonymous; stale refresh must not erase a newer login/signup.
+      if (sessionVersionRef.current === startedAtVersion) clearSession();
     }
   }, [applySession, clearSession]);
 

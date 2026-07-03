@@ -20,6 +20,8 @@ const heading = League_Spartan({
 });
 const body = Lato({
   subsets: ["latin", "latin-ext"],
+  // Lato ships no 500/600 — only 400 and 700. So `font-medium` renders as 400; use `font-bold`/
+  // `font-semibold` (→700) when text needs real weight contrast (e.g. author names).
   weight: ["400", "700"],
   variable: "--font-body",
 });

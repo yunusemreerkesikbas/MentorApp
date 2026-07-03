@@ -69,8 +69,13 @@ export interface ZoneMemberView {
   createdAt: string;
 }
 
-/** Allowed reactions (fixed, positive set — §3 "pozitif çerçevele"). Config-extensible later. */
-export const FORUM_REACTION_EMOJIS = ["👍", "❤️", "💪", "🎉", "😮"] as const;
+/**
+ * Reactions collapsed to a single "like" (❤️) — APP-017 pulled a Threads-style like/comment into
+ * MVP. The reaction table/endpoints stay generic (emoji column), but the app allows only this one.
+ * The richer positive-emoji palette (👍💪🎉😮) is a backlog item behind config if it returns.
+ */
+export const FORUM_LIKE_EMOJI = "❤️" as const;
+export const FORUM_REACTION_EMOJIS = [FORUM_LIKE_EMOJI] as const;
 export type ForumReactionEmoji = (typeof FORUM_REACTION_EMOJIS)[number];
 
 /** Thread status — meaningful only for QA questions (chat/announcement stay OPEN). */
@@ -88,7 +93,12 @@ export interface ThreadView {
   id: string;
   zoneId: string;
   authorId: string;
+  /** Author's display name (human name). */
   authorName: string;
+  /** Author's @handle; null when they haven't set a username. */
+  authorUsername: string | null;
+  /** Author's public avatar URL; null falls back to initials. */
+  authorAvatarUrl: string | null;
   /** QA question headline; null for chat/announcement. */
   title: string | null;
   body: string;
@@ -100,6 +110,10 @@ export interface ThreadView {
   reactionCounts: Record<string, number>;
   /** emoji the viewer themselves reacted with. */
   myReactions: string[];
+  /** Number of (non-deleted) comments/answers on this thread. */
+  commentCount: number;
+  /** Display names of up to 3 recent distinct commenters (for the replier-avatar cluster). */
+  commenterNames: string[];
   createdAt: string;
 }
 
@@ -115,6 +129,8 @@ export interface AnswerView {
   threadId: string;
   authorId: string;
   authorName: string;
+  authorUsername: string | null;
+  authorAvatarUrl: string | null;
   body: string;
   isAccepted: boolean;
   createdAt: string;
@@ -124,6 +140,43 @@ export interface AnswerView {
 export interface QuestionDetail {
   question: ThreadView;
   answers: AnswerView[];
+}
+
+/**
+ * A comment on a CHAT/ANNOUNCEMENT thread (APP-017 recursive threads). Every comment is itself
+ * likeable + replyable; `parentPostId` null = top-level comment, set = a reply to another comment.
+ * QA answers keep the leaner `AnswerView` (QA is out of scope for likes/nesting).
+ */
+export interface CommentView {
+  id: string;
+  threadId: string;
+  parentPostId: string | null;
+  authorId: string;
+  authorName: string;
+  authorUsername: string | null;
+  authorAvatarUrl: string | null;
+  body: string;
+  likeCount: number;
+  /** Whether the viewer has liked this comment. */
+  myLiked: boolean;
+  /** Number of (non-deleted) direct replies. */
+  replyCount: number;
+  createdAt: string;
+}
+
+/**
+ * GET /v1/forum/threads/:id/detail — a CHAT/ANNOUNCEMENT thread with its top-level comments.
+ * Nested replies are loaded per-comment via the comment detail endpoint (Twitter-style navigation).
+ */
+export interface ThreadDetail {
+  thread: ThreadView;
+  comments: CommentView[];
+}
+
+/** GET /v1/forum/posts/:postId — a focused comment with its direct replies (oldest-first). */
+export interface CommentDetail {
+  comment: CommentView;
+  replies: CommentView[];
 }
 
 /** Public (anonymous, SEO) QA shapes — no authorId/PII. Only indexable QA questions are exposed. */

@@ -11,6 +11,7 @@
  */
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   date,
   index,
@@ -81,6 +82,8 @@ export const users = pgTable(
     email: text("email").notNull(),
     passwordHash: text("password_hash").notNull(),
     displayName: text("display_name").notNull(),
+    username: text("username"),
+    avatarStorageKey: text("avatar_storage_key"),
     /** Multi-role (§9/§11): e.g. ORG_ADMIN + COACH. Values = UserRole enum. */
     roles: text("roles")
       .array()
@@ -98,7 +101,10 @@ export const users = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("users_email_unique_idx").on(sql`lower(${t.email})`)],
+  (t) => [
+    uniqueIndex("users_email_unique_idx").on(sql`lower(${t.email})`),
+    uniqueIndex("users_username_unique_idx").on(sql`lower(${t.username})`),
+  ],
 );
 
 /** Coach↔student link (§11) — schema-ready for Phase 2 BYOS/marketplace, unused in MVP. */
@@ -170,6 +176,26 @@ export const emailTokens = pgTable(
   (t) => [
     uniqueIndex("email_tokens_hash_idx").on(t.tokenHash),
     index("email_tokens_user_type_idx").on(t.userId, t.type),
+  ],
+);
+
+/** Verification email resend attempts — counted for admin-tunable self-service rate limits. */
+export const emailVerificationResendAttempts = pgTable(
+  "email_verification_resend_attempts",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("email_verification_resend_attempts_user_created_idx").on(
+      t.userId,
+      t.createdAt,
+    ),
   ],
 );
 
@@ -997,6 +1023,9 @@ export const forumPosts = pgTable(
     threadId: uuid("thread_id")
       .notNull()
       .references(() => forumThreads.id),
+    /** Reply target (APP-017 recursive threads). Null = top-level comment on the thread; set = a
+     * reply to another comment. Self-FK; the row still carries the root `thread_id` for zone lookup. */
+    parentPostId: uuid("parent_post_id").references((): AnyPgColumn => forumPosts.id),
     authorId: uuid("author_id")
       .notNull()
       .references(() => users.id),
@@ -1007,7 +1036,32 @@ export const forumPosts = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("forum_posts_thread_created_idx").on(t.threadId, t.createdAt)],
+  (t) => [
+    index("forum_posts_thread_created_idx").on(t.threadId, t.createdAt),
+    index("forum_posts_parent_idx").on(t.parentPostId),
+  ],
+);
+
+/** One reaction per (post, user, emoji) — comment likes (APP-017). Mirrors forum_reactions. */
+export const forumPostReactions = pgTable(
+  "forum_post_reactions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    postId: uuid("post_id")
+      .notNull()
+      .references(() => forumPosts.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    emoji: text("emoji").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_post_reactions_unique_idx").on(t.postId, t.userId, t.emoji),
+    index("forum_post_reactions_post_idx").on(t.postId),
+  ],
 );
 
 /** One reaction per (thread, user, emoji). Emoji constrained to FORUM_REACTION_EMOJIS in app. */

@@ -3,6 +3,7 @@ import { UserRole, ZoneMemberStatus, ZoneRole, ZoneType } from "@mentor/types";
 import {
   canAcceptAnswer,
   canApproveMember,
+  canCommentInZone,
   canCreateZone,
   canDeleteThread,
   canModerateZone,
@@ -61,6 +62,24 @@ describe("forum.policy", () => {
       expect(
         canPostInZone(actor([UserRole.MODERATOR], null), ZoneType.ANNOUNCEMENT, null),
       ).toBe(true);
+    });
+  });
+
+  describe("canCommentInZone", () => {
+    it("CHAT + ANNOUNCEMENT: any ACTIVE member (or staff) may comment; announcement discussion is open", () => {
+      const member = actor([UserRole.STUDENT], ZoneRole.MEMBER);
+      expect(canCommentInZone(member, ZoneType.CHAT, ZoneMemberStatus.ACTIVE)).toBe(true);
+      // Unlike posting, a plain member CAN comment on an announcement.
+      expect(canCommentInZone(member, ZoneType.ANNOUNCEMENT, ZoneMemberStatus.ACTIVE)).toBe(true);
+      expect(canCommentInZone(member, ZoneType.CHAT, ZoneMemberStatus.PENDING)).toBe(false);
+      expect(canCommentInZone(member, ZoneType.CHAT, null)).toBe(false);
+      expect(canCommentInZone(actor([UserRole.ADMIN], null), ZoneType.ANNOUNCEMENT, null)).toBe(true);
+    });
+
+    it("QA is not a comment surface (answers path only)", () => {
+      expect(
+        canCommentInZone(actor([UserRole.STUDENT], ZoneRole.MEMBER), ZoneType.QA, ZoneMemberStatus.ACTIVE),
+      ).toBe(false);
     });
   });
 

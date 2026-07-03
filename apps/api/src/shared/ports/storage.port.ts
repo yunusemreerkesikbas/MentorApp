@@ -16,5 +16,7 @@ export interface StoragePort {
   createUploadUrl(input: { key: string; contentType: string }): Promise<StorageUploadUrlResult>;
   getPublicUrl(key: string): string;
   /** Server-side read for the vision pipeline (never exposed to clients). */
-  readObject(key: string): Promise<Buffer | null>;
+  readObject(key: string, maxBytes?: number): Promise<Buffer | null>;
+  /** Best-effort cleanup for replaced user uploads. */
+  deleteObject(key: string): Promise<void>;
 }

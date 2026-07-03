@@ -68,7 +68,7 @@ export function NotificationSettings() {
 
   if (loading) {
     return (
-      <Card>
+      <Card solid className="p-4">
         <Skeleton className="h-6 w-44 rounded-[var(--radius-card)]" />
         <Skeleton className="mt-4 h-14 rounded-[var(--radius-card)]" />
         <Skeleton className="mt-3 h-14 rounded-[var(--radius-card)]" />
@@ -77,11 +77,10 @@ export function NotificationSettings() {
   }
 
   return (
-    <Card id="notification-settings">
+    <Card id="notification-settings" solid className="p-4">
       <SectionHeading
-        subtitle={t("subtitle")}
         action={
-          <span className="grid size-10 place-items-center rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)] text-[var(--color-progress)]">
+          <span className="grid size-10 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]">
             <Bell size={20} aria-hidden />
           </span>
         }
@@ -89,7 +88,7 @@ export function NotificationSettings() {
         {t("title")}
       </SectionHeading>
       {error ? <FormError message={error} /> : null}
-      <div className="mt-5 grid gap-3">
+      <div className="mt-3 divide-y divide-black/10 overflow-hidden rounded-[var(--radius-card)]">
         <ToggleRow
           checked={emailEnabled}
           description={t("email_desc")}
@@ -138,16 +137,16 @@ function ToggleRow({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex min-h-16 cursor-pointer items-center justify-between gap-4 rounded-[var(--radius-card)] border border-black/10 bg-white px-4 py-3 transition-colors hover:bg-black/[0.03] focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)] focus-within:ring-offset-2">
+    <label className="flex min-h-16 min-w-0 cursor-pointer items-center justify-between gap-3 bg-white px-3 py-3 transition-colors hover:bg-black/[0.03] focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)] focus-within:ring-offset-2">
       <span className="flex min-w-0 items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)] text-[var(--color-progress)]">
+        <span className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]">
           {icon}
         </span>
         <span className="min-w-0">
-          <span className="block text-base font-bold text-[var(--color-main)]">
+          <span className="block truncate text-base font-bold text-[var(--color-main)]">
             {label}
           </span>
-          <span className="mt-0.5 block text-sm leading-5 text-[var(--color-secondary)]">
+          <span className="mt-0.5 hidden text-sm leading-5 text-[var(--color-secondary)] sm:block">
             {description}
           </span>
         </span>

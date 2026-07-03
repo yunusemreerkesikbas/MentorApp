@@ -63,6 +63,32 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **Profil avatar render fix + edit sheet** — profil avatarı fake/R2 public object URL'ini doğrudan
+  `<img>` ile render eder; dev fake-object URL'inde kırık `next/image` alt metni görünmez. Profil
+  düzenleme akışı generic dialog yerine mevcut bottom sheet primitive'ine taşındı: mobilde sheet,
+  desktopta aynı içerik kompakt panel olarak açılır. Related: `profile-header.tsx`. *(2026-07-03.)*
+- **Profil avatar V1 UI** — `/profil` header avatarı `ProfileAvatar` parçasına ayrıldı: `avatarUrl`
+  varsa yuvarlak fotoğraf, yoksa mevcut ad-soyad baş harfleri render edilir. Profil düzenleme
+  modalına JPEG/PNG dosya seçimi, lokal preview ve "Kaldır" aksiyonu eklendi; save sırasında önce
+  avatar upload URL alınır, dosya PUT edilir, ardından `PATCH /v1/users/me` çalışır. Gotcha: crop,
+  hazır avatar seti ve image transform bu sürümde yok; fake storage'ın relatif upload/public URL'leri
+  `resolveApiUrl()` ile API host'una çözümlenir. Related: `profile-header.tsx`,
+  `apps/web/src/lib/{avatar,api-base}.ts`, `messages/{tr,en}.json`. *(2026-07-03.)*
+- **Profil ayar akışı sadeleştirme** — `/profil` hero daha kompakt hale getirildi; boş username
+  metni ve ikinci durum chip'i kaldırıldı, hedef sınav seçimi inline kart gridinden mevcut
+  bottom-sheet aksiyonuna taşındı. Mobilde bildirim satırı açıklamaları gizlenerek ilk ekranın
+  metin yükü azaltıldı. Related: `profile-header.tsx`, `profil-shell.tsx`,
+  `notification-settings.tsx`, `application-support-card.tsx`.
+- **Profil username edit** — `/profil` düzenleme modalı kalıcı `username` alanını gösterir ve
+  `usersControllerUpdateMe` ile kaydeder; hero `@username` gösterir, boşsa kullanıcı adı eklenmedi
+  mesajı kalır. Username forum author alanında kullanılır. Related:
+  `profile-header.tsx`, `packages/validation/src/auth.ts`.
+- **Profil V1 destek hub** — `/profil` hesap merkezi profil adı düzenleme (mevcut
+  `usersControllerUpdateMe`), locale tabanlı dil seçimi, tavsiye paylaşımı, yardım merkezi linki,
+  opsiyonel geri bildirim linki ve uygulama sosyal hesapları ile genişletildi. Backend/migration yok;
+  dış linkler `profile-links.ts` + `NEXT_PUBLIC_*` config değerlerinden gelir, boş URL'ler render
+  edilmez. Related: `apps/web/src/app/[locale]/(app)/profil/_components/*`,
+  `apps/web/src/lib/profile-links.ts`, `apps/web/messages/{tr,en}.json`.
 - **Profil premium hesap merkezi** — `/profil` panel overview tekrarından arındırıldı; desktopta
   ana hesap ayarları + sağ yan hesap/hak rayı, mobilde referanslardaki compact profil ayar akışı.
   `ProfilShell` yalnız `GET /v1/users/me` yükler, sayfa-özel skeleton gösterir; cover'lı profil hero,
@@ -150,6 +176,24 @@ http://localhost:3000/panel               # daily ritual hub
   same warm gray as passive tab rail) instead of `--color-progress-track` blue. Token added to
   `packages/ui/src/theme.css`. *(plan/koç loading states.)*
 - **Topluluk inner layout (Discord-like)** — `apps/web/src/app/[locale]/(app)/topluluk/layout.tsx` adds a second sidebar layer **inside** the existing `(app)` `lg:pl-60` content area. Desktop: in-flow `w-60` zone sidebar (`lg:flex`) + `min-w-0 flex-1` content. Mobile: CSS transform slide-in drawer (`ZoneDrawer`, `z-30`) triggered by hamburger bar (`sticky top-14 z-10`), closes on Escape or backdrop click. Zone detail adds a third column (`xl:w-72` right panel) inside `zone-shell.tsx`. Pattern: nested flex layouts all use `min-w-0` to prevent overflow; no fixed positioning inside content area. *(APP-016)*
+- **Profil mobile overflow hardening** — `/profil` account hub keeps the premium card stack but fixes narrow viewport drift: profile hero stacks identity content on mobile, card columns/rows use `min-w-0`, list chevrons/toggles stay fixed, and economy quest/invite rows wrap or truncate instead of widening the page. Usage: 375px profile should remain one-column with no horizontal scroll. Related files: `profil-shell.tsx`, `profile-header.tsx`, notification/support/account/economy profile cards. *(2026-07-01.)*
+- **Profil mobile settings hub** — `/profil` now reads as a minimal mobile settings surface:
+  centered identity header first, then grouped preferences/app/earned-rights/account rows.
+  Economy balance, quests, and invite details move behind the existing bottom sheet so the main
+  page stays short; desktop keeps the same overlay in a modal-like panel. Usage: mobile users scan
+  rows first; tap earned-rights rows for detail. Gotcha: details reuse existing cards; no new routes
+  yet. Related files: `profil-shell.tsx`, `profile-header.tsx`,
+  `account-links-card.tsx`, `notification-settings.tsx`, `application-support-card.tsx`,
+  `economy-section.tsx`, `messages/{tr,en}.json`. *(2026-07-03.)*
+- **Profil bilgi modalı polish** — profil düzenleme formundaki yardımcı metinler azaltıldı,
+  e-posta alanı kilit ikonlu bilgi satırı olarak gösterildi ve aksiyonlar mobilde dengeli iki kolon
+  oldu. Dialog focus sırası inputları da kapsar, bu yüzden form açılınca ilk düzenlenebilir alan odağı
+  alır. Related files: `profile-header.tsx`, `dialog-provider.tsx`,
+  `messages/{tr,en}.json`. *(2026-07-03.)*
+- **Profil e-posta durum badge'i** — profil header'daki doğrulama chip'i kaldırıldı; doğrulanmış
+  kullanıcıda avatar sağ-altında pasif `BadgeCheck`, doğrulanmamış kullanıcıda aynı noktada
+  tıklanabilir mail-warning badge'i gösterilir ve mevcut doğrulama e-postası resend akışını çalıştırır.
+  Related: `profile-header.tsx`. *(2026-07-03.)*
 
 ## Gotchas / Known issues
 

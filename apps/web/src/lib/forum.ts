@@ -1,10 +1,13 @@
 import type {
   AnswerView,
+  CommentDetail,
+  CommentView,
   ModerationTargetType,
   Paginated,
   QuestionDetail,
   ReportReason,
   ReportView,
+  ThreadDetail,
   ThreadFeed,
   ThreadView,
   ZoneMemberStatus,
@@ -33,9 +36,16 @@ export async function joinZone(zoneId: string): Promise<{ status: ZoneMemberStat
   })) as { status: ZoneMemberStatus };
 }
 
-export async function listThreads(zoneId: string, before?: string): Promise<ThreadFeed> {
+export type ThreadSort = "recent" | "popular";
+
+export async function listThreads(
+  zoneId: string,
+  before?: string,
+  sort: ThreadSort = "recent",
+): Promise<ThreadFeed> {
   const qs = new URLSearchParams({ limit: "30" });
   if (before) qs.set("before", before);
+  if (sort !== "recent") qs.set("sort", sort);
   return (await http<ThreadFeed>(`/v1/forum/zones/${zoneId}/threads?${qs.toString()}`)) as ThreadFeed;
 }
 
@@ -66,6 +76,46 @@ export async function unreactThread(threadId: string, emoji: string): Promise<vo
 
 export async function getQuestion(threadId: string): Promise<QuestionDetail> {
   return (await http<QuestionDetail>(`/v1/forum/threads/${threadId}`)) as QuestionDetail;
+}
+
+/** CHAT/ANNOUNCEMENT thread + its comments (oldest-first). */
+export async function getThreadDetail(threadId: string): Promise<ThreadDetail> {
+  return (await http<ThreadDetail>(`/v1/forum/threads/${threadId}/detail`)) as ThreadDetail;
+}
+
+/** Post a top-level comment on a CHAT/ANNOUNCEMENT thread. */
+export async function postComment(threadId: string, body: string): Promise<CommentView> {
+  return (await http<CommentView>(`/v1/forum/threads/${threadId}/comments`, {
+    method: "POST",
+    body: JSON.stringify({ body }),
+  })) as CommentView;
+}
+
+/** A focused comment + its direct replies (recursive navigation). */
+export async function getCommentDetail(postId: string): Promise<CommentDetail> {
+  return (await http<CommentDetail>(`/v1/forum/posts/${postId}`)) as CommentDetail;
+}
+
+/** Reply to a comment (nested). */
+export async function postReply(postId: string, body: string): Promise<CommentView> {
+  return (await http<CommentView>(`/v1/forum/posts/${postId}/replies`, {
+    method: "POST",
+    body: JSON.stringify({ body }),
+  })) as CommentView;
+}
+
+export async function likePost(postId: string, emoji: string): Promise<void> {
+  await http(`/v1/forum/posts/${postId}/reactions`, {
+    method: "PUT",
+    body: JSON.stringify({ emoji }),
+  });
+}
+
+export async function unlikePost(postId: string, emoji: string): Promise<void> {
+  await http(`/v1/forum/posts/${postId}/reactions`, {
+    method: "DELETE",
+    body: JSON.stringify({ emoji }),
+  });
 }
 
 export async function postAnswer(threadId: string, body: string): Promise<AnswerView> {
