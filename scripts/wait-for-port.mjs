@@ -21,18 +21,22 @@ const deadline = Date.now() + timeoutMs;
 
 function attempt() {
   const socket = net.connect({ port, host });
-  socket.once("connect", () => {
+  let settled = false;
+  const finish = (up) => {
+    if (settled) return; // connect/error/timeout can race — act once
+    settled = true;
     socket.destroy();
-    process.exit(0);
-  });
-  socket.once("error", () => {
-    socket.destroy();
+    if (up) process.exit(0);
     if (Date.now() >= deadline) {
       console.warn(`wait-for-port: ${host}:${port} not up after ${timeoutMs}ms — starting anyway.`);
       process.exit(0);
     }
     setTimeout(attempt, 300);
-  });
+  };
+  socket.setTimeout(1000); // a stuck (filtered) connect emits 'timeout' instead of hanging forever
+  socket.once("connect", () => finish(true));
+  socket.once("timeout", () => finish(false));
+  socket.once("error", () => finish(false));
 }
 
 console.log(`wait-for-port: waiting for ${host}:${port} …`);

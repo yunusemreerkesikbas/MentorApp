@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
 import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left.mjs";
@@ -22,9 +22,7 @@ import { Link } from "@/i18n/navigation";
 import { getCommunityLeaderboard, getCommunitySummary } from "@/lib/community";
 import { AuthorAvatar } from "../../_components/author-avatar";
 import { BadgeStrip } from "../../_components/badge-strip";
-
-/** Muted medal accents (calm, within-palette — no neon). */
-const MEDAL = ["#C9A227", "#9AA3AF", "#BA7517"] as const; // gold · silver · bronze
+import { MEDAL } from "../../_components/leaderboard-medals";
 
 /** Rank change vs the previous period. Gentle: ▲ calm green, ▼ muted gray (never red — §4). */
 function MovementIndicator({ movement }: { movement: RankMovement }) {
@@ -319,6 +317,23 @@ function WindowTabs({
 }) {
   const t = useTranslations("topluluk");
   const reduce = useReducedMotion() ?? false;
+  const order = ["today", "weekly", "all_time"] as const;
+  const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // WAI-ARIA tabs: roving tabindex + ←/→/Home/End move and activate (automatic activation).
+  const onKeyDown = (e: ReactKeyboardEvent) => {
+    const idx = order.indexOf(value);
+    let next = idx;
+    if (e.key === "ArrowRight") next = (idx + 1) % order.length;
+    else if (e.key === "ArrowLeft") next = (idx - 1 + order.length) % order.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = order.length - 1;
+    else return;
+    e.preventDefault();
+    onChange(order[next]);
+    btnRefs.current[next]?.focus();
+  };
+
   return (
     <div
       role="tablist"
@@ -326,15 +341,20 @@ function WindowTabs({
       className="flex gap-1 rounded-full p-1"
       style={{ background: "#f5f5f5" }}
     >
-      {(["today", "weekly", "all_time"] as const).map((w) => {
+      {order.map((w, i) => {
         const active = w === value;
         return (
           <button
             key={w}
+            ref={(el) => {
+              btnRefs.current[i] = el;
+            }}
             type="button"
             role="tab"
             aria-selected={active}
+            tabIndex={active ? 0 : -1}
             onClick={() => onChange(w)}
+            onKeyDown={onKeyDown}
             className="relative flex-1 rounded-full py-2.5 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             style={{ color: active ? "var(--color-main)" : "var(--color-secondary)" }}
           >

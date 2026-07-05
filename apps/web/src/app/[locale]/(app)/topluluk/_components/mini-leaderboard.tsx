@@ -7,9 +7,7 @@ import ChevronRight from "lucide-react/dist/esm/icons/chevron-right.mjs";
 import type { LeaderboardEntry, LeaderboardView } from "@mentor/types";
 import { Link } from "@/i18n/navigation";
 import { AuthorAvatar } from "./author-avatar";
-
-/** Muted medal accents (calm, within-palette — matches the full page). gold · silver · bronze */
-const MEDAL = ["#C9A227", "#9AA3AF", "#BA7517"] as const;
+import { MEDAL } from "./leaderboard-medals";
 
 function Spot({ entry, place, youLabel }: { entry: LeaderboardEntry; place: 0 | 1 | 2; youLabel: string }) {
   const locale = useLocale();
