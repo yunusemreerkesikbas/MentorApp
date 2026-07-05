@@ -83,6 +83,10 @@ export const CONFIG_CATALOG = {
   "ai.enabled": flag(true, "Global AI kill-switch (§4/§8) — turn off all AI features."),
   "economy.enabled": flag(false, "Gate for the light-economy module (user-facing balance/earning)."),
   "forum.enabled": flag(false, "Gate for the forum/community module (zones, threads, moderation)."),
+  "identity.google_oauth.enabled": flag(
+    false,
+    "Gate for Google sign-in on the public auth screens. Requires GOOGLE_OAUTH_* env vars.",
+  ),
   "signup.enabled": flag(true, "Registration kill-switch — disable new sign-ups."),
   "identity.verification_email.resend_limit": identityCount(
     3,
@@ -101,6 +105,8 @@ export const CONFIG_CATALOG = {
   "economy.quest.onboarding_reward_coin": economyCount(10, 100000, "Coin granted per completed onboarding quest."),
   "economy.coin.ai_chat_cost": economyCount(5, 100000, "Coin debited per AI coach chat message (free earned-right path)."),
   "forum.xp.accepted_answer": economyCount(25, 1000, "XP granted to a user when their forum answer is accepted (slice 3)."),
+  "forum.xp.thread_posted": economyCount(2, 1000, "XP granted for posting a forum thread/message (feeds the effort leaderboard; capped per day)."),
+  "forum.xp.thread_posted_daily_cap": economyCount(10, 1000, "Max posts per day that earn XP (anti-farm shield for the leaderboard)."),
   "ai.chat.daily_limit": aiCount(30, 100000, "Max AI coach chat messages a premium user may send per day (cost cap §7)."),
   "ai.chat.free_coin_daily_limit": aiCount(
     5,
@@ -121,6 +127,7 @@ export const FeatureFlag = {
   AI_ENABLED: "ai.enabled",
   ECONOMY_ENABLED: "economy.enabled",
   FORUM_ENABLED: "forum.enabled",
+  GOOGLE_OAUTH_ENABLED: "identity.google_oauth.enabled",
   SIGNUP_ENABLED: "signup.enabled",
 } as const satisfies Record<string, ConfigKey>;
 

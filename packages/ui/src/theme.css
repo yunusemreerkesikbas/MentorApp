@@ -29,6 +29,8 @@
      red (≥4.5:1 on white), calm not alarming (anti-shaming tone). focus-ring: keyboard
      focus indicator — darkened accent (≥3:1 for UI components). */
   --color-danger: #b42318;
+  /** Positive/upward signal — calm accessible green (≥4.5:1 on white); rank ▲, gains. */
+  --color-success: #2e7d54;
   /** Error icon circle background (toast error leading). */
   --color-error-container: #ffdad6;
   --color-surface-translucent: rgba(255, 255, 255, 0.5);

@@ -7,6 +7,9 @@ const threadRow = (over: Partial<Record<string, unknown>> = {}) => ({
   id: "t1",
   zoneId: "z1",
   authorId: "author",
+  authorName: "Author",
+  authorUsername: "author",
+  authorAvatarStorageKey: null,
   title: null,
   body: "merhaba",
   status: "OPEN",
@@ -77,6 +80,7 @@ describe("ForumThreadService", () => {
   beforeEach(() => {
     threadRepo = makeThreadRepo();
     events.emit.mockClear();
+    storage.getPublicUrl.mockClear();
   });
 
   let postRepo: ReturnType<typeof makePostRepo>;
@@ -112,6 +116,14 @@ describe("ForumThreadService", () => {
       title: null,
     });
     expect(events.emit).toHaveBeenCalledWith("forum.thread.posted", expect.objectContaining({ threadId: "t1" }));
+  });
+
+  it("maps author avatar storage key to authorAvatarUrl", async () => {
+    threadRepo.findById.mockResolvedValue(
+      threadRow({ authorAvatarStorageKey: "avatars/u1/a.png" }),
+    );
+    const view = await svc(makeZoneRepo()).postThread(actor([UserRole.STUDENT]), "z1", { body: "hi" });
+    expect(view.authorAvatarUrl).toBe("/v1/storage/fake-object?key=avatars%2Fu1%2Fa.png");
   });
 
   it("rejects a plain member posting in an ANNOUNCEMENT zone", async () => {

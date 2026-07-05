@@ -4,7 +4,7 @@
   "private": true,
   "description": "Mentor internal admin panel (W6) — Duralux Bootstrap template wired to the /v1 API. Team-only, behind Cloudflare Access (§9).",
   "scripts": {
-    "dev": "next dev --port 3002",
+    "dev": "node ../../scripts/wait-for-port.mjs 3001 && next dev --port 3002",
     "build": "next build",
     "start": "next start --port 3002",
     "lint": "next lint --dir src/lib --dir src/contentApi --dir src/components/shared --dir src/app/login --dir \"src/app/(general)/content\" --dir \"src/app/(general)/users\" --dir \"src/app/(general)/audit-log\" --dir \"src/app/(general)/config\" --dir src/app/page.tsx --dir \"src/app/(general)/layout.tsx\"",

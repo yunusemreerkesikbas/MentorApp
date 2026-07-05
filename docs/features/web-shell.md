@@ -63,6 +63,16 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **Onboarding profil adımı polish** — username/avatar formundaki nested-card hissi azaltıldı:
+  avatar satırı gölgesiz hafif field row'a döndü, avatar preview küçültüldü ve form aralıkları
+  sıkılaştırıldı. Usage: `/onboarding` profil adımı aynı davranışı korur; sadece görsel hiyerarşi
+  daha sakin. Related: `profile-step.tsx`. *(2026-07-04.)*
+- **Onboarding profil adımı** — `/onboarding` akışı 5 adıma çıktı: welcome → zorunlu username +
+  opsiyonel avatar → sınav → hedef → tamam. Usage: email/Google signup sonrası username seçmeden
+  `(app)` shell'e geçilmez; avatar aynı profil upload helper'larını kullanır ve atlanabilir. Gotcha:
+  username availability pre-check yok; duplicate mesajı backend `AUTH_USERNAME_IN_USE` cevabından
+  gösterilir. Related: `onboarding-wizard.tsx`, `profile-step.tsx`,
+  `post-auth-destination.ts`. *(2026-07-03.)*
 - **Profil avatar render fix + edit sheet** — profil avatarı fake/R2 public object URL'ini doğrudan
   `<img>` ile render eder; dev fake-object URL'inde kırık `next/image` alt metni görünmez. Profil
   düzenleme akışı generic dialog yerine mevcut bottom sheet primitive'ine taşındı: mobilde sheet,

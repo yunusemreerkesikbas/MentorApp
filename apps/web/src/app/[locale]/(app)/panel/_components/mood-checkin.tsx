@@ -15,10 +15,14 @@ import {
   coachingControllerUpsertMood,
 } from "@mentor/api-client";
 import { Card, Chip, SectionHeading } from "@mentor/ui";
-import { PuhuImage, type PuhuVariant } from "@/components/puhu-image";
+import type { PuhuVariant } from "@/components/puhu-image";
 import { useRouter } from "@/i18n/navigation";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
+import {
+  MOOD_WHEEL_SPHERES,
+  MoodWheelPicker,
+} from "./mood-wheel-picker";
 
 const MOOD_OPTIONS: Array<{ value: number; variant: PuhuVariant }> = [
   { value: 1, variant: "surprised" },
@@ -27,6 +31,11 @@ const MOOD_OPTIONS: Array<{ value: number; variant: PuhuVariant }> = [
   { value: 4, variant: "happy" },
   { value: 5, variant: "proud" },
 ];
+
+const MOOD_WHEEL_OPTIONS = MOOD_OPTIONS.map((option) => ({
+  ...option,
+  sphere: MOOD_WHEEL_SPHERES[option.value],
+}));
 
 /**
  * Mood check-in — gentle daily prompt (plan §3 Slice 5 + W3 mood AI-adaptive layer).
@@ -138,38 +147,35 @@ export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
     dialog.show({
       title: t("title"),
       message: t("subtitle"),
+      layout: "promo",
       dismissOnBackdrop: true,
       dismissOnEscape: true,
       content: (
-        <div className={`grid grid-cols-5 gap-2 ${busy ? "pointer-events-none opacity-60" : ""}`} aria-busy={busy}>
-          {MOOD_OPTIONS.map((option) => {
-            const selected = mood === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={selected}
-                aria-label={t(`option_${option.value}`)}
-                onClick={() => void pickMood(option.value)}
-                className={[
-                  "grid min-h-24 place-items-center gap-2 rounded-[var(--radius-card)] border p-2 text-xs font-bold transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-progress)] motion-reduce:transition-none motion-reduce:hover:translate-y-0",
-                  selected
-                    ? "border-[var(--color-progress)] bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)]"
-                    : "border-black/10 bg-white",
-                ].join(" ")}
-              >
-                <PuhuImage variant={option.variant} size={48} />
-                <span style={{ color: "var(--color-main)" }}>{t(`option_${option.value}`)}</span>
-              </button>
-            );
-          })}
-        </div>
+        <MoodWheelPicker
+          value={mood}
+          options={MOOD_WHEEL_OPTIONS}
+          getLabel={(value) =>
+            t(
+              `option_${value}` as
+                | "option_1"
+                | "option_2"
+                | "option_3"
+                | "option_4"
+                | "option_5",
+            )
+          }
+          onSelect={(value) => void pickMood(value)}
+          confirmLabel={t("checkin_cta")}
+          hintLabel={t("wheel_hint")}
+          disabled={busy}
+          ariaLabel={t("title")}
+        />
       ),
       actions: [
         {
           id: "later",
           label: t("ask_later"),
-          variant: "secondary",
+          variant: "link",
         },
       ],
     });

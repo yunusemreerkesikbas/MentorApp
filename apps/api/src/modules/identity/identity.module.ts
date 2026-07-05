@@ -3,10 +3,12 @@ import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import type { Env } from "../../config/env.validation";
 import { AuthService } from "./application/auth.service";
+import { GoogleAuthService } from "./application/google-auth.service";
 import { TokenService } from "./application/token.service";
 import { TurnstileService } from "./application/turnstile.service";
 import { UsersService } from "./application/users.service";
 import { EmailTokenRepository } from "./infrastructure/email-token.repository";
+import { AuthAccountRepository } from "./infrastructure/auth-account.repository";
 import { RefreshTokenRepository } from "./infrastructure/refresh-token.repository";
 import { UsersRepository } from "./infrastructure/users.repository";
 import { AuthController } from "./presentation/auth.controller";
@@ -30,10 +32,12 @@ import { UsersController } from "./presentation/users.controller";
   controllers: [AuthController, UsersController],
   providers: [
     AuthService,
+    GoogleAuthService,
     TokenService,
     TurnstileService,
     UsersService,
     UsersRepository,
+    AuthAccountRepository,
     RefreshTokenRepository,
     EmailTokenRepository,
   ],

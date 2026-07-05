@@ -104,6 +104,8 @@ export interface MockExamDto {
   examName: string;
   takenAt: string;
   totalNet: string;
+  /** Optional publisher label (e.g. Brans, Limit). */
+  publisherName: string | null;
   subjects: MockExamSubjectDto[];
 }
 
@@ -166,6 +168,8 @@ export interface CoachingAnalysisDto {
   trend: MockExamTrendPointDto[];
   subjects: SubjectStrengthDto[];
   photoSubjectSignals: PhotoSubjectSignalDto[];
+  /** All-time best total net across all attempts; null when no attempts. */
+  personalRecordNet: string | null;
   /** Latest-vs-own-past comparison; `null` when fewer than 2 attempts. */
   ghost: GhostComparisonDto | null;
 }

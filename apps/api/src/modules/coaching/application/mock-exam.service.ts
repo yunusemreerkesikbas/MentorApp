@@ -88,6 +88,7 @@ export class MockExamService {
         examId: input.examId,
         takenAt,
         totalNet,
+        publisherName: input.publisherName ?? null,
         subjects: subjectRows,
       });
       return toMockExamDto(created.exam, created.subjects, exam.name, slugToName);
@@ -168,8 +169,9 @@ export class MockExamService {
       }));
 
       const ghost = await this.buildGhost(tx, userId);
+      const personalRecordNet = await this.mockExams.maxTotalNet(tx, userId);
 
-      return { trend, subjects, photoSubjectSignals, ghost };
+      return { trend, subjects, photoSubjectSignals, personalRecordNet, ghost };
     });
   }
 

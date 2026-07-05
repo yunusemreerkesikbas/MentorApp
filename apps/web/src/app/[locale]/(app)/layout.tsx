@@ -7,6 +7,7 @@ import { AppNav } from "@/components/app-nav";
 import { MOBILE_TAB_BAR_PADDING_CLASS } from "@/lib/app-shell";
 import { useAuth } from "@/lib/auth-context";
 import { NotificationDrawerShell } from "@/lib/notification-drawer-shell";
+import { hasCompletedOnboarding } from "@/lib/post-auth-destination";
 
 /**
  * App shell + auth guard: anonymous users are redirected to /giris.
@@ -19,12 +20,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/giris");
-    if (status === "authenticated" && !user?.examType) {
+    if (status === "authenticated" && user && !hasCompletedOnboarding(user)) {
       router.replace("/onboarding");
     }
   }, [status, user, router]);
 
-  if (status !== "authenticated" || !user?.examType) {
+  if (status !== "authenticated" || !user || !hasCompletedOnboarding(user)) {
     return (
       <main
         className="flex min-h-screen items-center justify-center px-5"

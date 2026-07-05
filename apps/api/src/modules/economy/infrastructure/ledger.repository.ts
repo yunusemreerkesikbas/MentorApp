@@ -1,10 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lt, sql } from "drizzle-orm";
 import { Currency, LedgerStatus } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { ledgerEntries } from "../../../database/schema";
+import { ledgerEntries, users } from "../../../database/schema";
 import { EconomyLedger } from "../domain/economy.constants";
 
 export type LedgerRow = typeof ledgerEntries.$inferSelect;
@@ -15,6 +15,18 @@ export interface Balance {
   coinConfirmed: number;
   coinPending: number;
 }
+
+/** One XP-leaderboard row (author display joined from the shared users anchor). */
+export interface XpLeaderRow {
+  userId: string;
+  displayName: string;
+  avatarStorageKey: string | null;
+  xp: number;
+}
+
+/** Same-cohort filter for the leaderboard: exam type must match (or both be null). */
+const sameCohort = (examType: string | null) =>
+  examType === null ? isNull(users.examType) : eq(users.examType, examType);
 
 /**
  * Append-only ledger access (§4 #3). Writes/aggregations for the system/admin run in SERVICE
@@ -109,6 +121,23 @@ export class LedgerRepository {
     });
   }
 
+  /** Count of grant rows for a (userId, reason) since `since` — powers per-day XP earning caps. */
+  async grantCountSince(userId: string, reason: string, since: Date, exec?: DatabaseTx): Promise<number> {
+    return this.onService(exec, async (tx) => {
+      const rows = await tx
+        .select({ total: sql<number>`count(*)::int` })
+        .from(ledgerEntries)
+        .where(
+          and(
+            eq(ledgerEntries.userId, userId),
+            eq(ledgerEntries.reason, reason),
+            gte(ledgerEntries.createdAt, since),
+          ),
+        );
+      return rows[0]?.total ?? 0;
+    });
+  }
+
   /** True when a ledger row already exists for (refType, refId). */
   async existsByRef(refType: string, refId: string, exec?: DatabaseTx): Promise<boolean> {
     return this.onService(exec, async (tx) => {
@@ -159,6 +188,118 @@ export class LedgerRepository {
         .from(ledgerEntries)
         .where(and(...conds));
       return rows[0]?.total ?? 0;
+    });
+  }
+
+  /**
+   * Effort leaderboard: top-N users by XP earned since `since`, scoped to an exam-type cohort.
+   * `unit` is hard-filtered to XP so coin/net can NEVER enter the ranking (§3). Cross-user read →
+   * SERVICE context (same precedent as `sumIssued`). // ponytail: SQL aggregate; Redis sorted-set is
+   * the Faz-2 real-time upgrade. `users` is the shared identity anchor (forum joins it too).
+   */
+  xpLeaderboardSince(examType: string | null, since: Date, limit: number): Promise<XpLeaderRow[]> {
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select({
+          userId: ledgerEntries.userId,
+          displayName: users.displayName,
+          avatarStorageKey: users.avatarStorageKey,
+          xp: sql<number>`coalesce(sum(${ledgerEntries.amount}), 0)::int`,
+        })
+        .from(ledgerEntries)
+        .innerJoin(users, eq(users.id, ledgerEntries.userId))
+        .where(and(eq(ledgerEntries.unit, Currency.XP), gte(ledgerEntries.createdAt, since), sameCohort(examType)))
+        .groupBy(ledgerEntries.userId, users.displayName, users.avatarStorageKey)
+        .orderBy(desc(sql`coalesce(sum(${ledgerEntries.amount}), 0)`))
+        .limit(limit),
+    );
+  }
+
+  /**
+   * Count of distinct users with positive XP in the cohort since `since` — the leaderboard's
+   * denominator for "ahead of X%". SERVICE context (cross-user aggregate, same as the leaderboard).
+   */
+  xpParticipantCountSince(examType: string | null, since: Date): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const ranked = tx
+        .select({ uid: ledgerEntries.userId })
+        .from(ledgerEntries)
+        .innerJoin(users, eq(users.id, ledgerEntries.userId))
+        .where(and(eq(ledgerEntries.unit, Currency.XP), gte(ledgerEntries.createdAt, since), sameCohort(examType)))
+        .groupBy(ledgerEntries.userId)
+        .having(sql`coalesce(sum(${ledgerEntries.amount}), 0) > 0`)
+        .as("ranked");
+      const [row] = await tx.select({ total: sql<number>`count(*)::int` }).from(ranked);
+      return row?.total ?? 0;
+    });
+  }
+
+  /**
+   * Every user's rank within a cohort for the CLOSED window `[since, until)` — powers rank-movement
+   * (▲▼) by comparing against the current period. A closed past window is immutable, so this is
+   * computed on read (no snapshot table/cron needed). SERVICE context (cross-user aggregate).
+   */
+  async xpRanksBetween(
+    examType: string | null,
+    since: Date,
+    until: Date,
+  ): Promise<Map<string, number>> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({
+          userId: ledgerEntries.userId,
+          xp: sql<number>`coalesce(sum(${ledgerEntries.amount}), 0)::int`,
+        })
+        .from(ledgerEntries)
+        .innerJoin(users, eq(users.id, ledgerEntries.userId))
+        .where(
+          and(
+            eq(ledgerEntries.unit, Currency.XP),
+            gte(ledgerEntries.createdAt, since),
+            lt(ledgerEntries.createdAt, until),
+            sameCohort(examType),
+          ),
+        )
+        .groupBy(ledgerEntries.userId)
+        .having(sql`coalesce(sum(${ledgerEntries.amount}), 0) > 0`)
+        .orderBy(desc(sql`coalesce(sum(${ledgerEntries.amount}), 0)`));
+      // Dense enumeration mirrors the live board's ordering (ties keep insertion order).
+      const ranks = new Map<string, number>();
+      rows.forEach((r, i) => ranks.set(r.userId, i + 1));
+      return ranks;
+    });
+  }
+
+  /** A user's own XP + rank within their cohort since `since`. rank is null when they earned nothing. */
+  xpStandingSince(
+    userId: string,
+    examType: string | null,
+    since: Date,
+  ): Promise<{ xp: number; rank: number | null }> {
+    return withServiceContext(this.db, async (tx) => {
+      const [me] = await tx
+        .select({ xp: sql<number>`coalesce(sum(${ledgerEntries.amount}), 0)::int` })
+        .from(ledgerEntries)
+        .where(
+          and(
+            eq(ledgerEntries.userId, userId),
+            eq(ledgerEntries.unit, Currency.XP),
+            gte(ledgerEntries.createdAt, since),
+          ),
+        );
+      const xp = me?.xp ?? 0;
+      if (xp <= 0) return { xp: 0, rank: null };
+
+      const ranked = tx
+        .select({ uid: ledgerEntries.userId })
+        .from(ledgerEntries)
+        .innerJoin(users, eq(users.id, ledgerEntries.userId))
+        .where(and(eq(ledgerEntries.unit, Currency.XP), gte(ledgerEntries.createdAt, since), sameCohort(examType)))
+        .groupBy(ledgerEntries.userId)
+        .having(sql`coalesce(sum(${ledgerEntries.amount}), 0) > ${xp}`)
+        .as("ranked");
+      const [row] = await tx.select({ ahead: sql<number>`count(*)::int` }).from(ranked);
+      return { xp, rank: (row?.ahead ?? 0) + 1 };
     });
   }
 }

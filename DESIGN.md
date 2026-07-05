@@ -62,6 +62,7 @@ Nuton has no error/focus colors; these complete the product state vocabulary (fo
 | Token | Hex | Usage |
 |---|---|---|
 | `danger` | `#b42318` | Error/destructive text + field borders (`FormError`, `TextField error`). Deep red, **≥4.5:1 on white** (accessible body text). |
+| `success` | `#2e7d54` | Positive/upward signal — leaderboard rank ▲, gains. Calm green, **≥4.5:1 on white**. A downward move uses `secondary` gray, **never** red (anti-shaming). |
 | `focus-ring` | `#1d6fbf` | Keyboard focus ring (`focus-visible:ring-2`) on buttons/fields/toggles. Darkened accent, **≥3:1** for UI indicators. |
 
 > Errors use `danger` — **not** `like-active` (#ff2dab is the wishlist/like pink, not a state color).

@@ -3,7 +3,12 @@ import { Currency, LedgerStatus } from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
-import { LedgerRepository, type Balance, type LedgerRow } from "../infrastructure/ledger.repository";
+import {
+  LedgerRepository,
+  type Balance,
+  type LedgerRow,
+  type XpLeaderRow,
+} from "../infrastructure/ledger.repository";
 
 export interface GrantOptions {
   reason: string;
@@ -138,6 +143,30 @@ export class EconomyService {
   /** Rolling 24h count of AI chat coin spends (free-coin daily limit). */
   coinChatSpendsSince(userId: string, since: Date): Promise<number> {
     return this.repo.coinChatSpendsSince(userId, since);
+  }
+
+  /** Effort leaderboard (community): top-N by XP earned since `since`, scoped to an exam-type cohort. */
+  getXpLeaderboard(examType: string | null, since: Date, limit: number): Promise<XpLeaderRow[]> {
+    return this.repo.xpLeaderboardSince(examType, since, limit);
+  }
+
+  /** A user's own XP + cohort rank since `since` (rank null when they earned nothing in the window). */
+  getXpStanding(
+    userId: string,
+    examType: string | null,
+    since: Date,
+  ): Promise<{ xp: number; rank: number | null }> {
+    return this.repo.xpStandingSince(userId, examType, since);
+  }
+
+  /** Distinct XP earners in the cohort since `since` — leaderboard denominator for "ahead of X%". */
+  getXpParticipantCount(examType: string | null, since: Date): Promise<number> {
+    return this.repo.xpParticipantCountSince(examType, since);
+  }
+
+  /** Cohort ranks for the closed window `[since, until)` (userId→rank) — powers rank-movement ▲▼. */
+  getPreviousRanks(examType: string | null, since: Date, until: Date): Promise<Map<string, number>> {
+    return this.repo.xpRanksBetween(examType, since, until);
   }
 
   /** Admin metrics (W6) — total coin & XP issued (confirmed positive grants) across all users. */

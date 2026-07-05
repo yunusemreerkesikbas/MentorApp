@@ -25,6 +25,7 @@ import {
   type MemberRow,
   type ZoneRow,
 } from "../infrastructure/forum-zone.repository";
+import { ForumPostRepository } from "../infrastructure/forum-post.repository";
 
 const TR_MAP: Record<string, string> = {
   ç: "c", ğ: "g", ı: "i", İ: "i", ö: "o", ş: "s", ü: "u",
@@ -38,9 +39,17 @@ const TR_MAP: Record<string, string> = {
 export class ForumService {
   constructor(
     private readonly repo: ForumZoneRepository,
+    private readonly posts: ForumPostRepository,
     private readonly config: ConfigRegistryService,
     private readonly events: EventEmitter2,
   ) {}
+
+  /** Per-author activity signals for the community effort board's behaviour badges (read-only). */
+  getAuthorActivity(
+    userId: string,
+  ): Promise<{ totalPosts: number; nightPosts: number; reactionsReceived: number }> {
+    return this.posts.authorActivityStats(userId);
+  }
 
   async assertEnabled(): Promise<void> {
     if (!(await this.config.get("forum.enabled"))) {

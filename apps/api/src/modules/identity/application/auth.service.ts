@@ -64,11 +64,15 @@ export class AuthService {
         email: input.email,
         passwordHash,
         displayName: input.displayName,
+        username: input.username,
         kvkkAcceptedAt: new Date(),
       });
     } catch (err) {
       // Check-then-insert race: a concurrent signup hit the unique index → same 409 code.
       if (isUniqueViolation(err)) {
+        if (uniqueConstraint(err)?.includes("username")) {
+          throw new DomainError(ErrorCode.AUTH_USERNAME_IN_USE, HttpStatus.CONFLICT);
+        }
         throw new DomainError(ErrorCode.AUTH_EMAIL_IN_USE, HttpStatus.CONFLICT);
       }
       throw err;
@@ -204,6 +208,13 @@ export class AuthService {
 /** Pre-computed argon2 hash of an unguessable value — used to equalize login timing. */
 const DUMMY_HASH =
   "$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRzb21lc2FsdA$RdescudvJCsgt3ub+b+dWRWJTmaaJObG";
+
+function uniqueConstraint(err: unknown): string | undefined {
+  return (
+    (err as { constraint?: string })?.constraint ??
+    (err as { cause?: { constraint?: string } })?.cause?.constraint
+  );
+}
 
 export function toAuthUser(
   user: UserRow,

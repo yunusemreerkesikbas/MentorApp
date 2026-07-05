@@ -7,7 +7,7 @@
 
 Identity is the foundation module. It owns the `users` table (roles `text[]`, org-ready, KVKK
 timestamps, status), the auth lifecycle (signup/login/refresh/logout/verify-email/forgot-password/
-reset-password), `GET/PATCH /users/me` (minimal onboarding), the global JwtAuthGuard + RolesGuard,
+reset-password), Google OAuth sign-in, `GET/PATCH /users/me` (minimal onboarding), the global JwtAuthGuard + RolesGuard,
 and the RLS context helpers (`withUserContext` / `withServiceContext`) every other module relies on.
 It also exports `UsersService` (consumed by coaching for `examType`, by notifications for contact,
 by admin for stats) — the canonical cross-module seam for user data.
@@ -21,11 +21,15 @@ by admin for stats) — the canonical cross-module seam for user data.
 - **Enumeration-safe login** (same 401 + dummy-hash timing equalization via a valid `DUMMY_HASH`);
   forgot-password always 200; reset revokes all sessions; KVKK consent required; Turnstile verified
   when the secret is set; per-route throttling on auth endpoints.
+- **Google sign-in** uses Google Authorization Code + OpenID Connect on the backend. Google `sub`
+  is the stable provider key; Google tokens are not stored. Existing email/password accounts are
+  auto-linked only when Google reports `email_verified=true`. The public UI is gated by
+  `identity.google_oauth.enabled` in the admin config registry.
 - **RLS ENABLE+FORCE** on `users`/`refresh_tokens`/`email_tokens`; policies allow self (`app.user_id`)
   or `app.role IN ('SERVICE','ADMIN')`. `withServiceContext` for pre-auth flows (only from
   auth-boundary services). Local `mentor` DB is superuser → RLS bypassed locally; verify on Neon/prod.
-- **Schema (0001 migration):** `users` + `organizations` + `coach_students` (Phase-2-ready, unused),
-  `refresh_tokens` (hash + family), `email_tokens`.
+- **Schema:** `users` + `organizations` + `coach_students` (Phase-2-ready, unused),
+  `refresh_tokens` (hash + family), `email_tokens`, `user_auth_accounts`.
 - **Guards (global):** `JwtAuthGuard` (+`@Public()`), `RolesGuard` (+`@Roles()`, umbrella-aware —
   see [admin.md](./admin.md)), `@CurrentUser()`. Health is `@Public`.
 - **Email:** flows complete; dev `LoggerEmailAdapter` logs the link (W5 swaps in Postmark via
@@ -55,6 +59,9 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 |---|---|---|
 | POST | `/v1/auth/signup` | KVKK consent required; Turnstile when secret set |
 | POST | `/v1/auth/login` | Enumeration-safe (same 401 + dummy-hash timing) |
+| GET | `/v1/auth/google/status` | Public Google button availability (`enabled`, plus flag/config diagnostics) |
+| GET | `/v1/auth/google/start` | Starts Google OAuth (`mode=login|signup`; signup requires KVKK flag) |
+| GET | `/v1/auth/google/callback` | Google callback; sets Mentor refresh cookie then redirects to web |
 | POST | `/v1/auth/refresh` | Cookie-scoped `/v1/auth`; rotation + reuse detection |
 | POST | `/v1/auth/logout` | Revokes refresh family |
 | POST | `/v1/auth/verify-email` | Consumes `email_tokens` |
@@ -69,6 +76,7 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 | Endpoint | Purpose |
 |---|---|
 | `POST /v1/auth/{signup,login,refresh,logout,verify-email,forgot-password,reset-password}` | Auth lifecycle |
+| `GET /v1/auth/google/{status,start,callback}` | Google OAuth sign-in/sign-up |
 | `GET /v1/users/me` | Current user (consumed by coaching, notifications, admin) |
 | `PATCH /v1/users/me` | Onboarding/profile (displayName, username, examType, examDate, avatarStorageKey) |
 | `POST /v1/users/me/verification-email` | Resend verification email for current user |
@@ -76,6 +84,47 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **Signup username + hedef alanları** — web `/kayit` formu artık zorunlu `username` ve opsiyonel
+  `goalTitle` alır. `username` identity signup payload'ına yazılır; `/v1` geriye uyumluluğu için API
+  alanı opsiyonel kalır, eski/Google client'lar onboarding username adımını kullanmaya devam eder.
+  Duplicate username signup sırasında `AUTH_USERNAME_IN_USE` döner. Opsiyonel hedef, başarılı signup
+  oturumu açıldıktan sonra mevcut `POST /v1/coaching/vision` endpoint'ine best-effort kaydedilir.
+  Usage: e-posta/şifre signup'ta kullanıcı adı kayıt sırasında alınır; Google signup akışında
+  onboarding profile/goal inputları aynen kalır. Gotcha: hedef kaydı signup'ı bloklamaz; kullanıcı
+  isterse onboarding/hedef ekranında tekrar düzenleyebilir. Related: `signupSchema`,
+  `AuthService.signup`, `kayit/page.tsx`, `coachingControllerUpsertVision`, `auth.e2e-spec.ts`.
+  *(2026-07-05.)*
+- **Auth ekranı sadeleştirme** — `/giris` ve `/kayit` kartındaki üst marka/tagline metni kaldırıldı;
+  form başlığı tek odak olarak kaldı. Google OAuth aksiyonu artık görselde yalnızca Google logosu olan
+  48px ikon butonu olarak render edilir, erişilebilir adı lokalize `auth.google.continue` üzerinden
+  korunur. Usage: `identity.google_oauth.enabled` açıksa ikon butonu divider altında görünür. Gotcha:
+  signup tarafında Google başlangıcı hâlâ KVKK checkbox kabulünü ister. Related:
+  `auth-shell.tsx`, `google-auth-button.tsx`. *(2026-07-05.)*
+- **Auth ekranı redesign** — web `/giris` ve `/kayit` yüzeyleri referans mobil auth düzenine
+  yaklaştırıldı: mevcut pastel blob arka plan korunur, ortak `AuthShell` dar beyaz mobil ekran
+  yüzeyi verir, form başlıkları ortalanır, ana CTA Google girişinden önce gelir ve alt geçiş linkleri
+  sakin accent renkle gösterilir. Usage: kullanıcı `/giris` veya `/kayit` açtığında aynı auth akışı
+  ve Google/KVKK davranışı korunur. Gotcha: Google butonu hâlâ `identity.google_oauth.enabled`
+  kapalıysa render edilmez; KVKK kabulü signup Google başlangıcından önce zorunlu kalır. Related:
+  `auth-shell.tsx`, `auth-nav-link.tsx`, `giris/page.tsx`, `kayit/page.tsx`, `messages/{tr,en}.json`.
+  *(2026-07-05.)*
+- **Onboarding username kapısı** — post-auth tamamlanma kuralı artık `username + examType`
+  gerektirir; Google callback de `examType` olsa bile username yoksa `/onboarding`'e döner. Username
+  uniqueness yeni endpoint ile ön-kontrol yapılmadan mevcut case-insensitive DB unique index ve
+  `PATCH /v1/users/me` duplicate → `AUTH_USERNAME_IN_USE` akışıyla çözülür. Gotcha: `users.username`
+  nullable kalır; auth hesabı onboarding tamamlanmadan yaratılır. Related: `GoogleAuthService`,
+  `UsersService`, `usernameSchema`. *(2026-07-03.)*
+- **Google ile giriş** — `GET /v1/auth/google/start` ve callback eklendi; backend Google OAuth
+  authorization code akışını `google-auth-library` ile doğrular, sadece `openid email profile`
+  scope ister ve Google tokenlarını saklamaz. Usage: admin `/config` ekranında
+  `identity.google_oauth.enabled` açılınca web login/signup ekranları
+  `GET /v1/auth/google/status` üzerinden "Google ile devam et" butonunu gösterir; status cevabı
+  `enabled`, `flagEnabled`, `configured` alanlarını döner. Signup için KVKK
+  checkbox'ı hem client hem API start query'sinde zorunludur. Gotcha: Google Console redirect URI
+  `GOOGLE_OAUTH_REDIRECT_URI` ile birebir aynı olmalı; credential env'leri eksikse status kapalı
+  döner ve start 503 verir. Mevcut email/şifre hesabı yalnızca `email_verified=true` Google
+  hesabıyla otomatik bağlanır. Related: `GoogleAuthService`, `CONFIG_CATALOG`,
+  `user_auth_accounts`, `google-auth-button.tsx`. *(2026-07-03.)*
 - **Profile avatar V1** — `users.avatar_storage_key` nullable kolonu eklendi; auth/session ve
   `GET/PATCH /v1/users/me` artık `avatarUrl` döner. Akış: client
   `POST /v1/users/me/avatar-upload-url` ile JPEG/PNG için user-scoped key alır
@@ -124,12 +173,23 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   "Ana sayfaya dön" link); `AuthNavLink` for cross-page nav (44px touch, heading font, no bare
   underline); all pages use `SectionHeading` + consistent form spacing; KVKK checkbox min touch
   target; `eposta-dogrula` eslint-safe `useEffect` with active flag. *(0036.)*
+- **Mount silent-refresh hardened against dev boot race** — `Failed to fetch` on `/v1/auth/refresh`
+  right after `pnpm dev` (API not listening yet) or during a `nest --watch` recompile. Two fixes:
+  (1) `AuthProvider.silentRefresh` retries network errors 3× (300/600ms) and only a real
+  `ApiClientError` (401/expired cookie) → anonymous — a blip no longer drops a valid session;
+  (2) web `dev` script gates on `scripts/wait-for-port.mjs 3001` so cold boot never fires at a
+  down API (times out → starts anyway, so FE-only work isn't blocked). Admin got the same treatment:
+  `dev` port gate + `authProvider` mount `/users/me` retries network errors 3× (axios `!err.response`),
+  so the boot race no longer leaves the panel stuck with a null admin. *(0037.)*
 
 ## Gotchas / Known issues
 
 - **Refresh cookie is scoped to `/v1/auth`** — it never travels with normal API calls. SameSite=lax
   is same-site for web:3000/api:3001 (port ignored) and for prod subdomains.
 - **`JWT_ACCESS_SECRET` is required** (≥32 chars); dev value lives in `apps/api/.env`.
+- **Google callback 500 after setup usually means migrations are missing** — run
+  `pnpm --filter @mentor/api db:migrate` so `user_auth_accounts` exists before retrying the OAuth
+  flow. Google authorization codes are single-use; restart from `/giris`, not the old callback URL.
 - **OpenAPI response/body schemas are weak** (zod DTOs aren't introspected) → generated client types
   are loose; FE casts via `@mentor/types` (e.g. `usersControllerUpdateMe` is `void` — cast to
   `AuthUser`). Follow-up: zod→OpenAPI enrichment, then regenerate.

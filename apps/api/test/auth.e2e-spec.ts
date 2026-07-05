@@ -4,6 +4,8 @@ import cookieParser from "cookie-parser";
 import express from "express";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { FeatureFlag } from "../src/common/config/config.catalog";
+import { ConfigRegistryService } from "../src/common/config/config-registry.service";
 import { AVATAR_MAX_BYTES } from "../src/modules/identity/domain/avatar";
 
 /**
@@ -13,8 +15,11 @@ import { AVATAR_MAX_BYTES } from "../src/modules/identity/domain/avatar";
  */
 describe("identity (e2e)", () => {
   let app: INestApplication;
-  const email = `w0-${Date.now()}@test.local`;
+  const runId = Date.now();
+  const email = `w0-${runId}@test.local`;
+  const username = `w0_${runId}`;
   const password = "Sifre1234";
+  let userId = "";
   let accessToken = "";
   let refreshCookie = "";
 
@@ -22,6 +27,10 @@ describe("identity (e2e)", () => {
     process.env.DATABASE_URL =
       process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
     process.env.JWT_ACCESS_SECRET ??= "test-secret-test-secret-test-secret!!";
+    process.env.GOOGLE_OAUTH_CLIENT_ID ??= "google-client-id.test";
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET ??= "google-client-secret.test";
+    process.env.GOOGLE_OAUTH_REDIRECT_URI ??=
+      "http://localhost:3001/v1/auth/google/callback";
 
     const { AppModule } = await import("../src/app.module");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -44,14 +53,17 @@ describe("identity (e2e)", () => {
       email,
       password,
       displayName: "W0 Test",
+      username,
       kvkkAccepted: true,
     });
     expect(res.status).toBe(201);
     expect(res.body.accessToken).toBeTruthy();
     expect(res.body.user.email).toBe(email);
+    expect(res.body.user.username).toBe(username);
     expect(res.body.user.roles).toEqual(["STUDENT"]);
     expect(JSON.stringify(res.body)).not.toContain("passwordHash");
 
+    userId = res.body.user.id;
     const setCookie = res.headers["set-cookie"]?.[0] ?? "";
     expect(setCookie).toContain("mentor_refresh=");
     expect(setCookie.toLowerCase()).toContain("httponly");
@@ -64,10 +76,23 @@ describe("identity (e2e)", () => {
       email: email.toUpperCase(), // case-insensitive uniqueness
       password,
       displayName: "Dup",
+      username: `w0_dup_${runId}`,
       kvkkAccepted: true,
     });
     expect(res.status).toBe(409);
     expect(res.body.code).toBe("AUTH_EMAIL_IN_USE");
+  });
+
+  it("rejects a duplicate username with 409 AUTH_USERNAME_IN_USE", async () => {
+    const res = await request(app.getHttpServer()).post("/v1/auth/signup").send({
+      email: `username-${email}`,
+      password,
+      displayName: "Dup Username",
+      username: username.toUpperCase(),
+      kvkkAccepted: true,
+    });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe("AUTH_USERNAME_IN_USE");
   });
 
   it("rejects signup without KVKK consent (validation)", async () => {
@@ -217,6 +242,32 @@ describe("identity (e2e)", () => {
     // Logout without a cookie is still 204 (idempotent).
     const again = await request(app.getHttpServer()).post("/v1/auth/logout");
     expect(again.status).toBe(204);
+  });
+
+  it("starts Google OAuth with state cookie and Google redirect", async () => {
+    await app
+      .get(ConfigRegistryService)
+      .set(userId, FeatureFlag.GOOGLE_OAUTH_ENABLED, true);
+
+    const status = await request(app.getHttpServer()).get("/v1/auth/google/status");
+    expect(status.status).toBe(200);
+    expect(status.body).toMatchObject({ enabled: true });
+
+    const res = await request(app.getHttpServer()).get(
+      "/v1/auth/google/start?mode=login&locale=tr&returnTo=/panel",
+    );
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toContain("accounts.google.com");
+    expect(res.headers.location).toContain("scope=openid%20email%20profile");
+    expect(res.headers["set-cookie"]?.[0]).toContain("mentor_google_oauth=");
+  });
+
+  it("rejects Google OAuth callback without the signed state cookie", async () => {
+    const res = await request(app.getHttpServer()).get(
+      "/v1/auth/google/callback?code=x&state=y1234567890123456",
+    );
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("AUTH_GOOGLE_STATE_INVALID");
   });
 
   it("forgot-password always returns 200 (no enumeration)", async () => {

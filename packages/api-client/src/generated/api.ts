@@ -1232,6 +1232,105 @@ export const authControllerLogin = async (loginDto: LoginDto, options?: RequestI
 
 
 
+export type authControllerGoogleStartResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type authControllerGoogleStartResponseSuccess = (authControllerGoogleStartResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authControllerGoogleStartResponse = (authControllerGoogleStartResponseSuccess)
+
+export const getAuthControllerGoogleStartUrl = () => {
+
+
+  
+
+  return `/v1/auth/google/start`
+}
+
+export const authControllerGoogleStart = async ( options?: RequestInit): Promise<authControllerGoogleStartResponse> => {
+  
+  return http<authControllerGoogleStartResponse>(getAuthControllerGoogleStartUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type authControllerGoogleStatusResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type authControllerGoogleStatusResponseSuccess = (authControllerGoogleStatusResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authControllerGoogleStatusResponse = (authControllerGoogleStatusResponseSuccess)
+
+export const getAuthControllerGoogleStatusUrl = () => {
+
+
+  
+
+  return `/v1/auth/google/status`
+}
+
+export const authControllerGoogleStatus = async ( options?: RequestInit): Promise<authControllerGoogleStatusResponse> => {
+  
+  return http<authControllerGoogleStatusResponse>(getAuthControllerGoogleStatusUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type authControllerGoogleCallbackResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type authControllerGoogleCallbackResponseSuccess = (authControllerGoogleCallbackResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authControllerGoogleCallbackResponse = (authControllerGoogleCallbackResponseSuccess)
+
+export const getAuthControllerGoogleCallbackUrl = () => {
+
+
+  
+
+  return `/v1/auth/google/callback`
+}
+
+export const authControllerGoogleCallback = async ( options?: RequestInit): Promise<authControllerGoogleCallbackResponse> => {
+  
+  return http<authControllerGoogleCallbackResponse>(getAuthControllerGoogleCallbackUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
 export type authControllerRefreshResponse200 = {
   data: void
   status: 200
@@ -2892,6 +2991,39 @@ export const getMockExamControllerGetByIdUrl = (id: string,) => {
 export const mockExamControllerGetById = async (id: string, options?: RequestInit): Promise<mockExamControllerGetByIdResponse> => {
   
   return http<mockExamControllerGetByIdResponse>(getMockExamControllerGetByIdUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type communityControllerGetSummaryResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type communityControllerGetSummaryResponseSuccess = (communityControllerGetSummaryResponse200) & {
+  headers: Headers;
+};
+;
+
+export type communityControllerGetSummaryResponse = (communityControllerGetSummaryResponseSuccess)
+
+export const getCommunityControllerGetSummaryUrl = () => {
+
+
+  
+
+  return `/v1/community/summary`
+}
+
+export const communityControllerGetSummary = async ( options?: RequestInit): Promise<communityControllerGetSummaryResponse> => {
+  
+  return http<communityControllerGetSummaryResponse>(getCommunityControllerGetSummaryUrl(),
   {      
     ...options,
     method: 'GET'

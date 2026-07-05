@@ -41,7 +41,7 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
           href="/topluluk"
           onClick={onNavigate}
           className="mt-2 block text-xs underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{ color: "var(--color-cta)" }}
+          style={{ color: "var(--color-accent)" }}
         >
           {t("refresh")}
         </Link>

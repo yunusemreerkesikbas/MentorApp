@@ -12,7 +12,7 @@ export function AuthNavLink({
     <Link
       href={href}
       className="inline-flex min-h-11 items-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-      style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+      style={{ color: "var(--color-accent)", fontFamily: "var(--font-heading)" }}
     >
       {children}
     </Link>
