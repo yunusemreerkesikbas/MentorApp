@@ -19,6 +19,7 @@ import {
   type ThreadSort,
   unreactThread,
 } from "@/lib/forum";
+import type { AttachmentInput } from "@mentor/validation";
 import { AskComposer } from "./ask-composer";
 import { JoinButton } from "./join-button";
 import { QuestionListItem } from "./question-list-item";
@@ -83,10 +84,10 @@ export function ZoneShell({ slug }: { slug: string }) {
   );
 
   const onPost = useCallback(
-    async (body: string) => {
+    async (body: string, attachments: AttachmentInput[]) => {
       const ready = state.status === "ready" ? state : null;
       if (!ready) return;
-      const created = await postThread(ready.zone.id, body);
+      const created = await postThread(ready.zone.id, body, undefined, attachments);
       patchReady((r) => ({ ...r, threads: [created, ...r.threads] }));
     },
     [state, patchReady],

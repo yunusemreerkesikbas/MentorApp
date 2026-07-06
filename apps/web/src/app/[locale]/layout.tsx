@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Lato, League_Spartan } from "next/font/google";
+import { Nunito_Sans } from "next/font/google";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
@@ -11,18 +11,11 @@ import { DialogProviderShell } from "@/lib/dialog-provider-shell";
 import { BottomSheetProviderShell } from "@/lib/bottom-sheet-provider-shell";
 import "../globals.css";
 
-/* DESIGN.md §3 — headings: League Spartan, body: Lato. latin-ext covers Turkish glyphs
-   (ç ğ ı İ ş ö ü). The CSS variables override the @theme defaults in @mentor/ui/theme.css. */
-const heading = League_Spartan({
+/* DESIGN.md §3 — one smooth UI family for headings + body. latin-ext covers Turkish glyphs
+   (ç ğ ı İ ş ö ü). globals.css aliases --font-heading to this body variable. */
+const sans = Nunito_Sans({
   subsets: ["latin", "latin-ext"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-heading",
-});
-const body = Lato({
-  subsets: ["latin", "latin-ext"],
-  // Lato ships no 500/600 — only 400 and 700. So `font-medium` renders as 400; use `font-bold`/
-  // `font-semibold` (→700) when text needs real weight contrast (e.g. author names).
-  weight: ["400", "700"],
   variable: "--font-body",
 });
 
@@ -82,7 +75,7 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${heading.variable} ${body.variable}`}>
+    <html lang={locale} className={sans.variable}>
       {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla) inject body
           attributes pre-hydration; this silences only attribute diffs on <body>. */}
       <body suppressHydrationWarning>

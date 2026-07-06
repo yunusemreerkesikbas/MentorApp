@@ -6,6 +6,7 @@ import { ModerationTargetType, type CommentView } from "@mentor/types";
 import { Link, useRouter } from "@/i18n/navigation";
 import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "./author-avatar";
+import { AttachmentGallery } from "./attachment-gallery";
 import { HeartIcon, CommentIcon } from "./forum-icons";
 import { ThreadMenu } from "../[slug]/_components/thread-menu";
 
@@ -63,6 +64,8 @@ export function CommentRow({
         <p className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-[22px]" style={{ color: "var(--color-body)" }}>
           {comment.body}
         </p>
+
+        <AttachmentGallery attachments={comment.attachments} />
 
         {/* Action row — like + reply (opens this comment's detail, where the composer lives) */}
         <div className="-ml-1.5 mt-2 flex items-center gap-3">

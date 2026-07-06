@@ -63,6 +63,11 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **Global typography smoothing** — B2C shell switched from League Spartan/Lato to one Nunito Sans
+  latin-ext family for heading/body tokens. Usage: all screens continue using `--font-heading` and
+  `--font-body`; no component API changes. Gotcha: visual QA should check dense pages like
+  `/topluluk` because text metrics changed slightly. Related: `DESIGN.md`, `[locale]/layout.tsx`,
+  `globals.css`, `@mentor/ui` typography tokens. *(2026-07-05.)*
 - **Onboarding profil adımı polish** — username/avatar formundaki nested-card hissi azaltıldı:
   avatar satırı gölgesiz hafif field row'a döndü, avatar preview küçültüldü ve form aralıkları
   sıkılaştırıldı. Usage: `/onboarding` profil adımı aynı davranışı korur; sadece görsel hiyerarşi
@@ -204,6 +209,16 @@ http://localhost:3000/panel               # daily ritual hub
   kullanıcıda avatar sağ-altında pasif `BadgeCheck`, doğrulanmamış kullanıcıda aynı noktada
   tıklanabilir mail-warning badge'i gösterilir ve mevcut doğrulama e-postası resend akışını çalıştırır.
   Related: `profile-header.tsx`. *(2026-07-03.)*
+- **Panel emotional alignment (impeccable critique P0)** — `/panel` home de-scored for companionship tone:
+  removed fake `/100` rhythm hero-metric + blue gradient card; white Nuton card with effort summary
+  (`rhythm_summary`) instead.   Mood check-in card removed from panel body — trigger lives on hero
+  **Ruh hali** metric tile (`useMoodCheckin` hook). **Soft auto-prompt:** at most once per
+  calendar day when backend mood unset (`localStorage mentor_mood_prompt_deferred_date`);
+  cleared storage / new day re-triggers; hero tile always opens manually. Optional
+  `MOOD_PROMPT_MODE = "mandatory"` in `mood-checkin.tsx` blocks dismiss until pick.
+  Welcome toast once per calendar day (`sessionStorage mentor_panel_welcome_date`). Streak row uses
+  calm progress flame (no orange). Related: `panel-shell.tsx`, `mood-checkin.tsx`,
+  `messages/{tr,en}.json`. *(2026-07-05.)*
 
 ## Gotchas / Known issues
 

@@ -23,6 +23,7 @@ export const ConfigCategory = {
   ECONOMY: "economy",
   AI: "ai",
   IDENTITY: "identity",
+  NOTIFICATIONS: "notifications",
 } as const;
 
 export const ConfigValueType = {
@@ -79,6 +80,15 @@ const identityCount = (def: number, max: number, description: string): ConfigEnt
   description,
 });
 
+const notificationCount = (def: number, max: number, description: string): ConfigEntryDef => ({
+  category: ConfigCategory.NOTIFICATIONS,
+  type: ConfigValueType.NUMBER,
+  schema: z.number().int().min(1).max(max),
+  default: def,
+  sensitive: false,
+  description,
+});
+
 export const CONFIG_CATALOG = {
   "ai.enabled": flag(true, "Global AI kill-switch (§4/§8) — turn off all AI features."),
   "economy.enabled": flag(false, "Gate for the light-economy module (user-facing balance/earning)."),
@@ -89,7 +99,7 @@ export const CONFIG_CATALOG = {
   ),
   "signup.enabled": flag(true, "Registration kill-switch — disable new sign-ups."),
   "identity.verification_email.resend_limit": identityCount(
-    3,
+    1,
     100,
     "Max verification email resend attempts per user within the resend window.",
   ),
@@ -97,6 +107,16 @@ export const CONFIG_CATALOG = {
     180,
     86400,
     "Verification email resend rate-limit window in seconds.",
+  ),
+  "identity.verification_email.token_ttl_seconds": identityCount(
+    180,
+    86400,
+    "Verification email link expiration time in seconds.",
+  ),
+  "notifications.jobs.poll_interval_seconds": notificationCount(
+    10,
+    3600,
+    "How often API instances poll the jobs table for pending notification/email jobs.",
   ),
   "economy.coin.daily_cap": economyCount(50, 100000, "Max coin a user can earn per day (abuse shield)."),
   "economy.coin.weekly_cap": economyCount(200, 1000000, "Max coin a user can earn per week (abuse shield)."),

@@ -58,6 +58,11 @@ const makePostRepo = () => ({
   removePostReaction: vi.fn().mockResolvedValue(undefined),
 });
 
+const makeAttachmentRepo = () => ({
+  insertMany: vi.fn().mockResolvedValue([]),
+  listForTargets: vi.fn().mockResolvedValue(new Map()),
+});
+
 const makeZoneRepo = (
   zoneType: ZoneType = ZoneType.CHAT,
   memberStatus: string | null = ZoneMemberStatus.ACTIVE,
@@ -91,6 +96,7 @@ describe("ForumThreadService", () => {
       threadRepo as never,
       zoneRepo as never,
       postRepo as never,
+      makeAttachmentRepo() as never,
       enabledConfig as never,
       events as never,
       storage as never,

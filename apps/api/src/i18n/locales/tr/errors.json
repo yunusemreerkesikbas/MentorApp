@@ -14,6 +14,7 @@
   "AUTH_USERNAME_IN_USE": "Bu kullanıcı adı zaten alınmış.",
   "AUTH_TOKEN_INVALID": "Bu bağlantı geçersiz. Lütfen yeniden talep et.",
   "AUTH_TOKEN_EXPIRED": "Bu bağlantının süresi dolmuş. Lütfen yeniden talep et.",
+  "AUTH_VERIFICATION_EMAIL_RATE_LIMITED": "Doğrulama e-postası az önce gönderildi. 3 dakika sonra tekrar dene.",
   "AUTH_TURNSTILE_FAILED": "Güvenlik doğrulaması başarısız. Lütfen tekrar dene.",
   "AUTH_ACCOUNT_SUSPENDED": "Hesabın askıya alınmış. Destek ekibiyle iletişime geç.",
   "AUTH_AVATAR_INVALID_IMAGE": "Profil fotoğrafı işlenemedi. 2 MB altında JPEG veya PNG kullan.",
@@ -62,5 +63,6 @@
   "INVITE_ALREADY_REDEEMED": "Zaten bir davet kodu kullandın.",
   "INVITE_ALREADY_PREMIUM": "Premium kullanıcılar davet kodu kullanamaz.",
   "FORUM_DISABLED": "Forum özelliği şu anda kapalı.",
-  "FORUM_ZONE_NOT_FOUND": "Bu oda bulunamadı."
+  "FORUM_ZONE_NOT_FOUND": "Bu oda bulunamadı.",
+  "FORUM_ATTACHMENT_INVALID": "Ek geçersiz. Lütfen desteklenen bir görsel (JPEG/PNG/WebP) seç."
 }

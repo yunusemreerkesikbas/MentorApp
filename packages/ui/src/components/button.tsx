@@ -20,7 +20,7 @@ function Spinner() {
 
 /**
  * Primary button (DESIGN.md §6, node 2:770): black fill, radius 10,
- * Lato Bold, white label, single shadow token. Loading = spinner + same (localized) label,
+ * Nunito Sans Bold, white label, single shadow token. Loading = spinner + same (localized) label,
  * disabled, `aria-busy`. Tokenized keyboard focus ring (DESIGN.md §2.4).
  */
 export function Button({

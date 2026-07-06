@@ -22,8 +22,8 @@ export const colors = {
 } as const;
 
 export const typography = {
-  heading: "'League Spartan', sans-serif",
-  body: "'Lato', sans-serif",
+  heading: "'Nunito Sans', sans-serif",
+  body: "'Nunito Sans', sans-serif",
 } as const;
 
 /** Uniform radius — button/field/card/chip/thumb (DESIGN.md §5). */

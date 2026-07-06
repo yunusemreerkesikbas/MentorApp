@@ -3,6 +3,8 @@
  */
 import { z } from "zod";
 import {
+  FORUM_IMAGE_MIMES,
+  FORUM_MAX_ATTACHMENTS,
   FORUM_REACTION_EMOJIS,
   ModerationTargetType,
   ReportReason,
@@ -44,19 +46,42 @@ export const zoneMembersQuerySchema = z.object({
 });
 export type ZoneMembersQuery = z.infer<typeof zoneMembersQuerySchema>;
 
+/** Request a presigned upload URL for a post image (Phase 1). */
+export const attachmentUploadUrlSchema = z.object({
+  contentType: z.enum(FORUM_IMAGE_MIMES),
+});
+export type AttachmentUploadUrl = z.infer<typeof attachmentUploadUrlSchema>;
+
+/**
+ * One attachment reference sent when creating a post: the storage `key` returned by the upload-url
+ * endpoint (ownership re-verified server-side) + its mime and client-measured pixel size (for layout).
+ */
+export const attachmentInputSchema = z.object({
+  key: z.string().trim().min(1).max(300),
+  mimeType: z.enum(FORUM_IMAGE_MIMES),
+  width: z.number().int().positive().max(20000).optional(),
+  height: z.number().int().positive().max(20000).optional(),
+});
+export type AttachmentInput = z.infer<typeof attachmentInputSchema>;
+
+const attachmentsField = z.array(attachmentInputSchema).max(FORUM_MAX_ATTACHMENTS).optional();
+
 /**
  * Post a thread. CHAT/ANNOUNCEMENT use body only; a QA question also carries a `title` (the
- * service requires a non-empty title when the zone is QA and rejects it otherwise).
+ * service requires a non-empty title when the zone is QA and rejects it otherwise). Optional image
+ * attachments (max 4) — QA zones ignore them (attachments land on chat/announcement posts, APP-018).
  */
 export const createThreadSchema = z.object({
   body: z.string().trim().min(1).max(4000),
   title: z.string().trim().min(5).max(200).optional(),
+  attachments: attachmentsField,
 });
 export type CreateThread = z.infer<typeof createThreadSchema>;
 
-/** Post an answer to a QA question. */
+/** Post an answer/comment. Optional image attachments (max 4) — used by comments/replies (APP-018). */
 export const createAnswerSchema = z.object({
   body: z.string().trim().min(1).max(4000),
+  attachments: attachmentsField,
 });
 export type CreateAnswer = z.infer<typeof createAnswerSchema>;
 

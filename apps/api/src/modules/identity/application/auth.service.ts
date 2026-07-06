@@ -22,7 +22,6 @@ import {
   EmailTokenType,
   RESET_PASSWORD_TTL_MS,
   UserStatus,
-  VERIFY_EMAIL_TTL_MS,
 } from "../domain/identity.constants";
 import { EmailTokenRepository } from "../infrastructure/email-token.repository";
 import { UsersRepository, type UserRow } from "../infrastructure/users.repository";
@@ -149,7 +148,7 @@ export class AuthService {
       );
     if (attempts >= limit) {
       throw new DomainError(
-        ErrorCode.TOO_MANY_REQUESTS,
+        ErrorCode.AUTH_VERIFICATION_EMAIL_RATE_LIMITED,
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
@@ -179,7 +178,12 @@ export class AuthService {
 
   private async sendEmailToken(user: UserRow, type: EmailTokenType): Promise<void> {
     const raw = randomBytes(32).toString("base64url");
-    const ttl = type === EmailTokenType.VERIFY_EMAIL ? VERIFY_EMAIL_TTL_MS : RESET_PASSWORD_TTL_MS;
+    const ttl =
+      type === EmailTokenType.VERIFY_EMAIL
+        ? (await this.configRegistry.get(
+            "identity.verification_email.token_ttl_seconds",
+          )) * 1000
+        : RESET_PASSWORD_TTL_MS;
     await this.emailTokenRepo.create({
       userId: user.id,
       type,

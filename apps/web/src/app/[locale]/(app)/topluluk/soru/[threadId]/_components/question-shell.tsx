@@ -10,6 +10,9 @@ import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
 import { getQuestion, isForumDisabled, postAnswer } from "@/lib/forum";
 import { ReportButton } from "../../../_components/report-button";
+import { AttachmentGallery } from "../../../_components/attachment-gallery";
+import { ForumImagePicker } from "../../../_components/forum-image-picker";
+import { useForumImagePicker } from "../../../_components/use-forum-image-picker";
 import { AcceptButton } from "./accept-button";
 import { AnswerItem } from "./answer-item";
 
@@ -103,6 +106,7 @@ export function QuestionShell({ threadId }: { threadId: string }) {
         <p className="mt-3 whitespace-pre-wrap text-base" style={{ color: "var(--color-main)" }}>
           {question.body}
         </p>
+        <AttachmentGallery attachments={question.attachments} />
         <div className="mt-3">
           <ReportButton targetType={ModerationTargetType.THREAD} targetId={question.id} />
         </div>
@@ -146,19 +150,21 @@ function AnswerComposer({ threadId, onPosted }: { threadId: string; onPosted: ()
   const t = useTranslations("topluluk");
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const picker = useForumImagePicker();
 
   const send = async () => {
     const body = value.trim();
     if (!body) return;
     setBusy(true);
-    setError(null);
+    picker.setError(null);
     try {
-      await postAnswer(threadId, body);
+      const attachments = await picker.uploadAll();
+      await postAnswer(threadId, body, attachments);
       setValue("");
+      picker.reset();
       onPosted();
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.body.message : t("error"));
+      picker.setError(err instanceof ApiClientError ? err.body.message : t("error"));
     } finally {
       setBusy(false);
     }
@@ -175,7 +181,8 @@ function AnswerComposer({ threadId, onPosted }: { threadId: string; onPosted: ()
         className="w-full resize-y rounded-[var(--radius-card)] border border-white bg-white/70 p-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
       />
-      <FormError message={error} />
+      <ForumImagePicker picker={picker} disabled={busy} />
+      <FormError message={picker.error} />
       <div className="flex justify-end">
         <Button busy={busy} onClick={() => void send()}>
           {busy ? t("answer_submitting") : t("answer_submit")}

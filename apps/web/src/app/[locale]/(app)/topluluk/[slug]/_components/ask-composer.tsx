@@ -7,25 +7,28 @@ import { Button, TextField } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { postThread } from "@/lib/forum";
+import { ForumImagePicker } from "../../_components/forum-image-picker";
+import { useForumImagePicker } from "../../_components/use-forum-image-picker";
 
-/** Ask a question in a QA zone (title + body) → navigate to the new question detail. */
+/** Ask a question in a QA zone (title + body + images) → navigate to the new question detail. */
 export function AskComposer({ zoneId }: { zoneId: string }) {
   const t = useTranslations("topluluk");
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const picker = useForumImagePicker();
 
   const submit = async () => {
     if (title.trim().length < 5 || !body.trim()) return;
     setBusy(true);
-    setError(null);
+    picker.setError(null);
     try {
-      const created = await postThread(zoneId, body.trim(), title.trim());
+      const attachments = await picker.uploadAll();
+      const created = await postThread(zoneId, body.trim(), title.trim(), attachments);
       router.push(`/topluluk/soru/${created.id}`);
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.body.message : t("error"));
+      picker.setError(err instanceof ApiClientError ? err.body.message : t("error"));
       setBusy(false);
     }
   };
@@ -47,7 +50,8 @@ export function AskComposer({ zoneId }: { zoneId: string }) {
         className="w-full resize-y rounded-[var(--radius-card)] border border-white bg-white/70 p-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
       />
-      <FormError message={error} />
+      <ForumImagePicker picker={picker} disabled={busy} />
+      <FormError message={picker.error} />
       <div className="flex justify-end">
         <Button busy={busy} onClick={() => void submit()}>
           {t("ask_submit")}

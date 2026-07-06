@@ -82,6 +82,32 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **QA ekleri — görsel (Faz 2, APP-018)** — Görsel eklerini **QA soru + cevaplarına** genişletti
+  (Faz 1 yalnızca CHAT/ANNOUNCEMENT'a açmıştı). **Şema/migration yok** — mevcut `forum_attachments`
+  (polimorfik THREAD|POST) yeniden kullanıldı. QA, CHAT'ten ayrı servis/tip/composer kullandığı için
+  yol baştan sona kablolandı: `ForumThreadService`'in QA-soru guard'ı kaldırıldı (`postThread` artık
+  QA sorusuna da ek yazıyor); `ForumQaService`'e `ForumAttachmentRepository` inject edildi, `answer()`
+  ek çözüp yazıyor, `getQuestion()` soru+cevap eklerini **batched** (N+1 yok) yüklüyor;
+  `AnswerView` tipine + `postRowToAnswerView`'e `attachments` eklendi. Ortak `resolveAttachments`
+  mantığı iki serviste tekrar etmemek için `application/attachment.resolve.ts`'e çıkarıldı; aynı yerde
+  **güvenlik sıkılaştırması**: saklanan `mime_type` artık `FORUM_IMAGE_MIME` allowlist'ine karşı
+  doğrulanıyor (önceden yalnızca key regex uzantıyı sınırlıyordu; tüm ek yollarını kapsar). Web:
+  picker mantığı `useForumImagePicker` hook'una + sunum `ForumImagePicker` bileşenine çıkarıldı
+  (ThreadComposer/AskComposer/AnswerComposer paylaşıyor); soru+cevap detayına `AttachmentGallery`
+  eklendi. Limitler Faz 1 ile birebir (max 4, ≤5MB, JPEG/PNG/WebP). Yeni i18n anahtarı yok. Testler:
+  `forum-qa.service.spec` +3 (geçerli ek yazılıyor / yabancı key / spoof mime reddi), `forum.e2e`
+  +1 (QA soru+cevap upload → detay eklerle döner). Video + dosya + orphan-cleanup hâlâ ertelenmiş. *(APP-018)*
+- **Post ekleri — görsel (Faz 1, APP-018)** — CHAT/ANNOUNCEMENT thread'leri ve yorum/yanıtları artık
+  **çoklu görsel** (max 4, JPEG/PNG/WebP ≤5MB) taşıyabilir. Yeni polimorfik `forum_attachments` tablosu
+  (`forum_reports` deseni: `target_type THREAD|POST + target_id`; `kind` ile video/file Faz 2'ye hazır;
+  client-verilen width/height → CLS'siz galeri). Akış avatar/foto presigned desenini birebir kullanır:
+  `POST /v1/forum/attachments/upload-url` → client dosyayı PUT eder → thread/comment create'e `attachments[]`
+  (key) gönderir; servis her key'i **sahiplik regex'i + `storage.readObject` boyut/varlık** ile doğrular
+  (`isValidForumAttachmentKey`, `FORUM_IMAGE_*`), sonra satırları yazar. Okuma batched (N+1 yok), URL'ler
+  `storage.getPublicUrl` ile çözülür. Frontend: `ThreadComposer` görsel-picker + önizleme + yükleme,
+  `AttachmentGallery` (1→oran korur, 2–4 grid, lightbox). Guardrail: image-only allowlist + boyut + per-user
+  key; moderasyonla gizlenen/silinen post ekleri otomatik gizlenir (ayrı yüzey yok). Testler: forum e2e
+  (upload→post→feed + foreign-key/>4 red) 15/15. QA + video + dosya + orphan-cleanup ertelendi. *(APP-018)*
 - **Username author fallback** — forum thread/answer author seçimi `users.username ?? displayName`
   oldu; username seçmemiş eski hesaplarda ad soyad görünmeye devam eder. Related:
   `forum-thread.repository.ts`, `forum-post.repository.ts`. *(Profile username.)*
@@ -126,7 +152,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ### Figma fidelity backlog (backend gerektirir)
 
-- **Görsel/attachment + carousel** — `forum_threads`'te attachment alanı yok; upload akışı + şema değişikliği gerekir.
+- ~~**Görsel/attachment + carousel**~~ — **Yapıldı** (Faz 1 CHAT/ANNOUNCEMENT, Faz 2 QA soru+cevap, APP-018). Kalan: video + dosya + orphan-cleanup + carousel UI.
 - **Nested yorumlar (yoruma yorum) + yorumlara like** — MVP düz yorum; nesting ve comment-level reaksiyon `forum_reactions`'ı `postId`'ye açmayı gerektirir.
 - **Zengin emoji reaksiyon paleti (👍💪🎉😮)** — like tek kalbe indirildi; palet dönerse config arkasına alınabilir.
 - **Repost / harici paylaşım** — karşılık gelen bir entity yok (ürün kararı gereği kapsam dışı).

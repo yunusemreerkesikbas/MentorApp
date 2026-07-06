@@ -16,7 +16,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 
 /**
  * App navigation (DESIGN.md §6 Tab bar + §8 adaptation):
- *  - mobile: fixed bottom tab bar (white, 1px top divider, Spartan SemiBold UPPERCASE labels)
+ *  - mobile: fixed bottom tab bar (white, 1px top divider, Nunito Sans SemiBold UPPERCASE labels)
  *  - ≥1024px (lg): fixed left sidebar with the same items
  * Active = --color-main, inactive = --color-secondary (no accent fill — Nuton).
  */

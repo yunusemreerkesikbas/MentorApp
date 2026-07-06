@@ -25,9 +25,12 @@ function makeService(count: number) {
     get: vi.fn(() => "http://localhost:3000"),
   };
   const configRegistry = {
-    get: vi.fn(async (key: string) =>
-      key === "identity.verification_email.resend_limit" ? 3 : 180,
-    ),
+    get: vi.fn(async (key: string) => {
+      if (key === "identity.verification_email.resend_limit") return 1;
+      if (key === "identity.verification_email.resend_window_seconds") return 180;
+      if (key === "identity.verification_email.token_ttl_seconds") return 180;
+      return 0;
+    }),
   };
   const queue = {
     enqueue: vi.fn(async () => undefined),
@@ -54,10 +57,10 @@ describe("AuthService.resendVerificationEmail", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("rejects when the configured resend window limit is reached", async () => {
-    const { emailTokenRepo, queue, service } = makeService(3);
+    const { emailTokenRepo, queue, service } = makeService(1);
 
     await expect(service.resendVerificationEmail(USER.id)).rejects.toMatchObject({
-      code: ErrorCode.TOO_MANY_REQUESTS,
+      code: ErrorCode.AUTH_VERIFICATION_EMAIL_RATE_LIMITED,
       httpStatus: HttpStatus.TOO_MANY_REQUESTS,
     } satisfies Partial<DomainError>);
     expect(emailTokenRepo.createVerificationResendAttempt).not.toHaveBeenCalled();
@@ -65,19 +68,26 @@ describe("AuthService.resendVerificationEmail", () => {
   });
 
   it("records an attempt and sends a verification link when under limit", async () => {
-    const { emailTokenRepo, queue, service } = makeService(2);
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-05T10:00:00.000Z"));
+    const { emailTokenRepo, queue, service } = makeService(0);
 
-    await service.resendVerificationEmail(USER.id);
+    try {
+      await service.resendVerificationEmail(USER.id);
 
-    expect(emailTokenRepo.createVerificationResendAttempt).toHaveBeenCalledWith(
-      USER.id,
-    );
-    expect(emailTokenRepo.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: USER.id,
-        type: EmailTokenType.VERIFY_EMAIL,
-      }),
-    );
-    expect(queue.enqueue).toHaveBeenCalled();
+      expect(emailTokenRepo.createVerificationResendAttempt).toHaveBeenCalledWith(
+        USER.id,
+      );
+      expect(emailTokenRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: USER.id,
+          type: EmailTokenType.VERIFY_EMAIL,
+          expiresAt: new Date("2026-07-05T10:03:00.000Z"),
+        }),
+      );
+      expect(queue.enqueue).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

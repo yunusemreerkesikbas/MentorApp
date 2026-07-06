@@ -141,8 +141,10 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   kuyruğunu tekrar kullanır ve kullanıcı zaten doğrulanmışsa no-op döner. Usage: kullanıcı avatar
   üzerindeki doğrulama badge'ine dokunur, e-postadaki bağlantıya tıklaması gerektiğini anlatan bilgi
   dialog'unu görür. Rate limit admin config'ten yönetilir:
-  `identity.verification_email.resend_limit` (default 3) ve
-  `identity.verification_email.resend_window_seconds` (default 180). Gotcha: rate limit yalnızca
+  `identity.verification_email.resend_limit` (default 1),
+  `identity.verification_email.resend_window_seconds` (default 180) ve
+  `identity.verification_email.token_ttl_seconds` (default 180). Gotcha: rate limit yalnızca
+  `AUTH_VERIFICATION_EMAIL_RATE_LIMITED` koduyla kullanıcıya doğrulama e-postasına özel mesaj döner.
   resend denemelerini sayar; signup sırasında gönderilen ilk doğrulama e-postası bu pencereye dahil
   değildir. Email adresi body'de taşınmaz. Related: `AuthService.resendVerificationEmail`,
   `UsersController`, `email_verification_resend_attempts`,

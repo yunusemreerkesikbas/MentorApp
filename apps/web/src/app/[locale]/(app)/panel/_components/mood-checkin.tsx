@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type {
   CoachAccessDto,
@@ -14,11 +13,13 @@ import {
   ApiClientError,
   coachingControllerUpsertMood,
 } from "@mentor/api-client";
-import { Card, Chip, SectionHeading } from "@mentor/ui";
 import type { PuhuVariant } from "@/components/puhu-image";
-import { useRouter } from "@/i18n/navigation";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
+import {
+  deferMoodPromptForToday,
+  shouldAutoPromptMood,
+} from "./mood-prompt-storage";
 import {
   MOOD_WHEEL_SPHERES,
   MoodWheelPicker,
@@ -38,32 +39,36 @@ const MOOD_WHEEL_OPTIONS = MOOD_OPTIONS.map((option) => ({
 }));
 
 /**
- * Mood check-in — gentle daily prompt (plan §3 Slice 5 + W3 mood AI-adaptive layer).
- *
- * Free tier reads the rule-based, backend-localized encouragement verbatim (§4 #5). Premium users
- * additionally get an AI-adaptive reflection (`POST /v1/coach/mood-reflection`) and an optional
- * "zorlandığın konu" note that grounds it. The reflection is cached server-side per day, so a
- * re-fetch of an unchanged mood costs nothing.
+ * soft — auto-prompt at most once per calendar day when today's mood is unset;
+ *        "Daha sonra" / backdrop / Esc snooze until tomorrow (localStorage).
+ * mandatory — auto-prompt on each panel visit until mood is saved; modal cannot be dismissed.
  */
-export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
-  const reduceMotion = useReducedMotion();
+const MOOD_PROMPT_MODE: "soft" | "mandatory" = "soft";
+
+type UseMoodCheckinOptions = {
+  initial: MoodCheckinDto | null;
+  onSaved?: (result: MoodCheckinDto) => void;
+};
+
+/**
+ * Daily mood check-in — modal wheel + backend upsert.
+ * Hero "Ruh hali" tile opens manually any time; auto-prompt follows MOOD_PROMPT_MODE.
+ */
+export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
   const t = useTranslations("mood");
   const tCommon = useTranslations("common");
   const { error: showErrorToast } = useMentorToast();
   const dialog = useMentorDialog();
-  const router = useRouter();
   const [premium, setPremium] = useState<boolean | null>(null);
   const [mood, setMood] = useState<number | null>(initial?.mood ?? null);
-  const [message, setMessage] = useState<string | null>(
-    initial?.message ?? null,
-  );
+  const [message, setMessage] = useState<string | null>(initial?.message ?? null);
   const [note, setNote] = useState<string>(initial?.struggleNote ?? "");
   const [reflection, setReflection] = useState<string | null>(
     initial?.aiReflection ?? null,
   );
   const [reflecting, setReflecting] = useState(false);
   const [busy, setBusy] = useState(false);
-  const autoPromptShownRef = useRef(false);
+  const autoPromptAttemptedRef = useRef(false);
 
   const generateReflection = useCallback(async () => {
     setReflecting(true);
@@ -76,11 +81,18 @@ export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
         (res as MoodReflectionDto);
       if (dto?.reflection) setReflection(dto.reflection);
     } catch {
-      /* Fall back to the rule-based message; reflection is a premium enhancement, not critical. */
+      /* Fall back to the rule-based message; reflection is a premium enhancement. */
     } finally {
       setReflecting(false);
     }
   }, []);
+
+  useEffect(() => {
+    setMood(initial?.mood ?? null);
+    setMessage(initial?.message ?? null);
+    setNote(initial?.struggleNote ?? "");
+    setReflection(initial?.aiReflection ?? null);
+  }, [initial]);
 
   useEffect(() => {
     let active = true;
@@ -92,7 +104,6 @@ export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
           (res as unknown as CoachAccessDto);
         const isPremium = access?.mode === "PREMIUM";
         setPremium(isPremium);
-        // Fetch cached reflection on load when premium + mood set but no reflection yet.
         if (
           isPremium &&
           initial?.mood != null &&
@@ -109,173 +120,119 @@ export function MoodCheckin({ initial }: { initial: MoodCheckinDto | null }) {
     };
   }, [generateReflection, initial?.aiReflection, initial?.mood]);
 
-  const saveMood = useCallback(async (value: number, struggleNote: string) => {
-    setBusy(true);
-    try {
-      const result = (await coachingControllerUpsertMood({
-        mood: value,
-        struggleNote: struggleNote.trim() || undefined,
-      })) as unknown as MoodCheckinDto;
-      setMood(result.mood);
-      setMessage(result.message);
-      setReflection(null); // mood/note changed → stale reflection cleared server-side too
-      if (premium) await generateReflection();
-      return true;
-    } catch (err) {
-      showErrorToast({
-        title: tCommon("error_title"),
-        message:
-          err instanceof ApiClientError
-            ? err.message
-            : err instanceof Error
+  const saveMood = useCallback(
+    async (value: number, struggleNote: string) => {
+      setBusy(true);
+      try {
+        const result = (await coachingControllerUpsertMood({
+          mood: value,
+          struggleNote: struggleNote.trim() || undefined,
+        })) as unknown as MoodCheckinDto;
+        setMood(result.mood);
+        setMessage(result.message);
+        setReflection(null);
+        if (premium) await generateReflection();
+        onSaved?.(result);
+        return true;
+      } catch (err) {
+        showErrorToast({
+          title: tCommon("error_title"),
+          message:
+            err instanceof ApiClientError
               ? err.message
-          : tCommon("error_unknown"),
-        duration: 3000,
+              : err instanceof Error
+                ? err.message
+                : tCommon("error_unknown"),
+          duration: 3000,
+        });
+        return false;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [generateReflection, onSaved, premium, showErrorToast, tCommon],
+  );
+
+  const pickMood = useCallback(
+    async (value: number) => {
+      const saved = await saveMood(value, note);
+      if (saved) dialog.dismiss();
+    },
+    [dialog, note, saveMood],
+  );
+
+  const openMoodDialog = useCallback(
+    (_source: "manual" | "auto" = "manual") => {
+      const isMandatory = MOOD_PROMPT_MODE === "mandatory";
+
+      if (MOOD_PROMPT_MODE === "soft" && mood == null) {
+        deferMoodPromptForToday();
+      }
+
+      dialog.show({
+        title: t("title"),
+        message: t("subtitle"),
+        layout: "promo",
+        dismissOnBackdrop: !isMandatory,
+        dismissOnEscape: !isMandatory,
+        content: (
+          <MoodWheelPicker
+            value={mood}
+            options={MOOD_WHEEL_OPTIONS}
+            getLabel={(value) =>
+              t(
+                `option_${value}` as
+                  | "option_1"
+                  | "option_2"
+                  | "option_3"
+                  | "option_4"
+                  | "option_5",
+              )
+            }
+            onSelect={(value) => void pickMood(value)}
+            confirmLabel={t("checkin_cta")}
+            hintLabel={t("wheel_hint")}
+            disabled={busy}
+            ariaLabel={t("title")}
+          />
+        ),
+        actions: isMandatory
+          ? []
+          : [
+              {
+                id: "later",
+                label: t("ask_later"),
+                variant: "link",
+                onClick: () => {
+                  deferMoodPromptForToday();
+                },
+              },
+            ],
       });
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  }, [generateReflection, premium, showErrorToast, tCommon]);
-
-  const pickMood = useCallback(async (value: number) => {
-    const saved = await saveMood(value, note);
-    if (saved) dialog.dismiss();
-  }, [dialog, note, saveMood]);
-
-  const openMoodDialog = useCallback(() => {
-    dialog.show({
-      title: t("title"),
-      message: t("subtitle"),
-      layout: "promo",
-      dismissOnBackdrop: true,
-      dismissOnEscape: true,
-      content: (
-        <MoodWheelPicker
-          value={mood}
-          options={MOOD_WHEEL_OPTIONS}
-          getLabel={(value) =>
-            t(
-              `option_${value}` as
-                | "option_1"
-                | "option_2"
-                | "option_3"
-                | "option_4"
-                | "option_5",
-            )
-          }
-          onSelect={(value) => void pickMood(value)}
-          confirmLabel={t("checkin_cta")}
-          hintLabel={t("wheel_hint")}
-          disabled={busy}
-          ariaLabel={t("title")}
-        />
-      ),
-      actions: [
-        {
-          id: "later",
-          label: t("ask_later"),
-          variant: "link",
-        },
-      ],
-    });
-  }, [busy, dialog, mood, pickMood, t]);
+    },
+    [busy, dialog, mood, pickMood, t],
+  );
 
   useEffect(() => {
-    if (mood != null || autoPromptShownRef.current) return;
-    autoPromptShownRef.current = true;
-    openMoodDialog();
+    if (mood != null || autoPromptAttemptedRef.current) return;
+
+    const mayAutoPrompt =
+      MOOD_PROMPT_MODE === "mandatory"
+        ? true
+        : shouldAutoPromptMood(false);
+
+    if (!mayAutoPrompt) return;
+
+    autoPromptAttemptedRef.current = true;
+    openMoodDialog("auto");
   }, [mood, openMoodDialog]);
 
-  return (
-    <>
-      <Card>
-        <div className="flex items-start justify-between gap-4">
-          <SectionHeading subtitle={mood == null ? t("subtitle") : undefined}>
-            {t("title")}
-          </SectionHeading>
-          <button
-            type="button"
-            onClick={openMoodDialog}
-            className="shrink-0 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)] px-3 py-2 text-sm font-bold text-[var(--color-progress)] transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-progress)]"
-          >
-            {mood == null ? t("checkin_cta") : t("change_cta")}
-          </button>
-        </div>
-
-      {premium && mood != null ? (
-        <label className="mt-4 flex flex-col gap-1.5">
-          <span
-            className="text-sm font-semibold"
-            style={{ color: "var(--color-main)" }}
-          >
-            {t("struggle_label")}
-          </span>
-          <textarea
-            value={note}
-            maxLength={280}
-            rows={2}
-            disabled={busy}
-            placeholder={t("struggle_placeholder")}
-            onChange={(e) => setNote(e.target.value)}
-            onBlur={() => {
-              if (mood != null && (note.trim() || initial?.struggleNote))
-                void saveMood(mood, note);
-            }}
-            className="resize-none rounded-lg border px-3 py-2 text-sm"
-            style={{
-              borderColor: "var(--color-border, #e2e2e2)",
-              color: "var(--color-body)",
-            }}
-          />
-        </label>
-      ) : null}
-
-      {reflecting ? (
-        <p
-          className="mt-4 text-sm"
-          role="status"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {t("coach_thinking")}
-        </p>
-      ) : premium && reflection ? (
-        <motion.div
-          role="status"
-          className="mt-4 flex flex-col gap-2"
-          initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-        >
-          <Chip>{t("coach_chip")}</Chip>
-          <p className="text-sm" style={{ color: "var(--color-body)" }}>
-            {reflection}
-          </p>
-        </motion.div>
-      ) : message ? (
-        <motion.p
-          role="status"
-          className="mt-4 text-sm"
-          style={{ color: "var(--color-body)" }}
-          initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-        >
-          {message}
-        </motion.p>
-      ) : null}
-
-      {premium === false && mood != null ? (
-        <button
-          type="button"
-          onClick={() => router.push("/abonelik")}
-          className="mt-3 text-left text-sm underline"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {t("premium_nudge")}
-        </button>
-      ) : null}
-      </Card>
-    </>
-  );
+  return {
+    mood,
+    message,
+    reflection,
+    reflecting,
+    openMoodDialog: () => openMoodDialog("manual"),
+    needsMoodToday: mood == null,
+  };
 }

@@ -44,7 +44,7 @@ async function bootstrap(): Promise<void> {
   app.enableCors({ origin: corsOrigins(config), credentials: true });
   app.use(
     "/v1/storage/fake-upload",
-    express.raw({ type: ["image/jpeg", "image/png"], limit: PHOTO_MAX_BYTES }),
+    express.raw({ type: ["image/jpeg", "image/png", "image/webp"], limit: PHOTO_MAX_BYTES }),
   );
   app.useBodyParser("json", {
     limit: "1mb",

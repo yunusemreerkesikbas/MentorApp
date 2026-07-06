@@ -13,8 +13,7 @@ export const UserStatus = {
 } as const;
 export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
 
-/** Email-token TTLs (invariant policy, not user-tunable). */
-export const VERIFY_EMAIL_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+/** Password reset TTL is intentionally not admin-tunable. */
 export const RESET_PASSWORD_TTL_MS = 60 * 60 * 1000; // 1h
 
 /** Name of the httpOnly refresh cookie. */

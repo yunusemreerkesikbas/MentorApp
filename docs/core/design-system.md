@@ -14,7 +14,7 @@ rebuilt before `apps/web` typecheck sees new exports.
 
 - **Tokens, not numbers:** colors/spacing/radius/typography come from `theme.css` (`@theme`) → CSS vars.
   Thumb pastels are the only accepted hex outside the token file (DESIGN accents).
-- **Fonts:** latin-ext (Turkish glyphs), loaded once in the root layout.
+- **Fonts:** Nunito Sans latin-ext (Turkish glyphs), loaded once in the root layout.
 - **Responsive shell:** mobile tab bar (63px + safe-area inset) ↔ desktop sidebar; the same primitives
   adapt. Active nav = main-color indicator, not accent fill (anti-alarm per §0).
 - **Motion:** shared `stagger-motion.ts` (stagger + `useReducedMotion`) reused across hero/features/CTA
@@ -87,6 +87,10 @@ N/A (UI package, not REST).
 
 - **Design infrastructure** — `@mentor/ui` React primitives, fonts (latin-ext), responsive shell
   (tab bar ↔ sidebar), DESIGN.md tokens implemented as Tailwind v4 `@theme` + TS. *(0012.)*
+- **Typography smoothing** — web now uses one Nunito Sans latin-ext family for both
+  `--font-heading` and `--font-body`; this replaces the League Spartan/Lato pair that looked rough
+  in dense Turkish UI. Related: `DESIGN.md`, `apps/web/src/app/[locale]/layout.tsx`,
+  `packages/ui/src/theme.css`, `packages/ui/src/tokens.ts`. *(2026-07-05.)*
 - **Toast overlay primitive** — `packages/ui/src/components/toast/` (`ToastProvider`, `useToast`,
   `ToastItem`, `ToastViewport`); variants `success` | `error` | `info` | `coach`; max 3 stack;
   auto-dismiss + progress bar; tokens `--color-error-container`, `--color-surface-translucent`.

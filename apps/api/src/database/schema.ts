@@ -1173,3 +1173,34 @@ export const forumModerationActions = pgTable(
   },
   (t) => [index("forum_moderation_actions_zone_created_idx").on(t.zoneId, t.createdAt)],
 );
+
+/* Post attachments (APP-018). Polymorphic target (THREAD | POST) like forum_reports. Phase 1 = images;
+ * the `kind` column carries video/file later without a migration. author_id = uploader (ownership +
+ * cleanup); position orders a gallery. width/height are client-provided (aspect-ratio, no layout shift). */
+export const forumAttachments = pgTable(
+  "forum_attachments",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    /** ModerationTargetType-style: THREAD | POST */
+    targetType: text("target_type").notNull(),
+    targetId: uuid("target_id").notNull(),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    /** AttachmentKind: image (video | file later). */
+    kind: text("kind").notNull().default("image"),
+    storageKey: text("storage_key").notNull(),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    width: integer("width"),
+    height: integer("height"),
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("forum_attachments_target_idx").on(t.targetType, t.targetId),
+    index("forum_attachments_author_idx").on(t.authorId),
+  ],
+);

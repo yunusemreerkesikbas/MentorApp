@@ -78,6 +78,14 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   LLM-failure compensating refund. *(0045.)*
 - **Web profil economy UI** — earn hub on `/profil` (balance, quests, invite share + redeem).
   Hidden when `economy.enabled=false`. *(0046.)*
+- **Profil görev sheet iyileştirmesi** — `GET /v1/economy/quests` artık görev başına `rewardCoin`
+  döndürür; `/profil` görev sheet'i tamamlanma özetini, Framer Motion animasyonlu yarım daire
+  progress gauge'ini, backend'den gelen Coin ödülünü ve abonelik/davet aksiyonlarını gösterir.
+  Tamamlanan görevlerde metin rozet yerine soluk yeşil tick yeterlidir; eksik görevlerde satırın kendisi
+  aksiyon olur. E-posta doğrulama satırı `POST /v1/users/me/verification-email` ile doğrulama mailini
+  yeniden gönderir. Kart-içinde-kart görünümü kaldırıldı; ödül hâlâ otomatik işlenir, manuel claim yok.
+  İlgili dosyalar: `QuestService`, `@mentor/types` economy contract, `economy-quests-card.tsx`.
+  *(2026-07-05.)*
 
 ## Gotchas / Known issues
 

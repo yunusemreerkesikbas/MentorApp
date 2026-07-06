@@ -86,6 +86,39 @@ export const ThreadStatus = {
 export type ThreadStatus = (typeof ThreadStatus)[keyof typeof ThreadStatus];
 
 /**
+ * Post attachment (APP-018). Phase 1 = `image` only; `video`/`file` are a fast-follow (the DB `kind`
+ * column already carries them). `url` is the resolved public URL; `width`/`height` (client-provided at
+ * upload) let the gallery reserve aspect-ratio and avoid layout shift.
+ */
+export const AttachmentKind = {
+  IMAGE: "image",
+} as const;
+export type AttachmentKind = (typeof AttachmentKind)[keyof typeof AttachmentKind];
+
+export interface Attachment {
+  id: string;
+  kind: AttachmentKind;
+  url: string;
+  mimeType: string;
+  width: number | null;
+  height: number | null;
+}
+
+/** Max attachments per post + allowed image mimes + size cap (mirror of the API domain constants). */
+export const FORUM_MAX_ATTACHMENTS = 4;
+export const FORUM_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+export const FORUM_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp"] as const;
+export type ForumImageMime = (typeof FORUM_IMAGE_MIMES)[number];
+
+/** POST /v1/forum/attachments/upload-url → client PUTs the file to `uploadUrl`, then sends `key`. */
+export interface ForumAttachmentUploadUrl {
+  uploadUrl: string;
+  key: string;
+  expiresAt: string;
+  maxBytes: number;
+}
+
+/**
  * A thread — a CHAT message / ANNOUNCEMENT broadcast, or a QA question. For non-QA items
  * `title`/`acceptedPostId` are null and `status` is always OPEN.
  */
@@ -114,6 +147,8 @@ export interface ThreadView {
   commentCount: number;
   /** Display names of up to 3 recent distinct commenters (for the replier-avatar cluster). */
   commenterNames: string[];
+  /** Media attached to this thread (Phase 1: images, max 4); empty when none. */
+  attachments: Attachment[];
   createdAt: string;
 }
 
@@ -133,6 +168,8 @@ export interface AnswerView {
   authorAvatarUrl: string | null;
   body: string;
   isAccepted: boolean;
+  /** Media attached to this answer (Phase 2: images, max 4); empty when none. */
+  attachments: Attachment[];
   createdAt: string;
 }
 
@@ -161,6 +198,8 @@ export interface CommentView {
   myLiked: boolean;
   /** Number of (non-deleted) direct replies. */
   replyCount: number;
+  /** Media attached to this comment (Phase 1: images, max 4); empty when none. */
+  attachments: Attachment[];
   createdAt: string;
 }
 

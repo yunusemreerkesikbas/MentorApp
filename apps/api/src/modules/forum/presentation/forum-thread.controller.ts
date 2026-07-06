@@ -11,10 +11,24 @@ import {
 } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { CommentDetail, CommentView, ThreadDetail, ThreadFeed, ThreadView } from "@mentor/types";
+import type {
+  CommentDetail,
+  CommentView,
+  ForumAttachmentUploadUrl,
+  ThreadDetail,
+  ThreadFeed,
+  ThreadView,
+} from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { ForumThreadService } from "../application/forum-thread.service";
-import { CreateAnswerDto, CreateThreadDto, FeedQueryDto, PinThreadDto, ReactionDto } from "./forum.dto";
+import {
+  AttachmentUploadUrlDto,
+  CreateAnswerDto,
+  CreateThreadDto,
+  FeedQueryDto,
+  PinThreadDto,
+  ReactionDto,
+} from "./forum.dto";
 
 /**
  * Forum feed (Slice 2): post/list/pin/delete threads + reactions. Reading is open to any authed
@@ -25,6 +39,16 @@ import { CreateAnswerDto, CreateThreadDto, FeedQueryDto, PinThreadDto, ReactionD
 @Controller("forum")
 export class ForumThreadController {
   constructor(private readonly threads: ForumThreadService) {}
+
+  /** Presigned upload URL for a post image (client PUTs the file, then sends `key` on create). */
+  @Post("attachments/upload-url")
+  @Throttle({ default: { limit: 40, ttl: 60_000 } })
+  attachmentUploadUrl(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: AttachmentUploadUrlDto,
+  ): Promise<ForumAttachmentUploadUrl> {
+    return this.threads.createAttachmentUploadUrl(user.id, dto.contentType);
+  }
 
   // ponytail: static rate-limit; make config-driven (forum.post.rate_per_min) once abuse data warrants.
   @Post("zones/:id/threads")

@@ -14,6 +14,7 @@
   "AUTH_USERNAME_IN_USE": "This username is already taken.",
   "AUTH_TOKEN_INVALID": "This link is invalid. Please request a new one.",
   "AUTH_TOKEN_EXPIRED": "This link has expired. Please request a new one.",
+  "AUTH_VERIFICATION_EMAIL_RATE_LIMITED": "Verification email was just sent. Try again in 3 minutes.",
   "AUTH_TURNSTILE_FAILED": "Security verification failed. Please try again.",
   "AUTH_ACCOUNT_SUSPENDED": "Your account is suspended. Please contact support.",
   "AUTH_AVATAR_INVALID_IMAGE": "The profile photo could not be processed. Use JPEG or PNG under 2 MB.",
@@ -62,5 +63,6 @@
   "INVITE_ALREADY_REDEEMED": "You have already used an invite code.",
   "INVITE_ALREADY_PREMIUM": "Premium users can't redeem an invite code.",
   "FORUM_DISABLED": "The forum feature is currently disabled.",
-  "FORUM_ZONE_NOT_FOUND": "This room was not found."
+  "FORUM_ZONE_NOT_FOUND": "This room was not found.",
+  "FORUM_ATTACHMENT_INVALID": "Invalid attachment. Please pick a supported image (JPEG/PNG/WebP)."
 }

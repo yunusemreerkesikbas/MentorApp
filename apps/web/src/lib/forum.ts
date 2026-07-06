@@ -14,6 +14,7 @@ import type {
   ZoneMemberView,
   ZoneView,
 } from "@mentor/types";
+import type { AttachmentInput } from "@mentor/validation";
 import { ApiClientError, http } from "@mentor/api-client";
 
 /**
@@ -53,10 +54,15 @@ export async function postThread(
   zoneId: string,
   body: string,
   title?: string,
+  attachments?: AttachmentInput[],
 ): Promise<ThreadView> {
   return (await http<ThreadView>(`/v1/forum/zones/${zoneId}/threads`, {
     method: "POST",
-    body: JSON.stringify({ body, ...(title ? { title } : {}) }),
+    body: JSON.stringify({
+      body,
+      ...(title ? { title } : {}),
+      ...(attachments?.length ? { attachments } : {}),
+    }),
   })) as ThreadView;
 }
 
@@ -84,10 +90,14 @@ export async function getThreadDetail(threadId: string): Promise<ThreadDetail> {
 }
 
 /** Post a top-level comment on a CHAT/ANNOUNCEMENT thread. */
-export async function postComment(threadId: string, body: string): Promise<CommentView> {
+export async function postComment(
+  threadId: string,
+  body: string,
+  attachments?: AttachmentInput[],
+): Promise<CommentView> {
   return (await http<CommentView>(`/v1/forum/threads/${threadId}/comments`, {
     method: "POST",
-    body: JSON.stringify({ body }),
+    body: JSON.stringify({ body, ...(attachments?.length ? { attachments } : {}) }),
   })) as CommentView;
 }
 
@@ -97,10 +107,14 @@ export async function getCommentDetail(postId: string): Promise<CommentDetail> {
 }
 
 /** Reply to a comment (nested). */
-export async function postReply(postId: string, body: string): Promise<CommentView> {
+export async function postReply(
+  postId: string,
+  body: string,
+  attachments?: AttachmentInput[],
+): Promise<CommentView> {
   return (await http<CommentView>(`/v1/forum/posts/${postId}/replies`, {
     method: "POST",
-    body: JSON.stringify({ body }),
+    body: JSON.stringify({ body, ...(attachments?.length ? { attachments } : {}) }),
   })) as CommentView;
 }
 
@@ -118,10 +132,14 @@ export async function unlikePost(postId: string, emoji: string): Promise<void> {
   });
 }
 
-export async function postAnswer(threadId: string, body: string): Promise<AnswerView> {
+export async function postAnswer(
+  threadId: string,
+  body: string,
+  attachments?: AttachmentInput[],
+): Promise<AnswerView> {
   return (await http<AnswerView>(`/v1/forum/threads/${threadId}/answers`, {
     method: "POST",
-    body: JSON.stringify({ body }),
+    body: JSON.stringify({ body, ...(attachments?.length ? { attachments } : {}) }),
   })) as AnswerView;
 }
 

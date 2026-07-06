@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-Nuton's language is **monochrome-forward**: near-black text and **black primary buttons** on a **white background**, softened by **blurred pastel gradient blobs**, **translucent white cards**, a single **blue-tinted soft shadow**, and **10 px rounded corners everywhere**. Accents are soft pastels (violet chips, blue progress), not a single saturated brand color. Type pairs **League Spartan** (headings) with **Lato** (body).
+Nuton's language is **monochrome-forward**: near-black text and **black primary buttons** on a **white background**, softened by **blurred pastel gradient blobs**, **translucent white cards**, a single **blue-tinted soft shadow**, and **10 px rounded corners everywhere**. Accents are soft pastels (violet chips, blue progress), not a single saturated brand color. Mentor uses **Nunito Sans** for both headings and body to keep Turkish UI text smooth, warm, and readable at small sizes.
 
 Base canvas: **375 px** wide. Content column **335 px** → **20 px** side gutters.
 
@@ -71,21 +71,21 @@ Nuton has no error/focus colors; these complete the product state vocabulary (fo
 
 ## 3. Typography
 
-- **Headings:** **League Spartan** ("Spartan"). **Body / UI:** **Lato**.
+- **Headings / Body / UI:** **Nunito Sans**.
 - Verify full Turkish glyph coverage (ç ğ ı İ ş ö ü); pick Turkish-complete weights/fallbacks before wiring.
 
 | Style | Font | Size | Weight | Line-height |
 |---|---|---|---|---|
-| H1 | League Spartan | 32 | 700 Bold | 1.2 |
-| H2 | League Spartan | 20 | 600 SemiBold | 1.4 |
-| H3 | League Spartan | 16 | 500 Medium | 1.7 |
-| H4 | Lato | 18 | 700 Bold | 1.5 |
-| H5 | Lato | 16 | 700 Bold | 1.5 |
-| Body | Lato | 16 | 400 Regular | 1.7 |
-| Caption/meta | Lato | 14 | 400 Regular | 1.7 |
-| Small label | Spartan | 12 | 400 Regular | 1.7 |
-| Tab label | Spartan | 8 | 600 SemiBold | normal · **UPPERCASE** |
-| Button | Lato | 18 | 700 Bold | 1.7 · capitalize |
+| H1 | Nunito Sans | 32 | 700 Bold | 1.2 |
+| H2 | Nunito Sans | 20 | 600 SemiBold | 1.4 |
+| H3 | Nunito Sans | 16 | 500 Medium | 1.7 |
+| H4 | Nunito Sans | 18 | 700 Bold | 1.5 |
+| H5 | Nunito Sans | 16 | 700 Bold | 1.5 |
+| Body | Nunito Sans | 16 | 400 Regular | 1.7 |
+| Caption/meta | Nunito Sans | 14 | 400 Regular | 1.7 |
+| Small label | Nunito Sans | 12 | 400 Regular | 1.7 |
+| Tab label | Nunito Sans | 8 | 600 SemiBold | normal · **UPPERCASE** |
+| Button | Nunito Sans | 18 | 700 Bold | 1.7 · capitalize |
 
 Text colors: headings `#111`, body/value `#333`, meta/secondary `#666`.
 
@@ -110,17 +110,17 @@ Text colors: headings `#111`, body/value `#333`, meta/secondary `#666`.
 
 ## 6. Components (exact specs)
 
-**Primary button** (`btn` 2:770): bg `#000`, radius 10, width 335, label Lato Bold 18 `#FFF` centered capitalize. (Use for the main CTA — black, not accent.)
+**Primary button** (`btn` 2:770): bg `#000`, radius 10, width 335, label Nunito Sans Bold 18 `#FFF` centered capitalize. (Use for the main CTA — black, not accent.)
 
-**Text field** (`field` 2:722): bg `rgba(255,255,255,.5)`, 1px `#FFF` border, radius 10, shadow token, padding L20/T8/B7. Floating label Spartan Regular 12 `#666`; value Lato Regular 16 `#333`; optional trailing check icon.
+**Text field** (`field` 2:722): bg `rgba(255,255,255,.5)`, 1px `#FFF` border, radius 10, shadow token, padding L20/T8/B7. Floating label Nunito Sans Regular 12 `#666`; value Nunito Sans Regular 16 `#333`; optional trailing check icon.
 
-**Tab bar** (`Tab bar` 5:761): bg `#FFF`, height 63, 1px top divider. 4 items (Home · Search · My Courses · Profile), icon ~26–28 px + label Spartan SemiBold 8 UPPERCASE. **Active = `#111`, inactive = `#666`** (no accent fill).
+**Tab bar** (`Tab bar` 5:761): bg `#FFF`, height 63, 1px top divider. 4 items (Home · Search · My Courses · Profile), icon ~26–28 px + label Nunito Sans SemiBold 8 UPPERCASE. **Active = `#111`, inactive = `#666`** (no accent fill).
 
-**Tag / chip** (`tag` 141:1736): bg `#BEA1FE` @30%, radius 10, padding 16×10, label Lato Bold 14 `#7C6F97`, capitalize.
+**Tag / chip** (`tag` 141:1736): bg `#BEA1FE` @30%, radius 10, padding 16×10, label Nunito Sans Bold 14 `#7C6F97`, capitalize.
 
-**Course card — horizontal** (`product item` 10:901, 335×90): thumb `#D6DBFD` radius 10; title Lato Bold 14 `#111`; meta clock + Lato Regular 14 `#666`; price Lato Regular 16 `#111` (right); pink heart top-right; rating badge = white pill (radius bl10/tr10) with amber star + "5.0" Lato Bold 10 `#333`.
+**Course card — horizontal** (`product item` 10:901, 335×90): thumb `#D6DBFD` radius 10; title Nunito Sans Bold 14 `#111`; meta clock + Nunito Sans Regular 14 `#666`; price Nunito Sans Regular 16 `#111` (right); pink heart top-right; rating badge = white pill (radius bl10/tr10) with amber star + "5.0" Nunito Sans Bold 10 `#333`.
 
-**Course card — ongoing** (`product ongoing` 15:1173, 160×194): bg `rgba(255,255,255,.5)` + white border + shadow, radius 10; thumb `#DDACE5` with `#111`@10% overlay + play button; title Lato Regular 14 `#111`; progress track `#C3D9FD` / fill `#55ACEE` (h3, radius 3) + "56%" Lato Regular 12 `#666`.
+**Course card — ongoing** (`product ongoing` 15:1173, 160×194): bg `rgba(255,255,255,.5)` + white border + shadow, radius 10; thumb `#DDACE5` with `#111`@10% overlay + play button; title Nunito Sans Regular 14 `#111`; progress track `#C3D9FD` / fill `#55ACEE` (h3, radius 3) + "56%" Nunito Sans Regular 12 `#666`.
 
 **Other library symbols** (reuse as-is): Top Nav (375×42), Status Bar (375×44), Home Indicator (375×34), list item (335×56), product item 2/3 (230×170 / 230×300), lesson (335×50), video lesson (308×41), comment (335×191), checkbox, coupon item (335×85), wishlist item (335×110), FAQ item (335×56), support block (160×140).
 
@@ -154,7 +154,7 @@ Borrow Nuton's *visual* system; *content* follows the roadmap (companionship pla
 ---
 
 ## 10. Open Items
-- [x] ~~Turkish glyph coverage~~ → **next/font League Spartan + Lato with `latin-ext` subsets** (covers ç ğ ı İ ş ö ü), self-hosted; CSS vars `--font-heading`/`--font-body` (web layout).
+- [x] ~~Turkish glyph coverage~~ → **next/font Nunito Sans with `latin-ext` subsets** (covers ç ğ ı İ ş ö ü), self-hosted; CSS vars `--font-heading`/`--font-body` (web layout).
 - [x] ~~Desktop breakpoints~~ → **Tailwind defaults; `lg` (1024px) = sidebar switch** (bottom tab bar < 1024 → left sidebar ≥ 1024). Hover: nav `hover:bg-white`, focus: `focus:ring-2` on fields; richer states per-screen.
 - [ ] Map each Nuton screen to one of our screens (first live Figma MCP session).
 
