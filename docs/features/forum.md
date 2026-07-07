@@ -82,6 +82,32 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **QA ekleri — görsel (Faz 2, APP-018)** — Görsel eklerini **QA soru + cevaplarına** genişletti
+  (Faz 1 yalnızca CHAT/ANNOUNCEMENT'a açmıştı). **Şema/migration yok** — mevcut `forum_attachments`
+  (polimorfik THREAD|POST) yeniden kullanıldı. QA, CHAT'ten ayrı servis/tip/composer kullandığı için
+  yol baştan sona kablolandı: `ForumThreadService`'in QA-soru guard'ı kaldırıldı (`postThread` artık
+  QA sorusuna da ek yazıyor); `ForumQaService`'e `ForumAttachmentRepository` inject edildi, `answer()`
+  ek çözüp yazıyor, `getQuestion()` soru+cevap eklerini **batched** (N+1 yok) yüklüyor;
+  `AnswerView` tipine + `postRowToAnswerView`'e `attachments` eklendi. Ortak `resolveAttachments`
+  mantığı iki serviste tekrar etmemek için `application/attachment.resolve.ts`'e çıkarıldı; aynı yerde
+  **güvenlik sıkılaştırması**: saklanan `mime_type` artık `FORUM_IMAGE_MIME` allowlist'ine karşı
+  doğrulanıyor (önceden yalnızca key regex uzantıyı sınırlıyordu; tüm ek yollarını kapsar). Web:
+  picker mantığı `useForumImagePicker` hook'una + sunum `ForumImagePicker` bileşenine çıkarıldı
+  (ThreadComposer/AskComposer/AnswerComposer paylaşıyor); soru+cevap detayına `AttachmentGallery`
+  eklendi. Limitler Faz 1 ile birebir (max 4, ≤5MB, JPEG/PNG/WebP). Yeni i18n anahtarı yok. Testler:
+  `forum-qa.service.spec` +3 (geçerli ek yazılıyor / yabancı key / spoof mime reddi), `forum.e2e`
+  +1 (QA soru+cevap upload → detay eklerle döner). Video + dosya + orphan-cleanup hâlâ ertelenmiş. *(APP-018)*
+- **Post ekleri — görsel (Faz 1, APP-018)** — CHAT/ANNOUNCEMENT thread'leri ve yorum/yanıtları artık
+  **çoklu görsel** (max 4, JPEG/PNG/WebP ≤5MB) taşıyabilir. Yeni polimorfik `forum_attachments` tablosu
+  (`forum_reports` deseni: `target_type THREAD|POST + target_id`; `kind` ile video/file Faz 2'ye hazır;
+  client-verilen width/height → CLS'siz galeri). Akış avatar/foto presigned desenini birebir kullanır:
+  `POST /v1/forum/attachments/upload-url` → client dosyayı PUT eder → thread/comment create'e `attachments[]`
+  (key) gönderir; servis her key'i **sahiplik regex'i + `storage.readObject` boyut/varlık** ile doğrular
+  (`isValidForumAttachmentKey`, `FORUM_IMAGE_*`), sonra satırları yazar. Okuma batched (N+1 yok), URL'ler
+  `storage.getPublicUrl` ile çözülür. Frontend: `ThreadComposer` görsel-picker + önizleme + yükleme,
+  `AttachmentGallery` (1→oran korur, 2–4 grid, lightbox). Guardrail: image-only allowlist + boyut + per-user
+  key; moderasyonla gizlenen/silinen post ekleri otomatik gizlenir (ayrı yüzey yok). Testler: forum e2e
+  (upload→post→feed + foreign-key/>4 red) 15/15. QA + video + dosya + orphan-cleanup ertelendi. *(APP-018)*
 - **Username author fallback** — forum thread/answer author seçimi `users.username ?? displayName`
   oldu; username seçmemiş eski hesaplarda ad soyad görünmeye devam eder. Related:
   `forum-thread.repository.ts`, `forum-post.repository.ts`. *(Profile username.)*
@@ -106,6 +132,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 - **Admin UI — Zone yönetimi** — Admin panele "Topluluk" menüsü eklendi (`SUPER_ADMIN`/`ADMIN`). `/forum` zone listesi, `/forum/new` zone oluşturma formu. Backend'e dokunulmadı — mevcut `POST /v1/forum/zones` staff authz'u kullanılıyor. *(APP-016)*
 - **Unified Layout + Author Display (APP-016)** — Discord benzeri zone sidebar (in-flow, masaüstü) + CSS transform mobile drawer; `ThreadView`/`AnswerView`'e `authorName: string` eklendi (LEFT JOIN users); `ZoneView`'e `emoji` alanı eklendi (DB migration + admin form); zone detail sayfasına sağ panel (zone bilgisi + pinned gönderiler); `AuthorAvatar` (deterministik pastel, initials); `relativeTime` helper (`Intl.RelativeTimeFormat`); `zone-shell-skeleton`. *(APP-016)*
 - **Member reject & removal (APP-017)** — `DELETE /v1/forum/zones/:id/members/:userId` endpoint eklendi (aktif üye çıkarma + pending reddetme). `approveMember(false)` artık satırı PENDING'de bırakmak yerine siliyor. Policy'e `canRemoveMember` (OWNER çıkarılamaz). Repo'ya `findMembershipPrivileged` eklendi (`withServiceContext` — servis bağlamında güvenli role lookup). Web `/yonetim` sayfası iki tab'a genişledi: Bekleyenler (onayla/reddet) + Aktif Üyeler (kaldır); tab butonlarına `aria-pressed` eklendi. DB migration yok. Unit test: 37 → 45 (policy × 4 + service × 4). *(APP-017)*
+- **Sağ kolon "Emek Panosu" (APP-017)** — `/topluluk` sağ kolonu yeni `community` modülüyle canlı bir efor panosuna çevrildi (streak + XP + haftalık sınav-tipi leaderboard + pozitif rozetler). Ayrıntı ve mimari: [`community.md`](./community.md). *(APP-017)*
 - **"Trending Topics → Sohbet odaları" redesign (APP-017)** — Figma [Threads App Clone — Community](https://www.figma.com/design/9ekuZcod4ToI27D8LcKocZ/Threads-App-Clone--Community-?node-id=1-261) node'larından (`get_design_context` ile çekilen gerçek referans kod: 1:262/1:270/1:281/1:339) uygulanan **yapısal web redesign**, iki geçişte (backend/şema/tip değişikliği yok). `zone-sidebar.tsx`: zone satırları Trending-Topics kart diline (ikon karosu + kalın başlık + `t("members", {count})` ikincil satır) çevrildi. `layout.tsx`: içerik alanı arkaplanı `#f7f8fa` → beyaz (Figma'nın tam-beyaz canvas'ı). `zone-shell.tsx`: kutulu/gölgeli panel **tamamen kaldırıldı** — composer + thread'ler artık sayfa üzerinde `border-b`/`divide-y` ile ayrılmış gerçek flat liste (Figma 1:270/1:281 birebir); feed sütunu `max-w-2xl` ile Figma'nın ~640px dar sütununa yaklaştırıldı. `thread-item.tsx`/`thread-composer.tsx`: padding/tipografi Figma'nın px değerleriyle hizalandı (13-14px gövde, 12px meta, `pl-3/pr-4/py-4`); `reactionCounts` toplamından türetilen "`X beğeni`" satırı eklendi (Figma'nın "7 respostas · 59 curtidas" karşılığı). `reaction-bar.tsx`: renkli pill arkaplanları kaldırıldı, opaklık-bazlı minimal ikon satırına çevrildi — **bilinçli sınır**: Figma'nın monokrom heart/comment/repost/send SVG ikonlarının birebir karşılığı yok, çünkü ürün kararı gereği forum'da "pozitif emoji reaksiyonu" seti var (yorum/repost/paylaş özelliği MVP'de yok); emoji'nin renkli glyph doğası nedeniyle %100 monokrom görünüm mümkün değil. `right-panel.tsx`/`zone-card.tsx`/`question-list-item.tsx`: ağır gölgeler ince border'a çevrildi (beyaz canvas üzerinde gölge görünmüyordu). Görsel/attachment paylaşımı bilinçli olarak **kapsam dışı bırakıldı** (Figma'daki carousel'in karşılığı `forum_threads`'te yok) — Phase 2 backlog adayı. Üçüncü geçişte (aynı APP-017): zone-type rozeti (`Chip` — dolu lavanta buton görünümlü) Figma'nın düz/gri/uppercase eyebrow etiketine çevrildi (`zone-shell.tsx` header + `zone-card.tsx`) — artık tıklanabilir bir CTA gibi durmuyor. **Figma'daki üst icon-nav (home/search/heart/filter/bookmark) bilinçli olarak eklenmedi** — bu ikonlar Threads'te uygulama-geneli gezinme; bizde karşılığı zaten global app nav'da var, işlevsiz kopya ikon eklemek sahte affordance olurdu. *(APP-017)*
 
 - **Feed item Threads detayları (APP-017)** — Figma 1:281/1:288 feed item yapısına yaklaştırma: thread başlığına **⋯ overflow menüsü** eklendi (`thread-menu.tsx` — report + pin/delete tek dropdown'da; eski hover "Şikayet et" + alttaki "Sabitle/Sil" metin aksiyonları kaldırıldı), avatar kolonuna **dikey bağlantı çizgisi** eklendi (Figma 1:282 rail; son item hariç `showConnector`), gövde tipografisi 13px/19px. `zone-shell` artık `ThreadItem`'a `actions` prop'u geçmiyor. *(APP-017)*
@@ -125,7 +152,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ### Figma fidelity backlog (backend gerektirir)
 
-- **Görsel/attachment + carousel** — `forum_threads`'te attachment alanı yok; upload akışı + şema değişikliği gerekir.
+- ~~**Görsel/attachment + carousel**~~ — **Yapıldı** (Faz 1 CHAT/ANNOUNCEMENT, Faz 2 QA soru+cevap, APP-018). Kalan: video + dosya + orphan-cleanup + carousel UI.
 - **Nested yorumlar (yoruma yorum) + yorumlara like** — MVP düz yorum; nesting ve comment-level reaksiyon `forum_reactions`'ı `postId`'ye açmayı gerektirir.
 - **Zengin emoji reaksiyon paleti (👍💪🎉😮)** — like tek kalbe indirildi; palet dönerse config arkasına alınabilir.
 - **Repost / harici paylaşım** — karşılık gelen bir entity yok (ürün kararı gereği kapsam dışı).
@@ -139,7 +166,9 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 - **Slug is server-derived** from title + `Date.now()` base-36 suffix (curated, low volume).
 - **Accept is one-shot/final** — no un-accept/switch (anti-farm). 409 on re-accept.
 - **`accepted_post_id` has no FK** — avoids circular threads↔posts constraint; app-enforced.
-- **Author identity** — `ThreadView`/`AnswerView` include `authorName` via LEFT JOIN `users.username ?? users.displayName` (coalesced to `""`). UI shows `t("unknown_author")` when empty.
+- **Author identity** — `ThreadView`/`AnswerView`/`CommentView` include `authorName`,
+  `authorUsername`, and nullable `authorAvatarUrl` via LEFT JOIN `users`. UI shows
+  `t("unknown_author")` / initials fallback when empty.
 - **Member removal: OWNER çıkarılamaz** — `canRemoveMember` OWNER rolünü bloklar; OWNER devri ayrı feature (backlog).
 - **Restore lives in the queue** — hidden content isn't visible in the member feed; the only
   reachable restore is the RESOLVED tab of the report queue.

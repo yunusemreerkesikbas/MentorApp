@@ -50,20 +50,30 @@ const makeZoneRepo = (memberStatus: string | null = ZoneMemberStatus.ACTIVE) => 
     .fn()
     .mockResolvedValue(memberStatus ? { role: ZoneRole.MEMBER, status: memberStatus } : null),
 });
+const makeAttachmentRepo = () => ({
+  insertMany: vi.fn().mockResolvedValue([]),
+  listForTargets: vi.fn().mockResolvedValue(new Map()),
+});
 const config = { get: vi.fn().mockResolvedValue(true) };
 const events = { emit: vi.fn(), emitAsync: vi.fn().mockResolvedValue([]) };
-const storage = { getPublicUrl: vi.fn((key: string) => `/v1/storage/fake-object?key=${encodeURIComponent(key)}`) };
+const storage = {
+  getPublicUrl: vi.fn((key: string) => `/v1/storage/fake-object?key=${encodeURIComponent(key)}`),
+  readObject: vi.fn().mockResolvedValue(Buffer.from("img")),
+};
 const actor = (id: string, roles: string[] = [UserRole.STUDENT]) => ({ id, roles });
 
 describe("ForumQaService", () => {
   let threads: ReturnType<typeof makeThreadRepo>;
   let posts: ReturnType<typeof makePostRepo>;
+  let attachments: ReturnType<typeof makeAttachmentRepo>;
 
   beforeEach(() => {
     threads = makeThreadRepo();
     posts = makePostRepo();
+    attachments = makeAttachmentRepo();
     events.emit.mockClear();
     events.emitAsync.mockClear();
+    storage.readObject.mockClear();
   });
 
   const svc = (zoneRepo: ReturnType<typeof makeZoneRepo>) =>
@@ -71,6 +81,7 @@ describe("ForumQaService", () => {
       threads as never,
       posts as never,
       zoneRepo as never,
+      attachments as never,
       config as never,
       events as never,
       storage as never,
@@ -87,6 +98,37 @@ describe("ForumQaService", () => {
     const view = await svc(makeZoneRepo()).answer(actor("u1"), "q1", { body: "cevap" });
     expect(view.id).toBe("a1");
     expect(posts.createAnswer).toHaveBeenCalledWith({ threadId: "q1", authorId: "u1", body: "cevap" });
+  });
+
+  it("persists a valid image attachment on an answer (Phase 2)", async () => {
+    const key = "forum-attachments/u1/abcdef01.jpg";
+    await svc(makeZoneRepo()).answer(actor("u1"), "q1", {
+      body: "cevap",
+      attachments: [{ key, mimeType: "image/jpeg" }],
+    });
+    expect(attachments.insertMany).toHaveBeenCalledWith("POST", "a1", "u1", [
+      expect.objectContaining({ kind: "image", storageKey: key, mimeType: "image/jpeg" }),
+    ]);
+  });
+
+  it("rejects an attachment key outside the uploader's prefix (no answer left behind)", async () => {
+    await expect(
+      svc(makeZoneRepo()).answer(actor("u1"), "q1", {
+        body: "cevap",
+        attachments: [{ key: "forum-attachments/OTHER/abcdef01.jpg", mimeType: "image/jpeg" }],
+      }),
+    ).rejects.toMatchObject({ httpStatus: HttpStatus.BAD_REQUEST });
+    expect(posts.createAnswer).not.toHaveBeenCalled();
+  });
+
+  it("rejects a spoofed non-image mime even under a valid key", async () => {
+    // The typed AttachmentInput already bounds mimeType to image mimes; the cast simulates a raw
+    // client bypassing our types, which the service must still reject at runtime.
+    const spoofed = [{ key: "forum-attachments/u1/abcdef01.jpg", mimeType: "application/pdf" }];
+    await expect(
+      svc(makeZoneRepo()).answer(actor("u1"), "q1", { body: "cevap", attachments: spoofed as never }),
+    ).rejects.toMatchObject({ httpStatus: HttpStatus.BAD_REQUEST });
+    expect(posts.createAnswer).not.toHaveBeenCalled();
   });
 
   it("only the asker can accept; others are forbidden", async () => {

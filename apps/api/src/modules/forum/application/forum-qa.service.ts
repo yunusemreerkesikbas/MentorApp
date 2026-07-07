@@ -2,6 +2,7 @@ import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   type AnswerView,
+  ModerationTargetType,
   type Paginated,
   type QuestionDetail,
   type ThreadView,
@@ -23,6 +24,8 @@ import { ForumEventTopic } from "../domain/forum.events";
 import { ForumZoneRepository } from "../infrastructure/forum-zone.repository";
 import { ForumThreadRepository, type ThreadWithAuthor } from "../infrastructure/forum-thread.repository";
 import { ForumPostRepository } from "../infrastructure/forum-post.repository";
+import { ForumAttachmentRepository } from "../infrastructure/forum-attachment.repository";
+import { resolveForumAttachments } from "./attachment.resolve";
 import type { ThreadActor } from "./forum-thread.service";
 import { postRowToAnswerView, threadRowToView } from "./forum.mappers";
 
@@ -37,6 +40,7 @@ export class ForumQaService {
     private readonly threads: ForumThreadRepository,
     private readonly posts: ForumPostRepository,
     private readonly zones: ForumZoneRepository,
+    private readonly attachments: ForumAttachmentRepository,
     private readonly config: ConfigRegistryService,
     private readonly events: EventEmitter2,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
@@ -72,11 +76,19 @@ export class ForumQaService {
     if (!canPostInZone(forumActor, ZoneType.QA, membership?.status ?? null)) {
       throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
+    // Resolve/validate BEFORE inserting so a bad attachment fails without leaving an answer.
+    const toAttach = await resolveForumAttachments(this.storage, actor.id, dto.attachments);
     const post = await this.posts.createAnswer({ threadId, authorId: actor.id, body: dto.body });
+    const attached = await this.attachments.insertMany(
+      ModerationTargetType.POST,
+      post.id,
+      actor.id,
+      toAttach,
+    );
     // fetch with JOIN so authorName is populated in the immediate response
     const postWithAuthor = await this.posts.findById(post.id, actor.id);
     if (!postWithAuthor) throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
-    return postRowToAnswerView(postWithAuthor, this.storage);
+    return postRowToAnswerView(postWithAuthor, this.storage, attached);
   }
 
   async accept(actor: ThreadActor, threadId: string, postId: string): Promise<void> {
@@ -115,6 +127,14 @@ export class ForumQaService {
       this.threads.myReactionsByThread([threadId], viewerId),
       this.posts.listByThread(threadId, viewerId),
     ]);
+    // Batched attachment lookups (no N+1): the question thread + all answer posts.
+    const [threadAttach, answerAttach] = await Promise.all([
+      this.attachments.listForTargets(ModerationTargetType.THREAD, [threadId]),
+      this.attachments.listForTargets(
+        ModerationTargetType.POST,
+        answers.map((a) => a.id),
+      ),
+    ]);
     return {
       question: threadRowToView(
         thread,
@@ -122,8 +142,10 @@ export class ForumQaService {
         mine.get(threadId) ?? [],
         this.storage,
         answers.length,
+        [],
+        threadAttach.get(threadId) ?? [],
       ),
-      answers: answers.map((a) => postRowToAnswerView(a, this.storage)),
+      answers: answers.map((a) => postRowToAnswerView(a, this.storage, answerAttach.get(a.id) ?? [])),
     };
   }
 

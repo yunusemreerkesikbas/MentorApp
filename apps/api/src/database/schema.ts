@@ -25,6 +25,7 @@ import {
   uniqueIndex,
   uuid,
   vector,
+  varchar,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -55,6 +56,7 @@ export const jobs = pgTable(
 /* ============================== W0 · identity ==============================
  * users / organizations / coach_students (org+coach-ready from day one — §10)
  * refresh_tokens (rotation + reuse detection) · email_tokens (verify/reset)
+ * user_auth_accounts (external auth provider identities)
  * RLS: enabled+forced via the 0001 migration; access via withUserContext /
  * withServiceContext (database/rls.ts).
  * ========================================================================= */
@@ -176,6 +178,31 @@ export const emailTokens = pgTable(
   (t) => [
     uniqueIndex("email_tokens_hash_idx").on(t.tokenHash),
     index("email_tokens_user_type_idx").on(t.userId, t.type),
+  ],
+);
+
+export const userAuthAccounts = pgTable(
+  "user_auth_accounts",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    providerSubject: text("provider_subject").notNull(),
+    providerEmail: text("provider_email").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("user_auth_accounts_provider_subject_idx").on(
+      t.provider,
+      t.providerSubject,
+    ),
+    uniqueIndex("user_auth_accounts_user_provider_idx").on(t.userId, t.provider),
+    index("user_auth_accounts_user_idx").on(t.userId),
   ],
 );
 
@@ -493,6 +520,8 @@ export const mockExams = pgTable(
     takenAt: timestamp("taken_at", { withTimezone: true }).notNull(),
     /** Server-computed total net (stored for trend queries). */
     totalNet: numeric("total_net", { precision: 7, scale: 2 }).notNull(),
+    /** Optional publisher label entered by the user (Brans, Limit, etc.). */
+    publisherName: varchar("publisher_name", { length: 120 }),
     /**
      * Cached premium AI-adaptive "ghost" (geçmiş-ben) progress narration for THIS attempt vs the
      * user's own past (premium-only; null for free / not yet generated). Naturally invalidated when
@@ -1143,4 +1172,35 @@ export const forumModerationActions = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("forum_moderation_actions_zone_created_idx").on(t.zoneId, t.createdAt)],
+);
+
+/* Post attachments (APP-018). Polymorphic target (THREAD | POST) like forum_reports. Phase 1 = images;
+ * the `kind` column carries video/file later without a migration. author_id = uploader (ownership +
+ * cleanup); position orders a gallery. width/height are client-provided (aspect-ratio, no layout shift). */
+export const forumAttachments = pgTable(
+  "forum_attachments",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    /** ModerationTargetType-style: THREAD | POST */
+    targetType: text("target_type").notNull(),
+    targetId: uuid("target_id").notNull(),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    /** AttachmentKind: image (video | file later). */
+    kind: text("kind").notNull().default("image"),
+    storageKey: text("storage_key").notNull(),
+    mimeType: text("mime_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    width: integer("width"),
+    height: integer("height"),
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("forum_attachments_target_idx").on(t.targetType, t.targetId),
+    index("forum_attachments_author_idx").on(t.authorId),
+  ],
 );

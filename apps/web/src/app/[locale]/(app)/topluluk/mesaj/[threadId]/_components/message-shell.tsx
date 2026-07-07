@@ -15,6 +15,7 @@ import {
   unlikePost,
   unreactThread,
 } from "@/lib/forum";
+import type { AttachmentInput } from "@mentor/validation";
 import { CommentIcon } from "../../../_components/forum-icons";
 import { CommentRow } from "../../../_components/comment-row";
 import { ThreadComposer } from "../../../[slug]/_components/thread-composer";
@@ -78,8 +79,8 @@ export function MessageShell({ threadId }: { threadId: string }) {
   }, []);
 
   const onComment = useCallback(
-    async (body: string) => {
-      const created = await postComment(threadId, body);
+    async (body: string, attachments: AttachmentInput[]) => {
+      const created = await postComment(threadId, body, attachments);
       setState((s) =>
         s.status === "ready"
           ? {

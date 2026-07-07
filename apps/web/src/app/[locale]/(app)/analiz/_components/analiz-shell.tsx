@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslations, useLocale } from "next-intl";
-import { Link } from "@/i18n/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { motion, useReducedMotion } from "framer-motion";
 import type {
   AuthUser,
   CoachingAnalysisDto,
@@ -19,25 +19,26 @@ import {
   http,
   usersControllerMe,
 } from "@mentor/api-client";
-import {
-  Button,
-  Card,
-  ProgressBar,
-  SectionHeading,
-  TextField,
-} from "@mentor/ui";
+import { Card } from "@mentor/ui";
+import { Link, useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
-import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import { useMentorToast } from "@/lib/mentor-toast";
 import { fetchPhotoAccess } from "@/lib/analiz";
 import type { PhotoAccessDto } from "@mentor/types";
-import { PhotoCategorizeCard } from "./photo-categorize-card";
-import { GhostCard } from "./ghost-card";
-
-interface SubjectScores {
-  correct: string;
-  wrong: string;
-  blank: string;
-}
+import { staggerListVariants } from "@/lib/stagger-motion";
+import { AnalizContentSkeleton } from "./analiz-content-skeleton";
+import { AnalizSegmentControl } from "./analiz-segment-control";
+import { AnalizSummaryBand } from "./analiz-summary-band";
+import { AnalizTabGelisim } from "./analiz-tab-gelisim";
+import { AnalizTabGir } from "./analiz-tab-gir";
+import { AnalizTabYanlislarim } from "./analiz-tab-yanlislarim";
+import {
+  emptyScores,
+  parseAnalizTab,
+  scoresFromMockExam,
+  type AnalizTab,
+  type SubjectScores,
+} from "./analiz-types";
 
 type ReadyData = {
   exam: ExamSummaryDto | null;
@@ -59,37 +60,36 @@ function getMockExamsUrl(): string {
   return `/v1/mock-exams`;
 }
 
-function formatTrendDate(iso: string, locale: string): string {
-  return new Date(iso).toLocaleDateString(locale, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function emptyScores(
-  subjects: ExamSubjectDto[],
-): Record<string, SubjectScores> {
-  return Object.fromEntries(
-    subjects.map((s) => [s.slug, { correct: "", wrong: "", blank: "" }]),
-  );
-}
-
 /**
- * Deneme analizi — D/Y/Boş girişi, sunucu hesaplı net, kişisel trend (sıralama yok).
- * Exam resolution follows identity `examType` + editorial calendar (same rule as countdown).
+ * Deneme analizi — 3 mod (Gir / Gelişim / Yanlışlarım), sunucu hesaplı net, kişisel trend.
  */
 export function AnalizShell() {
   const t = useTranslations("analysis");
-  const locale = useLocale();
+  const toast = useMentorToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const reduceMotion = useReducedMotion();
+
+  const tab = parseAnalizTab(searchParams.get("tab"));
+
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [scores, setScores] = useState<Record<string, SubjectScores>>({});
-  const [lastResult, setLastResult] = useState<MockExamDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [publisherName, setPublisherName] = useState("");
+  const [takenAtDate, setTakenAtDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
   const [photoAccess, setPhotoAccess] = useState<PhotoAccessDto | null>(null);
   const [photoAccessError, setPhotoAccessError] = useState<string | null>(null);
+
+  const setTab = useCallback(
+    (next: AnalizTab) => {
+      router.replace(`/analiz?tab=${next}`);
+    },
+    [router],
+  );
 
   useEffect(() => {
     let active = true;
@@ -104,13 +104,11 @@ export function AnalizShell() {
           return;
         }
 
-        const [calendarRes, analysisRes, photoAccessResult] = await Promise.all(
-          [
-            contentControllerCalendarByFamily(me.examType),
-            http<CoachingAnalysisDto>(getAnalysisUrl()),
-            fetchPhotoAccess().catch((err: unknown) => ({ error: err })),
-          ],
-        );
+        const [calendarRes, analysisRes, photoAccessResult] = await Promise.all([
+          contentControllerCalendarByFamily(me.examType),
+          http<CoachingAnalysisDto>(getAnalysisUrl()),
+          fetchPhotoAccess().catch((err: unknown) => ({ error: err })),
+        ]);
         if (!active) return;
 
         if ("error" in photoAccessResult) {
@@ -168,16 +166,9 @@ export function AnalizShell() {
     [readyData?.subjects],
   );
   const analysis = readyData?.analysis ?? null;
+  const personalRecordNet = analysis?.personalRecordNet ?? null;
 
-  const maxTrendNet = useMemo(
-    () =>
-      analysis?.trend.length
-        ? Math.max(...analysis.trend.map((t) => Number(t.totalNet)))
-        : 0,
-    [analysis],
-  );
-
-  const activeMockExamId = lastResult?.id ?? analysis?.trend[0]?.id ?? null;
+  const activeMockExamId = analysis?.trend[0]?.id ?? null;
 
   const refreshAnalysis = useCallback(async () => {
     if (!exam || loadState.status !== "ready") return;
@@ -205,6 +196,75 @@ export function AnalizShell() {
     ]);
   }, [refreshAnalysis, t]);
 
+  function updateScore(
+    slug: string,
+    field: keyof SubjectScores,
+    value: string,
+  ) {
+    setScores((prev) => ({
+      ...prev,
+      [slug]: { ...prev[slug]!, [field]: value },
+    }));
+  }
+
+  const handleCopyLast = useCallback(
+    (mock: MockExamDto) => {
+      setScores(scoresFromMockExam(subjects, mock.subjects));
+      setPublisherName(mock.publisherName ?? "");
+      setTakenAtDate(mock.takenAt.slice(0, 10));
+      setTab("gir");
+      requestAnimationFrame(() => {
+        document.getElementById("analiz-form")?.scrollIntoView({ behavior: "smooth" });
+      });
+    },
+    [subjects, setTab],
+  );
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!exam || submitting || loadState.status !== "ready") return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const payload = {
+        examId: exam.id,
+        ...(publisherName.trim() ? { publisherName: publisherName.trim() } : {}),
+        ...(takenAtDate
+          ? { takenAt: new Date(`${takenAtDate}T12:00:00`).toISOString() }
+          : {}),
+        subjects: subjects.map((s) => ({
+          subjectRef: s.slug,
+          correct: Number(scores[s.slug]?.correct || 0),
+          wrong: Number(scores[s.slug]?.wrong || 0),
+          blank: Number(scores[s.slug]?.blank || 0),
+        })),
+      };
+      const result = await http<MockExamDto>(getMockExamsUrl(), {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      toast.success({
+        title: t("saved_toast_title"),
+        message: t("saved_toast_message", { net: result.totalNet }),
+      });
+      await refreshAnalysis();
+      setHistoryRefreshKey((k) => k + 1);
+      setScores(emptyScores(subjects));
+      setPublisherName("");
+      setTakenAtDate(new Date().toISOString().slice(0, 10));
+    } catch (err) {
+      setError(
+        err instanceof ApiClientError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : String(err),
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   const headerMotion = reduceMotion
     ? {}
     : {
@@ -224,58 +284,8 @@ export function AnalizShell() {
         variants: staggerListVariants,
       };
 
-  function updateScore(
-    slug: string,
-    field: keyof SubjectScores,
-    value: string,
-  ) {
-    setScores((prev) => ({
-      ...prev,
-      [slug]: { ...prev[slug]!, [field]: value },
-    }));
-  }
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!exam || submitting || loadState.status !== "ready") return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      const payload = {
-        examId: exam.id,
-        subjects: subjects.map((s) => ({
-          subjectRef: s.slug,
-          correct: Number(scores[s.slug]?.correct || 0),
-          wrong: Number(scores[s.slug]?.wrong || 0),
-          blank: Number(scores[s.slug]?.blank || 0),
-        })),
-      };
-      const result = await http<MockExamDto>(getMockExamsUrl(), {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-      setLastResult(result);
-      await refreshAnalysis();
-      setScores(emptyScores(subjects));
-    } catch (err) {
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : String(err),
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   if (loadState.status === "loading") {
-    return (
-      <main className="mx-auto flex min-h-[40vh] w-full max-w-2xl items-center justify-center px-5 py-8 lg:px-8">
-        <p style={{ color: "var(--color-secondary)" }}>{t("loading")}</p>
-      </main>
-    );
+    return <AnalizContentSkeleton />;
   }
 
   if (loadState.status === "error") {
@@ -290,7 +300,7 @@ export function AnalizShell() {
     <main className="mx-auto w-full max-w-2xl px-5 py-8 lg:px-8 lg:py-10">
       <motion.header className="mb-6" {...headerMotion}>
         <h1
-          className="text-3xl font-bold"
+          className="text-3xl font-bold text-balance"
           style={{
             color: "var(--color-main)",
             fontFamily: "var(--font-heading)",
@@ -312,277 +322,57 @@ export function AnalizShell() {
         <ExamTypeGate />
       ) : (
         <motion.div className="flex flex-col gap-6" {...gridMotion}>
-          <AnimatePresence>
-            {lastResult && (
-              <motion.div
-                key="last-result"
-                variants={reduceMotion ? undefined : staggerItemVariants}
-                initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
-              >
-                <Card>
-                  <div className="flex flex-col items-center gap-3 text-center sm:items-start sm:text-left">
-                    <span
-                      className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold"
-                      style={{
-                        backgroundColor:
-                          "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-                        color: "var(--color-chip-text)",
-                        fontFamily: "var(--font-body)",
-                      }}
-                    >
-                      {t("saved_chip")}
-                    </span>
-                    <p
-                      className="text-xl font-bold"
-                      style={{
-                        color: "var(--color-main)",
-                        fontFamily: "var(--font-heading)",
-                      }}
-                    >
-                      {t("total_net", { net: lastResult.totalNet })}
-                    </p>
-                    <p
-                      className="text-sm"
-                      style={{ color: "var(--color-secondary)" }}
-                    >
-                      {lastResult.examName}
-                    </p>
-                  </div>
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <AnalizSummaryBand
+            analysis={analysis}
+            onNewEntry={() => {
+              setTab("gir");
+              requestAnimationFrame(() => {
+                document
+                  .getElementById("analiz-form")
+                  ?.scrollIntoView({ behavior: "smooth" });
+              });
+            }}
+          />
 
-          {activeMockExamId ? (
-            <motion.div
-              variants={reduceMotion ? undefined : staggerItemVariants}
-            >
-              {photoAccessError ? (
-                <Card className="flex flex-col gap-3">
-                  <SectionHeading as="h2" subtitle={t("photo_unavailable")}>
-                    {t("photo_section_title")}
-                  </SectionHeading>
-                  <FormError message={photoAccessError} />
-                </Card>
-              ) : photoAccess ? (
-                <PhotoCategorizeCard
-                  mockExamId={activeMockExamId}
-                  access={photoAccess}
-                  onCategorized={handlePhotoCategorized}
-                />
-              ) : null}
-            </motion.div>
-          ) : null}
+          <AnalizSegmentControl value={tab} onChange={setTab} />
 
-          {analysis?.ghost ? (
-            <motion.div
-              key={analysis.ghost.latest.id}
-              variants={reduceMotion ? undefined : staggerItemVariants}
-            >
-              <GhostCard ghost={analysis.ghost} />
-            </motion.div>
-          ) : null}
-
-          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-            <Card>
-              <SectionHeading subtitle={exam?.name}>
-                {t("result_entry_title")}
-              </SectionHeading>
-
-              {!exam || subjects.length === 0 ? (
-                <NoExamSeed />
-              ) : (
-                <form
-                  onSubmit={(e) => void submit(e)}
-                  className="mt-4 flex flex-col gap-5"
-                >
-                  {subjects.map((s) => (
-                    <fieldset key={s.slug} className="flex flex-col gap-2">
-                      <legend
-                        className="text-sm font-bold"
-                        style={{
-                          color: "var(--color-main)",
-                          fontFamily: "var(--font-heading)",
-                        }}
-                      >
-                        {s.name}
-                        {s.questionCount != null
-                          ? ` ${t("questions_count", { count: s.questionCount })}`
-                          : ""}
-                      </legend>
-                      <div className="grid grid-cols-3 gap-2">
-                        <TextField
-                          label={t("correct")}
-                          type="number"
-                          min={0}
-                          inputMode="numeric"
-                          value={scores[s.slug]?.correct ?? ""}
-                          onChange={(e) =>
-                            updateScore(s.slug, "correct", e.target.value)
-                          }
-                        />
-                        <TextField
-                          label={t("wrong")}
-                          type="number"
-                          min={0}
-                          inputMode="numeric"
-                          value={scores[s.slug]?.wrong ?? ""}
-                          onChange={(e) =>
-                            updateScore(s.slug, "wrong", e.target.value)
-                          }
-                        />
-                        <TextField
-                          label={t("blank")}
-                          type="number"
-                          min={0}
-                          inputMode="numeric"
-                          value={scores[s.slug]?.blank ?? ""}
-                          onChange={(e) =>
-                            updateScore(s.slug, "blank", e.target.value)
-                          }
-                        />
-                      </div>
-                    </fieldset>
-                  ))}
-                  <Button type="submit" busy={submitting} fullWidth>
-                    {t("save")}
-                  </Button>
-                </form>
-              )}
-            </Card>
-          </motion.div>
-
-          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-            <Card>
-              <SectionHeading subtitle={t("trend_subtitle")}>
-                {t("trend_title")}
-              </SectionHeading>
-              {analysis && analysis.trend.length > 0 ? (
-                <motion.ul
-                  className="mt-4 flex flex-col gap-3"
-                  initial={reduceMotion ? false : "hidden"}
-                  animate={reduceMotion ? undefined : "show"}
-                  variants={{
-                    hidden: { opacity: 0 },
-                    show: { opacity: 1, transition: { staggerChildren: 0.06 } },
-                  }}
-                >
-                  {analysis.trend.map((point) => {
-                    const pct =
-                      maxTrendNet > 0
-                        ? Math.round(
-                            (Number(point.totalNet) / maxTrendNet) * 100,
-                          )
-                        : 0;
-                    return (
-                      <motion.li
-                        key={point.id}
-                        variants={
-                          reduceMotion ? undefined : staggerItemVariants
-                        }
-                      >
-                        <div className="mb-1 flex justify-between text-sm">
-                          <span style={{ color: "var(--color-body)" }}>
-                            {formatTrendDate(point.takenAt, locale)}
-                          </span>
-                          <span
-                            className="font-bold tabular-nums"
-                            style={{
-                              color: "var(--color-main)",
-                              fontFamily: "var(--font-heading)",
-                            }}
-                          >
-                            {point.totalNet}
-                          </span>
-                        </div>
-                        <ProgressBar value={pct} />
-                      </motion.li>
-                    );
-                  })}
-                </motion.ul>
-              ) : (
-                <EmptyTrend />
-              )}
-            </Card>
-          </motion.div>
-
-          {analysis && analysis.subjects.length > 0 && (
-            <motion.div
-              variants={reduceMotion ? undefined : staggerItemVariants}
-            >
-              <Card>
-                <SectionHeading subtitle={t("subject_avg_subtitle")}>
-                  {t("subject_avg_title")}
-                </SectionHeading>
-                <ul className="mt-4 flex flex-col gap-3">
-                  {analysis.subjects.map((s) => (
-                    <li
-                      key={s.subjectRef}
-                      className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] px-3 py-2 text-sm transition-colors hover:bg-white/40 motion-reduce:transition-none"
-                    >
-                      <span style={{ color: "var(--color-body)" }}>
-                        {s.subjectName}
-                      </span>
-                      <span
-                        className="tabular-nums"
-                        style={{ color: "var(--color-secondary)" }}
-                      >
-                        {t("avg_template", {
-                          avg: s.averageNet,
-                          count: s.attemptCount,
-                        })}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            </motion.div>
-          )}
-
-          {analysis && analysis.photoSubjectSignals.length > 0 && (
-            <motion.div
-              variants={reduceMotion ? undefined : staggerItemVariants}
-            >
-              <Card>
-                <SectionHeading subtitle={t("photo_signals_subtitle")}>
-                  {t("photo_signals_title")}
-                </SectionHeading>
-                <ul className="mt-4 flex flex-col gap-3">
-                  {analysis.photoSubjectSignals.map((s) => (
-                    <li
-                      key={s.subjectRef}
-                      className="flex items-center justify-between gap-3 rounded-[var(--radius-card)] px-3 py-2 text-sm"
-                    >
-                      <span style={{ color: "var(--color-body)" }}>
-                        {s.subjectName}
-                      </span>
-                      <span
-                        className="tabular-nums"
-                        style={{ color: "var(--color-secondary)" }}
-                      >
-                        {t("photo_count", { count: s.count })}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            </motion.div>
-          )}
-
-          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-            <Link
-              href="/panel"
-              className="flex min-h-[44px] items-center justify-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-              style={{
-                color: "var(--color-main)",
-                fontFamily: "var(--font-heading)",
-              }}
-            >
-              {t("back_panel")}
-            </Link>
-          </motion.div>
+          <div
+            role="tabpanel"
+            id={`analiz-panel-${tab}`}
+            aria-labelledby={`analiz-tab-${tab}`}
+          >
+            {tab === "gir" ? (
+              <AnalizTabGir
+                exam={exam}
+                subjects={subjects}
+                scores={scores}
+                submitting={submitting}
+                historyRefreshKey={historyRefreshKey}
+                publisherName={publisherName}
+                takenAtDate={takenAtDate}
+                onPublisherChange={setPublisherName}
+                onTakenAtChange={setTakenAtDate}
+                onScoreChange={updateScore}
+                onSubmit={(e) => void submit(e)}
+                onCopyLast={handleCopyLast}
+              />
+            ) : null}
+            {tab === "gelisim" ? (
+              <AnalizTabGelisim
+                analysis={analysis}
+                personalRecordNet={personalRecordNet}
+              />
+            ) : null}
+            {tab === "yanlislar" ? (
+              <AnalizTabYanlislarim
+                activeMockExamId={activeMockExamId}
+                photoAccess={photoAccess}
+                photoAccessError={photoAccessError}
+                analysis={analysis}
+                onCategorized={handlePhotoCategorized}
+              />
+            ) : null}
+          </div>
         </motion.div>
       )}
     </main>
@@ -622,50 +412,5 @@ function ExamTypeGate() {
         </Link>
       </div>
     </Card>
-  );
-}
-
-function NoExamSeed() {
-  const translate = useTranslations("analysis");
-  return (
-    <div className="mt-4 flex flex-col items-center gap-4 py-4 text-center">
-      <span
-        className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold capitalize"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-          color: "var(--color-chip-text)",
-          fontFamily: "var(--font-body)",
-        }}
-      >
-        {translate("no_seed_chip")}
-      </span>
-      <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-        {translate("no_seed_desc")}
-      </p>
-    </div>
-  );
-}
-
-function EmptyTrend() {
-  const t = useTranslations("analysis");
-
-  return (
-    <div className="mt-4 flex flex-col items-center gap-4 py-6 text-center">
-      <span
-        className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold capitalize"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-          color: "var(--color-chip-text)",
-          fontFamily: "var(--font-body)",
-        }}
-      >
-        {t("empty_trend_chip")}
-      </span>
-      <p className="text-base" style={{ color: "var(--color-secondary)" }}>
-        {t("empty_trend_desc")}
-      </p>
-    </div>
   );
 }

@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import type { ExamType } from "@mentor/types";
 import { useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { hasCompletedOnboarding } from "@/lib/post-auth-destination";
 import { CompleteStep } from "./steps/complete-step";
 import { ExamStep } from "./steps/exam-step";
 import type { GoalSummary } from "./steps/goal-step";
 import { GoalStep } from "./steps/goal-step";
+import { ProfileStep } from "./steps/profile-step";
 import { WelcomeStep } from "./steps/welcome-step";
 
-type Step = 0 | 1 | 2 | 3;
+type Step = 0 | 1 | 2 | 3 | 4;
 
 const SESSION_KEY = "mentor_onboarding";
 
@@ -24,7 +26,7 @@ export function OnboardingWizard() {
   const [goal, setGoal] = useState<GoalSummary | null>(null);
 
   useEffect(() => {
-    if (!user?.examType) {
+    if (user && !hasCompletedOnboarding(user)) {
       sessionStorage.setItem(SESSION_KEY, "1");
       return;
     }
@@ -49,34 +51,43 @@ export function OnboardingWizard() {
   }
   if (step === 1) {
     return (
-      <ExamStep
+      <ProfileStep
         user={user}
         onBack={() => setStep(0)}
-        onSaved={(next) => {
-          setExamType(next);
-          setStep(2);
-        }}
+        onSaved={() => setStep(2)}
       />
     );
   }
   if (step === 2) {
     return (
-      <GoalStep
+      <ExamStep
+        user={user}
         onBack={() => setStep(1)}
-        onSaved={(summary) => {
-          setGoal(summary);
+        onSaved={(next) => {
+          setExamType(next);
           setStep(3);
         }}
-        onSkip={() => setStep(3)}
       />
     );
   }
-  if (step === 3 && examType) {
+  if (step === 3) {
+    return (
+      <GoalStep
+        onBack={() => setStep(2)}
+        onSaved={(summary) => {
+          setGoal(summary);
+          setStep(4);
+        }}
+        onSkip={() => setStep(4)}
+      />
+    );
+  }
+  if (step === 4 && examType) {
     return (
       <CompleteStep
         examType={examType}
         goal={goal}
-        onBack={() => setStep(2)}
+        onBack={() => setStep(3)}
         onFinish={finishOnboarding}
       />
     );

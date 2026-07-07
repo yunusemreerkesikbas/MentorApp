@@ -22,7 +22,6 @@ import {
   EmailTokenType,
   RESET_PASSWORD_TTL_MS,
   UserStatus,
-  VERIFY_EMAIL_TTL_MS,
 } from "../domain/identity.constants";
 import { EmailTokenRepository } from "../infrastructure/email-token.repository";
 import { UsersRepository, type UserRow } from "../infrastructure/users.repository";
@@ -64,11 +63,15 @@ export class AuthService {
         email: input.email,
         passwordHash,
         displayName: input.displayName,
+        username: input.username,
         kvkkAcceptedAt: new Date(),
       });
     } catch (err) {
       // Check-then-insert race: a concurrent signup hit the unique index → same 409 code.
       if (isUniqueViolation(err)) {
+        if (uniqueConstraint(err)?.includes("username")) {
+          throw new DomainError(ErrorCode.AUTH_USERNAME_IN_USE, HttpStatus.CONFLICT);
+        }
         throw new DomainError(ErrorCode.AUTH_EMAIL_IN_USE, HttpStatus.CONFLICT);
       }
       throw err;
@@ -145,7 +148,7 @@ export class AuthService {
       );
     if (attempts >= limit) {
       throw new DomainError(
-        ErrorCode.TOO_MANY_REQUESTS,
+        ErrorCode.AUTH_VERIFICATION_EMAIL_RATE_LIMITED,
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
@@ -175,7 +178,12 @@ export class AuthService {
 
   private async sendEmailToken(user: UserRow, type: EmailTokenType): Promise<void> {
     const raw = randomBytes(32).toString("base64url");
-    const ttl = type === EmailTokenType.VERIFY_EMAIL ? VERIFY_EMAIL_TTL_MS : RESET_PASSWORD_TTL_MS;
+    const ttl =
+      type === EmailTokenType.VERIFY_EMAIL
+        ? (await this.configRegistry.get(
+            "identity.verification_email.token_ttl_seconds",
+          )) * 1000
+        : RESET_PASSWORD_TTL_MS;
     await this.emailTokenRepo.create({
       userId: user.id,
       type,
@@ -204,6 +212,13 @@ export class AuthService {
 /** Pre-computed argon2 hash of an unguessable value — used to equalize login timing. */
 const DUMMY_HASH =
   "$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRzb21lc2FsdA$RdescudvJCsgt3ub+b+dWRWJTmaaJObG";
+
+function uniqueConstraint(err: unknown): string | undefined {
+  return (
+    (err as { constraint?: string })?.constraint ??
+    (err as { cause?: { constraint?: string } })?.cause?.constraint
+  );
+}
 
 export function toAuthUser(
   user: UserRow,

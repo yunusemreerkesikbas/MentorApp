@@ -92,6 +92,7 @@ pnpm --filter @mentor/api test -- --grep "ai"
   all users. *(0049.)*
 - **Koç hub + chat split** — `/koc` hub (greeting, shortcut cards, session recent pills, start/continue CTAs) and `/koc/chat` (back header, transcript, composer). `CoachSessionProvider` in `koc/layout.tsx` persists messages + recent topics in `sessionStorage` (`mentor:coach-session:v1`) for the browser tab only — no backend history. Hub shortcuts and panel coach CTA deep-link via `?seed=` (composer pre-fill). Gate blocks both routes when `canChat=false`. Puhu avatar on coach bubbles; Encouraging Puhu on gate. *(2026-06-30.)*
 - **Puhu coach bubble** — reusable `PuhuCoachBubble` (`apps/web/src/components/puhu-coach-bubble.tsx`): white speech card + tail (`.mentor-coach-bubble`), dismiss X, optional bounce; wired on `/koc` gate (reason-specific copy) and hub welcome. *(2026-06-30.)*
+- **Koç hub generated hero** — `/koc` now uses the generated `koc-hero.png` as the main app-poster visual, with only a greeting overlay and start/continue CTAs. Dense shortcut-card grid and prompt chips were removed. Usage unchanged (`/koc`, `/koc/chat?seed=...`). Gotcha: chat route and access gate were intentionally left unchanged. Files: `koc-hub.tsx`, `koc-content-skeleton.tsx`. *(2026-07-03.)*
 
 ## Gotchas / Known issues
 

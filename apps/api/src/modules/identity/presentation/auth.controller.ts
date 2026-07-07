@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post, Req, Res } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Post, Query, Req, Res } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
@@ -6,10 +6,19 @@ import type { Request, Response } from "express";
 import type { AuthSession } from "@mentor/types";
 import { Public } from "../../../common/auth/public.decorator";
 import type { Env } from "../../../config/env.validation";
-import { REFRESH_COOKIE, REFRESH_COOKIE_PATH } from "../domain/identity.constants";
+import {
+  GOOGLE_OAUTH_COOKIE_PATH,
+  GOOGLE_OAUTH_STATE_COOKIE,
+  GOOGLE_OAUTH_STATE_TTL_MS,
+  REFRESH_COOKIE,
+  REFRESH_COOKIE_PATH,
+} from "../domain/identity.constants";
 import { AuthService, type AuthResult } from "../application/auth.service";
+import { GoogleAuthService, type GoogleOAuthStatus } from "../application/google-auth.service";
 import {
   ForgotPasswordDto,
+  GoogleOAuthCallbackQueryDto,
+  GoogleOAuthStartQueryDto,
   LoginDto,
   ResetPasswordDto,
   SignupDto,
@@ -28,6 +37,7 @@ import {
 export class AuthController {
   constructor(
     private readonly auth: AuthService,
+    private readonly googleAuth: GoogleAuthService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -48,6 +58,49 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthSession> {
     return this.finish(await this.auth.login(dto), res);
+  }
+
+  @Get("google/start")
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  async googleStart(
+    @Query() query: GoogleOAuthStartQueryDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const start = await this.googleAuth.createStartFor({
+      mode: query.mode,
+      locale: query.locale,
+      returnTo: query.returnTo,
+      kvkkAccepted: query.kvkkAccepted === "true",
+    });
+    const isProd = this.config.get("NODE_ENV", { infer: true }) === "production";
+    res.cookie(GOOGLE_OAUTH_STATE_COOKIE, start.cookieValue, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: "lax",
+      path: GOOGLE_OAUTH_COOKIE_PATH,
+      maxAge: GOOGLE_OAUTH_STATE_TTL_MS,
+    });
+    res.redirect(start.url);
+  }
+
+  @Get("google/status")
+  googleStatus(): Promise<GoogleOAuthStatus> {
+    return this.googleAuth.status();
+  }
+
+  @Get("google/callback")
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  async googleCallback(
+    @Query() query: GoogleOAuthCallbackQueryDto,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
+    const raw = (req.cookies as Record<string, string> | undefined)?.[GOOGLE_OAUTH_STATE_COOKIE];
+    const state = this.googleAuth.verifyState(raw, query.state);
+    res.clearCookie(GOOGLE_OAUTH_STATE_COOKIE, { path: GOOGLE_OAUTH_COOKIE_PATH });
+    const result = await this.googleAuth.callback(query.code, state);
+    this.finish(result, res);
+    res.redirect(this.googleAuth.redirectUrl(state, result.user));
   }
 
   @Post("refresh")

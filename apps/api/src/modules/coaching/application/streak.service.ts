@@ -29,6 +29,18 @@ export class StreakService {
     private readonly events: EventEmitter2,
   ) {}
 
+  /**
+   * Read-only current-streak snapshot (no recompute, no events) — for cross-module consumers like the
+   * community effort board. The snapshot is refreshed by `getSummary` on the daily panel.
+   * // ponytail: reads the cached snapshot; live-derive only if snapshot staleness ever matters here.
+   */
+  getCurrentStreak(userId: string): Promise<number> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const row = await this.streak.findByUser(tx, userId);
+      return row?.currentStreak ?? 0;
+    });
+  }
+
   async getSummary(userId: string): Promise<StreakSummaryDto> {
     const today = todayIso();
     const since = addDays(today, -STREAK_LOOKBACK_DAYS);

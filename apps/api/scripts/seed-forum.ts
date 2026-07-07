@@ -89,6 +89,12 @@ const COMMENTS = [
 const rand = (n: number) => Math.floor(Math.random() * n);
 const pick = <T,>(arr: T[]): T => arr[rand(arr.length)]!;
 const chance = (p: number) => Math.random() < p;
+/** Monday 00:00 UTC of the current week — matches CommunityService's leaderboard window. */
+const startOfWeekUtc = (now: Date): Date => {
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d;
+};
 const slugName = (name: string) =>
   name.toLowerCase().replaceAll("ı", "i").replaceAll("ş", "s").replaceAll("ç", "c")
     .replaceAll("ğ", "g").replaceAll("ü", "u").replaceAll("ö", "o").replace(/[^a-z]+/g, "-");
@@ -120,6 +126,7 @@ async function main() {
     replies: 0,
     likes: 0,
     commentLikes: 0,
+    xpRows: 0,
   };
   try {
     await c.query("BEGIN");
@@ -293,8 +300,37 @@ async function main() {
       await addLikes(res.rows[0]!.id, 5);
     }
 
+    // 7) Effort board (Emek Panosu): weekly XP + enable the economy in dev ------
+    // The community leaderboard ranks XP earned since Monday 00:00 UTC, scoped to the exam-type
+    // cohort. Grant every active user a spread of XP dated within THIS week so the board is populated
+    // for whoever logs in. Idempotent: wipe prior seed XP first (reason='seed.xp'; real grants stay).
+    await c.query("delete from ledger_entries where reason = 'seed.xp'");
+    const weekStart = startOfWeekUtc(new Date()).getTime();
+    const weekSpan = Date.now() - weekStart;
+    for (const uid of everyone) {
+      const rows = 1 + rand(4); // 1–4 grants → varied weekly totals
+      for (let i = 0; i < rows; i++) {
+        const amount = 20 + rand(180); // 20–199 XP per grant
+        const at = new Date(weekStart + Math.random() * weekSpan);
+        await c.query(
+          `insert into ledger_entries (user_id, unit, amount, reason, status, created_at)
+           values ($1, 'XP', $2, 'seed.xp', 'CONFIRMED', $3)`,
+          [uid, amount, at.toISOString()],
+        );
+        stats.xpRows++;
+      }
+    }
+    // Turn on the economy so the board's XP/level/leaderboard are visible (dev only). Direct override
+    // upsert — the running API caches config, so RESTART the api (or toggle via admin) to pick it up.
+    await c.query(
+      `insert into config_overrides (key, value, updated_at)
+       values ('economy.enabled', 'true'::jsonb, now())
+       on conflict (key) do update set value = 'true'::jsonb, updated_at = now()`,
+    );
+
     await c.query("COMMIT");
     console.log("Forum seed complete:", JSON.stringify(stats, null, 2));
+    console.log("economy.enabled override set → RESTART the api (or toggle in admin) for it to apply.");
   } catch (err) {
     await c.query("ROLLBACK");
     throw err;

@@ -6,10 +6,19 @@ import type { Env } from "../../config/env.validation";
 import { Public } from "../../common/auth/public.decorator";
 import { FakeStorageAdapter } from "../adapters/storage/fake-storage.adapter";
 import { PHOTO_ALLOWED_MIME, PHOTO_MAX_BYTES } from "../../modules/ai/domain/photo-classify.constants";
-import { AVATAR_MAX_BYTES } from "../../modules/identity/domain/avatar";
+import { AVATAR_ALLOWED_MIME, AVATAR_MAX_BYTES } from "../../modules/identity/domain/avatar";
+import {
+  FORUM_IMAGE_MAX_BYTES,
+  FORUM_IMAGE_MIME,
+} from "../../modules/forum/domain/attachment.constants";
 
-function maxBytesForKey(key: string): number {
-  return key.startsWith("avatars/") ? AVATAR_MAX_BYTES : PHOTO_MAX_BYTES;
+/** Per-resource size + mime rules, keyed by the object's prefix (matches each upload-url endpoint). */
+function limitsForKey(key: string): { maxBytes: number; allowedMime: Set<string> } {
+  if (key.startsWith("avatars/")) return { maxBytes: AVATAR_MAX_BYTES, allowedMime: AVATAR_ALLOWED_MIME };
+  if (key.startsWith("forum-attachments/")) {
+    return { maxBytes: FORUM_IMAGE_MAX_BYTES, allowedMime: FORUM_IMAGE_MIME };
+  }
+  return { maxBytes: PHOTO_MAX_BYTES, allowedMime: PHOTO_ALLOWED_MIME };
 }
 
 /**
@@ -47,7 +56,8 @@ export class FakeStorageController {
       res.status(400).send("key and contentType required");
       return undefined;
     }
-    if (!PHOTO_ALLOWED_MIME.has(contentType)) {
+    const { maxBytes, allowedMime } = limitsForKey(key);
+    if (!allowedMime.has(contentType)) {
       res.status(400).send("unsupported contentType");
       return undefined;
     }
@@ -56,7 +66,7 @@ export class FakeStorageController {
       res.status(400).send("empty body");
       return undefined;
     }
-    if (body.length > maxBytesForKey(key)) {
+    if (body.length > maxBytes) {
       res.status(413).send("too large");
       return undefined;
     }

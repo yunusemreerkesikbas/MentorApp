@@ -1,9 +1,12 @@
+import { randomUUID } from "node:crypto";
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   type CommentDetail,
   type CommentView,
   FORUM_LIKE_EMOJI,
+  type ForumAttachmentUploadUrl,
+  ModerationTargetType,
   type ThreadDetail,
   type ThreadFeed,
   type ThreadView,
@@ -16,6 +19,12 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import {
+  extensionForForumImageMime,
+  FORUM_IMAGE_MAX_BYTES,
+  FORUM_IMAGE_MIME,
+} from "../domain/attachment.constants";
+import { resolveForumAttachments } from "./attachment.resolve";
+import {
   canCommentInZone,
   canDeleteThread,
   canPinThread,
@@ -26,6 +35,7 @@ import { ForumEventTopic } from "../domain/forum.events";
 import { ForumZoneRepository } from "../infrastructure/forum-zone.repository";
 import { ForumThreadRepository, type ThreadWithAuthor } from "../infrastructure/forum-thread.repository";
 import { ForumPostRepository, type PostWithAuthor } from "../infrastructure/forum-post.repository";
+import { ForumAttachmentRepository } from "../infrastructure/forum-attachment.repository";
 import { postRowToCommentView, threadRowToView } from "./forum.mappers";
 
 /** Minimal authenticated principal the controller passes in (id + platform roles). */
@@ -44,10 +54,33 @@ export class ForumThreadService {
     private readonly threads: ForumThreadRepository,
     private readonly zones: ForumZoneRepository,
     private readonly posts: ForumPostRepository,
+    private readonly attachments: ForumAttachmentRepository,
     private readonly config: ConfigRegistryService,
     private readonly events: EventEmitter2,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
+
+  /** Presigned upload URL for a post image (Phase 1). Client PUTs the file, then sends `key` on create. */
+  async createAttachmentUploadUrl(
+    userId: string,
+    contentType: string,
+  ): Promise<ForumAttachmentUploadUrl> {
+    await this.assertEnabled();
+    if (!FORUM_IMAGE_MIME.has(contentType)) {
+      throw new DomainError(ErrorCode.FORUM_ATTACHMENT_INVALID, HttpStatus.BAD_REQUEST);
+    }
+    const ext = extensionForForumImageMime(contentType);
+    const result = await this.storage.createUploadUrl({
+      key: `forum-attachments/${userId}/${randomUUID()}.${ext}`,
+      contentType,
+    });
+    return {
+      uploadUrl: result.url,
+      key: result.key,
+      expiresAt: result.expiresAt,
+      maxBytes: FORUM_IMAGE_MAX_BYTES,
+    };
+  }
 
   private async assertEnabled(): Promise<void> {
     if (!(await this.config.get("forum.enabled"))) {
@@ -84,7 +117,16 @@ export class ForumThreadService {
       throw new DomainError(ErrorCode.FORUM_QUESTION_TITLE_REQUIRED, HttpStatus.BAD_REQUEST);
     }
     const title = zone.type === ZoneType.QA ? dto.title : null;
+    // Resolve/validate BEFORE inserting the thread so a bad attachment fails without leaving a post.
+    // QA questions carry images too (Phase 2) — same path as chat/announcement.
+    const toAttach = await resolveForumAttachments(this.storage, actor.id, dto.attachments);
     const row = await this.threads.createThread({ zoneId, authorId: actor.id, body: dto.body, title });
+    const attached = await this.attachments.insertMany(
+      ModerationTargetType.THREAD,
+      row.id,
+      actor.id,
+      toAttach,
+    );
     this.events.emit(ForumEventTopic.THREAD_POSTED, {
       zoneId,
       threadId: row.id,
@@ -93,7 +135,7 @@ export class ForumThreadService {
     // fetch with JOIN so authorName is populated in the immediate response
     const rowWithAuthor = await this.threads.findById(row.id, actor.id);
     if (!rowWithAuthor) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
-    return threadRowToView(rowWithAuthor, {}, [], this.storage);
+    return threadRowToView(rowWithAuthor, {}, [], this.storage, 0, [], attached);
   }
 
   async listFeed(viewerId: string, zoneId: string, q: FeedQuery): Promise<ThreadFeed> {
@@ -105,12 +147,13 @@ export class ForumThreadService {
         ? await this.threads.listPopular(viewerId, zoneId, q.limit)
         : await this.threads.listFeed(viewerId, zoneId, { limit: q.limit, before: q.before });
     const ids = rows.map((r) => r.id);
-    // Four batched lookups (no N+1).
-    const [counts, mine, commentCounts, commenters] = await Promise.all([
+    // Five batched lookups (no N+1).
+    const [counts, mine, commentCounts, commenters, attachMap] = await Promise.all([
       this.threads.reactionCountsByThread(ids),
       this.threads.myReactionsByThread(ids, viewerId),
       this.threads.commentCountsByThread(ids),
       this.threads.recentCommentersByThread(ids),
+      this.attachments.listForTargets(ModerationTargetType.THREAD, ids),
     ]);
     const items = rows.map((r) =>
       threadRowToView(
@@ -120,6 +163,7 @@ export class ForumThreadService {
         this.storage,
         commentCounts.get(r.id) ?? 0,
         commenters.get(r.id) ?? [],
+        attachMap.get(r.id) ?? [],
       ),
     );
     // Popular is a single top-N page (no time cursor). Recent paginates on createdAt.
@@ -167,7 +211,9 @@ export class ForumThreadService {
     await this.assertEnabled();
     const thread = await this.requireThread(threadId, actor.id);
     await this.assertCommentableZone(thread.zoneId, actor);
+    const toAttach = await resolveForumAttachments(this.storage, actor.id, dto.attachments);
     const post = await this.posts.createAnswer({ threadId, authorId: actor.id, body: dto.body });
+    await this.attachments.insertMany(ModerationTargetType.POST, post.id, actor.id, toAttach);
     return this.requireCommentView(post.id, actor.id);
   }
 
@@ -176,12 +222,14 @@ export class ForumThreadService {
     await this.assertEnabled();
     const parent = await this.requirePost(postId, actor.id);
     await this.assertCommentableZone(parent.threadId, actor, /* viaThread */ true);
+    const toAttach = await resolveForumAttachments(this.storage, actor.id, dto.attachments);
     const post = await this.posts.createAnswer({
       threadId: parent.threadId,
       authorId: actor.id,
       body: dto.body,
       parentPostId: postId,
     });
+    await this.attachments.insertMany(ModerationTargetType.POST, post.id, actor.id, toAttach);
     return this.requireCommentView(post.id, actor.id);
   }
 
@@ -201,11 +249,12 @@ export class ForumThreadService {
   async getThreadDetail(viewerId: string, threadId: string): Promise<ThreadDetail> {
     await this.assertEnabled();
     const thread = await this.requireThread(threadId, viewerId);
-    const [counts, mine, commentCounts, topLevel] = await Promise.all([
+    const [counts, mine, commentCounts, topLevel, attachMap] = await Promise.all([
       this.threads.reactionCountsByThread([threadId]),
       this.threads.myReactionsByThread([threadId], viewerId),
       this.threads.commentCountsByThread([threadId]),
       this.posts.listTopLevel(threadId, viewerId),
+      this.attachments.listForTargets(ModerationTargetType.THREAD, [threadId]),
     ]);
     return {
       thread: threadRowToView(
@@ -214,6 +263,8 @@ export class ForumThreadService {
         mine.get(threadId) ?? [],
         this.storage,
         commentCounts.get(threadId) ?? 0,
+        [],
+        attachMap.get(threadId) ?? [],
       ),
       comments: await this.decorateComments(topLevel, viewerId),
     };
@@ -237,10 +288,11 @@ export class ForumThreadService {
     viewerId: string,
   ): Promise<CommentView[]> {
     const ids = posts.map((p) => p.id);
-    const [likeCounts, myLiked, replyCounts] = await Promise.all([
+    const [likeCounts, myLiked, replyCounts, attachMap] = await Promise.all([
       this.posts.likeCountsByPost(ids),
       this.posts.myLikedPosts(ids, viewerId),
       this.posts.replyCountsByPost(ids),
+      this.attachments.listForTargets(ModerationTargetType.POST, ids),
     ]);
     return posts.map((p) =>
       postRowToCommentView(
@@ -249,6 +301,7 @@ export class ForumThreadService {
         myLiked.has(p.id),
         replyCounts.get(p.id) ?? 0,
         this.storage,
+        attachMap.get(p.id) ?? [],
       ),
     );
   }

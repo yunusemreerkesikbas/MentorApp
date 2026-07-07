@@ -6,7 +6,7 @@ export interface ChipProps extends HTMLAttributes<HTMLSpanElement> {
   children: ReactNode;
 }
 
-/** Tag/chip (DESIGN.md §6, node 141:1736): violet 30% fill, radius 10, Lato Bold 14. */
+/** Tag/chip (DESIGN.md §6, node 141:1736): violet 30% fill, radius 10, Nunito Sans Bold 14. */
 export function Chip({ children, className, ...rest }: ChipProps) {
   return (
     <span

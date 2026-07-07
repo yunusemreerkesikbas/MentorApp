@@ -1,0 +1,140 @@
+import { Inject, Injectable } from "@nestjs/common";
+import type {
+  AuthUser,
+  CommunitySummary,
+  LeaderboardEntry,
+  LeaderboardView,
+  LeaderboardWindow,
+} from "@mentor/types";
+import { ConfigRegistryService } from "../../../common/config/config-registry.service";
+import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
+import { StreakService } from "../../coaching/application/streak.service";
+import { EconomyService } from "../../economy/application/economy.service";
+import { ForumService } from "../../forum/application/forum.service";
+import { UsersService } from "../../identity/application/users.service";
+import { deriveBadges } from "../domain/badges";
+import { deriveLevel } from "../domain/level";
+import { previousWindowStart, resolveMovement, windowStart } from "../domain/leaderboard-window";
+
+const LEADERBOARD_SIZE = 10;
+
+/**
+ * Right-column effort board (§3). Pure orchestration — every read comes from the owning module's
+ * public service (no cross-module table access): profile ← identity, streak ← coaching, post signals
+ * ← forum, XP/leaderboard ← economy. Streak + badges are economy-independent and always returned;
+ * XP + level + leaderboard appear only when `economy.enabled`. Effort only — never net/exam results.
+ */
+@Injectable()
+export class CommunityService {
+  constructor(
+    private readonly users: UsersService,
+    private readonly streak: StreakService,
+    private readonly forum: ForumService,
+    private readonly economy: EconomyService,
+    private readonly config: ConfigRegistryService,
+    @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+  ) {}
+
+  async getSummary(userId: string): Promise<CommunitySummary> {
+    const economyEnabled = await this.config.get("economy.enabled");
+    const [me, currentStreak, activity] = await Promise.all([
+      this.users.getMe(userId),
+      this.streak.getCurrentStreak(userId),
+      this.forum.getAuthorActivity(userId),
+    ]);
+
+    const badges = deriveBadges({
+      currentStreak,
+      memberSince: new Date(me.createdAt),
+      totalPosts: activity.totalPosts,
+      nightPosts: activity.nightPosts,
+      reactionsReceived: activity.reactionsReceived,
+    });
+
+    if (!economyEnabled) {
+      return {
+        streak: currentStreak,
+        economyEnabled: false,
+        badges,
+        xp: null,
+        level: null,
+        leaderboard: null,
+      };
+    }
+
+    const [balance, leaderboard] = await Promise.all([
+      this.economy.getSelfBalance(userId),
+      this.buildLeaderboard(userId, me, "weekly"),
+    ]);
+
+    return {
+      streak: currentStreak,
+      economyEnabled: true,
+      badges,
+      xp: balance.xp,
+      level: deriveLevel(balance.xp),
+      leaderboard,
+    };
+  }
+
+  /**
+   * Effort ranking for a time window (full-page tabs: Bugün/Hafta/Tüm zamanlar). Economy-gated:
+   * returns an empty board when the economy is off (the client hides tabs via `economyEnabled`).
+   */
+  async getLeaderboard(userId: string, window: LeaderboardWindow): Promise<LeaderboardView> {
+    const [economyEnabled, me] = await Promise.all([
+      this.config.get("economy.enabled"),
+      this.users.getMe(userId),
+    ]);
+    const examType = me.examType ?? null;
+    if (!economyEnabled) return { window, examType, items: [], me: null, totalParticipants: 0 };
+    return this.buildLeaderboard(userId, me, window);
+  }
+
+  /** Shared board builder — XP only (§3). `me` is the resolved viewer profile (avatar + display). */
+  private async buildLeaderboard(
+    userId: string,
+    me: AuthUser,
+    window: LeaderboardWindow,
+  ): Promise<LeaderboardView> {
+    const examType = me.examType ?? null;
+    const since = windowStart(window);
+    const prevStart = previousWindowStart(window, since);
+    const [top, standing, totalParticipants, prevRanks] = await Promise.all([
+      this.economy.getXpLeaderboard(examType, since, LEADERBOARD_SIZE),
+      this.economy.getXpStanding(userId, examType, since),
+      this.economy.getXpParticipantCount(examType, since),
+      prevStart ? this.economy.getPreviousRanks(examType, prevStart, since) : Promise.resolve(null),
+    ]);
+
+    // Suppresses first-week / all_time "new" spam (see resolveMovement).
+    const movementFor = (uid: string, rank: number) => resolveMovement(prevRanks, uid, rank);
+
+    const items: LeaderboardEntry[] = top.map((r, i) => ({
+      rank: i + 1,
+      userId: r.userId,
+      displayName: r.displayName,
+      avatarUrl: r.avatarStorageKey ? this.storage.getPublicUrl(r.avatarStorageKey) : null,
+      xp: r.xp,
+      isMe: r.userId === userId,
+      movement: movementFor(r.userId, i + 1),
+    }));
+
+    const inTop = items.find((e) => e.isMe) ?? null;
+    const meEntry: LeaderboardEntry | null =
+      inTop ??
+      (standing.rank === null
+        ? null
+        : {
+            rank: standing.rank,
+            userId,
+            displayName: me.displayName,
+            avatarUrl: me.avatarUrl,
+            xp: standing.xp,
+            isMe: true,
+            movement: movementFor(userId, standing.rank),
+          });
+
+    return { window, examType, items, me: meEntry, totalParticipants };
+  }
+}

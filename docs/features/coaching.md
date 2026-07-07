@@ -121,6 +121,10 @@ pnpm --filter @mentor/api test
   through the shared `@mentor/ui` dialog as a dismissible Puhu mood modal when today's check-in is
   missing; "Daha sonra sor" only postpones for the current visit. Related file:
   `apps/web/src/app/[locale]/(app)/panel/_components/panel-shell.tsx`.
+- **Mood check-in çarkıfelek picker (2026-07-04)** — Convex-arc coverflow (`MoodWheelPicker`): Puhu
+  küreleri yukarı kavisli rail üzerinde kayar; ortadaki slot 96px + star glow, yanlar 68px fade.
+  Kesikli arc connector, kavisli tick dial (SVG) + sabit pembe pointer. Sürükle → snap; ortadaki
+  Puhu veya "Check-in yap" ile kaydet. Dosya: `mood-wheel-picker.tsx`.
 - **Coaching daily-loop (backend)** — new `modules/coaching` bounded context; 5 tables + RLS;
   composite `/today` endpoint; plan/session/mood endpoints; streak = read-time derived; ContentPort
   seam bound to W1 adapter. Shared contracts in `@mentor/types`/`@mentor/validation`. *(0014.)*
@@ -179,6 +183,13 @@ pnpm --filter @mentor/api test
   user (goal + optional city + "neden"). `vision_boards` table (unique user); `VisionService`
   (`getMine`/`upsert`/`setAiNote`); idempotent upsert (mirrors mood). Premium AI note owned by
   [AI](./ai.md). `/hedef` edit page; card on `/panel` (no nav tab). *(0051.)*
+- **Analiz redesign (3 mod)** — `/analiz` insight-first layout: özet band + `?tab=gir|gelisim|yanlislar`
+  segmented control; Gir (tablo form, validation, toast, geçmiş listesi/drawer, kopyala); Gelişim
+  (SVG sparkline, kişisel rekor gauge, ghost teaser/card, ders grid, koç seed link); Yanlışlarım
+  (foto drag-drop/preview, sinyal barları). Skeleton: `analiz-content-skeleton.tsx`. CSS blob hero
+  fallback. Phase 2: `mock_exams.publisher_name` + form alanları; `GET /analysis.personalRecordNet`.
+  Plan: `docs/plans/2026-07-04-analiz-redesign-design.md`; P3 backlog:
+  `docs/plans/2026-07-04-analiz-phase3-backlog.md`. *(2026-07-04.)*
 
 ## Gotchas / Known issues
 

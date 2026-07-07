@@ -7,6 +7,7 @@ import { ForumPublicService } from "./application/forum-public.service";
 import { ForumZoneRepository } from "./infrastructure/forum-zone.repository";
 import { ForumThreadRepository } from "./infrastructure/forum-thread.repository";
 import { ForumPostRepository } from "./infrastructure/forum-post.repository";
+import { ForumAttachmentRepository } from "./infrastructure/forum-attachment.repository";
 import { ForumReportRepository } from "./infrastructure/forum-report.repository";
 import { ForumController } from "./presentation/forum.controller";
 import { ForumThreadController } from "./presentation/forum-thread.controller";
@@ -36,6 +37,7 @@ import { ForumPublicController } from "./presentation/forum-public.controller";
     ForumZoneRepository,
     ForumThreadRepository,
     ForumPostRepository,
+    ForumAttachmentRepository,
     ForumReportRepository,
   ],
   exports: [ForumService, ForumThreadService, ForumQaService],

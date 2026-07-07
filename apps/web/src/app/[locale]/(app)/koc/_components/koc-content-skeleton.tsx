@@ -8,25 +8,16 @@ export function KocHubSkeleton() {
   const t = useTranslations("coach");
 
   return (
-    <main className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-2xl flex-col lg:min-h-screen">
-      <div className="px-5 pt-8">
-        <Skeleton className="h-7 w-40 rounded-[var(--radius-card)]" />
-        <Skeleton className="mt-2 h-4 w-64 max-w-full rounded-[var(--radius-card)]" />
-      </div>
-
+    <main className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-2xl flex-col px-5 py-6 lg:min-h-screen">
       <SkeletonGroup
         label={t("loading")}
-        className="flex flex-1 flex-col gap-4 px-5 py-6"
+        className="flex flex-1 flex-col gap-4"
       >
-        <Skeleton className="h-8 w-56 rounded-[var(--radius-card)]" />
-        <Skeleton className="h-4 w-72 max-w-full rounded-[var(--radius-card)]" />
-        <div className="grid grid-cols-2 gap-3 pt-2">
-          <Skeleton className="h-[88px] rounded-[var(--radius-card)]" />
-          <Skeleton className="h-[88px] rounded-[var(--radius-card)]" />
-          <Skeleton className="h-[88px] rounded-[var(--radius-card)]" />
-          <Skeleton className="h-[88px] rounded-[var(--radius-card)]" />
+        <div className="flex flex-1 flex-col rounded-[var(--radius-card)] p-5 shadow-[var(--shadow-card)]">
+          <Skeleton className="h-10 w-56 rounded-[var(--radius-card)]" />
+          <Skeleton className="my-8 min-h-72 flex-1 rounded-[var(--radius-card)]" />
+          <Skeleton className="h-11 w-full rounded-[var(--radius-card)]" />
         </div>
-        <Skeleton className="mt-auto h-11 w-full rounded-[var(--radius-card)]" />
       </SkeletonGroup>
     </main>
   );

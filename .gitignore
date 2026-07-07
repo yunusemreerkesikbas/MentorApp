@@ -64,3 +64,6 @@ Thumbs.db
 .codex/
 .github/prompts/
 .github/skills/
+
+# impeccable design-hook runtime cache
+**/.impeccable/

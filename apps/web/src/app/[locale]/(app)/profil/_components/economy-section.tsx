@@ -155,7 +155,7 @@ export function EconomySection({
     sheet.show({
       title: t("quests_title"),
       layout: "filter",
-      children: <EconomyQuestsCard quests={state.quests} />,
+      children: <EconomyQuestsCard quests={state.quests} onInviteRequested={showInvite} />,
     });
   }
 

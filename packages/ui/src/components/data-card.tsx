@@ -11,11 +11,11 @@ export interface DataCardSource {
 }
 
 export interface DataCardProps {
-  /** Small label above the value (Spartan 12 secondary, uppercased). */
+  /** Small label above the value (Nunito Sans 12 secondary, uppercased). */
   label?: string;
-  /** Headline value — the authoritative fact (League Spartan, large). */
+  /** Headline value — the authoritative fact (Nunito Sans, large). */
   value: ReactNode;
-  /** Supporting line under the value (Lato 14 secondary). */
+  /** Supporting line under the value (Nunito Sans 14 secondary). */
   caption?: ReactNode;
   /** Leading visual (icon/emoji), sized by the caller. */
   icon?: ReactNode;

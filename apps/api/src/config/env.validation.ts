@@ -24,6 +24,9 @@ const envSchema = z.object({
   JWT_ACCESS_TTL: z.coerce.number().int().positive().default(900),
   /** Refresh token TTL in seconds (opaque token, httpOnly cookie). */
   JWT_REFRESH_TTL: z.coerce.number().int().positive().default(2_592_000),
+  GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_OAUTH_REDIRECT_URI: z.string().url().optional(),
 
   // AI (§8): text = OpenAI, vision = Gemini. Provider behind LlmPort; `fake` is the dev/test default.
   AI_PROVIDER: z.enum(["fake", "openai"]).default("fake"),
@@ -105,6 +108,19 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
       code: z.ZodIssueCode.custom,
       path: ["OPENAI_API_KEY"],
       message: "OPENAI_API_KEY is required when AI_PROVIDER=openai.",
+    });
+  }
+  const googleVars = [
+    env.GOOGLE_OAUTH_CLIENT_ID,
+    env.GOOGLE_OAUTH_CLIENT_SECRET,
+    env.GOOGLE_OAUTH_REDIRECT_URI,
+  ].filter(Boolean);
+  if (googleVars.length > 0 && googleVars.length < 3) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["GOOGLE_OAUTH_CLIENT_ID"],
+      message:
+        "GOOGLE_OAUTH_CLIENT_ID/GOOGLE_OAUTH_CLIENT_SECRET/GOOGLE_OAUTH_REDIRECT_URI must be configured together.",
     });
   }
   if (env.VISION_PROVIDER === "gemini" && !env.GEMINI_API_KEY) {

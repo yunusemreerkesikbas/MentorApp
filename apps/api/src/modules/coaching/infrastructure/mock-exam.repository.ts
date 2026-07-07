@@ -24,6 +24,7 @@ export class MockExamRepository {
       examId: string;
       takenAt: Date;
       totalNet: string;
+      publisherName?: string | null;
       subjects: NewMockExamSubject[];
     },
   ): Promise<{ exam: MockExamRow; subjects: MockExamSubjectRow[] }> {
@@ -34,6 +35,7 @@ export class MockExamRepository {
         examId: data.examId,
         takenAt: data.takenAt,
         totalNet: data.totalNet,
+        publisherName: data.publisherName ?? null,
       })
       .returning();
     const exam = examRows[0]!;
@@ -142,6 +144,16 @@ export class MockExamRepository {
       .update(mockExams)
       .set({ aiGhostNarration: narration, aiGhostModel: model, aiGhostAt: new Date() })
       .where(eq(mockExams.id, id));
+  }
+
+  async maxTotalNet(db: Database | DatabaseTx, userId: string): Promise<string | null> {
+    const rows = await db
+      .select({
+        max: sql<string | null>`max(${mockExams.totalNet}::numeric)::text`,
+      })
+      .from(mockExams)
+      .where(eq(mockExams.userId, userId));
+    return rows[0]?.max ?? null;
   }
 
   async listTrend(db: Database | DatabaseTx, userId: string, limit = 12): Promise<MockExamRow[]> {

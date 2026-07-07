@@ -178,6 +178,7 @@ export const createMockExamSchema = z
   .object({
     examId: z.string().uuid(),
     takenAt: z.string().datetime({ offset: true }).optional(),
+    publisherName: z.string().trim().min(1).max(120).optional(),
     subjects: z.array(mockExamSubjectInputSchema).min(1).max(20),
   })
   .refine(

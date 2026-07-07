@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type {
@@ -35,7 +35,7 @@ import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 
 import { CommunityCard } from "./community-card";
 import { CountdownPlaceholder } from "./countdown-placeholder";
-import { MoodCheckin } from "./mood-checkin";
+import { useMoodCheckin } from "./mood-checkin";
 import { VisionBoardCard } from "./vision-board-card";
 
 type PanelShellProps = {
@@ -53,7 +53,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [economyBalance, setEconomyBalance] = useState<EconomyBalance | null>(null);
-  const welcomeShownRef = useRef(false);
+  const WELCOME_TOAST_KEY = "mentor_panel_welcome_date";
 
   const refreshToday = useCallback(async () => {
     setLoading(true);
@@ -70,6 +70,13 @@ export function PanelShell({ initialData }: PanelShellProps) {
       setLoading(false);
     }
   }, [t]);
+
+  const moodCheckin = useMoodCheckin({
+    initial: data?.mood ?? null,
+    onSaved: () => {
+      void refreshToday();
+    },
+  });
 
   useEffect(() => {
     let active = true;
@@ -92,8 +99,9 @@ export function PanelShell({ initialData }: PanelShellProps) {
   }, []);
 
   useEffect(() => {
-    if (welcomeShownRef.current) return;
-    welcomeShownRef.current = true;
+    const today = new Date().toISOString().slice(0, 10);
+    if (sessionStorage.getItem(WELCOME_TOAST_KEY) === today) return;
+    sessionStorage.setItem(WELCOME_TOAST_KEY, today);
     toast.show({
       variant: "info",
       title: t("welcome_toast_title"),
@@ -155,8 +163,10 @@ export function PanelShell({ initialData }: PanelShellProps) {
             <DailyRhythmCard
               tasks={data.tasks}
               mood={data.mood}
+              moodValue={moodCheckin.mood}
               streakDays={data.streak.currentStreak}
               focusMinutes={data.sessionPresets[0]?.focusMinutes ?? 25}
+              onMoodClick={moodCheckin.openMoodDialog}
             />
           </motion.div>
 
@@ -174,8 +184,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
             />
           </motion.div>
 
-          <motion.div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]" variants={staggerItemVariants}>
-            <MoodCheckin initial={data.mood} />
+          <motion.div variants={staggerItemVariants}>
             <CoachShortcutsCard />
           </motion.div>
         </section>
@@ -259,70 +268,84 @@ function EconomyPill({ balance }: { balance: EconomyBalance | null }) {
 function DailyRhythmCard({
   tasks,
   mood,
+  moodValue,
   streakDays,
   focusMinutes,
+  onMoodClick,
 }: {
   tasks: PlanTaskDto[];
   mood: TodayPanelResponse["mood"];
+  moodValue: number | null;
   streakDays: number;
   focusMinutes: number;
+  onMoodClick: () => void;
 }) {
   const t = useTranslations("panel");
   const doneCount = tasks.filter((task) => completedStatuses.includes(task.status)).length;
-  const score = Math.min(99, 72 + (doneCount > 0 ? 8 : 0) + Math.min(streakDays, 5) + (mood?.mood ?? 2) * 2);
+  const hasEffort = doneCount > 0 || streakDays > 0;
+  const displayMood = moodValue ?? mood?.mood ?? null;
 
   return (
-    <article className="overflow-hidden rounded-[var(--radius-card)] bg-[linear-gradient(135deg,#8EA7FF_0%,#B9C8FF_54%,#EEF4FF_100%)] text-white shadow-[var(--shadow-card)]">
-      <div className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_150px] sm:p-6">
-        <div className="space-y-3">
-          <p className="text-sm font-bold opacity-90">{t("rhythm_title")}</p>
-          <div className="flex items-end gap-1">
-            <span className="text-6xl font-bold leading-none">{score}</span>
-            <span className="pb-2 text-lg font-bold opacity-90">{t("rhythm_score_suffix")}</span>
-          </div>
-          <p className="max-w-md text-sm font-semibold leading-6 opacity-90">{t("rhythm_copy")}</p>
+    <article className="overflow-hidden rounded-[var(--radius-card)] bg-white shadow-[var(--shadow-card)]">
+      <div className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_120px] sm:p-6">
+        <div className="space-y-2">
+          <h2 className="text-xl font-bold text-[var(--color-main)]">{t("rhythm_title")}</h2>
+          <p className="max-w-md text-base leading-7 text-[var(--color-body)]">{t("rhythm_copy")}</p>
+          {hasEffort ? (
+            <p className="text-sm font-semibold text-[var(--color-secondary)]">
+              {t("rhythm_summary", {
+                done: doneCount,
+                total: tasks.length,
+                streak: streakDays,
+              })}
+            </p>
+          ) : null}
         </div>
 
-        <div className="mx-auto grid size-36 place-items-center rounded-full bg-white/30 p-3">
-          <div className="relative grid size-28 place-items-center rounded-full bg-white shadow-[0_12px_30px_rgba(37,73,150,0.18)]">
-            <CompletionRing value={score} />
-            <PuhuImage variant="winking" size={54} />
-          </div>
+        <div className="mx-auto grid size-24 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)]">
+          <PuhuImage variant="winking" size={54} />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 border-t border-white/40 bg-white text-[var(--color-main)] sm:grid-cols-4">
+      <div className="grid grid-cols-2 border-t border-black/5 sm:grid-cols-4">
         <MetricTile label={t("metric_plan")} value={`${doneCount}/${tasks.length}`} icon={<BookOpen className="size-4" />} />
-        <MetricTile label={t("metric_focus")} value={`${focusMinutes} dk`} icon={<Play className="size-4" />} />
-        <MetricTile label={t("metric_mood")} value={mood ? t(`mood_${mood.mood}`) : t("metric_mood_empty")} icon={<HeartPulse className="size-4" />} />
-        <MetricTile label={t("metric_streak")} value={`${streakDays} gün`} icon={<Flame className="size-4" />} />
+        <MetricTile
+          label={t("metric_focus")}
+          value={t("metric_focus_value", { minutes: focusMinutes })}
+          icon={<Play className="size-4" />}
+        />
+        <MetricTile
+          label={t("metric_mood")}
+          value={displayMood != null ? t(`mood_${displayMood}`) : t("metric_mood_empty")}
+          icon={<HeartPulse className="size-4" />}
+          onClick={onMoodClick}
+          actionLabel={t("metric_mood_action")}
+        />
+        <MetricTile
+          label={t("metric_streak")}
+          value={t("metric_streak_value", { count: streakDays })}
+          icon={<Flame className="size-4 text-[var(--color-progress)]" />}
+        />
       </div>
     </article>
   );
 }
 
-function CompletionRing({ value }: { value: number }) {
-  return (
-    <svg className="absolute inset-0 size-full rotate-[-90deg]" viewBox="0 0 100 100" aria-hidden>
-      <circle cx="50" cy="50" r="44" fill="none" stroke="#E8EEFF" strokeWidth="9" />
-      <circle
-        cx="50"
-        cy="50"
-        r="44"
-        fill="none"
-        pathLength={100}
-        stroke="var(--color-progress)"
-        strokeDasharray={`${value} ${100 - value}`}
-        strokeLinecap="round"
-        strokeWidth="9"
-      />
-    </svg>
-  );
-}
-
-function MetricTile({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
-  return (
-    <div className="flex items-center gap-3 border-white/70 px-4 py-4 sm:border-l first:sm:border-l-0">
+function MetricTile({
+  label,
+  value,
+  icon,
+  onClick,
+  actionLabel,
+}: {
+  label: string;
+  value: string;
+  icon: ReactNode;
+  onClick?: () => void;
+  actionLabel?: string;
+}) {
+  const content = (
+    <>
       <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)] text-[var(--color-progress)]">
         {icon}
       </span>
@@ -330,6 +353,25 @@ function MetricTile({ label, value, icon }: { label: string; value: string; icon
         <span className="block text-xs font-bold text-[var(--color-secondary)]">{label}</span>
         <span className="block truncate text-base font-bold">{value}</span>
       </span>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={actionLabel ?? label}
+        className="flex w-full items-center gap-3 border-black/5 px-4 py-4 text-left transition hover:bg-black/[0.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-focus-ring)] sm:border-l first:sm:border-l-0"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3 border-black/5 px-4 py-4 sm:border-l first:sm:border-l-0">
+      {content}
     </div>
   );
 }
@@ -365,21 +407,30 @@ function WeeklyStreakCard({ streakDays, freezeCount }: { streakDays: number; fre
         {days.map((day, index) => {
           const isDone = index < completedCount;
           const isToday = index === todayIndex;
-          const isHot = isDone || isToday;
+          const showFlame = isDone || isToday;
           return (
             <div key={day} className="grid justify-items-center gap-2">
               <span
                 className={[
-                  "grid size-8 place-items-center",
-                  isHot ? "text-[#F97316]" : "text-transparent",
+                  "grid size-8 place-items-center rounded-full",
+                  isDone
+                    ? "bg-[var(--color-progress)]"
+                    : isToday
+                      ? "border-2 border-[var(--color-progress)] bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)]"
+                      : "bg-[color-mix(in_srgb,var(--color-progress-track)_30%,white)]",
                 ].join(" ")}
                 aria-hidden
               >
-                {isHot ? (
-                  <Flame className="size-6 fill-[#F97316] stroke-[#F97316]" />
-                ) : (
-                  <span className="size-7 rounded-full bg-[#F3F5FA]" />
-                )}
+                {showFlame ? (
+                  <Flame
+                    className={[
+                      "size-5",
+                      isDone
+                        ? "fill-white stroke-white"
+                        : "fill-[var(--color-progress)] stroke-[var(--color-progress)]",
+                    ].join(" ")}
+                  />
+                ) : null}
               </span>
               <span
                 className={[
@@ -396,9 +447,9 @@ function WeeklyStreakCard({ streakDays, freezeCount }: { streakDays: number; fre
 
       <Link
         href="/seans"
-        className="mt-5 inline-flex min-h-11 items-center justify-center rounded-[var(--radius-card)] bg-[var(--color-btn)] px-4 text-sm font-bold text-white transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-progress)]"
+        className="mt-5 inline-flex min-h-11 items-center justify-center rounded-[var(--radius-card)] border border-black/10 bg-white px-4 text-sm font-bold text-[var(--color-main)] transition hover:bg-black/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
       >
-        {t("streak_grow")}
+        {t("streak_session_cta")}
       </Link>
     </article>
   );

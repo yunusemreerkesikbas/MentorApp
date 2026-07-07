@@ -26,6 +26,8 @@ export const signupSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   displayName: z.string().trim().min(2).max(64),
+  /** Optional at API level for /v1 backward compatibility; web signup requires it. */
+  username: usernameSchema.optional(),
   /** KVKK consent is mandatory at signup (roadmap §7/§9). */
   kvkkAccepted: z.literal(true),
   /** Cloudflare Turnstile token (enforced when the secret is configured). */
@@ -38,6 +40,28 @@ export const loginSchema = z.object({
   password: z.string().min(1).max(128),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const googleOAuthStartQuerySchema = z
+  .object({
+    mode: z.enum(["login", "signup"]).default("login"),
+    locale: z.enum(["tr", "en"]).default("tr"),
+    returnTo: z
+      .string()
+      .regex(/^\/(?!\/)[a-z0-9/_-]*$/i)
+      .default("/panel"),
+    kvkkAccepted: z.enum(["true"]).optional(),
+  })
+  .refine((v) => v.mode !== "signup" || v.kvkkAccepted === "true", {
+    path: ["kvkkAccepted"],
+    message: "required",
+  });
+export type GoogleOAuthStartQuery = z.infer<typeof googleOAuthStartQuerySchema>;
+
+export const googleOAuthCallbackQuerySchema = z.object({
+  code: z.string().min(1),
+  state: z.string().min(16),
+});
+export type GoogleOAuthCallbackQuery = z.infer<typeof googleOAuthCallbackQuerySchema>;
 
 export const forgotPasswordSchema = z.object({ email: emailSchema });
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;

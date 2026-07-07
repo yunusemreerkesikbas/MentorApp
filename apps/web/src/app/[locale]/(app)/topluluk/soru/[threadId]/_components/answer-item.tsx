@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { AnswerView } from "@mentor/types";
 import { Card, Chip } from "@mentor/ui";
+import { AttachmentGallery } from "../../../_components/attachment-gallery";
 
 /** One answer. Accepted answers are highlighted; `accept`/`report` are slots filled by the shell. */
 export function AnswerItem({
@@ -36,6 +37,7 @@ export function AnswerItem({
       <p className="mt-2 whitespace-pre-wrap text-base" style={{ color: "var(--color-main)" }}>
         {answer.body}
       </p>
+      <AttachmentGallery attachments={answer.attachments} />
       {accept || report ? (
         <div className="mt-3 flex items-center gap-3">
           {accept}

@@ -13,6 +13,7 @@ import {
 import { useLocale } from "next-intl";
 import type { AuthSession, AuthUser } from "@mentor/types";
 import {
+  ApiClientError,
   authControllerLogin,
   authControllerLogout,
   authControllerRefresh,
@@ -80,17 +81,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const silentRefresh = useCallback(async () => {
     const startedAtVersion = sessionVersionRef.current;
-    try {
-      refreshInFlightRef.current ??= (
-        authControllerRefresh() as unknown as Promise<AuthSession>
-      ).finally(() => {
-        refreshInFlightRef.current = null;
-      });
-      const session = await refreshInFlightRef.current;
-      if (sessionVersionRef.current === startedAtVersion) applySession(session);
-    } catch {
-      // no/expired cookie → anonymous; stale refresh must not erase a newer login/signup.
-      if (sessionVersionRef.current === startedAtVersion) clearSession();
+    // ponytail: fixed 3× short retry; add backoff/jitter only if the boot race widens.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        refreshInFlightRef.current ??= (
+          authControllerRefresh() as unknown as Promise<AuthSession>
+        ).finally(() => {
+          refreshInFlightRef.current = null;
+        });
+        const session = await refreshInFlightRef.current;
+        if (sessionVersionRef.current === startedAtVersion) applySession(session);
+        return;
+      } catch (err) {
+        // Only a real HTTP error (ApiClientError, e.g. 401/expired cookie) → anonymous.
+        // A "Failed to fetch" TypeError means the API is briefly unreachable (dev boot /
+        // watch recompile) — retry instead of dropping a possibly-valid session.
+        const isNetworkError = !(err instanceof ApiClientError);
+        const stillCurrent = sessionVersionRef.current === startedAtVersion;
+        if (isNetworkError && stillCurrent && attempt < 3) {
+          await new Promise((r) => setTimeout(r, 300 * attempt));
+          continue;
+        }
+        // Stale refresh must not erase a newer login/signup.
+        if (stillCurrent) clearSession();
+        return;
+      }
     }
   }, [applySession, clearSession]);
 

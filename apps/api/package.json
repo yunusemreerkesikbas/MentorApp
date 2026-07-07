@@ -39,6 +39,7 @@
     "argon2": "^0.41.1",
     "cookie-parser": "^1.4.7",
     "drizzle-orm": "^0.38.3",
+    "google-auth-library": "^10.9.0",
     "helmet": "^8.0.0",
     "nestjs-i18n": "^10.5.0",
     "nestjs-pino": "^4.1.0",

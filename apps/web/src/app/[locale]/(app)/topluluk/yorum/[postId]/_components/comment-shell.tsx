@@ -12,9 +12,11 @@ import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { getCommentDetail, isForumDisabled, likePost, postReply, unlikePost } from "@/lib/forum";
+import type { AttachmentInput } from "@mentor/validation";
 import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "../../../_components/author-avatar";
 import { CommentRow } from "../../../_components/comment-row";
+import { AttachmentGallery } from "../../../_components/attachment-gallery";
 import { HeartIcon } from "../../../_components/forum-icons";
 import { ThreadComposer } from "../../../[slug]/_components/thread-composer";
 import { ThreadMenu } from "../../../[slug]/_components/thread-menu";
@@ -61,8 +63,8 @@ export function CommentShell({ postId }: { postId: string }) {
   }, []);
 
   const onReply = useCallback(
-    async (body: string) => {
-      const created = await postReply(postId, body);
+    async (body: string, attachments: AttachmentInput[]) => {
+      const created = await postReply(postId, body, attachments);
       setState((s) =>
         s.status === "ready"
           ? {
@@ -180,6 +182,7 @@ function FocusedComment({
         <p className="mt-1.5 whitespace-pre-wrap break-words text-[16px] leading-[24px]" style={{ color: "var(--color-body)" }}>
           {comment.body}
         </p>
+        <AttachmentGallery attachments={comment.attachments} />
         <div className="-ml-1.5 mt-2 flex items-center">
           <button
             type="button"

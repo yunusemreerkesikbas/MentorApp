@@ -12,6 +12,7 @@ export interface QuestProgressView {
   id: string;
   type: string;
   title: string;
+  rewardCoin: number;
   completed: boolean;
   completedAt: string | null;
 }

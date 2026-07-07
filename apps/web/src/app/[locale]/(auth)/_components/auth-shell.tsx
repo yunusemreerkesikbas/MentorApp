@@ -4,8 +4,8 @@ import { useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
+import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left.mjs";
 import type { ReactNode } from "react";
-import { Card } from "@mentor/ui";
 import { isWelcomeSeen } from "@/lib/welcome-seen";
 
 const subscribeWelcomeSeen = () => () => undefined;
@@ -43,38 +43,26 @@ export function AuthShell({ children }: { children: ReactNode }) {
       };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-5 py-12">
-      <motion.header className="mb-6 text-center" {...headerMotion}>
-        <Link
-          href="/"
-          className="text-3xl font-bold tracking-tight transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          Mentor
-        </Link>
-        <p className="mt-2 text-sm" style={{ color: "var(--color-secondary)" }}>
-          {t("tagline")}
-        </p>
-      </motion.header>
-      <motion.div {...cardMotion}>
-        <Card className="flex flex-col gap-4">{children}</Card>
+    <main className="mx-auto flex min-h-screen w-full items-center justify-center px-5 py-8">
+      <motion.div
+        className="flex min-h-[34rem] w-full max-w-[23.4375rem] flex-col rounded-[var(--radius-card)] border border-white bg-white/80 px-5 py-6"
+        style={{ boxShadow: "var(--shadow-card)" }}
+        {...cardMotion}
+      >
+        {showBackHome ? (
+          <motion.header className="mb-4" {...headerMotion}>
+            <Link
+              href="/"
+              aria-label={t("back_home")}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-black/5 transition-colors hover:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+              style={{ color: "var(--color-main)" }}
+            >
+              <ChevronLeft size={20} strokeWidth={2} aria-hidden />
+            </Link>
+          </motion.header>
+        ) : null}
+        <div className="flex flex-1 flex-col justify-center">{children}</div>
       </motion.div>
-      {showBackHome ? (
-        <p
-          className="mt-6 text-center text-xs"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          <Link
-            href="/"
-            className="underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2"
-          >
-            {t("back_home")}
-          </Link>
-        </p>
-      ) : null}
     </main>
   );
 }

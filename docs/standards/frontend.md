@@ -26,7 +26,7 @@
 ## Design & accessibility
 - [ ] UI values **only from DESIGN.md tokens** (`@mentor/ui` / CSS variables). **No magic numbers.**
 - [ ] Uniform radius (10px token), single shadow token, 4px grid spacing — DESIGN.md §4-5.
-- [ ] Semantic HTML + WCAG AA (contrast, keyboard, focus ring, touch ≥44px). Turkish glyphs (League Spartan/Lato fallback).
+- [ ] Semantic HTML + WCAG AA (contrast, keyboard, focus ring, touch ≥44px). Turkish glyphs (Nunito Sans latin-ext fallback).
 - [ ] **Tone (§0):** encouraging, anti-shaming. Calm countdown (not alarm-red), no result ranking.
 - [ ] Every screen: loading / empty / error states.
 

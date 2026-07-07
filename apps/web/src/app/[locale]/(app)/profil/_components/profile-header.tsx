@@ -83,7 +83,7 @@ function ProfileAvatar({
 }
 
 /**
- * Profile identity row — Nuton thumb placeholder (#D6DBFD) + League Spartan name stack.
+ * Profile identity row — Nuton thumb placeholder (#D6DBFD) + Nunito Sans name stack.
  */
 export function ProfileHeader({
   onSaved,

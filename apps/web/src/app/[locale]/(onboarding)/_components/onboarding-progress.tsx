@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { DashProgress } from "@/components/dash-progress";
 
-const TOTAL = 4;
+const TOTAL = 5;
 
 export function OnboardingProgress({ step }: { step: number }) {
   const t = useTranslations("onboarding");

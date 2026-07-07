@@ -6,7 +6,7 @@
 ## Overview
 
 Notifications is the async backbone. It owns the `JobQueuePort` adapter (Postgres `jobs` table,
-`FOR UPDATE SKIP LOCKED`), a cron-triggered `JobRunnerService` (handler registry + retry/dead-letter),
+`FOR UPDATE SKIP LOCKED`), an auto-polling `JobRunnerService` (handler registry + retry/dead-letter),
 the email pipeline (`EMAIL_PORT` — Postmark when `POSTMARK_TOKEN` set, logger fallback in dev), and
 web push (`push_subscriptions`, `notification_preferences`, `notification_deliveries` dedupe). It also
 hosts the **Config Registry** — the runtime, admin-editable business-config mechanism distinct from
@@ -15,10 +15,13 @@ daily reminder (no session + no mood today).
 
 ## Architecture (key decisions)
 
-- **Postgres queue + HTTP cron (not Redis polling)** — keeps Neon scale-to-zero viable. `JobQueuePort`
-  behind an interface; MVP = Postgres+jobs table, Phase 2 = BullMQ+Redis.
-- **Cron HTTP runner:** `POST /v1/internal/cron/process-jobs` and `POST /v1/internal/cron/dispatch-daily-reminders`
-  guarded by `CRON_SECRET` (Render Cron, no polling). `@Public()` but require `x-cron-secret` or
+- **Postgres queue + lightweight polling (not Redis)** — `JobQueuePort` behind an interface; MVP =
+  Postgres+jobs table with `FOR UPDATE SKIP LOCKED`, Phase 2 = BullMQ+Redis if throughput requires it.
+- **Auto runner + cron HTTP runner:** API instances poll `jobs` automatically every
+  `notifications.jobs.poll_interval_seconds` seconds (default 10), so auth/payment emails are delivered
+  without a separate manual trigger. `POST /v1/internal/cron/process-jobs` remains available for Render
+  Cron/manual catch-up. `POST /v1/internal/cron/dispatch-daily-reminders`
+  is guarded by `CRON_SECRET`. `@Public()` but requires `x-cron-secret` or
   `Authorization: Bearer <CRON_SECRET>`; secret comparison is constant-time (`crypto.timingSafeEqual`).
 - **Email:** `EMAIL_PORT` moved to NotificationsModule (was identity). Identity auth emails enqueue
   `notifications.send-email`. Postmark HTML escape + http(s) URL validation (`email-html.util.ts`).
@@ -48,7 +51,7 @@ VAPID_PUBLIC_KEY=...
 VAPID_PRIVATE_KEY=...
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=...   # web profil push subscribe
 
-# Process queued jobs (Render Cron equivalent):
+# Process queued jobs manually (normally auto-polled by API instances):
 curl -X POST http://localhost:3001/v1/internal/cron/process-jobs \
   -H "x-cron-secret: $CRON_SECRET"
 
@@ -100,6 +103,10 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
   - **Review fixes (2nd round):** missing-handler jobs go straight to DEAD (were retried 5× while
     counted as dead); `CronSecretGuard` constant-time compare; `NotificationPreferencesRepository.
     getOrCreate` uses `onConflictDoNothing` + re-select (survives concurrent same-user create).
+  - **Auto runner:** `JobRunnerService` now polls pending jobs automatically using
+    `notifications.jobs.poll_interval_seconds` (default 10), while preserving the cron endpoint for
+    manual catch-up / Render Cron. This makes verification, password reset, payment, and reminder email
+    jobs self-processing after enqueue. *(2026-07-05.)*
 - **In-app notification inbox** — `user_notifications` table (RLS user-scoped, idx on
   `(user_id, created_at DESC)`); `UserNotificationRepository` (list/create/markRead/markUnread/markAllRead/delete);
   `NotificationsService.createInApp()` (writes via `withServiceContext`, category COACH/PLAN/CONTENT);

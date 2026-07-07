@@ -14,6 +14,7 @@ export interface QuestProgressView {
   id: string;
   type: string;
   title: string;
+  rewardCoin: number;
   completed: boolean;
   completedAt: string | null;
 }
@@ -106,6 +107,7 @@ export class QuestService {
   }
 
   private async toViews(userId: string): Promise<QuestProgressView[]> {
+    const rewardCoin = await this.config.get("economy.quest.onboarding_reward_coin");
     const byId = new Map((await this.quests.listForUser(userId)).map((r) => [r.questId, r]));
     return QUEST_CATALOG.map((q) => {
       const row = byId.get(q.id);
@@ -113,6 +115,7 @@ export class QuestService {
         id: q.id,
         type: q.type,
         title: q.title,
+        rewardCoin,
         completed: row !== undefined,
         completedAt: row?.completedAt.toISOString() ?? null,
       };

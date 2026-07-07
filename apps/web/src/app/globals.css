@@ -5,6 +5,7 @@
 
 /* Nuton-based base (DESIGN.md §1): white background, near-black text. */
 html {
+  --font-heading: var(--font-body);
   scrollbar-gutter: stable;
 }
 

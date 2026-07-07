@@ -1,12 +1,25 @@
-import type { AnswerView, CommentView, ThreadView } from "@mentor/types";
+import type { AnswerView, Attachment, CommentView, ThreadView } from "@mentor/types";
 import type { StoragePort } from "../../../shared/ports/storage.port";
 import type { ThreadWithAuthor } from "../infrastructure/forum-thread.repository";
 import type { PostWithAuthor } from "../infrastructure/forum-post.repository";
+import type { AttachmentRow } from "../infrastructure/forum-attachment.repository";
 
 type PublicStorage = Pick<StoragePort, "getPublicUrl">;
 
 function avatarUrl(key: string | null, storage: PublicStorage): string | null {
   return key ? storage.getPublicUrl(key) : null;
+}
+
+/** Attachment rows → public view (resolve each storage key to a URL, same call used for avatars). */
+function attachmentsToView(rows: AttachmentRow[], storage: PublicStorage): Attachment[] {
+  return rows.map((a) => ({
+    id: a.id,
+    kind: a.kind as Attachment["kind"],
+    url: storage.getPublicUrl(a.storageKey),
+    mimeType: a.mimeType,
+    width: a.width,
+    height: a.height,
+  }));
 }
 
 /** Row → ThreadView (shared by the feed + QA services). */
@@ -17,6 +30,7 @@ export function threadRowToView(
   storage: PublicStorage,
   commentCount = 0,
   commenterNames: string[] = [],
+  attachments: AttachmentRow[] = [],
 ): ThreadView {
   return {
     id: t.id,
@@ -34,6 +48,7 @@ export function threadRowToView(
     myReactions,
     commentCount,
     commenterNames,
+    attachments: attachmentsToView(attachments, storage),
     createdAt: t.createdAt.toISOString(),
   };
 }
@@ -45,6 +60,7 @@ export function postRowToCommentView(
   myLiked: boolean,
   replyCount: number,
   storage: PublicStorage,
+  attachments: AttachmentRow[] = [],
 ): CommentView {
   return {
     id: p.id,
@@ -58,12 +74,17 @@ export function postRowToCommentView(
     likeCount,
     myLiked,
     replyCount,
+    attachments: attachmentsToView(attachments, storage),
     createdAt: p.createdAt.toISOString(),
   };
 }
 
 /** Row → AnswerView (QA). */
-export function postRowToAnswerView(p: PostWithAuthor, storage: PublicStorage): AnswerView {
+export function postRowToAnswerView(
+  p: PostWithAuthor,
+  storage: PublicStorage,
+  attachments: AttachmentRow[] = [],
+): AnswerView {
   return {
     id: p.id,
     threadId: p.threadId,
@@ -73,6 +94,7 @@ export function postRowToAnswerView(p: PostWithAuthor, storage: PublicStorage): 
     authorAvatarUrl: avatarUrl(p.authorAvatarStorageKey, storage),
     body: p.body,
     isAccepted: p.isAccepted,
+    attachments: attachmentsToView(attachments, storage),
     createdAt: p.createdAt.toISOString(),
   };
 }

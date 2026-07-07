@@ -8,6 +8,7 @@ import { Field, FormError, SubmitButton } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
 import { postAuthDestination } from "@/lib/post-auth-destination";
 import { AuthNavLink } from "../_components/auth-nav-link";
+import { GoogleAuthButton } from "../_components/google-auth-button";
 
 export default function LoginPage() {
   const translate = useTranslations("auth.login");
@@ -37,7 +38,7 @@ export default function LoginPage() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <SectionHeading as="h2" subtitle={translate("subtitle")}>
+      <SectionHeading as="h2" subtitle={translate("subtitle")} className="justify-center text-center">
         {translate("title")}
       </SectionHeading>
       <Field
@@ -56,12 +57,16 @@ export default function LoginPage() {
         required
         revealLabels={{ show: ui("show_password"), hide: ui("hide_password") }}
       />
-      <FormError message={error} />
-      <SubmitButton busy={busy}>{translate("submit")}</SubmitButton>
-      <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-        <AuthNavLink href="/kayit">{translate("register_link")}</AuthNavLink>
+      <div className="flex justify-end">
         <AuthNavLink href="/sifremi-unuttum">{translate("forgot_link")}</AuthNavLink>
       </div>
+      <FormError message={error} />
+      <SubmitButton busy={busy}>{translate("submit")}</SubmitButton>
+      <GoogleAuthButton mode="login" />
+      <p className="text-center text-sm" style={{ color: "var(--color-secondary)" }}>
+        {translate("register_prompt")}{" "}
+        <AuthNavLink href="/kayit">{translate("register_link")}</AuthNavLink>
+      </p>
     </form>
   );
 }

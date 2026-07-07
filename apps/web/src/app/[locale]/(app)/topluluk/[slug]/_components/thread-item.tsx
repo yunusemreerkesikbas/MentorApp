@@ -6,6 +6,7 @@ import { FORUM_LIKE_EMOJI, type ThreadView } from "@mentor/types";
 import { Link, useRouter } from "@/i18n/navigation";
 import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "../../_components/author-avatar";
+import { AttachmentGallery } from "../../_components/attachment-gallery";
 import { CommentIcon, HeartIcon } from "../../_components/forum-icons";
 import { ThreadMenu } from "./thread-menu";
 
@@ -128,6 +129,8 @@ export function ThreadItem({
         >
           {thread.body}
         </p>
+
+        <AttachmentGallery attachments={thread.attachments} />
 
         {/* Action row — bare icons (Figma 1:300: 24px frames, 12px gap, no inline counts). Counts
             live only in the summary line below. Repost/share out of scope (product decision). */}

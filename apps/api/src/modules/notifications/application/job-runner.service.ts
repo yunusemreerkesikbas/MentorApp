@@ -1,5 +1,12 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import {
+  Inject,
+  Injectable,
+  Logger,
+  type OnModuleDestroy,
+  type OnModuleInit,
+} from "@nestjs/common";
 import { eq } from "drizzle-orm";
+import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -16,17 +23,34 @@ export interface ProcessJobsResult {
 
 /**
  * Polls the `jobs` table and dispatches to registered handlers.
- * Render Cron hits the HTTP endpoint — no continuous polling (scale-to-zero safe).
+ * API instances also poll periodically so user-triggered email jobs are delivered automatically.
  */
 @Injectable()
-export class JobRunnerService {
+export class JobRunnerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(JobRunnerService.name);
   private readonly handlers = new Map<string, JobHandler>();
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
+  private polling = false;
 
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly jobs: JobRepository,
+    private readonly config: ConfigRegistryService,
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    const intervalSeconds = await this.config.get("notifications.jobs.poll_interval_seconds");
+    this.pollTimer = setInterval(
+      () => void this.processDueJobs(),
+      intervalSeconds * 1000,
+    );
+    this.pollTimer.unref?.();
+  }
+
+  onModuleDestroy(): void {
+    if (this.pollTimer) clearInterval(this.pollTimer);
+    this.pollTimer = null;
+  }
 
   /** Extension point for W3/W6 — register additional job handlers at module init. */
   registerHandler(name: string, handler: JobHandler): void {
@@ -50,6 +74,25 @@ export class JobRunnerService {
     }
 
     return result;
+  }
+
+  private async processDueJobs(): Promise<void> {
+    if (this.polling) return;
+    this.polling = true;
+    try {
+      const result = await this.processBatch();
+      if (result.processed > 0) {
+        this.logger.log(
+          `Processed jobs: ${result.completed} completed, ${result.failed} retry, ${result.dead} dead`,
+        );
+      }
+    } catch (err) {
+      this.logger.warn(
+        `Job polling failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      this.polling = false;
+    }
   }
 
   private async dispatch(job: JobRow): Promise<"completed" | "retry" | "dead"> {

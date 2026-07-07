@@ -20,6 +20,37 @@ export type PostWithAuthor = PostRow & {
 export class ForumPostRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
+  /**
+   * Per-author activity signals for the community effort board's behaviour badges. Aggregate over a
+   * single author's posts + the reactions they've drawn — SERVICE context (read-only). Night = posts
+   * authored 00:00–05:00. // ponytail: fine at MVP scale; add an index on forum_posts.author_id if it bites.
+   */
+  authorActivityStats(
+    userId: string,
+  ): Promise<{ totalPosts: number; nightPosts: number; reactionsReceived: number }> {
+    return withServiceContext(this.db, async (tx) => {
+      const [posts] = await tx
+        .select({
+          total: sql<number>`count(*)::int`,
+          night: sql<number>`count(*) filter (where extract(hour from ${forumPosts.createdAt}) < 5)::int`,
+        })
+        .from(forumPosts)
+        .where(and(eq(forumPosts.authorId, userId), isNull(forumPosts.deletedAt)));
+
+      const [react] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(forumPostReactions)
+        .innerJoin(forumPosts, eq(forumPosts.id, forumPostReactions.postId))
+        .where(eq(forumPosts.authorId, userId));
+
+      return {
+        totalPosts: posts?.total ?? 0,
+        nightPosts: posts?.night ?? 0,
+        reactionsReceived: react?.n ?? 0,
+      };
+    });
+  }
+
   async createAnswer(input: {
     threadId: string;
     authorId: string;

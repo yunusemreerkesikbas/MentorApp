@@ -23,6 +23,7 @@ const makeRepo = () => ({
 
 const config = { get: vi.fn().mockResolvedValue(true) };
 const events = { emit: vi.fn() };
+const posts = { authorActivityStats: vi.fn() };
 
 describe("ForumService", () => {
   let repo: ReturnType<typeof makeRepo>;
@@ -32,7 +33,7 @@ describe("ForumService", () => {
     vi.clearAllMocks();
     config.get.mockResolvedValue(true);
     repo = makeRepo();
-    svc = new ForumService(repo as never, config as never, events as never);
+    svc = new ForumService(repo as never, posts as never, config as never, events as never);
   });
 
   it("404s when the feature flag is off", async () => {

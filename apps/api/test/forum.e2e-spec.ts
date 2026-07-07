@@ -1,6 +1,7 @@
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
+import express from "express";
 import { Pool } from "pg";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -62,6 +63,11 @@ describe("forum zones (e2e)", () => {
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());
+    // Mirror main.ts: raw body for the fake-upload endpoint (needed by the attachments test).
+    app.use(
+      "/v1/storage/fake-upload",
+      express.raw({ type: ["image/jpeg", "image/png", "image/webp"], limit: 5 * 1024 * 1024 }),
+    );
     await app.init();
 
     const admin = await signup("admin");
@@ -162,6 +168,129 @@ describe("forum zones (e2e)", () => {
       .set(asUser());
     expect(feed.status).toBe(200);
     expect(feed.body.items.map((t: { id: string }) => t.id)).toContain(posted.body.id);
+  });
+
+  it("attachments: upload → post with image → feed returns it; rejects a foreign key + >4 (APP-018)", async () => {
+    await setForumEnabled(true);
+    const zoneId = await createZone(ZoneType.CHAT, "Ekli Sohbet");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+
+    // 1) presigned upload URL (fake storage in test)
+    const urlRes = await request(app.getHttpServer())
+      .post("/v1/forum/attachments/upload-url")
+      .set(asUser())
+      .send({ contentType: "image/png" });
+    expect(urlRes.status).toBe(201);
+    const { uploadUrl, key } = urlRes.body as { uploadUrl: string; key: string };
+    expect(key).toMatch(/^forum-attachments\//);
+
+    // 2) PUT a real 1x1 PNG to the fake-upload endpoint
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    await request(app.getHttpServer())
+      .put(uploadUrl)
+      .set("Content-Type", "image/png")
+      .send(png)
+      .expect(200);
+
+    // 3) create a thread carrying the attachment
+    const posted = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "resimli mesaj", attachments: [{ key, mimeType: "image/png", width: 1, height: 1 }] });
+    expect(posted.status).toBe(201);
+    expect(posted.body.attachments).toHaveLength(1);
+    expect(posted.body.attachments[0].url).toContain("/v1/storage/fake-object");
+    expect(posted.body.attachments[0].width).toBe(1);
+
+    // …and the feed returns it too
+    const feed = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser());
+    const item = feed.body.items.find((t: { id: string }) => t.id === posted.body.id);
+    expect(item.attachments).toHaveLength(1);
+
+    // 4) a key under another user's prefix is rejected (ownership belt)
+    const foreign = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({
+        body: "yabancı ek",
+        attachments: [
+          { key: "forum-attachments/00000000-0000-0000-0000-000000000000/x.png", mimeType: "image/png" },
+        ],
+      });
+    expect(foreign.status).toBe(400);
+
+    // 5) more than 4 attachments → zod rejects (400)
+    const tooMany = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({
+        body: "çok fazla",
+        attachments: Array.from({ length: 5 }, () => ({ key, mimeType: "image/png" })),
+      });
+    expect(tooMany.status).toBe(400);
+  });
+
+  it("QA attachments: question + answer carry images; question detail returns both (Phase 2)", async () => {
+    await setForumEnabled(true);
+    const zoneId = await createZone(ZoneType.QA, "Ekli Soru-Cevap");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    // Upload one image and return its key (fake storage in test).
+    const uploadImage = async (): Promise<string> => {
+      const urlRes = await request(app.getHttpServer())
+        .post("/v1/forum/attachments/upload-url")
+        .set(asUser())
+        .send({ contentType: "image/png" });
+      expect(urlRes.status).toBe(201);
+      const { uploadUrl, key } = urlRes.body as { uploadUrl: string; key: string };
+      await request(app.getHttpServer())
+        .put(uploadUrl)
+        .set("Content-Type", "image/png")
+        .send(png)
+        .expect(200);
+      return key;
+    };
+
+    // Ask a question carrying an image (QA questions now accept attachments).
+    const qKey = await uploadImage();
+    const asked = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({
+        title: "Görselli soru başlığı",
+        body: "aşağıdaki ekran görüntüsü",
+        attachments: [{ key: qKey, mimeType: "image/png", width: 1, height: 1 }],
+      });
+    expect(asked.status).toBe(201);
+    expect(asked.body.attachments).toHaveLength(1);
+    const threadId = asked.body.id as string;
+
+    // Answer carrying an image too.
+    const aKey = await uploadImage();
+    const answered = await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${threadId}/answers`)
+      .set(asUser())
+      .send({ body: "çözümüm ekte", attachments: [{ key: aKey, mimeType: "image/png", width: 1, height: 1 }] });
+    expect(answered.status).toBe(201);
+    expect(answered.body.attachments).toHaveLength(1);
+
+    // Question detail returns attachments on both the question and the answer.
+    const detail = await request(app.getHttpServer())
+      .get(`/v1/forum/threads/${threadId}`)
+      .set(asUser());
+    expect(detail.status).toBe(200);
+    expect(detail.body.question.attachments).toHaveLength(1);
+    expect(detail.body.question.attachments[0].url).toContain("/v1/storage/fake-object");
+    expect(detail.body.answers[0].attachments).toHaveLength(1);
   });
 
   it("a non-member cannot post in a CHAT zone (403)", async () => {

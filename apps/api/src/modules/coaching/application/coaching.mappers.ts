@@ -95,6 +95,7 @@ export function toMockExamDto(
     examName,
     takenAt: exam.takenAt.toISOString(),
     totalNet: String(exam.totalNet),
+    publisherName: exam.publisherName ?? null,
     subjects: subjects.map((s) =>
       toMockExamSubjectDto(s, slugToName.get(s.subjectRef) ?? s.subjectRef),
     ),
