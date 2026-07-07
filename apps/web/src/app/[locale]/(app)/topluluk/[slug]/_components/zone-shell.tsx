@@ -9,6 +9,7 @@ import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { ZONE_TYPE_ICONS } from "../../_components/zone-icons";
 import {
+  bookmarkThread,
   deleteThread,
   getZone,
   isForumDisabled,
@@ -103,6 +104,24 @@ export function ZoneShell({ slug }: { slug: string }) {
         patchReady((r) => ({
           ...r,
           threads: r.threads.map((th) => applyReaction(th, threadId, emoji, !adding)),
+        }));
+      });
+    },
+    [patchReady],
+  );
+
+  const onToggleBookmark = useCallback(
+    (threadId: string, adding: boolean) => {
+      patchReady((r) => ({
+        ...r,
+        threads: r.threads.map((th) => (th.id === threadId ? { ...th, myBookmarked: adding } : th)),
+      }));
+      bookmarkThread(threadId, adding).catch(() => {
+        patchReady((r) => ({
+          ...r,
+          threads: r.threads.map((th) =>
+            th.id === threadId ? { ...th, myBookmarked: !adding } : th,
+          ),
         }));
       });
     },
@@ -328,6 +347,7 @@ export function ZoneShell({ slug }: { slug: string }) {
                   key={th.id}
                   thread={th}
                   onToggleReaction={(emoji, adding) => onToggleReaction(th.id, emoji, adding)}
+                  onToggleBookmark={(adding) => onToggleBookmark(th.id, adding)}
                   canModerate={zone.canModerate}
                   onPin={(pinned) => onPinThread(th.id, pinned)}
                   onDelete={() => onDeleteThread(th.id)}

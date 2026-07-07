@@ -58,6 +58,7 @@ export interface BottomSheetContextValue {
   sheet: BottomSheetRecord | null;
   show: (options: BottomSheetShowOptions) => void;
   dismiss: () => void;
+  dismissNow: () => void;
   actionSheet: (
     options: BottomSheetActionSheetOptions,
   ) => Promise<BottomSheetActionResult>;

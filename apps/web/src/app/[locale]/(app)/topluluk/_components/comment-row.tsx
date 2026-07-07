@@ -8,6 +8,8 @@ import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "./author-avatar";
 import { AttachmentGallery } from "./attachment-gallery";
 import { HeartIcon, CommentIcon } from "./forum-icons";
+import { SendButton } from "./send-button";
+import { BookmarkButton } from "./bookmark-button";
 import { ThreadMenu } from "../[slug]/_components/thread-menu";
 
 /**
@@ -17,9 +19,11 @@ import { ThreadMenu } from "../[slug]/_components/thread-menu";
 export function CommentRow({
   comment,
   onToggleLike,
+  onToggleBookmark,
 }: {
   comment: CommentView;
   onToggleLike: (postId: string, adding: boolean) => void;
+  onToggleBookmark: (postId: string, adding: boolean) => void;
 }) {
   const t = useTranslations("topluluk");
   const locale = useLocale();
@@ -103,6 +107,12 @@ export function CommentRow({
               <span className="text-[13px] tabular-nums">{comment.replyCount}</span>
             )}
           </Link>
+
+          <SendButton path={href} />
+          <BookmarkButton
+            bookmarked={comment.myBookmarked}
+            onToggle={(adding) => onToggleBookmark(comment.id, adding)}
+          />
         </div>
       </div>
     </div>

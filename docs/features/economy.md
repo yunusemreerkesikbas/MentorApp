@@ -86,6 +86,18 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   yeniden gönderir. Kart-içinde-kart görünümü kaldırıldı; ödül hâlâ otomatik işlenir, manuel claim yok.
   İlgili dosyalar: `QuestService`, `@mentor/types` economy contract, `economy-quests-card.tsx`.
   *(2026-07-05.)*
+- **Quest v2 — günlük ritüel görevleri** — `GET /v1/economy/quests` artık onboarding görevlerine ek
+  olarak günlük tekrar eden üç ritüel görevi döndürür: bugünün planından bir görev tamamla, bir odak
+  seansı bitir, mood check-in yap. Contract `category`, `period`, `periodKey`, `rewardUnit`,
+  `rewardAmount`, `badgeLabel` ve `action` alanlarıyla genişledi; eski `rewardCoin` alanı geriye
+  uyumluluk için kaldı. Günlük görevler `+5 XP` verir (`economy.quest.daily_ritual_reward_xp`),
+  onboarding görevleri Coin vermeye devam eder. `user_quest_progress.period_key` günlük idempotency
+  sağlar (`once` vs `YYYY-MM-DD`). Quest completion + ledger reward aynı SERVICE transaction içinde
+  işlenir; progress okumaları sadece `once` ve bugünün period key'i ile sınırlıdır. Economy, coaching
+  tablolarını okumaz; `DailyQuestSignalService` üzerinden boolean sinyal alır. Web modalı iki bölüme
+  ayrıldı: "Bugünkü Ritüel" + "Başlangıç"; görev listesi kendi içinde scroll eder ve navigasyon
+  aksiyonları sheet'i kapatır.
+  üstte tek "sıradaki küçük adım" CTA'sı bulunur. *(2026-07-06.)*
 
 ## Gotchas / Known issues
 
@@ -98,7 +110,7 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 - **Churn/refund reversal** = Phase 2 (negative compensating entry).
 - **F1 (backlog — REQUIRED before more organic earning):** cap check + append are atomic now
   (fixed in 0022), but advisory-lock = backlog for extreme concurrency.
-- **Habit/milestone quests** = backlog (need coaching events/port — coaching emits no events).
+- **Milestone quests** = backlog (streak tiers / longer-term badges need a broader product pass).
 
 ## Related
 

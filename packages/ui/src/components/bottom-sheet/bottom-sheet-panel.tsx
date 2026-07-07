@@ -35,7 +35,7 @@ export function BottomSheetPanel({
       aria-modal="true"
       aria-labelledby={titleId}
       data-mentor-bottom-sheet-panel
-      className={`flex w-full flex-col bg-white max-lg:max-h-[70vh] max-lg:rounded-t-[16px] max-lg:shadow-[0px_-4px_10px_rgba(37,73,150,0.10)] lg:h-auto lg:max-w-[480px] lg:rounded-[var(--radius-card)] lg:border lg:border-white lg:shadow-[var(--shadow-card)] ${panelAnimation}`}
+      className={`flex w-full flex-col overflow-hidden bg-white max-lg:max-h-[70vh] max-lg:rounded-t-[16px] max-lg:shadow-[0px_-4px_10px_rgba(37,73,150,0.10)] lg:max-h-[82dvh] lg:max-w-[480px] lg:rounded-[var(--radius-card)] lg:border lg:border-white lg:shadow-[var(--shadow-card)] ${panelAnimation}`}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Drag handle — mobile only */}
@@ -86,7 +86,7 @@ export function BottomSheetPanel({
 
       {/* Body */}
       <div
-        className={`flex-1 overflow-y-auto px-5 ${isAction ? "py-0" : "py-3"}`}
+        className={`min-h-0 flex-1 overflow-y-auto px-5 ${isAction ? "py-0" : "py-3"}`}
       >
         {isAction && sheet.actions ? (
           <BottomSheetActionList

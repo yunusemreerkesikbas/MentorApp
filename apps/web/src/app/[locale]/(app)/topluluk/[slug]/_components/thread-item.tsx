@@ -8,11 +8,14 @@ import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "../../_components/author-avatar";
 import { AttachmentGallery } from "../../_components/attachment-gallery";
 import { CommentIcon, HeartIcon } from "../../_components/forum-icons";
+import { SendButton } from "../../_components/send-button";
+import { BookmarkButton } from "../../_components/bookmark-button";
 import { ThreadMenu } from "./thread-menu";
 
 export function ThreadItem({
   thread,
   onToggleReaction,
+  onToggleBookmark,
   canModerate,
   onPin,
   onDelete,
@@ -20,6 +23,7 @@ export function ThreadItem({
 }: {
   thread: ThreadView;
   onToggleReaction: (emoji: string, adding: boolean) => void;
+  onToggleBookmark: (adding: boolean) => void;
   canModerate?: boolean;
   onPin?: (pinned: boolean) => void;
   onDelete?: () => void;
@@ -132,8 +136,8 @@ export function ThreadItem({
 
         <AttachmentGallery attachments={thread.attachments} />
 
-        {/* Action row — bare icons (Figma 1:300: 24px frames, 12px gap, no inline counts). Counts
-            live only in the summary line below. Repost/share out of scope (product decision). */}
+        {/* Action row — bare icons (Figma 1:300: 24px frames, no inline counts). Counts live only in
+            the summary line below. Like · comment · send (share link) · bookmark. */}
         <div className="-ml-1.5 mt-2 flex items-center gap-1.5">
           <button
             type="button"
@@ -166,6 +170,9 @@ export function ThreadItem({
               <CommentIcon />
             </span>
           </Link>
+
+          <SendButton path={detailHref} />
+          <BookmarkButton bookmarked={thread.myBookmarked} onToggle={onToggleBookmark} />
         </div>
 
         {/* Summary line (Figma 1:305 "7 respostas · 59 curtidas") */}

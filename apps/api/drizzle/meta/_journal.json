@@ -246,6 +246,27 @@
       "when": 1783262002653,
       "tag": "0034_young_cannonball",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1783340000000,
+      "tag": "0035_quest_period_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1783343407559,
+      "tag": "0036_careful_pixie",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1783377321260,
+      "tag": "0037_rich_loners",
+      "breakpoints": true
     }
   ]
 }

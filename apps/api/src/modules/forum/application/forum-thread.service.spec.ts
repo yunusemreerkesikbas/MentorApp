@@ -61,6 +61,16 @@ const makePostRepo = () => ({
 const makeAttachmentRepo = () => ({
   insertMany: vi.fn().mockResolvedValue([]),
   listForTargets: vi.fn().mockResolvedValue(new Map()),
+  markPending: vi.fn().mockResolvedValue(undefined),
+  listExpiredPending: vi.fn().mockResolvedValue([]),
+  deletePending: vi.fn().mockResolvedValue(undefined),
+});
+
+const makeBookmarkRepo = () => ({
+  add: vi.fn().mockResolvedValue(undefined),
+  remove: vi.fn().mockResolvedValue(undefined),
+  myBookmarkedTargets: vi.fn().mockResolvedValue(new Set()),
+  listForUser: vi.fn().mockResolvedValue([]),
 });
 
 const makeZoneRepo = (
@@ -97,6 +107,7 @@ describe("ForumThreadService", () => {
       zoneRepo as never,
       postRepo as never,
       makeAttachmentRepo() as never,
+      makeBookmarkRepo() as never,
       enabledConfig as never,
       events as never,
       storage as never,
@@ -250,5 +261,114 @@ describe("ForumThreadService", () => {
     expect(detail.comment.id).toBe("p1");
     expect(detail.replies).toHaveLength(1);
     expect(detail.replies[0]!.id).toBe("r1");
+  });
+
+  it("createAttachmentUploadUrl mints a key and records it pending (orphan-cleanup)", async () => {
+    const attachments = makeAttachmentRepo();
+    const storageMock = {
+      getPublicUrl: vi.fn(),
+      createUploadUrl: vi
+        .fn()
+        .mockResolvedValue({ url: "signed", key: "forum-attachments/u1/x.png", expiresAt: "e" }),
+    };
+    const service = new ForumThreadService(
+      makeThreadRepo() as never,
+      makeZoneRepo() as never,
+      makePostRepo() as never,
+      attachments as never,
+      makeBookmarkRepo() as never,
+      enabledConfig as never,
+      events as never,
+      storageMock as never,
+    );
+    const res = await service.createAttachmentUploadUrl("u1", "image/png");
+    expect(res.key).toBe("forum-attachments/u1/x.png");
+    expect(attachments.markPending).toHaveBeenCalledWith("forum-attachments/u1/x.png", "u1");
+  });
+
+  it("cleanupOrphanAttachments deletes expired pending objects then drops their rows", async () => {
+    const keys = ["forum-attachments/u1/a.png", "forum-attachments/u1/b.png"];
+    const attachments = makeAttachmentRepo();
+    attachments.listExpiredPending.mockResolvedValue(keys);
+    const storageMock = { getPublicUrl: vi.fn(), deleteObject: vi.fn().mockResolvedValue(undefined) };
+    const service = new ForumThreadService(
+      makeThreadRepo() as never,
+      makeZoneRepo() as never,
+      makePostRepo() as never,
+      attachments as never,
+      makeBookmarkRepo() as never,
+      enabledConfig as never,
+      events as never,
+      storageMock as never,
+    );
+    const res = await service.cleanupOrphanAttachments();
+    expect(res.deleted).toBe(2);
+    expect(storageMock.deleteObject).toHaveBeenCalledTimes(2);
+    expect(attachments.deletePending).toHaveBeenCalledWith(keys);
+  });
+
+  it("bookmarkThread / unbookmarkThread toggle the ledger via the repo", async () => {
+    const bookmarks = makeBookmarkRepo();
+    const service = new ForumThreadService(
+      makeThreadRepo() as never,
+      makeZoneRepo() as never,
+      makePostRepo() as never,
+      makeAttachmentRepo() as never,
+      bookmarks as never,
+      enabledConfig as never,
+      events as never,
+      storage as never,
+    );
+    await service.bookmarkThread("u1", "t1");
+    expect(bookmarks.add).toHaveBeenCalledWith("u1", "THREAD", "t1");
+    await service.unbookmarkThread("u1", "t1");
+    expect(bookmarks.remove).toHaveBeenCalledWith("u1", "THREAD", "t1");
+  });
+
+  it("getMyBookmarks interleaves saved threads + posts in save order, dropping deleted targets", async () => {
+    const now = new Date("2026-07-01T10:00:00Z");
+    const bookmarks = {
+      ...makeBookmarkRepo(),
+      listForUser: vi.fn().mockResolvedValue([
+        { targetType: "THREAD", targetId: "t1", createdAt: now },
+        { targetType: "POST", targetId: "p1", createdAt: now },
+        { targetType: "THREAD", targetId: "gone", createdAt: now }, // deleted → dropped
+      ]),
+    };
+    const threadRepo = {
+      ...makeThreadRepo(),
+      findManyByIds: vi.fn().mockResolvedValue([threadRow({ id: "t1" })]), // "gone" not returned
+    };
+    const postRepo = {
+      ...makePostRepo(),
+      findManyByIds: vi.fn().mockResolvedValue([
+        {
+          id: "p1",
+          threadId: "t1",
+          parentPostId: null,
+          authorId: "u2",
+          authorName: "u2",
+          authorUsername: null,
+          authorAvatarStorageKey: null,
+          body: "kayıtlı yorum",
+          isAccepted: false,
+          createdAt: now,
+        },
+      ]),
+    };
+    const service = new ForumThreadService(
+      threadRepo as never,
+      makeZoneRepo() as never,
+      postRepo as never,
+      makeAttachmentRepo() as never,
+      bookmarks as never,
+      enabledConfig as never,
+      events as never,
+      storage as never,
+    );
+    const res = await service.getMyBookmarks("u1");
+    expect(res.items.map((i) => i.type)).toEqual(["thread", "comment"]);
+    expect(res.items[0]!.type === "thread" && res.items[0]!.thread.id).toBe("t1");
+    expect(res.items[1]!.type === "comment" && res.items[1]!.comment.id).toBe("p1");
   });
 });

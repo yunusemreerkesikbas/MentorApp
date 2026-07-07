@@ -221,6 +221,23 @@ export class ForumPostRepository {
     });
   }
 
+  /** Visible posts for a set of ids (RLS hides deleted for the viewer). Order not guaranteed. */
+  async findManyByIds(postIds: string[], viewerId: string): Promise<PostWithAuthor[]> {
+    if (postIds.length === 0) return [];
+    return withUserContext(this.db, { userId: viewerId }, async (tx) =>
+      tx
+        .select({
+          ...getTableColumns(forumPosts),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+          authorUsername: sql<string | null>`${users.username}`,
+          authorAvatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+        })
+        .from(forumPosts)
+        .leftJoin(users, eq(forumPosts.authorId, users.id))
+        .where(and(inArray(forumPosts.id, postIds), isNull(forumPosts.deletedAt))),
+    );
+  }
+
   async setAccepted(postId: string, accepted: boolean): Promise<void> {
     await withServiceContext(this.db, async (tx) => {
       await tx

@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ContentModule } from "../content/content.module";
 import { IdentityModule } from "../identity/identity.module";
 import { MoodService } from "./application/mood.service";
+import { DailyQuestSignalService } from "./application/daily-quest-signal.service";
 import { MockExamService } from "./application/mock-exam.service";
 import { PlanService } from "./application/plan.service";
 import { SessionService } from "./application/session.service";
@@ -37,6 +38,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
   controllers: [CoachingController, PlanTaskController, StudySessionController, MockExamController],
   providers: [
     PlanService,
+    DailyQuestSignalService,
     SessionService,
     StreakService,
     MoodService,
@@ -56,6 +58,13 @@ import { StudySessionController } from "./presentation/study-session.controller"
     CoachingQueryAdapter,
     { provide: COACHING_QUERY_PORT, useExisting: CoachingQueryAdapter },
   ],
-  exports: [COACHING_QUERY_PORT, MockExamService, MoodService, VisionService, StreakService],
+  exports: [
+    COACHING_QUERY_PORT,
+    DailyQuestSignalService,
+    MockExamService,
+    MoodService,
+    VisionService,
+    StreakService,
+  ],
 })
 export class CoachingModule {}

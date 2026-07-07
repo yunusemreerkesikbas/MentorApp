@@ -25,6 +25,7 @@ import { ForumZoneRepository } from "../infrastructure/forum-zone.repository";
 import { ForumThreadRepository, type ThreadWithAuthor } from "../infrastructure/forum-thread.repository";
 import { ForumPostRepository } from "../infrastructure/forum-post.repository";
 import { ForumAttachmentRepository } from "../infrastructure/forum-attachment.repository";
+import { ForumBookmarkRepository } from "../infrastructure/forum-bookmark.repository";
 import { resolveForumAttachments } from "./attachment.resolve";
 import type { ThreadActor } from "./forum-thread.service";
 import { postRowToAnswerView, threadRowToView } from "./forum.mappers";
@@ -41,6 +42,7 @@ export class ForumQaService {
     private readonly posts: ForumPostRepository,
     private readonly zones: ForumZoneRepository,
     private readonly attachments: ForumAttachmentRepository,
+    private readonly bookmarks: ForumBookmarkRepository,
     private readonly config: ConfigRegistryService,
     private readonly events: EventEmitter2,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
@@ -127,13 +129,13 @@ export class ForumQaService {
       this.threads.myReactionsByThread([threadId], viewerId),
       this.posts.listByThread(threadId, viewerId),
     ]);
-    // Batched attachment lookups (no N+1): the question thread + all answer posts.
-    const [threadAttach, answerAttach] = await Promise.all([
+    // Batched attachment + bookmark lookups (no N+1): the question thread + all answer posts.
+    const answerIds = answers.map((a) => a.id);
+    const [threadAttach, answerAttach, threadBm, answerBm] = await Promise.all([
       this.attachments.listForTargets(ModerationTargetType.THREAD, [threadId]),
-      this.attachments.listForTargets(
-        ModerationTargetType.POST,
-        answers.map((a) => a.id),
-      ),
+      this.attachments.listForTargets(ModerationTargetType.POST, answerIds),
+      this.bookmarks.myBookmarkedTargets(ModerationTargetType.THREAD, [threadId], viewerId),
+      this.bookmarks.myBookmarkedTargets(ModerationTargetType.POST, answerIds, viewerId),
     ]);
     return {
       question: threadRowToView(
@@ -144,8 +146,11 @@ export class ForumQaService {
         answers.length,
         [],
         threadAttach.get(threadId) ?? [],
+        threadBm.has(threadId),
       ),
-      answers: answers.map((a) => postRowToAnswerView(a, this.storage, answerAttach.get(a.id) ?? [])),
+      answers: answers.map((a) =>
+        postRowToAnswerView(a, this.storage, answerAttach.get(a.id) ?? [], answerBm.has(a.id)),
+      ),
     };
   }
 
@@ -158,10 +163,11 @@ export class ForumQaService {
       pageSize: q.pageSize,
     });
     const ids = items.map((t) => t.id);
-    const [counts, mine, commentCounts] = await Promise.all([
+    const [counts, mine, commentCounts, bookmarked] = await Promise.all([
       this.threads.reactionCountsByThread(ids),
       this.threads.myReactionsByThread(ids, viewerId),
       this.threads.commentCountsByThread(ids),
+      this.bookmarks.myBookmarkedTargets(ModerationTargetType.THREAD, ids, viewerId),
     ]);
     const views = items.map((t) =>
       threadRowToView(
@@ -170,6 +176,9 @@ export class ForumQaService {
         mine.get(t.id) ?? [],
         this.storage,
         commentCounts.get(t.id) ?? 0,
+        [],
+        [],
+        bookmarked.has(t.id),
       ),
     );
     return { items: views, total, page: q.page, pageSize: q.pageSize };

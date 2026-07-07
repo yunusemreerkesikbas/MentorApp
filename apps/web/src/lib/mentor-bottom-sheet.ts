@@ -73,9 +73,10 @@ export function useMentorBottomSheet() {
       sheet: sheet.sheet,
       show,
       dismiss: sheet.dismiss,
+      dismissNow: sheet.dismissNow,
       actionSheet,
       filterSheet,
     }),
-    [actionSheet, filterSheet, sheet.dismiss, sheet.sheet, show],
+    [actionSheet, filterSheet, sheet.dismiss, sheet.dismissNow, sheet.sheet, show],
   );
 }

@@ -897,8 +897,8 @@ export const inviteRedemptions = pgTable(
   ],
 );
 
-/* --- Onboarding quests (§3 light economy): a completed quest → coin (capped, idempotent).
- * One row per (user, quest) recorded on completion; the reward is a ledger entry
+/* --- Quests (§3 light economy): completed quest → XP/Coin (capped where needed, idempotent).
+ * One row per (user, quest, period) recorded on completion; the reward is a ledger entry
  * (refType="quest", refId=row id). Evaluated by the economy QuestService.
  * RLS: self-read (the user) + SERVICE/ADMIN; eval/grant run in SERVICE context. */
 export const userQuestProgress = pgTable(
@@ -912,12 +912,14 @@ export const userQuestProgress = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     /** Stable quest id from the static catalog (e.g. "onboarding.profile-setup"). */
     questId: text("quest_id").notNull(),
+    /** "once" for one-shot onboarding quests; yyyy-mm-dd for daily ritual quests. */
+    periodKey: text("period_key").notNull().default("once"),
     status: text("status").notNull().default("COMPLETED"),
     completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    uniqueIndex("user_quest_progress_user_quest_unique_idx").on(t.userId, t.questId),
+    uniqueIndex("user_quest_progress_user_quest_period_unique_idx").on(t.userId, t.questId, t.periodKey),
     index("user_quest_progress_user_idx").on(t.userId),
   ],
 );
@@ -1202,5 +1204,45 @@ export const forumAttachments = pgTable(
   (t) => [
     index("forum_attachments_target_idx").on(t.targetType, t.targetId),
     index("forum_attachments_author_idx").on(t.authorId),
+  ],
+);
+
+/* Minted-but-unconfirmed attachment upload keys (APP-018 orphan-cleanup). A presigned upload writes
+ * the object to storage BEFORE the post is created; if the create never lands (client abandons, or a
+ * post-upload create rejection), the object orphans. We record each minted key here and clear it once
+ * the key is attached (see forum_attachments insert); a cron sweeps rows older than the grace window
+ * → deletes the storage object + row. Storage has no LIST, so this ledger is the orphan source. */
+export const forumPendingAttachments = pgTable(
+  "forum_pending_attachments",
+  {
+    storageKey: text("storage_key").primaryKey(),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("forum_pending_attachments_created_idx").on(t.createdAt)],
+);
+
+/* Per-user saved posts (APP-018 bookmarks). Polymorphic target (THREAD | POST) like forum_reports —
+ * a user saves a thread (chat post / QA question) or a post (comment / QA answer). Unique per
+ * (user, target); the (user, created_at) index drives the reverse-chronological "Kaydedilenler" feed. */
+export const forumBookmarks = pgTable(
+  "forum_bookmarks",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    /** ModerationTargetType: THREAD | POST */
+    targetType: text("target_type").notNull(),
+    targetId: uuid("target_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_bookmarks_user_target_unique_idx").on(t.userId, t.targetType, t.targetId),
+    index("forum_bookmarks_user_created_idx").on(t.userId, t.createdAt),
   ],
 );

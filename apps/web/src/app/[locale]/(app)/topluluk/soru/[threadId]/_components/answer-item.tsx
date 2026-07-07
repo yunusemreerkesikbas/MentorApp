@@ -5,14 +5,23 @@ import { useLocale, useTranslations } from "next-intl";
 import type { AnswerView } from "@mentor/types";
 import { Card, Chip } from "@mentor/ui";
 import { AttachmentGallery } from "../../../_components/attachment-gallery";
+import { SendButton } from "../../../_components/send-button";
+import { BookmarkButton } from "../../../_components/bookmark-button";
 
-/** One answer. Accepted answers are highlighted; `accept`/`report` are slots filled by the shell. */
+/**
+ * One answer. Accepted answers are highlighted; `accept`/`report` are slots filled by the shell.
+ * QA answers have no page of their own, so "send" shares the parent question (`shareHref`).
+ */
 export function AnswerItem({
   answer,
+  shareHref,
+  onToggleBookmark,
   accept,
   report,
 }: {
   answer: AnswerView;
+  shareHref: string;
+  onToggleBookmark: (adding: boolean) => void;
   accept?: ReactNode;
   report?: ReactNode;
 }) {
@@ -38,12 +47,12 @@ export function AnswerItem({
         {answer.body}
       </p>
       <AttachmentGallery attachments={answer.attachments} />
-      {accept || report ? (
-        <div className="mt-3 flex items-center gap-3">
-          {accept}
-          {report}
-        </div>
-      ) : null}
+      <div className="-ml-1.5 mt-3 flex items-center gap-1">
+        <SendButton path={shareHref} />
+        <BookmarkButton bookmarked={answer.myBookmarked} onToggle={onToggleBookmark} />
+        {accept}
+        {report}
+      </div>
     </Card>
   );
 }
