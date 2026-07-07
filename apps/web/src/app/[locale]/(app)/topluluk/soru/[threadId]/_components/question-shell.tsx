@@ -8,11 +8,13 @@ import { Button, Card, Chip } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
-import { getQuestion, isForumDisabled, postAnswer } from "@/lib/forum";
+import { bookmarkPost, bookmarkThread, getQuestion, isForumDisabled, postAnswer } from "@/lib/forum";
 import { ReportButton } from "../../../_components/report-button";
 import { AttachmentGallery } from "../../../_components/attachment-gallery";
 import { ForumImagePicker } from "../../../_components/forum-image-picker";
 import { useForumImagePicker } from "../../../_components/use-forum-image-picker";
+import { SendButton } from "../../../_components/send-button";
+import { BookmarkButton } from "../../../_components/bookmark-button";
 import { AcceptButton } from "./accept-button";
 import { AnswerItem } from "./answer-item";
 
@@ -40,6 +42,39 @@ export function QuestionShell({ threadId }: { threadId: string }) {
       });
     }
   }, [threadId, t]);
+
+  const onToggleQuestionBookmark = useCallback(
+    (adding: boolean) => {
+      setState((s) =>
+        s.status === "ready"
+          ? { ...s, detail: { ...s.detail, question: { ...s.detail.question, myBookmarked: adding } } }
+          : s,
+      );
+      bookmarkThread(threadId, adding).catch(() =>
+        setState((s) =>
+          s.status === "ready"
+            ? { ...s, detail: { ...s.detail, question: { ...s.detail.question, myBookmarked: !adding } } }
+            : s,
+        ),
+      );
+    },
+    [threadId],
+  );
+
+  const onToggleAnswerBookmark = useCallback((postId: string, adding: boolean) => {
+    const patch = (v: boolean) => (s: State): State =>
+      s.status === "ready"
+        ? {
+            ...s,
+            detail: {
+              ...s.detail,
+              answers: s.detail.answers.map((a) => (a.id === postId ? { ...a, myBookmarked: v } : a)),
+            },
+          }
+        : s;
+    setState(patch(adding));
+    bookmarkPost(postId, adding).catch(() => setState(patch(!adding)));
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -107,7 +142,9 @@ export function QuestionShell({ threadId }: { threadId: string }) {
           {question.body}
         </p>
         <AttachmentGallery attachments={question.attachments} />
-        <div className="mt-3">
+        <div className="-ml-1.5 mt-3 flex items-center gap-1">
+          <SendButton path={`/topluluk/soru/${question.id}`} />
+          <BookmarkButton bookmarked={question.myBookmarked} onToggle={onToggleQuestionBookmark} />
           <ReportButton targetType={ModerationTargetType.THREAD} targetId={question.id} />
         </div>
       </Card>
@@ -127,6 +164,8 @@ export function QuestionShell({ threadId }: { threadId: string }) {
             <AnswerItem
               key={a.id}
               answer={a}
+              shareHref={`/topluluk/soru/${question.id}`}
+              onToggleBookmark={(adding) => onToggleAnswerBookmark(a.id, adding)}
               accept={
                 canAccept && !a.isAccepted ? (
                   <AcceptButton threadId={threadId} postId={a.id} onAccepted={() => void load()} />

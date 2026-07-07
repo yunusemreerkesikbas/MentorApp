@@ -293,6 +293,48 @@ describe("forum zones (e2e)", () => {
     expect(detail.body.answers[0].attachments).toHaveLength(1);
   });
 
+  it("bookmarks: save a thread + a post → saved feed returns both; unsave drops it (APP-018)", async () => {
+    await setForumEnabled(true);
+    const zoneId = await createZone(ZoneType.QA, "Kayıt Soru-Cevap");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+
+    // A question (thread) + an answer (post) by the same member.
+    const asked = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ title: "Kaydedilecek soru", body: "gövde" });
+    const threadId = asked.body.id as string;
+    const answered = await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${threadId}/answers`)
+      .set(asUser())
+      .send({ body: "kaydedilecek cevap" });
+    const postId = answered.body.id as string;
+
+    // Bookmark both (post after thread → newest-saved first = post, then thread).
+    await request(app.getHttpServer()).put(`/v1/forum/threads/${threadId}/bookmark`).set(asUser()).expect(200);
+    await request(app.getHttpServer()).put(`/v1/forum/posts/${postId}/bookmark`).set(asUser()).expect(200);
+
+    const saved = await request(app.getHttpServer()).get(`/v1/forum/bookmarks`).set(asUser());
+    expect(saved.status).toBe(200);
+    expect(saved.body.items).toHaveLength(2);
+    expect(saved.body.items[0]).toMatchObject({ type: "comment" }); // newest-saved first
+    expect(saved.body.items[0].comment.id).toBe(postId);
+    expect(saved.body.items[0].comment.myBookmarked).toBe(true);
+    expect(saved.body.items[1]).toMatchObject({ type: "thread" });
+    expect(saved.body.items[1].thread.id).toBe(threadId);
+
+    // The question detail reflects myBookmarked on both the question and the answer.
+    const detail = await request(app.getHttpServer()).get(`/v1/forum/threads/${threadId}`).set(asUser());
+    expect(detail.body.question.myBookmarked).toBe(true);
+    expect(detail.body.answers[0].myBookmarked).toBe(true);
+
+    // Unsave the thread → the saved feed drops to just the post.
+    await request(app.getHttpServer()).delete(`/v1/forum/threads/${threadId}/bookmark`).set(asUser()).expect(204);
+    const after = await request(app.getHttpServer()).get(`/v1/forum/bookmarks`).set(asUser());
+    expect(after.body.items).toHaveLength(1);
+    expect(after.body.items[0].comment.id).toBe(postId);
+  });
+
   it("a non-member cannot post in a CHAT zone (403)", async () => {
     const zoneId = await createZone(ZoneType.CHAT, "Üyesiz Sohbet");
     const outsider = await signup("outsider");

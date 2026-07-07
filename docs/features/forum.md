@@ -82,6 +82,33 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Send (paylaş) + Bookmark (kaydet) — Twitter/Threads (APP-018)** — Aksiyon satırına iki yeni ikon:
+  **Send** postu paylaşılabilir bağlantı olarak paylaşır (`navigator.share` native sheet, yoksa panoya
+  kopyala + toast; backend yok — link uygulama-içi detay rotası), **Bookmark** postu kişiye özel kaydeder.
+  **Bookmark polimorfik** (thread + post): yeni `forum_bookmarks` (`0037`, unique `user_id+target`,
+  `myReactionsByThread` desenli batch `myBookmarkedTargets`). `ThreadView`/`CommentView`/`AnswerView`'a
+  `myBookmarked` (feed/detay/QA/search'e 6. batched lookup — N+1 yok). Toggle uçları reaction desenini
+  aynalar: `PUT/DELETE /threads|posts/:id/bookmark`. Kaydedilenler: `GET /forum/bookmarks` (thread+post
+  karışık, kaydetme sırası, cursor) → `SavedFeed` discriminated union; servis `findManyByIds` (yeni,
+  RLS-görünür çoğul fetch) ile çözer, silinmiş/gizli hedef sessizce düşer. Web: paylaşılan `SendButton`
+  (locale-aware URL — `as-needed` prefix) + `BookmarkButton` (optimistic) 5 yüzeyde (feed thread-item,
+  message/comment/question detay, answer-item); sol sidebar + mobil drawer'a "Kaydedilenler" girişi;
+  `/topluluk/kayitli` sayfası (`SavedShell` — unsave'de listeden düşer). Yeni i18n: `send`/`share_copied`/
+  `bookmark`/`saved_*`. Testler: unit +2 (bookmark toggle + getMyBookmarks sıra/drop), e2e +1
+  (thread+post kaydet → saved feed → unsave). *(APP-018)*
+- **Ek orphan-cleanup + lightbox carousel (Faz 2, APP-018)** — İki bağımsız iyileştirme.
+  **Orphan-cleanup**: presigned upload objeyi post oluşmadan **önce** storage'a yazdığından, create hiç
+  gelmezse (client vazgeçer / upload sonrası create reddi) obje öksüz kalıyordu. Storage'da LIST yok;
+  bu yüzden yeni **`forum_pending_attachments`** ledger tablosu (`0036`) — mint edilen her key kaydedilir,
+  `insertMany` ek'e bağlanınca aynı tx'te siler; grace (24s) geçmiş satırları bir cron süpürür
+  (`storage.deleteObject` + satır silme, tur başına 500 cap). Endpoint:
+  `POST /internal/cron/cleanup-forum-attachments` (yeni `ForumInternalController`, `CronSecretGuard`).
+  Guard `notifications/presentation`'dan **`common/auth/`**'a taşındı (cross-cutting; notifications + forum
+  paylaşıyor). **Carousel**: `AttachmentGallery` lightbox'ı tek görselden **çoklu-görsel gezinmeye**
+  çevrildi — prev/next ok + klavye (←/→/Esc) + swipe + nokta göstergesi (`prefers`... yok, saf state).
+  Yeni i18n: `attach_prev`/`attach_next`. Testler: `forum-thread.service.spec` +2 (markPending-on-upload
+  + sweep), toplam unit 61. E2E dokunulmadı (mevcut attachment e2e insertMany'nin yeni delete-pending
+  SQL'ini gerçek DB'de zaten çalıştırıyor → 16/16). Video + dosya hâlâ ertelenmiş. *(APP-018)*
 - **QA ekleri — görsel (Faz 2, APP-018)** — Görsel eklerini **QA soru + cevaplarına** genişletti
   (Faz 1 yalnızca CHAT/ANNOUNCEMENT'a açmıştı). **Şema/migration yok** — mevcut `forum_attachments`
   (polimorfik THREAD|POST) yeniden kullanıldı. QA, CHAT'ten ayrı servis/tip/composer kullandığı için
@@ -96,7 +123,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
   (ThreadComposer/AskComposer/AnswerComposer paylaşıyor); soru+cevap detayına `AttachmentGallery`
   eklendi. Limitler Faz 1 ile birebir (max 4, ≤5MB, JPEG/PNG/WebP). Yeni i18n anahtarı yok. Testler:
   `forum-qa.service.spec` +3 (geçerli ek yazılıyor / yabancı key / spoof mime reddi), `forum.e2e`
-  +1 (QA soru+cevap upload → detay eklerle döner). Video + dosya + orphan-cleanup hâlâ ertelenmiş. *(APP-018)*
+  +1 (QA soru+cevap upload → detay eklerle döner). Video + dosya hâlâ ertelenmiş. *(APP-018)*
 - **Post ekleri — görsel (Faz 1, APP-018)** — CHAT/ANNOUNCEMENT thread'leri ve yorum/yanıtları artık
   **çoklu görsel** (max 4, JPEG/PNG/WebP ≤5MB) taşıyabilir. Yeni polimorfik `forum_attachments` tablosu
   (`forum_reports` deseni: `target_type THREAD|POST + target_id`; `kind` ile video/file Faz 2'ye hazır;
@@ -152,16 +179,22 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ### Figma fidelity backlog (backend gerektirir)
 
-- ~~**Görsel/attachment + carousel**~~ — **Yapıldı** (Faz 1 CHAT/ANNOUNCEMENT, Faz 2 QA soru+cevap, APP-018). Kalan: video + dosya + orphan-cleanup + carousel UI.
+- ~~**Görsel/attachment + carousel**~~ — **Yapıldı** (Faz 1 CHAT/ANNOUNCEMENT · Faz 2 QA soru+cevap + lightbox carousel + orphan-cleanup, APP-018). Kalan: video + dosya ekleri.
 - **Nested yorumlar (yoruma yorum) + yorumlara like** — MVP düz yorum; nesting ve comment-level reaksiyon `forum_reactions`'ı `postId`'ye açmayı gerektirir.
 - **Zengin emoji reaksiyon paleti (👍💪🎉😮)** — like tek kalbe indirildi; palet dönerse config arkasına alınabilir.
-- **Repost / harici paylaşım** — karşılık gelen bir entity yok (ürün kararı gereği kapsam dışı).
+- **Repost** — hâlâ kapsam dışı (ürün kararı; karşılık gelen entity yok). *Harici paylaşım (Send) yapıldı — APP-018.*
 - **Zone başına agregat "X mesaj" sayacı** (Trending Topics'teki "123.9k threads" karşılığı) — şu an `memberCount` ile yaklaşıklanıyor; gerçek sayım için zone'a thread-count aggregate eklenmesi gerekir (küçük, isteğe bağlı iyileştirme).
 - **Profil kartı sosyal alanları** — Figma profil kartında bio, takipçi sayısı, web sitesi var; `AuthUser`'da yok. Şu an displayName + @username + examType + email + üye-tarihi ile yaklaşıklanıyor. Bio/website/followers için şema + endpoint gerekir.
 
 ## Gotchas / Known issues
 
 - **`forum.enabled` default off** — flip per-environment to go live.
+- **Paylaşım linki (Send) uygulama-içi + üye-gerektirir** — `/topluluk/mesaj|yorum|soru/...`; CHAT postları
+  public değil, giriş yapmamış/üye olmayan kullanıcı auth'a düşer. QA'nın public SEO sayfası
+  (`/forum/soru/[id]`) var ama Send tüm postlar için uygulama-içi linki kullanıyor (QA-public link backlog).
+- **Orphan-cleanup cron manuel kayıt ister** — `POST /internal/cron/cleanup-forum-attachments`
+  (`CronSecretGuard`, `x-cron-secret`) kendi kendine çalışmaz; Render Cron'a eklenmeli (grace 24s,
+  günde bir yeterli). Kayıt edilmezse öksüz upload'lar birikir (işlevsel hata değil, storage sızıntısı).
 - **Zone olmadan B2C boş görünür** — `forum.enabled = true` olsa bile `forum_zones` tablosu boşsa `/topluluk` "Henüz bir alan yok" gösterir. Üretime çıkmadan önce admin panelinden (`/forum/new`) en az bir zone oluştur.
 - **Slug is server-derived** from title + `Date.now()` base-36 suffix (curated, low volume).
 - **Accept is one-shot/final** — no un-accept/switch (anti-farm). 409 on re-accept.

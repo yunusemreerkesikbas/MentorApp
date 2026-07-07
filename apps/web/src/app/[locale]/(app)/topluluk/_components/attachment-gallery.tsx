@@ -1,32 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { Attachment } from "@mentor/types";
 import { resolveApiUrl } from "@/lib/api-base";
 
 /**
  * Post image gallery (Phase 1). 1 image keeps its aspect ratio (capped); 2–4 tile in a 2-col grid
- * (3 → first spans both columns). Tapping opens a lightbox. Lives inside clickable feed rows, so every
- * interaction stops propagation to avoid triggering the row's navigation.
+ * (3 → first spans both columns). Tapping opens a lightbox carousel (arrows + keyboard + swipe + dots
+ * across all images of the post). Lives inside clickable feed rows, so every interaction stops
+ * propagation to avoid triggering the row's navigation.
  */
 export function AttachmentGallery({ attachments }: { attachments: Attachment[] }) {
   const t = useTranslations("topluluk");
-  const [active, setActive] = useState<Attachment | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const images = attachments.filter((a) => a.kind === "image");
+  const count = images.length;
+  const touchStartX = useRef<number | null>(null);
+
+  const close = useCallback(() => setActiveIndex(null), []);
+  const go = useCallback(
+    (dir: number) => setActiveIndex((i) => (i === null ? i : (i + dir + count) % count)),
+    [count],
+  );
 
   useEffect(() => {
-    if (!active) return;
+    if (activeIndex === null) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActive(null);
+      if (e.key === "Escape") close();
+      else if (e.key === "ArrowRight") go(1);
+      else if (e.key === "ArrowLeft") go(-1);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [active]);
+  }, [activeIndex, close, go]);
 
-  if (images.length === 0) return null;
+  if (count === 0) return null;
 
-  const single = images.length === 1;
+  const single = count === 1;
+  const active = activeIndex === null ? null : images[activeIndex]!;
 
   return (
     <>
@@ -36,7 +48,7 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
       >
         {images.map((a, i) => {
           const ratio = single && a.width && a.height ? `${a.width} / ${a.height}` : "1 / 1";
-          const span = !single && images.length === 3 && i === 0 ? "col-span-2" : "";
+          const span = !single && count === 3 && i === 0 ? "col-span-2" : "";
           return (
             <button
               key={a.id}
@@ -44,7 +56,7 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
               aria-label={t("attach_view")}
               onClick={(e) => {
                 e.stopPropagation();
-                setActive(a);
+                setActiveIndex(i);
               }}
               className={`relative block w-full cursor-pointer overflow-hidden bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${span}`}
               style={{ aspectRatio: ratio, maxHeight: single ? 420 : undefined }}
@@ -63,7 +75,7 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
           style={{ background: "rgba(0,0,0,0.85)" }}
           onClick={(e) => {
             e.stopPropagation();
-            setActive(null);
+            close();
           }}
           role="dialog"
           aria-modal="true"
@@ -73,7 +85,7 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
             aria-label={t("attach_close")}
             onClick={(e) => {
               e.stopPropagation();
-              setActive(null);
+              close();
             }}
             className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             style={{ background: "rgba(255,255,255,0.15)" }}
@@ -83,13 +95,65 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
+
+          {count > 1 && (
+            <>
+              <button
+                type="button"
+                aria-label={t("attach_prev")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  go(-1);
+                }}
+                className="absolute left-2 flex h-10 w-10 items-center justify-center rounded-full text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:left-4"
+                style={{ background: "rgba(255,255,255,0.15)" }}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
+              </button>
+              <button
+                type="button"
+                aria-label={t("attach_next")}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  go(1);
+                }}
+                className="absolute right-2 flex h-10 w-10 items-center justify-center rounded-full text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-4"
+                style={{ background: "rgba(255,255,255,0.15)" }}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+              </button>
+            </>
+          )}
+
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={resolveApiUrl(active.url)}
             alt=""
             className="max-h-full max-w-full rounded-[var(--radius-card)] object-contain"
             onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => {
+              touchStartX.current = e.changedTouches[0]!.clientX;
+            }}
+            onTouchEnd={(e) => {
+              if (touchStartX.current === null) return;
+              const dx = e.changedTouches[0]!.clientX - touchStartX.current;
+              touchStartX.current = null;
+              if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+            }}
           />
+
+          {count > 1 && (
+            <div className="absolute bottom-5 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              {images.map((a, i) => (
+                <span
+                  key={a.id}
+                  aria-hidden="true"
+                  className="h-1.5 w-1.5 rounded-full transition-opacity"
+                  style={{ background: "#fff", opacity: i === activeIndex ? 1 : 0.4 }}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </>

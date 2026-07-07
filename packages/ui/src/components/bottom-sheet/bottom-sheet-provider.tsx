@@ -99,6 +99,12 @@ export function BottomSheetProvider({ children }: BottomSheetProviderProps) {
     finishDismiss("default");
   }, [finishDismiss]);
 
+  const dismissNow = useCallback(() => {
+    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    removeSheet();
+    resolvePending("cancel");
+  }, [removeSheet, resolvePending]);
+
   const openSheet = useCallback((options: BottomSheetShowOptions) => {
     if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
     setSheet({
@@ -241,10 +247,11 @@ export function BottomSheetProvider({ children }: BottomSheetProviderProps) {
       sheet,
       show,
       dismiss,
+      dismissNow,
       actionSheet,
       filterSheet,
     }),
-    [actionSheet, dismiss, filterSheet, sheet, show],
+    [actionSheet, dismiss, dismissNow, filterSheet, sheet, show],
   );
 
   const closeLabel = sheet?.closeLabel ?? "";

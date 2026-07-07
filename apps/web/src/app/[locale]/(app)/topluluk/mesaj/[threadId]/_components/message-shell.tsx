@@ -7,6 +7,8 @@ import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import {
+  bookmarkPost,
+  bookmarkThread,
   getThreadDetail,
   isForumDisabled,
   likePost,
@@ -78,6 +80,33 @@ export function MessageShell({ threadId }: { threadId: string }) {
     });
   }, []);
 
+  const onToggleThreadBookmark = useCallback(
+    (adding: boolean) => {
+      setState((s) => (s.status === "ready" ? { ...s, thread: { ...s.thread, myBookmarked: adding } } : s));
+      bookmarkThread(threadId, adding).catch(() => {
+        setState((s) =>
+          s.status === "ready" ? { ...s, thread: { ...s.thread, myBookmarked: !adding } } : s,
+        );
+      });
+    },
+    [threadId],
+  );
+
+  const onToggleCommentBookmark = useCallback((postId: string, adding: boolean) => {
+    setState((s) =>
+      s.status === "ready"
+        ? { ...s, comments: s.comments.map((c) => (c.id === postId ? { ...c, myBookmarked: adding } : c)) }
+        : s,
+    );
+    bookmarkPost(postId, adding).catch(() => {
+      setState((s) =>
+        s.status === "ready"
+          ? { ...s, comments: s.comments.map((c) => (c.id === postId ? { ...c, myBookmarked: !adding } : c)) }
+          : s,
+      );
+    });
+  }, []);
+
   const onComment = useCallback(
     async (body: string, attachments: AttachmentInput[]) => {
       const created = await postComment(threadId, body, attachments);
@@ -119,7 +148,11 @@ export function MessageShell({ threadId }: { threadId: string }) {
 
       {/* Main thread */}
       <div className="border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
-        <ThreadItem thread={thread} onToggleReaction={onToggleThreadLike} />
+        <ThreadItem
+          thread={thread}
+          onToggleReaction={onToggleThreadLike}
+          onToggleBookmark={onToggleThreadBookmark}
+        />
       </div>
 
       {/* Comments */}
@@ -152,7 +185,12 @@ export function MessageShell({ threadId }: { threadId: string }) {
           </h2>
           <div className="divide-y divide-[rgba(0,0,0,0.06)]">
             {comments.map((c) => (
-              <CommentRow key={c.id} comment={c} onToggleLike={onToggleCommentLike} />
+              <CommentRow
+                key={c.id}
+                comment={c}
+                onToggleLike={onToggleCommentLike}
+                onToggleBookmark={onToggleCommentBookmark}
+              />
             ))}
           </div>
         </>

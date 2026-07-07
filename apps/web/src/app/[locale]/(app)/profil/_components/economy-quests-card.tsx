@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { flushSync } from "react-dom";
 import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -16,23 +17,16 @@ import Clock3 from "lucide-react/dist/esm/icons/clock-3.mjs";
 import LoaderCircle from "lucide-react/dist/esm/icons/loader-circle.mjs";
 
 interface EconomyQuestsCardProps {
+  onDismiss?: () => void;
   onInviteRequested?: () => void;
   quests: QuestProgressView[];
-}
-
-type QuestAction = "subscription" | "invite" | "verify-email";
-
-function questAction(id: string): QuestAction | null {
-  if (id === "onboarding.first-subscription") return "subscription";
-  if (id === "onboarding.invite-redeemed") return "invite";
-  if (id === "onboarding.email-verified") return "verify-email";
-  return null;
 }
 
 /**
  * Onboarding quests — titles and completion from backend; no FE reward logic.
  */
 export function EconomyQuestsCard({
+  onDismiss,
   onInviteRequested,
   quests,
 }: EconomyQuestsCardProps) {
@@ -42,13 +36,45 @@ export function EconomyQuestsCard({
   const reduceMotion = useReducedMotion();
   const toast = useMentorToast();
   const [resendingVerification, setResendingVerification] = useState(false);
-  const completed = quests.filter((quest) => quest.completed).length;
+  const dailyQuests = quests.filter((quest) => quest.category === "daily_ritual");
+  const onboardingQuests = quests.filter((quest) => quest.category === "onboarding");
+  const completed = dailyQuests.filter((quest) => quest.completed).length;
   const percent =
-    quests.length === 0 ? 0 : Math.round((completed / quests.length) * 100);
+    dailyQuests.length === 0 ? 0 : Math.round((completed / dailyQuests.length) * 100);
+  const nextQuest =
+    dailyQuests.find((quest) => !quest.completed && quest.action) ??
+    onboardingQuests.find((quest) => !quest.completed && quest.action) ??
+    null;
 
-  async function handleAction(action: QuestAction) {
-    if (action === "subscription") router.push("/abonelik");
-    if (action === "invite") onInviteRequested?.();
+  function navigateAfterDismiss(path: "/plan" | "/seans" | "/panel" | "/abonelik") {
+    flushSync(() => {
+      onDismiss?.();
+    });
+    router.push(path);
+  }
+
+  async function handleAction(action: QuestProgressView["action"]) {
+    if (!action) return;
+    if (action === "plan") {
+      navigateAfterDismiss("/plan");
+      return;
+    }
+    if (action === "study-session") {
+      navigateAfterDismiss("/seans");
+      return;
+    }
+    if (action === "mood-checkin") {
+      navigateAfterDismiss("/panel");
+      return;
+    }
+    if (action === "subscription") {
+      navigateAfterDismiss("/abonelik");
+      return;
+    }
+    if (action === "invite") {
+      onInviteRequested?.();
+      return;
+    }
     if (action !== "verify-email" || resendingVerification) return;
 
     setResendingVerification(true);
@@ -75,47 +101,93 @@ export function EconomyQuestsCard({
 
   return (
     <div>
-      <QuestProgressGauge
-        percent={percent}
-        percentLabel={translate("quests_percent", { percent })}
-        progressLabel={translate("quests_progress", {
-          done: completed,
-          total: quests.length,
-        })}
-        stateLabel={translate("quests_gauge_state")}
-        reduceMotion={reduceMotion ?? false}
-      />
+      <div className="sticky top-0 z-10 bg-white pb-3">
+        <QuestProgressGauge
+          percent={percent}
+          percentLabel={translate("quests_percent", { percent })}
+          progressLabel={translate("quests_progress", {
+            done: completed,
+            total: dailyQuests.length,
+          })}
+          stateLabel={translate("quests_daily_state")}
+          reduceMotion={reduceMotion ?? false}
+        />
 
-      <ul className="mt-4 flex flex-col gap-2">
-        {quests.map((quest) => {
-          const action = quest.completed ? null : questAction(quest.id);
-          return (
-            <QuestRow
-              key={quest.id}
-              action={action}
-              busy={action === "verify-email" && resendingVerification}
-              onAction={handleAction}
-              quest={quest}
-            />
-          );
-        })}
-      </ul>
+        {nextQuest ? (
+          <button
+            type="button"
+            className="mt-3 flex w-full cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-card)] border border-black/10 bg-white px-4 py-3 text-left shadow-[var(--shadow-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
+            onClick={() => void handleAction(nextQuest.action)}
+          >
+            <span className="min-w-0">
+              <span className="block text-xs font-bold uppercase text-[var(--color-secondary)]">
+                {translate("quest_next_step")}
+              </span>
+              <span className="mt-1 block truncate text-base font-extrabold text-[var(--color-main)]">
+                {nextQuest.title}
+              </span>
+            </span>
+            <ArrowRight className="shrink-0 text-[var(--color-main)]" size={18} aria-hidden />
+          </button>
+        ) : null}
+      </div>
+
+      <QuestSection
+        title={translate("quests_daily_section")}
+        quests={dailyQuests}
+        resendingVerification={resendingVerification}
+        onAction={handleAction}
+      />
+      <QuestSection
+        title={translate("quests_onboarding_section")}
+        quests={onboardingQuests}
+        resendingVerification={resendingVerification}
+        onAction={handleAction}
+      />
     </div>
   );
 }
 
+function QuestSection({
+  onAction,
+  quests,
+  resendingVerification,
+  title,
+}: {
+  onAction: (action: QuestProgressView["action"]) => Promise<void>;
+  quests: QuestProgressView[];
+  resendingVerification: boolean;
+  title: string;
+}) {
+  if (quests.length === 0) return null;
+  return (
+    <section className="mt-5">
+      <h3 className="px-1 text-sm font-extrabold text-[var(--color-main)]">{title}</h3>
+      <ul className="mt-2 flex flex-col gap-2">
+        {quests.map((quest) => (
+          <QuestRow
+            key={`${quest.id}:${quest.periodKey}`}
+            busy={quest.action === "verify-email" && resendingVerification}
+            onAction={onAction}
+            quest={quest}
+          />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function QuestRow({
-  action,
   busy,
   onAction,
   quest,
 }: {
-  action: QuestAction | null;
   busy: boolean;
-  onAction: (action: QuestAction) => Promise<void>;
+  onAction: (action: QuestProgressView["action"]) => Promise<void>;
   quest: QuestProgressView;
 }) {
   const translate = useTranslations("economy");
+  const action = quest.completed ? null : quest.action;
   const content = (
     <>
       <span
@@ -132,10 +204,13 @@ function QuestRow({
       </span>
       <span className="min-w-0 flex-1 truncate text-left text-base font-semibold text-[var(--color-main)]">
         {quest.title}
+        <span className="mt-1 block text-xs font-bold text-[var(--color-secondary)]">
+          {quest.badgeLabel}
+        </span>
       </span>
       {!quest.completed ? (
         <span className="shrink-0 text-sm font-bold text-[var(--color-chip-text)]">
-          {translate("quest_reward", { count: quest.rewardCoin })}
+          {rewardLabel(translate, quest)}
         </span>
       ) : null}
       {action ? (
@@ -165,7 +240,7 @@ function QuestRow({
       {action ? (
         <button
           type="button"
-          className="flex min-h-9 w-full min-w-0 items-center gap-3 rounded-[var(--radius-card)] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] disabled:cursor-wait disabled:opacity-70"
+          className="flex min-h-9 w-full min-w-0 cursor-pointer items-center gap-3 rounded-[var(--radius-card)] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] disabled:cursor-wait disabled:opacity-70"
           disabled={busy}
           onClick={() => void onAction(action)}
         >
@@ -176,6 +251,15 @@ function QuestRow({
       )}
     </li>
   );
+}
+
+function rewardLabel(
+  translate: ReturnType<typeof useTranslations>,
+  quest: QuestProgressView,
+): string {
+  if (quest.rewardUnit === "XP") return translate("quest_reward_xp", { count: quest.rewardAmount });
+  if (quest.rewardUnit === "COIN") return translate("quest_reward_coin", { count: quest.rewardAmount });
+  return "";
 }
 
 function QuestProgressGauge({

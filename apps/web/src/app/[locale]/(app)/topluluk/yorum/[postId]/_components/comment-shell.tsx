@@ -11,13 +11,22 @@ import {
 import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
-import { getCommentDetail, isForumDisabled, likePost, postReply, unlikePost } from "@/lib/forum";
+import {
+  bookmarkPost,
+  getCommentDetail,
+  isForumDisabled,
+  likePost,
+  postReply,
+  unlikePost,
+} from "@/lib/forum";
 import type { AttachmentInput } from "@mentor/validation";
 import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "../../../_components/author-avatar";
 import { CommentRow } from "../../../_components/comment-row";
 import { AttachmentGallery } from "../../../_components/attachment-gallery";
 import { HeartIcon } from "../../../_components/forum-icons";
+import { SendButton } from "../../../_components/send-button";
+import { BookmarkButton } from "../../../_components/bookmark-button";
 import { ThreadComposer } from "../../../[slug]/_components/thread-composer";
 import { ThreadMenu } from "../../../[slug]/_components/thread-menu";
 
@@ -60,6 +69,14 @@ export function CommentShell({ postId }: { postId: string }) {
     setState((s) => (s.status === "ready" ? patchLike(s, id, adding) : s));
     const call = adding ? likePost(id, FORUM_LIKE_EMOJI) : unlikePost(id, FORUM_LIKE_EMOJI);
     call.catch(() => setState((s) => (s.status === "ready" ? patchLike(s, id, !adding) : s)));
+  }, []);
+
+  /** Optimistic bookmark for any comment id (focused comment or a reply). */
+  const onToggleBookmark = useCallback((id: string, adding: boolean) => {
+    setState((s) => (s.status === "ready" ? patchBookmark(s, id, adding) : s));
+    bookmarkPost(id, adding).catch(() =>
+      setState((s) => (s.status === "ready" ? patchBookmark(s, id, !adding) : s)),
+    );
   }, []);
 
   const onReply = useCallback(
@@ -106,7 +123,11 @@ export function CommentShell({ postId }: { postId: string }) {
 
       {/* Focused comment (not clickable — this is its own page) */}
       <div className="border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
-        <FocusedComment comment={comment} onToggleLike={onToggleLike} />
+        <FocusedComment
+          comment={comment}
+          onToggleLike={onToggleLike}
+          onToggleBookmark={onToggleBookmark}
+        />
       </div>
 
       {/* Replies */}
@@ -132,7 +153,12 @@ export function CommentShell({ postId }: { postId: string }) {
           </h2>
           <div className="divide-y divide-[rgba(0,0,0,0.06)]">
             {replies.map((r) => (
-              <CommentRow key={r.id} comment={r} onToggleLike={onToggleLike} />
+              <CommentRow
+                key={r.id}
+                comment={r}
+                onToggleLike={onToggleLike}
+                onToggleBookmark={onToggleBookmark}
+              />
             ))}
           </div>
         </>
@@ -153,9 +179,11 @@ export function CommentShell({ postId }: { postId: string }) {
 function FocusedComment({
   comment,
   onToggleLike,
+  onToggleBookmark,
 }: {
   comment: CommentView;
   onToggleLike: (id: string, adding: boolean) => void;
+  onToggleBookmark: (id: string, adding: boolean) => void;
 }) {
   const t = useTranslations("topluluk");
   const locale = useLocale();
@@ -202,6 +230,12 @@ function FocusedComment({
               <span className="text-[13px] tabular-nums">{comment.likeCount}</span>
             )}
           </button>
+
+          <SendButton path={`/topluluk/yorum/${comment.id}`} />
+          <BookmarkButton
+            bookmarked={comment.myBookmarked}
+            onToggle={(adding) => onToggleBookmark(comment.id, adding)}
+          />
         </div>
       </div>
     </div>
@@ -216,6 +250,16 @@ function patchLike(
 ): { status: "ready"; comment: CommentView; replies: CommentView[] } {
   const bump = (c: CommentView): CommentView =>
     c.id === id ? { ...c, myLiked: adding, likeCount: Math.max(0, c.likeCount + (adding ? 1 : -1)) } : c;
+  return { ...s, comment: bump(s.comment), replies: s.replies.map(bump) };
+}
+
+/** Optimistic bookmark patch across the focused comment + its replies. */
+function patchBookmark(
+  s: { status: "ready"; comment: CommentView; replies: CommentView[] },
+  id: string,
+  adding: boolean,
+): { status: "ready"; comment: CommentView; replies: CommentView[] } {
+  const bump = (c: CommentView): CommentView => (c.id === id ? { ...c, myBookmarked: adding } : c);
   return { ...s, comment: bump(s.comment), replies: s.replies.map(bump) };
 }
 

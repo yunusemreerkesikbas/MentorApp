@@ -139,7 +139,8 @@ export function EconomySection({
     return <FormError message={state.message} />;
   }
 
-  const completedQuests = state.quests.filter((quest) => quest.completed).length;
+  const dailyQuests = state.quests.filter((quest) => quest.category === "daily_ritual");
+  const completedDailyQuests = dailyQuests.filter((quest) => quest.completed).length;
 
   function showBalance() {
     if (state.status !== "ready") return;
@@ -155,7 +156,13 @@ export function EconomySection({
     sheet.show({
       title: t("quests_title"),
       layout: "filter",
-      children: <EconomyQuestsCard quests={state.quests} onInviteRequested={showInvite} />,
+      children: (
+        <EconomyQuestsCard
+          quests={state.quests}
+          onDismiss={sheet.dismissNow}
+          onInviteRequested={showInvite}
+        />
+      ),
     });
   }
 
@@ -190,9 +197,9 @@ export function EconomySection({
         <ListRow
           icon={<ListChecks size={22} aria-hidden />}
           onClick={showQuests}
-          description={profile("quests_summary", {
-            done: completedQuests,
-            total: state.quests.length,
+          description={profile("quests_ritual_summary", {
+            done: completedDailyQuests,
+            total: dailyQuests.length,
           })}
         >
           {t("quests_title")}

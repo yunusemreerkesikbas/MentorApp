@@ -116,6 +116,23 @@ export class ForumThreadRepository {
     });
   }
 
+  /** Visible threads for a set of ids (RLS hides deleted/hidden for the viewer). Order not guaranteed. */
+  async findManyByIds(threadIds: string[], viewerId: string): Promise<ThreadWithAuthor[]> {
+    if (threadIds.length === 0) return [];
+    return withUserContext(this.db, { userId: viewerId }, async (tx) =>
+      tx
+        .select({
+          ...getTableColumns(forumThreads),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+          authorUsername: sql<string | null>`${users.username}`,
+          authorAvatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+        })
+        .from(forumThreads)
+        .leftJoin(users, eq(forumThreads.authorId, users.id))
+        .where(inArray(forumThreads.id, threadIds)),
+    );
+  }
+
   async setPinned(threadId: string, pinned: boolean): Promise<void> {
     await withServiceContext(this.db, async (tx) => {
       await tx

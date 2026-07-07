@@ -7,9 +7,10 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { timingSafeEqual } from "node:crypto";
 import type { Request } from "express";
-import type { Env } from "../../../config/env.validation";
+import type { Env } from "../../config/env.validation";
 
-/** Protects internal cron endpoints — shared secret via header (Render Cron). */
+/** Protects internal cron endpoints — shared secret via header (Render Cron). Cross-cutting: used by
+ * any module exposing an `internal/cron` endpoint (notifications, forum). */
 @Injectable()
 export class CronSecretGuard implements CanActivate {
   constructor(private readonly config: ConfigService<Env, true>) {}

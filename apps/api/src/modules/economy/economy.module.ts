@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { CoachingModule } from "../coaching/coaching.module";
 import { IdentityModule } from "../identity/identity.module";
 import { PaymentsModule } from "../payments/payments.module";
 import { EconomyService } from "./application/economy.service";
@@ -19,7 +20,7 @@ import { EconomyController } from "./presentation/economy.controller";
  * Earning quests + spending (→ AI right) are later slices. `ConfigRegistryService` is global.
  */
 @Module({
-  imports: [PaymentsModule, IdentityModule],
+  imports: [PaymentsModule, IdentityModule, CoachingModule],
   controllers: [EconomyController],
   providers: [
     EconomyService,

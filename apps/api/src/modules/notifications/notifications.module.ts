@@ -23,8 +23,8 @@ import { NotificationPreferencesRepository } from "./infrastructure/notification
 import { PostgresJobQueueAdapter } from "./infrastructure/postgres-job-queue.adapter";
 import { PushSubscriptionRepository } from "./infrastructure/push-subscription.repository";
 import { UserNotificationRepository } from "./infrastructure/user-notification.repository";
+import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
 import { CronController } from "./presentation/cron.controller";
-import { CronSecretGuard } from "./presentation/cron-secret.guard";
 import { NotificationsController } from "./presentation/notifications.controller";
 
 /**

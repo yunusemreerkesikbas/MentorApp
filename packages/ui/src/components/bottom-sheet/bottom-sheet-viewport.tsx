@@ -54,7 +54,7 @@ export function BottomSheetViewport({
         onClick={onBackdropClick}
       />
       <div className="pointer-events-none fixed inset-0 z-[50] flex max-lg:items-end lg:items-center lg:justify-center lg:p-5">
-        <div className="pointer-events-auto w-full max-lg:max-h-[70vh] lg:w-full lg:max-w-[480px]">
+        <div className="pointer-events-auto w-full max-lg:max-h-[70vh] lg:w-full lg:max-h-[82dvh] lg:max-w-[480px]">
           <BottomSheetPanel
             sheet={sheet}
             onActionSelect={onActionSelect}

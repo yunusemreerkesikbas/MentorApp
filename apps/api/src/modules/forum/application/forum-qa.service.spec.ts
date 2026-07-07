@@ -54,6 +54,7 @@ const makeAttachmentRepo = () => ({
   insertMany: vi.fn().mockResolvedValue([]),
   listForTargets: vi.fn().mockResolvedValue(new Map()),
 });
+const bookmarks = { myBookmarkedTargets: vi.fn().mockResolvedValue(new Set()) };
 const config = { get: vi.fn().mockResolvedValue(true) };
 const events = { emit: vi.fn(), emitAsync: vi.fn().mockResolvedValue([]) };
 const storage = {
@@ -82,6 +83,7 @@ describe("ForumQaService", () => {
       posts as never,
       zoneRepo as never,
       attachments as never,
+      bookmarks as never,
       config as never,
       events as never,
       storage as never,

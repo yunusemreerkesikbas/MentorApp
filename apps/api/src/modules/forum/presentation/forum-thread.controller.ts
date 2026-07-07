@@ -15,6 +15,7 @@ import type {
   CommentDetail,
   CommentView,
   ForumAttachmentUploadUrl,
+  SavedFeed,
   ThreadDetail,
   ThreadFeed,
   ThreadView,
@@ -23,6 +24,7 @@ import { CurrentUser, type RequestUser } from "../../../common/auth/current-user
 import { ForumThreadService } from "../application/forum-thread.service";
 import {
   AttachmentUploadUrlDto,
+  BookmarkQueryDto,
   CreateAnswerDto,
   CreateThreadDto,
   FeedQueryDto,
@@ -162,5 +164,47 @@ export class ForumThreadController {
     @Body() dto: ReactionDto,
   ): Promise<void> {
     await this.threads.unreact(user.id, threadId, dto.emoji);
+  }
+
+  /** The viewer's saved feed (threads + posts interleaved, newest-saved first). */
+  @Get("bookmarks")
+  bookmarks(@CurrentUser() user: RequestUser, @Query() q: BookmarkQueryDto): Promise<SavedFeed> {
+    return this.threads.getMyBookmarks(user.id, q.before);
+  }
+
+  @Put("threads/:threadId/bookmark")
+  async bookmarkThread(
+    @CurrentUser() user: RequestUser,
+    @Param("threadId") threadId: string,
+  ): Promise<{ status: string }> {
+    await this.threads.bookmarkThread(user.id, threadId);
+    return { status: "ok" };
+  }
+
+  @Delete("threads/:threadId/bookmark")
+  @HttpCode(204)
+  async unbookmarkThread(
+    @CurrentUser() user: RequestUser,
+    @Param("threadId") threadId: string,
+  ): Promise<void> {
+    await this.threads.unbookmarkThread(user.id, threadId);
+  }
+
+  @Put("posts/:postId/bookmark")
+  async bookmarkPost(
+    @CurrentUser() user: RequestUser,
+    @Param("postId") postId: string,
+  ): Promise<{ status: string }> {
+    await this.threads.bookmarkPost(user.id, postId);
+    return { status: "ok" };
+  }
+
+  @Delete("posts/:postId/bookmark")
+  @HttpCode(204)
+  async unbookmarkPost(
+    @CurrentUser() user: RequestUser,
+    @Param("postId") postId: string,
+  ): Promise<void> {
+    await this.threads.unbookmarkPost(user.id, postId);
   }
 }

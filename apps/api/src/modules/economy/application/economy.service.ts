@@ -3,6 +3,7 @@ import { Currency, LedgerStatus } from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
+import type { DatabaseTx } from "../../../database/drizzle";
 import {
   LedgerRepository,
   type Balance,
@@ -51,6 +52,28 @@ export class EconomyService {
 
   /** Append a ledger entry (idempotent on refType/refId). Returns the user's fresh balance. */
   async grant(userId: string, unit: Currency, amount: number, opts: GrantOptions): Promise<Balance> {
+    await this.grantInTx(userId, unit, amount, opts);
+    return this.repo.balanceService(userId);
+  }
+
+  /** Append a ledger entry inside an existing SERVICE tx. Used when reward and source row must commit together. */
+  async grantInServiceTx(
+    userId: string,
+    unit: Currency,
+    amount: number,
+    opts: GrantOptions,
+    tx: DatabaseTx,
+  ): Promise<void> {
+    await this.grantInTx(userId, unit, amount, opts, tx);
+  }
+
+  private async grantInTx(
+    userId: string,
+    unit: Currency,
+    amount: number,
+    opts: GrantOptions,
+    exec?: DatabaseTx,
+  ): Promise<void> {
     const entry = {
       userId,
       unit,
@@ -70,7 +93,7 @@ export class EconomyService {
       const dailyCap = await this.config.get("economy.coin.daily_cap");
       const weeklyCap = await this.config.get("economy.coin.weekly_cap");
       const now = Date.now();
-      await this.repo.withServiceTx(async (tx) => {
+      const run = async (tx: DatabaseTx) => {
         if (minXp > 0 && (await this.repo.balanceService(userId, tx)).xp < minXp) {
           throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
         }
@@ -83,11 +106,12 @@ export class EconomyService {
           throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
         }
         await this.repo.append(entry, tx);
-      });
+      };
+      if (exec) await run(exec);
+      else await this.repo.withServiceTx(run);
     } else {
-      await this.repo.append(entry);
+      await this.repo.append(entry, exec);
     }
-    return this.repo.balanceService(userId);
   }
 
   getSelfBalance(userId: string): Promise<Balance> {

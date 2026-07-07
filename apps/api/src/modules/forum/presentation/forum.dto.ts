@@ -2,6 +2,7 @@ import {
   approveMemberSchema,
   assignOwnerSchema,
   attachmentUploadUrlSchema,
+  bookmarkQuerySchema,
   createAnswerSchema,
   createReportSchema,
   createThreadSchema,
@@ -24,6 +25,7 @@ export class ZoneListQueryDto extends createZodDto(zoneListQuerySchema) {}
 export class ZoneMembersQueryDto extends createZodDto(zoneMembersQuerySchema) {}
 export class CreateThreadDto extends createZodDto(createThreadSchema) {}
 export class FeedQueryDto extends createZodDto(feedQuerySchema) {}
+export class BookmarkQueryDto extends createZodDto(bookmarkQuerySchema) {}
 export class ReactionDto extends createZodDto(reactionSchema) {}
 export class PinThreadDto extends createZodDto(pinThreadSchema) {}
 export class CreateAnswerDto extends createZodDto(createAnswerSchema) {}

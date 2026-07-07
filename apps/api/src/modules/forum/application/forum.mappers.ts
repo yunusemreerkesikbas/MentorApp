@@ -31,6 +31,7 @@ export function threadRowToView(
   commentCount = 0,
   commenterNames: string[] = [],
   attachments: AttachmentRow[] = [],
+  myBookmarked = false,
 ): ThreadView {
   return {
     id: t.id,
@@ -49,6 +50,7 @@ export function threadRowToView(
     commentCount,
     commenterNames,
     attachments: attachmentsToView(attachments, storage),
+    myBookmarked,
     createdAt: t.createdAt.toISOString(),
   };
 }
@@ -61,6 +63,7 @@ export function postRowToCommentView(
   replyCount: number,
   storage: PublicStorage,
   attachments: AttachmentRow[] = [],
+  myBookmarked = false,
 ): CommentView {
   return {
     id: p.id,
@@ -75,6 +78,7 @@ export function postRowToCommentView(
     myLiked,
     replyCount,
     attachments: attachmentsToView(attachments, storage),
+    myBookmarked,
     createdAt: p.createdAt.toISOString(),
   };
 }
@@ -84,6 +88,7 @@ export function postRowToAnswerView(
   p: PostWithAuthor,
   storage: PublicStorage,
   attachments: AttachmentRow[] = [],
+  myBookmarked = false,
 ): AnswerView {
   return {
     id: p.id,
@@ -95,6 +100,7 @@ export function postRowToAnswerView(
     body: p.body,
     isAccepted: p.isAccepted,
     attachments: attachmentsToView(attachments, storage),
+    myBookmarked,
     createdAt: p.createdAt.toISOString(),
   };
 }

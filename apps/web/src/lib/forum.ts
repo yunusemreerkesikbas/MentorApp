@@ -7,6 +7,7 @@ import type {
   QuestionDetail,
   ReportReason,
   ReportView,
+  SavedFeed,
   ThreadDetail,
   ThreadFeed,
   ThreadView,
@@ -145,6 +146,21 @@ export async function postAnswer(
 
 export async function acceptAnswer(threadId: string, postId: string): Promise<void> {
   await http(`/v1/forum/threads/${threadId}/accept/${postId}`, { method: "POST" });
+}
+
+/** Toggle a bookmark on a thread (chat post / QA question) or post (comment / QA answer). */
+export async function bookmarkThread(threadId: string, adding: boolean): Promise<void> {
+  await http(`/v1/forum/threads/${threadId}/bookmark`, { method: adding ? "PUT" : "DELETE" });
+}
+
+export async function bookmarkPost(postId: string, adding: boolean): Promise<void> {
+  await http(`/v1/forum/posts/${postId}/bookmark`, { method: adding ? "PUT" : "DELETE" });
+}
+
+/** The viewer's saved feed (threads + posts interleaved, newest-saved first). */
+export async function getBookmarks(before?: string): Promise<SavedFeed> {
+  const qs = before ? `?before=${encodeURIComponent(before)}` : "";
+  return (await http<SavedFeed>(`/v1/forum/bookmarks${qs}`)) as SavedFeed;
 }
 
 export async function createReport(

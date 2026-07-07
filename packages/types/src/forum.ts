@@ -149,6 +149,8 @@ export interface ThreadView {
   commenterNames: string[];
   /** Media attached to this thread (Phase 1: images, max 4); empty when none. */
   attachments: Attachment[];
+  /** Whether the viewer has bookmarked this thread. */
+  myBookmarked: boolean;
   createdAt: string;
 }
 
@@ -170,6 +172,8 @@ export interface AnswerView {
   isAccepted: boolean;
   /** Media attached to this answer (Phase 2: images, max 4); empty when none. */
   attachments: Attachment[];
+  /** Whether the viewer has bookmarked this answer. */
+  myBookmarked: boolean;
   createdAt: string;
 }
 
@@ -200,7 +204,24 @@ export interface CommentView {
   replyCount: number;
   /** Media attached to this comment (Phase 1: images, max 4); empty when none. */
   attachments: Attachment[];
+  /** Whether the viewer has bookmarked this comment. */
+  myBookmarked: boolean;
   createdAt: string;
+}
+
+/**
+ * One entry in the "Saved" feed (APP-018 bookmarks) — a saved thread or a saved comment/answer,
+ * discriminated by `type`, newest-saved first. Posts (comments + QA answers) both surface as
+ * `CommentView` since they share the forum_posts row shape.
+ */
+export type SavedFeedItem =
+  | { type: "thread"; thread: ThreadView }
+  | { type: "comment"; comment: CommentView };
+
+/** GET /v1/forum/bookmarks — cursor-paginated saved feed. */
+export interface SavedFeed {
+  items: SavedFeedItem[];
+  nextCursor: string | null;
 }
 
 /**

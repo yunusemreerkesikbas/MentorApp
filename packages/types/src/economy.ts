@@ -7,11 +7,31 @@ export interface EconomyBalance {
   coinPending: number;
 }
 
-/** GET /v1/economy/quests — onboarding quest progress (backend titles, localized). */
+export type QuestCategory = "daily_ritual" | "onboarding";
+export type QuestPeriod = "daily" | "once";
+export type QuestRewardUnit = "XP" | "COIN" | "NONE";
+export type QuestAction =
+  | "plan"
+  | "study-session"
+  | "mood-checkin"
+  | "subscription"
+  | "invite"
+  | "verify-email"
+  | null;
+
+/** GET /v1/economy/quests — quest catalog + progress (backend titles, localized). */
 export interface QuestProgressView {
   id: string;
+  category: QuestCategory;
+  period: QuestPeriod;
+  periodKey: string;
   type: string;
   title: string;
+  badgeLabel: string;
+  action: QuestAction;
+  rewardUnit: QuestRewardUnit;
+  rewardAmount: number;
+  /** Backward-compatible field for older clients. 0 for non-Coin rewards. */
   rewardCoin: number;
   completed: boolean;
   completedAt: string | null;

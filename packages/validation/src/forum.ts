@@ -103,6 +103,12 @@ export const feedQuerySchema = z.object({
 });
 export type FeedQuery = z.infer<typeof feedQuerySchema>;
 
+/** Saved feed query — `before` = ISO createdAt of the last saved item (loads older). */
+export const bookmarkQuerySchema = z.object({
+  before: z.string().datetime().optional(),
+});
+export type BookmarkQuery = z.infer<typeof bookmarkQuerySchema>;
+
 /** Add/remove a reaction — emoji must be one of the fixed allowed set. */
 export const reactionSchema = z.object({
   emoji: z.enum(FORUM_REACTION_EMOJIS),

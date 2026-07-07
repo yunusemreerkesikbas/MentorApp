@@ -7,6 +7,7 @@ import type { ZoneView } from "@mentor/types";
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { listZones } from "@/lib/forum";
+import { BookmarkIcon } from "./forum-icons";
 
 /** Room groups in display order — one section header replaces the per-item category eyebrow. */
 const GROUPS = [
@@ -59,6 +60,24 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
         style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
       >
         {t("sidebar_title")}
+      </Link>
+
+      {/* Saved posts entry — leads to the personal "Kaydedilenler" feed. */}
+      <Link
+        href="/topluluk/kayitli"
+        onClick={onNavigate}
+        aria-current={pathname.endsWith("/topluluk/kayitli") ? "page" : undefined}
+        className="-mx-3 -mt-2 flex items-center gap-2 rounded-lg px-3 py-1.5 text-[14px] transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        style={{
+          color: "var(--color-main)",
+          fontWeight: pathname.endsWith("/topluluk/kayitli") ? 700 : 400,
+          background: pathname.endsWith("/topluluk/kayitli")
+            ? "color-mix(in srgb, var(--color-chip) 16%, white)"
+            : undefined,
+        }}
+      >
+        <BookmarkIcon filled={pathname.endsWith("/topluluk/kayitli")} />
+        {t("saved_nav")}
       </Link>
 
       {zones === null ? (
