@@ -8,6 +8,7 @@ import { IdentityModule } from "../identity/identity.module";
 import { PaymentsModule } from "../payments/payments.module";
 import { LLM_PORT } from "./domain/llm.port";
 import { VISION_PORT } from "./domain/vision.port";
+import { CONTEXT_COMPRESSION_PORT } from "./domain/context-compression.port";
 import { ChatService } from "./application/chat.service";
 import { CoachAccessService } from "./application/coach-access.service";
 import { MoodReflectionService } from "./application/mood-reflection.service";
@@ -18,6 +19,7 @@ import { PhotoAccessService } from "./application/photo-access.service";
 import { PhotoCategorizeService } from "./application/photo-categorize.service";
 import { PhotoUploadService } from "./application/photo-upload.service";
 import { ContextBuilder } from "./application/context-builder.service";
+import { PromptCompressionService } from "./application/prompt-compression.service";
 import { EmbeddingService } from "./application/embedding.service";
 import { ArticleEmbeddingListener } from "./application/article-embedding.listener";
 import { AiJobRegistrar } from "./application/ai-job.registrar";
@@ -25,6 +27,8 @@ import { EmbedArticleHandler } from "./application/handlers/embed-article.handle
 import { AiUsageRepository } from "./infrastructure/ai-usage.repository";
 import { FakeLlmAdapter } from "./infrastructure/adapters/fake-llm.adapter";
 import { OpenAiLlmAdapter } from "./infrastructure/adapters/openai-llm.adapter";
+import { NoopContextCompressionAdapter } from "./infrastructure/adapters/noop-context-compression.adapter";
+import { HeadroomContextCompressionAdapter } from "./infrastructure/adapters/headroom-context-compression.adapter";
 import { FakeVisionAdapter } from "./infrastructure/adapters/fake-vision.adapter";
 import { GeminiVisionAdapter } from "./infrastructure/adapters/gemini-vision.adapter";
 import { AiChatController } from "./presentation/ai-chat.controller";
@@ -62,6 +66,7 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     PhotoCategorizeService,
     PhotoUploadService,
     ContextBuilder,
+    PromptCompressionService,
     AiUsageRepository,
     EmbeddingService,
     ArticleEmbeddingListener,
@@ -69,6 +74,8 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     EmbedArticleHandler,
     FakeLlmAdapter,
     OpenAiLlmAdapter,
+    NoopContextCompressionAdapter,
+    HeadroomContextCompressionAdapter,
     FakeVisionAdapter,
     GeminiVisionAdapter,
     {
@@ -85,6 +92,15 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
         fake: FakeVisionAdapter,
         gemini: GeminiVisionAdapter,
       ) => (config.get("VISION_PROVIDER", { infer: true }) === "gemini" ? gemini : fake),
+    },
+    {
+      provide: CONTEXT_COMPRESSION_PORT,
+      inject: [ConfigService, NoopContextCompressionAdapter, HeadroomContextCompressionAdapter],
+      useFactory: (
+        config: ConfigService<Env, true>,
+        noop: NoopContextCompressionAdapter,
+        headroom: HeadroomContextCompressionAdapter,
+      ) => (config.get("HEADROOM_PROXY_URL", { infer: true }) ? headroom : noop),
     },
   ],
 })

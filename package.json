@@ -18,6 +18,12 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\" --ignore-path .gitignore",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
+    "headroom:up": "docker compose up -d headroom",
+    "headroom:down": "docker compose stop headroom",
+    "headroom:install": "node scripts/headroom-dev.mjs install",
+    "headroom:doctor": "node scripts/headroom-dev.mjs doctor",
+    "headroom:wrap": "node scripts/headroom-dev.mjs wrap",
+    "headroom:unwrap": "node scripts/headroom-dev.mjs unwrap",
     "clean": "turbo run clean && rimraf node_modules"
   },
   "devDependencies": {

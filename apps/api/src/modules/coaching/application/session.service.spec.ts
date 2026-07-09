@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { CoachingEventTopic } from "../domain/coaching.events";
 import { SessionService } from "./session.service";
 import type { RecentSummaryRow } from "../infrastructure/study-session.repository";
 
@@ -12,12 +13,18 @@ const fakeDb = {
 
 function makeService(
   sessionsRepo: Record<string, ReturnType<typeof vi.fn> | unknown>,
+  opts?: {
+    activity?: Record<string, ReturnType<typeof vi.fn> | unknown>;
+    events?: { emit: ReturnType<typeof vi.fn> };
+    config?: { get: ReturnType<typeof vi.fn> };
+  },
 ): SessionService {
   return new SessionService(
     fakeDb,
     sessionsRepo as never,
-    {} as never,
-    { emit: () => {} } as never,
+    (opts?.activity ?? {}) as never,
+    (opts?.events ?? { emit: () => {} }) as never,
+    (opts?.config ?? { get: vi.fn(async () => 300) }) as never,
   );
 }
 
@@ -145,5 +152,121 @@ describe("SessionService.recordFeedback / setAiReflection", () => {
 
     const patch = update.mock.calls[0]![3] as Record<string, unknown>;
     expect(patch.aiReflection).toBeUndefined();
+  });
+});
+
+describe("SessionService.finalize", () => {
+  const startedAt = new Date("2026-07-09T10:00:00Z");
+
+  it("emits SESSION_COMPLETED when status is COMPLETED", async () => {
+    const emit = vi.fn();
+    const findById = vi.fn(async () => ({
+      id: "s1",
+      startedAt,
+      endedAt: null,
+    }));
+    const update = vi.fn(async () => ({
+      id: "s1",
+      preset: "25_5",
+      status: "COMPLETED",
+      subject: null,
+      startedAt,
+      endedAt: new Date(),
+      actualFocusSeconds: 1500,
+      plannedFocusMinutes: null,
+      sessionMood: null,
+      struggleNote: null,
+      aiReflection: null,
+    }));
+    const findByDate = vi.fn(async () => null);
+    const hasCompletedOnDate = vi.fn(async () => true);
+    const upsertHasSession = vi.fn(async () => undefined);
+
+    await makeService(
+      { findById, update, hasCompletedOnDate },
+      { activity: { findByDate, upsertHasSession }, events: { emit } },
+    ).finalize(USER, "s1", { status: "COMPLETED", actualFocusSeconds: 1500 });
+
+    expect(emit).toHaveBeenCalledWith(
+      CoachingEventTopic.SESSION_COMPLETED,
+      expect.objectContaining({ userId: USER }),
+    );
+    expect(hasCompletedOnDate).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      "2026-07-09",
+      300,
+    );
+  });
+
+  it("does not emit SESSION_COMPLETED when focus is below min threshold", async () => {
+    const emit = vi.fn();
+    const findById = vi.fn(async () => ({
+      id: "s1",
+      startedAt,
+      endedAt: null,
+    }));
+    const update = vi.fn(async () => ({
+      id: "s1",
+      preset: "25_5",
+      status: "COMPLETED",
+      subject: null,
+      startedAt,
+      endedAt: new Date(),
+      actualFocusSeconds: 60,
+      plannedFocusMinutes: null,
+      sessionMood: null,
+      struggleNote: null,
+      aiReflection: null,
+    }));
+    const findByDate = vi.fn(async () => null);
+    const hasCompletedOnDate = vi.fn(async () => false);
+    const upsertHasSession = vi.fn(async () => undefined);
+
+    const result = await makeService(
+      { findById, update, hasCompletedOnDate },
+      { activity: { findByDate, upsertHasSession }, events: { emit } },
+    ).finalize(USER, "s1", { status: "COMPLETED", actualFocusSeconds: 60 });
+
+    expect(emit).not.toHaveBeenCalledWith(
+      CoachingEventTopic.SESSION_COMPLETED,
+      expect.anything(),
+    );
+    expect(result.countsAsFocusSession).toBe(false);
+  });
+
+  it("does not emit SESSION_COMPLETED when status is ABANDONED", async () => {
+    const emit = vi.fn();
+    const findById = vi.fn(async () => ({
+      id: "s1",
+      startedAt,
+      endedAt: null,
+    }));
+    const update = vi.fn(async () => ({
+      id: "s1",
+      preset: "25_5",
+      status: "ABANDONED",
+      subject: null,
+      startedAt,
+      endedAt: new Date(),
+      actualFocusSeconds: 300,
+      plannedFocusMinutes: null,
+      sessionMood: null,
+      struggleNote: null,
+      aiReflection: null,
+    }));
+    const findByDate = vi.fn(async () => ({ hasSession: true }));
+    const hasCompletedOnDate = vi.fn(async () => false);
+    const upsertHasSession = vi.fn(async () => undefined);
+
+    await makeService(
+      { findById, update, hasCompletedOnDate },
+      { activity: { findByDate, upsertHasSession }, events: { emit } },
+    ).finalize(USER, "s1", { status: "ABANDONED", actualFocusSeconds: 300 });
+
+    expect(emit).not.toHaveBeenCalledWith(
+      CoachingEventTopic.SESSION_COMPLETED,
+      expect.anything(),
+    );
   });
 });

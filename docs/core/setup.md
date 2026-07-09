@@ -26,6 +26,17 @@ pnpm dev                    # api:3001/v1 · web:3000 · admin:3002
 pnpm --filter @mentor/web dev
 ```
 
+## Optional — Headroom (compress LLM context while coding)
+
+Reduces token use in **Cursor / Claude Code / Codex** when working on this repo (separate from the koç API feature):
+
+```bash
+pnpm headroom:install
+pnpm headroom:wrap cursor    # or claude | codex
+```
+
+Guide: [dev/headroom.md](../dev/headroom.md).
+
 ## W5 · Notifications (local smoke test)
 
 Queue + email + push live in the **notifications** module — see [features/notifications.md](../features/notifications.md).

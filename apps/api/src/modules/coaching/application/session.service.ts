@@ -7,6 +7,7 @@ import type {
   StartStudySessionInput,
   UpdateStudySessionInput,
 } from "@mentor/validation";
+import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
@@ -14,11 +15,16 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { toIsoDate } from "../domain/date.util";
 import {
+  qualifiesAsFocusSession,
   RECENT_SESSION_WINDOW_DAYS,
   RECENT_SUBJECTS_MAX,
   type RecentSessionSummary,
 } from "../domain/coaching.constants";
-import { CoachingEventTopic, FirstSessionOfDay } from "../domain/coaching.events";
+import {
+  CoachingEventTopic,
+  FirstSessionOfDay,
+  StudySessionCompleted,
+} from "../domain/coaching.events";
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
 import { StudySessionRepository } from "../infrastructure/study-session.repository";
 import { toStudySessionDto } from "./coaching.mappers";
@@ -37,7 +43,12 @@ export class SessionService {
     private readonly sessions: StudySessionRepository,
     private readonly activity: DailyActivityRepository,
     private readonly events: EventEmitter2,
+    private readonly config: ConfigRegistryService,
   ) {}
+
+  private getMinFocusSeconds(): Promise<number> {
+    return this.config.get("coaching.session.min_focus_seconds");
+  }
 
   /**
    * PII-free summary of recent study behavior for the AI coach context (§4 #6). Aggregates
@@ -79,6 +90,7 @@ export class SessionService {
     userId: string,
     query: ListStudySessionsQuery,
   ): Promise<Paginated<StudySessionDto>> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
     return withUserContext(this.db, { userId }, async (tx) => {
       const { items, total } = await this.sessions.listPaged(
         tx,
@@ -87,7 +99,7 @@ export class SessionService {
         query.pageSize,
       );
       return {
-        items: items.map(toStudySessionDto),
+        items: items.map((row) => toStudySessionDto(row, minFocusSeconds)),
         total,
         page: query.page,
         pageSize: query.pageSize,
@@ -96,6 +108,7 @@ export class SessionService {
   }
 
   async start(userId: string, input: StartStudySessionInput): Promise<StudySessionDto> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
     const startedAt = input.startedAt ? new Date(input.startedAt) : new Date();
     const plannedFocusMinutes =
       input.preset === "custom" ? (input.focusMinutes ?? null) : null;
@@ -107,7 +120,7 @@ export class SessionService {
         plannedFocusMinutes,
         subject: input.subject ?? null,
       });
-      return toStudySessionDto(row);
+      return toStudySessionDto(row, minFocusSeconds);
     });
   }
 
@@ -116,6 +129,7 @@ export class SessionService {
     id: string,
     input: UpdateStudySessionInput,
   ): Promise<StudySessionDto> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
     let firstSessionToday = false;
     const result = await withUserContext(this.db, { userId }, async (tx) => {
       const existing = await this.sessions.findById(tx, userId, id);
@@ -134,14 +148,21 @@ export class SessionService {
       const date = toIsoDate(existing.startedAt);
       const [prior, hasSession] = await Promise.all([
         this.activity.findByDate(tx, userId, date),
-        this.sessions.hasCompletedOnDate(tx, userId, date),
+        this.sessions.hasCompletedOnDate(tx, userId, date, minFocusSeconds),
       ]);
       await this.activity.upsertHasSession(tx, userId, date, hasSession);
       if (!prior?.hasSession && hasSession) firstSessionToday = true;
-      return toStudySessionDto(updated!);
+      return toStudySessionDto(updated!, minFocusSeconds);
     });
     if (firstSessionToday) {
       this.events.emit(CoachingEventTopic.FIRST_SESSION, new FirstSessionOfDay(userId));
+    }
+    // XP / quest rewards only for sessions that meet the min-focus threshold (roadmap §261).
+    if (
+      input.status === "COMPLETED" &&
+      qualifiesAsFocusSession(input.actualFocusSeconds, minFocusSeconds)
+    ) {
+      this.events.emit(CoachingEventTopic.SESSION_COMPLETED, new StudySessionCompleted(userId));
     }
     return result;
   }
@@ -158,6 +179,7 @@ export class SessionService {
     id: string,
     input: SessionFeedbackInput,
   ): Promise<StudySessionDto> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
     return withUserContext(this.db, { userId }, async (tx) => {
       const existing = await this.sessions.findById(tx, userId, id);
       if (!existing) {
@@ -173,7 +195,7 @@ export class SessionService {
           ? { aiReflection: null, aiModel: null, aiReflectedAt: null }
           : {}),
       });
-      return toStudySessionDto(updated!);
+      return toStudySessionDto(updated!, minFocusSeconds);
     });
   }
 
@@ -188,6 +210,7 @@ export class SessionService {
     reflection: string,
     model: string,
   ): Promise<StudySessionDto> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
     return withUserContext(this.db, { userId }, async (tx) => {
       const existing = await this.sessions.findById(tx, userId, id);
       if (!existing) {
@@ -201,15 +224,16 @@ export class SessionService {
         aiModel: model,
         aiReflectedAt: new Date(),
       });
-      return toStudySessionDto(updated!);
+      return toStudySessionDto(updated!, minFocusSeconds);
     });
   }
 
   /** Read a single session (RLS-scoped) — used by W3 session reflection. */
   async getById(userId: string, id: string): Promise<StudySessionDto | null> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
     return withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.sessions.findById(tx, userId, id);
-      return row ? toStudySessionDto(row) : null;
+      return row ? toStudySessionDto(row, minFocusSeconds) : null;
     });
   }
 }

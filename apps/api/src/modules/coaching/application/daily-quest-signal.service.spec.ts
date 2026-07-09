@@ -16,11 +16,13 @@ describe("DailyQuestSignalService", () => {
       countCompleted: vi.fn(async () => 10),
     };
     const moods = { findByDate: vi.fn(async () => ({ id: "mood-1" })) };
+    const config = { get: vi.fn(async () => 300) };
     const service = new DailyQuestSignalService(
       db,
       planTasks as never,
       sessions as never,
       moods as never,
+      config as never,
     );
 
     const result = await service.getToday("user-1");
@@ -33,10 +35,16 @@ describe("DailyQuestSignalService", () => {
       completedPlanTasks: 25,
     });
     expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(config.get).toHaveBeenCalledWith("coaching.session.min_focus_seconds");
     expect(planTasks.countDone).toHaveBeenCalled();
     expect(planTasks.countDoneAllTime).toHaveBeenCalled();
-    expect(sessions.hasCompletedOnDate).toHaveBeenCalled();
-    expect(sessions.countCompleted).toHaveBeenCalled();
+    expect(sessions.hasCompletedOnDate).toHaveBeenCalledWith(
+      expect.anything(),
+      "user-1",
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      300,
+    );
+    expect(sessions.countCompleted).toHaveBeenCalledWith(expect.anything(), "user-1", 300);
     expect(moods.findByDate).toHaveBeenCalled();
   });
 });

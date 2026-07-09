@@ -17,6 +17,17 @@ pnpm --filter @mentor/api dev         # single app
 pnpm build | lint | typecheck
 ```
 
+## Optional — Headroom (token compression while coding)
+
+When vibe-coding this repo in **Cursor / Claude Code / Codex**, compress agent context to cut LLM cost:
+
+```bash
+pnpm headroom:install    # once — Python headroom CLI
+pnpm headroom:wrap cursor   # or claude | codex — each dev session
+```
+
+Full guide (dev vs koç API): [`docs/dev/headroom.md`](./docs/dev/headroom.md).
+
 ## Remember while working
 - First, **AGENTS.md §4 guardrails** (LLM never generates official info, photo categorizes-not-solves,
   coin is non-monetary, no AI on free, AI→teacher trust line, KVKK, org-ready schema).

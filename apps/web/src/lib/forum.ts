@@ -3,6 +3,7 @@ import type {
   CommentDetail,
   CommentView,
   ForumActivityFeed,
+  MentionSuggestion,
   ModerationTargetType,
   Paginated,
   QuestionDetail,
@@ -185,6 +186,14 @@ export async function createReport(
     method: "POST",
     body: JSON.stringify({ targetType, targetId, reason, ...(note ? { note } : {}) }),
   });
+}
+
+/** @mention autocomplete — ACTIVE members of the zone matching a username prefix (APP-021). */
+export async function searchZoneMembers(zoneId: string, q: string): Promise<MentionSuggestion[]> {
+  const qs = new URLSearchParams({ q });
+  return (await http<MentionSuggestion[]>(
+    `/v1/forum/zones/${zoneId}/members/search?${qs.toString()}`,
+  )) as MentionSuggestion[];
 }
 
 export async function searchQuestions(q: string): Promise<Paginated<ThreadView>> {

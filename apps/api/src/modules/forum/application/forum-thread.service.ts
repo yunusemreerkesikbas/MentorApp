@@ -386,7 +386,7 @@ export class ForumThreadService {
   /** Reply to another comment (nested — Twitter-style). Same zone rules; shares the root thread id. */
   async replyToComment(actor: ThreadActor, postId: string, dto: CreateAnswer): Promise<CommentView> {
     await this.assertEnabled();
-    const parent = await this.requirePost(postId, actor.id);
+    const { post: parent } = await this.requirePost(postId, actor.id);
     await this.assertCommentableZone(parent.threadId, actor, /* viaThread */ true);
     const toAttach = await resolveForumAttachments(this.storage, actor.id, dto.attachments);
     const post = await this.posts.createAnswer({
@@ -449,13 +449,13 @@ export class ForumThreadService {
   /** A focused comment + its direct replies (recursive navigation entry point). */
   async getCommentDetail(viewerId: string, postId: string): Promise<CommentDetail> {
     await this.assertEnabled();
-    const post = await this.requirePost(postId, viewerId);
+    const { post, zoneId } = await this.requirePost(postId, viewerId);
     const replies = await this.posts.listReplies(postId, viewerId);
     const [[comment], replyViews] = await Promise.all([
       this.decorateComments([post], viewerId),
       this.decorateComments(replies, viewerId),
     ]);
-    return { comment: comment!, replies: replyViews };
+    return { comment: comment!, replies: replyViews, zoneId };
   }
 
   /** Fold like/reply counts + the viewer's like state into CommentViews (batched, no N+1). */
@@ -492,12 +492,15 @@ export class ForumThreadService {
   }
 
   /** Load a visible, non-deleted post (RLS hides deleted) + belt its parent zone visibility. */
-  private async requirePost(postId: string, viewerId: string): Promise<PostWithAuthor> {
+  private async requirePost(
+    postId: string,
+    viewerId: string,
+  ): Promise<{ post: PostWithAuthor; zoneId: string }> {
     const post = await this.posts.findById(postId, viewerId);
     if (!post) throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     const thread = await this.threads.findById(post.threadId, viewerId);
     if (!thread) throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
-    return post;
+    return { post, zoneId: thread.zoneId };
   }
 
   /** Shared comment-authorization guard: zone exists, is not QA, and the actor may comment. */

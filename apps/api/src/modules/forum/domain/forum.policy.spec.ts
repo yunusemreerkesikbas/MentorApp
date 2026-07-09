@@ -9,6 +9,7 @@ import {
   canModerateZone,
   canPostInZone,
   canRemoveMember,
+  canSearchMembers,
   isPlatformStaff,
 } from "./forum.policy";
 
@@ -90,6 +91,19 @@ describe("forum.policy", () => {
       expect(canPostInZone(member, ZoneType.QA, ZoneMemberStatus.PENDING)).toBe(false);
       expect(canPostInZone(member, ZoneType.QA, null)).toBe(false);
       expect(canPostInZone(actor([UserRole.ADMIN], null), ZoneType.QA, null)).toBe(true);
+    });
+  });
+
+  describe("canSearchMembers", () => {
+    it("any ACTIVE member may search; pending/non-members may not", () => {
+      const member = actor([UserRole.STUDENT], ZoneRole.MEMBER);
+      expect(canSearchMembers(member, ZoneMemberStatus.ACTIVE)).toBe(true);
+      expect(canSearchMembers(member, ZoneMemberStatus.PENDING)).toBe(false);
+      expect(canSearchMembers(actor([UserRole.STUDENT], null), null)).toBe(false);
+    });
+
+    it("platform staff may search without membership (override)", () => {
+      expect(canSearchMembers(actor([UserRole.ADMIN], null), null)).toBe(true);
     });
   });
 

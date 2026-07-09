@@ -1,6 +1,7 @@
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
+  type MentionSuggestion,
   type Paginated,
   ZoneMemberStatus,
   type ZoneMemberView,
@@ -11,11 +12,13 @@ import type { CreateZone, ZoneListQuery } from "@mentor/validation";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
+import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import {
   canApproveMember,
   canCreateZone,
   canModerateZone,
   canRemoveMember,
+  canSearchMembers,
   isPlatformStaff,
   type ForumActor,
 } from "../domain/forum.policy";
@@ -42,6 +45,7 @@ export class ForumService {
     private readonly posts: ForumPostRepository,
     private readonly config: ConfigRegistryService,
     private readonly events: EventEmitter2,
+    @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
 
   /** Per-author activity signals for the community effort board's behaviour badges (read-only). */
@@ -194,6 +198,31 @@ export class ForumService {
       role: m.role as ZoneRole,
       status: m.status as ZoneMemberStatus,
       createdAt: m.createdAt.toISOString(),
+    }));
+  }
+
+  /**
+   * @mention autocomplete (APP-021): ACTIVE members of the zone whose username starts with `q`
+   * (schema guarantees lowercase handle-charset). Any ACTIVE member may search — the list is
+   * scoped to people the caller already shares a zone with, so nothing new is exposed.
+   */
+  async searchMembers(
+    actor: ForumActor,
+    memberStatus: string | null,
+    zoneId: string,
+    q: string,
+  ): Promise<MentionSuggestion[]> {
+    await this.assertEnabled();
+    const zone = await this.repo.findById(zoneId, actor.userId);
+    if (!zone) throw new DomainError(ErrorCode.FORUM_ZONE_NOT_FOUND, HttpStatus.NOT_FOUND);
+    if (!canSearchMembers(actor, memberStatus)) {
+      throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
+    }
+    const rows = await this.repo.searchActiveMembers(zoneId, q);
+    return rows.map((r) => ({
+      username: r.username,
+      displayName: r.displayName,
+      avatarUrl: r.avatarStorageKey ? this.storage.getPublicUrl(r.avatarStorageKey) : null,
     }));
   }
 

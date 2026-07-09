@@ -63,6 +63,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `POST /v1/forum/zones/:id/join` | Join zone (OPEN→ACTIVE, REQUEST→PENDING) |
 | `GET /v1/forum/zones/:id/members` | List members (owner/mod) |
 | `POST /v1/forum/zones/:id/members/:userId/approve` | Approve pending member |
+| `GET /v1/forum/zones/:id/members/search?q=` | @mention autocomplete — active-member username prefix search (APP-021) |
 | `DELETE /v1/forum/zones/:id/members/:userId` | Reject pending or remove active member (owner/mod/staff; OWNER protected) |
 | `POST /v1/forum/zones/:id/threads` | Post thread/ask question |
 | `GET /v1/forum/zones/:id/threads` | Cursor feed (pinned first) |
@@ -91,6 +92,27 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **@Mention composer autocomplete (APP-021)** — Composer'da `@` + ≥1 karakter yazınca **o zone'un
+  AKTİF üyelerinden** username-prefix eşleşenleri dropdown'da önerir (APP-018'in kapsam-dışı bıraktığı
+  parça; mention hikâyesi kapandı). **Kaynak = zone üyeleri** (privacy: yalnız üyesi olunan zone'un
+  üyeleri listelenir; mention *çözümü* backend'de global kalır). Backend: `GET /zones/:id/members/search?q=`
+  (`memberSearchQuerySchema` — q 1–24, handle-charset → LIKE escape gerekmez), yeni policy
+  `canSearchMembers` (**üyelik bazlı**, post değil — ANNOUNCEMENT üyesi de mention edebilir; ACTIVE üye
+  veya mod/staff), `ForumZoneRepository.searchActiveMembers` (members×users INNER JOIN, `username IS NOT
+  NULL`, prefix LIKE, LIMIT 8, username ASC), `ForumService.searchMembers` (zone 404 → policy 403 →
+  `MentionSuggestion[]`; StoragePort ile avatar URL — ForumService'e ilk kez inject edildi).
+  **`CommentDetail.zoneId` eklendi** — `requirePost` zaten parent thread'i yüklüyordu, ekstra sorgu yok
+  (yanıt composer'ının zone bağlamı). Web: saf `getActiveMentionToken` (caret-anchored token; `email@x`
+  tetiklemez), `useMentionAutocomplete` hook'u (200ms debounce, prefix→sonuç cache — **state'te stable
+  Map + version tick**, ref-during-render/set-state-in-effect lint'lerine takılmaz; stale-guard; hata/boş
+  → sessiz kapanış), `MentionSuggestions` listbox (textarea altında, caret-anchored DEĞİL — ponytail;
+  ↑↓/Enter/Tab/Esc, ARIA combobox + `aria-activedescendant`, mousedown-select ile focus korunur).
+  Entegrasyon 5 yüzey: `ThreadComposer` (**opsiyonel** `zoneId` prop — zone-shell/message-shell/
+  comment-shell geçirir), `AskComposer`, QA `AnswerComposer` (`question.zoneId` prop'a eklendi).
+  Ctrl/Cmd+Enter gönderimi dropdown açıkken de çalışır (yalnız düz Enter öneri seçer). i18n:
+  `mention_suggestions_label`. Testler: policy +2, servis +4 (403/404/avatar-map/staff), e2e +1
+  (üye arar-bulur, üye-olmayan 403) — forum unit 76, e2e 22/22. **Kapsam dışı**: fuzzy/displayName
+  arama, boş-@ önerisi, caret-anchored popup. *(APP-021)*
 - **Profil/topluluk UX loose-ends + profil rotası yeniden adlandırıldı (APP-020)** — yedi rötuş:
   (1) Sağ kolon `ProfileCard` artık kendi topluluk profiline **tıklanabilir** link (username yoksa düz).
   (2) **Kaydedilenler** sol sidebar'dan çıkarıldı; kendi profilinde **sekme** oldu (`[Gönderiler |
@@ -285,7 +307,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 - **Forum endpoints have no OpenAPI response schema** — web uses raw `fetch` + `@mentor/types`.
 - **Migration not auto-applied in some setups** — run `pnpm db:up && pnpm db:migrate` once.
 - **Tests need the DB** — vitest `globalSetup` migrates real Postgres before any spec.
-- **Unit tests: 45 green** (forum module spec'leri — policy + zone + thread + QA + moderation). E2E testler ayrı çalışır (`pnpm db:up && pnpm db:migrate` sonrası).
+- **Unit tests: 76 green** (forum module spec'leri — policy + zone + thread + QA + mention + moderation). E2E testler ayrı çalışır (`pnpm db:up && pnpm db:migrate` sonrası).
 
 ## Related
 

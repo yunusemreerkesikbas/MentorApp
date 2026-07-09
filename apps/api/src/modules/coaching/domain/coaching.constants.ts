@@ -33,6 +33,14 @@ export const SESSION_PRESETS: readonly SessionPresetDto[] = [
   { id: "50_10", label: "50 / 10 dk", focusMinutes: 50, breakMinutes: 10 },
 ] as const;
 
+/** Whether a finalized session meets the platform min-focus threshold (streak/XP/quests). */
+export function qualifiesAsFocusSession(
+  actualFocusSeconds: number,
+  minFocusSeconds: number,
+): boolean {
+  return actualFocusSeconds >= minFocusSeconds;
+}
+
 /* ------------------------------- streak rules -------------------------------- */
 
 /** Freeze tokens granted per calendar month (anti-shaming bridge for a single missed day). */

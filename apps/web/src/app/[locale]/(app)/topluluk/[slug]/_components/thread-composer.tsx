@@ -1,25 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { FORUM_IMAGE_MIMES } from "@mentor/types";
 import type { AttachmentInput } from "@mentor/validation";
 import { ApiClientError } from "@mentor/api-client";
 import { FormError } from "@/components/form";
 import { useForumImagePicker } from "../../_components/use-forum-image-picker";
+import { useMentionAutocomplete } from "../../_components/use-mention-autocomplete";
+import { MentionSuggestions } from "../../_components/mention-suggestions";
 
 export function ThreadComposer({
   placeholder,
   submitLabel,
   onSubmit,
+  zoneId,
 }: {
   placeholder: string;
   submitLabel: string;
   onSubmit: (body: string, attachments: AttachmentInput[]) => Promise<void>;
+  /** Enables @mention autocomplete over the zone's members; omitted → plain textarea. */
+  zoneId?: string;
 }) {
   const t = useTranslations("topluluk");
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mention = useMentionAutocomplete(zoneId, textareaRef, setValue);
   const { images, error, setError, addFiles, removeImage, uploadAll, reset, fileRef, atLimit } =
     useForumImagePicker();
 
@@ -41,6 +48,7 @@ export function ThreadComposer({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mention.onKeyDown(e)) return;
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
       void send();
@@ -61,17 +69,22 @@ export function ThreadComposer({
             <circle cx="12" cy="7" r="4" />
           </svg>
         </span>
-        <div className="min-w-0 flex-1">
+        <div className="relative min-w-0 flex-1">
           <textarea
+            ref={textareaRef}
             value={value}
             onChange={(e) => setValue(e.target.value)}
+            onSelect={mention.sync}
+            onBlur={mention.close}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             rows={1}
             maxLength={4000}
             className="w-full resize-none border-0 bg-transparent text-[15px] leading-[22px] outline-none placeholder:font-medium placeholder:text-[color:var(--color-secondary)]"
             style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
+            {...mention.inputProps}
           />
+          <MentionSuggestions mention={mention} />
 
           {images.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">

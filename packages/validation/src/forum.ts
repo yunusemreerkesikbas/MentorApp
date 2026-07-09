@@ -85,6 +85,21 @@ export const createAnswerSchema = z.object({
 });
 export type CreateAnswer = z.infer<typeof createAnswerSchema>;
 
+/**
+ * @mention autocomplete over a zone's ACTIVE members (APP-021). `q` is a username prefix —
+ * handle-charset only, so it can be interpolated into a LIKE prefix without wildcard escaping.
+ */
+export const memberSearchQuerySchema = z.object({
+  q: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(1)
+    .max(24)
+    .regex(/^[a-z0-9_]+$/),
+});
+export type MemberSearchQuery = z.infer<typeof memberSearchQuerySchema>;
+
 /** Full-text search over QA questions (title + body). Offset-paginated. */
 export const searchQuerySchema = paginationQuerySchema.extend({
   q: z.string().trim().min(2).max(120),

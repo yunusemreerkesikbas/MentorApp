@@ -155,9 +155,41 @@ describe("coaching (e2e)", () => {
     expect(done.status).toBe(200);
     expect(done.body.status).toBe("COMPLETED");
     expect(done.body.endedAt).toBeTruthy();
+    expect(done.body.countsAsFocusSession).toBe(true);
 
     const afterToday = await request(app.getHttpServer()).get("/v1/coaching/today").set(authA());
     expect(afterToday.body.streak.currentStreak).toBeGreaterThanOrEqual(streakMid);
+  });
+
+  it("short completed session is saved but does not count as focus session", async () => {
+    const start = await request(app.getHttpServer())
+      .post("/v1/study-sessions")
+      .set(authA())
+      .send({ preset: "25_5" });
+    expect(start.status).toBe(201);
+
+    const done = await request(app.getHttpServer())
+      .patch(`/v1/study-sessions/${start.body.id}`)
+      .set(authA())
+      .send({ status: "COMPLETED", actualFocusSeconds: 60 });
+    expect(done.status).toBe(200);
+    expect(done.body.status).toBe("COMPLETED");
+    expect(done.body.countsAsFocusSession).toBe(false);
+  });
+
+  it("long completed session counts as focus session", async () => {
+    const start = await request(app.getHttpServer())
+      .post("/v1/study-sessions")
+      .set(authB())
+      .send({ preset: "25_5" });
+    expect(start.status).toBe(201);
+
+    const done = await request(app.getHttpServer())
+      .patch(`/v1/study-sessions/${start.body.id}`)
+      .set(authB())
+      .send({ status: "COMPLETED", actualFocusSeconds: 1500 });
+    expect(done.status).toBe(200);
+    expect(done.body.countsAsFocusSession).toBe(true);
   });
 
   it("post-session feedback persists mood + note; unknown id → 404", async () => {

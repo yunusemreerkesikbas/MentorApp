@@ -37,7 +37,7 @@ type State =
   | { status: "loading" }
   | { status: "disabled" }
   | { status: "error"; message: string }
-  | { status: "ready"; comment: CommentView; replies: CommentView[] };
+  | { status: "ready"; comment: CommentView; replies: CommentView[]; zoneId: string };
 
 /** Comment detail — a focused comment + its direct replies (Twitter-style recursive navigation). */
 export function CommentShell({ postId }: { postId: string }) {
@@ -46,7 +46,7 @@ export function CommentShell({ postId }: { postId: string }) {
   const [state, setState] = useState<State>({ status: "loading" });
 
   const apply = useCallback((detail: CommentDetail) => {
-    setState({ status: "ready", comment: detail.comment, replies: detail.replies });
+    setState({ status: "ready", comment: detail.comment, replies: detail.replies, zoneId: detail.zoneId });
   }, []);
 
   useEffect(() => {
@@ -140,6 +140,7 @@ export function CommentShell({ postId }: { postId: string }) {
           placeholder={t("reply_placeholder")}
           submitLabel={t("reply_submit")}
           onSubmit={onReply}
+          zoneId={state.zoneId}
         />
       </div>
 
@@ -240,23 +241,17 @@ function FocusedComment({
   );
 }
 
+type ReadyState = Extract<State, { status: "ready" }>;
+
 /** Optimistic like patch across the focused comment + its replies. */
-function patchLike(
-  s: { status: "ready"; comment: CommentView; replies: CommentView[] },
-  id: string,
-  adding: boolean,
-): { status: "ready"; comment: CommentView; replies: CommentView[] } {
+function patchLike(s: ReadyState, id: string, adding: boolean): ReadyState {
   const bump = (c: CommentView): CommentView =>
     c.id === id ? { ...c, myLiked: adding, likeCount: Math.max(0, c.likeCount + (adding ? 1 : -1)) } : c;
   return { ...s, comment: bump(s.comment), replies: s.replies.map(bump) };
 }
 
 /** Optimistic bookmark patch across the focused comment + its replies. */
-function patchBookmark(
-  s: { status: "ready"; comment: CommentView; replies: CommentView[] },
-  id: string,
-  adding: boolean,
-): { status: "ready"; comment: CommentView; replies: CommentView[] } {
+function patchBookmark(s: ReadyState, id: string, adding: boolean): ReadyState {
   const bump = (c: CommentView): CommentView => (c.id === id ? { ...c, myBookmarked: adding } : c);
   return { ...s, comment: bump(s.comment), replies: s.replies.map(bump) };
 }

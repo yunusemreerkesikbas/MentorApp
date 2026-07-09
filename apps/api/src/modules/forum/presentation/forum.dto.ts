@@ -8,6 +8,7 @@ import {
   createThreadSchema,
   createZoneSchema,
   feedQuerySchema,
+  memberSearchQuerySchema,
   pinThreadSchema,
   reactionSchema,
   reportsQuerySchema,
@@ -23,6 +24,7 @@ export class AssignOwnerDto extends createZodDto(assignOwnerSchema) {}
 export class ApproveMemberDto extends createZodDto(approveMemberSchema) {}
 export class ZoneListQueryDto extends createZodDto(zoneListQuerySchema) {}
 export class ZoneMembersQueryDto extends createZodDto(zoneMembersQuerySchema) {}
+export class MemberSearchQueryDto extends createZodDto(memberSearchQuerySchema) {}
 export class CreateThreadDto extends createZodDto(createThreadSchema) {}
 export class FeedQueryDto extends createZodDto(feedQuerySchema) {}
 export class BookmarkQueryDto extends createZodDto(bookmarkQuerySchema) {}

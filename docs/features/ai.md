@@ -111,6 +111,11 @@ pnpm --filter @mentor/api test -- --grep "ai"
   ise çağırır → Puhu bubble. Dosyalar: `session-reflection.service.ts`, `ai-session.controller.ts`,
   `session.service.ts` (`setAiReflection`/`getById`), `session-done-state.tsx`, `coach.ts`,
   `messages/{tr,en}.json`. Seam: [coaching.md](./coaching.md).
+- **Headroom context compression (2026-07-10)** — optional [Headroom](https://github.com/headroomlabs-ai/headroom).
+  **Mod B (koç API):** `ContextCompressionPort` + sidecar; RAG verbatim (§4 #1); `ai.compression.enabled`
+  (default off). **Mod A (geliştirme):** `pnpm headroom:wrap cursor|claude|codex` — bkz.
+  [dev/headroom.md](../dev/headroom.md). Dosyalar: `prompt-compression.service.ts`,
+  `docker/headroom/`, `scripts/headroom-dev.mjs`.
 
 ## Gotchas / Known issues
 

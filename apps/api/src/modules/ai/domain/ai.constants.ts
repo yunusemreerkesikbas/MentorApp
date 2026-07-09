@@ -7,6 +7,8 @@ export const AI_MAX_OUTPUT_TOKENS = 600;
 export const AI_TEMPERATURE = 0.7;
 /** LLM request timeout (ms) — never let a hung provider hang the HTTP request. */
 export const AI_REQUEST_TIMEOUT_MS = 30_000;
+/** Headroom proxy compress timeout (ms) — optimization must not block chat for long. */
+export const HEADROOM_COMPRESSION_TIMEOUT_MS = 5_000;
 
 /** RAG retrieval: how many articles to ground on, and the max cosine distance to accept (lower = closer). */
 export const RAG_TOP_K = 3;
@@ -82,8 +84,13 @@ export function formatRecentSessionsLine(rs: CoachContext["recentSessions"]): st
   return `${parts.join("; ")}.`;
 }
 
-/** Build the full system prompt: PII-free context + (RAG) verified source articles or a no-source rule. */
-export function buildSystemPrompt(ctx: CoachContext, sources: CoachSource[] = []): string {
+/** Compressible system core + optional verbatim RAG block (§4 #1 — never compress verified sources). */
+export interface SystemPromptParts {
+  core: string;
+  ragBlock: string | null;
+}
+
+function buildContextLines(ctx: CoachContext): string[] {
   const lines = [
     ctx.examType ? `Sınav türü: ${ctx.examType}` : "Sınav türü: belirtilmemiş",
     ctx.daysRemaining != null
@@ -98,22 +105,39 @@ export function buildSystemPrompt(ctx: CoachContext, sources: CoachSource[] = []
   }
   const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
   if (sessionsLine) lines.push(sessionsLine);
-  let prompt = `${COACH_SYSTEM_BASE}\n\nBAĞLAM:\n${lines.join("\n")}`;
+  return lines;
+}
 
-  if (sources.length > 0) {
-    const block = sources
-      .map((s, i) => `(${i + 1}) ${s.title} — ${s.sourceUrl}\n${s.snippet}`)
-      .join("\n\n");
-    prompt +=
-      "\n\nKAYNAK MAKALELER (içerik/süreç sorularını YALNIZ bunlardan yanıtla ve hangi kaynağı kullandığını" +
-      " belirt; burada olmayan bir şeyi uydurma; kritik tarih/sayıyı yine veri kartına/Bilgi Merkezi'ne" +
-      ` yönlendir, parafraz etme):\n${block}`;
-  } else {
-    prompt +=
-      "\n\nKAYNAK MAKALELER: (yok). İçerik veya resmî bilgi sorulursa UYDURMA; 'bu konuda doğrulanmış" +
-      " içerik bulamadım, Bilgi Merkezi'ne (/bilgi) bak' de. Yalnız genel çalışma koçluğu yap.";
+/** Split system prompt so Headroom compresses only guardrails + BAĞLAM, not verified RAG articles. */
+export function buildSystemPromptParts(
+  ctx: CoachContext,
+  sources: CoachSource[] = [],
+): SystemPromptParts {
+  const core = `${COACH_SYSTEM_BASE}\n\nBAĞLAM:\n${buildContextLines(ctx).join("\n")}`;
+
+  if (sources.length === 0) {
+    return {
+      core:
+        core +
+        "\n\nKAYNAK MAKALELER: (yok). İçerik veya resmî bilgi sorulursa UYDURMA; 'bu konuda doğrulanmış" +
+        " içerik bulamadım, Bilgi Merkezi'ne (/bilgi) bak' de. Yalnız genel çalışma koçluğu yap.",
+      ragBlock: null,
+    };
   }
-  return prompt;
+
+  const ragBlock =
+    "KAYNAK MAKALELER (içerik/süreç sorularını YALNIZ bunlardan yanıtla ve hangi kaynağı kullandığını" +
+    " belirt; burada olmayan bir şeyi uydurma; kritik tarih/sayıyı yine veri kartına/Bilgi Merkezi'ne" +
+    " yönlendir, parafraz etme):\n" +
+    sources.map((s, i) => `(${i + 1}) ${s.title} — ${s.sourceUrl}\n${s.snippet}`).join("\n\n");
+
+  return { core, ragBlock };
+}
+
+/** Build the full system prompt: PII-free context + (RAG) verified source articles or a no-source rule. */
+export function buildSystemPrompt(ctx: CoachContext, sources: CoachSource[] = []): string {
+  const { core, ragBlock } = buildSystemPromptParts(ctx, sources);
+  return ragBlock ? `${core}\n\n${ragBlock}` : core;
 }
 
 /**

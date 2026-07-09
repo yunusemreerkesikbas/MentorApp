@@ -46,6 +46,12 @@ describe("ChatService coin refund", () => {
         grant,
         coinChatSpendsSince: vi.fn(async () => 0),
       } as never,
+      {
+        maybeCompress: vi.fn(async ({ systemCore, ragBlock, user }) => ({
+          system: ragBlock ? `${systemCore}\n\n${ragBlock}` : systemCore,
+          user,
+        })),
+      } as never,
     );
   });
 

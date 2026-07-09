@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
+  type MentionSuggestion,
   type Paginated,
   type ZoneMemberStatus,
   type ZoneMemberView,
@@ -13,6 +14,7 @@ import {
   ApproveMemberDto,
   AssignOwnerDto,
   CreateZoneDto,
+  MemberSearchQueryDto,
   ZoneListQueryDto,
   ZoneMembersQueryDto,
 } from "./forum.dto";
@@ -85,6 +87,22 @@ export class ForumController {
       this.actor(user, (membership?.role as ZoneRole | undefined) ?? null),
       id,
       q.status,
+    );
+  }
+
+  /** @mention autocomplete — ACTIVE members matching a username prefix (any active member). */
+  @Get("zones/:id/members/search")
+  async searchMembers(
+    @CurrentUser() user: RequestUser,
+    @Param("id") id: string,
+    @Query() q: MemberSearchQueryDto,
+  ): Promise<MentionSuggestion[]> {
+    const membership = await this.forum.getActorMembership(id, user.id);
+    return this.forum.searchMembers(
+      this.actor(user, (membership?.role as ZoneRole | undefined) ?? null),
+      membership?.status ?? null,
+      id,
+      q.q,
     );
   }
 

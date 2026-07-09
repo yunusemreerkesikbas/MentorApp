@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import type { SessionPresetDto } from "@mentor/types";
+import type { QuestProgressView, SessionPresetDto, TodayPanelResponse } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
 import { Card } from "@mentor/ui";
+import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
 import { SessionControls } from "./session-controls";
 import { SessionDoneState } from "./session-done-state";
 import { SessionHistory } from "./session-history";
@@ -65,6 +66,10 @@ function parseInitialSelectedPresetId(
   }
   if (presetParam === "50_10") return "50_10";
   return "25_5";
+}
+
+function unwrapTodayResponse(response: unknown): TodayPanelResponse {
+  return ((response as { data?: TodayPanelResponse }).data ?? response) as TodayPanelResponse;
 }
 
 /** Calm pastel backdrop for the immersive focus/break view (DESIGN.md blobs, softened). */
@@ -131,6 +136,8 @@ export function SeansShell() {
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(() =>
     parseInitialSelectedPresetId(presetParam, minutesParam),
   );
+  const [questBaseline, setQuestBaseline] = useState<QuestProgressView[] | null>(null);
+  const [streakBaseline, setStreakBaseline] = useState<number | null>(null);
 
   const timer = useSessionTimer({
     initialMinutes: parseInitialMinutes(presetParam, minutesParam),
@@ -185,6 +192,27 @@ export function SeansShell() {
     skipBreak,
     reset,
   } = timer;
+
+  const handleStartSession = async () => {
+    try {
+      const [questsResult, todayResult] = await Promise.all([
+        fetchQuests().catch((err) => (isEconomyDisabled(err) ? null : Promise.reject(err))),
+        coachingControllerGetToday(),
+      ]);
+      setQuestBaseline(questsResult);
+      setStreakBaseline(unwrapTodayResponse(todayResult).streak.currentStreak);
+    } catch {
+      setQuestBaseline(null);
+      setStreakBaseline(null);
+    }
+    await startSession();
+  };
+
+  const handleReset = () => {
+    setQuestBaseline(null);
+    setStreakBaseline(null);
+    reset();
+  };
 
   const handleMinutesChange = (minutes: number) => {
     setFocusMinutes(minutes);
@@ -300,7 +328,7 @@ export function SeansShell() {
             phase={phase}
             busy={busy}
             isPaused={isPaused}
-            onStart={() => void startSession()}
+            onStart={() => void handleStartSession()}
             onTogglePause={togglePause}
             onComplete={() => void finalize("COMPLETED")}
             onAbandon={() => void finalize("ABANDONED")}
@@ -376,7 +404,7 @@ export function SeansShell() {
                 phase={phase}
                 busy={busy}
                 isPaused={isPaused}
-                onStart={() => void startSession()}
+                onStart={() => void handleStartSession()}
                 onTogglePause={togglePause}
                 onComplete={() => void finalize("COMPLETED")}
                 onAbandon={() => void finalize("ABANDONED")}
@@ -391,8 +419,12 @@ export function SeansShell() {
                 focusElapsed={focusElapsed}
                 sessionId={session?.id ?? null}
                 subject={subject}
+                questBaseline={questBaseline}
+                streakBaseline={streakBaseline}
+                countsAsFocusSession={session?.countsAsFocusSession ?? true}
+                sessionStatus={session?.status ?? null}
                 onSubmitFeedback={recordFeedback}
-                onReset={reset}
+                onReset={handleReset}
               />
             </motion.div>
           )}

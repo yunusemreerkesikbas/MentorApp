@@ -1,13 +1,20 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { ZoneMemberStatus, ZoneRole } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { forumZoneMembers, forumZones } from "../../../database/schema";
+import { forumZoneMembers, forumZones, users } from "../../../database/schema";
 
 export type ZoneRow = typeof forumZones.$inferSelect;
 export type MemberRow = typeof forumZoneMembers.$inferSelect;
+
+/** One @mention autocomplete candidate — an ACTIVE member with a username (APP-021). */
+export interface MemberSearchRow {
+  username: string;
+  displayName: string;
+  avatarStorageKey: string | null;
+}
 
 /**
  * Zone + membership access (design 2026-06-22). Mirrors LedgerRepository conventions:
@@ -155,6 +162,36 @@ export class ForumZoneRepository {
         .from(forumZoneMembers)
         .where(and(...conds))
         .orderBy(desc(forumZoneMembers.createdAt));
+    });
+  }
+
+  /**
+   * SERVICE context — @mention autocomplete (APP-021): ACTIVE members whose username starts with
+   * `qLower`. Caller passes forum.policy (`canSearchMembers`) first and guarantees `qLower` is
+   * lowercase handle-charset (schema-validated), so LIKE needs no wildcard escaping.
+   */
+  async searchActiveMembers(zoneId: string, qLower: string, limit = 8): Promise<MemberSearchRow[]> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({
+          username: users.username,
+          displayName: users.displayName,
+          avatarStorageKey: users.avatarStorageKey,
+        })
+        .from(forumZoneMembers)
+        .innerJoin(users, eq(users.id, forumZoneMembers.userId))
+        .where(
+          and(
+            eq(forumZoneMembers.zoneId, zoneId),
+            eq(forumZoneMembers.status, ZoneMemberStatus.ACTIVE),
+            isNotNull(users.username),
+            sql`lower(${users.username}) like ${qLower + "%"}`,
+          ),
+        )
+        .orderBy(asc(users.username))
+        .limit(limit);
+      // isNotNull() already guarantees username; the cast just narrows the inferred nullable type.
+      return rows as MemberSearchRow[];
     });
   }
 

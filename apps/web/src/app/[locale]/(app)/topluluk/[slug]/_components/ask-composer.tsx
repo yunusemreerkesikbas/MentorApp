@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
 import { Button, TextField } from "@mentor/ui";
@@ -9,6 +9,8 @@ import { FormError } from "@/components/form";
 import { postThread } from "@/lib/forum";
 import { ForumImagePicker } from "../../_components/forum-image-picker";
 import { useForumImagePicker } from "../../_components/use-forum-image-picker";
+import { useMentionAutocomplete } from "../../_components/use-mention-autocomplete";
+import { MentionSuggestions } from "../../_components/mention-suggestions";
 
 /** Ask a question in a QA zone (title + body + images) → navigate to the new question detail. */
 export function AskComposer({ zoneId }: { zoneId: string }) {
@@ -17,6 +19,8 @@ export function AskComposer({ zoneId }: { zoneId: string }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const mention = useMentionAutocomplete(zoneId, bodyRef, setBody);
   const picker = useForumImagePicker();
 
   const submit = async () => {
@@ -41,15 +45,23 @@ export function AskComposer({ zoneId }: { zoneId: string }) {
         onChange={(e) => setTitle(e.target.value)}
         maxLength={200}
       />
-      <textarea
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        placeholder={t("ask_body_placeholder")}
-        rows={4}
-        maxLength={4000}
-        className="w-full resize-y rounded-[var(--radius-card)] border border-white bg-white/70 p-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
-      />
+      <div className="relative">
+        <textarea
+          ref={bodyRef}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          onSelect={mention.sync}
+          onBlur={mention.close}
+          onKeyDown={(e) => void mention.onKeyDown(e)}
+          placeholder={t("ask_body_placeholder")}
+          rows={4}
+          maxLength={4000}
+          className="w-full resize-y rounded-[var(--radius-card)] border border-white bg-white/70 p-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
+          {...mention.inputProps}
+        />
+        <MentionSuggestions mention={mention} />
+      </div>
       <ForumImagePicker picker={picker} disabled={busy} />
       <FormError message={picker.error} />
       <div className="flex justify-end">

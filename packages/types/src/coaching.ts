@@ -45,6 +45,8 @@ export interface StudySessionDto {
   struggleNote: string | null;
   /** Premium AI session reflection (null until generated / for free tier). */
   aiReflection: string | null;
+  /** True when this finalized session meets the platform min-focus threshold (streak/XP/quests). */
+  countsAsFocusSession: boolean;
 }
 
 /** Streak summary derived server-side from `daily_activity` / `streak_state`. */

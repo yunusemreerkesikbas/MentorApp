@@ -330,6 +330,7 @@ export function ZoneShell({ slug }: { slug: string }) {
                 placeholder={t("compose_placeholder")}
                 submitLabel={t("compose_send")}
                 onSubmit={onPost}
+                zoneId={zone.id}
               />
             ) : (
               <p className="px-3 py-4 text-sm" style={{ color: "var(--color-secondary)" }}>

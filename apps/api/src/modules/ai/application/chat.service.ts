@@ -11,8 +11,9 @@ import { EconomyService } from "../../economy/application/economy.service";
 import { EconomyLedger } from "../../economy/domain/economy.constants";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
-import { buildSystemPrompt, estimateCostMicros, RAG_MAX_DISTANCE, RAG_TOP_K } from "../domain/ai.constants";
+import { buildSystemPromptParts, estimateCostMicros, RAG_MAX_DISTANCE, RAG_TOP_K } from "../domain/ai.constants";
 import { ContextBuilder } from "./context-builder.service";
+import { PromptCompressionService } from "./prompt-compression.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 
 export type CoachReplyResult = CoachChatReplyDto;
@@ -35,6 +36,7 @@ export class ChatService {
     private readonly config: ConfigRegistryService,
     private readonly entitlement: EntitlementService,
     private readonly economy: EconomyService,
+    private readonly promptCompression: PromptCompressionService,
   ) {}
 
   async reply(
@@ -131,10 +133,23 @@ export class ChatService {
       }
     }
 
-    const result = await this.llm.complete({
-      system: buildSystemPrompt(ctx, retrieved),
+    const { core, ragBlock } = buildSystemPromptParts(ctx, retrieved);
+    const compressed = await this.promptCompression.maybeCompress({
+      systemCore: core,
+      ragBlock,
       user: message,
     });
+
+    const result = await this.llm.complete({
+      system: compressed.system,
+      user: compressed.user,
+    });
+
+    if (compressed.compression) {
+      this.logger.debug(
+        `Coach prompt compressed: saved ${compressed.compression.tokensSaved} input tokens`,
+      );
+    }
 
     await this.usage.append({
       userId,

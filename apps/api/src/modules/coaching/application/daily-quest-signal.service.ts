@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
@@ -23,16 +24,18 @@ export class DailyQuestSignalService {
     private readonly planTasks: PlanTaskRepository,
     private readonly sessions: StudySessionRepository,
     private readonly moods: MoodCheckinRepository,
+    private readonly config: ConfigRegistryService,
   ) {}
 
-  getToday(userId: string): Promise<DailyQuestSignals> {
+  async getToday(userId: string): Promise<DailyQuestSignals> {
     const date = todayIso();
+    const minFocusSeconds = await this.config.get("coaching.session.min_focus_seconds");
     return withUserContext(this.db, { userId }, async (tx) => {
       const [doneTasks, hasCompletedFocusSession, mood, completedFocusSessions, completedPlanTasks] = await Promise.all([
         this.planTasks.countDone(tx, userId, date),
-        this.sessions.hasCompletedOnDate(tx, userId, date),
+        this.sessions.hasCompletedOnDate(tx, userId, date, minFocusSeconds),
         this.moods.findByDate(tx, userId, date),
-        this.sessions.countCompleted(tx, userId),
+        this.sessions.countCompleted(tx, userId, minFocusSeconds),
         this.planTasks.countDoneAllTime(tx, userId),
       ]);
       return {

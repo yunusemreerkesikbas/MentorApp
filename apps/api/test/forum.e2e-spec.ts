@@ -169,6 +169,43 @@ describe("forum zones (e2e)", () => {
     expect(approved.status).toBe(201);
   });
 
+  it("member search (@mention autocomplete): ACTIVE member finds prefix matches; non-member is 403 (APP-021)", async () => {
+    const created = await request(app.getHttpServer())
+      .post("/v1/forum/zones")
+      .set(asAdmin())
+      .send({ type: ZoneType.CHAT, title: "Mention Odası", joinPolicy: ZoneJoinPolicy.OPEN });
+    const zoneId = created.body.id as string;
+
+    const alice = await signup("mention-a");
+    const bob = await signup("mention-b");
+    // Usernames are set via the users table (signup has no username field); handle-charset only.
+    await svc(async (c) => {
+      await c.query("update users set username=$1 where id=$2", [`mentiona${RUN}`, alice.user.id]);
+      await c.query("update users set username=$1 where id=$2", [`mentionb${RUN}`, bob.user.id]);
+    });
+    for (const tok of [alice.accessToken, bob.accessToken]) {
+      await request(app.getHttpServer())
+        .post(`/v1/forum/zones/${zoneId}/join`)
+        .set({ Authorization: `Bearer ${tok}` });
+    }
+
+    const found = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/members/search?q=mention`)
+      .set({ Authorization: `Bearer ${alice.accessToken}` });
+    expect(found.status).toBe(200);
+    const usernames = found.body.map((s: { username: string }) => s.username);
+    expect(usernames).toContain(`mentiona${RUN}`);
+    expect(usernames).toContain(`mentionb${RUN}`);
+    expect(found.body[0]).toHaveProperty("displayName");
+    expect(found.body[0]).toHaveProperty("avatarUrl");
+
+    // The regular test user never joined this zone → forbidden.
+    const outsider = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/members/search?q=mention`)
+      .set(asUser());
+    expect(outsider.status).toBe(403);
+  });
+
   // ---- Slice 2: thread feed + reactions + pin ----
 
   const createZone = async (type: string, title: string) => {

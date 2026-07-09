@@ -16,6 +16,7 @@ import type { MoodCheckinRow } from "../infrastructure/mood-checkin.repository";
 import type { PlanTaskRow } from "../infrastructure/plan-task.repository";
 import type { StudySessionRow } from "../infrastructure/study-session.repository";
 import type { VisionBoardRow } from "../infrastructure/vision-board.repository";
+import { qualifiesAsFocusSession } from "../domain/coaching.constants";
 
 export function toPlanTaskDto(row: PlanTaskRow): PlanTaskDto {
   return {
@@ -28,7 +29,12 @@ export function toPlanTaskDto(row: PlanTaskRow): PlanTaskDto {
   };
 }
 
-export function toStudySessionDto(row: StudySessionRow): StudySessionDto {
+export function toStudySessionDto(row: StudySessionRow, minFocusSeconds: number): StudySessionDto {
+  const countsAsFocusSession =
+    row.status === "COMPLETED" &&
+    row.endedAt != null &&
+    qualifiesAsFocusSession(row.actualFocusSeconds, minFocusSeconds);
+
   return {
     id: row.id,
     preset: row.preset as SessionPresetId,
@@ -41,6 +47,7 @@ export function toStudySessionDto(row: StudySessionRow): StudySessionDto {
     sessionMood: row.sessionMood ?? null,
     struggleNote: row.struggleNote ?? null,
     aiReflection: row.aiReflection ?? null,
+    countsAsFocusSession,
   };
 }
 

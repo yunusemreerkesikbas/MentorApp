@@ -3430,6 +3430,39 @@ export const forumControllerMembers = async (id: string, options?: RequestInit):
 
 
 
+export type forumControllerSearchMembersResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumControllerSearchMembersResponseSuccess = (forumControllerSearchMembersResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumControllerSearchMembersResponse = (forumControllerSearchMembersResponseSuccess)
+
+export const getForumControllerSearchMembersUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/forum/zones/${id}/members/search`
+}
+
+export const forumControllerSearchMembers = async (id: string, options?: RequestInit): Promise<forumControllerSearchMembersResponse> => {
+  
+  return http<forumControllerSearchMembersResponse>(getForumControllerSearchMembersUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
 export type forumControllerRemoveMemberResponse204 = {
   data: void
   status: 204

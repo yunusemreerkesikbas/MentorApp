@@ -22,6 +22,7 @@ export const ConfigCategory = {
   FEATURE_FLAGS: "feature-flags",
   ECONOMY: "economy",
   AI: "ai",
+  COACHING: "coaching",
   IDENTITY: "identity",
   NOTIFICATIONS: "notifications",
 } as const;
@@ -89,6 +90,15 @@ const notificationCount = (def: number, max: number, description: string): Confi
   description,
 });
 
+const coachingCount = (def: number, min: number, max: number, description: string): ConfigEntryDef => ({
+  category: ConfigCategory.COACHING,
+  type: ConfigValueType.NUMBER,
+  schema: z.number().int().min(min).max(max),
+  default: def,
+  sensitive: false,
+  description,
+});
+
 export const CONFIG_CATALOG = {
   "ai.enabled": flag(true, "Global AI kill-switch (§4/§8) — turn off all AI features."),
   "economy.enabled": flag(false, "Gate for the light-economy module (user-facing balance/earning)."),
@@ -140,6 +150,16 @@ export const CONFIG_CATALOG = {
     30,
     100000,
     "Max photo→subject categorizations a premium user may run per rolling 30-day window.",
+  ),
+  "ai.compression.enabled": flag(
+    false,
+    "Headroom context compression for coach chat (requires HEADROOM_PROXY_URL sidecar). RAG sources stay verbatim.",
+  ),
+  "coaching.session.min_focus_seconds": coachingCount(
+    300,
+    60,
+    3600,
+    "Min actual focus seconds for a session to count toward streak, XP quests, and effort milestones.",
   ),
 } as const satisfies Record<string, ConfigEntryDef>;
 

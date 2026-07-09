@@ -117,6 +117,17 @@ export type ForumImageMime = (typeof FORUM_IMAGE_MIMES)[number];
  */
 export const FORUM_MENTION_HANDLE_PATTERN = "[a-z0-9_]{3,24}";
 
+/**
+ * GET /v1/forum/zones/:id/members/search — one @mention autocomplete suggestion (APP-021).
+ * Active zone members whose username starts with the typed prefix; members without a username
+ * can't be mentioned, so they never appear.
+ */
+export interface MentionSuggestion {
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
+
 /** POST /v1/forum/attachments/upload-url → client PUTs the file to `uploadUrl`, then sends `key`. */
 export interface ForumAttachmentUploadUrl {
   uploadUrl: string;
@@ -256,6 +267,8 @@ export interface ThreadDetail {
 export interface CommentDetail {
   comment: CommentView;
   replies: CommentView[];
+  /** The zone the parent thread lives in (composer context, e.g. @mention autocomplete). */
+  zoneId: string;
 }
 
 /** Public (anonymous, SEO) QA shapes — no authorId/PII. Only indexable QA questions are exposed. */

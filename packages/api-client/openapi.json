@@ -2527,6 +2527,34 @@
         ]
       }
     },
+    "/v1/forum/zones/{id}/members/search": {
+      "get": {
+        "operationId": "ForumController_searchMembers",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
     "/v1/forum/zones/{id}/members/{userId}": {
       "delete": {
         "operationId": "ForumController_removeMember",

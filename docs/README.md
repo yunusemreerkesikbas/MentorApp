@@ -8,6 +8,7 @@
 - [core/file-structure.md](./core/file-structure.md) — folder structure + package dependency direction
 - [core/mvp-status.md](./core/mvp-status.md) — one-page MVP snapshot (what's built vs pending)
 - [core/setup.md](./core/setup.md) — local setup + troubleshooting
+- [dev/headroom.md](./dev/headroom.md) — **Headroom** (vibe coding + optional koç compression)
 - [core/integrations.md](./core/integrations.md) — connecting Neon/iyzico/Cloudflare/OpenAI/Gemini/Postmark/Sentry
 - [core/conventions.md](./core/conventions.md) — code/commit/PR/language/config conventions + ticket registry
 - [core/base-infrastructure.md](./core/base-infrastructure.md) — DB, errors, i18n, logging, health, OpenAPI, tests

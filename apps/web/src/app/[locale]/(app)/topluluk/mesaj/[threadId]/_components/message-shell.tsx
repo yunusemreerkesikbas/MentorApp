@@ -162,6 +162,7 @@ export function MessageShell({ threadId }: { threadId: string }) {
           placeholder={t("comment_placeholder")}
           submitLabel={t("comment_submit")}
           onSubmit={onComment}
+          zoneId={thread.zoneId}
         />
       </div>
 
