@@ -93,6 +93,24 @@ pnpm --filter @mentor/api test -- --grep "ai"
 - **Koç hub + chat split** — `/koc` hub (greeting, shortcut cards, session recent pills, start/continue CTAs) and `/koc/chat` (back header, transcript, composer). `CoachSessionProvider` in `koc/layout.tsx` persists messages + recent topics in `sessionStorage` (`mentor:coach-session:v1`) for the browser tab only — no backend history. Hub shortcuts and panel coach CTA deep-link via `?seed=` (composer pre-fill). Gate blocks both routes when `canChat=false`. Puhu avatar on coach bubbles; Encouraging Puhu on gate. *(2026-06-30.)*
 - **Puhu coach bubble** — reusable `PuhuCoachBubble` (`apps/web/src/components/puhu-coach-bubble.tsx`): white speech card + tail (`.mentor-coach-bubble`), dismiss X, optional bounce; wired on `/koc` gate (reason-specific copy) and hub welcome. *(2026-06-30.)*
 - **Koç hub generated hero** — `/koc` now uses the generated `koc-hero.png` as the main app-poster visual, with only a greeting overlay and start/continue CTAs. Dense shortcut-card grid and prompt chips were removed. Usage unchanged (`/koc`, `/koc/chat?seed=...`). Gotcha: chat route and access gate were intentionally left unchanged. Files: `koc-hub.tsx`, `koc-content-skeleton.tsx`. *(2026-07-03.)*
+- **Koç seans-farkında (2026-07-09)** — roadmap §258/§259 payoff'unun context katmanı: `CoachContext`'e
+  PII-free `recentSessions` özeti eklendi (son 7 gün seans/odak + distinct konular + son `struggle_note`).
+  `ContextBuilder` artık coaching'in `SessionService.getRecentSummary`'sini de okuyor (mood ile aynı
+  defensive `.catch(() => null)` deseni). Özet hem koç sohbetini (`buildSystemPrompt` → `ChatService`)
+  hem mood refleksiyonunu (`buildMoodReflectionPrompt` → `MoodReflectionService`) seans-farkında yapar;
+  `formatRecentSessionsLine` tek yerde biçimlendirir, aktivite yoksa satır düşer. Yeni endpoint/gating/
+  migration yok — koç sohbeti zaten premium/coin ile gate'li. **Guardrail (§4 #6):** agregat sayı +
+  kullanıcının kendi konu/notu, PII yok. **Kapsam dışı:** seans başına premium AI yansıması (ayrı
+  endpoint + migration), `ai_usage` feature-label cap (0048). Dosyalar: `ai.constants.ts`,
+  `context-builder.service.ts`, `context-builder.service.spec.ts`. Seam: [coaching.md](./coaching.md).
+- **Seans sonrası premium AI yansıması (2026-07-09)** — roadmap §259: mikro check-in `Kaydet` sonrası
+  premium kullanıcıya seansa özel 2–3 cümlelik AI yorumu. `POST /v1/coach/session-reflection`
+  `{ sessionId }` — `AI_ENABLED` + `isPremium`; `sessionMood` yoksa 400; satır cache
+  (`study_sessions.ai_reflection` / `ai_model` / `ai_reflected_at`, migration `0039_fair_jazinda`);
+  feedback değişince cache invalidate. Free: sessiz (AI kutusu yok). FE: done ekranı access=PREMIUM
+  ise çağırır → Puhu bubble. Dosyalar: `session-reflection.service.ts`, `ai-session.controller.ts`,
+  `session.service.ts` (`setAiReflection`/`getById`), `session-done-state.tsx`, `coach.ts`,
+  `messages/{tr,en}.json`. Seam: [coaching.md](./coaching.md).
 
 ## Gotchas / Known issues
 

@@ -1,4 +1,4 @@
-import type { CoachAccessDto, CoachChatReplyDto } from "@mentor/types";
+import type { CoachAccessDto, CoachChatReplyDto, SessionReflectionDto } from "@mentor/types";
 import { http } from "@mentor/api-client";
 
 /**
@@ -25,4 +25,14 @@ export async function sendCoachMessage(
     method: "POST",
     body: JSON.stringify({ message, ...(clientMessageId ? { clientMessageId } : {}) }),
   })) as CoachReply;
+}
+
+/** Premium session reflection after micro check-in; 403 for free — caller should stay silent. */
+export async function requestSessionReflection(
+  sessionId: string,
+): Promise<SessionReflectionDto> {
+  return (await http<SessionReflectionDto>("/v1/coach/session-reflection", {
+    method: "POST",
+    body: JSON.stringify({ sessionId }),
+  })) as SessionReflectionDto;
 }

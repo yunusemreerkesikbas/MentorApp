@@ -23,6 +23,17 @@ export interface CoachContext {
   moodLevel: number | null;
   /** Optional user-typed "zorlandığın konu" from today's check-in (null if none). */
   struggleNote: string | null;
+  /** PII-free rolling summary of recent study sessions (null when no recent activity). */
+  recentSessions: {
+    /** Finalized sessions in the last 7 days. */
+    count7d: number;
+    /** Total focused minutes in the last 7 days. */
+    focusMinutes7d: number;
+    /** Distinct recent subjects (most-recent first, capped). */
+    subjects: string[];
+    /** Most recent post-session struggle note (null if none). */
+    lastStruggleNote: string | null;
+  } | null;
 }
 
 /** A retrieved, verified article used to ground the answer (RAG, §1). */
@@ -59,6 +70,18 @@ export const COACH_SYSTEM_BASE = [
   "4) Tıbbi/hukuki tavsiye verme; ciddi durumda profesyonele yönlendir.",
 ].join("\n");
 
+/**
+ * PII-free one-line summary of recent study sessions for grounding (§4 #6 — aggregate counts +
+ * the user's own subject names + own note only). Returns null when there is no recent activity.
+ */
+export function formatRecentSessionsLine(rs: CoachContext["recentSessions"]): string | null {
+  if (!rs) return null;
+  const parts = [`Son 7 gün: ${rs.count7d} seans, ${rs.focusMinutes7d} dk odak`];
+  if (rs.subjects.length > 0) parts.push(`çalıştığı konular: ${rs.subjects.join(", ")}`);
+  if (rs.lastStruggleNote) parts.push(`son zorlandığı: "${rs.lastStruggleNote}"`);
+  return `${parts.join("; ")}.`;
+}
+
 /** Build the full system prompt: PII-free context + (RAG) verified source articles or a no-source rule. */
 export function buildSystemPrompt(ctx: CoachContext, sources: CoachSource[] = []): string {
   const lines = [
@@ -73,6 +96,8 @@ export function buildSystemPrompt(ctx: CoachContext, sources: CoachSource[] = []
         (ctx.struggleNote ? `, zorlandığı konu: "${ctx.struggleNote}"` : ""),
     );
   }
+  const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
+  if (sessionsLine) lines.push(sessionsLine);
   let prompt = `${COACH_SYSTEM_BASE}\n\nBAĞLAM:\n${lines.join("\n")}`;
 
   if (sources.length > 0) {
@@ -115,7 +140,52 @@ export function buildMoodReflectionPrompt(
   const ctxLine =
     ctx.daysRemaining != null ? ` Sınava kalan gün: ${ctx.daysRemaining}.` : "";
   const noteLine = struggleNote ? ` Bugün en çok zorlandığı konu: "${struggleNote}".` : "";
-  const user = `Öğrencinin bugünkü ruh hali: ${MOOD_LABEL[mood] ?? "orta"} (${mood}/5).${noteLine}${ctxLine}`;
+  const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
+  const studyLine = sessionsLine ? ` ${sessionsLine}` : "";
+  const user = `Öğrencinin bugünkü ruh hali: ${MOOD_LABEL[mood] ?? "orta"} (${mood}/5).${noteLine}${ctxLine}${studyLine}`;
+
+  return { system, user };
+}
+
+/** 1..3 session effort → short Turkish label for session-reflection prompts. */
+const SESSION_MOOD_LABEL: Record<number, string> = {
+  1: "zorlandı",
+  2: "idare eder",
+  3: "iyi geçti",
+};
+
+/**
+ * Premium AI reflection on a finalized study session after micro check-in (§4 #5). Warm, brief
+ * (2-3 sentences), one small next step. Grounds on PII-free session fields + CoachContext.
+ */
+export function buildSessionReflectionPrompt(
+  ctx: CoachContext,
+  session: {
+    subject: string | null;
+    focusMinutes: number;
+    sessionMood: number;
+    struggleNote: string | null;
+  },
+): { system: string; user: string } {
+  const system = [
+    "Sen Mentor uygulamasının sınav hazırlık koçusun. Öğrencinin az önce bitirdiği çalışma seansına",
+    "KISA (2-3 cümle), sıcak ve motive edici bir karşılık ver. Yargılama; eforu takdir et; küçük ve",
+    "uygulanabilir tek bir öneriyle bitir.",
+    "KESİN KURALLAR:",
+    "1) Resmî bilgi (sınav tarihi, başvuru/süreç, yerleştirme, kontenjan, puan) ÜRETME/UYDURMA;",
+    "   gerekirse Bilgi Merkezi'ne (/bilgi) yönlendir.",
+    "2) Tıbbi/psikolojik teşhis veya tedavi önerme. Ciddi sıkıntı/umutsuzluk sinyali varsa, nazikçe",
+    "   güvendiği biriyle veya bir uzmanla konuşmaya teşvik et.",
+    "3) Ödeme/abonelik/coin veya teknik konulara girme. Kişisel veri isteme.",
+  ].join("\n");
+
+  const subjectLine = session.subject ? ` Konu: "${session.subject}".` : "";
+  const noteLine = session.struggleNote
+    ? ` Seans sırasında zorlandığı: "${session.struggleNote}".`
+    : "";
+  const ctxLine = ctx.daysRemaining != null ? ` Sınava kalan gün: ${ctx.daysRemaining}.` : "";
+  const moodLabel = SESSION_MOOD_LABEL[session.sessionMood] ?? "idare eder";
+  const user = `Öğrenci ${session.focusMinutes} dk odaklandı.${subjectLine} Seans nasıl geçti: ${moodLabel} (${session.sessionMood}/3).${noteLine}${ctxLine}`;
 
   return { system, user };
 }

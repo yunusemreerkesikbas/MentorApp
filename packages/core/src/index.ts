@@ -15,3 +15,6 @@ export const NET_PENALTY_DIVISOR: Record<ExamType, number> = {
 };
 
 export const APP_NAME = "Mentor" as const;
+
+export const STREAK_MILESTONES = [7, 14, 30, 100, 365] as const;
+export type StreakMilestoneValue = (typeof STREAK_MILESTONES)[number];

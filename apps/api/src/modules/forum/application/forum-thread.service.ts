@@ -6,6 +6,8 @@ import {
   type CommentView,
   FORUM_LIKE_EMOJI,
   type ForumAttachmentUploadUrl,
+  type ForumActivityFeed,
+  type ForumActivityItem,
   ModerationTargetType,
   type SavedFeed,
   type SavedFeedItem,
@@ -17,8 +19,9 @@ import {
 } from "@mentor/types";
 import type { CreateAnswer, CreateThread, FeedQuery } from "@mentor/validation";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
-import { DomainError } from "../../../common/errors/domain-error";
+import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
+import { UsersService } from "../../identity/application/users.service";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import {
   extensionForForumImageMime,
@@ -28,6 +31,7 @@ import {
   FORUM_ORPHAN_SWEEP_BATCH,
 } from "../domain/attachment.constants";
 import { resolveForumAttachments } from "./attachment.resolve";
+import { ForumMentionService } from "./forum-mention.service";
 import {
   canCommentInZone,
   canDeleteThread,
@@ -64,6 +68,8 @@ export class ForumThreadService {
     private readonly config: ConfigRegistryService,
     private readonly events: EventEmitter2,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    private readonly mentions: ForumMentionService,
+    private readonly users: UsersService,
   ) {}
 
   /** Presigned upload URL for a post image (Phase 1). Client PUTs the file, then sends `key` on create. */
@@ -153,6 +159,8 @@ export class ForumThreadService {
       threadId: row.id,
       authorId: actor.id,
     });
+    const mentionLink = `/topluluk/${zone.type === ZoneType.QA ? "soru" : "mesaj"}/${row.id}`;
+    void this.mentions.dispatch(dto.body, actor.id, mentionLink);
     // fetch with JOIN so authorName is populated in the immediate response
     const rowWithAuthor = await this.threads.findById(row.id, actor.id);
     if (!rowWithAuthor) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -289,6 +297,46 @@ export class ForumThreadService {
     return { items, nextCursor };
   }
 
+  /**
+   * A user's forum activity (their threads + posts interleaved, newest first) for their profile page.
+   * Viewer state (reactions/bookmarks/likes) is the *viewer's* — so they can interact from the profile.
+   * Fetches `limit` from each source and merges: each source's top-N contains all global-top-N candidates.
+   */
+  async getUserActivity(viewerId: string, username: string, before?: string): Promise<ForumActivityFeed> {
+    await this.assertEnabled();
+    const user = await this.users.findByUsername(username);
+    if (!user) throw new NotFoundError();
+    const limit = 20;
+    const [threads, posts] = await Promise.all([
+      this.threads.listByAuthor(user.id, viewerId, { limit, before }),
+      this.posts.listByAuthor(user.id, viewerId, { limit, before }),
+    ]);
+    const [threadViews, postViews] = await Promise.all([
+      this.buildThreadViews(threads, viewerId),
+      this.decorateComments(posts, viewerId),
+    ]);
+    // buildThreadViews/decorateComments preserve input order, so zone[i] pairs with view[i].
+    const merged: ForumActivityItem[] = [
+      ...threadViews.map((thread, i) => ({
+        type: "thread" as const,
+        thread,
+        zone: { title: threads[i]!.zoneTitle, slug: threads[i]!.zoneSlug },
+      })),
+      ...postViews.map((comment, i) => ({
+        type: "comment" as const,
+        comment,
+        zone: { title: posts[i]!.zoneTitle, slug: posts[i]!.zoneSlug },
+      })),
+    ];
+    const at = (i: ForumActivityItem) =>
+      i.type === "thread" ? i.thread.createdAt : i.comment.createdAt;
+    merged.sort((a, b) => at(b).localeCompare(at(a))); // ISO strings sort chronologically
+    const items = merged.slice(0, limit);
+    // ponytail: heuristic cursor (matches listFeed) — a full page may have more; worst case one empty fetch.
+    const nextCursor = items.length === limit ? at(items[items.length - 1]!) : null;
+    return { items, nextCursor };
+  }
+
   /** Fold reaction/comment counts + viewer state into ThreadViews for a set of rows (batched). */
   private async buildThreadViews(
     rows: ThreadWithAuthor[],
@@ -324,6 +372,14 @@ export class ForumThreadService {
     const toAttach = await resolveForumAttachments(this.storage, actor.id, dto.attachments);
     const post = await this.posts.createAnswer({ threadId, authorId: actor.id, body: dto.body });
     await this.attachments.insertMany(ModerationTargetType.POST, post.id, actor.id, toAttach);
+    // Notify the thread author about the new comment (self-comment skipped in the listener).
+    this.events.emit(ForumEventTopic.THREAD_COMMENTED, {
+      threadId,
+      recipientId: thread.authorId,
+      actorId: actor.id,
+    });
+    // @mentions in the comment — exclude the thread author (already gets the comment notification).
+    void this.mentions.dispatch(dto.body, actor.id, `/topluluk/mesaj/${threadId}`, [thread.authorId]);
     return this.requireCommentView(post.id, actor.id);
   }
 
@@ -340,6 +396,14 @@ export class ForumThreadService {
       parentPostId: postId,
     });
     await this.attachments.insertMany(ModerationTargetType.POST, post.id, actor.id, toAttach);
+    // Notify the parent comment's author about the reply (self-reply skipped in the listener).
+    this.events.emit(ForumEventTopic.COMMENT_REPLIED, {
+      parentPostId: postId,
+      recipientId: parent.authorId,
+      actorId: actor.id,
+    });
+    // @mentions in the reply — exclude the parent author (already gets the reply notification).
+    void this.mentions.dispatch(dto.body, actor.id, `/topluluk/yorum/${post.id}`, [parent.authorId]);
     return this.requireCommentView(post.id, actor.id);
   }
 

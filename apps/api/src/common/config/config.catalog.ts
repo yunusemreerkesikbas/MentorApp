@@ -124,6 +124,8 @@ export const CONFIG_CATALOG = {
   "economy.invite.reward_coin": economyCount(20, 100000, "Coin granted to the inviter when an invited user converts."),
   "economy.quest.onboarding_reward_coin": economyCount(10, 100000, "Coin granted per completed onboarding quest."),
   "economy.quest.daily_ritual_reward_xp": economyCount(5, 100000, "XP granted per completed daily ritual quest."),
+  "economy.quest.streak_milestone_reward_xp": economyCount(25, 100000, "XP granted per completed streak milestone quest."),
+  "economy.quest.effort_milestone_reward_xp": economyCount(25, 100000, "XP granted per completed effort milestone quest."),
   "economy.coin.ai_chat_cost": economyCount(5, 100000, "Coin debited per AI coach chat message (free earned-right path)."),
   "forum.xp.accepted_answer": economyCount(25, 1000, "XP granted to a user when their forum answer is accepted (slice 3)."),
   "forum.xp.thread_posted": economyCount(2, 1000, "XP granted for posting a forum thread/message (feeds the effort leaderboard; capped per day)."),

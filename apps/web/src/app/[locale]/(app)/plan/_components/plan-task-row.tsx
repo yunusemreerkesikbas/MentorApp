@@ -67,7 +67,11 @@ export function PlanTaskRow({
           ) : null}
           {!done && !readOnly ? (
             <Link
-              href="/seans"
+              href={
+                task.subject
+                  ? { pathname: "/seans", query: { subject: task.subject } }
+                  : "/seans"
+              }
               className="text-xs font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2"
               style={{ color: "var(--color-progress)" }}
             >

@@ -1,9 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, getTableColumns, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, inArray, isNull, lt, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { forumPostReactions, forumPosts, users } from "../../../database/schema";
+import { forumPostReactions, forumPosts, forumThreads, forumZones, users } from "../../../database/schema";
 
 export type PostRow = typeof forumPosts.$inferSelect;
 export type PostWithAuthor = PostRow & {
@@ -11,6 +11,8 @@ export type PostWithAuthor = PostRow & {
   authorUsername: string | null;
   authorAvatarStorageKey: string | null;
 };
+/** Author-listing row enriched with its zone (for the profile activity feed's "posted in X" label). */
+export type PostWithAuthorAndZone = PostWithAuthor & { zoneTitle: string; zoneSlug: string };
 
 /**
  * QA answer access (slice 3). Reads run in user context (RLS belt: non-deleted answers to any
@@ -218,6 +220,34 @@ export class ForumPostRepository {
         .where(eq(forumPosts.id, postId))
         .limit(1);
       return row ?? null;
+    });
+  }
+
+  /** A user's own posts (comments + QA answers), newest first (for their profile). */
+  async listByAuthor(
+    authorId: string,
+    viewerId: string,
+    opts: { limit: number; before?: string },
+  ): Promise<PostWithAuthorAndZone[]> {
+    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+      const conds = [eq(forumPosts.authorId, authorId), isNull(forumPosts.deletedAt)];
+      if (opts.before) conds.push(lt(forumPosts.createdAt, new Date(opts.before)));
+      return tx
+        .select({
+          ...getTableColumns(forumPosts),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+          authorUsername: sql<string | null>`${users.username}`,
+          authorAvatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+          zoneTitle: sql<string>`coalesce(${forumZones.title}, '')`,
+          zoneSlug: sql<string>`coalesce(${forumZones.slug}, '')`,
+        })
+        .from(forumPosts)
+        .leftJoin(users, eq(forumPosts.authorId, users.id))
+        .leftJoin(forumThreads, eq(forumPosts.threadId, forumThreads.id))
+        .leftJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
+        .where(and(...conds))
+        .orderBy(desc(forumPosts.createdAt))
+        .limit(opts.limit);
     });
   }
 

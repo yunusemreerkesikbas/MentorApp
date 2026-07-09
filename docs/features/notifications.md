@@ -142,6 +142,21 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
   with `dedupeKey = "{template}:{YYYY-MM-DD}"` (max 1 per trigger per day); on dedup miss writes
   in-app notification via `createInApp()`. `linkUrl`s: streak/mood → `/panel`, `/koc`;
   first-session → `/seans`; plan → `/plan`. No new files, no migration, no module wiring changes. *(APP-015.)*
+- **Forum @mention notifications** — `ForumEventsListener.onUserMentioned` handles a new
+  `forum.user.mentioned` event (recipient + link on payload) → "Sizden bahsedildi" FORUM notification.
+  Emitted by forum's `ForumMentionService` at post-create (parses `@handle`s, resolves via
+  `UsersService.findIdsByUsernames`, best-effort). Excludes the actor + already-notified reply recipients.
+  No new table/migration. Detail: [`forum.md`](./forum.md) timeline. *(APP-018.)*
+- **Forum in-app notifications** — new `FORUM` notification category (`user_notifications.category` is
+  text → no migration; added to `NotificationCategory` type + `notificationCategorySchema`).
+  `ForumEventsListener` (`application/listeners/forum-events.listener.ts`) consumes 5 forum domain events
+  → `createInApp(recipientId, "FORUM", title, body, linkUrl)`, best-effort, self-acts skipped
+  (`actor === recipient`). Recipients are resolved in the forum domain and carried on the event payload,
+  so this listener imports only the forum **event contracts** (no forum repo/module dependency — like
+  `CoachingEventsListener`). No per-day dedup (each reply/answer notifies). Generic Turkish copy (no actor
+  name → no extra query). Web: `notification-drawer-shell` icon/color/fallback maps gain `FORUM`
+  (MessageCircle, `/topluluk`); no new tab (shows under "Tümü", like `CONTENT`). Trigger/link detail:
+  [`forum.md`](./forum.md) timeline. *(APP-018.)*
 - **Config registry + feature flags** — central config registry (`common/config`, `@Global`);
   code-defined catalog (Zod-validated, admins can't invent keys); `config_overrides` table
   (overrides only); `ConfigRegistryService` (typed `get<K>`, in-memory cache, invalidate-on-write);

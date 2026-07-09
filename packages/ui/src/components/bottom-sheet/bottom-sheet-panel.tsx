@@ -24,6 +24,10 @@ export function BottomSheetPanel({
   const titleId = useId();
   const isAction = sheet.layout === "action";
   const isFilter = sheet.layout === "filter";
+  const bodyScroll = sheet.bodyScroll ?? true;
+  const panelSize = bodyScroll
+    ? "max-lg:max-h-[70vh] lg:max-h-[82dvh]"
+    : "max-lg:h-[70vh] lg:h-[82dvh]";
 
   const panelAnimation = sheet.exiting
     ? "max-lg:animate-sheet-exit lg:animate-dialog-exit motion-reduce:opacity-0"
@@ -35,7 +39,7 @@ export function BottomSheetPanel({
       aria-modal="true"
       aria-labelledby={titleId}
       data-mentor-bottom-sheet-panel
-      className={`flex w-full flex-col overflow-hidden bg-white max-lg:max-h-[70vh] max-lg:rounded-t-[16px] max-lg:shadow-[0px_-4px_10px_rgba(37,73,150,0.10)] lg:max-h-[82dvh] lg:max-w-[480px] lg:rounded-[var(--radius-card)] lg:border lg:border-white lg:shadow-[var(--shadow-card)] ${panelAnimation}`}
+      className={`flex w-full flex-col overflow-hidden bg-white ${panelSize} max-lg:rounded-t-[16px] max-lg:shadow-[0px_-4px_10px_rgba(37,73,150,0.10)] lg:max-w-[480px] lg:rounded-[var(--radius-card)] lg:border lg:border-white lg:shadow-[var(--shadow-card)] ${panelAnimation}`}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Drag handle — mobile only */}
@@ -86,7 +90,7 @@ export function BottomSheetPanel({
 
       {/* Body */}
       <div
-        className={`min-h-0 flex-1 overflow-y-auto px-5 ${isAction ? "py-0" : "py-3"}`}
+        className={`min-h-0 flex-1 px-5 ${bodyScroll ? "mentor-scrollarea overflow-y-auto" : "overflow-hidden"} ${isAction ? "py-0" : "py-3"}`}
       >
         {isAction && sheet.actions ? (
           <BottomSheetActionList
@@ -95,7 +99,15 @@ export function BottomSheetPanel({
           />
         ) : null}
         {isFilter && sheet.children ? (
-          <div className="flex flex-col gap-4">{sheet.children}</div>
+          <div
+            className={
+              bodyScroll
+                ? "flex flex-col gap-4"
+                : "flex h-full min-h-0 flex-col gap-4 overflow-hidden"
+            }
+          >
+            {sheet.children}
+          </div>
         ) : null}
       </div>
 

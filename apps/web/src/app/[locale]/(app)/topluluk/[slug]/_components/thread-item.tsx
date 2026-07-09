@@ -6,8 +6,10 @@ import { FORUM_LIKE_EMOJI, type ThreadView } from "@mentor/types";
 import { Link, useRouter } from "@/i18n/navigation";
 import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "../../_components/author-avatar";
+import { AuthorLink } from "../../_components/author-link";
 import { AttachmentGallery } from "../../_components/attachment-gallery";
 import { CommentIcon, HeartIcon } from "../../_components/forum-icons";
+import { MentionText } from "../../_components/mention-text";
 import { SendButton } from "../../_components/send-button";
 import { BookmarkButton } from "../../_components/bookmark-button";
 import { ThreadMenu } from "./thread-menu";
@@ -66,7 +68,9 @@ export function ThreadItem({
     <div {...rowProps}>
       {/* Avatar column + connector rail down to the replier cluster (Figma 1:282/1:285) */}
       <div className="flex flex-col items-center">
-        <AuthorAvatar name={thread.authorName} size={36} src={thread.authorAvatarUrl} />
+        <AuthorLink username={thread.authorUsername}>
+          <AuthorAvatar name={thread.authorName} size={36} src={thread.authorAvatarUrl} />
+        </AuthorLink>
         {repliers.length > 0 && (
           <>
             <div className="mt-2 w-px flex-1" style={{ background: "rgba(0,0,0,0.10)" }} aria-hidden="true" />
@@ -89,9 +93,12 @@ export function ThreadItem({
         {/* Header row — name truncates so the timestamp + menu never wrap on narrow screens */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1.5">
-            <span className="flex-shrink truncate text-[15px] font-semibold" style={{ color: "var(--color-main)" }}>
-              {thread.authorName || t("unknown_author")}
-            </span>
+            <AuthorLink
+              username={thread.authorUsername}
+              className="flex-shrink truncate text-[15px] font-semibold hover:underline"
+            >
+              <span style={{ color: "var(--color-main)" }}>{thread.authorName || t("unknown_author")}</span>
+            </AuthorLink>
             {thread.authorUsername && (
               <span className="flex-shrink truncate text-[13px]" style={{ color: "var(--color-secondary)" }}>
                 @{thread.authorUsername}
@@ -131,7 +138,7 @@ export function ThreadItem({
           className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-[22px]"
           style={{ color: "var(--color-body)" }}
         >
-          {thread.body}
+          <MentionText text={thread.body} />
         </p>
 
         <AttachmentGallery attachments={thread.attachments} />

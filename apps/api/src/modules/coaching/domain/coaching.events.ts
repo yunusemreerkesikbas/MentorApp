@@ -1,5 +1,7 @@
 /** Coaching domain events — emitted via EventEmitter2. */
 
+export { STREAK_MILESTONES, type StreakMilestoneValue } from "@mentor/core";
+
 export const CoachingEventTopic = {
   STREAK_BROKEN:    "coaching.streak-broken",
   STREAK_MILESTONE: "coaching.streak-milestone",
@@ -14,9 +16,6 @@ export class StreakBroken {
     readonly previousStreak: number,
   ) {}
 }
-
-export const STREAK_MILESTONES = [7, 14, 30, 100, 365] as const;
-export type StreakMilestoneValue = (typeof STREAK_MILESTONES)[number];
 
 export class StreakMilestone {
   constructor(readonly userId: string, readonly milestone: number) {}

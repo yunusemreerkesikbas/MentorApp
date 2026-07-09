@@ -142,6 +142,21 @@ export const updateStudySessionSchema = z.object({
 });
 export type UpdateStudySessionInput = z.infer<typeof updateStudySessionSchema>;
 
+/**
+ * Post-session micro check-in (roadmap §258): a subjective effort/mood signal (1-3, 😩😐🙂)
+ * with an optional "what challenged you" note. Attached to an already-finalized session so the
+ * finalize path stays untouched; idempotent (re-submit overwrites).
+ */
+export const sessionFeedbackSchema = z.object({
+  mood: z.coerce.number().int().min(1).max(3),
+  struggleNote: z.string().trim().max(280).optional(),
+});
+export type SessionFeedbackInput = z.infer<typeof sessionFeedbackSchema>;
+
+/** Paginated study-session history (most recent finalized first). */
+export const listStudySessionsQuerySchema = paginationQuerySchema;
+export type ListStudySessionsQuery = z.infer<typeof listStudySessionsQuerySchema>;
+
 /* ---------------------------------- mood -------------------------------------- */
 
 export const createMoodCheckinSchema = z.object({

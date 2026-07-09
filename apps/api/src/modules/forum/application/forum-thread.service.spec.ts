@@ -73,6 +73,9 @@ const makeBookmarkRepo = () => ({
   listForUser: vi.fn().mockResolvedValue([]),
 });
 
+const makeMentionService = () => ({ dispatch: vi.fn().mockResolvedValue(undefined) });
+const makeUsersService = () => ({ findByUsername: vi.fn().mockResolvedValue(undefined) });
+
 const makeZoneRepo = (
   zoneType: ZoneType = ZoneType.CHAT,
   memberStatus: string | null = ZoneMemberStatus.ACTIVE,
@@ -99,9 +102,11 @@ describe("ForumThreadService", () => {
   });
 
   let postRepo: ReturnType<typeof makePostRepo>;
+  let mentions: ReturnType<typeof makeMentionService>;
 
   const svc = (zoneRepo: ReturnType<typeof makeZoneRepo>) => {
     postRepo = makePostRepo();
+    mentions = makeMentionService();
     return new ForumThreadService(
       threadRepo as never,
       zoneRepo as never,
@@ -111,6 +116,8 @@ describe("ForumThreadService", () => {
       enabledConfig as never,
       events as never,
       storage as never,
+      mentions as never,
+      makeUsersService() as never,
     );
   };
 
@@ -189,6 +196,13 @@ describe("ForumThreadService", () => {
       authorId: "u1",
       body: "yorum",
     });
+    expect(events.emit).toHaveBeenCalledWith("forum.thread.commented", {
+      threadId: "t1",
+      recipientId: "author",
+      actorId: "u1",
+    });
+    // @mentions dispatched with the thread author excluded (already gets the comment notification).
+    expect(mentions.dispatch).toHaveBeenCalledWith("yorum", "u1", "/topluluk/mesaj/t1", ["author"]);
   });
 
   it("lets an ACTIVE member comment on an ANNOUNCEMENT thread (discussion is open)", async () => {
@@ -222,6 +236,11 @@ describe("ForumThreadService", () => {
       authorId: "u1",
       body: "yanıt",
       parentPostId: "parent-post",
+    });
+    expect(events.emit).toHaveBeenCalledWith("forum.comment.replied", {
+      parentPostId: "parent-post",
+      recipientId: "u1",
+      actorId: "u1",
     });
   });
 
@@ -280,6 +299,8 @@ describe("ForumThreadService", () => {
       enabledConfig as never,
       events as never,
       storageMock as never,
+      makeMentionService() as never,
+      makeUsersService() as never,
     );
     const res = await service.createAttachmentUploadUrl("u1", "image/png");
     expect(res.key).toBe("forum-attachments/u1/x.png");
@@ -300,6 +321,8 @@ describe("ForumThreadService", () => {
       enabledConfig as never,
       events as never,
       storageMock as never,
+      makeMentionService() as never,
+      makeUsersService() as never,
     );
     const res = await service.cleanupOrphanAttachments();
     expect(res.deleted).toBe(2);
@@ -318,6 +341,8 @@ describe("ForumThreadService", () => {
       enabledConfig as never,
       events as never,
       storage as never,
+      makeMentionService() as never,
+      makeUsersService() as never,
     );
     await service.bookmarkThread("u1", "t1");
     expect(bookmarks.add).toHaveBeenCalledWith("u1", "THREAD", "t1");
@@ -365,10 +390,80 @@ describe("ForumThreadService", () => {
       enabledConfig as never,
       events as never,
       storage as never,
+      makeMentionService() as never,
+      makeUsersService() as never,
     );
     const res = await service.getMyBookmarks("u1");
     expect(res.items.map((i) => i.type)).toEqual(["thread", "comment"]);
     expect(res.items[0]!.type === "thread" && res.items[0]!.thread.id).toBe("t1");
     expect(res.items[1]!.type === "comment" && res.items[1]!.comment.id).toBe("p1");
+  });
+
+  it("getUserActivity interleaves a user's threads + posts newest-first (resolved by username)", async () => {
+    const users = { findByUsername: vi.fn().mockResolvedValue({ id: "uAuthor" }) };
+    const threadRepo = {
+      ...makeThreadRepo(),
+      listByAuthor: vi.fn().mockResolvedValue([
+        {
+          ...threadRow({ id: "t1", createdAt: new Date("2026-07-02T10:00:00Z") }),
+          zoneTitle: "KPSS Genel",
+          zoneSlug: "kpss-genel",
+        },
+      ]),
+    };
+    const postRepo = {
+      ...makePostRepo(),
+      listByAuthor: vi.fn().mockResolvedValue([
+        {
+          id: "p1",
+          threadId: "t1",
+          parentPostId: null,
+          authorId: "uAuthor",
+          authorName: "A",
+          authorUsername: null,
+          authorAvatarStorageKey: null,
+          body: "yanıt",
+          isAccepted: false,
+          createdAt: new Date("2026-07-03T10:00:00Z"), // newer than the thread
+          zoneTitle: "KPSS Genel",
+          zoneSlug: "kpss-genel",
+        },
+      ]),
+    };
+    const service = new ForumThreadService(
+      threadRepo as never,
+      makeZoneRepo() as never,
+      postRepo as never,
+      makeAttachmentRepo() as never,
+      makeBookmarkRepo() as never,
+      enabledConfig as never,
+      events as never,
+      storage as never,
+      makeMentionService() as never,
+      users as never,
+    );
+    const res = await service.getUserActivity("viewer", "author");
+    expect(users.findByUsername).toHaveBeenCalledWith("author");
+    expect(threadRepo.listByAuthor).toHaveBeenCalledWith("uAuthor", "viewer", expect.any(Object));
+    expect(res.items.map((i) => i.type)).toEqual(["comment", "thread"]); // p1 (Jul 3) before t1 (Jul 2)
+    expect(res.items[0]!.zone.title).toBe("KPSS Genel"); // zone context carried through
+  });
+
+  it("getUserActivity 404s for an unknown username", async () => {
+    const service = new ForumThreadService(
+      makeThreadRepo() as never,
+      makeZoneRepo() as never,
+      makePostRepo() as never,
+      makeAttachmentRepo() as never,
+      makeBookmarkRepo() as never,
+      enabledConfig as never,
+      events as never,
+      storage as never,
+      makeMentionService() as never,
+      { findByUsername: vi.fn().mockResolvedValue(undefined) } as never,
+    );
+    await expect(service.getUserActivity("viewer", "nobody")).rejects.toMatchObject({
+      httpStatus: HttpStatus.NOT_FOUND,
+    });
   });
 });

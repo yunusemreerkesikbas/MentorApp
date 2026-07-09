@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/auth-context";
 import { bookmarkPost, bookmarkThread, getQuestion, isForumDisabled, postAnswer } from "@/lib/forum";
 import { ReportButton } from "../../../_components/report-button";
 import { AttachmentGallery } from "../../../_components/attachment-gallery";
+import { MentionText } from "../../../_components/mention-text";
 import { ForumImagePicker } from "../../../_components/forum-image-picker";
 import { useForumImagePicker } from "../../../_components/use-forum-image-picker";
 import { SendButton } from "../../../_components/send-button";
@@ -139,7 +140,7 @@ export function QuestionShell({ threadId }: { threadId: string }) {
           {when}
         </p>
         <p className="mt-3 whitespace-pre-wrap text-base" style={{ color: "var(--color-main)" }}>
-          {question.body}
+          <MentionText text={question.body} />
         </p>
         <AttachmentGallery attachments={question.attachments} />
         <div className="-ml-1.5 mt-3 flex items-center gap-1">

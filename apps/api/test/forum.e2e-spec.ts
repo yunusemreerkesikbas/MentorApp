@@ -1,5 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import { ThrottlerStorage } from "@nestjs/throttler";
 import cookieParser from "cookie-parser";
 import express from "express";
 import { Pool } from "pg";
@@ -18,6 +19,7 @@ describe("forum zones (e2e)", () => {
   let pool: Pool;
   let adminToken = "";
   let userToken = "";
+  let userId = "";
 
   const signup = async (label: string) => {
     const email = `forum-${label}-${RUN}@test.local`;
@@ -53,13 +55,37 @@ describe("forum zones (e2e)", () => {
   const asAdmin = () => ({ Authorization: `Bearer ${adminToken}` });
   const asUser = () => ({ Authorization: `Bearer ${userToken}` });
 
+  /** Poll the in-app inbox for a FORUM notification with the given link (events emit fire-and-forget). */
+  const pollForumNotif = async (auth: Record<string, string>, link: string): Promise<boolean> => {
+    for (let i = 0; i < 40; i++) {
+      const res = await request(app.getHttpServer()).get(`/v1/notifications`).set(auth);
+      if (
+        res.body.items?.some(
+          (n: { category: string; linkUrl: string }) => n.category === "FORUM" && n.linkUrl === link,
+        )
+      ) {
+        return true;
+      }
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    return false;
+  };
+
   beforeAll(async () => {
     process.env.DATABASE_URL =
       process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
     pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
     const { AppModule } = await import("../src/app.module");
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    // Disable rate limiting for e2e via a no-op throttler store — no test asserts 429, and per-IP
+    // throttling made the suite fragile (a new test could push an unrelated later test over the limit).
+    // Overriding the store (not the APP_GUARD) leaves the auth/roles guards intact.
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(ThrottlerStorage)
+      .useValue({
+        increment: async () => ({ totalHits: 1, timeToExpire: 0, isBlocked: false, timeToBlockExpire: 0 }),
+      })
+      .compile();
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());
@@ -73,6 +99,7 @@ describe("forum zones (e2e)", () => {
     const admin = await signup("admin");
     const user = await signup("user");
     userToken = user.accessToken;
+    userId = user.user.id;
 
     await grantRole(admin.user.id, UserRole.ADMIN);
     const login = await request(app.getHttpServer())
@@ -333,6 +360,113 @@ describe("forum zones (e2e)", () => {
     const after = await request(app.getHttpServer()).get(`/v1/forum/bookmarks`).set(asUser());
     expect(after.body.items).toHaveLength(1);
     expect(after.body.items[0].comment.id).toBe(postId);
+  });
+
+  it("notifications: a join request notifies the zone owner (in-app, APP-018)", async () => {
+    await setForumEnabled(true);
+    // admin (staff) creates a REQUEST zone and makes `user` its owner.
+    const zoneRes = await request(app.getHttpServer())
+      .post("/v1/forum/zones")
+      .set(asAdmin())
+      .send({ type: ZoneType.CHAT, title: "Bildirim Owner Zonu", joinPolicy: ZoneJoinPolicy.REQUEST });
+    const zoneId = zoneRes.body.id as string;
+    const slug = zoneRes.body.slug as string;
+    await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/owner`)
+      .set(asAdmin())
+      .send({ userId })
+      .expect(201);
+
+    // A different user (admin) requests to join → the owner (user) is notified.
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asAdmin());
+    expect(await pollForumNotif(asUser(), `/topluluk/${slug}/yonetim`)).toBe(true);
+  });
+
+  it("notifications: commenting on a thread notifies its author (in-app, APP-018)", async () => {
+    await setForumEnabled(true);
+    const zoneId = await createZone(ZoneType.CHAT, "Bildirim Yorum Zonu");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+    const posted = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "gönderim" });
+    const threadId = posted.body.id as string;
+
+    // A different user (admin) comments → the thread author (user) is notified.
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asAdmin());
+    await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${threadId}/comments`)
+      .set(asAdmin())
+      .send({ body: "güzel gönderi" });
+
+    expect(await pollForumNotif(asUser(), `/topluluk/mesaj/${threadId}`)).toBe(true);
+  });
+
+  it("notifications: an @mention notifies the mentioned user (in-app, APP-018)", async () => {
+    await setForumEnabled(true);
+    const handle = `mnt${RUN}`;
+    // The mentioned user (`user`) sets a username so they can be @mentioned.
+    await request(app.getHttpServer())
+      .patch("/v1/users/me")
+      .set(asUser())
+      .send({ username: handle })
+      .expect(200);
+
+    const zoneId = await createZone(ZoneType.CHAT, "Bildirim Mention Zonu");
+    // admin (staff) posts a thread mentioning @handle → the mentioned user is notified.
+    const posted = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asAdmin())
+      .send({ body: `selam @${handle} nasılsın` });
+    const threadId = posted.body.id as string;
+
+    expect(await pollForumNotif(asUser(), `/topluluk/mesaj/${threadId}`)).toBe(true);
+  });
+
+  it("profile: activity feed + public header (no email); unknown username → 404 (APP-018)", async () => {
+    await setForumEnabled(true);
+    const handle = `prof${RUN}`;
+    await request(app.getHttpServer())
+      .patch("/v1/users/me")
+      .set(asUser())
+      .send({ username: handle })
+      .expect(200);
+    const zoneId = await createZone(ZoneType.CHAT, "Profil Zonu");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+    const posted = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "profil gönderisi" });
+    const threadId = posted.body.id as string;
+    await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${threadId}/comments`)
+      .set(asUser())
+      .send({ body: "profil yorumu" });
+
+    // Forum activity feed — the user's thread + comment interleaved.
+    const activity = await request(app.getHttpServer())
+      .get(`/v1/forum/users/${handle}/activity`)
+      .set(asUser());
+    expect(activity.status).toBe(200);
+    const types = (activity.body.items as { type: string }[]).map((i) => i.type);
+    expect(types).toContain("thread");
+    expect(types).toContain("comment");
+    // Each item carries its zone (for the "posted in X" label).
+    expect(activity.body.items[0].zone.title).toBe("Profil Zonu");
+
+    // Community profile header — identity + stats, and crucially NO email (PII).
+    const profile = await request(app.getHttpServer())
+      .get(`/v1/community/profile/${handle}`)
+      .set(asUser());
+    expect(profile.status).toBe(200);
+    expect(profile.body.username).toBe(handle);
+    expect(profile.body.email).toBeUndefined();
+    expect(profile.body).toHaveProperty("streak");
+
+    const missing = await request(app.getHttpServer())
+      .get(`/v1/community/profile/nobody${RUN}`)
+      .set(asUser());
+    expect(missing.status).toBe(404);
   });
 
   it("a non-member cannot post in a CHAT zone (403)", async () => {

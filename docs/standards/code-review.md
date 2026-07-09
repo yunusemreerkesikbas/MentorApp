@@ -42,7 +42,7 @@
 - [ ] Critical paths tested; names clear; **dead code removed for the touched scope**; no stray TODO/FIXME.
 
 ## Blocking findings (prevent merge)
-Guardrail violation · security hole · red CI · schema change without a migration · committed secret · missing devnote.
+Guardrail violation · security hole · red CI · schema change without a migration · committed secret · missing feature-doc entry.
 
 ## Flow
 1. Developer self-review + `/code-review` (or the `code-reviewer` skill).

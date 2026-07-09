@@ -1,5 +1,6 @@
 import type {
   EconomyBalance,
+  EconomyLedgerEntryView,
   InviteCodeView,
   QuestProgressView,
   RedeemInviteResult,
@@ -12,6 +13,22 @@ import { ApiClientError, http } from "@mentor/api-client";
  */
 export async function fetchEconomyBalance(): Promise<EconomyBalance> {
   return (await http<EconomyBalance>("/v1/economy/balance")) as EconomyBalance;
+}
+
+export async function fetchEconomyLedger({
+  page = 1,
+  pageSize = 20,
+}: {
+  page?: number;
+  pageSize?: number;
+} = {}): Promise<EconomyLedgerEntryView[]> {
+  const query = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  return (await http<EconomyLedgerEntryView[]>(
+    `/v1/economy/ledger?${query.toString()}`,
+  )) as EconomyLedgerEntryView[];
 }
 
 export async function fetchQuests(): Promise<QuestProgressView[]> {

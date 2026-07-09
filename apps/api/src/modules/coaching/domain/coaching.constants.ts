@@ -43,3 +43,26 @@ export const FREEZE_TOKENS_PER_MONTH = 2;
  * and is well over a year so a long active streak is still fully counted.
  */
 export const STREAK_LOOKBACK_DAYS = 400;
+
+/* -------------------------- recent-session summary --------------------------- */
+
+/** Rolling window (days) for the "son seanslar" summary fed to the AI coach context. */
+export const RECENT_SESSION_WINDOW_DAYS = 7;
+/** Max distinct subjects surfaced in the recent-session summary (keeps the prompt bounded). */
+export const RECENT_SUBJECTS_MAX = 4;
+
+/**
+ * PII-free aggregate of a user's recent study behavior, consumed by the AI coach context
+ * (§4 #6 — counts + own subject names + own note only; no behavioral raw data / no PII).
+ * `null`-returning services use it as an optional grounding signal.
+ */
+export interface RecentSessionSummary {
+  /** Finalized sessions within {@link RECENT_SESSION_WINDOW_DAYS}. */
+  count7d: number;
+  /** Total focused minutes within the window (rounded). */
+  focusMinutes7d: number;
+  /** Distinct recent subjects (most-recent first, capped at {@link RECENT_SUBJECTS_MAX}). */
+  subjects: string[];
+  /** Most recent non-empty post-session struggle note (null if none). */
+  lastStruggleNote: string | null;
+}

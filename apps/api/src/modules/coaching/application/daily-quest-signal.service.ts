@@ -12,6 +12,8 @@ export interface DailyQuestSignals {
   hasDonePlanTask: boolean;
   hasCompletedFocusSession: boolean;
   hasMoodCheckin: boolean;
+  completedFocusSessions: number;
+  completedPlanTasks: number;
 }
 
 @Injectable()
@@ -26,16 +28,20 @@ export class DailyQuestSignalService {
   getToday(userId: string): Promise<DailyQuestSignals> {
     const date = todayIso();
     return withUserContext(this.db, { userId }, async (tx) => {
-      const [doneTasks, hasCompletedFocusSession, mood] = await Promise.all([
+      const [doneTasks, hasCompletedFocusSession, mood, completedFocusSessions, completedPlanTasks] = await Promise.all([
         this.planTasks.countDone(tx, userId, date),
         this.sessions.hasCompletedOnDate(tx, userId, date),
         this.moods.findByDate(tx, userId, date),
+        this.sessions.countCompleted(tx, userId),
+        this.planTasks.countDoneAllTime(tx, userId),
       ]);
       return {
         date,
         hasDonePlanTask: doneTasks > 0,
         hasCompletedFocusSession,
         hasMoodCheckin: mood !== undefined,
+        completedFocusSessions,
+        completedPlanTasks,
       };
     });
   }

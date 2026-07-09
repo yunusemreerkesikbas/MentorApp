@@ -110,6 +110,13 @@ export const FORUM_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 export const FORUM_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp"] as const;
 export type ForumImageMime = (typeof FORUM_IMAGE_MIMES)[number];
 
+/**
+ * @mention handle = a username (lowercase `[a-z0-9_]`, 3–24). Single source so the server parser
+ * (`forum/domain/mention.ts`) and the client highlighter (`MentionText`) agree on what a mention is;
+ * each surface wraps it with its own boundary handling (server lookbehind vs client capture-group).
+ */
+export const FORUM_MENTION_HANDLE_PATTERN = "[a-z0-9_]{3,24}";
+
 /** POST /v1/forum/attachments/upload-url → client PUTs the file to `uploadUrl`, then sends `key`. */
 export interface ForumAttachmentUploadUrl {
   uploadUrl: string;
@@ -221,6 +228,18 @@ export type SavedFeedItem =
 /** GET /v1/forum/bookmarks — cursor-paginated saved feed. */
 export interface SavedFeed {
   items: SavedFeedItem[];
+  nextCursor: string | null;
+}
+
+/**
+ * One entry in a user's activity feed — a saved-feed item enriched with the zone it lives in, so the
+ * profile can label "posted in {zone}" (activity spans zones, unlike a single zone's feed).
+ */
+export type ForumActivityItem = SavedFeedItem & { zone: { title: string; slug: string } };
+
+/** GET /v1/forum/users/:username/activity — a user's threads + posts interleaved, newest first. */
+export interface ForumActivityFeed {
+  items: ForumActivityItem[];
   nextCursor: string | null;
 }
 

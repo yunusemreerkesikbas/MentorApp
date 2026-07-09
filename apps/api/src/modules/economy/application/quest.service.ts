@@ -7,6 +7,7 @@ import {
   DailyQuestSignalService,
   type DailyQuestSignals,
 } from "../../coaching/application/daily-quest-signal.service";
+import { StreakService } from "../../coaching/application/streak.service";
 import { UsersService } from "../../identity/application/users.service";
 import { SubscriptionsService } from "../../payments/application/subscriptions.service";
 import { EconomyService } from "./economy.service";
@@ -35,6 +36,7 @@ export class QuestService {
     private readonly users: UsersService,
     private readonly subscriptions: SubscriptionsService,
     private readonly dailySignals: DailyQuestSignalService,
+    private readonly streak: StreakService,
     private readonly invites: InviteRepository,
     private readonly economy: EconomyService,
     private readonly quests: QuestRepository,
@@ -48,7 +50,10 @@ export class QuestService {
   async evaluateAndGrant(userId: string): Promise<void> {
     if (!(await this.config.get("economy.enabled"))) return;
 
-    const signals = await this.dailySignals.getToday(userId);
+    const [signals, streak] = await Promise.all([
+      this.dailySignals.getToday(userId),
+      this.streak.getSummary(userId),
+    ]);
     const activePeriodKeys = this.activePeriodKeys(signals);
     const completed = new Set(
       (await this.quests.listForUser(userId, activePeriodKeys)).map((r) =>
@@ -69,6 +74,10 @@ export class QuestService {
     const redeemed = await this.invites.findRedemptionByInvited(userId);
 
     const isMet = (q: QuestDef): boolean => {
+      if (q.type === QuestType.MILESTONE) {
+        const target = q.progressTarget ?? Number.POSITIVE_INFINITY;
+        return milestoneCurrent(q, signals, streak.currentStreak) >= target;
+      }
       switch (q.id) {
         case "daily.plan-task-done":
           return signals.hasDonePlanTask;
@@ -89,9 +98,16 @@ export class QuestService {
       }
     };
 
-    const [onboardingRewardCoin, dailyRewardXp] = await Promise.all([
+    const [
+      onboardingRewardCoin,
+      dailyRewardXp,
+      streakMilestoneRewardXp,
+      effortMilestoneRewardXp,
+    ] = await Promise.all([
       this.config.get("economy.quest.onboarding_reward_coin"),
       this.config.get("economy.quest.daily_ritual_reward_xp"),
+      this.config.get("economy.quest.streak_milestone_reward_xp"),
+      this.config.get("economy.quest.effort_milestone_reward_xp"),
     ]);
 
     for (const q of pending) {
@@ -99,7 +115,15 @@ export class QuestService {
       const periodKey = this.periodKey(q, signals);
       const reward =
         q.rewardUnit === "XP"
-          ? { unit: Currency.XP, amount: dailyRewardXp }
+          ? {
+              unit: Currency.XP,
+              amount: xpReward(
+                q,
+                dailyRewardXp,
+                streakMilestoneRewardXp,
+                effortMilestoneRewardXp,
+              ),
+            }
           : q.rewardUnit === "COIN"
             ? { unit: Currency.COIN, amount: onboardingRewardCoin }
             : null;
@@ -143,10 +167,21 @@ export class QuestService {
   }
 
   private async toViews(userId: string): Promise<QuestProgressView[]> {
-    const signals = await this.dailySignals.getToday(userId);
-    const [onboardingRewardCoin, dailyRewardXp, rows] = await Promise.all([
+    const [signals, streak] = await Promise.all([
+      this.dailySignals.getToday(userId),
+      this.streak.getSummary(userId),
+    ]);
+    const [
+      onboardingRewardCoin,
+      dailyRewardXp,
+      streakMilestoneRewardXp,
+      effortMilestoneRewardXp,
+      rows,
+    ] = await Promise.all([
       this.config.get("economy.quest.onboarding_reward_coin"),
       this.config.get("economy.quest.daily_ritual_reward_xp"),
+      this.config.get("economy.quest.streak_milestone_reward_xp"),
+      this.config.get("economy.quest.effort_milestone_reward_xp"),
       this.quests.listForUser(userId, this.activePeriodKeys(signals)),
     ]);
     const byKey = new Map(rows.map((r) => [progressKey(r.questId, r.periodKey), r]));
@@ -155,7 +190,7 @@ export class QuestService {
       const row = byKey.get(progressKey(q.id, periodKey));
       const rewardAmount =
         q.rewardUnit === "XP"
-          ? dailyRewardXp
+          ? xpReward(q, dailyRewardXp, streakMilestoneRewardXp, effortMilestoneRewardXp)
           : q.rewardUnit === "COIN"
             ? onboardingRewardCoin
             : 0;
@@ -171,6 +206,16 @@ export class QuestService {
         rewardUnit: q.rewardUnit,
         rewardAmount,
         rewardCoin: q.rewardUnit === "COIN" ? rewardAmount : 0,
+        progressCurrent:
+          q.type === QuestType.MILESTONE
+            ? row
+              ? q.progressTarget
+              : Math.min(
+                  milestoneCurrent(q, signals, streak.currentStreak),
+                  q.progressTarget ?? 0,
+                )
+            : undefined,
+        progressTarget: q.progressTarget,
         completed: row !== undefined,
         completedAt: row?.completedAt.toISOString() ?? null,
       };
@@ -188,4 +233,21 @@ export class QuestService {
 
 function progressKey(questId: string, periodKey: string): string {
   return `${questId}:${periodKey}`;
+}
+
+function milestoneCurrent(q: QuestDef, signals: DailyQuestSignals, currentStreak: number): number {
+  if (q.progressSource === "streak") return currentStreak;
+  if (q.progressSource === "completed_focus_sessions") return signals.completedFocusSessions;
+  if (q.progressSource === "completed_plan_tasks") return signals.completedPlanTasks;
+  return 0;
+}
+
+function xpReward(
+  q: QuestDef,
+  dailyRewardXp: number,
+  streakMilestoneRewardXp: number,
+  effortMilestoneRewardXp: number,
+): number {
+  if (q.type !== QuestType.MILESTONE) return dailyRewardXp;
+  return q.progressSource === "streak" ? streakMilestoneRewardXp : effortMilestoneRewardXp;
 }

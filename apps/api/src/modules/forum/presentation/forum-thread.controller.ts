@@ -14,6 +14,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type {
   CommentDetail,
   CommentView,
+  ForumActivityFeed,
   ForumAttachmentUploadUrl,
   SavedFeed,
   ThreadDetail,
@@ -170,6 +171,16 @@ export class ForumThreadController {
   @Get("bookmarks")
   bookmarks(@CurrentUser() user: RequestUser, @Query() q: BookmarkQueryDto): Promise<SavedFeed> {
     return this.threads.getMyBookmarks(user.id, q.before);
+  }
+
+  /** A user's activity feed (their threads + posts interleaved, newest first) for their profile page. */
+  @Get("users/:username/activity")
+  userActivity(
+    @CurrentUser() user: RequestUser,
+    @Param("username") username: string,
+    @Query() q: BookmarkQueryDto,
+  ): Promise<ForumActivityFeed> {
+    return this.threads.getUserActivity(user.id, username, q.before);
   }
 
   @Put("threads/:threadId/bookmark")

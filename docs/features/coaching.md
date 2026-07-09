@@ -58,8 +58,10 @@ PATCH  /v1/plan-tasks/:id        # toggle status → recomputes daily_activity.t
 DELETE /v1/plan-tasks/:id
 
 # Pomodoro / study session:
-POST  /v1/study-sessions        # { preset: "25_5" } OR { preset: "custom", focusMinutes: 35 }
-PATCH /v1/study-sessions/:id    # complete/abandon → recomputes daily_activity.has_session (same tx)
+GET   /v1/study-sessions?page=1&pageSize=5  # finalized-session history (most recent first)
+POST  /v1/study-sessions             # { preset: "25_5" } OR { preset: "custom", focusMinutes: 35 }
+PATCH /v1/study-sessions/:id         # complete/abandon → recomputes daily_activity.has_session (same tx)
+PATCH /v1/study-sessions/:id/feedback # post-session micro check-in { mood: 1-3, struggleNote? }
 
 # Mock exam + personal trend (no ranking):
 POST /v1/mock-exams             # { examId, subjects: [{ subjectRef, correct, wrong, blank }] }
@@ -102,7 +104,9 @@ pnpm --filter @mentor/api test
 |---|---|
 | `GET /v1/coaching/today` | Composite Panel payload (greeting · countdown · streak · tasks · presets · mood) |
 | `GET/POST /v1/plan-tasks` · `PATCH/DELETE /:id` | Plan-task CRUD (toggle recomputes `daily_activity`) |
+| `GET /v1/study-sessions` | Paginated finalized-session history ("Son seanslar") |
 | `POST /v1/study-sessions` · `PATCH /:id` | Pomodoro start / complete-abandon (recomputes `daily_activity`) |
+| `PATCH /v1/study-sessions/:id/feedback` | Post-session micro check-in (mood 1-3 + optional note → AI signal) |
 | `POST /v1/mock-exams` · `GET /:id` · `GET /v1/coaching/analysis` | Mock-exam entry + personal trend + ghost |
 | `POST/GET /v1/coaching/mood-checkins` | Mood check-in (upsert today) + trend |
 | `GET/POST /v1/coaching/vision` | Vision board (idempotent upsert, single row per user) |
@@ -131,6 +135,86 @@ pnpm --filter @mentor/api test
 - **Plan + Seans UI** — `/plan` full CRUD (list by date, create, toggle, delete); `/seans` Pomodoro
   (preset select, client timer, `POST/PATCH study-sessions` finalize). Manual URL for `?date=` until
   OpenAPI exposes the query param; `useSearchParams` wrapped in `<Suspense>`. *(0021.)*
+- **Seans focus modu + mola + subject deep-link (2026-07-08)** — `/seans` faz makinesi artık
+  `idle → focus → break → done`. Focus süresi dolunca seans otomatik `COMPLETED` yazılır (PATCH,
+  `actualFocusSeconds = focusMinutes*60`) ve **atlanabilir** mola sayacı başlar; mola tamamen
+  client-side (DB kavramı yok), süresi presetten gelir (25/5→5, 50/10→10, custom→sabit 5 dk).
+  `focus`+`break` fazları **immersive** görünümde: `SeansShell` `fixed inset-0 z-30` katmanı render
+  eder (nav `z-20` altta kalır), pastel blob backdrop + halka + minimal kontroller. Plan görevinden
+  konu taşınır: `plan-task-row`/`plan-timeline-view` linkleri `task.subject` varsa
+  `/seans?subject=…` verir; shell `subject`'i parse edip başlıkta chip olarak gösterir ve
+  `POST /v1/study-sessions` gövdesine ekler (backend `subject` alanı zaten mevcuttu — BE değişmedi).
+  `CircularTimerRing` countdown modunda halka içine yumuşak radyal pastel gradyan (Referans 1
+  estetiği). Kullanım/gotcha: mola atlansa/beklense de seans focus bitişinde persist edilir; erken
+  "Seansı bitir"/"Erken bırak" molayı atlar. Hata toast'ları `z-[100]` immersive üstünde kalır.
+  Dosyalar: `apps/web/src/app/[locale]/(app)/seans/_components/*`,
+  `apps/web/src/app/[locale]/(app)/plan/_components/plan-task-row.tsx`,
+  `plan-timeline-view.tsx`, `packages/ui/src/components/circular-timer-ring.tsx`,
+  `apps/web/messages/{tr,en}.json`.
+- **Seans UI rafinasyonu (2026-07-08)** — immersive kontroller referanstaki gibi kompakt ikon
+  satırı: merkezde mavi (`--color-progress`) büyük ⏸/▶, yanlarda ✕/✓ (focus) veya ⏭ (break);
+  hepsi `--shadow-card` ile yüzeyden kalkar, ikon-only + `aria-label`. `CircularTimerRing`
+  countdown'a hareket eklendi: iç pastel dolgu 4s sakin "nefes" (`mentor-timer-breathe`,
+  reduced-motion kapalı), stroke geçişi 1s ease-linear (sürekli akış), yay ucunda glow'lu öncü
+  nokta. Idle kurulum ekranına bilgi şeridi: **Odak / Mola / Tahmini bitiş** (mola-farkında;
+  bitiş `now` 30s'de bir tazelenir, `Date.now()` render dışı). Dosyalar:
+  `session-controls.tsx`, `circular-timer-ring.tsx`, `packages/ui/src/theme.css`, `seans-shell.tsx`.
+- **Seans geçmişi / görünürlüğü (2026-07-09)** — roadmap §255 "hesap verebilirlik ritüeli":
+  yakalanan seans verisi artık kullanıcıya geri gösteriliyor. `GET /v1/study-sessions` (paginated,
+  `endedAt` not-null → finalize edilmiş geçmiş, `startedAt desc`) eklendi; mock-exam/mood list
+  pattern'iyle birebir (`listStudySessionsQuerySchema = paginationQuerySchema` → repo `listPaged` →
+  service `list` → controller `@Get()`). `/seans` idle ekranında `SessionHistory` bölümü son 5 seansı
+  gösterir: efor emoji (`session_mood` 1/2/3 → 😩😐🙂), süre, konu chip'i, `struggle_note`, durum
+  (Tamamlandı / **Yarım kaldı** — anti-shaming §0), tarih. `reset()` ile idle'a dönünce remount →
+  yeni seans taze görünür. FE generated client list query paramı üretmediği için `study-sessions.ts`
+  wrapper URL'e `page/pageSize` ekler (plan-tasks deseni). Sadece frontend + tek okuma endpoint'i;
+  DB/migration yok. **Kapsam dışı:** AI tüketimi (W3), tam sayfa geçmiş/filtre/"load more" (backlog).
+  Dosyalar: `session-history.tsx`, `seans-shell.tsx`, `study-sessions.ts` (web), coaching
+  `study-session.controller`/`session.service`/`study-session.repository`/`coaching.dto`,
+  `packages/validation`, `coaching.e2e-spec.ts`, `messages/{tr,en}.json`.
+- **Seans özetinin AI koça açılması (2026-07-09)** — roadmap §258/§259 seam'inin coaching tarafı:
+  yakalanan seans sinyali (konu + efor + `struggle_note`) artık AI context'ine PII-free bir agregat
+  olarak akıyor. `SessionService.getRecentSummary(userId)` son `RECENT_SESSION_WINDOW_DAYS`(7) günün
+  finalize seans sayısı + odak dakikası + son distinct konular (`RECENT_SUBJECTS_MAX`=4) + en yeni
+  `struggle_note`'u döndürür (hiç aktivite yoksa `null`). Veri erişimi tek yer:
+  `StudySessionRepository.recentSummary` (2 sınırlı sorgu: agregat + son 20 satır tarama). `SessionService`
+  artık `coaching.module` `exports`'unda (AI `ContextBuilder` tüketir; `MoodService` gibi). Yeni tablo/
+  kolon/endpoint yok. **Guardrail (§4 #6):** yalnız sayı + kullanıcının kendi konu adları + kendi notu;
+  e-posta/isim/davranışsal ham veri yok. Dosyalar: `coaching.constants.ts` (`RecentSessionSummary`),
+  `study-session.repository.ts`, `session.service.ts`, `coaching.module.ts`, `session.service.spec.ts`.
+  Seam karşılığı: [ai.md](./ai.md).
+- **Seans idle UI sadeleştirme (2026-07-09)** — gereksiz yardımcı metinler kaldırıldı (`duration_*`,
+  `subject_optional_hint`, halkadaki "Sürükle veya ok tuşları"); chip'ler `aria-label`/`aria-pressed`
+  ile kendi kendini anlatıyor. Özet satırı nested-card gölgesinden pastel tint'e indi; timer 280px;
+  `+/−` yuvarlak. "Son seanslar" tek yüzeyli liste (avatar süre/mood + konu + durum + tarih). Dosyalar:
+  `seans-shell.tsx`, `session-subject-picker.tsx`, `session-timer-ring.tsx`, `session-history.tsx`,
+  `circular-timer-ring.tsx` (`@mentor/ui`), `messages/{tr,en}.json`.
+- **Seans sonrası premium AI yansıması — coaching seam (2026-07-09)** — `study_sessions` +=
+  `ai_reflection` / `ai_model` / `ai_reflected_at` (migration `0039_fair_jazinda`).
+  `SessionService.setAiReflection` + `getById` (W3 yazar, AI tabloya dokunmaz); `recordFeedback`
+  mood/note değişince cache temizler. `StudySessionDto.aiReflection`. Seam: [ai.md](./ai.md).
+- **Seans öncesi konu seçimi (2026-07-09)** — roadmap §256 "veri kör kalmasın": `/seans` idle
+  kurulum ekranına konu seçici (`SessionSubjectPicker`) eklendi; artık deep-link (`?subject=`)
+  olmadan da konu seçilebiliyor, böylece mikro check-in sinyali bir konuya bağlanır. Plan'daki
+  add-task picker deseni aynalandı (`usersControllerMe` → `contentControllerCalendarByFamily` →
+  `contentControllerSubjectsBySlug`): examType'lı kullanıcıda ders chip'leri, examType yoksa Profil
+  CTA + serbest metin, taksonomi boş/hata → serbest metin. `seans-shell` `subject`'i artık state
+  (URL param'dan tohumlanır); idle'da picker, immersive'de salt-okunur chip. Sadece frontend —
+  backend/DB/api-client değişmedi (konu zaten POST gövdesinde). Not: plan/seans picker'ının ortak
+  bir `SubjectPicker`'a çıkarılması DRY backlog. Dosyalar: `session-subject-picker.tsx`,
+  `seans-shell.tsx`, `messages/{tr,en}.json`.
+- **Seans sonrası mikro check-in (2026-07-08)** — roadmap §258: Pomodoro "AI'ın gözü" oluyor. Seans
+  `done` ekranına 3 emoji (😩😐🙂 → mood 1-3) + opsiyonel "seni en çok ne zorladı" notu eklendi;
+  **atlanabilir** (mood seçmeden Yeni seans/Panele dön ile geçilebilir), seans konusu varsa not
+  placeholder'ı kişiselleşir. Finalize akışına dokunulmadı: focus bitince seans zaten `COMPLETED`
+  yazıldığı için check-in **ayrı** `PATCH /v1/study-sessions/:id/feedback` ile finalize *sonrası*
+  eklenir (idempotent, yalnızca kullanıcının kendi seansı; status'e göre gate yok — nullable metadata).
+  DB: `study_sessions` += `session_mood` (int 1-3) + `struggle_note` (text) — migration
+  `0038_cloudy_night_thrasher.sql` (forward-only). Şema: `sessionFeedbackSchema` (@mentor/validation);
+  `StudySessionDto` += `sessionMood`/`struggleNote` (append-only). **Kapsam dışı (Faz 2):** AI'ın bu
+  sinyali yorumlaması (W3 seam) + seans→XP. Dosyalar: `session-done-state.tsx`, `use-session-timer.ts`,
+  `seans-shell.tsx`, `study-sessions.ts` (web), coaching `session.service`/controller/dto/mappers,
+  `schema.ts`, `packages/{types,validation}`, `coaching.e2e-spec.ts`, `messages/{tr,en}.json`.
 - **Plan page refactor (3 views)** — `/plan` now has a segmented switcher: **Liste** (checklist +
   progress %), **Timeline** (Zendenta-style rail + Yapılacak/Tamamlanan cards), **Hafta** (7-day
   strip + selected-day tasks). View mode persists in `localStorage` (`mentor.plan.viewMode`). Add

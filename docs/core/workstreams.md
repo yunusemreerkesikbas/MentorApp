@@ -58,7 +58,7 @@ Same worktree → conflicts are rare but these files are shared. Rules:
 ## 3. Working agreement
 - One track = one agent at a time. Don't write inside another track's `modules/<x>/**`.
 - Need something from another module? Use its **public service/port or a domain event** — never its tables (§AGENTS 2). If the contract doesn't exist yet, define the interface in your module and stub it.
-- Before starting a track: read its roadmap sections + relevant standards; plan; after finishing: devnote + update the api.md catalog.
+- Before starting a track: read its roadmap sections + relevant standards; plan; after finishing: update the matching feature doc + api.md catalog.
 - Quality gates per track: typecheck/lint/build/test green; review checklist (`docs/standards/code-review.md`).
 
 ## 4. Suggested execution order

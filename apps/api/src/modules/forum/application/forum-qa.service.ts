@@ -27,6 +27,7 @@ import { ForumPostRepository } from "../infrastructure/forum-post.repository";
 import { ForumAttachmentRepository } from "../infrastructure/forum-attachment.repository";
 import { ForumBookmarkRepository } from "../infrastructure/forum-bookmark.repository";
 import { resolveForumAttachments } from "./attachment.resolve";
+import { ForumMentionService } from "./forum-mention.service";
 import type { ThreadActor } from "./forum-thread.service";
 import { postRowToAnswerView, threadRowToView } from "./forum.mappers";
 
@@ -46,6 +47,7 @@ export class ForumQaService {
     private readonly config: ConfigRegistryService,
     private readonly events: EventEmitter2,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    private readonly mentions: ForumMentionService,
   ) {}
 
   private async assertEnabled(): Promise<void> {
@@ -87,6 +89,14 @@ export class ForumQaService {
       actor.id,
       toAttach,
     );
+    // Notify the asker that their question got an answer (skip when they answer their own).
+    this.events.emit(ForumEventTopic.QUESTION_ANSWERED, {
+      threadId,
+      recipientId: thread.authorId,
+      actorId: actor.id,
+    });
+    // @mentions in the answer — exclude the asker (already gets the answer notification).
+    void this.mentions.dispatch(dto.body, actor.id, `/topluluk/soru/${threadId}`, [thread.authorId]);
     // fetch with JOIN so authorName is populated in the immediate response
     const postWithAuthor = await this.posts.findById(post.id, actor.id);
     if (!postWithAuthor) throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);

@@ -25,6 +25,7 @@ export interface BottomSheetShowOptions {
   applyLabel?: string;
   closeLabel: string;
   children?: ReactNode;
+  bodyScroll?: boolean;
   dismissOnBackdrop?: boolean;
   dismissOnEscape?: boolean;
   onApply?: () => void | Promise<void>;

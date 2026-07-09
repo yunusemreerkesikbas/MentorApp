@@ -15,6 +15,7 @@ import { SendPushHandler } from "./application/handlers/send-push.handler";
 import { JobHandlersRegistrar } from "./application/job-handlers.registrar";
 import { JobRunnerService } from "./application/job-runner.service";
 import { CoachingEventsListener } from "./application/listeners/coaching-events.listener";
+import { ForumEventsListener } from "./application/listeners/forum-events.listener";
 import { PaymentsEventsListener } from "./application/listeners/payments-events.listener";
 import { NotificationsService } from "./application/notifications.service";
 import { JobRepository } from "./infrastructure/job.repository";
@@ -46,6 +47,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     DailyReminderService,
     PaymentsEventsListener,
     CoachingEventsListener,
+    ForumEventsListener,
     NotificationPreferencesRepository,
     PushSubscriptionRepository,
     NotificationDeliveryRepository,

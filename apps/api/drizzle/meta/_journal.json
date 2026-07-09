@@ -267,6 +267,20 @@
       "when": 1783377321260,
       "tag": "0037_rich_loners",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1783544210672,
+      "tag": "0038_cloudy_night_thrasher",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1783553074093,
+      "tag": "0039_fair_jazinda",
+      "breakpoints": true
     }
   ]
 }

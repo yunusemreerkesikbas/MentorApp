@@ -38,6 +38,9 @@ export function toStudySessionDto(row: StudySessionRow): StudySessionDto {
     endedAt: row.endedAt ? row.endedAt.toISOString() : null,
     actualFocusSeconds: row.actualFocusSeconds,
     plannedFocusMinutes: row.plannedFocusMinutes ?? null,
+    sessionMood: row.sessionMood ?? null,
+    struggleNote: row.struggleNote ?? null,
+    aiReflection: row.aiReflection ?? null,
   };
 }
 

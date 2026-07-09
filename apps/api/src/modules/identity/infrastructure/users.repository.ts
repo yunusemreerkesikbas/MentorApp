@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
@@ -28,10 +28,37 @@ export class UsersRepository {
     });
   }
 
+  async findByUsernameService(username: string): Promise<UserRow | undefined> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select()
+        .from(users)
+        .where(sql`lower(${users.username}) = lower(${username})`)
+        .limit(1);
+      return rows[0];
+    });
+  }
+
   async findByIdService(id: string): Promise<UserRow | undefined> {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx.select().from(users).where(eq(users.id, id)).limit(1);
       return rows[0];
+    });
+  }
+
+  /** Service-scoped: resolve a set of (lowercase) usernames → `username → id` map. Empty in → empty map. */
+  async findIdsByUsernames(usernames: string[]): Promise<Map<string, string>> {
+    const map = new Map<string, string>();
+    if (usernames.length === 0) return map;
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ id: users.id, username: users.username })
+        .from(users)
+        .where(inArray(users.username, usernames));
+      for (const r of rows) {
+        if (r.username) map.set(r.username.toLowerCase(), r.id);
+      }
+      return map;
     });
   }
 

@@ -85,6 +85,25 @@
   animation: mentor-skeleton-enter 0.28s ease-out forwards;
 }
 
+/* Calm "breathing" pulse for the focus timer's inner fill (CircularTimerRing countdown). */
+@keyframes mentor-timer-breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+.mentor-timer-breathe {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mentor-timer-breathe 4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mentor-skeleton-shimmer {
     animation: none;
@@ -93,6 +112,10 @@
 
   .mentor-skeleton-enter,
   .animate-skeleton-enter {
+    animation: none;
+  }
+
+  .mentor-timer-breathe {
     animation: none;
   }
 }

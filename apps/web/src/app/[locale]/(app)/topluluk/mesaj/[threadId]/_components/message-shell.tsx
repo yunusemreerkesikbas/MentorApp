@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { FORUM_LIKE_EMOJI, type CommentView, type ThreadDetail, type ThreadView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
@@ -18,7 +19,6 @@ import {
   unreactThread,
 } from "@/lib/forum";
 import type { AttachmentInput } from "@mentor/validation";
-import { CommentIcon } from "../../../_components/forum-icons";
 import { CommentRow } from "../../../_components/comment-row";
 import { ThreadComposer } from "../../../[slug]/_components/thread-composer";
 import { ThreadItem } from "../../../[slug]/_components/thread-item";
@@ -32,6 +32,7 @@ type State =
 /** Message detail (APP-017) — the thread + its top-level comments + a comment composer. */
 export function MessageShell({ threadId }: { threadId: string }) {
   const t = useTranslations("topluluk");
+  const highlightId = useSearchParams().get("highlight");
   const [state, setState] = useState<State>({ status: "loading" });
 
   const apply = useCallback((detail: ThreadDetail) => {
@@ -155,27 +156,17 @@ export function MessageShell({ threadId }: { threadId: string }) {
         />
       </div>
 
-      {/* Comments */}
-      {comments.length === 0 ? (
-        <div className="flex flex-col items-center px-6 py-12 text-center">
-          <span
-            className="flex h-12 w-12 items-center justify-center rounded-full"
-            style={{ background: "color-mix(in srgb, var(--color-chip) 16%, white)" }}
-            aria-hidden="true"
-          >
-            <CommentIcon />
-          </span>
-          <p
-            className="mt-3 text-[15px] font-semibold"
-            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-          >
-            {t("comments_empty_title")}
-          </p>
-          <p className="mt-1 text-[13px]" style={{ color: "var(--color-secondary)" }}>
-            {t("comments_empty_desc")}
-          </p>
-        </div>
-      ) : (
+      {/* Composer — always directly under the post, before any comments */}
+      <div className="border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+        <ThreadComposer
+          placeholder={t("comment_placeholder")}
+          submitLabel={t("comment_submit")}
+          onSubmit={onComment}
+        />
+      </div>
+
+      {/* Comments (nothing shown when empty — the composer above is the call to action) */}
+      {comments.length > 0 && (
         <>
           <h2
             className="mb-1 mt-6 px-3 text-[11px] font-semibold uppercase tracking-wide"
@@ -190,20 +181,12 @@ export function MessageShell({ threadId }: { threadId: string }) {
                 comment={c}
                 onToggleLike={onToggleCommentLike}
                 onToggleBookmark={onToggleCommentBookmark}
+                highlighted={c.id === highlightId}
               />
             ))}
           </div>
         </>
       )}
-
-      {/* Composer */}
-      <div className="mt-4 border-t" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
-        <ThreadComposer
-          placeholder={t("comment_placeholder")}
-          submitLabel={t("comment_submit")}
-          onSubmit={onComment}
-        />
-      </div>
     </main>
   );
 }

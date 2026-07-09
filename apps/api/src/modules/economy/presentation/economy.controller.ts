@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpStatus, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import type { EconomyLedgerEntryView } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -7,28 +8,9 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { EconomyService } from "../application/economy.service";
 import { InviteService } from "../application/invite.service";
 import { QuestService, type QuestProgressView } from "../application/quest.service";
-import type { LedgerRow, Balance } from "../infrastructure/ledger.repository";
+import type { Balance } from "../infrastructure/ledger.repository";
 import { EconomyLedgerQueryDto, RedeemInviteDto } from "./economy.dto";
-
-export interface LedgerEntryView {
-  id: string;
-  unit: string;
-  amount: number;
-  reason: string;
-  status: string;
-  note: string | null;
-  createdAt: string;
-}
-
-const toView = (r: LedgerRow): LedgerEntryView => ({
-  id: r.id,
-  unit: r.unit,
-  amount: r.amount,
-  reason: r.reason,
-  status: r.status,
-  note: r.note,
-  createdAt: r.createdAt.toISOString(),
-});
+import { toLedgerEntryView } from "./ledger-entry-view";
 
 /**
  * User-facing economy reads (W6). Self-scoped (user-context RLS). Gated by the `economy.enabled`
@@ -61,10 +43,10 @@ export class EconomyController {
   async ledger(
     @CurrentUser() user: RequestUser,
     @Query() query: EconomyLedgerQueryDto,
-  ): Promise<LedgerEntryView[]> {
+  ): Promise<EconomyLedgerEntryView[]> {
     await this.assertEnabled();
     const rows = await this.economy.getSelfLedger(user.id, query.page, query.pageSize);
-    return rows.map(toView);
+    return rows.map(toLedgerEntryView);
   }
 
   @Get("invite")

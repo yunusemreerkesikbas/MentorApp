@@ -55,6 +55,7 @@ const makeAttachmentRepo = () => ({
   listForTargets: vi.fn().mockResolvedValue(new Map()),
 });
 const bookmarks = { myBookmarkedTargets: vi.fn().mockResolvedValue(new Set()) };
+const mentions = { dispatch: vi.fn().mockResolvedValue(undefined) };
 const config = { get: vi.fn().mockResolvedValue(true) };
 const events = { emit: vi.fn(), emitAsync: vi.fn().mockResolvedValue([]) };
 const storage = {
@@ -87,6 +88,7 @@ describe("ForumQaService", () => {
       config as never,
       events as never,
       storage as never,
+      mentions as never,
     );
 
   it("rejects a non-member answering", async () => {
@@ -96,10 +98,15 @@ describe("ForumQaService", () => {
     expect(posts.createAnswer).not.toHaveBeenCalled();
   });
 
-  it("an ACTIVE member can answer", async () => {
+  it("an ACTIVE member can answer + notifies the asker", async () => {
     const view = await svc(makeZoneRepo()).answer(actor("u1"), "q1", { body: "cevap" });
     expect(view.id).toBe("a1");
     expect(posts.createAnswer).toHaveBeenCalledWith({ threadId: "q1", authorId: "u1", body: "cevap" });
+    expect(events.emit).toHaveBeenCalledWith("forum.question.answered", {
+      threadId: "q1",
+      recipientId: "asker",
+      actorId: "u1",
+    });
   });
 
   it("persists a valid image attachment on an answer (Phase 2)", async () => {

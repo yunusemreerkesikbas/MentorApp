@@ -221,7 +221,11 @@ function TimelineTaskCard({
               >
                 {t("today")} ·{" "}
                 <Link
-                  href="/seans"
+                  href={
+                    task.subject
+                      ? { pathname: "/seans", query: { subject: task.subject } }
+                      : "/seans"
+                  }
                   className="inline-flex items-center gap-0.5 font-bold"
                   style={{ color: "var(--color-progress)" }}
                 >

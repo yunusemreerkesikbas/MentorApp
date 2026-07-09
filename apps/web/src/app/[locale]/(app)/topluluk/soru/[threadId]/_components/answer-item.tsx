@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { AnswerView } from "@mentor/types";
 import { Card, Chip } from "@mentor/ui";
 import { AttachmentGallery } from "../../../_components/attachment-gallery";
+import { MentionText } from "../../../_components/mention-text";
 import { SendButton } from "../../../_components/send-button";
 import { BookmarkButton } from "../../../_components/bookmark-button";
 
@@ -44,7 +45,7 @@ export function AnswerItem({
         ) : null}
       </div>
       <p className="mt-2 whitespace-pre-wrap text-base" style={{ color: "var(--color-main)" }}>
-        {answer.body}
+        <MentionText text={answer.body} />
       </p>
       <AttachmentGallery attachments={answer.attachments} />
       <div className="-ml-1.5 mt-3 flex items-center gap-1">

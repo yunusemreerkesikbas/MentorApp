@@ -68,9 +68,18 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `GET /v1/forum/zones/:id/threads` | Cursor feed (pinned first) |
 | `POST /v1/forum/threads/:threadId/answers` | Post QA answer |
 | `GET /v1/forum/threads/:threadId` | Question detail (q + answers) |
+| `GET /v1/forum/threads/:threadId/detail` | CHAT/ANNOUNCEMENT thread + top-level comments |
+| `POST /v1/forum/threads/:threadId/comments` | Comment on a CHAT/ANNOUNCEMENT thread |
+| `GET/POST /v1/forum/posts/:postId[/replies]` | Comment detail / reply (nested) |
+| `PUT/DELETE /v1/forum/posts/:postId/reactions` | Toggle like on a comment |
 | `POST /v1/forum/threads/:threadId/accept/:postId` | Accept answer (asker, one-shot) |
 | `PUT/DELETE /v1/forum/threads/:threadId/reactions` | Toggle emoji reaction |
 | `POST /v1/forum/threads/:threadId/pin` | Pin/unpin thread |
+| `POST /v1/forum/attachments/upload-url` | Presigned image upload URL (APP-018) |
+| `PUT/DELETE /v1/forum/threads\|posts/:id/bookmark` | Toggle bookmark (APP-018) |
+| `GET /v1/forum/bookmarks?before=` | Saved feed — threads + posts interleaved (APP-018) |
+| `GET /v1/forum/users/:username/activity?before=` | A user's activity feed (profile, APP-018) |
+| `POST /v1/internal/cron/cleanup-forum-attachments` | Orphan upload sweep (CronSecretGuard, APP-018) |
 | `POST /v1/forum/reports` | Report content |
 | `GET /v1/forum/zones/:id/reports` | Room moderation queue |
 | `GET /v1/forum/reports` | Platform moderation queue |
@@ -82,6 +91,74 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Profil/topluluk UX loose-ends + profil rotası yeniden adlandırıldı (APP-020)** — yedi rötuş:
+  (1) Sağ kolon `ProfileCard` artık kendi topluluk profiline **tıklanabilir** link (username yoksa düz).
+  (2) **Kaydedilenler** sol sidebar'dan çıkarıldı; kendi profilinde **sekme** oldu (`[Gönderiler |
+  Kaydedilenler]`, saved sekmesi yalnız kendi profilinde). `SavedShell` `embedded` prop'u aldı → profil
+  sekmesinde `<main>`/başlık olmadan yeniden kullanılıyor (bookmark mantığı tek yerde). (3) `/profil`
+  (hesap sayfası) → `/topluluk/uye/[me]` **çapraz link** ("Topluluk profilim"); iki sayfa ayrı amaç,
+  üçüncü profil yok. (4) Profil feed'inde bir **yanıta** tıklayınca artık kendi izole detayına değil,
+  **ebeveyn post'a** gidiliyor ve yanıt `?highlight=` ile vurgulanıp scroll'lanıyor (`CommentRow`
+  `rowHref`+`highlighted` prop'ları; `message-shell`/`comment-shell` `useSearchParams` ile highlight
+  okuyor). (5) Post detayında **kompozer** her zaman postun hemen altında (yanıtlardan önce). (6) Boş
+  durumdaki "Henüz yorum/yanıt yok" blokları kaldırıldı (altta kompozer zaten CTA). (7) Profil rotası
+  `/topluluk/u/[username]` → **`/topluluk/uye/[username]`** (anlamlı TR segment; `topluluk` prefix'i
+  korundu — profil topluluk 3-kolon shell'inde render oluyor). `AuthorLink`/`MentionText`/`HideCompanion`
+  + dizin taşındı. Kaldırılan i18n: `comments_empty*`/`replies_empty*`; eklenen: `profile_tab_posts`,
+  `profile.community_profile_link`. *(APP-020)*
+- **Kullanıcı forum profili + tıklanabilir yazar/@mention (APP-018)** — `/topluluk/uye/[username]`:
+  public-safe profil başlığı (kimlik + oyunlaştırma) + kişinin **karışık aktivite feed'i** (thread +
+  yorum/cevap). **İki endpoint** (community→forum cycle'ından kaçınmak için): `GET /community/profile/
+  :username` (`CommunityService.getPublicProfile` — `getSummary`'nin özü, leaderboard hariç + public
+  kimlik; **email/PII YOK**; banlı/olmayan → 404) ve `GET /forum/users/:username/activity?before=`
+  (`ForumThreadService.getUserActivity` — repo `listByAuthor` thread+post, merge+createdAt-desc+cursor;
+  viewer state ile → profilden beğeni/kaydet yapılabilir). Username çözümü identity'de
+  (`UsersService.findByUsername`). Tipler: `PublicProfile` (community), `ForumActivityFeed` (forum,
+  `SavedFeedItem` reuse). **Tıklanabilirlik**: `MentionText` @handle artık `Link`
+  (`/topluluk/uye/{handle}`); yeni `AuthorLink` (username yoksa düz metin, feed satırında
+  `stopPropagation`) yazar isim+avatarını sarıyor (`thread-item`/`comment-row`/`comment-shell`).
+  Frontend: `profile-shell` (saved-shell deseni; bookmark listeden düşürmez, patch'ler) + `profile-header`
+  (`StatSnapshot`+`BadgeStrip` reuse). i18n: `profile_not_found`/`profile_activity_empty`. Testler:
+  `getUserActivity` (merge/sort/cursor + 404), e2e (aktivite feed + profil email'siz + 404). **Kapsam
+  dışı**: takip/bio, profil düzenleme, replier-cluster linkleri, SEO-public. *(APP-018)*
+- **Profil UI rötuş — impeccable/product register (APP-018)** — (1) Profil başlığı büyük **hero-metric
+  stat kartlarından** (PRODUCT.md'nin yasakladığı desen; sağ efor-panosuyla yinelenme) **kompakt satır-içi
+  stat rayı**na çevrildi (avatar 72, ince seviye çubuğu, geri-link). (2) `HideOnRanking` → `HideCompanion`:
+  sağ efor-panosu artık `/topluluk/uye/*` profillerinde de gizlenir (kendi profilinde kimlik iki kez
+  belirmesin). (3) Aktivite feed'inde **zone bağlamı**: `listByAuthor` (thread + post, post 2-hop join)
+  `zoneTitle`/`zoneSlug` taşır → yeni `ForumActivityItem` (`SavedFeedItem & { zone }`); her öğe üstünde
+  linkli zone etiketi (subreddit-adı deseni). *(APP-018)*
+- **@Mention — kullanıcı etiketleme + bildirim (APP-018)** — Post/yorum/cevap gövdesinde `@kullanıcı`
+  etiketlenince o kişiye in-app bildirim gider ve @handle gövdede vurgulanır. **Tablosuz** — mention'lar
+  gövdedeki @token'lardan türetilir (migration yok). `forum/domain/mention.ts` `extractMentions`
+  (`@[a-z0-9_]{3,24}`, kelime-içine gömülü değil, uniq, cap **10**). Yeni `ForumMentionService` (create'te
+  `dispatch(body, actor, link, exclude[])` → `UsersService.findIdsByUsernames` ile çözer → çözülen her
+  gerçek kullanıcıya `USER_MENTIONED` emit; **best-effort** try/catch+log, `void` ile fire-and-forget,
+  post'u asla kırmaz). Mimari: username→id çözümü **identity'de** (`UsersService.findIdsByUsernames`,
+  `IdentityModule` forum'a import edildi) — forum `users` tablosunu doğrudan sorgulamıyor. Emit noktaları:
+  `postThread`/`comment`/`replyToComment`/`answer`; her biri **exclude** ile parent-yazarını atlar
+  (yorum/yanıt bildirimini zaten alan kişiye çift bildirim yok) + öz-mention listener'da atlanır.
+  `ForumEventsListener.onUserMentioned` → "Sizden bahsedildi" FORUM bildirimi (link yüzeye göre payload'da).
+  Web: `MentionText` (lookbehind'sız, cross-browser regex; @handle'ı accent renkte vurgular, **link değil**
+  — profil sayfası backlog) tüm gövde render'larında (thread-item/comment-row/answer-item/question/comment
+  shell). **Kapsam dışı**: composer autocomplete, tıklanabilir profil linki, `forum_mentions` tablosu.
+  Testler: `extractMentions` + `ForumMentionService` (resolve/exclude/hata-yutma) + listener + servis
+  wiring assertion'ı + e2e (@mention → bildirim). *(APP-018)*
+- **Forum bildirimleri (in-app, APP-018)** — Forum etkileşimleri artık kişiye özel gerçek-zamanlı
+  in-app bildirim üretiyor (mevcut SSE zil + `/bildirimler` gelen kutusu). 5 tetikleyici: soruna cevap
+  (`question.answered` — soran), thread'e yorum (`thread.commented` — yazar), yoruma yanıt
+  (`comment.replied` — yorum yazarı), cevap kabul (`answer.accepted` — cevaplayan), zone'a katılım isteği
+  (`member.requested` — owner/mod). **Migration yok** (`user_notifications.category` text; enum'a `FORUM`
+  eklendi). Forum yeni event'leri emit ediyor (recipient + link alanları **domain'de çözülüyor** →
+  notifications forum'a coupling'siz); yeni `ForumEventsListener` (notifications) `@OnEvent` × 5 →
+  `createInApp(recipientId, "FORUM", …)`, best-effort, **öz-bildirim atlanır** (actor===recipient).
+  `member.requested` owner/mod'lara fan-out (`ForumZoneRepository.listOwnerAndMods`, payload'da
+  `moderatorIds`+`slug`). Reply/cevap **event-başına** (coaching'deki günlük dedup YOK). Web:
+  `notification-drawer-shell` kategori map'lerine `FORUM` (MessageCircle ikon, fallback `/topluluk`).
+  Jenerik metin (aktör adı yok → ekstra sorgu yok). Testler: `forum-events.listener.spec` (6: her
+  handler + öz-bildirim + fan-out), servis emit assertion'ları, e2e (join-request → owner bildirilir;
+  throttle-güvenli, thread POST'suz). **Kapsam dışı**: @mention, web push fan-out, gruplama,
+  kişiselleştirilmiş isim. Detay: [`notifications.md`](./notifications.md). *(APP-018)*
 - **Send (paylaş) + Bookmark (kaydet) — Twitter/Threads (APP-018)** — Aksiyon satırına iki yeni ikon:
   **Send** postu paylaşılabilir bağlantı olarak paylaşır (`navigator.share` native sheet, yoksa panoya
   kopyala + toast; backend yok — link uygulama-içi detay rotası), **Bookmark** postu kişiye özel kaydeder.

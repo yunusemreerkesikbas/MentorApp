@@ -12,6 +12,8 @@ export type ThreadWithAuthor = ThreadRow & {
   authorUsername: string | null;
   authorAvatarStorageKey: string | null;
 };
+/** Author-listing row enriched with its zone (for the profile activity feed's "posted in X" label). */
+export type ThreadWithAuthorAndZone = ThreadWithAuthor & { zoneTitle: string; zoneSlug: string };
 
 /**
  * Feed-thread + reaction access (Slice 2). Reads run in user context (RLS belt: non-deleted +
@@ -113,6 +115,33 @@ export class ForumThreadRepository {
         .where(eq(forumThreads.id, threadId))
         .limit(1);
       return row ?? null;
+    });
+  }
+
+  /** A user's own threads, newest first (for their profile). `before` (ISO createdAt) loads older. */
+  async listByAuthor(
+    authorId: string,
+    viewerId: string,
+    opts: { limit: number; before?: string },
+  ): Promise<ThreadWithAuthorAndZone[]> {
+    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+      const conds = [eq(forumThreads.authorId, authorId), isNull(forumThreads.deletedAt)];
+      if (opts.before) conds.push(lt(forumThreads.createdAt, new Date(opts.before)));
+      return tx
+        .select({
+          ...getTableColumns(forumThreads),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+          authorUsername: sql<string | null>`${users.username}`,
+          authorAvatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+          zoneTitle: sql<string>`coalesce(${forumZones.title}, '')`,
+          zoneSlug: sql<string>`coalesce(${forumZones.slug}, '')`,
+        })
+        .from(forumThreads)
+        .leftJoin(users, eq(forumThreads.authorId, users.id))
+        .leftJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
+        .where(and(...conds))
+        .orderBy(desc(forumThreads.createdAt))
+        .limit(opts.limit);
     });
   }
 

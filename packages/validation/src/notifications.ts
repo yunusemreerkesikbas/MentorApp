@@ -28,7 +28,7 @@ export type UpdateNotificationPreferencesInput = z.infer<
   typeof updateNotificationPreferencesSchema
 >;
 
-export const notificationCategorySchema = z.enum(["COACH", "PLAN", "CONTENT"]);
+export const notificationCategorySchema = z.enum(["COACH", "PLAN", "CONTENT", "FORUM"]);
 export type NotificationCategoryInput = z.infer<typeof notificationCategorySchema>;
 
 export const listNotificationsSchema = z.object({

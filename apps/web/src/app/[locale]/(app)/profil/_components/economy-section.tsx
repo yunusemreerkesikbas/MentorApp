@@ -9,6 +9,7 @@ import type {
 } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Card, SectionHeading } from "@mentor/ui";
+import { EconomyQuestsCard } from "@/components/economy-quests-card";
 import { FormError } from "@/components/form";
 import {
   fetchEconomyBalance,
@@ -19,7 +20,6 @@ import {
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { EconomyBalanceCard } from "./economy-balance-card";
 import { EconomyInviteCard } from "./economy-invite-card";
-import { EconomyQuestsCard } from "./economy-quests-card";
 import { ListRow } from "./account-links-card";
 import Coins from "lucide-react/dist/esm/icons/coins.mjs";
 import Gift from "lucide-react/dist/esm/icons/gift.mjs";
@@ -48,11 +48,11 @@ async function fetchEconomyHub(): Promise<{
   quests: QuestProgressView[];
   invite: InviteCodeView;
 }> {
-  const [balance, quests, invite] = await Promise.all([
-    fetchEconomyBalance(),
+  const [quests, invite] = await Promise.all([
     fetchQuests(),
     fetchInviteCode(),
   ]);
+  const balance = await fetchEconomyBalance();
   return { balance, quests, invite };
 }
 
@@ -156,6 +156,7 @@ export function EconomySection({
     sheet.show({
       title: t("quests_title"),
       layout: "filter",
+      bodyScroll: false,
       children: (
         <EconomyQuestsCard
           quests={state.quests}

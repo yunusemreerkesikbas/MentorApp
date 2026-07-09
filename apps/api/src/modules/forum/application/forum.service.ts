@@ -112,7 +112,20 @@ export class ForumService {
       joinPolicy === "REQUEST" ? ZoneMemberStatus.PENDING : ZoneMemberStatus.ACTIVE;
     await this.repo.upsertMember(zoneId, userId, ZoneRole.MEMBER, status);
     if (status === ZoneMemberStatus.PENDING) {
-      this.events.emit(ForumEventTopic.MEMBER_REQUESTED, { zoneId, userId });
+      // Resolve slug + recipients in-domain (service context) so notifications stays decoupled and
+      // the link never depends on the joiner's zone visibility. Skip if the zone vanished (no link).
+      const [slug, moderatorIds] = await Promise.all([
+        this.repo.zoneSlug(zoneId),
+        this.repo.listOwnerAndMods(zoneId),
+      ]);
+      if (slug) {
+        this.events.emit(ForumEventTopic.MEMBER_REQUESTED, {
+          zoneId,
+          slug,
+          requesterId: userId,
+          moderatorIds,
+        });
+      }
     }
     return { status };
   }
