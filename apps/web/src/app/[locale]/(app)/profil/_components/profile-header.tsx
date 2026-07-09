@@ -7,6 +7,7 @@ import {
   type FormEvent,
 } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { updateMeSchema } from "@mentor/validation";
 import {
   ApiClientError,
@@ -209,6 +210,16 @@ export function ProfileHeader({
       <p className="mt-2 max-w-full truncate text-sm text-[var(--color-secondary)]">
         {user.username ? `@${user.username}` : user.email}
       </p>
+      {user.username ? (
+        <Link
+          href={`/topluluk/uye/${user.username}`}
+          className="mt-3 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{ color: "var(--color-accent)" }}
+        >
+          {t("community_profile_link")}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+        </Link>
+      ) : null}
     </section>
   );
 }

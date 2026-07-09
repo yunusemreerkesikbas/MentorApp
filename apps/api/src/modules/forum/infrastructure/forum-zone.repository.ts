@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { ZoneMemberStatus } from "@mentor/types";
+import { ZoneMemberStatus, ZoneRole } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
@@ -176,6 +176,35 @@ export class ForumZoneRepository {
         .where(and(eq(forumZoneMembers.zoneId, zoneId), eq(forumZoneMembers.userId, userId)))
         .limit(1);
       return row ?? null;
+    });
+  }
+
+  /** SERVICE context — a zone's slug (for building notification links), or null if it no longer exists. */
+  async zoneSlug(zoneId: string): Promise<string | null> {
+    return withServiceContext(this.db, async (tx) => {
+      const [row] = await tx
+        .select({ slug: forumZones.slug })
+        .from(forumZones)
+        .where(eq(forumZones.id, zoneId))
+        .limit(1);
+      return row?.slug ?? null;
+    });
+  }
+
+  /** SERVICE context — active owner + moderator user ids of a zone (for notifying on join requests). */
+  async listOwnerAndMods(zoneId: string): Promise<string[]> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ userId: forumZoneMembers.userId })
+        .from(forumZoneMembers)
+        .where(
+          and(
+            eq(forumZoneMembers.zoneId, zoneId),
+            eq(forumZoneMembers.status, ZoneMemberStatus.ACTIVE),
+            inArray(forumZoneMembers.role, [ZoneRole.OWNER, ZoneRole.MODERATOR]),
+          ),
+        );
+      return rows.map((r) => r.userId);
     });
   }
 

@@ -52,7 +52,7 @@
 - [ ] **Dead code removed for the touched scope** — unused vars/imports/branches/files, no commented-out code.
 - [ ] Tests for the logic (backend use-cases); CI green (lint/typecheck/build).
 - [ ] No stray `TODO/FIXME` without a tracked reference.
-- [ ] Docs updated (service catalog/OpenAPI if the API changed) + **devnote added**.
+- [ ] Docs updated (service catalog/OpenAPI if the API changed) + **feature-doc timeline entry added**.
 
 ## 7. Other contracts (quick reference)
 - **Errors:** typed; mapped to `ApiError` at the boundary; never swallowed. **Never surface raw SQL/DB/internal

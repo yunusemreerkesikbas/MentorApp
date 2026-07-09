@@ -56,6 +56,25 @@ export interface LeaderboardView {
   totalParticipants: number;
 }
 
+/**
+ * GET /v1/community/profile/:username — a public user profile header (identity + gamification).
+ * Public-safe: NO email or other PII; xp/level are already public via the leaderboard.
+ */
+export interface PublicProfile {
+  userId: string;
+  displayName: string;
+  username: string;
+  avatarUrl: string | null;
+  examType: string | null;
+  /** ISO — drives "member since". */
+  createdAt: string;
+  streak: number;
+  badges: CommunityBadgeId[];
+  /** Total XP; null when the economy is disabled. */
+  xp: number | null;
+  level: CommunityLevelView | null;
+}
+
 /** GET /v1/community/summary — everything the right-column effort board needs in one call. */
 export interface CommunitySummary {
   /** Current study streak in days — economy-independent. */

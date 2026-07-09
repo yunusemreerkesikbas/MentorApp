@@ -3,7 +3,7 @@ import { ZoneSidebar } from "./_components/zone-sidebar";
 import { ZoneDrawer } from "./_components/zone-drawer";
 import { EffortBoardDrawer } from "./_components/effort-board-drawer";
 import { EffortBoard } from "./_components/effort-board";
-import { HideOnRanking } from "./_components/hide-on-ranking";
+import { HideCompanion } from "./_components/hide-companion";
 
 /**
  * Three-column community shell (Figma Feed 1:261): left chat rooms (Trending Topics layout),
@@ -17,9 +17,9 @@ export default function ToplulukLayout({ children }: { children: ReactNode }) {
       {/* Mobile chrome (outside the flex row): left "Kanallar" drawer + right "Sıralama" drawer.
           Both hidden at their desktop breakpoint where the real column shows. */}
       <ZoneDrawer />
-      <HideOnRanking>
+      <HideCompanion>
         <EffortBoardDrawer />
-      </HideOnRanking>
+      </HideCompanion>
 
       <div className="flex min-h-screen">
         {/* Left: chat rooms */}
@@ -35,7 +35,7 @@ export default function ToplulukLayout({ children }: { children: ReactNode }) {
 
         {/* Right: profile + effort board — xl+ only (below xl it lives in EffortBoardDrawer).
             Hidden on the ranking page, which already IS the full leaderboard (no duplication). */}
-        <HideOnRanking>
+        <HideCompanion>
           <aside
             className="hidden xl:block xl:w-80 xl:flex-shrink-0 xl:border-l xl:py-6"
             style={{ borderColor: "rgba(0,0,0,0.08)" }}
@@ -44,7 +44,7 @@ export default function ToplulukLayout({ children }: { children: ReactNode }) {
               <EffortBoard />
             </div>
           </aside>
-        </HideOnRanking>
+        </HideCompanion>
       </div>
     </div>
   );

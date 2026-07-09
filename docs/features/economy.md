@@ -98,6 +98,43 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   ayrıldı: "Bugünkü Ritüel" + "Başlangıç"; görev listesi kendi içinde scroll eder ve navigasyon
   aksiyonları sheet'i kapatır.
   üstte tek "sıradaki küçük adım" CTA'sı bulunur. *(2026-07-06.)*
+- **Quest v2.1 — streak milestone görevleri** — `GET /v1/economy/quests` streak eşikleri için
+  tek-seferlik "Kilometre Taşları" görevlerini de döndürür (`7/14/30/100/365 gün`). Contract'a
+  `category=milestone`, `action=panel`, `progressCurrent` ve `progressTarget` eklendi. Milestone
+  ödülü Coin değil XP'dir ve `economy.quest.streak_milestone_reward_xp` ile yönetilir. Web profil
+  görev sheet'i bu görevleri animasyonlu kategori tab'larında gösterir; sheet root'u sabit yükseklikte
+  kalır, scroll yalnızca görev listesi panelindedir ve satır aksiyonu `/panel` yönlendirmesidir.
+  Tamamlanan milestone progress'i streak resetlense bile hedefte gösterilir; streak eşikleri
+  `@mentor/core` içindeki ortak invariant'tan okunur. Milestone satırlarında metnin yanında
+  ince bir progress çizgisi gösterilir.
+  *(2026-07-08.)*
+- **Quest v2.2 — effort milestone görevleri** — `GET /v1/economy/quests` artık streak dışı toplam
+  emek kilometre taşlarını da döndürür: `10/25/50/100` odak seansı ve `25/50/100/250` tamamlanan
+  plan görevi. Hepsi `category=milestone`, `period=once`, XP ödüllü ve
+  `economy.quest.effort_milestone_reward_xp` ile yönetilir. Economy coaching tablolarını okumaz;
+  toplam sayaçları `DailyQuestSignalService` public boundary'sinden alır. Web görev modalında mevcut
+  "Kilometre Taşları" tabında otomatik görünür; mobile app aynı `/v1/economy/quests` contract'ını
+  native action mapping ile tüketebilir.
+  *(2026-07-09.)*
+- **Quest v2.3 — panel quest banner** — görevler artık yalnızca `/profil` içinde saklı değil:
+  `/panel` günlük ritim kartının altında hafif bir "Bugünkü Ritüel" banner'ı gösterir. Banner mevcut
+  `GET /v1/economy/quests` contract'ını best-effort tüketir, economy kapalıysa sessizce gizlenir ve
+  tıklanınca aynı görev sheet'ini açar. Modal içeriği profil ve panel arasında ortak component'tir;
+  backend contract değişmedi. Plan/mood güncellemeleri quest state'ini yeniden çeker.
+  *(2026-07-09.)*
+- **Quest v2.4 — reward feedback + balance sync** — web artık panelde yeni tamamlanan görevleri
+  önceki/sonraki quest snapshot'ından algılar; ilk yüklemede eski tamamlanmış görevler için toast
+  göstermez. Plan veya mood aksiyonundan sonra `GET /v1/economy/quests` auto-grant'i tetikler,
+  yeni ödül varsa kısa XP/Coin toast'ı gösterir ve ardından `GET /v1/economy/balance` ile üstteki
+  bakiye pill'ini yeniler. Profil economy hub da stale balance riskini kapatmak için quest auto-grant
+  okumasından sonra balance okur. Backend contract değişmedi.
+  *(2026-07-09.)*
+- **Quest v2.5 — reward ledger history UI** — `GET /v1/economy/ledger` artık ledger satırlarını
+  kullanıcı-dostu `title`/`description` alanlarıyla döndürür; teknik `reason` debug için korunur ama
+  web UI'da gösterilmez. Profilde bakiye sheet'i açılınca son 20 hareket lazy yüklenir, XP/Coin
+  tutarı ve kısa tarih ile gösterilir. Yeni endpoint yok; mobile ileride aynı view contract'ını
+  tüketebilir.
+  *(2026-07-09.)*
 
 ## Gotchas / Known issues
 
@@ -110,7 +147,7 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 - **Churn/refund reversal** = Phase 2 (negative compensating entry).
 - **F1 (backlog — REQUIRED before more organic earning):** cap check + append are atomic now
   (fixed in 0022), but advisory-lock = backlog for extreme concurrency.
-- **Milestone quests** = backlog (streak tiers / longer-term badges need a broader product pass).
+- **Weekly ritual quests / richer milestones** = backlog (weekly period rules and future totals need a product pass).
 
 ## Related
 

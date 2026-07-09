@@ -403,6 +403,14 @@ export const studySessions = pgTable(
     actualFocusSeconds: integer("actual_focus_seconds").notNull().default(0),
     /** Nullable SOFT ref → content subject. */
     subject: text("subject"),
+    /** Post-session micro check-in: subjective effort/mood 1-3 (😩😐🙂); null until captured. */
+    sessionMood: integer("session_mood"),
+    /** Optional post-session "what challenged you" free-text signal for the AI; null when blank. */
+    struggleNote: text("struggle_note"),
+    /** Premium AI session reflection cache (one per session; cleared when feedback changes). */
+    aiReflection: text("ai_reflection"),
+    aiModel: text("ai_model"),
+    aiReflectedAt: timestamp("ai_reflected_at", { withTimezone: true }),
     /** IN_PROGRESS | COMPLETED | ABANDONED (StudySessionStatus). */
     status: text("status").notNull().default("IN_PROGRESS"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

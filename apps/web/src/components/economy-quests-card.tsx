@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { flushSync } from "react-dom";
 import { useTranslations } from "next-intl";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   ApiClientError,
   usersControllerResendVerificationEmail,
@@ -22,6 +22,8 @@ interface EconomyQuestsCardProps {
   quests: QuestProgressView[];
 }
 
+type QuestTabKey = QuestProgressView["category"];
+
 /**
  * Onboarding quests — titles and completion from backend; no FE reward logic.
  */
@@ -36,8 +38,23 @@ export function EconomyQuestsCard({
   const reduceMotion = useReducedMotion();
   const toast = useMentorToast();
   const [resendingVerification, setResendingVerification] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<QuestTabKey>("daily_ritual");
   const dailyQuests = quests.filter((quest) => quest.category === "daily_ritual");
+  const milestoneQuests = quests.filter((quest) => quest.category === "milestone");
   const onboardingQuests = quests.filter((quest) => quest.category === "onboarding");
+  const questTabs = ([
+    { key: "daily_ritual", label: translate("quests_daily_section"), quests: dailyQuests },
+    { key: "milestone", label: translate("quests_milestone_section"), quests: milestoneQuests },
+    { key: "onboarding", label: translate("quests_onboarding_section"), quests: onboardingQuests },
+  ] satisfies Array<{
+    key: QuestTabKey;
+    label: string;
+    quests: QuestProgressView[];
+  }>).filter((tab) => tab.quests.length > 0);
+  const activeTab = questTabs.some((tab) => tab.key === selectedTab)
+    ? selectedTab
+    : questTabs[0]?.key;
+  const activeQuests = questTabs.find((tab) => tab.key === activeTab)?.quests ?? [];
   const completed = dailyQuests.filter((quest) => quest.completed).length;
   const percent =
     dailyQuests.length === 0 ? 0 : Math.round((completed / dailyQuests.length) * 100);
@@ -46,7 +63,7 @@ export function EconomyQuestsCard({
     onboardingQuests.find((quest) => !quest.completed && quest.action) ??
     null;
 
-  function navigateAfterDismiss(path: "/plan" | "/seans" | "/panel" | "/abonelik") {
+  function navigateAfterDismiss(path: "/plan" | "/seans" | "/panel" | "/abonelik" | "/profil") {
     flushSync(() => {
       onDismiss?.();
     });
@@ -67,12 +84,20 @@ export function EconomyQuestsCard({
       navigateAfterDismiss("/panel");
       return;
     }
+    if (action === "panel") {
+      navigateAfterDismiss("/panel");
+      return;
+    }
     if (action === "subscription") {
       navigateAfterDismiss("/abonelik");
       return;
     }
     if (action === "invite") {
-      onInviteRequested?.();
+      if (onInviteRequested) {
+        onInviteRequested();
+        return;
+      }
+      navigateAfterDismiss("/profil");
       return;
     }
     if (action !== "verify-email" || resendingVerification) return;
@@ -100,8 +125,8 @@ export function EconomyQuestsCard({
   }
 
   return (
-    <div>
-      <div className="sticky top-0 z-10 bg-white pb-3">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="shrink-0 bg-white pb-3">
         <QuestProgressGauge
           percent={percent}
           percentLabel={translate("quests_percent", { percent })}
@@ -130,17 +155,57 @@ export function EconomyQuestsCard({
             <ArrowRight className="shrink-0 text-[var(--color-main)]" size={18} aria-hidden />
           </button>
         ) : null}
+
+        {questTabs.length > 1 ? (
+          <div
+            aria-label={translate("quests_tabs_label")}
+            className="mt-3 flex rounded-[var(--radius-card)] border border-black/10 bg-black/[0.04] p-1"
+            role="tablist"
+          >
+            {questTabs.map((tab) => {
+              const tabCompleted = tab.quests.filter((quest) => quest.completed).length;
+              const selected = tab.key === activeTab;
+              return (
+                <button
+                  key={tab.key}
+                  aria-controls="quests-panel"
+                  aria-selected={selected}
+                  className={`relative min-w-0 flex-1 rounded-[var(--radius-card)] px-2 py-2 text-center text-xs font-extrabold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] motion-reduce:transition-none ${
+                    selected ? "text-[var(--color-main)]" : "text-[var(--color-secondary)] hover:text-[var(--color-main)]"
+                  }`}
+                  id={`quests-tab-${tab.key}`}
+                  onClick={() => setSelectedTab(tab.key)}
+                  role="tab"
+                  type="button"
+                >
+                  {selected ? (
+                    <motion.span
+                      className="absolute inset-0 rounded-[var(--radius-card)] bg-white shadow-[var(--shadow-card)]"
+                      layoutId="quest-tab-indicator"
+                      transition={
+                        reduceMotion
+                          ? { duration: 0 }
+                          : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }
+                      }
+                    />
+                  ) : null}
+                  <span className="relative block truncate">{tab.label}</span>
+                  <span className="relative mt-0.5 block tabular-nums">
+                    {tabCompleted}/{tab.quests.length}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
 
       <QuestSection
-        title={translate("quests_daily_section")}
-        quests={dailyQuests}
-        resendingVerification={resendingVerification}
-        onAction={handleAction}
-      />
-      <QuestSection
-        title={translate("quests_onboarding_section")}
-        quests={onboardingQuests}
+        animationKey={activeTab}
+        labelledBy={activeTab ? `quests-tab-${activeTab}` : undefined}
+        panelId="quests-panel"
+        quests={activeQuests}
+        reduceMotion={reduceMotion ?? false}
         resendingVerification={resendingVerification}
         onAction={handleAction}
       />
@@ -149,30 +214,49 @@ export function EconomyQuestsCard({
 }
 
 function QuestSection({
+  animationKey,
   onAction,
+  labelledBy,
+  panelId,
   quests,
+  reduceMotion,
   resendingVerification,
-  title,
 }: {
+  animationKey?: string;
+  labelledBy?: string;
   onAction: (action: QuestProgressView["action"]) => Promise<void>;
+  panelId?: string;
   quests: QuestProgressView[];
+  reduceMotion: boolean;
   resendingVerification: boolean;
-  title: string;
 }) {
   if (quests.length === 0) return null;
   return (
-    <section className="mt-5">
-      <h3 className="px-1 text-sm font-extrabold text-[var(--color-main)]">{title}</h3>
-      <ul className="mt-2 flex flex-col gap-2">
-        {quests.map((quest) => (
-          <QuestRow
-            key={`${quest.id}:${quest.periodKey}`}
-            busy={quest.action === "verify-email" && resendingVerification}
-            onAction={onAction}
-            quest={quest}
-          />
-        ))}
-      </ul>
+    <section
+      aria-labelledby={labelledBy}
+      className="mentor-scrollarea mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1"
+      id={panelId}
+      role={labelledBy ? "tabpanel" : undefined}
+    >
+      <AnimatePresence initial={false} mode="wait">
+        <motion.ul
+          key={animationKey}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-2 flex flex-col gap-2"
+          exit={{ opacity: 0, y: reduceMotion ? 0 : -4 }}
+          initial={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 6 }}
+          transition={reduceMotion ? { duration: 0 } : { duration: 0.18, ease: "easeOut" }}
+        >
+          {quests.map((quest) => (
+            <QuestRow
+              key={`${quest.id}:${quest.periodKey}`}
+              busy={quest.action === "verify-email" && resendingVerification}
+              onAction={onAction}
+              quest={quest}
+            />
+          ))}
+        </motion.ul>
+      </AnimatePresence>
     </section>
   );
 }
@@ -188,6 +272,13 @@ function QuestRow({
 }) {
   const translate = useTranslations("economy");
   const action = quest.completed ? null : quest.action;
+  const progressCurrent = quest.progressCurrent;
+  const progressTarget = quest.progressTarget;
+  const hasProgress = progressCurrent !== undefined && progressTarget !== undefined;
+  const progressPercent =
+    hasProgress && progressTarget > 0
+      ? Math.min(100, Math.max(0, (progressCurrent / progressTarget) * 100))
+      : 0;
   const content = (
     <>
       <span
@@ -202,11 +293,30 @@ function QuestRow({
           <Clock3 size={20} strokeWidth={2.2} aria-hidden />
         )}
       </span>
-      <span className="min-w-0 flex-1 truncate text-left text-base font-semibold text-[var(--color-main)]">
-        {quest.title}
+      <span className="min-w-0 flex-1 text-left">
+        <span className="block truncate text-base font-semibold text-[var(--color-main)]">
+          {quest.title}
+        </span>
         <span className="mt-1 block text-xs font-bold text-[var(--color-secondary)]">
           {quest.badgeLabel}
+          {hasProgress
+            ? ` · ${translate("quest_progress_days", {
+                current: progressCurrent,
+                target: progressTarget,
+              })}`
+            : null}
         </span>
+        {hasProgress ? (
+          <span
+            aria-hidden="true"
+            className="mt-2 block h-1.5 overflow-hidden rounded-full bg-[var(--color-progress-track)]"
+          >
+            <span
+              className="block h-full rounded-full bg-[var(--color-progress)]"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </span>
+        ) : null}
       </span>
       {!quest.completed ? (
         <span className="shrink-0 text-sm font-bold text-[var(--color-chip-text)]">

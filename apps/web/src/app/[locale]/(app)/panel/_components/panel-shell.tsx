@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type {
   EconomyBalance,
   PlanTaskDto,
   PlanTaskStatus,
+  QuestProgressView,
   SessionPresetDto,
   TodayPanelResponse,
 } from "@mentor/types";
@@ -14,6 +15,7 @@ import { ApiClientError, coachingControllerGetToday, planTaskControllerUpdate } 
 import { CountdownCard } from "@mentor/ui";
 import {
   BarChart3,
+  ArrowRight,
   BookOpen,
   Brain,
   CalendarDays,
@@ -22,14 +24,17 @@ import {
   Flame,
   Gem,
   HeartPulse,
+  ListChecks,
   Play,
   Snowflake,
 } from "lucide-react";
 
+import { EconomyQuestsCard } from "@/components/economy-quests-card";
 import { PuhuImage } from "@/components/puhu-image";
 import { Link } from "@/i18n/navigation";
-import { fetchEconomyBalance, isEconomyDisabled } from "@/lib/economy";
+import { fetchEconomyBalance, fetchQuests, isEconomyDisabled } from "@/lib/economy";
 import { FormError } from "@/components/form";
+import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 
@@ -46,6 +51,7 @@ const completedStatuses: PlanTaskStatus[] = ["DONE"];
 
 export function PanelShell({ initialData }: PanelShellProps) {
   const t = useTranslations("panel");
+  const economyT = useTranslations("economy");
   const countdownT = useTranslations("countdown");
   const toast = useMentorToast();
   const shouldReduceMotion = useReducedMotion();
@@ -53,7 +59,52 @@ export function PanelShell({ initialData }: PanelShellProps) {
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [economyBalance, setEconomyBalance] = useState<EconomyBalance | null>(null);
+  const [quests, setQuests] = useState<QuestProgressView[] | null>(null);
+  const questsRef = useRef<QuestProgressView[] | null>(null);
   const WELCOME_TOAST_KEY = "mentor_panel_welcome_date";
+
+  const refreshEconomyBalance = useCallback(async () => {
+    try {
+      setEconomyBalance(await fetchEconomyBalance());
+    } catch (err) {
+      if (!isEconomyDisabled(err)) {
+        setEconomyBalance(null);
+      }
+    }
+  }, []);
+
+  const refreshQuests = useCallback(async (options?: { announceRewards?: boolean; refreshBalance?: boolean }) => {
+    try {
+      const nextQuests = await fetchQuests();
+      const completedNow = options?.announceRewards
+        ? findNewlyCompletedQuests(questsRef.current, nextQuests)
+        : [];
+      questsRef.current = nextQuests;
+      setQuests(nextQuests);
+
+      if (completedNow.length > 0) {
+        const rewardSummary = formatRewardSummary(completedNow, economyT);
+        if (!rewardSummary) return;
+        toast.success({
+          title:
+            completedNow.length === 1
+              ? t("quest_reward_single_title")
+              : t("quest_reward_multi_title"),
+          message: t("quest_reward_message", {
+            reward: rewardSummary,
+          }),
+          duration: 3000,
+        });
+      }
+    } catch {
+      questsRef.current = null;
+      setQuests(null);
+    } finally {
+      if (options?.refreshBalance) {
+        await refreshEconomyBalance();
+      }
+    }
+  }, [economyT, refreshEconomyBalance, t, toast]);
 
   const refreshToday = useCallback(async () => {
     setLoading(true);
@@ -71,25 +122,38 @@ export function PanelShell({ initialData }: PanelShellProps) {
     }
   }, [t]);
 
+  const refreshRitualAndRewards = useCallback(async () => {
+    await refreshToday();
+    await refreshQuests({ announceRewards: true, refreshBalance: true });
+  }, [refreshQuests, refreshToday]);
+
   const moodCheckin = useMoodCheckin({
     initial: data?.mood ?? null,
     onSaved: () => {
-      void refreshToday();
+      void refreshRitualAndRewards();
     },
   });
 
   useEffect(() => {
     let active = true;
 
-    fetchEconomyBalance()
-      .then((balance) => {
-        if (active) {
-          setEconomyBalance(balance);
-        }
+    fetchQuests()
+      .then((nextQuests) => {
+        if (!active) return null;
+        questsRef.current = nextQuests;
+        setQuests(nextQuests);
+        return fetchEconomyBalance().catch(() => null);
       })
-      .catch((err: unknown) => {
-        if (active && !isEconomyDisabled(err)) {
-          setEconomyBalance(null);
+      .catch(() => {
+        if (active) {
+          questsRef.current = null;
+          setQuests(null);
+        }
+        return fetchEconomyBalance().catch(() => null);
+      })
+      .then((balance) => {
+        if (active && balance) {
+          setEconomyBalance(balance);
         }
       });
 
@@ -170,6 +234,12 @@ export function PanelShell({ initialData }: PanelShellProps) {
             />
           </motion.div>
 
+          {quests ? (
+            <motion.div variants={staggerItemVariants}>
+              <PanelQuestBanner quests={quests} />
+            </motion.div>
+          ) : null}
+
           <motion.div variants={staggerItemVariants}>
             <WeeklyStreakCard streakDays={data.streak.currentStreak} freezeCount={data.streak.freezeTokens} />
           </motion.div>
@@ -180,7 +250,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
               initialTasks={data.tasks}
               sessionPresets={data.sessionPresets}
               doneCount={doneCount}
-              onTasksChanged={refreshToday}
+              onTasksChanged={refreshRitualAndRewards}
             />
           </motion.div>
 
@@ -220,6 +290,63 @@ export function PanelShell({ initialData }: PanelShellProps) {
       {loading ? <p className="sr-only">{t("loading")}</p> : null}
       {error ? <FormError message={error} /> : null}
     </main>
+  );
+}
+
+function PanelQuestBanner({ quests }: { quests: QuestProgressView[] }) {
+  const panelT = useTranslations("panel");
+  const economyT = useTranslations("economy");
+  const sheet = useMentorBottomSheet();
+  const dailyQuests = quests.filter((quest) => quest.category === "daily_ritual");
+  if (dailyQuests.length === 0) return null;
+
+  const completed = dailyQuests.filter((quest) => quest.completed).length;
+  const percent = Math.round((completed / dailyQuests.length) * 100);
+  const nextQuest =
+    dailyQuests.find((quest) => !quest.completed && quest.action) ??
+    quests.find((quest) => quest.category === "onboarding" && !quest.completed && quest.action) ??
+    null;
+
+  function showQuests() {
+    sheet.show({
+      title: economyT("quests_title"),
+      layout: "filter",
+      bodyScroll: false,
+      children: <EconomyQuestsCard quests={quests} onDismiss={sheet.dismissNow} />,
+    });
+  }
+
+  return (
+    <article className="rounded-[var(--radius-card)] bg-white p-4 shadow-[var(--shadow-card)] sm:p-5">
+      <button
+        type="button"
+        aria-label={panelT("quests_banner_open")}
+        className="flex min-h-12 w-full items-center gap-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
+        onClick={showQuests}
+      >
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-black/[0.04] text-[var(--color-main)]">
+          <ListChecks className="size-5" aria-hidden />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-xs font-bold uppercase text-[var(--color-secondary)]">
+            {economyT("quests_daily_section")}
+          </span>
+          <span className="mt-1 block truncate text-base font-extrabold text-[var(--color-main)]">
+            {nextQuest?.title ?? panelT("quests_banner_done")}
+          </span>
+        </span>
+        <span className="shrink-0 rounded-full bg-black/[0.04] px-3 py-1 text-xs font-extrabold tabular-nums text-[var(--color-secondary)]">
+          {completed}/{dailyQuests.length}
+        </span>
+        <ArrowRight className="size-4 shrink-0 text-[var(--color-main)]" aria-hidden />
+      </button>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--color-progress-track)]">
+        <div
+          className="h-full rounded-full bg-[var(--color-progress)] transition-[width]"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </article>
   );
 }
 
@@ -619,6 +746,43 @@ function formatCompact(value: number) {
     maximumFractionDigits: 1,
     notation: "compact",
   }).format(value);
+}
+
+function findNewlyCompletedQuests(
+  previous: QuestProgressView[] | null,
+  next: QuestProgressView[],
+): QuestProgressView[] {
+  if (!previous) return [];
+  const previousByKey = new Map(
+    previous.map((quest) => [questProgressKey(quest), quest.completed]),
+  );
+  return next.filter(
+    (quest) => quest.completed && previousByKey.get(questProgressKey(quest)) !== true,
+  );
+}
+
+function formatRewardSummary(
+  quests: QuestProgressView[],
+  translate: ReturnType<typeof useTranslations>,
+): string {
+  const totals = quests.reduce(
+    (acc, quest) => {
+      if (quest.rewardUnit === "XP") acc.xp += quest.rewardAmount;
+      if (quest.rewardUnit === "COIN") acc.coin += quest.rewardAmount;
+      return acc;
+    },
+    { xp: 0, coin: 0 },
+  );
+  return [
+    totals.xp > 0 ? translate("quest_reward_xp", { count: totals.xp }) : null,
+    totals.coin > 0 ? translate("quest_reward_coin", { count: totals.coin }) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function questProgressKey(quest: QuestProgressView): string {
+  return `${quest.id}:${quest.periodKey}`;
 }
 
 function greetingKeyForHour(): "greeting_morning" | "greeting_day" | "greeting_evening" {

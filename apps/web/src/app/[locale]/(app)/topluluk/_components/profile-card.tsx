@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/lib/auth-context";
+import { Link } from "@/i18n/navigation";
 import { AuthorAvatar } from "./author-avatar";
 
 /**
@@ -20,8 +21,8 @@ export function ProfileCard() {
     year: "numeric",
   }).format(new Date(user.createdAt));
 
-  return (
-    <div className="flex flex-col gap-4">
+  const content = (
+    <>
       <AuthorAvatar name={user.displayName} size={64} src={user.avatarUrl} />
 
       <div className="flex flex-col gap-2 py-2">
@@ -54,6 +55,19 @@ export function ProfileCard() {
       <p className="text-[13px] tracking-[-0.2px]" style={{ color: "var(--color-secondary)" }}>
         {t("profile_member_since", { date: memberSince })}
       </p>
-    </div>
+    </>
+  );
+
+  // The whole card links to your own community profile — but only if you have a username (the route
+  // is username-keyed); without one it renders plainly.
+  return user.username ? (
+    <Link
+      href={`/topluluk/uye/${user.username}`}
+      className="-m-2 flex flex-col gap-4 rounded-2xl p-2 transition-colors hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+    >
+      {content}
+    </Link>
+  ) : (
+    <div className="flex flex-col gap-4">{content}</div>
   );
 }

@@ -160,6 +160,61 @@ describe("coaching (e2e)", () => {
     expect(afterToday.body.streak.currentStreak).toBeGreaterThanOrEqual(streakMid);
   });
 
+  it("post-session feedback persists mood + note; unknown id → 404", async () => {
+    const start = await request(app.getHttpServer())
+      .post("/v1/study-sessions")
+      .set(authA())
+      .send({ preset: "25_5", subject: "Türkçe" });
+    expect(start.status).toBe(201);
+
+    await request(app.getHttpServer())
+      .patch(`/v1/study-sessions/${start.body.id}`)
+      .set(authA())
+      .send({ status: "COMPLETED", actualFocusSeconds: 1500 });
+
+    const feedback = await request(app.getHttpServer())
+      .patch(`/v1/study-sessions/${start.body.id}/feedback`)
+      .set(authA())
+      .send({ mood: 3, struggleNote: "Paragraf soruları" });
+    expect(feedback.status).toBe(200);
+    expect(feedback.body.sessionMood).toBe(3);
+    expect(feedback.body.struggleNote).toBe("Paragraf soruları");
+
+    const invalid = await request(app.getHttpServer())
+      .patch(`/v1/study-sessions/${start.body.id}/feedback`)
+      .set(authA())
+      .send({ mood: 9 });
+    expect(invalid.status).toBe(400);
+
+    const missing = await request(app.getHttpServer())
+      .patch("/v1/study-sessions/00000000-0000-0000-0000-000000000000/feedback")
+      .set(authA())
+      .send({ mood: 2 });
+    expect(missing.status).toBe(404);
+  });
+
+  it("GET /study-sessions lists finalized sessions (paginated, most recent first)", async () => {
+    const start = await request(app.getHttpServer())
+      .post("/v1/study-sessions")
+      .set(authA())
+      .send({ preset: "25_5", subject: "Matematik" });
+    expect(start.status).toBe(201);
+
+    await request(app.getHttpServer())
+      .patch(`/v1/study-sessions/${start.body.id}`)
+      .set(authA())
+      .send({ status: "COMPLETED", actualFocusSeconds: 1500 });
+
+    const list = await request(app.getHttpServer())
+      .get("/v1/study-sessions?page=1&pageSize=5")
+      .set(authA());
+    expect(list.status).toBe(200);
+    expect(list.body.page).toBe(1);
+    expect(list.body.pageSize).toBe(5);
+    expect(Array.isArray(list.body.items)).toBe(true);
+    expect(list.body.items.some((s: { id: string }) => s.id === start.body.id)).toBe(true);
+  });
+
   it("custom preset requires focusMinutes and persists plannedFocusMinutes", async () => {
     const missing = await request(app.getHttpServer())
       .post("/v1/study-sessions")

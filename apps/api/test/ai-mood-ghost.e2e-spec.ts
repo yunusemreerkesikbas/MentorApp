@@ -99,7 +99,14 @@ describe("ai mood-reflection + ghost-narration (e2e)", () => {
 
   it("§4 #1: mood and ghost prompts forbid generating official info", () => {
     const mood = buildMoodReflectionPrompt(
-      { examType: "KPSS", daysRemaining: 90, examDateLabel: null, moodLevel: 3, struggleNote: null },
+      {
+        examType: "KPSS",
+        daysRemaining: 90,
+        examDateLabel: null,
+        moodLevel: 3,
+        struggleNote: null,
+        recentSessions: null,
+      },
       3,
       null,
     );

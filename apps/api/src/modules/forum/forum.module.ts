@@ -1,10 +1,12 @@
 import { Module } from "@nestjs/common";
 import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
+import { IdentityModule } from "../identity/identity.module";
 import { ForumService } from "./application/forum.service";
 import { ForumThreadService } from "./application/forum-thread.service";
 import { ForumQaService } from "./application/forum-qa.service";
 import { ForumModerationService } from "./application/forum-moderation.service";
 import { ForumPublicService } from "./application/forum-public.service";
+import { ForumMentionService } from "./application/forum-mention.service";
 import { ForumZoneRepository } from "./infrastructure/forum-zone.repository";
 import { ForumThreadRepository } from "./infrastructure/forum-thread.repository";
 import { ForumPostRepository } from "./infrastructure/forum-post.repository";
@@ -24,6 +26,7 @@ import { ForumInternalController } from "./presentation/forum-internal.controlle
  * Slice 5: reports → moderation queue (hide/restore/dismiss + audit). All behind `forum.enabled`.
  */
 @Module({
+  imports: [IdentityModule],
   controllers: [
     ForumController,
     ForumThreadController,
@@ -39,6 +42,7 @@ import { ForumInternalController } from "./presentation/forum-internal.controlle
     ForumQaService,
     ForumModerationService,
     ForumPublicService,
+    ForumMentionService,
     ForumZoneRepository,
     ForumThreadRepository,
     ForumPostRepository,

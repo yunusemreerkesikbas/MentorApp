@@ -36,6 +36,16 @@ export interface MoodReflectionDto {
 }
 
 /**
+ * POST /v1/coach/session-reflection response — premium AI reflection on a finalized study session
+ * after micro check-in (§4 #5 premium-only; warm/short, never official info §4 #1).
+ * `model` is "cache" on a hit.
+ */
+export interface SessionReflectionDto {
+  reflection: string;
+  model: string;
+}
+
+/**
  * POST /v1/coach/vision-note response — premium AI motivation note grounded on the user's vision
  * board (goal + city + "why") + PII-free context (§4 #5 premium-only; never official info §4 #1).
  */

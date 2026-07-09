@@ -1465,336 +1465,6 @@
         ]
       }
     },
-    "/v1/content/exams": {
-      "get": {
-        "operationId": "ContentController_listExams",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "content"
-        ]
-      }
-    },
-    "/v1/content/exams/by-type/{type}/calendar": {
-      "get": {
-        "operationId": "ContentController_calendarByFamily",
-        "parameters": [
-          {
-            "name": "type",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "content"
-        ]
-      }
-    },
-    "/v1/content/exams/{slug}/calendar": {
-      "get": {
-        "operationId": "ContentController_calendarBySlug",
-        "parameters": [
-          {
-            "name": "slug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "content"
-        ]
-      }
-    },
-    "/v1/content/exams/{slug}/subjects": {
-      "get": {
-        "operationId": "ContentController_subjectsBySlug",
-        "parameters": [
-          {
-            "name": "slug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "content"
-        ]
-      }
-    },
-    "/v1/content/info-articles": {
-      "get": {
-        "operationId": "InfoArticleController_listArticles",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "content"
-        ]
-      }
-    },
-    "/v1/content/info-articles/{slug}": {
-      "get": {
-        "operationId": "InfoArticleController_getArticle",
-        "parameters": [
-          {
-            "name": "slug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "content"
-        ]
-      }
-    },
-    "/v1/coach/access": {
-      "get": {
-        "operationId": "AiChatController_getAccess",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "ai"
-        ]
-      }
-    },
-    "/v1/coach/chat": {
-      "post": {
-        "operationId": "AiChatController_reply",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AiChatDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "ai"
-        ]
-      }
-    },
-    "/v1/coach/mood-reflection": {
-      "post": {
-        "operationId": "AiMoodController_reflect",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "ai"
-        ]
-      }
-    },
-    "/v1/coach/ghost-narration": {
-      "post": {
-        "operationId": "AiGhostController_narrate",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "ai"
-        ]
-      }
-    },
-    "/v1/coach/vision-note": {
-      "post": {
-        "operationId": "AiVisionController_note",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "ai"
-        ]
-      }
-    },
-    "/v1/coach/photo-access": {
-      "get": {
-        "operationId": "AiPhotoController_getPhotoAccess",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "ai"
-        ]
-      }
-    },
-    "/v1/mock-exams/photo-upload-url": {
-      "post": {
-        "operationId": "AiMockExamPhotoController_createPhotoUploadUrl",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PhotoUploadUrlDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "ai"
-        ]
-      }
-    },
-    "/v1/mock-exams/{id}/categorize-photo": {
-      "post": {
-        "operationId": "AiMockExamPhotoController_categorizePhoto",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CategorizePhotoDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "ai"
-        ]
-      }
-    },
-    "/v1/admin/ai/reembed": {
-      "post": {
-        "operationId": "AdminEmbeddingController_reembed",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "ai"
-        ]
-      }
-    },
     "/v1/coaching/today": {
       "get": {
         "operationId": "CoachingController_getToday",
@@ -2055,6 +1725,23 @@
       }
     },
     "/v1/study-sessions": {
+      "get": {
+        "operationId": "StudySessionController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      },
       "post": {
         "operationId": "StudySessionController_start",
         "parameters": [],
@@ -2102,6 +1789,44 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateStudySessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/study-sessions/{id}/feedback": {
+      "patch": {
+        "operationId": "StudySessionController_recordFeedback",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionFeedbackDto"
               }
             }
           }
@@ -2195,10 +1920,430 @@
         ]
       }
     },
+    "/v1/content/exams": {
+      "get": {
+        "operationId": "ContentController_listExams",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/exams/by-type/{type}/calendar": {
+      "get": {
+        "operationId": "ContentController_calendarByFamily",
+        "parameters": [
+          {
+            "name": "type",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/exams/{slug}/calendar": {
+      "get": {
+        "operationId": "ContentController_calendarBySlug",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/exams/{slug}/subjects": {
+      "get": {
+        "operationId": "ContentController_subjectsBySlug",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/info-articles": {
+      "get": {
+        "operationId": "InfoArticleController_listArticles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/info-articles/{slug}": {
+      "get": {
+        "operationId": "InfoArticleController_getArticle",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/coach/access": {
+      "get": {
+        "operationId": "AiChatController_getAccess",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/chat": {
+      "post": {
+        "operationId": "AiChatController_reply",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiChatDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/mood-reflection": {
+      "post": {
+        "operationId": "AiMoodController_reflect",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/session-reflection": {
+      "post": {
+        "operationId": "AiSessionController_reflect",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionReflectionBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/ghost-narration": {
+      "post": {
+        "operationId": "AiGhostController_narrate",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/vision-note": {
+      "post": {
+        "operationId": "AiVisionController_note",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/photo-access": {
+      "get": {
+        "operationId": "AiPhotoController_getPhotoAccess",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/mock-exams/photo-upload-url": {
+      "post": {
+        "operationId": "AiMockExamPhotoController_createPhotoUploadUrl",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/mock-exams/{id}/categorize-photo": {
+      "post": {
+        "operationId": "AiMockExamPhotoController_categorizePhoto",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategorizePhotoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/admin/ai/reembed": {
+      "post": {
+        "operationId": "AdminEmbeddingController_reembed",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/community/summary": {
       "get": {
         "operationId": "CommunityController_getSummary",
         "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/v1/community/profile/{username}": {
+      "get": {
+        "operationId": "CommunityController_getProfile",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/v1/community/leaderboard": {
+      "get": {
+        "operationId": "CommunityController_getLeaderboard",
+        "parameters": [
+          {
+            "name": "window",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "today",
+                "weekly",
+                "all_time"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -2445,6 +2590,35 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ApproveMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/attachments/upload-url": {
+      "post": {
+        "operationId": "ForumThreadController_attachmentUploadUrl",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachmentUploadUrlDto"
               }
             }
           }
@@ -2880,6 +3054,161 @@
         ]
       }
     },
+    "/v1/forum/bookmarks": {
+      "get": {
+        "operationId": "ForumThreadController_bookmarks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/users/{username}/activity": {
+      "get": {
+        "operationId": "ForumThreadController_userActivity",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/threads/{threadId}/bookmark": {
+      "put": {
+        "operationId": "ForumThreadController_bookmarkThread",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "delete": {
+        "operationId": "ForumThreadController_unbookmarkThread",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/posts/{postId}/bookmark": {
+      "put": {
+        "operationId": "ForumThreadController_bookmarkPost",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "delete": {
+        "operationId": "ForumThreadController_unbookmarkPost",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
     "/v1/forum/search": {
       "get": {
         "operationId": "ForumQaController_search",
@@ -3215,6 +3544,20 @@
         ]
       }
     },
+    "/v1/internal/cron/cleanup-forum-attachments": {
+      "post": {
+        "operationId": "ForumInternalController_cleanupAttachments",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "internal"
+        ]
+      }
+    },
     "/v1/internal/cron/process-jobs": {
       "post": {
         "operationId": "CronController_processJobs",
@@ -3541,18 +3884,6 @@
         "type": "object",
         "properties": {}
       },
-      "AiChatDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "PhotoUploadUrlDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "CategorizePhotoDto": {
-        "type": "object",
-        "properties": {}
-      },
       "CreateMoodCheckinDto": {
         "type": "object",
         "properties": {}
@@ -3577,7 +3908,27 @@
         "type": "object",
         "properties": {}
       },
+      "SessionFeedbackDto": {
+        "type": "object",
+        "properties": {}
+      },
       "CreateMockExamDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AiChatDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SessionReflectionBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "PhotoUploadUrlDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CategorizePhotoDto": {
         "type": "object",
         "properties": {}
       },
@@ -3590,6 +3941,10 @@
         "properties": {}
       },
       "ApproveMemberDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AttachmentUploadUrlDto": {
         "type": "object",
         "properties": {}
       },

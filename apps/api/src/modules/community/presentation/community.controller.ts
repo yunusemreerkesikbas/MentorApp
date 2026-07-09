@@ -1,6 +1,6 @@
-import { Controller, Get, Query } from "@nestjs/common";
+import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
-import type { CommunitySummary, LeaderboardView } from "@mentor/types";
+import type { CommunitySummary, LeaderboardView, PublicProfile } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { CommunityService } from "../application/community.service";
 import { toWindow } from "../domain/leaderboard-window";
@@ -18,6 +18,12 @@ export class CommunityController {
   @Get("summary")
   getSummary(@CurrentUser() user: RequestUser): Promise<CommunitySummary> {
     return this.community.getSummary(user.id);
+  }
+
+  /** Public profile header (identity + gamification) of another user, by username. Unknown → 404. */
+  @Get("profile/:username")
+  getProfile(@Param("username") username: string): Promise<PublicProfile> {
+    return this.community.getPublicProfile(username);
   }
 
   /** Effort ranking for a time window (full-page tabs). Unknown `window` → weekly (safe default). */

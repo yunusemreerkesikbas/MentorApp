@@ -39,6 +39,12 @@ export interface StudySessionDto {
   actualFocusSeconds: number;
   /** Set when `preset === "custom"`; null for fixed Pomodoro presets. */
   plannedFocusMinutes: number | null;
+  /** Post-session micro check-in effort/mood 1-3 (😩😐🙂); null until captured. */
+  sessionMood: number | null;
+  /** Optional post-session "what challenged you" note; null when blank. */
+  struggleNote: string | null;
+  /** Premium AI session reflection (null until generated / for free tier). */
+  aiReflection: string | null;
 }
 
 /** Streak summary derived server-side from `daily_activity` / `streak_state`. */

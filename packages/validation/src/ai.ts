@@ -21,3 +21,9 @@ export const categorizePhotoSchema = z.object({
   clientRequestId: z.string().uuid().optional(),
 });
 export type CategorizePhotoInput = z.infer<typeof categorizePhotoSchema>;
+
+/** Premium AI reflection on a finalized study session (after micro check-in). */
+export const sessionReflectionSchema = z.object({
+  sessionId: z.string().uuid(),
+});
+export type SessionReflectionInput = z.infer<typeof sessionReflectionSchema>;

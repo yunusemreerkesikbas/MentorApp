@@ -161,6 +161,19 @@ export function CircularTimerRing({
         onPointerCancel={onPointerUp}
       >
         <svg width={size} height={size} aria-hidden="true" className="block">
+          <defs>
+            <radialGradient id={`${labelId}-fill`} cx="50%" cy="38%" r="65%">
+              <stop offset="0%" stopColor="var(--color-progress-track)" stopOpacity={0.55} />
+              <stop offset="100%" stopColor="var(--color-progress)" stopOpacity={0.14} />
+            </radialGradient>
+          </defs>
+          <circle
+            cx={cx}
+            cy={cy}
+            r={radius - RING_STROKE / 2}
+            fill={`url(#${labelId}-fill)`}
+            className={mode === "countdown" ? "mentor-timer-breathe" : undefined}
+          />
           <circle
             cx={cx}
             cy={cy}
@@ -180,8 +193,23 @@ export function CircularTimerRing({
             strokeDasharray={circumference}
             strokeDashoffset={dashOffset}
             transform={`rotate(-90 ${cx} ${cy})`}
-            className="motion-reduce:transition-none transition-[stroke-dashoffset] duration-300 ease-out"
+            className="motion-reduce:transition-none transition-[stroke-dashoffset] duration-1000 ease-linear"
           />
+          {mode === "countdown" && (
+            <circle
+              cx={handleX}
+              cy={handleY}
+              r={7}
+              fill="var(--color-progress)"
+              stroke="#FFFFFF"
+              strokeWidth={2}
+              className="motion-reduce:transition-none transition-[cx,cy] duration-1000 ease-linear"
+              style={{
+                filter:
+                  "drop-shadow(0 0 6px color-mix(in srgb, var(--color-progress) 70%, transparent))",
+              }}
+            />
+          )}
           {interactive && (
             <circle
               cx={handleX}
@@ -215,24 +243,21 @@ export function CircularTimerRing({
       </div>
 
       {interactive && (
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             aria-label={`${step} dakika azalt`}
-            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-[var(--radius-card)] border border-white bg-white/50 text-xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            style={{ color: "var(--color-main)" }}
+            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full border border-white bg-white/70 text-xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            style={{ color: "var(--color-main)", boxShadow: "var(--shadow-card)" }}
             onClick={() => nudge(-step)}
           >
             −
           </button>
-          <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-            Sürükle veya ok tuşları
-          </p>
           <button
             type="button"
             aria-label={`${step} dakika artır`}
-            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-[var(--radius-card)] border border-white bg-white/50 text-xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            style={{ color: "var(--color-main)" }}
+            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full border border-white bg-white/70 text-xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            style={{ color: "var(--color-main)", boxShadow: "var(--shadow-card)" }}
             onClick={() => nudge(step)}
           >
             +

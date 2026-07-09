@@ -1,13 +1,15 @@
 "use client";
 
-import type { KeyboardEvent } from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ModerationTargetType, type CommentView } from "@mentor/types";
 import { Link, useRouter } from "@/i18n/navigation";
 import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "./author-avatar";
+import { AuthorLink } from "./author-link";
 import { AttachmentGallery } from "./attachment-gallery";
 import { HeartIcon, CommentIcon } from "./forum-icons";
+import { MentionText } from "./mention-text";
 import { SendButton } from "./send-button";
 import { BookmarkButton } from "./bookmark-button";
 import { ThreadMenu } from "../[slug]/_components/thread-menu";
@@ -15,21 +17,29 @@ import { ThreadMenu } from "../[slug]/_components/thread-menu";
 /**
  * One comment in a thread/comment detail. Twitter-style: the whole row opens the comment's own
  * detail (its replies); like + reply-count + report are interactive children that stop propagation.
+ *
+ * `rowHref` overrides where the ROW click lands (the profile feed points a reply at its parent post +
+ * `?highlight=` so its context opens, not the reply in isolation); the inner reply/send links always
+ * stay on this comment. `highlighted` tints the row and scrolls it into view (the `?highlight=` target).
  */
 export function CommentRow({
   comment,
   onToggleLike,
   onToggleBookmark,
+  rowHref,
+  highlighted,
 }: {
   comment: CommentView;
   onToggleLike: (postId: string, adding: boolean) => void;
   onToggleBookmark: (postId: string, adding: boolean) => void;
+  rowHref?: string;
+  highlighted?: boolean;
 }) {
   const t = useTranslations("topluluk");
   const locale = useLocale();
   const router = useRouter();
   const href = `/topluluk/yorum/${comment.id}`;
-  const open = () => router.push(href);
+  const open = () => router.push(rowHref ?? href);
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -37,21 +47,34 @@ export function CommentRow({
     }
   };
 
+  const rowRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (highlighted) rowRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [highlighted]);
+
   return (
     <div
+      ref={rowRef}
       role="link"
       tabIndex={0}
       onClick={open}
       onKeyDown={onKeyDown}
       className="group flex cursor-pointer touch-manipulation items-start gap-3 py-4 pl-3 pr-4 transition-colors hover:bg-black/[0.015] focus-visible:outline-none focus-visible:bg-black/[0.02]"
+      // ponytail: persistent tint marks the highlighted reply — no fade timer; add one if it reads as sticky.
+      style={highlighted ? { background: "color-mix(in srgb, var(--color-chip) 14%, white)" } : undefined}
     >
-      <AuthorAvatar name={comment.authorName} size={36} src={comment.authorAvatarUrl} />
+      <AuthorLink username={comment.authorUsername}>
+        <AuthorAvatar name={comment.authorName} size={36} src={comment.authorAvatarUrl} />
+      </AuthorLink>
       <div className="min-w-0 flex-1">
         {/* Single-line header: name + @handle truncate, time never wraps, menu pinned right. */}
         <div className="flex items-center gap-1.5">
-          <span className="flex-shrink truncate text-[15px] font-semibold" style={{ color: "var(--color-main)" }}>
-            {comment.authorName || t("unknown_author")}
-          </span>
+          <AuthorLink
+            username={comment.authorUsername}
+            className="flex-shrink truncate text-[15px] font-semibold hover:underline"
+          >
+            <span style={{ color: "var(--color-main)" }}>{comment.authorName || t("unknown_author")}</span>
+          </AuthorLink>
           {comment.authorUsername && (
             <span className="flex-shrink truncate text-[13px]" style={{ color: "var(--color-secondary)" }}>
               @{comment.authorUsername}
@@ -66,7 +89,7 @@ export function CommentRow({
         </div>
 
         <p className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-[22px]" style={{ color: "var(--color-body)" }}>
-          {comment.body}
+          <MentionText text={comment.body} />
         </p>
 
         <AttachmentGallery attachments={comment.attachments} />

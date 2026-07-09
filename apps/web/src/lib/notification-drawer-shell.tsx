@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Brain from "lucide-react/dist/esm/icons/brain.mjs";
 import FileText from "lucide-react/dist/esm/icons/file-text.mjs";
 import ListCheck from "lucide-react/dist/esm/icons/list-check.mjs";
+import MessageCircle from "lucide-react/dist/esm/icons/message-circle.mjs";
 import { useTranslations } from "next-intl";
 import type { NotificationCategory, NotificationListDto, UserNotificationDto } from "@mentor/types";
 import { NotificationDrawerProvider } from "@mentor/ui";
@@ -23,12 +24,14 @@ const ICON_BY_CATEGORY = {
   COACH: Brain,
   PLAN: ListCheck,
   CONTENT: FileText,
+  FORUM: MessageCircle,
 };
 
 const ICON_COLOR_BY_CATEGORY: Record<NotificationCategory, string> = {
   COACH: "var(--color-chip-text)",
   PLAN: "#4A80D8",
   CONTENT: "var(--color-secondary)",
+  FORUM: "var(--color-progress)",
 };
 
 function CategoryIcon({ category }: { category: NotificationCategory }) {
@@ -49,6 +52,7 @@ const CATEGORY_FALLBACK: Record<NotificationCategory, string> = {
   COACH: "/panel",
   PLAN: "/plan",
   CONTENT: "/bilgi",
+  FORUM: "/topluluk",
 };
 
 /** Web-layer wrapper: fetches data, injects i18n labels and Puhu icons. */

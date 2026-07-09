@@ -34,6 +34,16 @@ export class UsersService {
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
 
+  /** Resolve @mention handles → `lowercase-username → userId` map (used by the forum mention notifier). */
+  findIdsByUsernames(usernames: string[]): Promise<Map<string, string>> {
+    return this.usersRepo.findIdsByUsernames(usernames);
+  }
+
+  /** Resolve a single username → full user row (used by the forum profile page). */
+  findByUsername(username: string) {
+    return this.usersRepo.findByUsernameService(username);
+  }
+
   /** Admin metrics dashboard (W6) — read-only user-base aggregate. */
   async getUserStats(): Promise<UserStats> {
     const s = await this.usersRepo.statsSnapshot();

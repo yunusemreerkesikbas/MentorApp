@@ -2,6 +2,7 @@ import type {
   AnswerView,
   CommentDetail,
   CommentView,
+  ForumActivityFeed,
   ModerationTargetType,
   Paginated,
   QuestionDetail,
@@ -161,6 +162,17 @@ export async function bookmarkPost(postId: string, adding: boolean): Promise<voi
 export async function getBookmarks(before?: string): Promise<SavedFeed> {
   const qs = before ? `?before=${encodeURIComponent(before)}` : "";
   return (await http<SavedFeed>(`/v1/forum/bookmarks${qs}`)) as SavedFeed;
+}
+
+/** A user's activity feed (their threads + posts interleaved, newest first). */
+export async function getUserActivity(
+  username: string,
+  before?: string,
+): Promise<ForumActivityFeed> {
+  const qs = before ? `?before=${encodeURIComponent(before)}` : "";
+  return (await http<ForumActivityFeed>(
+    `/v1/forum/users/${encodeURIComponent(username)}/activity${qs}`,
+  )) as ForumActivityFeed;
 }
 
 export async function createReport(

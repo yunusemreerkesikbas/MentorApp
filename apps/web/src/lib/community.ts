@@ -1,4 +1,9 @@
-import type { CommunitySummary, LeaderboardView, LeaderboardWindow } from "@mentor/types";
+import type {
+  CommunitySummary,
+  LeaderboardView,
+  LeaderboardWindow,
+  PublicProfile,
+} from "@mentor/types";
 import { http } from "@mentor/api-client";
 
 /**
@@ -8,6 +13,13 @@ import { http } from "@mentor/api-client";
  */
 export async function getCommunitySummary(): Promise<CommunitySummary> {
   return (await http<CommunitySummary>("/v1/community/summary")) as CommunitySummary;
+}
+
+/** Public profile header (identity + gamification) of another user, by username. 404 → throws. */
+export async function getPublicProfile(username: string): Promise<PublicProfile> {
+  return (await http<PublicProfile>(
+    `/v1/community/profile/${encodeURIComponent(username)}`,
+  )) as PublicProfile;
 }
 
 /** Effort ranking for a time window (full-page tabs: today / weekly / all_time). */

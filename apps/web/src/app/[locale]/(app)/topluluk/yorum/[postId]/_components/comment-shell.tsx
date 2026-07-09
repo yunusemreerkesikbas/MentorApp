@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   FORUM_LIKE_EMOJI,
@@ -22,8 +23,10 @@ import {
 import type { AttachmentInput } from "@mentor/validation";
 import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "../../../_components/author-avatar";
+import { AuthorLink } from "../../../_components/author-link";
 import { CommentRow } from "../../../_components/comment-row";
 import { AttachmentGallery } from "../../../_components/attachment-gallery";
+import { MentionText } from "../../../_components/mention-text";
 import { HeartIcon } from "../../../_components/forum-icons";
 import { SendButton } from "../../../_components/send-button";
 import { BookmarkButton } from "../../../_components/bookmark-button";
@@ -39,6 +42,7 @@ type State =
 /** Comment detail — a focused comment + its direct replies (Twitter-style recursive navigation). */
 export function CommentShell({ postId }: { postId: string }) {
   const t = useTranslations("topluluk");
+  const highlightId = useSearchParams().get("highlight");
   const [state, setState] = useState<State>({ status: "loading" });
 
   const apply = useCallback((detail: CommentDetail) => {
@@ -130,20 +134,17 @@ export function CommentShell({ postId }: { postId: string }) {
         />
       </div>
 
-      {/* Replies */}
-      {replies.length === 0 ? (
-        <div className="flex flex-col items-center px-6 py-12 text-center">
-          <p
-            className="text-[15px] font-semibold"
-            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-          >
-            {t("replies_empty_title")}
-          </p>
-          <p className="mt-1 text-[13px]" style={{ color: "var(--color-secondary)" }}>
-            {t("replies_empty_desc")}
-          </p>
-        </div>
-      ) : (
+      {/* Reply composer — always directly under the post, before any replies */}
+      <div className="border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+        <ThreadComposer
+          placeholder={t("reply_placeholder")}
+          submitLabel={t("reply_submit")}
+          onSubmit={onReply}
+        />
+      </div>
+
+      {/* Replies (nothing shown when empty — the composer above is the call to action) */}
+      {replies.length > 0 && (
         <>
           <h2
             className="mb-1 mt-6 px-3 text-[11px] font-semibold uppercase tracking-wide"
@@ -158,20 +159,12 @@ export function CommentShell({ postId }: { postId: string }) {
                 comment={r}
                 onToggleLike={onToggleLike}
                 onToggleBookmark={onToggleBookmark}
+                highlighted={r.id === highlightId}
               />
             ))}
           </div>
         </>
       )}
-
-      {/* Reply composer */}
-      <div className="mt-4 border-t" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
-        <ThreadComposer
-          placeholder={t("reply_placeholder")}
-          submitLabel={t("reply_submit")}
-          onSubmit={onReply}
-        />
-      </div>
     </main>
   );
 }
@@ -189,12 +182,17 @@ function FocusedComment({
   const locale = useLocale();
   return (
     <div className="group flex items-start gap-3 py-4 pl-3 pr-4">
-      <AuthorAvatar name={comment.authorName} size={40} src={comment.authorAvatarUrl} />
+      <AuthorLink username={comment.authorUsername}>
+        <AuthorAvatar name={comment.authorName} size={40} src={comment.authorAvatarUrl} />
+      </AuthorLink>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className="flex-shrink truncate text-[15px] font-semibold" style={{ color: "var(--color-main)" }}>
-            {comment.authorName || t("unknown_author")}
-          </span>
+          <AuthorLink
+            username={comment.authorUsername}
+            className="flex-shrink truncate text-[15px] font-semibold hover:underline"
+          >
+            <span style={{ color: "var(--color-main)" }}>{comment.authorName || t("unknown_author")}</span>
+          </AuthorLink>
           {comment.authorUsername && (
             <span className="flex-shrink truncate text-[13px]" style={{ color: "var(--color-secondary)" }}>
               @{comment.authorUsername}
@@ -208,7 +206,7 @@ function FocusedComment({
           </span>
         </div>
         <p className="mt-1.5 whitespace-pre-wrap break-words text-[16px] leading-[24px]" style={{ color: "var(--color-body)" }}>
-          {comment.body}
+          <MentionText text={comment.body} />
         </p>
         <AttachmentGallery attachments={comment.attachments} />
         <div className="-ml-1.5 mt-2 flex items-center">

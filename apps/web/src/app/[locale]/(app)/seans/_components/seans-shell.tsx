@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { SessionPresetDto } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
-import { Card, SectionHeading } from "@mentor/ui";
-import { Link } from "@/i18n/navigation";
+import { Card } from "@mentor/ui";
 import { SessionControls } from "./session-controls";
 import { SessionDoneState } from "./session-done-state";
+import { SessionHistory } from "./session-history";
+import { SessionSubjectPicker } from "./session-subject-picker";
 import { SessionTimerRing } from "./session-timer-ring";
 import { useSessionTimer } from "./use-session-timer";
 
@@ -28,6 +29,18 @@ function parseInitialMinutes(
   }
   if (presetParam === "50_10") return 50;
   return 25;
+}
+
+function parseInitialBreakMinutes(
+  presetParam: string | null,
+  minutesParam: string | null,
+): number {
+  if (minutesParam) {
+    const n = Number.parseInt(minutesParam, 10);
+    if (!Number.isNaN(n) && n >= 5 && n <= 120 && n % 5 === 0) return 5;
+  }
+  if (presetParam === "50_10") return 10;
+  return 5;
 }
 
 function parseInitialPreset(
@@ -54,25 +67,76 @@ function parseInitialSelectedPresetId(
   return "25_5";
 }
 
+/** Calm pastel backdrop for the immersive focus/break view (DESIGN.md blobs, softened). */
+function ImmersiveBackdrop() {
+  return (
+    <div
+      aria-hidden
+      className="absolute inset-0 overflow-hidden"
+      style={{ backgroundColor: "var(--color-bg)" }}
+    >
+      <div
+        className="absolute -left-24 -top-24 h-96 w-96 rounded-full opacity-30 blur-[150px]"
+        style={{ backgroundColor: "#FF2DAB" }}
+      />
+      <div
+        className="absolute top-1/3 -right-32 h-[28rem] w-[28rem] rounded-full opacity-50 blur-[150px]"
+        style={{ backgroundColor: "#9BC1FB" }}
+      />
+      <div
+        className="absolute -bottom-32 left-1/4 h-96 w-96 rounded-full opacity-50 blur-[150px]"
+        style={{ backgroundColor: "#BDEBFF" }}
+      />
+    </div>
+  );
+}
+
+function SetupStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-1 flex-col items-center gap-0.5">
+      <span
+        className="text-[11px] font-semibold uppercase tracking-wide"
+        style={{ color: "var(--color-secondary)" }}
+      >
+        {label}
+      </span>
+      <span
+        className="text-sm font-bold tabular-nums"
+        style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
 /**
- * Pomodoro session UI — circular dial, pause/resume, API start/finalize.
+ * Pomodoro session UI — setup dial (idle), immersive focus/break, done summary.
  */
 export function SeansShell() {
   const reduceMotion = useReducedMotion();
   const t = useTranslations("session");
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const presetParam = searchParams.get("preset");
   const minutesParam = searchParams.get("minutes");
+  const subjectParam = searchParams.get("subject");
+  const [subject, setSubject] = useState<string | null>(() =>
+    subjectParam?.trim() ? subjectParam.trim() : null,
+  );
 
   const [presets, setPresets] = useState<SessionPresetDto[]>(DEFAULT_PRESETS);
   const [presetNotice, setPresetNotice] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(() =>
     parseInitialSelectedPresetId(presetParam, minutesParam),
   );
 
   const timer = useSessionTimer({
     initialMinutes: parseInitialMinutes(presetParam, minutesParam),
+    initialBreakMinutes: parseInitialBreakMinutes(presetParam, minutesParam),
     initialPreset: parseInitialPreset(presetParam, minutesParam),
+    subject,
   });
 
   useEffect(() => {
@@ -98,19 +162,27 @@ export function SeansShell() {
     };
   }, [t]);
 
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const {
     phase,
     focusMinutes,
+    breakMinutes,
     secondsLeft,
     focusElapsed,
     isPaused,
-    isTimerComplete,
     busy,
+    session,
     setFocusMinutes,
     selectPreset,
     startSession,
     togglePause,
     finalize,
+    recordFeedback,
+    skipBreak,
     reset,
   } = timer;
 
@@ -119,21 +191,14 @@ export function SeansShell() {
     setSelectedPresetId(null);
   };
 
-  const handlePresetSelect = (presetId: "25_5" | "50_10", minutes: number) => {
-    selectPreset(presetId, minutes);
+  const handlePresetSelect = (
+    presetId: "25_5" | "50_10",
+    minutes: number,
+    breakLen: number,
+  ) => {
+    selectPreset(presetId, minutes, breakLen);
     setSelectedPresetId(presetId);
   };
-
-  const headerMotion = reduceMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: 0.3, ease: "easeOut" as const },
-        },
-      };
 
   const phaseMotion = reduceMotion
     ? {}
@@ -147,9 +212,119 @@ export function SeansShell() {
         exit: { opacity: 0, y: -6, transition: { duration: 0.15 } },
       };
 
+  const subjectChip = subject ? (
+    <span
+      className="rounded-[var(--radius-card)] px-3 py-1 text-xs font-bold uppercase tracking-wide"
+      style={{
+        backgroundColor:
+          "color-mix(in srgb, var(--color-chip) 30%, transparent)",
+        color: "var(--color-chip-text)",
+        fontFamily: "var(--font-body)",
+      }}
+    >
+      {subject}
+    </span>
+  ) : null;
+
+  const phaseLabel =
+    phase === "break"
+      ? t("break_label")
+      : isPaused
+        ? t("paused")
+        : t("focusing");
+
+  const estimatedFinish = new Date(
+    now + (focusMinutes + breakMinutes) * 60_000,
+  ).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+
+  const setupSummary = (
+    <div
+      className="flex w-full items-center rounded-[var(--radius-card)] px-1 py-2.5"
+      style={{
+        backgroundColor: "color-mix(in srgb, var(--color-chip) 18%, transparent)",
+      }}
+    >
+      <SetupStat
+        label={t("summary_focus")}
+        value={t("minutes_value", { minutes: focusMinutes })}
+      />
+      <span
+        aria-hidden
+        className="h-7 w-px shrink-0"
+        style={{ backgroundColor: "var(--color-progress-track)" }}
+      />
+      <SetupStat
+        label={t("summary_break")}
+        value={t("minutes_value", { minutes: breakMinutes })}
+      />
+      <span
+        aria-hidden
+        className="h-7 w-px shrink-0"
+        style={{ backgroundColor: "var(--color-progress-track)" }}
+      />
+      <SetupStat label={t("summary_finish")} value={estimatedFinish} />
+    </div>
+  );
+
+  // Immersive focus/break view — covers the app nav (z-30 over the z-20 shell).
+  if (phase === "focus" || phase === "break") {
+    return (
+      <div className="fixed inset-0 z-30 flex flex-col items-center justify-center px-5 py-8">
+        <ImmersiveBackdrop />
+        <motion.div
+          key={phase}
+          className="relative flex w-full max-w-sm flex-col items-center gap-6"
+          {...phaseMotion}
+        >
+          {subjectChip}
+          <p
+            className="text-sm font-semibold uppercase tracking-wide"
+            style={{
+              color: "var(--color-secondary)",
+              fontFamily: "var(--font-heading)",
+            }}
+          >
+            {phaseLabel}
+          </p>
+          <SessionTimerRing
+            phase={phase}
+            focusMinutes={focusMinutes}
+            breakMinutes={breakMinutes}
+            secondsLeft={secondsLeft}
+            presets={presets}
+            selectedPresetId={selectedPresetId}
+            onMinutesChange={handleMinutesChange}
+            onPresetSelect={handlePresetSelect}
+          />
+          <SessionControls
+            phase={phase}
+            busy={busy}
+            isPaused={isPaused}
+            onStart={() => void startSession()}
+            onTogglePause={togglePause}
+            onComplete={() => void finalize("COMPLETED")}
+            onAbandon={() => void finalize("ABANDONED")}
+            onSkipBreak={skipBreak}
+          />
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-5 py-8 lg:px-8 lg:py-10">
-      <motion.header {...headerMotion}>
+      <motion.header
+        {...(reduceMotion
+          ? {}
+          : {
+              initial: { opacity: 0, y: 8 },
+              animate: {
+                opacity: 1,
+                y: 0,
+                transition: { duration: 0.3, ease: "easeOut" as const },
+              },
+            })}
+      >
         <h1
           className="text-3xl font-bold"
           style={{
@@ -159,10 +334,7 @@ export function SeansShell() {
         >
           {t("title")}
         </h1>
-        <p
-          className="mt-1 text-base"
-          style={{ color: "var(--color-secondary)" }}
-        >
+        <p className="mt-1 text-base" style={{ color: "var(--color-secondary)" }}>
           {t("subtitle")}
         </p>
       </motion.header>
@@ -177,70 +349,57 @@ export function SeansShell() {
         </p>
       )}
 
-      <Card className="flex flex-col items-center gap-6 py-10">
+      <Card className="flex flex-col items-center gap-5 px-5 py-8 sm:px-8 sm:py-10">
         <AnimatePresence mode="wait">
-          {phase !== "done" && (
+          {phase === "idle" && (
             <motion.div
-              key={phase === "focus" ? "focus" : "idle"}
-              className="flex w-full flex-col items-center gap-6"
+              key="idle"
+              className="flex w-full flex-col items-center gap-5"
               {...phaseMotion}
             >
-              {phase === "idle" && (
-                <SectionHeading subtitle={t("duration_subtitle")}>
-                  {t("duration_title")}
-                </SectionHeading>
-              )}
-              {phase === "focus" && (
-                <p
-                  className="text-sm font-semibold uppercase tracking-wide"
-                  style={{
-                    color: "var(--color-secondary)",
-                    fontFamily: "var(--font-heading)",
-                  }}
-                >
-                  {isPaused ? t("paused") : t("focusing")}
-                </p>
-              )}
+              <SessionSubjectPicker
+                value={subject ?? ""}
+                onChange={(v) => setSubject(v.trim() ? v.trim() : null)}
+              />
               <SessionTimerRing
                 phase={phase}
                 focusMinutes={focusMinutes}
+                breakMinutes={breakMinutes}
                 secondsLeft={secondsLeft}
                 presets={presets}
                 selectedPresetId={selectedPresetId}
                 onMinutesChange={handleMinutesChange}
                 onPresetSelect={handlePresetSelect}
               />
+              {setupSummary}
               <SessionControls
                 phase={phase}
                 busy={busy}
                 isPaused={isPaused}
-                isTimerComplete={isTimerComplete}
                 onStart={() => void startSession()}
                 onTogglePause={togglePause}
                 onComplete={() => void finalize("COMPLETED")}
                 onAbandon={() => void finalize("ABANDONED")}
+                onSkipBreak={skipBreak}
               />
             </motion.div>
           )}
 
           {phase === "done" && (
             <motion.div key="done" className="w-full" {...phaseMotion}>
-              <SessionDoneState focusElapsed={focusElapsed} onReset={reset} />
+              <SessionDoneState
+                focusElapsed={focusElapsed}
+                sessionId={session?.id ?? null}
+                subject={subject}
+                onSubmitFeedback={recordFeedback}
+                onReset={reset}
+              />
             </motion.div>
           )}
         </AnimatePresence>
       </Card>
 
-      <Link
-        href="/plan"
-        className="flex min-h-[44px] items-center justify-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-        style={{
-          color: "var(--color-main)",
-          fontFamily: "var(--font-heading)",
-        }}
-      >
-        {t("back_plan")}
-      </Link>
+      {phase === "idle" && <SessionHistory />}
     </main>
   );
 }

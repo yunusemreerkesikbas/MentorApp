@@ -26,8 +26,12 @@ type State =
   | { status: "error"; message: string }
   | { status: "ready"; items: SavedFeedItem[]; nextCursor: string | null; loadingMore: boolean };
 
-/** "Kaydedilenler" — the viewer's saved threads + comments, newest-saved first. */
-export function SavedShell() {
+/**
+ * "Kaydedilenler" — the viewer's saved threads + comments, newest-saved first. `embedded` drops the
+ * outer `<main>` + page title so it can live inside another page's container (the profile Saved tab),
+ * which already provides the landmark and heading.
+ */
+export function SavedShell({ embedded = false }: { embedded?: boolean } = {}) {
   const t = useTranslations("topluluk");
   const [state, setState] = useState<State>({ status: "loading" });
 
@@ -137,26 +141,27 @@ export function SavedShell() {
     [removeItem],
   );
 
-  if (state.status === "loading") return <Centered>{t("loading")}</Centered>;
-  if (state.status === "disabled") return <Centered>{t("soon_title")}</Centered>;
+  if (state.status === "loading") return <Centered embedded={embedded}>{t("loading")}</Centered>;
+  if (state.status === "disabled") return <Centered embedded={embedded}>{t("soon_title")}</Centered>;
   if (state.status === "error") {
-    return (
-      <main className="mx-auto w-full max-w-2xl px-4 py-6 lg:px-8">
-        <FormError message={state.message} />
-      </main>
-    );
+    const cls = "mx-auto w-full max-w-2xl px-4 py-6 lg:px-8";
+    const body = <FormError message={state.message} />;
+    return embedded ? <div className={cls}>{body}</div> : <main className={cls}>{body}</main>;
   }
 
   const { items, nextCursor, loadingMore } = state;
+  const Root = embedded ? "div" : "main";
 
   return (
-    <main className="mx-auto min-w-0 max-w-2xl px-4 py-6 lg:px-8 lg:py-8">
-      <h1
-        className="mb-4 px-3 text-lg font-bold"
-        style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-      >
-        {t("saved_title")}
-      </h1>
+    <Root className={embedded ? "min-w-0" : "mx-auto min-w-0 max-w-2xl px-4 py-6 lg:px-8 lg:py-8"}>
+      {!embedded && (
+        <h1
+          className="mb-4 px-3 text-lg font-bold"
+          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+        >
+          {t("saved_title")}
+        </h1>
+      )}
 
       {items.length === 0 ? (
         <div className="flex flex-col items-center px-6 py-16 text-center">
@@ -205,7 +210,7 @@ export function SavedShell() {
           </Button>
         </div>
       )}
-    </main>
+    </Root>
   );
 }
 
@@ -222,10 +227,8 @@ function applyReaction(
   return { ...thread, reactionCounts: counts, myReactions: mine };
 }
 
-function Centered({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="mx-auto flex min-h-[40vh] w-full max-w-2xl items-center justify-center px-5 py-8">
-      <p style={{ color: "var(--color-secondary)" }}>{children}</p>
-    </main>
-  );
+function Centered({ children, embedded }: { children: React.ReactNode; embedded?: boolean }) {
+  const cls = "mx-auto flex min-h-[40vh] w-full max-w-2xl items-center justify-center px-5 py-8";
+  const body = <p style={{ color: "var(--color-secondary)" }}>{children}</p>;
+  return embedded ? <div className={cls}>{body}</div> : <main className={cls}>{body}</main>;
 }

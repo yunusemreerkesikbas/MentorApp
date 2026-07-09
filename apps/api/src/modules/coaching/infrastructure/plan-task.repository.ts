@@ -155,4 +155,12 @@ export class PlanTaskRepository {
       .where(and(eq(planTasks.userId, userId), eq(planTasks.taskDate, date)));
     return rows[0]?.count ?? 0;
   }
+
+  async countDoneAllTime(tx: DatabaseTx, userId: string): Promise<number> {
+    const rows = await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(planTasks)
+      .where(and(eq(planTasks.userId, userId), eq(planTasks.status, "DONE")));
+    return rows[0]?.count ?? 0;
+  }
 }

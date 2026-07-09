@@ -62,9 +62,18 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 | Endpoint | Purpose |
 |---|---|
 | `GET /v1/community/summary` | Effort board: streak, badges, and (economy-gated) xp/level/weekly leaderboard |
+| `GET /v1/community/leaderboard?window=` | Effort ranking (today / weekly / all_time) |
+| `GET /v1/community/profile/:username` | Public profile header — identity + gamification, no PII (APP-018) |
 
 ## Geliştirmeler (timeline)
 
+- **Public profil başlığı — `getPublicProfile` (APP-018)** — Forum kullanıcı profil sayfası
+  (`/topluluk/uye/[username]`) için `CommunityService.getPublicProfile(username)` +
+  `GET /v1/community/profile/:username`. `getSummary`'nin özünü (streak/badges/level/xp) **hedef
+  kullanıcı** için, **leaderboard hariç**, + public kimlik (displayName/username/avatar/examType/
+  memberSince — **email/PII YOK**) döndürür; banlı/askıya-alınmış/olmayan → 404. Yeni tip `PublicProfile`.
+  Kimlik+gamification zaten leaderboard'da public olduğundan tutarlı; §3 effort-only korunur.
+  Aktivite feed'i forum tarafında (bkz. [`forum.md`](./forum.md)). *(APP-018)*
 - **Leaderboard UX rötuş — "yeni" gürültüsü + boş durum + streak/xp kaldırma (APP-018)** — (1) İlk
   hafta önceki dönem verisi olmadığında her satırda "YENİ" gösterilmesi gürültüydü; yeni domain helper
   `resolveMovement` (null/boş baseline → `movement` null, "new" değil) bunu bastırır — gerçek geçmiş

@@ -116,6 +116,7 @@ export function BottomSheetProvider({ children }: BottomSheetProviderProps) {
       applyLabel: options.applyLabel,
       closeLabel: options.closeLabel,
       children: options.children,
+      bodyScroll: options.bodyScroll,
       dismissOnBackdrop: options.dismissOnBackdrop ?? true,
       dismissOnEscape: options.dismissOnEscape ?? true,
       onApply: options.onApply,

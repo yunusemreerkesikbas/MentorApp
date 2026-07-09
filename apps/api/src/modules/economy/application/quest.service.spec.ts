@@ -17,10 +17,13 @@ function service(options: {
     hasDonePlanTask?: boolean;
     hasCompletedFocusSession?: boolean;
     hasMoodCheckin?: boolean;
+    completedFocusSessions?: number;
+    completedPlanTasks?: number;
   };
   user?: { examType: string | null; emailVerified: boolean };
   subscription?: unknown;
   redeemed?: unknown;
+  currentStreak?: number;
   rows?: ProgressRow[];
   grantShouldFail?: boolean;
 } = {}) {
@@ -31,6 +34,8 @@ function service(options: {
       if (key === "economy.enabled") return options.economyEnabled ?? true;
       if (key === "economy.quest.onboarding_reward_coin") return 10;
       if (key === "economy.quest.daily_ritual_reward_xp") return 5;
+      if (key === "economy.quest.streak_milestone_reward_xp") return 25;
+      if (key === "economy.quest.effort_milestone_reward_xp") return 25;
       return 0;
     }),
   };
@@ -40,6 +45,15 @@ function service(options: {
       hasDonePlanTask: options.signals?.hasDonePlanTask ?? false,
       hasCompletedFocusSession: options.signals?.hasCompletedFocusSession ?? false,
       hasMoodCheckin: options.signals?.hasMoodCheckin ?? false,
+      completedFocusSessions: options.signals?.completedFocusSessions ?? 0,
+      completedPlanTasks: options.signals?.completedPlanTasks ?? 0,
+    })),
+  };
+  const streak = {
+    getSummary: vi.fn(async () => ({
+      currentStreak: options.currentStreak ?? 0,
+      longestStreak: options.currentStreak ?? 0,
+      freezeTokens: 0,
     })),
   };
   const quests = {
@@ -85,11 +99,13 @@ function service(options: {
       { getMe: vi.fn(async () => options.user ?? { examType: null, emailVerified: false }) } as never,
       { getView: vi.fn(async () => ({ subscription: options.subscription ?? null })) } as never,
       dailySignals as never,
+      streak as never,
       { findRedemptionByInvited: vi.fn(async () => options.redeemed ?? null) } as never,
       economy as never,
       quests as never,
       config as never,
     ),
+    streak,
   };
 }
 
@@ -97,7 +113,7 @@ describe("QuestService", () => {
   it("returns daily ritual and onboarding quests with their reward metadata", async () => {
     const quests = await service().service.getUserProgress("user-1");
 
-    expect(quests).toHaveLength(7);
+    expect(quests).toHaveLength(20);
     expect(quests[0]).toMatchObject({
       id: "daily.plan-task-done",
       category: "daily_ritual",
@@ -108,7 +124,7 @@ describe("QuestService", () => {
       rewardCoin: 0,
       action: "plan",
     });
-    expect(quests[3]).toMatchObject({
+    expect(quests.find((quest) => quest.id === "onboarding.profile-setup")).toMatchObject({
       id: "onboarding.profile-setup",
       category: "onboarding",
       periodKey: "once",
@@ -116,6 +132,182 @@ describe("QuestService", () => {
       rewardAmount: 10,
       rewardCoin: 10,
     });
+  });
+
+  it("returns streak milestone quests with progress metadata", async () => {
+    const quests = await service({ currentStreak: 3 }).service.getUserProgress("user-1");
+
+    const firstMilestone = quests.find((quest) => quest.id === "milestone.streak.7");
+    expect(firstMilestone).toMatchObject({
+      category: "milestone",
+      period: "once",
+      periodKey: "once",
+      rewardUnit: "XP",
+      rewardAmount: 25,
+      rewardCoin: 0,
+      action: "panel",
+      progressCurrent: 3,
+      progressTarget: 7,
+    });
+  });
+
+  it("returns effort milestone quests with progress metadata", async () => {
+    const quests = await service({
+      signals: { completedFocusSessions: 3, completedPlanTasks: 12 },
+    }).service.getUserProgress("user-1");
+
+    expect(quests.find((quest) => quest.id === "milestone.focus_sessions.10")).toMatchObject({
+      category: "milestone",
+      period: "once",
+      periodKey: "once",
+      rewardUnit: "XP",
+      rewardAmount: 25,
+      rewardCoin: 0,
+      action: "study-session",
+      progressCurrent: 3,
+      progressTarget: 10,
+    });
+    expect(quests.find((quest) => quest.id === "milestone.plan_tasks.25")).toMatchObject({
+      action: "plan",
+      progressCurrent: 12,
+      progressTarget: 25,
+    });
+  });
+
+  it("keeps completed milestone progress at the target after a streak reset", async () => {
+    const quests = await service({
+      currentStreak: 0,
+      rows: [
+        {
+          id: "progress-1",
+          questId: "milestone.streak.7",
+          periodKey: "once",
+          completedAt: new Date("2026-07-01T00:00:00.000Z"),
+        },
+      ],
+    }).service.getUserProgress("user-1");
+
+    expect(quests.find((quest) => quest.id === "milestone.streak.7")).toMatchObject({
+      completed: true,
+      progressCurrent: 7,
+      progressTarget: 7,
+    });
+  });
+
+  it("does not grant a streak milestone before the target is reached", async () => {
+    const subject = service({ currentStreak: 6 });
+
+    await subject.service.evaluateAndGrant("user-1");
+
+    expect(subject.quests.markCompleted).not.toHaveBeenCalled();
+    expect(subject.economy.grantInServiceTx).not.toHaveBeenCalled();
+  });
+
+  it("grants reached streak milestone XP once", async () => {
+    const subject = service({ currentStreak: 7 });
+
+    await subject.service.evaluateAndGrant("user-1");
+    await subject.service.evaluateAndGrant("user-1");
+
+    expect(subject.quests.markCompleted).toHaveBeenCalledTimes(1);
+    expect(subject.economy.grantInServiceTx).toHaveBeenCalledTimes(1);
+    expect(subject.economy.grantInServiceTx).toHaveBeenCalledWith(
+      "user-1",
+      Currency.XP,
+      25,
+      expect.objectContaining({
+        reason: "quest.milestone.streak.7",
+        refType: "quest",
+      }),
+      {},
+    );
+  });
+
+  it("grants each reached streak milestone once when multiple thresholds are met", async () => {
+    const subject = service({ currentStreak: 14 });
+
+    await subject.service.evaluateAndGrant("user-1");
+
+    expect(subject.quests.markCompleted).toHaveBeenCalledTimes(2);
+    expect(subject.economy.grantInServiceTx).toHaveBeenCalledWith(
+      "user-1",
+      Currency.XP,
+      25,
+      expect.objectContaining({ reason: "quest.milestone.streak.7" }),
+      {},
+    );
+    expect(subject.economy.grantInServiceTx).toHaveBeenCalledWith(
+      "user-1",
+      Currency.XP,
+      25,
+      expect.objectContaining({ reason: "quest.milestone.streak.14" }),
+      {},
+    );
+  });
+
+  it("does not grant an effort milestone before the target is reached", async () => {
+    const subject = service({ signals: { completedFocusSessions: 9, completedPlanTasks: 24 } });
+
+    await subject.service.evaluateAndGrant("user-1");
+
+    expect(subject.quests.markCompleted).not.toHaveBeenCalled();
+    expect(subject.economy.grantInServiceTx).not.toHaveBeenCalled();
+  });
+
+  it("grants reached effort milestone XP once", async () => {
+    const subject = service({ signals: { completedFocusSessions: 10 } });
+
+    await subject.service.evaluateAndGrant("user-1");
+    await subject.service.evaluateAndGrant("user-1");
+
+    expect(subject.quests.markCompleted).toHaveBeenCalledTimes(1);
+    expect(subject.economy.grantInServiceTx).toHaveBeenCalledTimes(1);
+    expect(subject.economy.grantInServiceTx).toHaveBeenCalledWith(
+      "user-1",
+      Currency.XP,
+      25,
+      expect.objectContaining({
+        reason: "quest.milestone.focus_sessions.10",
+        refType: "quest",
+      }),
+      {},
+    );
+  });
+
+  it("grants each reached effort milestone once when multiple thresholds are met", async () => {
+    const subject = service({ signals: { completedFocusSessions: 25, completedPlanTasks: 50 } });
+
+    await subject.service.evaluateAndGrant("user-1");
+
+    expect(subject.quests.markCompleted).toHaveBeenCalledTimes(4);
+    expect(subject.economy.grantInServiceTx).toHaveBeenCalledWith(
+      "user-1",
+      Currency.XP,
+      25,
+      expect.objectContaining({ reason: "quest.milestone.focus_sessions.10" }),
+      {},
+    );
+    expect(subject.economy.grantInServiceTx).toHaveBeenCalledWith(
+      "user-1",
+      Currency.XP,
+      25,
+      expect.objectContaining({ reason: "quest.milestone.focus_sessions.25" }),
+      {},
+    );
+    expect(subject.economy.grantInServiceTx).toHaveBeenCalledWith(
+      "user-1",
+      Currency.XP,
+      25,
+      expect.objectContaining({ reason: "quest.milestone.plan_tasks.25" }),
+      {},
+    );
+    expect(subject.economy.grantInServiceTx).toHaveBeenCalledWith(
+      "user-1",
+      Currency.XP,
+      25,
+      expect.objectContaining({ reason: "quest.milestone.plan_tasks.50" }),
+      {},
+    );
   });
 
   it("grants a daily ritual XP quest only once per day", async () => {

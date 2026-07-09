@@ -19,6 +19,8 @@ const makeRepo = () => ({
   setMemberStatus: vi.fn(),
   deleteMember: vi.fn(),
   memberCount: vi.fn().mockResolvedValue(0),
+  listOwnerAndMods: vi.fn().mockResolvedValue([]),
+  zoneSlug: vi.fn().mockResolvedValue(null),
 });
 
 const config = { get: vi.fn().mockResolvedValue(true) };
@@ -66,10 +68,17 @@ describe("ForumService", () => {
     expect(events.emit).not.toHaveBeenCalled();
   });
 
-  it("REQUEST join is PENDING and emits member.requested", async () => {
+  it("REQUEST join is PENDING and emits member.requested with resolved recipients", async () => {
+    repo.zoneSlug.mockResolvedValue("genel-abc");
+    repo.listOwnerAndMods.mockResolvedValue(["owner1", "mod1"]);
     const r = await svc.join("z1", "u2", ZoneJoinPolicy.REQUEST);
     expect(r.status).toBe(ZoneMemberStatus.PENDING);
-    expect(events.emit).toHaveBeenCalledWith("forum.member.requested", { zoneId: "z1", userId: "u2" });
+    expect(events.emit).toHaveBeenCalledWith("forum.member.requested", {
+      zoneId: "z1",
+      slug: "genel-abc",
+      requesterId: "u2",
+      moderatorIds: ["owner1", "mod1"],
+    });
   });
 
   it("an already-ACTIVE member re-joining is a no-op", async () => {

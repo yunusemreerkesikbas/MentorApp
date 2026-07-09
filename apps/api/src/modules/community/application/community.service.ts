@@ -5,7 +5,9 @@ import type {
   LeaderboardEntry,
   LeaderboardView,
   LeaderboardWindow,
+  PublicProfile,
 } from "@mentor/types";
+import { NotFoundError } from "../../../common/errors/domain-error";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import { StreakService } from "../../coaching/application/streak.service";
@@ -74,6 +76,42 @@ export class CommunityService {
       xp: balance.xp,
       level: deriveLevel(balance.xp),
       leaderboard,
+    };
+  }
+
+  /**
+   * Public profile header (identity + gamification) for another user, resolved by username. Public-safe:
+   * NO email/PII; xp/level are already public via the leaderboard. Banned/suspended/unknown → 404.
+   */
+  async getPublicProfile(username: string): Promise<PublicProfile> {
+    const user = await this.users.findByUsername(username);
+    if (!user || !user.username || user.status === "BANNED" || user.status === "SUSPENDED") {
+      throw new NotFoundError();
+    }
+    const economyEnabled = await this.config.get("economy.enabled");
+    const [currentStreak, activity] = await Promise.all([
+      this.streak.getCurrentStreak(user.id),
+      this.forum.getAuthorActivity(user.id),
+    ]);
+    const badges = deriveBadges({
+      currentStreak,
+      memberSince: new Date(user.createdAt),
+      totalPosts: activity.totalPosts,
+      nightPosts: activity.nightPosts,
+      reactionsReceived: activity.reactionsReceived,
+    });
+    const balance = economyEnabled ? await this.economy.getSelfBalance(user.id) : null;
+    return {
+      userId: user.id,
+      displayName: user.displayName,
+      username: user.username,
+      avatarUrl: user.avatarStorageKey ? this.storage.getPublicUrl(user.avatarStorageKey) : null,
+      examType: user.examType,
+      createdAt: user.createdAt.toISOString(),
+      streak: currentStreak,
+      badges,
+      xp: balance?.xp ?? null,
+      level: balance ? deriveLevel(balance.xp) : null,
     };
   }
 

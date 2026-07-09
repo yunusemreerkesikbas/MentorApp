@@ -1,5 +1,11 @@
-import type { StudySessionDto } from "@mentor/types";
-import { studySessionControllerFinalize, studySessionControllerStart } from "@mentor/api-client";
+import type { Paginated, StudySessionDto } from "@mentor/types";
+import {
+  getStudySessionControllerListUrl,
+  http,
+  studySessionControllerFinalize,
+  studySessionControllerRecordFeedback,
+  studySessionControllerStart,
+} from "@mentor/api-client";
 
 /**
  * Typed wrappers over the generated study-session client.
@@ -20,4 +26,21 @@ export async function finalizeStudySession(
   input: Parameters<typeof studySessionControllerFinalize>[1],
 ): Promise<void> {
   await studySessionControllerFinalize(id, input);
+}
+
+/** Attach the post-session micro check-in (mood 1-3 + optional note) to a finalized session. */
+export async function recordSessionFeedback(
+  id: string,
+  input: Parameters<typeof studySessionControllerRecordFeedback>[1],
+): Promise<void> {
+  await studySessionControllerRecordFeedback(id, input);
+}
+
+/** Recent finalized sessions — generated client omits pagination query params. */
+export async function listStudySessions(
+  page = 1,
+  pageSize = 5,
+): Promise<Paginated<StudySessionDto>> {
+  const url = `${getStudySessionControllerListUrl()}?page=${page}&pageSize=${pageSize}`;
+  return (await http<Paginated<StudySessionDto>>(url)) as Paginated<StudySessionDto>;
 }

@@ -7,13 +7,27 @@ export interface EconomyBalance {
   coinPending: number;
 }
 
-export type QuestCategory = "daily_ritual" | "onboarding";
+/** GET /v1/economy/ledger — append-only economy history, ready to render. */
+export interface EconomyLedgerEntryView {
+  id: string;
+  unit: "XP" | "COIN";
+  amount: number;
+  reason: string;
+  status: "PENDING" | "CONFIRMED" | "REVERSED";
+  note: string | null;
+  title: string;
+  description: string;
+  createdAt: string;
+}
+
+export type QuestCategory = "daily_ritual" | "milestone" | "onboarding";
 export type QuestPeriod = "daily" | "once";
 export type QuestRewardUnit = "XP" | "COIN" | "NONE";
 export type QuestAction =
   | "plan"
   | "study-session"
   | "mood-checkin"
+  | "panel"
   | "subscription"
   | "invite"
   | "verify-email"
@@ -33,6 +47,8 @@ export interface QuestProgressView {
   rewardAmount: number;
   /** Backward-compatible field for older clients. 0 for non-Coin rewards. */
   rewardCoin: number;
+  progressCurrent?: number;
+  progressTarget?: number;
   completed: boolean;
   completedAt: string | null;
 }

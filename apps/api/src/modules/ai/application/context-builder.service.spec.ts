@@ -6,16 +6,19 @@ describe("ContextBuilder (mood grounding)", () => {
   let getMe: ReturnType<typeof vi.fn>;
   let getExamCalendarByFamily: ReturnType<typeof vi.fn>;
   let getToday: ReturnType<typeof vi.fn>;
+  let getRecentSummary: ReturnType<typeof vi.fn>;
   let builder: ContextBuilder;
 
   beforeEach(() => {
     getMe = vi.fn(async () => ({ examType: "KPSS" }));
     getExamCalendarByFamily = vi.fn(async () => ({ daysRemaining: 90, examDateLabel: "12 Tem 2026" }));
     getToday = vi.fn(async () => ({ mood: 2, struggleNote: "matematik" }));
+    getRecentSummary = vi.fn(async () => null);
     builder = new ContextBuilder(
       { getMe } as never,
       { getExamCalendarByFamily } as never,
       { getToday } as never,
+      { getRecentSummary } as never,
     );
   });
 
@@ -32,5 +35,46 @@ describe("ContextBuilder (mood grounding)", () => {
     expect(ctx.moodLevel).toBeNull();
     expect(ctx.struggleNote).toBeNull();
     expect(buildSystemPrompt(ctx)).not.toContain("Bugünkü ruh hali");
+  });
+
+  it("includes the recent-session summary in the context and grounds the prompt", async () => {
+    getRecentSummary.mockResolvedValue({
+      count7d: 4,
+      focusMinutes7d: 120,
+      subjects: ["Matematik", "Tarih"],
+      lastStruggleNote: "paragraf",
+    });
+    const ctx = await builder.build("u1");
+    expect(ctx.recentSessions).toEqual({
+      count7d: 4,
+      focusMinutes7d: 120,
+      subjects: ["Matematik", "Tarih"],
+      lastStruggleNote: "paragraf",
+    });
+    const prompt = buildSystemPrompt(ctx);
+    expect(prompt).toContain("Son 7 gün: 4 seans, 120 dk odak");
+    expect(prompt).toContain("çalıştığı konular: Matematik, Tarih");
+    expect(prompt).toContain('son zorlandığı: "paragraf"');
+  });
+
+  it("omits the session line when there is no recent activity", async () => {
+    getRecentSummary.mockResolvedValue(null);
+    const ctx = await builder.build("u1");
+    expect(ctx.recentSessions).toBeNull();
+    expect(buildSystemPrompt(ctx)).not.toContain("Son 7 gün");
+  });
+
+  it("still builds context (mood + sessions) when the user has no exam type", async () => {
+    getMe.mockResolvedValue({ examType: null });
+    getRecentSummary.mockResolvedValue({
+      count7d: 1,
+      focusMinutes7d: 25,
+      subjects: [],
+      lastStruggleNote: null,
+    });
+    const ctx = await builder.build("u1");
+    expect(ctx.examType).toBeNull();
+    expect(ctx.recentSessions?.count7d).toBe(1);
+    expect(buildSystemPrompt(ctx)).toContain("Son 7 gün: 1 seans, 25 dk odak");
   });
 });
