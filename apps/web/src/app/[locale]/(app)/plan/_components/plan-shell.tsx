@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import type { PlanTaskDto, PlanTaskStatus } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
 import Plus from "lucide-react/dist/esm/icons/plus.mjs";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { MOBILE_TAB_BAR_STICKY_BOTTOM_CLASS } from "@/lib/app-shell";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
@@ -21,6 +22,7 @@ import {
   updatePlanTask,
 } from "@/lib/plan-tasks";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import { parseAnalysisPlanPrefill, type AnalysisPlanPrefill } from "@/lib/analysis-plan-prefill";
 import { PlanAddTaskForm, type PlanAddTaskFormHandle } from "./plan-add-task-form";
 import { PlanDateNav } from "./plan-date-nav";
 import { PlanDatePickerSheet, type PlanDatePickerSheetHandle } from "./plan-date-picker-sheet";
@@ -50,6 +52,8 @@ export function PlanShell() {
   const t = useTranslations("plan");
   const tCommon = useTranslations("common");
   const locale = useLocale();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const { filterSheet, actionSheet } = useMentorBottomSheet();
   const { confirm } = useMentorDialog();
   const { error: showErrorToast } = useMentorToast();
@@ -64,6 +68,16 @@ export function PlanShell() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const addFormRef = useRef<PlanAddTaskFormHandle>(null);
+  const prefillConsumed = useRef(false);
+  const prefill = useMemo(
+    () =>
+      parseAnalysisPlanPrefill({
+        add: searchParams.get("add"),
+        subject: searchParams.get("subject"),
+        title: searchParams.get("title"),
+      }),
+    [searchParams],
+  );
 
   useEffect(() => {
     setViewMode(readStoredViewMode());
@@ -302,12 +316,18 @@ export function PlanShell() {
     }
   }
 
-  const openAddSheet = useCallback(async () => {
+  const openAddSheet = useCallback(async (taskPrefill?: AnalysisPlanPrefill | null) => {
     if (readOnly) return;
     await filterSheet({
       title: t("add_sheet_title"),
       applyLabel: t("add_task"),
-      children: <PlanAddTaskForm ref={addFormRef} />,
+      children: (
+        <PlanAddTaskForm
+          ref={addFormRef}
+          initialTitle={taskPrefill?.title}
+          initialSubject={taskPrefill?.subject}
+        />
+      ),
       onApply: async () => {
         if (!addFormRef.current?.validate()) throw new Error("validation");
         const { title, subject } = addFormRef.current.getValues();
@@ -321,6 +341,14 @@ export function PlanShell() {
       },
     });
   }, [date, filterSheet, readOnly, t]);
+
+  useEffect(() => {
+    if (!prefill || prefillConsumed.current || readOnly) return;
+    prefillConsumed.current = true;
+    void openAddSheet(prefill).finally(() => {
+      router.replace("/plan");
+    });
+  }, [openAddSheet, prefill, readOnly, router]);
 
   const dayProgress = taskStats(dayLoading ? [] : tasks);
   const weekDayProgress = taskStats(

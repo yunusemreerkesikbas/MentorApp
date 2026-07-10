@@ -67,6 +67,12 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Profil header takip alanları — `getPublicProfile` enrich (APP-022)** — Public profil başlığı artık
+  `followerCount`/`followingCount`/`isFollowing` taşıyor. `getPublicProfile` `viewerId` alıp identity
+  `FollowService`'ten okur (`isSelf` → `isFollowing:false`); sayaçlar okuma-anında COUNT. Takip **grafı
+  identity'de** yaşar (community→forum importu var → grafı community'ye koymak Akış feed'i için forum→community
+  döngüsü yaratırdı); community yalnız tüketici, saf orkestrasyon korunur. Takip sistemi + Akış feed'i +
+  bildirim forum tarafında: [`forum.md`](./forum.md) *(APP-022)*. *(APP-022)*
 - **Public profil başlığı — `getPublicProfile` (APP-018)** — Forum kullanıcı profil sayfası
   (`/topluluk/uye/[username]`) için `CommunityService.getPublicProfile(username)` +
   `GET /v1/community/profile/:username`. `getSummary`'nin özünü (streak/badges/level/xp) **hedef

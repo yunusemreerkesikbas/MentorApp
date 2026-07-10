@@ -11,11 +11,13 @@ import { resolveApiUrl } from "./api-base";
 export async function fetchMockExamsList(
   page = 1,
   pageSize = 5,
+  examId?: string,
 ): Promise<Paginated<MockExamDto>> {
   const qs = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
   });
+  if (examId) qs.set("examId", examId);
   return (await http<Paginated<MockExamDto>>(
     `/v1/mock-exams?${qs.toString()}`,
   )) as Paginated<MockExamDto>;
@@ -65,3 +67,4 @@ export async function putPhotoToSignedUrl(
     throw new Error("Fotoğraf yüklenemedi.");
   }
 }
+

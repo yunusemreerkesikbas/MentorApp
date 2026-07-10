@@ -10,6 +10,7 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { CONTENT_PORT, type ContentPort, type ExamRef } from "../domain/content.port";
 import { computeGhost } from "../domain/ghost";
 import { computeSubjectNet, computeTotalNet, formatNet } from "../domain/net";
+import { selectAnalysisFocus } from "../domain/analysis-focus";
 import {
   MockExamRepository,
   type MockExamRow,
@@ -114,6 +115,7 @@ export class MockExamService {
         userId,
         query.page,
         query.pageSize,
+        query.examId,
       );
       if (items.length === 0) {
         return { items: [], total, page: query.page, pageSize: query.pageSize };
@@ -127,10 +129,10 @@ export class MockExamService {
     });
   }
 
-  async getAnalysis(userId: string): Promise<CoachingAnalysisDto> {
+  async getAnalysis(userId: string, examId?: string): Promise<CoachingAnalysisDto> {
     return withUserContext(this.db, { userId }, async (tx) => {
-      const trendRows = await this.mockExams.listTrend(tx, userId);
-      const breakdown = await this.mockExams.listSubjectBreakdown(tx, userId);
+      const trendRows = await this.mockExams.listTrend(tx, userId, 12, examId);
+      const breakdown = await this.mockExams.listSubjectBreakdown(tx, userId, examId);
 
       const examIds = [...new Set(trendRows.map((r) => r.examId))];
       const [taxonomyEntries, examEntries] = await Promise.all([
@@ -139,8 +141,14 @@ export class MockExamService {
       ]);
 
       const slugToName = new Map<string, string>();
+      const questionCountsBySlug = new Map<string, Set<number | null>>();
       for (const taxonomy of taxonomyEntries) {
-        for (const s of taxonomy) slugToName.set(s.slug, s.name);
+        for (const subject of taxonomy) {
+          slugToName.set(subject.slug, subject.name);
+          const counts = questionCountsBySlug.get(subject.slug) ?? new Set<number | null>();
+          counts.add(subject.questionCount ?? null);
+          questionCountsBySlug.set(subject.slug, counts);
+        }
       }
 
       const examNameById = new Map(
@@ -154,58 +162,99 @@ export class MockExamService {
         examName: examNameById.get(row.examId) ?? "Deneme",
       }));
 
-      const subjects = breakdown.map((row) => ({
-        subjectRef: row.subjectRef,
-        subjectName: slugToName.get(row.subjectRef) ?? row.subjectRef,
-        averageNet: row.avgNet,
-        attemptCount: row.attemptCount,
-      }));
+      const subjects = breakdown.map((row) => {
+        const counts = questionCountsBySlug.get(row.subjectRef);
+        const questionCount =
+          counts?.size === 1 ? ([...counts][0] ?? null) : null;
+        return {
+          subjectRef: row.subjectRef,
+          subjectName: slugToName.get(row.subjectRef) ?? row.subjectRef,
+          averageNet: row.avgNet,
+          attemptCount: row.attemptCount,
+          questionCount,
+          normalizedAveragePercent:
+            questionCount != null && questionCount > 0
+              ? ((Number(row.avgNet) / questionCount) * 100).toFixed(2)
+              : null,
+        };
+      });
 
-      const photoSignals = await this.photoRows.listPhotoSubjectSignals(tx, userId);
+      const photoSignals = await this.photoRows.listPhotoSubjectSignals(tx, userId, examId);
       const photoSubjectSignals = photoSignals.map((row) => ({
         subjectRef: row.subjectRef,
         subjectName: slugToName.get(row.subjectRef) ?? row.subjectRef,
         count: row.count,
       }));
+      const focus = selectAnalysisFocus(subjects, photoSubjectSignals);
+      const nextFocus = focus
+        ? {
+            ...focus,
+            message: this.translateFocus(
+              `coaching.focus.${focus.source}_${focus.evidenceLevel}`,
+              focus.subjectName,
+            ),
+            suggestedTaskTitle: this.translateFocus(
+              `coaching.focus.TASK_TITLE_${focus.source}`,
+              focus.subjectName,
+            ),
+          }
+        : null;
 
-      const ghost = await this.buildGhost(tx, userId);
-      const personalRecordNet = await this.mockExams.maxTotalNet(tx, userId);
+      const ghost = await this.buildGhost(tx, userId, examId);
+      const personalRecordNet = await this.mockExams.maxTotalNet(tx, userId, examId);
 
-      return { trend, subjects, photoSubjectSignals, personalRecordNet, ghost };
+      return { trend, subjects, photoSubjectSignals, nextFocus, personalRecordNet, ghost };
     });
   }
 
   /** Rule-based "geçmiş-ben" comparison (also exposed to W3 for the premium AI narration). */
-  async getGhostComparison(userId: string): Promise<GhostComparisonDto | null> {
-    return withUserContext(this.db, { userId }, (tx) => this.buildGhost(tx, userId));
+  async getGhostComparison(
+    userId: string,
+    examId?: string,
+  ): Promise<GhostComparisonDto | null> {
+    return withUserContext(this.db, { userId }, (tx) =>
+      this.buildGhost(tx, userId, examId),
+    );
   }
 
   /**
    * Cache the premium ghost narration on the user's latest attempt (table write stays in coaching —
    * workstreams §2; the AI module calls this instead of touching `mock_exams`).
    */
-  async setLatestGhostNarration(userId: string, narration: string, model: string): Promise<void> {
+  async setLatestGhostNarration(
+    userId: string,
+    narration: string,
+    model: string,
+    examId?: string,
+  ): Promise<void> {
     await withUserContext(this.db, { userId }, async (tx) => {
-      const latest = await this.mockExams.listTrend(tx, userId, 1);
+      const latest = await this.mockExams.listTrend(tx, userId, 1, examId);
       if (latest.length === 0) return;
       await this.mockExams.setGhostNarration(tx, latest[0]!.id, narration, model);
     });
   }
 
   /** Build the latest-vs-own-past comparison (null when fewer than 2 attempts). */
-  private async buildGhost(tx: DatabaseTx, userId: string): Promise<GhostComparisonDto | null> {
-    const latest2 = await this.mockExams.listTrend(tx, userId, 2);
+  private async buildGhost(
+    tx: DatabaseTx,
+    userId: string,
+    examId?: string,
+  ): Promise<GhostComparisonDto | null> {
+    const latest2 = await this.mockExams.listTrend(tx, userId, 2, examId);
     if (latest2.length < 2) return null;
     const latest = latest2[0]!;
     const previous = latest2[1]!;
 
     const [bestPrev, subjMap, exam, taxonomy] = await Promise.all([
-      this.mockExams.maxNetExcluding(tx, userId, latest.id),
+      this.mockExams.maxNetExcluding(tx, userId, latest.id, examId),
       this.mockExams.listSubjectsByMockExamIds(tx, [latest.id, previous.id]),
       this.content.getExamById(latest.examId),
       this.content.listExamSubjects(latest.examId),
     ]);
     const slugToName = new Map(taxonomy.map((s) => [s.slug, s.name]));
+    const subjectOrder = new Map(
+      taxonomy.map((subject, index) => [subject.slug, subject.sortOrder ?? index]),
+    );
 
     const { headlineKey, ...rest } = computeGhost({
       latest: {
@@ -216,10 +265,16 @@ export class MockExamService {
       },
       previousNet: previous.totalNet,
       bestPreviousNet: bestPrev ?? previous.totalNet,
-      latestSubjects: (subjMap.get(latest.id) ?? []).map((r) => ({
-        subjectRef: r.subjectRef,
-        net: r.net,
-      })),
+      latestSubjects: [...(subjMap.get(latest.id) ?? [])]
+        .sort(
+          (a, b) =>
+            (subjectOrder.get(a.subjectRef) ?? Number.MAX_SAFE_INTEGER) -
+            (subjectOrder.get(b.subjectRef) ?? Number.MAX_SAFE_INTEGER),
+        )
+        .map((row) => ({
+          subjectRef: row.subjectRef,
+          net: row.net,
+        })),
       previousSubjects: (subjMap.get(previous.id) ?? []).map((r) => ({
         subjectRef: r.subjectRef,
         net: r.net,
@@ -280,6 +335,13 @@ export class MockExamService {
     });
   }
 
+  private translateFocus(key: string, subject: string): string {
+    return this.i18n.translate(key, {
+      lang: I18nContext.current()?.lang,
+      args: { subject },
+    }) as unknown as string;
+  }
+
   private async buildMockExamDtos(
     _tx: DatabaseTx,
     rows: MockExamRow[],
@@ -309,3 +371,4 @@ export class MockExamService {
     });
   }
 }
+

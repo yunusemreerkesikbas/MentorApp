@@ -165,6 +165,12 @@ export async function getBookmarks(before?: string): Promise<SavedFeed> {
   return (await http<SavedFeed>(`/v1/forum/bookmarks${qs}`)) as SavedFeed;
 }
 
+/** The viewer's cross-zone "Akış" feed — threads by the people they follow, newest first. */
+export async function getFollowingFeed(before?: string): Promise<ThreadFeed> {
+  const qs = before ? `?before=${encodeURIComponent(before)}` : "";
+  return (await http<ThreadFeed>(`/v1/forum/feed/following${qs}`)) as ThreadFeed;
+}
+
 /** A user's activity feed (their threads + posts interleaved, newest first). */
 export async function getUserActivity(
   username: string,

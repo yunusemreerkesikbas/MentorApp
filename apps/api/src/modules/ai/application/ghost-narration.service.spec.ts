@@ -83,15 +83,19 @@ describe("GhostNarrationService", () => {
     expect(setLatestGhostNarration).not.toHaveBeenCalled();
   });
 
-  it("generates, meters and caches a narration for premium with no cache", async () => {
-    const res = await service.narrate(USER);
+  it("generates, meters and caches a narration within the requested exam", async () => {
+    const examId = "11111111-1111-4111-8111-111111111111";
+    const res = await service.narrate(USER, examId);
     expect(res.narration).toBe("Geçmiş-ben'i geçtin, harika ivme!");
     expect(res.model).toBe("fake");
     expect(append).toHaveBeenCalledOnce();
+    expect(getGhostComparison).toHaveBeenCalledWith(USER_ID, examId);
     expect(setLatestGhostNarration).toHaveBeenCalledWith(
       USER_ID,
       "Geçmiş-ben'i geçtin, harika ivme!",
       "fake",
+      examId,
     );
   });
 });
+

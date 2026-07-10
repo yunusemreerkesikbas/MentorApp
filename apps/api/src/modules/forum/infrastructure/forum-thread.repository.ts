@@ -1,10 +1,25 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, getTableColumns, inArray, isNull, lt, sql } from "drizzle-orm";
-import { ZoneType } from "@mentor/types";
+import { and, desc, eq, getTableColumns, inArray, isNotNull, isNull, lt, notInArray, sql } from "drizzle-orm";
+import { ZoneMemberStatus, ZoneType } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { forumPosts, forumReactions, forumThreads, forumZones, users } from "../../../database/schema";
+import {
+  forumPosts,
+  forumReactions,
+  forumThreads,
+  forumZoneMembers,
+  forumZones,
+  users,
+} from "../../../database/schema";
+
+/** A candidate for follow suggestions / cohort peers — public-safe identity fields. */
+export interface SuggestedUserRow {
+  userId: string;
+  displayName: string;
+  username: string;
+  avatarStorageKey: string | null;
+}
 
 export type ThreadRow = typeof forumThreads.$inferSelect;
 export type ThreadWithAuthor = ThreadRow & {
@@ -139,6 +154,35 @@ export class ForumThreadRepository {
         .from(forumThreads)
         .leftJoin(users, eq(forumThreads.authorId, users.id))
         .leftJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
+        .where(and(...conds))
+        .orderBy(desc(forumThreads.createdAt))
+        .limit(opts.limit);
+    });
+  }
+
+  /**
+   * Threads authored by any of `authorIds`, newest first (cross-zone "Akış" feed). `withUserContext`
+   * RLS elides deleted threads + threads in zones the viewer can't see, so visibility comes for free.
+   * Empty author set → []. `before` (ISO createdAt) loads older.
+   */
+  async listByAuthorIds(
+    authorIds: string[],
+    viewerId: string,
+    opts: { limit: number; before?: string },
+  ): Promise<ThreadWithAuthor[]> {
+    if (authorIds.length === 0) return [];
+    return withUserContext(this.db, { userId: viewerId }, async (tx) => {
+      const conds = [inArray(forumThreads.authorId, authorIds), isNull(forumThreads.deletedAt)];
+      if (opts.before) conds.push(lt(forumThreads.createdAt, new Date(opts.before)));
+      return tx
+        .select({
+          ...getTableColumns(forumThreads),
+          authorName: sql<string>`coalesce(${users.displayName}, '')`,
+          authorUsername: sql<string | null>`${users.username}`,
+          authorAvatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+        })
+        .from(forumThreads)
+        .leftJoin(users, eq(forumThreads.authorId, users.id))
         .where(and(...conds))
         .orderBy(desc(forumThreads.createdAt))
         .limit(opts.limit);
@@ -348,6 +392,52 @@ export class ForumThreadRepository {
         map.set(threadId, arr.slice(0, perThread).map((x) => x.name));
       }
       return map;
+    });
+  }
+
+  /**
+   * Follow suggestions (forum-native): distinct recent thread authors in zones where the viewer is an
+   * ACTIVE member, excluding `excludeIds` (self + already-followed) and handle-less users. One row per
+   * author (their newest thread), then sorted by recency in JS and capped. SERVICE context — the
+   * membership join scopes it to the viewer's own zones (no cross-zone leak).
+   * ponytail: `notInArray` grows with follow count; fine at MVP scale, not a hot path.
+   */
+  async suggestAuthorsInMemberZones(
+    viewerId: string,
+    excludeIds: string[],
+    limit: number,
+  ): Promise<SuggestedUserRow[]> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .selectDistinctOn([forumThreads.authorId], {
+          userId: users.id,
+          displayName: sql<string>`coalesce(${users.displayName}, '')`,
+          username: sql<string>`${users.username}`,
+          avatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+          createdAt: forumThreads.createdAt,
+        })
+        .from(forumThreads)
+        .innerJoin(
+          forumZoneMembers,
+          and(
+            eq(forumZoneMembers.zoneId, forumThreads.zoneId),
+            eq(forumZoneMembers.userId, viewerId),
+            eq(forumZoneMembers.status, ZoneMemberStatus.ACTIVE),
+          ),
+        )
+        .innerJoin(users, eq(users.id, forumThreads.authorId))
+        .where(
+          and(
+            isNull(forumThreads.deletedAt),
+            isNotNull(users.username),
+            notInArray(forumThreads.authorId, excludeIds),
+          ),
+        )
+        .orderBy(forumThreads.authorId, desc(forumThreads.createdAt));
+      return rows
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, limit)
+        .map(({ createdAt: _createdAt, ...u }) => u);
     });
   }
 

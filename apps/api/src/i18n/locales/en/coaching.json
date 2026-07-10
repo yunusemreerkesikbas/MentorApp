@@ -15,5 +15,16 @@
     "BEAT_PREVIOUS": "You beat your last attempt — past-you is defeated. The momentum is with you.",
     "TIED": "You're level with your last attempt. Consistency is a win too; one small step puts you ahead.",
     "BELOW_PREVIOUS": "A little behind this time — it happens. Don't dwell on one attempt; look at your trend. I'm here."
+  },
+  "focus": {
+    "PHOTO_SIGNAL": "{subject} appears most often in your wrong-answer photos. Let's add it to your next plan.",
+    "LOWEST_AVERAGE": "A small review of {subject} could be a good next step.",
+    "TASK_TITLE": "Review {subject}",
+    "PHOTO_SIGNAL_EARLY": "{subject} appeared in your first wrong-answer photo signal. We can treat it as a small starting step.",
+    "PHOTO_SIGNAL_REPEATED": "{subject} keeps appearing in your wrong-answer photos. Let's add it to your next plan.",
+    "LOWEST_AVERAGE_EARLY": "{subject} needs a little more support in your first mock exam. A short review is a good start.",
+    "LOWEST_AVERAGE_REPEATED": "{subject} keeps appearing as an area to strengthen. A short review is a good next step.",
+    "TASK_TITLE_PHOTO_SIGNAL": "Review {subject} mistakes",
+    "TASK_TITLE_LOWEST_AVERAGE": "Review {subject}"
   }
 }

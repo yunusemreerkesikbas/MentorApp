@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { StudySessionDto } from "@mentor/types";
-import { Chip } from "@mentor/ui";
+import { Button } from "@mentor/ui";
+import { Link } from "@/i18n/navigation";
 import { listStudySessions } from "@/lib/study-sessions";
+import { SessionHistoryRow } from "./session-history-row";
 
-/** Effort/mood glyphs matching the post-session check-in (1-3 -> 😩😐🙂). */
-const EFFORT_EMOJI: Record<number, string> = { 1: "😩", 2: "😐", 3: "🙂" };
+const HISTORY_PAGE_SIZE = 5;
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -17,17 +18,23 @@ type LoadState = "loading" | "ready" | "error";
  */
 export function SessionHistory() {
   const t = useTranslations("session");
-  const locale = useLocale();
   const [sessions, setSessions] = useState<StudySessionDto[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [state, setState] = useState<LoadState>("loading");
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
 
   useEffect(() => {
     let active = true;
     async function load() {
       try {
-        const res = await listStudySessions(1, 5);
+        const res = await listStudySessions(1, HISTORY_PAGE_SIZE);
         if (!active) return;
         setSessions(res.items);
+        setTotal(res.total);
+        setPage(1);
+        setLoadMoreError(false);
         setState("ready");
       } catch {
         if (!active) return;
@@ -39,6 +46,25 @@ export function SessionHistory() {
       active = false;
     };
   }, []);
+
+  const hasMore = sessions.length < total;
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    setLoadMoreError(false);
+    const nextPage = page + 1;
+    try {
+      const res = await listStudySessions(nextPage, HISTORY_PAGE_SIZE);
+      setSessions((prev) => [...prev, ...res.items]);
+      setTotal(res.total);
+      setPage(nextPage);
+    } catch {
+      setLoadMoreError(true);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasMore, loadingMore, page]);
 
   if (state === "loading") return null;
 
@@ -60,103 +86,50 @@ export function SessionHistory() {
 
   return (
     <section className="flex w-full flex-col gap-3">
-      <h2
-        className="text-base font-bold"
-        style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-      >
-        {t("history_title")}
-      </h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2
+          className="text-base font-bold"
+          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+        >
+          {t("history_title")}
+        </h2>
+        <Link
+          href="/seans/gecmis"
+          className="shrink-0 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{ color: "var(--color-main)" }}
+        >
+          {t("history_view_all")}
+        </Link>
+      </div>
       <ul
         className="flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-white bg-white/70"
         style={{ boxShadow: "var(--shadow-card)" }}
       >
         {sessions.map((s, i) => {
-          const minutes = Math.round(s.actualFocusSeconds / 60);
-          const started = new Date(s.startedAt);
-          const dateLabel = started.toLocaleDateString(locale, {
-            day: "2-digit",
-            month: "short",
-          });
-          const timeLabel = started.toLocaleTimeString(locale, {
-            hour: "2-digit",
-            minute: "2-digit",
-          });
-          const emoji = s.sessionMood ? EFFORT_EMOJI[s.sessionMood] : null;
           const abandoned = s.status === "ABANDONED";
-          const statusLabel = abandoned
-            ? t("history_abandoned")
-            : t("history_completed");
           return (
-            <li
+            <SessionHistoryRow
               key={s.id}
-              className="flex items-center gap-3 px-4 py-3.5"
-              style={
-                i > 0
-                  ? {
-                      borderTop:
-                        "1px solid color-mix(in srgb, var(--color-progress-track) 65%, transparent)",
-                    }
-                  : undefined
-              }
-            >
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums"
-                style={{
-                  backgroundColor: abandoned
-                    ? "color-mix(in srgb, var(--color-secondary) 12%, transparent)"
-                    : "color-mix(in srgb, var(--color-progress) 14%, transparent)",
-                  color: abandoned
-                    ? "var(--color-secondary)"
-                    : "var(--color-main)",
-                  fontFamily: "var(--font-heading)",
-                }}
-                aria-hidden
-              >
-                {emoji ?? minutes}
-              </div>
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <div className="flex min-w-0 flex-wrap items-center gap-2">
-                  <span
-                    className="text-sm font-bold tabular-nums"
-                    style={{ color: "var(--color-main)" }}
-                  >
-                    {t("minutes_value", { minutes })}
-                  </span>
-                  {s.subject && (
-                    <Chip className="max-w-[9rem] truncate px-2 py-0.5 text-[10px] font-bold uppercase">
-                      {s.subject}
-                    </Chip>
-                  )}
-                </div>
-                {s.struggleNote ? (
-                  <p
-                    className="truncate text-xs"
-                    style={{ color: "var(--color-secondary)" }}
-                  >
-                    {s.struggleNote}
-                  </p>
-                ) : (
-                  <p
-                    className="text-xs font-medium"
-                    style={{ color: "var(--color-secondary)" }}
-                  >
-                    {statusLabel}
-                  </p>
-                )}
-              </div>
-              <time
-                dateTime={s.startedAt}
-                className="shrink-0 text-right text-[11px] tabular-nums leading-snug"
-                style={{ color: "var(--color-secondary)" }}
-              >
-                {dateLabel}
-                <br />
-                {timeLabel}
-              </time>
-            </li>
+              session={s}
+              index={i}
+              minutesLabel={t("minutes_value", {
+                minutes: Math.round(s.actualFocusSeconds / 60),
+              })}
+              statusLabel={abandoned ? t("history_abandoned") : t("history_completed")}
+            />
           );
         })}
       </ul>
+      {loadMoreError ? (
+        <p className="text-sm" style={{ color: "var(--color-secondary)" }} role="status">
+          {t("history_load_more_error")}
+        </p>
+      ) : null}
+      {hasMore ? (
+        <Button variant="secondary" fullWidth busy={loadingMore} onClick={() => void loadMore()}>
+          {t("history_load_more")}
+        </Button>
+      ) : null}
     </section>
   );
 }

@@ -14,6 +14,12 @@ export interface NewMockExamSubject {
   net: string;
 }
 
+function userExamScope(userId: string, examId?: string) {
+  return examId
+    ? and(eq(mockExams.userId, userId), eq(mockExams.examId, examId))
+    : eq(mockExams.userId, userId);
+}
+
 /** Data access for `mock_exams` + `mock_exam_subjects` (RLS-scoped). */
 @Injectable()
 export class MockExamRepository {
@@ -85,19 +91,20 @@ export class MockExamRepository {
     userId: string,
     page: number,
     pageSize: number,
+    examId?: string,
   ): Promise<{ items: MockExamRow[]; total: number }> {
     const [items, totalRow] = await Promise.all([
       db
         .select()
         .from(mockExams)
-        .where(eq(mockExams.userId, userId))
+        .where(userExamScope(userId, examId))
         .orderBy(desc(mockExams.takenAt))
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       db
         .select({ count: sql<number>`count(*)::int` })
         .from(mockExams)
-        .where(eq(mockExams.userId, userId)),
+        .where(userExamScope(userId, examId)),
     ]);
     return { items, total: totalRow[0]?.count ?? 0 };
   }
@@ -125,11 +132,12 @@ export class MockExamRepository {
     db: Database | DatabaseTx,
     userId: string,
     excludeId: string,
+    examId?: string,
   ): Promise<string | null> {
     const rows = await db
       .select({ max: sql<string | null>`MAX(${mockExams.totalNet})::text` })
       .from(mockExams)
-      .where(and(eq(mockExams.userId, userId), ne(mockExams.id, excludeId)));
+      .where(and(userExamScope(userId, examId), ne(mockExams.id, excludeId)));
     return rows[0]?.max ?? null;
   }
 
@@ -146,21 +154,30 @@ export class MockExamRepository {
       .where(eq(mockExams.id, id));
   }
 
-  async maxTotalNet(db: Database | DatabaseTx, userId: string): Promise<string | null> {
+  async maxTotalNet(
+    db: Database | DatabaseTx,
+    userId: string,
+    examId?: string,
+  ): Promise<string | null> {
     const rows = await db
       .select({
         max: sql<string | null>`max(${mockExams.totalNet}::numeric)::text`,
       })
       .from(mockExams)
-      .where(eq(mockExams.userId, userId));
+      .where(userExamScope(userId, examId));
     return rows[0]?.max ?? null;
   }
 
-  async listTrend(db: Database | DatabaseTx, userId: string, limit = 12): Promise<MockExamRow[]> {
+  async listTrend(
+    db: Database | DatabaseTx,
+    userId: string,
+    limit = 12,
+    examId?: string,
+  ): Promise<MockExamRow[]> {
     return db
       .select()
       .from(mockExams)
-      .where(eq(mockExams.userId, userId))
+      .where(userExamScope(userId, examId))
       .orderBy(desc(mockExams.takenAt))
       .limit(limit);
   }
@@ -168,6 +185,7 @@ export class MockExamRepository {
   async listSubjectBreakdown(
     db: Database | DatabaseTx,
     userId: string,
+    examId?: string,
   ): Promise<Array<{ subjectRef: string; avgNet: string; attemptCount: number }>> {
     const rows = await db
       .select({
@@ -177,7 +195,7 @@ export class MockExamRepository {
       })
       .from(mockExamSubjects)
       .innerJoin(mockExams, eq(mockExamSubjects.mockExamId, mockExams.id))
-      .where(eq(mockExams.userId, userId))
+      .where(userExamScope(userId, examId))
       .groupBy(mockExamSubjects.subjectRef)
       .orderBy(desc(sql`AVG(${mockExamSubjects.net}::numeric)`));
     return rows.map((r) => ({
@@ -187,3 +205,4 @@ export class MockExamRepository {
     }));
   }
 }
+

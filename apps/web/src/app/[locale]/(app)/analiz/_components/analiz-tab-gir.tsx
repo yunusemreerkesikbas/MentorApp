@@ -8,6 +8,7 @@ import { AnalizHistoryList } from "./analiz-history-list";
 import { AnalizMockExamForm } from "./analiz-mock-exam-form";
 
 interface AnalizTabGirProps {
+  examId: string;
   exam: ExamSummaryDto | null;
   subjects: ExamSubjectDto[];
   scores: Record<string, SubjectScores>;
@@ -43,6 +44,7 @@ function NoExamSeed() {
 }
 
 export function AnalizTabGir({
+  examId,
   exam,
   subjects,
   scores,
@@ -78,7 +80,12 @@ export function AnalizTabGir({
           />
         )}
       </Card>
-      <AnalizHistoryList refreshKey={historyRefreshKey} onCopyLast={onCopyLast} />
+      <AnalizHistoryList
+        examId={examId}
+        refreshKey={historyRefreshKey}
+        onCopyLast={onCopyLast}
+      />
     </div>
   );
 }
+

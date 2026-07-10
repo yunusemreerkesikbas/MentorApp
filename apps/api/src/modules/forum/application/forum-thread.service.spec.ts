@@ -34,6 +34,7 @@ const makeThreadRepo = () => ({
   myReactionsByThread: vi.fn().mockResolvedValue(new Map()),
   commentCountsByThread: vi.fn().mockResolvedValue(new Map()),
   recentCommentersByThread: vi.fn().mockResolvedValue(new Map()),
+  suggestAuthorsInMemberZones: vi.fn().mockResolvedValue([]),
 });
 
 const makePostRepo = () => ({
@@ -74,7 +75,11 @@ const makeBookmarkRepo = () => ({
 });
 
 const makeMentionService = () => ({ dispatch: vi.fn().mockResolvedValue(undefined) });
-const makeUsersService = () => ({ findByUsername: vi.fn().mockResolvedValue(undefined) });
+const makeUsersService = () => ({
+  findByUsername: vi.fn().mockResolvedValue(undefined),
+  suggestCohortPeers: vi.fn().mockResolvedValue([]),
+});
+const makeFollowService = () => ({ getFolloweeIds: vi.fn().mockResolvedValue([]) });
 
 const makeZoneRepo = (
   zoneType: ZoneType = ZoneType.CHAT,
@@ -103,10 +108,14 @@ describe("ForumThreadService", () => {
 
   let postRepo: ReturnType<typeof makePostRepo>;
   let mentions: ReturnType<typeof makeMentionService>;
+  let usersService: ReturnType<typeof makeUsersService>;
+  let follow: ReturnType<typeof makeFollowService>;
 
   const svc = (zoneRepo: ReturnType<typeof makeZoneRepo>) => {
     postRepo = makePostRepo();
     mentions = makeMentionService();
+    usersService = makeUsersService();
+    follow = makeFollowService();
     return new ForumThreadService(
       threadRepo as never,
       zoneRepo as never,
@@ -117,7 +126,8 @@ describe("ForumThreadService", () => {
       events as never,
       storage as never,
       mentions as never,
-      makeUsersService() as never,
+      usersService as never,
+      follow as never,
     );
   };
 
@@ -465,5 +475,44 @@ describe("ForumThreadService", () => {
     await expect(service.getUserActivity("viewer", "nobody")).rejects.toMatchObject({
       httpStatus: HttpStatus.NOT_FOUND,
     });
+  });
+
+  it("getFollowSuggestions: zone authors first, cohort fallback for the rest, excluding self+followed", async () => {
+    const service = svc(makeZoneRepo());
+    follow.getFolloweeIds.mockResolvedValue(["followed1"]);
+    threadRepo.suggestAuthorsInMemberZones.mockResolvedValue([
+      { userId: "a1", displayName: "A1", username: "a1", avatarStorageKey: "avatars/a1.png" },
+    ]);
+    usersService.suggestCohortPeers.mockResolvedValue([
+      { userId: "c1", displayName: "C1", username: "c1", avatarStorageKey: null },
+    ]);
+
+    const res = await service.getFollowSuggestions("u1", 10);
+
+    // Primary excludes self + already-followed.
+    expect(threadRepo.suggestAuthorsInMemberZones).toHaveBeenCalledWith("u1", ["u1", "followed1"], 10);
+    // Fallback also excludes the primary results, asks only for the remaining slots.
+    expect(usersService.suggestCohortPeers).toHaveBeenCalledWith("u1", ["u1", "followed1", "a1"], 9);
+    expect(res).toEqual([
+      {
+        userId: "a1",
+        displayName: "A1",
+        username: "a1",
+        avatarUrl: "/v1/storage/fake-object?key=avatars%2Fa1.png",
+        isFollowing: false,
+      },
+      { userId: "c1", displayName: "C1", username: "c1", avatarUrl: null, isFollowing: false },
+    ]);
+  });
+
+  it("getFollowSuggestions: skips the cohort fallback when zone authors already fill the limit", async () => {
+    const service = svc(makeZoneRepo());
+    threadRepo.suggestAuthorsInMemberZones.mockResolvedValue([
+      { userId: "a1", displayName: "A1", username: "a1", avatarStorageKey: null },
+      { userId: "a2", displayName: "A2", username: "a2", avatarStorageKey: null },
+    ]);
+    const res = await service.getFollowSuggestions("u1", 2);
+    expect(usersService.suggestCohortPeers).not.toHaveBeenCalled();
+    expect(res.map((r) => r.userId)).toEqual(["a1", "a2"]);
   });
 });

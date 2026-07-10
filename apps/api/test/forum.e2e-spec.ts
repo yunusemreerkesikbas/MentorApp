@@ -865,4 +865,120 @@ describe("forum zones (e2e)", () => {
     expect(list.status).toBe(200);
     expect(list.body.map((r: { id: string }) => r.id)).toContain(threadId);
   });
+
+  // ---- Follow graph + "Akış" feed (APP-022) ----
+
+  it("follow → profile counts/isFollowing, following-feed scoping, notification, unfollow, self-follow", async () => {
+    await setForumEnabled(true);
+    // A (the default user) + B + C, all with handles (needed for followability + the notif link).
+    const aHandle = `fola${RUN}`;
+    const bHandle = `folb${RUN}`;
+    await request(app.getHttpServer())
+      .patch("/v1/users/me")
+      .set(asUser())
+      .send({ username: aHandle })
+      .expect(200);
+    const b = await signup("followee");
+    const asB = () => ({ Authorization: `Bearer ${b.accessToken}` });
+    await request(app.getHttpServer())
+      .patch("/v1/users/me")
+      .set(asB())
+      .send({ username: bHandle })
+      .expect(200);
+    const c = await signup("nonfollowee");
+    const asC = () => ({ Authorization: `Bearer ${c.accessToken}` });
+
+    // A CHAT zone all three join; B and C each post a thread.
+    const zoneId = await createZone(ZoneType.CHAT, "Takip Zonu");
+    for (const auth of [asUser(), asB(), asC()]) {
+      await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(auth);
+    }
+    const bThread = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asB())
+      .send({ body: "B'nin gönderisi" });
+    const cThread = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asC())
+      .send({ body: "C'nin gönderisi" });
+    const bThreadId = bThread.body.id as string;
+    const cThreadId = cThread.body.id as string;
+
+    // A follows B.
+    await request(app.getHttpServer()).put(`/v1/users/${bHandle}/follow`).set(asUser()).expect(200);
+
+    // B's profile (viewed by A) reflects the follow.
+    const profile = await request(app.getHttpServer())
+      .get(`/v1/community/profile/${bHandle}`)
+      .set(asUser());
+    expect(profile.status).toBe(200);
+    expect(profile.body.isFollowing).toBe(true);
+    expect(profile.body.followerCount).toBe(1);
+
+    // A's following feed shows B's thread but NOT C's (A doesn't follow C).
+    const feed = await request(app.getHttpServer()).get("/v1/forum/feed/following").set(asUser());
+    expect(feed.status).toBe(200);
+    const feedIds = (feed.body.items as { id: string }[]).map((t) => t.id);
+    expect(feedIds).toContain(bThreadId);
+    expect(feedIds).not.toContain(cThreadId);
+
+    // B is notified that A followed them (link → A's profile).
+    expect(await pollForumNotif(asB(), `/topluluk/uye/${aHandle}`)).toBe(true);
+
+    // Self-follow is rejected.
+    await request(app.getHttpServer()).put(`/v1/users/${aHandle}/follow`).set(asUser()).expect(400);
+
+    // Unfollow → profile flips + B's thread leaves the feed.
+    await request(app.getHttpServer()).delete(`/v1/users/${bHandle}/follow`).set(asUser()).expect(204);
+    const after = await request(app.getHttpServer())
+      .get(`/v1/community/profile/${bHandle}`)
+      .set(asUser());
+    expect(after.body.isFollowing).toBe(false);
+    expect(after.body.followerCount).toBe(0);
+    const feed2 = await request(app.getHttpServer()).get("/v1/forum/feed/following").set(asUser());
+    expect((feed2.body.items as { id: string }[]).map((t) => t.id)).not.toContain(bThreadId);
+  });
+
+  it("follow-suggestions: active zone authors, excluding self + already-followed (APP-023)", async () => {
+    await setForumEnabled(true);
+    const sHandle = `sug${RUN}`;
+    const bHandle = `sugb${RUN}`;
+    const cHandle = `sugc${RUN}`;
+    const s = await signup("sugviewer");
+    const asS = () => ({ Authorization: `Bearer ${s.accessToken}` });
+    const b = await signup("sugb");
+    const asB = () => ({ Authorization: `Bearer ${b.accessToken}` });
+    const c = await signup("sugc");
+    const asC = () => ({ Authorization: `Bearer ${c.accessToken}` });
+    for (const [auth, handle] of [
+      [asS(), sHandle],
+      [asB(), bHandle],
+      [asC(), cHandle],
+    ] as const) {
+      await request(app.getHttpServer()).patch("/v1/users/me").set(auth).send({ username: handle }).expect(200);
+    }
+
+    const zoneId = await createZone(ZoneType.CHAT, "Öneri Zonu");
+    for (const auth of [asS(), asB(), asC()]) {
+      await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(auth);
+    }
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/threads`).set(asB()).send({ body: "B önerisi" });
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/threads`).set(asC()).send({ body: "C önerisi" });
+
+    // S follows no one → suggestions surface the zone's authors (B, C), never S itself; all not-followed.
+    const sug1 = await request(app.getHttpServer()).get("/v1/forum/follow-suggestions").set(asS());
+    expect(sug1.status).toBe(200);
+    const handles1 = (sug1.body as { username: string }[]).map((u) => u.username);
+    expect(handles1).toContain(bHandle);
+    expect(handles1).toContain(cHandle);
+    expect(handles1).not.toContain(sHandle);
+    expect((sug1.body as { isFollowing: boolean }[]).every((u) => u.isFollowing === false)).toBe(true);
+
+    // After following B, B drops out of the suggestions; C stays.
+    await request(app.getHttpServer()).put(`/v1/users/${bHandle}/follow`).set(asS()).expect(200);
+    const sug2 = await request(app.getHttpServer()).get("/v1/forum/follow-suggestions").set(asS());
+    const handles2 = (sug2.body as { username: string }[]).map((u) => u.username);
+    expect(handles2).not.toContain(bHandle);
+    expect(handles2).toContain(cHandle);
+  });
 });

@@ -27,3 +27,13 @@ export const sessionReflectionSchema = z.object({
   sessionId: z.string().uuid(),
 });
 export type SessionReflectionInput = z.infer<typeof sessionReflectionSchema>;
+
+/** Optional active-exam scope for premium ghost narration. */
+export const ghostNarrationSchema = z
+  .object({
+    examId: z.string().uuid().optional(),
+  })
+  .default({});
+export type GhostNarrationInput = z.infer<typeof ghostNarrationSchema>;
+
+

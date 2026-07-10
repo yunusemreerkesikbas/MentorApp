@@ -4,7 +4,6 @@ import { useTranslations } from "next-intl";
 import type { CoachingAnalysisDto } from "@mentor/types";
 import { Button, Card, Chip } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
-import { findWeakestSubject } from "./analiz-types";
 
 interface AnalizSummaryBandProps {
   analysis: CoachingAnalysisDto | null;
@@ -19,7 +18,7 @@ export function AnalizSummaryBand({
 
   const latest = analysis?.trend[0] ?? null;
   const ghost = analysis?.ghost ?? null;
-  const weak = analysis ? findWeakestSubject(analysis.subjects) : null;
+  const focus = analysis?.nextFocus ?? null;
 
   if (!latest) {
     return (
@@ -49,9 +48,9 @@ export function AnalizSummaryBand({
               {t("delta", { delta: ghost.previousDelta })}
             </Chip>
           ) : null}
-          {weak ? (
+          {focus ? (
             <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-              {t("weak_subject", { subject: weak.subjectName })}
+              {t("next_focus", { subject: focus.subjectName })}
             </span>
           ) : null}
         </div>

@@ -80,6 +80,10 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `PUT/DELETE /v1/forum/threads\|posts/:id/bookmark` | Toggle bookmark (APP-018) |
 | `GET /v1/forum/bookmarks?before=` | Saved feed — threads + posts interleaved (APP-018) |
 | `GET /v1/forum/users/:username/activity?before=` | A user's activity feed (profile, APP-018) |
+| `GET /v1/forum/feed/following?before=` | Cross-zone "Akış" — threads by followed users (APP-022) |
+| `GET /v1/forum/follow-suggestions` | "Kimi takip et" — active zone authors + cohort fallback (APP-023) |
+| `PUT/DELETE /v1/users/:username/follow` | Follow / unfollow a user (identity; APP-022) |
+| `GET /v1/users/:username/{followers,following}?before=` | Follower / following lists (identity; APP-022) |
 | `POST /v1/internal/cron/cleanup-forum-attachments` | Orphan upload sweep (CronSecretGuard, APP-018) |
 | `POST /v1/forum/reports` | Report content |
 | `GET /v1/forum/zones/:id/reports` | Room moderation queue |
@@ -92,6 +96,56 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Follow discovery — "Kimi takip et" + follow-back (APP-023)** — Takip grafını dolduran discovery
+  (APP-022'nin eksik yarısı: yeni kullanıcı kimseyi takip etmiyor → Akış boştu). **Öneri kaynağı = üyesi
+  olunan zone'larda aktif kişiler** (forum-native, bağlamsal — Akış'ta zaten göreceğin insanlar), soğuk
+  başlangıçta **cohort fallback** (aynı sınav tipi). Yeni `ForumThreadRepository.suggestAuthorsInMemberZones`
+  (`recentCommentersByThread` deseni: SERVICE-context + `selectDistinctOn(authorId)`; `forum_threads` →
+  `forum_zone_members` INNER JOIN [`userId=viewer`, `status=ACTIVE`] → `users`; `deletedAt IS NULL`,
+  `username IS NOT NULL`, `notInArray(authorId, excludeIds)`; JS'te recency sort + slice — viewer'ın kendi
+  zone'larına scope'lu, sızma yok) + `UsersRepository.suggestCohortPeers` (identity: recent ACTIVE +
+  username + examType cohort, excludeIds hariç) + `UsersService.suggestCohortPeers` (viewer examType'ını
+  çözer). `ForumThreadService.getFollowSuggestions(viewerId, limit=10)`: `excludeIds=[self,
+  ...getFolloweeIds]` → primary → eksikse fallback (primary id'leri de excludeIds'e) → `FollowUserRef[]`
+  (`isFollowing:false`, avatar storage URL). **Mimari:** endpoint forum'da (zone üyeliği + thread yazarları
+  forum'un; forum zaten FollowService + UsersService import ediyor → forward-dep, döngüsüz). Endpoint:
+  `GET /v1/forum/follow-suggestions` → `FollowUserRef[]` (bare array). Web: paylaşılan **`FollowButton`**
+  (optimistic, failure-safe toggle — `topluluk/_components/`), **`FollowSuggestions`** (Akış'ta feed üstünde;
+  boşsa kendini gizler; takip → `onFollowed` ile feed refetch — kart yerinde kalır, server sonraki ziyarette
+  düşürür), **follow-back butonu** takipçi/takip listelerine (`FollowListPanel` satırı yeniden yapılandırıldı:
+  `<Link>` yalnız avatar+ad'ı sarar, buton **kardeş** — anchor-içinde-button geçersizliğini önler; kendi
+  satırında gizli). lib: `follow.getFollowSuggestions`. i18n: `suggestions_title`. Testler: `getFollowSuggestions`
+  unit +2 (primary+fallback merge/exclude; fallback-atlama), forum e2e +1 (öneriler zone yazarlarını verir,
+  self hariç; takip sonrası düşer). **Kapsam dışı** (backlog): profil kartı sayaçları (düşük ROI — getMe hot
+  path), gelişmiş skorlama (ortak-zone/karşılıklılık), öneri kartı kapatma. *(APP-023)*
+- **Takip (follow) + kişiselleştirilmiş "Akış" feed'i (APP-022)** — Profil sayfaları artık read-only
+  değil: tek yönlü, herkese açık, anında **takip sistemi** + zone-üstü **Akış** feed'i. **Takip grafı
+  `identity`'de** (`user_follows`, `forum_bookmarks` desenini aynalar — `0041`; SERVICE-context + WHERE
+  scope, ayrı RLS yok). **Mimari kısıt:** graf community'de olamazdı (community→forum importu var → Akış
+  için forum→community = döngü); `identity` kimseye bağlı değil, forum/community tüketici. `FollowService`
+  (self-follow reddi `SOCIAL_CANNOT_FOLLOW_SELF` 400, banlı/olmayan hedef 404, follow→`identity.user.followed`
+  event; unfollow sessiz) + `FollowRepository` (idempotent toggle, sayaçlar okuma-anında COUNT,
+  `getFolloweeIds`, takipçi/takip listeleri users INNER JOIN + viewer'ın `isFollowing`'i tek sorguda EXISTS,
+  banlı hariç). Endpoint'ler identity'de: `PUT/DELETE /v1/users/:username/follow`, `GET
+  /v1/users/:username/{followers,following}?before=` (cursor). `community.getPublicProfile` artık `viewerId`
+  alıp `followerCount`/`followingCount`/`isFollowing`'i FollowService'ten okur (self → false). **Akış feed'i
+  (yalnız thread'ler):** `ForumThreadRepository.listByAuthorIds` (`listByAuthor`'ın `inArray` genellemesi;
+  `withUserContext` RLS viewer'ın göremeyeceği zone/silinmiş thread'leri eler → gizlilik ücretsiz),
+  `ForumThreadService.getFollowingFeed` (followee ids boşsa erken `[]`; `buildThreadViews` batched lookup'ları
+  reuse), `GET /v1/forum/feed/following?before=`. **Bildirim:** yeni `IdentityEventsListener` (notifications)
+  `@OnEvent("identity.user.followed")` → "Yeni takipçi · <ad> seni takip etti" in-app (kategori **FORUM**
+  reuse, link takipçi profiline; handle yoksa linksiz; best-effort). Web: profil header'a **Takip Et/Bırak**
+  (optimistic, kendi profilinde gizli) + tıklanabilir **takipçi/takip sayaçları** → header altında `FollowListPanel`
+  (geri-butonlu liste, cursor); yeni **`/topluluk/akis`** sayfası (`AkisShell` — ThreadItem reuse, optimistic
+  like/bookmark, davetkâr boş durum) + sol sidebar'da zone gruplarının **üstünde** "Akış" girişi (`Rss`). lib:
+  `follow.ts` + `forum.getFollowingFeed`. Tipler: `PublicProfile` + `followerCount/followingCount/isFollowing`,
+  yeni `FollowUserRef`/`FollowList`. i18n: `follow`/`following_state`/`followers_label`/`following_label`/
+  `followers_title`/`following_title`/`follow_list_empty`/`feed_nav`/`following_feed_empty`. Testler: FollowService
+  unit +7 (follow/event, self-follow 400, 404, unfollow no-op, liste map/drop/404), IdentityEventsListener +3
+  (link/linksiz/best-effort), forum e2e +1 (A→B takip → profil isFollowing+sayaç → Akış B'yi gösterir C'yi
+  göstermez → bildirim → self-follow 400 → unfollow → feed düşer). **Kapsam dışı** (backlog): "kimi takip et"
+  önerileri, feed satırında inline takip butonu, thread+yorum merge'li akış, karşılıklı/engelleme/private,
+  takip için web push, denormalize sayaç. *(APP-022)*
 - **@Mention composer autocomplete (APP-021)** — Composer'da `@` + ≥1 karakter yazınca **o zone'un
   AKTİF üyelerinden** username-prefix eşleşenleri dropdown'da önerir (APP-018'in kapsam-dışı bıraktığı
   parça; mention hikâyesi kapandı). **Kaynak = zone üyeleri** (privacy: yalnız üyesi olunan zone'un
@@ -283,7 +337,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 - **Zengin emoji reaksiyon paleti (👍💪🎉😮)** — like tek kalbe indirildi; palet dönerse config arkasına alınabilir.
 - **Repost** — hâlâ kapsam dışı (ürün kararı; karşılık gelen entity yok). *Harici paylaşım (Send) yapıldı — APP-018.*
 - **Zone başına agregat "X mesaj" sayacı** (Trending Topics'teki "123.9k threads" karşılığı) — şu an `memberCount` ile yaklaşıklanıyor; gerçek sayım için zone'a thread-count aggregate eklenmesi gerekir (küçük, isteğe bağlı iyileştirme).
-- **Profil kartı sosyal alanları** — Figma profil kartında bio, takipçi sayısı, web sitesi var; `AuthUser`'da yok. Şu an displayName + @username + examType + email + üye-tarihi ile yaklaşıklanıyor. Bio/website/followers için şema + endpoint gerekir.
+- **Profil kartı sosyal alanları** — ~~takipçi sayısı~~ **Yapıldı** (takip grafı + takipçi/takip sayaç & listeleri, APP-022). Kalan: **bio + web sitesi** (`AuthUser`/`users`'da yok; şema + endpoint gerekir).
 
 ## Gotchas / Known issues
 

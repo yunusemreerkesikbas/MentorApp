@@ -14,6 +14,7 @@ import { StreakService } from "../../coaching/application/streak.service";
 import { EconomyService } from "../../economy/application/economy.service";
 import { ForumService } from "../../forum/application/forum.service";
 import { UsersService } from "../../identity/application/users.service";
+import { FollowService } from "../../identity/application/follow.service";
 import { deriveBadges } from "../domain/badges";
 import { deriveLevel } from "../domain/level";
 import { previousWindowStart, resolveMovement, windowStart } from "../domain/leaderboard-window";
@@ -33,6 +34,7 @@ export class CommunityService {
     private readonly streak: StreakService,
     private readonly forum: ForumService,
     private readonly economy: EconomyService,
+    private readonly follow: FollowService,
     private readonly config: ConfigRegistryService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
@@ -83,15 +85,19 @@ export class CommunityService {
    * Public profile header (identity + gamification) for another user, resolved by username. Public-safe:
    * NO email/PII; xp/level are already public via the leaderboard. Banned/suspended/unknown → 404.
    */
-  async getPublicProfile(username: string): Promise<PublicProfile> {
+  async getPublicProfile(username: string, viewerId: string): Promise<PublicProfile> {
     const user = await this.users.findByUsername(username);
     if (!user || !user.username || user.status === "BANNED" || user.status === "SUSPENDED") {
       throw new NotFoundError();
     }
     const economyEnabled = await this.config.get("economy.enabled");
-    const [currentStreak, activity] = await Promise.all([
+    const isSelf = viewerId === user.id;
+    const [currentStreak, activity, followerCount, followingCount, isFollowing] = await Promise.all([
       this.streak.getCurrentStreak(user.id),
       this.forum.getAuthorActivity(user.id),
+      this.follow.countFollowers(user.id),
+      this.follow.countFollowing(user.id),
+      isSelf ? Promise.resolve(false) : this.follow.isFollowing(viewerId, user.id),
     ]);
     const badges = deriveBadges({
       currentStreak,
@@ -112,6 +118,9 @@ export class CommunityService {
       badges,
       xp: balance?.xp ?? null,
       level: balance ? deriveLevel(balance.xp) : null,
+      followerCount,
+      followingCount,
+      isFollowing,
     };
   }
 

@@ -1,11 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import { and, desc, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, gte, isNotNull, lt, sql } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
-import { studySessions } from "../../../database/schema";
+import { planTasks, studySessions } from "../../../database/schema";
 import { StudySessionStatus } from "../domain/coaching.constants";
 import { addDays } from "../domain/date.util";
 
 export type StudySessionRow = typeof studySessions.$inferSelect;
+export type StudySessionListRow = StudySessionRow & { planTaskTitle: string | null };
 export type NewStudySession = typeof studySessions.$inferInsert;
 
 /**
@@ -61,19 +62,34 @@ export class StudySessionRepository {
     userId: string,
     page: number,
     pageSize: number,
-  ): Promise<{ items: StudySessionRow[]; total: number }> {
-    const where = and(eq(studySessions.userId, userId), isNotNull(studySessions.endedAt));
+    subject?: string,
+  ): Promise<{ items: StudySessionListRow[]; total: number }> {
+    const where = and(
+      eq(studySessions.userId, userId),
+      isNotNull(studySessions.endedAt),
+      subject ? eq(studySessions.subject, subject) : undefined,
+    );
     const [items, totalRow] = await Promise.all([
       tx
-        .select()
+        .select({
+          ...getTableColumns(studySessions),
+          planTaskTitle: planTasks.title,
+        })
         .from(studySessions)
+        .leftJoin(planTasks, eq(studySessions.planTaskId, planTasks.id))
         .where(where)
         .orderBy(desc(studySessions.startedAt))
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       tx.select({ count: sql<number>`count(*)::int` }).from(studySessions).where(where),
     ]);
-    return { items, total: totalRow[0]?.count ?? 0 };
+    return {
+      items: items.map((row) => ({
+        ...row,
+        planTaskTitle: row.planTaskTitle ?? null,
+      })),
+      total: totalRow[0]?.count ?? 0,
+    };
   }
 
   /**

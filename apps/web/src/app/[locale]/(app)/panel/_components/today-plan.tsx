@@ -8,6 +8,7 @@ import type { PlanTaskDto, PlanTaskStatus } from "@mentor/types";
 import { ApiClientError, planTaskControllerUpdate } from "@mentor/api-client";
 import { Card, PlanListItem, ProgressBar, SectionHeading } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
+import { buildSeansHrefFromPlanTask } from "@/lib/plan-seans-link";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { staggerItemVariants } from "@/lib/stagger-motion";
 
@@ -30,6 +31,7 @@ export function TodayPlan({
 }) {
   const reduceMotion = useReducedMotion();
   const t = useTranslations("today_plan");
+  const tPlan = useTranslations("plan");
   const tCommon = useTranslations("common");
   const { error: showErrorToast } = useMentorToast();
   const [tasks, setTasks] = useState(initialTasks);
@@ -119,6 +121,7 @@ export function TodayPlan({
               <motion.li
                 key={task.id}
                 variants={reduceMotion ? undefined : staggerItemVariants}
+                className="flex flex-col gap-1"
               >
                 <PlanListItem
                   title={task.title}
@@ -126,6 +129,15 @@ export function TodayPlan({
                   done={task.status === "DONE"}
                   onToggle={() => void toggle(task.id)}
                 />
+                {task.status !== "DONE" ? (
+                  <Link
+                    href={buildSeansHrefFromPlanTask(task)}
+                    className="ml-14 text-xs font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2"
+                    style={{ color: "var(--color-progress)" }}
+                  >
+                    {tPlan("start_session")} →
+                  </Link>
+                ) : null}
               </motion.li>
             ))}
           </motion.ul>

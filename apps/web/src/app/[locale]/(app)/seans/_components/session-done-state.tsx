@@ -46,6 +46,8 @@ export interface SessionDoneStateProps {
   countsAsFocusSession?: boolean;
   /** Final session status — used to avoid hint on abandoned sessions. */
   sessionStatus?: StudySessionStatus | null;
+  /** Linked plan task was auto-marked DONE on finalize. */
+  planTaskAutoCompleted?: boolean;
   /** Persists the post-session micro check-in; rejects on API error (toast shown upstream). */
   onSubmitFeedback: (mood: number, struggleNote?: string) => Promise<void>;
   onReset: () => void;
@@ -66,6 +68,7 @@ export function SessionDoneState({
   streakBaseline = null,
   countsAsFocusSession = true,
   sessionStatus = null,
+  planTaskAutoCompleted = false,
   onSubmitFeedback,
   onReset,
 }: SessionDoneStateProps) {
@@ -203,6 +206,20 @@ export function SessionDoneState({
           role="status"
         >
           {t("too_short_hint")}
+        </span>
+      )}
+      {planTaskAutoCompleted && (
+        <span
+          className="rounded-full px-3 py-1 text-xs font-semibold"
+          style={{
+            backgroundColor:
+              "color-mix(in srgb, var(--color-progress-track) 35%, transparent)",
+            color: "var(--color-secondary)",
+            fontFamily: "var(--font-body)",
+          }}
+          role="status"
+        >
+          {t("plan_task_completed")}
         </span>
       )}
       {streakFeedback != null && currentStreak != null && (

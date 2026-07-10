@@ -73,6 +73,30 @@ export interface PublicProfile {
   /** Total XP; null when the economy is disabled. */
   xp: number | null;
   level: CommunityLevelView | null;
+  /** How many users follow this profile. */
+  followerCount: number;
+  /** How many users this profile follows. */
+  followingCount: number;
+  /** Whether the viewer follows this profile. false when it's the viewer's own profile (can't follow self). */
+  isFollowing: boolean;
+}
+
+/**
+ * A user reference in a follower/following list (public-safe — no PII). `isFollowing` is the *viewer's*
+ * relationship to this user, so the list can show a follow-back button.
+ */
+export interface FollowUserRef {
+  userId: string;
+  displayName: string;
+  username: string;
+  avatarUrl: string | null;
+  isFollowing: boolean;
+}
+
+/** GET /v1/users/:username/followers|following — cursor-paginated user list, newest-follow first. */
+export interface FollowList {
+  items: FollowUserRef[];
+  nextCursor: string | null;
 }
 
 /** GET /v1/community/summary — everything the right-column effort board needs in one call. */

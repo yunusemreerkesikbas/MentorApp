@@ -247,6 +247,98 @@ describe("coaching (e2e)", () => {
     expect(list.body.items.some((s: { id: string }) => s.id === start.body.id)).toBe(true);
   });
 
+  it("GET /study-sessions filters by subject when subject query param is set", async () => {
+    const matematik = await request(app.getHttpServer())
+      .post("/v1/study-sessions")
+      .set(authA())
+      .send({ preset: "25_5", subject: "Matematik" });
+    expect(matematik.status).toBe(201);
+    await request(app.getHttpServer())
+      .patch(`/v1/study-sessions/${matematik.body.id}`)
+      .set(authA())
+      .send({ status: "COMPLETED", actualFocusSeconds: 1500 });
+
+    const turkce = await request(app.getHttpServer())
+      .post("/v1/study-sessions")
+      .set(authA())
+      .send({ preset: "25_5", subject: "Türkçe" });
+    expect(turkce.status).toBe(201);
+    await request(app.getHttpServer())
+      .patch(`/v1/study-sessions/${turkce.body.id}`)
+      .set(authA())
+      .send({ status: "COMPLETED", actualFocusSeconds: 1500 });
+
+    const filtered = await request(app.getHttpServer())
+      .get("/v1/study-sessions?page=1&pageSize=10&subject=Matematik")
+      .set(authA());
+    expect(filtered.status).toBe(200);
+    expect(filtered.body.items.every((s: { subject: string }) => s.subject === "Matematik")).toBe(
+      true,
+    );
+    expect(filtered.body.items.some((s: { id: string }) => s.id === matematik.body.id)).toBe(true);
+    expect(filtered.body.items.some((s: { id: string }) => s.id === turkce.body.id)).toBe(false);
+
+    const empty = await request(app.getHttpServer())
+      .get("/v1/study-sessions?page=1&pageSize=10&subject=Fizik")
+      .set(authA());
+    expect(empty.status).toBe(200);
+    expect(empty.body.items).toEqual([]);
+    expect(empty.body.total).toBe(0);
+  });
+
+  it("study session start persists planTaskId when linked from a plan task", async () => {
+    const createTask = await request(app.getHttpServer())
+      .post("/v1/plan-tasks")
+      .set(authA())
+      .send({ title: "Seans bağlantısı", subject: "Coğrafya" });
+    expect(createTask.status).toBe(201);
+
+    const start = await request(app.getHttpServer())
+      .post("/v1/study-sessions")
+      .set(authA())
+      .send({
+        preset: "25_5",
+        subject: "Coğrafya",
+        planTaskId: createTask.body.id,
+      });
+    expect(start.status).toBe(201);
+    expect(start.body.planTaskId).toBe(createTask.body.id);
+
+    const done = await request(app.getHttpServer())
+      .patch(`/v1/study-sessions/${start.body.id}`)
+      .set(authA())
+      .send({ status: "COMPLETED", actualFocusSeconds: 1500 });
+    expect(done.status).toBe(200);
+    expect(done.body.planTaskAutoCompleted).toBe(true);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const tasks = await request(app.getHttpServer())
+      .get(`/v1/plan-tasks?date=${today}`)
+      .set(authA());
+    expect(tasks.status).toBe(200);
+    const linkedTask = tasks.body.items.find(
+      (t: { id: string }) => t.id === createTask.body.id,
+    );
+    expect(linkedTask?.status).toBe("DONE");
+
+    const list = await request(app.getHttpServer())
+      .get("/v1/study-sessions?page=1&pageSize=5")
+      .set(authA());
+    expect(list.status).toBe(200);
+    const listed = list.body.items.find((s: { id: string }) => s.id === start.body.id);
+    expect(listed?.planTaskTitle).toBe("Seans bağlantısı");
+
+    const foreign = await request(app.getHttpServer())
+      .post("/v1/study-sessions")
+      .set(authA())
+      .send({
+        preset: "25_5",
+        planTaskId: "00000000-0000-0000-0000-000000000000",
+      });
+    expect(foreign.status).toBe(404);
+    expect(foreign.body.code).toBeTruthy();
+  });
+
   it("custom preset requires focusMinutes and persists plannedFocusMinutes", async () => {
     const missing = await request(app.getHttpServer())
       .post("/v1/study-sessions")

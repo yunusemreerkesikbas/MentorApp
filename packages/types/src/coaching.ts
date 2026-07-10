@@ -34,6 +34,10 @@ export interface StudySessionDto {
   preset: SessionPresetId;
   status: StudySessionStatus;
   subject: string | null;
+  /** Plan task this session was started from; null when not linked. */
+  planTaskId: string | null;
+  /** Resolved plan task title when listed with join; null when unlinked or on write responses. */
+  planTaskTitle: string | null;
   startedAt: string; // ISO datetime
   endedAt: string | null; // ISO datetime
   actualFocusSeconds: number;
@@ -47,6 +51,8 @@ export interface StudySessionDto {
   aiReflection: string | null;
   /** True when this finalized session meets the platform min-focus threshold (streak/XP/quests). */
   countsAsFocusSession: boolean;
+  /** True when finalize auto-marked the linked plan task DONE (this request only). */
+  planTaskAutoCompleted: boolean;
 }
 
 /** Streak summary derived server-side from `daily_activity` / `streak_state`. */
@@ -129,6 +135,9 @@ export interface SubjectStrengthDto {
   subjectName: string;
   averageNet: string;
   attemptCount: number;
+  questionCount: number | null;
+  /** Server-computed averageNet / questionCount × 100. */
+  normalizedAveragePercent: string | null;
 }
 
 /** Foto analizinden gelen ders sinyalleri (zayıflık ipucu; net ortalamasından ayrı). */
@@ -136,6 +145,19 @@ export interface PhotoSubjectSignalDto {
   subjectRef: string;
   subjectName: string;
   count: number;
+}
+
+/** Server-selected next study focus from personal analysis evidence. */
+export interface AnalysisFocusDto {
+  subjectRef: string;
+  subjectName: string;
+  source: "PHOTO_SIGNAL" | "LOWEST_AVERAGE";
+  evidenceCount: number;
+  evidenceLevel: "EARLY" | "REPEATED";
+  /** Backend-localized, encouraging explanation of the selected evidence. */
+  message: string;
+  /** Backend-localized Plan task title prefill. */
+  suggestedTaskTitle: string;
 }
 
 /** Per-subject "geçmiş-ben" delta: this attempt's subject net vs the previous attempt's. */
@@ -176,6 +198,8 @@ export interface CoachingAnalysisDto {
   trend: MockExamTrendPointDto[];
   subjects: SubjectStrengthDto[];
   photoSubjectSignals: PhotoSubjectSignalDto[];
+  /** `null` until a mock-exam or photo signal supplies personal evidence. */
+  nextFocus: AnalysisFocusDto | null;
   /** All-time best total net across all attempts; null when no attempts. */
   personalRecordNet: string | null;
   /** Latest-vs-own-past comparison; `null` when fewer than 2 attempts. */
@@ -209,3 +233,4 @@ export interface VisionDto {
   createdAt: string;
   updatedAt: string;
 }
+

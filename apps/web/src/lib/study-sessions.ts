@@ -24,8 +24,8 @@ export async function startStudySession(
 export async function finalizeStudySession(
   id: string,
   input: Parameters<typeof studySessionControllerFinalize>[1],
-): Promise<void> {
-  await studySessionControllerFinalize(id, input);
+): Promise<StudySessionDto> {
+  return (await studySessionControllerFinalize(id, input)) as unknown as StudySessionDto;
 }
 
 /** Attach the post-session micro check-in (mood 1-3 + optional note) to a finalized session. */
@@ -40,7 +40,13 @@ export async function recordSessionFeedback(
 export async function listStudySessions(
   page = 1,
   pageSize = 5,
+  subject?: string,
 ): Promise<Paginated<StudySessionDto>> {
-  const url = `${getStudySessionControllerListUrl()}?page=${page}&pageSize=${pageSize}`;
+  const params = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  if (subject?.trim()) params.set("subject", subject.trim());
+  const url = `${getStudySessionControllerListUrl()}?${params.toString()}`;
   return (await http<Paginated<StudySessionDto>>(url)) as Paginated<StudySessionDto>;
 }

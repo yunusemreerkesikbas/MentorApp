@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import Flame from "lucide-react/dist/esm/icons/flame.mjs";
 import Zap from "lucide-react/dist/esm/icons/zap.mjs";
 import type { PublicProfile } from "@mentor/types";
+import { Button } from "@mentor/ui";
 import { AuthorAvatar } from "../../../_components/author-avatar";
 import { BadgeStrip } from "../../../_components/badge-strip";
 
@@ -46,7 +47,22 @@ function StatInline({
  * effort board uses: on your own profile those would duplicate the right card and read as a hero-metric
  * block. Effort-only (§3 anti-shaming); economy-gated cells degrade when xp/level are null.
  */
-export function ProfileHeader({ profile }: { profile: PublicProfile }) {
+interface ProfileHeaderProps {
+  profile: PublicProfile;
+  /** The viewer's own profile → no follow button (can't follow yourself). */
+  isOwn: boolean;
+  onToggleFollow: () => void;
+  onOpenFollowers: () => void;
+  onOpenFollowing: () => void;
+}
+
+export function ProfileHeader({
+  profile,
+  isOwn,
+  onToggleFollow,
+  onOpenFollowers,
+  onOpenFollowing,
+}: ProfileHeaderProps) {
   const t = useTranslations("topluluk");
   const locale = useLocale();
   const memberSince = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(
@@ -83,7 +99,42 @@ export function ProfileHeader({ profile }: { profile: PublicProfile }) {
           <p className="mt-1.5 text-[12px]" style={{ color: "var(--color-secondary)" }}>
             {t("profile_member_since", { date: memberSince })}
           </p>
+          {/* Follower / following counts — clickable, open the respective list. */}
+          <div className="mt-2 flex items-center gap-4 text-[13px]">
+            <button
+              type="button"
+              onClick={onOpenFollowers}
+              className="transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              style={{ color: "var(--color-secondary)" }}
+            >
+              <span className="font-bold tabular-nums" style={{ color: "var(--color-main)" }}>
+                {profile.followerCount.toLocaleString(locale)}
+              </span>{" "}
+              {t("followers_label")}
+            </button>
+            <button
+              type="button"
+              onClick={onOpenFollowing}
+              className="transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              style={{ color: "var(--color-secondary)" }}
+            >
+              <span className="font-bold tabular-nums" style={{ color: "var(--color-main)" }}>
+                {profile.followingCount.toLocaleString(locale)}
+              </span>{" "}
+              {t("following_label")}
+            </button>
+          </div>
         </div>
+        {!isOwn && (
+          <div className="shrink-0 pt-0.5">
+            <Button
+              variant={profile.isFollowing ? "secondary" : "primary"}
+              onClick={onToggleFollow}
+            >
+              {profile.isFollowing ? t("following_state") : t("follow")}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Gamification rail — inline, quiet, no cards */}

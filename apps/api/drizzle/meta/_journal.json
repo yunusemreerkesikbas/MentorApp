@@ -281,6 +281,20 @@
       "when": 1783553074093,
       "tag": "0039_fair_jazinda",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1783638463028,
+      "tag": "0040_certain_iceman",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1783670328454,
+      "tag": "0041_strange_william_stryker",
+      "breakpoints": true
     }
   ]
 }

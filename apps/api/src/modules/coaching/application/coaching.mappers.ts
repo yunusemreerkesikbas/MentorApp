@@ -29,7 +29,11 @@ export function toPlanTaskDto(row: PlanTaskRow): PlanTaskDto {
   };
 }
 
-export function toStudySessionDto(row: StudySessionRow, minFocusSeconds: number): StudySessionDto {
+export function toStudySessionDto(
+  row: StudySessionRow,
+  minFocusSeconds: number,
+  extras?: { planTaskTitle?: string | null; planTaskAutoCompleted?: boolean },
+): StudySessionDto {
   const countsAsFocusSession =
     row.status === "COMPLETED" &&
     row.endedAt != null &&
@@ -40,6 +44,8 @@ export function toStudySessionDto(row: StudySessionRow, minFocusSeconds: number)
     preset: row.preset as SessionPresetId,
     status: row.status as StudySessionStatus,
     subject: row.subject,
+    planTaskId: row.planTaskId ?? null,
+    planTaskTitle: extras?.planTaskTitle ?? null,
     startedAt: row.startedAt.toISOString(),
     endedAt: row.endedAt ? row.endedAt.toISOString() : null,
     actualFocusSeconds: row.actualFocusSeconds,
@@ -48,6 +54,7 @@ export function toStudySessionDto(row: StudySessionRow, minFocusSeconds: number)
     struggleNote: row.struggleNote ?? null,
     aiReflection: row.aiReflection ?? null,
     countsAsFocusSession,
+    planTaskAutoCompleted: extras?.planTaskAutoCompleted ?? false,
   };
 }
 

@@ -14,6 +14,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type {
   CommentDetail,
   CommentView,
+  FollowUserRef,
   ForumActivityFeed,
   ForumAttachmentUploadUrl,
   SavedFeed,
@@ -71,6 +72,21 @@ export class ForumThreadController {
     @Query() q: FeedQueryDto,
   ): Promise<ThreadFeed> {
     return this.threads.listFeed(user.id, zoneId, q);
+  }
+
+  /** The viewer's cross-zone "Akış" feed — threads by the people they follow, newest first. */
+  @Get("feed/following")
+  followingFeed(
+    @CurrentUser() user: RequestUser,
+    @Query() q: BookmarkQueryDto,
+  ): Promise<ThreadFeed> {
+    return this.threads.getFollowingFeed(user.id, q.before);
+  }
+
+  /** "Kimi takip et" — people to follow (active authors in your zones + cohort fallback). */
+  @Get("follow-suggestions")
+  followSuggestions(@CurrentUser() user: RequestUser): Promise<FollowUserRef[]> {
+    return this.threads.getFollowSuggestions(user.id);
   }
 
   @Get("threads/:threadId/detail")

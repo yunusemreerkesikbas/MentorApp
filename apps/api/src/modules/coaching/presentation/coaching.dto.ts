@@ -1,4 +1,5 @@
 import {
+  analysisQuerySchema,
   createMoodCheckinSchema,
   createMockExamSchema,
   createPlanTaskSchema,
@@ -25,6 +26,8 @@ export class SessionFeedbackDto extends createZodDto(sessionFeedbackSchema) {}
 export class ListStudySessionsQueryDto extends createZodDto(listStudySessionsQuerySchema) {}
 export class CreateMoodCheckinDto extends createZodDto(createMoodCheckinSchema) {}
 export class ListMoodCheckinsQueryDto extends createZodDto(listMoodCheckinsQuerySchema) {}
+export class AnalysisQueryDto extends createZodDto(analysisQuerySchema) {}
 export class CreateMockExamDto extends createZodDto(createMockExamSchema) {}
 export class ListMockExamsQueryDto extends createZodDto(listMockExamsQuerySchema) {}
 export class UpsertVisionDto extends createZodDto(upsertVisionSchema) {}
+

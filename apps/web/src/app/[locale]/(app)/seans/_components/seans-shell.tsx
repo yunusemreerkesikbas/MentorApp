@@ -8,6 +8,7 @@ import type { QuestProgressView, SessionPresetDto, TodayPanelResponse } from "@m
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
 import { Card } from "@mentor/ui";
 import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
+import { parsePlanTaskContextFromParams } from "@/lib/plan-seans-link";
 import { SessionControls } from "./session-controls";
 import { SessionDoneState } from "./session-done-state";
 import { SessionHistory } from "./session-history";
@@ -115,6 +116,22 @@ function SetupStat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function PlanTaskContextChip({ title }: { title: string }) {
+  return (
+    <span
+      className="max-w-full truncate rounded-full px-3 py-1 text-xs font-semibold"
+      style={{
+        backgroundColor: "color-mix(in srgb, var(--color-progress) 14%, transparent)",
+        color: "var(--color-main)",
+        fontFamily: "var(--font-body)",
+      }}
+      title={title}
+    >
+      {title}
+    </span>
+  );
+}
+
 /**
  * Pomodoro session UI — setup dial (idle), immersive focus/break, done summary.
  */
@@ -126,8 +143,16 @@ export function SeansShell() {
   const presetParam = searchParams.get("preset");
   const minutesParam = searchParams.get("minutes");
   const subjectParam = searchParams.get("subject");
+  const taskTitleParam = searchParams.get("taskTitle");
+  const taskIdParam = searchParams.get("taskId");
   const [subject, setSubject] = useState<string | null>(() =>
     subjectParam?.trim() ? subjectParam.trim() : null,
+  );
+  const [planTaskContext, setPlanTaskContext] = useState(() =>
+    parsePlanTaskContextFromParams({
+      taskTitle: taskTitleParam,
+      taskId: taskIdParam,
+    }),
   );
 
   const [presets, setPresets] = useState<SessionPresetDto[]>(DEFAULT_PRESETS);
@@ -144,6 +169,7 @@ export function SeansShell() {
     initialBreakMinutes: parseInitialBreakMinutes(presetParam, minutesParam),
     initialPreset: parseInitialPreset(presetParam, minutesParam),
     subject,
+    planTaskId: planTaskContext.taskId,
   });
 
   useEffect(() => {
@@ -211,6 +237,7 @@ export function SeansShell() {
   const handleReset = () => {
     setQuestBaseline(null);
     setStreakBaseline(null);
+    setPlanTaskContext({ taskTitle: null, taskId: null });
     reset();
   };
 
@@ -253,6 +280,19 @@ export function SeansShell() {
       {subject}
     </span>
   ) : null;
+
+  const planTaskTitle = planTaskContext.taskTitle;
+  const planTaskChip = planTaskTitle ? (
+    <PlanTaskContextChip title={t("from_plan_task", { title: planTaskTitle })} />
+  ) : null;
+
+  const contextChips =
+    subjectChip || planTaskChip ? (
+      <div className="flex max-w-full flex-wrap items-center justify-center gap-2">
+        {planTaskChip}
+        {subjectChip}
+      </div>
+    ) : null;
 
   const phaseLabel =
     phase === "break"
@@ -304,7 +344,7 @@ export function SeansShell() {
           className="relative flex w-full max-w-sm flex-col items-center gap-6"
           {...phaseMotion}
         >
-          {subjectChip}
+          {contextChips}
           <p
             className="text-sm font-semibold uppercase tracking-wide"
             style={{
@@ -389,6 +429,9 @@ export function SeansShell() {
                 value={subject ?? ""}
                 onChange={(v) => setSubject(v.trim() ? v.trim() : null)}
               />
+              {planTaskChip ? (
+                <div className="flex w-full justify-center">{planTaskChip}</div>
+              ) : null}
               <SessionTimerRing
                 phase={phase}
                 focusMinutes={focusMinutes}
@@ -423,6 +466,7 @@ export function SeansShell() {
                 streakBaseline={streakBaseline}
                 countsAsFocusSession={session?.countsAsFocusSession ?? true}
                 sessionStatus={session?.status ?? null}
+                planTaskAutoCompleted={session?.planTaskAutoCompleted ?? false}
                 onSubmitFeedback={recordFeedback}
                 onReset={handleReset}
               />

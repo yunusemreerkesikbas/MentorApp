@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
@@ -7,6 +7,14 @@ import { users } from "../../../database/schema";
 
 export type UserRow = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+/** Public-safe identity fields for a suggested user (follow discovery cohort fallback). */
+export interface CohortPeer {
+  userId: string;
+  displayName: string;
+  username: string;
+  avatarStorageKey: string | null;
+}
 
 /**
  * All access goes through RLS contexts (double belt):
@@ -43,6 +51,36 @@ export class UsersRepository {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx.select().from(users).where(eq(users.id, id)).limit(1);
       return rows[0];
+    });
+  }
+
+  /**
+   * Cohort peers for follow discovery cold-start: recent ACTIVE users with a username, scoped to the
+   * given exam-type cohort (any exam type when `examType` is null), excluding `excludeIds`. Newest first.
+   */
+  async suggestCohortPeers(
+    examType: string | null,
+    excludeIds: string[],
+    limit: number,
+  ): Promise<CohortPeer[]> {
+    return withServiceContext(this.db, async (tx) => {
+      const conds = [
+        eq(users.status, "ACTIVE"),
+        isNotNull(users.username),
+        notInArray(users.id, excludeIds),
+      ];
+      if (examType) conds.push(eq(users.examType, examType));
+      return tx
+        .select({
+          userId: users.id,
+          displayName: sql<string>`coalesce(${users.displayName}, '')`,
+          username: sql<string>`${users.username}`,
+          avatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+        })
+        .from(users)
+        .where(and(...conds))
+        .orderBy(desc(users.createdAt))
+        .limit(limit);
     });
   }
 

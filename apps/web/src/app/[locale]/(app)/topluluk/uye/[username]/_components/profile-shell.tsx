@@ -9,6 +9,7 @@ import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
 import { getPublicProfile } from "@/lib/community";
+import { followUser, unfollowUser } from "@/lib/follow";
 import {
   bookmarkPost,
   bookmarkThread,
@@ -22,6 +23,7 @@ import {
 import { CommentRow } from "../../../_components/comment-row";
 import { ThreadItem } from "../../../[slug]/_components/thread-item";
 import { SavedShell } from "../../../kayitli/_components/saved-shell";
+import { FollowListPanel } from "./follow-list-panel";
 import { ProfileHeader } from "./profile-header";
 
 type Ready = {
@@ -44,6 +46,7 @@ export function ProfileShell({ username }: { username: string }) {
   const { user } = useAuth();
   const isOwn = !!user?.username && user.username === username;
   const [tab, setTab] = useState<"posts" | "saved">("posts");
+  const [listView, setListView] = useState<"followers" | "following" | null>(null);
   const [state, setState] = useState<State>({ status: "loading" });
 
   useEffect(() => {
@@ -140,6 +143,26 @@ export function ProfileShell({ username }: { username: string }) {
     [patchReady],
   );
 
+  /** Optimistic follow toggle — flips isFollowing + follower count, reverts on failure. */
+  const onToggleFollow = useCallback(() => {
+    setState((s) => {
+      if (s.status !== "ready") return s;
+      const adding = !s.profile.isFollowing;
+      const step = (add: boolean) => (r: Ready) => ({
+        ...r,
+        profile: {
+          ...r.profile,
+          isFollowing: add,
+          followerCount: Math.max(0, r.profile.followerCount + (add ? 1 : -1)),
+        },
+      });
+      (adding ? followUser(username) : unfollowUser(username)).catch(() =>
+        patchReady(step(!adding)),
+      );
+      return step(adding)(s);
+    });
+  }, [patchReady, username]);
+
   if (state.status === "loading") return <Centered>{t("loading")}</Centered>;
   if (state.status === "disabled") return <Centered>{t("soon_title")}</Centered>;
   if (state.status === "notfound") return <Centered>{t("profile_not_found")}</Centered>;
@@ -165,8 +188,23 @@ export function ProfileShell({ username }: { username: string }) {
           {t("back")}
         </Link>
       </div>
-      <ProfileHeader profile={profile} />
+      <ProfileHeader
+        profile={profile}
+        isOwn={isOwn}
+        onToggleFollow={onToggleFollow}
+        onOpenFollowers={() => setListView("followers")}
+        onOpenFollowing={() => setListView("following")}
+      />
 
+      {listView ? (
+        <FollowListPanel
+          key={listView}
+          username={username}
+          kind={listView}
+          onBack={() => setListView(null)}
+        />
+      ) : (
+        <>
       {/* Tabs — only on your own profile, where "Kaydedilenler" (private) is meaningful. */}
       {isOwn && (
         <div className="flex gap-1 border-b px-4 lg:px-6" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
@@ -252,6 +290,8 @@ export function ProfileShell({ username }: { username: string }) {
               </Button>
             </div>
           )}
+        </>
+      )}
         </>
       )}
     </main>

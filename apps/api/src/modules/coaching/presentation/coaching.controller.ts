@@ -12,7 +12,12 @@ import { MoodService } from "../application/mood.service";
 import { MockExamService } from "../application/mock-exam.service";
 import { TodayService } from "../application/today.service";
 import { VisionService } from "../application/vision.service";
-import { CreateMoodCheckinDto, ListMoodCheckinsQueryDto, UpsertVisionDto } from "./coaching.dto";
+import {
+  AnalysisQueryDto,
+  CreateMoodCheckinDto,
+  ListMoodCheckinsQueryDto,
+  UpsertVisionDto,
+} from "./coaching.dto";
 
 /** Coaching composite + mood endpoints. Authenticated self resource (global JwtAuthGuard applies). */
 @ApiTags("coaching")
@@ -34,8 +39,11 @@ export class CoachingController {
 
   /** Personal deneme analysis — net trend + subject strength/weakness (no ranking). */
   @Get("analysis")
-  getAnalysis(@CurrentUser() user: RequestUser): Promise<CoachingAnalysisDto> {
-    return this.mockExams.getAnalysis(user.id);
+  getAnalysis(
+    @CurrentUser() user: RequestUser,
+    @Query() query: AnalysisQueryDto,
+  ): Promise<CoachingAnalysisDto> {
+    return this.mockExams.getAnalysis(user.id, query.examId);
   }
 
   /** Upsert today's mood → returns the rule-based, localized encouragement. */
@@ -73,3 +81,4 @@ export class CoachingController {
     return this.vision.upsert(user.id, dto);
   }
 }
+

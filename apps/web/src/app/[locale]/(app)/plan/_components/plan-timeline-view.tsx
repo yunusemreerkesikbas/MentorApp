@@ -8,6 +8,7 @@ import CheckCircle2 from "lucide-react/dist/esm/icons/check-circle-2.mjs";
 import EllipsisVertical from "lucide-react/dist/esm/icons/ellipsis-vertical.mjs";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { buildSeansHrefFromPlanTask } from "@/lib/plan-seans-link";
 import { PlanTimelineSkeleton } from "./plan-content-skeleton";
 import {
   formatMonthDayShort,
@@ -221,11 +222,7 @@ function TimelineTaskCard({
               >
                 {t("today")} ·{" "}
                 <Link
-                  href={
-                    task.subject
-                      ? { pathname: "/seans", query: { subject: task.subject } }
-                      : "/seans"
-                  }
+                  href={buildSeansHrefFromPlanTask(task)}
                   className="inline-flex items-center gap-0.5 font-bold"
                   style={{ color: "var(--color-progress)" }}
                 >

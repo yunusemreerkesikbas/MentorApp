@@ -58,7 +58,7 @@ PATCH  /v1/plan-tasks/:id        # toggle status → recomputes daily_activity.t
 DELETE /v1/plan-tasks/:id
 
 # Pomodoro / study session:
-GET   /v1/study-sessions?page=1&pageSize=5  # finalized-session history (most recent first)
+GET   /v1/study-sessions?page=1&pageSize=5&subject=Matematik  # finalized-session history (optional subject filter)
 POST  /v1/study-sessions             # { preset: "25_5" } OR { preset: "custom", focusMinutes: 35 }
 PATCH /v1/study-sessions/:id         # complete/abandon → recomputes daily_activity.has_session (same tx)
 PATCH /v1/study-sessions/:id/feedback # post-session micro check-in { mood: 1-3, struggleNote? }
@@ -212,6 +212,53 @@ pnpm --filter @mentor/api test
   `config.catalog.ts`, `coaching.constants.ts`, `study-session.repository.ts`, `session.service.ts`,
   `daily-quest-signal.service.ts`, `coaching.mappers.ts`, `packages/types`, `session-done-state.tsx`,
   `seans-shell.tsx`, `coaching.e2e-spec.ts`, `messages/{tr,en}.json`.
+- **Plan → Seans tek tık bağlamı (2026-07-10)** — roadmap §256/§259: plan görevinden seansa geçişte
+  konu + görev başlığı + `taskId` URL query ile taşınır; `/seans` idle ve immersive ekranda sakin
+  `session.from_plan_task` chip'i gösterilir. Paylaşılan helper: `plan-seans-link.ts`
+  (`buildSeansHrefFromPlanTask`). Entry point'ler: `plan-task-row`, `plan-timeline-view`, panel
+  `today-plan` (pending görevler). Backend değişmedi — `study_sessions.subject` yeterli; `planTaskId`
+  kolonu §259 AI adaptasyonuna kadar ertelendi. Reset/yeni seans plan bağlamını temizler. Dosyalar:
+  `plan-seans-link.ts`, `plan-seans-link.spec.ts` (api vitest), `seans-shell.tsx`, `today-plan.tsx`,
+  `messages/{tr,en}.json`.
+- **planTaskId persist — Plan → Seans köprüsü (2026-07-10)** — roadmap §259: plan görevinden
+  başlatılan seanslar artık `study_sessions.plan_task_id` FK ile kalıcı bağlanır (nullable;
+  manuel konu seçimi `null`). `POST /v1/study-sessions` gövdesi += opsiyonel `planTaskId` (UUID);
+  RLS tx içinde `PlanTaskRepository.findById` — yoksa `COACHING_TASK_NOT_FOUND` (404). DTO:
+  `StudySessionDto.planTaskId`. FE: `seans-shell` → `useSessionTimer({ planTaskId })` → start body.
+  Migration: `0040_certain_iceman.sql`. **Kapsam dışı:** geçmiş satırında görev başlığı, AI plan
+  revizyonu, finalize'da planTaskId değiştirme. Dosyalar: `schema.ts`, `session.service.ts`,
+  `coaching.mappers.ts`, `packages/{types,validation}`, `use-session-timer.ts`, `seans-shell.tsx`,
+  `session.service.spec.ts`, `coaching.e2e-spec.ts`.
+- **Seans bitince plan görevi otomatik DONE (2026-07-10)** — §259 döngüsü: `finalize(COMPLETED)` +
+  min odak eşiği + `planTaskId` → linked görev aynı tx'te `DONE`; `daily_activity.tasks_done`
+  senkron; bugünün tüm görevleri biterse `PLAN_COMPLETED` event. DTO:
+  `StudySessionDto.planTaskAutoCompleted` (finalize yanıtı). FE: `finalizeStudySession` DTO döner,
+  timer session state günceller; done ekranı `plan_task_completed` pill. Geçmiş gün görevleri
+  dokunulmaz (`taskDate >= today`). **Kapsam dışı:** undo, ABANDONED geri alma. Dosyalar:
+  `session.service.ts`, `coaching.mappers.ts`, `packages/types`, `use-session-timer.ts`,
+  `study-sessions.ts`, `session-done-state.tsx`, `messages/{tr,en}.json`.
+- **Seans geçmişinde plan görev başlığı (2026-07-10)** — planTaskId persist'in UX devamı:
+  `GET /v1/study-sessions` listesi `plan_tasks` ile LEFT JOIN → `StudySessionDto.planTaskTitle`
+  (start/finalize yanıtlarında `null`). Idle "Son seanslar" satırında muted chip + truncate +
+  `history_plan_task` aria-label. Migration yok. **Kapsam dışı:** `/seans/gecmis` tam sayfa,
+  otomatik DONE. Dosyalar: `study-session.repository.ts`, `coaching.mappers.ts`,
+  `session.service.ts`, `session-history.tsx`, `packages/types`, `coaching.e2e-spec.ts`,
+  `messages/{tr,en}.json`.
+- **Seans geçmişi load-more (2026-07-10)** — roadmap §255: `/seans` idle "Son seanslar" listesine
+  `Paginated.total` tabanlı "Daha fazla göster" eklendi (ilk 5, her tıklamada +5). Mevcut
+  `GET /v1/study-sessions?page&pageSize` — backend değişmedi. `SessionHistoryRow` extract (ileride
+  tam sayfa reuse). Load-more hatası sakin inline mesaj; liste korunur. Idle remount ile yeni seans
+  sonrası liste tazelenir. **Kapsam dışı:** `/seans/gecmis` tam sayfa + filtre. Dosyalar:
+  `session-history.tsx`, `messages/{tr,en}.json`.
+- **Seans geçmişi tam sayfa `/seans/gecmis` (2026-07-10)** — roadmap §255 hesap verebilirlik ritüeli:
+  idle "Son seanslar" başlığında "Tümünü gör" → `/seans/gecmis` paginated tam liste (sayfa boyutu 15,
+  load-more). Konu chip filtresi: ilk unfiltered fetch'ten distinct konular (page 1, size 30); seçim
+  `GET /v1/study-sessions?subject=` ile exact match filtreler. `SessionHistoryRow` ayrı dosyaya
+  extract edildi (idle + tam sayfa reuse). Geri link `/seans` (koc-chat-shell deseni). Migration yok.
+  **Kapsam dışı:** tarih aralığı filtresi, seans detay sayfası, export. Dosyalar:
+  `session-history-row.tsx`, `session-history-page.tsx`, `seans/gecmis/page.tsx`, `session-history.tsx`,
+  `study-sessions.ts`, `study-session.repository.ts`, `packages/validation`, `coaching.e2e-spec.ts`,
+  `messages/{tr,en}.json`.
 - **Seans öncesi konu seçimi (2026-07-09)** — roadmap §256 "veri kör kalmasın": `/seans` idle
   kurulum ekranına konu seçici (`SessionSubjectPicker`) eklendi; artık deep-link (`?subject=`)
   olmadan da konu seçilebiliyor, böylece mikro check-in sinyali bir konuya bağlanır. Plan'daki
@@ -293,6 +340,14 @@ pnpm --filter @mentor/api test
   fallback. Phase 2: `mock_exams.publisher_name` + form alanları; `GET /analysis.personalRecordNet`.
   Plan: `docs/plans/2026-07-04-analiz-redesign-design.md`; P3 backlog:
   `docs/plans/2026-07-04-analiz-phase3-backlog.md`. *(2026-07-04.)*
+- **Analiz sıradaki odak + Plan ön-doldurma (2026-07-10)** — `GET /v1/coaching/analysis`
+  artık `nextFocus` döndürür: önce en sık fotoğraf ders sinyali, yoksa en düşük deneme ortalaması
+  seçilir; karar backend'de, mesaj ve önerilen görev başlığı backend-i18n'den gelir. `/analiz`
+  Gelişim sekmesi bu odağı tek CTA kartı olarak gösterir ve `/plan?add=1&subject=&title=` ile
+  mevcut görev ekleme sheet'ini ön-doldurur; görev doğrudan kaydedilmez, kullanıcı onaylar. Fotoğraf
+  hâlâ sadece ders kategorisi sinyalidir, çözüm/OCR/AI koç çağrısı yok. Dosyalar:
+  `analysis-focus.ts`, `mock-exam.service.ts`, `analiz-next-focus-card.tsx`,
+  `analysis-plan-prefill.ts`, `plan-shell.tsx`, `messages/{tr,en}.json`.
 
 ## Gotchas / Known issues
 

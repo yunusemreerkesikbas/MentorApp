@@ -12,6 +12,7 @@ import {
   AnalizRecordGaugeTeaser,
 } from "./analiz-record-gauge";
 import { AnalizSparkline } from "./analiz-sparkline";
+import { AnalizNextFocusCard } from "./analiz-next-focus-card";
 import {
   computePersonalRecordNet,
   formatTrendDate,
@@ -41,13 +42,6 @@ export function AnalizTabGelisim({
   const recordNet = computePersonalRecordNet(analysis, personalRecordNet);
   const latestNet = trend[0] ? Number(trend[0].totalNet) : null;
   const ghost = analysis?.ghost ?? null;
-
-  const weakestRef = useMemo(() => {
-    if (!analysis?.subjects.length) return null;
-    return analysis.subjects.reduce((min, s) =>
-      Number(s.averageNet) < Number(min.averageNet) ? s : min,
-    );
-  }, [analysis?.subjects]);
 
   const coachSeed = encodeURIComponent(t("coach_seed"));
 
@@ -133,22 +127,25 @@ export function AnalizTabGelisim({
         </div>
       </Card>
 
-      <Card>
-        <SectionHeading subtitle={t("gauge.title")}>{t("gauge.title")}</SectionHeading>
-        {latestNet != null && recordNet != null && trend.length >= 1 ? (
-          trend.length === 1 && !ghost ? (
-            <AnalizRecordGaugeTeaser />
+      <div className="grid gap-6 lg:grid-cols-2">
+        {analysis.nextFocus ? <AnalizNextFocusCard focus={analysis.nextFocus} /> : null}
+        <Card>
+          <SectionHeading subtitle={t("gauge.title")}>{t("gauge.title")}</SectionHeading>
+          {latestNet != null && recordNet != null && trend.length >= 1 ? (
+            trend.length === 1 && !ghost ? (
+              <AnalizRecordGaugeTeaser />
+            ) : (
+              <AnalizRecordGauge
+                latestNet={latestNet}
+                recordNet={recordNet}
+                isNewRecord={ghost?.isNewRecord ?? latestNet >= recordNet}
+              />
+            )
           ) : (
-            <AnalizRecordGauge
-              latestNet={latestNet}
-              recordNet={recordNet}
-              isNewRecord={ghost?.isNewRecord ?? latestNet >= recordNet}
-            />
-          )
-        ) : (
-          <AnalizRecordGaugeTeaser />
-        )}
-      </Card>
+            <AnalizRecordGaugeTeaser />
+          )}
+        </Card>
+      </div>
 
       {ghost ? <GhostCard ghost={ghost} /> : <AnalizGhostTeaser />}
 
@@ -159,13 +156,13 @@ export function AnalizTabGelisim({
           </SectionHeading>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {analysis.subjects.map((s) => {
-              const isWeakest = weakestRef?.subjectRef === s.subjectRef;
+              const isFocus = analysis.nextFocus?.subjectRef === s.subjectRef;
               return (
                 <div
                   key={s.subjectRef}
                   className="flex flex-col gap-1 rounded-[var(--radius-card)] p-3"
                   style={{
-                    background: isWeakest
+                    background: isFocus
                       ? "color-mix(in srgb, var(--color-chip) 18%, white)"
                       : "rgba(0,0,0,0.03)",
                   }}

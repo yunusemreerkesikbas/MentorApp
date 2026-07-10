@@ -15,5 +15,16 @@
     "BEAT_PREVIOUS": "Geçen denemeni geçtin — geçmiş-ben'i yendin. İvme seninle.",
     "TIED": "Geçen denemenle aynı seviyedesin. İstikrar da bir kazanç; küçük bir adımla öne geç.",
     "BELOW_PREVIOUS": "Bu sefer biraz geride kaldın, olur böyle. Tek bir denemeye takılma — trendine bak, yanındayım."
+  },
+  "focus": {
+    "PHOTO_SIGNAL": "{subject} yanlış fotoğraflarında en çok öne çıkıyor. İstersen bunu bir sonraki planına ekleyelim.",
+    "LOWEST_AVERAGE": "{subject} için küçük bir tekrar iyi bir sonraki adım olabilir.",
+    "TASK_TITLE": "{subject} tekrar et",
+    "PHOTO_SIGNAL_EARLY": "{subject} ilk yanlış fotoğraf sinyalinde öne çıktı. Bunu küçük bir başlangıç adımı olarak planına ekleyebiliriz.",
+    "PHOTO_SIGNAL_REPEATED": "{subject} yanlış fotoğraflarında tekrar tekrar öne çıkıyor. Bunu bir sonraki planına ekleyelim.",
+    "LOWEST_AVERAGE_EARLY": "{subject} ilk denemende diğer derslere göre daha fazla desteğe ihtiyaç duyuyor. Küçük bir tekrar iyi bir başlangıç olabilir.",
+    "LOWEST_AVERAGE_REPEATED": "{subject} denemelerinde tekrar eden çalışma alanın olarak görünüyor. Küçük bir tekrar iyi bir sonraki adım olabilir.",
+    "TASK_TITLE_PHOTO_SIGNAL": "{subject} yanlışlarını gözden geçir",
+    "TASK_TITLE_LOWEST_AVERAGE": "{subject} tekrar et"
   }
 }

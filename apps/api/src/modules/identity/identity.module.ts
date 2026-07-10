@@ -7,12 +7,15 @@ import { GoogleAuthService } from "./application/google-auth.service";
 import { TokenService } from "./application/token.service";
 import { TurnstileService } from "./application/turnstile.service";
 import { UsersService } from "./application/users.service";
+import { FollowService } from "./application/follow.service";
 import { EmailTokenRepository } from "./infrastructure/email-token.repository";
 import { AuthAccountRepository } from "./infrastructure/auth-account.repository";
 import { RefreshTokenRepository } from "./infrastructure/refresh-token.repository";
 import { UsersRepository } from "./infrastructure/users.repository";
+import { FollowRepository } from "./infrastructure/follow.repository";
 import { AuthController } from "./presentation/auth.controller";
 import { UsersController } from "./presentation/users.controller";
+import { FollowController } from "./presentation/follow.controller";
 
 /**
  * W0 — identity bounded context: auth (own JWT + refresh rotation), users/orgs, RLS-backed access.
@@ -29,18 +32,20 @@ import { UsersController } from "./presentation/users.controller";
       }),
     }),
   ],
-  controllers: [AuthController, UsersController],
+  controllers: [AuthController, UsersController, FollowController],
   providers: [
     AuthService,
     GoogleAuthService,
     TokenService,
     TurnstileService,
     UsersService,
+    FollowService,
     UsersRepository,
+    FollowRepository,
     AuthAccountRepository,
     RefreshTokenRepository,
     EmailTokenRepository,
   ],
-  exports: [UsersRepository, UsersService],
+  exports: [UsersRepository, UsersService, FollowService],
 })
 export class IdentityModule {}

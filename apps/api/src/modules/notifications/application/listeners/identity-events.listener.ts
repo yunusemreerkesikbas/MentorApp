@@ -1,0 +1,29 @@
+import { Injectable, Logger } from "@nestjs/common";
+import { OnEvent } from "@nestjs/event-emitter";
+import { IdentityEventTopic, type UserFollowed } from "../../../identity/domain/identity.events";
+import { NotificationsService } from "../notifications.service";
+
+/**
+ * Consumes identity domain events → in-app notifications. Best-effort: a failed notification never
+ * breaks the emitter. The actor's display fields ride on the event payload, so this listener holds no
+ * identity dependency (only the event contract). Reuses the FORUM category — the follow links into the
+ * /topluluk social surface (no new category churn, per plan).
+ */
+@Injectable()
+export class IdentityEventsListener {
+  private readonly logger = new Logger(IdentityEventsListener.name);
+
+  constructor(private readonly notifications: NotificationsService) {}
+
+  @OnEvent(IdentityEventTopic.USER_FOLLOWED)
+  async onUserFollowed(e: UserFollowed): Promise<void> {
+    if (e.recipientId === e.actorId) return; // can't follow yourself, but stay safe
+    // A follower without a handle has no linkable profile page → notify without a link.
+    const link = e.actorUsername ? `/topluluk/uye/${e.actorUsername}` : undefined;
+    await this.notifications
+      .createInApp(e.recipientId, "FORUM", "Yeni takipçi", `${e.actorDisplayName} seni takip etti.`, link)
+      .catch((err: unknown) =>
+        this.logger.warn(`follow notification failed for ${e.recipientId}: ${String(err)}`),
+      );
+  }
+}

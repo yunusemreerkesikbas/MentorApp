@@ -5,6 +5,7 @@ import {
   type CommentDetail,
   type CommentView,
   FORUM_LIKE_EMOJI,
+  type FollowUserRef,
   type ForumAttachmentUploadUrl,
   type ForumActivityFeed,
   type ForumActivityItem,
@@ -22,6 +23,7 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { UsersService } from "../../identity/application/users.service";
+import { FollowService } from "../../identity/application/follow.service";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import {
   extensionForForumImageMime,
@@ -41,7 +43,11 @@ import {
 } from "../domain/forum.policy";
 import { ForumEventTopic } from "../domain/forum.events";
 import { ForumZoneRepository } from "../infrastructure/forum-zone.repository";
-import { ForumThreadRepository, type ThreadWithAuthor } from "../infrastructure/forum-thread.repository";
+import {
+  ForumThreadRepository,
+  type SuggestedUserRow,
+  type ThreadWithAuthor,
+} from "../infrastructure/forum-thread.repository";
 import { ForumPostRepository, type PostWithAuthor } from "../infrastructure/forum-post.repository";
 import { ForumAttachmentRepository } from "../infrastructure/forum-attachment.repository";
 import { ForumBookmarkRepository } from "../infrastructure/forum-bookmark.repository";
@@ -70,6 +76,7 @@ export class ForumThreadService {
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     private readonly mentions: ForumMentionService,
     private readonly users: UsersService,
+    private readonly follow: FollowService,
   ) {}
 
   /** Presigned upload URL for a post image (Phase 1). Client PUTs the file, then sends `key` on create. */
@@ -335,6 +342,51 @@ export class ForumThreadService {
     // ponytail: heuristic cursor (matches listFeed) — a full page may have more; worst case one empty fetch.
     const nextCursor = items.length === limit ? at(items[items.length - 1]!) : null;
     return { items, nextCursor };
+  }
+
+  /**
+   * The viewer's cross-zone "Akış" feed — threads authored by people they follow, newest first.
+   * Threads-only (comments/answers are out of scope). RLS in listByAuthorIds elides threads in zones
+   * the viewer can't see, so the feed never leaks non-member content.
+   */
+  async getFollowingFeed(viewerId: string, before?: string): Promise<ThreadFeed> {
+    await this.assertEnabled();
+    const followeeIds = await this.follow.getFolloweeIds(viewerId);
+    if (followeeIds.length === 0) return { items: [], nextCursor: null };
+    const limit = 20;
+    const rows = await this.threads.listByAuthorIds(followeeIds, viewerId, { limit, before });
+    const items = await this.buildThreadViews(rows, viewerId);
+    // ponytail: heuristic cursor (matches listFeed) — a full page may have more; worst case one empty fetch.
+    const last = items.at(-1);
+    const nextCursor = rows.length === limit && last ? last.createdAt : null;
+    return { items, nextCursor };
+  }
+
+  /**
+   * "Kimi takip et" önerileri — people the viewer might follow, to seed the Akış feed. Primary source:
+   * recent authors in the viewer's ACTIVE-member zones (they'll show up in the feed). Cold-start
+   * fallback: cohort peers (same exam type). Self + already-followed are excluded; all returned as
+   * not-yet-followed refs.
+   */
+  async getFollowSuggestions(viewerId: string, limit = 10): Promise<FollowUserRef[]> {
+    await this.assertEnabled();
+    const followeeIds = await this.follow.getFolloweeIds(viewerId);
+    const excludeIds = [viewerId, ...followeeIds];
+    const primary = await this.threads.suggestAuthorsInMemberZones(viewerId, excludeIds, limit);
+    let peers: SuggestedUserRow[] = [];
+    if (primary.length < limit) {
+      const already = [...excludeIds, ...primary.map((u) => u.userId)];
+      peers = await this.users.suggestCohortPeers(viewerId, already, limit - primary.length);
+    }
+    return [...primary, ...peers].map(
+      (u): FollowUserRef => ({
+        userId: u.userId,
+        displayName: u.displayName,
+        username: u.username,
+        avatarUrl: u.avatarStorageKey ? this.storage.getPublicUrl(u.avatarStorageKey) : null,
+        isFollowing: false,
+      }),
+    );
   }
 
   /** Fold reaction/comment counts + viewer state into ThreadViews for a set of rows (batched). */
