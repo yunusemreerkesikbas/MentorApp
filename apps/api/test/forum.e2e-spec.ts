@@ -89,10 +89,21 @@ describe("forum zones (e2e)", () => {
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());
-    // Mirror main.ts: raw body for the fake-upload endpoint (needed by the attachments test).
+    // Mirror main.ts: raw body for the fake-upload endpoint (needed by the attachments tests).
     app.use(
       "/v1/storage/fake-upload",
-      express.raw({ type: ["image/jpeg", "image/png", "image/webp"], limit: 5 * 1024 * 1024 }),
+      express.raw({
+        type: [
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "application/pdf",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ],
+        limit: 10 * 1024 * 1024,
+      }),
     );
     await app.init();
 
@@ -232,6 +243,11 @@ describe("forum zones (e2e)", () => {
       .set(asUser());
     expect(feed.status).toBe(200);
     expect(feed.body.items.map((t: { id: string }) => t.id)).toContain(posted.body.id);
+
+    // The zone list carries a per-zone thread count (APP-026 loose-end).
+    const zones = await request(app.getHttpServer()).get("/v1/forum/zones").set(asUser());
+    const listed = zones.body.items.find((z: { id: string }) => z.id === zoneId);
+    expect(listed.threadCount).toBeGreaterThanOrEqual(1);
   });
 
   it("attachments: upload → post with image → feed returns it; rejects a foreign key + >4 (APP-018)", async () => {
@@ -297,6 +313,56 @@ describe("forum zones (e2e)", () => {
         attachments: Array.from({ length: 5 }, () => ({ key, mimeType: "image/png" })),
       });
     expect(tooMany.status).toBe(400);
+  });
+
+  it("file attachments: upload → post with PDF → detail returns kind=file + fileName; rejects a bad type (APP-027)", async () => {
+    await setForumEnabled(true);
+    const zoneId = await createZone(ZoneType.CHAT, "Dosyalı Sohbet");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+
+    // A disallowed content type is rejected at the upload-url boundary.
+    const bad = await request(app.getHttpServer())
+      .post("/v1/forum/attachments/upload-url")
+      .set(asUser())
+      .send({ contentType: "application/x-msdownload" });
+    expect(bad.status).toBe(400);
+
+    // Presigned upload for a PDF → key carries the .pdf extension.
+    const urlRes = await request(app.getHttpServer())
+      .post("/v1/forum/attachments/upload-url")
+      .set(asUser())
+      .send({ contentType: "application/pdf" });
+    expect(urlRes.status).toBe(201);
+    const { uploadUrl, key } = urlRes.body as { uploadUrl: string; key: string };
+    expect(key).toMatch(/\.pdf$/);
+
+    const pdf = Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF", "utf8");
+    await request(app.getHttpServer())
+      .put(uploadUrl)
+      .set("Content-Type", "application/pdf")
+      .send(pdf)
+      .expect(200);
+
+    const posted = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({
+        body: "notlarım ekte",
+        attachments: [{ key, mimeType: "application/pdf", fileName: "kpss-notlari.pdf" }],
+      });
+    expect(posted.status).toBe(201);
+    expect(posted.body.attachments).toHaveLength(1);
+    const att = posted.body.attachments[0];
+    expect(att.kind).toBe("file");
+    expect(att.fileName).toBe("kpss-notlari.pdf");
+    expect(att.sizeBytes).toBeGreaterThan(0);
+
+    // A mime outside the allowlist on create is rejected (spoof belt).
+    const spoof = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "sahte", attachments: [{ key, mimeType: "application/zip", fileName: "x.zip" }] });
+    expect(spoof.status).toBe(400);
   });
 
   it("QA attachments: question + answer carry images; question detail returns both (Phase 2)", async () => {
@@ -466,7 +532,7 @@ describe("forum zones (e2e)", () => {
     await request(app.getHttpServer())
       .patch("/v1/users/me")
       .set(asUser())
-      .send({ username: handle })
+      .send({ username: handle, bio: "KPSS yolculuğu", website: "https://ornek.dev" })
       .expect(200);
     const zoneId = await createZone(ZoneType.CHAT, "Profil Zonu");
     await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
@@ -499,6 +565,9 @@ describe("forum zones (e2e)", () => {
     expect(profile.body.username).toBe(handle);
     expect(profile.body.email).toBeUndefined();
     expect(profile.body).toHaveProperty("streak");
+    // Public bio + website surface (APP-024); still no PII.
+    expect(profile.body.bio).toBe("KPSS yolculuğu");
+    expect(profile.body.website).toBe("https://ornek.dev");
 
     const missing = await request(app.getHttpServer())
       .get(`/v1/community/profile/nobody${RUN}`)
@@ -533,7 +602,7 @@ describe("forum zones (e2e)", () => {
     expect(byStaff.status).toBe(201);
   });
 
-  it("react / unreact toggles the reaction count and myReactions", async () => {
+  it("emoji palette: multi-emoji reactions on threads + comments; disallowed emoji rejected", async () => {
     const zoneId = await createZone(ZoneType.CHAT, "Tepki Odası");
     await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
     const posted = await request(app.getHttpServer())
@@ -542,31 +611,59 @@ describe("forum zones (e2e)", () => {
       .send({ body: "tepki ver" });
     const threadId = posted.body.id as string;
 
+    // React with two distinct palette emojis (multiple reactions per user).
+    for (const emoji of [FORUM_LIKE_EMOJI, "💪"]) {
+      await request(app.getHttpServer())
+        .put(`/v1/forum/threads/${threadId}/reactions`)
+        .set(asUser())
+        .send({ emoji })
+        .expect(200);
+    }
+    // A disallowed emoji is rejected (allowlist).
     await request(app.getHttpServer())
       .put(`/v1/forum/threads/${threadId}/reactions`)
       .set(asUser())
-      .send({ emoji: FORUM_LIKE_EMOJI })
-      .expect(200);
+      .send({ emoji: "🤢" })
+      .expect(400);
 
     let feed = await request(app.getHttpServer())
       .get(`/v1/forum/zones/${zoneId}/threads`)
       .set(asUser());
     let item = feed.body.items.find((t: { id: string }) => t.id === threadId);
     expect(item.reactionCounts[FORUM_LIKE_EMOJI]).toBe(1);
-    expect(item.myReactions).toContain(FORUM_LIKE_EMOJI);
+    expect(item.reactionCounts["💪"]).toBe(1);
+    expect(item.myReactions).toEqual(expect.arrayContaining([FORUM_LIKE_EMOJI, "💪"]));
 
+    // Unreact one → the other stays.
     await request(app.getHttpServer())
       .delete(`/v1/forum/threads/${threadId}/reactions`)
       .set(asUser())
       .send({ emoji: FORUM_LIKE_EMOJI })
       .expect(204);
-
     feed = await request(app.getHttpServer())
       .get(`/v1/forum/zones/${zoneId}/threads`)
       .set(asUser());
     item = feed.body.items.find((t: { id: string }) => t.id === threadId);
     expect(item.reactionCounts[FORUM_LIKE_EMOJI] ?? 0).toBe(0);
-    expect(item.myReactions).not.toContain(FORUM_LIKE_EMOJI);
+    expect(item.reactionCounts["💪"]).toBe(1);
+
+    // Comments carry the same palette (reactionCounts / myReactions).
+    const comment = await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${threadId}/comments`)
+      .set(asUser())
+      .send({ body: "yorum" });
+    const postId = comment.body.id as string;
+    await request(app.getHttpServer())
+      .put(`/v1/forum/posts/${postId}/reactions`)
+      .set(asUser())
+      .send({ emoji: "🙏" })
+      .expect(200);
+    const detail = await request(app.getHttpServer())
+      .get(`/v1/forum/threads/${threadId}/detail`)
+      .set(asUser());
+    const commentView = detail.body.comments.find((c: { id: string }) => c.id === postId);
+    expect(commentView.reactionCounts["🙏"]).toBe(1);
+    expect(commentView.myReactions).toContain("🙏");
   });
 
   it("staff pin floats a thread to the top of the feed", async () => {

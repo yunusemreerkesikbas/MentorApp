@@ -121,14 +121,14 @@ export async function postReply(
   })) as CommentView;
 }
 
-export async function likePost(postId: string, emoji: string): Promise<void> {
+export async function reactPost(postId: string, emoji: string): Promise<void> {
   await http(`/v1/forum/posts/${postId}/reactions`, {
     method: "PUT",
     body: JSON.stringify({ emoji }),
   });
 }
 
-export async function unlikePost(postId: string, emoji: string): Promise<void> {
+export async function unreactPost(postId: string, emoji: string): Promise<void> {
   await http(`/v1/forum/posts/${postId}/reactions`, {
     method: "DELETE",
     body: JSON.stringify({ emoji }),

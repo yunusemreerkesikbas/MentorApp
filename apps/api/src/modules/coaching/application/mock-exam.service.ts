@@ -1,13 +1,14 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { I18nContext, I18nService } from "nestjs-i18n";
 import type { CoachingAnalysisDto, GhostComparisonDto, MockExamDto, Paginated } from "@mentor/types";
-import type { CreateMockExamInput, ListMockExamsQuery } from "@mentor/validation";
+import type { CreateMockExamInput, ListMockExamsQuery, UpdateMockExamInput } from "@mentor/validation";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { CONTENT_PORT, type ContentPort, type ExamRef } from "../domain/content.port";
+import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
+import { CONTENT_PORT, type ContentPort, type ExamRef, type ExamSubjectRef } from "../domain/content.port";
 import { computeGhost } from "../domain/ghost";
 import { computeSubjectNet, computeTotalNet, formatNet } from "../domain/net";
 import { selectAnalysisFocus } from "../domain/analysis-focus";
@@ -34,14 +35,10 @@ export class MockExamService {
     private readonly mockExams: MockExamRepository,
     private readonly photoRows: MockExamPhotoRepository,
     private readonly i18n: I18nService,
+    @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
 
   async create(userId: string, input: CreateMockExamInput): Promise<MockExamDto> {
-    const refs = input.subjects.map((s) => s.subjectRef);
-    if (new Set(refs).size !== refs.length) {
-      throw new DomainError(ErrorCode.COACHING_DUPLICATE_SUBJECT_REF, HttpStatus.BAD_REQUEST);
-    }
-
     const exam = await this.content.getExamById(input.examId);
     if (!exam) {
       throw new DomainError(ErrorCode.CONTENT_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND, {
@@ -50,49 +47,22 @@ export class MockExamService {
     }
 
     const taxonomy = await this.content.listExamSubjects(input.examId);
-    const slugToName = new Map(taxonomy.map((s) => [s.slug, s.name]));
-    const taxonomyBySlug = new Map(taxonomy.map((s) => [s.slug, s]));
-
-    for (const s of input.subjects) {
-      const meta = taxonomyBySlug.get(s.subjectRef);
-      if (!meta) {
-        throw new DomainError(ErrorCode.COACHING_INVALID_SUBJECT_REF, HttpStatus.BAD_REQUEST, {
-          subjectRef: s.subjectRef,
-        });
-      }
-      if (meta.questionCount != null) {
-        const answered = s.correct + s.wrong + s.blank;
-        if (answered > meta.questionCount) {
-          throw new DomainError(ErrorCode.COACHING_INVALID_MOCK_EXAM_SCORES, HttpStatus.BAD_REQUEST, {
-            subjectRef: s.subjectRef,
-            questionCount: meta.questionCount,
-          });
-        }
-      }
-    }
-
-    const takenAt = input.takenAt ? new Date(input.takenAt) : new Date();
-    const subjectNets = input.subjects.map((s) => computeSubjectNet(s, exam.netRule));
-    const totalNet = formatNet(computeTotalNet(subjectNets));
-
-    const subjectRows = input.subjects.map((s, i) => ({
-      subjectRef: s.subjectRef,
-      correct: s.correct,
-      wrong: s.wrong,
-      blank: s.blank,
-      net: formatNet(subjectNets[i]!),
-    }));
-
+    const prepared = this.prepareResult(exam, taxonomy, input.subjects);
     return withUserContext(this.db, { userId }, async (tx) => {
       const created = await this.mockExams.create(tx, {
         userId,
         examId: input.examId,
-        takenAt,
-        totalNet,
+        takenAt: input.takenAt ? new Date(input.takenAt) : new Date(),
+        totalNet: prepared.totalNet,
         publisherName: input.publisherName ?? null,
-        subjects: subjectRows,
+        subjects: prepared.subjectRows,
       });
-      return toMockExamDto(created.exam, created.subjects, exam.name, slugToName);
+      return toMockExamDto(
+        created.exam,
+        created.subjects,
+        exam.name,
+        prepared.slugToName,
+      );
     });
   }
 
@@ -106,6 +76,78 @@ export class MockExamService {
       const [dto] = await this.buildMockExamDtos(tx, [row.exam], subjectsMap);
       return dto!;
     });
+  }
+
+  async update(
+    userId: string,
+    id: string,
+    input: UpdateMockExamInput,
+  ): Promise<MockExamDto> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const existing = await this.mockExams.findById(tx, userId, id);
+      if (!existing) {
+        throw new DomainError(
+          ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      const exam = await this.content.getExamById(existing.exam.examId);
+      if (!exam) {
+        throw new DomainError(ErrorCode.CONTENT_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND, {
+          examId: existing.exam.examId,
+        });
+      }
+      const taxonomy = await this.content.listExamSubjects(existing.exam.examId);
+      const prepared = this.prepareResult(exam, taxonomy, input.subjects);
+      const updated = await this.mockExams.update(tx, userId, id, {
+        takenAt: new Date(input.takenAt),
+        totalNet: prepared.totalNet,
+        publisherName: input.publisherName,
+        subjects: prepared.subjectRows,
+      });
+      if (!updated) {
+        throw new DomainError(
+          ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      await this.mockExams.clearGhostNarrations(
+        tx,
+        userId,
+        existing.exam.examId,
+      );
+      return toMockExamDto(
+        updated.exam,
+        updated.subjects,
+        exam.name,
+        prepared.slugToName,
+      );
+    });
+  }
+
+  async remove(userId: string, id: string): Promise<void> {
+    const storageKeys = await withUserContext(this.db, { userId }, async (tx) => {
+      const existing = await this.mockExams.findById(tx, userId, id);
+      if (!existing) {
+        throw new DomainError(
+          ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      const keys = await this.photoRows.listStorageKeys(tx, userId, id);
+      await this.mockExams.delete(tx, userId, id);
+      await this.mockExams.clearGhostNarrations(
+        tx,
+        userId,
+        existing.exam.examId,
+      );
+      return keys;
+    });
+
+    await Promise.allSettled(
+      storageKeys.map((storageKey) => this.storage.deleteObject(storageKey)),
+    );
   }
 
   async list(userId: string, query: ListMockExamsQuery): Promise<Paginated<MockExamDto>> {
@@ -335,6 +377,67 @@ export class MockExamService {
     });
   }
 
+  private prepareResult(
+    exam: ExamRef,
+    taxonomy: ExamSubjectRef[],
+    subjects: CreateMockExamInput["subjects"],
+  ): {
+    totalNet: string;
+    subjectRows: Array<{
+      subjectRef: string;
+      correct: number;
+      wrong: number;
+      blank: number;
+      net: string;
+    }>;
+    slugToName: Map<string, string>;
+  } {
+    const refs = subjects.map((subject) => subject.subjectRef);
+    if (new Set(refs).size !== refs.length) {
+      throw new DomainError(
+        ErrorCode.COACHING_DUPLICATE_SUBJECT_REF,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const taxonomyBySlug = new Map(taxonomy.map((subject) => [subject.slug, subject]));
+    for (const subject of subjects) {
+      const meta = taxonomyBySlug.get(subject.subjectRef);
+      if (!meta) {
+        throw new DomainError(
+          ErrorCode.COACHING_INVALID_SUBJECT_REF,
+          HttpStatus.BAD_REQUEST,
+          { subjectRef: subject.subjectRef },
+        );
+      }
+      if (
+        meta.questionCount != null &&
+        subject.correct + subject.wrong + subject.blank > meta.questionCount
+      ) {
+        throw new DomainError(
+          ErrorCode.COACHING_INVALID_MOCK_EXAM_SCORES,
+          HttpStatus.BAD_REQUEST,
+          {
+            subjectRef: subject.subjectRef,
+            questionCount: meta.questionCount,
+          },
+        );
+      }
+    }
+
+    const subjectNets = subjects.map((subject) =>
+      computeSubjectNet(subject, exam.netRule),
+    );
+    return {
+      totalNet: formatNet(computeTotalNet(subjectNets)),
+      subjectRows: subjects.map((subject, index) => ({
+        ...subject,
+        net: formatNet(subjectNets[index]!),
+      })),
+      slugToName: new Map(taxonomy.map((subject) => [subject.slug, subject.name])),
+    };
+  }
+
   private translateFocus(key: string, subject: string): string {
     return this.i18n.translate(key, {
       lang: I18nContext.current()?.lang,
@@ -371,4 +474,3 @@ export class MockExamService {
     });
   }
 }
-

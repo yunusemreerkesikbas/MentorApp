@@ -106,6 +106,7 @@ describe("ai mood-reflection + ghost-narration (e2e)", () => {
         moodLevel: 3,
         struggleNote: null,
         recentSessions: null,
+        todayPlan: null,
       },
       3,
       null,

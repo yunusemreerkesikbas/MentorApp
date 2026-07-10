@@ -52,8 +52,9 @@ type LoadState =
   | { status: "needs_exam_type" }
   | { status: "ready"; data: ReadyData };
 
-function getAnalysisUrl(): string {
-  return `/v1/coaching/analysis`;
+function getAnalysisUrl(examId: string): string {
+  const qs = new URLSearchParams({ examId });
+  return `/v1/coaching/analysis?${qs.toString()}`;
 }
 
 function getMockExamsUrl(): string {
@@ -104,9 +105,8 @@ export function AnalizShell() {
           return;
         }
 
-        const [calendarRes, analysisRes, photoAccessResult] = await Promise.all([
+        const [calendarRes, photoAccessResult] = await Promise.all([
           contentControllerCalendarByFamily(me.examType),
-          http<CoachingAnalysisDto>(getAnalysisUrl()),
           fetchPhotoAccess().catch((err: unknown) => ({ error: err })),
         ]);
         if (!active) return;
@@ -124,15 +124,15 @@ export function AnalizShell() {
 
         const calendar = calendarRes as unknown as ExamCalendarDto | null;
         const current = calendar?.exam ?? null;
-        const analysis = analysisRes;
-
-        let subjectRows: ExamSubjectDto[] = [];
-        if (current) {
-          subjectRows = (await contentControllerSubjectsBySlug(
-            current.slug,
-          )) as unknown as ExamSubjectDto[];
-          if (!active) return;
-        }
+        const [analysis, subjectRows] = current
+          ? await Promise.all([
+              http<CoachingAnalysisDto>(getAnalysisUrl(current.id)),
+              contentControllerSubjectsBySlug(current.slug) as unknown as Promise<
+                ExamSubjectDto[]
+              >,
+            ])
+          : [null, []];
+        if (!active) return;
 
         setScores(emptyScores(subjectRows));
         setLoadState({
@@ -172,12 +172,17 @@ export function AnalizShell() {
 
   const refreshAnalysis = useCallback(async () => {
     if (!exam || loadState.status !== "ready") return;
-    const analysisRes = await http<CoachingAnalysisDto>(getAnalysisUrl());
+    const analysisRes = await http<CoachingAnalysisDto>(getAnalysisUrl(exam.id));
     setLoadState({
       status: "ready",
       data: { exam, subjects, analysis: analysisRes },
     });
   }, [exam, loadState.status, subjects]);
+
+  const handleHistoryChanged = useCallback(() => {
+    setHistoryRefreshKey((key) => key + 1);
+    void refreshAnalysis();
+  }, [refreshAnalysis]);
 
   const handlePhotoCategorized = useCallback(() => {
     void Promise.all([
@@ -290,14 +295,14 @@ export function AnalizShell() {
 
   if (loadState.status === "error") {
     return (
-      <main className="mx-auto w-full max-w-2xl px-5 py-8 lg:px-8 lg:py-10">
+      <main className="mx-auto w-full max-w-5xl px-5 py-8 lg:px-8 lg:py-10">
         <FormError message={loadState.message} />
       </main>
     );
   }
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-5 py-8 lg:px-8 lg:py-10">
+    <main className="mx-auto w-full max-w-5xl px-5 py-8 lg:px-8 lg:py-10">
       <motion.header className="mb-6" {...headerMotion}>
         <h1
           className="text-3xl font-bold text-balance"
@@ -343,6 +348,7 @@ export function AnalizShell() {
           >
             {tab === "gir" ? (
               <AnalizTabGir
+                examId={exam?.id ?? ""}
                 exam={exam}
                 subjects={subjects}
                 scores={scores}
@@ -355,10 +361,12 @@ export function AnalizShell() {
                 onScoreChange={updateScore}
                 onSubmit={(e) => void submit(e)}
                 onCopyLast={handleCopyLast}
+                onHistoryChanged={handleHistoryChanged}
               />
             ) : null}
             {tab === "gelisim" ? (
               <AnalizTabGelisim
+                examId={exam?.id ?? ""}
                 analysis={analysis}
                 personalRecordNet={personalRecordNet}
               />

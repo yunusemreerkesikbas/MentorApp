@@ -74,3 +74,19 @@ export interface RecentSessionSummary {
   /** Most recent non-empty post-session struggle note (null if none). */
   lastStruggleNote: string | null;
 }
+
+/* ----------------------------- today-plan summary ---------------------------- */
+
+/** Max pending task titles surfaced in the today-plan summary (keeps the prompt bounded). */
+export const TODAY_PLAN_PENDING_MAX = 5;
+
+/**
+ * PII-free aggregate of today's plan tasks, consumed by the AI coach context
+ * (§4 #6 — counts + the user's own task titles only; no PII).
+ */
+export interface TodayPlanSummary {
+  total: number;
+  done: number;
+  /** Pending task titles (capped at {@link TODAY_PLAN_PENDING_MAX}). */
+  pendingTitles: string[];
+}

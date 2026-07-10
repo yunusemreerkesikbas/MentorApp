@@ -1265,6 +1265,116 @@
         ]
       }
     },
+    "/v1/users/{username}/follow": {
+      "put": {
+        "operationId": "FollowController_followUser",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "users"
+        ]
+      },
+      "delete": {
+        "operationId": "FollowController_unfollowUser",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/v1/users/{username}/followers": {
+      "get": {
+        "operationId": "FollowController_followers",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/v1/users/{username}/following": {
+      "get": {
+        "operationId": "FollowController_following",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/v1/economy/balance": {
       "get": {
         "operationId": "EconomyController_balance",
@@ -1487,7 +1597,17 @@
     "/v1/coaching/analysis": {
       "get": {
         "operationId": "CoachingController_getAnalysis",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "examId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -1876,7 +1996,17 @@
       },
       "get": {
         "operationId": "MockExamController_list",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "examId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -1907,6 +2037,68 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      },
+      "put": {
+        "operationId": "MockExamController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMockExamDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      },
+      "delete": {
+        "operationId": "MockExamController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
             "description": ""
           }
         },
@@ -2140,6 +2332,22 @@
       "post": {
         "operationId": "AiGhostController_narrate",
         "parameters": [],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "examId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -2730,6 +2938,44 @@
         ]
       }
     },
+    "/v1/forum/feed/following": {
+      "get": {
+        "operationId": "ForumThreadController_followingFeed",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/follow-suggestions": {
+      "get": {
+        "operationId": "ForumThreadController_followSuggestions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
     "/v1/forum/threads/{threadId}/detail": {
       "get": {
         "operationId": "ForumThreadController_detail",
@@ -2864,7 +3110,7 @@
     },
     "/v1/forum/posts/{postId}/reactions": {
       "put": {
-        "operationId": "ForumThreadController_likePost",
+        "operationId": "ForumThreadController_reactPost",
         "parameters": [
           {
             "name": "postId",
@@ -2875,6 +3121,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReactionDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -2890,7 +3146,7 @@
         ]
       },
       "delete": {
-        "operationId": "ForumThreadController_unlikePost",
+        "operationId": "ForumThreadController_unreactPost",
         "parameters": [
           {
             "name": "postId",
@@ -2901,6 +3157,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReactionDto"
+              }
+            }
+          }
+        },
         "responses": {
           "204": {
             "description": ""
@@ -3944,6 +4210,10 @@
         "type": "object",
         "properties": {}
       },
+      "UpdateMockExamDto": {
+        "type": "object",
+        "properties": {}
+      },
       "AiChatDto": {
         "type": "object",
         "properties": {}
@@ -3984,11 +4254,11 @@
         "type": "object",
         "properties": {}
       },
-      "PinThreadDto": {
+      "ReactionDto": {
         "type": "object",
         "properties": {}
       },
-      "ReactionDto": {
+      "PinThreadDto": {
         "type": "object",
         "properties": {}
       },

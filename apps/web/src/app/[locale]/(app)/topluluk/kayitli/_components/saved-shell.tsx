@@ -2,18 +2,19 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { FORUM_LIKE_EMOJI, type SavedFeedItem } from "@mentor/types";
+import { type SavedFeedItem } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
 import { FormError } from "@/components/form";
+import { toggleReaction } from "@/lib/forum-reactions";
 import {
   bookmarkPost,
   bookmarkThread,
   getBookmarks,
   isForumDisabled,
-  likePost,
+  reactPost,
   reactThread,
-  unlikePost,
+  unreactPost,
   unreactThread,
 } from "@/lib/forum";
 import { BookmarkIcon } from "../../_components/forum-icons";
@@ -83,7 +84,7 @@ export function SavedShell({ embedded = false }: { embedded?: boolean } = {}) {
         ...r,
         items: r.items.map((it) =>
           it.type === "thread" && it.thread.id === threadId
-            ? { ...it, thread: applyReaction(it.thread, emoji, v) }
+            ? { ...it, thread: toggleReaction(it.thread, emoji, v) }
             : it,
         ),
       });
@@ -94,25 +95,18 @@ export function SavedShell({ embedded = false }: { embedded?: boolean } = {}) {
     [patchReady],
   );
 
-  const onToggleCommentLike = useCallback(
-    (postId: string, adding: boolean) => {
+  const onToggleCommentReaction = useCallback(
+    (postId: string, emoji: string, adding: boolean) => {
       const patch = (v: boolean) => (r: Extract<State, { status: "ready" }>) => ({
         ...r,
         items: r.items.map((it) =>
           it.type === "comment" && it.comment.id === postId
-            ? {
-                ...it,
-                comment: {
-                  ...it.comment,
-                  myLiked: v,
-                  likeCount: Math.max(0, it.comment.likeCount + (v ? 1 : -1)),
-                },
-              }
+            ? { ...it, comment: toggleReaction(it.comment, emoji, v) }
             : it,
         ),
       });
       patchReady(patch(adding));
-      const call = adding ? likePost(postId, FORUM_LIKE_EMOJI) : unlikePost(postId, FORUM_LIKE_EMOJI);
+      const call = adding ? reactPost(postId, emoji) : unreactPost(postId, emoji);
       call.catch(() => patchReady(patch(!adding)));
     },
     [patchReady],
@@ -195,7 +189,7 @@ export function SavedShell({ embedded = false }: { embedded?: boolean } = {}) {
               <CommentRow
                 key={`c-${it.comment.id}`}
                 comment={it.comment}
-                onToggleLike={onToggleCommentLike}
+                onToggleReaction={onToggleCommentReaction}
                 onToggleBookmark={(id) => onUnbookmarkComment(id)}
               />
             ),
@@ -212,19 +206,6 @@ export function SavedShell({ embedded = false }: { embedded?: boolean } = {}) {
       )}
     </Root>
   );
-}
-
-/** Optimistic like toggle on a saved thread. */
-function applyReaction(
-  thread: Extract<SavedFeedItem, { type: "thread" }>["thread"],
-  emoji: string,
-  adding: boolean,
-) {
-  const count = thread.reactionCounts[emoji] ?? 0;
-  const counts = { ...thread.reactionCounts, [emoji]: Math.max(0, count + (adding ? 1 : -1)) };
-  if (counts[emoji] === 0) delete counts[emoji];
-  const mine = adding ? [...thread.myReactions, emoji] : thread.myReactions.filter((e) => e !== emoji);
-  return { ...thread, reactionCounts: counts, myReactions: mine };
 }
 
 function Centered({ children, embedded }: { children: React.ReactNode; embedded?: boolean }) {

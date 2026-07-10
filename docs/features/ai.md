@@ -103,6 +103,11 @@ pnpm --filter @mentor/api test -- --grep "ai"
   kullanıcının kendi konu/notu, PII yok. **Kapsam dışı:** seans başına premium AI yansıması (ayrı
   endpoint + migration), `ai_usage` feature-label cap (0048). Dosyalar: `ai.constants.ts`,
   `context-builder.service.ts`, `context-builder.service.spec.ts`. Seam: [coaching.md](./coaching.md).
+- **Koç plan-farkında (2026-07-11)** — roadmap §259 devamı: `CoachContext.todayPlan` bugünkü plan
+  özetini taşır (`PlanService.getTodaySummary` seam). `formatTodayPlanLine` koç sohbeti, mood ve
+  seans yansıması prompt'larına "Bugünün planı: X/Y tamam; kalan: …" satırı ekler; görev yoksa düşer.
+  Yeni endpoint/migration yok. **Kapsam dışı:** AI plan revizyonu, FE. Dosyalar: `ai.constants.ts`,
+  `context-builder.service.ts`, `context-builder.service.spec.ts`. Seam: [coaching.md](./coaching.md).
 - **Seans sonrası premium AI yansıması (2026-07-09)** — roadmap §259: mikro check-in `Kaydet` sonrası
   premium kullanıcıya seansa özel 2–3 cümlelik AI yorumu. `POST /v1/coach/session-reflection`
   `{ sessionId }` — `AI_ENABLED` + `isPremium`; `sessionMood` yoksa 400; satır cache

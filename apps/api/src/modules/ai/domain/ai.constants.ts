@@ -1,5 +1,6 @@
 /** AI coach domain constants (W3): system prompt (§4 guardrails) + cost model + request limits. */
 import type { GhostComparisonDto } from "@mentor/types";
+import type { TodayPlanSummary } from "../../coaching/domain/coaching.constants";
 
 /** Max completion tokens per call — bounds per-call cost (§7). */
 export const AI_MAX_OUTPUT_TOKENS = 600;
@@ -36,6 +37,8 @@ export interface CoachContext {
     /** Most recent post-session struggle note (null if none). */
     lastStruggleNote: string | null;
   } | null;
+  /** PII-free summary of today's plan tasks (null when no tasks scheduled today). */
+  todayPlan: TodayPlanSummary | null;
 }
 
 /** A retrieved, verified article used to ground the answer (RAG, §1). */
@@ -84,6 +87,19 @@ export function formatRecentSessionsLine(rs: CoachContext["recentSessions"]): st
   return `${parts.join("; ")}.`;
 }
 
+/**
+ * PII-free one-line summary of today's plan for grounding (§4 #6 — counts + own task titles only).
+ * Returns null when there are no tasks today.
+ */
+export function formatTodayPlanLine(tp: CoachContext["todayPlan"]): string | null {
+  if (!tp) return null;
+  const parts = [`Bugünün planı: ${tp.done}/${tp.total} tamam`];
+  if (tp.pendingTitles.length > 0) {
+    parts.push(`kalan: ${tp.pendingTitles.map((t) => `"${t}"`).join(", ")}`);
+  }
+  return `${parts.join("; ")}.`;
+}
+
 /** Compressible system core + optional verbatim RAG block (§4 #1 — never compress verified sources). */
 export interface SystemPromptParts {
   core: string;
@@ -103,6 +119,8 @@ function buildContextLines(ctx: CoachContext): string[] {
         (ctx.struggleNote ? `, zorlandığı konu: "${ctx.struggleNote}"` : ""),
     );
   }
+  const planLine = formatTodayPlanLine(ctx.todayPlan);
+  if (planLine) lines.push(planLine);
   const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
   if (sessionsLine) lines.push(sessionsLine);
   return lines;
@@ -166,7 +184,9 @@ export function buildMoodReflectionPrompt(
   const noteLine = struggleNote ? ` Bugün en çok zorlandığı konu: "${struggleNote}".` : "";
   const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
   const studyLine = sessionsLine ? ` ${sessionsLine}` : "";
-  const user = `Öğrencinin bugünkü ruh hali: ${MOOD_LABEL[mood] ?? "orta"} (${mood}/5).${noteLine}${ctxLine}${studyLine}`;
+  const planLine = formatTodayPlanLine(ctx.todayPlan);
+  const planContextLine = planLine ? ` ${planLine}` : "";
+  const user = `Öğrencinin bugünkü ruh hali: ${MOOD_LABEL[mood] ?? "orta"} (${mood}/5).${noteLine}${ctxLine}${studyLine}${planContextLine}`;
 
   return { system, user };
 }
@@ -208,8 +228,10 @@ export function buildSessionReflectionPrompt(
     ? ` Seans sırasında zorlandığı: "${session.struggleNote}".`
     : "";
   const ctxLine = ctx.daysRemaining != null ? ` Sınava kalan gün: ${ctx.daysRemaining}.` : "";
+  const planLine = formatTodayPlanLine(ctx.todayPlan);
+  const planContextLine = planLine ? ` ${planLine}` : "";
   const moodLabel = SESSION_MOOD_LABEL[session.sessionMood] ?? "idare eder";
-  const user = `Öğrenci ${session.focusMinutes} dk odaklandı.${subjectLine} Seans nasıl geçti: ${moodLabel} (${session.sessionMood}/3).${noteLine}${ctxLine}`;
+  const user = `Öğrenci ${session.focusMinutes} dk odaklandı.${subjectLine} Seans nasıl geçti: ${moodLabel} (${session.sessionMood}/3).${noteLine}${ctxLine}${planContextLine}`;
 
   return { system, user };
 }

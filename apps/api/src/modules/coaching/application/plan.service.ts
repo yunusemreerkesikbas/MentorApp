@@ -13,6 +13,11 @@ import { withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { todayIso } from "../domain/date.util";
+import {
+  PlanTaskStatus,
+  TODAY_PLAN_PENDING_MAX,
+  type TodayPlanSummary,
+} from "../domain/coaching.constants";
 import { CoachingEventTopic, DailyPlanCompleted } from "../domain/coaching.events";
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
 import { PlanTaskRepository } from "../infrastructure/plan-task.repository";
@@ -68,6 +73,21 @@ export class PlanService {
       const rows = await this.tasks.listByDate(tx, userId, date);
       return rows.map(toPlanTaskDto);
     });
+  }
+
+  /**
+   * PII-free summary of today's plan for the AI coach context (§4 #6 — counts + own titles only).
+   * Returns null when the user has no tasks scheduled for today.
+   */
+  async getTodaySummary(userId: string): Promise<TodayPlanSummary | null> {
+    const tasks = await this.listForDate(userId, todayIso());
+    if (tasks.length === 0) return null;
+    const pending = tasks.filter((t) => t.status !== PlanTaskStatus.DONE);
+    return {
+      total: tasks.length,
+      done: tasks.length - pending.length,
+      pendingTitles: pending.map((t) => t.title).slice(0, TODAY_PLAN_PENDING_MAX),
+    };
   }
 
   /** Distinct dates with ≥1 task in range — one query for calendar/week indicators. */

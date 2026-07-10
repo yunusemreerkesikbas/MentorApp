@@ -34,4 +34,31 @@ describe("UsersService.updateMe", () => {
       username: "taken",
     });
   });
+
+  it("passes bio + website through to updateSelf (null clears)", async () => {
+    const updated = {
+      id: "user-1",
+      email: "a@b.co",
+      displayName: "A",
+      username: null,
+      avatarStorageKey: null,
+      bio: "merhaba",
+      website: null,
+      roles: ["STUDENT"],
+      organizationId: null,
+      examType: null,
+      examDate: null,
+      emailVerifiedAt: null,
+      createdAt: new Date(),
+    };
+    const usersRepo = { updateSelf: vi.fn(async () => updated) };
+    const storage = { getPublicUrl: vi.fn() };
+    const service = new UsersService(usersRepo as never, storage as never);
+
+    await service.updateMe("user-1", { bio: "merhaba", website: null });
+    expect(usersRepo.updateSelf).toHaveBeenCalledWith("user-1", {
+      bio: "merhaba",
+      website: null,
+    });
+  });
 });

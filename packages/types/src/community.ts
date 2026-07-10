@@ -68,6 +68,10 @@ export interface PublicProfile {
   examType: string | null;
   /** ISO — drives "member since". */
   createdAt: string;
+  /** Public self-description; null when unset. */
+  bio: string | null;
+  /** Public personal link (http/https); null when unset. */
+  website: string | null;
   streak: number;
   badges: CommunityBadgeId[];
   /** Total XP; null when the economy is disabled. */

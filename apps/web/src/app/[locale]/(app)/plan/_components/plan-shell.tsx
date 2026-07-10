@@ -44,6 +44,15 @@ import {
   weekDates,
 } from "./plan-utils";
 
+/** Best-effort human message from an unknown error (module-level so it's declared before use). */
+function readError(err: unknown): string {
+  return err instanceof ApiClientError
+    ? err.message
+    : err instanceof Error
+      ? err.message
+      : String(err);
+}
+
 /**
  * Plan page — three toggleable views (Liste / Timeline / Hafta) with shared CRUD.
  */
@@ -80,6 +89,9 @@ export function PlanShell() {
   );
 
   useEffect(() => {
+    // Reads localStorage after mount (never on the server) so the stored view can't cause an SSR
+    // hydration mismatch — a deliberate external-sync effect, not derived state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setViewMode(readStoredViewMode());
   }, []);
 
@@ -87,47 +99,70 @@ export function PlanShell() {
   const weekLoading = loadedWeek !== weekAnchor;
   const readOnly = isPastDate(date);
 
+  const loadDayTasks = useCallback(async (isMounted: () => boolean = () => true) => {
+    try {
+      const data = await listPlanTasksForDate(date);
+      if (!isMounted()) return;
+      setTasks(data);
+      setLoadedDate(date);
+      setError(null);
+    } catch (err) {
+      if (!isMounted()) return;
+      setTasks([]);
+      setLoadedDate(date);
+      setError(readError(err));
+    }
+  }, [date]);
+
+  const loadWeekTasks = useCallback(async (isMounted: () => boolean = () => true) => {
+    try {
+      const data = await listPlanTasksForWeek(weekAnchor);
+      if (!isMounted()) return;
+      setWeekTasks(data);
+      setLoadedWeek(weekAnchor);
+      setError(null);
+    } catch (err) {
+      if (!isMounted()) return;
+      setWeekTasks({});
+      setLoadedWeek(weekAnchor);
+      setError(readError(err));
+    }
+  }, [weekAnchor]);
+
   useEffect(() => {
     if (viewMode === "week") return;
     let active = true;
-    listPlanTasksForDate(date)
-      .then((data) => {
-        if (!active) return;
-        setTasks(data);
-        setLoadedDate(date);
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        setTasks([]);
-        setLoadedDate(date);
-        setError(readError(err));
-      });
+    void loadDayTasks(() => active);
     return () => {
       active = false;
     };
-  }, [date, viewMode]);
+  }, [date, viewMode, loadDayTasks]);
 
   useEffect(() => {
     if (viewMode !== "week") return;
     let active = true;
-    listPlanTasksForWeek(weekAnchor)
-      .then((data) => {
-        if (!active) return;
-        setWeekTasks(data);
-        setLoadedWeek(weekAnchor);
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        setWeekTasks({});
-        setLoadedWeek(weekAnchor);
-        setError(readError(err));
-      });
+    void loadWeekTasks(() => active);
     return () => {
       active = false;
     };
-  }, [viewMode, weekAnchor]);
+  }, [viewMode, weekAnchor, loadWeekTasks]);
+
+  useEffect(() => {
+    function refreshIfVisible() {
+      if (document.visibilityState !== "visible") return;
+      if (viewMode === "week") void loadWeekTasks();
+      else void loadDayTasks();
+    }
+    function onPageShow(e: PageTransitionEvent) {
+      if (e.persisted) refreshIfVisible();
+    }
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [viewMode, loadDayTasks, loadWeekTasks]);
 
   const activeTasks = useMemo(() => {
     if (viewMode === "week") return weekTasks[date] ?? [];
@@ -163,14 +198,6 @@ export function PlanShell() {
       },
     });
   }, [date, filterSheet, t, tasks, viewMode, weekTasks]);
-
-  function readError(err: unknown): string {
-    return err instanceof ApiClientError
-      ? err.message
-      : err instanceof Error
-        ? err.message
-        : String(err);
-  }
 
   function reportActionError(err: unknown) {
     showErrorToast({

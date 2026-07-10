@@ -13,6 +13,7 @@ export interface NewAttachment {
   storageKey: string;
   mimeType: string;
   sizeBytes: number;
+  fileName: string | null;
   width: number | null;
   height: number | null;
 }
@@ -46,6 +47,7 @@ export class ForumAttachmentRepository {
             storageKey: a.storageKey,
             mimeType: a.mimeType,
             sizeBytes: a.sizeBytes,
+            fileName: a.fileName,
             width: a.width,
             height: a.height,
             position: i,

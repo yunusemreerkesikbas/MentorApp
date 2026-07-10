@@ -18,6 +18,8 @@ interface AnalizMockExamFormProps {
   onTakenAtChange: (value: string) => void;
   onScoreChange: (slug: string, field: keyof SubjectScores, value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
+  submitLabel?: string;
+  onCancel?: () => void;
 }
 
 export function AnalizMockExamForm({
@@ -30,6 +32,8 @@ export function AnalizMockExamForm({
   onTakenAtChange,
   onScoreChange,
   onSubmit,
+  submitLabel,
+  onCancel,
 }: AnalizMockExamFormProps) {
   const t = useTranslations("analysis");
 
@@ -117,9 +121,27 @@ export function AnalizMockExamForm({
 
       <FormError message={validationMessage} />
 
-      <Button type="submit" busy={submitting} fullWidth disabled={invalidSlug != null}>
-        {t("save")}
-      </Button>
+      <div className={onCancel ? "grid gap-2 sm:grid-cols-2" : undefined}>
+        {onCancel ? (
+          <Button
+            type="button"
+            variant="secondary"
+            fullWidth
+            disabled={submitting}
+            onClick={onCancel}
+          >
+            {t("history.cancel_edit")}
+          </Button>
+        ) : null}
+        <Button
+          type="submit"
+          busy={submitting}
+          fullWidth
+          disabled={invalidSlug != null}
+        >
+          {submitLabel ?? t("save")}
+        </Button>
+      </div>
     </form>
   );
 }

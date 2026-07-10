@@ -3,7 +3,7 @@
  */
 import { z } from "zod";
 import {
-  FORUM_IMAGE_MIMES,
+  FORUM_ATTACHMENT_MIMES,
   FORUM_MAX_ATTACHMENTS,
   FORUM_REACTION_EMOJIS,
   ModerationTargetType,
@@ -46,21 +46,23 @@ export const zoneMembersQuerySchema = z.object({
 });
 export type ZoneMembersQuery = z.infer<typeof zoneMembersQuerySchema>;
 
-/** Request a presigned upload URL for a post image (Phase 1). */
+/** Request a presigned upload URL for a post attachment (image or file — APP-027). */
 export const attachmentUploadUrlSchema = z.object({
-  contentType: z.enum(FORUM_IMAGE_MIMES),
+  contentType: z.enum(FORUM_ATTACHMENT_MIMES),
 });
 export type AttachmentUploadUrl = z.infer<typeof attachmentUploadUrlSchema>;
 
 /**
  * One attachment reference sent when creating a post: the storage `key` returned by the upload-url
- * endpoint (ownership re-verified server-side) + its mime and client-measured pixel size (for layout).
+ * endpoint (ownership re-verified server-side) + its mime, client-measured pixel size (images), and
+ * original filename (files, for the download chip label).
  */
 export const attachmentInputSchema = z.object({
   key: z.string().trim().min(1).max(300),
-  mimeType: z.enum(FORUM_IMAGE_MIMES),
+  mimeType: z.enum(FORUM_ATTACHMENT_MIMES),
   width: z.number().int().positive().max(20000).optional(),
   height: z.number().int().positive().max(20000).optional(),
+  fileName: z.string().trim().min(1).max(255).optional(),
 });
 export type AttachmentInput = z.infer<typeof attachmentInputSchema>;
 

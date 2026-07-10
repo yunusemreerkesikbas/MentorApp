@@ -63,6 +63,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     DailyQuestSignalService,
     MockExamService,
     MoodService,
+    PlanService,
     SessionService,
     VisionService,
     StreakService,

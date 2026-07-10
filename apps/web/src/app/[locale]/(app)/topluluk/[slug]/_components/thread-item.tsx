@@ -2,14 +2,15 @@
 
 import type { KeyboardEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { FORUM_LIKE_EMOJI, type ThreadView } from "@mentor/types";
+import type { ThreadView } from "@mentor/types";
 import { Link, useRouter } from "@/i18n/navigation";
 import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "../../_components/author-avatar";
 import { AuthorLink } from "../../_components/author-link";
 import { AttachmentGallery } from "../../_components/attachment-gallery";
-import { CommentIcon, HeartIcon } from "../../_components/forum-icons";
+import { CommentIcon } from "../../_components/forum-icons";
 import { MentionText } from "../../_components/mention-text";
+import { ReactionBar } from "../../_components/reaction-bar";
 import { SendButton } from "../../_components/send-button";
 import { BookmarkButton } from "../../_components/bookmark-button";
 import { ThreadMenu } from "./thread-menu";
@@ -35,15 +36,12 @@ export function ThreadItem({
   const t = useTranslations("topluluk");
   const locale = useLocale();
   const router = useRouter();
-  const liked = thread.myReactions.includes(FORUM_LIKE_EMOJI);
-  const likeCount = thread.reactionCounts[FORUM_LIKE_EMOJI] ?? 0;
   const detailHref = `/topluluk/mesaj/${thread.id}`;
   const repliers = thread.commenterNames.slice(0, 3);
 
-  // Summary order mirrors Figma "7 respostas · 59 curtidas" — comments first, then likes.
+  // Reaction counts live in the ReactionBar chips now; the summary keeps only the comment total.
   const summary: string[] = [];
   if (thread.commentCount > 0) summary.push(t("comment_total", { count: thread.commentCount }));
-  if (likeCount > 0) summary.push(t("like_total", { count: likeCount }));
 
   // Twitter-style row: the whole post navigates to its detail; interactive children stop propagation.
   const open = () => router.push(detailHref);
@@ -143,28 +141,14 @@ export function ThreadItem({
 
         <AttachmentGallery attachments={thread.attachments} />
 
-        {/* Action row — bare icons (Figma 1:300: 24px frames, no inline counts). Counts live only in
-            the summary line below. Like · comment · send (share link) · bookmark. */}
-        <div className="-ml-1.5 mt-2 flex items-center gap-1.5">
-          <button
-            type="button"
-            aria-pressed={liked}
-            aria-label={t("like")}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleReaction(FORUM_LIKE_EMOJI, !liked);
-            }}
-            className="group/like flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            style={{ color: liked ? "var(--color-danger)" : "var(--color-main)" }}
-          >
-            {/* Remount on toggle so the one-shot pop replays each time a post is liked. */}
-            <span
-              key={liked ? "on" : "off"}
-              className={`inline-flex transition-transform duration-150 group-hover/like:scale-110 group-active/like:scale-90 motion-reduce:transition-none ${liked ? "forum-like-pop" : ""}`}
-            >
-              <HeartIcon filled={liked} />
-            </span>
-          </button>
+        {/* Action row — reaction palette + comment · send (share link) · bookmark. Reaction counts
+            render as chips inside the ReactionBar; the summary line below keeps the comment total. */}
+        <div className="-ml-1.5 mt-2 flex flex-wrap items-center gap-1.5">
+          <ReactionBar
+            reactionCounts={thread.reactionCounts}
+            myReactions={thread.myReactions}
+            onToggle={onToggleReaction}
+          />
 
           <Link
             href={detailHref}

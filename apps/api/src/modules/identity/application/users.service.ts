@@ -121,6 +121,8 @@ export class UsersService {
         ...(patch.avatarStorageKey !== undefined && {
           avatarStorageKey: patch.avatarStorageKey,
         }),
+        ...(patch.bio !== undefined && { bio: patch.bio }),
+        ...(patch.website !== undefined && { website: patch.website }),
         ...(patch.examType !== undefined && { examType: patch.examType }),
         ...(patch.examDate !== undefined && { examDate: patch.examDate }),
       });

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { FORUM_LIKE_EMOJI, type ForumActivityItem, type PublicProfile } from "@mentor/types";
+import { type ForumActivityItem, type PublicProfile } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
@@ -10,14 +10,15 @@ import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
 import { getPublicProfile } from "@/lib/community";
 import { followUser, unfollowUser } from "@/lib/follow";
+import { toggleReaction } from "@/lib/forum-reactions";
 import {
   bookmarkPost,
   bookmarkThread,
   getUserActivity,
   isForumDisabled,
-  likePost,
+  reactPost,
   reactThread,
-  unlikePost,
+  unreactPost,
   unreactThread,
 } from "@/lib/forum";
 import { CommentRow } from "../../../_components/comment-row";
@@ -90,7 +91,7 @@ export function ProfileShell({ username }: { username: string }) {
       const patch = (v: boolean) => (r: Ready) => ({
         ...r,
         items: r.items.map((it) =>
-          it.type === "thread" && it.thread.id === threadId ? { ...it, thread: applyReaction(it.thread, emoji, v) } : it,
+          it.type === "thread" && it.thread.id === threadId ? { ...it, thread: toggleReaction(it.thread, emoji, v) } : it,
         ),
       });
       patchReady(patch(adding));
@@ -113,18 +114,18 @@ export function ProfileShell({ username }: { username: string }) {
     [patchReady],
   );
 
-  const onToggleCommentLike = useCallback(
-    (postId: string, adding: boolean) => {
+  const onToggleCommentReaction = useCallback(
+    (postId: string, emoji: string, adding: boolean) => {
       const patch = (v: boolean) => (r: Ready) => ({
         ...r,
         items: r.items.map((it) =>
           it.type === "comment" && it.comment.id === postId
-            ? { ...it, comment: { ...it.comment, myLiked: v, likeCount: Math.max(0, it.comment.likeCount + (v ? 1 : -1)) } }
+            ? { ...it, comment: toggleReaction(it.comment, emoji, v) }
             : it,
         ),
       });
       patchReady(patch(adding));
-      (adding ? likePost(postId, FORUM_LIKE_EMOJI) : unlikePost(postId, FORUM_LIKE_EMOJI)).catch(() => patchReady(patch(!adding)));
+      (adding ? reactPost(postId, emoji) : unreactPost(postId, emoji)).catch(() => patchReady(patch(!adding)));
     },
     [patchReady],
   );
@@ -269,7 +270,7 @@ export function ProfileShell({ username }: { username: string }) {
                     // not the reply stranded on its own detail page.
                     <CommentRow
                       comment={it.comment}
-                      onToggleLike={onToggleCommentLike}
+                      onToggleReaction={onToggleCommentReaction}
                       onToggleBookmark={onToggleCommentBookmark}
                       rowHref={
                         it.comment.parentPostId
@@ -296,15 +297,6 @@ export function ProfileShell({ username }: { username: string }) {
       )}
     </main>
   );
-}
-
-/** Optimistic like toggle on a thread in the activity feed. */
-function applyReaction(thread: Extract<ForumActivityItem, { type: "thread" }>["thread"], emoji: string, adding: boolean) {
-  const count = thread.reactionCounts[emoji] ?? 0;
-  const counts = { ...thread.reactionCounts, [emoji]: Math.max(0, count + (adding ? 1 : -1)) };
-  if (counts[emoji] === 0) delete counts[emoji];
-  const mine = adding ? [...thread.myReactions, emoji] : thread.myReactions.filter((e) => e !== emoji);
-  return { ...thread, reactionCounts: counts, myReactions: mine };
 }
 
 function Centered({ children }: { children: React.ReactNode }) {

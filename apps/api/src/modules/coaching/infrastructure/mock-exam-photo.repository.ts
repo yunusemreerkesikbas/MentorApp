@@ -60,6 +60,23 @@ export class MockExamPhotoRepository {
     return rows[0]?.n ?? 0;
   }
 
+  async listStorageKeys(
+    db: Database | DatabaseTx,
+    userId: string,
+    mockExamId: string,
+  ): Promise<string[]> {
+    const rows = await db
+      .selectDistinct({ storageKey: mockExamPhotoCategorizations.storageKey })
+      .from(mockExamPhotoCategorizations)
+      .where(
+        and(
+          eq(mockExamPhotoCategorizations.userId, userId),
+          eq(mockExamPhotoCategorizations.mockExamId, mockExamId),
+        ),
+      );
+    return rows.map((row) => row.storageKey);
+  }
+
   async listPhotoSubjectSignals(
     db: Database | DatabaseTx,
     userId: string,
@@ -85,4 +102,3 @@ export class MockExamPhotoRepository {
     return rows.map((r) => ({ subjectRef: r.subjectRef, count: r.count }));
   }
 }
-

@@ -206,6 +206,18 @@ export const createMockExamSchema = z
   );
 export type CreateMockExamInput = z.infer<typeof createMockExamSchema>;
 
+export const updateMockExamSchema = z
+  .object({
+    takenAt: z.string().datetime({ offset: true }),
+    publisherName: z.string().trim().min(1).max(120).nullable(),
+    subjects: z.array(mockExamSubjectInputSchema).min(1).max(20),
+  })
+  .refine(
+    (data) => new Set(data.subjects.map((subject) => subject.subjectRef)).size === data.subjects.length,
+    { message: "duplicate_subject_ref" },
+  );
+export type UpdateMockExamInput = z.infer<typeof updateMockExamSchema>;
+
 export const analysisQuerySchema = z.object({
   examId: z.string().uuid().optional(),
 });
@@ -215,4 +227,3 @@ export const listMockExamsQuerySchema = paginationQuerySchema.extend({
   examId: z.string().uuid().optional(),
 });
 export type ListMockExamsQuery = z.infer<typeof listMockExamsQuerySchema>;
-

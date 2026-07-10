@@ -8,15 +8,19 @@ import { FakeStorageAdapter } from "../adapters/storage/fake-storage.adapter";
 import { PHOTO_ALLOWED_MIME, PHOTO_MAX_BYTES } from "../../modules/ai/domain/photo-classify.constants";
 import { AVATAR_ALLOWED_MIME, AVATAR_MAX_BYTES } from "../../modules/identity/domain/avatar";
 import {
-  FORUM_IMAGE_MAX_BYTES,
+  FORUM_FILE_MAX_BYTES,
+  FORUM_FILE_MIME,
   FORUM_IMAGE_MIME,
 } from "../../modules/forum/domain/attachment.constants";
+
+/** Forum accepts images + files; the authoritative per-kind size cap is enforced in resolveForumAttachments. */
+const FORUM_ATTACHMENT_MIME = new Set([...FORUM_IMAGE_MIME, ...FORUM_FILE_MIME]);
 
 /** Per-resource size + mime rules, keyed by the object's prefix (matches each upload-url endpoint). */
 function limitsForKey(key: string): { maxBytes: number; allowedMime: Set<string> } {
   if (key.startsWith("avatars/")) return { maxBytes: AVATAR_MAX_BYTES, allowedMime: AVATAR_ALLOWED_MIME };
   if (key.startsWith("forum-attachments/")) {
-    return { maxBytes: FORUM_IMAGE_MAX_BYTES, allowedMime: FORUM_IMAGE_MIME };
+    return { maxBytes: FORUM_FILE_MAX_BYTES, allowedMime: FORUM_ATTACHMENT_MIME };
   }
   return { maxBytes: PHOTO_MAX_BYTES, allowedMime: PHOTO_ALLOWED_MIME };
 }

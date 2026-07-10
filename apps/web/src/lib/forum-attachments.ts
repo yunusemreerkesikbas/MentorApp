@@ -1,11 +1,11 @@
-import type { ForumAttachmentUploadUrl, ForumImageMime } from "@mentor/types";
+import type { ForumAttachmentUploadUrl, ForumFileMime, ForumImageMime } from "@mentor/types";
 import type { AttachmentInput } from "@mentor/validation";
 import { http } from "@mentor/api-client";
 import { resolveApiUrl } from "./api-base";
 
-/** Presigned upload URL for a post image (client then PUTs the file directly to storage). */
+/** Presigned upload URL for a post attachment — image or file (client then PUTs directly to storage). */
 export async function createAttachmentUploadUrl(
-  contentType: ForumImageMime,
+  contentType: ForumImageMime | ForumFileMime,
 ): Promise<ForumAttachmentUploadUrl> {
   return (await http<ForumAttachmentUploadUrl>("/v1/forum/attachments/upload-url", {
     method: "POST",
@@ -43,4 +43,12 @@ export async function uploadForumImage(file: File): Promise<AttachmentInput> {
   ]);
   await putFileToSignedUrl(uploadUrl, file, contentType);
   return { key, mimeType: contentType, width: size?.width, height: size?.height };
+}
+
+/** Upload one file (PDF/Office) and return the reference — carries the original name for its download chip. */
+export async function uploadForumFile(file: File): Promise<AttachmentInput> {
+  const contentType = file.type as ForumFileMime;
+  const { uploadUrl, key } = await createAttachmentUploadUrl(contentType);
+  await putFileToSignedUrl(uploadUrl, file, contentType);
+  return { key, mimeType: contentType, fileName: file.name };
 }

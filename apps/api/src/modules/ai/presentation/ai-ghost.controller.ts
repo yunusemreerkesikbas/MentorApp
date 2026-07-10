@@ -1,5 +1,5 @@
 import { Body, Controller, HttpCode, Post } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiTags } from "@nestjs/swagger";
 import type { GhostNarrationDto } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { GhostNarrationService } from "../application/ghost-narration.service";
@@ -17,6 +17,15 @@ export class AiGhostController {
 
   @Post("ghost-narration")
   @HttpCode(200)
+  @ApiBody({
+    required: false,
+    schema: {
+      type: "object",
+      properties: {
+        examId: { type: "string", format: "uuid" },
+      },
+    },
+  })
   narrate(
     @CurrentUser() user: RequestUser,
     @Body() dto: GhostNarrationBodyDto,
@@ -24,4 +33,5 @@ export class AiGhostController {
     return this.ghost.narrate(user, dto.examId);
   }
 }
+
 

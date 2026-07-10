@@ -67,6 +67,9 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Profil bio + web sitesi — `getPublicProfile` enrich (APP-024)** — `PublicProfile` + `getPublicProfile`
+  artık `bio`/`website` taşıyor (public-safe kimlik; email yok). Şema/`updateMe`/`AuthUser`/düzenleme formu
+  + community profil header/`ProfileCard` gösterimi identity tarafında: [`identity.md`](./identity.md) *(APP-024)*. *(APP-024)*
 - **Profil header takip alanları — `getPublicProfile` enrich (APP-022)** — Public profil başlığı artık
   `followerCount`/`followingCount`/`isFollowing` taşıyor. `getPublicProfile` `viewerId` alıp identity
   `FollowService`'ten okur (`isSelf` → `isFollowing:false`); sayaçlar okuma-anında COUNT. Takip **grafı

@@ -4,7 +4,6 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   type CommentDetail,
   type CommentView,
-  FORUM_LIKE_EMOJI,
   type FollowUserRef,
   type ForumAttachmentUploadUrl,
   type ForumActivityFeed,
@@ -26,8 +25,11 @@ import { UsersService } from "../../identity/application/users.service";
 import { FollowService } from "../../identity/application/follow.service";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import {
+  extensionForForumFileMime,
   extensionForForumImageMime,
   FORUM_ATTACHMENT_ORPHAN_GRACE_MS,
+  FORUM_FILE_MAX_BYTES,
+  FORUM_FILE_MIME,
   FORUM_IMAGE_MAX_BYTES,
   FORUM_IMAGE_MIME,
   FORUM_ORPHAN_SWEEP_BATCH,
@@ -79,16 +81,20 @@ export class ForumThreadService {
     private readonly follow: FollowService,
   ) {}
 
-  /** Presigned upload URL for a post image (Phase 1). Client PUTs the file, then sends `key` on create. */
+  /** Presigned upload URL for a post attachment — image or file (APP-027). Client PUTs, then sends `key`. */
   async createAttachmentUploadUrl(
     userId: string,
     contentType: string,
   ): Promise<ForumAttachmentUploadUrl> {
     await this.assertEnabled();
-    if (!FORUM_IMAGE_MIME.has(contentType)) {
+    const isImage = FORUM_IMAGE_MIME.has(contentType);
+    const isFile = FORUM_FILE_MIME.has(contentType);
+    if (!isImage && !isFile) {
       throw new DomainError(ErrorCode.FORUM_ATTACHMENT_INVALID, HttpStatus.BAD_REQUEST);
     }
-    const ext = extensionForForumImageMime(contentType);
+    const ext = isImage
+      ? extensionForForumImageMime(contentType)
+      : extensionForForumFileMime(contentType);
     const result = await this.storage.createUploadUrl({
       key: `forum-attachments/${userId}/${randomUUID()}.${ext}`,
       contentType,
@@ -100,7 +106,7 @@ export class ForumThreadService {
       uploadUrl: result.url,
       key: result.key,
       expiresAt: result.expiresAt,
-      maxBytes: FORUM_IMAGE_MAX_BYTES,
+      maxBytes: isImage ? FORUM_IMAGE_MAX_BYTES : FORUM_FILE_MAX_BYTES,
     };
   }
 
@@ -459,16 +465,16 @@ export class ForumThreadService {
     return this.requireCommentView(post.id, actor.id);
   }
 
-  async likePost(userId: string, postId: string): Promise<void> {
+  async reactPost(userId: string, postId: string, emoji: string): Promise<void> {
     await this.assertEnabled();
-    await this.requirePost(postId, userId);
-    await this.posts.addPostReaction(postId, userId, FORUM_LIKE_EMOJI);
+    await this.requirePost(postId, userId); // visibility belt
+    await this.posts.addPostReaction(postId, userId, emoji);
   }
 
-  async unlikePost(userId: string, postId: string): Promise<void> {
+  async unreactPost(userId: string, postId: string, emoji: string): Promise<void> {
     await this.assertEnabled();
     await this.requirePost(postId, userId);
-    await this.posts.removePostReaction(postId, userId, FORUM_LIKE_EMOJI);
+    await this.posts.removePostReaction(postId, userId, emoji);
   }
 
   /** A CHAT/ANNOUNCEMENT thread + its top-level comments. QA uses ForumQaService.getQuestion. */
@@ -510,15 +516,15 @@ export class ForumThreadService {
     return { comment: comment!, replies: replyViews, zoneId };
   }
 
-  /** Fold like/reply counts + the viewer's like state into CommentViews (batched, no N+1). */
+  /** Fold reaction/reply counts + the viewer's reaction state into CommentViews (batched, no N+1). */
   private async decorateComments(
     posts: PostWithAuthor[],
     viewerId: string,
   ): Promise<CommentView[]> {
     const ids = posts.map((p) => p.id);
-    const [likeCounts, myLiked, replyCounts, attachMap, bookmarked] = await Promise.all([
-      this.posts.likeCountsByPost(ids),
-      this.posts.myLikedPosts(ids, viewerId),
+    const [reactionCounts, myReactions, replyCounts, attachMap, bookmarked] = await Promise.all([
+      this.posts.reactionCountsByPost(ids),
+      this.posts.myReactionsByPost(ids, viewerId),
       this.posts.replyCountsByPost(ids),
       this.attachments.listForTargets(ModerationTargetType.POST, ids),
       this.bookmarks.myBookmarkedTargets(ModerationTargetType.POST, ids, viewerId),
@@ -526,8 +532,8 @@ export class ForumThreadService {
     return posts.map((p) =>
       postRowToCommentView(
         p,
-        likeCounts.get(p.id) ?? 0,
-        myLiked.has(p.id),
+        reactionCounts.get(p.id) ?? {},
+        myReactions.get(p.id) ?? [],
         replyCounts.get(p.id) ?? 0,
         this.storage,
         attachMap.get(p.id) ?? [],

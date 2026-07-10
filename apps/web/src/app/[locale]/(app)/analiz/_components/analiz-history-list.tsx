@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import type { MockExamDto } from "@mentor/types";
+import type { ExamSubjectDto, MockExamDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Card, SectionHeading } from "@mentor/ui";
 import { fetchMockExamsList } from "@/lib/analiz";
@@ -13,13 +13,17 @@ interface AnalizHistoryListProps {
   examId: string;
   /** Bump to refetch after a new save. */
   refreshKey: number;
+  subjects: ExamSubjectDto[];
   onCopyLast: (exam: MockExamDto) => void;
+  onChanged: () => void;
 }
 
 export function AnalizHistoryList({
   examId,
   refreshKey,
+  subjects,
   onCopyLast,
+  onChanged,
 }: AnalizHistoryListProps) {
   const t = useTranslations("analysis.history");
   const tAnalysis = useTranslations("analysis");
@@ -45,6 +49,8 @@ export function AnalizHistoryList({
   }, [examId]);
 
   useEffect(() => {
+    // `load` kicks off the fetch (setting its own loading state) — deliberate data-fetch trigger.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load, refreshKey]);
 
@@ -106,7 +112,9 @@ export function AnalizHistoryList({
       </Card>
       <AnalizHistoryDetail
         mockExamId={selectedId}
+        subjects={subjects}
         onClose={() => setSelectedId(null)}
+        onChanged={onChanged}
       />
     </>
   );

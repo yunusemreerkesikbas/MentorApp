@@ -133,9 +133,9 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
                           />
                         )}
                       </span>
-                      {/* Member count */}
+                      {/* Member + message counts */}
                       <span className="truncate text-[12px]" style={{ color: "#616161" }}>
-                        {t("members", { count: z.memberCount })}
+                        {t("members", { count: z.memberCount })} · {t("messages_count", { count: z.threadCount })}
                       </span>
                     </Link>
                   );

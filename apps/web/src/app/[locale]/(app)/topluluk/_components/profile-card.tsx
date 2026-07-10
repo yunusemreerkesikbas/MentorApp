@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import Globe from "lucide-react/dist/esm/icons/globe.mjs";
 import { useAuth } from "@/lib/auth-context";
 import { Link } from "@/i18n/navigation";
 import { AuthorAvatar } from "./author-avatar";
@@ -50,6 +51,23 @@ export function ProfileCard() {
         <p className="text-[12px] font-medium leading-[19px]" style={{ color: "var(--color-main)" }}>
           {user.email}
         </p>
+        {user.bio ? (
+          <p
+            className="line-clamp-3 whitespace-pre-line break-words text-[12px] leading-[18px]"
+            style={{ color: "var(--color-secondary)" }}
+          >
+            {user.bio}
+          </p>
+        ) : null}
+        {user.website ? (
+          <span
+            className="inline-flex w-fit items-center gap-1 text-[12px] font-medium"
+            style={{ color: "var(--color-accent)" }}
+          >
+            <Globe size={12} aria-hidden="true" />
+            {user.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+          </span>
+        ) : null}
       </div>
 
       <p className="text-[13px] tracking-[-0.2px]" style={{ color: "var(--color-secondary)" }}>

@@ -114,6 +114,8 @@ export class CommunityService {
       avatarUrl: user.avatarStorageKey ? this.storage.getPublicUrl(user.avatarStorageKey) : null,
       examType: user.examType,
       createdAt: user.createdAt.toISOString(),
+      bio: user.bio ?? null,
+      website: user.website ?? null,
       streak: currentStreak,
       badges,
       xp: balance?.xp ?? null,

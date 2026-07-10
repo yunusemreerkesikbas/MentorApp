@@ -49,10 +49,14 @@ function makeRepoFake() {
     maxNetExcluding: vi.fn(),
     maxTotalNet: vi.fn(),
     setGhostNarration: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    clearGhostNarrations: vi.fn(),
   };
 }
 
 const i18nFake = { translate: (key: string) => key } as never;
+const storageFake = { deleteObject: vi.fn() };
 
 describe("MockExamService", () => {
   let repo: ReturnType<typeof makeRepoFake>;
@@ -61,6 +65,7 @@ describe("MockExamService", () => {
     findByClientRequestId: ReturnType<typeof vi.fn>;
     insert: ReturnType<typeof vi.fn>;
     listPhotoSubjectSignals: ReturnType<typeof vi.fn>;
+    listStorageKeys: ReturnType<typeof vi.fn>;
   };
   let service: MockExamService;
 
@@ -72,6 +77,7 @@ describe("MockExamService", () => {
       findByClientRequestId: vi.fn(),
       insert: vi.fn(),
       listPhotoSubjectSignals: vi.fn(),
+      listStorageKeys: vi.fn(),
     };
     service = new MockExamService(
       fakeDb,
@@ -79,6 +85,7 @@ describe("MockExamService", () => {
       repo as never,
       photoRows as never,
       i18nFake,
+      storageFake as never,
     );
     contentPort.getExamById.mockResolvedValue({
       id: EXAM_ID,
@@ -129,6 +136,62 @@ describe("MockExamService", () => {
         subjects: [{ subjectRef: "turkce", correct: 25, wrong: 5, blank: 5 }],
       }),
     ).rejects.toMatchObject({ code: ErrorCode.COACHING_INVALID_MOCK_EXAM_SCORES });
+  });
+
+  it("updates an owned mock exam with recalculated nets and clears scoped ghost narration", async () => {
+    const existing = {
+      id: "mock-1",
+      userId: USER,
+      examId: EXAM_ID,
+      takenAt: new Date("2026-06-01T12:00:00.000Z"),
+      totalNet: "10.00",
+      publisherName: "Eski yayın",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    repo.findById.mockResolvedValue({ exam: existing, subjects: [] });
+    repo.update.mockImplementation(async (_tx, _userId, _id, data) => ({
+      exam: { ...existing, ...data },
+      subjects: data.subjects.map((subject: { subjectRef: string; correct: number; wrong: number; blank: number; net: string }, index: number) => ({
+        id: "updated-" + index,
+        mockExamId: existing.id,
+        createdAt: new Date(),
+        ...subject,
+      })),
+    }));
+
+    const result = await service.update(USER, existing.id, {
+      takenAt: "2026-06-20T12:00:00.000Z",
+      publisherName: null,
+      subjects: [{ subjectRef: "turkce", correct: 20, wrong: 4, blank: 6 }],
+    });
+
+    expect(result.totalNet).toBe("19.00");
+    expect(result.publisherName).toBeNull();
+    expect(repo.clearGhostNarrations).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      EXAM_ID,
+    );
+  });
+
+  it("permanently deletes an owned mock exam and cleans its photo objects", async () => {
+    repo.findById.mockResolvedValue({
+      exam: { id: "mock-1", userId: USER, examId: EXAM_ID },
+      subjects: [],
+    });
+    photoRows.listStorageKeys.mockResolvedValue(["mock-exams/u1/photo.jpg"]);
+    repo.delete.mockResolvedValue(true);
+
+    await service.remove(USER, "mock-1");
+
+    expect(repo.delete).toHaveBeenCalledWith(expect.anything(), USER, "mock-1");
+    expect(repo.clearGhostNarrations).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      EXAM_ID,
+    );
+    expect(storageFake.deleteObject).toHaveBeenCalledWith("mock-exams/u1/photo.jpg");
   });
 
   it("getGhostComparison returns null with fewer than 2 attempts", async () => {

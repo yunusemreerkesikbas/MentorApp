@@ -20,6 +20,7 @@ const makeRepo = () => ({
   setMemberStatus: vi.fn(),
   deleteMember: vi.fn(),
   memberCount: vi.fn().mockResolvedValue(0),
+  threadCountsByZone: vi.fn().mockResolvedValue(new Map()),
   listOwnerAndMods: vi.fn().mockResolvedValue([]),
   zoneSlug: vi.fn().mockResolvedValue(null),
 });

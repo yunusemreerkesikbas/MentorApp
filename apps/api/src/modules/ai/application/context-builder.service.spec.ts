@@ -7,6 +7,7 @@ describe("ContextBuilder (mood grounding)", () => {
   let getExamCalendarByFamily: ReturnType<typeof vi.fn>;
   let getToday: ReturnType<typeof vi.fn>;
   let getRecentSummary: ReturnType<typeof vi.fn>;
+  let getTodaySummary: ReturnType<typeof vi.fn>;
   let builder: ContextBuilder;
 
   beforeEach(() => {
@@ -14,10 +15,12 @@ describe("ContextBuilder (mood grounding)", () => {
     getExamCalendarByFamily = vi.fn(async () => ({ daysRemaining: 90, examDateLabel: "12 Tem 2026" }));
     getToday = vi.fn(async () => ({ mood: 2, struggleNote: "matematik" }));
     getRecentSummary = vi.fn(async () => null);
+    getTodaySummary = vi.fn(async () => null);
     builder = new ContextBuilder(
       { getMe } as never,
       { getExamCalendarByFamily } as never,
       { getToday } as never,
+      { getTodaySummary } as never,
       { getRecentSummary } as never,
     );
   });
@@ -62,6 +65,30 @@ describe("ContextBuilder (mood grounding)", () => {
     const ctx = await builder.build("u1");
     expect(ctx.recentSessions).toBeNull();
     expect(buildSystemPrompt(ctx)).not.toContain("Son 7 gün");
+  });
+
+  it("includes today's plan summary in the context and grounds the prompt", async () => {
+    getTodaySummary.mockResolvedValue({
+      total: 5,
+      done: 2,
+      pendingTitles: ["Matematik tekrarı", "Coğrafya özeti"],
+    });
+    const ctx = await builder.build("u1");
+    expect(ctx.todayPlan).toEqual({
+      total: 5,
+      done: 2,
+      pendingTitles: ["Matematik tekrarı", "Coğrafya özeti"],
+    });
+    const prompt = buildSystemPrompt(ctx);
+    expect(prompt).toContain("Bugünün planı: 2/5 tamam");
+    expect(prompt).toContain('kalan: "Matematik tekrarı", "Coğrafya özeti"');
+  });
+
+  it("omits the plan line when there are no tasks today", async () => {
+    getTodaySummary.mockResolvedValue(null);
+    const ctx = await builder.build("u1");
+    expect(ctx.todayPlan).toBeNull();
+    expect(buildSystemPrompt(ctx)).not.toContain("Bugünün planı");
   });
 
   it("still builds context (mood + sessions) when the user has no exam type", async () => {

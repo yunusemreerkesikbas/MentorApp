@@ -52,8 +52,8 @@ const makePostRepo = () => ({
   listByThread: vi.fn().mockResolvedValue([]),
   listTopLevel: vi.fn().mockResolvedValue([]),
   listReplies: vi.fn().mockResolvedValue([]),
-  likeCountsByPost: vi.fn().mockResolvedValue(new Map()),
-  myLikedPosts: vi.fn().mockResolvedValue(new Set()),
+  reactionCountsByPost: vi.fn().mockResolvedValue(new Map()),
+  myReactionsByPost: vi.fn().mockResolvedValue(new Map()),
   replyCountsByPost: vi.fn().mockResolvedValue(new Map()),
   addPostReaction: vi.fn().mockResolvedValue(undefined),
   removePostReaction: vi.fn().mockResolvedValue(undefined),
@@ -262,13 +262,13 @@ describe("ForumThreadService", () => {
     expect(postRepo.createAnswer).not.toHaveBeenCalled();
   });
 
-  it("likes and unlikes a comment", async () => {
+  it("reacts and unreacts a comment with the given emoji", async () => {
     const zoneRepo = makeZoneRepo(ZoneType.CHAT, ZoneMemberStatus.ACTIVE);
     const service = svc(zoneRepo);
-    await service.likePost("u1", "p1");
-    expect(postRepo.addPostReaction).toHaveBeenCalledWith("p1", "u1", expect.any(String));
-    await service.unlikePost("u1", "p1");
-    expect(postRepo.removePostReaction).toHaveBeenCalledWith("p1", "u1", expect.any(String));
+    await service.reactPost("u1", "p1", "💪");
+    expect(postRepo.addPostReaction).toHaveBeenCalledWith("p1", "u1", "💪");
+    await service.unreactPost("u1", "p1", "💪");
+    expect(postRepo.removePostReaction).toHaveBeenCalledWith("p1", "u1", "💪");
   });
 
   it("getCommentDetail returns the focused comment + its direct replies", async () => {

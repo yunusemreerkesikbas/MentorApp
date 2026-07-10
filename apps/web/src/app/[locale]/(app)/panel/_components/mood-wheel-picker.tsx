@@ -254,6 +254,8 @@ export function MoodWheelPicker({
   }, []);
 
   useEffect(() => {
+    // Re-center the wheel when the resolved initial index changes — deliberate external-sync.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelection(resolvedInitialIndex);
     selectionRef.current = resolvedInitialIndex;
   }, [resolvedInitialIndex]);

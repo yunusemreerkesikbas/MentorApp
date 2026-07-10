@@ -105,6 +105,64 @@ describe("coaching (e2e)", () => {
     expect(crossPatch.body.code).toBeTruthy();
   });
 
+  it("lists plan tasks by inclusive from/to range", async () => {
+    const today = new Date();
+    const addDays = (base: Date, days: number) => {
+      const d = new Date(base);
+      d.setUTCDate(d.getUTCDate() + days);
+      return d.toISOString().slice(0, 10);
+    };
+    const day1 = addDays(today, 1);
+    const day3 = addDays(today, 3);
+    const dayOut = addDays(today, 10);
+    const rangeTo = addDays(today, 7);
+
+    const create1 = await request(app.getHttpServer())
+      .post("/v1/plan-tasks")
+      .set(authA())
+      .send({ title: "Range day 1", taskDate: day1 });
+    expect(create1.status).toBe(201);
+
+    const create2 = await request(app.getHttpServer())
+      .post("/v1/plan-tasks")
+      .set(authA())
+      .send({ title: "Range day 3", taskDate: day3 });
+    expect(create2.status).toBe(201);
+
+    const createOut = await request(app.getHttpServer())
+      .post("/v1/plan-tasks")
+      .set(authA())
+      .send({ title: "Out of range", taskDate: dayOut });
+    expect(createOut.status).toBe(201);
+
+    const range = await request(app.getHttpServer())
+      .get(
+        `/v1/plan-tasks?from=${encodeURIComponent(day1)}&to=${encodeURIComponent(rangeTo)}&page=1&pageSize=50`,
+      )
+      .set(authA());
+    expect(range.status).toBe(200);
+    const titles = range.body.items.map((t: { title: string }) => t.title);
+    expect(titles).toContain("Range day 1");
+    expect(titles).toContain("Range day 3");
+    expect(titles).not.toContain("Out of range");
+    expect(
+      range.body.items.every(
+        (t: { taskDate: string }) => t.taskDate >= day1 && t.taskDate <= rangeTo,
+      ),
+    ).toBe(true);
+    const ordered = range.body.items
+      .filter((t: { title: string }) => t.title.startsWith("Range day"))
+      .map((t: { taskDate: string }) => t.taskDate);
+    expect(ordered).toEqual([day1, day3]);
+
+    const invalid = await request(app.getHttpServer())
+      .get(
+        `/v1/plan-tasks?date=${encodeURIComponent(day1)}&from=${encodeURIComponent(day1)}&to=${encodeURIComponent(rangeTo)}`,
+      )
+      .set(authA());
+    expect(invalid.status).toBe(400);
+  });
+
   it("mood check-in upsert returns an encouraging message", async () => {
     const res = await request(app.getHttpServer())
       .post("/v1/coaching/mood-checkins")
@@ -387,6 +445,119 @@ describe("coaching (e2e)", () => {
     expect(analysis.body.trend.some((t: { id: string }) => t.id === create.body.id)).toBe(true);
     expect(analysis.body.trend[0].totalNet).toBe("19.00");
     expect(Array.isArray(analysis.body.photoSubjectSignals)).toBe(true);
+
+    const scoped = await request(app.getHttpServer())
+      .get(`/v1/coaching/analysis?examId=${exam.id}`)
+      .set(authA());
+    expect(scoped.status).toBe(200);
+    expect(scoped.body.trend.some((t: { id: string }) => t.id === create.body.id)).toBe(true);
+    expect(scoped.body.subjects[0]).toMatchObject({
+      subjectRef: "turkce",
+      questionCount: 30,
+      normalizedAveragePercent: "63.33",
+    });
+
+    const otherExamId = "00000000-0000-4000-8000-000000000001";
+    const otherScope = await request(app.getHttpServer())
+      .get(`/v1/coaching/analysis?examId=${otherExamId}`)
+      .set(authA());
+    expect(otherScope.status).toBe(200);
+    expect(otherScope.body.trend).toEqual([]);
+    expect(otherScope.body.personalRecordNet).toBeNull();
+
+    const otherHistory = await request(app.getHttpServer())
+      .get(`/v1/mock-exams?page=1&pageSize=5&examId=${otherExamId}`)
+      .set(authA());
+    expect(otherHistory.status).toBe(200);
+    expect(otherHistory.body.items).toEqual([]);
+  });
+
+  it("updates and permanently deletes an owned mock exam", async () => {
+    const exams = await request(app.getHttpServer()).get(
+      "/v1/content/exams?page=1&pageSize=20",
+    );
+    const exam = exams.body.items.find(
+      (item: { slug: string }) => item.slug === "kpss-lisans-2026",
+    );
+
+    const created = await request(app.getHttpServer())
+      .post("/v1/mock-exams")
+      .set(authA())
+      .send({
+        examId: exam.id,
+        publisherName: "İlk yayın",
+        subjects: [
+          { subjectRef: "turkce", correct: 15, wrong: 4, blank: 11 },
+        ],
+      });
+    expect(created.status).toBe(201);
+
+    const updateBody = {
+      takenAt: "2026-07-10T12:00:00.000Z",
+      publisherName: null,
+      subjects: [
+        { subjectRef: "turkce", correct: 18, wrong: 4, blank: 8 },
+      ],
+    };
+    const updated = await request(app.getHttpServer())
+      .put(`/v1/mock-exams/${created.body.id}`)
+      .set(authA())
+      .send(updateBody);
+    expect(updated.status).toBe(200);
+    expect(updated.body).toMatchObject({
+      id: created.body.id,
+      examId: exam.id,
+      publisherName: null,
+      totalNet: "17.00",
+    });
+
+    const history = await request(app.getHttpServer())
+      .get(`/v1/mock-exams?page=1&pageSize=20&examId=${exam.id}`)
+      .set(authA());
+    expect(
+      history.body.items.filter(
+        (item: { id: string }) => item.id === created.body.id,
+      ),
+    ).toHaveLength(1);
+
+    const analysis = await request(app.getHttpServer())
+      .get(`/v1/coaching/analysis?examId=${exam.id}`)
+      .set(authA());
+    expect(
+      analysis.body.trend.find(
+        (item: { id: string }) => item.id === created.body.id,
+      )?.totalNet,
+    ).toBe("17.00");
+
+    const crossUpdate = await request(app.getHttpServer())
+      .put(`/v1/mock-exams/${created.body.id}`)
+      .set(authB())
+      .send(updateBody);
+    expect([403, 404]).toContain(crossUpdate.status);
+
+    const crossDelete = await request(app.getHttpServer())
+      .delete(`/v1/mock-exams/${created.body.id}`)
+      .set(authB());
+    expect([403, 404]).toContain(crossDelete.status);
+
+    const removed = await request(app.getHttpServer())
+      .delete(`/v1/mock-exams/${created.body.id}`)
+      .set(authA());
+    expect(removed.status).toBe(204);
+
+    const missing = await request(app.getHttpServer())
+      .get(`/v1/mock-exams/${created.body.id}`)
+      .set(authA());
+    expect(missing.status).toBe(404);
+
+    const analysisAfterDelete = await request(app.getHttpServer())
+      .get(`/v1/coaching/analysis?examId=${exam.id}`)
+      .set(authA());
+    expect(
+      analysisAfterDelete.body.trend.some(
+        (item: { id: string }) => item.id === created.body.id,
+      ),
+    ).toBe(false);
   });
 
   it("mock exam data is isolated per user (RLS)", async () => {

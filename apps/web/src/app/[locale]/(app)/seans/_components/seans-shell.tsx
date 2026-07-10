@@ -9,11 +9,14 @@ import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
 import { Card } from "@mentor/ui";
 import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
 import { parsePlanTaskContextFromParams } from "@/lib/plan-seans-link";
+import { SessionAmbientPicker } from "./session-ambient-picker";
+import { SessionAmbientToggle } from "./session-ambient-toggle";
 import { SessionControls } from "./session-controls";
 import { SessionDoneState } from "./session-done-state";
 import { SessionHistory } from "./session-history";
 import { SessionSubjectPicker } from "./session-subject-picker";
 import { SessionTimerRing } from "./session-timer-ring";
+import { useSessionAmbientSound } from "./use-session-ambient-sound";
 import { useSessionTimer } from "./use-session-timer";
 
 const DEFAULT_PRESETS: SessionPresetDto[] = [
@@ -219,6 +222,8 @@ export function SeansShell() {
     reset,
   } = timer;
 
+  const ambient = useSessionAmbientSound({ phase, isPaused });
+
   const handleStartSession = async () => {
     try {
       const [questsResult, todayResult] = await Promise.all([
@@ -364,16 +369,24 @@ export function SeansShell() {
             onMinutesChange={handleMinutesChange}
             onPresetSelect={handlePresetSelect}
           />
-          <SessionControls
-            phase={phase}
-            busy={busy}
-            isPaused={isPaused}
-            onStart={() => void handleStartSession()}
-            onTogglePause={togglePause}
-            onComplete={() => void finalize("COMPLETED")}
-            onAbandon={() => void finalize("ABANDONED")}
-            onSkipBreak={skipBreak}
-          />
+          <div className="flex items-center justify-center gap-3">
+            {ambient.trackId !== "off" ? (
+              <SessionAmbientToggle
+                muted={ambient.muted}
+                onToggleMute={ambient.toggleMute}
+              />
+            ) : null}
+            <SessionControls
+              phase={phase}
+              busy={busy}
+              isPaused={isPaused}
+              onStart={() => void handleStartSession()}
+              onTogglePause={togglePause}
+              onComplete={() => void finalize("COMPLETED")}
+              onAbandon={() => void finalize("ABANDONED")}
+              onSkipBreak={skipBreak}
+            />
+          </div>
         </motion.div>
       </div>
     );
@@ -432,6 +445,10 @@ export function SeansShell() {
               {planTaskChip ? (
                 <div className="flex w-full justify-center">{planTaskChip}</div>
               ) : null}
+              <SessionAmbientPicker
+                trackId={ambient.trackId}
+                onTrackIdChange={ambient.setTrackId}
+              />
               <SessionTimerRing
                 phase={phase}
                 focusMinutes={focusMinutes}

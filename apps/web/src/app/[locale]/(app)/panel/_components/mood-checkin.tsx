@@ -88,10 +88,13 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
   }, []);
 
   useEffect(() => {
+    // Sync the latest `initial` prop into local state — a deliberate external-sync, not derived state.
+    /* eslint-disable react-hooks/set-state-in-effect */
     setMood(initial?.mood ?? null);
     setMessage(initial?.message ?? null);
     setNote(initial?.struggleNote ?? "");
     setReflection(initial?.aiReflection ?? null);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [initial]);
 
   useEffect(() => {

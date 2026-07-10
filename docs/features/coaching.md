@@ -52,6 +52,7 @@ GET /v1/coaching/today
 
 # Plan tasks:
 GET    /v1/plan-tasks?date=YYYY-MM-DD
+GET    /v1/plan-tasks?from=YYYY-MM-DD&to=YYYY-MM-DD   # inclusive range (week view; max 62 days; mutually exclusive with date)
 GET    /v1/plan-tasks/calendar?from=YYYY-MM-DD&to=YYYY-MM-DD   # distinct dates with tasks (datepicker)
 POST   /v1/plan-tasks
 PATCH  /v1/plan-tasks/:id        # toggle status → recomputes daily_activity.tasks_done (same tx)
@@ -103,7 +104,7 @@ pnpm --filter @mentor/api test
 | Endpoint | Purpose |
 |---|---|
 | `GET /v1/coaching/today` | Composite Panel payload (greeting · countdown · streak · tasks · presets · mood) |
-| `GET/POST /v1/plan-tasks` · `PATCH/DELETE /:id` | Plan-task CRUD (toggle recomputes `daily_activity`) |
+| `GET/POST /v1/plan-tasks` · `PATCH/DELETE /:id` | Plan-task CRUD; list by `date` **or** inclusive `from`/`to` range (week view) |
 | `GET /v1/study-sessions` | Paginated finalized-session history ("Son seanslar") |
 | `POST /v1/study-sessions` · `PATCH /:id` | Pomodoro start / complete-abandon (recomputes `daily_activity`) |
 | `PATCH /v1/study-sessions/:id/feedback` | Post-session micro check-in (mood 1-3 + optional note → AI signal) |
@@ -259,6 +260,42 @@ pnpm --filter @mentor/api test
   `session-history-row.tsx`, `session-history-page.tsx`, `seans/gecmis/page.tsx`, `session-history.tsx`,
   `study-sessions.ts`, `study-session.repository.ts`, `packages/validation`, `coaching.e2e-spec.ts`,
   `messages/{tr,en}.json`.
+- **SubjectPicker DRY (2026-07-11)** — plan (`PlanSubjectPicker`) ve seans (`SessionSubjectPicker`)
+  konu seçicileri ortak `SubjectPicker` + `useExamSubjectTaxonomy` hook'una çıkarıldı; fetch mantığı
+  tek yerde (`usersControllerMe` → calendar → subjects). Layout farkları korunur: plan `stacked`,
+  seans `centered` + `role=group`. i18n namespace'leri (`plan` / `session`) değişmedi. Dosyalar:
+  `components/subject-picker.tsx`, `lib/use-exam-subject-taxonomy.ts`, `plan-subject-picker.tsx`,
+  `session-subject-picker.tsx`.
+- **Plan Hafta range API — shipped (2026-07-11)** — `GET /v1/plan-tasks?from=&to=` (max 62 days,
+  mutually exclusive with `date`) + `listByDateRangePaged`; FE `listPlanTasksForWeek` tek istek
+  (`listPlanTasksForRange`). E2E: range list + `date`+`from` → 400. Dosyalar: `coaching.ts`
+  (validation), `plan.service.ts`, `plan-task.repository.ts`, `plan-tasks.ts`, `coaching.e2e-spec.ts`.
+- **Odak fon müziği v3 — preview (2026-07-11)** — idle kurulumda parça seçince ~5 sn
+  önizleme; uygulama içi ses slider yok (cihaz sesi). `setVolume` kaldırıldı; sabit
+  `PLAYBACK_VOLUME`. Dosyalar: `session-ambient-picker.tsx`, `use-session-ambient-sound.ts`.
+- **Odak fon müziği v2 — pre-session picker (2026-07-11)** — idle kurulumda dropdown: Sessiz +
+  3 ambient parça (`soft` / `rain` / `warm`); seçim Pomodoro başlamadan. Focus/break'te yalnızca
+  mute/unmute (`trackId !== off`). `ambient-tracks.ts` katalog; v1 `{ enabled }` → `trackId` migration.
+  Dosyalar: `session-ambient-picker.tsx`, `use-session-ambient-sound.ts`, `session-ambient-toggle.tsx`,
+  `seans-shell.tsx`, `public/audio/focus-ambient-*.wav`, `scripts/generate-ambient-audio.mjs`.
+- **Odak fon müziği — ambient sound v1 (2026-07-11)** — Phase 2 backlog'dan lean client slice:
+  focus/break immersive görünümünde opsiyonel ambient loop (`/audio/focus-ambient.wav`, synthesized
+  in-repo). `useSessionAmbientSound` + `SessionAmbientToggle`; tercih `localStorage`
+  (`mentor.session.ambientSound`); seans duraklatılınca ses durur, varsayılan kapalı. Backend/coin yok.
+  Regenerate: `node scripts/generate-ambient-audio.mjs`. Design: [`plans/2026-07-11-ambient-sound-design.md`](../plans/2026-07-11-ambient-sound-design.md).
+- **Bugünkü plan özeti → AI koç context (2026-07-11)** — roadmap §259: `PlanService.getTodaySummary`
+  bugünün görevlerinden PII-free özet döner (`total`, `done`, `pendingTitles` max 5); boş gün → `null`.
+  `coaching.module` artık `PlanService`'i export eder (W2→W3 seam). Migration/endpoint yok.
+  **Kapsam dışı:** otomatik plan revizyonu, FE. Dosyalar: `coaching.constants.ts`, `plan.service.ts`,
+  `plan.service.spec.ts`, `coaching.module.ts`. Seam: [ai.md](./ai.md).
+- **Plan auto-DONE sonrası `/plan` refetch (2026-07-11)** — §259 UX polish: seans bitince linked görev
+  backend'de `DONE` olur; `/plan`'a dönünce liste güncel kalsın diye `PlanShell` görünür olunca
+  sessiz refetch yapar (`visibilitychange` + bfcache `pageshow`). `loadDayTasks` / `loadWeekTasks`
+  extract; loading flash yok. **Kapsam dışı:** `/panel` today-plan. Dosya: `plan-shell.tsx`.
+- **Plan auto-DONE sonrası `/panel` refetch (2026-07-11)** — §259 UX polish devamı: seans bitince
+  done ekranından `/panel`'e dönünce bugünkü görevler + ritim metrikleri güncel kalsın.
+  `PanelShell` görünür olunca sessiz `refreshToday({ silent: true })` + `refreshQuests()` (toast yok);
+  `visibilitychange` + bfcache `pageshow`. Loading flash yok. Dosya: `panel-shell.tsx`.
 - **Seans öncesi konu seçimi (2026-07-09)** — roadmap §256 "veri kör kalmasın": `/seans` idle
   kurulum ekranına konu seçici (`SessionSubjectPicker`) eklendi; artık deep-link (`?subject=`)
   olmadan da konu seçilebiliyor, böylece mikro check-in sinyali bir konuya bağlanır. Plan'daki
@@ -266,9 +303,8 @@ pnpm --filter @mentor/api test
   `contentControllerSubjectsBySlug`): examType'lı kullanıcıda ders chip'leri, examType yoksa Profil
   CTA + serbest metin, taksonomi boş/hata → serbest metin. `seans-shell` `subject`'i artık state
   (URL param'dan tohumlanır); idle'da picker, immersive'de salt-okunur chip. Sadece frontend —
-  backend/DB/api-client değişmedi (konu zaten POST gövdesinde). Not: plan/seans picker'ının ortak
-  bir `SubjectPicker`'a çıkarılması DRY backlog. Dosyalar: `session-subject-picker.tsx`,
-  `seans-shell.tsx`, `messages/{tr,en}.json`.
+  backend/DB/api-client değişmedi (konu zaten POST gövdesinde). Ortak `SubjectPicker` → 2026-07-11.
+  Dosyalar: `session-subject-picker.tsx`, `seans-shell.tsx`, `messages/{tr,en}.json`.
 - **Seans sonrası mikro check-in (2026-07-08)** — roadmap §258: Pomodoro "AI'ın gözü" oluyor. Seans
   `done` ekranına 3 emoji (😩😐🙂 → mood 1-3) + opsiyonel "seni en çok ne zorladı" notu eklendi;
   **atlanabilir** (mood seçmeden Yeni seans/Panele dön ile geçilebilir), seans konusu varsa not
@@ -285,19 +321,16 @@ pnpm --filter @mentor/api test
   progress %), **Timeline** (Zendenta-style rail + Yapılacak/Tamamlanan cards), **Hafta** (7-day
   strip + selected-day tasks). View mode persists in `localStorage` (`mentor.plan.viewMode`). Add
   task moved to bottom sheet + sticky CTA (mobile above tab bar); date picker sheet via calendar
-  icon. Week data = 7 parallel `GET /v1/plan-tasks?date=` calls (`listPlanTasksForWeek`) until a
-  `from`/`to` API lands. Date sheet uses `react-day-picker` v10 (TR/EN `date-fns` locale, Monday
+  icon. Week data = **one** `GET /v1/plan-tasks?from=&to=` via `listPlanTasksForWeek`. Date sheet uses `react-day-picker` v10 (TR/EN `date-fns` locale, Monday
   week start, DESIGN token overrides in `globals.css`). Selected day = full black circle +
   white label; days with tasks show a progress dot under the number. Calendar dots =
   **one** `GET /v1/plan-tasks/calendar?from=&to=` per visible month (not N day fetches). Files:
   `apps/web/src/app/[locale]/(app)/plan/_components/*`.
-- **Plan Hafta wave (deferred backlog)** — `GET /v1/plan-tasks?from=&to=` (max 62 days, mutually
-  exclusive with `date`) replaces 7 parallel day fetches in `listPlanTasksForWeek`. **Hafta mobile:**
-  dedicated `PlanWeekNavCard` (week strip) + `PlanWeekView` (selected-day tasks + progress). **Hafta
-  desktop (`lg:`):** `PlanWeekDesktopLayout` — sticky mini calendar + week summary list + task panel
-  (`max-w-6xl`). Add-task sheet: `PlanSubjectPicker` loads exam taxonomy via
-  `GET /v1/content/exams/:slug/subjects` (fallback free-text when `examType` missing). Files:
-  `plan-week-*.tsx`, `plan-subject-picker.tsx`, `plan.service`/`plan-task.repository` range list.
+- **Plan Hafta wave UI** — **Hafta mobile:** dedicated `PlanWeekNavCard` (week strip) +
+  `PlanWeekView` (selected-day tasks + progress). **Hafta desktop (`lg:`):** `PlanWeekDesktopLayout`
+  — sticky mini calendar + week summary list + task panel (`max-w-6xl`). Add-task sheet:
+  `PlanSubjectPicker` loads exam taxonomy via `GET /v1/content/exams/:slug/subjects` (fallback
+  free-text when `examType` missing). Files: `plan-week-*.tsx`, `plan-subject-picker.tsx`.
 - **Plan Hafta desktop dedup** — removed `PlanWeekStrip` from the right panel (was duplicating week
   range, 7-day picker, and week summary). Left sidebar = mini calendar + summary list with inline
   week arrows + merged week progress footer; right panel = selected-day tasks only. Task row ⋮ menu
@@ -348,6 +381,24 @@ pnpm --filter @mentor/api test
   hâlâ sadece ders kategorisi sinyalidir, çözüm/OCR/AI koç çağrısı yok. Dosyalar:
   `analysis-focus.ts`, `mock-exam.service.ts`, `analiz-next-focus-card.tsx`,
   `analysis-plan-prefill.ts`, `plan-shell.tsx`, `messages/{tr,en}.json`.
+
+- **Eyleme dönüştüren sınav-kapsamlı analiz (2026-07-10)** — Analiz/geçmiş/ghost/rekor/foto
+  sinyalleri opsiyonel `examId` ile aynı aktif sınava sınırlandı. Ders odağı artık ham net yerine
+  `averageNet / questionCount` normalize yüzdesini kullanıyor ve `EARLY` / `REPEATED`
+  kanıt seviyesini backend-localized mesajla döndürüyor. Web, masaüstünde trend+geçmiş-ben ve
+  odak+rekor kolonlarını kullanıyor; geçmiş yayın adını ve ders bazlı normalize yüzdeleri gösteriyor.
+  Yerel demo: `pnpm --filter @mentor/api seed:analysis-demo -- --email=<adres>` sekiz idempotent
+  KPSS denemesi ve üç Türkçe foto sinyali ekler; production ortamında çalışmaz. Konu-seviyesi vision,
+  OCR kapsam dışı. İlgili dosyalar: `mock-exam.service.ts`,
+  `analysis-focus.ts`, `analiz-tab-gelisim.tsx`, `seed-analysis-demo.ts`.
+
+- **Deneme düzenleme ve kalıcı silme (2026-07-11)** — Geçmiş deneme detay paneli yayın adı,
+  tarih ve D/Y/B alanlarını düzenler; sınav kimliği sabittir ve bütün netler backend'de yeniden
+  hesaplanır. `PUT /v1/mock-exams/:id` atomik olarak sonucu/dersleri yeniler, `DELETE` kayıtla
+  birlikte ders ve fotoğraf sinyallerini kaldırır; iki işlem de sınav-kapsamlı ghost cache'ini
+  temizler. Silme ortak onay dialog'undan sonra kalıcıdır; storage nesneleri mevcut
+  `StoragePort` ile best-effort temizlenir. İlgili dosyalar: `mock-exam.service.ts`,
+  `mock-exam.repository.ts`, `analiz-history-detail.tsx`.
 
 ## Gotchas / Known issues
 

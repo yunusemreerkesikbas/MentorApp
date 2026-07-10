@@ -127,21 +127,23 @@ export class ForumThreadController {
   }
 
   @Put("posts/:postId/reactions")
-  async likePost(
+  async reactPost(
     @CurrentUser() user: RequestUser,
     @Param("postId") postId: string,
+    @Body() dto: ReactionDto,
   ): Promise<{ status: string }> {
-    await this.threads.likePost(user.id, postId);
+    await this.threads.reactPost(user.id, postId, dto.emoji);
     return { status: "ok" };
   }
 
   @Delete("posts/:postId/reactions")
   @HttpCode(204)
-  async unlikePost(
+  async unreactPost(
     @CurrentUser() user: RequestUser,
     @Param("postId") postId: string,
+    @Body() dto: ReactionDto,
   ): Promise<void> {
-    await this.threads.unlikePost(user.id, postId);
+    await this.threads.unreactPost(user.id, postId, dto.emoji);
   }
 
   @Post("threads/:threadId/pin")

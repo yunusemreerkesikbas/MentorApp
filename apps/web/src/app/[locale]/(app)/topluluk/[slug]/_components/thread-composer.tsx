@@ -2,11 +2,14 @@
 
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { FORUM_IMAGE_MIMES } from "@mentor/types";
 import type { AttachmentInput } from "@mentor/validation";
 import { ApiClientError } from "@mentor/api-client";
 import { FormError } from "@/components/form";
-import { useForumImagePicker } from "../../_components/use-forum-image-picker";
+import { AttachmentPreviewStrip } from "../../_components/attachment-preview-strip";
+import {
+  FORUM_ATTACHMENT_ACCEPT,
+  useForumImagePicker,
+} from "../../_components/use-forum-image-picker";
 import { useMentionAutocomplete } from "../../_components/use-mention-autocomplete";
 import { MentionSuggestions } from "../../_components/mention-suggestions";
 
@@ -27,7 +30,7 @@ export function ThreadComposer({
   const [busy, setBusy] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mention = useMentionAutocomplete(zoneId, textareaRef, setValue);
-  const { images, error, setError, addFiles, removeImage, uploadAll, reset, fileRef, atLimit } =
+  const { items, error, setError, addFiles, removeAt, uploadAll, reset, fileRef, atLimit } =
     useForumImagePicker();
 
   const send = async () => {
@@ -86,54 +89,26 @@ export function ThreadComposer({
           />
           <MentionSuggestions mention={mention} />
 
-          {images.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {images.map((p, i) => (
-                <div
-                  key={p.url}
-                  className="relative h-16 w-16 overflow-hidden rounded-[var(--radius-card)]"
-                  style={{ border: "1px solid rgba(0,0,0,0.08)" }}
-                >
-                  {/* Local object-URL preview (not next/image — it's a client blob). */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.url} alt="" className="h-full w-full object-cover" />
-                  <button
-                    type="button"
-                    aria-label={t("attach_remove")}
-                    onClick={() => removeImage(i)}
-                    className="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                    style={{ background: "rgba(0,0,0,0.55)" }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <AttachmentPreviewStrip items={items} onRemove={removeAt} />
 
           <div className="mt-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                aria-label={t("attach_image")}
+                aria-label={t("attach")}
                 disabled={busy || atLimit}
                 onClick={() => fileRef.current?.click()}
                 className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[rgba(0,0,0,0.06)] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 style={{ color: "var(--color-secondary)" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
+                  <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                 </svg>
               </button>
               <input
                 ref={fileRef}
                 type="file"
-                accept={FORUM_IMAGE_MIMES.join(",")}
+                accept={FORUM_ATTACHMENT_ACCEPT}
                 multiple
                 hidden
                 onChange={(e) => addFiles(e.target.files)}

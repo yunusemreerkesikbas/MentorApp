@@ -136,30 +136,44 @@ export class ForumPostRepository {
     });
   }
 
-  /** Batched like count per post (service context — cross-user aggregate). */
-  async likeCountsByPost(postIds: string[]): Promise<Map<string, number>> {
+  /** Batched reaction counts per post, keyed by emoji (service context — cross-user aggregate). */
+  async reactionCountsByPost(postIds: string[]): Promise<Map<string, Record<string, number>>> {
     if (postIds.length === 0) return new Map();
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx
-        .select({ postId: forumPostReactions.postId, count: sql<number>`count(*)::int` })
+        .select({
+          postId: forumPostReactions.postId,
+          emoji: forumPostReactions.emoji,
+          count: sql<number>`count(*)::int`,
+        })
         .from(forumPostReactions)
         .where(inArray(forumPostReactions.postId, postIds))
-        .groupBy(forumPostReactions.postId);
-      const map = new Map<string, number>();
-      for (const r of rows) map.set(r.postId, r.count);
+        .groupBy(forumPostReactions.postId, forumPostReactions.emoji);
+      const map = new Map<string, Record<string, number>>();
+      for (const r of rows) {
+        const entry = map.get(r.postId) ?? {};
+        entry[r.emoji] = r.count;
+        map.set(r.postId, entry);
+      }
       return map;
     });
   }
 
-  /** Batched: which posts the viewer has liked (their own rows, RLS user context). */
-  async myLikedPosts(postIds: string[], userId: string): Promise<Set<string>> {
-    if (postIds.length === 0) return new Set();
+  /** Batched: which emojis the viewer themselves reacted with, per post (RLS user context). */
+  async myReactionsByPost(postIds: string[], userId: string): Promise<Map<string, string[]>> {
+    if (postIds.length === 0) return new Map();
     return withUserContext(this.db, { userId }, async (tx) => {
       const rows = await tx
-        .select({ postId: forumPostReactions.postId })
+        .select({ postId: forumPostReactions.postId, emoji: forumPostReactions.emoji })
         .from(forumPostReactions)
         .where(and(inArray(forumPostReactions.postId, postIds), eq(forumPostReactions.userId, userId)));
-      return new Set(rows.map((r) => r.postId));
+      const map = new Map<string, string[]>();
+      for (const r of rows) {
+        const arr = map.get(r.postId) ?? [];
+        arr.push(r.emoji);
+        map.set(r.postId, arr);
+      }
+      return map;
     });
   }
 

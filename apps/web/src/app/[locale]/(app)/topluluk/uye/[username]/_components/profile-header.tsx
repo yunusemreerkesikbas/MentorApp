@@ -3,9 +3,11 @@
 import type { ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import Flame from "lucide-react/dist/esm/icons/flame.mjs";
+import Globe from "lucide-react/dist/esm/icons/globe.mjs";
 import Zap from "lucide-react/dist/esm/icons/zap.mjs";
 import type { PublicProfile } from "@mentor/types";
 import { Button } from "@mentor/ui";
+import { Link } from "@/i18n/navigation";
 import { AuthorAvatar } from "../../../_components/author-avatar";
 import { BadgeStrip } from "../../../_components/badge-strip";
 
@@ -125,17 +127,51 @@ export function ProfileHeader({
             </button>
           </div>
         </div>
-        {!isOwn && (
-          <div className="shrink-0 pt-0.5">
+        <div className="shrink-0 pt-0.5">
+          {isOwn ? (
+            <Link
+              href="/profil"
+              className="inline-flex items-center rounded-[var(--radius-card)] border border-black/10 bg-white px-3 py-2 text-[13px] font-semibold transition-colors hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              style={{ color: "var(--color-main)" }}
+            >
+              {t("edit_profile")}
+            </Link>
+          ) : (
             <Button
               variant={profile.isFollowing ? "secondary" : "primary"}
               onClick={onToggleFollow}
             >
               {profile.isFollowing ? t("following_state") : t("follow")}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* Bio + website — public identity (no PII). */}
+      {(profile.bio || profile.website) && (
+        <div className="mt-4 flex flex-col gap-2">
+          {profile.bio && (
+            <p
+              className="whitespace-pre-line break-words text-[14px] leading-relaxed"
+              style={{ color: "var(--color-main)" }}
+            >
+              {profile.bio}
+            </p>
+          )}
+          {profile.website && (
+            <a
+              href={profile.website}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="inline-flex w-fit items-center gap-1.5 text-[13px] font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              style={{ color: "var(--color-accent)" }}
+            >
+              <Globe size={14} aria-hidden="true" />
+              {profile.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+            </a>
+          )}
+        </div>
+      )}
 
       {/* Gamification rail — inline, quiet, no cards */}
       <div className="mt-5 flex flex-wrap items-center gap-x-7 gap-y-4">

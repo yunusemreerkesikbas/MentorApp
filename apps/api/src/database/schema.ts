@@ -86,6 +86,9 @@ export const users = pgTable(
     displayName: text("display_name").notNull(),
     username: text("username"),
     avatarStorageKey: text("avatar_storage_key"),
+    /** Public profile identity (community surface) — short self-description + a personal link. */
+    bio: text("bio"),
+    website: text("website"),
     /** Multi-role (§9/§11): e.g. ORG_ADMIN + COACH. Values = UserRole enum. */
     roles: text("roles")
       .array()
@@ -1206,6 +1209,8 @@ export const forumAttachments = pgTable(
     storageKey: text("storage_key").notNull(),
     mimeType: text("mime_type").notNull(),
     sizeBytes: integer("size_bytes").notNull(),
+    /** Original filename — set only for `kind='file'` (download-chip label); null for images. */
+    fileName: text("file_name"),
     width: integer("width"),
     height: integer("height"),
     position: integer("position").notNull().default(0),

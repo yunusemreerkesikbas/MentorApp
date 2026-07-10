@@ -86,6 +86,62 @@ export class MockExamRepository {
     return { exam, subjects };
   }
 
+  async update(
+    tx: DatabaseTx,
+    userId: string,
+    id: string,
+    data: {
+      takenAt: Date;
+      totalNet: string;
+      publisherName: string | null;
+      subjects: NewMockExamSubject[];
+    },
+  ): Promise<{ exam: MockExamRow; subjects: MockExamSubjectRow[] } | undefined> {
+    const examRows = await tx
+      .update(mockExams)
+      .set({
+        takenAt: data.takenAt,
+        totalNet: data.totalNet,
+        publisherName: data.publisherName,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(mockExams.id, id), eq(mockExams.userId, userId)))
+      .returning();
+    const exam = examRows[0];
+    if (!exam) return undefined;
+
+    await tx.delete(mockExamSubjects).where(eq(mockExamSubjects.mockExamId, id));
+    const subjects = await tx
+      .insert(mockExamSubjects)
+      .values(data.subjects.map((subject) => ({ ...subject, mockExamId: id })))
+      .returning();
+    return { exam, subjects };
+  }
+
+  async delete(tx: DatabaseTx, userId: string, id: string): Promise<boolean> {
+    const rows = await tx
+      .delete(mockExams)
+      .where(and(eq(mockExams.id, id), eq(mockExams.userId, userId)))
+      .returning({ id: mockExams.id });
+    return rows.length > 0;
+  }
+
+  async clearGhostNarrations(
+    tx: DatabaseTx,
+    userId: string,
+    examId: string,
+  ): Promise<void> {
+    await tx
+      .update(mockExams)
+      .set({
+        aiGhostNarration: null,
+        aiGhostModel: null,
+        aiGhostAt: null,
+        updatedAt: new Date(),
+      })
+      .where(userExamScope(userId, examId));
+  }
+
   async listPaged(
     db: Database | DatabaseTx,
     userId: string,
@@ -205,4 +261,3 @@ export class MockExamRepository {
     }));
   }
 }
-

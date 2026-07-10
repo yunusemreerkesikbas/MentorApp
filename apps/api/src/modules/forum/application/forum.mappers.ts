@@ -17,6 +17,8 @@ function attachmentsToView(rows: AttachmentRow[], storage: PublicStorage): Attac
     kind: a.kind as Attachment["kind"],
     url: storage.getPublicUrl(a.storageKey),
     mimeType: a.mimeType,
+    sizeBytes: a.sizeBytes,
+    fileName: a.fileName,
     width: a.width,
     height: a.height,
   }));
@@ -55,11 +57,11 @@ export function threadRowToView(
   };
 }
 
-/** Row → CommentView (CHAT/ANNOUNCEMENT comment — likeable + replyable). Counts folded in. */
+/** Row → CommentView (CHAT/ANNOUNCEMENT comment — reactable + replyable). Counts folded in. */
 export function postRowToCommentView(
   p: PostWithAuthor,
-  likeCount: number,
-  myLiked: boolean,
+  reactionCounts: Record<string, number>,
+  myReactions: string[],
   replyCount: number,
   storage: PublicStorage,
   attachments: AttachmentRow[] = [],
@@ -74,8 +76,8 @@ export function postRowToCommentView(
     authorUsername: p.authorUsername,
     authorAvatarUrl: avatarUrl(p.authorAvatarStorageKey, storage),
     body: p.body,
-    likeCount,
-    myLiked,
+    reactionCounts,
+    myReactions,
     replyCount,
     attachments: attachmentsToView(attachments, storage),
     myBookmarked,

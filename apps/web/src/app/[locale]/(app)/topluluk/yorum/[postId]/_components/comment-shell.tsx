@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
-  FORUM_LIKE_EMOJI,
   ModerationTargetType,
   type CommentDetail,
   type CommentView,
@@ -12,22 +11,23 @@ import {
 import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
+import { toggleReaction } from "@/lib/forum-reactions";
 import {
   bookmarkPost,
   getCommentDetail,
   isForumDisabled,
-  likePost,
   postReply,
-  unlikePost,
+  reactPost,
+  unreactPost,
 } from "@/lib/forum";
 import type { AttachmentInput } from "@mentor/validation";
 import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "../../../_components/author-avatar";
 import { AuthorLink } from "../../../_components/author-link";
 import { CommentRow } from "../../../_components/comment-row";
+import { ReactionBar } from "../../../_components/reaction-bar";
 import { AttachmentGallery } from "../../../_components/attachment-gallery";
 import { MentionText } from "../../../_components/mention-text";
-import { HeartIcon } from "../../../_components/forum-icons";
 import { SendButton } from "../../../_components/send-button";
 import { BookmarkButton } from "../../../_components/bookmark-button";
 import { ThreadComposer } from "../../../[slug]/_components/thread-composer";
@@ -68,11 +68,11 @@ export function CommentShell({ postId }: { postId: string }) {
     };
   }, [postId, apply, t]);
 
-  /** Optimistic like for any comment id (focused comment or a reply). */
-  const onToggleLike = useCallback((id: string, adding: boolean) => {
-    setState((s) => (s.status === "ready" ? patchLike(s, id, adding) : s));
-    const call = adding ? likePost(id, FORUM_LIKE_EMOJI) : unlikePost(id, FORUM_LIKE_EMOJI);
-    call.catch(() => setState((s) => (s.status === "ready" ? patchLike(s, id, !adding) : s)));
+  /** Optimistic reaction for any comment id (focused comment or a reply). */
+  const onToggleReaction = useCallback((id: string, emoji: string, adding: boolean) => {
+    setState((s) => (s.status === "ready" ? patchReaction(s, id, emoji, adding) : s));
+    const call = adding ? reactPost(id, emoji) : unreactPost(id, emoji);
+    call.catch(() => setState((s) => (s.status === "ready" ? patchReaction(s, id, emoji, !adding) : s)));
   }, []);
 
   /** Optimistic bookmark for any comment id (focused comment or a reply). */
@@ -129,7 +129,7 @@ export function CommentShell({ postId }: { postId: string }) {
       <div className="border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
         <FocusedComment
           comment={comment}
-          onToggleLike={onToggleLike}
+          onToggleReaction={onToggleReaction}
           onToggleBookmark={onToggleBookmark}
         />
       </div>
@@ -158,7 +158,7 @@ export function CommentShell({ postId }: { postId: string }) {
               <CommentRow
                 key={r.id}
                 comment={r}
-                onToggleLike={onToggleLike}
+                onToggleReaction={onToggleReaction}
                 onToggleBookmark={onToggleBookmark}
                 highlighted={r.id === highlightId}
               />
@@ -172,11 +172,11 @@ export function CommentShell({ postId }: { postId: string }) {
 
 function FocusedComment({
   comment,
-  onToggleLike,
+  onToggleReaction,
   onToggleBookmark,
 }: {
   comment: CommentView;
-  onToggleLike: (id: string, adding: boolean) => void;
+  onToggleReaction: (id: string, emoji: string, adding: boolean) => void;
   onToggleBookmark: (id: string, adding: boolean) => void;
 }) {
   const t = useTranslations("topluluk");
@@ -210,25 +210,12 @@ function FocusedComment({
           <MentionText text={comment.body} />
         </p>
         <AttachmentGallery attachments={comment.attachments} />
-        <div className="-ml-1.5 mt-2 flex items-center">
-          <button
-            type="button"
-            aria-pressed={comment.myLiked}
-            aria-label={t("like")}
-            onClick={() => onToggleLike(comment.id, !comment.myLiked)}
-            className="group/like flex h-8 items-center gap-1 rounded-full px-1.5 transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            style={{ color: comment.myLiked ? "var(--color-danger)" : "var(--color-main)" }}
-          >
-            <span
-              key={comment.myLiked ? "on" : "off"}
-              className={`inline-flex transition-transform duration-150 group-hover/like:scale-110 motion-reduce:transition-none ${comment.myLiked ? "forum-like-pop" : ""}`}
-            >
-              <HeartIcon filled={comment.myLiked} />
-            </span>
-            {comment.likeCount > 0 && (
-              <span className="text-[13px] tabular-nums">{comment.likeCount}</span>
-            )}
-          </button>
+        <div className="-ml-1.5 mt-2 flex flex-wrap items-center gap-2">
+          <ReactionBar
+            reactionCounts={comment.reactionCounts}
+            myReactions={comment.myReactions}
+            onToggle={(emoji, adding) => onToggleReaction(comment.id, emoji, adding)}
+          />
 
           <SendButton path={`/topluluk/yorum/${comment.id}`} />
           <BookmarkButton
@@ -243,10 +230,9 @@ function FocusedComment({
 
 type ReadyState = Extract<State, { status: "ready" }>;
 
-/** Optimistic like patch across the focused comment + its replies. */
-function patchLike(s: ReadyState, id: string, adding: boolean): ReadyState {
-  const bump = (c: CommentView): CommentView =>
-    c.id === id ? { ...c, myLiked: adding, likeCount: Math.max(0, c.likeCount + (adding ? 1 : -1)) } : c;
+/** Optimistic reaction patch across the focused comment + its replies. */
+function patchReaction(s: ReadyState, id: string, emoji: string, adding: boolean): ReadyState {
+  const bump = (c: CommentView): CommentView => (c.id === id ? toggleReaction(c, emoji, adding) : c);
   return { ...s, comment: bump(s.comment), replies: s.replies.map(bump) };
 }
 

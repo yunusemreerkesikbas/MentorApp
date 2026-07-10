@@ -110,19 +110,28 @@ export function PanelShell({ initialData }: PanelShellProps) {
     }
   }, [economyT, refreshEconomyBalance, t, toast]);
 
-  const refreshToday = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const refreshToday = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const response = await coachingControllerGetToday();
       const next = unwrapTodayResponse(response);
       setData(next);
+      if (!opts?.silent) setError(null);
     } catch (err) {
-      const message =
-        err instanceof ApiClientError ? err.message : err instanceof Error ? err.message : t("today_refresh_error");
-      setError(message);
+      if (!opts?.silent) {
+        const message =
+          err instanceof ApiClientError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : t("today_refresh_error");
+        setError(message);
+      }
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
   }, [t]);
 
@@ -203,6 +212,23 @@ export function PanelShell({ initialData }: PanelShellProps) {
       active = false;
     };
   }, [initialData, t]);
+
+  useEffect(() => {
+    function refreshIfVisible() {
+      if (document.visibilityState !== "visible") return;
+      void refreshToday({ silent: true });
+      void refreshQuests();
+    }
+    function onPageShow(e: PageTransitionEvent) {
+      if (e.persisted) refreshIfVisible();
+    }
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [refreshToday, refreshQuests]);
 
   if (!data) {
     return (

@@ -1,9 +1,24 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
+} from "@nestjs/common";
+import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import type { MockExamDto, Paginated } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { MockExamService } from "../application/mock-exam.service";
-import { CreateMockExamDto, ListMockExamsQueryDto } from "./coaching.dto";
+import {
+  CreateMockExamDto,
+  ListMockExamsQueryDto,
+  UpdateMockExamDto,
+} from "./coaching.dto";
 
 /** Deneme (mock exam) attempts — authenticated self resource. */
 @ApiTags("coaching")
@@ -21,6 +36,7 @@ export class MockExamController {
   }
 
   @Get()
+  @ApiQuery({ name: "examId", required: false, type: String, format: "uuid" })
   list(
     @CurrentUser() user: RequestUser,
     @Query() query: ListMockExamsQueryDto,
@@ -34,5 +50,23 @@ export class MockExamController {
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<MockExamDto> {
     return this.mockExams.getById(user.id, id);
+  }
+
+  @Put(":id")
+  update(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdateMockExamDto,
+  ): Promise<MockExamDto> {
+    return this.mockExams.update(user.id, id, dto);
+  }
+
+  @Delete(":id")
+  @HttpCode(204)
+  remove(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    return this.mockExams.remove(user.id, id);
   }
 }

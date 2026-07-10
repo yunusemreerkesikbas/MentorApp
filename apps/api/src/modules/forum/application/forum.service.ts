@@ -87,7 +87,7 @@ export class ForumService {
       joinPolicy: dto.joinPolicy,
       createdBy: actorId,
     });
-    return this.toView(row, 0, null, actorRoles);
+    return this.toView(row, 0, 0, null, actorRoles);
   }
 
   async assignOwner(actorRoles: string[], zoneId: string, targetUserId: string): Promise<void> {
@@ -171,13 +171,20 @@ export class ForumService {
     await this.assertEnabled();
     const { items, total } = await this.repo.listPublic(viewerId, q);
     const ids = items.map((z) => z.id);
-    // Two batched lookups instead of 2-per-zone (no N+1).
-    const [counts, memberships] = await Promise.all([
+    // Three batched lookups instead of per-zone (no N+1).
+    const [counts, threadCounts, memberships] = await Promise.all([
       this.repo.memberCountsByZone(ids),
+      this.repo.threadCountsByZone(ids),
       this.repo.findMembershipsByZone(ids, viewerId),
     ]);
     const views = items.map((z) =>
-      this.toView(z, counts.get(z.id) ?? 0, memberships.get(z.id) ?? null, actorRoles),
+      this.toView(
+        z,
+        counts.get(z.id) ?? 0,
+        threadCounts.get(z.id) ?? 0,
+        memberships.get(z.id) ?? null,
+        actorRoles,
+      ),
     );
     return { items: views, total, page: q.page, pageSize: q.pageSize };
   }
@@ -230,11 +237,12 @@ export class ForumService {
     await this.assertEnabled();
     const row = await this.repo.findBySlug(slug, viewerId);
     if (!row) throw new DomainError(ErrorCode.FORUM_ZONE_NOT_FOUND, HttpStatus.NOT_FOUND);
-    const [m, count] = await Promise.all([
+    const [m, count, threadCounts] = await Promise.all([
       this.repo.findMembership(row.id, viewerId),
       this.repo.memberCount(row.id),
+      this.repo.threadCountsByZone([row.id]),
     ]);
-    return this.toView(row, count, m ?? null, actorRoles);
+    return this.toView(row, count, threadCounts.get(row.id) ?? 0, m ?? null, actorRoles);
   }
 
   /** Controller helper: the zone's join policy (for the join call) — no member-count round-trip. */
@@ -253,6 +261,7 @@ export class ForumService {
   private toView(
     z: ZoneRow,
     memberCount: number,
+    threadCount: number,
     membership: MemberRow | null,
     actorRoles: string[],
   ): ZoneView {
@@ -271,6 +280,7 @@ export class ForumService {
       emoji: z.emoji,
       isArchived: z.isArchived,
       memberCount,
+      threadCount,
       myStatus: (membership?.status as ZoneMemberStatus | undefined) ?? null,
       myRole,
       canModerate,

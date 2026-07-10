@@ -1,10 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { ZoneMemberStatus, ZoneRole } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { forumZoneMembers, forumZones, users } from "../../../database/schema";
+import { forumThreads, forumZoneMembers, forumZones, users } from "../../../database/schema";
 
 export type ZoneRow = typeof forumZones.$inferSelect;
 export type MemberRow = typeof forumZoneMembers.$inferSelect;
@@ -125,6 +125,19 @@ export class ForumZoneRepository {
           ),
         )
         .groupBy(forumZoneMembers.zoneId);
+      return new Map(rows.map((r) => [r.zoneId, r.count]));
+    });
+  }
+
+  /** Batched non-deleted thread counts for a page of zones (avoids N+1 in listZones). */
+  async threadCountsByZone(zoneIds: string[]): Promise<Map<string, number>> {
+    if (zoneIds.length === 0) return new Map();
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ zoneId: forumThreads.zoneId, count: sql<number>`count(*)::int` })
+        .from(forumThreads)
+        .where(and(inArray(forumThreads.zoneId, zoneIds), isNull(forumThreads.deletedAt)))
+        .groupBy(forumThreads.zoneId);
       return new Map(rows.map((r) => [r.zoneId, r.count]));
     });
   }

@@ -10,6 +10,10 @@ export interface AuthUser {
   displayName: string;
   username: string | null;
   avatarUrl: string | null;
+  /** Public profile self-description; null when unset. */
+  bio: string | null;
+  /** Public personal link (http/https); null when unset. */
+  website: string | null;
   roles: UserRole[];
   organizationId: string | null;
   examType: ExamType | null;

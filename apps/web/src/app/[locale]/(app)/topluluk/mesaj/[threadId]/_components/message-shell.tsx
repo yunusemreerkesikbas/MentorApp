@@ -3,19 +3,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { FORUM_LIKE_EMOJI, type CommentView, type ThreadDetail, type ThreadView } from "@mentor/types";
+import { type CommentView, type ThreadDetail, type ThreadView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
+import { toggleReaction } from "@/lib/forum-reactions";
 import {
   bookmarkPost,
   bookmarkThread,
   getThreadDetail,
   isForumDisabled,
-  likePost,
   postComment,
+  reactPost,
   reactThread,
-  unlikePost,
+  unreactPost,
   unreactThread,
 } from "@/lib/forum";
 import type { AttachmentInput } from "@mentor/validation";
@@ -58,26 +59,23 @@ export function MessageShell({ threadId }: { threadId: string }) {
     };
   }, [threadId, apply, t]);
 
-  const onToggleThreadLike = useCallback(
+  const onToggleThreadReaction = useCallback(
     (emoji: string, adding: boolean) => {
-      setState((s) => (s.status === "ready" ? { ...s, thread: applyReaction(s.thread, emoji, adding) } : s));
+      setState((s) => (s.status === "ready" ? { ...s, thread: toggleReaction(s.thread, emoji, adding) } : s));
       const call = adding ? reactThread(threadId, emoji) : unreactThread(threadId, emoji);
       call.catch(() => {
-        setState((s) => (s.status === "ready" ? { ...s, thread: applyReaction(s.thread, emoji, !adding) } : s));
+        setState((s) => (s.status === "ready" ? { ...s, thread: toggleReaction(s.thread, emoji, !adding) } : s));
       });
     },
     [threadId],
   );
 
-  const onToggleCommentLike = useCallback((postId: string, adding: boolean) => {
-    setState((s) =>
-      s.status === "ready" ? { ...s, comments: s.comments.map((c) => applyCommentLike(c, postId, adding)) } : s,
-    );
-    const call = adding ? likePost(postId, FORUM_LIKE_EMOJI) : unlikePost(postId, FORUM_LIKE_EMOJI);
+  const onToggleCommentReaction = useCallback((postId: string, emoji: string, adding: boolean) => {
+    const patch = (v: boolean) => (c: CommentView) => (c.id === postId ? toggleReaction(c, emoji, v) : c);
+    setState((s) => (s.status === "ready" ? { ...s, comments: s.comments.map(patch(adding)) } : s));
+    const call = adding ? reactPost(postId, emoji) : unreactPost(postId, emoji);
     call.catch(() => {
-      setState((s) =>
-        s.status === "ready" ? { ...s, comments: s.comments.map((c) => applyCommentLike(c, postId, !adding)) } : s,
-      );
+      setState((s) => (s.status === "ready" ? { ...s, comments: s.comments.map(patch(!adding)) } : s));
     });
   }, []);
 
@@ -151,7 +149,7 @@ export function MessageShell({ threadId }: { threadId: string }) {
       <div className="border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
         <ThreadItem
           thread={thread}
-          onToggleReaction={onToggleThreadLike}
+          onToggleReaction={onToggleThreadReaction}
           onToggleBookmark={onToggleThreadBookmark}
         />
       </div>
@@ -180,7 +178,7 @@ export function MessageShell({ threadId }: { threadId: string }) {
               <CommentRow
                 key={c.id}
                 comment={c}
-                onToggleLike={onToggleCommentLike}
+                onToggleReaction={onToggleCommentReaction}
                 onToggleBookmark={onToggleCommentBookmark}
                 highlighted={c.id === highlightId}
               />
@@ -190,21 +188,6 @@ export function MessageShell({ threadId }: { threadId: string }) {
       )}
     </main>
   );
-}
-
-/** Optimistic like toggle on the detail thread. */
-function applyReaction(thread: ThreadView, emoji: string, adding: boolean): ThreadView {
-  const count = thread.reactionCounts[emoji] ?? 0;
-  const counts = { ...thread.reactionCounts, [emoji]: Math.max(0, count + (adding ? 1 : -1)) };
-  if (counts[emoji] === 0) delete counts[emoji];
-  const mine = adding ? [...thread.myReactions, emoji] : thread.myReactions.filter((e) => e !== emoji);
-  return { ...thread, reactionCounts: counts, myReactions: mine };
-}
-
-/** Optimistic like toggle on one comment. */
-function applyCommentLike(c: CommentView, postId: string, adding: boolean): CommentView {
-  if (c.id !== postId) return c;
-  return { ...c, myLiked: adding, likeCount: Math.max(0, c.likeCount + (adding ? 1 : -1)) };
 }
 
 function Centered({ children }: { children: React.ReactNode }) {

@@ -53,6 +53,8 @@ export interface SessionFeedbackDto { [key: string]: unknown }
 
 export interface CreateMockExamDto { [key: string]: unknown }
 
+export interface UpdateMockExamDto { [key: string]: unknown }
+
 export interface AiChatDto { [key: string]: unknown }
 
 export interface SessionReflectionBodyDto { [key: string]: unknown }
@@ -73,9 +75,9 @@ export interface CreateThreadDto { [key: string]: unknown }
 
 export interface CreateAnswerDto { [key: string]: unknown }
 
-export interface PinThreadDto { [key: string]: unknown }
-
 export interface ReactionDto { [key: string]: unknown }
+
+export interface PinThreadDto { [key: string]: unknown }
 
 export interface CreateReportDto { [key: string]: unknown }
 
@@ -145,6 +147,18 @@ export type HealthControllerReadiness503 = {
   /** @nullable */
   error?: HealthControllerReadiness503Error;
   details?: HealthControllerReadiness503Details;
+};
+
+export type CoachingControllerGetAnalysisParams = {
+examId?: string;
+};
+
+export type MockExamControllerListParams = {
+examId?: string;
+};
+
+export type AiGhostControllerNarrateBody = {
+  examId?: string;
 };
 
 export type CommunityControllerGetLeaderboardParams = {
@@ -1653,6 +1667,138 @@ export const usersControllerResendVerificationEmail = async ( options?: RequestI
 
 
 
+export type followControllerFollowUserResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type followControllerFollowUserResponseSuccess = (followControllerFollowUserResponse200) & {
+  headers: Headers;
+};
+;
+
+export type followControllerFollowUserResponse = (followControllerFollowUserResponseSuccess)
+
+export const getFollowControllerFollowUserUrl = (username: string,) => {
+
+
+  
+
+  return `/v1/users/${username}/follow`
+}
+
+export const followControllerFollowUser = async (username: string, options?: RequestInit): Promise<followControllerFollowUserResponse> => {
+  
+  return http<followControllerFollowUserResponse>(getFollowControllerFollowUserUrl(username),
+  {      
+    ...options,
+    method: 'PUT'
+    
+    
+  }
+);}
+
+
+
+export type followControllerUnfollowUserResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type followControllerUnfollowUserResponseSuccess = (followControllerUnfollowUserResponse204) & {
+  headers: Headers;
+};
+;
+
+export type followControllerUnfollowUserResponse = (followControllerUnfollowUserResponseSuccess)
+
+export const getFollowControllerUnfollowUserUrl = (username: string,) => {
+
+
+  
+
+  return `/v1/users/${username}/follow`
+}
+
+export const followControllerUnfollowUser = async (username: string, options?: RequestInit): Promise<followControllerUnfollowUserResponse> => {
+  
+  return http<followControllerUnfollowUserResponse>(getFollowControllerUnfollowUserUrl(username),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type followControllerFollowersResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type followControllerFollowersResponseSuccess = (followControllerFollowersResponse200) & {
+  headers: Headers;
+};
+;
+
+export type followControllerFollowersResponse = (followControllerFollowersResponseSuccess)
+
+export const getFollowControllerFollowersUrl = (username: string,) => {
+
+
+  
+
+  return `/v1/users/${username}/followers`
+}
+
+export const followControllerFollowers = async (username: string, options?: RequestInit): Promise<followControllerFollowersResponse> => {
+  
+  return http<followControllerFollowersResponse>(getFollowControllerFollowersUrl(username),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type followControllerFollowingResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type followControllerFollowingResponseSuccess = (followControllerFollowingResponse200) & {
+  headers: Headers;
+};
+;
+
+export type followControllerFollowingResponse = (followControllerFollowingResponseSuccess)
+
+export const getFollowControllerFollowingUrl = (username: string,) => {
+
+
+  
+
+  return `/v1/users/${username}/following`
+}
+
+export const followControllerFollowing = async (username: string, options?: RequestInit): Promise<followControllerFollowingResponse> => {
+  
+  return http<followControllerFollowingResponse>(getFollowControllerFollowingUrl(username),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
 export type economyControllerBalanceResponse200 = {
   data: void
   status: 200
@@ -2030,17 +2176,24 @@ export type coachingControllerGetAnalysisResponseSuccess = (coachingControllerGe
 
 export type coachingControllerGetAnalysisResponse = (coachingControllerGetAnalysisResponseSuccess)
 
-export const getCoachingControllerGetAnalysisUrl = () => {
+export const getCoachingControllerGetAnalysisUrl = (params?: CoachingControllerGetAnalysisParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
-  
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/v1/coaching/analysis`
+  return stringifiedParams.length > 0 ? `/v1/coaching/analysis?${stringifiedParams}` : `/v1/coaching/analysis`
 }
 
-export const coachingControllerGetAnalysis = async ( options?: RequestInit): Promise<coachingControllerGetAnalysisResponse> => {
+export const coachingControllerGetAnalysis = async (params?: CoachingControllerGetAnalysisParams, options?: RequestInit): Promise<coachingControllerGetAnalysisResponse> => {
   
-  return http<coachingControllerGetAnalysisResponse>(getCoachingControllerGetAnalysisUrl(),
+  return http<coachingControllerGetAnalysisResponse>(getCoachingControllerGetAnalysisUrl(params),
   {      
     ...options,
     method: 'GET'
@@ -2536,17 +2689,24 @@ export type mockExamControllerListResponseSuccess = (mockExamControllerListRespo
 
 export type mockExamControllerListResponse = (mockExamControllerListResponseSuccess)
 
-export const getMockExamControllerListUrl = () => {
+export const getMockExamControllerListUrl = (params?: MockExamControllerListParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
-  
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/v1/mock-exams`
+  return stringifiedParams.length > 0 ? `/v1/mock-exams?${stringifiedParams}` : `/v1/mock-exams`
 }
 
-export const mockExamControllerList = async ( options?: RequestInit): Promise<mockExamControllerListResponse> => {
+export const mockExamControllerList = async (params?: MockExamControllerListParams, options?: RequestInit): Promise<mockExamControllerListResponse> => {
   
-  return http<mockExamControllerListResponse>(getMockExamControllerListUrl(),
+  return http<mockExamControllerListResponse>(getMockExamControllerListUrl(params),
   {      
     ...options,
     method: 'GET'
@@ -2583,6 +2743,74 @@ export const mockExamControllerGetById = async (id: string, options?: RequestIni
   {      
     ...options,
     method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mockExamControllerUpdateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mockExamControllerUpdateResponseSuccess = (mockExamControllerUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mockExamControllerUpdateResponse = (mockExamControllerUpdateResponseSuccess)
+
+export const getMockExamControllerUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/mock-exams/${id}`
+}
+
+export const mockExamControllerUpdate = async (id: string,
+    updateMockExamDto: UpdateMockExamDto, options?: RequestInit): Promise<mockExamControllerUpdateResponse> => {
+  
+  return http<mockExamControllerUpdateResponse>(getMockExamControllerUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateMockExamDto,)
+  }
+);}
+
+
+
+export type mockExamControllerRemoveResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type mockExamControllerRemoveResponseSuccess = (mockExamControllerRemoveResponse204) & {
+  headers: Headers;
+};
+;
+
+export type mockExamControllerRemoveResponse = (mockExamControllerRemoveResponseSuccess)
+
+export const getMockExamControllerRemoveUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/mock-exams/${id}`
+}
+
+export const mockExamControllerRemove = async (id: string, options?: RequestInit): Promise<mockExamControllerRemoveResponse> => {
+  
+  return http<mockExamControllerRemoveResponse>(getMockExamControllerRemoveUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
     
     
   }
@@ -2942,14 +3170,15 @@ export const getAiGhostControllerNarrateUrl = () => {
   return `/v1/coach/ghost-narration`
 }
 
-export const aiGhostControllerNarrate = async ( options?: RequestInit): Promise<aiGhostControllerNarrateResponse> => {
+export const aiGhostControllerNarrate = async (aiGhostControllerNarrateBody?: AiGhostControllerNarrateBody, options?: RequestInit): Promise<aiGhostControllerNarrateResponse> => {
   
   return http<aiGhostControllerNarrateResponse>(getAiGhostControllerNarrateUrl(),
   {      
     ...options,
-    method: 'POST'
-    
-    
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      aiGhostControllerNarrateBody,)
   }
 );}
 
@@ -3637,6 +3866,72 @@ export const forumThreadControllerFeed = async (id: string, options?: RequestIni
 
 
 
+export type forumThreadControllerFollowingFeedResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumThreadControllerFollowingFeedResponseSuccess = (forumThreadControllerFollowingFeedResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumThreadControllerFollowingFeedResponse = (forumThreadControllerFollowingFeedResponseSuccess)
+
+export const getForumThreadControllerFollowingFeedUrl = () => {
+
+
+  
+
+  return `/v1/forum/feed/following`
+}
+
+export const forumThreadControllerFollowingFeed = async ( options?: RequestInit): Promise<forumThreadControllerFollowingFeedResponse> => {
+  
+  return http<forumThreadControllerFollowingFeedResponse>(getForumThreadControllerFollowingFeedUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type forumThreadControllerFollowSuggestionsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumThreadControllerFollowSuggestionsResponseSuccess = (forumThreadControllerFollowSuggestionsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumThreadControllerFollowSuggestionsResponse = (forumThreadControllerFollowSuggestionsResponseSuccess)
+
+export const getForumThreadControllerFollowSuggestionsUrl = () => {
+
+
+  
+
+  return `/v1/forum/follow-suggestions`
+}
+
+export const forumThreadControllerFollowSuggestions = async ( options?: RequestInit): Promise<forumThreadControllerFollowSuggestionsResponse> => {
+  
+  return http<forumThreadControllerFollowSuggestionsResponse>(getForumThreadControllerFollowSuggestionsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
 export type forumThreadControllerDetailResponse200 = {
   data: void
   status: 200
@@ -3773,19 +4068,19 @@ export const forumThreadControllerReply = async (postId: string,
 
 
 
-export type forumThreadControllerLikePostResponse200 = {
+export type forumThreadControllerReactPostResponse200 = {
   data: void
   status: 200
 }
     
-export type forumThreadControllerLikePostResponseSuccess = (forumThreadControllerLikePostResponse200) & {
+export type forumThreadControllerReactPostResponseSuccess = (forumThreadControllerReactPostResponse200) & {
   headers: Headers;
 };
 ;
 
-export type forumThreadControllerLikePostResponse = (forumThreadControllerLikePostResponseSuccess)
+export type forumThreadControllerReactPostResponse = (forumThreadControllerReactPostResponseSuccess)
 
-export const getForumThreadControllerLikePostUrl = (postId: string,) => {
+export const getForumThreadControllerReactPostUrl = (postId: string,) => {
 
 
   
@@ -3793,32 +4088,34 @@ export const getForumThreadControllerLikePostUrl = (postId: string,) => {
   return `/v1/forum/posts/${postId}/reactions`
 }
 
-export const forumThreadControllerLikePost = async (postId: string, options?: RequestInit): Promise<forumThreadControllerLikePostResponse> => {
+export const forumThreadControllerReactPost = async (postId: string,
+    reactionDto: ReactionDto, options?: RequestInit): Promise<forumThreadControllerReactPostResponse> => {
   
-  return http<forumThreadControllerLikePostResponse>(getForumThreadControllerLikePostUrl(postId),
+  return http<forumThreadControllerReactPostResponse>(getForumThreadControllerReactPostUrl(postId),
   {      
     ...options,
-    method: 'PUT'
-    
-    
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reactionDto,)
   }
 );}
 
 
 
-export type forumThreadControllerUnlikePostResponse204 = {
+export type forumThreadControllerUnreactPostResponse204 = {
   data: void
   status: 204
 }
     
-export type forumThreadControllerUnlikePostResponseSuccess = (forumThreadControllerUnlikePostResponse204) & {
+export type forumThreadControllerUnreactPostResponseSuccess = (forumThreadControllerUnreactPostResponse204) & {
   headers: Headers;
 };
 ;
 
-export type forumThreadControllerUnlikePostResponse = (forumThreadControllerUnlikePostResponseSuccess)
+export type forumThreadControllerUnreactPostResponse = (forumThreadControllerUnreactPostResponseSuccess)
 
-export const getForumThreadControllerUnlikePostUrl = (postId: string,) => {
+export const getForumThreadControllerUnreactPostUrl = (postId: string,) => {
 
 
   
@@ -3826,14 +4123,16 @@ export const getForumThreadControllerUnlikePostUrl = (postId: string,) => {
   return `/v1/forum/posts/${postId}/reactions`
 }
 
-export const forumThreadControllerUnlikePost = async (postId: string, options?: RequestInit): Promise<forumThreadControllerUnlikePostResponse> => {
+export const forumThreadControllerUnreactPost = async (postId: string,
+    reactionDto: ReactionDto, options?: RequestInit): Promise<forumThreadControllerUnreactPostResponse> => {
   
-  return http<forumThreadControllerUnlikePostResponse>(getForumThreadControllerUnlikePostUrl(postId),
+  return http<forumThreadControllerUnreactPostResponse>(getForumThreadControllerUnreactPostUrl(postId),
   {      
     ...options,
-    method: 'DELETE'
-    
-    
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reactionDto,)
   }
 );}
 

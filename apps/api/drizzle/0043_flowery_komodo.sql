@@ -1,0 +1,1 @@
+ALTER TABLE "forum_attachments" ADD COLUMN "file_name" text;

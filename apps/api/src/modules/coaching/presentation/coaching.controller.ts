@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Post, Query } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import type {
   MoodCheckinDto,
   Paginated,
@@ -39,6 +39,7 @@ export class CoachingController {
 
   /** Personal deneme analysis — net trend + subject strength/weakness (no ranking). */
   @Get("analysis")
+  @ApiQuery({ name: "examId", required: false, type: String, format: "uuid" })
   getAnalysis(
     @CurrentUser() user: RequestUser,
     @Query() query: AnalysisQueryDto,
@@ -81,4 +82,6 @@ export class CoachingController {
     return this.vision.upsert(user.id, dto);
   }
 }
+
+
 
