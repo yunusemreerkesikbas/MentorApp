@@ -65,5 +65,6 @@
   "FORUM_DISABLED": "Forum özelliği şu anda kapalı.",
   "FORUM_ZONE_NOT_FOUND": "Bu oda bulunamadı.",
   "FORUM_ATTACHMENT_INVALID": "Ek geçersiz. Lütfen desteklenen bir görsel (JPEG/PNG/WebP) seç.",
-  "SOCIAL_CANNOT_FOLLOW_SELF": "Kendini takip edemezsin."
+  "SOCIAL_CANNOT_FOLLOW_SELF": "Kendini takip edemezsin.",
+  "COACHING_WEEKLY_REVIEW_INSUFFICIENT": "Haftalık koç değerlendirmesi için bir deneme veya iki tamamlanmış seans gerekiyor."
 }

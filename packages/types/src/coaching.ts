@@ -234,3 +234,42 @@ export interface VisionDto {
   updatedAt: string;
 }
 
+
+
+/** Completed-week rule-based review (Europe/Istanbul, active exam scoped). */
+export type WeeklyReviewStatus = "READY" | "INSUFFICIENT";
+export type WeeklyEnergySignal = "LOW" | "MIXED" | "STEADY";
+export type WeeklyFocusSource =
+  | "REPEATED_PHOTO_SIGNAL"
+  | "WEEKLY_DECLINE"
+  | "LOWEST_NORMALIZED"
+  | "SESSION_RHYTHM";
+
+export interface WeeklyReviewDto {
+  period: { startDate: string; endDate: string; timeZone: "Europe/Istanbul" };
+  status: WeeklyReviewStatus;
+  evidence: { mockExamCount: number; completedSessionCount: number };
+  rhythm: {
+    completedSessionCount: number;
+    focusMinutes: number;
+    activeDays: number;
+    moodCheckinCount: number;
+    energySignal: WeeklyEnergySignal | null;
+    message: string;
+  };
+  performance: {
+    mockExamCount: number;
+    averageNet: string;
+    previousWeekAverageNet: string | null;
+    delta: string | null;
+    evidenceLevel: "EARLY" | "COMPARABLE";
+    message: string;
+  } | null;
+  focus: {
+    source: WeeklyFocusSource;
+    subjectRef: string | null;
+    subjectName: string | null;
+    message: string;
+  } | null;
+}
+

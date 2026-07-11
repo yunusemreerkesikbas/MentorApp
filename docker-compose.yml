@@ -23,19 +23,5 @@ services:
       timeout: 5s
       retries: 10
 
-  headroom:
-    build:
-      context: ./docker/headroom
-    container_name: mentor-headroom
-    restart: unless-stopped
-    ports:
-      - "8787:8787"
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8787/health')\""]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 60s
-
 volumes:
   mentor-pgdata:

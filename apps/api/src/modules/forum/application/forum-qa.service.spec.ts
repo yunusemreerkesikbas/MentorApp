@@ -130,10 +130,10 @@ describe("ForumQaService", () => {
     expect(posts.createAnswer).not.toHaveBeenCalled();
   });
 
-  it("rejects a spoofed non-image mime even under a valid key", async () => {
-    // The typed AttachmentInput already bounds mimeType to image mimes; the cast simulates a raw
-    // client bypassing our types, which the service must still reject at runtime.
-    const spoofed = [{ key: "forum-attachments/u1/abcdef01.jpg", mimeType: "application/pdf" }];
+  it("rejects a spoofed non-allowed mime even under a valid key", async () => {
+    // The typed AttachmentInput already bounds mimeType to the image+file allowlist; the cast simulates
+    // a raw client bypassing our types with a disallowed mime, which the service must reject at runtime.
+    const spoofed = [{ key: "forum-attachments/u1/abcdef01.jpg", mimeType: "application/zip" }];
     await expect(
       svc(makeZoneRepo()).answer(actor("u1"), "q1", { body: "cevap", attachments: spoofed as never }),
     ).rejects.toMatchObject({ httpStatus: HttpStatus.BAD_REQUEST });

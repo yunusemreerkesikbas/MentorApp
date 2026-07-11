@@ -8,7 +8,6 @@
 | **Neon** | Postgres + pgvector (DB) | `DATABASE_URL` | MVP |
 | **Own JWT** | Auth (access/refresh) | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | MVP |
 | **OpenAI** | AI text (GPT-5) | `OPENAI_API_KEY`, `AI_PROVIDER` | MVP |
-| **Headroom** | LLM context compression (dev + optional koç) | see [dev/headroom.md](../dev/headroom.md) | MVP (opt-in) |
 | **Gemini** | AI vision (photo→categorize) | `GEMINI_API_KEY`, `GEMINI_MODEL`, `VISION_PROVIDER` | MVP (premium) |
 | **iyzico** | Subscription/payments | `IYZICO_*` | MVP |
 | **Cloudflare R2** | Object storage (mock-exam photos) | `R2_*`, `STORAGE_PROVIDER`, `R2_PUBLIC_BASE_URL` | MVP |
@@ -29,8 +28,6 @@
 ### OpenAI / Gemini (AI)
 - OpenAI key → `OPENAI_API_KEY` (no-training API; KVKK transfer disclosure). Text provider finalized via
   Turkish eval (§8). `AI_PROVIDER=openai` in prod when chat LLM is live.
-- **Headroom:** **(A)** dev — `pnpm headroom:wrap cursor|claude|codex`; **(B)** koç API — `pnpm headroom:up`,
-  `HEADROOM_PROXY_URL`, `ai.compression.enabled` (default off). Guide: [dev/headroom.md](../dev/headroom.md).
 - Google AI Studio key → `GEMINI_API_KEY` (vision, rate-limit + premium). Photo categorize:
   `VISION_PROVIDER=gemini` + `GEMINI_MODEL` (default `gemini-2.0-flash`). Dev/test: `VISION_PROVIDER=fake`.
 - Mock-exam photo uploads: `STORAGE_PROVIDER=r2` + `R2_*` in prod; `fake` uses in-memory

@@ -448,11 +448,26 @@
       "new_chat": "Yeni sohbet",
       "refresh_suggestions": "Önerileri yenile",
       "bubble_welcome": "Bir soru sormak için kısa yollardan birini seç — ya da sohbete başla.",
-      "bubble_dismiss": "Kapat"
+      "bubble_dismiss": "Kapat",
+      "brief_plan": "Bugünün planı: {done}/{total} tamam",
+      "brief_plan_empty": "Bugün için planlı görev yok",
+      "brief_streak": "Seri: {days} gün",
+      "suggestions_label": "Koça sorabileceklerin",
+      "chip_focus": "{subject} odağı",
+      "seed_focus": "{subject} dersinde zorlanıyorum, nasıl çalışmalıyım?",
+      "chip_task": "Sıradaki göreve başla",
+      "seed_task": "Bugünkü \"{title}\" görevine nasıl başlamalıyım?",
+      "chip_done_day": "Sırada ne var?",
+      "seed_done_day": "Bugünkü planımı bitirdim, şimdi ne yapmalıyım?",
+      "chip_plan_day": "Günümü planla",
+      "seed_plan_day": "Bugünü nasıl planlamalıyım?",
+      "chip_streak": "Serimi koru",
+      "seed_streak": "{days} günlük serim var, bunu korumak için bugün ne yapmalıyım?"
     },
     "chat": {
       "header_title": "Sohbet",
-      "empty_hint": "İlk mesajını yaz — koçun burada."
+      "empty_hint": "İlk mesajını yaz — koçun burada.",
+      "stream_error": "Yanıt alınamadı — lütfen tekrar dene."
     }
   },
   "profile": {
@@ -752,6 +767,31 @@
       "delete_confirm_no": "Vazgeç",
       "delete_success_title": "Deneme silindi",
       "delete_success_message": "Analizin kalan denemelerine göre yenilendi."
+    },
+    "weekly": {
+      "title": "Geçen haftan",
+      "period": "{startDate} – {endDate}",
+      "ready": "Değerlendirmeye hazır",
+      "insufficient": "Biraz daha veri gerekli",
+      "rhythm_title": "Çalışma ritmin",
+      "rhythm_value": "{sessions} seans · {minutes} dk · {days} gün",
+      "performance_title": "Deneme sinyalin",
+      "net_value": "{net} net",
+      "no_exam": "Deneme yok",
+      "no_exam_message": "Bu hafta çalışma ritmin üzerinden ilerliyoruz.",
+      "focus_title": "Sıradaki adım",
+      "rhythm_focus": "Ritmi sürdür",
+      "rhythm_focus_message": "İki küçük odak seansı yeterli bir başlangıç.",
+      "generate": "Haftamı değerlendir",
+      "generating": "Koçun haftanı değerlendiriyor…",
+      "coach_chip": "Koçunun yorumu",
+      "add_to_plan": "Planıma ekle",
+      "premium_teaser": "Koç yorumu ve hazır plan görevi Premium’da",
+      "enter_exam": "Deneme gir",
+      "start_session": "Seans başlat",
+      "retry": "Tekrar dene",
+      "load_error": "Haftalık değerlendirme yüklenemedi.",
+      "generate_error": "Koç değerlendirmesi oluşturulamadı."
     }
   },
   "session": {
@@ -869,6 +909,8 @@
     "result_prefix": "Bu soru muhtemelen:"
   },
   "coach_chat": {
+    "suggested_task_label": "Koçun önerisi",
+    "add_to_plan": "Plana ekle",
     "input_label": "Koçuna mesaj yaz",
     "input_placeholder": "Koçuna bir şey sor…",
     "send": "Gönder",

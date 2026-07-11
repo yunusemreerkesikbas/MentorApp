@@ -96,6 +96,23 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Dosya ekleri — PDF + Office (APP-027)** — Forum ekleri artık **görsel + dosya** taşıyor (görsel altyapısı
+  genelleştirildi). Türler: `application/pdf` + modern OOXML (docx/xlsx/pptx; legacy .doc/.xls/.ppt hariç),
+  **10MB/dosya**, mevcut **birleşik 4-ek limiti** (görsel 5MB / dosya 10MB, sunucu-uygulamalı). Migration
+  `0043`: `forum_attachments.file_name` (nullable, yalnız `kind='file'`). `Attachment` tipine `fileName` +
+  `sizeBytes` + `AttachmentKind.FILE`; `attachment.constants` `FORUM_FILE_MIME`/`FORUM_FILE_MAX_BYTES`/
+  `extensionForForumFileMime` + key regex dosya uzantılarını kapsar; validation `attachmentUploadUrlSchema`/
+  `attachmentInputSchema` mime allowlist'i `FORUM_ATTACHMENT_MIMES`'e genişledi + `fileName`. **`resolveForumAttachments`
+  genelleştirildi:** mime'a göre `kind` (image/file) + doğru per-kind boyut cap + fileName. `createAttachmentUploadUrl`
+  görsel VEYA dosya content-type'ı doğru uzantıyla mint eder. Fake storage controller + main.ts express.raw dosya
+  mime'larını + 10MB'ı kabul eder (asıl per-kind cap `resolveForumAttachments`'ta). **Güvenlik:** content-type
+  presigned upload'ta allowlist'e sabit (inline-HTML riski yok) + key own-prefix regex; dosya indirilir, yürütülmez.
+  Web: birleşik picker (`useForumImagePicker` görsel+dosya, tek liste + birleşik limit, `uploadForumFile`),
+  paylaşılan `AttachmentPreviewStrip` (thumb + dosya-chip; ThreadComposer + ForumImagePicker ortak), gallery
+  dosyaları **indirme chip'i** (ikon + `fileName` + boyut + güvenli dış link) olarak ayırır. i18n: `attach`/
+  `attach_file`/`attach_file_too_large` + genelleşen mesajlar. Testler: forum e2e +1 (PDF upload→post→detay
+  `kind=file`+fileName+sizeBytes; izin-dışı tür 400), qa-spec spoof-mime `application/zip`'e güncellendi;
+  forum unit 78, e2e 25/25. **Kapsam dışı**: legacy Office, inline PDF/Office önizleme, magic-byte sniff, video. *(APP-027)*
 - **Toparlama & CI yeşili + zone "X mesaj" sayacı (APP-026)** — Stabilizasyon slice'ı. (1) **APP-025 kapatma:**
   `reaction-bar` palet butonlarından geçersiz `aria-pressed` (role=menuitem) kaldırıldı; full forum e2e
   regresyonsuz. (2) **CI yeşili:** `apps/web` lint 7 error → 0 (`"lint": "eslint"`, `--max-warnings` yok →
@@ -362,7 +379,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ### Figma fidelity backlog (backend gerektirir)
 
-- ~~**Görsel/attachment + carousel**~~ — **Yapıldı** (Faz 1 CHAT/ANNOUNCEMENT · Faz 2 QA soru+cevap + lightbox carousel + orphan-cleanup, APP-018). Kalan: video + dosya ekleri.
+- ~~**Görsel/attachment + carousel**~~ — **Yapıldı** (Faz 1 CHAT/ANNOUNCEMENT · Faz 2 QA soru+cevap + lightbox carousel + orphan-cleanup, APP-018). ~~Dosya ekleri~~ **Yapıldı** (PDF + Office, APP-027). Kalan: **video** ekleri.
 - **Nested yorumlar (yoruma yorum) + yorumlara like** — MVP düz yorum; nesting ve comment-level reaksiyon `forum_reactions`'ı `postId`'ye açmayı gerektirir.
 - ~~**Zengin emoji reaksiyon paleti (👍💪🎉😮)**~~ — **Yapıldı** (thread + yorum, `❤️👍💪🎉🙏` pozitif set, APP-025).
 - **Repost** — hâlâ kapsam dışı (ürün kararı; karşılık gelen entity yok). *Harici paylaşım (Send) yapıldı — APP-018.*

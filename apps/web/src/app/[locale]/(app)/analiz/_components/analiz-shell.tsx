@@ -6,13 +6,16 @@ import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
 import type {
   AuthUser,
+  CoachAccessDto,
   CoachingAnalysisDto,
   ExamCalendarDto,
   ExamSubjectDto,
   ExamSummaryDto,
   MockExamDto,
+  WeeklyReviewDto,
 } from "@mentor/types";
 import {
+  aiChatControllerGetAccess,
   ApiClientError,
   contentControllerCalendarByFamily,
   contentControllerSubjectsBySlug,
@@ -44,6 +47,9 @@ type ReadyData = {
   exam: ExamSummaryDto | null;
   subjects: ExamSubjectDto[];
   analysis: CoachingAnalysisDto | null;
+  weeklyReview: WeeklyReviewDto | null;
+  weeklyReviewError: string | null;
+  coachAccess: CoachAccessDto | null;
 };
 
 type LoadState =
@@ -55,6 +61,10 @@ type LoadState =
 function getAnalysisUrl(examId: string): string {
   const qs = new URLSearchParams({ examId });
   return `/v1/coaching/analysis?${qs.toString()}`;
+}
+
+function getWeeklyReviewUrl(examId: string): string {
+  return `/v1/coaching/weekly-review?examId=${encodeURIComponent(examId)}`;
 }
 
 function getMockExamsUrl(): string {
@@ -105,9 +115,10 @@ export function AnalizShell() {
           return;
         }
 
-        const [calendarRes, photoAccessResult] = await Promise.all([
+        const [calendarRes, photoAccessResult, coachAccessResult] = await Promise.all([
           contentControllerCalendarByFamily(me.examType),
           fetchPhotoAccess().catch((err: unknown) => ({ error: err })),
+          aiChatControllerGetAccess().catch(() => null),
         ]);
         if (!active) return;
 
@@ -124,20 +135,39 @@ export function AnalizShell() {
 
         const calendar = calendarRes as unknown as ExamCalendarDto | null;
         const current = calendar?.exam ?? null;
-        const [analysis, subjectRows] = current
+        const [analysis, subjectRows, weeklyResult] = current
           ? await Promise.all([
               http<CoachingAnalysisDto>(getAnalysisUrl(current.id)),
               contentControllerSubjectsBySlug(current.slug) as unknown as Promise<
                 ExamSubjectDto[]
               >,
+              http<WeeklyReviewDto>(getWeeklyReviewUrl(current.id)).catch(
+                (error: unknown) => ({ error }),
+              ),
             ])
-          : [null, []];
+          : [null, [], null];
         if (!active) return;
 
         setScores(emptyScores(subjectRows));
         setLoadState({
           status: "ready",
-          data: { exam: current, subjects: subjectRows, analysis },
+          data: {
+            exam: current,
+            subjects: subjectRows,
+            analysis,
+            weeklyReview:
+              weeklyResult && !("error" in weeklyResult) ? weeklyResult : null,
+            weeklyReviewError:
+              weeklyResult && "error" in weeklyResult
+                ? weeklyResult.error instanceof Error
+                  ? weeklyResult.error.message
+                  : t("weekly.load_error")
+                : null,
+            coachAccess: coachAccessResult
+              ? ((coachAccessResult as unknown as { data?: CoachAccessDto }).data ??
+                (coachAccessResult as unknown as CoachAccessDto))
+              : null,
+          },
         });
       } catch (err) {
         if (!active) return;
@@ -172,12 +202,30 @@ export function AnalizShell() {
 
   const refreshAnalysis = useCallback(async () => {
     if (!exam || loadState.status !== "ready") return;
-    const analysisRes = await http<CoachingAnalysisDto>(getAnalysisUrl(exam.id));
+    const [analysisRes, weeklyResult] = await Promise.all([
+      http<CoachingAnalysisDto>(getAnalysisUrl(exam.id)),
+      http<WeeklyReviewDto>(getWeeklyReviewUrl(exam.id)).catch(
+        (refreshError: unknown) => ({ error: refreshError }),
+      ),
+    ]);
     setLoadState({
       status: "ready",
-      data: { exam, subjects, analysis: analysisRes },
+      data: {
+        ...loadState.data,
+        exam,
+        subjects,
+        analysis: analysisRes,
+        weeklyReview:
+          !("error" in weeklyResult) ? weeklyResult : loadState.data.weeklyReview,
+        weeklyReviewError:
+          "error" in weeklyResult
+            ? weeklyResult.error instanceof Error
+              ? weeklyResult.error.message
+              : t("weekly.load_error")
+            : null,
+      },
     });
-  }, [exam, loadState.status, subjects]);
+  }, [exam, loadState, subjects, t]);
 
   const handleHistoryChanged = useCallback(() => {
     setHistoryRefreshKey((key) => key + 1);
@@ -369,6 +417,9 @@ export function AnalizShell() {
                 examId={exam?.id ?? ""}
                 analysis={analysis}
                 personalRecordNet={personalRecordNet}
+                weeklyReview={readyData?.weeklyReview ?? null}
+                weeklyReviewError={readyData?.weeklyReviewError ?? null}
+                premium={readyData?.coachAccess?.mode === "PREMIUM"}
               />
             ) : null}
             {tab === "yanlislar" ? (
@@ -422,3 +473,7 @@ function ExamTypeGate() {
     </Card>
   );
 }
+
+
+
+

@@ -8,7 +8,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { CoachAccessMode } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
-import { sendCoachMessage } from "@/lib/coach";
+import { CoachStreamError, streamCoachMessage } from "@/lib/coach";
 import { useKocAccess } from "./koc-access-shell";
 import { useCoachSession } from "./coach-session-context";
 import { CoachComposer } from "./coach-composer";
@@ -25,9 +25,11 @@ export function KocChatShell() {
   const access = useKocAccess();
   const searchParams = useSearchParams();
   const reduceMotion = useReducedMotion();
-  const { messages, appendMessage, pushRecentTopic } = useCoachSession();
+  const { messages, appendMessage, updateMessage, removeMessage, pushRecentTopic } =
+    useCoachSession();
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [streamStarted, setStreamStarted] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const seedAppliedRef = useRef(false);
@@ -66,27 +68,42 @@ export function KocChatShell() {
     }
 
     setBusy(true);
+    const coachMessageId = newId();
+    let received = "";
     try {
-      const { reply, sources } = await sendCoachMessage(
+      const { reply, sources, suggestedTask } = await streamCoachMessage(
         trimmed,
         clientMessageId,
+        (delta) => {
+          if (received === "") {
+            setStreamStarted(true);
+            appendMessage({ id: coachMessageId, role: "coach", text: delta });
+          } else {
+            updateMessage(coachMessageId, { text: received + delta });
+          }
+          received += delta;
+        },
       );
-      appendMessage({
-        id: newId(),
-        role: "coach",
-        text: reply,
-        sources,
-      });
+      // Finalize with the authoritative reply + source chips (covers zero-delta fallbacks too).
+      if (received === "") {
+        appendMessage({ id: coachMessageId, role: "coach", text: reply, sources, suggestedTask });
+      } else {
+        updateMessage(coachMessageId, { text: reply, sources, suggestedTask });
+      }
     } catch (err) {
+      if (received !== "") removeMessage(coachMessageId);
       setChatError(
-        err instanceof ApiClientError
-          ? err.body.message
-          : err instanceof Error
-            ? err.message
-            : String(err),
+        err instanceof CoachStreamError
+          ? tChat("stream_error")
+          : err instanceof ApiClientError
+            ? err.body.message
+            : err instanceof Error
+              ? err.message
+              : String(err),
       );
     } finally {
       setBusy(false);
+      setStreamStarted(false);
       composerRef.current?.focus();
     }
   }
@@ -140,7 +157,7 @@ export function KocChatShell() {
 
       <CoachTranscript
         messages={messages}
-        busy={busy}
+        busy={busy && !streamStarted}
         error={chatError}
         emptyHint={tChat("empty_hint")}
       />

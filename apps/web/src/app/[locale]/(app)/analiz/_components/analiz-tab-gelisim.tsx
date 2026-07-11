@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import type { CoachingAnalysisDto } from "@mentor/types";
+import type { CoachingAnalysisDto, WeeklyReviewDto } from "@mentor/types";
 import { Card, SectionHeading } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { AnalizGhostTeaser } from "./analiz-ghost-teaser";
@@ -21,17 +21,24 @@ import {
   type TrendWindow,
 } from "./analiz-types";
 import { GhostCard } from "./ghost-card";
+import { AnalizWeeklyReviewCard } from "./analiz-weekly-review-card";
 
 interface AnalizTabGelisimProps {
   examId: string;
   analysis: CoachingAnalysisDto | null;
   personalRecordNet?: string | null;
+  weeklyReview: WeeklyReviewDto | null;
+  weeklyReviewError: string | null;
+  premium: boolean;
 }
 
 export function AnalizTabGelisim({
   examId,
   analysis,
   personalRecordNet,
+  weeklyReview,
+  weeklyReviewError,
+  premium,
 }: AnalizTabGelisimProps) {
   const t = useTranslations("analysis");
   const locale = useLocale();
@@ -48,7 +55,14 @@ export function AnalizTabGelisim({
 
   if (!analysis || trend.length === 0) {
     return (
-      <Card>
+      <div className="flex flex-col gap-6">
+        <AnalizWeeklyReviewCard
+          examId={examId}
+          review={weeklyReview}
+          error={weeklyReviewError}
+          premium={premium}
+        />
+        <Card>
         <div className="mt-4 flex flex-col items-center gap-4 py-6 text-center">
           <span
             className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold"
@@ -64,12 +78,19 @@ export function AnalizTabGelisim({
             {t("empty_trend_desc")}
           </p>
         </div>
-      </Card>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-6">
+      <AnalizWeeklyReviewCard
+        examId={examId}
+        review={weeklyReview}
+        error={weeklyReviewError}
+        premium={premium}
+      />
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)]">
         <div className="flex min-w-0 flex-col gap-6">
           <Card className="relative overflow-hidden">
@@ -158,7 +179,7 @@ export function AnalizTabGelisim({
           </Card>
 
           {ghost ? (
-            <GhostCard examId={examId} ghost={ghost} />
+            <GhostCard examId={examId} ghost={ghost} premium={premium} />
           ) : (
             <AnalizGhostTeaser />
           )}
@@ -263,3 +284,5 @@ export function AnalizTabGelisim({
     </div>
   );
 }
+
+

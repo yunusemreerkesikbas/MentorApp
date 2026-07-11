@@ -227,3 +227,11 @@ export const listMockExamsQuerySchema = paginationQuerySchema.extend({
   examId: z.string().uuid().optional(),
 });
 export type ListMockExamsQuery = z.infer<typeof listMockExamsQuerySchema>;
+
+
+/** Active-exam scope for the completed weekly review. */
+export const weeklyReviewQuerySchema = z.object({
+  examId: z.string().uuid(),
+});
+export type WeeklyReviewQuery = z.infer<typeof weeklyReviewQuerySchema>;
+

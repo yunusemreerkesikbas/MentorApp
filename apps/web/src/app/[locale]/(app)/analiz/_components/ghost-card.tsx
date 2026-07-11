@@ -3,32 +3,25 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
-import type {
-  CoachAccessDto,
-  GhostComparisonDto,
-  GhostNarrationDto,
-} from "@mentor/types";
-import {
-  aiChatControllerGetAccess,
-  aiGhostControllerNarrate,
-} from "@mentor/api-client";
+import type { GhostComparisonDto, GhostNarrationDto } from "@mentor/types";
+import { aiGhostControllerNarrate } from "@mentor/api-client";
 import { Card, Chip, SectionHeading } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 
 interface GhostCardProps {
   examId: string;
   ghost: GhostComparisonDto;
+  premium: boolean;
 }
 
 /**
  * "Geçmiş-ben" compares the latest attempt with the user's own past.
  * Premium narration remains scoped to the same active exam.
  */
-export function GhostCard({ examId, ghost }: GhostCardProps) {
+export function GhostCard({ examId, ghost, premium }: GhostCardProps) {
   const reduceMotion = useReducedMotion();
   const translate = useTranslations("ghost");
   const router = useRouter();
-  const [premium, setPremium] = useState<boolean | null>(null);
   const [narration, setNarration] = useState<string | null>(ghost.aiNarration);
   const [narrating, setNarrating] = useState(false);
 
@@ -50,24 +43,8 @@ export function GhostCard({ examId, ghost }: GhostCardProps) {
   }, [examId]);
 
   useEffect(() => {
-    let active = true;
-    aiChatControllerGetAccess()
-      .then((res) => {
-        if (!active) return;
-        const access =
-          (res as unknown as { data?: CoachAccessDto }).data ??
-          (res as unknown as CoachAccessDto);
-        const isPremium = access?.mode === "PREMIUM";
-        setPremium(isPremium);
-        if (isPremium && ghost.aiNarration == null) void generate();
-      })
-      .catch(() => {
-        if (active) setPremium(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [generate, ghost.aiNarration]);
+    if (premium && ghost.aiNarration == null) void generate();
+  }, [generate, ghost.aiNarration, premium]);
 
   return (
     <Card className="flex flex-col gap-4">
@@ -167,7 +144,7 @@ export function GhostCard({ examId, ghost }: GhostCardProps) {
             {narration}
           </p>
         </motion.div>
-      ) : premium === false ? (
+      ) : !premium ? (
         <button
           type="button"
           onClick={() => router.push("/abonelik")}
@@ -180,3 +157,7 @@ export function GhostCard({ examId, ghost }: GhostCardProps) {
     </Card>
   );
 }
+
+
+
+

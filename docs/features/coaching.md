@@ -445,3 +445,12 @@ pnpm --filter @mentor/api test
   [identity.md](./identity.md) (`UsersService.getMe` for examType), [economy.md](./economy.md)
 - Web: `/panel`, `/plan`, `/seans`, `/analiz`, `/hedef`
 - Status: [core/mvp-status.md](../core/mvp-status.md) (W2)
+
+
+- **Haftalık değerlendirme + tek odak (2026-07-11)** — `GET /v1/coaching/weekly-review?examId=`
+  tamamlanan son Pazartesi–Pazar dönemini Europe/Istanbul sınırlarıyla özetler. Eşik: aynı sınavda
+  1 deneme veya 2 tamamlanmış seans. Free çıktı yalnız kural tabanlıdır; denemeler normalize ders
+  performansıyla önceki haftaya kıyaslanır, mood yalnız aggregate enerji sinyalidir (ham not yok).
+  `/analiz?tab=gelisim` kartı ritim, deneme sinyali ve tek odağı gösterir. İlgili dosyalar:
+  `weekly-review.service.ts`, `weekly-review.ts`, `analiz-weekly-review-card.tsx`.
+

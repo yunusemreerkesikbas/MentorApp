@@ -65,5 +65,6 @@
   "FORUM_DISABLED": "The forum feature is currently disabled.",
   "FORUM_ZONE_NOT_FOUND": "This room was not found.",
   "FORUM_ATTACHMENT_INVALID": "Invalid attachment. Please pick a supported image (JPEG/PNG/WebP).",
-  "SOCIAL_CANNOT_FOLLOW_SELF": "You can't follow yourself."
+  "SOCIAL_CANNOT_FOLLOW_SELF": "You can't follow yourself.",
+  "COACHING_WEEKLY_REVIEW_INSUFFICIENT": "A mock exam or two completed sessions are required for the weekly coach review."
 }

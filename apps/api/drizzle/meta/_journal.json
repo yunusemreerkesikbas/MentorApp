@@ -309,6 +309,20 @@
       "when": 1783727098672,
       "tag": "0043_flowery_komodo",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1783766418939,
+      "tag": "0044_silent_solo",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1783767682293,
+      "tag": "0045_vengeful_shinobi_shaw",
+      "breakpoints": true
     }
   ]
 }

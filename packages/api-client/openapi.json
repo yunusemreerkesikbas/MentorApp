@@ -1623,6 +1623,35 @@
         ]
       }
     },
+    "/v1/coaching/weekly-review": {
+      "get": {
+        "operationId": "CoachingController_getWeeklyReview",
+        "parameters": [
+          {
+            "name": "examId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
     "/v1/coaching/mood-checkins": {
       "post": {
         "operationId": "CoachingController_upsertMood",
@@ -2280,6 +2309,71 @@
         ]
       }
     },
+    "/v1/coach/chat/stream": {
+      "post": {
+        "operationId": "AiChatController_replyStream",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiChatDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/messages": {
+      "get": {
+        "operationId": "AiChatController_listMessages",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      },
+      "delete": {
+        "operationId": "AiChatController_clearMessages",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/coach/mood-reflection": {
       "post": {
         "operationId": "AiMoodController_reflect",
@@ -2367,6 +2461,35 @@
       "post": {
         "operationId": "AiVisionController_note",
         "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/weekly-review": {
+      "post": {
+        "operationId": "AiWeeklyReviewController_narrate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WeeklyReviewNarrationBodyDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -4219,6 +4342,10 @@
         "properties": {}
       },
       "SessionReflectionBodyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "WeeklyReviewNarrationBodyDto": {
         "type": "object",
         "properties": {}
       },

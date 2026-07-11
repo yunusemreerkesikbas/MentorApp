@@ -59,6 +59,8 @@ export interface AiChatDto { [key: string]: unknown }
 
 export interface SessionReflectionBodyDto { [key: string]: unknown }
 
+export interface WeeklyReviewNarrationBodyDto { [key: string]: unknown }
+
 export interface PhotoUploadUrlDto { [key: string]: unknown }
 
 export interface CategorizePhotoDto { [key: string]: unknown }
@@ -151,6 +153,10 @@ export type HealthControllerReadiness503 = {
 
 export type CoachingControllerGetAnalysisParams = {
 examId?: string;
+};
+
+export type CoachingControllerGetWeeklyReviewParams = {
+examId: string;
 };
 
 export type MockExamControllerListParams = {
@@ -2204,6 +2210,46 @@ export const coachingControllerGetAnalysis = async (params?: CoachingControllerG
 
 
 
+export type coachingControllerGetWeeklyReviewResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type coachingControllerGetWeeklyReviewResponseSuccess = (coachingControllerGetWeeklyReviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerGetWeeklyReviewResponse = (coachingControllerGetWeeklyReviewResponseSuccess)
+
+export const getCoachingControllerGetWeeklyReviewUrl = (params: CoachingControllerGetWeeklyReviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/coaching/weekly-review?${stringifiedParams}` : `/v1/coaching/weekly-review`
+}
+
+export const coachingControllerGetWeeklyReview = async (params: CoachingControllerGetWeeklyReviewParams, options?: RequestInit): Promise<coachingControllerGetWeeklyReviewResponse> => {
+  
+  return http<coachingControllerGetWeeklyReviewResponse>(getCoachingControllerGetWeeklyReviewUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
 export type coachingControllerUpsertMoodResponse200 = {
   data: void
   status: 200
@@ -3083,6 +3129,106 @@ export const aiChatControllerReply = async (aiChatDto: AiChatDto, options?: Requ
 
 
 
+export type aiChatControllerReplyStreamResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type aiChatControllerReplyStreamResponseSuccess = (aiChatControllerReplyStreamResponse201) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerReplyStreamResponse = (aiChatControllerReplyStreamResponseSuccess)
+
+export const getAiChatControllerReplyStreamUrl = () => {
+
+
+  
+
+  return `/v1/coach/chat/stream`
+}
+
+export const aiChatControllerReplyStream = async (aiChatDto: AiChatDto, options?: RequestInit): Promise<aiChatControllerReplyStreamResponse> => {
+  
+  return http<aiChatControllerReplyStreamResponse>(getAiChatControllerReplyStreamUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      aiChatDto,)
+  }
+);}
+
+
+
+export type aiChatControllerListMessagesResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type aiChatControllerListMessagesResponseSuccess = (aiChatControllerListMessagesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerListMessagesResponse = (aiChatControllerListMessagesResponseSuccess)
+
+export const getAiChatControllerListMessagesUrl = () => {
+
+
+  
+
+  return `/v1/coach/messages`
+}
+
+export const aiChatControllerListMessages = async ( options?: RequestInit): Promise<aiChatControllerListMessagesResponse> => {
+  
+  return http<aiChatControllerListMessagesResponse>(getAiChatControllerListMessagesUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type aiChatControllerClearMessagesResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type aiChatControllerClearMessagesResponseSuccess = (aiChatControllerClearMessagesResponse204) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerClearMessagesResponse = (aiChatControllerClearMessagesResponseSuccess)
+
+export const getAiChatControllerClearMessagesUrl = () => {
+
+
+  
+
+  return `/v1/coach/messages`
+}
+
+export const aiChatControllerClearMessages = async ( options?: RequestInit): Promise<aiChatControllerClearMessagesResponse> => {
+  
+  return http<aiChatControllerClearMessagesResponse>(getAiChatControllerClearMessagesUrl(),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
 export type aiMoodControllerReflectResponse200 = {
   data: void
   status: 200
@@ -3212,6 +3358,40 @@ export const aiVisionControllerNote = async ( options?: RequestInit): Promise<ai
     method: 'POST'
     
     
+  }
+);}
+
+
+
+export type aiWeeklyReviewControllerNarrateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type aiWeeklyReviewControllerNarrateResponseSuccess = (aiWeeklyReviewControllerNarrateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiWeeklyReviewControllerNarrateResponse = (aiWeeklyReviewControllerNarrateResponseSuccess)
+
+export const getAiWeeklyReviewControllerNarrateUrl = () => {
+
+
+  
+
+  return `/v1/coach/weekly-review`
+}
+
+export const aiWeeklyReviewControllerNarrate = async (weeklyReviewNarrationBodyDto: WeeklyReviewNarrationBodyDto, options?: RequestInit): Promise<aiWeeklyReviewControllerNarrateResponse> => {
+  
+  return http<aiWeeklyReviewControllerNarrateResponse>(getAiWeeklyReviewControllerNarrateUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      weeklyReviewNarrationBodyDto,)
   }
 );}
 

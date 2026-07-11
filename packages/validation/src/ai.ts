@@ -37,3 +37,11 @@ export const ghostNarrationSchema = z
 export type GhostNarrationInput = z.infer<typeof ghostNarrationSchema>;
 
 
+
+
+/** Premium weekly review generation request. */
+export const weeklyReviewNarrationSchema = z.object({
+  examId: z.string().uuid(),
+});
+export type WeeklyReviewNarrationInput = z.infer<typeof weeklyReviewNarrationSchema>;
+

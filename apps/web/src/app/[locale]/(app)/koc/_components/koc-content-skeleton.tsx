@@ -15,7 +15,12 @@ export function KocHubSkeleton() {
       >
         <div className="flex flex-1 flex-col rounded-[var(--radius-card)] p-5 shadow-[var(--shadow-card)]">
           <Skeleton className="h-10 w-56 rounded-[var(--radius-card)]" />
-          <Skeleton className="my-8 min-h-72 flex-1 rounded-[var(--radius-card)]" />
+          <Skeleton className="my-8 min-h-64 flex-1 rounded-[var(--radius-card)]" />
+          <Skeleton className="mb-3 h-14 w-full rounded-[var(--radius-card)]" />
+          <div className="mb-3 flex gap-2">
+            <Skeleton className="h-11 w-32 rounded-full" />
+            <Skeleton className="h-11 w-28 rounded-full" />
+          </div>
           <Skeleton className="h-11 w-full rounded-[var(--radius-card)]" />
         </div>
       </SkeletonGroup>

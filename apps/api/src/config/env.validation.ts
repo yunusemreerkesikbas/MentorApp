@@ -33,8 +33,6 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),
   OPENAI_EMBED_MODEL: z.string().default("text-embedding-3-small"),
-  /** Headroom proxy base URL (no trailing slash), e.g. http://localhost:8787 — optional sidecar. */
-  HEADROOM_PROXY_URL: z.string().url().optional(),
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().default("gemini-2.0-flash"),
   VISION_PROVIDER: z.enum(["fake", "gemini"]).default("fake"),

@@ -151,10 +151,6 @@ export const CONFIG_CATALOG = {
     100000,
     "Max photo→subject categorizations a premium user may run per rolling 30-day window.",
   ),
-  "ai.compression.enabled": flag(
-    false,
-    "Headroom context compression for coach chat (requires HEADROOM_PROXY_URL sidecar). RAG sources stay verbatim.",
-  ),
   "coaching.session.min_focus_seconds": coachingCount(
     300,
     60,

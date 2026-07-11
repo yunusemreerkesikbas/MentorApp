@@ -75,3 +75,8 @@
 > **Health probes** (`/v1/health`, `/v1/health/ready`) use the **terminus** response shape
 > (`{ status, info, error, details }`), not the `ApiError` envelope — they are infra for orchestrators,
 > outside the API contract. The global filter passes them through unchanged.
+
+
+- `GET /v1/coaching/weekly-review?examId={uuid}` — completed-week rule summary (JWT, Free).
+- `POST /v1/coach/weekly-review` — cached Premium narration + deterministic suggested task (JWT).
+

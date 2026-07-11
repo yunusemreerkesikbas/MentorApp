@@ -448,11 +448,26 @@
       "new_chat": "New chat",
       "refresh_suggestions": "Refresh suggestions",
       "bubble_welcome": "Pick a shortcut below to ask a question — or start a chat.",
-      "bubble_dismiss": "Dismiss"
+      "bubble_dismiss": "Dismiss",
+      "brief_plan": "Today's plan: {done}/{total} done",
+      "brief_plan_empty": "No planned tasks today",
+      "brief_streak": "Streak: {days} days",
+      "suggestions_label": "Things to ask your coach",
+      "chip_focus": "{subject} focus",
+      "seed_focus": "I'm struggling with {subject} — how should I study it?",
+      "chip_task": "Start the next task",
+      "seed_task": "How should I start today's \"{title}\" task?",
+      "chip_done_day": "What's next?",
+      "seed_done_day": "I finished today's plan — what should I do now?",
+      "chip_plan_day": "Plan my day",
+      "seed_plan_day": "How should I plan my day?",
+      "chip_streak": "Keep my streak",
+      "seed_streak": "I have a {days}-day streak — what should I do today to keep it?"
     },
     "chat": {
       "header_title": "Chat",
-      "empty_hint": "Write your first message — your coach is here."
+      "empty_hint": "Write your first message — your coach is here.",
+      "stream_error": "Couldn't get a reply — please try again."
     }
   },
   "profile": {
@@ -755,7 +770,32 @@
       "delete_success_message": "Your analysis now reflects your remaining exams."
     },
     "avg_normalized": "{percent}% · {questions} questions",
-    "photo_signals_empty_desc": "No subject signals yet. Add a wrong-answer photo and we will collect the clues here."
+    "photo_signals_empty_desc": "No subject signals yet. Add a wrong-answer photo and we will collect the clues here.",
+    "weekly": {
+      "title": "Your last week",
+      "period": "{startDate} – {endDate}",
+      "ready": "Ready to review",
+      "insufficient": "A little more data needed",
+      "rhythm_title": "Your study rhythm",
+      "rhythm_value": "{sessions} sessions · {minutes} min · {days} days",
+      "performance_title": "Your mock-exam signal",
+      "net_value": "{net} net",
+      "no_exam": "No mock exam",
+      "no_exam_message": "This week we are using your study rhythm.",
+      "focus_title": "Your next step",
+      "rhythm_focus": "Keep the rhythm",
+      "rhythm_focus_message": "Two small focus sessions are enough to start.",
+      "generate": "Review my week",
+      "generating": "Your coach is reviewing the week…",
+      "coach_chip": "Coach reflection",
+      "add_to_plan": "Add to my plan",
+      "premium_teaser": "Coach reflection and a ready plan task are available with Premium",
+      "enter_exam": "Enter mock exam",
+      "start_session": "Start session",
+      "retry": "Try again",
+      "load_error": "Weekly review could not be loaded.",
+      "generate_error": "Coach review could not be generated."
+    }
   },
   "session": {
     "title": "Study Session",
@@ -872,6 +912,8 @@
     "result_prefix": "This question is likely:"
   },
   "coach_chat": {
+    "suggested_task_label": "Coach's suggestion",
+    "add_to_plan": "Add to plan",
     "input_label": "Write a message to your coach",
     "input_placeholder": "Ask your coach something…",
     "send": "Send",
