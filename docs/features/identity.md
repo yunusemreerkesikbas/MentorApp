@@ -84,6 +84,21 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **Profil bio + web sitesi (APP-024)** — Kullanıcı artık kendisi hakkında kısa bir **bio** + bir **web
+  sitesi** linki girip düzenleyebiliyor ("profil kartı sosyal alanları" backlog'unun son parçası). `users`
+  tablosuna iki nullable kolon (`bio`, `website` — migration `0042`). `updateMeSchema`'ya `bio` (≤200) +
+  `website` (`.url()`, ≤200) eklendi; **`z.preprocess(emptyToNull, …)`** ile boş/whitespace → `null`
+  (temizleme). `AuthUser` + `PublicProfile` + `toAuthUser` + `UsersService.updateMe` patch spread'i +
+  `CommunityService.getPublicProfile` bio/website taşır (public-safe — kimlik, PII değil; email hâlâ gizli).
+  **OpenAPI+api-client regen** (`/profil` orval `usersControllerUpdateMe`/`Me` kullanıyor; `UpdateMeDto`
+  createZodDto'dan `{[key]:unknown}` loose kaldığından body zaten bio/website'i taşıyor). Web: `/profil`
+  düzenleme formuna (`ProfileEditForm`) bio `TextAreaField` (200 sayaç) + website `TextField`; community
+  profil header'ında (`/topluluk/uye/[username]`) bio (`whitespace-pre-line break-words`) + website (güvenli
+  dış link, `noopener noreferrer nofollow`, Globe) + `isOwn`'da "Profili düzenle" linki (→ `/profil`); sağ
+  `ProfileCard`'da bio (3-satır clamp) + website (düz metin — kart zaten `<Link>`, nested-anchor'dan
+  kaçınıldı). i18n: `profile.edit.{bio,website}_*`, `topluluk.edit_profile`. Testler: `UsersService.updateMe`
+  unit +1 (bio/website patch, null clear), forum e2e profil testine bio/website assertion. **Kapsam dışı**:
+  bio'da @mention/link render, community içi inline form, website unfurl/favicon, çoklu sosyal link. *(APP-024)*
 - **Signup username + hedef alanları** — web `/kayit` formu artık zorunlu `username` ve opsiyonel
   `goalTitle` alır. `username` identity signup payload'ına yazılır; `/v1` geriye uyumluluğu için API
   alanı opsiyonel kalır, eski/Google client'lar onboarding username adımını kullanmaya devam eder.

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
-import { Currency, type CoachChatReplyDto } from "@mentor/types";
+import { Currency, type CoachChatReplyDto, type CoachChatStreamEvent } from "@mentor/types";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -10,10 +10,18 @@ import { ContentService } from "../../content/application/content.service";
 import { EconomyService } from "../../economy/application/economy.service";
 import { EconomyLedger } from "../../economy/domain/economy.constants";
 import { EntitlementService } from "../../payments/application/entitlement.service";
-import { LLM_PORT, type LlmPort } from "../domain/llm.port";
-import { buildSystemPrompt, estimateCostMicros, RAG_MAX_DISTANCE, RAG_TOP_K } from "../domain/ai.constants";
+import { LLM_PORT, type LlmHistoryMessage, type LlmPort } from "../domain/llm.port";
+import {
+  buildSystemPrompt,
+  CHAT_HISTORY_MAX_MESSAGES,
+  estimateCostMicros,
+  RAG_MAX_DISTANCE,
+  RAG_TOP_K,
+} from "../domain/ai.constants";
+import { createTaskMarkerFilter, extractSuggestedTask } from "../domain/suggested-task";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
+import { CoachMessageRepository } from "../infrastructure/coach-message.repository";
 
 export type CoachReplyResult = CoachChatReplyDto;
 
@@ -21,7 +29,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * AI coach chat (W3): premium (flat + rate-limit) or free earned-coin path (spend + free daily cap).
- * PII-free grounded prompt (§4 #1/#6); no conversation history yet.
+ * PII-free grounded prompt (§4 #1/#6); multi-turn via persisted rolling history (last N messages).
  */
 @Injectable()
 export class ChatService {
@@ -35,6 +43,7 @@ export class ChatService {
     private readonly config: ConfigRegistryService,
     private readonly entitlement: EntitlementService,
     private readonly economy: EconomyService,
+    private readonly messages: CoachMessageRepository,
   ) {}
 
   async reply(
@@ -113,8 +122,24 @@ export class ChatService {
     });
   }
 
-  private async completeChat(userId: string, message: string): Promise<CoachReplyResult> {
+  /** Shared prompt prep: PII-free context + multi-turn history + RAG retrieval. */
+  private async prepareChat(userId: string, message: string) {
     const ctx = await this.context.build(userId);
+
+    // Multi-turn: replay the last N persisted messages (the user's own words + earlier coach
+    // replies — no third-party PII, §4 #6). Defensive: a history failure never blocks the chat.
+    const history: LlmHistoryMessage[] = await this.messages
+      .lastN(userId, CHAT_HISTORY_MAX_MESSAGES)
+      .then((rows) =>
+        rows.map((m) => ({
+          role: m.role === "USER" ? ("user" as const) : ("assistant" as const),
+          content: m.content,
+        })),
+      )
+      .catch((err) => {
+        this.logger.warn(`Chat history load skipped: ${String(err)}`);
+        return [];
+      });
 
     let retrieved: { title: string; slug: string; sourceUrl: string; snippet: string }[] = [];
     if (ctx.examType) {
@@ -131,11 +156,21 @@ export class ChatService {
       }
     }
 
-    const result = await this.llm.complete({
-      system: buildSystemPrompt(ctx, retrieved),
-      user: message,
-    });
+    const system = buildSystemPrompt(ctx, retrieved);
 
+    return {
+      llmInput: { system, user: message, history },
+      sources: retrieved.map((s) => ({ title: s.title, slug: s.slug, url: s.sourceUrl })),
+    };
+  }
+
+  /** Post-success bookkeeping: usage meter + persist the exchange (only on success). */
+  private async recordSuccess(
+    userId: string,
+    message: string,
+    result: { text: string; promptTokens: number; completionTokens: number; model: string },
+    sources: { title: string; slug: string; url: string }[],
+  ): Promise<void> {
     await this.usage.append({
       userId,
       model: result.model,
@@ -144,10 +179,103 @@ export class ChatService {
       costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
     });
 
+    // Best-effort: a persist failure must not swallow the reply the user already paid for.
+    await this.messages
+      .appendExchange(userId, message, { content: result.text, model: result.model, sources })
+      .catch((err) => {
+        this.logger.error(`Chat history persist failed: ${String(err)}`);
+      });
+  }
+
+  private async completeChat(userId: string, message: string): Promise<CoachReplyResult> {
+    const { llmInput, sources } = await this.prepareChat(userId, message);
+    const result = await this.llm.complete(llmInput);
+    const { text: reply, task } = extractSuggestedTask(result.text);
+    await this.recordSuccess(userId, message, { ...result, text: reply }, sources);
     return {
-      reply: result.text,
+      reply,
       model: result.model,
-      sources: retrieved.map((s) => ({ title: s.title, slug: s.slug, url: s.sourceUrl })),
+      sources,
+      ...(task ? { suggestedTask: task } : {}),
     };
+  }
+
+  /**
+   * Streaming variant of `reply` (POST /v1/coach/chat/stream). Same gating/coin/rate-limit path;
+   * yields text deltas, then one `done` with the full reply. Mid-stream LLM failure refunds the
+   * coin spend (same rule as `reply`) and rethrows — the controller emits the `error` event.
+   */
+  async *replyStream(
+    user: RequestUser,
+    message: string,
+    clientMessageId?: string,
+  ): AsyncGenerator<CoachChatStreamEvent> {
+    if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
+      throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+    }
+
+    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
+    const spendRefId = clientMessageId ?? randomUUID();
+    let coinCost = 0;
+    let shouldRefundOnFailure = false;
+
+    if (ent.isPremium) {
+      await this.assertPremiumRateLimit(user.id);
+    } else {
+      ({ cost: coinCost, shouldRefundOnFailure } = await this.prepareCoinSpend(user.id, spendRefId));
+    }
+
+    try {
+      const { llmInput, sources } = await this.prepareChat(user.id, message);
+      // The task marker must never leak into deltas — filter holds back anything marker-like.
+      const markerFilter = createTaskMarkerFilter();
+      let final: { text: string; promptTokens: number; completionTokens: number; model: string } | null =
+        null;
+      for await (const ev of this.llm.completeStream(llmInput)) {
+        if (ev.delta) {
+          const safe = markerFilter.push(ev.delta);
+          if (safe) yield { delta: safe };
+        }
+        if (ev.final) final = ev.final;
+      }
+      if (!final) {
+        throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      const held = markerFilter.flush();
+      if (held) yield { delta: held };
+      const { text: reply, task } = extractSuggestedTask(final.text);
+      await this.recordSuccess(user.id, message, { ...final, text: reply }, sources);
+      yield {
+        done: {
+          reply,
+          model: final.model,
+          sources,
+          ...(task ? { suggestedTask: task } : {}),
+        },
+      };
+    } catch (err) {
+      if (!ent.isPremium && shouldRefundOnFailure && coinCost > 0) {
+        await this.refundCoinSpend(user.id, coinCost, spendRefId).catch((refundErr) => {
+          this.logger.error(`Coin refund failed after stream error: ${String(refundErr)}`);
+        });
+      }
+      throw err;
+    }
+  }
+
+  /** GET /v1/coach/messages — paginated rolling history (auth-only; no premium/coin gate). */
+  async listMessages(userId: string, page: number, pageSize: number) {
+    if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
+      throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+    }
+    return this.messages.listPaged(userId, page, pageSize);
+  }
+
+  /** DELETE /v1/coach/messages — "Yeni sohbet": clears the user's own rolling conversation. */
+  async clearMessages(userId: string): Promise<void> {
+    if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
+      throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+    }
+    await this.messages.clearAll(userId);
   }
 }

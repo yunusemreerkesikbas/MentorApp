@@ -5,17 +5,20 @@ import type {
   PhotoAccessDto,
   PhotoUploadUrlDto,
 } from "@mentor/types";
+import type { UpdateMockExamInput } from "@mentor/validation";
 import { http } from "@mentor/api-client";
 import { resolveApiUrl } from "./api-base";
 
 export async function fetchMockExamsList(
   page = 1,
   pageSize = 5,
+  examId?: string,
 ): Promise<Paginated<MockExamDto>> {
   const qs = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
   });
+  if (examId) qs.set("examId", examId);
   return (await http<Paginated<MockExamDto>>(
     `/v1/mock-exams?${qs.toString()}`,
   )) as Paginated<MockExamDto>;
@@ -23,6 +26,20 @@ export async function fetchMockExamsList(
 
 export async function fetchMockExamById(id: string): Promise<MockExamDto> {
   return (await http<MockExamDto>(`/v1/mock-exams/${id}`)) as MockExamDto;
+}
+
+export async function updateMockExam(
+  id: string,
+  input: UpdateMockExamInput,
+): Promise<MockExamDto> {
+  return (await http<MockExamDto>(`/v1/mock-exams/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })) as MockExamDto;
+}
+
+export async function deleteMockExam(id: string): Promise<void> {
+  await http<void>(`/v1/mock-exams/${id}`, { method: "DELETE" });
 }
 
 export async function fetchPhotoAccess(): Promise<PhotoAccessDto> {

@@ -80,6 +80,15 @@ export function canCommentInZone(
   return memberStatus === ZoneMemberStatus.ACTIVE || canModerateZone(actor);
 }
 
+/**
+ * @mention autocomplete over a zone's member list (APP-021). Membership-based, not post-based:
+ * an ANNOUNCEMENT member can't post the broadcast but can comment — and thus mention — so any
+ * ACTIVE member (or owner/mod/staff) may search, regardless of zone type.
+ */
+export function canSearchMembers(actor: ForumActor, memberStatus: string | null): boolean {
+  return memberStatus === ZoneMemberStatus.ACTIVE || canModerateZone(actor);
+}
+
 /** Only the question's author may accept an answer (asker-only; no staff override in MVP). */
 export function canAcceptAnswer(actor: ForumActor, questionAuthorId: string): boolean {
   return actor.userId === questionAuthorId;

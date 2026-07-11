@@ -22,8 +22,11 @@ export class CommunityController {
 
   /** Public profile header (identity + gamification) of another user, by username. Unknown → 404. */
   @Get("profile/:username")
-  getProfile(@Param("username") username: string): Promise<PublicProfile> {
-    return this.community.getPublicProfile(username);
+  getProfile(
+    @CurrentUser() user: RequestUser,
+    @Param("username") username: string,
+  ): Promise<PublicProfile> {
+    return this.community.getPublicProfile(username, user.id);
   }
 
   /** Effort ranking for a time window (full-page tabs). Unknown `window` → weekly (safe default). */

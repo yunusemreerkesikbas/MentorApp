@@ -4,7 +4,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   type CommentDetail,
   type CommentView,
-  FORUM_LIKE_EMOJI,
+  type FollowUserRef,
   type ForumAttachmentUploadUrl,
   type ForumActivityFeed,
   type ForumActivityItem,
@@ -22,10 +22,14 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { UsersService } from "../../identity/application/users.service";
+import { FollowService } from "../../identity/application/follow.service";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import {
+  extensionForForumFileMime,
   extensionForForumImageMime,
   FORUM_ATTACHMENT_ORPHAN_GRACE_MS,
+  FORUM_FILE_MAX_BYTES,
+  FORUM_FILE_MIME,
   FORUM_IMAGE_MAX_BYTES,
   FORUM_IMAGE_MIME,
   FORUM_ORPHAN_SWEEP_BATCH,
@@ -41,7 +45,11 @@ import {
 } from "../domain/forum.policy";
 import { ForumEventTopic } from "../domain/forum.events";
 import { ForumZoneRepository } from "../infrastructure/forum-zone.repository";
-import { ForumThreadRepository, type ThreadWithAuthor } from "../infrastructure/forum-thread.repository";
+import {
+  ForumThreadRepository,
+  type SuggestedUserRow,
+  type ThreadWithAuthor,
+} from "../infrastructure/forum-thread.repository";
 import { ForumPostRepository, type PostWithAuthor } from "../infrastructure/forum-post.repository";
 import { ForumAttachmentRepository } from "../infrastructure/forum-attachment.repository";
 import { ForumBookmarkRepository } from "../infrastructure/forum-bookmark.repository";
@@ -70,18 +78,23 @@ export class ForumThreadService {
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     private readonly mentions: ForumMentionService,
     private readonly users: UsersService,
+    private readonly follow: FollowService,
   ) {}
 
-  /** Presigned upload URL for a post image (Phase 1). Client PUTs the file, then sends `key` on create. */
+  /** Presigned upload URL for a post attachment — image or file (APP-027). Client PUTs, then sends `key`. */
   async createAttachmentUploadUrl(
     userId: string,
     contentType: string,
   ): Promise<ForumAttachmentUploadUrl> {
     await this.assertEnabled();
-    if (!FORUM_IMAGE_MIME.has(contentType)) {
+    const isImage = FORUM_IMAGE_MIME.has(contentType);
+    const isFile = FORUM_FILE_MIME.has(contentType);
+    if (!isImage && !isFile) {
       throw new DomainError(ErrorCode.FORUM_ATTACHMENT_INVALID, HttpStatus.BAD_REQUEST);
     }
-    const ext = extensionForForumImageMime(contentType);
+    const ext = isImage
+      ? extensionForForumImageMime(contentType)
+      : extensionForForumFileMime(contentType);
     const result = await this.storage.createUploadUrl({
       key: `forum-attachments/${userId}/${randomUUID()}.${ext}`,
       contentType,
@@ -93,7 +106,7 @@ export class ForumThreadService {
       uploadUrl: result.url,
       key: result.key,
       expiresAt: result.expiresAt,
-      maxBytes: FORUM_IMAGE_MAX_BYTES,
+      maxBytes: isImage ? FORUM_IMAGE_MAX_BYTES : FORUM_FILE_MAX_BYTES,
     };
   }
 
@@ -337,6 +350,51 @@ export class ForumThreadService {
     return { items, nextCursor };
   }
 
+  /**
+   * The viewer's cross-zone "Akış" feed — threads authored by people they follow, newest first.
+   * Threads-only (comments/answers are out of scope). RLS in listByAuthorIds elides threads in zones
+   * the viewer can't see, so the feed never leaks non-member content.
+   */
+  async getFollowingFeed(viewerId: string, before?: string): Promise<ThreadFeed> {
+    await this.assertEnabled();
+    const followeeIds = await this.follow.getFolloweeIds(viewerId);
+    if (followeeIds.length === 0) return { items: [], nextCursor: null };
+    const limit = 20;
+    const rows = await this.threads.listByAuthorIds(followeeIds, viewerId, { limit, before });
+    const items = await this.buildThreadViews(rows, viewerId);
+    // ponytail: heuristic cursor (matches listFeed) — a full page may have more; worst case one empty fetch.
+    const last = items.at(-1);
+    const nextCursor = rows.length === limit && last ? last.createdAt : null;
+    return { items, nextCursor };
+  }
+
+  /**
+   * "Kimi takip et" önerileri — people the viewer might follow, to seed the Akış feed. Primary source:
+   * recent authors in the viewer's ACTIVE-member zones (they'll show up in the feed). Cold-start
+   * fallback: cohort peers (same exam type). Self + already-followed are excluded; all returned as
+   * not-yet-followed refs.
+   */
+  async getFollowSuggestions(viewerId: string, limit = 10): Promise<FollowUserRef[]> {
+    await this.assertEnabled();
+    const followeeIds = await this.follow.getFolloweeIds(viewerId);
+    const excludeIds = [viewerId, ...followeeIds];
+    const primary = await this.threads.suggestAuthorsInMemberZones(viewerId, excludeIds, limit);
+    let peers: SuggestedUserRow[] = [];
+    if (primary.length < limit) {
+      const already = [...excludeIds, ...primary.map((u) => u.userId)];
+      peers = await this.users.suggestCohortPeers(viewerId, already, limit - primary.length);
+    }
+    return [...primary, ...peers].map(
+      (u): FollowUserRef => ({
+        userId: u.userId,
+        displayName: u.displayName,
+        username: u.username,
+        avatarUrl: u.avatarStorageKey ? this.storage.getPublicUrl(u.avatarStorageKey) : null,
+        isFollowing: false,
+      }),
+    );
+  }
+
   /** Fold reaction/comment counts + viewer state into ThreadViews for a set of rows (batched). */
   private async buildThreadViews(
     rows: ThreadWithAuthor[],
@@ -386,7 +444,7 @@ export class ForumThreadService {
   /** Reply to another comment (nested — Twitter-style). Same zone rules; shares the root thread id. */
   async replyToComment(actor: ThreadActor, postId: string, dto: CreateAnswer): Promise<CommentView> {
     await this.assertEnabled();
-    const parent = await this.requirePost(postId, actor.id);
+    const { post: parent } = await this.requirePost(postId, actor.id);
     await this.assertCommentableZone(parent.threadId, actor, /* viaThread */ true);
     const toAttach = await resolveForumAttachments(this.storage, actor.id, dto.attachments);
     const post = await this.posts.createAnswer({
@@ -407,16 +465,16 @@ export class ForumThreadService {
     return this.requireCommentView(post.id, actor.id);
   }
 
-  async likePost(userId: string, postId: string): Promise<void> {
+  async reactPost(userId: string, postId: string, emoji: string): Promise<void> {
     await this.assertEnabled();
-    await this.requirePost(postId, userId);
-    await this.posts.addPostReaction(postId, userId, FORUM_LIKE_EMOJI);
+    await this.requirePost(postId, userId); // visibility belt
+    await this.posts.addPostReaction(postId, userId, emoji);
   }
 
-  async unlikePost(userId: string, postId: string): Promise<void> {
+  async unreactPost(userId: string, postId: string, emoji: string): Promise<void> {
     await this.assertEnabled();
     await this.requirePost(postId, userId);
-    await this.posts.removePostReaction(postId, userId, FORUM_LIKE_EMOJI);
+    await this.posts.removePostReaction(postId, userId, emoji);
   }
 
   /** A CHAT/ANNOUNCEMENT thread + its top-level comments. QA uses ForumQaService.getQuestion. */
@@ -449,24 +507,24 @@ export class ForumThreadService {
   /** A focused comment + its direct replies (recursive navigation entry point). */
   async getCommentDetail(viewerId: string, postId: string): Promise<CommentDetail> {
     await this.assertEnabled();
-    const post = await this.requirePost(postId, viewerId);
+    const { post, zoneId } = await this.requirePost(postId, viewerId);
     const replies = await this.posts.listReplies(postId, viewerId);
     const [[comment], replyViews] = await Promise.all([
       this.decorateComments([post], viewerId),
       this.decorateComments(replies, viewerId),
     ]);
-    return { comment: comment!, replies: replyViews };
+    return { comment: comment!, replies: replyViews, zoneId };
   }
 
-  /** Fold like/reply counts + the viewer's like state into CommentViews (batched, no N+1). */
+  /** Fold reaction/reply counts + the viewer's reaction state into CommentViews (batched, no N+1). */
   private async decorateComments(
     posts: PostWithAuthor[],
     viewerId: string,
   ): Promise<CommentView[]> {
     const ids = posts.map((p) => p.id);
-    const [likeCounts, myLiked, replyCounts, attachMap, bookmarked] = await Promise.all([
-      this.posts.likeCountsByPost(ids),
-      this.posts.myLikedPosts(ids, viewerId),
+    const [reactionCounts, myReactions, replyCounts, attachMap, bookmarked] = await Promise.all([
+      this.posts.reactionCountsByPost(ids),
+      this.posts.myReactionsByPost(ids, viewerId),
       this.posts.replyCountsByPost(ids),
       this.attachments.listForTargets(ModerationTargetType.POST, ids),
       this.bookmarks.myBookmarkedTargets(ModerationTargetType.POST, ids, viewerId),
@@ -474,8 +532,8 @@ export class ForumThreadService {
     return posts.map((p) =>
       postRowToCommentView(
         p,
-        likeCounts.get(p.id) ?? 0,
-        myLiked.has(p.id),
+        reactionCounts.get(p.id) ?? {},
+        myReactions.get(p.id) ?? [],
         replyCounts.get(p.id) ?? 0,
         this.storage,
         attachMap.get(p.id) ?? [],
@@ -492,12 +550,15 @@ export class ForumThreadService {
   }
 
   /** Load a visible, non-deleted post (RLS hides deleted) + belt its parent zone visibility. */
-  private async requirePost(postId: string, viewerId: string): Promise<PostWithAuthor> {
+  private async requirePost(
+    postId: string,
+    viewerId: string,
+  ): Promise<{ post: PostWithAuthor; zoneId: string }> {
     const post = await this.posts.findById(postId, viewerId);
     if (!post) throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     const thread = await this.threads.findById(post.threadId, viewerId);
     if (!thread) throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
-    return post;
+    return { post, zoneId: thread.zoneId };
   }
 
   /** Shared comment-authorization guard: zone exists, is not QA, and the actor may comment. */

@@ -4,14 +4,19 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import type { SessionPresetDto } from "@mentor/types";
+import type { QuestProgressView, SessionPresetDto, TodayPanelResponse } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
 import { Card } from "@mentor/ui";
+import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
+import { parsePlanTaskContextFromParams } from "@/lib/plan-seans-link";
+import { SessionAmbientPicker } from "./session-ambient-picker";
+import { SessionAmbientToggle } from "./session-ambient-toggle";
 import { SessionControls } from "./session-controls";
 import { SessionDoneState } from "./session-done-state";
 import { SessionHistory } from "./session-history";
 import { SessionSubjectPicker } from "./session-subject-picker";
 import { SessionTimerRing } from "./session-timer-ring";
+import { useSessionAmbientSound } from "./use-session-ambient-sound";
 import { useSessionTimer } from "./use-session-timer";
 
 const DEFAULT_PRESETS: SessionPresetDto[] = [
@@ -67,6 +72,10 @@ function parseInitialSelectedPresetId(
   return "25_5";
 }
 
+function unwrapTodayResponse(response: unknown): TodayPanelResponse {
+  return ((response as { data?: TodayPanelResponse }).data ?? response) as TodayPanelResponse;
+}
+
 /** Calm pastel backdrop for the immersive focus/break view (DESIGN.md blobs, softened). */
 function ImmersiveBackdrop() {
   return (
@@ -110,6 +119,22 @@ function SetupStat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function PlanTaskContextChip({ title }: { title: string }) {
+  return (
+    <span
+      className="max-w-full truncate rounded-full px-3 py-1 text-xs font-semibold"
+      style={{
+        backgroundColor: "color-mix(in srgb, var(--color-progress) 14%, transparent)",
+        color: "var(--color-main)",
+        fontFamily: "var(--font-body)",
+      }}
+      title={title}
+    >
+      {title}
+    </span>
+  );
+}
+
 /**
  * Pomodoro session UI — setup dial (idle), immersive focus/break, done summary.
  */
@@ -121,8 +146,16 @@ export function SeansShell() {
   const presetParam = searchParams.get("preset");
   const minutesParam = searchParams.get("minutes");
   const subjectParam = searchParams.get("subject");
+  const taskTitleParam = searchParams.get("taskTitle");
+  const taskIdParam = searchParams.get("taskId");
   const [subject, setSubject] = useState<string | null>(() =>
     subjectParam?.trim() ? subjectParam.trim() : null,
+  );
+  const [planTaskContext, setPlanTaskContext] = useState(() =>
+    parsePlanTaskContextFromParams({
+      taskTitle: taskTitleParam,
+      taskId: taskIdParam,
+    }),
   );
 
   const [presets, setPresets] = useState<SessionPresetDto[]>(DEFAULT_PRESETS);
@@ -131,12 +164,15 @@ export function SeansShell() {
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(() =>
     parseInitialSelectedPresetId(presetParam, minutesParam),
   );
+  const [questBaseline, setQuestBaseline] = useState<QuestProgressView[] | null>(null);
+  const [streakBaseline, setStreakBaseline] = useState<number | null>(null);
 
   const timer = useSessionTimer({
     initialMinutes: parseInitialMinutes(presetParam, minutesParam),
     initialBreakMinutes: parseInitialBreakMinutes(presetParam, minutesParam),
     initialPreset: parseInitialPreset(presetParam, minutesParam),
     subject,
+    planTaskId: planTaskContext.taskId,
   });
 
   useEffect(() => {
@@ -186,6 +222,30 @@ export function SeansShell() {
     reset,
   } = timer;
 
+  const ambient = useSessionAmbientSound({ phase, isPaused });
+
+  const handleStartSession = async () => {
+    try {
+      const [questsResult, todayResult] = await Promise.all([
+        fetchQuests().catch((err) => (isEconomyDisabled(err) ? null : Promise.reject(err))),
+        coachingControllerGetToday(),
+      ]);
+      setQuestBaseline(questsResult);
+      setStreakBaseline(unwrapTodayResponse(todayResult).streak.currentStreak);
+    } catch {
+      setQuestBaseline(null);
+      setStreakBaseline(null);
+    }
+    await startSession();
+  };
+
+  const handleReset = () => {
+    setQuestBaseline(null);
+    setStreakBaseline(null);
+    setPlanTaskContext({ taskTitle: null, taskId: null });
+    reset();
+  };
+
   const handleMinutesChange = (minutes: number) => {
     setFocusMinutes(minutes);
     setSelectedPresetId(null);
@@ -225,6 +285,19 @@ export function SeansShell() {
       {subject}
     </span>
   ) : null;
+
+  const planTaskTitle = planTaskContext.taskTitle;
+  const planTaskChip = planTaskTitle ? (
+    <PlanTaskContextChip title={t("from_plan_task", { title: planTaskTitle })} />
+  ) : null;
+
+  const contextChips =
+    subjectChip || planTaskChip ? (
+      <div className="flex max-w-full flex-wrap items-center justify-center gap-2">
+        {planTaskChip}
+        {subjectChip}
+      </div>
+    ) : null;
 
   const phaseLabel =
     phase === "break"
@@ -276,7 +349,7 @@ export function SeansShell() {
           className="relative flex w-full max-w-sm flex-col items-center gap-6"
           {...phaseMotion}
         >
-          {subjectChip}
+          {contextChips}
           <p
             className="text-sm font-semibold uppercase tracking-wide"
             style={{
@@ -296,16 +369,24 @@ export function SeansShell() {
             onMinutesChange={handleMinutesChange}
             onPresetSelect={handlePresetSelect}
           />
-          <SessionControls
-            phase={phase}
-            busy={busy}
-            isPaused={isPaused}
-            onStart={() => void startSession()}
-            onTogglePause={togglePause}
-            onComplete={() => void finalize("COMPLETED")}
-            onAbandon={() => void finalize("ABANDONED")}
-            onSkipBreak={skipBreak}
-          />
+          <div className="flex items-center justify-center gap-3">
+            {ambient.trackId !== "off" ? (
+              <SessionAmbientToggle
+                muted={ambient.muted}
+                onToggleMute={ambient.toggleMute}
+              />
+            ) : null}
+            <SessionControls
+              phase={phase}
+              busy={busy}
+              isPaused={isPaused}
+              onStart={() => void handleStartSession()}
+              onTogglePause={togglePause}
+              onComplete={() => void finalize("COMPLETED")}
+              onAbandon={() => void finalize("ABANDONED")}
+              onSkipBreak={skipBreak}
+            />
+          </div>
         </motion.div>
       </div>
     );
@@ -361,6 +442,13 @@ export function SeansShell() {
                 value={subject ?? ""}
                 onChange={(v) => setSubject(v.trim() ? v.trim() : null)}
               />
+              {planTaskChip ? (
+                <div className="flex w-full justify-center">{planTaskChip}</div>
+              ) : null}
+              <SessionAmbientPicker
+                trackId={ambient.trackId}
+                onTrackIdChange={ambient.setTrackId}
+              />
               <SessionTimerRing
                 phase={phase}
                 focusMinutes={focusMinutes}
@@ -376,7 +464,7 @@ export function SeansShell() {
                 phase={phase}
                 busy={busy}
                 isPaused={isPaused}
-                onStart={() => void startSession()}
+                onStart={() => void handleStartSession()}
                 onTogglePause={togglePause}
                 onComplete={() => void finalize("COMPLETED")}
                 onAbandon={() => void finalize("ABANDONED")}
@@ -391,8 +479,13 @@ export function SeansShell() {
                 focusElapsed={focusElapsed}
                 sessionId={session?.id ?? null}
                 subject={subject}
+                questBaseline={questBaseline}
+                streakBaseline={streakBaseline}
+                countsAsFocusSession={session?.countsAsFocusSession ?? true}
+                sessionStatus={session?.status ?? null}
+                planTaskAutoCompleted={session?.planTaskAutoCompleted ?? false}
                 onSubmitFeedback={recordFeedback}
-                onReset={reset}
+                onReset={handleReset}
               />
             </motion.div>
           )}

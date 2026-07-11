@@ -8,6 +8,7 @@ import { Button } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useCoachSession } from "./coach-session-context";
+import { KocHubBrief } from "./koc-hub-brief";
 import { KocHubSkeleton } from "./koc-content-skeleton";
 
 function greetingKeyForHour():
@@ -82,6 +83,7 @@ export function KocHub() {
         </div>
 
         <div className="relative z-10 mt-auto flex flex-col gap-3 px-5 pb-6 pt-72">
+          <KocHubBrief />
           <Button type="button" className="w-full" onClick={goNewChat}>
             {t("start_chat")}
           </Button>

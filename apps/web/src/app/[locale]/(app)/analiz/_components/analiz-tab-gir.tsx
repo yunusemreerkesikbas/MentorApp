@@ -8,6 +8,7 @@ import { AnalizHistoryList } from "./analiz-history-list";
 import { AnalizMockExamForm } from "./analiz-mock-exam-form";
 
 interface AnalizTabGirProps {
+  examId: string;
   exam: ExamSummaryDto | null;
   subjects: ExamSubjectDto[];
   scores: Record<string, SubjectScores>;
@@ -20,6 +21,7 @@ interface AnalizTabGirProps {
   onScoreChange: (slug: string, field: keyof SubjectScores, value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCopyLast: (exam: import("@mentor/types").MockExamDto) => void;
+  onHistoryChanged: () => void;
 }
 
 function NoExamSeed() {
@@ -43,6 +45,7 @@ function NoExamSeed() {
 }
 
 export function AnalizTabGir({
+  examId,
   exam,
   subjects,
   scores,
@@ -55,6 +58,7 @@ export function AnalizTabGir({
   onScoreChange,
   onSubmit,
   onCopyLast,
+  onHistoryChanged,
 }: AnalizTabGirProps) {
   const t = useTranslations("analysis");
 
@@ -78,7 +82,15 @@ export function AnalizTabGir({
           />
         )}
       </Card>
-      <AnalizHistoryList refreshKey={historyRefreshKey} onCopyLast={onCopyLast} />
+      {examId ? (
+        <AnalizHistoryList
+          examId={examId}
+          refreshKey={historyRefreshKey}
+          subjects={subjects}
+          onCopyLast={onCopyLast}
+          onChanged={onHistoryChanged}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,7 @@
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
+  type MentionSuggestion,
   type Paginated,
   ZoneMemberStatus,
   type ZoneMemberView,
@@ -11,11 +12,13 @@ import type { CreateZone, ZoneListQuery } from "@mentor/validation";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
+import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import {
   canApproveMember,
   canCreateZone,
   canModerateZone,
   canRemoveMember,
+  canSearchMembers,
   isPlatformStaff,
   type ForumActor,
 } from "../domain/forum.policy";
@@ -42,6 +45,7 @@ export class ForumService {
     private readonly posts: ForumPostRepository,
     private readonly config: ConfigRegistryService,
     private readonly events: EventEmitter2,
+    @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
 
   /** Per-author activity signals for the community effort board's behaviour badges (read-only). */
@@ -83,7 +87,7 @@ export class ForumService {
       joinPolicy: dto.joinPolicy,
       createdBy: actorId,
     });
-    return this.toView(row, 0, null, actorRoles);
+    return this.toView(row, 0, 0, null, actorRoles);
   }
 
   async assignOwner(actorRoles: string[], zoneId: string, targetUserId: string): Promise<void> {
@@ -167,13 +171,20 @@ export class ForumService {
     await this.assertEnabled();
     const { items, total } = await this.repo.listPublic(viewerId, q);
     const ids = items.map((z) => z.id);
-    // Two batched lookups instead of 2-per-zone (no N+1).
-    const [counts, memberships] = await Promise.all([
+    // Three batched lookups instead of per-zone (no N+1).
+    const [counts, threadCounts, memberships] = await Promise.all([
       this.repo.memberCountsByZone(ids),
+      this.repo.threadCountsByZone(ids),
       this.repo.findMembershipsByZone(ids, viewerId),
     ]);
     const views = items.map((z) =>
-      this.toView(z, counts.get(z.id) ?? 0, memberships.get(z.id) ?? null, actorRoles),
+      this.toView(
+        z,
+        counts.get(z.id) ?? 0,
+        threadCounts.get(z.id) ?? 0,
+        memberships.get(z.id) ?? null,
+        actorRoles,
+      ),
     );
     return { items: views, total, page: q.page, pageSize: q.pageSize };
   }
@@ -197,15 +208,41 @@ export class ForumService {
     }));
   }
 
+  /**
+   * @mention autocomplete (APP-021): ACTIVE members of the zone whose username starts with `q`
+   * (schema guarantees lowercase handle-charset). Any ACTIVE member may search — the list is
+   * scoped to people the caller already shares a zone with, so nothing new is exposed.
+   */
+  async searchMembers(
+    actor: ForumActor,
+    memberStatus: string | null,
+    zoneId: string,
+    q: string,
+  ): Promise<MentionSuggestion[]> {
+    await this.assertEnabled();
+    const zone = await this.repo.findById(zoneId, actor.userId);
+    if (!zone) throw new DomainError(ErrorCode.FORUM_ZONE_NOT_FOUND, HttpStatus.NOT_FOUND);
+    if (!canSearchMembers(actor, memberStatus)) {
+      throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
+    }
+    const rows = await this.repo.searchActiveMembers(zoneId, q);
+    return rows.map((r) => ({
+      username: r.username,
+      displayName: r.displayName,
+      avatarUrl: r.avatarStorageKey ? this.storage.getPublicUrl(r.avatarStorageKey) : null,
+    }));
+  }
+
   async getZone(viewerId: string, actorRoles: string[], slug: string): Promise<ZoneView> {
     await this.assertEnabled();
     const row = await this.repo.findBySlug(slug, viewerId);
     if (!row) throw new DomainError(ErrorCode.FORUM_ZONE_NOT_FOUND, HttpStatus.NOT_FOUND);
-    const [m, count] = await Promise.all([
+    const [m, count, threadCounts] = await Promise.all([
       this.repo.findMembership(row.id, viewerId),
       this.repo.memberCount(row.id),
+      this.repo.threadCountsByZone([row.id]),
     ]);
-    return this.toView(row, count, m ?? null, actorRoles);
+    return this.toView(row, count, threadCounts.get(row.id) ?? 0, m ?? null, actorRoles);
   }
 
   /** Controller helper: the zone's join policy (for the join call) — no member-count round-trip. */
@@ -224,6 +261,7 @@ export class ForumService {
   private toView(
     z: ZoneRow,
     memberCount: number,
+    threadCount: number,
     membership: MemberRow | null,
     actorRoles: string[],
   ): ZoneView {
@@ -242,6 +280,7 @@ export class ForumService {
       emoji: z.emoji,
       isArchived: z.isArchived,
       memberCount,
+      threadCount,
       myStatus: (membership?.status as ZoneMemberStatus | undefined) ?? null,
       myRole,
       canModerate,

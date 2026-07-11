@@ -7,19 +7,27 @@ import type {
   StartStudySessionInput,
   UpdateStudySessionInput,
 } from "@mentor/validation";
+import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { toIsoDate } from "../domain/date.util";
+import { toIsoDate, todayIso } from "../domain/date.util";
 import {
+  qualifiesAsFocusSession,
   RECENT_SESSION_WINDOW_DAYS,
   RECENT_SUBJECTS_MAX,
   type RecentSessionSummary,
 } from "../domain/coaching.constants";
-import { CoachingEventTopic, FirstSessionOfDay } from "../domain/coaching.events";
+import {
+  CoachingEventTopic,
+  DailyPlanCompleted,
+  FirstSessionOfDay,
+  StudySessionCompleted,
+} from "../domain/coaching.events";
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
+import { PlanTaskRepository } from "../infrastructure/plan-task.repository";
 import { StudySessionRepository } from "../infrastructure/study-session.repository";
 import { toStudySessionDto } from "./coaching.mappers";
 
@@ -35,9 +43,15 @@ export class SessionService {
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly sessions: StudySessionRepository,
+    private readonly planTasks: PlanTaskRepository,
     private readonly activity: DailyActivityRepository,
     private readonly events: EventEmitter2,
+    private readonly config: ConfigRegistryService,
   ) {}
+
+  private getMinFocusSeconds(): Promise<number> {
+    return this.config.get("coaching.session.min_focus_seconds");
+  }
 
   /**
    * PII-free summary of recent study behavior for the AI coach context (§4 #6). Aggregates
@@ -79,15 +93,19 @@ export class SessionService {
     userId: string,
     query: ListStudySessionsQuery,
   ): Promise<Paginated<StudySessionDto>> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
     return withUserContext(this.db, { userId }, async (tx) => {
       const { items, total } = await this.sessions.listPaged(
         tx,
         userId,
         query.page,
         query.pageSize,
+        query.subject,
       );
       return {
-        items: items.map(toStudySessionDto),
+        items: items.map(({ planTaskTitle, ...row }) =>
+          toStudySessionDto(row, minFocusSeconds, { planTaskTitle }),
+        ),
         total,
         page: query.page,
         pageSize: query.pageSize,
@@ -96,18 +114,26 @@ export class SessionService {
   }
 
   async start(userId: string, input: StartStudySessionInput): Promise<StudySessionDto> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
     const startedAt = input.startedAt ? new Date(input.startedAt) : new Date();
     const plannedFocusMinutes =
       input.preset === "custom" ? (input.focusMinutes ?? null) : null;
     return withUserContext(this.db, { userId }, async (tx) => {
+      if (input.planTaskId) {
+        const task = await this.planTasks.findById(tx, userId, input.planTaskId);
+        if (!task) {
+          throw new DomainError(ErrorCode.COACHING_TASK_NOT_FOUND, HttpStatus.NOT_FOUND);
+        }
+      }
       const row = await this.sessions.create(tx, {
         userId,
         startedAt,
         preset: input.preset,
         plannedFocusMinutes,
         subject: input.subject ?? null,
+        planTaskId: input.planTaskId ?? null,
       });
-      return toStudySessionDto(row);
+      return toStudySessionDto(row, minFocusSeconds);
     });
   }
 
@@ -116,7 +142,9 @@ export class SessionService {
     id: string,
     input: UpdateStudySessionInput,
   ): Promise<StudySessionDto> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
     let firstSessionToday = false;
+    let planCompleted: number | null = null;
     const result = await withUserContext(this.db, { userId }, async (tx) => {
       const existing = await this.sessions.findById(tx, userId, id);
       if (!existing) {
@@ -134,14 +162,47 @@ export class SessionService {
       const date = toIsoDate(existing.startedAt);
       const [prior, hasSession] = await Promise.all([
         this.activity.findByDate(tx, userId, date),
-        this.sessions.hasCompletedOnDate(tx, userId, date),
+        this.sessions.hasCompletedOnDate(tx, userId, date, minFocusSeconds),
       ]);
       await this.activity.upsertHasSession(tx, userId, date, hasSession);
       if (!prior?.hasSession && hasSession) firstSessionToday = true;
-      return toStudySessionDto(updated!);
+
+      let planTaskAutoCompleted = false;
+      if (
+        input.status === "COMPLETED" &&
+        qualifiesAsFocusSession(input.actualFocusSeconds, minFocusSeconds) &&
+        existing.planTaskId
+      ) {
+        const task = await this.planTasks.findById(tx, userId, existing.planTaskId);
+        if (task && task.status !== "DONE" && task.taskDate >= todayIso()) {
+          await this.planTasks.update(tx, userId, task.id, { status: "DONE" });
+          const doneCount = await this.planTasks.countDone(tx, userId, task.taskDate);
+          await this.activity.upsertTasksDone(tx, userId, task.taskDate, doneCount);
+          planTaskAutoCompleted = true;
+          if (task.taskDate === todayIso()) {
+            const total = await this.planTasks.countTotal(tx, userId, task.taskDate);
+            if (total > 0 && doneCount === total) planCompleted = total;
+          }
+        }
+      }
+
+      return toStudySessionDto(updated!, minFocusSeconds, { planTaskAutoCompleted });
     });
     if (firstSessionToday) {
       this.events.emit(CoachingEventTopic.FIRST_SESSION, new FirstSessionOfDay(userId));
+    }
+    if (planCompleted !== null) {
+      this.events.emit(
+        CoachingEventTopic.PLAN_COMPLETED,
+        new DailyPlanCompleted(userId, planCompleted),
+      );
+    }
+    // XP / quest rewards only for sessions that meet the min-focus threshold (roadmap §261).
+    if (
+      input.status === "COMPLETED" &&
+      qualifiesAsFocusSession(input.actualFocusSeconds, minFocusSeconds)
+    ) {
+      this.events.emit(CoachingEventTopic.SESSION_COMPLETED, new StudySessionCompleted(userId));
     }
     return result;
   }
@@ -158,6 +219,7 @@ export class SessionService {
     id: string,
     input: SessionFeedbackInput,
   ): Promise<StudySessionDto> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
     return withUserContext(this.db, { userId }, async (tx) => {
       const existing = await this.sessions.findById(tx, userId, id);
       if (!existing) {
@@ -173,7 +235,7 @@ export class SessionService {
           ? { aiReflection: null, aiModel: null, aiReflectedAt: null }
           : {}),
       });
-      return toStudySessionDto(updated!);
+      return toStudySessionDto(updated!, minFocusSeconds);
     });
   }
 
@@ -188,6 +250,7 @@ export class SessionService {
     reflection: string,
     model: string,
   ): Promise<StudySessionDto> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
     return withUserContext(this.db, { userId }, async (tx) => {
       const existing = await this.sessions.findById(tx, userId, id);
       if (!existing) {
@@ -201,15 +264,16 @@ export class SessionService {
         aiModel: model,
         aiReflectedAt: new Date(),
       });
-      return toStudySessionDto(updated!);
+      return toStudySessionDto(updated!, minFocusSeconds);
     });
   }
 
   /** Read a single session (RLS-scoped) — used by W3 session reflection. */
   async getById(userId: string, id: string): Promise<StudySessionDto | null> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
     return withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.sessions.findById(tx, userId, id);
-      return row ? toStudySessionDto(row) : null;
+      return row ? toStudySessionDto(row, minFocusSeconds) : null;
     });
   }
 }

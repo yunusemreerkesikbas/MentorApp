@@ -16,9 +16,11 @@ const makeRepo = () => ({
   findMembership: vi.fn().mockResolvedValue(null),
   findMembershipPrivileged: vi.fn().mockResolvedValue(null),
   listMembers: vi.fn(),
+  searchActiveMembers: vi.fn().mockResolvedValue([]),
   setMemberStatus: vi.fn(),
   deleteMember: vi.fn(),
   memberCount: vi.fn().mockResolvedValue(0),
+  threadCountsByZone: vi.fn().mockResolvedValue(new Map()),
   listOwnerAndMods: vi.fn().mockResolvedValue([]),
   zoneSlug: vi.fn().mockResolvedValue(null),
 });
@@ -26,6 +28,7 @@ const makeRepo = () => ({
 const config = { get: vi.fn().mockResolvedValue(true) };
 const events = { emit: vi.fn() };
 const posts = { authorActivityStats: vi.fn() };
+const storage = { getPublicUrl: vi.fn((key: string) => `https://cdn/${key}`) };
 
 describe("ForumService", () => {
   let repo: ReturnType<typeof makeRepo>;
@@ -35,7 +38,7 @@ describe("ForumService", () => {
     vi.clearAllMocks();
     config.get.mockResolvedValue(true);
     repo = makeRepo();
-    svc = new ForumService(repo as never, posts as never, config as never, events as never);
+    svc = new ForumService(repo as never, posts as never, config as never, events as never, storage as never);
   });
 
   it("404s when the feature flag is off", async () => {
@@ -98,6 +101,52 @@ describe("ForumService", () => {
     await svc.approveMember({ userId: "u1", platformRoles: [UserRole.ADMIN], zoneRole: null }, "z1", "u2", false);
     expect(repo.deleteMember).toHaveBeenCalledWith("z1", "u2");
     expect(repo.setMemberStatus).not.toHaveBeenCalled();
+  });
+
+  describe("searchMembers (@mention autocomplete)", () => {
+    const zone = { id: "z1", type: ZoneType.CHAT };
+
+    it("rejects a non-member (and never hits the repo)", async () => {
+      repo.findById.mockResolvedValue(zone);
+      await expect(
+        svc.searchMembers({ userId: "u1", platformRoles: [UserRole.STUDENT], zoneRole: null }, null, "z1", "em"),
+      ).rejects.toMatchObject({ httpStatus: HttpStatus.FORBIDDEN });
+      expect(repo.searchActiveMembers).not.toHaveBeenCalled();
+    });
+
+    it("404s on an unknown zone", async () => {
+      repo.findById.mockResolvedValue(null);
+      await expect(
+        svc.searchMembers({ userId: "u1", platformRoles: [UserRole.ADMIN], zoneRole: null }, null, "zX", "em"),
+      ).rejects.toMatchObject({ httpStatus: HttpStatus.NOT_FOUND });
+    });
+
+    it("ACTIVE member searches; avatar keys resolve to public URLs", async () => {
+      repo.findById.mockResolvedValue(zone);
+      repo.searchActiveMembers.mockResolvedValue([
+        { username: "emre", displayName: "Emre E.", avatarStorageKey: "a/emre.webp" },
+        { username: "emel", displayName: "Emel K.", avatarStorageKey: null },
+      ]);
+      const out = await svc.searchMembers(
+        { userId: "u1", platformRoles: [UserRole.STUDENT], zoneRole: ZoneRole.MEMBER },
+        ZoneMemberStatus.ACTIVE,
+        "z1",
+        "em",
+      );
+      expect(repo.searchActiveMembers).toHaveBeenCalledWith("z1", "em");
+      expect(out).toEqual([
+        { username: "emre", displayName: "Emre E.", avatarUrl: "https://cdn/a/emre.webp" },
+        { username: "emel", displayName: "Emel K.", avatarUrl: null },
+      ]);
+    });
+
+    it("platform staff may search without membership", async () => {
+      repo.findById.mockResolvedValue(zone);
+      repo.searchActiveMembers.mockResolvedValue([]);
+      await expect(
+        svc.searchMembers({ userId: "u1", platformRoles: [UserRole.ADMIN], zoneRole: null }, null, "z1", "em"),
+      ).resolves.toEqual([]);
+    });
   });
 
   describe("removeMember", () => {

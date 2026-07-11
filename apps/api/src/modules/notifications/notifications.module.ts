@@ -16,6 +16,7 @@ import { JobHandlersRegistrar } from "./application/job-handlers.registrar";
 import { JobRunnerService } from "./application/job-runner.service";
 import { CoachingEventsListener } from "./application/listeners/coaching-events.listener";
 import { ForumEventsListener } from "./application/listeners/forum-events.listener";
+import { IdentityEventsListener } from "./application/listeners/identity-events.listener";
 import { PaymentsEventsListener } from "./application/listeners/payments-events.listener";
 import { NotificationsService } from "./application/notifications.service";
 import { JobRepository } from "./infrastructure/job.repository";
@@ -48,6 +49,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     PaymentsEventsListener,
     CoachingEventsListener,
     ForumEventsListener,
+    IdentityEventsListener,
     NotificationPreferencesRepository,
     PushSubscriptionRepository,
     NotificationDeliveryRepository,

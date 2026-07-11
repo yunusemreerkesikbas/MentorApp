@@ -231,6 +231,8 @@ export function toAuthUser(
     username: user.username ?? null,
     avatarUrl:
       user.avatarStorageKey && storage ? storage.getPublicUrl(user.avatarStorageKey) : null,
+    bio: user.bio ?? null,
+    website: user.website ?? null,
     roles: user.roles as AuthUser["roles"],
     organizationId: user.organizationId,
     examType: (user.examType as AuthUser["examType"]) ?? null,

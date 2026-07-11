@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import type { PlanTaskDto, PlanTaskStatus } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
 import Plus from "lucide-react/dist/esm/icons/plus.mjs";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { MOBILE_TAB_BAR_STICKY_BOTTOM_CLASS } from "@/lib/app-shell";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
@@ -21,6 +22,7 @@ import {
   updatePlanTask,
 } from "@/lib/plan-tasks";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import { parseAnalysisPlanPrefill, type AnalysisPlanPrefill } from "@/lib/analysis-plan-prefill";
 import { PlanAddTaskForm, type PlanAddTaskFormHandle } from "./plan-add-task-form";
 import { PlanDateNav } from "./plan-date-nav";
 import { PlanDatePickerSheet, type PlanDatePickerSheetHandle } from "./plan-date-picker-sheet";
@@ -42,6 +44,15 @@ import {
   weekDates,
 } from "./plan-utils";
 
+/** Best-effort human message from an unknown error (module-level so it's declared before use). */
+function readError(err: unknown): string {
+  return err instanceof ApiClientError
+    ? err.message
+    : err instanceof Error
+      ? err.message
+      : String(err);
+}
+
 /**
  * Plan page — three toggleable views (Liste / Timeline / Hafta) with shared CRUD.
  */
@@ -50,6 +61,8 @@ export function PlanShell() {
   const t = useTranslations("plan");
   const tCommon = useTranslations("common");
   const locale = useLocale();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const { filterSheet, actionSheet } = useMentorBottomSheet();
   const { confirm } = useMentorDialog();
   const { error: showErrorToast } = useMentorToast();
@@ -64,8 +77,21 @@ export function PlanShell() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const addFormRef = useRef<PlanAddTaskFormHandle>(null);
+  const prefillConsumed = useRef(false);
+  const prefill = useMemo(
+    () =>
+      parseAnalysisPlanPrefill({
+        add: searchParams.get("add"),
+        subject: searchParams.get("subject"),
+        title: searchParams.get("title"),
+      }),
+    [searchParams],
+  );
 
   useEffect(() => {
+    // Reads localStorage after mount (never on the server) so the stored view can't cause an SSR
+    // hydration mismatch — a deliberate external-sync effect, not derived state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setViewMode(readStoredViewMode());
   }, []);
 
@@ -73,47 +99,70 @@ export function PlanShell() {
   const weekLoading = loadedWeek !== weekAnchor;
   const readOnly = isPastDate(date);
 
+  const loadDayTasks = useCallback(async (isMounted: () => boolean = () => true) => {
+    try {
+      const data = await listPlanTasksForDate(date);
+      if (!isMounted()) return;
+      setTasks(data);
+      setLoadedDate(date);
+      setError(null);
+    } catch (err) {
+      if (!isMounted()) return;
+      setTasks([]);
+      setLoadedDate(date);
+      setError(readError(err));
+    }
+  }, [date]);
+
+  const loadWeekTasks = useCallback(async (isMounted: () => boolean = () => true) => {
+    try {
+      const data = await listPlanTasksForWeek(weekAnchor);
+      if (!isMounted()) return;
+      setWeekTasks(data);
+      setLoadedWeek(weekAnchor);
+      setError(null);
+    } catch (err) {
+      if (!isMounted()) return;
+      setWeekTasks({});
+      setLoadedWeek(weekAnchor);
+      setError(readError(err));
+    }
+  }, [weekAnchor]);
+
   useEffect(() => {
     if (viewMode === "week") return;
     let active = true;
-    listPlanTasksForDate(date)
-      .then((data) => {
-        if (!active) return;
-        setTasks(data);
-        setLoadedDate(date);
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        setTasks([]);
-        setLoadedDate(date);
-        setError(readError(err));
-      });
+    void loadDayTasks(() => active);
     return () => {
       active = false;
     };
-  }, [date, viewMode]);
+  }, [date, viewMode, loadDayTasks]);
 
   useEffect(() => {
     if (viewMode !== "week") return;
     let active = true;
-    listPlanTasksForWeek(weekAnchor)
-      .then((data) => {
-        if (!active) return;
-        setWeekTasks(data);
-        setLoadedWeek(weekAnchor);
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        setWeekTasks({});
-        setLoadedWeek(weekAnchor);
-        setError(readError(err));
-      });
+    void loadWeekTasks(() => active);
     return () => {
       active = false;
     };
-  }, [viewMode, weekAnchor]);
+  }, [viewMode, weekAnchor, loadWeekTasks]);
+
+  useEffect(() => {
+    function refreshIfVisible() {
+      if (document.visibilityState !== "visible") return;
+      if (viewMode === "week") void loadWeekTasks();
+      else void loadDayTasks();
+    }
+    function onPageShow(e: PageTransitionEvent) {
+      if (e.persisted) refreshIfVisible();
+    }
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [viewMode, loadDayTasks, loadWeekTasks]);
 
   const activeTasks = useMemo(() => {
     if (viewMode === "week") return weekTasks[date] ?? [];
@@ -149,14 +198,6 @@ export function PlanShell() {
       },
     });
   }, [date, filterSheet, t, tasks, viewMode, weekTasks]);
-
-  function readError(err: unknown): string {
-    return err instanceof ApiClientError
-      ? err.message
-      : err instanceof Error
-        ? err.message
-        : String(err);
-  }
 
   function reportActionError(err: unknown) {
     showErrorToast({
@@ -302,12 +343,18 @@ export function PlanShell() {
     }
   }
 
-  const openAddSheet = useCallback(async () => {
+  const openAddSheet = useCallback(async (taskPrefill?: AnalysisPlanPrefill | null) => {
     if (readOnly) return;
     await filterSheet({
       title: t("add_sheet_title"),
       applyLabel: t("add_task"),
-      children: <PlanAddTaskForm ref={addFormRef} />,
+      children: (
+        <PlanAddTaskForm
+          ref={addFormRef}
+          initialTitle={taskPrefill?.title}
+          initialSubject={taskPrefill?.subject}
+        />
+      ),
       onApply: async () => {
         if (!addFormRef.current?.validate()) throw new Error("validation");
         const { title, subject } = addFormRef.current.getValues();
@@ -321,6 +368,14 @@ export function PlanShell() {
       },
     });
   }, [date, filterSheet, readOnly, t]);
+
+  useEffect(() => {
+    if (!prefill || prefillConsumed.current || readOnly) return;
+    prefillConsumed.current = true;
+    void openAddSheet(prefill).finally(() => {
+      router.replace("/plan");
+    });
+  }, [openAddSheet, prefill, readOnly, router]);
 
   const dayProgress = taskStats(dayLoading ? [] : tasks);
   const weekDayProgress = taskStats(

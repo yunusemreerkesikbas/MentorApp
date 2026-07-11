@@ -55,22 +55,38 @@ export function AnalizTabYanlislarim({
             {t("photo_signals_title")}
           </SectionHeading>
           <ul className="mt-4 flex flex-col gap-3">
-            {signals.map((s) => (
-              <li key={s.subjectRef} className="flex flex-col gap-1">
+            {signals.map((signal) => (
+              <li key={signal.subjectRef} className="flex flex-col gap-1">
                 <div className="flex items-center justify-between text-sm">
-                  <span style={{ color: "var(--color-body)" }}>{s.subjectName}</span>
-                  <span className="tabular-nums" style={{ color: "var(--color-secondary)" }}>
-                    {t("photo_count", { count: s.count })}
+                  <span style={{ color: "var(--color-body)" }}>
+                    {signal.subjectName}
+                  </span>
+                  <span
+                    className="tabular-nums"
+                    style={{ color: "var(--color-secondary)" }}
+                  >
+                    {t("photo_count", { count: signal.count })}
                   </span>
                 </div>
                 <ProgressBar
-                  value={maxCount > 0 ? Math.round((s.count / maxCount) * 100) : 0}
+                  value={
+                    maxCount > 0
+                      ? Math.round((signal.count / maxCount) * 100)
+                      : 0
+                  }
                 />
               </li>
             ))}
           </ul>
         </Card>
-      ) : null}
+      ) : (
+        <Card>
+          <SectionHeading subtitle={t("photo_signals_empty_desc")}>
+            {t("photo_signals_title")}
+          </SectionHeading>
+        </Card>
+      )}
     </div>
   );
 }
+

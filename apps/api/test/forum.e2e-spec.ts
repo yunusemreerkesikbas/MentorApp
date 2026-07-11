@@ -89,10 +89,21 @@ describe("forum zones (e2e)", () => {
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());
-    // Mirror main.ts: raw body for the fake-upload endpoint (needed by the attachments test).
+    // Mirror main.ts: raw body for the fake-upload endpoint (needed by the attachments tests).
     app.use(
       "/v1/storage/fake-upload",
-      express.raw({ type: ["image/jpeg", "image/png", "image/webp"], limit: 5 * 1024 * 1024 }),
+      express.raw({
+        type: [
+          "image/jpeg",
+          "image/png",
+          "image/webp",
+          "application/pdf",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ],
+        limit: 10 * 1024 * 1024,
+      }),
     );
     await app.init();
 
@@ -169,6 +180,43 @@ describe("forum zones (e2e)", () => {
     expect(approved.status).toBe(201);
   });
 
+  it("member search (@mention autocomplete): ACTIVE member finds prefix matches; non-member is 403 (APP-021)", async () => {
+    const created = await request(app.getHttpServer())
+      .post("/v1/forum/zones")
+      .set(asAdmin())
+      .send({ type: ZoneType.CHAT, title: "Mention Odası", joinPolicy: ZoneJoinPolicy.OPEN });
+    const zoneId = created.body.id as string;
+
+    const alice = await signup("mention-a");
+    const bob = await signup("mention-b");
+    // Usernames are set via the users table (signup has no username field); handle-charset only.
+    await svc(async (c) => {
+      await c.query("update users set username=$1 where id=$2", [`mentiona${RUN}`, alice.user.id]);
+      await c.query("update users set username=$1 where id=$2", [`mentionb${RUN}`, bob.user.id]);
+    });
+    for (const tok of [alice.accessToken, bob.accessToken]) {
+      await request(app.getHttpServer())
+        .post(`/v1/forum/zones/${zoneId}/join`)
+        .set({ Authorization: `Bearer ${tok}` });
+    }
+
+    const found = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/members/search?q=mention`)
+      .set({ Authorization: `Bearer ${alice.accessToken}` });
+    expect(found.status).toBe(200);
+    const usernames = found.body.map((s: { username: string }) => s.username);
+    expect(usernames).toContain(`mentiona${RUN}`);
+    expect(usernames).toContain(`mentionb${RUN}`);
+    expect(found.body[0]).toHaveProperty("displayName");
+    expect(found.body[0]).toHaveProperty("avatarUrl");
+
+    // The regular test user never joined this zone → forbidden.
+    const outsider = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/members/search?q=mention`)
+      .set(asUser());
+    expect(outsider.status).toBe(403);
+  });
+
   // ---- Slice 2: thread feed + reactions + pin ----
 
   const createZone = async (type: string, title: string) => {
@@ -195,6 +243,11 @@ describe("forum zones (e2e)", () => {
       .set(asUser());
     expect(feed.status).toBe(200);
     expect(feed.body.items.map((t: { id: string }) => t.id)).toContain(posted.body.id);
+
+    // The zone list carries a per-zone thread count (APP-026 loose-end).
+    const zones = await request(app.getHttpServer()).get("/v1/forum/zones").set(asUser());
+    const listed = zones.body.items.find((z: { id: string }) => z.id === zoneId);
+    expect(listed.threadCount).toBeGreaterThanOrEqual(1);
   });
 
   it("attachments: upload → post with image → feed returns it; rejects a foreign key + >4 (APP-018)", async () => {
@@ -260,6 +313,56 @@ describe("forum zones (e2e)", () => {
         attachments: Array.from({ length: 5 }, () => ({ key, mimeType: "image/png" })),
       });
     expect(tooMany.status).toBe(400);
+  });
+
+  it("file attachments: upload → post with PDF → detail returns kind=file + fileName; rejects a bad type (APP-027)", async () => {
+    await setForumEnabled(true);
+    const zoneId = await createZone(ZoneType.CHAT, "Dosyalı Sohbet");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+
+    // A disallowed content type is rejected at the upload-url boundary.
+    const bad = await request(app.getHttpServer())
+      .post("/v1/forum/attachments/upload-url")
+      .set(asUser())
+      .send({ contentType: "application/x-msdownload" });
+    expect(bad.status).toBe(400);
+
+    // Presigned upload for a PDF → key carries the .pdf extension.
+    const urlRes = await request(app.getHttpServer())
+      .post("/v1/forum/attachments/upload-url")
+      .set(asUser())
+      .send({ contentType: "application/pdf" });
+    expect(urlRes.status).toBe(201);
+    const { uploadUrl, key } = urlRes.body as { uploadUrl: string; key: string };
+    expect(key).toMatch(/\.pdf$/);
+
+    const pdf = Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF", "utf8");
+    await request(app.getHttpServer())
+      .put(uploadUrl)
+      .set("Content-Type", "application/pdf")
+      .send(pdf)
+      .expect(200);
+
+    const posted = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({
+        body: "notlarım ekte",
+        attachments: [{ key, mimeType: "application/pdf", fileName: "kpss-notlari.pdf" }],
+      });
+    expect(posted.status).toBe(201);
+    expect(posted.body.attachments).toHaveLength(1);
+    const att = posted.body.attachments[0];
+    expect(att.kind).toBe("file");
+    expect(att.fileName).toBe("kpss-notlari.pdf");
+    expect(att.sizeBytes).toBeGreaterThan(0);
+
+    // A mime outside the allowlist on create is rejected (spoof belt).
+    const spoof = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "sahte", attachments: [{ key, mimeType: "application/zip", fileName: "x.zip" }] });
+    expect(spoof.status).toBe(400);
   });
 
   it("QA attachments: question + answer carry images; question detail returns both (Phase 2)", async () => {
@@ -429,7 +532,7 @@ describe("forum zones (e2e)", () => {
     await request(app.getHttpServer())
       .patch("/v1/users/me")
       .set(asUser())
-      .send({ username: handle })
+      .send({ username: handle, bio: "KPSS yolculuğu", website: "https://ornek.dev" })
       .expect(200);
     const zoneId = await createZone(ZoneType.CHAT, "Profil Zonu");
     await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
@@ -462,6 +565,9 @@ describe("forum zones (e2e)", () => {
     expect(profile.body.username).toBe(handle);
     expect(profile.body.email).toBeUndefined();
     expect(profile.body).toHaveProperty("streak");
+    // Public bio + website surface (APP-024); still no PII.
+    expect(profile.body.bio).toBe("KPSS yolculuğu");
+    expect(profile.body.website).toBe("https://ornek.dev");
 
     const missing = await request(app.getHttpServer())
       .get(`/v1/community/profile/nobody${RUN}`)
@@ -496,7 +602,7 @@ describe("forum zones (e2e)", () => {
     expect(byStaff.status).toBe(201);
   });
 
-  it("react / unreact toggles the reaction count and myReactions", async () => {
+  it("emoji palette: multi-emoji reactions on threads + comments; disallowed emoji rejected", async () => {
     const zoneId = await createZone(ZoneType.CHAT, "Tepki Odası");
     await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
     const posted = await request(app.getHttpServer())
@@ -505,31 +611,59 @@ describe("forum zones (e2e)", () => {
       .send({ body: "tepki ver" });
     const threadId = posted.body.id as string;
 
+    // React with two distinct palette emojis (multiple reactions per user).
+    for (const emoji of [FORUM_LIKE_EMOJI, "💪"]) {
+      await request(app.getHttpServer())
+        .put(`/v1/forum/threads/${threadId}/reactions`)
+        .set(asUser())
+        .send({ emoji })
+        .expect(200);
+    }
+    // A disallowed emoji is rejected (allowlist).
     await request(app.getHttpServer())
       .put(`/v1/forum/threads/${threadId}/reactions`)
       .set(asUser())
-      .send({ emoji: FORUM_LIKE_EMOJI })
-      .expect(200);
+      .send({ emoji: "🤢" })
+      .expect(400);
 
     let feed = await request(app.getHttpServer())
       .get(`/v1/forum/zones/${zoneId}/threads`)
       .set(asUser());
     let item = feed.body.items.find((t: { id: string }) => t.id === threadId);
     expect(item.reactionCounts[FORUM_LIKE_EMOJI]).toBe(1);
-    expect(item.myReactions).toContain(FORUM_LIKE_EMOJI);
+    expect(item.reactionCounts["💪"]).toBe(1);
+    expect(item.myReactions).toEqual(expect.arrayContaining([FORUM_LIKE_EMOJI, "💪"]));
 
+    // Unreact one → the other stays.
     await request(app.getHttpServer())
       .delete(`/v1/forum/threads/${threadId}/reactions`)
       .set(asUser())
       .send({ emoji: FORUM_LIKE_EMOJI })
       .expect(204);
-
     feed = await request(app.getHttpServer())
       .get(`/v1/forum/zones/${zoneId}/threads`)
       .set(asUser());
     item = feed.body.items.find((t: { id: string }) => t.id === threadId);
     expect(item.reactionCounts[FORUM_LIKE_EMOJI] ?? 0).toBe(0);
-    expect(item.myReactions).not.toContain(FORUM_LIKE_EMOJI);
+    expect(item.reactionCounts["💪"]).toBe(1);
+
+    // Comments carry the same palette (reactionCounts / myReactions).
+    const comment = await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${threadId}/comments`)
+      .set(asUser())
+      .send({ body: "yorum" });
+    const postId = comment.body.id as string;
+    await request(app.getHttpServer())
+      .put(`/v1/forum/posts/${postId}/reactions`)
+      .set(asUser())
+      .send({ emoji: "🙏" })
+      .expect(200);
+    const detail = await request(app.getHttpServer())
+      .get(`/v1/forum/threads/${threadId}/detail`)
+      .set(asUser());
+    const commentView = detail.body.comments.find((c: { id: string }) => c.id === postId);
+    expect(commentView.reactionCounts["🙏"]).toBe(1);
+    expect(commentView.myReactions).toContain("🙏");
   });
 
   it("staff pin floats a thread to the top of the feed", async () => {
@@ -827,5 +961,121 @@ describe("forum zones (e2e)", () => {
     const list = await request(app.getHttpServer()).get("/v1/forum/public/questions");
     expect(list.status).toBe(200);
     expect(list.body.map((r: { id: string }) => r.id)).toContain(threadId);
+  });
+
+  // ---- Follow graph + "Akış" feed (APP-022) ----
+
+  it("follow → profile counts/isFollowing, following-feed scoping, notification, unfollow, self-follow", async () => {
+    await setForumEnabled(true);
+    // A (the default user) + B + C, all with handles (needed for followability + the notif link).
+    const aHandle = `fola${RUN}`;
+    const bHandle = `folb${RUN}`;
+    await request(app.getHttpServer())
+      .patch("/v1/users/me")
+      .set(asUser())
+      .send({ username: aHandle })
+      .expect(200);
+    const b = await signup("followee");
+    const asB = () => ({ Authorization: `Bearer ${b.accessToken}` });
+    await request(app.getHttpServer())
+      .patch("/v1/users/me")
+      .set(asB())
+      .send({ username: bHandle })
+      .expect(200);
+    const c = await signup("nonfollowee");
+    const asC = () => ({ Authorization: `Bearer ${c.accessToken}` });
+
+    // A CHAT zone all three join; B and C each post a thread.
+    const zoneId = await createZone(ZoneType.CHAT, "Takip Zonu");
+    for (const auth of [asUser(), asB(), asC()]) {
+      await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(auth);
+    }
+    const bThread = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asB())
+      .send({ body: "B'nin gönderisi" });
+    const cThread = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asC())
+      .send({ body: "C'nin gönderisi" });
+    const bThreadId = bThread.body.id as string;
+    const cThreadId = cThread.body.id as string;
+
+    // A follows B.
+    await request(app.getHttpServer()).put(`/v1/users/${bHandle}/follow`).set(asUser()).expect(200);
+
+    // B's profile (viewed by A) reflects the follow.
+    const profile = await request(app.getHttpServer())
+      .get(`/v1/community/profile/${bHandle}`)
+      .set(asUser());
+    expect(profile.status).toBe(200);
+    expect(profile.body.isFollowing).toBe(true);
+    expect(profile.body.followerCount).toBe(1);
+
+    // A's following feed shows B's thread but NOT C's (A doesn't follow C).
+    const feed = await request(app.getHttpServer()).get("/v1/forum/feed/following").set(asUser());
+    expect(feed.status).toBe(200);
+    const feedIds = (feed.body.items as { id: string }[]).map((t) => t.id);
+    expect(feedIds).toContain(bThreadId);
+    expect(feedIds).not.toContain(cThreadId);
+
+    // B is notified that A followed them (link → A's profile).
+    expect(await pollForumNotif(asB(), `/topluluk/uye/${aHandle}`)).toBe(true);
+
+    // Self-follow is rejected.
+    await request(app.getHttpServer()).put(`/v1/users/${aHandle}/follow`).set(asUser()).expect(400);
+
+    // Unfollow → profile flips + B's thread leaves the feed.
+    await request(app.getHttpServer()).delete(`/v1/users/${bHandle}/follow`).set(asUser()).expect(204);
+    const after = await request(app.getHttpServer())
+      .get(`/v1/community/profile/${bHandle}`)
+      .set(asUser());
+    expect(after.body.isFollowing).toBe(false);
+    expect(after.body.followerCount).toBe(0);
+    const feed2 = await request(app.getHttpServer()).get("/v1/forum/feed/following").set(asUser());
+    expect((feed2.body.items as { id: string }[]).map((t) => t.id)).not.toContain(bThreadId);
+  });
+
+  it("follow-suggestions: active zone authors, excluding self + already-followed (APP-023)", async () => {
+    await setForumEnabled(true);
+    const sHandle = `sug${RUN}`;
+    const bHandle = `sugb${RUN}`;
+    const cHandle = `sugc${RUN}`;
+    const s = await signup("sugviewer");
+    const asS = () => ({ Authorization: `Bearer ${s.accessToken}` });
+    const b = await signup("sugb");
+    const asB = () => ({ Authorization: `Bearer ${b.accessToken}` });
+    const c = await signup("sugc");
+    const asC = () => ({ Authorization: `Bearer ${c.accessToken}` });
+    for (const [auth, handle] of [
+      [asS(), sHandle],
+      [asB(), bHandle],
+      [asC(), cHandle],
+    ] as const) {
+      await request(app.getHttpServer()).patch("/v1/users/me").set(auth).send({ username: handle }).expect(200);
+    }
+
+    const zoneId = await createZone(ZoneType.CHAT, "Öneri Zonu");
+    for (const auth of [asS(), asB(), asC()]) {
+      await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(auth);
+    }
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/threads`).set(asB()).send({ body: "B önerisi" });
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/threads`).set(asC()).send({ body: "C önerisi" });
+
+    // S follows no one → suggestions surface the zone's authors (B, C), never S itself; all not-followed.
+    const sug1 = await request(app.getHttpServer()).get("/v1/forum/follow-suggestions").set(asS());
+    expect(sug1.status).toBe(200);
+    const handles1 = (sug1.body as { username: string }[]).map((u) => u.username);
+    expect(handles1).toContain(bHandle);
+    expect(handles1).toContain(cHandle);
+    expect(handles1).not.toContain(sHandle);
+    expect((sug1.body as { isFollowing: boolean }[]).every((u) => u.isFollowing === false)).toBe(true);
+
+    // After following B, B drops out of the suggestions; C stays.
+    await request(app.getHttpServer()).put(`/v1/users/${bHandle}/follow`).set(asS()).expect(200);
+    const sug2 = await request(app.getHttpServer()).get("/v1/forum/follow-suggestions").set(asS());
+    const handles2 = (sug2.body as { username: string }[]).map((u) => u.username);
+    expect(handles2).not.toContain(bHandle);
+    expect(handles2).toContain(cHandle);
   });
 });

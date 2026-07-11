@@ -208,3 +208,62 @@ describe("PlanService — task toggle keeps daily_activity in sync", () => {
     });
   });
 });
+
+describe("PlanService.getTodaySummary", () => {
+  let planRepo: ReturnType<typeof makePlanRepoFake>;
+  let service: PlanService;
+
+  beforeEach(() => {
+    planRepo = makePlanRepoFake([]);
+    service = new PlanService(fakeDb, planRepo as never, makeActivityFake() as never, {
+      emit: () => {},
+    } as never);
+  });
+
+  it("returns null when there are no tasks today", async () => {
+    expect(await service.getTodaySummary(USER)).toBeNull();
+  });
+
+  it("returns counts and capped pending titles", async () => {
+    for (let i = 1; i <= 6; i++) {
+      planRepo.rows.push({
+        id: `t${i}`,
+        userId: USER,
+        taskDate: TODAY,
+        title: `Task ${i}`,
+        subject: null,
+        status: i <= 2 ? "DONE" : "PENDING",
+        sortOrder: i,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+
+    const summary = await service.getTodaySummary(USER);
+    expect(summary).toEqual({
+      total: 6,
+      done: 2,
+      pendingTitles: ["Task 3", "Task 4", "Task 5", "Task 6"],
+    });
+  });
+
+  it("caps pending titles at TODAY_PLAN_PENDING_MAX", async () => {
+    for (let i = 1; i <= 7; i++) {
+      planRepo.rows.push({
+        id: `t${i}`,
+        userId: USER,
+        taskDate: TODAY,
+        title: `Task ${i}`,
+        subject: null,
+        status: "PENDING",
+        sortOrder: i,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+
+    const summary = await service.getTodaySummary(USER);
+    expect(summary?.pendingTitles).toHaveLength(5);
+    expect(summary?.pendingTitles).toEqual(["Task 1", "Task 2", "Task 3", "Task 4", "Task 5"]);
+  });
+});

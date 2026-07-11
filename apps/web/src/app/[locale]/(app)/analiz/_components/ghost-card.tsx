@@ -2,64 +2,52 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
-import type { CoachAccessDto, GhostComparisonDto, GhostNarrationDto } from "@mentor/types";
-import { aiChatControllerGetAccess, aiGhostControllerNarrate } from "@mentor/api-client";
+import type { GhostComparisonDto, GhostNarrationDto } from "@mentor/types";
+import { aiGhostControllerNarrate } from "@mentor/api-client";
 import { Card, Chip, SectionHeading } from "@mentor/ui";
+import { useRouter } from "@/i18n/navigation";
+
+interface GhostCardProps {
+  examId: string;
+  ghost: GhostComparisonDto;
+  premium: boolean;
+}
 
 /**
- * "Geçmiş-ben" (ghost) — the latest attempt vs the user's OWN past (§0 no ranking). Free reads the
- * rule-based comparison (backend-localized headline + signed deltas + record badge); premium users
- * additionally get an AI progress narration (`POST /v1/coach/ghost-narration`, cached per attempt).
+ * "Geçmiş-ben" compares the latest attempt with the user's own past.
+ * Premium narration remains scoped to the same active exam.
  */
-export function GhostCard({ ghost }: { ghost: GhostComparisonDto }) {
+export function GhostCard({ examId, ghost, premium }: GhostCardProps) {
   const reduceMotion = useReducedMotion();
   const translate = useTranslations("ghost");
   const router = useRouter();
-  const [premium, setPremium] = useState<boolean | null>(null);
   const [narration, setNarration] = useState<string | null>(ghost.aiNarration);
   const [narrating, setNarrating] = useState(false);
 
   const generate = useCallback(async () => {
     setNarrating(true);
     try {
-      const res = (await aiGhostControllerNarrate()) as unknown as
+      const res = (await aiGhostControllerNarrate({ examId })) as unknown as
         | { data?: GhostNarrationDto }
         | GhostNarrationDto;
-      const dto = (res as { data?: GhostNarrationDto }).data ?? (res as GhostNarrationDto);
+      const dto =
+        (res as { data?: GhostNarrationDto }).data ??
+        (res as GhostNarrationDto);
       if (dto?.narration) setNarration(dto.narration);
     } catch {
-      /* Narration is a premium enhancement; fall back to the rule-based comparison. */
+      /* Premium enhancement: the rule-based comparison remains available. */
     } finally {
       setNarrating(false);
     }
-  }, []);
+  }, [examId]);
 
   useEffect(() => {
-    let active = true;
-    aiChatControllerGetAccess()
-      .then((res) => {
-        if (!active) return;
-        const access =
-          (res as unknown as { data?: CoachAccessDto }).data ?? (res as unknown as CoachAccessDto);
-        const isPremium = access?.mode === "PREMIUM";
-        setPremium(isPremium);
-        // Generate only when premium and this attempt has no cached narration yet.
-        if (isPremium && ghost.aiNarration == null) void generate();
-      })
-      .catch(() => {
-        if (active) setPremium(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [generate, ghost.aiNarration]);
-
-  const movers = ghost.subjects.filter((s) => s.delta && s.delta !== "0.00");
+    if (premium && ghost.aiNarration == null) void generate();
+  }, [generate, ghost.aiNarration, premium]);
 
   return (
-    <Card className="flex flex-col gap-3">
+    <Card className="flex flex-col gap-4">
       <SectionHeading as="h2" subtitle={translate("subtitle")}>
         {translate("title")}
       </SectionHeading>
@@ -71,7 +59,10 @@ export function GhostCard({ ghost }: { ghost: GhostComparisonDto }) {
       <div className="flex flex-wrap items-center gap-2">
         <span
           className="text-2xl font-bold tabular-nums"
-          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+          style={{
+            color: "var(--color-main)",
+            fontFamily: "var(--font-heading)",
+          }}
         >
           {ghost.latest.totalNet}
         </span>
@@ -83,28 +74,61 @@ export function GhostCard({ ghost }: { ghost: GhostComparisonDto }) {
         </Chip>
       </div>
 
-      {movers.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          <span className="text-sm" style={{ color: "var(--color-secondary)" }}>
-            {translate("by_subject")}
-          </span>
-          {movers.map((s) => (
-            <span
-              key={s.subjectRef}
-              className="rounded-[var(--radius-card)] px-2 py-1 text-xs tabular-nums"
-              style={{
-                backgroundColor: "color-mix(in srgb, var(--color-chip) 25%, transparent)",
-                color: "var(--color-chip-text)",
-              }}
-            >
-              {s.subjectName} {s.delta}
-            </span>
-          ))}
+      <div className="overflow-hidden rounded-[var(--radius-card)]">
+        <div
+          className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 py-2 text-xs font-semibold"
+          style={{
+            background: "color-mix(in srgb, var(--color-chip) 12%, white)",
+            color: "var(--color-secondary)",
+          }}
+        >
+          <span>{translate("by_subject")}</span>
+          <span>{translate("latest_net")}</span>
+          <span>{translate("change")}</span>
         </div>
-      )}
+        <ul className="flex flex-col">
+          {ghost.subjects.map((subject) => {
+            const improved = subject.delta != null && Number(subject.delta) > 0;
+            return (
+              <li
+                key={subject.subjectRef}
+                className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-t px-3 py-2 text-sm"
+                style={{
+                  borderColor:
+                    "color-mix(in srgb, var(--color-main) 8%, transparent)",
+                }}
+              >
+                <span style={{ color: "var(--color-body)" }}>
+                  {subject.subjectName}
+                </span>
+                <span
+                  className="tabular-nums"
+                  style={{ color: "var(--color-main)" }}
+                >
+                  {subject.latestNet}
+                </span>
+                <span
+                  className="min-w-12 text-right font-semibold tabular-nums"
+                  style={{
+                    color: improved
+                      ? "var(--color-success)"
+                      : "var(--color-secondary)",
+                  }}
+                >
+                  {subject.delta ?? "—"}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
 
       {narrating ? (
-        <p className="text-sm" role="status" style={{ color: "var(--color-secondary)" }}>
+        <p
+          className="text-sm"
+          role="status"
+          style={{ color: "var(--color-secondary)" }}
+        >
           {translate("narrating")}
         </p>
       ) : premium && narration ? (
@@ -120,11 +144,11 @@ export function GhostCard({ ghost }: { ghost: GhostComparisonDto }) {
             {narration}
           </p>
         </motion.div>
-      ) : premium === false ? (
+      ) : !premium ? (
         <button
           type="button"
           onClick={() => router.push("/abonelik")}
-          className="text-left text-sm underline"
+          className="min-h-11 text-left text-sm underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           style={{ color: "var(--color-secondary)" }}
         >
           {translate("premium_nudge")}
@@ -133,3 +157,7 @@ export function GhostCard({ ghost }: { ghost: GhostComparisonDto }) {
     </Card>
   );
 }
+
+
+
+

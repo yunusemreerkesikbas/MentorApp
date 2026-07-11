@@ -22,6 +22,8 @@ export interface UseSessionTimerOptions {
   initialPreset?: "25_5" | "50_10" | "custom";
   /** Optional subject carried from a plan task deep-link. */
   subject?: string | null;
+  /** Optional plan task id from a plan → seans deep-link (persisted on start). */
+  planTaskId?: string | null;
 }
 
 export interface UseSessionTimerResult {
@@ -64,6 +66,7 @@ export function useSessionTimer(
     initialBreakMinutes = 5,
     initialPreset = "25_5",
     subject = null,
+    planTaskId = null,
   } = options;
   const tCommon = useTranslations("common");
   const { error: showErrorToast } = useMentorToast();
@@ -162,6 +165,10 @@ export function useSessionTimer(
               status: "COMPLETED",
               actualFocusSeconds: presetSeconds(focusMinutesRef.current),
             })
+              .then((finalized) => {
+                setSession(finalized);
+                sessionRef.current = finalized;
+              })
               .catch(showSessionError)
               .finally(() => setBusy(false));
           }
@@ -181,10 +188,15 @@ export function useSessionTimer(
     try {
       const preset = selectedPresetRef.current;
       const trimmedSubject = subject?.trim() ? subject.trim() : undefined;
+      const trimmedPlanTaskId = planTaskId?.trim() ? planTaskId.trim() : undefined;
+      const shared = {
+        subject: trimmedSubject,
+        ...(trimmedPlanTaskId ? { planTaskId: trimmedPlanTaskId } : {}),
+      };
       const started = await startStudySession(
         preset === "custom"
-          ? { preset: "custom", focusMinutes, subject: trimmedSubject }
-          : { preset, subject: trimmedSubject },
+          ? { preset: "custom", focusMinutes, ...shared }
+          : { preset, ...shared },
       );
       setSession(started);
       sessionRef.current = started;
@@ -195,17 +207,19 @@ export function useSessionTimer(
     } finally {
       setBusy(false);
     }
-  }, [focusMinutes, subject, beginPhase, showSessionError]);
+  }, [focusMinutes, subject, planTaskId, beginPhase, showSessionError]);
 
   const finalize = useCallback(
     async (status: "COMPLETED" | "ABANDONED") => {
       if (!session) return;
       setBusy(true);
       try {
-        await finalizeStudySession(session.id, {
+        const finalized = await finalizeStudySession(session.id, {
           status,
           actualFocusSeconds: focusElapsed,
         });
+        setSession(finalized);
+        sessionRef.current = finalized;
         setPhase("done");
       } catch (err) {
         showSessionError(err);

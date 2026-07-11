@@ -9,6 +9,7 @@ import { SessionService } from "./application/session.service";
 import { StreakService } from "./application/streak.service";
 import { TodayService } from "./application/today.service";
 import { VisionService } from "./application/vision.service";
+import { WeeklyReviewService } from "./application/weekly-review.service";
 import { CONTENT_PORT } from "./domain/content.port";
 import { CoachingQueryAdapter } from "./infrastructure/coaching-query.adapter";
 import { ContentServiceAdapter } from "./infrastructure/content-service.adapter";
@@ -21,6 +22,7 @@ import { StudySessionRepository } from "./infrastructure/study-session.repositor
 import { MockExamRepository } from "./infrastructure/mock-exam.repository";
 import { MockExamPhotoRepository } from "./infrastructure/mock-exam-photo.repository";
 import { VisionBoardRepository } from "./infrastructure/vision-board.repository";
+import { WeeklyReviewRepository } from "./infrastructure/weekly-review.repository";
 import { CoachingController } from "./presentation/coaching.controller";
 import { MockExamController } from "./presentation/mock-exam.controller";
 import { PlanTaskController } from "./presentation/plan-task.controller";
@@ -45,6 +47,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     MockExamService,
     TodayService,
     VisionService,
+    WeeklyReviewService,
     PlanTaskRepository,
     StudySessionRepository,
     MockExamRepository,
@@ -53,6 +56,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     StreakStateRepository,
     MoodCheckinRepository,
     VisionBoardRepository,
+    WeeklyReviewRepository,
     // W1 ContentService adapter (ContentPort → editorial calendar).
     { provide: CONTENT_PORT, useClass: ContentServiceAdapter },
     CoachingQueryAdapter,
@@ -63,9 +67,21 @@ import { StudySessionController } from "./presentation/study-session.controller"
     DailyQuestSignalService,
     MockExamService,
     MoodService,
+    PlanService,
     SessionService,
     VisionService,
+    WeeklyReviewService,
     StreakService,
   ],
 })
 export class CoachingModule {}
+
+
+
+
+
+
+
+
+
+

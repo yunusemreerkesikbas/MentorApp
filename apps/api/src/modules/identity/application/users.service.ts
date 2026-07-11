@@ -44,6 +44,16 @@ export class UsersService {
     return this.usersRepo.findByUsernameService(username);
   }
 
+  /**
+   * Cohort peers for follow-suggestion cold-start (forum orchestrates): recent active users in the
+   * viewer's exam-type cohort, excluding `excludeIds`. Empty when the viewer is unknown.
+   */
+  async suggestCohortPeers(viewerId: string, excludeIds: string[], limit: number) {
+    const me = await this.usersRepo.findByIdService(viewerId);
+    if (!me) return [];
+    return this.usersRepo.suggestCohortPeers(me.examType, excludeIds, limit);
+  }
+
   /** Admin metrics dashboard (W6) — read-only user-base aggregate. */
   async getUserStats(): Promise<UserStats> {
     const s = await this.usersRepo.statsSnapshot();
@@ -111,6 +121,8 @@ export class UsersService {
         ...(patch.avatarStorageKey !== undefined && {
           avatarStorageKey: patch.avatarStorageKey,
         }),
+        ...(patch.bio !== undefined && { bio: patch.bio }),
+        ...(patch.website !== undefined && { website: patch.website }),
         ...(patch.examType !== undefined && { examType: patch.examType }),
         ...(patch.examDate !== undefined && { examDate: patch.examDate }),
       });

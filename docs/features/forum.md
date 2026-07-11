@@ -63,6 +63,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `POST /v1/forum/zones/:id/join` | Join zone (OPEN→ACTIVE, REQUEST→PENDING) |
 | `GET /v1/forum/zones/:id/members` | List members (owner/mod) |
 | `POST /v1/forum/zones/:id/members/:userId/approve` | Approve pending member |
+| `GET /v1/forum/zones/:id/members/search?q=` | @mention autocomplete — active-member username prefix search (APP-021) |
 | `DELETE /v1/forum/zones/:id/members/:userId` | Reject pending or remove active member (owner/mod/staff; OWNER protected) |
 | `POST /v1/forum/zones/:id/threads` | Post thread/ask question |
 | `GET /v1/forum/zones/:id/threads` | Cursor feed (pinned first) |
@@ -79,6 +80,10 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `PUT/DELETE /v1/forum/threads\|posts/:id/bookmark` | Toggle bookmark (APP-018) |
 | `GET /v1/forum/bookmarks?before=` | Saved feed — threads + posts interleaved (APP-018) |
 | `GET /v1/forum/users/:username/activity?before=` | A user's activity feed (profile, APP-018) |
+| `GET /v1/forum/feed/following?before=` | Cross-zone "Akış" — threads by followed users (APP-022) |
+| `GET /v1/forum/follow-suggestions` | "Kimi takip et" — active zone authors + cohort fallback (APP-023) |
+| `PUT/DELETE /v1/users/:username/follow` | Follow / unfollow a user (identity; APP-022) |
+| `GET /v1/users/:username/{followers,following}?before=` | Follower / following lists (identity; APP-022) |
 | `POST /v1/internal/cron/cleanup-forum-attachments` | Orphan upload sweep (CronSecretGuard, APP-018) |
 | `POST /v1/forum/reports` | Report content |
 | `GET /v1/forum/zones/:id/reports` | Room moderation queue |
@@ -91,6 +96,124 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Dosya ekleri — PDF + Office (APP-027)** — Forum ekleri artık **görsel + dosya** taşıyor (görsel altyapısı
+  genelleştirildi). Türler: `application/pdf` + modern OOXML (docx/xlsx/pptx; legacy .doc/.xls/.ppt hariç),
+  **10MB/dosya**, mevcut **birleşik 4-ek limiti** (görsel 5MB / dosya 10MB, sunucu-uygulamalı). Migration
+  `0043`: `forum_attachments.file_name` (nullable, yalnız `kind='file'`). `Attachment` tipine `fileName` +
+  `sizeBytes` + `AttachmentKind.FILE`; `attachment.constants` `FORUM_FILE_MIME`/`FORUM_FILE_MAX_BYTES`/
+  `extensionForForumFileMime` + key regex dosya uzantılarını kapsar; validation `attachmentUploadUrlSchema`/
+  `attachmentInputSchema` mime allowlist'i `FORUM_ATTACHMENT_MIMES`'e genişledi + `fileName`. **`resolveForumAttachments`
+  genelleştirildi:** mime'a göre `kind` (image/file) + doğru per-kind boyut cap + fileName. `createAttachmentUploadUrl`
+  görsel VEYA dosya content-type'ı doğru uzantıyla mint eder. Fake storage controller + main.ts express.raw dosya
+  mime'larını + 10MB'ı kabul eder (asıl per-kind cap `resolveForumAttachments`'ta). **Güvenlik:** content-type
+  presigned upload'ta allowlist'e sabit (inline-HTML riski yok) + key own-prefix regex; dosya indirilir, yürütülmez.
+  Web: birleşik picker (`useForumImagePicker` görsel+dosya, tek liste + birleşik limit, `uploadForumFile`),
+  paylaşılan `AttachmentPreviewStrip` (thumb + dosya-chip; ThreadComposer + ForumImagePicker ortak), gallery
+  dosyaları **indirme chip'i** (ikon + `fileName` + boyut + güvenli dış link) olarak ayırır. i18n: `attach`/
+  `attach_file`/`attach_file_too_large` + genelleşen mesajlar. Testler: forum e2e +1 (PDF upload→post→detay
+  `kind=file`+fileName+sizeBytes; izin-dışı tür 400), qa-spec spoof-mime `application/zip`'e güncellendi;
+  forum unit 78, e2e 25/25. **Kapsam dışı**: legacy Office, inline PDF/Office önizleme, magic-byte sniff, video. *(APP-027)*
+- **Toparlama & CI yeşili + zone "X mesaj" sayacı (APP-026)** — Stabilizasyon slice'ı. (1) **APP-025 kapatma:**
+  `reaction-bar` palet butonlarından geçersiz `aria-pressed` (role=menuitem) kaldırıldı; full forum e2e
+  regresyonsuz. (2) **CI yeşili:** `apps/web` lint 7 error → 0 (`"lint": "eslint"`, `--max-warnings` yok →
+  yalnız error bloklar). 7 error yeni katı react-hooks kurallarından (`set-state-in-effect` ×6 + `immutability`
+  ×1), `analiz/panel/plan`'da (başka iş kalemlerinin WIP'i). **Hedefli yaklaşım:** `plan-shell` `readError`
+  modül seviyesine taşındı (before-declare fix) + 6 `set-state-in-effect` **gerekçeli `eslint-disable`** ile
+  bastırıldı (bilinçli prop→state senkronu / SSR-güvenli localStorage / fetch tetikleyici — davranış
+  değişmedi, mantık yeniden yazılmadı). (3) **Loose-end — zone "X mesaj" sayacı:** `ZoneView.threadCount`
+  (types) + `ForumZoneRepository.threadCountsByZone` (`memberCountsByZone` deseni: non-deleted COUNT, GROUP BY
+  zone, service-context, N+1 yok) + `ForumService.listZones`/`getZone`/`createZone` assembly + web
+  `zone-sidebar` "X üye · Y mesaj" (i18n `messages_count`). Testler: forum unit 78, e2e zone-list'e threadCount
+  assertion (24/24). **QA-public Send ertelendi** (indexability sinyali gerektirir — backlog). Orphan-cron
+  kaydı hâlâ ops (Gotchas'ta belgeli). *(APP-026)*
+- **Zengin emoji reaksiyon paleti — thread + yorum (APP-025)** — Like tek kalpten (APP-017'de daraltılmıştı)
+  **pozitif/destek emoji paletine** çevrildi (`FORUM_REACTION_EMOJIS = ["❤️","👍","💪","🎉","🙏"]`; §4
+  anti-shaming — negatif emoji yok; tunable sabit, runtime flag yok). Kullanıcı başına **çoklu reaksiyon**
+  (her emoji bağımsız toggle). **Migration yok** (`forum_reactions` + `forum_post_reactions` zaten emoji
+  tutuyor). Thread altyapısı zaten çoklu-emoji'ydi; **yorumlar tek-like'tan (`likeCount`/`myLiked`) palete
+  taşındı**: `CommentView` → `reactionCounts`/`myReactions` (ThreadView ile aynı); `ForumPostRepository`
+  `likeCountsByPost`/`myLikedPosts` → **`reactionCountsByPost`/`myReactionsByPost`** (thread aggregate desenini
+  aynalar); `postRowToCommentView` + `decorateComments` reaksiyon lookup'larına geçti; servis
+  `likePost/unlikePost` → **`reactPost/unreactPost(emoji)`**; `PUT/DELETE /posts/:id/reactions` artık emoji
+  body alır (`ReactionDto`, thread'le aynı; allowlist `z.enum` → izin-dışı emoji 400). Web: paylaşılan
+  **`ReactionBar`** (picker popover — Esc/click-dışı kapanır + ilk öğeye focus — + gruplu emoji-chip'leri;
+  `stopPropagation` ile satır navigasyonunu kırmaz) hem `ThreadItem` hem `CommentRow`/`FocusedComment`'te.
+  Optimistic toggle tek yere (`lib/forum-reactions.ts` `toggleReaction<T>` — ThreadView & CommentView aynı
+  şekil) çıkarıldı; 6 shell'in tekrarlı yerel `applyReaction`/`applyCommentLike` kopyaları silindi. i18n:
+  `reaction_add`. Testler: `forum-thread.service.spec` (yorum react/unreact emoji), forum e2e (thread'e 2
+  emoji + gruplu sayım + yoruma emoji + izin-dışı 400). **Kapsam dışı**: QA cevabına reaksiyon, "kimler tepki
+  verdi" listesi, reaksiyon bildirimi. *(APP-025)*
+- **Follow discovery — "Kimi takip et" + follow-back (APP-023)** — Takip grafını dolduran discovery
+  (APP-022'nin eksik yarısı: yeni kullanıcı kimseyi takip etmiyor → Akış boştu). **Öneri kaynağı = üyesi
+  olunan zone'larda aktif kişiler** (forum-native, bağlamsal — Akış'ta zaten göreceğin insanlar), soğuk
+  başlangıçta **cohort fallback** (aynı sınav tipi). Yeni `ForumThreadRepository.suggestAuthorsInMemberZones`
+  (`recentCommentersByThread` deseni: SERVICE-context + `selectDistinctOn(authorId)`; `forum_threads` →
+  `forum_zone_members` INNER JOIN [`userId=viewer`, `status=ACTIVE`] → `users`; `deletedAt IS NULL`,
+  `username IS NOT NULL`, `notInArray(authorId, excludeIds)`; JS'te recency sort + slice — viewer'ın kendi
+  zone'larına scope'lu, sızma yok) + `UsersRepository.suggestCohortPeers` (identity: recent ACTIVE +
+  username + examType cohort, excludeIds hariç) + `UsersService.suggestCohortPeers` (viewer examType'ını
+  çözer). `ForumThreadService.getFollowSuggestions(viewerId, limit=10)`: `excludeIds=[self,
+  ...getFolloweeIds]` → primary → eksikse fallback (primary id'leri de excludeIds'e) → `FollowUserRef[]`
+  (`isFollowing:false`, avatar storage URL). **Mimari:** endpoint forum'da (zone üyeliği + thread yazarları
+  forum'un; forum zaten FollowService + UsersService import ediyor → forward-dep, döngüsüz). Endpoint:
+  `GET /v1/forum/follow-suggestions` → `FollowUserRef[]` (bare array). Web: paylaşılan **`FollowButton`**
+  (optimistic, failure-safe toggle — `topluluk/_components/`), **`FollowSuggestions`** (Akış'ta feed üstünde;
+  boşsa kendini gizler; takip → `onFollowed` ile feed refetch — kart yerinde kalır, server sonraki ziyarette
+  düşürür), **follow-back butonu** takipçi/takip listelerine (`FollowListPanel` satırı yeniden yapılandırıldı:
+  `<Link>` yalnız avatar+ad'ı sarar, buton **kardeş** — anchor-içinde-button geçersizliğini önler; kendi
+  satırında gizli). lib: `follow.getFollowSuggestions`. i18n: `suggestions_title`. Testler: `getFollowSuggestions`
+  unit +2 (primary+fallback merge/exclude; fallback-atlama), forum e2e +1 (öneriler zone yazarlarını verir,
+  self hariç; takip sonrası düşer). **Kapsam dışı** (backlog): profil kartı sayaçları (düşük ROI — getMe hot
+  path), gelişmiş skorlama (ortak-zone/karşılıklılık), öneri kartı kapatma. *(APP-023)*
+- **Takip (follow) + kişiselleştirilmiş "Akış" feed'i (APP-022)** — Profil sayfaları artık read-only
+  değil: tek yönlü, herkese açık, anında **takip sistemi** + zone-üstü **Akış** feed'i. **Takip grafı
+  `identity`'de** (`user_follows`, `forum_bookmarks` desenini aynalar — `0041`; SERVICE-context + WHERE
+  scope, ayrı RLS yok). **Mimari kısıt:** graf community'de olamazdı (community→forum importu var → Akış
+  için forum→community = döngü); `identity` kimseye bağlı değil, forum/community tüketici. `FollowService`
+  (self-follow reddi `SOCIAL_CANNOT_FOLLOW_SELF` 400, banlı/olmayan hedef 404, follow→`identity.user.followed`
+  event; unfollow sessiz) + `FollowRepository` (idempotent toggle, sayaçlar okuma-anında COUNT,
+  `getFolloweeIds`, takipçi/takip listeleri users INNER JOIN + viewer'ın `isFollowing`'i tek sorguda EXISTS,
+  banlı hariç). Endpoint'ler identity'de: `PUT/DELETE /v1/users/:username/follow`, `GET
+  /v1/users/:username/{followers,following}?before=` (cursor). `community.getPublicProfile` artık `viewerId`
+  alıp `followerCount`/`followingCount`/`isFollowing`'i FollowService'ten okur (self → false). **Akış feed'i
+  (yalnız thread'ler):** `ForumThreadRepository.listByAuthorIds` (`listByAuthor`'ın `inArray` genellemesi;
+  `withUserContext` RLS viewer'ın göremeyeceği zone/silinmiş thread'leri eler → gizlilik ücretsiz),
+  `ForumThreadService.getFollowingFeed` (followee ids boşsa erken `[]`; `buildThreadViews` batched lookup'ları
+  reuse), `GET /v1/forum/feed/following?before=`. **Bildirim:** yeni `IdentityEventsListener` (notifications)
+  `@OnEvent("identity.user.followed")` → "Yeni takipçi · <ad> seni takip etti" in-app (kategori **FORUM**
+  reuse, link takipçi profiline; handle yoksa linksiz; best-effort). Web: profil header'a **Takip Et/Bırak**
+  (optimistic, kendi profilinde gizli) + tıklanabilir **takipçi/takip sayaçları** → header altında `FollowListPanel`
+  (geri-butonlu liste, cursor); yeni **`/topluluk/akis`** sayfası (`AkisShell` — ThreadItem reuse, optimistic
+  like/bookmark, davetkâr boş durum) + sol sidebar'da zone gruplarının **üstünde** "Akış" girişi (`Rss`). lib:
+  `follow.ts` + `forum.getFollowingFeed`. Tipler: `PublicProfile` + `followerCount/followingCount/isFollowing`,
+  yeni `FollowUserRef`/`FollowList`. i18n: `follow`/`following_state`/`followers_label`/`following_label`/
+  `followers_title`/`following_title`/`follow_list_empty`/`feed_nav`/`following_feed_empty`. Testler: FollowService
+  unit +7 (follow/event, self-follow 400, 404, unfollow no-op, liste map/drop/404), IdentityEventsListener +3
+  (link/linksiz/best-effort), forum e2e +1 (A→B takip → profil isFollowing+sayaç → Akış B'yi gösterir C'yi
+  göstermez → bildirim → self-follow 400 → unfollow → feed düşer). **Kapsam dışı** (backlog): "kimi takip et"
+  önerileri, feed satırında inline takip butonu, thread+yorum merge'li akış, karşılıklı/engelleme/private,
+  takip için web push, denormalize sayaç. *(APP-022)*
+- **@Mention composer autocomplete (APP-021)** — Composer'da `@` + ≥1 karakter yazınca **o zone'un
+  AKTİF üyelerinden** username-prefix eşleşenleri dropdown'da önerir (APP-018'in kapsam-dışı bıraktığı
+  parça; mention hikâyesi kapandı). **Kaynak = zone üyeleri** (privacy: yalnız üyesi olunan zone'un
+  üyeleri listelenir; mention *çözümü* backend'de global kalır). Backend: `GET /zones/:id/members/search?q=`
+  (`memberSearchQuerySchema` — q 1–24, handle-charset → LIKE escape gerekmez), yeni policy
+  `canSearchMembers` (**üyelik bazlı**, post değil — ANNOUNCEMENT üyesi de mention edebilir; ACTIVE üye
+  veya mod/staff), `ForumZoneRepository.searchActiveMembers` (members×users INNER JOIN, `username IS NOT
+  NULL`, prefix LIKE, LIMIT 8, username ASC), `ForumService.searchMembers` (zone 404 → policy 403 →
+  `MentionSuggestion[]`; StoragePort ile avatar URL — ForumService'e ilk kez inject edildi).
+  **`CommentDetail.zoneId` eklendi** — `requirePost` zaten parent thread'i yüklüyordu, ekstra sorgu yok
+  (yanıt composer'ının zone bağlamı). Web: saf `getActiveMentionToken` (caret-anchored token; `email@x`
+  tetiklemez), `useMentionAutocomplete` hook'u (200ms debounce, prefix→sonuç cache — **state'te stable
+  Map + version tick**, ref-during-render/set-state-in-effect lint'lerine takılmaz; stale-guard; hata/boş
+  → sessiz kapanış), `MentionSuggestions` listbox (textarea altında, caret-anchored DEĞİL — ponytail;
+  ↑↓/Enter/Tab/Esc, ARIA combobox + `aria-activedescendant`, mousedown-select ile focus korunur).
+  Entegrasyon 5 yüzey: `ThreadComposer` (**opsiyonel** `zoneId` prop — zone-shell/message-shell/
+  comment-shell geçirir), `AskComposer`, QA `AnswerComposer` (`question.zoneId` prop'a eklendi).
+  Ctrl/Cmd+Enter gönderimi dropdown açıkken de çalışır (yalnız düz Enter öneri seçer). i18n:
+  `mention_suggestions_label`. Testler: policy +2, servis +4 (403/404/avatar-map/staff), e2e +1
+  (üye arar-bulur, üye-olmayan 403) — forum unit 76, e2e 22/22. **Kapsam dışı**: fuzzy/displayName
+  arama, boş-@ önerisi, caret-anchored popup. *(APP-021)*
 - **Profil/topluluk UX loose-ends + profil rotası yeniden adlandırıldı (APP-020)** — yedi rötuş:
   (1) Sağ kolon `ProfileCard` artık kendi topluluk profiline **tıklanabilir** link (username yoksa düz).
   (2) **Kaydedilenler** sol sidebar'dan çıkarıldı; kendi profilinde **sekme** oldu (`[Gönderiler |
@@ -256,12 +379,12 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ### Figma fidelity backlog (backend gerektirir)
 
-- ~~**Görsel/attachment + carousel**~~ — **Yapıldı** (Faz 1 CHAT/ANNOUNCEMENT · Faz 2 QA soru+cevap + lightbox carousel + orphan-cleanup, APP-018). Kalan: video + dosya ekleri.
+- ~~**Görsel/attachment + carousel**~~ — **Yapıldı** (Faz 1 CHAT/ANNOUNCEMENT · Faz 2 QA soru+cevap + lightbox carousel + orphan-cleanup, APP-018). ~~Dosya ekleri~~ **Yapıldı** (PDF + Office, APP-027). Kalan: **video** ekleri.
 - **Nested yorumlar (yoruma yorum) + yorumlara like** — MVP düz yorum; nesting ve comment-level reaksiyon `forum_reactions`'ı `postId`'ye açmayı gerektirir.
-- **Zengin emoji reaksiyon paleti (👍💪🎉😮)** — like tek kalbe indirildi; palet dönerse config arkasına alınabilir.
+- ~~**Zengin emoji reaksiyon paleti (👍💪🎉😮)**~~ — **Yapıldı** (thread + yorum, `❤️👍💪🎉🙏` pozitif set, APP-025).
 - **Repost** — hâlâ kapsam dışı (ürün kararı; karşılık gelen entity yok). *Harici paylaşım (Send) yapıldı — APP-018.*
-- **Zone başına agregat "X mesaj" sayacı** (Trending Topics'teki "123.9k threads" karşılığı) — şu an `memberCount` ile yaklaşıklanıyor; gerçek sayım için zone'a thread-count aggregate eklenmesi gerekir (küçük, isteğe bağlı iyileştirme).
-- **Profil kartı sosyal alanları** — Figma profil kartında bio, takipçi sayısı, web sitesi var; `AuthUser`'da yok. Şu an displayName + @username + examType + email + üye-tarihi ile yaklaşıklanıyor. Bio/website/followers için şema + endpoint gerekir.
+- ~~**Zone başına agregat "X mesaj" sayacı**~~ — **Yapıldı** (`ZoneView.threadCount` + `threadCountsByZone` batched aggregate; sidebar "X üye · Y mesaj", APP-026).
+- **Profil kartı sosyal alanları** — ~~takipçi sayısı~~ **Yapıldı** (takip grafı + takipçi/takip sayaç & listeleri, APP-022). Kalan: **bio + web sitesi** (`AuthUser`/`users`'da yok; şema + endpoint gerekir).
 
 ## Gotchas / Known issues
 
@@ -285,7 +408,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 - **Forum endpoints have no OpenAPI response schema** — web uses raw `fetch` + `@mentor/types`.
 - **Migration not auto-applied in some setups** — run `pnpm db:up && pnpm db:migrate` once.
 - **Tests need the DB** — vitest `globalSetup` migrates real Postgres before any spec.
-- **Unit tests: 45 green** (forum module spec'leri — policy + zone + thread + QA + moderation). E2E testler ayrı çalışır (`pnpm db:up && pnpm db:migrate` sonrası).
+- **Unit tests: 76 green** (forum module spec'leri — policy + zone + thread + QA + mention + moderation). E2E testler ayrı çalışır (`pnpm db:up && pnpm db:migrate` sonrası).
 
 ## Related
 

@@ -1,18 +1,26 @@
 import { Body, Controller, Get, HttpCode, Post, Query } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import type {
   MoodCheckinDto,
   Paginated,
   TodayPanelResponse,
   CoachingAnalysisDto,
   VisionDto,
+  WeeklyReviewDto,
 } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { MoodService } from "../application/mood.service";
 import { MockExamService } from "../application/mock-exam.service";
 import { TodayService } from "../application/today.service";
 import { VisionService } from "../application/vision.service";
-import { CreateMoodCheckinDto, ListMoodCheckinsQueryDto, UpsertVisionDto } from "./coaching.dto";
+import { WeeklyReviewService } from "../application/weekly-review.service";
+import {
+  AnalysisQueryDto,
+  CreateMoodCheckinDto,
+  ListMoodCheckinsQueryDto,
+  UpsertVisionDto,
+  WeeklyReviewQueryDto,
+} from "./coaching.dto";
 
 /** Coaching composite + mood endpoints. Authenticated self resource (global JwtAuthGuard applies). */
 @ApiTags("coaching")
@@ -24,6 +32,7 @@ export class CoachingController {
     private readonly mood: MoodService,
     private readonly mockExams: MockExamService,
     private readonly vision: VisionService,
+    private readonly weeklyReview: WeeklyReviewService,
   ) {}
 
   /** Composite daily-hub payload for the Panel (one round-trip). */
@@ -34,8 +43,22 @@ export class CoachingController {
 
   /** Personal deneme analysis — net trend + subject strength/weakness (no ranking). */
   @Get("analysis")
-  getAnalysis(@CurrentUser() user: RequestUser): Promise<CoachingAnalysisDto> {
-    return this.mockExams.getAnalysis(user.id);
+  @ApiQuery({ name: "examId", required: false, type: String, format: "uuid" })
+  getAnalysis(
+    @CurrentUser() user: RequestUser,
+    @Query() query: AnalysisQueryDto,
+  ): Promise<CoachingAnalysisDto> {
+    return this.mockExams.getAnalysis(user.id, query.examId);
+  }
+
+  /** Previous completed week, scoped to the active exam. */
+  @Get("weekly-review")
+  @ApiQuery({ name: "examId", required: true, type: String, format: "uuid" })
+  getWeeklyReview(
+    @CurrentUser() user: RequestUser,
+    @Query() query: WeeklyReviewQueryDto,
+  ): Promise<WeeklyReviewDto> {
+    return this.weeklyReview.getReview(user.id, query.examId);
   }
 
   /** Upsert today's mood → returns the rule-based, localized encouragement. */
@@ -73,3 +96,8 @@ export class CoachingController {
     return this.vision.upsert(user.id, dto);
   }
 }
+
+
+
+
+

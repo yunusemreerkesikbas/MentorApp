@@ -68,7 +68,10 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /v1/coach/chat` | AI coach chat (single-turn, RAG-grounded) |
+| `POST /v1/coach/chat` | AI coach chat (multi-turn, RAG-grounded) |
+| `POST /v1/coach/chat/stream` | Streaming chat (SSE over POST; delta → done/error) |
+| `GET /v1/coach/messages` | Paginated persisted chat history (auth-only) |
+| `DELETE /v1/coach/messages` | "Yeni sohbet" — clear own rolling conversation |
 | `GET /v1/coach/access` | Access probe (PREMIUM/COIN/NONE) |
 | `POST /v1/coach/mood-reflection` | Premium mood AI reflection |
 | `POST /v1/coach/ghost-narration` | Premium ghost AI narration |
@@ -103,6 +106,11 @@ pnpm --filter @mentor/api test -- --grep "ai"
   kullanıcının kendi konu/notu, PII yok. **Kapsam dışı:** seans başına premium AI yansıması (ayrı
   endpoint + migration), `ai_usage` feature-label cap (0048). Dosyalar: `ai.constants.ts`,
   `context-builder.service.ts`, `context-builder.service.spec.ts`. Seam: [coaching.md](./coaching.md).
+- **Koç plan-farkında (2026-07-11)** — roadmap §259 devamı: `CoachContext.todayPlan` bugünkü plan
+  özetini taşır (`PlanService.getTodaySummary` seam). `formatTodayPlanLine` koç sohbeti, mood ve
+  seans yansıması prompt'larına "Bugünün planı: X/Y tamam; kalan: …" satırı ekler; görev yoksa düşer.
+  Yeni endpoint/migration yok. **Kapsam dışı:** AI plan revizyonu, FE. Dosyalar: `ai.constants.ts`,
+  `context-builder.service.ts`, `context-builder.service.spec.ts`. Seam: [coaching.md](./coaching.md).
 - **Seans sonrası premium AI yansıması (2026-07-09)** — roadmap §259: mikro check-in `Kaydet` sonrası
   premium kullanıcıya seansa özel 2–3 cümlelik AI yorumu. `POST /v1/coach/session-reflection`
   `{ sessionId }` — `AI_ENABLED` + `isPremium`; `sessionMood` yoksa 400; satır cache
@@ -111,6 +119,50 @@ pnpm --filter @mentor/api test -- --grep "ai"
   ise çağırır → Puhu bubble. Dosyalar: `session-reflection.service.ts`, `ai-session.controller.ts`,
   `session.service.ts` (`setAiReflection`/`getById`), `session-done-state.tsx`, `coach.ts`,
   `messages/{tr,en}.json`. Seam: [coaching.md](./coaching.md).
+- **Multi-turn + kalıcı sohbet geçmişi (2026-07-11)** — Faz 2 backlog'unun ilk kalemi: koç artık
+  hafızalı. Yeni `coach_messages` tablosu (kullanıcı başına **tek rolling sohbet**, thread yok;
+  migration `0044_silent_solo` + RLS self-or-service) user+coach mesajlarını persist eder (COACH
+  satırında `sources` jsonb + `model`). `ChatService` her yanıttan önce son
+  `CHAT_HISTORY_MAX_MESSAGES`(10) mesajı `LlmPort.complete({ history })`'ye enjekte eder (defensive
+  — history yüklenemezse sohbet yine çalışır); persist yalnız **başarılı** yanıttan sonra (LLM
+  hatası satır bırakmaz). Yeni endpoint'ler: `GET /v1/coach/messages` (paginated, auth-only) +
+  `DELETE /v1/coach/messages` ("Yeni sohbet"). FE: `CoachSessionProvider` artık API'den hydrate olur
+  (ilk 30 mesaj); `sessionStorage` yalnız recent-topic pill'leri taşır. Gating/coin/rate-limit
+  akışı değişmedi (maliyet birimi = kullanıcı mesajı). Dosyalar: `schema.ts`,
+  `coach-message.repository.ts`, `chat.service.ts`, `llm.port.ts`, `fake/openai-llm.adapter.ts`,
+  `ai-chat.controller.ts`, `coach-session-context.tsx`, `coach-session-storage.ts`, `coach.ts` (web),
+  `packages/types/ai.ts`.
+- **Streaming yanıt — SSE (2026-07-11)** — `POST /v1/coach/chat/stream`: SSE over POST; ilk event
+  header'lar yazılmadan **önce** beklenir (gating/rate-limit/coin hataları normal HTTP hatası olarak
+  döner), sonra `{delta}` event'leri + tek terminal `{done}` (reply+sources) veya `{error}`.
+  `LlmPort.completeStream` (fake: kelime kelime deterministik; OpenAI: `stream:true` +
+  `stream_options.include_usage`). Orta-akış hata → coin refund (mevcut yol) + `error` event;
+  persist yalnız stream tamamlanınca. FE: `streamCoachMessage` (`httpRaw` + ReadableStream parse,
+  `res.body` yoksa blocking fallback); transcript'te koç balonu delta'larla büyür, hata durumunda
+  parçalı balon kaldırılır (`coach.chat.stream_error`). Dosyalar: `llm.port.ts`, adapters,
+  `chat.service.ts` (`replyStream`), `ai-chat.controller.ts`, `http.ts` (`httpRaw`), `coach.ts`,
+  `koc-chat-shell.tsx`, `coach-session-context.tsx` (`updateMessage`/`removeMessage`).
+- **Akıllı hub — kural tabanlı brief + öneri chip'leri (2026-07-11)** — `/koc` hub'ına LLM'siz
+  günlük özet: `KocHubBrief` mevcut `GET /v1/coaching/today` + `GET /v1/coaching/analysis`
+  verisinden "Bugünün planı: X/Y tamam · Seri: N gün" kartı (+ varsa backend-localized `nextFocus`
+  mesajı) ve 2-3 bağlamsal öneri chip'i üretir; chip'ler mevcut `?seed=` deep-link'iyle composer'ı
+  ön-doldurur. Her iki fetch defensive (analysis 400 = normal durum, kart sessizce küçülür).
+  Backend değişikliği yok. Dosyalar: `koc-hub-brief.tsx`, `koc-hub.tsx`,
+  `koc-content-skeleton.tsx`, `messages/{tr,en}.json`.
+
+- **AI plan revizyonu — koç → görev önerisi (2026-07-11)** — roadmap §259 devamı: koç, somut görev
+  önerdiğinde yanıtın sonuna tek satır `<<TASK{"title":"...","subject":"..."}>>` marker'ı ekler
+  (system prompt kuralı). Backend `extractSuggestedTask` marker'ı parse+strip eder (bozuk JSON
+  sessizce yok sayılır, marker yine temizlenir); stream'de `createTaskMarkerFilter` holdback'i
+  marker'ın delta'lara SIZMAMASINI garanti eder (chunk sınırında bölünme dahil, spec'li).
+  `CoachChatReplyDto.suggestedTask?` (append-only) hem `POST /chat` hem stream `done` event'inde.
+  FE: koç balonu altında "Koçun önerisi" kartı + **Plana ekle** → mevcut `/plan?add=1&title=&subject=`
+  prefill akışı (analiz kartıyla aynı yol). **Guardrail:** AI hiçbir plan tablosuna yazmaz — görev
+  yalnız kullanıcı add-sheet'te onaylayınca kaydedilir. Fake adapter: mesajda "plan/görev" geçerse
+  deterministik marker üretir. **Kapsam dışı:** öneri persist'i (kart ephemeral — reload'da düşer),
+  çoklu öneri, OpenAI json modu. Dosyalar: `suggested-task.ts`(+spec), `ai.constants.ts`,
+  `chat.service.ts`(+spec), `fake-llm.adapter.ts`, `packages/types/ai.ts`, `coach-transcript.tsx`,
+  `koc-chat-shell.tsx`, `messages/{tr,en}.json`.
 
 ## Gotchas / Known issues
 
@@ -128,6 +180,15 @@ pnpm --filter @mentor/api test -- --grep "ai"
 - **W2↔W3 seam:** mood reflection (0048) and ghost narration (0049) cross W2 (coaching domain logic)
   and W3 (AI LLM call). See also [coaching.md](./coaching.md) for the coaching side.
 - **Rate-limit window** is rolling 24h (`now − 24h`), not calendar-day.
+- **KVKK — `coach_messages.content`** davranışsal serbest metindir; `admin anonymize` bunu
+  scrub etmez (aynı durum `struggle_note`/`motivation` için de geçerli — coaching.md'deki holistic
+  erasure follow-up'ına dahil). Gerçek kullanıcı silmede `onDelete: cascade` temizler.
+  `DELETE /v1/coach/messages` kullanıcıya kendi geçmişini silme yolu verir.
+- **Multi-turn penceresi sabittir** (`CHAT_HISTORY_MAX_MESSAGES=10`, `ai.constants.ts`) — runtime
+  config değil; tuning ihtiyacı doğarsa config catalog'a taşınır.
+- **Stream yarıda kesilirse persist yok** — `coach_messages` yalnız tamamlanan exchange'i yazar;
+  FE de parçalı balonu kaldırır, tekrar deneme yeni `clientMessageId` ile yeni spend'dir (aynı id
+  ile idempotent).
 
 ## Related
 
@@ -135,3 +196,11 @@ pnpm --filter @mentor/api test -- --grep "ai"
   [economy.md](./economy.md) (coin spend), [payments.md](./payments.md) (PremiumGuard)
 - Web: [i18n.md](./i18n.md) (koc namespace)
 - Status: [core/mvp-status.md](../core/mvp-status.md) (W3)
+
+
+- **Premium haftalık koç yorumu (2026-07-11)** — `POST /v1/coach/weekly-review` aktif sınavın
+  coaching tarafından hazırlanmış PII-minimal haftalık özetini en fazla üç kısa cümleyle yorumlar.
+  Free kullanıcıya LLM çağrısı yapılmaz. Sonuç kullanıcı+sınav+hafta+locale ve aggregate fingerprint
+  ile `ai_weekly_reviews` tablosunda cache'lenir; veri değişirse yeniden üretilir. Plan görevi AI
+  tarafından yazılmaz, deterministik coaching odağından gelir. Migration: `0045_vengeful_shinobi_shaw.sql`.
+

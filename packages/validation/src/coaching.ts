@@ -122,6 +122,8 @@ export const startStudySessionSchema = z
       .refine((v) => v % 5 === 0, { message: "invalid_focus_minutes_step" })
       .optional(),
     subject: z.string().trim().min(1).max(80).nullish(),
+    /** When starting from a plan task deep-link; must belong to the current user. */
+    planTaskId: z.string().uuid().optional(),
     /** ISO datetime; defaults to server "now" when omitted. */
     startedAt: z.string().datetime({ offset: true }).optional(),
   })
@@ -154,7 +156,9 @@ export const sessionFeedbackSchema = z.object({
 export type SessionFeedbackInput = z.infer<typeof sessionFeedbackSchema>;
 
 /** Paginated study-session history (most recent finalized first). */
-export const listStudySessionsQuerySchema = paginationQuerySchema;
+export const listStudySessionsQuerySchema = paginationQuerySchema.extend({
+  subject: z.string().trim().min(1).max(100).optional(),
+});
 export type ListStudySessionsQuery = z.infer<typeof listStudySessionsQuerySchema>;
 
 /* ---------------------------------- mood -------------------------------------- */
@@ -202,5 +206,32 @@ export const createMockExamSchema = z
   );
 export type CreateMockExamInput = z.infer<typeof createMockExamSchema>;
 
-export const listMockExamsQuerySchema = paginationQuerySchema;
+export const updateMockExamSchema = z
+  .object({
+    takenAt: z.string().datetime({ offset: true }),
+    publisherName: z.string().trim().min(1).max(120).nullable(),
+    subjects: z.array(mockExamSubjectInputSchema).min(1).max(20),
+  })
+  .refine(
+    (data) => new Set(data.subjects.map((subject) => subject.subjectRef)).size === data.subjects.length,
+    { message: "duplicate_subject_ref" },
+  );
+export type UpdateMockExamInput = z.infer<typeof updateMockExamSchema>;
+
+export const analysisQuerySchema = z.object({
+  examId: z.string().uuid().optional(),
+});
+export type AnalysisQuery = z.infer<typeof analysisQuerySchema>;
+
+export const listMockExamsQuerySchema = paginationQuerySchema.extend({
+  examId: z.string().uuid().optional(),
+});
 export type ListMockExamsQuery = z.infer<typeof listMockExamsQuerySchema>;
+
+
+/** Active-exam scope for the completed weekly review. */
+export const weeklyReviewQuerySchema = z.object({
+  examId: z.string().uuid(),
+});
+export type WeeklyReviewQuery = z.infer<typeof weeklyReviewQuerySchema>;
+

@@ -3,6 +3,7 @@ import type {
   CommentDetail,
   CommentView,
   ForumActivityFeed,
+  MentionSuggestion,
   ModerationTargetType,
   Paginated,
   QuestionDetail,
@@ -120,14 +121,14 @@ export async function postReply(
   })) as CommentView;
 }
 
-export async function likePost(postId: string, emoji: string): Promise<void> {
+export async function reactPost(postId: string, emoji: string): Promise<void> {
   await http(`/v1/forum/posts/${postId}/reactions`, {
     method: "PUT",
     body: JSON.stringify({ emoji }),
   });
 }
 
-export async function unlikePost(postId: string, emoji: string): Promise<void> {
+export async function unreactPost(postId: string, emoji: string): Promise<void> {
   await http(`/v1/forum/posts/${postId}/reactions`, {
     method: "DELETE",
     body: JSON.stringify({ emoji }),
@@ -164,6 +165,12 @@ export async function getBookmarks(before?: string): Promise<SavedFeed> {
   return (await http<SavedFeed>(`/v1/forum/bookmarks${qs}`)) as SavedFeed;
 }
 
+/** The viewer's cross-zone "Akış" feed — threads by the people they follow, newest first. */
+export async function getFollowingFeed(before?: string): Promise<ThreadFeed> {
+  const qs = before ? `?before=${encodeURIComponent(before)}` : "";
+  return (await http<ThreadFeed>(`/v1/forum/feed/following${qs}`)) as ThreadFeed;
+}
+
 /** A user's activity feed (their threads + posts interleaved, newest first). */
 export async function getUserActivity(
   username: string,
@@ -185,6 +192,14 @@ export async function createReport(
     method: "POST",
     body: JSON.stringify({ targetType, targetId, reason, ...(note ? { note } : {}) }),
   });
+}
+
+/** @mention autocomplete — ACTIVE members of the zone matching a username prefix (APP-021). */
+export async function searchZoneMembers(zoneId: string, q: string): Promise<MentionSuggestion[]> {
+  const qs = new URLSearchParams({ q });
+  return (await http<MentionSuggestion[]>(
+    `/v1/forum/zones/${zoneId}/members/search?${qs.toString()}`,
+  )) as MentionSuggestion[];
 }
 
 export async function searchQuestions(q: string): Promise<Paginated<ThreadView>> {

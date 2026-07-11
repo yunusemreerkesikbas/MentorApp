@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ModerationTargetType, type QuestionDetail } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
@@ -16,6 +16,8 @@ import { ForumImagePicker } from "../../../_components/forum-image-picker";
 import { useForumImagePicker } from "../../../_components/use-forum-image-picker";
 import { SendButton } from "../../../_components/send-button";
 import { BookmarkButton } from "../../../_components/bookmark-button";
+import { useMentionAutocomplete } from "../../../_components/use-mention-autocomplete";
+import { MentionSuggestions } from "../../../_components/mention-suggestions";
 import { AcceptButton } from "./accept-button";
 import { AnswerItem } from "./answer-item";
 
@@ -179,17 +181,27 @@ export function QuestionShell({ threadId }: { threadId: string }) {
       )}
 
       <div className="mt-6">
-        <AnswerComposer threadId={threadId} onPosted={() => void load()} />
+        <AnswerComposer threadId={threadId} zoneId={question.zoneId} onPosted={() => void load()} />
       </div>
     </main>
   );
 }
 
 /** Inline answer composer (kept local — not the chat ThreadComposer, to avoid cross-route coupling). */
-function AnswerComposer({ threadId, onPosted }: { threadId: string; onPosted: () => void }) {
+function AnswerComposer({
+  threadId,
+  zoneId,
+  onPosted,
+}: {
+  threadId: string;
+  zoneId: string;
+  onPosted: () => void;
+}) {
   const t = useTranslations("topluluk");
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mention = useMentionAutocomplete(zoneId, textareaRef, setValue);
   const picker = useForumImagePicker();
 
   const send = async () => {
@@ -212,15 +224,23 @@ function AnswerComposer({ threadId, onPosted }: { threadId: string; onPosted: ()
 
   return (
     <div className="flex flex-col gap-2">
-      <textarea
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder={t("answer_placeholder")}
-        rows={3}
-        maxLength={4000}
-        className="w-full resize-y rounded-[var(--radius-card)] border border-white bg-white/70 p-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
-      />
+      <div className="relative">
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onSelect={mention.sync}
+          onBlur={mention.close}
+          onKeyDown={(e) => void mention.onKeyDown(e)}
+          placeholder={t("answer_placeholder")}
+          rows={3}
+          maxLength={4000}
+          className="w-full resize-y rounded-[var(--radius-card)] border border-white bg-white/70 p-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
+          {...mention.inputProps}
+        />
+        <MentionSuggestions mention={mention} />
+      </div>
       <ForumImagePicker picker={picker} disabled={busy} />
       <FormError message={picker.error} />
       <div className="flex justify-end">

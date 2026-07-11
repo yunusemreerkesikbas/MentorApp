@@ -24,6 +24,34 @@ export interface CoachChatReplyDto {
   reply: string;
   model: string;
   sources: { title: string; slug: string; url: string }[];
+  /** Optional coach-suggested plan task — FE renders a "Plana ekle" card (user confirms; AI never writes). */
+  suggestedTask?: { title: string; subject: string | null };
+}
+
+/**
+ * POST /v1/coach/chat/stream SSE event payloads: text `delta`s while generating, exactly one
+ * terminal `done` (full reply + sources) or `error` (localized ApiError shape).
+ */
+export type CoachChatStreamEvent =
+  | { delta: string }
+  | { done: CoachChatReplyDto }
+  | { error: { code: string; message: string } };
+
+/** coach_messages.role — who authored a persisted chat message. */
+export const CoachMessageRole = {
+  USER: "USER",
+  COACH: "COACH",
+} as const;
+export type CoachMessageRole = (typeof CoachMessageRole)[keyof typeof CoachMessageRole];
+
+/** GET /v1/coach/messages item — one persisted chat message (single rolling conversation). */
+export interface CoachMessageDto {
+  id: string;
+  role: CoachMessageRole;
+  content: string;
+  /** RAG source chips on COACH rows; empty on USER rows. */
+  sources: { title: string; slug: string; url: string }[];
+  createdAt: string;
 }
 
 /**
@@ -83,3 +111,12 @@ export interface PhotoUploadUrlDto {
 export interface CategorizePhotoResultDto {
   subjectRefs: { slug: string; name: string }[];
 }
+
+
+/** Premium weekly coach narration plus deterministic plan-task prefill. */
+export interface WeeklyReviewNarrationDto {
+  narration: string;
+  model: string;
+  suggestedTask: { subjectRef: string | null; title: string };
+}
+

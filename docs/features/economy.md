@@ -65,6 +65,14 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+- **Seans → XP ödül döngüsü (2026-07-10)** — roadmap §262: tamamlanan seans artık XP'yi anında
+  tetikler (lazy `/profil` beklemesi yok). `coaching.session-completed` event'i →
+  `SessionCompletedListener` → `QuestService.evaluateAndGrant` (günlük `daily.focus-session-completed`
+  + `milestone.focus_sessions.*`; idempotent, capped). Yeni ödül kalemi yok. Done ekranı mount'ta
+  `GET /v1/economy/quests` okuyup son ~120sn'de tamamlanan `study-session` quest'lerinin XP toplamını
+  sade pill ile gösterir; `economy.enabled=false` → sessiz. Dosyalar: `coaching.events.ts`,
+  `session.service.ts`, `session-completed.listener.ts`, `economy.module.ts`, `session-done-state.tsx`,
+  `messages/{tr,en}.json`.
 - **Slice 1 — Ledger substrate + admin adjust** — `ledger_entries`, `EconomyService.grant()`
   (append-only, capped), self balance/ledger API, admin manual adjust (audited, bypasses caps).
   *(0021.)*

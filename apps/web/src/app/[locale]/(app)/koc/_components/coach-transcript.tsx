@@ -13,6 +13,8 @@ export interface ChatMessage {
   role: "user" | "coach";
   text: string;
   sources?: CoachSource[];
+  /** Coach-suggested plan task → "Plana ekle" card (ephemeral; not part of persisted history). */
+  suggestedTask?: { title: string; subject: string | null };
 }
 
 /**
@@ -76,6 +78,9 @@ export function CoachTranscript({
       {messages.map((m) => (
         <Fragment key={m.id}>
           <MessageBubble message={m} reduceMotion={reduceMotion} />
+          {m.role === "coach" && m.suggestedTask ? (
+            <SuggestedTaskCard task={m.suggestedTask} />
+          ) : null}
           {m.role === "coach" && m.sources ? (
             <SourceChips sources={m.sources} />
           ) : null}
@@ -130,6 +135,59 @@ function MessageBubble({
         {message.text}
       </div>
     </motion.div>
+  );
+}
+
+/**
+ * Coach-suggested plan task → deep-links to the existing /plan?add=1 prefill flow. The task is
+ * saved only when the user confirms in the add sheet (AI never writes plan tasks).
+ */
+function SuggestedTaskCard({
+  task,
+}: {
+  task: NonNullable<ChatMessage["suggestedTask"]>;
+}) {
+  const translate = useTranslations("coach_chat");
+  const href = `/plan?add=1&title=${encodeURIComponent(task.title)}${
+    task.subject ? `&subject=${encodeURIComponent(task.subject)}` : ""
+  }`;
+  return (
+    <div className="flex justify-start pl-10">
+      <div
+        className="flex max-w-[85%] flex-col gap-2 rounded-[var(--radius-card)] border border-white bg-white/50 px-4 py-3"
+        style={{ boxShadow: "var(--shadow-card)" }}
+      >
+        <span
+          className="text-xs font-bold"
+          style={{ color: "var(--color-secondary)" }}
+        >
+          {translate("suggested_task_label")}
+        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className="text-sm font-bold"
+            style={{ color: "var(--color-main)" }}
+          >
+            {task.title}
+          </span>
+          {task.subject ? (
+            <span
+              className="rounded-full bg-white px-2.5 py-0.5 text-xs font-bold"
+              style={{ color: "var(--color-chip-text)" }}
+            >
+              {task.subject}
+            </span>
+          ) : null}
+        </div>
+        <Link
+          href={href}
+          className="inline-flex min-h-11 w-fit cursor-pointer items-center rounded-[var(--radius-card)] px-4 text-sm font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+          style={{ backgroundColor: "var(--color-progress)" }}
+        >
+          {translate("add_to_plan")}
+        </Link>
+      </div>
+    </div>
   );
 }
 

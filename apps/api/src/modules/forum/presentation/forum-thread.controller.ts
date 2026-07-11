@@ -14,6 +14,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type {
   CommentDetail,
   CommentView,
+  FollowUserRef,
   ForumActivityFeed,
   ForumAttachmentUploadUrl,
   SavedFeed,
@@ -73,6 +74,21 @@ export class ForumThreadController {
     return this.threads.listFeed(user.id, zoneId, q);
   }
 
+  /** The viewer's cross-zone "Akış" feed — threads by the people they follow, newest first. */
+  @Get("feed/following")
+  followingFeed(
+    @CurrentUser() user: RequestUser,
+    @Query() q: BookmarkQueryDto,
+  ): Promise<ThreadFeed> {
+    return this.threads.getFollowingFeed(user.id, q.before);
+  }
+
+  /** "Kimi takip et" — people to follow (active authors in your zones + cohort fallback). */
+  @Get("follow-suggestions")
+  followSuggestions(@CurrentUser() user: RequestUser): Promise<FollowUserRef[]> {
+    return this.threads.getFollowSuggestions(user.id);
+  }
+
   @Get("threads/:threadId/detail")
   detail(
     @CurrentUser() user: RequestUser,
@@ -111,21 +127,23 @@ export class ForumThreadController {
   }
 
   @Put("posts/:postId/reactions")
-  async likePost(
+  async reactPost(
     @CurrentUser() user: RequestUser,
     @Param("postId") postId: string,
+    @Body() dto: ReactionDto,
   ): Promise<{ status: string }> {
-    await this.threads.likePost(user.id, postId);
+    await this.threads.reactPost(user.id, postId, dto.emoji);
     return { status: "ok" };
   }
 
   @Delete("posts/:postId/reactions")
   @HttpCode(204)
-  async unlikePost(
+  async unreactPost(
     @CurrentUser() user: RequestUser,
     @Param("postId") postId: string,
+    @Body() dto: ReactionDto,
   ): Promise<void> {
-    await this.threads.unlikePost(user.id, postId);
+    await this.threads.unreactPost(user.id, postId, dto.emoji);
   }
 
   @Post("threads/:threadId/pin")

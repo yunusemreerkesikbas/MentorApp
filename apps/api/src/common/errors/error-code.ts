@@ -36,6 +36,7 @@ export const ErrorCode = {
   COACHING_INVALID_SUBJECT_REF: "COACHING_INVALID_SUBJECT_REF",
   COACHING_DUPLICATE_SUBJECT_REF: "COACHING_DUPLICATE_SUBJECT_REF",
   COACHING_INVALID_MOCK_EXAM_SCORES: "COACHING_INVALID_MOCK_EXAM_SCORES",
+  COACHING_WEEKLY_REVIEW_INSUFFICIENT: "COACHING_WEEKLY_REVIEW_INSUFFICIENT",
   // content (W1) — module-prefixed, append-only (workstreams rule)
   CONTENT_EXAM_NOT_FOUND: "CONTENT_EXAM_NOT_FOUND",
   CONTENT_INVALID_NET_RULE: "CONTENT_INVALID_NET_RULE",
@@ -83,6 +84,8 @@ export const ErrorCode = {
   FORUM_ALREADY_ANSWERED: "FORUM_ALREADY_ANSWERED",
   FORUM_REPORT_NOT_FOUND: "FORUM_REPORT_NOT_FOUND",
   FORUM_ATTACHMENT_INVALID: "FORUM_ATTACHMENT_INVALID",
+  // social / follow (Phase-2→MVP) — module-prefixed, append-only (workstreams rule)
+  SOCIAL_CANNOT_FOLLOW_SELF: "SOCIAL_CANNOT_FOLLOW_SELF",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -110,3 +113,5 @@ export function httpStatusToErrorCode(status: number): ErrorCode {
       return status >= 500 ? ErrorCode.INTERNAL_ERROR : ErrorCode.BAD_REQUEST;
   }
 }
+
+

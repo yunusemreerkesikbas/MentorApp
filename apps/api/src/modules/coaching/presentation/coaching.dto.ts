@@ -1,4 +1,5 @@
 import {
+  analysisQuerySchema,
   createMoodCheckinSchema,
   createMockExamSchema,
   createPlanTaskSchema,
@@ -9,9 +10,11 @@ import {
   planTaskCalendarQuerySchema,
   sessionFeedbackSchema,
   startStudySessionSchema,
+  updateMockExamSchema,
   updatePlanTaskSchema,
   updateStudySessionSchema,
   upsertVisionSchema,
+  weeklyReviewQuerySchema,
 } from "@mentor/validation";
 import { createZodDto } from "../../../common/validation/zod-dto";
 
@@ -25,6 +28,11 @@ export class SessionFeedbackDto extends createZodDto(sessionFeedbackSchema) {}
 export class ListStudySessionsQueryDto extends createZodDto(listStudySessionsQuerySchema) {}
 export class CreateMoodCheckinDto extends createZodDto(createMoodCheckinSchema) {}
 export class ListMoodCheckinsQueryDto extends createZodDto(listMoodCheckinsQuerySchema) {}
+export class AnalysisQueryDto extends createZodDto(analysisQuerySchema) {}
+export class WeeklyReviewQueryDto extends createZodDto(weeklyReviewQuerySchema) {}
 export class CreateMockExamDto extends createZodDto(createMockExamSchema) {}
+export class UpdateMockExamDto extends createZodDto(updateMockExamSchema) {}
 export class ListMockExamsQueryDto extends createZodDto(listMockExamsQuerySchema) {}
 export class UpsertVisionDto extends createZodDto(upsertVisionSchema) {}
+
+

@@ -13,6 +13,7 @@ import { AppModule } from "./app.module";
 import type { Env } from "./config/env.validation";
 import { setupSwagger } from "./observability/swagger";
 import { PHOTO_MAX_BYTES } from "./modules/ai/domain/photo-classify.constants";
+import { FORUM_FILE_MAX_BYTES, FORUM_FILE_MIMES } from "@mentor/types";
 
 function corsOrigins(config: ConfigService<Env, true>): string[] {
   const raw = config.get("CORS_ORIGINS", { infer: true });
@@ -44,7 +45,10 @@ async function bootstrap(): Promise<void> {
   app.enableCors({ origin: corsOrigins(config), credentials: true });
   app.use(
     "/v1/storage/fake-upload",
-    express.raw({ type: ["image/jpeg", "image/png", "image/webp"], limit: PHOTO_MAX_BYTES }),
+    express.raw({
+      type: ["image/jpeg", "image/png", "image/webp", ...FORUM_FILE_MIMES],
+      limit: Math.max(PHOTO_MAX_BYTES, FORUM_FILE_MAX_BYTES),
+    }),
   );
   app.useBodyParser("json", {
     limit: "1mb",

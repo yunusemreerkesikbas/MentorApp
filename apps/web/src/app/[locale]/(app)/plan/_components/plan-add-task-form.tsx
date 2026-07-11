@@ -11,11 +11,16 @@ export type PlanAddTaskFormHandle = {
   validate: () => boolean;
 };
 
-export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle>(
-  function PlanAddTaskForm(_props, ref) {
+interface PlanAddTaskFormProps {
+  initialTitle?: string;
+  initialSubject?: string;
+}
+
+export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskFormProps>(
+  function PlanAddTaskForm({ initialTitle = "", initialSubject = "" }: PlanAddTaskFormProps, ref) {
     const t = useTranslations("plan");
-    const [title, setTitle] = useState("");
-    const [subject, setSubject] = useState("");
+    const [title, setTitle] = useState(initialTitle);
+    const [subject, setSubject] = useState(initialSubject);
     const [error, setError] = useState<string | null>(null);
 
     useImperativeHandle(ref, () => ({

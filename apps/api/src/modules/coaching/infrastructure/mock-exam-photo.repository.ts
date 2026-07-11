@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
-import { mockExamPhotoCategorizations } from "../../../database/schema";
+import { mockExamPhotoCategorizations, mockExams } from "../../../database/schema";
 
 export type MockExamPhotoRow = typeof mockExamPhotoCategorizations.$inferSelect;
 
@@ -60,9 +60,27 @@ export class MockExamPhotoRepository {
     return rows[0]?.n ?? 0;
   }
 
+  async listStorageKeys(
+    db: Database | DatabaseTx,
+    userId: string,
+    mockExamId: string,
+  ): Promise<string[]> {
+    const rows = await db
+      .selectDistinct({ storageKey: mockExamPhotoCategorizations.storageKey })
+      .from(mockExamPhotoCategorizations)
+      .where(
+        and(
+          eq(mockExamPhotoCategorizations.userId, userId),
+          eq(mockExamPhotoCategorizations.mockExamId, mockExamId),
+        ),
+      );
+    return rows.map((row) => row.storageKey);
+  }
+
   async listPhotoSubjectSignals(
     db: Database | DatabaseTx,
     userId: string,
+    examId?: string,
   ): Promise<Array<{ subjectRef: string; count: number }>> {
     const rows = await db
       .select({
@@ -70,7 +88,15 @@ export class MockExamPhotoRepository {
         count: sql<number>`count(*)::int`,
       })
       .from(mockExamPhotoCategorizations)
-      .where(eq(mockExamPhotoCategorizations.userId, userId))
+      .innerJoin(mockExams, eq(mockExamPhotoCategorizations.mockExamId, mockExams.id))
+      .where(
+        examId
+          ? and(
+              eq(mockExamPhotoCategorizations.userId, userId),
+              eq(mockExams.examId, examId),
+            )
+          : eq(mockExamPhotoCategorizations.userId, userId),
+      )
       .groupBy(mockExamPhotoCategorizations.subjectRef)
       .orderBy(desc(sql`count(*)`));
     return rows.map((r) => ({ subjectRef: r.subjectRef, count: r.count }));

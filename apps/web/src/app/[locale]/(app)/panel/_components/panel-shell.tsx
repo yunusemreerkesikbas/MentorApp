@@ -33,6 +33,10 @@ import { EconomyQuestsCard } from "@/components/economy-quests-card";
 import { PuhuImage } from "@/components/puhu-image";
 import { Link } from "@/i18n/navigation";
 import { fetchEconomyBalance, fetchQuests, isEconomyDisabled } from "@/lib/economy";
+import {
+  findNewlyCompletedQuests,
+  formatRewardSummary,
+} from "@/lib/economy-quest-utils";
 import { FormError } from "@/components/form";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorToast } from "@/lib/mentor-toast";
@@ -106,19 +110,28 @@ export function PanelShell({ initialData }: PanelShellProps) {
     }
   }, [economyT, refreshEconomyBalance, t, toast]);
 
-  const refreshToday = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const refreshToday = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const response = await coachingControllerGetToday();
       const next = unwrapTodayResponse(response);
       setData(next);
+      if (!opts?.silent) setError(null);
     } catch (err) {
-      const message =
-        err instanceof ApiClientError ? err.message : err instanceof Error ? err.message : t("today_refresh_error");
-      setError(message);
+      if (!opts?.silent) {
+        const message =
+          err instanceof ApiClientError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : t("today_refresh_error");
+        setError(message);
+      }
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
   }, [t]);
 
@@ -199,6 +212,23 @@ export function PanelShell({ initialData }: PanelShellProps) {
       active = false;
     };
   }, [initialData, t]);
+
+  useEffect(() => {
+    function refreshIfVisible() {
+      if (document.visibilityState !== "visible") return;
+      void refreshToday({ silent: true });
+      void refreshQuests();
+    }
+    function onPageShow(e: PageTransitionEvent) {
+      if (e.persisted) refreshIfVisible();
+    }
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [refreshToday, refreshQuests]);
 
   if (!data) {
     return (
@@ -746,43 +776,6 @@ function formatCompact(value: number) {
     maximumFractionDigits: 1,
     notation: "compact",
   }).format(value);
-}
-
-function findNewlyCompletedQuests(
-  previous: QuestProgressView[] | null,
-  next: QuestProgressView[],
-): QuestProgressView[] {
-  if (!previous) return [];
-  const previousByKey = new Map(
-    previous.map((quest) => [questProgressKey(quest), quest.completed]),
-  );
-  return next.filter(
-    (quest) => quest.completed && previousByKey.get(questProgressKey(quest)) !== true,
-  );
-}
-
-function formatRewardSummary(
-  quests: QuestProgressView[],
-  translate: ReturnType<typeof useTranslations>,
-): string {
-  const totals = quests.reduce(
-    (acc, quest) => {
-      if (quest.rewardUnit === "XP") acc.xp += quest.rewardAmount;
-      if (quest.rewardUnit === "COIN") acc.coin += quest.rewardAmount;
-      return acc;
-    },
-    { xp: 0, coin: 0 },
-  );
-  return [
-    totals.xp > 0 ? translate("quest_reward_xp", { count: totals.xp }) : null,
-    totals.coin > 0 ? translate("quest_reward_coin", { count: totals.coin }) : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-}
-
-function questProgressKey(quest: QuestProgressView): string {
-  return `${quest.id}:${quest.periodKey}`;
 }
 
 function greetingKeyForHour(): "greeting_morning" | "greeting_day" | "greeting_evening" {

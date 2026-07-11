@@ -28,7 +28,7 @@ export class GhostNarrationService {
     private readonly mockExams: MockExamService,
   ) {}
 
-  async narrate(user: RequestUser): Promise<GhostNarrationDto> {
+  async narrate(user: RequestUser, examId?: string): Promise<GhostNarrationDto> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
@@ -38,7 +38,7 @@ export class GhostNarrationService {
       throw new DomainError(ErrorCode.PAYMENT_PREMIUM_REQUIRED, HttpStatus.FORBIDDEN);
     }
 
-    const ghost = await this.mockExams.getGhostComparison(user.id);
+    const ghost = await this.mockExams.getGhostComparison(user.id, examId);
     if (!ghost) {
       // Need at least two attempts to compare against the past.
       throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST);
@@ -60,8 +60,14 @@ export class GhostNarrationService {
       costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
     });
 
-    await this.mockExams.setLatestGhostNarration(user.id, result.text, result.model);
+    await this.mockExams.setLatestGhostNarration(
+      user.id,
+      result.text,
+      result.model,
+      examId,
+    );
 
     return { narration: result.text, model: result.model };
   }
 }
+

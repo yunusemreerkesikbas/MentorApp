@@ -47,30 +47,45 @@ function makeRepoFake() {
     listSubjectBreakdown: vi.fn(),
     listSubjectsByMockExamIds: vi.fn(),
     maxNetExcluding: vi.fn(),
+    maxTotalNet: vi.fn(),
     setGhostNarration: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    clearGhostNarrations: vi.fn(),
   };
 }
 
 const i18nFake = { translate: (key: string) => key } as never;
+const storageFake = { deleteObject: vi.fn() };
 
 describe("MockExamService", () => {
   let repo: ReturnType<typeof makeRepoFake>;
+  let photoRows: {
+    countSince: ReturnType<typeof vi.fn>;
+    findByClientRequestId: ReturnType<typeof vi.fn>;
+    insert: ReturnType<typeof vi.fn>;
+    listPhotoSubjectSignals: ReturnType<typeof vi.fn>;
+    listStorageKeys: ReturnType<typeof vi.fn>;
+  };
   let service: MockExamService;
 
   beforeEach(() => {
     vi.clearAllMocks();
     repo = makeRepoFake();
+    photoRows = {
+      countSince: vi.fn(),
+      findByClientRequestId: vi.fn(),
+      insert: vi.fn(),
+      listPhotoSubjectSignals: vi.fn(),
+      listStorageKeys: vi.fn(),
+    };
     service = new MockExamService(
       fakeDb,
       contentPort as never,
       repo as never,
-      {
-        countSince: vi.fn(),
-        findByClientRequestId: vi.fn(),
-        insert: vi.fn(),
-        listPhotoSubjectSignals: vi.fn(),
-      } as never,
+      photoRows as never,
       i18nFake,
+      storageFake as never,
     );
     contentPort.getExamById.mockResolvedValue({
       id: EXAM_ID,
@@ -123,6 +138,62 @@ describe("MockExamService", () => {
     ).rejects.toMatchObject({ code: ErrorCode.COACHING_INVALID_MOCK_EXAM_SCORES });
   });
 
+  it("updates an owned mock exam with recalculated nets and clears scoped ghost narration", async () => {
+    const existing = {
+      id: "mock-1",
+      userId: USER,
+      examId: EXAM_ID,
+      takenAt: new Date("2026-06-01T12:00:00.000Z"),
+      totalNet: "10.00",
+      publisherName: "Eski yayın",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    repo.findById.mockResolvedValue({ exam: existing, subjects: [] });
+    repo.update.mockImplementation(async (_tx, _userId, _id, data) => ({
+      exam: { ...existing, ...data },
+      subjects: data.subjects.map((subject: { subjectRef: string; correct: number; wrong: number; blank: number; net: string }, index: number) => ({
+        id: "updated-" + index,
+        mockExamId: existing.id,
+        createdAt: new Date(),
+        ...subject,
+      })),
+    }));
+
+    const result = await service.update(USER, existing.id, {
+      takenAt: "2026-06-20T12:00:00.000Z",
+      publisherName: null,
+      subjects: [{ subjectRef: "turkce", correct: 20, wrong: 4, blank: 6 }],
+    });
+
+    expect(result.totalNet).toBe("19.00");
+    expect(result.publisherName).toBeNull();
+    expect(repo.clearGhostNarrations).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      EXAM_ID,
+    );
+  });
+
+  it("permanently deletes an owned mock exam and cleans its photo objects", async () => {
+    repo.findById.mockResolvedValue({
+      exam: { id: "mock-1", userId: USER, examId: EXAM_ID },
+      subjects: [],
+    });
+    photoRows.listStorageKeys.mockResolvedValue(["mock-exams/u1/photo.jpg"]);
+    repo.delete.mockResolvedValue(true);
+
+    await service.remove(USER, "mock-1");
+
+    expect(repo.delete).toHaveBeenCalledWith(expect.anything(), USER, "mock-1");
+    expect(repo.clearGhostNarrations).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      EXAM_ID,
+    );
+    expect(storageFake.deleteObject).toHaveBeenCalledWith("mock-exams/u1/photo.jpg");
+  });
+
   it("getGhostComparison returns null with fewer than 2 attempts", async () => {
     repo.listTrend.mockResolvedValue([{ id: "m1", examId: EXAM_ID, totalNet: "20.00" }]);
     expect(await service.getGhostComparison(USER)).toBeNull();
@@ -153,5 +224,67 @@ describe("MockExamService", () => {
     repo.listTrend.mockResolvedValue([{ id: "m2", examId: EXAM_ID, totalNet: "42.00" }]);
     await service.setLatestGhostNarration(USER, "story", "fake");
     expect(repo.setGhostNarration).toHaveBeenCalledWith(expect.anything(), "m2", "story", "fake");
+  });
+
+  it("includes normalized strengths and an evidence-aware next focus", async () => {
+    repo.listTrend.mockResolvedValue([
+      { id: "m1", examId: EXAM_ID, takenAt: new Date("2026-06-19T10:00:00Z"), totalNet: "42.00" },
+    ]);
+    repo.listSubjectBreakdown.mockResolvedValue([
+      { subjectRef: "turkce", avgNet: "21.00", attemptCount: 1 },
+    ]);
+    repo.maxTotalNet.mockResolvedValue("42.00");
+    contentPort.listExamSubjects.mockResolvedValue([
+      { slug: "turkce", name: "Türkçe", questionCount: 30, sortOrder: 0 },
+      { slug: "tarih", name: "Tarih", questionCount: 27, sortOrder: 1 },
+    ]);
+    photoRows.listPhotoSubjectSignals.mockResolvedValue([
+      { subjectRef: "tarih", count: 2 },
+    ]);
+
+    await expect(service.getAnalysis(USER)).resolves.toMatchObject({
+      subjects: [
+        {
+          subjectRef: "turkce",
+          questionCount: 30,
+          normalizedAveragePercent: "70.00",
+        },
+      ],
+      nextFocus: {
+        subjectRef: "tarih",
+        subjectName: "Tarih",
+        source: "PHOTO_SIGNAL",
+        evidenceCount: 2,
+        evidenceLevel: "REPEATED",
+        message: "coaching.focus.PHOTO_SIGNAL_REPEATED",
+        suggestedTaskTitle: "coaching.focus.TASK_TITLE_PHOTO_SIGNAL",
+      },
+    });
+  });
+
+  it("scopes every analysis source to the requested exam", async () => {
+    repo.listTrend.mockResolvedValue([
+      { id: "m1", examId: EXAM_ID, takenAt: new Date("2026-06-19T10:00:00Z"), totalNet: "42.00" },
+    ]);
+    repo.listSubjectBreakdown.mockResolvedValue([
+      { subjectRef: "turkce", avgNet: "21.00", attemptCount: 1 },
+    ]);
+    repo.maxTotalNet.mockResolvedValue("42.00");
+    repo.listSubjectsByMockExamIds.mockResolvedValue(new Map());
+    photoRows.listPhotoSubjectSignals.mockResolvedValue([]);
+
+    await (service.getAnalysis as unknown as (
+      userId: string,
+      examId: string,
+    ) => Promise<unknown>)(USER, EXAM_ID);
+
+    expect(repo.listTrend).toHaveBeenCalledWith(expect.anything(), USER, 12, EXAM_ID);
+    expect(repo.listSubjectBreakdown).toHaveBeenCalledWith(expect.anything(), USER, EXAM_ID);
+    expect(photoRows.listPhotoSubjectSignals).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      EXAM_ID,
+    );
+    expect(repo.maxTotalNet).toHaveBeenCalledWith(expect.anything(), USER, EXAM_ID);
   });
 });

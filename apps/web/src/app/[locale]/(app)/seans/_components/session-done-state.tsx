@@ -1,12 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import type { QuestProgressView, StudySessionStatus, TodayPanelResponse } from "@mentor/types";
+import { coachingControllerGetToday } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { PuhuCoachBubble } from "@/components/puhu-coach-bubble";
 import { fetchCoachAccess, requestSessionReflection } from "@/lib/coach";
+import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
+import {
+  findNewlyCompletedQuests,
+  formatRewardSummary,
+} from "@/lib/economy-quest-utils";
+import { useMentorToast } from "@/lib/mentor-toast";
+
+function unwrapTodayResponse(response: unknown): TodayPanelResponse {
+  return ((response as { data?: TodayPanelResponse }).data ?? response) as TodayPanelResponse;
+}
+
+type StreakFeedback = "started" | "kept" | null;
+
+function resolveStreakFeedback(
+  baseline: number | null,
+  currentStreak: number,
+): StreakFeedback {
+  if (baseline == null) return null;
+  if (baseline === 0 && currentStreak >= 1) return "started";
+  if (currentStreak > baseline) return "kept";
+  return null;
+}
 
 export interface SessionDoneStateProps {
   focusElapsed: number;
@@ -14,6 +38,16 @@ export interface SessionDoneStateProps {
   sessionId: string | null;
   /** Subject carried from the session, used to personalise the note placeholder. */
   subject?: string | null;
+  /** Quest snapshot captured at session start — drives reward toast diff. */
+  questBaseline?: QuestProgressView[] | null;
+  /** Streak count captured at session start — drives streak pill. */
+  streakBaseline?: number | null;
+  /** Whether this session met the min-focus threshold (streak/XP/quests). */
+  countsAsFocusSession?: boolean;
+  /** Final session status — used to avoid hint on abandoned sessions. */
+  sessionStatus?: StudySessionStatus | null;
+  /** Linked plan task was auto-marked DONE on finalize. */
+  planTaskAutoCompleted?: boolean;
   /** Persists the post-session micro check-in; rejects on API error (toast shown upstream). */
   onSubmitFeedback: (mood: number, struggleNote?: string) => Promise<void>;
   onReset: () => void;
@@ -30,16 +64,68 @@ export function SessionDoneState({
   focusElapsed,
   sessionId,
   subject,
+  questBaseline = null,
+  streakBaseline = null,
+  countsAsFocusSession = true,
+  sessionStatus = null,
+  planTaskAutoCompleted = false,
   onSubmitFeedback,
   onReset,
 }: SessionDoneStateProps) {
   const reduceMotion = useReducedMotion();
   const t = useTranslations("session");
+  const panelT = useTranslations("panel");
+  const economyT = useTranslations("economy");
+  const toast = useMentorToast();
   const [mood, setMood] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [reflection, setReflection] = useState<string | null>(null);
   const [reflecting, setReflecting] = useState(false);
+  const [streakFeedback, setStreakFeedback] = useState<StreakFeedback>(null);
+  const [currentStreak, setCurrentStreak] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [questsResult, todayResult] = await Promise.all([
+          fetchQuests().catch((err) => (isEconomyDisabled(err) ? null : Promise.reject(err))),
+          coachingControllerGetToday(),
+        ]);
+        if (cancelled) return;
+
+        const today = unwrapTodayResponse(todayResult);
+        const streak = today.streak.currentStreak;
+        setCurrentStreak(streak);
+        setStreakFeedback(resolveStreakFeedback(streakBaseline, streak));
+
+        if (questsResult) {
+          const completedNow = findNewlyCompletedQuests(questBaseline ?? null, questsResult);
+          if (completedNow.length > 0) {
+            const rewardSummary = formatRewardSummary(completedNow, economyT);
+            if (rewardSummary) {
+              toast.success({
+                title:
+                  completedNow.length === 1
+                    ? panelT("quest_reward_single_title")
+                    : panelT("quest_reward_multi_title"),
+                message: panelT("quest_reward_message", { reward: rewardSummary }),
+                duration: 3000,
+              });
+            }
+          }
+        }
+      } catch {
+        /* Economy disabled / network — stay silent (§4 tone). */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Mount-only closure feedback; baselines are fixed when the done screen opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toast is stable enough for one-shot announce
+  }, [economyT, panelT, questBaseline, streakBaseline]);
 
   const phaseMotion = reduceMotion
     ? {}
@@ -108,6 +194,50 @@ export function SessionDoneState({
       <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
         {t("done_elapsed", { minutes: Math.floor(focusElapsed / 60) })}
       </p>
+      {!countsAsFocusSession && sessionStatus !== "ABANDONED" && (
+        <span
+          className="rounded-full px-3 py-1 text-xs font-semibold"
+          style={{
+            backgroundColor:
+              "color-mix(in srgb, var(--color-progress-track) 35%, transparent)",
+            color: "var(--color-secondary)",
+            fontFamily: "var(--font-body)",
+          }}
+          role="status"
+        >
+          {t("too_short_hint")}
+        </span>
+      )}
+      {planTaskAutoCompleted && (
+        <span
+          className="rounded-full px-3 py-1 text-xs font-semibold"
+          style={{
+            backgroundColor:
+              "color-mix(in srgb, var(--color-progress-track) 35%, transparent)",
+            color: "var(--color-secondary)",
+            fontFamily: "var(--font-body)",
+          }}
+          role="status"
+        >
+          {t("plan_task_completed")}
+        </span>
+      )}
+      {streakFeedback != null && currentStreak != null && (
+        <span
+          className="rounded-full px-3 py-1 text-xs font-semibold"
+          style={{
+            backgroundColor:
+              "color-mix(in srgb, var(--color-chip) 22%, transparent)",
+            color: "var(--color-chip-text)",
+            fontFamily: "var(--font-body)",
+          }}
+          role="status"
+        >
+          {streakFeedback === "started"
+            ? t("streak_started")
+            : t("streak_kept", { days: currentStreak })}
+        </span>
+      )}
 
       {status === "saved" ? (
         <div className="flex w-full flex-col items-center gap-4">

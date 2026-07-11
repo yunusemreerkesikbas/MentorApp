@@ -52,6 +52,8 @@ export interface ZoneView {
   emoji?: string | null;
   isArchived: boolean;
   memberCount: number;
+  /** Non-deleted thread count — the zone's activity signal ("X mesaj"). */
+  threadCount: number;
   /** Viewer's membership status; null when not a member. */
   myStatus: ZoneMemberStatus | null;
   /** Viewer's role in this zone; null when not a member. */
@@ -71,11 +73,12 @@ export interface ZoneMemberView {
 
 /**
  * Reactions collapsed to a single "like" (❤️) — APP-017 pulled a Threads-style like/comment into
- * MVP. The reaction table/endpoints stay generic (emoji column), but the app allows only this one.
- * The richer positive-emoji palette (👍💪🎉😮) is a backlog item behind config if it returns.
+ * `FORUM_LIKE_EMOJI` is the default (first-tap) reaction; the palette adds positive/supportive options
+ * (§4 anti-shaming — positive-only, no negative/mocking emoji). A user may hold multiple reactions on one
+ * item (each toggles independently). The set is a compile-time constant — tune here to add/remove.
  */
 export const FORUM_LIKE_EMOJI = "❤️" as const;
-export const FORUM_REACTION_EMOJIS = [FORUM_LIKE_EMOJI] as const;
+export const FORUM_REACTION_EMOJIS = ["❤️", "👍", "💪", "🎉", "🙏"] as const;
 export type ForumReactionEmoji = (typeof FORUM_REACTION_EMOJIS)[number];
 
 /** Thread status — meaningful only for QA questions (chat/announcement stay OPEN). */
@@ -92,6 +95,7 @@ export type ThreadStatus = (typeof ThreadStatus)[keyof typeof ThreadStatus];
  */
 export const AttachmentKind = {
   IMAGE: "image",
+  FILE: "file",
 } as const;
 export type AttachmentKind = (typeof AttachmentKind)[keyof typeof AttachmentKind];
 
@@ -100,6 +104,10 @@ export interface Attachment {
   kind: AttachmentKind;
   url: string;
   mimeType: string;
+  /** Object size in bytes — drives the "X MB" label on file chips. */
+  sizeBytes: number;
+  /** Original filename; set only for `file` kind (null for images). */
+  fileName: string | null;
   width: number | null;
   height: number | null;
 }
@@ -110,12 +118,35 @@ export const FORUM_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 export const FORUM_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp"] as const;
 export type ForumImageMime = (typeof FORUM_IMAGE_MIMES)[number];
 
+/** File attachments (APP-027): PDF + modern Office (docx/xlsx/pptx). 10 MB cap; legacy .doc/.xls/.ppt excluded. */
+export const FORUM_FILE_MAX_BYTES = 10 * 1024 * 1024;
+export const FORUM_FILE_MIMES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+] as const;
+export type ForumFileMime = (typeof FORUM_FILE_MIMES)[number];
+/** Union of everything the upload-url endpoint + attachment inputs accept. */
+export const FORUM_ATTACHMENT_MIMES = [...FORUM_IMAGE_MIMES, ...FORUM_FILE_MIMES] as const;
+
 /**
  * @mention handle = a username (lowercase `[a-z0-9_]`, 3–24). Single source so the server parser
  * (`forum/domain/mention.ts`) and the client highlighter (`MentionText`) agree on what a mention is;
  * each surface wraps it with its own boundary handling (server lookbehind vs client capture-group).
  */
 export const FORUM_MENTION_HANDLE_PATTERN = "[a-z0-9_]{3,24}";
+
+/**
+ * GET /v1/forum/zones/:id/members/search — one @mention autocomplete suggestion (APP-021).
+ * Active zone members whose username starts with the typed prefix; members without a username
+ * can't be mentioned, so they never appear.
+ */
+export interface MentionSuggestion {
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+}
 
 /** POST /v1/forum/attachments/upload-url → client PUTs the file to `uploadUrl`, then sends `key`. */
 export interface ForumAttachmentUploadUrl {
@@ -204,9 +235,10 @@ export interface CommentView {
   authorUsername: string | null;
   authorAvatarUrl: string | null;
   body: string;
-  likeCount: number;
-  /** Whether the viewer has liked this comment. */
-  myLiked: boolean;
+  /** Reaction counts keyed by emoji (same shape as ThreadView); empty when none. */
+  reactionCounts: Record<string, number>;
+  /** Emojis the viewer has reacted with on this comment. */
+  myReactions: string[];
   /** Number of (non-deleted) direct replies. */
   replyCount: number;
   /** Media attached to this comment (Phase 1: images, max 4); empty when none. */
@@ -256,6 +288,8 @@ export interface ThreadDetail {
 export interface CommentDetail {
   comment: CommentView;
   replies: CommentView[];
+  /** The zone the parent thread lives in (composer context, e.g. @mention autocomplete). */
+  zoneId: string;
 }
 
 /** Public (anonymous, SEO) QA shapes — no authorId/PII. Only indexable QA questions are exposed. */

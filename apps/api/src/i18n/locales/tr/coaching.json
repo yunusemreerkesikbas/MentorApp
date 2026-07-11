@@ -15,5 +15,31 @@
     "BEAT_PREVIOUS": "Geçen denemeni geçtin — geçmiş-ben'i yendin. İvme seninle.",
     "TIED": "Geçen denemenle aynı seviyedesin. İstikrar da bir kazanç; küçük bir adımla öne geç.",
     "BELOW_PREVIOUS": "Bu sefer biraz geride kaldın, olur böyle. Tek bir denemeye takılma — trendine bak, yanındayım."
+  },
+  "focus": {
+    "PHOTO_SIGNAL": "{subject} yanlış fotoğraflarında en çok öne çıkıyor. İstersen bunu bir sonraki planına ekleyelim.",
+    "LOWEST_AVERAGE": "{subject} için küçük bir tekrar iyi bir sonraki adım olabilir.",
+    "TASK_TITLE": "{subject} tekrar et",
+    "PHOTO_SIGNAL_EARLY": "{subject} ilk yanlış fotoğraf sinyalinde öne çıktı. Bunu küçük bir başlangıç adımı olarak planına ekleyebiliriz.",
+    "PHOTO_SIGNAL_REPEATED": "{subject} yanlış fotoğraflarında tekrar tekrar öne çıkıyor. Bunu bir sonraki planına ekleyelim.",
+    "LOWEST_AVERAGE_EARLY": "{subject} ilk denemende diğer derslere göre daha fazla desteğe ihtiyaç duyuyor. Küçük bir tekrar iyi bir başlangıç olabilir.",
+    "LOWEST_AVERAGE_REPEATED": "{subject} denemelerinde tekrar eden çalışma alanın olarak görünüyor. Küçük bir tekrar iyi bir sonraki adım olabilir.",
+    "TASK_TITLE_PHOTO_SIGNAL": "{subject} yanlışlarını gözden geçir",
+    "TASK_TITLE_LOWEST_AVERAGE": "{subject} tekrar et"
+  },
+  "weekly": {
+    "INSUFFICIENT": "Geçen haftayı değerlendirmek için bir deneme ya da iki tamamlanmış seans yeterli.",
+    "RHYTHM": "{sessions} seansla {minutes} dakika odaklandın ve {days} güne yayıldın.",
+    "RHYTHM_LOW": "Enerjin zorlanmış olsa da {sessions} seansla {minutes} dakika emek verdin.",
+    "RHYTHM_MIXED": "Enerjin dalgalıydı; yine de {sessions} seans ve {minutes} dakika biriktirdin.",
+    "RHYTHM_STEADY": "Enerjin dengeliydi; {sessions} seansla {minutes} dakika odaklandın.",
+    "PERFORMANCE_EARLY": "Bu haftanın ilk sinyali {net} net. Bir sonraki haftayla birlikte yön daha görünür olacak.",
+    "PERFORMANCE_COMPARABLE": "Haftalık ortalaman {net} net; önceki haftaya göre farkın {delta}.",
+    "FOCUS_REPEATED_PHOTO_SIGNAL": "{subject} yanlış fotoğraflarında tekrarlıyor. Küçük bir gözden geçirme iyi bir sonraki adım.",
+    "FOCUS_WEEKLY_DECLINE": "{subject} geçen haftaya göre en çok desteğe ihtiyaç duyan alanın. Tek bir tekrar yeterli bir başlangıç.",
+    "FOCUS_LOWEST_NORMALIZED": "{subject} normalize performansta bu haftanın çalışma odağı olarak öne çıkıyor.",
+    "FOCUS_SESSION_RHYTHM": "Bu hafta ritmi sürdürmek için iki küçük odak seansı planlayalım.",
+    "TASK_SUBJECT": "{subject} haftalık tekrar",
+    "TASK_SESSION": "İki odak seansı planla"
   }
 }

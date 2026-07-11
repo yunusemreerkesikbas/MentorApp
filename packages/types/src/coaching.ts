@@ -34,6 +34,10 @@ export interface StudySessionDto {
   preset: SessionPresetId;
   status: StudySessionStatus;
   subject: string | null;
+  /** Plan task this session was started from; null when not linked. */
+  planTaskId: string | null;
+  /** Resolved plan task title when listed with join; null when unlinked or on write responses. */
+  planTaskTitle: string | null;
   startedAt: string; // ISO datetime
   endedAt: string | null; // ISO datetime
   actualFocusSeconds: number;
@@ -45,6 +49,10 @@ export interface StudySessionDto {
   struggleNote: string | null;
   /** Premium AI session reflection (null until generated / for free tier). */
   aiReflection: string | null;
+  /** True when this finalized session meets the platform min-focus threshold (streak/XP/quests). */
+  countsAsFocusSession: boolean;
+  /** True when finalize auto-marked the linked plan task DONE (this request only). */
+  planTaskAutoCompleted: boolean;
 }
 
 /** Streak summary derived server-side from `daily_activity` / `streak_state`. */
@@ -127,6 +135,9 @@ export interface SubjectStrengthDto {
   subjectName: string;
   averageNet: string;
   attemptCount: number;
+  questionCount: number | null;
+  /** Server-computed averageNet / questionCount × 100. */
+  normalizedAveragePercent: string | null;
 }
 
 /** Foto analizinden gelen ders sinyalleri (zayıflık ipucu; net ortalamasından ayrı). */
@@ -134,6 +145,19 @@ export interface PhotoSubjectSignalDto {
   subjectRef: string;
   subjectName: string;
   count: number;
+}
+
+/** Server-selected next study focus from personal analysis evidence. */
+export interface AnalysisFocusDto {
+  subjectRef: string;
+  subjectName: string;
+  source: "PHOTO_SIGNAL" | "LOWEST_AVERAGE";
+  evidenceCount: number;
+  evidenceLevel: "EARLY" | "REPEATED";
+  /** Backend-localized, encouraging explanation of the selected evidence. */
+  message: string;
+  /** Backend-localized Plan task title prefill. */
+  suggestedTaskTitle: string;
 }
 
 /** Per-subject "geçmiş-ben" delta: this attempt's subject net vs the previous attempt's. */
@@ -174,6 +198,8 @@ export interface CoachingAnalysisDto {
   trend: MockExamTrendPointDto[];
   subjects: SubjectStrengthDto[];
   photoSubjectSignals: PhotoSubjectSignalDto[];
+  /** `null` until a mock-exam or photo signal supplies personal evidence. */
+  nextFocus: AnalysisFocusDto | null;
   /** All-time best total net across all attempts; null when no attempts. */
   personalRecordNet: string | null;
   /** Latest-vs-own-past comparison; `null` when fewer than 2 attempts. */
@@ -207,3 +233,43 @@ export interface VisionDto {
   createdAt: string;
   updatedAt: string;
 }
+
+
+
+/** Completed-week rule-based review (Europe/Istanbul, active exam scoped). */
+export type WeeklyReviewStatus = "READY" | "INSUFFICIENT";
+export type WeeklyEnergySignal = "LOW" | "MIXED" | "STEADY";
+export type WeeklyFocusSource =
+  | "REPEATED_PHOTO_SIGNAL"
+  | "WEEKLY_DECLINE"
+  | "LOWEST_NORMALIZED"
+  | "SESSION_RHYTHM";
+
+export interface WeeklyReviewDto {
+  period: { startDate: string; endDate: string; timeZone: "Europe/Istanbul" };
+  status: WeeklyReviewStatus;
+  evidence: { mockExamCount: number; completedSessionCount: number };
+  rhythm: {
+    completedSessionCount: number;
+    focusMinutes: number;
+    activeDays: number;
+    moodCheckinCount: number;
+    energySignal: WeeklyEnergySignal | null;
+    message: string;
+  };
+  performance: {
+    mockExamCount: number;
+    averageNet: string;
+    previousWeekAverageNet: string | null;
+    delta: string | null;
+    evidenceLevel: "EARLY" | "COMPARABLE";
+    message: string;
+  } | null;
+  focus: {
+    source: WeeklyFocusSource;
+    subjectRef: string | null;
+    subjectName: string | null;
+    message: string;
+  } | null;
+}
+

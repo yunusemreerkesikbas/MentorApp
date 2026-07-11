@@ -14,6 +14,12 @@ export interface NewMockExamSubject {
   net: string;
 }
 
+function userExamScope(userId: string, examId?: string) {
+  return examId
+    ? and(eq(mockExams.userId, userId), eq(mockExams.examId, examId))
+    : eq(mockExams.userId, userId);
+}
+
 /** Data access for `mock_exams` + `mock_exam_subjects` (RLS-scoped). */
 @Injectable()
 export class MockExamRepository {
@@ -80,24 +86,81 @@ export class MockExamRepository {
     return { exam, subjects };
   }
 
+  async update(
+    tx: DatabaseTx,
+    userId: string,
+    id: string,
+    data: {
+      takenAt: Date;
+      totalNet: string;
+      publisherName: string | null;
+      subjects: NewMockExamSubject[];
+    },
+  ): Promise<{ exam: MockExamRow; subjects: MockExamSubjectRow[] } | undefined> {
+    const examRows = await tx
+      .update(mockExams)
+      .set({
+        takenAt: data.takenAt,
+        totalNet: data.totalNet,
+        publisherName: data.publisherName,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(mockExams.id, id), eq(mockExams.userId, userId)))
+      .returning();
+    const exam = examRows[0];
+    if (!exam) return undefined;
+
+    await tx.delete(mockExamSubjects).where(eq(mockExamSubjects.mockExamId, id));
+    const subjects = await tx
+      .insert(mockExamSubjects)
+      .values(data.subjects.map((subject) => ({ ...subject, mockExamId: id })))
+      .returning();
+    return { exam, subjects };
+  }
+
+  async delete(tx: DatabaseTx, userId: string, id: string): Promise<boolean> {
+    const rows = await tx
+      .delete(mockExams)
+      .where(and(eq(mockExams.id, id), eq(mockExams.userId, userId)))
+      .returning({ id: mockExams.id });
+    return rows.length > 0;
+  }
+
+  async clearGhostNarrations(
+    tx: DatabaseTx,
+    userId: string,
+    examId: string,
+  ): Promise<void> {
+    await tx
+      .update(mockExams)
+      .set({
+        aiGhostNarration: null,
+        aiGhostModel: null,
+        aiGhostAt: null,
+        updatedAt: new Date(),
+      })
+      .where(userExamScope(userId, examId));
+  }
+
   async listPaged(
     db: Database | DatabaseTx,
     userId: string,
     page: number,
     pageSize: number,
+    examId?: string,
   ): Promise<{ items: MockExamRow[]; total: number }> {
     const [items, totalRow] = await Promise.all([
       db
         .select()
         .from(mockExams)
-        .where(eq(mockExams.userId, userId))
+        .where(userExamScope(userId, examId))
         .orderBy(desc(mockExams.takenAt))
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       db
         .select({ count: sql<number>`count(*)::int` })
         .from(mockExams)
-        .where(eq(mockExams.userId, userId)),
+        .where(userExamScope(userId, examId)),
     ]);
     return { items, total: totalRow[0]?.count ?? 0 };
   }
@@ -125,11 +188,12 @@ export class MockExamRepository {
     db: Database | DatabaseTx,
     userId: string,
     excludeId: string,
+    examId?: string,
   ): Promise<string | null> {
     const rows = await db
       .select({ max: sql<string | null>`MAX(${mockExams.totalNet})::text` })
       .from(mockExams)
-      .where(and(eq(mockExams.userId, userId), ne(mockExams.id, excludeId)));
+      .where(and(userExamScope(userId, examId), ne(mockExams.id, excludeId)));
     return rows[0]?.max ?? null;
   }
 
@@ -146,21 +210,30 @@ export class MockExamRepository {
       .where(eq(mockExams.id, id));
   }
 
-  async maxTotalNet(db: Database | DatabaseTx, userId: string): Promise<string | null> {
+  async maxTotalNet(
+    db: Database | DatabaseTx,
+    userId: string,
+    examId?: string,
+  ): Promise<string | null> {
     const rows = await db
       .select({
         max: sql<string | null>`max(${mockExams.totalNet}::numeric)::text`,
       })
       .from(mockExams)
-      .where(eq(mockExams.userId, userId));
+      .where(userExamScope(userId, examId));
     return rows[0]?.max ?? null;
   }
 
-  async listTrend(db: Database | DatabaseTx, userId: string, limit = 12): Promise<MockExamRow[]> {
+  async listTrend(
+    db: Database | DatabaseTx,
+    userId: string,
+    limit = 12,
+    examId?: string,
+  ): Promise<MockExamRow[]> {
     return db
       .select()
       .from(mockExams)
-      .where(eq(mockExams.userId, userId))
+      .where(userExamScope(userId, examId))
       .orderBy(desc(mockExams.takenAt))
       .limit(limit);
   }
@@ -168,6 +241,7 @@ export class MockExamRepository {
   async listSubjectBreakdown(
     db: Database | DatabaseTx,
     userId: string,
+    examId?: string,
   ): Promise<Array<{ subjectRef: string; avgNet: string; attemptCount: number }>> {
     const rows = await db
       .select({
@@ -177,7 +251,7 @@ export class MockExamRepository {
       })
       .from(mockExamSubjects)
       .innerJoin(mockExams, eq(mockExamSubjects.mockExamId, mockExams.id))
-      .where(eq(mockExams.userId, userId))
+      .where(userExamScope(userId, examId))
       .groupBy(mockExamSubjects.subjectRef)
       .orderBy(desc(sql`AVG(${mockExamSubjects.net}::numeric)`));
     return rows.map((r) => ({

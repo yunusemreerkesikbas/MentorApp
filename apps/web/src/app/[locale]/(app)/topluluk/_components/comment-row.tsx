@@ -8,8 +8,9 @@ import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "./author-avatar";
 import { AuthorLink } from "./author-link";
 import { AttachmentGallery } from "./attachment-gallery";
-import { HeartIcon, CommentIcon } from "./forum-icons";
+import { CommentIcon } from "./forum-icons";
 import { MentionText } from "./mention-text";
+import { ReactionBar } from "./reaction-bar";
 import { SendButton } from "./send-button";
 import { BookmarkButton } from "./bookmark-button";
 import { ThreadMenu } from "../[slug]/_components/thread-menu";
@@ -24,13 +25,13 @@ import { ThreadMenu } from "../[slug]/_components/thread-menu";
  */
 export function CommentRow({
   comment,
-  onToggleLike,
+  onToggleReaction,
   onToggleBookmark,
   rowHref,
   highlighted,
 }: {
   comment: CommentView;
-  onToggleLike: (postId: string, adding: boolean) => void;
+  onToggleReaction: (postId: string, emoji: string, adding: boolean) => void;
   onToggleBookmark: (postId: string, adding: boolean) => void;
   rowHref?: string;
   highlighted?: boolean;
@@ -94,29 +95,13 @@ export function CommentRow({
 
         <AttachmentGallery attachments={comment.attachments} />
 
-        {/* Action row — like + reply (opens this comment's detail, where the composer lives) */}
-        <div className="-ml-1.5 mt-2 flex items-center gap-3">
-          <button
-            type="button"
-            aria-pressed={comment.myLiked}
-            aria-label={t("like")}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleLike(comment.id, !comment.myLiked);
-            }}
-            className="group/like flex h-8 items-center gap-1 rounded-full px-1.5 transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            style={{ color: comment.myLiked ? "var(--color-danger)" : "var(--color-main)" }}
-          >
-            <span
-              key={comment.myLiked ? "on" : "off"}
-              className={`inline-flex transition-transform duration-150 group-hover/like:scale-110 motion-reduce:transition-none ${comment.myLiked ? "forum-like-pop" : ""}`}
-            >
-              <HeartIcon filled={comment.myLiked} />
-            </span>
-            {comment.likeCount > 0 && (
-              <span className="text-[13px] tabular-nums">{comment.likeCount}</span>
-            )}
-          </button>
+        {/* Action row — reaction palette + reply (opens this comment's detail, where the composer lives) */}
+        <div className="-ml-1.5 mt-2 flex flex-wrap items-center gap-2">
+          <ReactionBar
+            reactionCounts={comment.reactionCounts}
+            myReactions={comment.myReactions}
+            onToggle={(emoji, adding) => onToggleReaction(comment.id, emoji, adding)}
+          />
 
           <Link
             href={href}

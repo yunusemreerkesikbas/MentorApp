@@ -9,7 +9,7 @@ export function AnalizContentSkeleton() {
   const t = useTranslations("analysis");
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-5 py-8 lg:px-8 lg:py-10">
+    <main className="mx-auto w-full max-w-5xl px-5 py-8 lg:px-8 lg:py-10">
       <SkeletonGroup label={t("loading")} className="flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <Skeleton className="h-9 w-48 rounded-[var(--radius-card)]" />
@@ -61,3 +61,4 @@ export function AnalizContentSkeleton() {
     </main>
   );
 }
+

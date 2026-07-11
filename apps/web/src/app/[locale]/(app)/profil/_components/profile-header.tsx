@@ -14,7 +14,7 @@ import {
   usersControllerResendVerificationEmail,
   usersControllerUpdateMe,
 } from "@mentor/api-client";
-import { Button, TextField, useDialog } from "@mentor/ui";
+import { Button, TextAreaField, TextField, useDialog } from "@mentor/ui";
 import type { AuthUser } from "@mentor/types";
 import BadgeCheck from "lucide-react/dist/esm/icons/badge-check.mjs";
 import ImagePlus from "lucide-react/dist/esm/icons/image-plus.mjs";
@@ -237,6 +237,8 @@ function ProfileEditForm({
   const toast = useMentorToast();
   const [displayName, setDisplayName] = useState(user.displayName);
   const [username, setUsername] = useState(user.username ?? "");
+  const [bio, setBio] = useState(user.bio ?? "");
+  const [website, setWebsite] = useState(user.website ?? "");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [removeAvatar, setRemoveAvatar] = useState(false);
@@ -281,6 +283,8 @@ function ProfileEditForm({
       displayName: displayName.trim(),
       ...((trimmedUsername || user.username) && { username: trimmedUsername }),
       ...(removeAvatar && { avatarStorageKey: null }),
+      bio: bio.trim(),
+      website: website.trim(),
     };
     const parsed = updateMeSchema.safeParse(patch);
     if (!parsed.success) {
@@ -399,6 +403,26 @@ function ProfileEditForm({
         onChange={(event) => setUsername(event.target.value)}
         disabled={saving}
         maxLength={24}
+      />
+      <TextAreaField
+        label={t("bio_label")}
+        value={bio}
+        onChange={(event) => setBio(event.target.value)}
+        disabled={saving}
+        maxLength={200}
+        rows={3}
+        placeholder={t("bio_placeholder")}
+        hint={`${bio.trim().length}/200`}
+      />
+      <TextField
+        label={t("website_label")}
+        value={website}
+        onChange={(event) => setWebsite(event.target.value)}
+        disabled={saving}
+        maxLength={200}
+        type="url"
+        inputMode="url"
+        placeholder={t("website_placeholder")}
       />
       <LockedEmailField label={t("email_label")} value={user.email} />
       <div className="grid grid-cols-2 gap-3 pt-2">

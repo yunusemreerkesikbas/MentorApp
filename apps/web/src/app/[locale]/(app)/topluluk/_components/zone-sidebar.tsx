@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import Rss from "lucide-react/dist/esm/icons/rss.mjs";
 import type { ZoneView } from "@mentor/types";
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
@@ -61,6 +62,23 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
         {t("sidebar_title")}
       </Link>
 
+      {/* Cross-zone "Akış" — threads by the people you follow (above the room groups). */}
+      <Link
+        href="/topluluk/akis"
+        onClick={onNavigate}
+        aria-current={pathname.endsWith("/topluluk/akis") ? "page" : undefined}
+        className="-mx-3 -mt-2 flex items-center gap-2 rounded-lg px-3 py-2 text-[14px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        style={{
+          color: "var(--color-main)",
+          background: pathname.endsWith("/topluluk/akis")
+            ? "color-mix(in srgb, var(--color-chip) 16%, white)"
+            : undefined,
+        }}
+      >
+        <Rss size={16} aria-hidden="true" />
+        {t("feed_nav")}
+      </Link>
+
       {zones === null ? (
         <SkeletonGroup label={t("loading")} className="flex flex-col gap-4">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -115,9 +133,9 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
                           />
                         )}
                       </span>
-                      {/* Member count */}
+                      {/* Member + message counts */}
                       <span className="truncate text-[12px]" style={{ color: "#616161" }}>
-                        {t("members", { count: z.memberCount })}
+                        {t("members", { count: z.memberCount })} · {t("messages_count", { count: z.threadCount })}
                       </span>
                     </Link>
                   );

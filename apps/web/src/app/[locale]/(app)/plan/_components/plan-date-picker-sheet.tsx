@@ -84,6 +84,8 @@ export const PlanDatePickerSheet = forwardRef<
   const monthKey = `${month.getFullYear()}-${month.getMonth()}`;
 
   useEffect(() => {
+    // Merge freshly-seeded planned dates into local state — deliberate external-sync, not derived state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlannedDates((prev) => new Set([...prev, ...seedPlannedDates]));
   }, [seedPlannedDates]);
 

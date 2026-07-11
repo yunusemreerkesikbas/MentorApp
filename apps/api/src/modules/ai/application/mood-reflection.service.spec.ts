@@ -30,6 +30,8 @@ describe("MoodReflectionService", () => {
       examDateLabel: null,
       moodLevel: 2,
       struggleNote: null,
+      recentSessions: null,
+      todayPlan: null,
     }));
     append = vi.fn(async () => undefined);
     configGet = vi.fn(async (key: string) => (key === FeatureFlag.AI_ENABLED ? true : null));

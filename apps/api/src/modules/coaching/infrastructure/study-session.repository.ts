@@ -1,11 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import { and, desc, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, gte, isNotNull, lt, sql } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
-import { studySessions } from "../../../database/schema";
+import { planTasks, studySessions } from "../../../database/schema";
 import { StudySessionStatus } from "../domain/coaching.constants";
 import { addDays } from "../domain/date.util";
 
 export type StudySessionRow = typeof studySessions.$inferSelect;
+export type StudySessionListRow = StudySessionRow & { planTaskTitle: string | null };
 export type NewStudySession = typeof studySessions.$inferInsert;
 
 /**
@@ -61,27 +62,46 @@ export class StudySessionRepository {
     userId: string,
     page: number,
     pageSize: number,
-  ): Promise<{ items: StudySessionRow[]; total: number }> {
-    const where = and(eq(studySessions.userId, userId), isNotNull(studySessions.endedAt));
+    subject?: string,
+  ): Promise<{ items: StudySessionListRow[]; total: number }> {
+    const where = and(
+      eq(studySessions.userId, userId),
+      isNotNull(studySessions.endedAt),
+      subject ? eq(studySessions.subject, subject) : undefined,
+    );
     const [items, totalRow] = await Promise.all([
       tx
-        .select()
+        .select({
+          ...getTableColumns(studySessions),
+          planTaskTitle: planTasks.title,
+        })
         .from(studySessions)
+        .leftJoin(planTasks, eq(studySessions.planTaskId, planTasks.id))
         .where(where)
         .orderBy(desc(studySessions.startedAt))
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       tx.select({ count: sql<number>`count(*)::int` }).from(studySessions).where(where),
     ]);
-    return { items, total: totalRow[0]?.count ?? 0 };
+    return {
+      items: items.map((row) => ({
+        ...row,
+        planTaskTitle: row.planTaskTitle ?? null,
+      })),
+      total: totalRow[0]?.count ?? 0,
+    };
   }
 
   /**
-   * Whether the user has any FINALIZED completed session on the given UTC calendar date.
-   * "Finalized" = status COMPLETED and `ended_at` set, so an in-progress (just-started) row
-   * does not count until it is actually completed.
+   * Whether the user has any FINALIZED completed session on the given UTC calendar date
+   * that meets {@link minFocusSeconds} actual focus (roadmap §261 — real work, not a tap-through).
    */
-  async hasCompletedOnDate(tx: DatabaseTx, userId: string, date: string): Promise<boolean> {
+  async hasCompletedOnDate(
+    tx: DatabaseTx,
+    userId: string,
+    date: string,
+    minFocusSeconds: number,
+  ): Promise<boolean> {
     const dayStart = `${date}T00:00:00Z`;
     const nextDayStart = `${addDays(date, 1)}T00:00:00Z`;
     const rows = await tx
@@ -92,6 +112,7 @@ export class StudySessionRepository {
           eq(studySessions.userId, userId),
           eq(studySessions.status, "COMPLETED"),
           isNotNull(studySessions.endedAt),
+          gte(studySessions.actualFocusSeconds, minFocusSeconds),
           gte(studySessions.startedAt, new Date(dayStart)),
           lt(studySessions.startedAt, new Date(nextDayStart)),
         ),
@@ -128,7 +149,7 @@ export class StudySessionRepository {
     };
   }
 
-  async countCompleted(tx: DatabaseTx, userId: string): Promise<number> {
+  async countCompleted(tx: DatabaseTx, userId: string, minFocusSeconds: number): Promise<number> {
     const rows = await tx
       .select({ count: sql<number>`count(*)::int` })
       .from(studySessions)
@@ -137,6 +158,7 @@ export class StudySessionRepository {
           eq(studySessions.userId, userId),
           eq(studySessions.status, StudySessionStatus.COMPLETED),
           isNotNull(studySessions.endedAt),
+          gte(studySessions.actualFocusSeconds, minFocusSeconds),
         ),
       );
     return rows[0]?.count ?? 0;

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import type { MockExamDto, MockExamTrendPointDto } from "@mentor/types";
+import type { ExamSubjectDto, MockExamDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Card, SectionHeading } from "@mentor/ui";
 import { fetchMockExamsList } from "@/lib/analiz";
@@ -10,32 +10,32 @@ import { formatTrendDate } from "./analiz-types";
 import { AnalizHistoryDetail } from "./analiz-history-detail";
 
 interface AnalizHistoryListProps {
+  examId: string;
   /** Bump to refetch after a new save. */
   refreshKey: number;
+  subjects: ExamSubjectDto[];
   onCopyLast: (exam: MockExamDto) => void;
+  onChanged: () => void;
 }
 
-export function AnalizHistoryList({ refreshKey, onCopyLast }: AnalizHistoryListProps) {
+export function AnalizHistoryList({
+  examId,
+  refreshKey,
+  subjects,
+  onCopyLast,
+  onChanged,
+}: AnalizHistoryListProps) {
   const t = useTranslations("analysis.history");
   const tAnalysis = useTranslations("analysis");
   const locale = useLocale();
-  const [items, setItems] = useState<MockExamTrendPointDto[]>([]);
-  const [lastFull, setLastFull] = useState<MockExamDto | null>(null);
+  const [items, setItems] = useState<MockExamDto[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetchMockExamsList(1, 5);
-      setItems(
-        res.items.map((m) => ({
-          id: m.id,
-          takenAt: m.takenAt,
-          totalNet: m.totalNet,
-          examName: m.examName,
-        })),
-      );
-      setLastFull(res.items[0] ?? null);
+      const res = await fetchMockExamsList(1, 5, examId);
+      setItems(res.items);
       setError(null);
     } catch (err) {
       setError(
@@ -46,15 +46,17 @@ export function AnalizHistoryList({ refreshKey, onCopyLast }: AnalizHistoryListP
             : String(err),
       );
     }
-  }, []);
+  }, [examId]);
 
   useEffect(() => {
+    // `load` kicks off the fetch (setting its own loading state) — deliberate data-fetch trigger.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load, refreshKey]);
 
   if (error) {
     return (
-      <p className="text-sm" style={{ color: "var(--color-danger, #b42318)" }}>
+      <p className="text-sm" style={{ color: "var(--color-danger)" }}>
         {error}
       </p>
     );
@@ -72,7 +74,7 @@ export function AnalizHistoryList({ refreshKey, onCopyLast }: AnalizHistoryListP
     <>
       <Card>
         <SectionHeading as="h3">{t("title")}</SectionHeading>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
           {items.map((item) => (
             <button
               key={item.id}
@@ -85,24 +87,35 @@ export function AnalizHistoryList({ refreshKey, onCopyLast }: AnalizHistoryListP
               }}
             >
               <span className="block font-bold tabular-nums">{item.totalNet}</span>
-              <span className="block text-xs" style={{ color: "var(--color-secondary)" }}>
+              {item.publisherName ? (
+                <span className="block truncate text-xs font-semibold">
+                  {item.publisherName}
+                </span>
+              ) : null}
+              <span
+                className="block text-xs"
+                style={{ color: "var(--color-secondary)" }}
+              >
                 {formatTrendDate(item.takenAt, locale)}
               </span>
             </button>
           ))}
         </div>
-        {lastFull ? (
-          <button
-            type="button"
-            onClick={() => onCopyLast(lastFull)}
-            className="mt-4 min-h-[44px] text-sm font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            style={{ color: "var(--color-main)" }}
-          >
-            {tAnalysis("copy_last")}
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => onCopyLast(items[0]!)}
+          className="mt-4 min-h-[44px] text-sm font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{ color: "var(--color-main)" }}
+        >
+          {tAnalysis("copy_last")}
+        </button>
       </Card>
-      <AnalizHistoryDetail mockExamId={selectedId} onClose={() => setSelectedId(null)} />
+      <AnalizHistoryDetail
+        mockExamId={selectedId}
+        subjects={subjects}
+        onClose={() => setSelectedId(null)}
+        onChanged={onChanged}
+      />
     </>
   );
 }

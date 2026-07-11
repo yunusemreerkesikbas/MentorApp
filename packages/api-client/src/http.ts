@@ -45,19 +45,7 @@ function getFallbackMessage(): string {
  * - Sends Accept-Language so the backend returns localized messages.
  */
 export async function http<T>(url: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers);
-  if (!headers.has("content-type") && init?.body)
-    headers.set("content-type", "application/json");
-  const token = config.getAccessToken?.();
-  if (token) headers.set("authorization", `Bearer ${token}`);
-  const locale = config.getLocale?.();
-  if (locale) headers.set("accept-language", locale);
-
-  const res = await fetch(`${config.baseUrl}${url}`, {
-    ...init,
-    headers,
-    credentials: "include",
-  });
+  const res = await httpRaw(url, init);
 
   if (res.status === 204) return undefined as T;
   const body: unknown = await res.json().catch(() => undefined);
@@ -69,4 +57,35 @@ export async function http<T>(url: string, init?: RequestInit): Promise<T> {
     throw new ApiClientError(res.status, apiError);
   }
   return body as T;
+}
+
+/**
+ * Same auth/locale headers as `http`, but returns the raw Response — for streaming endpoints
+ * (SSE over POST) where the caller reads `res.body` incrementally. Does NOT throw on non-2xx;
+ * callers that need the localized ApiError can pass the response to `throwApiClientError`.
+ */
+export async function httpRaw(url: string, init?: RequestInit): Promise<Response> {
+  const headers = new Headers(init?.headers);
+  if (!headers.has("content-type") && init?.body)
+    headers.set("content-type", "application/json");
+  const token = config.getAccessToken?.();
+  if (token) headers.set("authorization", `Bearer ${token}`);
+  const locale = config.getLocale?.();
+  if (locale) headers.set("accept-language", locale);
+
+  return fetch(`${config.baseUrl}${url}`, {
+    ...init,
+    headers,
+    credentials: "include",
+  });
+}
+
+/** Parse a non-2xx Response body into the localized ApiClientError (streaming callers). */
+export async function throwApiClientError(res: Response): Promise<never> {
+  const body: unknown = await res.json().catch(() => undefined);
+  const apiError: ApiError =
+    body && typeof body === "object" && "code" in body
+      ? (body as ApiError)
+      : { code: "INTERNAL_ERROR", message: getFallbackMessage() };
+  throw new ApiClientError(res.status, apiError);
 }

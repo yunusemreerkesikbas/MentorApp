@@ -2,26 +2,29 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { FORUM_LIKE_EMOJI, type ForumActivityItem, type PublicProfile } from "@mentor/types";
+import { type ForumActivityItem, type PublicProfile } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
 import { getPublicProfile } from "@/lib/community";
+import { followUser, unfollowUser } from "@/lib/follow";
+import { toggleReaction } from "@/lib/forum-reactions";
 import {
   bookmarkPost,
   bookmarkThread,
   getUserActivity,
   isForumDisabled,
-  likePost,
+  reactPost,
   reactThread,
-  unlikePost,
+  unreactPost,
   unreactThread,
 } from "@/lib/forum";
 import { CommentRow } from "../../../_components/comment-row";
 import { ThreadItem } from "../../../[slug]/_components/thread-item";
 import { SavedShell } from "../../../kayitli/_components/saved-shell";
+import { FollowListPanel } from "./follow-list-panel";
 import { ProfileHeader } from "./profile-header";
 
 type Ready = {
@@ -44,6 +47,7 @@ export function ProfileShell({ username }: { username: string }) {
   const { user } = useAuth();
   const isOwn = !!user?.username && user.username === username;
   const [tab, setTab] = useState<"posts" | "saved">("posts");
+  const [listView, setListView] = useState<"followers" | "following" | null>(null);
   const [state, setState] = useState<State>({ status: "loading" });
 
   useEffect(() => {
@@ -87,7 +91,7 @@ export function ProfileShell({ username }: { username: string }) {
       const patch = (v: boolean) => (r: Ready) => ({
         ...r,
         items: r.items.map((it) =>
-          it.type === "thread" && it.thread.id === threadId ? { ...it, thread: applyReaction(it.thread, emoji, v) } : it,
+          it.type === "thread" && it.thread.id === threadId ? { ...it, thread: toggleReaction(it.thread, emoji, v) } : it,
         ),
       });
       patchReady(patch(adding));
@@ -110,18 +114,18 @@ export function ProfileShell({ username }: { username: string }) {
     [patchReady],
   );
 
-  const onToggleCommentLike = useCallback(
-    (postId: string, adding: boolean) => {
+  const onToggleCommentReaction = useCallback(
+    (postId: string, emoji: string, adding: boolean) => {
       const patch = (v: boolean) => (r: Ready) => ({
         ...r,
         items: r.items.map((it) =>
           it.type === "comment" && it.comment.id === postId
-            ? { ...it, comment: { ...it.comment, myLiked: v, likeCount: Math.max(0, it.comment.likeCount + (v ? 1 : -1)) } }
+            ? { ...it, comment: toggleReaction(it.comment, emoji, v) }
             : it,
         ),
       });
       patchReady(patch(adding));
-      (adding ? likePost(postId, FORUM_LIKE_EMOJI) : unlikePost(postId, FORUM_LIKE_EMOJI)).catch(() => patchReady(patch(!adding)));
+      (adding ? reactPost(postId, emoji) : unreactPost(postId, emoji)).catch(() => patchReady(patch(!adding)));
     },
     [patchReady],
   );
@@ -139,6 +143,26 @@ export function ProfileShell({ username }: { username: string }) {
     },
     [patchReady],
   );
+
+  /** Optimistic follow toggle — flips isFollowing + follower count, reverts on failure. */
+  const onToggleFollow = useCallback(() => {
+    setState((s) => {
+      if (s.status !== "ready") return s;
+      const adding = !s.profile.isFollowing;
+      const step = (add: boolean) => (r: Ready) => ({
+        ...r,
+        profile: {
+          ...r.profile,
+          isFollowing: add,
+          followerCount: Math.max(0, r.profile.followerCount + (add ? 1 : -1)),
+        },
+      });
+      (adding ? followUser(username) : unfollowUser(username)).catch(() =>
+        patchReady(step(!adding)),
+      );
+      return step(adding)(s);
+    });
+  }, [patchReady, username]);
 
   if (state.status === "loading") return <Centered>{t("loading")}</Centered>;
   if (state.status === "disabled") return <Centered>{t("soon_title")}</Centered>;
@@ -165,8 +189,23 @@ export function ProfileShell({ username }: { username: string }) {
           {t("back")}
         </Link>
       </div>
-      <ProfileHeader profile={profile} />
+      <ProfileHeader
+        profile={profile}
+        isOwn={isOwn}
+        onToggleFollow={onToggleFollow}
+        onOpenFollowers={() => setListView("followers")}
+        onOpenFollowing={() => setListView("following")}
+      />
 
+      {listView ? (
+        <FollowListPanel
+          key={listView}
+          username={username}
+          kind={listView}
+          onBack={() => setListView(null)}
+        />
+      ) : (
+        <>
       {/* Tabs — only on your own profile, where "Kaydedilenler" (private) is meaningful. */}
       {isOwn && (
         <div className="flex gap-1 border-b px-4 lg:px-6" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
@@ -231,7 +270,7 @@ export function ProfileShell({ username }: { username: string }) {
                     // not the reply stranded on its own detail page.
                     <CommentRow
                       comment={it.comment}
-                      onToggleLike={onToggleCommentLike}
+                      onToggleReaction={onToggleCommentReaction}
                       onToggleBookmark={onToggleCommentBookmark}
                       rowHref={
                         it.comment.parentPostId
@@ -254,17 +293,10 @@ export function ProfileShell({ username }: { username: string }) {
           )}
         </>
       )}
+        </>
+      )}
     </main>
   );
-}
-
-/** Optimistic like toggle on a thread in the activity feed. */
-function applyReaction(thread: Extract<ForumActivityItem, { type: "thread" }>["thread"], emoji: string, adding: boolean) {
-  const count = thread.reactionCounts[emoji] ?? 0;
-  const counts = { ...thread.reactionCounts, [emoji]: Math.max(0, count + (adding ? 1 : -1)) };
-  if (counts[emoji] === 0) delete counts[emoji];
-  const mine = adding ? [...thread.myReactions, emoji] : thread.myReactions.filter((e) => e !== emoji);
-  return { ...thread, reactionCounts: counts, myReactions: mine };
 }
 
 function Centered({ children }: { children: React.ReactNode }) {

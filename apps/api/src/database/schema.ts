@@ -86,6 +86,9 @@ export const users = pgTable(
     displayName: text("display_name").notNull(),
     username: text("username"),
     avatarStorageKey: text("avatar_storage_key"),
+    /** Public profile identity (community surface) — short self-description + a personal link. */
+    bio: text("bio"),
+    website: text("website"),
     /** Multi-role (§9/§11): e.g. ORG_ADMIN + COACH. Values = UserRole enum. */
     roles: text("roles")
       .array()
@@ -403,6 +406,8 @@ export const studySessions = pgTable(
     actualFocusSeconds: integer("actual_focus_seconds").notNull().default(0),
     /** Nullable SOFT ref → content subject. */
     subject: text("subject"),
+    /** Optional link to the plan task this session was started from (roadmap §259). */
+    planTaskId: uuid("plan_task_id").references(() => planTasks.id, { onDelete: "set null" }),
     /** Post-session micro check-in: subjective effort/mood 1-3 (😩😐🙂); null until captured. */
     sessionMood: integer("session_mood"),
     /** Optional post-session "what challenged you" free-text signal for the AI; null when blank. */
@@ -955,6 +960,32 @@ export const aiUsage = pgTable(
   (t) => [index("ai_usage_user_created_idx").on(t.userId, t.createdAt)],
 );
 
+/* --- AI coach chat history (W3, Faz 2 multi-turn): one row per message, single rolling
+ * conversation per user (no thread table — add a conversation_id column if threads ever land).
+ * §4 #6: content is the user's own words / the coach reply (user-authored + generated — no
+ * third-party PII). KVKK: behavioral free-text — included in the erasure follow-up (ai.md Gotchas).
+ * RLS: self-or-service (per-user behavioral data, 0001 pattern). */
+export const coachMessages = pgTable(
+  "coach_messages",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** CoachMessageRole: USER | COACH. */
+    role: text("role").notNull(),
+    content: text("content").notNull(),
+    /** RAG source chips on COACH rows ([{title, slug, url}]); null on USER rows. */
+    sources: jsonb("sources"),
+    /** LLM model that produced a COACH row; null on USER rows. */
+    model: text("model"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("coach_messages_user_created_idx").on(t.userId, t.createdAt)],
+);
+
 /* ============================== forum ==============================
  * Zone primitive (announcement/chat/qa) + scoped membership (owner/mod/member).
  * Design 2026-06-22. org_id nullable from day one; visibility PUBLIC in MVP
@@ -1204,6 +1235,8 @@ export const forumAttachments = pgTable(
     storageKey: text("storage_key").notNull(),
     mimeType: text("mime_type").notNull(),
     sizeBytes: integer("size_bytes").notNull(),
+    /** Original filename — set only for `kind='file'` (download-chip label); null for images. */
+    fileName: text("file_name"),
     width: integer("width"),
     height: integer("height"),
     position: integer("position").notNull().default(0),
@@ -1254,3 +1287,56 @@ export const forumBookmarks = pgTable(
     index("forum_bookmarks_user_created_idx").on(t.userId, t.createdAt),
   ],
 );
+
+/* Social follow graph — a one-way, public, instant follow (Twitter-style; no approval/private accounts).
+ * follower_id follows followee_id. Unique per pair (idempotent toggle, like forum_bookmarks). The
+ * (followee, created_at) index drives "my followers" + follower count; (follower, created_at) drives
+ * "who I follow" + the cross-zone "Akış" feed's author set. Accessed in SERVICE context, own-user
+ * scoped by the WHERE clause (same trust model as forum_bookmarks — no separate RLS policy). */
+export const userFollows = pgTable(
+  "user_follows",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    followerId: uuid("follower_id")
+      .notNull()
+      .references(() => users.id),
+    followeeId: uuid("followee_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("user_follows_pair_unique_idx").on(t.followerId, t.followeeId),
+    index("user_follows_followee_created_idx").on(t.followeeId, t.createdAt),
+    index("user_follows_follower_created_idx").on(t.followerId, t.createdAt),
+  ],
+);
+
+
+/* --- Premium weekly review narration cache (W3). Aggregated/generated text only; no raw notes. */
+export const aiWeeklyReviews = pgTable(
+  "ai_weekly_reviews",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    examId: uuid("exam_id").notNull(),
+    weekStart: date("week_start").notNull(),
+    locale: text("locale").notNull(),
+    sourceFingerprint: text("source_fingerprint").notNull(),
+    narration: text("narration").notNull(),
+    model: text("model").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("ai_weekly_reviews_user_exam_week_locale_idx").on(
+      t.userId,
+      t.examId,
+      t.weekStart,
+      t.locale,
+    ),
+  ],
+);
+

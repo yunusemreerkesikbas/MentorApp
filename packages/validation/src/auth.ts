@@ -75,11 +75,18 @@ export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export const verifyEmailSchema = z.object({ token: z.string().min(16) });
 export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 
+/** Empty / whitespace-only strings clear the field (→ null); real values are validated. */
+const emptyToNull = (v: unknown) => (typeof v === "string" && v.trim() === "" ? null : v);
+
 export const updateMeSchema = z
   .object({
     displayName: z.string().trim().min(2).max(64).optional(),
     username: usernameSchema.optional(),
     avatarStorageKey: z.string().trim().min(1).max(512).nullable().optional(),
+    /** Public profile self-description (community surface); empty clears it. */
+    bio: z.preprocess(emptyToNull, z.string().trim().max(200).nullable()).optional(),
+    /** Public personal link (http/https); empty clears it. */
+    website: z.preprocess(emptyToNull, z.string().trim().url().max(200).nullable()).optional(),
     examType: z.enum(["KPSS", "YKS", "LGS"]).optional(),
     /** ISO date (yyyy-mm-dd) of the target exam — must be a real calendar date. */
     examDate: z

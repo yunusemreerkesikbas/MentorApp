@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { LlmCompleteInput, LlmPort, LlmResult } from "../../domain/llm.port";
+import type { LlmCompleteInput, LlmPort, LlmResult, LlmStreamEvent } from "../../domain/llm.port";
 
 /** Rough token estimate (~4 chars/token) — good enough for the usage meter in dev/test. */
 const estimateTokens = (text: string): number => Math.max(1, Math.ceil(text.length / 4));
@@ -12,15 +12,43 @@ const estimateTokens = (text: string): number => Math.max(1, Math.ceil(text.leng
 @Injectable()
 export class FakeLlmAdapter implements LlmPort {
   async complete(input: LlmCompleteInput): Promise<LlmResult> {
+    // Deterministic multi-turn signal: history length is visible in the reply so specs and manual
+    // dev verification can prove the history reached the LLM.
+    const historyLine =
+      input.history && input.history.length > 0
+        ? ` (Önceki ${input.history.length} mesajını hatırlıyorum.)`
+        : "";
+    // Deterministic plan-revision signal: mentioning "plan"/"görev" yields a task marker so the
+    // extract + stream-filter + FE card path is testable without a real provider.
+    const taskMarker = /plan|görev/i.test(input.user)
+      ? '\n<<TASK{"title":"Matematik: 20 soru çöz","subject":"Matematik"}>>'
+      : "";
     const text =
       "Bugün küçük ve net bir hedefle başla: 25 dakikalık odak + 5 dakika mola. " +
-      "Resmî tarih/süreç bilgileri için Bilgi Merkezi'ne bakmayı unutma.";
+      "Resmî tarih/süreç bilgileri için Bilgi Merkezi'ne bakmayı unutma." +
+      historyLine +
+      taskMarker;
+    const historyTokens = (input.history ?? []).reduce(
+      (sum, m) => sum + estimateTokens(m.content),
+      0,
+    );
     return {
       text,
-      promptTokens: estimateTokens(input.system) + estimateTokens(input.user),
+      promptTokens: estimateTokens(input.system) + historyTokens + estimateTokens(input.user),
       completionTokens: estimateTokens(text),
       model: "fake",
     };
+  }
+
+  /** Streams the deterministic reply word-by-word (small delay so the FE typing effect is visible in dev). */
+  async *completeStream(input: LlmCompleteInput): AsyncIterable<LlmStreamEvent> {
+    const result = await this.complete(input);
+    const words = result.text.split(" ");
+    for (let i = 0; i < words.length; i++) {
+      yield { delta: i === 0 ? words[i]! : ` ${words[i]!}` };
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    yield { final: result };
   }
 
   /**

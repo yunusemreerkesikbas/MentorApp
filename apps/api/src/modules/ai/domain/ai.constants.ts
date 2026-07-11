@@ -1,5 +1,6 @@
 /** AI coach domain constants (W3): system prompt (§4 guardrails) + cost model + request limits. */
 import type { GhostComparisonDto } from "@mentor/types";
+import type { TodayPlanSummary } from "../../coaching/domain/coaching.constants";
 
 /** Max completion tokens per call — bounds per-call cost (§7). */
 export const AI_MAX_OUTPUT_TOKENS = 600;
@@ -7,6 +8,10 @@ export const AI_MAX_OUTPUT_TOKENS = 600;
 export const AI_TEMPERATURE = 0.7;
 /** LLM request timeout (ms) — never let a hung provider hang the HTTP request. */
 export const AI_REQUEST_TIMEOUT_MS = 30_000;
+
+/** Multi-turn: how many persisted messages (user+coach rows) are replayed into the prompt.
+ * ponytail: constant, not config — move to the config catalog if tuning is ever needed. */
+export const CHAT_HISTORY_MAX_MESSAGES = 10;
 
 /** RAG retrieval: how many articles to ground on, and the max cosine distance to accept (lower = closer). */
 export const RAG_TOP_K = 3;
@@ -34,6 +39,8 @@ export interface CoachContext {
     /** Most recent post-session struggle note (null if none). */
     lastStruggleNote: string | null;
   } | null;
+  /** PII-free summary of today's plan tasks (null when no tasks scheduled today). */
+  todayPlan: TodayPlanSummary | null;
 }
 
 /** A retrieved, verified article used to ground the answer (RAG, §1). */
@@ -68,6 +75,10 @@ export const COACH_SYSTEM_BASE = [
   "2) Ödeme, abonelik, coin/puan ekonomisi veya teknik/sistem konularını konuşma; bunlar senin alanın değil.",
   "3) Yalnızca sana verilen 'BAĞLAM' bilgisine ve genel çalışma koçluğuna dayan; kişisel veri isteme.",
   "4) Tıbbi/hukuki tavsiye verme; ciddi durumda profesyonele yönlendir.",
+  "GÖREV ÖNERİSİ: Kullanıcı somut bir çalışma görevi/plan yardımı istediyse ve yanıtında net bir",
+  'görev önerdiysen, yanıtın EN SONUNA tek satır <<TASK{"title":"kısa görev başlığı","subject":"ders"}>>',
+  "ekle (en fazla 1; subject bilinmiyorsa alanı boş bırakma, hiç yazma). Görev önermiyorsan bu satırı",
+  "EKLEME. Bu satır kullanıcıya gösterilmez; 1. kuraldaki yasaklar burada da geçerlidir.",
 ].join("\n");
 
 /**
@@ -79,6 +90,19 @@ export function formatRecentSessionsLine(rs: CoachContext["recentSessions"]): st
   const parts = [`Son 7 gün: ${rs.count7d} seans, ${rs.focusMinutes7d} dk odak`];
   if (rs.subjects.length > 0) parts.push(`çalıştığı konular: ${rs.subjects.join(", ")}`);
   if (rs.lastStruggleNote) parts.push(`son zorlandığı: "${rs.lastStruggleNote}"`);
+  return `${parts.join("; ")}.`;
+}
+
+/**
+ * PII-free one-line summary of today's plan for grounding (§4 #6 — counts + own task titles only).
+ * Returns null when there are no tasks today.
+ */
+export function formatTodayPlanLine(tp: CoachContext["todayPlan"]): string | null {
+  if (!tp) return null;
+  const parts = [`Bugünün planı: ${tp.done}/${tp.total} tamam`];
+  if (tp.pendingTitles.length > 0) {
+    parts.push(`kalan: ${tp.pendingTitles.map((t) => `"${t}"`).join(", ")}`);
+  }
   return `${parts.join("; ")}.`;
 }
 
@@ -96,6 +120,8 @@ export function buildSystemPrompt(ctx: CoachContext, sources: CoachSource[] = []
         (ctx.struggleNote ? `, zorlandığı konu: "${ctx.struggleNote}"` : ""),
     );
   }
+  const planLine = formatTodayPlanLine(ctx.todayPlan);
+  if (planLine) lines.push(planLine);
   const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
   if (sessionsLine) lines.push(sessionsLine);
   let prompt = `${COACH_SYSTEM_BASE}\n\nBAĞLAM:\n${lines.join("\n")}`;
@@ -142,7 +168,9 @@ export function buildMoodReflectionPrompt(
   const noteLine = struggleNote ? ` Bugün en çok zorlandığı konu: "${struggleNote}".` : "";
   const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
   const studyLine = sessionsLine ? ` ${sessionsLine}` : "";
-  const user = `Öğrencinin bugünkü ruh hali: ${MOOD_LABEL[mood] ?? "orta"} (${mood}/5).${noteLine}${ctxLine}${studyLine}`;
+  const planLine = formatTodayPlanLine(ctx.todayPlan);
+  const planContextLine = planLine ? ` ${planLine}` : "";
+  const user = `Öğrencinin bugünkü ruh hali: ${MOOD_LABEL[mood] ?? "orta"} (${mood}/5).${noteLine}${ctxLine}${studyLine}${planContextLine}`;
 
   return { system, user };
 }
@@ -184,8 +212,10 @@ export function buildSessionReflectionPrompt(
     ? ` Seans sırasında zorlandığı: "${session.struggleNote}".`
     : "";
   const ctxLine = ctx.daysRemaining != null ? ` Sınava kalan gün: ${ctx.daysRemaining}.` : "";
+  const planLine = formatTodayPlanLine(ctx.todayPlan);
+  const planContextLine = planLine ? ` ${planLine}` : "";
   const moodLabel = SESSION_MOOD_LABEL[session.sessionMood] ?? "idare eder";
-  const user = `Öğrenci ${session.focusMinutes} dk odaklandı.${subjectLine} Seans nasıl geçti: ${moodLabel} (${session.sessionMood}/3).${noteLine}${ctxLine}`;
+  const user = `Öğrenci ${session.focusMinutes} dk odaklandı.${subjectLine} Seans nasıl geçti: ${moodLabel} (${session.sessionMood}/3).${noteLine}${ctxLine}${planContextLine}`;
 
   return { system, user };
 }

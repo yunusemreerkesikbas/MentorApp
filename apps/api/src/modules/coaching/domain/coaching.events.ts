@@ -3,11 +3,12 @@
 export { STREAK_MILESTONES, type StreakMilestoneValue } from "@mentor/core";
 
 export const CoachingEventTopic = {
-  STREAK_BROKEN:    "coaching.streak-broken",
-  STREAK_MILESTONE: "coaching.streak-milestone",
-  MOOD_LOW:         "coaching.mood-low",
-  FIRST_SESSION:    "coaching.first-session",
-  PLAN_COMPLETED:   "coaching.plan-completed",
+  STREAK_BROKEN:     "coaching.streak-broken",
+  STREAK_MILESTONE:  "coaching.streak-milestone",
+  MOOD_LOW:          "coaching.mood-low",
+  FIRST_SESSION:     "coaching.first-session",
+  SESSION_COMPLETED: "coaching.session-completed",
+  PLAN_COMPLETED:    "coaching.plan-completed",
 } as const;
 
 export class StreakBroken {
@@ -26,6 +27,11 @@ export class MoodLow {
 }
 
 export class FirstSessionOfDay {
+  constructor(readonly userId: string) {}
+}
+
+/** Emitted whenever a study session is finalized as COMPLETED (every session, not just first-of-day). */
+export class StudySessionCompleted {
   constructor(readonly userId: string) {}
 }
 

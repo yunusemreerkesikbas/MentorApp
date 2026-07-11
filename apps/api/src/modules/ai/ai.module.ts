@@ -14,6 +14,7 @@ import { MoodReflectionService } from "./application/mood-reflection.service";
 import { SessionReflectionService } from "./application/session-reflection.service";
 import { GhostNarrationService } from "./application/ghost-narration.service";
 import { VisionNoteService } from "./application/vision-note.service";
+import { WeeklyReviewNarrationService } from "./application/weekly-review-narration.service";
 import { PhotoAccessService } from "./application/photo-access.service";
 import { PhotoCategorizeService } from "./application/photo-categorize.service";
 import { PhotoUploadService } from "./application/photo-upload.service";
@@ -23,6 +24,8 @@ import { ArticleEmbeddingListener } from "./application/article-embedding.listen
 import { AiJobRegistrar } from "./application/ai-job.registrar";
 import { EmbedArticleHandler } from "./application/handlers/embed-article.handler";
 import { AiUsageRepository } from "./infrastructure/ai-usage.repository";
+import { CoachMessageRepository } from "./infrastructure/coach-message.repository";
+import { WeeklyReviewCacheRepository } from "./infrastructure/weekly-review-cache.repository";
 import { FakeLlmAdapter } from "./infrastructure/adapters/fake-llm.adapter";
 import { OpenAiLlmAdapter } from "./infrastructure/adapters/openai-llm.adapter";
 import { FakeVisionAdapter } from "./infrastructure/adapters/fake-vision.adapter";
@@ -32,6 +35,7 @@ import { AiMoodController } from "./presentation/ai-mood.controller";
 import { AiSessionController } from "./presentation/ai-session.controller";
 import { AiGhostController } from "./presentation/ai-ghost.controller";
 import { AiVisionController } from "./presentation/ai-vision.controller";
+import { AiWeeklyReviewController } from "./presentation/ai-weekly-review.controller";
 import { AiMockExamPhotoController } from "./presentation/ai-mock-exam-photo.controller";
 import { AiPhotoController } from "./presentation/ai-photo.controller";
 import { AdminEmbeddingController } from "./presentation/admin-embedding.controller";
@@ -47,6 +51,7 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     AiSessionController,
     AiGhostController,
     AiVisionController,
+    AiWeeklyReviewController,
     AiPhotoController,
     AiMockExamPhotoController,
     AdminEmbeddingController,
@@ -58,11 +63,14 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     SessionReflectionService,
     GhostNarrationService,
     VisionNoteService,
+    WeeklyReviewNarrationService,
     PhotoAccessService,
     PhotoCategorizeService,
     PhotoUploadService,
     ContextBuilder,
     AiUsageRepository,
+    CoachMessageRepository,
+    WeeklyReviewCacheRepository,
     EmbeddingService,
     ArticleEmbeddingListener,
     AiJobRegistrar,
@@ -89,3 +97,5 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
   ],
 })
 export class AiModule {}
+
+

@@ -9,13 +9,16 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { clearCoachHistory, listCoachMessages } from "@/lib/coach";
 import type { ChatMessage } from "./coach-transcript";
 import {
-  clearCoachMessages,
-  loadCoachSession,
+  loadRecentTopics,
   MAX_RECENT_TOPICS,
-  saveCoachSession,
+  saveRecentTopics,
 } from "./coach-session-storage";
+
+/** How many persisted messages to hydrate into the transcript on open. */
+const HISTORY_PAGE_SIZE = 30;
 
 interface CoachSessionContextValue {
   messages: ChatMessage[];
@@ -23,6 +26,10 @@ interface CoachSessionContextValue {
   hasActiveChat: boolean;
   hydrated: boolean;
   appendMessage: (message: ChatMessage) => void;
+  /** Patch a message in place (streaming deltas grow the coach bubble). */
+  updateMessage: (id: string, patch: Partial<ChatMessage>) => void;
+  /** Drop a message (e.g. an empty streaming placeholder after a failure). */
+  removeMessage: (id: string) => void;
   setMessages: (messages: ChatMessage[]) => void;
   pushRecentTopic: (label: string) => void;
   startNewChat: () => void;
@@ -38,18 +45,38 @@ export function CoachSessionProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const stored = loadCoachSession();
-    /* eslint-disable react-hooks/set-state-in-effect -- sessionStorage hydrate after mount */
-    setMessagesState(stored.messages);
-    setRecentTopics(stored.recentTopics);
-    setHydrated(true);
+    let active = true;
+    /* eslint-disable react-hooks/set-state-in-effect -- hydrate after mount (topics + API history) */
+    setRecentTopics(loadRecentTopics());
+    listCoachMessages(1, HISTORY_PAGE_SIZE)
+      .then(({ items }) => {
+        if (!active) return;
+        // API returns newest-first; the transcript renders oldest-first.
+        setMessagesState(
+          [...items].reverse().map((m) => ({
+            id: m.id,
+            role: m.role === "USER" ? ("user" as const) : ("coach" as const),
+            text: m.content,
+            sources: m.sources,
+          })),
+        );
+      })
+      .catch(() => {
+        // History unavailable (offline, ai.enabled off) — chat still works from a blank transcript.
+      })
+      .finally(() => {
+        if (active) setHydrated(true);
+      });
     /* eslint-enable react-hooks/set-state-in-effect */
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    saveCoachSession({ messages, recentTopics });
-  }, [messages, recentTopics, hydrated]);
+    saveRecentTopics(recentTopics);
+  }, [recentTopics, hydrated]);
 
   const setMessages = useCallback((next: ChatMessage[]) => {
     setMessagesState(next);
@@ -57,6 +84,16 @@ export function CoachSessionProvider({ children }: { children: ReactNode }) {
 
   const appendMessage = useCallback((message: ChatMessage) => {
     setMessagesState((prev) => [...prev, message]);
+  }, []);
+
+  const updateMessage = useCallback((id: string, patch: Partial<ChatMessage>) => {
+    setMessagesState((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+    );
+  }, []);
+
+  const removeMessage = useCallback((id: string) => {
+    setMessagesState((prev) => prev.filter((m) => m.id !== id));
   }, []);
 
   const pushRecentTopic = useCallback((label: string) => {
@@ -72,7 +109,8 @@ export function CoachSessionProvider({ children }: { children: ReactNode }) {
 
   const startNewChat = useCallback(() => {
     setMessagesState([]);
-    clearCoachMessages();
+    // Best-effort: if the DELETE fails the history simply reappears on next open.
+    void clearCoachHistory().catch(() => {});
   }, []);
 
   const value = useMemo(
@@ -82,6 +120,8 @@ export function CoachSessionProvider({ children }: { children: ReactNode }) {
       hasActiveChat: messages.length > 0,
       hydrated,
       appendMessage,
+      updateMessage,
+      removeMessage,
       setMessages,
       pushRecentTopic,
       startNewChat,
@@ -91,6 +131,8 @@ export function CoachSessionProvider({ children }: { children: ReactNode }) {
       recentTopics,
       hydrated,
       appendMessage,
+      updateMessage,
+      removeMessage,
       setMessages,
       pushRecentTopic,
       startNewChat,
