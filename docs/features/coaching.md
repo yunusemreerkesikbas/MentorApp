@@ -59,7 +59,7 @@ PATCH  /v1/plan-tasks/:id        # toggle status → recomputes daily_activity.t
 DELETE /v1/plan-tasks/:id
 
 # Pomodoro / study session:
-GET   /v1/study-sessions?page=1&pageSize=5&subject=Matematik  # finalized-session history (optional subject filter)
+GET   /v1/study-sessions?page=1&pageSize=5&subject=Matematik&from=2026-07-01&to=2026-07-12  # finalized history (optional subject + UTC day range on started_at)
 POST  /v1/study-sessions             # { preset: "25_5" } OR { preset: "custom", focusMinutes: 35 }
 PATCH /v1/study-sessions/:id         # complete/abandon → recomputes daily_activity.has_session (same tx)
 PATCH /v1/study-sessions/:id/feedback # post-session micro check-in { mood: 1-3, struggleNote? }
@@ -260,6 +260,12 @@ pnpm --filter @mentor/api test
   `session-history-row.tsx`, `session-history-page.tsx`, `seans/gecmis/page.tsx`, `session-history.tsx`,
   `study-sessions.ts`, `study-session.repository.ts`, `packages/validation`, `coaching.e2e-spec.ts`,
   `messages/{tr,en}.json`.
+- **Seans geçmişi tarih filtresi (2026-07-12)** — `/seans/gecmis`: Tümü · Bugün · Son 7 gün · Son 30 gün
+  chip'leri. `GET /v1/study-sessions?from=&to=` (yyyy-mm-dd, inclusive UTC günler, `started_at`);
+  `from > to` → 400. Konu filtresiyle birlikte. Custom date picker / detay / export yok. Dosyalar:
+  `listStudySessionsQuerySchema`, `study-session.repository.ts`, `session.service.ts`,
+  `history-date-range.ts`, `session-history-page.tsx`, `study-sessions.ts`, `messages/{tr,en}.json`,
+  `coaching.e2e-spec.ts`.
 - **SubjectPicker DRY (2026-07-11)** — plan (`PlanSubjectPicker`) ve seans (`SessionSubjectPicker`)
   konu seçicileri ortak `SubjectPicker` + `useExamSubjectTaxonomy` hook'una çıkarıldı; fetch mantığı
   tek yerde (`usersControllerMe` → calendar → subjects). Layout farkları korunur: plan `stacked`,
@@ -296,6 +302,11 @@ pnpm --filter @mentor/api test
   done ekranından `/panel`'e dönünce bugünkü görevler + ritim metrikleri güncel kalsın.
   `PanelShell` görünür olunca sessiz `refreshToday({ silent: true })` + `refreshQuests()` (toast yok);
   `visibilitychange` + bfcache `pageshow`. Loading flash yok. Dosya: `panel-shell.tsx`.
+- **Seans yansıması → plan önerisi seam (2026-07-12)** — W3 session-reflection `ai_suggested_task`
+  jsonb cache yazar (`SessionService.setAiReflection` 5. arg); feedback invalidate hem reflection
+  hem task'ı temizler. Migration `0047_supreme_eternals`. FE done kartı W3'te. Seam: [ai.md](./ai.md).
+- **Seans “Yarın hatırlat” CTA (2026-07-12)** — done ekranı W5 `POST /v1/notifications/session-return-reminder`
+  opt-in; konu deep-link. Seam: [notifications.md](./notifications.md).
 - **Seans öncesi konu seçimi (2026-07-09)** — roadmap §256 "veri kör kalmasın": `/seans` idle
   kurulum ekranına konu seçici (`SessionSubjectPicker`) eklendi; artık deep-link (`?subject=`)
   olmadan da konu seçilebiliyor, böylece mikro check-in sinyali bir konuya bağlanır. Plan'daki
@@ -402,6 +413,9 @@ pnpm --filter @mentor/api test
 
 ## Gotchas / Known issues
 
+- **Session history date filter is UTC** — `from`/`to` bound `started_at` to UTC calendar days
+  (same day math as streak/`daily_activity`). Near midnight local time, "Bugün" may differ from the
+  user's wall clock until per-user timezone is threaded.
 - **Task-done toast streak** — panel `TodayPlan` PATCH does not return streak; after a DONE toggle,
   `PanelShell.refreshAfterTaskChange({ celebrateDone: true })` re-fetches `GET /coaching/today` and
   shows the success toast with the refreshed `streak.currentStreak` (never client-derived).

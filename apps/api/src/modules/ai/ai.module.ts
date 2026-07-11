@@ -23,11 +23,15 @@ import { EmbeddingService } from "./application/embedding.service";
 import { ArticleEmbeddingListener } from "./application/article-embedding.listener";
 import { AiJobRegistrar } from "./application/ai-job.registrar";
 import { EmbedArticleHandler } from "./application/handlers/embed-article.handler";
+import { RefreshMemoryHandler } from "./application/handlers/refresh-memory.handler";
 import { AiUsageRepository } from "./infrastructure/ai-usage.repository";
 import { CoachMessageRepository } from "./infrastructure/coach-message.repository";
+import { CoachMemoryRepository } from "./infrastructure/coach-memory.repository";
 import { WeeklyReviewCacheRepository } from "./infrastructure/weekly-review-cache.repository";
 import { FakeLlmAdapter } from "./infrastructure/adapters/fake-llm.adapter";
 import { OpenAiLlmAdapter } from "./infrastructure/adapters/openai-llm.adapter";
+import { GeminiLlmAdapter } from "./infrastructure/adapters/gemini-llm.adapter";
+import { OpenAiVisionAdapter } from "./infrastructure/adapters/openai-vision.adapter";
 import { FakeVisionAdapter } from "./infrastructure/adapters/fake-vision.adapter";
 import { GeminiVisionAdapter } from "./infrastructure/adapters/gemini-vision.adapter";
 import { AiChatController } from "./presentation/ai-chat.controller";
@@ -70,29 +74,56 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     ContextBuilder,
     AiUsageRepository,
     CoachMessageRepository,
+    CoachMemoryRepository,
     WeeklyReviewCacheRepository,
     EmbeddingService,
     ArticleEmbeddingListener,
     AiJobRegistrar,
     EmbedArticleHandler,
+    RefreshMemoryHandler,
     FakeLlmAdapter,
     OpenAiLlmAdapter,
+    GeminiLlmAdapter,
+    OpenAiVisionAdapter,
     FakeVisionAdapter,
     GeminiVisionAdapter,
     {
       provide: LLM_PORT,
-      inject: [ConfigService, FakeLlmAdapter, OpenAiLlmAdapter],
-      useFactory: (config: ConfigService<Env, true>, fake: FakeLlmAdapter, openai: OpenAiLlmAdapter) =>
-        config.get("AI_PROVIDER", { infer: true }) === "openai" ? openai : fake,
+      inject: [ConfigService, FakeLlmAdapter, OpenAiLlmAdapter, GeminiLlmAdapter],
+      useFactory: (
+        config: ConfigService<Env, true>,
+        fake: FakeLlmAdapter,
+        openai: OpenAiLlmAdapter,
+        gemini: GeminiLlmAdapter,
+      ) => {
+        switch (config.get("AI_PROVIDER", { infer: true })) {
+          case "openai":
+            return openai;
+          case "gemini":
+            return gemini;
+          default:
+            return fake;
+        }
+      },
     },
     {
       provide: VISION_PORT,
-      inject: [ConfigService, FakeVisionAdapter, GeminiVisionAdapter],
+      inject: [ConfigService, FakeVisionAdapter, GeminiVisionAdapter, OpenAiVisionAdapter],
       useFactory: (
         config: ConfigService<Env, true>,
         fake: FakeVisionAdapter,
         gemini: GeminiVisionAdapter,
-      ) => (config.get("VISION_PROVIDER", { infer: true }) === "gemini" ? gemini : fake),
+        openai: OpenAiVisionAdapter,
+      ) => {
+        switch (config.get("VISION_PROVIDER", { infer: true })) {
+          case "gemini":
+            return gemini;
+          case "openai":
+            return openai;
+          default:
+            return fake;
+        }
+      },
     },
   ],
 })

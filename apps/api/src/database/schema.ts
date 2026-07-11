@@ -416,6 +416,8 @@ export const studySessions = pgTable(
     aiReflection: text("ai_reflection"),
     aiModel: text("ai_model"),
     aiReflectedAt: timestamp("ai_reflected_at", { withTimezone: true }),
+    /** Cached plan-task suggestion from session reflection ({title, subject}); null when none. */
+    aiSuggestedTask: jsonb("ai_suggested_task"),
     /** IN_PROGRESS | COMPLETED | ABANDONED (StudySessionStatus). */
     status: text("status").notNull().default("IN_PROGRESS"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -981,10 +983,29 @@ export const coachMessages = pgTable(
     sources: jsonb("sources"),
     /** LLM model that produced a COACH row; null on USER rows. */
     model: text("model"),
+    /** User rating on a COACH row: 1 = 👍, -1 = 👎, null = none. */
+    feedback: smallint("feedback"),
+    /** Persisted coach plan-task suggestion ({title, subject}) on a COACH row; null otherwise. */
+    suggestedTask: jsonb("suggested_task"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("coach_messages_user_created_idx").on(t.userId, t.createdAt)],
 );
+
+/* --- AI coach memory profile (W3, Faz 2): one distilled PII-free summary per user, refreshed by an
+ * async job every N messages. §4 #6: goal / recurring struggles / study prefs only — never name,
+ * email, contact. KVKK: behavioral free-text (erasure follow-up); user can reset via DELETE.
+ * RLS: self-or-service (0001 pattern). */
+export const coachMemory = pgTable("coach_memory", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  summary: text("summary").notNull(),
+  model: text("model").notNull(),
+  /** Message count at which this profile was distilled — the refresh threshold guard. */
+  messageCount: integer("message_count").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /* ============================== forum ==============================
  * Zone primitive (announcement/chat/qa) + scoped membership (owner/mod/member).

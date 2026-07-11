@@ -11,7 +11,7 @@ import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.po
 import { CONTENT_PORT, type ContentPort, type ExamRef, type ExamSubjectRef } from "../domain/content.port";
 import { computeGhost } from "../domain/ghost";
 import { computeSubjectNet, computeTotalNet, formatNet } from "../domain/net";
-import { selectAnalysisFocus } from "../domain/analysis-focus";
+import { buildFocusTrend, selectAnalysisFocus } from "../domain/analysis-focus";
 import {
   MockExamRepository,
   type MockExamRow,
@@ -175,6 +175,10 @@ export class MockExamService {
     return withUserContext(this.db, { userId }, async (tx) => {
       const trendRows = await this.mockExams.listTrend(tx, userId, 12, examId);
       const breakdown = await this.mockExams.listSubjectBreakdown(tx, userId, examId);
+      const recentRows = trendRows.slice(0, 4);
+      const recentIds = recentRows.map((row) => row.id);
+      const recentSubjectsByMockExamId =
+        await this.mockExams.listSubjectsByMockExamIds(tx, recentIds);
 
       const examIds = [...new Set(trendRows.map((r) => r.examId))];
       const [taxonomyEntries, examEntries] = await Promise.all([
@@ -196,7 +200,6 @@ export class MockExamService {
       const examNameById = new Map(
         examIds.map((id, i) => [id, examEntries[i]?.name ?? "Deneme"]),
       );
-
       const trend = trendRows.map((row) => ({
         id: row.id,
         takenAt: row.takenAt.toISOString(),
@@ -204,30 +207,54 @@ export class MockExamService {
         examName: examNameById.get(row.examId) ?? "Deneme",
       }));
 
-      const subjects = breakdown.map((row) => {
-        const counts = questionCountsBySlug.get(row.subjectRef);
-        const questionCount =
-          counts?.size === 1 ? ([...counts][0] ?? null) : null;
+      const toStrength = (
+        subjectRef: string,
+        averageNet: string,
+        attemptCount: number,
+      ) => {
+        const counts = questionCountsBySlug.get(subjectRef);
+        const questionCount = counts?.size === 1 ? ([...counts][0] ?? null) : null;
         return {
-          subjectRef: row.subjectRef,
-          subjectName: slugToName.get(row.subjectRef) ?? row.subjectRef,
-          averageNet: row.avgNet,
-          attemptCount: row.attemptCount,
+          subjectRef,
+          subjectName: slugToName.get(subjectRef) ?? subjectRef,
+          averageNet,
+          attemptCount,
           questionCount,
           normalizedAveragePercent:
             questionCount != null && questionCount > 0
-              ? ((Number(row.avgNet) / questionCount) * 100).toFixed(2)
+              ? ((Number(averageNet) / questionCount) * 100).toFixed(2)
               : null,
         };
-      });
+      };
+      const subjects = breakdown.map((row) =>
+        toStrength(row.subjectRef, row.avgNet, row.attemptCount),
+      );
 
-      const photoSignals = await this.photoRows.listPhotoSubjectSignals(tx, userId, examId);
+      const recentTotals = new Map<string, { sum: number; count: number }>();
+      for (const rows of recentSubjectsByMockExamId.values()) {
+        for (const row of rows) {
+          const current = recentTotals.get(row.subjectRef) ?? { sum: 0, count: 0 };
+          current.sum += Number(row.net);
+          current.count += 1;
+          recentTotals.set(row.subjectRef, current);
+        }
+      }
+      const recentSubjects = [...recentTotals].map(([subjectRef, total]) =>
+        toStrength(subjectRef, (total.sum / total.count).toFixed(2), total.count),
+      );
+
+      const photoSignals = await this.photoRows.listPhotoSubjectSignals(
+        tx,
+        userId,
+        examId,
+        recentIds,
+      );
       const photoSubjectSignals = photoSignals.map((row) => ({
         subjectRef: row.subjectRef,
         subjectName: slugToName.get(row.subjectRef) ?? row.subjectRef,
         count: row.count,
       }));
-      const focus = selectAnalysisFocus(subjects, photoSubjectSignals);
+      const focus = selectAnalysisFocus(recentSubjects, photoSubjectSignals);
       const nextFocus = focus
         ? {
             ...focus,
@@ -239,12 +266,24 @@ export class MockExamService {
               `coaching.focus.TASK_TITLE_${focus.source}`,
               focus.subjectName,
             ),
+            ...buildFocusTrend(
+              focus.subjectRef,
+              recentRows,
+              recentSubjectsByMockExamId,
+            ),
+            trendMessage: this.translateFocus(
+              `coaching.focus.TREND_${buildFocusTrend(
+                focus.subjectRef,
+                recentRows,
+                recentSubjectsByMockExamId,
+              ).trendDirection}`,
+              focus.subjectName,
+            ),
           }
         : null;
 
       const ghost = await this.buildGhost(tx, userId, examId);
       const personalRecordNet = await this.mockExams.maxTotalNet(tx, userId, examId);
-
       return { trend, subjects, photoSubjectSignals, nextFocus, personalRecordNet, ghost };
     });
   }
@@ -474,3 +513,4 @@ export class MockExamService {
     });
   }
 }
+

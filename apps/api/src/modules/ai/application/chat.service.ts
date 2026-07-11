@@ -12,16 +12,20 @@ import { EconomyLedger } from "../../economy/domain/economy.constants";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { LLM_PORT, type LlmHistoryMessage, type LlmPort } from "../domain/llm.port";
 import {
+  AI_MEMORY_JOB,
   buildSystemPrompt,
   CHAT_HISTORY_MAX_MESSAGES,
   estimateCostMicros,
+  MEMORY_REFRESH_EVERY_N_MESSAGES,
   RAG_MAX_DISTANCE,
   RAG_TOP_K,
 } from "../domain/ai.constants";
 import { createTaskMarkerFilter, extractSuggestedTask } from "../domain/suggested-task";
+import { JOB_QUEUE_PORT, type JobQueuePort } from "../../../shared/ports/job-queue.port";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { CoachMessageRepository } from "../infrastructure/coach-message.repository";
+import { CoachMemoryRepository } from "../infrastructure/coach-memory.repository";
 
 export type CoachReplyResult = CoachChatReplyDto;
 
@@ -44,6 +48,8 @@ export class ChatService {
     private readonly entitlement: EntitlementService,
     private readonly economy: EconomyService,
     private readonly messages: CoachMessageRepository,
+    private readonly memory: CoachMemoryRepository,
+    @Inject(JOB_QUEUE_PORT) private readonly queue: JobQueuePort,
   ) {}
 
   async reply(
@@ -164,12 +170,13 @@ export class ChatService {
     };
   }
 
-  /** Post-success bookkeeping: usage meter + persist the exchange (only on success). */
+  /** Post-success bookkeeping: usage meter + persist the exchange + maybe refresh memory (only on success). */
   private async recordSuccess(
     userId: string,
     message: string,
     result: { text: string; promptTokens: number; completionTokens: number; model: string },
     sources: { title: string; slug: string; url: string }[],
+    suggestedTask?: { title: string; subject: string | null },
   ): Promise<void> {
     await this.usage.append({
       userId,
@@ -180,18 +187,31 @@ export class ChatService {
     });
 
     // Best-effort: a persist failure must not swallow the reply the user already paid for.
-    await this.messages
-      .appendExchange(userId, message, { content: result.text, model: result.model, sources })
+    const persisted = await this.messages
+      .appendExchange(userId, message, {
+        content: result.text,
+        model: result.model,
+        sources,
+        suggestedTask,
+      })
       .catch((err) => {
         this.logger.error(`Chat history persist failed: ${String(err)}`);
+        return null;
       });
+
+    // Memory profile: enqueue an async refresh every N messages (never blocks the chat).
+    if (persisted && persisted.totalMessages % MEMORY_REFRESH_EVERY_N_MESSAGES === 0) {
+      await this.queue.enqueue(AI_MEMORY_JOB, { userId }).catch((err) => {
+        this.logger.warn(`Memory refresh enqueue skipped: ${String(err)}`);
+      });
+    }
   }
 
   private async completeChat(userId: string, message: string): Promise<CoachReplyResult> {
     const { llmInput, sources } = await this.prepareChat(userId, message);
     const result = await this.llm.complete(llmInput);
     const { text: reply, task } = extractSuggestedTask(result.text);
-    await this.recordSuccess(userId, message, { ...result, text: reply }, sources);
+    await this.recordSuccess(userId, message, { ...result, text: reply }, sources, task ?? undefined);
     return {
       reply,
       model: result.model,
@@ -244,7 +264,7 @@ export class ChatService {
       const held = markerFilter.flush();
       if (held) yield { delta: held };
       const { text: reply, task } = extractSuggestedTask(final.text);
-      await this.recordSuccess(user.id, message, { ...final, text: reply }, sources);
+      await this.recordSuccess(user.id, message, { ...final, text: reply }, sources, task ?? undefined);
       yield {
         done: {
           reply,
@@ -271,11 +291,41 @@ export class ChatService {
     return this.messages.listPaged(userId, page, pageSize);
   }
 
-  /** DELETE /v1/coach/messages — "Yeni sohbet": clears the user's own rolling conversation. */
+  /** DELETE /v1/coach/messages — "Yeni sohbet": clears the user's own conversation AND memory profile. */
   async clearMessages(userId: string): Promise<void> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
     await this.messages.clearAll(userId);
+    // A fresh conversation should not carry the old distilled profile.
+    await this.memory.clear(userId).catch((err) => {
+      this.logger.warn(`Memory clear skipped on new chat: ${String(err)}`);
+    });
+  }
+
+  /** PATCH /v1/coach/messages/:id/feedback — 👍/👎/none on the user's own coach message. */
+  async setMessageFeedback(userId: string, messageId: string, feedback: number | null): Promise<void> {
+    if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
+      throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+    }
+    const ok = await this.messages.setFeedback(userId, messageId, feedback);
+    if (!ok) throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+  }
+
+  /** GET /v1/coach/memory — the coach's distilled profile of the user (null until built). */
+  async getMemory(userId: string): Promise<{ summary: string; updatedAt: string } | null> {
+    if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
+      throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+    }
+    const row = await this.memory.get(userId);
+    return row ? { summary: row.summary, updatedAt: row.updatedAt.toISOString() } : null;
+  }
+
+  /** DELETE /v1/coach/memory — reset the profile (user-controlled, KVKK). */
+  async clearMemory(userId: string): Promise<void> {
+    if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
+      throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+    }
+    await this.memory.clear(userId);
   }
 }

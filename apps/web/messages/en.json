@@ -464,6 +464,10 @@
       "chip_streak": "Keep my streak",
       "seed_streak": "I have a {days}-day streak — what should I do today to keep it?"
     },
+    "memory": {
+      "title": "What your coach knows about you",
+      "reset": "Reset"
+    },
     "chat": {
       "header_title": "Chat",
       "empty_hint": "Write your first message — your coach is here.",
@@ -843,6 +847,21 @@
     "history_filter_all": "All",
     "history_back": "Back to session",
     "history_loading": "Loading session history…",
+    "history_empty_filtered": "No sessions match these filters.",
+    "history_date_filter_label": "Date range",
+    "history_subject_filter_label": "Subject filter",
+    "history_date_all": "All",
+    "history_date_today": "Today",
+    "history_date_7d": "Last 7 days",
+    "history_date_30d": "Last 30 days",
+    "return_remind_cta": "Remind me tomorrow",
+    "return_remind_done": "Reminder set",
+    "return_remind_ok_title": "Done",
+    "return_remind_ok_message": "We'll gently remind you tomorrow.",
+    "return_remind_already_title": "Already set",
+    "return_remind_already_message": "Your tomorrow reminder is ready.",
+    "return_remind_error_title": "Could not save reminder",
+    "return_remind_error_message": "Please try again in a moment.",
     "plan_task_completed": "Plan task marked done.",
     "new_session": "New session",
     "back_panel": "Back to Dashboard"
@@ -914,6 +933,8 @@
   "coach_chat": {
     "suggested_task_label": "Coach's suggestion",
     "add_to_plan": "Add to plan",
+    "feedback_up": "This reply was helpful",
+    "feedback_down": "This reply was not helpful",
     "input_label": "Write a message to your coach",
     "input_placeholder": "Ask your coach something…",
     "send": "Send",

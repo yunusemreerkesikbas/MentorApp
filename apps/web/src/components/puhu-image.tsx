@@ -8,6 +8,15 @@ export type PuhuVariant =
   | "surprised"
   | "winking";
 
+/** DESIGN.md §8.2 — companion size scale. */
+export const PUHU_SIZES = {
+  sm: 40,
+  md: 72,
+  lg: 120,
+} as const;
+
+export type PuhuSizeToken = keyof typeof PUHU_SIZES;
+
 const FILE_BY_VARIANT: Record<PuhuVariant, string> = {
   default: "puhu-default.png",
   encouraging: "puhu-encouraging.png",
@@ -17,27 +26,35 @@ const FILE_BY_VARIANT: Record<PuhuVariant, string> = {
   winking: "puhu-happy.png",
 };
 
+function resolvePuhuSize(size: PuhuSizeToken | number): number {
+  return typeof size === "number" ? size : PUHU_SIZES[size];
+}
+
 export function PuhuImage({
   variant,
-  size = 120,
+  size = "lg",
   className,
+  priority = false,
 }: {
   variant: PuhuVariant;
-  size?: number;
+  /** Token (`sm`/`md`/`lg`) or raw px for special layouts (mood wheel, onboarding). */
+  size?: PuhuSizeToken | number;
   className?: string;
+  priority?: boolean;
 }) {
+  const px = resolvePuhuSize(size);
   const src = `/mascot/puhu/${FILE_BY_VARIANT[variant]}`;
 
   return (
     <Image
       src={src}
       alt=""
-      width={size}
-      height={size}
+      width={px}
+      height={px}
       aria-hidden
-      priority
+      priority={priority}
       className={className}
-      style={{ width: size, height: "auto", maxWidth: "100%" }}
+      style={{ width: px, height: "auto", maxWidth: "100%" }}
     />
   );
 }

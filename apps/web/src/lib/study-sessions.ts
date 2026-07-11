@@ -41,12 +41,16 @@ export async function listStudySessions(
   page = 1,
   pageSize = 5,
   subject?: string,
+  from?: string,
+  to?: string,
 ): Promise<Paginated<StudySessionDto>> {
   const params = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
   });
   if (subject?.trim()) params.set("subject", subject.trim());
+  if (from?.trim()) params.set("from", from.trim());
+  if (to?.trim()) params.set("to", to.trim());
   const url = `${getStudySessionControllerListUrl()}?${params.toString()}`;
   return (await http<Paginated<StudySessionDto>>(url)) as Paginated<StudySessionDto>;
 }

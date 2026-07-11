@@ -30,16 +30,27 @@ function makeRepoFake() {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-      subjects: data.subjects.map((s: { subjectRef: string; correct: number; wrong: number; blank: number; net: string }, i: number) => ({
-        id: `sub-${i}`,
-        mockExamId: "mock-1",
-        subjectRef: s.subjectRef,
-        correct: s.correct,
-        wrong: s.wrong,
-        blank: s.blank,
-        net: s.net,
-        createdAt: new Date(),
-      })),
+      subjects: data.subjects.map(
+        (
+          s: {
+            subjectRef: string;
+            correct: number;
+            wrong: number;
+            blank: number;
+            net: string;
+          },
+          i: number,
+        ) => ({
+          id: `sub-${i}`,
+          mockExamId: "mock-1",
+          subjectRef: s.subjectRef,
+          correct: s.correct,
+          wrong: s.wrong,
+          blank: s.blank,
+          net: s.net,
+          createdAt: new Date(),
+        }),
+      ),
     })),
     findById: vi.fn(),
     listPaged: vi.fn(),
@@ -79,6 +90,8 @@ describe("MockExamService", () => {
       listPhotoSubjectSignals: vi.fn(),
       listStorageKeys: vi.fn(),
     };
+    repo.listSubjectsByMockExamIds.mockResolvedValue(new Map());
+    photoRows.listPhotoSubjectSignals.mockResolvedValue([]);
     service = new MockExamService(
       fakeDb,
       contentPort as never,
@@ -94,7 +107,7 @@ describe("MockExamService", () => {
       netRule: { kind: "PENALTY", divisor: 4 },
     });
     contentPort.listExamSubjects.mockResolvedValue([
-      { slug: "turkce", name: "Türkçe", questionCount: 30, sortOrder: 0 },
+      { slug: "turkce", name: "T\u00fcrk\u00e7e", questionCount: 30, sortOrder: 0 },
     ]);
   });
 
@@ -135,7 +148,9 @@ describe("MockExamService", () => {
         examId: EXAM_ID,
         subjects: [{ subjectRef: "turkce", correct: 25, wrong: 5, blank: 5 }],
       }),
-    ).rejects.toMatchObject({ code: ErrorCode.COACHING_INVALID_MOCK_EXAM_SCORES });
+    ).rejects.toMatchObject({
+      code: ErrorCode.COACHING_INVALID_MOCK_EXAM_SCORES,
+    });
   });
 
   it("updates an owned mock exam with recalculated nets and clears scoped ghost narration", async () => {
@@ -145,19 +160,30 @@ describe("MockExamService", () => {
       examId: EXAM_ID,
       takenAt: new Date("2026-06-01T12:00:00.000Z"),
       totalNet: "10.00",
-      publisherName: "Eski yayın",
+      publisherName: "Eski yayin",
       createdAt: new Date(),
       updatedAt: new Date(),
     };
     repo.findById.mockResolvedValue({ exam: existing, subjects: [] });
     repo.update.mockImplementation(async (_tx, _userId, _id, data) => ({
       exam: { ...existing, ...data },
-      subjects: data.subjects.map((subject: { subjectRef: string; correct: number; wrong: number; blank: number; net: string }, index: number) => ({
-        id: "updated-" + index,
-        mockExamId: existing.id,
-        createdAt: new Date(),
-        ...subject,
-      })),
+      subjects: data.subjects.map(
+        (
+          subject: {
+            subjectRef: string;
+            correct: number;
+            wrong: number;
+            blank: number;
+            net: string;
+          },
+          index: number,
+        ) => ({
+          id: "updated-" + index,
+          mockExamId: existing.id,
+          createdAt: new Date(),
+          ...subject,
+        }),
+      ),
     }));
 
     const result = await service.update(USER, existing.id, {
@@ -191,18 +217,34 @@ describe("MockExamService", () => {
       USER,
       EXAM_ID,
     );
-    expect(storageFake.deleteObject).toHaveBeenCalledWith("mock-exams/u1/photo.jpg");
+    expect(storageFake.deleteObject).toHaveBeenCalledWith(
+      "mock-exams/u1/photo.jpg",
+    );
   });
 
   it("getGhostComparison returns null with fewer than 2 attempts", async () => {
-    repo.listTrend.mockResolvedValue([{ id: "m1", examId: EXAM_ID, totalNet: "20.00" }]);
+    repo.listTrend.mockResolvedValue([
+      { id: "m1", examId: EXAM_ID, totalNet: "20.00" },
+    ]);
     expect(await service.getGhostComparison(USER)).toBeNull();
   });
 
   it("getGhostComparison builds the latest-vs-past comparison with the cached narration", async () => {
     repo.listTrend.mockResolvedValue([
-      { id: "m2", examId: EXAM_ID, takenAt: new Date("2026-06-19T10:00:00Z"), totalNet: "42.00", aiGhostNarration: "cached-story" },
-      { id: "m1", examId: EXAM_ID, takenAt: new Date("2026-06-12T10:00:00Z"), totalNet: "39.00", aiGhostNarration: null },
+      {
+        id: "m2",
+        examId: EXAM_ID,
+        takenAt: new Date("2026-06-19T10:00:00Z"),
+        totalNet: "42.00",
+        aiGhostNarration: "cached-story",
+      },
+      {
+        id: "m1",
+        examId: EXAM_ID,
+        takenAt: new Date("2026-06-12T10:00:00Z"),
+        totalNet: "39.00",
+        aiGhostNarration: null,
+      },
     ]);
     repo.maxNetExcluding.mockResolvedValue("40.00");
     repo.listSubjectsByMockExamIds.mockResolvedValue(
@@ -215,27 +257,39 @@ describe("MockExamService", () => {
     const ghost = await service.getGhostComparison(USER);
     expect(ghost?.previousDelta).toBe("+3.00");
     expect(ghost?.isNewRecord).toBe(true);
-    expect(ghost?.headline).toBe("coaching.ghost.NEW_RECORD"); // i18n fake echoes the key
+    expect(ghost?.headline).toBe("coaching.ghost.NEW_RECORD");
     expect(ghost?.subjects[0]?.delta).toBe("+3.00");
     expect(ghost?.aiNarration).toBe("cached-story");
   });
 
   it("setLatestGhostNarration caches on the latest attempt", async () => {
-    repo.listTrend.mockResolvedValue([{ id: "m2", examId: EXAM_ID, totalNet: "42.00" }]);
+    repo.listTrend.mockResolvedValue([
+      { id: "m2", examId: EXAM_ID, totalNet: "42.00" },
+    ]);
     await service.setLatestGhostNarration(USER, "story", "fake");
-    expect(repo.setGhostNarration).toHaveBeenCalledWith(expect.anything(), "m2", "story", "fake");
+    expect(repo.setGhostNarration).toHaveBeenCalledWith(
+      expect.anything(),
+      "m2",
+      "story",
+      "fake",
+    );
   });
 
   it("includes normalized strengths and an evidence-aware next focus", async () => {
     repo.listTrend.mockResolvedValue([
-      { id: "m1", examId: EXAM_ID, takenAt: new Date("2026-06-19T10:00:00Z"), totalNet: "42.00" },
+      {
+        id: "m1",
+        examId: EXAM_ID,
+        takenAt: new Date("2026-06-19T10:00:00Z"),
+        totalNet: "42.00",
+      },
     ]);
     repo.listSubjectBreakdown.mockResolvedValue([
       { subjectRef: "turkce", avgNet: "21.00", attemptCount: 1 },
     ]);
     repo.maxTotalNet.mockResolvedValue("42.00");
     contentPort.listExamSubjects.mockResolvedValue([
-      { slug: "turkce", name: "Türkçe", questionCount: 30, sortOrder: 0 },
+      { slug: "turkce", name: "T\u00fcrk\u00e7e", questionCount: 30, sortOrder: 0 },
       { slug: "tarih", name: "Tarih", questionCount: 27, sortOrder: 1 },
     ]);
     photoRows.listPhotoSubjectSignals.mockResolvedValue([
@@ -258,33 +312,106 @@ describe("MockExamService", () => {
         evidenceLevel: "REPEATED",
         message: "coaching.focus.PHOTO_SIGNAL_REPEATED",
         suggestedTaskTitle: "coaching.focus.TASK_TITLE_PHOTO_SIGNAL",
+        recentTrend: [],
+        recentDelta: null,
+        trendDirection: "FIRST",
+        trendMessage: "coaching.focus.TREND_FIRST",
       },
+    });
+  });
+
+  it("builds the next focus from only the latest four attempts", async () => {
+    const attempts = [
+      { id: "m5", examId: EXAM_ID, takenAt: new Date("2026-07-10T10:00:00Z"), totalNet: "70.00" },
+      { id: "m4", examId: EXAM_ID, takenAt: new Date("2026-07-03T10:00:00Z"), totalNet: "68.00" },
+      { id: "m3", examId: EXAM_ID, takenAt: new Date("2026-06-26T10:00:00Z"), totalNet: "66.00" },
+      { id: "m2", examId: EXAM_ID, takenAt: new Date("2026-06-19T10:00:00Z"), totalNet: "64.00" },
+      { id: "m1", examId: EXAM_ID, takenAt: new Date("2026-06-12T10:00:00Z"), totalNet: "62.00" },
+    ];
+    repo.listTrend.mockResolvedValue(attempts);
+    repo.listSubjectBreakdown.mockResolvedValue([
+      { subjectRef: "turkce", avgNet: "12.00", attemptCount: 5 },
+      { subjectRef: "matematik", avgNet: "10.00", attemptCount: 5 },
+    ]);
+    repo.listSubjectsByMockExamIds.mockResolvedValue(
+      new Map([
+        ["m5", [{ subjectRef: "turkce", net: "18.00" }, { subjectRef: "matematik", net: "20.00" }]],
+        ["m4", [{ subjectRef: "turkce", net: "16.00" }, { subjectRef: "matematik", net: "19.00" }]],
+        ["m3", [{ subjectRef: "turkce", net: "15.00" }, { subjectRef: "matematik", net: "18.00" }]],
+        ["m2", [{ subjectRef: "turkce", net: "14.00" }, { subjectRef: "matematik", net: "17.00" }]],
+        ["m1", [{ subjectRef: "turkce", net: "2.00" }, { subjectRef: "matematik", net: "16.00" }]],
+      ]),
+    );
+    repo.maxNetExcluding.mockResolvedValue("68.00");
+    repo.maxTotalNet.mockResolvedValue("70.00");
+    contentPort.listExamSubjects.mockResolvedValue([
+      { slug: "turkce", name: "T\u00fcrk\u00e7e", questionCount: 30, sortOrder: 0 },
+      { slug: "matematik", name: "Matematik", questionCount: 30, sortOrder: 1 },
+    ]);
+    photoRows.listPhotoSubjectSignals.mockResolvedValue([
+      { subjectRef: "turkce", count: 3 },
+    ]);
+
+    const result = await service.getAnalysis(USER, EXAM_ID);
+
+    expect(photoRows.listPhotoSubjectSignals).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      EXAM_ID,
+      ["m5", "m4", "m3", "m2"],
+    );
+    expect(result.nextFocus).toMatchObject({
+      subjectRef: "turkce",
+      recentTrend: [
+        { mockExamId: "m5", net: "18.00" },
+        { mockExamId: "m4", net: "16.00" },
+        { mockExamId: "m3", net: "15.00" },
+        { mockExamId: "m2", net: "14.00" },
+      ],
+      recentDelta: "+2.00",
+      trendDirection: "UP",
+      trendMessage: "coaching.focus.TREND_UP",
     });
   });
 
   it("scopes every analysis source to the requested exam", async () => {
     repo.listTrend.mockResolvedValue([
-      { id: "m1", examId: EXAM_ID, takenAt: new Date("2026-06-19T10:00:00Z"), totalNet: "42.00" },
+      {
+        id: "m1",
+        examId: EXAM_ID,
+        takenAt: new Date("2026-06-19T10:00:00Z"),
+        totalNet: "42.00",
+      },
     ]);
     repo.listSubjectBreakdown.mockResolvedValue([
       { subjectRef: "turkce", avgNet: "21.00", attemptCount: 1 },
     ]);
     repo.maxTotalNet.mockResolvedValue("42.00");
-    repo.listSubjectsByMockExamIds.mockResolvedValue(new Map());
-    photoRows.listPhotoSubjectSignals.mockResolvedValue([]);
 
-    await (service.getAnalysis as unknown as (
-      userId: string,
-      examId: string,
-    ) => Promise<unknown>)(USER, EXAM_ID);
+    await service.getAnalysis(USER, EXAM_ID);
 
-    expect(repo.listTrend).toHaveBeenCalledWith(expect.anything(), USER, 12, EXAM_ID);
-    expect(repo.listSubjectBreakdown).toHaveBeenCalledWith(expect.anything(), USER, EXAM_ID);
-    expect(photoRows.listPhotoSubjectSignals).toHaveBeenCalledWith(
+    expect(repo.listTrend).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      12,
+      EXAM_ID,
+    );
+    expect(repo.listSubjectBreakdown).toHaveBeenCalledWith(
       expect.anything(),
       USER,
       EXAM_ID,
     );
-    expect(repo.maxTotalNet).toHaveBeenCalledWith(expect.anything(), USER, EXAM_ID);
+    expect(photoRows.listPhotoSubjectSignals).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      EXAM_ID,
+      ["m1"],
+    );
+    expect(repo.maxTotalNet).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      EXAM_ID,
+    );
   });
 });
+

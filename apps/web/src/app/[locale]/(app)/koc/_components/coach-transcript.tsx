@@ -3,9 +3,12 @@
 import Image from "next/image";
 import { Fragment, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
+import ThumbsUp from "lucide-react/dist/esm/icons/thumbs-up.mjs";
+import ThumbsDown from "lucide-react/dist/esm/icons/thumbs-down.mjs";
 import { Link } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { FormError } from "@/components/form";
+import { SuggestedTaskCard } from "@/components/suggested-task-card";
 import type { CoachSource } from "@/lib/coach";
 
 export interface ChatMessage {
@@ -13,8 +16,10 @@ export interface ChatMessage {
   role: "user" | "coach";
   text: string;
   sources?: CoachSource[];
-  /** Coach-suggested plan task → "Plana ekle" card (ephemeral; not part of persisted history). */
+  /** Coach-suggested plan task → "Plana ekle" card (persisted with the reply). */
   suggestedTask?: { title: string; subject: string | null };
+  /** 👍 = 1, 👎 = -1, null = none (COACH rows only; undefined on optimistic/streaming rows). */
+  feedback?: number | null;
 }
 
 /**
@@ -25,11 +30,14 @@ export function CoachTranscript({
   busy,
   error,
   emptyHint,
+  onFeedback,
 }: {
   messages: ChatMessage[];
   busy: boolean;
   error: string | null;
   emptyHint: string;
+  /** Rate a coach reply (👍/👎/toggle-off). Undefined disables the control (e.g. while streaming). */
+  onFeedback?: (id: string, value: 1 | -1 | null) => void;
 }) {
   const reduceMotion = useReducedMotion();
   const translate = useTranslations("coach_chat");
@@ -79,10 +87,16 @@ export function CoachTranscript({
         <Fragment key={m.id}>
           <MessageBubble message={m} reduceMotion={reduceMotion} />
           {m.role === "coach" && m.suggestedTask ? (
-            <SuggestedTaskCard task={m.suggestedTask} />
+            <SuggestedTaskCard task={m.suggestedTask} className="flex justify-start pl-10" />
           ) : null}
           {m.role === "coach" && m.sources ? (
             <SourceChips sources={m.sources} />
+          ) : null}
+          {m.role === "coach" && onFeedback ? (
+            <FeedbackRow
+              value={m.feedback ?? null}
+              onRate={(v) => onFeedback(m.id, v)}
+            />
           ) : null}
         </Fragment>
       ))}
@@ -138,55 +152,39 @@ function MessageBubble({
   );
 }
 
-/**
- * Coach-suggested plan task → deep-links to the existing /plan?add=1 prefill flow. The task is
- * saved only when the user confirms in the add sheet (AI never writes plan tasks).
- */
-function SuggestedTaskCard({
-  task,
+/** 👍/👎 on a coach reply — toggling the active rating clears it. Optimistic; parent persists. */
+function FeedbackRow({
+  value,
+  onRate,
 }: {
-  task: NonNullable<ChatMessage["suggestedTask"]>;
+  value: number | null;
+  onRate: (v: 1 | -1 | null) => void;
 }) {
   const translate = useTranslations("coach_chat");
-  const href = `/plan?add=1&title=${encodeURIComponent(task.title)}${
-    task.subject ? `&subject=${encodeURIComponent(task.subject)}` : ""
-  }`;
+  const base =
+    "inline-flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none";
   return (
-    <div className="flex justify-start pl-10">
-      <div
-        className="flex max-w-[85%] flex-col gap-2 rounded-[var(--radius-card)] border border-white bg-white/50 px-4 py-3"
-        style={{ boxShadow: "var(--shadow-card)" }}
+    <div className="flex justify-start gap-1 pl-10">
+      <button
+        type="button"
+        aria-label={translate("feedback_up")}
+        aria-pressed={value === 1}
+        onClick={() => onRate(value === 1 ? null : 1)}
+        className={base}
+        style={{ color: value === 1 ? "var(--color-progress)" : "var(--color-secondary)" }}
       >
-        <span
-          className="text-xs font-bold"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {translate("suggested_task_label")}
-        </span>
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className="text-sm font-bold"
-            style={{ color: "var(--color-main)" }}
-          >
-            {task.title}
-          </span>
-          {task.subject ? (
-            <span
-              className="rounded-full bg-white px-2.5 py-0.5 text-xs font-bold"
-              style={{ color: "var(--color-chip-text)" }}
-            >
-              {task.subject}
-            </span>
-          ) : null}
-        </div>
-        <Link
-          href={href}
-          className="inline-flex min-h-11 w-fit cursor-pointer items-center rounded-[var(--radius-card)] px-4 text-sm font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-          style={{ backgroundColor: "var(--color-progress)" }}
-        >
-          {translate("add_to_plan")}
-        </Link>
-      </div>
+        <ThumbsUp className="size-4" aria-hidden />
+      </button>
+      <button
+        type="button"
+        aria-label={translate("feedback_down")}
+        aria-pressed={value === -1}
+        onClick={() => onRate(value === -1 ? null : -1)}
+        className={base}
+        style={{ color: value === -1 ? "var(--color-main)" : "var(--color-secondary)" }}
+      >
+        <ThumbsDown className="size-4" aria-hidden />
+      </button>
     </div>
   );
 }

@@ -156,9 +156,24 @@ export const sessionFeedbackSchema = z.object({
 export type SessionFeedbackInput = z.infer<typeof sessionFeedbackSchema>;
 
 /** Paginated study-session history (most recent finalized first). */
-export const listStudySessionsQuerySchema = paginationQuerySchema.extend({
-  subject: z.string().trim().min(1).max(100).optional(),
-});
+export const listStudySessionsQuerySchema = paginationQuerySchema
+  .extend({
+    subject: z.string().trim().min(1).max(100).optional(),
+    /** Inclusive UTC start day (yyyy-mm-dd) for `started_at` filter. */
+    from: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    /** Inclusive UTC end day (yyyy-mm-dd) for `started_at` filter. */
+    to: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+  })
+  .refine((q) => !q.from || !q.to || q.from <= q.to, {
+    message: "invalid_date_range",
+    path: ["from"],
+  });
 export type ListStudySessionsQuery = z.infer<typeof listStudySessionsQuerySchema>;
 
 /* ---------------------------------- mood -------------------------------------- */

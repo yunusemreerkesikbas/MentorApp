@@ -4,22 +4,28 @@ import type { Observable } from "rxjs";
 import type {
   NotificationListDto,
   NotificationPreferencesDto,
+  SessionReturnReminderDto,
   UserNotificationDto,
 } from "@mentor/types";
 import { Public } from "../../../common/auth/public.decorator";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { NotificationsService } from "../application/notifications.service";
+import { SessionReturnReminderService } from "../application/session-return-reminder.service";
 import {
   ListNotificationsDto,
   PushSubscribeDto,
   PushUnsubscribeDto,
+  ScheduleSessionReturnReminderDto,
   UpdateNotificationPreferencesDto,
 } from "./notifications.dto";
 
 @ApiTags("notifications")
 @Controller("notifications")
 export class NotificationsController {
-  constructor(private readonly notifications: NotificationsService) {}
+  constructor(
+    private readonly notifications: NotificationsService,
+    private readonly sessionReturn: SessionReturnReminderService,
+  ) {}
 
   @Post("push-subscriptions")
   subscribePush(
@@ -48,6 +54,15 @@ export class NotificationsController {
     @Body() body: UpdateNotificationPreferencesDto,
   ): Promise<NotificationPreferencesDto> {
     return this.notifications.updatePreferences(user.id, body);
+  }
+
+  /** Opt-in soft return after a study session — schedules ~24h reminder (mobile-ready). */
+  @Post("session-return-reminder")
+  scheduleSessionReturn(
+    @CurrentUser() user: RequestUser,
+    @Body() body: ScheduleSessionReturnReminderDto,
+  ): Promise<SessionReturnReminderDto> {
+    return this.sessionReturn.schedule(user.id, body);
   }
 
   // --- In-app notification inbox ---

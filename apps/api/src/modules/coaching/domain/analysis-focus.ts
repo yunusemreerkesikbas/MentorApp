@@ -1,4 +1,5 @@
 import type { PhotoSubjectSignalDto, SubjectStrengthDto } from "@mentor/types";
+import { formatNetDelta } from "./net";
 
 export type AnalysisFocus = {
   subjectRef: string;
@@ -17,6 +18,44 @@ function normalizedPercent(
 ): number {
   if (subject?.normalizedAveragePercent == null) return Number.POSITIVE_INFINITY;
   return Number(subject.normalizedAveragePercent);
+}
+
+
+export type FocusTrendDirection = "FIRST" | "UP" | "DOWN" | "STEADY";
+
+export function buildFocusTrend(
+  subjectRef: string,
+  attempts: Array<{ id: string; takenAt: Date }>,
+  subjectsByMockExamId: Map<string, Array<{ subjectRef: string; net: string }>>,
+) {
+  const recentTrend = attempts.flatMap((attempt) => {
+    const subject = subjectsByMockExamId
+      .get(attempt.id)
+      ?.find((row) => row.subjectRef === subjectRef);
+    return subject
+      ? [{
+          mockExamId: attempt.id,
+          takenAt: attempt.takenAt.toISOString(),
+          net: String(subject.net),
+        }]
+      : [];
+  });
+  if (recentTrend.length < 2) {
+    return {
+      recentTrend,
+      recentDelta: null,
+      trendDirection: "FIRST" as const,
+    };
+  }
+
+  const delta = Number(recentTrend[0]!.net) - Number(recentTrend[1]!.net);
+  const trendDirection: FocusTrendDirection =
+    delta > 0 ? "UP" : delta < 0 ? "DOWN" : "STEADY";
+  return {
+    recentTrend,
+    recentDelta: formatNetDelta(delta),
+    trendDirection,
+  };
 }
 
 export function selectAnalysisFocus(
@@ -77,3 +116,4 @@ export function selectAnalysisFocus(
     evidenceLevel: evidenceLevel(selectedSubject.attemptCount),
   };
 }
+

@@ -9,13 +9,15 @@ import { SessionService } from "../../coaching/application/session.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
 import { buildSessionReflectionPrompt, estimateCostMicros } from "../domain/ai.constants";
+import { extractSuggestedTask } from "../domain/suggested-task";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 
 /**
  * Premium AI reflection on a finalized study session after micro check-in (W3 · §4 #5).
  * Cost bounded by an idempotent per-session cache; coaching clears the cache when feedback
- * changes. AI never touches `study_sessions` directly — writes via {@link SessionService.setAiReflection}.
+ * changes. May include a plan-task suggestion (<<TASK>> marker) — AI never writes plan_tasks;
+ * writes via {@link SessionService.setAiReflection}.
  */
 @Injectable()
 export class SessionReflectionService {
@@ -47,7 +49,11 @@ export class SessionReflectionService {
     }
 
     if (session.aiReflection) {
-      return { reflection: session.aiReflection, model: "cache" };
+      return {
+        reflection: session.aiReflection,
+        model: "cache",
+        ...(session.aiSuggestedTask ? { suggestedTask: session.aiSuggestedTask } : {}),
+      };
     }
 
     const ctx = await this.context.build(user.id);
@@ -60,6 +66,7 @@ export class SessionReflectionService {
     });
 
     const result = await this.llm.complete({ system, user: userMsg });
+    const { text, task } = extractSuggestedTask(result.text);
 
     await this.usage.append({
       userId: user.id,
@@ -69,8 +76,12 @@ export class SessionReflectionService {
       costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
     });
 
-    await this.sessions.setAiReflection(user.id, sessionId, result.text, result.model);
+    await this.sessions.setAiReflection(user.id, sessionId, text, result.model, task);
 
-    return { reflection: result.text, model: result.model };
+    return {
+      reflection: text,
+      model: result.model,
+      ...(task ? { suggestedTask: task } : {}),
+    };
   }
 }

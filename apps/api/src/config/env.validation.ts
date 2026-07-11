@@ -28,14 +28,18 @@ const envSchema = z.object({
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
   GOOGLE_OAUTH_REDIRECT_URI: z.string().url().optional(),
 
-  // AI (§8): text = OpenAI, vision = Gemini. Provider behind LlmPort; `fake` is the dev/test default.
-  AI_PROVIDER: z.enum(["fake", "openai"]).default("fake"),
+  // AI (§8): chat + vision providers are BOTH selectable (openai | gemini) — whichever provider +
+  // key is set in env runs. `fake` is the dev/test default. Gotcha: switching AI_PROVIDER changes
+  // the embedding model too → run POST /v1/admin/ai/reembed once (query/article vectors must match).
+  AI_PROVIDER: z.enum(["fake", "openai", "gemini"]).default("fake"),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default("gpt-4o-mini"),
   OPENAI_EMBED_MODEL: z.string().default("text-embedding-3-small"),
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().default("gemini-2.0-flash"),
-  VISION_PROVIDER: z.enum(["fake", "gemini"]).default("fake"),
+  /** Must support outputDimensionality=1536 (pgvector column size). */
+  GEMINI_EMBED_MODEL: z.string().default("gemini-embedding-001"),
+  VISION_PROVIDER: z.enum(["fake", "gemini", "openai"]).default("fake"),
   STORAGE_PROVIDER: z.enum(["fake", "r2"]).default("fake"),
   R2_PUBLIC_BASE_URL: z.string().url().optional(),
 
@@ -110,6 +114,13 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
       message: "OPENAI_API_KEY is required when AI_PROVIDER=openai.",
     });
   }
+  if (env.AI_PROVIDER === "gemini" && !env.GEMINI_API_KEY) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["GEMINI_API_KEY"],
+      message: "GEMINI_API_KEY is required when AI_PROVIDER=gemini.",
+    });
+  }
   const googleVars = [
     env.GOOGLE_OAUTH_CLIENT_ID,
     env.GOOGLE_OAUTH_CLIENT_SECRET,
@@ -128,6 +139,13 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
       code: z.ZodIssueCode.custom,
       path: ["GEMINI_API_KEY"],
       message: "GEMINI_API_KEY is required when VISION_PROVIDER=gemini.",
+    });
+  }
+  if (env.VISION_PROVIDER === "openai" && !env.OPENAI_API_KEY) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["OPENAI_API_KEY"],
+      message: "OPENAI_API_KEY is required when VISION_PROVIDER=openai.",
     });
   }
   if (env.STORAGE_PROVIDER === "r2") {

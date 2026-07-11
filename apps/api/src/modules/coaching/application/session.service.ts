@@ -101,6 +101,8 @@ export class SessionService {
         query.page,
         query.pageSize,
         query.subject,
+        query.from,
+        query.to,
       );
       return {
         items: items.map(({ planTaskTitle, ...row }) =>
@@ -232,7 +234,7 @@ export class SessionService {
         sessionMood: input.mood,
         struggleNote: nextNote,
         ...(changed
-          ? { aiReflection: null, aiModel: null, aiReflectedAt: null }
+          ? { aiReflection: null, aiModel: null, aiReflectedAt: null, aiSuggestedTask: null }
           : {}),
       });
       return toStudySessionDto(updated!, minFocusSeconds);
@@ -243,12 +245,14 @@ export class SessionService {
    * Cache the premium AI session reflection (written by W3 via this public surface so
    * `study_sessions` is only mutated inside coaching — workstreams §2). Requires a finalized
    * session; returns the updated DTO for callers that need the cached text.
+   * Optional `suggestedTask` is the stripped <<TASK>> plan suggestion (null clears / none).
    */
   async setAiReflection(
     userId: string,
     id: string,
     reflection: string,
     model: string,
+    suggestedTask: { title: string; subject: string | null } | null = null,
   ): Promise<StudySessionDto> {
     const minFocusSeconds = await this.getMinFocusSeconds();
     return withUserContext(this.db, { userId }, async (tx) => {
@@ -263,6 +267,7 @@ export class SessionService {
         aiReflection: reflection,
         aiModel: model,
         aiReflectedAt: new Date(),
+        aiSuggestedTask: suggestedTask,
       });
       return toStudySessionDto(updated!, minFocusSeconds);
     });

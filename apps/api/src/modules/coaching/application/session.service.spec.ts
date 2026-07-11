@@ -146,6 +146,26 @@ describe("SessionService.list", () => {
     expect(result.items[0]?.planTaskTitle).toBe("Seans bağlantısı");
     expect(result.items[0]?.planTaskId).toBe("task-1");
   });
+
+  it("forwards from/to date bounds and subject to listPaged", async () => {
+    const listPaged = vi.fn(async () => ({ items: [], total: 0 }));
+    await makeService({ listPaged }).list(USER, {
+      page: 2,
+      pageSize: 15,
+      subject: "Matematik",
+      from: "2026-07-01",
+      to: "2026-07-12",
+    });
+    expect(listPaged).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      2,
+      15,
+      "Matematik",
+      "2026-07-01",
+      "2026-07-12",
+    );
+  });
 });
 
 describe("SessionService.getRecentSummary", () => {
@@ -238,6 +258,7 @@ describe("SessionService.recordFeedback / setAiReflection", () => {
         aiReflection: null,
         aiModel: null,
         aiReflectedAt: null,
+        aiSuggestedTask: null,
       }),
     );
   });

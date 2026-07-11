@@ -49,6 +49,11 @@ export interface StudySessionDto {
   struggleNote: string | null;
   /** Premium AI session reflection (null until generated / for free tier). */
   aiReflection: string | null;
+  /**
+   * Cached plan-task suggestion from session reflection ({title, subject}); null when none /
+   * free / cleared. Used by W3 session-reflection cache; not shown on history list UI.
+   */
+  aiSuggestedTask: { title: string; subject: string | null } | null;
   /** True when this finalized session meets the platform min-focus threshold (streak/XP/quests). */
   countsAsFocusSession: boolean;
   /** True when finalize auto-marked the linked plan task DONE (this request only). */
@@ -148,6 +153,14 @@ export interface PhotoSubjectSignalDto {
 }
 
 /** Server-selected next study focus from personal analysis evidence. */
+export type AnalysisFocusTrendDirection = "FIRST" | "UP" | "DOWN" | "STEADY";
+
+export interface AnalysisFocusTrendPointDto {
+  mockExamId: string;
+  takenAt: string;
+  net: string;
+}
+
 export interface AnalysisFocusDto {
   subjectRef: string;
   subjectName: string;
@@ -158,6 +171,13 @@ export interface AnalysisFocusDto {
   message: string;
   /** Backend-localized Plan task title prefill. */
   suggestedTaskTitle: string;
+  /** Selected subject's latest exam-scoped points, newest first (max 4). */
+  recentTrend: AnalysisFocusTrendPointDto[];
+  /** Latest minus previous subject net; null until two comparable points exist. */
+  recentDelta: string | null;
+  trendDirection: AnalysisFocusTrendDirection;
+  /** Backend-localized interpretation; clients render it verbatim. */
+  trendMessage: string;
 }
 
 /** Per-subject "geçmiş-ben" delta: this attempt's subject net vs the previous attempt's. */
@@ -272,4 +292,5 @@ export interface WeeklyReviewDto {
     message: string;
   } | null;
 }
+
 

@@ -9,6 +9,10 @@ const KEYS = [
   "LOWEST_AVERAGE_REPEATED",
   "TASK_TITLE_PHOTO_SIGNAL",
   "TASK_TITLE_LOWEST_AVERAGE",
+  "TREND_FIRST",
+  "TREND_UP",
+  "TREND_DOWN",
+  "TREND_STEADY",
 ] as const;
 
 function interpolate(template: string, subject: string): string {
@@ -28,3 +32,4 @@ describe("analysis focus locales", () => {
     }
   });
 });
+

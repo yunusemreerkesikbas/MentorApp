@@ -33,3 +33,12 @@ export interface NotificationListDto {
   unreadCount: number;
   hasMore: boolean;
 }
+
+/** POST /v1/notifications/session-return-reminder response. */
+export interface SessionReturnReminderDto {
+  /** True when a new job was enqueued; false when already scheduled for that target day. */
+  scheduled: boolean;
+  alreadyScheduled: boolean;
+  /** ISO datetime when the reminder job is due (null when alreadyScheduled). */
+  runAt: string | null;
+}

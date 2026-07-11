@@ -8,6 +8,7 @@ import { coachingControllerGetToday } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { PuhuCoachBubble } from "@/components/puhu-coach-bubble";
+import { SuggestedTaskCard } from "@/components/suggested-task-card";
 import { fetchCoachAccess, requestSessionReflection } from "@/lib/coach";
 import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
 import {
@@ -15,6 +16,7 @@ import {
   formatRewardSummary,
 } from "@/lib/economy-quest-utils";
 import { useMentorToast } from "@/lib/mentor-toast";
+import { scheduleSessionReturnReminder } from "@/lib/notification-api";
 
 function unwrapTodayResponse(response: unknown): TodayPanelResponse {
   return ((response as { data?: TodayPanelResponse }).data ?? response) as TodayPanelResponse;
@@ -81,7 +83,12 @@ export function SessionDoneState({
   const [note, setNote] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [reflection, setReflection] = useState<string | null>(null);
+  const [suggestedTask, setSuggestedTask] = useState<{
+    title: string;
+    subject: string | null;
+  } | null>(null);
   const [reflecting, setReflecting] = useState(false);
+  const [remindStatus, setRemindStatus] = useState<"idle" | "saving" | "done">("idle");
   const [streakFeedback, setStreakFeedback] = useState<StreakFeedback>(null);
   const [currentStreak, setCurrentStreak] = useState<number | null>(null);
 
@@ -147,6 +154,7 @@ export function SessionDoneState({
       if (access.mode !== "PREMIUM") return;
       const res = await requestSessionReflection(sessionId);
       if (res.reflection) setReflection(res.reflection);
+      if (res.suggestedTask) setSuggestedTask(res.suggestedTask);
     } catch {
       /* Free / AI disabled / network — stay silent (§4 #5). */
     } finally {
@@ -163,6 +171,30 @@ export function SessionDoneState({
       void maybeReflect();
     } catch {
       setStatus("idle");
+    }
+  };
+
+  const handleRemindTomorrow = async () => {
+    if (remindStatus !== "idle") return;
+    setRemindStatus("saving");
+    try {
+      const res = await scheduleSessionReturnReminder(subject);
+      setRemindStatus("done");
+      toast.success({
+        title: res.alreadyScheduled
+          ? t("return_remind_already_title")
+          : t("return_remind_ok_title"),
+        message: res.alreadyScheduled
+          ? t("return_remind_already_message")
+          : t("return_remind_ok_message"),
+        duration: 3000,
+      });
+    } catch {
+      setRemindStatus("idle");
+      toast.error({
+        title: t("return_remind_error_title"),
+        message: t("return_remind_error_message"),
+      });
     }
   };
 
@@ -266,6 +298,12 @@ export function SessionDoneState({
               dismissLabel={t("reflection_dismiss")}
             />
           )}
+          {suggestedTask ? (
+            <SuggestedTaskCard
+              task={suggestedTask}
+              className="flex w-full justify-center"
+            />
+          ) : null}
         </div>
       ) : (
         <div className="flex w-full flex-col items-center gap-4">
@@ -344,6 +382,15 @@ export function SessionDoneState({
           fullWidth
         >
           {t("new_session")}
+        </Button>
+        <Button
+          onClick={() => void handleRemindTomorrow()}
+          variant="secondary"
+          fullWidth
+          busy={remindStatus === "saving"}
+          disabled={remindStatus === "done"}
+        >
+          {remindStatus === "done" ? t("return_remind_done") : t("return_remind_cta")}
         </Button>
         <Link
           href="/panel"

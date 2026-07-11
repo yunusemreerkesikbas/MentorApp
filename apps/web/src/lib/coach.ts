@@ -2,6 +2,7 @@ import type {
   CoachAccessDto,
   CoachChatReplyDto,
   CoachChatStreamEvent,
+  CoachMemoryDto,
   CoachMessageDto,
   Paginated,
   SessionReflectionDto,
@@ -99,9 +100,30 @@ export async function listCoachMessages(
   )) as Paginated<CoachMessageDto>;
 }
 
-/** "Yeni sohbet" — clears the persisted rolling conversation on the backend. */
+/** "Yeni sohbet" — clears the persisted rolling conversation (and memory profile) on the backend. */
 export async function clearCoachHistory(): Promise<void> {
   await http<void>("/v1/coach/messages", { method: "DELETE" });
+}
+
+/** Rate a coach message: 1 = 👍, -1 = 👎, null = clear. */
+export async function setCoachMessageFeedback(
+  messageId: string,
+  feedback: 1 | -1 | null,
+): Promise<void> {
+  await http<void>(`/v1/coach/messages/${messageId}/feedback`, {
+    method: "PATCH",
+    body: JSON.stringify({ feedback }),
+  });
+}
+
+/** The coach's distilled profile of the user (null until the memory job builds one). */
+export async function fetchCoachMemory(): Promise<CoachMemoryDto | null> {
+  return (await http<CoachMemoryDto | null>("/v1/coach/memory")) as CoachMemoryDto | null;
+}
+
+/** Reset the memory profile (user-controlled, KVKK). */
+export async function clearCoachMemory(): Promise<void> {
+  await http<void>("/v1/coach/memory", { method: "DELETE" });
 }
 
 /** Premium session reflection after micro check-in; 403 for free — caller should stay silent. */

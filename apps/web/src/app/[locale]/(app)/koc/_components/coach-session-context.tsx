@@ -58,6 +58,8 @@ export function CoachSessionProvider({ children }: { children: ReactNode }) {
             role: m.role === "USER" ? ("user" as const) : ("coach" as const),
             text: m.content,
             sources: m.sources,
+            feedback: m.feedback,
+            suggestedTask: m.suggestedTask,
           })),
         );
       })

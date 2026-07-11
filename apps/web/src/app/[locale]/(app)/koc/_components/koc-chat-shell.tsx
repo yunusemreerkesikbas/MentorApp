@@ -8,7 +8,11 @@ import { motion, useReducedMotion } from "framer-motion";
 import { CoachAccessMode } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
-import { CoachStreamError, streamCoachMessage } from "@/lib/coach";
+import {
+  CoachStreamError,
+  setCoachMessageFeedback,
+  streamCoachMessage,
+} from "@/lib/coach";
 import { useKocAccess } from "./koc-access-shell";
 import { useCoachSession } from "./coach-session-context";
 import { CoachComposer } from "./coach-composer";
@@ -108,6 +112,14 @@ export function KocChatShell() {
     }
   }
 
+  function rateMessage(id: string, value: 1 | -1 | null) {
+    const previous = messages.find((m) => m.id === id)?.feedback ?? null;
+    updateMessage(id, { feedback: value }); // optimistic
+    void setCoachMessageFeedback(id, value).catch(() => {
+      updateMessage(id, { feedback: previous }); // revert on failure
+    });
+  }
+
   const headerMotion = reduceMotion
     ? {}
     : {
@@ -160,6 +172,7 @@ export function KocChatShell() {
         busy={busy && !streamStarted}
         error={chatError}
         emptyHint={tChat("empty_hint")}
+        onFeedback={rateMessage}
       />
       <CoachComposer
         ref={composerRef}

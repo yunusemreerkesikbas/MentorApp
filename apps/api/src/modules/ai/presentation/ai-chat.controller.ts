@@ -5,18 +5,27 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   Res,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
-import type { CoachAccessDto, CoachChatStreamEvent, CoachMessageDto, Paginated } from "@mentor/types";
+import type {
+  CoachAccessDto,
+  CoachChatStreamEvent,
+  CoachMemoryDto,
+  CoachMessageDto,
+  Paginated,
+} from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { CoachAccessService } from "../application/coach-access.service";
 import { ChatService, type CoachReplyResult } from "../application/chat.service";
-import { AiChatDto, ListCoachMessagesQueryDto } from "./ai.dto";
+import { AiChatDto, CoachFeedbackDto, ListCoachMessagesQueryDto } from "./ai.dto";
 
 /**
  * AI coach chat (W3). Premium = flat + rate-limit; free = earned coin spend (economy.enabled).
@@ -85,10 +94,34 @@ export class AiChatController {
     return this.chat.listMessages(user.id, query.page, query.pageSize);
   }
 
-  /** "Yeni sohbet" — clears the user's own rolling conversation. */
+  /** "Yeni sohbet" — clears the user's own rolling conversation (and memory profile). */
   @Delete("messages")
   @HttpCode(HttpStatus.NO_CONTENT)
   clearMessages(@CurrentUser() user: RequestUser): Promise<void> {
     return this.chat.clearMessages(user.id);
+  }
+
+  /** Rate a coach reply (👍/👎/none). */
+  @Patch("messages/:id/feedback")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  setFeedback(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: CoachFeedbackDto,
+  ): Promise<void> {
+    return this.chat.setMessageFeedback(user.id, id, dto.feedback);
+  }
+
+  /** The coach's distilled PII-free profile of the user (null until built). */
+  @Get("memory")
+  getMemory(@CurrentUser() user: RequestUser): Promise<CoachMemoryDto | null> {
+    return this.chat.getMemory(user.id);
+  }
+
+  /** Reset the memory profile (user-controlled, KVKK). */
+  @Delete("memory")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  clearMemory(@CurrentUser() user: RequestUser): Promise<void> {
+    return this.chat.clearMemory(user.id);
   }
 }

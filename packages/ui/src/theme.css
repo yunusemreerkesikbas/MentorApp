@@ -4,8 +4,7 @@
  *   @import "tailwindcss";
  *   @import "@mentor/ui/theme.css";
  *
- * Value source: DESIGN.md §2–§5. Nuton: monochrome-forward, black primary
- * button, white background, single shadow, 10px radius everywhere.
+ * Value source: DESIGN.md §2–§5. Nuton base + Mentor evolve (surfaces, hover shadow).
  */
 @theme {
   /* Colors */
@@ -15,7 +14,10 @@
   --color-btn: #000000;
   --color-bg: #ffffff;
   --color-surface: #ffffff;
-  /** Muted track — tab switcher rail, skeleton shimmer (warm neutral). */
+  /**
+   * Surface hierarchy (DESIGN.md §2.2):
+   * muted wells — tab switcher rail, sidebar track, skeleton shimmer.
+   */
   --color-surface-container: #f0edec;
   --color-chip: #bea1fe;
   --color-chip-text: #7c6f97;
@@ -23,6 +25,8 @@
   /** Calm blue accent — links, secondary CTAs (alias of progress; DESIGN.md §2.3). */
   --color-accent: #55acee;
   --color-progress-track: #c3d9fd;
+  /** Soft accent wells — alias of progress-track (DESIGN.md §2.3). */
+  --color-accent-soft: #c3d9fd;
   --color-star: #ffc700;
   --color-like-active: #ff2dab;
   /* Semantic state tokens (DESIGN.md §2.4). danger: errors/destructive — deep, accessible
@@ -43,8 +47,9 @@
   /* Radius — uniform */
   --radius-card: 10px;
 
-  /* Shadow — single token */
+  /* Shadow family — same tint; hover is one step stronger (DESIGN.md §5). */
   --shadow-card: 0px 4px 10px rgba(37, 73, 150, 0.1);
+  --shadow-card-hover: 0px 6px 14px rgba(37, 73, 150, 0.1);
 }
 
 /* --- Skeleton shimmer (surface-container gray; passive tab rail register) --- */
@@ -104,6 +109,25 @@
   animation: mentor-timer-breathe 4s ease-in-out infinite;
 }
 
+/* Ambient blob drift (DESIGN.md §9) — transform only; very slow. */
+@keyframes mentor-blob-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(2.5%, -1.5%) scale(1.03);
+  }
+  66% {
+    transform: translate(-2%, 2%) scale(0.98);
+  }
+}
+
+.mentor-blob-drift {
+  animation: mentor-blob-drift 36s ease-in-out infinite;
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mentor-skeleton-shimmer {
     animation: none;
@@ -117,5 +141,10 @@
 
   .mentor-timer-breathe {
     animation: none;
+  }
+
+  .mentor-blob-drift {
+    animation: none;
+    will-change: auto;
   }
 }

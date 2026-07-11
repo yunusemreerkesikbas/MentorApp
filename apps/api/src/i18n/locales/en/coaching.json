@@ -25,7 +25,11 @@
     "LOWEST_AVERAGE_EARLY": "{subject} needs a little more support in your first mock exam. A short review is a good start.",
     "LOWEST_AVERAGE_REPEATED": "{subject} keeps appearing as an area to strengthen. A short review is a good next step.",
     "TASK_TITLE_PHOTO_SIGNAL": "Review {subject} mistakes",
-    "TASK_TITLE_LOWEST_AVERAGE": "Review {subject}"
+    "TASK_TITLE_LOWEST_AVERAGE": "Review {subject}",
+    "TREND_FIRST": "Your first recent signal for {subject} is here. One more mock exam will make the direction clearer.",
+    "TREND_UP": "{subject} is moving upward in your recent attempts. A short review can help keep that rhythm.",
+    "TREND_DOWN": "{subject} needed a little more support in your latest attempt. One short review is enough without overreading one result.",
+    "TREND_STEADY": "{subject} stayed steady across your latest two attempts. A short review may create the next opening."
   },
   "weekly": {
     "INSUFFICIENT": "One mock exam or two completed sessions is enough to review last week.",
@@ -43,3 +47,4 @@
     "TASK_SESSION": "Plan two focus sessions"
   }
 }
+

@@ -51,7 +51,17 @@ export interface CoachMessageDto {
   content: string;
   /** RAG source chips on COACH rows; empty on USER rows. */
   sources: { title: string; slug: string; url: string }[];
+  /** User rating on a COACH row: 1 = 👍, -1 = 👎, null = none. */
+  feedback: number | null;
+  /** Persisted coach plan-task suggestion on a COACH row (survives reload). */
+  suggestedTask?: { title: string; subject: string | null };
   createdAt: string;
+}
+
+/** GET /v1/coach/memory — the coach's distilled PII-free profile of the user (null until built). */
+export interface CoachMemoryDto {
+  summary: string;
+  updatedAt: string;
 }
 
 /**
@@ -71,6 +81,8 @@ export interface MoodReflectionDto {
 export interface SessionReflectionDto {
   reflection: string;
   model: string;
+  /** Plan-task suggestion extracted from the reflection (user confirms via /plan?add=1). */
+  suggestedTask?: { title: string; subject: string | null };
 }
 
 /**

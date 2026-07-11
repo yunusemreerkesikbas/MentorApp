@@ -3,7 +3,7 @@ import { and, desc, eq, getTableColumns, gte, isNotNull, lt, sql } from "drizzle
 import type { DatabaseTx } from "../../../database/drizzle";
 import { planTasks, studySessions } from "../../../database/schema";
 import { StudySessionStatus } from "../domain/coaching.constants";
-import { addDays } from "../domain/date.util";
+import { addDays, parseIsoDate } from "../domain/date.util";
 
 export type StudySessionRow = typeof studySessions.$inferSelect;
 export type StudySessionListRow = StudySessionRow & { planTaskTitle: string | null };
@@ -63,11 +63,15 @@ export class StudySessionRepository {
     page: number,
     pageSize: number,
     subject?: string,
+    from?: string,
+    to?: string,
   ): Promise<{ items: StudySessionListRow[]; total: number }> {
     const where = and(
       eq(studySessions.userId, userId),
       isNotNull(studySessions.endedAt),
       subject ? eq(studySessions.subject, subject) : undefined,
+      from ? gte(studySessions.startedAt, parseIsoDate(from)) : undefined,
+      to ? lt(studySessions.startedAt, parseIsoDate(addDays(to, 1))) : undefined,
     );
     const [items, totalRow] = await Promise.all([
       tx

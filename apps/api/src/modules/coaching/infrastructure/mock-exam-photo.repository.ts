@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { mockExamPhotoCategorizations, mockExams } from "../../../database/schema";
 
@@ -81,7 +81,9 @@ export class MockExamPhotoRepository {
     db: Database | DatabaseTx,
     userId: string,
     examId?: string,
+    mockExamIds?: string[],
   ): Promise<Array<{ subjectRef: string; count: number }>> {
+    if (mockExamIds?.length === 0) return [];
     const rows = await db
       .select({
         subjectRef: mockExamPhotoCategorizations.subjectRef,
@@ -90,15 +92,17 @@ export class MockExamPhotoRepository {
       .from(mockExamPhotoCategorizations)
       .innerJoin(mockExams, eq(mockExamPhotoCategorizations.mockExamId, mockExams.id))
       .where(
-        examId
-          ? and(
-              eq(mockExamPhotoCategorizations.userId, userId),
-              eq(mockExams.examId, examId),
-            )
-          : eq(mockExamPhotoCategorizations.userId, userId),
+        and(
+          eq(mockExamPhotoCategorizations.userId, userId),
+          examId ? eq(mockExams.examId, examId) : undefined,
+          mockExamIds
+            ? inArray(mockExamPhotoCategorizations.mockExamId, mockExamIds)
+            : undefined,
+        ),
       )
       .groupBy(mockExamPhotoCategorizations.subjectRef)
       .orderBy(desc(sql`count(*)`));
     return rows.map((r) => ({ subjectRef: r.subjectRef, count: r.count }));
   }
 }
+

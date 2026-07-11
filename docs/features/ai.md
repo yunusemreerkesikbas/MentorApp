@@ -71,7 +71,10 @@ pnpm --filter @mentor/api test -- --grep "ai"
 | `POST /v1/coach/chat` | AI coach chat (multi-turn, RAG-grounded) |
 | `POST /v1/coach/chat/stream` | Streaming chat (SSE over POST; delta → done/error) |
 | `GET /v1/coach/messages` | Paginated persisted chat history (auth-only) |
-| `DELETE /v1/coach/messages` | "Yeni sohbet" — clear own rolling conversation |
+| `DELETE /v1/coach/messages` | "Yeni sohbet" — clear own conversation + memory profile |
+| `PATCH /v1/coach/messages/:id/feedback` | Rate a coach reply (👍 1 / 👎 -1 / null) |
+| `GET /v1/coach/memory` | Distilled PII-free memory profile (null until built) |
+| `DELETE /v1/coach/memory` | Reset the memory profile (KVKK) |
 | `GET /v1/coach/access` | Access probe (PREMIUM/COIN/NONE) |
 | `POST /v1/coach/mood-reflection` | Premium mood AI reflection |
 | `POST /v1/coach/ghost-narration` | Premium ghost AI narration |
@@ -164,6 +167,48 @@ pnpm --filter @mentor/api test -- --grep "ai"
   `chat.service.ts`(+spec), `fake-llm.adapter.ts`, `packages/types/ai.ts`, `coach-transcript.tsx`,
   `koc-chat-shell.tsx`, `messages/{tr,en}.json`.
 
+- **Dinamik provider seçimi (2026-07-11)** — chat ve vision artık env'den seçilebilir:
+  `AI_PROVIDER=fake|openai|gemini`, `VISION_PROVIDER=fake|gemini|openai` — hangi provider + key
+  girilirse o çalışır (tek OpenAI key ile chat+vision, ya da tek Gemini key ile chat+embed+vision).
+  Yeni adapter'lar: `gemini-llm.adapter.ts` (complete + SSE stream + `gemini-embedding-001`
+  embed, `outputDimensionality:1536` — pgvector uyumu boot'ta değil çağrıda hard-check) ve
+  `openai-vision.adapter.ts` (`response_format: json_object`, gemini vision ile aynı 0.1 temp /
+  128 token sınırları, `PHOTO_CLASSIFY_SYSTEM` paylaşımlı). Env validation her kombinasyon için
+  key zorunluluğunu boot'ta doğrular. Port/servis/FE değişmedi — seam yeterliydi. Dosyalar:
+  `env.validation.ts`, `gemini-llm.adapter.ts`, `openai-vision.adapter.ts`, `ai.module.ts`,
+  `ai.constants.ts` (gemini fiyat güncellemesi), `.env.example`.
+
+- **Yanıt feedback'i + öneri persist (2026-07-11)** — koç yanıtına 👍/👎 (`coach_messages.feedback`
+  smallint: 1/-1/null) + Dilim 4 "Plana ekle" önerisi artık kalıcı (`coach_messages.suggested_task`
+  jsonb — reload sonrası kart korunur). Migration `0046_curly_siren`. Yeni endpoint
+  `PATCH /v1/coach/messages/:id/feedback` (yalnız kullanıcının kendi COACH satırı — RLS + role guard;
+  yoksa 404). `appendExchange` artık `suggestedTask`'ı persist eder ve toplam mesaj sayısını döndürür
+  (memory tetiği için). FE: `FeedbackRow` (optimistic, hata revert); hydrate feedback+suggestedTask'ı
+  taşır. Dosyalar: `schema.ts`, `coach-message.repository.ts`, `chat.service.ts`, `ai-chat.controller.ts`,
+  `packages/{types,validation}`, `coach-transcript.tsx`, `koc-chat-shell.tsx`, `coach-session-context.tsx`.
+- **Memory profile (2026-07-11)** — koç oturumlar arası kullanıcıyı "tanır": yeni `coach_memory` tablosu
+  (kullanıcı başına tek PII-free özet; RLS self-or-service; migration `0046_curly_siren`). Her
+  `MEMORY_REFRESH_EVERY_N_MESSAGES`(10) mesajda `ChatService` `JobQueuePort.enqueue(AI_MEMORY_JOB)`
+  (best-effort — chat'i bloklamaz); `RefreshMemoryHandler` son 40 mesajı `buildMemoryProfilePrompt`
+  ile damıtır → `coach_memory.upsert` (messageCount aynıysa no-op, boş history no-op). `ContextBuilder`
+  profili `CoachContext.memoryProfile`'a koyar; `buildSystemPrompt` BAĞLAM'a "Kullanıcı profili
+  (geçmiş sohbetlerden): …" satırı ekler. Endpoint'ler: `GET /v1/coach/memory` + `DELETE`;
+  "Yeni sohbet" (`clearMessages`) profili de siler. FE: hub'da `CoachMemoryCard` (özet + "Sıfırla",
+  profil yoksa görünmez). **Guardrail (§4 #6):** damıtma prompt'u isim/e-posta/iletişim yasaklar;
+  kullanıcı DELETE ile sıfırlar. Dosyalar: `coach-memory.repository.ts`, `refresh-memory.handler.ts`,
+  `ai-job.registrar.ts`, `ai.constants.ts`, `context-builder.service.ts`, `chat.service.ts`,
+  `coach-memory-card.tsx`, `messages/{tr,en}.json`.
+- **Seans yansıması → plan önerisi (2026-07-12)** — roadmap §259: premium `POST /v1/coach/session-reflection`
+  artık koç Dilim 4 ile aynı `<<TASK{...}>>` marker'ını destekler. `extractSuggestedTask` strip+parse;
+  `SessionReflectionDto.suggestedTask?`; cache `study_sessions.ai_suggested_task` jsonb (migration
+  `0047_supreme_eternals`); feedback değişince reflection+task birlikte temizlenir. FE: done ekranında
+  shared `SuggestedTaskCard` → `/plan?add=1` prefill (AI plan tablosuna yazmaz). Eski cache (task null)
+  → kart yok, regenerate yok. **Kapsam dışı:** Free rule-based öneri, çoklu öneri, otomatik plan yazımı.
+  Dosyalar: `ai.constants.ts` (`buildSessionReflectionPrompt`), `session-reflection.service.ts`(+spec),
+  `session.service.ts`, `schema.ts`, `packages/types/{ai,coaching}.ts`, `suggested-task-card.tsx`,
+  `session-done-state.tsx`, `coach-transcript.tsx`. Seam: [coaching.md](./coaching.md).
+  Design: [`plans/2026-07-12-seans-plan-suggestion-design.md`](../plans/2026-07-12-seans-plan-suggestion-design.md).
+
 ## Gotchas / Known issues
 
 - **No RAG in Slice 1** — the coach refuses official-info questions until RAG retrieval lands.
@@ -180,12 +225,20 @@ pnpm --filter @mentor/api test -- --grep "ai"
 - **W2↔W3 seam:** mood reflection (0048) and ghost narration (0049) cross W2 (coaching domain logic)
   and W3 (AI LLM call). See also [coaching.md](./coaching.md) for the coaching side.
 - **Rate-limit window** is rolling 24h (`now − 24h`), not calendar-day.
-- **KVKK — `coach_messages.content`** davranışsal serbest metindir; `admin anonymize` bunu
-  scrub etmez (aynı durum `struggle_note`/`motivation` için de geçerli — coaching.md'deki holistic
-  erasure follow-up'ına dahil). Gerçek kullanıcı silmede `onDelete: cascade` temizler.
-  `DELETE /v1/coach/messages` kullanıcıya kendi geçmişini silme yolu verir.
+- **KVKK — `coach_messages.content` / `coach_messages.suggested_task` / `coach_memory.summary`**
+  davranışsal serbest metindir; `admin anonymize` bunları scrub etmez (aynı durum
+  `struggle_note`/`motivation` için de geçerli — coaching.md'deki holistic erasure follow-up'ına
+  dahil). Gerçek kullanıcı silmede `onDelete: cascade` temizler. Kullanıcı kendi geçmişini
+  `DELETE /v1/coach/messages`, profilini `DELETE /v1/coach/memory` ile siler.
+- **Memory profili yaklaşık ve gecikmelidir** — her 10 mesajda bir async job ile yenilenir; en son
+  ~40 mesajdan damıtılır. Job runner (Cron/dev tick) çalışmıyorsa profil güncellenmez ama chat
+  çalışmaya devam eder (context satırı düşer). "Yeni sohbet" hem mesajları hem profili sıfırlar.
 - **Multi-turn penceresi sabittir** (`CHAT_HISTORY_MAX_MESSAGES=10`, `ai.constants.ts`) — runtime
   config değil; tuning ihtiyacı doğarsa config catalog'a taşınır.
+- **Provider değişimi = 1 kez reembed** — sorgu embedding'i ile makale embedding'i aynı modelden
+  olmalı; `AI_PROVIDER` değişince `POST /v1/admin/ai/reembed` (SUPER_ADMIN) çalıştırılmazsa RAG
+  retrieval anlamsızlaşır (hata vermez, alakasız/boş kaynak döner). Maliyeti sentlerle ölçülür.
+  `MODEL_PRICING_MICROS_PER_TOKEN` tablosuna yeni model eklenmezse `ai_usage.cost_micros` 0 yazar.
 - **Stream yarıda kesilirse persist yok** — `coach_messages` yalnız tamamlanan exchange'i yazar;
   FE de parçalı balonu kaldırır, tekrar deneme yeni `clientMessageId` ile yeni spend'dir (aynı id
   ile idempotent).

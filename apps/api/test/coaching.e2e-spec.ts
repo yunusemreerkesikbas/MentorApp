@@ -344,6 +344,36 @@ describe("coaching (e2e)", () => {
     expect(empty.body.total).toBe(0);
   });
 
+  it("GET /study-sessions filters by from/to UTC day bounds on started_at", async () => {
+    const start = await request(app.getHttpServer())
+      .post("/v1/study-sessions")
+      .set(authA())
+      .send({ preset: "25_5", subject: "Tarih" });
+    expect(start.status).toBe(201);
+    await request(app.getHttpServer())
+      .patch(`/v1/study-sessions/${start.body.id}`)
+      .set(authA())
+      .send({ status: "COMPLETED", actualFocusSeconds: 1500 });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const inRange = await request(app.getHttpServer())
+      .get(`/v1/study-sessions?page=1&pageSize=10&from=${today}&to=${today}`)
+      .set(authA());
+    expect(inRange.status).toBe(200);
+    expect(inRange.body.items.some((s: { id: string }) => s.id === start.body.id)).toBe(true);
+
+    const outOfRange = await request(app.getHttpServer())
+      .get("/v1/study-sessions?page=1&pageSize=10&from=2000-01-01&to=2000-01-02")
+      .set(authA());
+    expect(outOfRange.status).toBe(200);
+    expect(outOfRange.body.items.some((s: { id: string }) => s.id === start.body.id)).toBe(false);
+
+    const badRange = await request(app.getHttpServer())
+      .get("/v1/study-sessions?page=1&pageSize=10&from=2026-07-20&to=2026-07-10")
+      .set(authA());
+    expect(badRange.status).toBe(400);
+  });
+
   it("study session start persists planTaskId when linked from a plan task", async () => {
     const createTask = await request(app.getHttpServer())
       .post("/v1/plan-tasks")

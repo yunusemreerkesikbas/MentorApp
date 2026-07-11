@@ -13,6 +13,13 @@ export const AI_REQUEST_TIMEOUT_MS = 30_000;
  * ponytail: constant, not config — move to the config catalog if tuning is ever needed. */
 export const CHAT_HISTORY_MAX_MESSAGES = 10;
 
+/** Memory profile: refresh the distilled summary every N persisted messages (user+coach rows). */
+export const MEMORY_REFRESH_EVERY_N_MESSAGES = 10;
+/** How many recent messages the memory job distills from. */
+export const MEMORY_DISTILL_WINDOW = 40;
+/** AI memory-refresh job name (own constant — runner matches by string). */
+export const AI_MEMORY_JOB = "ai.refresh-memory";
+
 /** RAG retrieval: how many articles to ground on, and the max cosine distance to accept (lower = closer). */
 export const RAG_TOP_K = 3;
 export const RAG_MAX_DISTANCE = 0.6;
@@ -41,6 +48,8 @@ export interface CoachContext {
   } | null;
   /** PII-free summary of today's plan tasks (null when no tasks scheduled today). */
   todayPlan: TodayPlanSummary | null;
+  /** Distilled PII-free profile from past conversations (null until the memory job builds one). */
+  memoryProfile: string | null;
 }
 
 /** A retrieved, verified article used to ground the answer (RAG, §1). */
@@ -124,6 +133,9 @@ export function buildSystemPrompt(ctx: CoachContext, sources: CoachSource[] = []
   if (planLine) lines.push(planLine);
   const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
   if (sessionsLine) lines.push(sessionsLine);
+  if (ctx.memoryProfile) {
+    lines.push(`Kullanıcı profili (geçmiş sohbetlerden): ${ctx.memoryProfile}`);
+  }
   let prompt = `${COACH_SYSTEM_BASE}\n\nBAĞLAM:\n${lines.join("\n")}`;
 
   if (sources.length > 0) {
@@ -140,6 +152,33 @@ export function buildSystemPrompt(ctx: CoachContext, sources: CoachSource[] = []
       " içerik bulamadım, Bilgi Merkezi'ne (/bilgi) bak' de. Yalnız genel çalışma koçluğu yap.";
   }
   return prompt;
+}
+
+/**
+ * Distill a PII-free memory profile from recent chat history (memory job). Output = a short 2-4
+ * bullet Turkish summary of the user's goal, recurring struggles, and study preferences. §4 #6:
+ * NEVER name / email / contact / any personal identifier; §4 #1 official-info ban still applies.
+ * `history` is oldest-first; empty history → caller skips the LLM call.
+ */
+export function buildMemoryProfilePrompt(
+  history: { role: "user" | "assistant"; content: string }[],
+): { system: string; user: string } {
+  const system = [
+    "Sen bir sınav hazırlık koçunun hafıza asistanısın. Aşağıdaki sohbet geçmişinden öğrenci hakkında",
+    "kalıcı, KISA bir profil çıkar (en fazla 4 madde, Türkçe). Yalnızca şunları özetle: öğrencinin hedefi,",
+    "tekrar eden zorlukları/konu eksikleri, çalışma tercihleri ve alışkanlıkları.",
+    "KESİN KURALLAR:",
+    "1) İsim, e-posta, telefon, adres veya herhangi bir kişisel/iletişim bilgisi YAZMA.",
+    "2) Resmî bilgi (sınav tarihi, başvuru, yerleştirme, puan) üretme.",
+    "3) Kısa ve maddeler halinde yaz; çıkarım yoksa 'Belirgin bir örüntü yok.' de.",
+  ].join("\n");
+
+  const transcript = history
+    .map((m) => `${m.role === "user" ? "Öğrenci" : "Koç"}: ${m.content}`)
+    .join("\n");
+  const user = `Sohbet geçmişi:\n${transcript}`;
+
+  return { system, user };
 }
 
 /**
@@ -205,6 +244,10 @@ export function buildSessionReflectionPrompt(
     "2) Tıbbi/psikolojik teşhis veya tedavi önerme. Ciddi sıkıntı/umutsuzluk sinyali varsa, nazikçe",
     "   güvendiği biriyle veya bir uzmanla konuşmaya teşvik et.",
     "3) Ödeme/abonelik/coin veya teknik konulara girme. Kişisel veri isteme.",
+    "GÖREV ÖNERİSİ: Yanıtında somut bir sonraki çalışma görevi önerdiysen, yanıtın EN SONUNA tek satır",
+    '<<TASK{"title":"kısa görev başlığı","subject":"ders"}>> ekle (en fazla 1; subject bilinmiyorsa',
+    "alanı boş bırakma, hiç yazma). Bu satır kullanıcıya gösterilmez; 1. kuraldaki yasaklar burada da",
+    "geçerlidir.",
   ].join("\n");
 
   const subjectLine = session.subject ? ` Konu: "${session.subject}".` : "";
@@ -293,7 +336,7 @@ export const MODEL_PRICING_MICROS_PER_TOKEN: Record<string, { input: number; out
   "gpt-4o-mini": { input: 0.15, output: 0.6 },
   fake: { input: 0, output: 0 },
   "fake-vision": { input: 0, output: 0 },
-  "gemini-2.0-flash": { input: 0.05, output: 0.15 },
+  "gemini-2.0-flash": { input: 0.1, output: 0.4 },
 };
 
 export function estimateCostMicros(

@@ -464,6 +464,10 @@
       "chip_streak": "Serimi koru",
       "seed_streak": "{days} günlük serim var, bunu korumak için bugün ne yapmalıyım?"
     },
+    "memory": {
+      "title": "Koçun seni nasıl tanıyor",
+      "reset": "Sıfırla"
+    },
     "chat": {
       "header_title": "Sohbet",
       "empty_hint": "İlk mesajını yaz — koçun burada.",
@@ -840,6 +844,21 @@
     "history_filter_all": "Tümü",
     "history_back": "Seansa dön",
     "history_loading": "Seans geçmişi yükleniyor…",
+    "history_empty_filtered": "Bu filtrelerle seans yok.",
+    "history_date_filter_label": "Tarih aralığı",
+    "history_subject_filter_label": "Konu filtresi",
+    "history_date_all": "Tümü",
+    "history_date_today": "Bugün",
+    "history_date_7d": "Son 7 gün",
+    "history_date_30d": "Son 30 gün",
+    "return_remind_cta": "Yarın hatırlat",
+    "return_remind_done": "Hatırlatma ayarlandı",
+    "return_remind_ok_title": "Tamam",
+    "return_remind_ok_message": "Yarın seni nazikçe hatırlatacağız.",
+    "return_remind_already_title": "Zaten ayarlı",
+    "return_remind_already_message": "Yarın için hatırlatman hazır.",
+    "return_remind_error_title": "Hatırlatma kaydedilemedi",
+    "return_remind_error_message": "Biraz sonra tekrar dene.",
     "plan_task_completed": "Plan görevin tamamlandı.",
     "new_session": "Yeni seans",
     "back_panel": "Panele dön"
@@ -911,6 +930,8 @@
   "coach_chat": {
     "suggested_task_label": "Koçun önerisi",
     "add_to_plan": "Plana ekle",
+    "feedback_up": "Bu yanıt yardımcı oldu",
+    "feedback_down": "Bu yanıt yardımcı olmadı",
     "input_label": "Koçuna mesaj yaz",
     "input_placeholder": "Koçuna bir şey sor…",
     "send": "Gönder",

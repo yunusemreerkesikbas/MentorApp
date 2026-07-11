@@ -57,7 +57,10 @@ describe("ChatService coin refund", () => {
         appendExchange,
         listPaged: vi.fn(),
         clearAll: vi.fn(),
+        setFeedback: vi.fn(),
       } as never,
+      { get: vi.fn(async () => null), upsert: vi.fn(), clear: vi.fn() } as never,
+      { enqueue: vi.fn(async () => undefined) } as never,
     );
   });
 
@@ -179,6 +182,7 @@ describe("ChatService coin refund", () => {
       content: "Harika!",
       model: "fake",
       sources: [],
+      suggestedTask: { title: "Tarih: 10 soru", subject: "Tarih" },
     });
   });
 

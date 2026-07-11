@@ -9,6 +9,12 @@ export const aiChatSchema = z.object({
 });
 export type AiChatInput = z.infer<typeof aiChatSchema>;
 
+/** PATCH /v1/coach/messages/:id/feedback — 1 = 👍, -1 = 👎, null = clear. */
+export const coachFeedbackSchema = z.object({
+  feedback: z.union([z.literal(1), z.literal(-1), z.null()]),
+});
+export type CoachFeedbackInput = z.infer<typeof coachFeedbackSchema>;
+
 /** Mock-exam wrong-question photo upload (signed URL). */
 export const photoUploadUrlSchema = z.object({
   contentType: z.enum(["image/jpeg", "image/png"]),
