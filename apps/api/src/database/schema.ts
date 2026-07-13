@@ -953,6 +953,8 @@ export const aiUsage = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     model: text("model").notNull(),
+    /** Which AI feature produced this call (chat/vision/mood/...); null on pre-labeling rows. */
+    feature: text("feature"),
     promptTokens: integer("prompt_tokens").notNull().default(0),
     completionTokens: integer("completion_tokens").notNull().default(0),
     /** Estimated cost in micro-USD (integer; per-call cost is far below 1 minor unit). */

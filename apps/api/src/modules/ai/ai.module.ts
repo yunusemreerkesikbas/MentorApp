@@ -24,6 +24,9 @@ import { ArticleEmbeddingListener } from "./application/article-embedding.listen
 import { AiJobRegistrar } from "./application/ai-job.registrar";
 import { EmbedArticleHandler } from "./application/handlers/embed-article.handler";
 import { RefreshMemoryHandler } from "./application/handlers/refresh-memory.handler";
+import { AiCostStatsService } from "./application/ai-cost-stats.service";
+import { AiBudgetGuard } from "./application/ai-budget.guard";
+import { CoachFeedbackStatsService } from "./application/coach-feedback-stats.service";
 import { AiUsageRepository } from "./infrastructure/ai-usage.repository";
 import { CoachMessageRepository } from "./infrastructure/coach-message.repository";
 import { CoachMemoryRepository } from "./infrastructure/coach-memory.repository";
@@ -73,6 +76,9 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     PhotoUploadService,
     ContextBuilder,
     AiUsageRepository,
+    AiCostStatsService,
+    AiBudgetGuard,
+    CoachFeedbackStatsService,
     CoachMessageRepository,
     CoachMemoryRepository,
     WeeklyReviewCacheRepository,
@@ -126,6 +132,7 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
       },
     },
   ],
+  exports: [AiCostStatsService, CoachFeedbackStatsService],
 })
 export class AiModule {}
 

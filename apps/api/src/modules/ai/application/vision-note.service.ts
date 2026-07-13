@@ -8,9 +8,10 @@ import { FeatureFlag } from "../../../common/config/config.catalog";
 import { VisionService } from "../../coaching/application/vision.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
-import { buildVisionNotePrompt, estimateCostMicros } from "../domain/ai.constants";
+import { AiUsageFeature, buildVisionNotePrompt, estimateCostMicros } from "../domain/ai.constants";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
+import { AiBudgetGuard } from "./ai-budget.guard";
 
 /**
  * Premium AI motivation note for the vision/goal board ("hayal/hedef panosu") — W3 · §4 #5
@@ -28,6 +29,7 @@ export class VisionNoteService {
     private readonly config: ConfigRegistryService,
     private readonly entitlement: EntitlementService,
     private readonly vision: VisionService,
+    private readonly budget: AiBudgetGuard,
   ) {}
 
   async note(user: RequestUser): Promise<VisionNoteDto> {
@@ -58,11 +60,13 @@ export class VisionNoteService {
       board.motivation,
     );
 
+    await this.budget.assertWithinBudget();
     const result = await this.llm.complete({ system, user: userMsg });
 
     await this.usage.append({
       userId: user.id,
       model: result.model,
+      feature: AiUsageFeature.VISION_NOTE,
       promptTokens: result.promptTokens,
       completionTokens: result.completionTokens,
       costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),

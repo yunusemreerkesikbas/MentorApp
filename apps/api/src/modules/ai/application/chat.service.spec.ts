@@ -60,6 +60,7 @@ describe("ChatService coin refund", () => {
         setFeedback: vi.fn(),
       } as never,
       { get: vi.fn(async () => null), upsert: vi.fn(), clear: vi.fn() } as never,
+      { assertWithinBudget: vi.fn(async () => undefined) } as never,
       { enqueue: vi.fn(async () => undefined) } as never,
     );
   });

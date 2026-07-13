@@ -63,6 +63,7 @@ describe("SessionReflectionService", () => {
       { get: configGet } as never,
       { getEntitlement } as never,
       { getById, setAiReflection } as never,
+      { assertWithinBudget: vi.fn(async () => undefined) } as never,
     );
   });
 

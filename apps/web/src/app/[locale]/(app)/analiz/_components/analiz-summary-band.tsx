@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import type { CoachingAnalysisDto } from "@mentor/types";
 import { Button, Card, Chip } from "@mentor/ui";
-import { Link } from "@/i18n/navigation";
 
 interface AnalizSummaryBandProps {
   analysis: CoachingAnalysisDto | null;
@@ -38,24 +37,32 @@ export function AnalizSummaryBand({
       <div className="flex min-w-0 flex-col gap-2">
         <p
           className="text-lg font-bold tabular-nums"
-          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+          style={{
+            color: "var(--color-main)",
+            fontFamily: "var(--font-heading)",
+          }}
         >
           {t("last_net", { net: latest.totalNet })}
         </p>
         <div className="flex flex-wrap items-center gap-2">
           {ghost ? (
-            <Chip>
-              {t("delta", { delta: ghost.previousDelta })}
-            </Chip>
+            <Chip>{t("delta", { delta: ghost.previousDelta })}</Chip>
           ) : null}
           {focus ? (
-            <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
+            <span
+              className="text-xs"
+              style={{ color: "var(--color-secondary)" }}
+            >
               {t("next_focus", { subject: focus.subjectName })}
             </span>
           ) : null}
         </div>
       </div>
-      <Button type="button" onClick={onNewEntry} className="w-full shrink-0 sm:w-auto">
+      <Button
+        type="button"
+        onClick={onNewEntry}
+        className="w-full shrink-0 sm:w-auto"
+      >
         {t("new_entry")}
       </Button>
     </Card>

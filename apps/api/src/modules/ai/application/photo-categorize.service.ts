@@ -9,11 +9,12 @@ import { ContentService } from "../../content/application/content.service";
 import { MockExamService } from "../../coaching/application/mock-exam.service";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import { VISION_PORT, type VisionPort } from "../domain/vision.port";
-import { estimateCostMicros } from "../domain/ai.constants";
+import { AiUsageFeature, estimateCostMicros } from "../domain/ai.constants";
 import {
   PHOTO_MAX_BYTES,
 } from "../domain/photo-classify.constants";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
+import { AiBudgetGuard } from "./ai-budget.guard";
 import { isValidPhotoStorageKey } from "./photo-upload.service";
 import { PhotoAccessService } from "./photo-access.service";
 
@@ -30,6 +31,7 @@ export class PhotoCategorizeService {
     private readonly mockExams: MockExamService,
     private readonly usage: AiUsageRepository,
     private readonly photoAccess: PhotoAccessService,
+    private readonly budget: AiBudgetGuard,
   ) {}
 
   async categorize(
@@ -89,6 +91,8 @@ export class PhotoCategorizeService {
     const allowedSubjects = taxonomy.map((s) => ({ slug: s.slug, name: s.name }));
     const mimeType = input.storageKey.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
 
+    // Budget gate right before the billable vision call (idempotent retries above return cached, free).
+    await this.budget.assertWithinBudget();
     const visionResult = await this.vision.categorizeImage({
       imageBytes,
       mimeType,
@@ -109,6 +113,7 @@ export class PhotoCategorizeService {
     await this.usage.append({
       userId,
       model: visionResult.model,
+      feature: AiUsageFeature.VISION,
       promptTokens: visionResult.promptTokens,
       completionTokens: visionResult.completionTokens,
       costMicros: estimateCostMicros(

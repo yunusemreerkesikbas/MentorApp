@@ -1,13 +1,30 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, desc, eq, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { CoachMessageRole, type CoachMessageDto, type Paginated } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
-import { withUserContext } from "../../../database/rls";
+import { withServiceContext, withUserContext } from "../../../database/rls";
 import { coachMessages } from "../../../database/schema";
 
 type SourceChip = { title: string; slug: string; url: string };
 type SuggestedTask = { title: string; subject: string | null };
+
+/** Cross-user feedback aggregate (admin report). */
+export interface FeedbackCounts {
+  up: number;
+  down: number;
+  rated: number;
+}
+
+/** A 👎-rated coach reply with the question that prompted it (admin report). */
+export interface DownratedReply {
+  id: string;
+  userId: string;
+  question: string | null;
+  reply: string;
+  createdAt: string;
+}
 
 type CoachMessageRow = typeof coachMessages.$inferSelect;
 
@@ -119,6 +136,58 @@ export class CoachMessageRepository {
   async clearAll(userId: string): Promise<void> {
     await withUserContext(this.db, { userId }, async (tx) => {
       await tx.delete(coachMessages).where(eq(coachMessages.userId, userId));
+    });
+  }
+
+  /** Cross-user 👍/👎 counts on COACH rows (admin report, SERVICE ctx). */
+  async feedbackCounts(): Promise<FeedbackCounts> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({
+          up: sql<number>`count(*) filter (where ${coachMessages.feedback} = 1)::int`,
+          down: sql<number>`count(*) filter (where ${coachMessages.feedback} = -1)::int`,
+          rated: sql<number>`count(*) filter (where ${coachMessages.feedback} is not null)::int`,
+        })
+        .from(coachMessages)
+        .where(eq(coachMessages.role, CoachMessageRole.COACH));
+      return rows[0] ?? { up: 0, down: 0, rated: 0 };
+    });
+  }
+
+  /**
+   * Most recent 👎-rated coach replies with the question that prompted each (admin report, SERVICE
+   * ctx). `question` = the same user's latest USER message before the coach row (null if none).
+   */
+  async listDownrated(limit: number): Promise<DownratedReply[]> {
+    return withServiceContext(this.db, async (tx) => {
+      const u = alias(coachMessages, "u");
+      const question = sql<string | null>`(
+        select ${u.content} from ${u}
+        where ${u.userId} = ${coachMessages.userId}
+          and ${u.role} = ${CoachMessageRole.USER}
+          and ${u.createdAt} < ${coachMessages.createdAt}
+        order by ${u.createdAt} desc
+        limit 1
+      )`;
+      const rows = await tx
+        .select({
+          id: coachMessages.id,
+          userId: coachMessages.userId,
+          reply: coachMessages.content,
+          createdAt: coachMessages.createdAt,
+          question,
+        })
+        .from(coachMessages)
+        .where(and(eq(coachMessages.role, CoachMessageRole.COACH), eq(coachMessages.feedback, -1)))
+        .orderBy(desc(coachMessages.createdAt))
+        .limit(limit);
+      return rows.map((r) => ({
+        id: r.id,
+        userId: r.userId,
+        reply: r.reply,
+        question: r.question ?? null,
+        createdAt: r.createdAt.toISOString(),
+      }));
     });
   }
 }

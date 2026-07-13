@@ -24,6 +24,7 @@ describe("PhotoAccessService", () => {
       { getEntitlement } as never,
       { get: configGet } as never,
       { countPhotoCategorizationsSince: countSince } as never,
+      { isWithinBudget: vi.fn(async () => true) } as never,
     );
   });
 

@@ -337,6 +337,13 @@
       "when": 1783805175421,
       "tag": "0047_supreme_eternals",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1783975933633,
+      "tag": "0048_chemical_lady_mastermind",
+      "breakpoints": true
     }
   ]
 }

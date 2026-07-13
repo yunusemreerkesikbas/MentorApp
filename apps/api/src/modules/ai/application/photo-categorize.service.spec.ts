@@ -52,6 +52,7 @@ describe("PhotoCategorizeService", () => {
       } as never,
       { append: vi.fn() } as never,
       { assertCanCategorize } as never,
+      { assertWithinBudget: vi.fn(async () => undefined) } as never,
     );
   });
 

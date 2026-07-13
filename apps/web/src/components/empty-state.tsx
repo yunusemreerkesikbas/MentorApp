@@ -65,7 +65,7 @@ export function EmptyState({
 
       <div className="flex max-w-sm flex-col gap-2">
         <h3
-          className="text-lg font-bold leading-snug text-wrap-balance"
+          className="text-lg font-bold leading-snug text-balance"
           style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
         >
           {title}

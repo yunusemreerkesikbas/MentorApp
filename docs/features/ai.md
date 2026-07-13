@@ -81,6 +81,8 @@ pnpm --filter @mentor/api test -- --grep "ai"
 | `POST /v1/coach/vision-note` | Premium vision board AI note |
 | `GET /v1/coach/photo-access` | Photo categorize access (upload URL) |
 | `POST /v1/admin/ai/reembed` | Backfill article embeddings (SUPER_ADMIN) |
+| `GET /v1/admin/metrics/ai` | LLM cost dashboard (window/model/top-spenders; SUPPORT+FINANCE) |
+| `GET /v1/admin/metrics/coach-feedback` | Coach 👍/👎 satisfaction + recent 👎 replies (SUPPORT+FINANCE) |
 
 ## Geliştirmeler (timeline)
 
@@ -209,6 +211,54 @@ pnpm --filter @mentor/api test -- --grep "ai"
   `session-done-state.tsx`, `coach-transcript.tsx`. Seam: [coaching.md](./coaching.md).
   Design: [`plans/2026-07-12-seans-plan-suggestion-design.md`](../plans/2026-07-12-seans-plan-suggestion-design.md).
 
+- **AI maliyet görünürlüğü — admin (2026-07-13)** — §7 KPI: `ai_usage` meteri artık admin panelinde.
+  `GET /v1/admin/metrics/ai` (SUPPORT+FINANCE) rolling pencere totalleri (son 24s/7g/30g maliyet+çağrı
+  +token) + model bazlı kırılım (30g) + en çok harcayan 10 kullanıcı (30g; admin-only email/isim
+  JOIN). `AiUsageRepository`'ye 3 agregasyon (`windowSince`/`byModelSince`/`topSpendersSince`,
+  SERVICE ctx); `AiCostStatsService` (AiModule export eder; admin.module AiModule import eder — döngü
+  yok). Maliyet micro-USD saklanır, admin UI USD'ye formatlar. FE: `apps/admin` `AiCostCards.tsx`
+  (Bootstrap/Duralux deseni; `/admin/metrics` `MetricsCards` aynası) dashboard'a eklendi. **Kapsam
+  dışı:** özellik-bazlı kırılım (Dilim 10'da eklendi), grafik/zaman
+  serisi, CSV export. Dosyalar: `ai-usage.repository.ts`, `ai-cost-stats.service.ts`(+spec),
+  `admin-metrics.controller.ts`, `admin.module.ts`, `ai.module.ts`, `packages/types/ai.ts`,
+  `apps/admin/src/{lib/types.ts,app/AiCostCards.tsx,app/page.tsx}`.
+
+- **Koç feedback raporu — admin (2026-07-13)** — Dilim 6'daki 👍/👎 sinyali artık ölü veri değil:
+  `GET /v1/admin/metrics/coach-feedback` (SUPPORT+FINANCE) tüm-zaman memnuniyet oranı
+  (`up/(up+down)`, oy yoksa null) + son 20 👎 yanıtı **sorusuyla birlikte** listeler.
+  `CoachMessageRepository`'ye 2 SERVICE-ctx metot: `feedbackCounts` (`count(*) FILTER`) ve
+  `listDownrated` (korelasyonlu subquery ile önceki USER mesajını eşler — `alias(coachMessages)`).
+  `CoachFeedbackStatsService` (AiModule export; admin.module zaten AiModule import ediyor).
+  FE: `apps/admin` `CoachFeedbackCards.tsx` (AiCostCards deseni) dashboard'a eklendi. **Guardrail:**
+  koç mesaj metni davranışsal serbest metin — admin-only görünür (top-spender email'i gibi; mevcut
+  KVKK gotcha kapsıyor). **Kapsam dışı:** feedback'i prompt'a geri besleme, zaman serisi, 👍 listesi.
+  Dosyalar: `coach-message.repository.ts`, `coach-feedback-stats.service.ts`(+spec),
+  `admin-metrics.controller.ts`, `ai.module.ts`, `packages/types/ai.ts`,
+  `apps/admin/src/{lib/types.ts,app/CoachFeedbackCards.tsx,app/page.tsx}`.
+
+- **Özellik-bazlı AI maliyet kırılımı (2026-07-13)** — Dilim 8'in tamamlayıcısı: `ai_usage` +=
+  `feature text` (migration `0048_chemical_lady_mastermind`, nullable — eski satırlar panelde
+  "other"). `AiUsageFeature` sabiti (chat/vision/mood/ghost/vision_note/session_reflection/
+  weekly_review/memory); 8 `usage.append` çağrısı özelliğiyle etiketlenir. **Memory metering açığı
+  kapatıldı:** `RefreshMemoryHandler` artık `usage.append(feature=memory)` yazıyor (önce ölçülmüyordu).
+  `AiUsageRepository.byFeatureSince` + `AiCostStatsService` payload'ına `byFeature`; admin
+  `AiCostCards.tsx` "Özellik bazlı (30 gün)" tablosu (slug→TR etiket sözlüğü). Dosyalar: `schema.ts`,
+  `ai.constants.ts`, `ai-usage.repository.ts`, `ai-cost-stats.service.ts`(+spec), 8 servis/handler,
+  `refresh-memory.handler.ts`(+spec), `packages/types/ai.ts`, `apps/admin/src/{lib/types.ts,app/AiCostCards.tsx}`.
+
+- **AI bütçe koruyucusu (2026-07-14)** — §7 kaçak harcama savunması: aylık AI harcaması admin config'li
+  cap'i (`ai.budget.monthly_cap_usd_cents`, 0 = sınırsız) geçince tüm LLM çağrıları 503
+  `AI_BUDGET_EXCEEDED` ile bloklanır; takvim ayı dönünce/cap yükseltilince otomatik toparlanır (yumuşak
+  guard, kalıcı flag flip yok). `AiBudgetGuard` (yeni): takvim-ayı MTD harcamayı `windowSince`'den
+  ~30s cache'ler (per-request agregasyon yok, per-instance cache). `assertWithinBudget()` 7 LLM
+  giriş noktasında **billable çağrıdan hemen önce** (cache isabetleri/idempotent retry ücretsiz geçer);
+  memory job throw yerine erken-return (retry fırtınası yok). Gate probe'ları
+  (`coach-access`/`photo-access`) budget aşılıysa `canChat/canCategorize=false` + reason döner (UI
+  "kullanılamıyor"). Admin: `/admin/metrics/ai` payload'ına `budget`; `AiCostCards` üstünde banner
+  (%80 sarı, %100 kırmızı). Dosyalar: `config.catalog.ts`, `error-code.ts`, `i18n/*/errors.json`,
+  `ai-budget.guard.ts`(+spec), 7 servis + `refresh-memory.handler`, `coach-access`/`photo-access`,
+  `ai-cost-stats.service.ts`, `ai.module.ts`, `packages/types/ai.ts`, `apps/admin/.../AiCostCards.tsx`.
+
 ## Gotchas / Known issues
 
 - **No RAG in Slice 1** — the coach refuses official-info questions until RAG retrieval lands.
@@ -225,6 +275,9 @@ pnpm --filter @mentor/api test -- --grep "ai"
 - **W2↔W3 seam:** mood reflection (0048) and ghost narration (0049) cross W2 (coaching domain logic)
   and W3 (AI LLM call). See also [coaching.md](./coaching.md) for the coaching side.
 - **Rate-limit window** is rolling 24h (`now − 24h`), not calendar-day.
+- **Bütçe cap'i ~30s cache'li ve per-instance** — MTD harcama her istekte değil ~30s'de bir
+  hesaplanır, yani cap aşımı sonrası en fazla ~1 cache penceresi + çok-instance sayısı kadar
+  overspend olabilir (kesin hard-stop değil, yaklaşık). Cap **takvim ayı** (UTC) — ayın 1'inde sıfırlanır.
 - **KVKK — `coach_messages.content` / `coach_messages.suggested_task` / `coach_memory.summary`**
   davranışsal serbest metindir; `admin anonymize` bunları scrub etmez (aynı durum
   `struggle_note`/`motivation` için de geçerli — coaching.md'deki holistic erasure follow-up'ına

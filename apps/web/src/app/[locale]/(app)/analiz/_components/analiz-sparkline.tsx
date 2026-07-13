@@ -1,18 +1,17 @@
 "use client";
 
-import type { MockExamTrendPointDto } from "@mentor/types";
+interface SparklinePoint {
+  id: string;
+  totalNet: string;
+}
 
 interface AnalizSparklineProps {
-  points: MockExamTrendPointDto[];
-  /** Accessible label for the chart. */
+  points: SparklinePoint[];
   label: string;
   width?: number;
   height?: number;
 }
 
-/**
- * Minimal SVG sparkline — no chart library (DESIGN.md constraint).
- */
 export function AnalizSparkline({
   points,
   label,
@@ -26,31 +25,34 @@ export function AnalizSparkline({
 
   if (points.length === 0) return null;
 
-  const values = points.map((p) => Number(p.totalNet));
+  const values = points.map((point) => Number(point.totalNet));
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
 
-  const coords = points.map((p, i) => {
+  const coords = points.map((point, index) => {
     const x =
       points.length === 1
         ? padX + innerW / 2
-        : padX + (i / (points.length - 1)) * innerW;
-    const y = padY + innerH - ((Number(p.totalNet) - min) / span) * innerH;
-    return { x, y, id: p.id };
+        : padX + (index / (points.length - 1)) * innerW;
+    const y = padY + innerH - ((Number(point.totalNet) - min) / span) * innerH;
+    return { x, y, id: point.id };
   });
 
   const polyline =
     coords.length > 1
-      ? coords.map((c) => `${c.x},${c.y}`).join(" ")
+      ? coords.map((coordinate) => coordinate.x + "," + coordinate.y).join(" ")
       : null;
+  const accessibleLabel = `${label}: ${points
+    .map((point) => point.totalNet)
+    .join(" → ")}`;
 
   return (
     <svg
-      viewBox={`0 0 ${width} ${height}`}
+      viewBox={["0", "0", width, height].join(" ")}
       className="h-[72px] w-full max-w-full"
       role="img"
-      aria-label={label}
+      aria-label={accessibleLabel}
     >
       {polyline ? (
         <polyline
@@ -62,11 +64,11 @@ export function AnalizSparkline({
           points={polyline}
         />
       ) : null}
-      {coords.map((c) => (
+      {coords.map((coordinate) => (
         <circle
-          key={c.id}
-          cx={c.x}
-          cy={c.y}
+          key={coordinate.id}
+          cx={coordinate.x}
+          cy={coordinate.y}
           r={points.length === 1 ? 5 : 3.5}
           fill="var(--color-progress)"
         />
@@ -74,3 +76,4 @@ export function AnalizSparkline({
     </svg>
   );
 }
+

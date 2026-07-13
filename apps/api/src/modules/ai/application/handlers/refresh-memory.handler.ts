@@ -1,9 +1,16 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { z } from "zod";
 import { LLM_PORT, type LlmPort } from "../../domain/llm.port";
-import { buildMemoryProfilePrompt, MEMORY_DISTILL_WINDOW } from "../../domain/ai.constants";
+import {
+  AiUsageFeature,
+  buildMemoryProfilePrompt,
+  estimateCostMicros,
+  MEMORY_DISTILL_WINDOW,
+} from "../../domain/ai.constants";
+import { AiUsageRepository } from "../../infrastructure/ai-usage.repository";
 import { CoachMessageRepository } from "../../infrastructure/coach-message.repository";
 import { CoachMemoryRepository } from "../../infrastructure/coach-memory.repository";
+import { AiBudgetGuard } from "../ai-budget.guard";
 
 const payloadSchema = z.object({ userId: z.string().uuid() });
 
@@ -20,10 +27,15 @@ export class RefreshMemoryHandler {
     @Inject(LLM_PORT) private readonly llm: LlmPort,
     private readonly messages: CoachMessageRepository,
     private readonly memory: CoachMemoryRepository,
+    private readonly usage: AiUsageRepository,
+    private readonly budget: AiBudgetGuard,
   ) {}
 
   async handle(payload: unknown): Promise<void> {
     const { userId } = payloadSchema.parse(payload);
+
+    // Over budget → skip silently (return, don't throw) so the job doesn't retry-storm on no money.
+    if (!(await this.budget.isWithinBudget())) return;
 
     const recent = await this.messages.lastN(userId, MEMORY_DISTILL_WINDOW);
     if (recent.length === 0) return;
@@ -43,6 +55,16 @@ export class RefreshMemoryHandler {
       summary: result.text.trim(),
       model: result.model,
       messageCount: recent.length,
+    });
+
+    // Meter the distillation call so it shows in the admin cost dashboard (feature=memory).
+    await this.usage.append({
+      userId,
+      model: result.model,
+      feature: AiUsageFeature.MEMORY,
+      promptTokens: result.promptTokens,
+      completionTokens: result.completionTokens,
+      costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
     });
     this.logger.debug(`Memory profile refreshed for user ${userId} (${recent.length} msgs)`);
   }

@@ -20,6 +20,19 @@ export const MEMORY_DISTILL_WINDOW = 40;
 /** AI memory-refresh job name (own constant — runner matches by string). */
 export const AI_MEMORY_JOB = "ai.refresh-memory";
 
+/** Feature label written to `ai_usage.feature` — drives the admin per-feature cost breakdown. */
+export const AiUsageFeature = {
+  CHAT: "chat",
+  VISION: "vision",
+  MOOD: "mood",
+  GHOST: "ghost",
+  VISION_NOTE: "vision_note",
+  SESSION_REFLECTION: "session_reflection",
+  WEEKLY_REVIEW: "weekly_review",
+  MEMORY: "memory",
+} as const;
+export type AiUsageFeature = (typeof AiUsageFeature)[keyof typeof AiUsageFeature];
+
 /** RAG retrieval: how many articles to ground on, and the max cosine distance to accept (lower = closer). */
 export const RAG_TOP_K = 3;
 export const RAG_MAX_DISTANCE = 0.6;

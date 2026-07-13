@@ -8,9 +8,10 @@ import { FeatureFlag } from "../../../common/config/config.catalog";
 import { MoodService } from "../../coaching/application/mood.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
-import { buildMoodReflectionPrompt, estimateCostMicros } from "../domain/ai.constants";
+import { AiUsageFeature, buildMoodReflectionPrompt, estimateCostMicros } from "../domain/ai.constants";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
+import { AiBudgetGuard } from "./ai-budget.guard";
 
 /**
  * Premium AI-adaptive reflection on today's mood check-in (W3 · §4 #5 premium-only — free tier
@@ -30,6 +31,7 @@ export class MoodReflectionService {
     private readonly config: ConfigRegistryService,
     private readonly entitlement: EntitlementService,
     private readonly mood: MoodService,
+    private readonly budget: AiBudgetGuard,
   ) {}
 
   async reflect(user: RequestUser): Promise<MoodReflectionDto> {
@@ -59,11 +61,13 @@ export class MoodReflectionService {
       today.struggleNote,
     );
 
+    await this.budget.assertWithinBudget();
     const result = await this.llm.complete({ system, user: userMsg });
 
     await this.usage.append({
       userId: user.id,
       model: result.model,
+      feature: AiUsageFeature.MOOD,
       promptTokens: result.promptTokens,
       completionTokens: result.completionTokens,
       costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),

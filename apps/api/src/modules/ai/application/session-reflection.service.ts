@@ -8,10 +8,11 @@ import { FeatureFlag } from "../../../common/config/config.catalog";
 import { SessionService } from "../../coaching/application/session.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
-import { buildSessionReflectionPrompt, estimateCostMicros } from "../domain/ai.constants";
+import { AiUsageFeature, buildSessionReflectionPrompt, estimateCostMicros } from "../domain/ai.constants";
 import { extractSuggestedTask } from "../domain/suggested-task";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
+import { AiBudgetGuard } from "./ai-budget.guard";
 
 /**
  * Premium AI reflection on a finalized study session after micro check-in (W3 · §4 #5).
@@ -28,6 +29,7 @@ export class SessionReflectionService {
     private readonly config: ConfigRegistryService,
     private readonly entitlement: EntitlementService,
     private readonly sessions: SessionService,
+    private readonly budget: AiBudgetGuard,
   ) {}
 
   async reflect(user: RequestUser, sessionId: string): Promise<SessionReflectionDto> {
@@ -65,12 +67,14 @@ export class SessionReflectionService {
       struggleNote: session.struggleNote,
     });
 
+    await this.budget.assertWithinBudget();
     const result = await this.llm.complete({ system, user: userMsg });
     const { text, task } = extractSuggestedTask(result.text);
 
     await this.usage.append({
       userId: user.id,
       model: result.model,
+      feature: AiUsageFeature.SESSION_REFLECTION,
       promptTokens: result.promptTokens,
       completionTokens: result.completionTokens,
       costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),

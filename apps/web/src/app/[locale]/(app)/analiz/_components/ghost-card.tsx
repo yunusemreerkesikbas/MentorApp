@@ -11,7 +11,7 @@ import { useRouter } from "@/i18n/navigation";
 interface GhostCardProps {
   examId: string;
   ghost: GhostComparisonDto;
-  premium: boolean;
+  premium?: boolean;
 }
 
 /**
@@ -43,7 +43,9 @@ export function GhostCard({ examId, ghost, premium }: GhostCardProps) {
   }, [examId]);
 
   useEffect(() => {
-    if (premium && ghost.aiNarration == null) void generate();
+    if (!premium || ghost.aiNarration != null) return;
+    const timer = window.setTimeout(() => void generate(), 0);
+    return () => window.clearTimeout(timer);
   }, [generate, ghost.aiNarration, premium]);
 
   return (
@@ -144,7 +146,7 @@ export function GhostCard({ examId, ghost, premium }: GhostCardProps) {
             {narration}
           </p>
         </motion.div>
-      ) : !premium ? (
+      ) : premium === false ? (
         <button
           type="button"
           onClick={() => router.push("/abonelik")}
@@ -157,7 +159,5 @@ export function GhostCard({ examId, ghost, premium }: GhostCardProps) {
     </Card>
   );
 }
-
-
 
 

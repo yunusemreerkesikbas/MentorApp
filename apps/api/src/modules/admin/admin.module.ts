@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { AiModule } from "../ai/ai.module";
 import { ContentModule } from "../content/content.module";
 import { EconomyModule } from "../economy/economy.module";
 import { IdentityModule } from "../identity/identity.module";
@@ -24,7 +25,7 @@ import { AdminUsersController } from "./presentation/admin-users.controller";
  * reuse the same append-only audit trail. Economy (coin/XP/invite/quest) lands in a later slice.
  */
 @Module({
-  imports: [IdentityModule, EconomyModule, ContentModule, PaymentsModule],
+  imports: [IdentityModule, EconomyModule, ContentModule, PaymentsModule, AiModule],
   controllers: [
     AdminUsersController,
     AdminConfigController,

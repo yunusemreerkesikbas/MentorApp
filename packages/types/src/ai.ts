@@ -64,6 +64,50 @@ export interface CoachMemoryDto {
   updatedAt: string;
 }
 
+/** One time-window's aggregate AI usage (admin cost dashboard). Cost is micro-USD. */
+export interface AiCostWindowDto {
+  costMicros: number;
+  calls: number;
+  promptTokens: number;
+  completionTokens: number;
+}
+
+/** GET /v1/admin/metrics/coach-feedback — coach reply satisfaction (Dilim 6 signal → admin report). */
+export interface AdminCoachFeedbackDto {
+  /** 👍 count on coach replies (all-time). */
+  up: number;
+  /** 👎 count on coach replies (all-time). */
+  down: number;
+  /** Total rated coach replies (up + down). */
+  rated: number;
+  /** up / (up + down); null when nothing has been rated yet. */
+  satisfactionRate: number | null;
+  /** Most recent 👎 replies with the question that prompted each (admin-only free text). */
+  downrated: {
+    id: string;
+    userId: string;
+    question: string | null;
+    reply: string;
+    createdAt: string;
+  }[];
+  generatedAt: string;
+}
+
+/** GET /v1/admin/metrics/ai — LLM cost visibility (§7). All windows are rolling from now. */
+export interface AdminAiCostDto {
+  /** Rolling windows: last 24h / 7d / 30d. */
+  windows: { d1: AiCostWindowDto; d7: AiCostWindowDto; d30: AiCostWindowDto };
+  /** Per-model breakdown over the last 30d, highest cost first. */
+  byModel: (AiCostWindowDto & { model: string })[];
+  /** Per-feature breakdown over the last 30d (chat/vision/...), highest cost first. */
+  byFeature: (AiCostWindowDto & { feature: string })[];
+  /** Top spenders over the last 30d (admin-only PII). */
+  topSpenders: { userId: string; email: string; displayName: string; costMicros: number; calls: number }[];
+  /** Monthly budget guard status (calendar-month; capMicros 0 = no cap). */
+  budget: { capMicros: number; spentMicros: number; exceeded: boolean };
+  generatedAt: string;
+}
+
 /**
  * POST /v1/coach/mood-reflection response — premium AI-adaptive reflection on today's mood
  * (§4 #5 premium-only; warm/short coaching, never official info §4 #1).

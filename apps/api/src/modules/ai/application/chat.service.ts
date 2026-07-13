@@ -13,6 +13,7 @@ import { EntitlementService } from "../../payments/application/entitlement.servi
 import { LLM_PORT, type LlmHistoryMessage, type LlmPort } from "../domain/llm.port";
 import {
   AI_MEMORY_JOB,
+  AiUsageFeature,
   buildSystemPrompt,
   CHAT_HISTORY_MAX_MESSAGES,
   estimateCostMicros,
@@ -26,6 +27,7 @@ import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { CoachMessageRepository } from "../infrastructure/coach-message.repository";
 import { CoachMemoryRepository } from "../infrastructure/coach-memory.repository";
+import { AiBudgetGuard } from "./ai-budget.guard";
 
 export type CoachReplyResult = CoachChatReplyDto;
 
@@ -49,6 +51,7 @@ export class ChatService {
     private readonly economy: EconomyService,
     private readonly messages: CoachMessageRepository,
     private readonly memory: CoachMemoryRepository,
+    private readonly budget: AiBudgetGuard,
     @Inject(JOB_QUEUE_PORT) private readonly queue: JobQueuePort,
   ) {}
 
@@ -60,6 +63,7 @@ export class ChatService {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
+    await this.budget.assertWithinBudget();
 
     const ent = await this.entitlement.getEntitlement(user.id, user.roles);
     const spendRefId = clientMessageId ?? randomUUID();
@@ -181,6 +185,7 @@ export class ChatService {
     await this.usage.append({
       userId,
       model: result.model,
+      feature: AiUsageFeature.CHAT,
       promptTokens: result.promptTokens,
       completionTokens: result.completionTokens,
       costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
@@ -233,6 +238,7 @@ export class ChatService {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
+    await this.budget.assertWithinBudget();
 
     const ent = await this.entitlement.getEntitlement(user.id, user.roles);
     const spendRefId = clientMessageId ?? randomUUID();

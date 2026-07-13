@@ -89,7 +89,7 @@ export function WelcomeSlideLayout({
         {topBar}
         <div className="flex flex-1 flex-col items-center justify-center">
           <div className="mb-5 flex justify-center">
-            <PuhuImage variant={mascot} size={140} />
+            <PuhuImage variant={mascot} size={140} priority />
           </div>
           <h1
             className="text-center text-xl font-semibold leading-snug lg:text-2xl"

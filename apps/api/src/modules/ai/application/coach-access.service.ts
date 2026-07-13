@@ -5,6 +5,7 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { EconomyService } from "../../economy/application/economy.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
+import { AiBudgetGuard } from "./ai-budget.guard";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -18,11 +19,15 @@ export class CoachAccessService {
     private readonly entitlement: EntitlementService,
     private readonly economy: EconomyService,
     private readonly config: ConfigRegistryService,
+    private readonly budget: AiBudgetGuard,
   ) {}
 
   async getAccess(userId: string, rolesHint?: string[]): Promise<CoachAccessDto> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       return { canChat: false, mode: CoachAccessMode.NONE, reason: ErrorCode.AI_DISABLED };
+    }
+    if (!(await this.budget.isWithinBudget())) {
+      return { canChat: false, mode: CoachAccessMode.NONE, reason: ErrorCode.AI_BUDGET_EXCEEDED };
     }
 
     const ent = await this.entitlement.getEntitlement(userId, rolesHint);

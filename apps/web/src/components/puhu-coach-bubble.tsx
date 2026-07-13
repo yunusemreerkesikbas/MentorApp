@@ -3,13 +3,13 @@
 import { useState } from "react";
 import X from "lucide-react/dist/esm/icons/x.mjs";
 import { motion, useReducedMotion } from "framer-motion";
-import { PuhuImage, type PuhuVariant } from "@/components/puhu-image";
+import { PuhuImage, type PuhuSizeToken, type PuhuVariant } from "@/components/puhu-image";
 
 export interface PuhuCoachBubbleProps {
   message: string;
   variant?: PuhuVariant;
-  /** Puhu render size in px (Stitch default 72). */
-  puhuSize?: number;
+  /** DESIGN.md §8.2 — token or raw px. Default `md` (72). */
+  puhuSize?: PuhuSizeToken | number;
   dismissible?: boolean;
   /** Subtle vertical bounce on mascot (celebration / nudge). */
   bounce?: boolean;
@@ -24,7 +24,7 @@ export interface PuhuCoachBubbleProps {
 export function PuhuCoachBubble({
   message,
   variant = "encouraging",
-  puhuSize = 72,
+  puhuSize = "md",
   dismissible = true,
   bounce = false,
   className,

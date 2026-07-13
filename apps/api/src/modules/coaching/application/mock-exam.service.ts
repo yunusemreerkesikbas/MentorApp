@@ -1,14 +1,31 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { I18nContext, I18nService } from "nestjs-i18n";
-import type { CoachingAnalysisDto, GhostComparisonDto, MockExamDto, Paginated } from "@mentor/types";
-import type { CreateMockExamInput, ListMockExamsQuery, UpdateMockExamInput } from "@mentor/validation";
+import type {
+  CoachingAnalysisDto,
+  GhostComparisonDto,
+  MockExamDto,
+  Paginated,
+} from "@mentor/types";
+import type {
+  CreateMockExamInput,
+  ListMockExamsQuery,
+  UpdateMockExamInput,
+} from "@mentor/validation";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
-import { CONTENT_PORT, type ContentPort, type ExamRef, type ExamSubjectRef } from "../domain/content.port";
+import {
+  STORAGE_PORT,
+  type StoragePort,
+} from "../../../shared/ports/storage.port";
+import {
+  CONTENT_PORT,
+  type ContentPort,
+  type ExamRef,
+  type ExamSubjectRef,
+} from "../domain/content.port";
 import { computeGhost } from "../domain/ghost";
 import { computeSubjectNet, computeTotalNet, formatNet } from "../domain/net";
 import { buildFocusTrend, selectAnalysisFocus } from "../domain/analysis-focus";
@@ -38,12 +55,19 @@ export class MockExamService {
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
 
-  async create(userId: string, input: CreateMockExamInput): Promise<MockExamDto> {
+  async create(
+    userId: string,
+    input: CreateMockExamInput,
+  ): Promise<MockExamDto> {
     const exam = await this.content.getExamById(input.examId);
     if (!exam) {
-      throw new DomainError(ErrorCode.CONTENT_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND, {
-        examId: input.examId,
-      });
+      throw new DomainError(
+        ErrorCode.CONTENT_EXAM_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+        {
+          examId: input.examId,
+        },
+      );
     }
 
     const taxonomy = await this.content.listExamSubjects(input.examId);
@@ -70,9 +94,14 @@ export class MockExamService {
     return withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.mockExams.findById(tx, userId, id);
       if (!row) {
-        throw new DomainError(ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND);
+        throw new DomainError(
+          ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
       }
-      const subjectsMap = await this.mockExams.listSubjectsByMockExamIds(tx, [row.exam.id]);
+      const subjectsMap = await this.mockExams.listSubjectsByMockExamIds(tx, [
+        row.exam.id,
+      ]);
       const [dto] = await this.buildMockExamDtos(tx, [row.exam], subjectsMap);
       return dto!;
     });
@@ -94,11 +123,17 @@ export class MockExamService {
 
       const exam = await this.content.getExamById(existing.exam.examId);
       if (!exam) {
-        throw new DomainError(ErrorCode.CONTENT_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND, {
-          examId: existing.exam.examId,
-        });
+        throw new DomainError(
+          ErrorCode.CONTENT_EXAM_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+          {
+            examId: existing.exam.examId,
+          },
+        );
       }
-      const taxonomy = await this.content.listExamSubjects(existing.exam.examId);
+      const taxonomy = await this.content.listExamSubjects(
+        existing.exam.examId,
+      );
       const prepared = this.prepareResult(exam, taxonomy, input.subjects);
       const updated = await this.mockExams.update(tx, userId, id, {
         takenAt: new Date(input.takenAt),
@@ -127,30 +162,37 @@ export class MockExamService {
   }
 
   async remove(userId: string, id: string): Promise<void> {
-    const storageKeys = await withUserContext(this.db, { userId }, async (tx) => {
-      const existing = await this.mockExams.findById(tx, userId, id);
-      if (!existing) {
-        throw new DomainError(
-          ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND,
-          HttpStatus.NOT_FOUND,
+    const storageKeys = await withUserContext(
+      this.db,
+      { userId },
+      async (tx) => {
+        const existing = await this.mockExams.findById(tx, userId, id);
+        if (!existing) {
+          throw new DomainError(
+            ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND,
+            HttpStatus.NOT_FOUND,
+          );
+        }
+        const keys = await this.photoRows.listStorageKeys(tx, userId, id);
+        await this.mockExams.delete(tx, userId, id);
+        await this.mockExams.clearGhostNarrations(
+          tx,
+          userId,
+          existing.exam.examId,
         );
-      }
-      const keys = await this.photoRows.listStorageKeys(tx, userId, id);
-      await this.mockExams.delete(tx, userId, id);
-      await this.mockExams.clearGhostNarrations(
-        tx,
-        userId,
-        existing.exam.examId,
-      );
-      return keys;
-    });
+        return keys;
+      },
+    );
 
     await Promise.allSettled(
       storageKeys.map((storageKey) => this.storage.deleteObject(storageKey)),
     );
   }
 
-  async list(userId: string, query: ListMockExamsQuery): Promise<Paginated<MockExamDto>> {
+  async list(
+    userId: string,
+    query: ListMockExamsQuery,
+  ): Promise<Paginated<MockExamDto>> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const { items, total } = await this.mockExams.listPaged(
         tx,
@@ -171,10 +213,17 @@ export class MockExamService {
     });
   }
 
-  async getAnalysis(userId: string, examId?: string): Promise<CoachingAnalysisDto> {
+  async getAnalysis(
+    userId: string,
+    examId?: string,
+  ): Promise<CoachingAnalysisDto> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const trendRows = await this.mockExams.listTrend(tx, userId, 12, examId);
-      const breakdown = await this.mockExams.listSubjectBreakdown(tx, userId, examId);
+      const breakdown = await this.mockExams.listSubjectBreakdown(
+        tx,
+        userId,
+        examId,
+      );
       const recentRows = trendRows.slice(0, 4);
       const recentIds = recentRows.map((row) => row.id);
       const recentSubjectsByMockExamId =
@@ -191,7 +240,8 @@ export class MockExamService {
       for (const taxonomy of taxonomyEntries) {
         for (const subject of taxonomy) {
           slugToName.set(subject.slug, subject.name);
-          const counts = questionCountsBySlug.get(subject.slug) ?? new Set<number | null>();
+          const counts =
+            questionCountsBySlug.get(subject.slug) ?? new Set<number | null>();
           counts.add(subject.questionCount ?? null);
           questionCountsBySlug.set(subject.slug, counts);
         }
@@ -213,7 +263,8 @@ export class MockExamService {
         attemptCount: number,
       ) => {
         const counts = questionCountsBySlug.get(subjectRef);
-        const questionCount = counts?.size === 1 ? ([...counts][0] ?? null) : null;
+        const questionCount =
+          counts?.size === 1 ? ([...counts][0] ?? null) : null;
         return {
           subjectRef,
           subjectName: slugToName.get(subjectRef) ?? subjectRef,
@@ -233,14 +284,21 @@ export class MockExamService {
       const recentTotals = new Map<string, { sum: number; count: number }>();
       for (const rows of recentSubjectsByMockExamId.values()) {
         for (const row of rows) {
-          const current = recentTotals.get(row.subjectRef) ?? { sum: 0, count: 0 };
+          const current = recentTotals.get(row.subjectRef) ?? {
+            sum: 0,
+            count: 0,
+          };
           current.sum += Number(row.net);
           current.count += 1;
           recentTotals.set(row.subjectRef, current);
         }
       }
       const recentSubjects = [...recentTotals].map(([subjectRef, total]) =>
-        toStrength(subjectRef, (total.sum / total.count).toFixed(2), total.count),
+        toStrength(
+          subjectRef,
+          (total.sum / total.count).toFixed(2),
+          total.count,
+        ),
       );
 
       const photoSignals = await this.photoRows.listPhotoSubjectSignals(
@@ -255,36 +313,47 @@ export class MockExamService {
         count: row.count,
       }));
       const focus = selectAnalysisFocus(recentSubjects, photoSubjectSignals);
-      const nextFocus = focus
-        ? {
-            ...focus,
-            message: this.translateFocus(
-              `coaching.focus.${focus.source}_${focus.evidenceLevel}`,
-              focus.subjectName,
-            ),
-            suggestedTaskTitle: this.translateFocus(
-              `coaching.focus.TASK_TITLE_${focus.source}`,
-              focus.subjectName,
-            ),
-            ...buildFocusTrend(
-              focus.subjectRef,
-              recentRows,
-              recentSubjectsByMockExamId,
-            ),
-            trendMessage: this.translateFocus(
-              `coaching.focus.TREND_${buildFocusTrend(
-                focus.subjectRef,
-                recentRows,
-                recentSubjectsByMockExamId,
-              ).trendDirection}`,
-              focus.subjectName,
-            ),
-          }
+      const focusTrend = focus
+        ? buildFocusTrend(
+            focus.subjectRef,
+            recentRows,
+            recentSubjectsByMockExamId,
+          )
         : null;
+      const nextFocus =
+        focus && focusTrend
+          ? {
+              ...focus,
+              message: this.translateFocus(
+                `coaching.focus.${focus.source}_${focus.evidenceLevel}`,
+                focus.subjectName,
+              ),
+              suggestedTaskTitle: this.translateFocus(
+                `coaching.focus.TASK_TITLE_${focus.source}`,
+                focus.subjectName,
+              ),
+              ...focusTrend,
+              trendMessage: this.translateFocus(
+                `coaching.focus.TREND_${focusTrend.trendDirection}`,
+                focus.subjectName,
+              ),
+            }
+          : null;
 
       const ghost = await this.buildGhost(tx, userId, examId);
-      const personalRecordNet = await this.mockExams.maxTotalNet(tx, userId, examId);
-      return { trend, subjects, photoSubjectSignals, nextFocus, personalRecordNet, ghost };
+      const personalRecordNet = await this.mockExams.maxTotalNet(
+        tx,
+        userId,
+        examId,
+      );
+      return {
+        trend,
+        subjects,
+        photoSubjectSignals,
+        nextFocus,
+        personalRecordNet,
+        ghost,
+      };
     });
   }
 
@@ -311,7 +380,12 @@ export class MockExamService {
     await withUserContext(this.db, { userId }, async (tx) => {
       const latest = await this.mockExams.listTrend(tx, userId, 1, examId);
       if (latest.length === 0) return;
-      await this.mockExams.setGhostNarration(tx, latest[0]!.id, narration, model);
+      await this.mockExams.setGhostNarration(
+        tx,
+        latest[0]!.id,
+        narration,
+        model,
+      );
     });
   }
 
@@ -334,7 +408,10 @@ export class MockExamService {
     ]);
     const slugToName = new Map(taxonomy.map((s) => [s.slug, s.name]));
     const subjectOrder = new Map(
-      taxonomy.map((subject, index) => [subject.slug, subject.sortOrder ?? index]),
+      taxonomy.map((subject, index) => [
+        subject.slug,
+        subject.sortOrder ?? index,
+      ]),
     );
 
     const { headlineKey, ...rest } = computeGhost({
@@ -371,7 +448,10 @@ export class MockExamService {
   }
 
   /** Count photo categorizations in the rolling window (premium rate-limit). */
-  async countPhotoCategorizationsSince(userId: string, since: Date): Promise<number> {
+  async countPhotoCategorizationsSince(
+    userId: string,
+    since: Date,
+  ): Promise<number> {
     return withUserContext(this.db, { userId }, async (tx) =>
       this.photoRows.countSince(tx, userId, since),
     );
@@ -386,11 +466,17 @@ export class MockExamService {
     );
   }
 
-  async getOwnedMockExam(userId: string, mockExamId: string): Promise<MockExamRow> {
+  async getOwnedMockExam(
+    userId: string,
+    mockExamId: string,
+  ): Promise<MockExamRow> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.mockExams.findById(tx, userId, mockExamId);
       if (!row) {
-        throw new DomainError(ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND);
+        throw new DomainError(
+          ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
       }
       return row.exam;
     });
@@ -439,7 +525,9 @@ export class MockExamService {
       );
     }
 
-    const taxonomyBySlug = new Map(taxonomy.map((subject) => [subject.slug, subject]));
+    const taxonomyBySlug = new Map(
+      taxonomy.map((subject) => [subject.slug, subject]),
+    );
     for (const subject of subjects) {
       const meta = taxonomyBySlug.get(subject.subjectRef);
       if (!meta) {
@@ -473,7 +561,9 @@ export class MockExamService {
         ...subject,
         net: formatNet(subjectNets[index]!),
       })),
-      slugToName: new Map(taxonomy.map((subject) => [subject.slug, subject.name])),
+      slugToName: new Map(
+        taxonomy.map((subject) => [subject.slug, subject.name]),
+      ),
     };
   }
 
@@ -513,4 +603,3 @@ export class MockExamService {
     });
   }
 }
-

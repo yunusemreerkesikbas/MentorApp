@@ -153,6 +153,33 @@ export interface AdminMetrics {
     generatedAt: string;
 }
 
+// GET /admin/metrics/ai — LLM cost visibility (§7). Cost is micro-USD; the UI formats to USD.
+export interface AiCostWindow {
+    costMicros: number;
+    calls: number;
+    promptTokens: number;
+    completionTokens: number;
+}
+
+export interface AdminAiCost {
+    windows: { d1: AiCostWindow; d7: AiCostWindow; d30: AiCostWindow };
+    byModel: (AiCostWindow & { model: string })[];
+    byFeature: (AiCostWindow & { feature: string })[];
+    topSpenders: { userId: string; email: string; displayName: string; costMicros: number; calls: number }[];
+    budget: { capMicros: number; spentMicros: number; exceeded: boolean };
+    generatedAt: string;
+}
+
+// GET /admin/metrics/coach-feedback — coach reply satisfaction (Dilim 6 👍/👎 → admin report).
+export interface AdminCoachFeedback {
+    up: number;
+    down: number;
+    rated: number;
+    satisfactionRate: number | null;
+    downrated: { id: string; userId: string; question: string | null; reply: string; createdAt: string }[];
+    generatedAt: string;
+}
+
 export interface ConfigEntry {
     key: string;
     category: string;

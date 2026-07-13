@@ -151,6 +151,11 @@ export const CONFIG_CATALOG = {
     100000,
     "Max photo→subject categorizations a premium user may run per rolling 30-day window.",
   ),
+  "ai.budget.monthly_cap_usd_cents": aiCount(
+    0,
+    100_000_000,
+    "Monthly AI spend cap in US cents (0 = no cap; e.g. 5000 = $50). Over cap → all AI blocked until next month (§7).",
+  ),
   "coaching.session.min_focus_seconds": coachingCount(
     300,
     60,

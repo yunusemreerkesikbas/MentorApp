@@ -46,6 +46,7 @@ describe("MoodReflectionService", () => {
       { get: configGet } as never,
       { getEntitlement } as never,
       { getToday, setTodayAiReflection } as never,
+      { assertWithinBudget: vi.fn(async () => undefined) } as never,
     );
   });
 

@@ -37,7 +37,7 @@ domain logic + persistence and exposes setters the AI module calls.
 - **Repositories take the RLS-scoped `tx`** (opened by the service via `withUserContext`) so
   multi-table writes (task/session ↔ `daily_activity`) are atomic. Don't open a second tx inside a repo.
 - **AI seam (workstreams §2):** AI never writes coaching tables — it calls `MoodService.
-  setTodayAiReflection`, `MockExamService.setLatestGhostNarration`, `VisionService.setAiNote`.
+setTodayAiReflection`, `MockExamService.setLatestGhostNarration`, `VisionService.setAiNote`.
 
 ## Tutorials / Guides
 
@@ -86,38 +86,58 @@ pnpm --filter @mentor/api test
 ```jsonc
 {
   "greetingName": "Elif",
-  "motivationalLine": "…",           // rule-based, backend-localized (TR)
-  "countdown": {                      // null if no examType / no calendar date (no silent fallback)
-    "examType": "KPSS", "examName": "KPSS Lisans 2026",
-    "daysRemaining": 184, "examDateLabel": "12 Temmuz 2026",
-    "source": "ÖSYM", "sourceUrl": "https://www.osym.gov.tr"
+  "motivationalLine": "…", // rule-based, backend-localized (TR)
+  "countdown": {
+    // null if no examType / no calendar date (no silent fallback)
+    "examType": "KPSS",
+    "examName": "KPSS Lisans 2026",
+    "daysRemaining": 184,
+    "examDateLabel": "12 Temmuz 2026",
+    "source": "ÖSYM",
+    "sourceUrl": "https://www.osym.gov.tr",
   },
   "streak": { "currentStreak": 7, "longestStreak": 21, "freezeTokens": 2 },
-  "tasks": [{ "id": "…", "title": "…", "subject": "Türkçe", "status": "DONE", "sortOrder": 0, "taskDate": "2026-06-10" }],
-  "sessionPresets": [{ "id": "25_5", "label": "25 / 5 dk", "focusMinutes": 25, "breakMinutes": 5 }],
-  "mood": null
+  "tasks": [
+    {
+      "id": "…",
+      "title": "…",
+      "subject": "Türkçe",
+      "status": "DONE",
+      "sortOrder": 0,
+      "taskDate": "2026-06-10",
+    },
+  ],
+  "sessionPresets": [
+    {
+      "id": "25_5",
+      "label": "25 / 5 dk",
+      "focusMinutes": 25,
+      "breakMinutes": 5,
+    },
+  ],
+  "mood": null,
 }
 ```
 
 ## API
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /v1/coaching/today` | Composite Panel payload (greeting · countdown · streak · tasks · presets · mood) |
-| `GET/POST /v1/plan-tasks` · `PATCH/DELETE /:id` | Plan-task CRUD; list by `date` **or** inclusive `from`/`to` range (week view) |
-| `GET /v1/study-sessions` | Paginated finalized-session history ("Son seanslar") |
-| `POST /v1/study-sessions` · `PATCH /:id` | Pomodoro start / complete-abandon (recomputes `daily_activity`) |
-| `PATCH /v1/study-sessions/:id/feedback` | Post-session micro check-in (mood 1-3 + optional note → AI signal) |
-| `POST /v1/mock-exams` · `GET /:id` · `GET /v1/coaching/analysis` | Mock-exam entry + personal trend + ghost |
-| `POST/GET /v1/coaching/mood-checkins` | Mood check-in (upsert today) + trend |
-| `GET/POST /v1/coaching/vision` | Vision board (idempotent upsert, single row per user) |
+| Endpoint                                                         | Purpose                                                                          |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `GET /v1/coaching/today`                                         | Composite Panel payload (greeting · countdown · streak · tasks · presets · mood) |
+| `GET/POST /v1/plan-tasks` · `PATCH/DELETE /:id`                  | Plan-task CRUD; list by `date` **or** inclusive `from`/`to` range (week view)    |
+| `GET /v1/study-sessions`                                         | Paginated finalized-session history ("Son seanslar")                             |
+| `POST /v1/study-sessions` · `PATCH /:id`                         | Pomodoro start / complete-abandon (recomputes `daily_activity`)                  |
+| `PATCH /v1/study-sessions/:id/feedback`                          | Post-session micro check-in (mood 1-3 + optional note → AI signal)               |
+| `POST /v1/mock-exams` · `GET /:id` · `GET /v1/coaching/analysis` | Mock-exam entry + personal trend + ghost                                         |
+| `POST/GET /v1/coaching/mood-checkins`                            | Mood check-in (upsert today) + trend                                             |
+| `GET/POST /v1/coaching/vision`                                   | Vision board (idempotent upsert, single row per user)                            |
 
 ## Geliştirmeler (timeline)
 
 - **Panel (Anasayfa) UI** — `/panel` Server Component: greeting, calm countdown (blue, no alarm-red),
   streak badge (anti-shaming), today's plan list, start-session CTA, mood check-in. Six `@mentor/ui`
   primitives (`SectionHeading`, `DataCard`, `CountdownCard`, `StreakBadge`, `PlanListItem`,
-  `MoodPicker`). `PanelShell` loads `GET /v1/coaching/today` client-side (token in memory). *(0013.)*
+  `MoodPicker`). `PanelShell` loads `GET /v1/coaching/today` client-side (token in memory). _(0013.)_
 - **Panel mobile-first redesign** — `/panel` now uses an app-like header with Puhu + earned-rights
   economy capsule, a wellness-style "Bugünkü ritim" summary, a language-app-inspired weekly streak
   card, and a compact ritual task/CTA card. Data still comes from `GET /v1/coaching/today` and
@@ -132,10 +152,10 @@ pnpm --filter @mentor/api test
   Puhu veya "Check-in yap" ile kaydet. Dosya: `mood-wheel-picker.tsx`.
 - **Coaching daily-loop (backend)** — new `modules/coaching` bounded context; 5 tables + RLS;
   composite `/today` endpoint; plan/session/mood endpoints; streak = read-time derived; ContentPort
-  seam bound to W1 adapter. Shared contracts in `@mentor/types`/`@mentor/validation`. *(0014.)*
+  seam bound to W1 adapter. Shared contracts in `@mentor/types`/`@mentor/validation`. _(0014.)_
 - **Plan + Seans UI** — `/plan` full CRUD (list by date, create, toggle, delete); `/seans` Pomodoro
   (preset select, client timer, `POST/PATCH study-sessions` finalize). Manual URL for `?date=` until
-  OpenAPI exposes the query param; `useSearchParams` wrapped in `<Suspense>`. *(0021.)*
+  OpenAPI exposes the query param; `useSearchParams` wrapped in `<Suspense>`. _(0021.)_
 - **Seans focus modu + mola + subject deep-link (2026-07-08)** — `/seans` faz makinesi artık
   `idle → focus → break → done`. Focus süresi dolunca seans otomatik `COMPLETED` yazılır (PATCH,
   `actualFocusSeconds = focusMinutes*60`) ve **atlanabilir** mola sayacı başlar; mola tamamen
@@ -320,7 +340,7 @@ pnpm --filter @mentor/api test
   `done` ekranına 3 emoji (😩😐🙂 → mood 1-3) + opsiyonel "seni en çok ne zorladı" notu eklendi;
   **atlanabilir** (mood seçmeden Yeni seans/Panele dön ile geçilebilir), seans konusu varsa not
   placeholder'ı kişiselleşir. Finalize akışına dokunulmadı: focus bitince seans zaten `COMPLETED`
-  yazıldığı için check-in **ayrı** `PATCH /v1/study-sessions/:id/feedback` ile finalize *sonrası*
+  yazıldığı için check-in **ayrı** `PATCH /v1/study-sessions/:id/feedback` ile finalize _sonrası_
   eklenir (idempotent, yalnızca kullanıcının kendi seansı; status'e göre gate yok — nullable metadata).
   DB: `study_sessions` += `session_mood` (int 1-3) + `struggle_note` (text) — migration
   `0038_cloudy_night_thrasher.sql` (forward-only). Şema: `sessionFeedbackSchema` (@mentor/validation);
@@ -358,32 +378,32 @@ pnpm --filter @mentor/api test
   `globals.css`.
 - **Mock exam + analysis** — `subjects`/`exam_subjects` seed + KPSS taxonomy endpoint; `mock_exams`/
   `mock_exam_subjects`; `domain/net.ts` (KPSS penalty rule); `/analiz` UI (per-subject D/Y/Boş,
-  ProgressBar trend — no chart lib). *(0022-w2.)*
+  ProgressBar trend — no chart lib). _(0022-w2.)_
 - **Panel UI polish** — shared `stagger-motion.ts`; `PanelShell` header fade + grid stagger;
   `CountdownPlaceholder` (CTA → `/profil` when `examType` missing; editorial-gap message when type
-  set but no calendar seed); `StartSessionCta` extracted (Link-as-button, valid HTML). *(0033.)*
+  set but no calendar seed); `StartSessionCta` extracted (Link-as-button, valid HTML). _(0033.)_
 - **Plan + Seans UI polish** — `PlanShell`/`SeansShell` motion + `AnimatePresence` phase transitions
-  (idle → focus/break → done); `SectionHeading` preset picker; eslint-safe fetch (`active` flag). *(0037.)*
+  (idle → focus/break → done); `SectionHeading` preset picker; eslint-safe fetch (`active` flag). _(0037.)_
 - **Analiz UI polish** — `AnalizShell` `LoadState` union (separates `needs_exam_type` from API
-  errors); always-visible trend card with chip empty state; tabular nums; calm subtitle (no ranking). *(0038.)*
+  errors); always-visible trend card with chip empty state; tabular nums; calm subtitle (no ranking). _(0038.)_
 - **Seans circular timer + custom duration** — `CircularTimerRing` in `@mentor/ui` (SVG progress
   ring, drag/touch dial 5–120 dk, keyboard +/-); zorunlu mola fazı kaldırıldı (mola = kullanıcı
-  duraklatması); `preset: "custom"` + `study_sessions.planned_focus_minutes` column (migration 0016). *(0044.)*
+  duraklatması); `preset: "custom"` + `study_sessions.planned_focus_minutes` column (migration 0016). _(0044.)_
 - **Ghost (geçmiş-ben) + premium AI narration** — `domain/ghost.ts` pure comparison of latest vs OWN
   past (signed net deltas, personal record flag, i18n headline keys — no cross-user ranking §0);
   `GET /analysis` gains `ghost` (null until ≥2 attempts); `mock_exams` += AI cache columns. Premium
-  AI narration owned by [AI](./ai.md). *(0049.)*
+  AI narration owned by [AI](./ai.md). _(0049.)_
 - **Hayal/Hedef Panosu (vision board)** — roadmap MVP feature: text-based single-goal anchor per
   user (goal + optional city + "neden"). `vision_boards` table (unique user); `VisionService`
   (`getMine`/`upsert`/`setAiNote`); idempotent upsert (mirrors mood). Premium AI note owned by
-  [AI](./ai.md). `/hedef` edit page; card on `/panel` (no nav tab). *(0051.)*
+  [AI](./ai.md). `/hedef` edit page; card on `/panel` (no nav tab). _(0051.)_
 - **Analiz redesign (3 mod)** — `/analiz` insight-first layout: özet band + `?tab=gir|gelisim|yanlislar`
   segmented control; Gir (tablo form, validation, toast, geçmiş listesi/drawer, kopyala); Gelişim
   (SVG sparkline, kişisel rekor gauge, ghost teaser/card, ders grid, koç seed link); Yanlışlarım
   (foto drag-drop/preview, sinyal barları). Skeleton: `analiz-content-skeleton.tsx`. CSS blob hero
   fallback. Phase 2: `mock_exams.publisher_name` + form alanları; `GET /analysis.personalRecordNet`.
   Plan: `docs/plans/2026-07-04-analiz-redesign-design.md`; P3 backlog:
-  `docs/plans/2026-07-04-analiz-phase3-backlog.md`. *(2026-07-04.)*
+  `docs/plans/2026-07-04-analiz-phase3-backlog.md`. _(2026-07-04.)_
 - **Analiz sıradaki odak + Plan ön-doldurma (2026-07-10)** — `GET /v1/coaching/analysis`
   artık `nextFocus` döndürür: önce en sık fotoğraf ders sinyali, yoksa en düşük deneme ortalaması
   seçilir; karar backend'de, mesaj ve önerilen görev başlığı backend-i18n'den gelir. `/analiz`
@@ -399,10 +419,23 @@ pnpm --filter @mentor/api test
   kanıt seviyesini backend-localized mesajla döndürüyor. Web, masaüstünde trend+geçmiş-ben ve
   odak+rekor kolonlarını kullanıyor; geçmiş yayın adını ve ders bazlı normalize yüzdeleri gösteriyor.
   Yerel demo: `pnpm --filter @mentor/api seed:analysis-demo -- --email=<adres>` sekiz idempotent
-  KPSS denemesi ve üç Türkçe foto sinyali ekler; production ortamında çalışmaz. Konu-seviyesi vision,
+  KPSS denemesi ve son dört denemeye bağlı altı foto sinyali (3 Türkçe, 2 Matematik, 1 Tarih) ekler; production ortamında çalışmaz. Konu-seviyesi vision,
   OCR kapsam dışı. İlgili dosyalar: `mock-exam.service.ts`,
   `analysis-focus.ts`, `analiz-tab-gelisim.tsx`, `seed-analysis-demo.ts`.
 
+- **Eyleme dönük üç sekme + son dört deneme odağı (2026-07-13)** — /analiz akışı Gir →
+  Gelişim → Yanlışlarım olarak sadeleştirildi. GET /v1/coaching/analysis?examId= odağı yalnız aktif
+  sınavın son dört denemesinden seçer; aynı dört kimliğe bağlı foto sinyalleri önceliklidir, yoksa en
+  düşük normalize ders ortalaması kullanılır. nextFocus artık en yeni→eski en fazla dört ders neti,
+  son fark, yön ve backend-localized sakin mesaj döndürür. Gir formunun fieldset/legend grid kayması
+  giderildi, satır içi soru aşımı ve yükleme durumu olan taranabilir geçmiş listesi eklendi. Gelişim
+  odağı birincil karttır; Plan CTA yalnız formu ön-doldurur. Yanlışlarım güven metni ile deneme/erişim/
+  limit/yükleme/hata/sinyal-yok durumlarını aksiyona bağlar. Demo seed 8 deneme + 6 son-dört foto
+  sinyali doğrular; yeni tablo, migration, endpoint veya chart bağımlılığı yoktur. Kullanım:
+  pnpm --filter @mentor/api seed:analysis-demo -- --email=<adres>. Gotcha: genel trend/rekor/ghost ve
+  tüm-geçmiş ders ortalamaları eski kapsamlarını korur; yalnız odak ve foto sinyalleri son dört
+  denemeliktir. Dosyalar: analysis-focus.ts, mock-exam.service.ts, seed-analysis-demo.ts,
+  analiz form/card/list bileşenleri ve messages/{tr,en}.json.
 - **Deneme düzenleme ve kalıcı silme (2026-07-11)** — Geçmiş deneme detay paneli yayın adı,
   tarih ve D/Y/B alanlarını düzenler; sınav kimliği sabittir ve bütün netler backend'de yeniden
   hesaplanır. `PUT /v1/mock-exams/:id` atomik olarak sonucu/dersleri yeniler, `DELETE` kayıtla
@@ -460,11 +493,12 @@ pnpm --filter @mentor/api test
 - Web: `/panel`, `/plan`, `/seans`, `/analiz`, `/hedef`
 - Status: [core/mvp-status.md](../core/mvp-status.md) (W2)
 
-
 - **Haftalık değerlendirme + tek odak (2026-07-11)** — `GET /v1/coaching/weekly-review?examId=`
   tamamlanan son Pazartesi–Pazar dönemini Europe/Istanbul sınırlarıyla özetler. Eşik: aynı sınavda
   1 deneme veya 2 tamamlanmış seans. Free çıktı yalnız kural tabanlıdır; denemeler normalize ders
   performansıyla önceki haftaya kıyaslanır, mood yalnız aggregate enerji sinyalidir (ham not yok).
   `/analiz?tab=gelisim` kartı ritim, deneme sinyali ve tek odağı gösterir. İlgili dosyalar:
   `weekly-review.service.ts`, `weekly-review.ts`, `analiz-weekly-review-card.tsx`.
-
+- **Balanced `/analiz` simplification and lazy loading (2026-07-14)** — Kept the three-tab contract and existing APIs while moving weekly review/coach access to the first `Gelişim` visit and photo access to the first `Yanlışlarım` visit, cached per active exam. `Gelişim` now prioritizes focus → weekly review → trend/past-self, removes the duplicate record gauge, and collapses all-attempt subject averages. Mock-exam history keeps the first five rows and appends pages via “Daha fazla göster”; drawer focus is trapped/restored and scroll lock is reused. Retry/skeleton states keep core analysis visible. Gotcha: mock-exam and photo mutations invalidate lazy extras, so the active tab refetches them on demand. Backend/API contracts are unchanged. Related files: `apps/web/src/app/[locale]/(app)/analiz/_components/*`, `apps/web/messages/{tr,en}.json`.
+- **`/analiz` entry CTA navigation fix (2026-07-14)** — “Yeni deneme gir” and “Son denemeyi kopyala” now reuse one entry action. If `Gir` is already active, the action skips the redundant RSC route replacement and scrolls directly to `#analiz-form`; from another tab it waits for the query-driven tab render, then scrolls. Tab navigation also preserves scroll. Regression check: `apps/api/src/analiz-navigation.spec.ts`. Related files: `analiz-shell.tsx`, `analiz-types.ts`.
+- **`/analiz` client-only tab navigation (2026-07-14)** — Replaced query-only router transitions with local tab state and native `history.replaceState`. Direct `?tab=` URLs still select the initial view, while tab/entry actions no longer issue RSC requests; any `_rsc` transport parameter is removed when synchronizing the URL. This also makes “Yeni deneme gir” reveal and scroll to the form immediately. Regression check: `apps/api/src/analiz-navigation.spec.ts`. Related files: `analiz-shell.tsx`, `analiz-types.ts`.
