@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildAnalizTabHref,
+  shouldRevealFirstInsight,
   shouldNavigateAnalizTab,
 } from "../../web/src/app/[locale]/(app)/analiz/_components/analiz-types";
 
@@ -18,6 +19,11 @@ describe("analysis tab navigation", () => {
         "gelisim",
       ),
     ).toBe("/analiz?tab=gelisim&source=summary");
+  });
+
+  it("reveals development only after the first saved attempt", () => {
+    expect(shouldRevealFirstInsight(0)).toBe(true);
+    expect(shouldRevealFirstInsight(1)).toBe(false);
   });
 });
 

@@ -2,7 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { and, eq } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
-import { withUserContext } from "../../../database/rls";
+import { withServiceContext, withUserContext } from "../../../database/rls";
 import { aiWeeklyReviews } from "../../../database/schema";
 
 @Injectable()
@@ -22,6 +22,13 @@ export class WeeklyReviewCacheRepository {
         ))
         .limit(1);
       return rows[0];
+    });
+  }
+
+  /** KVKK erasure: drop all cached narrations (AI-generated text about the user). Idempotent. */
+  async deleteAllForUser(userId: string): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await tx.delete(aiWeeklyReviews).where(eq(aiWeeklyReviews.userId, userId));
     });
   }
 

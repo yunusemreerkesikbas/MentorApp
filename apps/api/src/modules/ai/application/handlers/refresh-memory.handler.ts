@@ -37,7 +37,8 @@ export class RefreshMemoryHandler {
     // Over budget → skip silently (return, don't throw) so the job doesn't retry-storm on no money.
     if (!(await this.budget.isWithinBudget())) return;
 
-    const recent = await this.messages.lastN(userId, MEMORY_DISTILL_WINDOW);
+    // Cross-thread: the memory profile is a global picture of the user, not one conversation.
+    const recent = await this.messages.recentForUser(userId, MEMORY_DISTILL_WINDOW);
     if (recent.length === 0) return;
 
     // Skip the LLM call if the profile is already current for this message count.

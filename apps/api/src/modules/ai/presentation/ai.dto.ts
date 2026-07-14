@@ -8,9 +8,22 @@ import {
   sessionReflectionSchema,
   weeklyReviewNarrationSchema,
 } from "@mentor/validation";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { createZodDto } from "../../../common/validation/zod-dto";
 
-export class AiChatDto extends createZodDto(aiChatSchema) {}
+export class AiChatDto extends createZodDto(aiChatSchema) {
+  @ApiProperty({ minLength: 1, maxLength: 2000 })
+  override message!: string;
+
+  @ApiPropertyOptional({ format: "uuid" })
+  override clientMessageId?: string;
+
+  @ApiPropertyOptional({ format: "uuid" })
+  override conversationId?: string;
+
+  @ApiPropertyOptional({ format: "uuid" })
+  override contextMockExamId?: string;
+}
 /** Query for GET /v1/coach/messages (plain pagination — study-sessions pattern). */
 export class ListCoachMessagesQueryDto extends createZodDto(paginationQuerySchema) {}
 /** Body for PATCH /v1/coach/messages/:id/feedback. */

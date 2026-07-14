@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { CoachingAnalysisDto, WeeklyReviewDto } from "@mentor/types";
 import { Button, Card, SectionHeading } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
+import { buildCoachMockExamHref } from "@/lib/coach";
 import { AnalizGhostTeaser } from "./analiz-ghost-teaser";
 import { AnalizHeroBackdrop } from "./analiz-hero-backdrop";
 import { AnalizNextFocusCard } from "./analiz-next-focus-card";
@@ -52,7 +53,6 @@ export function AnalizTabGelisim({
   const sliced = useMemo(() => sliceTrend(trend, window), [trend, window]);
   const sparkPoints = useMemo(() => trendForSparkline(sliced), [sliced]);
   const ghost = analysis?.ghost ?? null;
-  const coachSeed = encodeURIComponent(t("coach_seed"));
   const premium =
     extras.status === "ready" ? extras.data.premium : undefined;
 
@@ -271,7 +271,7 @@ export function AnalizTabGelisim({
       ) : null}
 
       <Link
-        href={`/koc/chat?seed=${coachSeed}`}
+        href={buildCoachMockExamHref(t("coach_seed"), trend[0].id)}
         className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
         style={{
           backgroundColor: "var(--color-btn)",

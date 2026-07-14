@@ -1,6 +1,5 @@
 "use client";
 
-import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw.mjs";
 import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -8,6 +7,7 @@ import { Button } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useCoachSession } from "./coach-session-context";
+import { CoachConversationList } from "./coach-conversation-list";
 import { CoachMemoryCard } from "./coach-memory-card";
 import { KocHubBrief } from "./koc-hub-brief";
 import { KocHubSkeleton } from "./koc-content-skeleton";
@@ -35,12 +35,13 @@ export function KocHub() {
   const { user } = useAuth();
   const router = useRouter();
   const reduceMotion = useReducedMotion();
-  const { hasActiveChat, startNewChat, hydrated } = useCoachSession();
+  const { conversations, startNewChat, hydrated } = useCoachSession();
 
   const name = user?.displayName
     ? firstName(user.displayName)
     : t("greeting_fallback");
   const greeting = t(greetingKeyForHour(), { name });
+  const mostRecent = conversations[0] ?? null;
 
   function goNewChat() {
     startNewChat();
@@ -87,32 +88,22 @@ export function KocHub() {
           <CoachMemoryCard />
           <KocHubBrief />
           <Button type="button" className="w-full" onClick={goNewChat}>
-            {t("start_chat")}
+            {mostRecent ? t("new_chat") : t("start_chat")}
           </Button>
-          {hasActiveChat ? (
+          {mostRecent ? (
             <Button
               type="button"
               variant="secondary"
               className="w-full"
-              onClick={() => router.push("/koc/chat")}
+              onClick={() => router.push(`/koc/chat?c=${mostRecent.id}`)}
             >
               {t("continue_chat")}
             </Button>
           ) : null}
-          {hasActiveChat ? (
-            <button
-              type="button"
-              onClick={goNewChat}
-              className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 text-sm font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-              style={{ color: "var(--color-progress)" }}
-            >
-              <RefreshCw className="size-4" aria-hidden />
-              {t("new_chat")}
-            </button>
-          ) : null}
         </div>
       </motion.section>
 
+      <CoachConversationList />
     </main>
   );
 }

@@ -29,6 +29,10 @@ export function shouldNavigateAnalizTab(
   return current !== next;
 }
 
+export function shouldRevealFirstInsight(attemptCount: number): boolean {
+  return attemptCount === 0;
+}
+
 export function buildAnalizTabHref(
   pathname: string,
   search: string,

@@ -126,4 +126,32 @@ describe("ContextBuilder (mood grounding)", () => {
     expect(ctx.recentSessions?.count7d).toBe(1);
     expect(buildSystemPrompt(ctx)).toContain("Son 7 gün: 1 seans, 25 dk odak");
   });
+  it("grounds the prompt with authoritative mock-exam results without publisher data", async () => {
+    const ctx = await builder.build("u1");
+    const prompt = buildSystemPrompt(ctx, [], {
+      id: "00000000-0000-4000-8000-0000000000e1",
+      examId: "00000000-0000-4000-8000-0000000000e2",
+      examName: "KPSS Genel Yetenek",
+      takenAt: "2026-07-13T12:00:00.000Z",
+      totalNet: "72.50",
+      publisherName: "SECRET PUBLISHER",
+      subjects: [
+        {
+          subjectRef: "math",
+          subjectName: "Matematik",
+          correct: 30,
+          wrong: 8,
+          blank: 2,
+          net: "28.00",
+        },
+      ],
+    });
+
+    expect(prompt).toContain("KPSS Genel Yetenek");
+    expect(prompt).toContain("13.07.2026");
+    expect(prompt).toContain("toplam net: 72.50");
+    expect(prompt).toContain("Matematik: D 30, Y 8, Boş 2, net 28.00");
+    expect(prompt).not.toContain("SECRET PUBLISHER");
+  });
+
 });

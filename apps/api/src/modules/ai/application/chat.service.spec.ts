@@ -5,6 +5,26 @@ import { ChatService } from "./chat.service";
 
 const USER = { id: "user-1", roles: [] as string[], orgId: null };
 const MSG_ID = "00000000-0000-4000-8000-000000000099";
+const CONV_ID = "00000000-0000-4000-8000-0000000000c1";
+const MOCK_EXAM_ID = "00000000-0000-4000-8000-0000000000e1";
+const MOCK_EXAM = {
+  id: MOCK_EXAM_ID,
+  examId: "00000000-0000-4000-8000-0000000000e2",
+  examName: "KPSS Genel Yetenek",
+  takenAt: "2026-07-13T12:00:00.000Z",
+  totalNet: "72.50",
+  publisherName: "SECRET PUBLISHER",
+  subjects: [
+    {
+      subjectRef: "math",
+      subjectName: "Matematik",
+      correct: 30,
+      wrong: 8,
+      blank: 2,
+      net: "28.00",
+    },
+  ],
+};
 
 describe("ChatService coin refund", () => {
   let service: ChatService;
@@ -14,6 +34,9 @@ describe("ChatService coin refund", () => {
   let llmCompleteStream: ReturnType<typeof vi.fn>;
   let lastN: ReturnType<typeof vi.fn>;
   let appendExchange: ReturnType<typeof vi.fn>;
+  let createConversation: ReturnType<typeof vi.fn>;
+  let isOwned: ReturnType<typeof vi.fn>;
+  let getMockExam: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     llmComplete = vi.fn();
@@ -22,6 +45,9 @@ describe("ChatService coin refund", () => {
     grant = vi.fn();
     lastN = vi.fn(async () => []);
     appendExchange = vi.fn(async () => undefined);
+    createConversation = vi.fn(async () => CONV_ID);
+    isOwned = vi.fn(async () => true);
+    getMockExam = vi.fn(async () => MOCK_EXAM);
 
     const config = {
       get: vi.fn(async (key: string) => {
@@ -54,14 +80,21 @@ describe("ChatService coin refund", () => {
       } as never,
       {
         lastN,
+        recentForUser: vi.fn(async () => []),
         appendExchange,
-        listPaged: vi.fn(),
-        clearAll: vi.fn(),
+        listPagedByConversation: vi.fn(),
         setFeedback: vi.fn(),
+      } as never,
+      {
+        create: createConversation,
+        isOwned,
+        listPaged: vi.fn(),
+        delete: vi.fn(),
       } as never,
       { get: vi.fn(async () => null), upsert: vi.fn(), clear: vi.fn() } as never,
       { assertWithinBudget: vi.fn(async () => undefined) } as never,
       { enqueue: vi.fn(async () => undefined) } as never,
+      { getById: getMockExam } as never,
     );
   });
 
@@ -113,7 +146,7 @@ describe("ChatService coin refund", () => {
 
     await service.reply(USER, "Merhaba", MSG_ID);
 
-    expect(appendExchange).toHaveBeenCalledWith(USER.id, "Merhaba", {
+    expect(appendExchange).toHaveBeenCalledWith(USER.id, CONV_ID, "Merhaba", {
       content: "Yanıt",
       model: "fake",
       sources: [],
@@ -141,7 +174,7 @@ describe("ChatService coin refund", () => {
     expect(events).toEqual([
       { delta: "Merha" },
       { delta: "ba!" },
-      { done: { reply: "Merhaba!", model: "fake", sources: [] } },
+      { done: { reply: "Merhaba!", model: "fake", conversationId: CONV_ID, sources: [] } },
     ]);
     expect(appendExchange).toHaveBeenCalledOnce();
   });
@@ -179,7 +212,7 @@ describe("ChatService coin refund", () => {
 
     expect(res.reply).toBe("Harika!");
     expect(res.suggestedTask).toEqual({ title: "Tarih: 10 soru", subject: "Tarih" });
-    expect(appendExchange).toHaveBeenCalledWith(USER.id, "Bana görev öner", {
+    expect(appendExchange).toHaveBeenCalledWith(USER.id, CONV_ID, "Bana görev öner", {
       content: "Harika!",
       model: "fake",
       sources: [],
@@ -214,10 +247,43 @@ describe("ChatService coin refund", () => {
       done: {
         reply: "Bugün 20 soru çöz.",
         model: "fake",
+        conversationId: CONV_ID,
         sources: [],
         suggestedTask: { title: "Mat: 20 soru", subject: "Matematik" },
       },
     });
+  });
+
+  it("opens a new thread titled after the message when no conversationId is given", async () => {
+    llmComplete.mockResolvedValue({ text: "Yanıt", promptTokens: 1, completionTokens: 1, model: "fake" });
+
+    const res = await service.reply(USER, "Türkçe paragrafta zorlanıyorum", MSG_ID);
+
+    expect(createConversation).toHaveBeenCalledWith(USER.id, "Türkçe paragrafta zorlanıyorum");
+    expect(res.conversationId).toBe(CONV_ID);
+    // History window is scoped to the new thread, not the whole user.
+    expect(lastN).toHaveBeenCalledWith(USER.id, CONV_ID, expect.any(Number));
+  });
+
+  it("reuses an owned thread and does not create a new one", async () => {
+    llmComplete.mockResolvedValue({ text: "Yanıt", promptTokens: 1, completionTokens: 1, model: "fake" });
+    const existing = "00000000-0000-4000-8000-0000000000c2";
+
+    const res = await service.reply(USER, "Devam", MSG_ID, existing);
+
+    expect(isOwned).toHaveBeenCalledWith(USER.id, existing);
+    expect(createConversation).not.toHaveBeenCalled();
+    expect(res.conversationId).toBe(existing);
+    expect(lastN).toHaveBeenCalledWith(USER.id, existing, expect.any(Number));
+  });
+
+  it("rejects a thread the user does not own", async () => {
+    isOwned.mockResolvedValue(false);
+
+    await expect(
+      service.reply(USER, "Başkasının thread'i", MSG_ID, "00000000-0000-4000-8000-0000000000c9"),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(llmComplete).not.toHaveBeenCalled();
   });
 
   it("still replies when history load fails (defensive)", async () => {
@@ -229,4 +295,61 @@ describe("ChatService coin refund", () => {
     expect(res.reply).toBe("Yanıt");
     expect(llmComplete).toHaveBeenCalledWith(expect.objectContaining({ history: [] }));
   });
+  it("loads an owned mock exam and adds only its safe authoritative summary to blocking chat", async () => {
+    llmComplete.mockResolvedValue({ text: "Yanıt", promptTokens: 1, completionTokens: 1, model: "fake" });
+
+    await service.reply(USER, "Bu denemeyi yorumla", MSG_ID, undefined, MOCK_EXAM_ID);
+
+    expect(getMockExam).toHaveBeenCalledWith(USER.id, MOCK_EXAM_ID);
+    const llmInput = llmComplete.mock.calls[0]?.[0] as { system: string };
+    expect(llmInput.system).toContain("KPSS Genel Yetenek");
+    expect(llmInput.system).toContain("toplam net: 72.50");
+    expect(llmInput.system).toContain("Matematik: D 30, Y 8, Boş 2, net 28.00");
+    expect(llmInput.system).not.toContain("SECRET PUBLISHER");
+  });
+
+  it("does not create a conversation or call the LLM when mock-exam ownership validation fails", async () => {
+    const notFound = Object.assign(new Error("not found"), {
+      code: "COACHING_MOCK_EXAM_NOT_FOUND",
+    });
+    getMockExam.mockRejectedValue(notFound);
+
+    await expect(
+      service.reply(USER, "Bu denemeyi yorumla", MSG_ID, undefined, MOCK_EXAM_ID),
+    ).rejects.toBe(notFound);
+
+    expect(createConversation).not.toHaveBeenCalled();
+    expect(llmComplete).not.toHaveBeenCalled();
+    expect(grant).toHaveBeenCalledWith(
+      USER.id,
+      Currency.COIN,
+      5,
+      expect.objectContaining({ refId: MSG_ID }),
+    );
+  });
+
+  it("uses the same mock-exam context path for streaming chat", async () => {
+    llmCompleteStream.mockImplementation(async function* () {
+      yield { delta: "Yanıt" };
+      yield { final: { text: "Yanıt", promptTokens: 1, completionTokens: 1, model: "fake" } };
+    });
+
+    const events = [];
+    for await (const event of service.replyStream(
+      USER,
+      "Bu denemeyi yorumla",
+      MSG_ID,
+      undefined,
+      MOCK_EXAM_ID,
+    )) {
+      events.push(event);
+    }
+
+    expect(events.at(-1)).toMatchObject({ done: { reply: "Yanıt" } });
+    expect(getMockExam).toHaveBeenCalledWith(USER.id, MOCK_EXAM_ID);
+    expect(llmCompleteStream).toHaveBeenCalledWith(
+      expect.objectContaining({ system: expect.stringContaining("toplam net: 72.50") }),
+    );
+  });
+
 });

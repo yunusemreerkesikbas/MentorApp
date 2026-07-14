@@ -17,6 +17,7 @@ import type { Response } from "express";
 import type {
   CoachAccessDto,
   CoachChatStreamEvent,
+  CoachConversationDto,
   CoachMemoryDto,
   CoachMessageDto,
   Paginated,
@@ -47,7 +48,13 @@ export class AiChatController {
 
   @Post("chat")
   reply(@CurrentUser() user: RequestUser, @Body() dto: AiChatDto): Promise<CoachReplyResult> {
-    return this.chat.reply(user, dto.message, dto.clientMessageId);
+    return this.chat.reply(
+      user,
+      dto.message,
+      dto.clientMessageId,
+      dto.conversationId,
+      dto.contextMockExamId,
+    );
   }
 
   /**
@@ -61,7 +68,13 @@ export class AiChatController {
     @Body() dto: AiChatDto,
     @Res() res: Response,
   ): Promise<void> {
-    const stream = this.chat.replyStream(user, dto.message, dto.clientMessageId);
+    const stream = this.chat.replyStream(
+      user,
+      dto.message,
+      dto.clientMessageId,
+      dto.conversationId,
+      dto.contextMockExamId,
+    );
     // Pre-stream gating: let the first pull throw before SSE headers are committed.
     const first = await stream.next();
 
@@ -85,20 +98,33 @@ export class AiChatController {
     }
   }
 
-  /** Persisted rolling history, newest-first (auth-only — reading your own history needs no gate). */
-  @Get("messages")
-  listMessages(
+  /** The user's chat threads, most-recently-active first ("Son sohbetler"). */
+  @Get("conversations")
+  listConversations(
     @CurrentUser() user: RequestUser,
     @Query() query: ListCoachMessagesQueryDto,
-  ): Promise<Paginated<CoachMessageDto>> {
-    return this.chat.listMessages(user.id, query.page, query.pageSize);
+  ): Promise<Paginated<CoachConversationDto>> {
+    return this.chat.listConversations(user.id, query.page, query.pageSize);
   }
 
-  /** "Yeni sohbet" — clears the user's own rolling conversation (and memory profile). */
-  @Delete("messages")
+  /** One thread's history, newest-first (ownership enforced). */
+  @Get("conversations/:id/messages")
+  listConversationMessages(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Query() query: ListCoachMessagesQueryDto,
+  ): Promise<Paginated<CoachMessageDto>> {
+    return this.chat.listConversationMessages(user.id, id, query.page, query.pageSize);
+  }
+
+  /** Delete one thread (its messages cascade). The memory profile is kept. */
+  @Delete("conversations/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  clearMessages(@CurrentUser() user: RequestUser): Promise<void> {
-    return this.chat.clearMessages(user.id);
+  deleteConversation(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    return this.chat.deleteConversation(user.id, id);
   }
 
   /** Rate a coach reply (👍/👎/none). */

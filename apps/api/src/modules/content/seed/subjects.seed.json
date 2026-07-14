@@ -13,6 +13,18 @@
     { "examSlug": "kpss-lisans-2026", "subjectSlug": "tarih", "questionCount": 27, "sortOrder": 2 },
     { "examSlug": "kpss-lisans-2026", "subjectSlug": "cografya", "questionCount": 18, "sortOrder": 3 },
     { "examSlug": "kpss-lisans-2026", "subjectSlug": "vatandaslik", "questionCount": 9, "sortOrder": 4 },
-    { "examSlug": "kpss-lisans-2026", "subjectSlug": "guncel", "questionCount": 6, "sortOrder": 5 }
+    { "examSlug": "kpss-lisans-2026", "subjectSlug": "guncel", "questionCount": 6, "sortOrder": 5 },
+    { "examSlug": "kpss-onlisans-2026", "subjectSlug": "turkce", "questionCount": 30, "sortOrder": 0 },
+    { "examSlug": "kpss-onlisans-2026", "subjectSlug": "matematik", "questionCount": 30, "sortOrder": 1 },
+    { "examSlug": "kpss-onlisans-2026", "subjectSlug": "tarih", "questionCount": 27, "sortOrder": 2 },
+    { "examSlug": "kpss-onlisans-2026", "subjectSlug": "cografya", "questionCount": 18, "sortOrder": 3 },
+    { "examSlug": "kpss-onlisans-2026", "subjectSlug": "vatandaslik", "questionCount": 9, "sortOrder": 4 },
+    { "examSlug": "kpss-onlisans-2026", "subjectSlug": "guncel", "questionCount": 6, "sortOrder": 5 },
+    { "examSlug": "kpss-ortaogretim-2026", "subjectSlug": "turkce", "questionCount": 30, "sortOrder": 0 },
+    { "examSlug": "kpss-ortaogretim-2026", "subjectSlug": "matematik", "questionCount": 30, "sortOrder": 1 },
+    { "examSlug": "kpss-ortaogretim-2026", "subjectSlug": "tarih", "questionCount": 27, "sortOrder": 2 },
+    { "examSlug": "kpss-ortaogretim-2026", "subjectSlug": "cografya", "questionCount": 18, "sortOrder": 3 },
+    { "examSlug": "kpss-ortaogretim-2026", "subjectSlug": "vatandaslik", "questionCount": 9, "sortOrder": 4 },
+    { "examSlug": "kpss-ortaogretim-2026", "subjectSlug": "guncel", "questionCount": 6, "sortOrder": 5 }
   ]
 }

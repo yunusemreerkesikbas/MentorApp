@@ -127,3 +127,4 @@ pnpm --filter @mentor/api-client generate
   source, embedding pipeline), [admin.md](./admin.md) (content/exam editors)
 - Web: `/bilgi` hub, `/bilgi/[slug]` public article
 - Status: [core/mvp-status.md](../core/mvp-status.md) (W1)
+- **Upcoming exam rollover for analysis taxonomy (2026-07-14)** — Calendar selection now filters expired dates before preferring `isCurrent`, so a stale marker cannot hide the next verified exam. KPSS associate-degree and secondary-education exams reuse the seeded six-subject taxonomy; startup upserts the links idempotently. Usage: restart the API after pulling seed changes, then refresh `/analiz`. Gotcha: official dates remain editorial seed data; this change does not invent or rewrite them. Related files: `calendar.util.ts`, `calendar.util.spec.ts`, `subjects.seed.json`.

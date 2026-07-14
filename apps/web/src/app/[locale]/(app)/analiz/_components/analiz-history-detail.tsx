@@ -7,6 +7,8 @@ import type { ExamSubjectDto, MockExamDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button, Card } from "@mentor/ui";
 import { FormError } from "@/components/form";
+import { Link } from "@/i18n/navigation";
+import { buildCoachMockExamHref } from "@/lib/coach";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import {
@@ -44,6 +46,7 @@ export function AnalizHistoryDetail({
   onChanged,
 }: AnalizHistoryDetailProps) {
   const t = useTranslations("analysis.history");
+  const tAnalysis = useTranslations("analysis");
   const locale = useLocale();
   const dialog = useMentorDialog();
   const toast = useMentorToast();
@@ -340,6 +343,26 @@ export function AnalizHistoryDetail({
                     </li>
                   ))}
                 </ul>
+                {!mutating ? (
+                  <Link
+                    href={buildCoachMockExamHref(
+                      t("coach_seed", {
+                        date: formatTrendDate(detail.takenAt, locale),
+                        exam: detail.examName,
+                      }),
+                      detail.id,
+                    )}
+                    className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+                    style={{
+                      backgroundColor: "var(--color-btn)",
+                      color: "white",
+                      boxShadow: "var(--shadow-card)",
+                      fontFamily: "var(--font-body)",
+                    }}
+                  >
+                    {tAnalysis("coach_cta")}
+                  </Link>
+                ) : null}
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Button
                     type="button"

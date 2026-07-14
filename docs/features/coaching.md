@@ -444,6 +444,16 @@ pnpm --filter @mentor/api test
   `StoragePort` ile best-effort temizlenir. İlgili dosyalar: `mock-exam.service.ts`,
   `mock-exam.repository.ts`, `analiz-history-detail.tsx`.
 
+- **KVKK bütünsel silme — coaching tarafı (2026-07-14)** — `admin anonymize` artık coaching'in tüm
+  davranışsal serbest metnini de siliyor. Yeni `CoachingErasureService` + `CoachingErasureRepository`
+  (tek SERVICE-ctx tx → atomik): `vision_boards` satırı silinir; `mood_checkins`/`study_sessions`
+  `struggle_note`+`ai_reflection` → null; `mock_exams.ai_ghost_narration` → null; `plan_tasks.title`
+  → `"Silinmiş görev"` (NOT NULL); foto kategorizasyon satırları **ve storage objeleri** silinir
+  (best-effort `Promise.allSettled`, `mock-exam.service` deseni). **Sayısal veriler korunur** (netler,
+  seans süreleri, streak, quest). `CoachingModule` servisi export eder; `AdminModule` onu import edip
+  çağırır (admin W2 tablolarına yazmaz). Seam: [ai.md](./ai.md). Dosyalar:
+  `coaching-erasure.service.ts`(+spec), `coaching-erasure.repository.ts`, `coaching.module.ts`.
+
 ## Gotchas / Known issues
 
 - **Session history date filter is UTC** — `from`/`to` bound `started_at` to UTC calendar days
@@ -479,10 +489,15 @@ pnpm --filter @mentor/api test
 - **DB-integration/e2e for coaching repositories was deferred** (pure unit tests cover the logic).
   Pre-existing e2e suites (`payments` on a dirty volume, `auth`/`health-down`) can show failures
   depending on local DB state; coaching specs are pure and DB-independent.
-- **KVKK (conscious decision):** the existing `admin anonymize` only scrubs the `users` row; behavioral
-  free-text like `mood_checkins.struggle_note` and `vision_boards.motivation` is **not** scrubbed. A
-  holistic erasure step for all behavioral free-text is a W6/identity follow-up (tables are
-  `onDelete: cascade`, so a real user delete cascades). See `modules/admin/infrastructure/admin-users.repository.ts`.
+- **KVKK — RESOLVED (2026-07-14):** `admin anonymize` is now a **holistic erasure**.
+  `CoachingErasureService` (exported by `CoachingModule`; admin orchestrates, never writes W2 tables)
+  scrubs every piece of behavioral free-text in ONE SERVICE-ctx tx: `vision_boards` row deleted;
+  `mood_checkins`/`study_sessions` `struggle_note` + `ai_reflection` → null; `mock_exams.ai_ghost_narration`
+  → null; `plan_tasks.title` → `"Silinmiş görev"` (NOT NULL, so placeholder not null); uploaded question
+  photos deleted (rows **and** storage objects, best-effort `Promise.allSettled`).
+  **KEPT:** the numbers (mock-exam nets, session durations, streak, activity) — no free text, still
+  useful as aggregate signal. Files: `coaching-erasure.service.ts`, `coaching-erasure.repository.ts`.
+  AI-side erasure → [ai.md](./ai.md).
 - **W2↔W3 seam:** mood reflection and ghost narration cross W2 (coaching domain logic) and W3 (AI LLM
   call). See [ai.md](./ai.md) for the AI side.
 
@@ -502,3 +517,14 @@ pnpm --filter @mentor/api test
 - **Balanced `/analiz` simplification and lazy loading (2026-07-14)** — Kept the three-tab contract and existing APIs while moving weekly review/coach access to the first `Gelişim` visit and photo access to the first `Yanlışlarım` visit, cached per active exam. `Gelişim` now prioritizes focus → weekly review → trend/past-self, removes the duplicate record gauge, and collapses all-attempt subject averages. Mock-exam history keeps the first five rows and appends pages via “Daha fazla göster”; drawer focus is trapped/restored and scroll lock is reused. Retry/skeleton states keep core analysis visible. Gotcha: mock-exam and photo mutations invalidate lazy extras, so the active tab refetches them on demand. Backend/API contracts are unchanged. Related files: `apps/web/src/app/[locale]/(app)/analiz/_components/*`, `apps/web/messages/{tr,en}.json`.
 - **`/analiz` entry CTA navigation fix (2026-07-14)** — “Yeni deneme gir” and “Son denemeyi kopyala” now reuse one entry action. If `Gir` is already active, the action skips the redundant RSC route replacement and scrolls directly to `#analiz-form`; from another tab it waits for the query-driven tab render, then scrolls. Tab navigation also preserves scroll. Regression check: `apps/api/src/analiz-navigation.spec.ts`. Related files: `analiz-shell.tsx`, `analiz-types.ts`.
 - **`/analiz` client-only tab navigation (2026-07-14)** — Replaced query-only router transitions with local tab state and native `history.replaceState`. Direct `?tab=` URLs still select the initial view, while tab/entry actions no longer issue RSC requests; any `_rsc` transport parameter is removed when synchronizing the URL. This also makes “Yeni deneme gir” reveal and scroll to the form immediately. Regression check: `apps/api/src/analiz-navigation.spec.ts`. Related files: `analiz-shell.tsx`, `analiz-types.ts`.
+- **First mock-exam activation flow (2026-07-14)** — The shared “Yeni deneme gir”/copy-last action now scrolls to the entry card and focuses its first numeric score input without changing the shared `TextField`. After a successful first attempt only, analysis refreshes and the client switches to `Gelişim`, synchronizes `?tab=gelisim` without an RSC navigation, and focuses the active tab; later saves remain on `Gir`. Related files: `analiz-shell.tsx`, `analiz-types.ts`, `apps/api/src/analiz-navigation.spec.ts`.
+
+
+- **Latest attempt → AI coach handoff (2026-07-14)** — The `Gelişim` “Koça sor” CTA now carries
+  `analysis.trend[0].id` as `contextMockExamId` alongside the existing editable seed. Opening chat
+  never sends automatically; the verified result is attached only when the user submits the first
+  successful message. Gotcha: deleted or non-owned attempts fail with 404 instead of silently
+  degrading to context-free coaching. Related files: `analiz-tab-gelisim.tsx`,
+  `koc-chat-shell.tsx`, `apps/web/src/lib/coach.ts`.
+
+- **Historical attempt to AI coach handoff (2026-07-14)** - The loaded history drawer now offers a primary Ask the coach link that pre-fills chat with the selected attempt date and exam name, and carries its ID as contextMockExamId. Usage: open any past attempt and choose the CTA; the message remains editable and is never sent automatically. Gotcha: the publisher is intentionally excluded, and edit/delete states cannot navigate. Related files: analiz-history-detail.tsx, apps/web/src/lib/coach.ts, apps/web/messages/{tr,en}.json.

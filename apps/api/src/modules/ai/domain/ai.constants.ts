@@ -1,5 +1,5 @@
 /** AI coach domain constants (W3): system prompt (§4 guardrails) + cost model + request limits. */
-import type { GhostComparisonDto } from "@mentor/types";
+import type { GhostComparisonDto, MockExamDto } from "@mentor/types";
 import type { TodayPlanSummary } from "../../coaching/domain/coaching.constants";
 
 /** Max completion tokens per call — bounds per-call cost (§7). */
@@ -19,6 +19,18 @@ export const MEMORY_REFRESH_EVERY_N_MESSAGES = 10;
 export const MEMORY_DISTILL_WINDOW = 40;
 /** AI memory-refresh job name (own constant — runner matches by string). */
 export const AI_MEMORY_JOB = "ai.refresh-memory";
+
+/** Thread titles are derived from the first user message — no LLM call, no cost. */
+export const CONVERSATION_TITLE_MAX = 60;
+
+/** First user message → thread title (collapse whitespace, truncate). Never empty. */
+export function buildConversationTitle(message: string): string {
+  const clean = message.replace(/\s+/g, " ").trim();
+  if (!clean) return "Sohbet";
+  return clean.length > CONVERSATION_TITLE_MAX
+    ? `${clean.slice(0, CONVERSATION_TITLE_MAX - 1).trimEnd()}…`
+    : clean;
+}
 
 /** Feature label written to `ai_usage.feature` — drives the admin per-feature cost breakdown. */
 export const AiUsageFeature = {
@@ -129,7 +141,11 @@ export function formatTodayPlanLine(tp: CoachContext["todayPlan"]): string | nul
 }
 
 /** Build the full system prompt: PII-free context + (RAG) verified source articles or a no-source rule. */
-export function buildSystemPrompt(ctx: CoachContext, sources: CoachSource[] = []): string {
+export function buildSystemPrompt(
+  ctx: CoachContext,
+  sources: CoachSource[] = [],
+  mockExam?: MockExamDto,
+): string {
   const lines = [
     ctx.examType ? `Sınav türü: ${ctx.examType}` : "Sınav türü: belirtilmemiş",
     ctx.daysRemaining != null
@@ -148,6 +164,19 @@ export function buildSystemPrompt(ctx: CoachContext, sources: CoachSource[] = []
   if (sessionsLine) lines.push(sessionsLine);
   if (ctx.memoryProfile) {
     lines.push(`Kullanıcı profili (geçmiş sohbetlerden): ${ctx.memoryProfile}`);
+  }
+  if (mockExam) {
+    const takenAt = mockExam.takenAt.slice(0, 10).split("-").reverse().join(".");
+    lines.push(
+      "Son deneme (backend tarafından doğrulandı; netleri yeniden hesaplama):",
+      `Sınav: ${mockExam.examName}; tarih: ${takenAt}; toplam net: ${mockExam.totalNet}.`,
+      `Dersler: ${mockExam.subjects
+        .map(
+          (subject) =>
+            `${subject.subjectName}: D ${subject.correct}, Y ${subject.wrong}, Boş ${subject.blank}, net ${subject.net}`,
+        )
+        .join("; ")}.`,
+    );
   }
   let prompt = `${COACH_SYSTEM_BASE}\n\nBAĞLAM:\n${lines.join("\n")}`;
 

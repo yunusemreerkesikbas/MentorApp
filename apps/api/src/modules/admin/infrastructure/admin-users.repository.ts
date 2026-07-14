@@ -79,39 +79,4 @@ export class AdminUsersRepository {
     });
   }
 
-  /**
-   * KVKK erasure by anonymization (§9): scrub PII and ban the account, keeping the row so
-   * foreign keys / append-only ledgers stay intact. Returns before/after PII for audit.
-   */
-  async anonymize(
-    id: string,
-  ): Promise<{ before: Record<string, unknown>; after: Record<string, unknown> } | undefined> {
-    return withServiceContext(this.db, async (tx: DatabaseTx) => {
-      const rows = await tx
-        .select({
-          email: users.email,
-          displayName: users.displayName,
-          username: users.username,
-          status: users.status,
-        })
-        .from(users)
-        .where(eq(users.id, id))
-        .for("update")
-        .limit(1);
-      const current = rows[0];
-      if (!current) return undefined;
-      const anonEmail = `deleted+${id}@anonymized.local`;
-      const after = {
-        email: anonEmail,
-        displayName: "Silinmiş Kullanıcı",
-        username: null,
-        status: "BANNED",
-      };
-      await tx
-        .update(users)
-        .set({ ...after, examType: null, examDate: null })
-        .where(eq(users.id, id));
-      return { before: current, after };
-    });
-  }
 }

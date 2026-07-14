@@ -13,6 +13,7 @@ import { validateEnv } from "./config/env.validation";
 import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
 import { AppI18nModule } from "./i18n/i18n.module";
+import { AccountModule } from "./modules/account/account.module";
 import { AdminModule } from "./modules/admin/admin.module";
 import { AiModule } from "./modules/ai/ai.module";
 import { CoachingModule } from "./modules/coaching/coaching.module";
@@ -51,6 +52,7 @@ import { buildLoggerConfig } from "./observability/logger.config";
     DatabaseModule,
     StorageModule,
     HealthModule,
+    AccountModule,
     AdminModule,
     AiModule,
     CoachingModule,

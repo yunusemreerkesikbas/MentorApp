@@ -46,6 +46,6 @@ import { FollowController } from "./presentation/follow.controller";
     RefreshTokenRepository,
     EmailTokenRepository,
   ],
-  exports: [UsersRepository, UsersService, FollowService],
+  exports: [UsersRepository, UsersService, FollowService, TokenService],
 })
 export class IdentityModule {}

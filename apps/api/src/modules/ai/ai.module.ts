@@ -26,9 +26,11 @@ import { EmbedArticleHandler } from "./application/handlers/embed-article.handle
 import { RefreshMemoryHandler } from "./application/handlers/refresh-memory.handler";
 import { AiCostStatsService } from "./application/ai-cost-stats.service";
 import { AiBudgetGuard } from "./application/ai-budget.guard";
+import { AiErasureService } from "./application/ai-erasure.service";
 import { CoachFeedbackStatsService } from "./application/coach-feedback-stats.service";
 import { AiUsageRepository } from "./infrastructure/ai-usage.repository";
 import { CoachMessageRepository } from "./infrastructure/coach-message.repository";
+import { CoachConversationRepository } from "./infrastructure/coach-conversation.repository";
 import { CoachMemoryRepository } from "./infrastructure/coach-memory.repository";
 import { WeeklyReviewCacheRepository } from "./infrastructure/weekly-review-cache.repository";
 import { FakeLlmAdapter } from "./infrastructure/adapters/fake-llm.adapter";
@@ -78,8 +80,10 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     AiUsageRepository,
     AiCostStatsService,
     AiBudgetGuard,
+    AiErasureService,
     CoachFeedbackStatsService,
     CoachMessageRepository,
+    CoachConversationRepository,
     CoachMemoryRepository,
     WeeklyReviewCacheRepository,
     EmbeddingService,
@@ -132,7 +136,7 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
       },
     },
   ],
-  exports: [AiCostStatsService, CoachFeedbackStatsService],
+  exports: [AiCostStatsService, CoachFeedbackStatsService, AiErasureService],
 })
 export class AiModule {}
 

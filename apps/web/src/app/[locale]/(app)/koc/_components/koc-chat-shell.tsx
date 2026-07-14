@@ -10,6 +10,8 @@ import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
 import {
   CoachStreamError,
+  removeMockExamContextFromUrl,
+  resolvePendingMockExamContext,
   setCoachMessageFeedback,
   streamCoachMessage,
 } from "@/lib/coach";
@@ -29,16 +31,38 @@ export function KocChatShell() {
   const access = useKocAccess();
   const searchParams = useSearchParams();
   const reduceMotion = useReducedMotion();
-  const { messages, appendMessage, updateMessage, removeMessage, pushRecentTopic } =
-    useCoachSession();
+  const {
+    messages,
+    activeConversationId,
+    appendMessage,
+    updateMessage,
+    removeMessage,
+    openConversation,
+    startNewChat,
+    adoptConversation,
+    refreshConversations,
+  } = useCoachSession();
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [streamStarted, setStreamStarted] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const seedAppliedRef = useRef(false);
+  const appliedContextMockExamIdRef = useRef<string | null>(null);
 
   const seed = searchParams.get("seed");
+  const contextMockExamId = searchParams.get("contextMockExamId");
+  // `?c=<id>` opens an existing thread; no param means a fresh chat.
+  const routeConversationId = searchParams.get("c");
+  const appliedRouteRef = useRef<string | null | undefined>(undefined);
+
+  // React to ROUTE changes only — adopting the id of a freshly created thread must not reset it.
+  useEffect(() => {
+    if (appliedRouteRef.current === routeConversationId) return;
+    appliedRouteRef.current = routeConversationId;
+    if (routeConversationId) void openConversation(routeConversationId);
+    else startNewChat();
+  }, [routeConversationId, openConversation, startNewChat]);
 
   useEffect(() => {
     if (seedAppliedRef.current || !seed) return;
@@ -58,7 +82,11 @@ export function KocChatShell() {
     setChatError(null);
     setInput("");
 
-    const isFirstUserMessage = !messages.some((m) => m.role === "user");
+    const wasNewChat = activeConversationId === null;
+    const pendingContextMockExamId = resolvePendingMockExamContext(
+      contextMockExamId,
+      appliedContextMockExamIdRef.current,
+    );
     const clientMessageId = newId();
     const userMessage: ChatMessage = {
       id: clientMessageId,
@@ -67,15 +95,11 @@ export function KocChatShell() {
     };
     appendMessage(userMessage);
 
-    if (isFirstUserMessage) {
-      pushRecentTopic(trimmed);
-    }
-
     setBusy(true);
     const coachMessageId = newId();
     let received = "";
     try {
-      const { reply, sources, suggestedTask } = await streamCoachMessage(
+      const { reply, sources, suggestedTask, conversationId } = await streamCoachMessage(
         trimmed,
         clientMessageId,
         (delta) => {
@@ -87,6 +111,8 @@ export function KocChatShell() {
           }
           received += delta;
         },
+        activeConversationId ?? undefined,
+        pendingContextMockExamId,
       );
       // Finalize with the authoritative reply + source chips (covers zero-delta fallbacks too).
       if (received === "") {
@@ -94,6 +120,21 @@ export function KocChatShell() {
       } else {
         updateMessage(coachMessageId, { text: reply, sources, suggestedTask });
       }
+
+      if (pendingContextMockExamId) {
+        appliedContextMockExamIdRef.current = pendingContextMockExamId;
+        window.history.replaceState(
+          window.history.state,
+          "",
+          removeMockExamContextFromUrl(window.location.href),
+        );
+      }
+
+      // A brand-new chat just became a real thread — adopt its id and refresh the hub list.
+      if (wasNewChat) {
+        adoptConversation(conversationId);
+      }
+      void refreshConversations();
     } catch (err) {
       if (received !== "") removeMessage(coachMessageId);
       setChatError(

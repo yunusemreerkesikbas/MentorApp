@@ -39,6 +39,7 @@ import {
   parseAnalizTab,
   scoresFromMockExam,
   shouldNavigateAnalizTab,
+  shouldRevealFirstInsight,
   type AnalizTab,
   type SubjectScores,
 } from "./analiz-types";
@@ -125,24 +126,28 @@ export function AnalizShell() {
     [tab],
   );
 
-  const scrollToEntry = useCallback(() => {
-    document.getElementById("analiz-form")?.scrollIntoView({ block: "start" });
+  const activateEntryForm = useCallback(() => {
+    const form = document.getElementById("analiz-form");
+    form?.scrollIntoView({ block: "start" });
+    form
+      ?.querySelector<HTMLInputElement>('input[type="number"]')
+      ?.focus({ preventScroll: true });
   }, []);
 
   const openEntryForm = useCallback(() => {
     if (tab === "gir") {
-      scrollToEntry();
+      activateEntryForm();
       return;
     }
     entryScrollRequested.current = true;
     setTab("gir");
-  }, [scrollToEntry, setTab, tab]);
+  }, [activateEntryForm, setTab, tab]);
 
   useEffect(() => {
     if (tab !== "gir" || !entryScrollRequested.current) return;
     entryScrollRequested.current = false;
-    requestAnimationFrame(scrollToEntry);
-  }, [scrollToEntry, tab]);
+    requestAnimationFrame(activateEntryForm);
+  }, [activateEntryForm, tab]);
 
   useEffect(() => {
     let active = true;
@@ -356,6 +361,9 @@ export function AnalizShell() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!exam || submitting || loadState.status !== "ready") return;
+    const revealFirstInsight = shouldRevealFirstInsight(
+      analysis?.trend.length ?? 0,
+    );
     setSubmitting(true);
     setError(null);
     try {
@@ -388,6 +396,12 @@ export function AnalizShell() {
       setScores(emptyScores(subjects));
       setPublisherName("");
       setTakenAtDate(new Date().toISOString().slice(0, 10));
+      if (revealFirstInsight) {
+        setTab("gelisim");
+        requestAnimationFrame(() => {
+          document.getElementById("analiz-tab-gelisim")?.focus();
+        });
+      }
     } catch (submitError) {
       setError(
         submitError instanceof ApiClientError

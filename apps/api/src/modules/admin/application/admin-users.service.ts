@@ -2,6 +2,8 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ASSIGNABLE_ADMIN_ROLES, UserRole } from "@mentor/types";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { DomainError } from "../../../common/errors/domain-error";
+import { AccountErasureService } from "../../account/application/account-erasure.service";
+import { UserStatus } from "../../identity/domain/identity.constants";
 import { AdminUsersRepository, type AdminUserRow } from "../infrastructure/admin-users.repository";
 
 /** User row as shown in the admin panel (no secrets — never expose passwordHash). */
@@ -63,7 +65,10 @@ function toDetail(row: AdminUserRow): AdminUserDetail {
 
 @Injectable()
 export class AdminUsersService {
-  constructor(private readonly repo: AdminUsersRepository) {}
+  constructor(
+    private readonly repo: AdminUsersRepository,
+    private readonly accountErasure: AccountErasureService,
+  ) {}
 
   async search(q: string | undefined, page: number, pageSize: number): Promise<AdminUserView[]> {
     const rows = await this.repo.search(q, page, pageSize);
@@ -153,14 +158,25 @@ export class AdminUsersService {
     };
   }
 
-  /** KVKK erasure by anonymization (soft). Admins cannot anonymize themselves. */
+  /**
+   * KVKK holistic erasure, admin-initiated (status BANNED — a moderation outcome, unlike the
+   * self-service "hesabımı sil" which lands on DELETED). Delegates to the shared
+   * {@link AccountErasureService} so there is exactly ONE erasure path: subscription cancelled,
+   * every module's behavioral data erased, identity row anonymized, sessions revoked.
+   *
+   * Admins cannot anonymize themselves.
+   */
   async anonymize(
     actorId: string,
     userId: string,
   ): Promise<FieldChangeResult<Record<string, unknown>>> {
     this.assertNotSelf(actorId, userId);
-    const change = await this.repo.anonymize(userId);
-    if (!change) throw new DomainError(ErrorCode.ADMIN_USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+    const existing = await this.repo.findById(userId);
+    if (!existing) throw new DomainError(ErrorCode.ADMIN_USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+
+    const change = await this.accountErasure.eraseAccount(userId, UserStatus.BANNED);
+
     const row = await this.repo.findById(userId);
     return { user: toView(row!), before: change.before, after: change.after };
   }

@@ -70,8 +70,9 @@ pnpm --filter @mentor/api test -- --grep "ai"
 |---|---|
 | `POST /v1/coach/chat` | AI coach chat (multi-turn, RAG-grounded) |
 | `POST /v1/coach/chat/stream` | Streaming chat (SSE over POST; delta → done/error) |
-| `GET /v1/coach/messages` | Paginated persisted chat history (auth-only) |
-| `DELETE /v1/coach/messages` | "Yeni sohbet" — clear own conversation + memory profile |
+| `GET /v1/coach/conversations` | The user's chat threads, most-recently-active first |
+| `GET /v1/coach/conversations/:id/messages` | One thread's paginated history |
+| `DELETE /v1/coach/conversations/:id` | Delete one thread (messages cascade) |
 | `PATCH /v1/coach/messages/:id/feedback` | Rate a coach reply (👍 1 / 👎 -1 / null) |
 | `GET /v1/coach/memory` | Distilled PII-free memory profile (null until built) |
 | `DELETE /v1/coach/memory` | Reset the memory profile (KVKK) |
@@ -259,6 +260,37 @@ pnpm --filter @mentor/api test -- --grep "ai"
   `ai-budget.guard.ts`(+spec), 7 servis + `refresh-memory.handler`, `coach-access`/`photo-access`,
   `ai-cost-stats.service.ts`, `ai.module.ts`, `packages/types/ai.ts`, `apps/admin/.../AiCostCards.tsx`.
 
+- **Çoklu konuşma — thread'ler (2026-07-14)** — Dilim 1'de ertelenen thread modeli geldi: yeni
+  `coach_conversations` tablosu (title = **ilk kullanıcı mesajının ilk 60 karakteri**, LLM yok;
+  `last_message_at` liste sırası) + `coach_messages.conversation_id` (FK cascade). Migration
+  `0049_colorful_madrox` **backfill'li**: mesajı olan her kullanıcıya 1 konuşma yaratılıp mesajlar
+  bağlanır, sonra kolon NOT NULL olur (eski model zaten kullanıcı başına tek sohbetti).
+  **Multi-turn context artık thread-scoped** (`lastN(userId, conversationId, N)`) — farklı konular
+  birbirine karışmaz; **memory profili kullanıcı-geneli kalır** (`recentForUser`, tüm thread'lerden
+  damıtılır). `POST /chat` + `/chat/stream` gövdesi opsiyonel `conversationId` alır (yoksa yeni thread
+  açılır, sahiplik doğrulanır → yoksa 404) ve yanıt/`done` `conversationId` döner. Yeni endpoint'ler:
+  `GET /conversations`, `GET /conversations/:id/messages`, `DELETE /conversations/:id`.
+  **Kaldırılan:** `GET/DELETE /v1/coach/messages` (+ "Yeni sohbet artık hiçbir şey silmez").
+  Admin `listDownrated`'in "önceki soru" eşlemesi artık aynı thread içinde (doğruluk düzeltmesi).
+  FE: hub'da `CoachConversationList` ("Son sohbetler", tıkla → `?c=<id>`, çöp → onay dialog'u);
+  `CoachSessionProvider` thread-aware; ölü `recentTopics`/`coach-session-storage.ts` silindi.
+  **Kapsam dışı:** yeniden adlandırma, LLM başlık, arama/pin/arşiv, thread-bazlı memory.
+  Dosyalar: `schema.ts`, `coach-conversation.repository.ts`, `coach-message.repository.ts`,
+  `chat.service.ts`(+spec), `ai-chat.controller.ts`, `ai.constants.ts`, `packages/{types,validation}`,
+  `coach-session-context.tsx`, `coach-conversation-list.tsx`, `koc-hub.tsx`, `koc-chat-shell.tsx`, `coach.ts`.
+
+- **KVKK bütünsel silme (2026-07-14)** — dokümanlarda uzun süredir işaretli açık kapandı: `admin
+  anonymize` yalnız `users` satırını temizliyordu, kullanıcının **koça yazdığı tüm mesajlar** DB'de
+  duruyordu. Artık her modül kendi verisini siler (workstreams §2 — admin orkestre eder, başkasının
+  tablosuna yazmaz): `AiErasureService` (yeni, AiModule export) koç thread'leri + `coach_memory` +
+  `ai_weekly_reviews`'ı siler; `CoachingErasureService` (bkz. coaching.md) coaching serbest metnini
+  scrub eder; identity satırında `bio`/`website`/`avatar` da temizlenir + avatar objesi storage'dan
+  best-effort silinir. Bir adım patlarsa **hata yükselir** (yarım silme sessizce raporlanmaz); akış
+  idempotent, admin tekrar deneyebilir. `ai_usage` bilinçli olarak KALIR (maliyet meta, PII yok).
+  Repo'lara `deleteAllForUser` (SERVICE ctx) eklendi. Dosyalar: `ai-erasure.service.ts`(+spec),
+  `coach-conversation.repository.ts`, `coach-memory.repository.ts`, `weekly-review-cache.repository.ts`,
+  `admin-users.service.ts`(+spec), `admin-users.repository.ts`, `admin.module.ts`, `ai.module.ts`.
+
 ## Gotchas / Known issues
 
 - **No RAG in Slice 1** — the coach refuses official-info questions until RAG retrieval lands.
@@ -278,16 +310,21 @@ pnpm --filter @mentor/api test -- --grep "ai"
 - **Bütçe cap'i ~30s cache'li ve per-instance** — MTD harcama her istekte değil ~30s'de bir
   hesaplanır, yani cap aşımı sonrası en fazla ~1 cache penceresi + çok-instance sayısı kadar
   overspend olabilir (kesin hard-stop değil, yaklaşık). Cap **takvim ayı** (UTC) — ayın 1'inde sıfırlanır.
-- **KVKK — `coach_messages.content` / `coach_messages.suggested_task` / `coach_memory.summary`**
-  davranışsal serbest metindir; `admin anonymize` bunları scrub etmez (aynı durum
-  `struggle_note`/`motivation` için de geçerli — coaching.md'deki holistic erasure follow-up'ına
-  dahil). Gerçek kullanıcı silmede `onDelete: cascade` temizler. Kullanıcı kendi geçmişini
-  `DELETE /v1/coach/messages`, profilini `DELETE /v1/coach/memory` ile siler.
+- **KVKK — ÇÖZÜLDÜ (2026-07-14):** `admin anonymize` artık **bütünsel silme** yapıyor —
+  `AiErasureService` koç thread'lerini (mesajlar + `suggested_task` cascade), `coach_memory`'yi ve
+  `ai_weekly_reviews`'ı siler; coaching kendi serbest metnini scrub eder (bkz. coaching.md).
+  **`ai_usage` KALIR** (token/maliyet meta, PII yok — §7 maliyet muhasebesi). Kullanıcı ayrıca kendi
+  profilini `DELETE /v1/coach/memory`, tek bir thread'i `DELETE /v1/coach/conversations/:id` ile siler.
+  **Kapsam dışı:** forum içeriği (kamuya açık topluluk içeriği; yazar "Silinmiş Kullanıcı" görünür).
 - **Memory profili yaklaşık ve gecikmelidir** — her 10 mesajda bir async job ile yenilenir; en son
   ~40 mesajdan damıtılır. Job runner (Cron/dev tick) çalışmıyorsa profil güncellenmez ama chat
-  çalışmaya devam eder (context satırı düşer). "Yeni sohbet" hem mesajları hem profili sıfırlar.
+  çalışmaya devam eder (context satırı düşer).
 - **Multi-turn penceresi sabittir** (`CHAT_HISTORY_MAX_MESSAGES=10`, `ai.constants.ts`) — runtime
-  config değil; tuning ihtiyacı doğarsa config catalog'a taşınır.
+  config değil; tuning ihtiyacı doğarsa config catalog'a taşınır. Pencere **aktif thread'e** dairdir.
+- **Thread vs memory kapsamı** — sohbet bağlamı thread-scoped (`lastN`), memory profili
+  kullanıcı-geneli (`recentForUser`, tüm thread'lerden). Yani koç yeni bir thread'de eski thread'in
+  mesajlarını hatırlamaz ama **profilini** (hedef/zorluklar) hatırlar. Thread silmek profili silmez
+  (`DELETE /v1/coach/memory` ayrı).
 - **Provider değişimi = 1 kez reembed** — sorgu embedding'i ile makale embedding'i aynı modelden
   olmalı; `AI_PROVIDER` değişince `POST /v1/admin/ai/reembed` (SUPER_ADMIN) çalıştırılmazsa RAG
   retrieval anlamsızlaşır (hata vermez, alakasız/boş kaynak döner). Maliyeti sentlerle ölçülür.
@@ -310,3 +347,16 @@ pnpm --filter @mentor/api test -- --grep "ai"
   ile `ai_weekly_reviews` tablosunda cache'lenir; veri değişirse yeniden üretilir. Plan görevi AI
   tarafından yazılmaz, deterministik coaching odağından gelir. Migration: `0045_vengeful_shinobi_shaw.sql`.
 
+
+
+- **Latest mock exam as explicit coach context (2026-07-14)** — `POST /v1/coach/chat` and
+  `/chat/stream` now accept optional `contextMockExamId`. `ChatService` verifies ownership through
+  the public `MockExamService.getById` boundary before creating a conversation, then grounds the
+  prompt only with exam name/date, backend-computed total net, and subject D/Y/blank/net values.
+  Publisher, photos, and personal notes are excluded; nets are never recalculated. Usage: open
+  “Koça sor” from `/analiz?tab=gelisim`, edit the seeded message, then send. The web retries the same
+  context after failures and removes only the context query after the first successful reply.
+  Gotcha: the context is not persisted; later turns use normal conversation history. Missing/foreign
+  attempts return the existing 404 and the current coin-refund path remains intact. Related files:
+  `aiChatSchema`, `chat.service.ts`, `ai.constants.ts`, `ai-chat.controller.ts`,
+  `koc-chat-shell.tsx`, `apps/web/src/lib/coach.ts`, generated OpenAPI client.

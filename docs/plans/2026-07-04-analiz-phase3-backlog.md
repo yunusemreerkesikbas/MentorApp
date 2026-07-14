@@ -11,7 +11,7 @@
 | Delete / edit attempts  | PUT/DELETE /v1/mock-exams/:id                                | coaching                        | Shipped 2026-07-11                    |
 | Subject time series     | Latest-four net trend for the selected focus subject         | coaching                        | Shipped 2026-07-13                    |
 | Plan integration        | Prefill a focus task; explicit user confirmation before save | coaching → plan                 | Shipped 2026-07-10                    |
-| Coach context injection | contextMockExamId on POST /v1/coach/chat                     | AI context builder              | Backlog                               |
+| Coach context injection | contextMockExamId on blocking/SSE coach chat                  | AI + coaching public boundary   | Shipped 2026-07-14                    |
 
 ## Notes
 

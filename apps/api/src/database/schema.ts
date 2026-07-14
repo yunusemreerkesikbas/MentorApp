@@ -964,9 +964,29 @@ export const aiUsage = pgTable(
   (t) => [index("ai_usage_user_created_idx").on(t.userId, t.createdAt)],
 );
 
-/* --- AI coach chat history (W3, Faz 2 multi-turn): one row per message, single rolling
- * conversation per user (no thread table — add a conversation_id column if threads ever land).
- * §4 #6: content is the user's own words / the coach reply (user-authored + generated — no
+/* --- AI coach conversations (W3, threads): one row per chat thread. Title is derived from the
+ * first user message (no LLM). `last_message_at` drives the "Son sohbetler" list order.
+ * KVKK: title is user-authored free-text — same erasure follow-up as coach_messages.
+ * RLS: self-or-service (per-user behavioral data, 0001 pattern). */
+export const coachConversations = pgTable(
+  "coach_conversations",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Bumped on every persisted exchange — the list sort key. */
+    lastMessageAt: timestamp("last_message_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("coach_conversations_user_last_idx").on(t.userId, t.lastMessageAt)],
+);
+
+/* --- AI coach chat history (W3, Faz 2 multi-turn): one row per message, scoped to a conversation
+ * (thread). §4 #6: content is the user's own words / the coach reply (user-authored + generated — no
  * third-party PII). KVKK: behavioral free-text — included in the erasure follow-up (ai.md Gotchas).
  * RLS: self-or-service (per-user behavioral data, 0001 pattern). */
 export const coachMessages = pgTable(
@@ -978,6 +998,10 @@ export const coachMessages = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    /** Thread this message belongs to (deleting a conversation cascades its messages). */
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => coachConversations.id, { onDelete: "cascade" }),
     /** CoachMessageRole: USER | COACH. */
     role: text("role").notNull(),
     content: text("content").notNull(),
@@ -991,7 +1015,10 @@ export const coachMessages = pgTable(
     suggestedTask: jsonb("suggested_task"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("coach_messages_user_created_idx").on(t.userId, t.createdAt)],
+  (t) => [
+    index("coach_messages_user_created_idx").on(t.userId, t.createdAt),
+    index("coach_messages_conversation_created_idx").on(t.conversationId, t.createdAt),
+  ],
 );
 
 /* --- AI coach memory profile (W3, Faz 2): one distilled PII-free summary per user, refreshed by an

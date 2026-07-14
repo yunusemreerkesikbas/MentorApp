@@ -1,12 +1,18 @@
 import { randomUUID } from "node:crypto";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
-import { Currency, type CoachChatReplyDto, type CoachChatStreamEvent } from "@mentor/types";
+import {
+  Currency,
+  type CoachChatReplyDto,
+  type CoachChatStreamEvent,
+  type MockExamDto,
+} from "@mentor/types";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { ContentService } from "../../content/application/content.service";
+import { MockExamService } from "../../coaching/application/mock-exam.service";
 import { EconomyService } from "../../economy/application/economy.service";
 import { EconomyLedger } from "../../economy/domain/economy.constants";
 import { EntitlementService } from "../../payments/application/entitlement.service";
@@ -14,6 +20,7 @@ import { LLM_PORT, type LlmHistoryMessage, type LlmPort } from "../domain/llm.po
 import {
   AI_MEMORY_JOB,
   AiUsageFeature,
+  buildConversationTitle,
   buildSystemPrompt,
   CHAT_HISTORY_MAX_MESSAGES,
   estimateCostMicros,
@@ -27,6 +34,7 @@ import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { CoachMessageRepository } from "../infrastructure/coach-message.repository";
 import { CoachMemoryRepository } from "../infrastructure/coach-memory.repository";
+import { CoachConversationRepository } from "../infrastructure/coach-conversation.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 
 export type CoachReplyResult = CoachChatReplyDto;
@@ -50,15 +58,37 @@ export class ChatService {
     private readonly entitlement: EntitlementService,
     private readonly economy: EconomyService,
     private readonly messages: CoachMessageRepository,
+    private readonly conversations: CoachConversationRepository,
     private readonly memory: CoachMemoryRepository,
     private readonly budget: AiBudgetGuard,
     @Inject(JOB_QUEUE_PORT) private readonly queue: JobQueuePort,
+    private readonly mockExams: MockExamService,
   ) {}
+
+  /**
+   * Resolve the thread this message belongs to: verify ownership of an existing one, or open a new
+   * conversation titled after the message (first ~60 chars — no LLM call).
+   */
+  private async resolveConversation(
+    userId: string,
+    message: string,
+    conversationId?: string,
+  ): Promise<string> {
+    if (conversationId) {
+      if (!(await this.conversations.isOwned(userId, conversationId))) {
+        throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+      }
+      return conversationId;
+    }
+    return this.conversations.create(userId, buildConversationTitle(message));
+  }
 
   async reply(
     user: RequestUser,
     message: string,
     clientMessageId?: string,
+    conversationId?: string,
+    contextMockExamId?: string,
   ): Promise<CoachReplyResult> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
@@ -77,7 +107,11 @@ export class ChatService {
     }
 
     try {
-      return await this.completeChat(user.id, message);
+      const mockExam = contextMockExamId
+        ? await this.mockExams.getById(user.id, contextMockExamId)
+        : undefined;
+      const threadId = await this.resolveConversation(user.id, message, conversationId);
+      return await this.completeChat(user.id, threadId, message, mockExam);
     } catch (err) {
       if (!ent.isPremium && shouldRefundOnFailure && coinCost > 0) {
         await this.refundCoinSpend(user.id, coinCost, spendRefId).catch((refundErr) => {
@@ -132,14 +166,19 @@ export class ChatService {
     });
   }
 
-  /** Shared prompt prep: PII-free context + multi-turn history + RAG retrieval. */
-  private async prepareChat(userId: string, message: string) {
+  /** Shared prompt prep: PII-free context + this thread's multi-turn history + RAG retrieval. */
+  private async prepareChat(
+    userId: string,
+    conversationId: string,
+    message: string,
+    mockExam?: MockExamDto,
+  ) {
     const ctx = await this.context.build(userId);
 
-    // Multi-turn: replay the last N persisted messages (the user's own words + earlier coach
+    // Multi-turn: replay the last N messages OF THIS THREAD (the user's own words + earlier coach
     // replies — no third-party PII, §4 #6). Defensive: a history failure never blocks the chat.
     const history: LlmHistoryMessage[] = await this.messages
-      .lastN(userId, CHAT_HISTORY_MAX_MESSAGES)
+      .lastN(userId, conversationId, CHAT_HISTORY_MAX_MESSAGES)
       .then((rows) =>
         rows.map((m) => ({
           role: m.role === "USER" ? ("user" as const) : ("assistant" as const),
@@ -166,7 +205,7 @@ export class ChatService {
       }
     }
 
-    const system = buildSystemPrompt(ctx, retrieved);
+    const system = buildSystemPrompt(ctx, retrieved, mockExam);
 
     return {
       llmInput: { system, user: message, history },
@@ -177,6 +216,7 @@ export class ChatService {
   /** Post-success bookkeeping: usage meter + persist the exchange + maybe refresh memory (only on success). */
   private async recordSuccess(
     userId: string,
+    conversationId: string,
     message: string,
     result: { text: string; promptTokens: number; completionTokens: number; model: string },
     sources: { title: string; slug: string; url: string }[],
@@ -193,7 +233,7 @@ export class ChatService {
 
     // Best-effort: a persist failure must not swallow the reply the user already paid for.
     const persisted = await this.messages
-      .appendExchange(userId, message, {
+      .appendExchange(userId, conversationId, message, {
         content: result.text,
         model: result.model,
         sources,
@@ -212,14 +252,32 @@ export class ChatService {
     }
   }
 
-  private async completeChat(userId: string, message: string): Promise<CoachReplyResult> {
-    const { llmInput, sources } = await this.prepareChat(userId, message);
+  private async completeChat(
+    userId: string,
+    conversationId: string,
+    message: string,
+    mockExam?: MockExamDto,
+  ): Promise<CoachReplyResult> {
+    const { llmInput, sources } = await this.prepareChat(
+      userId,
+      conversationId,
+      message,
+      mockExam,
+    );
     const result = await this.llm.complete(llmInput);
     const { text: reply, task } = extractSuggestedTask(result.text);
-    await this.recordSuccess(userId, message, { ...result, text: reply }, sources, task ?? undefined);
+    await this.recordSuccess(
+      userId,
+      conversationId,
+      message,
+      { ...result, text: reply },
+      sources,
+      task ?? undefined,
+    );
     return {
       reply,
       model: result.model,
+      conversationId,
       sources,
       ...(task ? { suggestedTask: task } : {}),
     };
@@ -234,6 +292,8 @@ export class ChatService {
     user: RequestUser,
     message: string,
     clientMessageId?: string,
+    conversationId?: string,
+    contextMockExamId?: string,
   ): AsyncGenerator<CoachChatStreamEvent> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
@@ -252,7 +312,16 @@ export class ChatService {
     }
 
     try {
-      const { llmInput, sources } = await this.prepareChat(user.id, message);
+      const mockExam = contextMockExamId
+        ? await this.mockExams.getById(user.id, contextMockExamId)
+        : undefined;
+      const threadId = await this.resolveConversation(user.id, message, conversationId);
+      const { llmInput, sources } = await this.prepareChat(
+        user.id,
+        threadId,
+        message,
+        mockExam,
+      );
       // The task marker must never leak into deltas — filter holds back anything marker-like.
       const markerFilter = createTaskMarkerFilter();
       let final: { text: string; promptTokens: number; completionTokens: number; model: string } | null =
@@ -270,11 +339,19 @@ export class ChatService {
       const held = markerFilter.flush();
       if (held) yield { delta: held };
       const { text: reply, task } = extractSuggestedTask(final.text);
-      await this.recordSuccess(user.id, message, { ...final, text: reply }, sources, task ?? undefined);
+      await this.recordSuccess(
+        user.id,
+        threadId,
+        message,
+        { ...final, text: reply },
+        sources,
+        task ?? undefined,
+      );
       yield {
         done: {
           reply,
           model: final.model,
+          conversationId: threadId,
           sources,
           ...(task ? { suggestedTask: task } : {}),
         },
@@ -289,24 +366,37 @@ export class ChatService {
     }
   }
 
-  /** GET /v1/coach/messages — paginated rolling history (auth-only; no premium/coin gate). */
-  async listMessages(userId: string, page: number, pageSize: number) {
+  /** GET /v1/coach/conversations — the user's threads, most-recently-active first. */
+  async listConversations(userId: string, page: number, pageSize: number) {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
-    return this.messages.listPaged(userId, page, pageSize);
+    return this.conversations.listPaged(userId, page, pageSize);
   }
 
-  /** DELETE /v1/coach/messages — "Yeni sohbet": clears the user's own conversation AND memory profile. */
-  async clearMessages(userId: string): Promise<void> {
+  /** GET /v1/coach/conversations/:id/messages — one thread's history (auth-only; ownership enforced). */
+  async listConversationMessages(
+    userId: string,
+    conversationId: string,
+    page: number,
+    pageSize: number,
+  ) {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
-    await this.messages.clearAll(userId);
-    // A fresh conversation should not carry the old distilled profile.
-    await this.memory.clear(userId).catch((err) => {
-      this.logger.warn(`Memory clear skipped on new chat: ${String(err)}`);
-    });
+    if (!(await this.conversations.isOwned(userId, conversationId))) {
+      throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    return this.messages.listPagedByConversation(userId, conversationId, page, pageSize);
+  }
+
+  /** DELETE /v1/coach/conversations/:id — drop one thread (messages cascade). Memory profile is kept. */
+  async deleteConversation(userId: string, conversationId: string): Promise<void> {
+    if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
+      throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+    }
+    const deleted = await this.conversations.delete(userId, conversationId);
+    if (!deleted) throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
   }
 
   /** PATCH /v1/coach/messages/:id/feedback — 👍/👎/none on the user's own coach message. */

@@ -81,6 +81,7 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 | `PATCH /v1/users/me` | Onboarding/profile (displayName, username, examType, examDate, avatarStorageKey) |
 | `POST /v1/users/me/verification-email` | Resend verification email for current user |
 | `POST /v1/users/me/avatar-upload-url` | Create user-scoped avatar upload URL |
+| `DELETE /v1/account` | Self-service KVKK erasure ("hesabımı sil") — irreversible |
 
 ## Geliştirmeler (timeline)
 
@@ -198,6 +199,23 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   down API (times out → starts anyway, so FE-only work isn't blocked). Admin got the same treatment:
   `dev` port gate + `authProvider` mount `/users/me` retries network errors 3× (axios `!err.response`),
   so the boot race no longer leaves the panel stuck with a null admin. *(0037.)*
+
+- **Hesabımı sil — self-service KVKK (2026-07-14)** — Dilim 13'te bütünsel silme makinesi kurulmuştu
+  ama yalnız admin tetikleyebiliyordu; "unutulma hakkı" veri sahibinin kendisine ait. Yeni
+  `DELETE /v1/account` (auth'lu) kullanıcının kendi hesabını siler. **Yeni ince `modules/account`**
+  bounded context'i orkestrasyonu barındırır — identity foundational modül olduğu için (Ai/Coaching/
+  Payments hepsi onu import ediyor) orkestrasyon identity'ye konsaydı **döngü** olurdu. Sıra:
+  ① abonelik iptali (`SubscriptionsService.cancel`; açık abonelik yoksa `NotFound` yutulur — silinen
+  hesap faturalanmaya devam etmemeli) → ② `AiErasureService` + `CoachingErasureService` → ③
+  `UsersService.anonymizeAccount` (identity kendi tablosunu kendi scrub eder; admin artık `users`'a
+  doğrudan yazmaz) + `TokenService.revokeAllForUser` → ④ avatar objesi (best-effort).
+  Yeni `UserStatus.DELETED`; login gate zaten `status !== ACTIVE` dediği için giriş otomatik bloklanır.
+  **Admin `anonymize` artık aynı servisi** `BANNED` statüsüyle çağırır → tek erasure yolu, sıfır kopya
+  (`admin-users.repository.anonymize` silindi). **Korunan:** fatura/ödeme kayıtları (iyzico e-arşiv —
+  yasal saklama) + append-only ledger; satır anonimleştirilir, silinmez, FK'lar sağlam kalır.
+  FE: `/profil` "Tehlikeli bölge" kartı — yazarak onay (`HESABIMI SİL`; şifre re-entry Google-only
+  hesaplarda çalışmaz). Dosyalar: `modules/account/*`, `users.repository.ts`, `users.service.ts`,
+  `identity.constants.ts`, `admin-users.service.ts`(+spec), `delete-account-card.tsx`.
 
 ## Gotchas / Known issues
 

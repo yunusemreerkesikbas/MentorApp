@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { AccountModule } from "../account/account.module";
 import { AiModule } from "../ai/ai.module";
 import { ContentModule } from "../content/content.module";
 import { EconomyModule } from "../economy/economy.module";
@@ -25,7 +26,8 @@ import { AdminUsersController } from "./presentation/admin-users.controller";
  * reuse the same append-only audit trail. Economy (coin/XP/invite/quest) lands in a later slice.
  */
 @Module({
-  imports: [IdentityModule, EconomyModule, ContentModule, PaymentsModule, AiModule],
+  // AiModule → cost/feedback metrics; AccountModule → the shared KVKK erasure path (anonymize).
+  imports: [IdentityModule, EconomyModule, ContentModule, PaymentsModule, AiModule, AccountModule],
   controllers: [
     AdminUsersController,
     AdminConfigController,

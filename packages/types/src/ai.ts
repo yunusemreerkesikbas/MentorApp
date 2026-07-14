@@ -19,10 +19,21 @@ export interface CoachAccessDto {
   freeCoinMessagesRemainingToday?: number;
 }
 
+/** GET /v1/coach/conversations item — one chat thread. */
+export interface CoachConversationDto {
+  id: string;
+  /** Derived from the first user message (no LLM). */
+  title: string;
+  lastMessageAt: string;
+  messageCount: number;
+}
+
 /** POST /v1/coach/chat response (no coin fields in the chat zone §4 #3). */
 export interface CoachChatReplyDto {
   reply: string;
   model: string;
+  /** Thread this exchange belongs to — new when the request omitted `conversationId`. */
+  conversationId: string;
   sources: { title: string; slug: string; url: string }[];
   /** Optional coach-suggested plan task — FE renders a "Plana ekle" card (user confirms; AI never writes). */
   suggestedTask?: { title: string; subject: string | null };

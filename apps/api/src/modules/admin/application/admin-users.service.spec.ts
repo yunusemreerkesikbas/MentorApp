@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UserRole } from "@mentor/types";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -43,28 +43,32 @@ function makeRepoFake(users: Map<string, AdminUserRow>) {
       users.set(id, { ...row, status });
       return { before, after: status };
     },
-    anonymize: async (id: string) => {
-      const row = users.get(id);
-      if (!row) return undefined;
-      const before = { email: row.email, displayName: row.displayName, status: row.status };
-      const after = {
-        email: `deleted+${id}@anonymized.local`,
-        displayName: "Silinmiş Kullanıcı",
-        status: "BANNED",
-      };
-      users.set(id, { ...row, ...after, examType: null, examDate: null });
-      return { before, after };
-    },
   };
 }
 
 describe("AdminUsersService", () => {
   let users: Map<string, AdminUserRow>;
   let service: AdminUsersService;
+  let eraseAccount: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     users = new Map([["u1", makeUser("u1", [UserRole.STUDENT])]]);
-    service = new AdminUsersService(makeRepoFake(users) as never);
+    // The shared erasure path (AccountModule) — admin only sequences it with the BANNED status.
+    eraseAccount = vi.fn(async (id: string, status: string) => {
+      const row = users.get(id)!;
+      const before = { email: row.email, displayName: row.displayName, status: row.status };
+      const after = {
+        email: `deleted+${id}@anonymized.local`,
+        displayName: "Silinmiş Kullanıcı",
+        status,
+      };
+      users.set(id, { ...row, ...after, examType: null, examDate: null });
+      return { before, after };
+    });
+    service = new AdminUsersService(
+      makeRepoFake(users) as never,
+      { eraseAccount } as never,
+    );
   });
 
   it("grants STAFF and reports the before/after diff", async () => {
@@ -133,5 +137,24 @@ describe("AdminUsersService", () => {
     await expect(service.anonymize("u1", "u1")).rejects.toMatchObject({
       code: ErrorCode.ADMIN_CANNOT_MODIFY_SELF,
     });
+  });
+
+  it("anonymize delegates to the shared KVKK erasure path with the BANNED status", async () => {
+    await service.anonymize("admin", "u1");
+
+    expect(eraseAccount).toHaveBeenCalledWith("u1", "BANNED");
+  });
+
+  it("surfaces an erasure failure instead of reporting a half-done anonymize", async () => {
+    eraseAccount.mockRejectedValue(new Error("erasure down"));
+
+    await expect(service.anonymize("admin", "u1")).rejects.toThrow("erasure down");
+  });
+
+  it("rejects anonymizing an unknown user", async () => {
+    await expect(service.anonymize("admin", "nope")).rejects.toMatchObject({
+      code: ErrorCode.ADMIN_USER_NOT_FOUND,
+    });
+    expect(eraseAccount).not.toHaveBeenCalled();
   });
 });

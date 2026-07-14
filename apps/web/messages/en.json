@@ -469,6 +469,14 @@
       "title": "What your coach knows about you",
       "reset": "Reset"
     },
+    "conversations": {
+      "title": "Recent chats",
+      "delete_aria": "Delete the chat \"{title}\"",
+      "delete_confirm_title": "Delete this chat?",
+      "delete_confirm_message": "The chat \"{title}\" and all of its messages will be permanently deleted.",
+      "delete_confirm_yes": "Delete",
+      "delete_confirm_no": "Cancel"
+    },
     "chat": {
       "header_title": "Chat",
       "empty_hint": "Write your first message — your coach is here.",
@@ -544,6 +552,17 @@
       "title": "Account",
       "subscription": "Subscription",
       "logout": "Sign out"
+    },
+    "delete_account": {
+      "title": "Delete my account",
+      "description": "Your account and data are permanently deleted: coach chats, notes, goal board and uploaded photos. An active subscription is cancelled. Invoice records are kept as required by law. This cannot be undone.",
+      "cta": "Delete my account",
+      "confirm_phrase": "DELETE MY ACCOUNT",
+      "confirm_hint": "Type {phrase} below to confirm.",
+      "confirm_label": "Confirmation text",
+      "confirm_cta": "Delete permanently",
+      "deleting": "Deleting…",
+      "cancel": "Cancel"
     },
     "support": {
       "title": "App",
@@ -766,6 +785,7 @@
     "history": {
       "title": "Past exams",
       "detail_title": "Exam detail",
+      "coach_seed": "Can you comment on my {exam} mock exam results from {date}?",
       "close": "Cancel",
       "empty": "No saved exams yet.",
       "loading": "Loading past exams…",

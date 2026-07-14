@@ -2,6 +2,7 @@ import type {
   CoachAccessDto,
   CoachChatReplyDto,
   CoachChatStreamEvent,
+  CoachConversationDto,
   CoachMemoryDto,
   CoachMessageDto,
   Paginated,
@@ -21,6 +22,31 @@ export interface CoachSource {
 
 export type CoachReply = CoachChatReplyDto;
 
+export function buildCoachMockExamHref(
+  seed: string,
+  contextMockExamId: string,
+) {
+  return {
+    pathname: "/koc/chat" as const,
+    query: { seed, contextMockExamId },
+  };
+}
+
+export function resolvePendingMockExamContext(
+  contextMockExamId: string | null,
+  appliedContextMockExamId: string | null,
+): string | undefined {
+  return contextMockExamId && contextMockExamId !== appliedContextMockExamId
+    ? contextMockExamId
+    : undefined;
+}
+
+export function removeMockExamContextFromUrl(href: string): string {
+  const url = new URL(href);
+  url.searchParams.delete("contextMockExamId");
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 export async function fetchCoachAccess(): Promise<CoachAccessDto> {
   return (await http<CoachAccessDto>("/v1/coach/access")) as CoachAccessDto;
 }
@@ -28,10 +54,17 @@ export async function fetchCoachAccess(): Promise<CoachAccessDto> {
 export async function sendCoachMessage(
   message: string,
   clientMessageId?: string,
+  conversationId?: string,
+  contextMockExamId?: string,
 ): Promise<CoachReply> {
   return (await http<CoachReply>("/v1/coach/chat", {
     method: "POST",
-    body: JSON.stringify({ message, ...(clientMessageId ? { clientMessageId } : {}) }),
+    body: JSON.stringify({
+      message,
+      ...(clientMessageId ? { clientMessageId } : {}),
+      ...(conversationId ? { conversationId } : {}),
+      ...(contextMockExamId ? { contextMockExamId } : {}),
+    }),
   })) as CoachReply;
 }
 
@@ -52,13 +85,22 @@ export async function streamCoachMessage(
   message: string,
   clientMessageId: string | undefined,
   onDelta: (delta: string) => void,
+  conversationId?: string,
+  contextMockExamId?: string,
 ): Promise<CoachReply> {
   const res = await httpRaw("/v1/coach/chat/stream", {
     method: "POST",
-    body: JSON.stringify({ message, ...(clientMessageId ? { clientMessageId } : {}) }),
+    body: JSON.stringify({
+      message,
+      ...(clientMessageId ? { clientMessageId } : {}),
+      ...(conversationId ? { conversationId } : {}),
+      ...(contextMockExamId ? { contextMockExamId } : {}),
+    }),
   });
   if (!res.ok) await throwApiClientError(res);
-  if (!res.body) return sendCoachMessage(message, clientMessageId);
+  if (!res.body) {
+    return sendCoachMessage(message, clientMessageId, conversationId, contextMockExamId);
+  }
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -90,19 +132,30 @@ export async function streamCoachMessage(
   return done;
 }
 
-/** Persisted rolling chat history, newest-first (page/pageSize appended manually — study-sessions pattern). */
+/** The user's chat threads, most-recently-active first ("Son sohbetler"). */
+export async function listCoachConversations(
+  page = 1,
+  pageSize = 20,
+): Promise<Paginated<CoachConversationDto>> {
+  return (await http<Paginated<CoachConversationDto>>(
+    `/v1/coach/conversations?page=${page}&pageSize=${pageSize}`,
+  )) as Paginated<CoachConversationDto>;
+}
+
+/** One thread's persisted history, newest-first. */
 export async function listCoachMessages(
+  conversationId: string,
   page = 1,
   pageSize = 30,
 ): Promise<Paginated<CoachMessageDto>> {
   return (await http<Paginated<CoachMessageDto>>(
-    `/v1/coach/messages?page=${page}&pageSize=${pageSize}`,
+    `/v1/coach/conversations/${conversationId}/messages?page=${page}&pageSize=${pageSize}`,
   )) as Paginated<CoachMessageDto>;
 }
 
-/** "Yeni sohbet" — clears the persisted rolling conversation (and memory profile) on the backend. */
-export async function clearCoachHistory(): Promise<void> {
-  await http<void>("/v1/coach/messages", { method: "DELETE" });
+/** Delete one thread (its messages cascade). The memory profile is kept. */
+export async function deleteCoachConversation(conversationId: string): Promise<void> {
+  await http<void>(`/v1/coach/conversations/${conversationId}`, { method: "DELETE" });
 }
 
 /** Rate a coach message: 1 = 👍, -1 = 👎, null = clear. */

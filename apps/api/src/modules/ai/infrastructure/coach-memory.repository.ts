@@ -2,7 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { eq } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
-import { withUserContext } from "../../../database/rls";
+import { withServiceContext, withUserContext } from "../../../database/rls";
 import { coachMemory } from "../../../database/schema";
 
 export interface CoachMemoryRow {
@@ -48,6 +48,13 @@ export class CoachMemoryRepository {
           target: coachMemory.userId,
           set: { ...data, updatedAt: new Date() },
         });
+    });
+  }
+
+  /** KVKK erasure: drop the profile from an admin context (target user, not the caller). Idempotent. */
+  async deleteAllForUser(userId: string): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await tx.delete(coachMemory).where(eq(coachMemory.userId, userId));
     });
   }
 

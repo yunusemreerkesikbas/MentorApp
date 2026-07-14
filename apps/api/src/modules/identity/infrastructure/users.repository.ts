@@ -165,4 +165,61 @@ export class UsersRepository {
       return rows[0]!;
     });
   }
+
+  /**
+   * KVKK erasure of the identity row (identity owns this table — admin/account orchestrators call
+   * through the service, never write `users` directly). Returns the pre-scrub PII for the audit
+   * trail plus the avatar key so the caller can drop the object from storage.
+   * Idempotent: re-running on an already-scrubbed row just rewrites the same values.
+   */
+  async anonymizeAccount(
+    id: string,
+    status: string,
+  ): Promise<
+    | {
+        before: Record<string, unknown>;
+        after: Record<string, unknown>;
+        avatarStorageKey: string | null;
+      }
+    | undefined
+  > {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({
+          email: users.email,
+          displayName: users.displayName,
+          username: users.username,
+          status: users.status,
+          avatarStorageKey: users.avatarStorageKey,
+        })
+        .from(users)
+        .where(eq(users.id, id))
+        .for("update")
+        .limit(1);
+      const current = rows[0];
+      if (!current) return undefined;
+
+      const after = {
+        email: `deleted+${id}@anonymized.local`,
+        displayName: "Silinmiş Kullanıcı",
+        username: null,
+        status,
+      };
+      await tx
+        .update(users)
+        .set({
+          ...after,
+          examType: null,
+          examDate: null,
+          // Public profile PII (KVKK).
+          bio: null,
+          website: null,
+          avatarStorageKey: null,
+        })
+        .where(eq(users.id, id));
+
+      const { avatarStorageKey, ...before } = current;
+      return { before, after, avatarStorageKey };
+    });
+  }
 }

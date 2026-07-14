@@ -6,6 +6,10 @@ export const aiChatSchema = z.object({
   message: z.string().trim().min(1).max(2000),
   /** Idempotency key for coin spend (free path) — prevents double-debit on retry. */
   clientMessageId: z.string().uuid().optional(),
+  /** Existing thread to continue; omit to start a new conversation. */
+  conversationId: z.string().uuid().optional(),
+  /** Owned mock exam whose authoritative result summary should ground this message. */
+  contextMockExamId: z.string().uuid().optional(),
 });
 export type AiChatInput = z.infer<typeof aiChatSchema>;
 

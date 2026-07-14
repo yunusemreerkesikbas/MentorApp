@@ -469,6 +469,14 @@
       "title": "Koçun seni nasıl tanıyor",
       "reset": "Sıfırla"
     },
+    "conversations": {
+      "title": "Son sohbetler",
+      "delete_aria": "\"{title}\" sohbetini sil",
+      "delete_confirm_title": "Sohbet silinsin mi?",
+      "delete_confirm_message": "\"{title}\" sohbeti ve içindeki tüm mesajlar kalıcı olarak silinecek.",
+      "delete_confirm_yes": "Sil",
+      "delete_confirm_no": "Vazgeç"
+    },
     "chat": {
       "header_title": "Sohbet",
       "empty_hint": "İlk mesajını yaz — koçun burada.",
@@ -541,6 +549,17 @@
       "title": "Hesap",
       "subscription": "Abonelik",
       "logout": "Çıkış yap"
+    },
+    "delete_account": {
+      "title": "Hesabımı sil",
+      "description": "Hesabın ve verilerin kalıcı olarak silinir: koç sohbetlerin, notların, hedef panon ve yüklediğin fotoğraflar. Aktif aboneliğin varsa iptal edilir. Fatura kayıtları yasal saklama yükümlülüğü gereği korunur. Bu işlem geri alınamaz.",
+      "cta": "Hesabımı sil",
+      "confirm_phrase": "HESABIMI SİL",
+      "confirm_hint": "Onaylamak için aşağıya {phrase} yaz.",
+      "confirm_label": "Onay metni",
+      "confirm_cta": "Kalıcı olarak sil",
+      "deleting": "Siliniyor…",
+      "cancel": "Vazgeç"
     },
     "support": {
       "title": "Uygulama",
@@ -772,6 +791,7 @@
     "history": {
       "title": "Geçmiş denemeler",
       "detail_title": "Deneme detayı",
+      "coach_seed": "{date} tarihli {exam} denememin sonuçlarını yorumlar mısın?",
       "close": "İptal",
       "empty": "Henüz kayıtlı deneme yok.",
       "loading": "Geçmiş denemeler yükleniyor…",
