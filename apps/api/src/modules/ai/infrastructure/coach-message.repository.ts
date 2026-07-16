@@ -89,6 +89,37 @@ export class CoachMessageRepository {
     });
   }
 
+  /**
+   * Regenerate: overwrite the user's own COACH row in place — content/model/sources/suggestedTask
+   * replaced, feedback reset (it rated the OLD reply). Row identity and message count are stable.
+   */
+  async updateCoachReply(
+    userId: string,
+    messageId: string,
+    coach: { content: string; model: string; sources: SourceChip[]; suggestedTask?: SuggestedTask },
+  ): Promise<boolean> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const updated = await tx
+        .update(coachMessages)
+        .set({
+          content: coach.content,
+          model: coach.model,
+          sources: coach.sources,
+          suggestedTask: coach.suggestedTask ?? null,
+          feedback: null,
+        })
+        .where(
+          and(
+            eq(coachMessages.id, messageId),
+            eq(coachMessages.userId, userId),
+            eq(coachMessages.role, CoachMessageRole.COACH),
+          ),
+        )
+        .returning({ id: coachMessages.id });
+      return updated.length > 0;
+    });
+  }
+
   /** Set 👍/👎/none on the user's own COACH message. Returns false when no such row (wrong id/role/owner). */
   async setFeedback(userId: string, messageId: string, feedback: number | null): Promise<boolean> {
     return withUserContext(this.db, { userId }, async (tx) => {

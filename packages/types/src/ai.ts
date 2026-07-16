@@ -17,6 +17,8 @@ export interface CoachAccessDto {
   chatCost?: number;
   /** Remaining free-coin messages today (COIN path only). */
   freeCoinMessagesRemainingToday?: number;
+  /** Remaining messages in the rolling-24h premium limit (PREMIUM only; a message count, never coins §4 #3). */
+  dailyMessagesRemaining?: number;
 }
 
 /** GET /v1/coach/conversations item — one chat thread. */
@@ -37,6 +39,8 @@ export interface CoachChatReplyDto {
   sources: { title: string; slug: string; url: string }[];
   /** Optional coach-suggested plan task — FE renders a "Plana ekle" card (user confirms; AI never writes). */
   suggestedTask?: { title: string; subject: string | null };
+  /** Ephemeral follow-up question chips (max 3) — never persisted; only on the live reply. */
+  followUps?: string[];
 }
 
 /**
@@ -141,6 +145,24 @@ export interface SessionReflectionDto {
 }
 
 /**
+ * POST /v1/coach/plan-draft response — a clamped 7-day plan PREVIEW (§4 #5 premium-only).
+ * Never persisted; the user confirms in the FE and tasks are written via POST /v1/plan-tasks/bulk.
+ */
+export interface CoachPlanDraftDto {
+  days: { date: string; tasks: { title: string; subject: string | null }[] }[];
+  model: string;
+}
+
+/**
+ * POST /v1/coach/daily-greeting response — premium proactive daily greeting on the /koc hub
+ * (§4 #5 premium-only; cached per user+day, `model` is "cache" on a hit).
+ */
+export interface DailyGreetingDto {
+  greeting: string;
+  model: string;
+}
+
+/**
  * POST /v1/coach/vision-note response — premium AI motivation note grounded on the user's vision
  * board (goal + city + "why") + PII-free context (§4 #5 premium-only; never official info §4 #1).
  */
@@ -177,6 +199,7 @@ export interface PhotoUploadUrlDto {
 /** POST /v1/mock-exams/{id}/categorize-photo response — classification only (§4 #2). */
 export interface CategorizePhotoResultDto {
   subjectRefs: { slug: string; name: string }[];
+  topicRefs: { slug: string; name: string; subjectSlug: string; subjectName: string }[];
 }
 
 

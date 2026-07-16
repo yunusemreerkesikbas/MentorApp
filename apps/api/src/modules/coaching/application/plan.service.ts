@@ -118,6 +118,30 @@ export class PlanService {
     });
   }
 
+  /**
+   * User-confirmed batch add (e.g. an accepted coach draft — the AI itself never writes here,
+   * workstreams §2). All-or-nothing: every date is validated first, then one tx writes all rows.
+   */
+  async createMany(userId: string, inputs: CreatePlanTaskInput[]): Promise<PlanTaskDto[]> {
+    const withDates = inputs.map((input) => ({ ...input, taskDate: input.taskDate ?? todayIso() }));
+    for (const input of withDates) this.assertTaskDateMutable(input.taskDate);
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const rows = [];
+      for (const input of withDates) {
+        rows.push(
+          await this.tasks.create(tx, {
+            userId,
+            taskDate: input.taskDate,
+            title: input.title,
+            subject: input.subject ?? null,
+            ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
+          }),
+        );
+      }
+      return rows.map(toPlanTaskDto);
+    });
+  }
+
   async update(userId: string, id: string, input: UpdatePlanTaskInput): Promise<PlanTaskDto> {
     let planCompleted: number | null = null;
     const result = await withUserContext(this.db, { userId }, async (tx) => {

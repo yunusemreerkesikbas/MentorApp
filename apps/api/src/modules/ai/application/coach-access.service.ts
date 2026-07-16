@@ -5,6 +5,8 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { EconomyService } from "../../economy/application/economy.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
+import { AiUsageFeature } from "../domain/ai.constants";
+import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -20,6 +22,7 @@ export class CoachAccessService {
     private readonly economy: EconomyService,
     private readonly config: ConfigRegistryService,
     private readonly budget: AiBudgetGuard,
+    private readonly usage: AiUsageRepository,
   ) {}
 
   async getAccess(userId: string, rolesHint?: string[]): Promise<CoachAccessDto> {
@@ -32,7 +35,16 @@ export class CoachAccessService {
 
     const ent = await this.entitlement.getEntitlement(userId, rolesHint);
     if (ent.isPremium) {
-      return { canChat: true, mode: CoachAccessMode.PREMIUM };
+      // Same counter as ChatService.assertPremiumRateLimit so the hint matches enforcement.
+      const [dailyLimit, usedToday] = await Promise.all([
+        this.config.get("ai.chat.daily_limit"),
+        this.usage.countFeatureSince(userId, AiUsageFeature.CHAT, new Date(Date.now() - DAY_MS)),
+      ]);
+      return {
+        canChat: true,
+        mode: CoachAccessMode.PREMIUM,
+        dailyMessagesRemaining: Math.max(0, dailyLimit - usedToday),
+      };
     }
 
     if (!(await this.config.get(FeatureFlag.ECONOMY_ENABLED))) {

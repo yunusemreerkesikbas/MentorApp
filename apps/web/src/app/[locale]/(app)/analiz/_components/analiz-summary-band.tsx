@@ -17,7 +17,6 @@ export function AnalizSummaryBand({
 
   const latest = analysis?.trend[0] ?? null;
   const ghost = analysis?.ghost ?? null;
-  const focus = analysis?.nextFocus ?? null;
 
   if (!latest) {
     return (
@@ -47,14 +46,6 @@ export function AnalizSummaryBand({
         <div className="flex flex-wrap items-center gap-2">
           {ghost ? (
             <Chip>{t("delta", { delta: ghost.previousDelta })}</Chip>
-          ) : null}
-          {focus ? (
-            <span
-              className="text-xs"
-              style={{ color: "var(--color-secondary)" }}
-            >
-              {t("next_focus", { subject: focus.subjectName })}
-            </span>
           ) : null}
         </div>
       </div>

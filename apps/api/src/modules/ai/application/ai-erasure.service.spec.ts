@@ -7,25 +7,29 @@ describe("AiErasureService", () => {
   let deleteConversations: ReturnType<typeof vi.fn>;
   let deleteMemory: ReturnType<typeof vi.fn>;
   let deleteWeekly: ReturnType<typeof vi.fn>;
+  let deleteGreetings: ReturnType<typeof vi.fn>;
   let service: AiErasureService;
 
   beforeEach(() => {
     deleteConversations = vi.fn(async () => undefined);
     deleteMemory = vi.fn(async () => undefined);
     deleteWeekly = vi.fn(async () => undefined);
+    deleteGreetings = vi.fn(async () => undefined);
     service = new AiErasureService(
       { deleteAllForUser: deleteConversations } as never,
       { deleteAllForUser: deleteMemory } as never,
       { deleteAllForUser: deleteWeekly } as never,
+      { deleteAllForUser: deleteGreetings } as never,
     );
   });
 
-  it("erases threads, memory profile and weekly narrations", async () => {
+  it("erases threads, memory profile, weekly narrations and daily greetings", async () => {
     await service.eraseUserData(USER);
 
     expect(deleteConversations).toHaveBeenCalledWith(USER);
     expect(deleteMemory).toHaveBeenCalledWith(USER);
     expect(deleteWeekly).toHaveBeenCalledWith(USER);
+    expect(deleteGreetings).toHaveBeenCalledWith(USER);
   });
 
   it("is idempotent — a second run is another clean no-op pass", async () => {

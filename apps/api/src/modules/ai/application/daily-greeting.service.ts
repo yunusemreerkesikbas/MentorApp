@@ -1,0 +1,74 @@
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import type { DailyGreetingDto } from "@mentor/types";
+import type { RequestUser } from "../../../common/auth/current-user";
+import { DomainError } from "../../../common/errors/domain-error";
+import { ErrorCode } from "../../../common/errors/error-code";
+import { ConfigRegistryService } from "../../../common/config/config-registry.service";
+import { FeatureFlag } from "../../../common/config/config.catalog";
+import { EntitlementService } from "../../payments/application/entitlement.service";
+import { LLM_PORT, type LlmPort } from "../domain/llm.port";
+import { AiUsageFeature, buildDailyGreetingPrompt, estimateCostMicros } from "../domain/ai.constants";
+import { ContextBuilder } from "./context-builder.service";
+import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
+import { DailyGreetingRepository } from "../infrastructure/daily-greeting.repository";
+import { AiBudgetGuard } from "./ai-budget.guard";
+
+/**
+ * Premium proactive daily greeting on the /koc hub (W3 · §4 #5 premium-only — free tier keeps the
+ * rule-based brief). Cost is bounded by an idempotent daily cache: at most one LLM call per
+ * (user, UTC day); the message stays fixed for the day (no fingerprint refresh — deliberate).
+ * Mirrors {@link MoodReflectionService}; usage metered into `ai_usage` (§7).
+ */
+@Injectable()
+export class DailyGreetingService {
+  constructor(
+    @Inject(LLM_PORT) private readonly llm: LlmPort,
+    private readonly context: ContextBuilder,
+    private readonly usage: AiUsageRepository,
+    private readonly config: ConfigRegistryService,
+    private readonly entitlement: EntitlementService,
+    private readonly greetings: DailyGreetingRepository,
+    private readonly budget: AiBudgetGuard,
+  ) {}
+
+  async greet(user: RequestUser): Promise<DailyGreetingDto> {
+    if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
+      throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+    }
+
+    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
+    if (!ent.isPremium) {
+      throw new DomainError(ErrorCode.PAYMENT_PREMIUM_REQUIRED, HttpStatus.FORBIDDEN);
+    }
+
+    const today = new Date().toISOString().slice(0, 10); // UTC day — same day math as streak
+    const cached = await this.greetings.find(user.id, today);
+    if (cached) {
+      return { greeting: cached.greeting, model: "cache" };
+    }
+
+    const ctx = await this.context.build(user.id);
+    const { system, user: userMsg } = buildDailyGreetingPrompt(ctx);
+
+    await this.budget.assertWithinBudget();
+    const result = await this.llm.complete({ system, user: userMsg });
+
+    await this.usage.append({
+      userId: user.id,
+      model: result.model,
+      feature: AiUsageFeature.DAILY_GREETING,
+      promptTokens: result.promptTokens,
+      completionTokens: result.completionTokens,
+      costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
+    });
+
+    await this.greetings.insert({
+      userId: user.id,
+      greetingDate: today,
+      greeting: result.text,
+      model: result.model,
+    });
+
+    return { greeting: result.text, model: result.model };
+  }
+}

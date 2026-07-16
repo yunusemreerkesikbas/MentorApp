@@ -454,6 +454,7 @@
       "brief_plan_empty": "Bugün için planlı görev yok",
       "brief_streak": "Seri: {days} gün",
       "suggestions_label": "Koça sorabileceklerin",
+      "daily_greeting_dismiss": "Günlük mesajı kapat",
       "chip_focus": "{subject} odağı",
       "seed_focus": "{subject} dersinde zorlanıyorum, nasıl çalışmalıyım?",
       "chip_task": "Sıradaki göreve başla",
@@ -480,7 +481,9 @@
     "chat": {
       "header_title": "Sohbet",
       "empty_hint": "İlk mesajını yaz — koçun burada.",
-      "stream_error": "Yanıt alınamadı — lütfen tekrar dene."
+      "stream_error": "Yanıt alınamadı — lütfen tekrar dene.",
+      "remaining_hint": "Kalan mesaj hakkın: {count}",
+      "remaining_hint_zero": "Bugünlük mesaj hakkın doldu — yarın devam."
     }
   },
   "profile": {
@@ -688,7 +691,21 @@
     "date_sheet_title": "Tarih seç",
     "date_sheet_apply": "Uygula",
     "date_sheet_label": "Gün",
-    "past_readonly_notice": "Geçmiş günler salt okunur. Sadece bugün ve gelecek günleri düzenleyebilirsin."
+    "past_readonly_notice": "Geçmiş günler salt okunur. Sadece bugün ve gelecek günleri düzenleyebilirsin.",
+    "coach_draft_cta": "Koçtan haftalık plan iste",
+    "coach_draft_note_title": "Koçun haftalık planı",
+    "coach_draft_note_label": "Bu hafta için notun (isteğe bağlı)",
+    "coach_draft_note_placeholder": "Örn. Matematiğe biraz daha ağırlık ver.",
+    "coach_draft_note_hint": "{count}/500 karakter",
+    "coach_draft_note_invalid": "Not en fazla 500 karakter olabilir.",
+    "coach_draft_generate": "Taslak oluştur",
+    "coach_draft_preview_title": "Koçun plan taslağı",
+    "coach_draft_preview_notice": "Mevcut görevlerin korunur; yalnız seçtiklerin planına eklenir.",
+    "coach_draft_selected_count": "{count} görev seçildi",
+    "coach_draft_select_required": "Planına eklemek için en az bir görev seç.",
+    "coach_draft_add_selected": "Seçilenleri plana ekle",
+    "coach_draft_success_title": "Planın hazır",
+    "coach_draft_success_message": "{count} görev planına eklendi."
   },
   "analysis": {
     "loading": "Yükleniyor…",
@@ -717,6 +734,8 @@
     "avg_normalized": "%{percent} · {questions} soru",
     "photo_signals_title": "Ders sinyalleri",
     "photo_signals_subtitle": "Foto analizinden gelen ipuçları",
+    "photo_topic_signals_title": "Konu sinyalleri",
+    "photo_topic_signals_subtitle": "Yanlış fotoğraflarında tekrar eden konular",
     "photo_count": "{count} foto",
     "photo_signals_empty_desc": "Henüz ders sinyali yok. Yanlış bir soru fotoğrafı eklediğinde ipuçlarını burada birlikte göreceğiz.",
     "photo_trust": "Fotoğraf yalnızca konu veya ders sınıflandırır; soruyu çözmez.",
@@ -725,6 +744,7 @@
     "photo_retry": "Tekrar dene",
     "photo_loading": "Fotoğraf erişimi yükleniyor…",
     "photo_signals_window": "Yalnızca son dört denemeye bağlı fotoğraf sinyalleri.",
+    "photo_topic_signals_window": "Aktif sınavındaki son 12 denemeye bağlı konu sinyalleri.",
     "photo_signals_empty_action": "İlk yanlış soru fotoğrafını yukarıdaki alandan ekleyebilirsin.",
     "back_panel": "← Panele dön",
     "needs_exam_chip": "Sınav türü gerekli",
@@ -744,7 +764,6 @@
       "last_net": "Son net: {net}",
       "delta": "Geçen denemeye göre {delta}",
       "weak_subject": "{subject} ile güçlenelim",
-      "next_focus": "Sıradaki odağın: {subject}",
       "new_entry": "Yeni deneme gir",
       "empty": "Henüz deneme yok — ilk sonucunu girelim."
     },
@@ -757,6 +776,9 @@
       "evidence_level_early": "İlk sinyal",
       "evidence_level_repeated": "Tekrarlayan sinyal",
       "cta": "Planıma ekle",
+      "coach_cta": "Koçla konuş",
+      "coach_seed": "{subject} dersindeki {topic} konusu yanlış fotoğraflarımda tekrar ediyor. Bu konuyu nasıl çalışmalıyım?",
+      "coach_seed_subject": "{subject} çalışma odağımı birlikte netleştirelim. Bu dersi nasıl çalışmalıyım?",
       "recent_title": "Son 4 deneme",
       "recent_subtitle": "Odak dersinin net seyri",
       "recent_delta": "{delta} net",
@@ -771,11 +793,12 @@
       "teaser_title": "Rekorun burada başlıyor",
       "teaser_desc": "İlk denemeni girdikten sonra gelişimini burada takip edeceğiz."
     },
+    "evidence_title": "Kanıtlar ve geçmiş",
+    "evidence_subtitle": "Trend, geçmiş-ben ve ders ortalamaların",
     "ghost_teaser_title": "Geçmişinle kıyaslama",
     "ghost_teaser_desc": "Bir deneme daha gir; geçmişinle kıyaslamaya başlayalım.",
     "copy_last": "Son denemeyi kopyala",
-    "coach_seed": "Son deneme sonuçlarıma göre ilerlememi yorumlar mısın?",
-    "coach_cta": "Koça sor",
+    "coach_cta": "Koçla konuş",
     "trend_first": "İlk deneme",
     "validation_over_count": "{subject}: toplam soru sayısını aştın ({total}/{max}).",
     "saved_toast_title": "Deneme kaydedildi",
@@ -829,16 +852,10 @@
       "focus_title": "Sıradaki adım",
       "rhythm_focus": "Ritmi sürdür",
       "rhythm_focus_message": "İki küçük odak seansı yeterli bir başlangıç.",
-      "generate": "Haftamı değerlendir",
-      "generating": "Koçun haftanı değerlendiriyor…",
-      "coach_chip": "Koçunun yorumu",
-      "add_to_plan": "Planıma ekle",
-      "premium_teaser": "Koç yorumu ve hazır plan görevi Premium’da",
       "enter_exam": "Deneme gir",
       "start_session": "Seans başlat",
       "retry": "Tekrar dene",
-      "load_error": "Haftalık değerlendirme yüklenemedi.",
-      "generate_error": "Koç değerlendirmesi oluşturulamadı."
+      "load_error": "Haftalık değerlendirme yüklenemedi."
     }
   },
   "session": {
@@ -966,18 +983,24 @@
     "locked_unavailable_title": "Foto analizi şu an kapalı",
     "locked_unavailable_subtitle": "Bu özellik geçici olarak kullanılamıyor. Daha sonra yeniden deneyebilirsin.",
     "upgrade": "Premium'a yükselt",
-    "upload_subtitle": "Yanlış sorunun fotoğrafını yükle; hangi derse ait olduğunu tahmin ederiz (çözüm yok).",
-    "upload_title": "Foto ile ders tahmini",
+    "upload_subtitle": "Tek bir yanlış sorunun fotoğrafını yükle; dersini ve mümkünse konusunu sınıflandırırız (çözüm yok).",
+    "upload_title": "Foto ile ders ve konu tahmini",
     "remaining": "Bu ay kalan analiz: {count}",
     "file_label": "Soru fotoğrafı (JPEG/PNG)",
     "analyzing": "Analiz ediliyor…",
-    "result_prefix": "Bu soru muhtemelen:"
+    "result_prefix": "Bu soru muhtemelen:",
+    "topic_undetermined": "Ders belirlendi; konu bu fotoğrafta netleşmedi.",
+    "result_empty": "Bu fotoğraf için güvenli bir ders veya konu eşleşmesi bulunamadı."
   },
   "coach_chat": {
     "suggested_task_label": "Koçun önerisi",
     "add_to_plan": "Plana ekle",
     "feedback_up": "Bu yanıt yardımcı oldu",
     "feedback_down": "Bu yanıt yardımcı olmadı",
+    "copy": "Yanıtı kopyala",
+    "copied": "Kopyalandı",
+    "followups_label": "Devam soruları",
+    "regenerate": "Yanıtı yeniden üret",
     "input_label": "Koçuna mesaj yaz",
     "input_placeholder": "Koçuna bir şey sor…",
     "send": "Gönder",

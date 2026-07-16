@@ -34,6 +34,7 @@ describe("ChatService coin refund", () => {
   let llmCompleteStream: ReturnType<typeof vi.fn>;
   let lastN: ReturnType<typeof vi.fn>;
   let appendExchange: ReturnType<typeof vi.fn>;
+  let updateCoachReply: ReturnType<typeof vi.fn>;
   let createConversation: ReturnType<typeof vi.fn>;
   let isOwned: ReturnType<typeof vi.fn>;
   let getMockExam: ReturnType<typeof vi.fn>;
@@ -45,6 +46,7 @@ describe("ChatService coin refund", () => {
     grant = vi.fn();
     lastN = vi.fn(async () => []);
     appendExchange = vi.fn(async () => undefined);
+    updateCoachReply = vi.fn(async () => true);
     createConversation = vi.fn(async () => CONV_ID);
     isOwned = vi.fn(async () => true);
     getMockExam = vi.fn(async () => MOCK_EXAM);
@@ -82,6 +84,7 @@ describe("ChatService coin refund", () => {
         lastN,
         recentForUser: vi.fn(async () => []),
         appendExchange,
+        updateCoachReply,
         listPagedByConversation: vi.fn(),
         setFeedback: vi.fn(),
       } as never,
@@ -220,6 +223,27 @@ describe("ChatService coin refund", () => {
     });
   });
 
+  it("extracts follow-ups (before the trailing task marker) and persists the cleaned reply", async () => {
+    llmComplete.mockResolvedValue({
+      text: 'Harika!\n<<FOLLOWUP["Soru bir?","Soru iki?"]>>\n<<TASK{"title":"Tarih: 10 soru","subject":"Tarih"}>>',
+      promptTokens: 1,
+      completionTokens: 1,
+      model: "fake",
+    });
+
+    const res = await service.reply(USER, "Bana görev öner", MSG_ID);
+
+    expect(res.reply).toBe("Harika!");
+    expect(res.followUps).toEqual(["Soru bir?", "Soru iki?"]);
+    expect(res.suggestedTask).toEqual({ title: "Tarih: 10 soru", subject: "Tarih" });
+    expect(appendExchange).toHaveBeenCalledWith(
+      USER.id,
+      CONV_ID,
+      "Bana görev öner",
+      expect.objectContaining({ content: "Harika!" }),
+    );
+  });
+
   it("never leaks the task marker into stream deltas; done carries the suggestion", async () => {
     llmCompleteStream.mockImplementation(async function* () {
       yield { delta: "Bugün 20 soru çöz. " };
@@ -352,4 +376,76 @@ describe("ChatService coin refund", () => {
     );
   });
 
+  // ---- regenerate ----
+
+  const TAIL = [
+    { id: "m-user", role: "USER", content: "Nasıl çalışmalıyım?", sources: [], feedback: null, createdAt: "t1" },
+    { id: "m-coach", role: "COACH", content: "Eski yanıt.", sources: [], feedback: -1, createdAt: "t2" },
+  ];
+
+  it("regenerate overwrites the coach row in place — no new exchange, no memory trigger", async () => {
+    lastN.mockResolvedValue(TAIL);
+    llmCompleteStream.mockImplementation(async function* () {
+      yield { delta: "Yeni yanıt." };
+      yield { final: { text: "Yeni yanıt.", promptTokens: 1, completionTokens: 1, model: "fake" } };
+    });
+
+    const events: unknown[] = [];
+    for await (const ev of service.regenerateStream(USER, CONV_ID)) events.push(ev);
+
+    expect(events.at(-1)).toMatchObject({
+      done: { reply: "Yeni yanıt.", conversationId: CONV_ID },
+    });
+    expect(updateCoachReply).toHaveBeenCalledWith(
+      USER.id,
+      "m-coach",
+      expect.objectContaining({ content: "Yeni yanıt.", model: "fake" }),
+    );
+    expect(appendExchange).not.toHaveBeenCalled();
+    // The old (disliked) reply must not be replayed into the prompt history.
+    expect(llmCompleteStream).toHaveBeenCalledWith(
+      expect.objectContaining({ user: "Nasıl çalışmalıyım?", history: [] }),
+    );
+  });
+
+  it("regenerate rejects a thread that does not end in a completed exchange", async () => {
+    lastN.mockResolvedValue([]);
+
+    const consume = async () => {
+      for await (const ev of service.regenerateStream(USER, CONV_ID)) void ev;
+    };
+    await expect(consume()).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+    expect(llmCompleteStream).not.toHaveBeenCalled();
+    expect(spend).not.toHaveBeenCalled();
+  });
+
+  it("regenerate rejects a thread the user does not own", async () => {
+    isOwned.mockResolvedValue(false);
+
+    const consume = async () => {
+      for await (const ev of service.regenerateStream(USER, CONV_ID)) void ev;
+    };
+    await expect(consume()).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("regenerate refunds the coin and leaves the row untouched on a mid-stream failure", async () => {
+    lastN.mockResolvedValue(TAIL);
+    llmCompleteStream.mockImplementation(async function* () {
+      yield { delta: "Yarı" };
+      throw new Error("LLM down");
+    });
+
+    const consume = async () => {
+      for await (const ev of service.regenerateStream(USER, CONV_ID)) void ev;
+    };
+    await expect(consume()).rejects.toThrow("LLM down");
+
+    expect(updateCoachReply).not.toHaveBeenCalled();
+    expect(grant).toHaveBeenCalledWith(
+      USER.id,
+      Currency.COIN,
+      5,
+      expect.objectContaining({ refId: expect.any(String) }),
+    );
+  });
 });

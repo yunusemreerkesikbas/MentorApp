@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useCoachSession } from "./coach-session-context";
 import { CoachConversationList } from "./coach-conversation-list";
 import { CoachMemoryCard } from "./coach-memory-card";
+import { KocDailyGreeting } from "./koc-daily-greeting";
 import { KocHubBrief } from "./koc-hub-brief";
 import { KocHubSkeleton } from "./koc-content-skeleton";
 
@@ -85,6 +86,7 @@ export function KocHub() {
         </div>
 
         <div className="relative z-10 mt-auto flex flex-col gap-3 px-5 pb-6 pt-72">
+          <KocDailyGreeting />
           <CoachMemoryCard />
           <KocHubBrief />
           <Button type="button" className="w-full" onClick={goNewChat}>

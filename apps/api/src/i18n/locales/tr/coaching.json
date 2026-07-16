@@ -26,10 +26,12 @@
     "LOWEST_AVERAGE_REPEATED": "{subject} denemelerinde tekrar eden çalışma alanın olarak görünüyor. Küçük bir tekrar iyi bir sonraki adım olabilir.",
     "TASK_TITLE_PHOTO_SIGNAL": "{subject} yanlışlarını gözden geçir",
     "TASK_TITLE_LOWEST_AVERAGE": "{subject} tekrar et",
-    "TREND_FIRST": "{subject} i\u00e7in ilk yak\u0131n d\u00f6nem sinyalin olu\u015ftu. Bir deneme daha y\u00f6n\u00fc g\u00f6r\u00fcn\u00fcr k\u0131lacak.",
-    "TREND_UP": "{subject} yak\u0131n d\u00f6nemde yukar\u0131 y\u00f6nl\u00fc ilerliyor. Bu ritmi k\u00fc\u00e7\u00fck bir tekrar ile s\u00fcrd\u00fcrelim.",
-    "TREND_DOWN": "{subject} son denemede biraz daha deste\u011fe ihtiya\u00e7 duydu. Tek bir sonuca tak\u0131lmadan k\u00fc\u00e7\u00fck bir tekrar planlayal\u0131m.",
-    "TREND_STEADY": "{subject} son iki denemede dengeli kald\u0131. K\u00fc\u00e7\u00fck bir tekrar yeni hareket alan\u0131 a\u00e7abilir."
+    "TREND_FIRST": "{subject} için ilk yakın dönem sinyalin oluştu. Bir deneme daha yönü görünür kılacak.",
+    "TREND_UP": "{subject} yakın dönemde yukarı yönlü ilerliyor. Bu ritmi küçük bir tekrar ile sürdürelim.",
+    "TREND_DOWN": "{subject} son denemede biraz daha desteğe ihtiyaç duydu. Tek bir sonuca takılmadan küçük bir tekrar planlayalım.",
+    "TREND_STEADY": "{subject} son iki denemede dengeli kaldı. Küçük bir tekrar yeni hareket alanı açabilir.",
+    "PHOTO_TOPIC_REPEATED": "{subject} içindeki {topic} yanlış fotoğraflarında tekrar ediyor. Küçük bir konu tekrarı iyi bir sonraki adım.",
+    "TASK_TITLE_PHOTO_TOPIC": "{topic} konusunu gözden geçir"
   },
   "weekly": {
     "INSUFFICIENT": "Geçen haftayı değerlendirmek için bir deneme ya da iki tamamlanmış seans yeterli.",
@@ -47,4 +49,3 @@
     "TASK_SESSION": "İki odak seansı planla"
   }
 }
-

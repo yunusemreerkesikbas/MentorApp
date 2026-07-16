@@ -37,6 +37,28 @@ export function AnalizTabYanlislarim({
 }: AnalizTabYanlislarimProps) {
   const t = useTranslations("analysis");
   const signals = analysis?.photoSubjectSignals ?? [];
+  const topicSignals = analysis?.photoTopicSignals ?? [];
+  const topicGroups = topicSignals.reduce<
+    Array<{
+      subjectRef: string;
+      subjectName: string;
+      topics: typeof topicSignals;
+    }>
+  >((groups, signal) => {
+    const group = groups.find((item) => item.subjectRef === signal.subjectRef);
+    if (group) group.topics.push(signal);
+    else
+      groups.push({
+        subjectRef: signal.subjectRef,
+        subjectName: signal.subjectName,
+        topics: [signal],
+      });
+    return groups;
+  }, []);
+  const maxTopicCount = topicSignals.reduce(
+    (maximum, signal) => Math.max(maximum, signal.count),
+    0,
+  );
   const maxCount = signals.reduce(
     (maximum, signal) => Math.max(maximum, signal.count),
     0,
@@ -95,7 +117,59 @@ export function AnalizTabYanlislarim({
         </SkeletonGroup>
       )}
 
-      {signals.length > 0 ? (
+      {topicSignals.length > 0 ? (
+        <Card>
+          <SectionHeading subtitle={t("photo_topic_signals_subtitle")}>
+            {t("photo_topic_signals_title")}
+          </SectionHeading>
+          <p
+            className="mt-2 text-xs"
+            style={{ color: "var(--color-secondary)" }}
+          >
+            {t("photo_topic_signals_window")}
+          </p>
+          <div className="mt-4 flex flex-col gap-5">
+            {topicGroups.map((group) => (
+              <section
+                key={group.subjectRef}
+                aria-labelledby={"topic-group-" + group.subjectRef}
+              >
+                <h3
+                  id={"topic-group-" + group.subjectRef}
+                  className="mb-2 text-sm font-bold"
+                  style={{ color: "var(--color-main)" }}
+                >
+                  {group.subjectName}
+                </h3>
+                <ul className="flex flex-col gap-3">
+                  {group.topics.map((signal) => (
+                    <li key={signal.topicRef} className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span style={{ color: "var(--color-body)" }}>
+                          {signal.topicName}
+                        </span>
+                        <span
+                          className="tabular-nums"
+                          style={{ color: "var(--color-secondary)" }}
+                        >
+                          {t("photo_count", { count: signal.count })}
+                        </span>
+                      </div>
+                      <ProgressBar
+                        value={
+                          maxTopicCount > 0
+                            ? Math.round((signal.count / maxTopicCount) * 100)
+                            : 0
+                        }
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        </Card>
+      ) : signals.length > 0 ? (
         <Card>
           <SectionHeading subtitle={t("photo_signals_subtitle")}>
             {t("photo_signals_title")}
@@ -149,4 +223,3 @@ export function AnalizTabYanlislarim({
     </div>
   );
 }
-

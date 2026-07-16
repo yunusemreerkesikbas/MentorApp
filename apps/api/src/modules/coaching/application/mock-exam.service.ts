@@ -230,10 +230,12 @@ export class MockExamService {
         await this.mockExams.listSubjectsByMockExamIds(tx, recentIds);
 
       const examIds = [...new Set(trendRows.map((r) => r.examId))];
-      const [taxonomyEntries, examEntries] = await Promise.all([
-        Promise.all(examIds.map((id) => this.content.listExamSubjects(id))),
-        Promise.all(examIds.map((id) => this.content.getExamById(id))),
-      ]);
+      const [taxonomyEntries, topicTaxonomyEntries, examEntries] =
+        await Promise.all([
+          Promise.all(examIds.map((id) => this.content.listExamSubjects(id))),
+          Promise.all(examIds.map((id) => this.content.listExamTopics(id))),
+          Promise.all(examIds.map((id) => this.content.getExamById(id))),
+        ]);
 
       const slugToName = new Map<string, string>();
       const questionCountsBySlug = new Map<string, Set<number | null>>();
@@ -246,6 +248,12 @@ export class MockExamService {
           questionCountsBySlug.set(subject.slug, counts);
         }
       }
+
+      const topicByKey = new Map(
+        topicTaxonomyEntries
+          .flat()
+          .map((topic) => [topic.subjectSlug + ":" + topic.slug, topic]),
+      );
 
       const examNameById = new Map(
         examIds.map((id, i) => [id, examEntries[i]?.name ?? "Deneme"]),
@@ -301,18 +309,43 @@ export class MockExamService {
         ),
       );
 
-      const photoSignals = await this.photoRows.listPhotoSubjectSignals(
-        tx,
-        userId,
-        examId,
-        recentIds,
-      );
+      const [photoSignals, topicSignalRows] = await Promise.all([
+        this.photoRows.listPhotoSubjectSignals(tx, userId, examId, recentIds),
+        this.photoRows.listPhotoTopicSignals(
+          tx,
+          userId,
+          examId,
+          trendRows.map((row) => row.id),
+        ),
+      ]);
       const photoSubjectSignals = photoSignals.map((row) => ({
         subjectRef: row.subjectRef,
         subjectName: slugToName.get(row.subjectRef) ?? row.subjectRef,
         count: row.count,
       }));
-      const focus = selectAnalysisFocus(recentSubjects, photoSubjectSignals);
+      const topicFocusSignals = topicSignalRows.flatMap((row) => {
+        const topic = topicByKey.get(row.subjectRef + ":" + row.topicRef);
+        return topic
+          ? [
+              {
+                subjectRef: row.subjectRef,
+                subjectName: topic.subjectName,
+                topicRef: row.topicRef,
+                topicName: topic.name,
+                count: row.count,
+                latestAt: new Date(row.latestAt).toISOString(),
+              },
+            ]
+          : [];
+      });
+      const photoTopicSignals = topicFocusSignals.map(
+        ({ latestAt: _latestAt, ...signal }) => signal,
+      );
+      const focus = selectAnalysisFocus(
+        recentSubjects,
+        photoSubjectSignals,
+        topicFocusSignals,
+      );
       const focusTrend = focus
         ? buildFocusTrend(
             focus.subjectRef,
@@ -325,12 +358,18 @@ export class MockExamService {
           ? {
               ...focus,
               message: this.translateFocus(
-                `coaching.focus.${focus.source}_${focus.evidenceLevel}`,
+                focus.topicName
+                  ? "coaching.focus.PHOTO_TOPIC_REPEATED"
+                  : `coaching.focus.${focus.source}_${focus.evidenceLevel}`,
                 focus.subjectName,
+                focus.topicName,
               ),
               suggestedTaskTitle: this.translateFocus(
-                `coaching.focus.TASK_TITLE_${focus.source}`,
+                focus.topicName
+                  ? "coaching.focus.TASK_TITLE_PHOTO_TOPIC"
+                  : `coaching.focus.TASK_TITLE_${focus.source}`,
                 focus.subjectName,
+                focus.topicName,
               ),
               ...focusTrend,
               trendMessage: this.translateFocus(
@@ -350,6 +389,7 @@ export class MockExamService {
         trend,
         subjects,
         photoSubjectSignals,
+        photoTopicSignals,
         nextFocus,
         personalRecordNet,
         ghost,
@@ -485,16 +525,17 @@ export class MockExamService {
   async recordPhotoCategorizations(
     userId: string,
     mockExamId: string,
-    subjectSlugs: string[],
+    classifications: Array<{ subjectRef: string; topicRef: string | null }>,
     storageKey: string,
     clientRequestId?: string,
   ): Promise<void> {
     await withUserContext(this.db, { userId }, async (tx) => {
-      for (const slug of subjectSlugs) {
+      for (const classification of classifications) {
         await this.photoRows.insert(tx, {
           userId,
           mockExamId,
-          subjectRef: slug,
+          subjectRef: classification.subjectRef,
+          topicRef: classification.topicRef,
           storageKey,
           clientRequestId,
         });
@@ -567,10 +608,10 @@ export class MockExamService {
     };
   }
 
-  private translateFocus(key: string, subject: string): string {
+  private translateFocus(key: string, subject: string, topic?: string): string {
     return this.i18n.translate(key, {
       lang: I18nContext.current()?.lang,
-      args: { subject },
+      args: { subject, topic },
     }) as unknown as string;
   }
 

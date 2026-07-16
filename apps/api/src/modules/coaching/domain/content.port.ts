@@ -43,13 +43,23 @@ export interface ExamSubjectRef {
   sortOrder: number;
 }
 
+export interface ExamTopicRef {
+  subjectSlug: string;
+  subjectName: string;
+  slug: string;
+  name: string;
+  sortOrder: number;
+}
+
 export interface ContentPort {
   /**
    * Resolve the verified exam calendar for an exam type, or `null` when no exam type is set
    * or the calendar has no authoritative date yet. Coaching must NOT fall back to any other
    * source (no silent fallback — plan §6 #5).
    */
-  getExamCalendar(examType: string | null | undefined): Promise<ExamCalendar | null>;
+  getExamCalendar(
+    examType: string | null | undefined,
+  ): Promise<ExamCalendar | null>;
 
   /** Net-scoring rule for an exam type (reserved for W2-b; not used in this slice). */
   getNetRule(examType: string | null | undefined): Promise<NetRule | null>;
@@ -59,4 +69,7 @@ export interface ContentPort {
 
   /** Subject taxonomy for an exam (soft-ref validation). */
   listExamSubjects(examId: string): Promise<ExamSubjectRef[]>;
+
+  /** Topic taxonomy for an exam, including parent subject. */
+  listExamTopics(examId: string): Promise<ExamTopicRef[]>;
 }

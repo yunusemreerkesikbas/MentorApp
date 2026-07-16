@@ -9,6 +9,7 @@ import { EmbedArticleHandler } from "../src/modules/ai/application/handlers/embe
 
 const RUN = Date.now();
 const SLUG = `e2e-rag-kpss-${RUN}`;
+const RAG_ARTICLE_PATTERN = "e2e-rag-kpss-%";
 
 /**
  * W3 RAG grounding (e2e, fake provider): a published article is embedded (via the reembed backfill +
@@ -54,6 +55,19 @@ describe("ai coach RAG grounding (e2e)", () => {
     return res.body.accessToken;
   };
 
+  const cleanupArticles = () =>
+    svc(async (c) => {
+      await c.query(
+        `delete from jobs
+         where name = 'ai.embed-article'
+           and payload->>'articleId' in (
+             select id::text from info_articles where slug like $1
+           )`,
+        [RAG_ARTICLE_PATTERN],
+      );
+      await c.query("delete from info_articles where slug like $1", [RAG_ARTICLE_PATTERN]);
+    });
+
   /** Seed a short, keyword-dense published KPSS article (no embedding yet); capture its id. */
   const seedArticle = () =>
     svc(async (c) => {
@@ -97,10 +111,12 @@ describe("ai coach RAG grounding (e2e)", () => {
     await grantRole(su.user.id, UserRole.SUPER_ADMIN);
     superToken = await login(su.email);
 
+    await cleanupArticles();
     await seedArticle();
   }, 90_000);
 
   afterAll(async () => {
+    if (pool) await cleanupArticles();
     await app?.close();
     await pool?.end();
   });

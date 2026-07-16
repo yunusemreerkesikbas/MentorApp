@@ -6,6 +6,7 @@ import type { AnalysisFocusDto } from "@mentor/types";
 import { Card, Chip, SectionHeading } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { AnalizSparkline } from "./analiz-sparkline";
+import { buildAnalysisCoachHref } from "./analiz-types";
 
 interface AnalizNextFocusCardProps {
   focus: AnalysisFocusDto;
@@ -27,6 +28,12 @@ export function AnalizNextFocusCard({ focus }: AnalizNextFocusCardProps) {
       })),
     [focus.recentTrend],
   );
+  const coachSeed = focus.topicName
+    ? t("coach_seed", {
+        subject: focus.subjectName,
+        topic: focus.topicName,
+      })
+    : t("coach_seed_subject", { subject: focus.subjectName });
 
   return (
     <Card
@@ -58,6 +65,14 @@ export function AnalizNextFocusCard({ focus }: AnalizNextFocusCardProps) {
             >
               {focus.subjectName}
             </p>
+            {focus.topicName ? (
+              <p
+                className="text-lg font-semibold"
+                style={{ color: "var(--color-body)" }}
+              >
+                {focus.topicName}
+              </p>
+            ) : null}
             <p
               className="text-sm leading-6"
               style={{ color: "var(--color-body)" }}
@@ -65,23 +80,36 @@ export function AnalizNextFocusCard({ focus }: AnalizNextFocusCardProps) {
               {focus.message}
             </p>
           </div>
-          <Link
-            href={{
-              pathname: "/plan",
-              query: {
-                add: "1",
-                subject: focus.subjectName,
-                title: focus.suggestedTaskTitle,
-              },
-            }}
-            className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-white transition-opacity duration-200 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:w-fit"
-            style={{
-              backgroundColor: "var(--color-btn)",
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
-            {t("cta")}
-          </Link>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Link
+              href={{
+                pathname: "/plan",
+                query: {
+                  add: "1",
+                  subject: focus.subjectName,
+                  title: focus.suggestedTaskTitle,
+                },
+              }}
+              className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-white transition-opacity duration-200 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:w-fit"
+              style={{
+                backgroundColor: "var(--color-btn)",
+                boxShadow: "var(--shadow-card)",
+              }}
+            >
+              {t("cta")}
+            </Link>
+            <Link
+              href={buildAnalysisCoachHref(coachSeed)}
+              className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] border px-5 py-3 text-sm font-bold transition-opacity duration-200 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:w-fit"
+              style={{
+                borderColor: "var(--color-border)",
+                backgroundColor: "white",
+                color: "var(--color-btn)",
+              }}
+            >
+              {t("coach_cta")}
+            </Link>
+          </div>
         </div>
 
         <div

@@ -34,6 +34,57 @@ describe("validateEnv", () => {
     ).toThrow(/forbidden in production/);
   });
 
+  it("production lock: AI_PROVIDER=fake is forbidden in production", () => {
+    expect(() =>
+      validateEnv({
+        ...REQUIRED,
+        NODE_ENV: "production",
+        AI_PROVIDER: "fake",
+        OPENAI_API_KEY: "test-openai-key",
+        VISION_PROVIDER: "openai",
+        STORAGE_PROVIDER: "r2",
+        R2_ACCOUNT_ID: "account",
+        R2_ACCESS_KEY_ID: "access",
+        R2_SECRET_ACCESS_KEY: "secret",
+        R2_BUCKET: "bucket",
+        PAYMENTS_PROVIDER: "iyzico",
+        IYZICO_API_KEY: "key",
+        IYZICO_SECRET_KEY: "secret",
+        CRON_SECRET: "c".repeat(32),
+        POSTMARK_TOKEN: "postmark-token",
+      }),
+    ).toThrow(/AI_PROVIDER=fake/);
+  });
+
+  it.each(["development", "test"] as const)(
+    "allows the fake AI provider in %s",
+    (nodeEnv) => {
+      expect(validateEnv({ ...REQUIRED, NODE_ENV: nodeEnv }).AI_PROVIDER).toBe("fake");
+    },
+  );
+
+  it("production OpenAI provider requires OPENAI_API_KEY", () => {
+    expect(() =>
+      validateEnv({
+        ...REQUIRED,
+        NODE_ENV: "production",
+        AI_PROVIDER: "openai",
+        VISION_PROVIDER: "gemini",
+        GEMINI_API_KEY: "gemini-key",
+        STORAGE_PROVIDER: "r2",
+        R2_ACCOUNT_ID: "account",
+        R2_ACCESS_KEY_ID: "access",
+        R2_SECRET_ACCESS_KEY: "secret",
+        R2_BUCKET: "bucket",
+        PAYMENTS_PROVIDER: "iyzico",
+        IYZICO_API_KEY: "key",
+        IYZICO_SECRET_KEY: "secret",
+        CRON_SECRET: "c".repeat(32),
+        POSTMARK_TOKEN: "postmark-token",
+      }),
+    ).toThrow(/OPENAI_API_KEY/);
+  });
+
   it("production lock: VISION_PROVIDER=fake is forbidden in production", () => {
     expect(() =>
       validateEnv({

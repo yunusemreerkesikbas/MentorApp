@@ -90,6 +90,44 @@ describe("coaching (e2e)", () => {
     expect(after.body.motivationalLine.length).toBeGreaterThan(0);
   });
 
+  it("bulk create adds all tasks; a single past date rejects the whole batch (403)", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const ok = await request(app.getHttpServer())
+      .post("/v1/plan-tasks/bulk")
+      .set(authA())
+      .send({
+        tasks: [
+          { title: "Bulk 1", subject: "Matematik", taskDate: today },
+          { title: "Bulk 2", subject: "Türkçe", taskDate: today },
+        ],
+      });
+    expect(ok.status).toBe(201);
+    expect(ok.body).toHaveLength(2);
+
+    const list = await request(app.getHttpServer())
+      .get(`/v1/plan-tasks?date=${today}`)
+      .set(authA());
+    const titles = list.body.items.map((t: { title: string }) => t.title);
+    expect(titles).toEqual(expect.arrayContaining(["Bulk 1", "Bulk 2"]));
+
+    const rejected = await request(app.getHttpServer())
+      .post("/v1/plan-tasks/bulk")
+      .set(authA())
+      .send({
+        tasks: [
+          { title: "Geçerli", taskDate: today },
+          { title: "Geçmiş", taskDate: "2020-01-01" },
+        ],
+      });
+    expect(rejected.status).toBe(403); // COACHING_TASK_DATE_READONLY — same as single create
+    const after = await request(app.getHttpServer())
+      .get(`/v1/plan-tasks?date=${today}`)
+      .set(authA());
+    expect(
+      after.body.items.some((t: { title: string }) => t.title === "Geçerli"),
+    ).toBe(false); // all-or-nothing
+  });
+
   it("user A cannot PATCH user B's plan task (404 — RLS hides foreign rows)", async () => {
     const createB = await request(app.getHttpServer())
       .post("/v1/plan-tasks")

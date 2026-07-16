@@ -17,6 +17,7 @@ import type { Response } from "express";
 import type {
   CoachAccessDto,
   CoachChatStreamEvent,
+  CoachPlanDraftDto,
   CoachConversationDto,
   CoachMemoryDto,
   CoachMessageDto,
@@ -26,7 +27,8 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { CoachAccessService } from "../application/coach-access.service";
 import { ChatService, type CoachReplyResult } from "../application/chat.service";
-import { AiChatDto, CoachFeedbackDto, ListCoachMessagesQueryDto } from "./ai.dto";
+import { AiChatDto, CoachFeedbackDto, ListCoachMessagesQueryDto, PlanDraftBodyDto } from "./ai.dto";
+import { PlanDraftService } from "../application/plan-draft.service";
 
 /**
  * AI coach chat (W3). Premium = flat + rate-limit; free = earned coin spend (economy.enabled).
@@ -39,6 +41,7 @@ export class AiChatController {
   constructor(
     private readonly chat: ChatService,
     private readonly access: CoachAccessService,
+    private readonly planDraft: PlanDraftService,
   ) {}
 
   @Get("access")
@@ -76,6 +79,51 @@ export class AiChatController {
       dto.contextMockExamId,
     );
     // Pre-stream gating: let the first pull throw before SSE headers are committed.
+    const first = await stream.next();
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    const write = (event: CoachChatStreamEvent) => {
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    };
+
+    try {
+      if (!first.done && first.value) write(first.value);
+      for await (const event of stream) write(event);
+    } catch (err) {
+      const code = err instanceof DomainError ? err.code : "AI_PROVIDER_ERROR";
+      write({ error: { code, message: "" } });
+    } finally {
+      res.end();
+    }
+  }
+
+  /**
+   * Koç yapımı haftalık plan TASLAĞI (premium). Preview only — nothing is persisted; the user
+   * confirms in the FE and tasks are written via POST /v1/plan-tasks/bulk (W2).
+   */
+  @Post("plan-draft")
+  planDraftPreview(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: PlanDraftBodyDto,
+  ): Promise<CoachPlanDraftDto> {
+    return this.planDraft.draft(user, dto.note);
+  }
+
+  /**
+   * Regenerate the LAST coach reply of a thread (SSE over POST, no body). Same pre-stream gating
+   * contract as `chat/stream`: the first event is awaited before headers are written.
+   */
+  @Post("conversations/:id/regenerate/stream")
+  async regenerateStream(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const stream = this.chat.regenerateStream(user, id);
     const first = await stream.next();
 
     res.setHeader("Content-Type", "text/event-stream");

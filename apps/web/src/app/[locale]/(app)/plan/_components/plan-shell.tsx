@@ -24,6 +24,7 @@ import {
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { parseAnalysisPlanPrefill, type AnalysisPlanPrefill } from "@/lib/analysis-plan-prefill";
 import { PlanAddTaskForm, type PlanAddTaskFormHandle } from "./plan-add-task-form";
+import { PlanCoachDraftAction } from "./plan-coach-draft-action";
 import { PlanDateNav } from "./plan-date-nav";
 import { PlanDatePickerSheet, type PlanDatePickerSheetHandle } from "./plan-date-picker-sheet";
 import { PlanListView } from "./plan-list-view";
@@ -132,6 +133,8 @@ export function PlanShell() {
   useEffect(() => {
     if (viewMode === "week") return;
     let active = true;
+    // Loader state updates happen only after the awaited request; active guards unmounts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadDayTasks(() => active);
     return () => {
       active = false;
@@ -141,6 +144,8 @@ export function PlanShell() {
   useEffect(() => {
     if (viewMode !== "week") return;
     let active = true;
+    // Loader state updates happen only after the awaited request; active guards unmounts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadWeekTasks(() => active);
     return () => {
       active = false;
@@ -251,6 +256,10 @@ export function PlanShell() {
       const list = prev[day] ?? [];
       return { ...prev, [day]: [...list, created] };
     });
+  }
+
+  function appendCoachDraft(created: PlanTaskDto[]) {
+    for (const task of created) appendTask(task);
   }
 
   async function toggle(id: string) {
@@ -454,6 +463,9 @@ export function PlanShell() {
           >
             {t("subtitle")}
           </p>
+          <div className="mt-4">
+            <PlanCoachDraftAction onCreated={appendCoachDraft} />
+          </div>
         </motion.header>
 
         <motion.div className="flex flex-col gap-5 pb-28 lg:pb-8" {...gridMotion}>

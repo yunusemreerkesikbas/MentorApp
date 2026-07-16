@@ -1,15 +1,19 @@
 "use client";
 
 import Image from "next/image";
-import { Fragment, useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import ThumbsUp from "lucide-react/dist/esm/icons/thumbs-up.mjs";
 import ThumbsDown from "lucide-react/dist/esm/icons/thumbs-down.mjs";
+import Copy from "lucide-react/dist/esm/icons/copy.mjs";
+import Check from "lucide-react/dist/esm/icons/check.mjs";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw.mjs";
 import { Link } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { FormError } from "@/components/form";
 import { SuggestedTaskCard } from "@/components/suggested-task-card";
 import type { CoachSource } from "@/lib/coach";
+import { CoachMarkdown } from "./coach-markdown";
 
 export interface ChatMessage {
   id: string;
@@ -31,6 +35,9 @@ export function CoachTranscript({
   error,
   emptyHint,
   onFeedback,
+  followUps,
+  onFollowUp,
+  onRegenerate,
 }: {
   messages: ChatMessage[];
   busy: boolean;
@@ -38,6 +45,12 @@ export function CoachTranscript({
   emptyHint: string;
   /** Rate a coach reply (👍/👎/toggle-off). Undefined disables the control (e.g. while streaming). */
   onFeedback?: (id: string, value: 1 | -1 | null) => void;
+  /** Ephemeral follow-up chips for the LATEST reply (parent passes [] while busy / after reload). */
+  followUps?: string[];
+  /** Fills the composer with the tapped question — never sends (coin-safe, ?seed= philosophy). */
+  onFollowUp?: (question: string) => void;
+  /** Regenerate the LAST coach reply (spends like a normal message). Undefined hides the control. */
+  onRegenerate?: () => void;
 }) {
   const reduceMotion = useReducedMotion();
   const translate = useTranslations("coach_chat");
@@ -51,6 +64,8 @@ export function CoachTranscript({
   }, [messages.length, busy, reduceMotion]);
 
   const isEmpty = messages.length === 0 && !busy;
+  // ↻ appears only under the newest coach reply — older ones are history, not candidates.
+  const lastCoachId = [...messages].reverse().find((m) => m.role === "coach")?.id;
 
   return (
     <div
@@ -96,10 +111,32 @@ export function CoachTranscript({
             <FeedbackRow
               value={m.feedback ?? null}
               onRate={(v) => onFeedback(m.id, v)}
+              text={m.text}
+              onRegenerate={m.id === lastCoachId && !busy ? onRegenerate : undefined}
             />
           ) : null}
         </Fragment>
       ))}
+
+      {!busy && onFollowUp && followUps && followUps.length > 0 ? (
+        <div
+          className="flex flex-wrap gap-2 pl-10"
+          role="group"
+          aria-label={translate("followups_label")}
+        >
+          {followUps.map((question) => (
+            <button
+              key={question}
+              type="button"
+              onClick={() => onFollowUp(question)}
+              className="inline-flex min-h-11 cursor-pointer items-center rounded-full bg-white/90 px-4 text-sm font-bold shadow-[var(--shadow-card)] transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+              style={{ color: "var(--color-progress)" }}
+            >
+              {question}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {busy ? <TypingBubble reduceMotion={reduceMotion} /> : null}
 
@@ -136,8 +173,8 @@ function MessageBubble({
         />
       ) : null}
       <div
-        className={`max-w-[85%] whitespace-pre-wrap rounded-[var(--radius-card)] px-4 py-2.5 text-base leading-relaxed ${
-          isUser ? "text-white" : "border border-white bg-white/50"
+        className={`max-w-[85%] rounded-[var(--radius-card)] px-4 py-2.5 text-base leading-relaxed ${
+          isUser ? "whitespace-pre-wrap text-white" : "border border-white bg-white/50"
         }`}
         style={{
           fontFamily: "var(--font-body)",
@@ -146,23 +183,36 @@ function MessageBubble({
             : { color: "var(--color-body)", boxShadow: "var(--shadow-card)" }),
         }}
       >
-        {message.text}
+        {isUser ? message.text : <CoachMarkdown text={message.text} />}
       </div>
     </motion.div>
   );
 }
 
-/** 👍/👎 on a coach reply — toggling the active rating clears it. Optimistic; parent persists. */
+/** 👍/👎 + copy on a coach reply — toggling the active rating clears it. Optimistic; parent persists. */
 function FeedbackRow({
   value,
   onRate,
+  text,
+  onRegenerate,
 }: {
   value: number | null;
   onRate: (v: 1 | -1 | null) => void;
+  text: string;
+  onRegenerate?: () => void;
 }) {
   const translate = useTranslations("coach_chat");
+  const [copied, setCopied] = useState(false);
   const base =
     "inline-flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none";
+
+  function copyReply() {
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    });
+  }
+
   return (
     <div className="flex justify-start gap-1 pl-10">
       <button
@@ -185,6 +235,32 @@ function FeedbackRow({
       >
         <ThumbsDown className="size-4" aria-hidden />
       </button>
+      <button
+        type="button"
+        aria-label={translate(copied ? "copied" : "copy")}
+        onClick={copyReply}
+        className={base}
+        style={{
+          color: copied ? "var(--color-progress)" : "var(--color-secondary)",
+        }}
+      >
+        {copied ? (
+          <Check className="size-4" aria-hidden />
+        ) : (
+          <Copy className="size-4" aria-hidden />
+        )}
+      </button>
+      {onRegenerate ? (
+        <button
+          type="button"
+          aria-label={translate("regenerate")}
+          onClick={onRegenerate}
+          className={base}
+          style={{ color: "var(--color-secondary)" }}
+        >
+          <RefreshCw className="size-4" aria-hidden />
+        </button>
+      ) : null}
     </div>
   );
 }

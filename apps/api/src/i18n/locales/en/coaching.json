@@ -29,7 +29,9 @@
     "TREND_FIRST": "Your first recent signal for {subject} is here. One more mock exam will make the direction clearer.",
     "TREND_UP": "{subject} is moving upward in your recent attempts. A short review can help keep that rhythm.",
     "TREND_DOWN": "{subject} needed a little more support in your latest attempt. One short review is enough without overreading one result.",
-    "TREND_STEADY": "{subject} stayed steady across your latest two attempts. A short review may create the next opening."
+    "TREND_STEADY": "{subject} stayed steady across your latest two attempts. A short review may create the next opening.",
+    "PHOTO_TOPIC_REPEATED": "{topic} within {subject} keeps appearing in your wrong-answer photos. A short topic review is a good next step.",
+    "TASK_TITLE_PHOTO_TOPIC": "Review {topic}"
   },
   "weekly": {
     "INSUFFICIENT": "One mock exam or two completed sessions is enough to review last week.",
@@ -47,4 +49,3 @@
     "TASK_SESSION": "Plan two focus sessions"
   }
 }
-

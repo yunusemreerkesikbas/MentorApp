@@ -11,6 +11,8 @@ import { VISION_PORT } from "./domain/vision.port";
 import { ChatService } from "./application/chat.service";
 import { CoachAccessService } from "./application/coach-access.service";
 import { MoodReflectionService } from "./application/mood-reflection.service";
+import { DailyGreetingService } from "./application/daily-greeting.service";
+import { PlanDraftService } from "./application/plan-draft.service";
 import { SessionReflectionService } from "./application/session-reflection.service";
 import { GhostNarrationService } from "./application/ghost-narration.service";
 import { VisionNoteService } from "./application/vision-note.service";
@@ -33,6 +35,7 @@ import { CoachMessageRepository } from "./infrastructure/coach-message.repositor
 import { CoachConversationRepository } from "./infrastructure/coach-conversation.repository";
 import { CoachMemoryRepository } from "./infrastructure/coach-memory.repository";
 import { WeeklyReviewCacheRepository } from "./infrastructure/weekly-review-cache.repository";
+import { DailyGreetingRepository } from "./infrastructure/daily-greeting.repository";
 import { FakeLlmAdapter } from "./infrastructure/adapters/fake-llm.adapter";
 import { OpenAiLlmAdapter } from "./infrastructure/adapters/openai-llm.adapter";
 import { GeminiLlmAdapter } from "./infrastructure/adapters/gemini-llm.adapter";
@@ -69,6 +72,8 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     ChatService,
     CoachAccessService,
     MoodReflectionService,
+    DailyGreetingService,
+    PlanDraftService,
     SessionReflectionService,
     GhostNarrationService,
     VisionNoteService,
@@ -86,6 +91,7 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     CoachConversationRepository,
     CoachMemoryRepository,
     WeeklyReviewCacheRepository,
+    DailyGreetingRepository,
     EmbeddingService,
     ArticleEmbeddingListener,
     AiJobRegistrar,

@@ -35,6 +35,12 @@ export const createPlanTaskSchema = z.object({
 });
 export type CreatePlanTaskInput = z.infer<typeof createPlanTaskSchema>;
 
+/** POST /v1/plan-tasks/bulk — user-confirmed batch add (e.g. accepted coach draft). */
+export const bulkCreatePlanTasksSchema = z.object({
+  tasks: createPlanTaskSchema.array().min(1).max(21),
+});
+export type BulkCreatePlanTasksInput = z.infer<typeof bulkCreatePlanTasksSchema>;
+
 export const updatePlanTaskSchema = z
   .object({
     title: z.string().trim().min(1).max(200).optional(),

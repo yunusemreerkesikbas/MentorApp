@@ -28,7 +28,7 @@ import {
   RAG_MAX_DISTANCE,
   RAG_TOP_K,
 } from "../domain/ai.constants";
-import { createTaskMarkerFilter, extractSuggestedTask } from "../domain/suggested-task";
+import { createTaskMarkerFilter, extractReplyMarkers } from "../domain/suggested-task";
 import { JOB_QUEUE_PORT, type JobQueuePort } from "../../../shared/ports/job-queue.port";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
@@ -124,7 +124,12 @@ export class ChatService {
 
   private async assertPremiumRateLimit(userId: string): Promise<void> {
     const dailyLimit = await this.config.get("ai.chat.daily_limit");
-    const usedToday = await this.usage.countSince(userId, new Date(Date.now() - DAY_MS));
+    // CHAT only — greeting/plan-draft/mood have their own caps and must not eat the chat quota.
+    const usedToday = await this.usage.countFeatureSince(
+      userId,
+      AiUsageFeature.CHAT,
+      new Date(Date.now() - DAY_MS),
+    );
     if (usedToday >= dailyLimit) {
       throw new DomainError(ErrorCode.AI_RATE_LIMITED, HttpStatus.TOO_MANY_REQUESTS);
     }
@@ -172,13 +177,17 @@ export class ChatService {
     conversationId: string,
     message: string,
     mockExam?: MockExamDto,
+    opts?: { excludeTailExchange?: boolean },
   ) {
     const ctx = await this.context.build(userId);
 
     // Multi-turn: replay the last N messages OF THIS THREAD (the user's own words + earlier coach
     // replies — no third-party PII, §4 #6). Defensive: a history failure never blocks the chat.
+    // Regenerate excludes the tail USER+COACH pair — the model must not anchor on the reply being
+    // replaced, and the user message is re-sent as the live prompt.
     const history: LlmHistoryMessage[] = await this.messages
       .lastN(userId, conversationId, CHAT_HISTORY_MAX_MESSAGES)
+      .then((rows) => (opts?.excludeTailExchange ? rows.slice(0, -2) : rows))
       .then((rows) =>
         rows.map((m) => ({
           role: m.role === "USER" ? ("user" as const) : ("assistant" as const),
@@ -265,7 +274,8 @@ export class ChatService {
       mockExam,
     );
     const result = await this.llm.complete(llmInput);
-    const { text: reply, task } = extractSuggestedTask(result.text);
+    // Order-agnostic: models sometimes reverse the FOLLOWUP/TASK order — never leak a marker.
+    const { text: reply, task, followUps } = extractReplyMarkers(result.text);
     await this.recordSuccess(
       userId,
       conversationId,
@@ -280,6 +290,7 @@ export class ChatService {
       conversationId,
       sources,
       ...(task ? { suggestedTask: task } : {}),
+      ...(followUps.length > 0 ? { followUps } : {}),
     };
   }
 
@@ -322,23 +333,8 @@ export class ChatService {
         message,
         mockExam,
       );
-      // The task marker must never leak into deltas — filter holds back anything marker-like.
-      const markerFilter = createTaskMarkerFilter();
-      let final: { text: string; promptTokens: number; completionTokens: number; model: string } | null =
-        null;
-      for await (const ev of this.llm.completeStream(llmInput)) {
-        if (ev.delta) {
-          const safe = markerFilter.push(ev.delta);
-          if (safe) yield { delta: safe };
-        }
-        if (ev.final) final = ev.final;
-      }
-      if (!final) {
-        throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
-      }
-      const held = markerFilter.flush();
-      if (held) yield { delta: held };
-      const { text: reply, task } = extractSuggestedTask(final.text);
+      const final = yield* this.streamLlm(llmInput);
+      const { text: reply, task, followUps } = extractReplyMarkers(final.text);
       await this.recordSuccess(
         user.id,
         threadId,
@@ -354,6 +350,7 @@ export class ChatService {
           conversationId: threadId,
           sources,
           ...(task ? { suggestedTask: task } : {}),
+          ...(followUps.length > 0 ? { followUps } : {}),
         },
       };
     } catch (err) {
@@ -364,6 +361,125 @@ export class ChatService {
       }
       throw err;
     }
+  }
+
+  /**
+   * Regenerate the LAST coach reply of a thread (POST /v1/coach/conversations/:id/regenerate/stream).
+   * Same gating/spend as a normal message — every regenerate is a fresh spend (no idempotency key).
+   * The old COACH row is overwritten IN PLACE only after a successful generation, so a mid-stream
+   * failure leaves history untouched (and refunds the coin). Message count is stable → the memory
+   * refresh trigger is intentionally skipped.
+   */
+  async *regenerateStream(
+    user: RequestUser,
+    conversationId: string,
+  ): AsyncGenerator<CoachChatStreamEvent> {
+    if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
+      throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+    }
+    await this.budget.assertWithinBudget();
+
+    if (!(await this.conversations.isOwned(user.id, conversationId))) {
+      throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    // The thread must end in a completed exchange (one USER + one COACH row). Order within the
+    // pair is NOT trusted: appendExchange writes both rows in one tx, so their timestamps can tie
+    // and the uuid tie-breaker is random.
+    const tail = await this.messages.lastN(user.id, conversationId, 2);
+    const userMsg = tail.find((m) => m.role === "USER");
+    const coachMsg = tail.find((m) => m.role === "COACH");
+    if (!userMsg || !coachMsg) {
+      throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST);
+    }
+
+    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
+    const spendRefId = randomUUID();
+    let coinCost = 0;
+    let shouldRefundOnFailure = false;
+
+    if (ent.isPremium) {
+      await this.assertPremiumRateLimit(user.id);
+    } else {
+      ({ cost: coinCost, shouldRefundOnFailure } = await this.prepareCoinSpend(user.id, spendRefId));
+    }
+
+    try {
+      const { llmInput, sources } = await this.prepareChat(
+        user.id,
+        conversationId,
+        userMsg.content,
+        undefined,
+        { excludeTailExchange: true },
+      );
+      const final = yield* this.streamLlm(llmInput);
+      const { text: reply, task, followUps } = extractReplyMarkers(final.text);
+
+      await this.usage.append({
+        userId: user.id,
+        model: final.model,
+        feature: AiUsageFeature.CHAT,
+        promptTokens: final.promptTokens,
+        completionTokens: final.completionTokens,
+        costMicros: estimateCostMicros(final.model, final.promptTokens, final.completionTokens),
+      });
+      // Best-effort like recordSuccess: a persist failure must not swallow the paid reply.
+      await this.messages
+        .updateCoachReply(user.id, coachMsg.id, {
+          content: reply,
+          model: final.model,
+          sources,
+          suggestedTask: task ?? undefined,
+        })
+        .catch((err) => {
+          this.logger.error(`Regenerated reply persist failed: ${String(err)}`);
+        });
+
+      yield {
+        done: {
+          reply,
+          model: final.model,
+          conversationId,
+          sources,
+          ...(task ? { suggestedTask: task } : {}),
+          ...(followUps.length > 0 ? { followUps } : {}),
+        },
+      };
+    } catch (err) {
+      if (!ent.isPremium && shouldRefundOnFailure && coinCost > 0) {
+        await this.refundCoinSpend(user.id, coinCost, spendRefId).catch((refundErr) => {
+          this.logger.error(`Coin refund failed after regenerate error: ${String(refundErr)}`);
+        });
+      }
+      throw err;
+    }
+  }
+
+  /** Marker-safe LLM streaming: yields clean deltas, returns the raw final result. */
+  private async *streamLlm(llmInput: {
+    system: string;
+    user: string;
+    history: LlmHistoryMessage[];
+  }): AsyncGenerator<
+    CoachChatStreamEvent,
+    { text: string; promptTokens: number; completionTokens: number; model: string }
+  > {
+    // The task/follow-up markers must never leak into deltas — the filter holds anything marker-like.
+    const markerFilter = createTaskMarkerFilter();
+    let final: { text: string; promptTokens: number; completionTokens: number; model: string } | null =
+      null;
+    for await (const ev of this.llm.completeStream(llmInput)) {
+      if (ev.delta) {
+        const safe = markerFilter.push(ev.delta);
+        if (safe) yield { delta: safe };
+      }
+      if (ev.final) final = ev.final;
+    }
+    if (!final) {
+      throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    const held = markerFilter.flush();
+    if (held) yield { delta: held };
+    return final;
   }
 
   /** GET /v1/coach/conversations — the user's threads, most-recently-active first. */

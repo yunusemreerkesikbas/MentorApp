@@ -14,6 +14,7 @@ const fakeDb = {
 const contentPort = {
   getExamById: vi.fn(),
   listExamSubjects: vi.fn(),
+  listExamTopics: vi.fn(),
   getExamCalendar: vi.fn(),
   getNetRule: vi.fn(),
 };
@@ -76,6 +77,7 @@ describe("MockExamService", () => {
     findByClientRequestId: ReturnType<typeof vi.fn>;
     insert: ReturnType<typeof vi.fn>;
     listPhotoSubjectSignals: ReturnType<typeof vi.fn>;
+    listPhotoTopicSignals: ReturnType<typeof vi.fn>;
     listStorageKeys: ReturnType<typeof vi.fn>;
   };
   let service: MockExamService;
@@ -88,10 +90,12 @@ describe("MockExamService", () => {
       findByClientRequestId: vi.fn(),
       insert: vi.fn(),
       listPhotoSubjectSignals: vi.fn(),
+      listPhotoTopicSignals: vi.fn(),
       listStorageKeys: vi.fn(),
     };
     repo.listSubjectsByMockExamIds.mockResolvedValue(new Map());
     photoRows.listPhotoSubjectSignals.mockResolvedValue([]);
+    photoRows.listPhotoTopicSignals.mockResolvedValue([]);
     service = new MockExamService(
       fakeDb,
       contentPort as never,
@@ -106,8 +110,14 @@ describe("MockExamService", () => {
       name: "KPSS Lisans 2026",
       netRule: { kind: "PENALTY", divisor: 4 },
     });
+    contentPort.listExamTopics.mockResolvedValue([]);
     contentPort.listExamSubjects.mockResolvedValue([
-      { slug: "turkce", name: "T\u00fcrk\u00e7e", questionCount: 30, sortOrder: 0 },
+      {
+        slug: "turkce",
+        name: "T\u00fcrk\u00e7e",
+        questionCount: 30,
+        sortOrder: 0,
+      },
     ]);
   });
 
@@ -289,7 +299,12 @@ describe("MockExamService", () => {
     ]);
     repo.maxTotalNet.mockResolvedValue("42.00");
     contentPort.listExamSubjects.mockResolvedValue([
-      { slug: "turkce", name: "T\u00fcrk\u00e7e", questionCount: 30, sortOrder: 0 },
+      {
+        slug: "turkce",
+        name: "T\u00fcrk\u00e7e",
+        questionCount: 30,
+        sortOrder: 0,
+      },
       { slug: "tarih", name: "Tarih", questionCount: 27, sortOrder: 1 },
     ]);
     photoRows.listPhotoSubjectSignals.mockResolvedValue([
@@ -320,13 +335,89 @@ describe("MockExamService", () => {
     });
   });
 
+  it("promotes a repeated topic and returns topic signals", async () => {
+    repo.listTrend.mockResolvedValue([
+      {
+        id: "m1",
+        examId: EXAM_ID,
+        takenAt: new Date("2026-07-10T10:00:00Z"),
+        totalNet: "42.00",
+      },
+    ]);
+    repo.listSubjectBreakdown.mockResolvedValue([]);
+    repo.maxTotalNet.mockResolvedValue("42.00");
+    contentPort.listExamTopics.mockResolvedValue([
+      {
+        subjectSlug: "turkce",
+        subjectName: "Türkçe",
+        slug: "paragraf",
+        name: "Paragraf",
+        sortOrder: 0,
+      },
+    ]);
+    photoRows.listPhotoSubjectSignals.mockResolvedValue([
+      { subjectRef: "turkce", count: 2 },
+    ]);
+    photoRows.listPhotoTopicSignals.mockResolvedValue([
+      {
+        subjectRef: "turkce",
+        topicRef: "paragraf",
+        count: 2,
+        latestAt: new Date("2026-07-10T10:00:00Z"),
+      },
+    ]);
+
+    const result = await service.getAnalysis(USER, EXAM_ID);
+
+    expect(result.photoTopicSignals).toEqual([
+      {
+        subjectRef: "turkce",
+        subjectName: "Türkçe",
+        topicRef: "paragraf",
+        topicName: "Paragraf",
+        count: 2,
+      },
+    ]);
+    expect(result.nextFocus).toMatchObject({
+      topicRef: "paragraf",
+      topicName: "Paragraf",
+      message: "coaching.focus.PHOTO_TOPIC_REPEATED",
+      suggestedTaskTitle: "coaching.focus.TASK_TITLE_PHOTO_TOPIC",
+    });
+  });
+
   it("builds the next focus from only the latest four attempts", async () => {
     const attempts = [
-      { id: "m5", examId: EXAM_ID, takenAt: new Date("2026-07-10T10:00:00Z"), totalNet: "70.00" },
-      { id: "m4", examId: EXAM_ID, takenAt: new Date("2026-07-03T10:00:00Z"), totalNet: "68.00" },
-      { id: "m3", examId: EXAM_ID, takenAt: new Date("2026-06-26T10:00:00Z"), totalNet: "66.00" },
-      { id: "m2", examId: EXAM_ID, takenAt: new Date("2026-06-19T10:00:00Z"), totalNet: "64.00" },
-      { id: "m1", examId: EXAM_ID, takenAt: new Date("2026-06-12T10:00:00Z"), totalNet: "62.00" },
+      {
+        id: "m5",
+        examId: EXAM_ID,
+        takenAt: new Date("2026-07-10T10:00:00Z"),
+        totalNet: "70.00",
+      },
+      {
+        id: "m4",
+        examId: EXAM_ID,
+        takenAt: new Date("2026-07-03T10:00:00Z"),
+        totalNet: "68.00",
+      },
+      {
+        id: "m3",
+        examId: EXAM_ID,
+        takenAt: new Date("2026-06-26T10:00:00Z"),
+        totalNet: "66.00",
+      },
+      {
+        id: "m2",
+        examId: EXAM_ID,
+        takenAt: new Date("2026-06-19T10:00:00Z"),
+        totalNet: "64.00",
+      },
+      {
+        id: "m1",
+        examId: EXAM_ID,
+        takenAt: new Date("2026-06-12T10:00:00Z"),
+        totalNet: "62.00",
+      },
     ];
     repo.listTrend.mockResolvedValue(attempts);
     repo.listSubjectBreakdown.mockResolvedValue([
@@ -335,17 +426,52 @@ describe("MockExamService", () => {
     ]);
     repo.listSubjectsByMockExamIds.mockResolvedValue(
       new Map([
-        ["m5", [{ subjectRef: "turkce", net: "18.00" }, { subjectRef: "matematik", net: "20.00" }]],
-        ["m4", [{ subjectRef: "turkce", net: "16.00" }, { subjectRef: "matematik", net: "19.00" }]],
-        ["m3", [{ subjectRef: "turkce", net: "15.00" }, { subjectRef: "matematik", net: "18.00" }]],
-        ["m2", [{ subjectRef: "turkce", net: "14.00" }, { subjectRef: "matematik", net: "17.00" }]],
-        ["m1", [{ subjectRef: "turkce", net: "2.00" }, { subjectRef: "matematik", net: "16.00" }]],
+        [
+          "m5",
+          [
+            { subjectRef: "turkce", net: "18.00" },
+            { subjectRef: "matematik", net: "20.00" },
+          ],
+        ],
+        [
+          "m4",
+          [
+            { subjectRef: "turkce", net: "16.00" },
+            { subjectRef: "matematik", net: "19.00" },
+          ],
+        ],
+        [
+          "m3",
+          [
+            { subjectRef: "turkce", net: "15.00" },
+            { subjectRef: "matematik", net: "18.00" },
+          ],
+        ],
+        [
+          "m2",
+          [
+            { subjectRef: "turkce", net: "14.00" },
+            { subjectRef: "matematik", net: "17.00" },
+          ],
+        ],
+        [
+          "m1",
+          [
+            { subjectRef: "turkce", net: "2.00" },
+            { subjectRef: "matematik", net: "16.00" },
+          ],
+        ],
       ]),
     );
     repo.maxNetExcluding.mockResolvedValue("68.00");
     repo.maxTotalNet.mockResolvedValue("70.00");
     contentPort.listExamSubjects.mockResolvedValue([
-      { slug: "turkce", name: "T\u00fcrk\u00e7e", questionCount: 30, sortOrder: 0 },
+      {
+        slug: "turkce",
+        name: "T\u00fcrk\u00e7e",
+        questionCount: 30,
+        sortOrder: 0,
+      },
       { slug: "matematik", name: "Matematik", questionCount: 30, sortOrder: 1 },
     ]);
     photoRows.listPhotoSubjectSignals.mockResolvedValue([
@@ -359,6 +485,12 @@ describe("MockExamService", () => {
       USER,
       EXAM_ID,
       ["m5", "m4", "m3", "m2"],
+    );
+    expect(photoRows.listPhotoTopicSignals).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      EXAM_ID,
+      ["m5", "m4", "m3", "m2", "m1"],
     );
     expect(result.nextFocus).toMatchObject({
       subjectRef: "turkce",
@@ -414,4 +546,3 @@ describe("MockExamService", () => {
     );
   });
 });
-

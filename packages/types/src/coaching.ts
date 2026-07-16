@@ -152,6 +152,14 @@ export interface PhotoSubjectSignalDto {
   count: number;
 }
 
+export interface PhotoTopicSignalDto {
+  subjectRef: string;
+  subjectName: string;
+  topicRef: string;
+  topicName: string;
+  count: number;
+}
+
 /** Server-selected next study focus from personal analysis evidence. */
 export type AnalysisFocusTrendDirection = "FIRST" | "UP" | "DOWN" | "STEADY";
 
@@ -164,6 +172,8 @@ export interface AnalysisFocusTrendPointDto {
 export interface AnalysisFocusDto {
   subjectRef: string;
   subjectName: string;
+  topicRef?: string;
+  topicName?: string;
   source: "PHOTO_SIGNAL" | "LOWEST_AVERAGE";
   evidenceCount: number;
   evidenceLevel: "EARLY" | "REPEATED";
@@ -218,6 +228,7 @@ export interface CoachingAnalysisDto {
   trend: MockExamTrendPointDto[];
   subjects: SubjectStrengthDto[];
   photoSubjectSignals: PhotoSubjectSignalDto[];
+  photoTopicSignals: PhotoTopicSignalDto[];
   /** `null` until a mock-exam or photo signal supplies personal evidence. */
   nextFocus: AnalysisFocusDto | null;
   /** All-time best total net across all attempts; null when no attempts. */
@@ -253,8 +264,6 @@ export interface VisionDto {
   createdAt: string;
   updatedAt: string;
 }
-
-
 
 /** Completed-week rule-based review (Europe/Istanbul, active exam scoped). */
 export type WeeklyReviewStatus = "READY" | "INSUFFICIENT";
@@ -292,5 +301,3 @@ export interface WeeklyReviewDto {
     message: string;
   } | null;
 }
-
-

@@ -1,5 +1,6 @@
 import {
   analysisQuerySchema,
+  bulkCreatePlanTasksSchema,
   createMoodCheckinSchema,
   createMockExamSchema,
   createPlanTaskSchema,
@@ -19,6 +20,8 @@ import {
 import { createZodDto } from "../../../common/validation/zod-dto";
 
 export class CreatePlanTaskDto extends createZodDto(createPlanTaskSchema) {}
+/** Body for POST /v1/plan-tasks/bulk (user-confirmed batch add — e.g. accepted coach draft). */
+export class BulkCreatePlanTasksDto extends createZodDto(bulkCreatePlanTasksSchema) {}
 export class UpdatePlanTaskDto extends createZodDto(updatePlanTaskSchema) {}
 export class ListPlanTasksQueryDto extends createZodDto(listPlanTasksQuerySchema) {}
 export class PlanTaskCalendarQueryDto extends createZodDto(planTaskCalendarQuerySchema) {}

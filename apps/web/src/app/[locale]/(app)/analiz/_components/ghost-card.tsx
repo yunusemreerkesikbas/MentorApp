@@ -1,52 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { motion, useReducedMotion } from "framer-motion";
-import type { GhostComparisonDto, GhostNarrationDto } from "@mentor/types";
-import { aiGhostControllerNarrate } from "@mentor/api-client";
+import type { GhostComparisonDto } from "@mentor/types";
 import { Card, Chip, SectionHeading } from "@mentor/ui";
-import { useRouter } from "@/i18n/navigation";
 
 interface GhostCardProps {
-  examId: string;
   ghost: GhostComparisonDto;
-  premium?: boolean;
 }
 
-/**
- * "Geçmiş-ben" compares the latest attempt with the user's own past.
- * Premium narration remains scoped to the same active exam.
- */
-export function GhostCard({ examId, ghost, premium }: GhostCardProps) {
-  const reduceMotion = useReducedMotion();
+/** "Geçmiş-ben" compares the latest attempt with the user's own past. */
+export function GhostCard({ ghost }: GhostCardProps) {
   const translate = useTranslations("ghost");
-  const router = useRouter();
-  const [narration, setNarration] = useState<string | null>(ghost.aiNarration);
-  const [narrating, setNarrating] = useState(false);
-
-  const generate = useCallback(async () => {
-    setNarrating(true);
-    try {
-      const res = (await aiGhostControllerNarrate({ examId })) as unknown as
-        | { data?: GhostNarrationDto }
-        | GhostNarrationDto;
-      const dto =
-        (res as { data?: GhostNarrationDto }).data ??
-        (res as GhostNarrationDto);
-      if (dto?.narration) setNarration(dto.narration);
-    } catch {
-      /* Premium enhancement: the rule-based comparison remains available. */
-    } finally {
-      setNarrating(false);
-    }
-  }, [examId]);
-
-  useEffect(() => {
-    if (!premium || ghost.aiNarration != null) return;
-    const timer = window.setTimeout(() => void generate(), 0);
-    return () => window.clearTimeout(timer);
-  }, [generate, ghost.aiNarration, premium]);
 
   return (
     <Card className="flex flex-col gap-4">
@@ -68,7 +32,9 @@ export function GhostCard({ examId, ghost, premium }: GhostCardProps) {
         >
           {ghost.latest.totalNet}
         </span>
-        <Chip>{translate("previous_delta", { delta: ghost.previousDelta })}</Chip>
+        <Chip>
+          {translate("previous_delta", { delta: ghost.previousDelta })}
+        </Chip>
         <Chip>
           {ghost.isNewRecord
             ? translate("new_record")
@@ -124,40 +90,6 @@ export function GhostCard({ examId, ghost, premium }: GhostCardProps) {
           })}
         </ul>
       </div>
-
-      {narrating ? (
-        <p
-          className="text-sm"
-          role="status"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {translate("narrating")}
-        </p>
-      ) : premium && narration ? (
-        <motion.div
-          role="status"
-          className="flex flex-col gap-2"
-          initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-        >
-          <Chip>{translate("coach_chip")}</Chip>
-          <p className="text-sm" style={{ color: "var(--color-body)" }}>
-            {narration}
-          </p>
-        </motion.div>
-      ) : premium === false ? (
-        <button
-          type="button"
-          onClick={() => router.push("/abonelik")}
-          className="min-h-11 text-left text-sm underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {translate("premium_nudge")}
-        </button>
-      ) : null}
     </Card>
   );
 }
-
-

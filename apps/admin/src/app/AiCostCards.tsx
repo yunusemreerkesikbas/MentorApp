@@ -20,6 +20,8 @@ const FEATURE_LABEL: Record<string, string> = {
     session_reflection: "Seans yansıması",
     weekly_review: "Haftalık özet",
     memory: "Hafıza profili",
+    daily_greeting: "Günlük selam",
+    plan_draft: "Plan taslağı",
     other: "Diğer",
 };
 const featureLabel = (f: string) => FEATURE_LABEL[f] ?? f;

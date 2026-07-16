@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import Image from "next/image";
-import type { PhotoAccessDto } from "@mentor/types";
+import type { CategorizePhotoResultDto, PhotoAccessDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button, Card, Chip, ProgressBar, SectionHeading } from "@mentor/ui";
 import { FormError } from "@/components/form";
@@ -34,7 +34,7 @@ export function PhotoCategorizeCard({
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [chips, setChips] = useState<{ slug: string; name: string }[]>([]);
+  const [result, setResult] = useState<CategorizePhotoResultDto | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -82,7 +82,7 @@ export function PhotoCategorizeCard({
           upload.key,
           clientRequestId,
         );
-        setChips(result.subjectRefs);
+        setResult(result);
         clearPreview();
         onCategorized?.();
       } catch (err) {
@@ -265,14 +265,35 @@ export function PhotoCategorizeCard({
         </p>
       ) : null}
 
-      {chips.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          <span className="text-sm" style={{ color: "var(--color-secondary)" }}>
-            {translate("result_prefix")}
-          </span>
-          {chips.map((c) => (
-            <Chip key={c.slug}>{c.name}</Chip>
-          ))}
+      {result ? (
+        <div className="flex flex-col gap-2" role="status">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className="text-sm"
+              style={{ color: "var(--color-secondary)" }}
+            >
+              {translate("result_prefix")}
+            </span>
+            {result.topicRefs.map((topic) => (
+              <Chip key={topic.subjectSlug + ":" + topic.slug}>
+                {topic.subjectName} · {topic.name}
+              </Chip>
+            ))}
+            {result.topicRefs.length === 0
+              ? result.subjectRefs.map((subject) => (
+                  <Chip key={subject.slug}>{subject.name}</Chip>
+                ))
+              : null}
+          </div>
+          {result.topicRefs.length === 0 && result.subjectRefs.length > 0 ? (
+            <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+              {translate("topic_undetermined")}
+            </p>
+          ) : result.subjectRefs.length === 0 ? (
+            <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+              {translate("result_empty")}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </Card>

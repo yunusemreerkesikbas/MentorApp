@@ -14,6 +14,7 @@ import {
   resolvePendingMockExamContext,
   setCoachMessageFeedback,
   streamCoachMessage,
+  streamRegenerate,
 } from "@/lib/coach";
 import { useKocAccess } from "./koc-access-shell";
 import { useCoachSession } from "./coach-session-context";
@@ -21,6 +22,9 @@ import { CoachComposer } from "./coach-composer";
 import { CoachTranscript, type ChatMessage } from "./coach-transcript";
 
 const newId = () => globalThis.crypto.randomUUID();
+
+/** Show the calm remaining-messages hint only when the allowance is nearly spent. */
+const REMAINING_HINT_THRESHOLD = 5;
 
 /**
  * /koc/chat — back header, transcript, sticky composer. Session state from layout provider.
@@ -44,8 +48,18 @@ export function KocChatShell() {
   } = useCoachSession();
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  // Message COUNT only — never coin amounts inside the chat zone (§4 #3). Decremented locally.
+  const [remaining, setRemaining] = useState<number | null>(() =>
+    access.mode === CoachAccessMode.PREMIUM
+      ? (access.dailyMessagesRemaining ?? null)
+      : access.mode === CoachAccessMode.COIN
+        ? (access.freeCoinMessagesRemainingToday ?? null)
+        : null,
+  );
   const [streamStarted, setStreamStarted] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  // Ephemeral follow-up chips from the LATEST reply only — never persisted, gone on reload.
+  const [followUps, setFollowUps] = useState<string[]>([]);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const seedAppliedRef = useRef(false);
   const appliedContextMockExamIdRef = useRef<string | null>(null);
@@ -81,6 +95,7 @@ export function KocChatShell() {
     if (!trimmed || busy) return;
     setChatError(null);
     setInput("");
+    setFollowUps([]);
 
     const wasNewChat = activeConversationId === null;
     const pendingContextMockExamId = resolvePendingMockExamContext(
@@ -99,7 +114,7 @@ export function KocChatShell() {
     const coachMessageId = newId();
     let received = "";
     try {
-      const { reply, sources, suggestedTask, conversationId } = await streamCoachMessage(
+      const { reply, sources, suggestedTask, followUps: nextFollowUps, conversationId } = await streamCoachMessage(
         trimmed,
         clientMessageId,
         (delta) => {
@@ -120,6 +135,7 @@ export function KocChatShell() {
       } else {
         updateMessage(coachMessageId, { text: reply, sources, suggestedTask });
       }
+      setFollowUps(nextFollowUps ?? []);
 
       if (pendingContextMockExamId) {
         appliedContextMockExamIdRef.current = pendingContextMockExamId;
@@ -135,6 +151,7 @@ export function KocChatShell() {
         adoptConversation(conversationId);
       }
       void refreshConversations();
+      setRemaining((r) => (r === null ? null : Math.max(0, r - 1)));
     } catch (err) {
       if (received !== "") removeMessage(coachMessageId);
       setChatError(
@@ -150,6 +167,51 @@ export function KocChatShell() {
       setBusy(false);
       setStreamStarted(false);
       composerRef.current?.focus();
+    }
+  }
+
+  async function regenerate() {
+    if (busy || !activeConversationId) return;
+    const lastCoach = [...messages].reverse().find((m) => m.role === "coach");
+    if (!lastCoach) return;
+
+    setChatError(null);
+    setFollowUps([]);
+    setBusy(true);
+    // Old reply stays visible until the first delta; a failure restores this snapshot.
+    updateMessage(lastCoach.id, { sources: undefined, suggestedTask: undefined, feedback: null });
+    let received = "";
+    try {
+      const { reply, sources, suggestedTask, followUps: nextFollowUps } = await streamRegenerate(
+        activeConversationId,
+        (delta) => {
+          received += delta;
+          setStreamStarted(true);
+          updateMessage(lastCoach.id, { text: received });
+        },
+      );
+      updateMessage(lastCoach.id, { text: reply, sources, suggestedTask, feedback: null });
+      setFollowUps(nextFollowUps ?? []);
+      setRemaining((r) => (r === null ? null : Math.max(0, r - 1)));
+    } catch (err) {
+      updateMessage(lastCoach.id, {
+        text: lastCoach.text,
+        sources: lastCoach.sources,
+        suggestedTask: lastCoach.suggestedTask,
+        feedback: lastCoach.feedback ?? null,
+      });
+      setChatError(
+        err instanceof CoachStreamError
+          ? tChat("stream_error")
+          : err instanceof ApiClientError
+            ? err.body.message
+            : err instanceof Error
+              ? err.message
+              : String(err),
+      );
+    } finally {
+      setBusy(false);
+      setStreamStarted(false);
     }
   }
 
@@ -214,7 +276,23 @@ export function KocChatShell() {
         error={chatError}
         emptyHint={tChat("empty_hint")}
         onFeedback={rateMessage}
+        followUps={busy ? [] : followUps}
+        onFollowUp={(q) => {
+          setInput(q);
+          composerRef.current?.focus();
+        }}
+        onRegenerate={activeConversationId ? () => void regenerate() : undefined}
       />
+      {remaining !== null && remaining <= REMAINING_HINT_THRESHOLD ? (
+        <p
+          className="px-5 pb-1 text-center text-xs"
+          style={{ color: "var(--color-secondary)" }}
+        >
+          {remaining === 0
+            ? tChat("remaining_hint_zero")
+            : tChat("remaining_hint", { count: remaining })}
+        </p>
+      ) : null}
       <CoachComposer
         ref={composerRef}
         value={input}

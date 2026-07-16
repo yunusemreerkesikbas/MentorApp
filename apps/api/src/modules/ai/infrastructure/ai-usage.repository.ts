@@ -59,6 +59,23 @@ export class AiUsageRepository {
     });
   }
 
+  /** Count one feature's calls for a user since `since` — drives per-feature daily caps. */
+  async countFeatureSince(userId: string, feature: string, since: Date): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(aiUsage)
+        .where(
+          and(
+            eq(aiUsage.userId, userId),
+            eq(aiUsage.feature, feature),
+            gte(aiUsage.createdAt, since),
+          ),
+        );
+      return rows[0]?.n ?? 0;
+    });
+  }
+
   /** Aggregate cost + calls + tokens across ALL users since `since` (admin cost dashboard, SERVICE ctx). */
   async windowSince(since: Date): Promise<UsageWindow> {
     return withServiceContext(this.db, async (tx) => {

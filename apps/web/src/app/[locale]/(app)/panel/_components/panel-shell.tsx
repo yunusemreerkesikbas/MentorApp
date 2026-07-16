@@ -41,6 +41,7 @@ import { FormError } from "@/components/form";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import { useDailyGreeting } from "@/lib/use-daily-greeting";
 
 import { CommunityCard } from "./community-card";
 import { CountdownPlaceholder } from "./countdown-placeholder";
@@ -438,6 +439,9 @@ function DailyRhythmCard({
   onMoodClick: () => void;
 }) {
   const t = useTranslations("panel");
+  // Premium: the coach's daily greeting (cached per user+day) replaces the static line;
+  // free / error keeps the calm fallback copy.
+  const dailyGreeting = useDailyGreeting();
   const doneCount = tasks.filter((task) => completedStatuses.includes(task.status)).length;
   const hasEffort = doneCount > 0 || streakDays > 0;
   const displayMood = moodValue ?? mood?.mood ?? null;
@@ -447,7 +451,9 @@ function DailyRhythmCard({
       <div className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_120px] sm:p-6">
         <div className="space-y-2">
           <h2 className="text-xl font-bold text-[var(--color-main)]">{t("rhythm_title")}</h2>
-          <p className="max-w-md text-base leading-7 text-[var(--color-body)]">{t("rhythm_copy")}</p>
+          <p className="max-w-md text-base leading-7 text-[var(--color-body)]">
+            {dailyGreeting ?? t("rhythm_copy")}
+          </p>
           {hasEffort ? (
             <p className="text-sm font-semibold text-[var(--color-secondary)]">
               {t("rhythm_summary", {

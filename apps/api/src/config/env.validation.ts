@@ -105,8 +105,16 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
       message: "PAYMENTS_WEBHOOK_SECRET is required when PAYMENTS_PROVIDER=fake.",
     });
   }
-  // The OpenAI LLM adapter needs a key; the fake adapter (dev/test) does not. (AI is additionally
-  // gated by the `ai.enabled` flag, so prod may ship with fake until the key/launch is ready.)
+  // Fake AI is deterministic test/dev infrastructure, never a production fallback. Production AI
+  // can still be disabled safely with the runtime `ai.enabled` kill-switch.
+  if (env.NODE_ENV === "production" && env.AI_PROVIDER === "fake") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["AI_PROVIDER"],
+      message: "AI_PROVIDER=fake is forbidden in production — configure a real provider.",
+    });
+  }
+  // Real adapters require their provider key; the fake adapter (dev/test) does not.
   if (env.AI_PROVIDER === "openai" && !env.OPENAI_API_KEY) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

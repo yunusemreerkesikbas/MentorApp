@@ -171,6 +171,7 @@ describe("ai coach chat (e2e)", () => {
     expect(premiumAccess.status).toBe(200);
     expect(premiumAccess.body.mode).toBe("PREMIUM");
     expect(premiumAccess.body.canChat).toBe(true);
+    expect(typeof premiumAccess.body.dailyMessagesRemaining).toBe("number");
 
     const coinAccess = await access(freeToken);
     expect(coinAccess.status).toBe(200);
@@ -186,6 +187,10 @@ describe("ai coach chat (e2e)", () => {
     expect(typeof res.body.reply).toBe("string");
     expect(res.body.reply.length).toBeGreaterThan(0);
     expect(res.body.model).toBe("fake");
+    // Default message contains "nasıl" → fake adapter appends the FOLLOWUP marker; the backend
+    // must strip it from the reply text and surface it as the ephemeral followUps field.
+    expect(res.body.followUps).toHaveLength(2);
+    expect(res.body.reply).not.toContain("<<");
     expect(await aiUsageCount(premiumId)).toBeGreaterThan(0);
     expect(await coinBalance(premiumId)).toBe(before);
   });
@@ -242,5 +247,72 @@ describe("ai coach chat (e2e)", () => {
     } finally {
       await setConfig("ai.chat.daily_limit", 30);
     }
+  });
+
+  it("regenerate replaces the last coach reply in place (SSE; count stable, feedback reset)", async () => {
+    const first = await chat(premiumToken);
+    expect(first.status).toBe(201);
+    const convId = first.body.conversationId as string;
+
+    const regen = await request(app.getHttpServer())
+      .post(`/v1/coach/conversations/${convId}/regenerate/stream`)
+      .set({ Authorization: `Bearer ${premiumToken}` });
+    expect(regen.status).toBe(201); // Nest @Post default — same as chat/stream
+
+    expect(regen.text).toContain('"done"');
+    expect(regen.text).not.toContain("<<");
+
+    const messages = await request(app.getHttpServer())
+      .get(`/v1/coach/conversations/${convId}/messages`)
+      .set({ Authorization: `Bearer ${premiumToken}` });
+    expect(messages.status).toBe(200);
+    expect(messages.body.total).toBe(2); // still one USER + one COACH row
+    const coachRow = messages.body.items.find((m: { role: string }) => m.role === "COACH");
+    expect(coachRow.feedback).toBeNull();
+
+    const bogus = await request(app.getHttpServer())
+      .post("/v1/coach/conversations/00000000-0000-4000-8000-00000000dead/regenerate/stream")
+      .set({ Authorization: `Bearer ${premiumToken}` });
+    expect(bogus.status).toBe(404);
+  });
+
+  it("plan draft: premium gets a clamped 7-day preview; free is 403; nothing persisted", async () => {
+    const draft = (token: string) =>
+      request(app.getHttpServer())
+        .post("/v1/coach/plan-draft")
+        .set({ Authorization: `Bearer ${token}` })
+        .send({ note: "hafta sonu yoğunum" });
+
+    const res = await draft(premiumToken);
+    expect(res.status).toBe(201);
+    expect(res.body.model).toBe("fake");
+    expect(Array.isArray(res.body.days)).toBe(true);
+    expect(res.body.days.length).toBeGreaterThan(0);
+    for (const day of res.body.days) {
+      expect(day.tasks.length).toBeGreaterThan(0);
+      expect(day.tasks.length).toBeLessThanOrEqual(3);
+      expect(typeof day.tasks[0].title).toBe("string");
+    }
+
+    expect((await draft(freeToken)).status).toBe(403);
+  });
+
+  it("daily greeting: premium generates once then hits the day cache; free is 403", async () => {
+    const greet = (token: string) =>
+      request(app.getHttpServer())
+        .post("/v1/coach/daily-greeting")
+        .set({ Authorization: `Bearer ${token}` });
+
+    const first = await greet(premiumToken);
+    expect(first.status).toBe(200);
+    expect(first.body.greeting.length).toBeGreaterThan(0);
+    expect(first.body.model).not.toBe("cache");
+
+    const second = await greet(premiumToken);
+    expect(second.status).toBe(200);
+    expect(second.body.greeting).toBe(first.body.greeting);
+    expect(second.body.model).toBe("cache");
+
+    expect((await greet(freeToken)).status).toBe(403);
   });
 });

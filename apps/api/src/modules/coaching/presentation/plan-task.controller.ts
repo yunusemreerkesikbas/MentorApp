@@ -15,6 +15,7 @@ import type { Paginated, PlanTaskCalendarDto, PlanTaskDto } from "@mentor/types"
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { PlanService } from "../application/plan.service";
 import {
+  BulkCreatePlanTasksDto,
   CreatePlanTaskDto,
   ListPlanTasksQueryDto,
   PlanTaskCalendarQueryDto,
@@ -50,6 +51,15 @@ export class PlanTaskController {
     @Body() dto: CreatePlanTaskDto,
   ): Promise<PlanTaskDto> {
     return this.plan.create(user.id, dto);
+  }
+
+  /** User-confirmed batch add (e.g. accepted coach draft). All-or-nothing on invalid dates. */
+  @Post("bulk")
+  createMany(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: BulkCreatePlanTasksDto,
+  ): Promise<PlanTaskDto[]> {
+    return this.plan.createMany(user.id, dto.tasks);
   }
 
   @Patch(":id")

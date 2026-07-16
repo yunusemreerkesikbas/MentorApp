@@ -1,6 +1,7 @@
 import {
   aiChatSchema,
   categorizePhotoSchema,
+  planDraftSchema,
   coachFeedbackSchema,
   ghostNarrationSchema,
   paginationQuerySchema,
@@ -23,6 +24,11 @@ export class AiChatDto extends createZodDto(aiChatSchema) {
 
   @ApiPropertyOptional({ format: "uuid" })
   override contextMockExamId?: string;
+}
+/** Body for POST /v1/coach/plan-draft (optional free-text wish). */
+export class PlanDraftBodyDto extends createZodDto(planDraftSchema) {
+  @ApiPropertyOptional({ maxLength: 500 })
+  override note?: string;
 }
 /** Query for GET /v1/coach/messages (plain pagination — study-sessions pattern). */
 export class ListCoachMessagesQueryDto extends createZodDto(paginationQuerySchema) {}

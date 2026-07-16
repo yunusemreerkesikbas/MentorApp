@@ -21,7 +21,7 @@ motivation notes. Cost is controlled by premium gating + coin spending + rate-li
   `info_articles`; if no relevant source found → "doğrulanmış içerik bulamadım → /bilgi" (no fabrication).
 - **LlmPort** (domain port): `FakeLlmAdapter` (dev default, deterministic) + `OpenAiLlmAdapter`
   (real, fetch-based, no new dependency). Selected by `AI_PROVIDER` env.
-- **VisionPort** (module-local): `FakeVisionAdapter` + `GeminiVisionAdapter` — photo→subject classify only
+- **VisionPort** (module-local): `FakeVisionAdapter` + `GeminiVisionAdapter` + `OpenAiVisionAdapter` — photo→subject/topic classify only
   (§4 #2 — never solves).
 - **StoragePort** (shared): `FakeStorageAdapter` + `R2StorageAdapter` — signed upload URL flow.
 - **RAG:** async embedding pipeline (`ArticlePublished` → job → `LlmPort.embed` → `ContentService.
@@ -36,6 +36,9 @@ motivation notes. Cost is controlled by premium gating + coin spending + rate-li
 ```bash
 # Dev defaults: AI_PROVIDER=fake, VISION_PROVIDER=fake, STORAGE_PROVIDER=fake
 pnpm dev
+
+# Opt-in: four low-cost real OpenAI calls; reads apps/api/.env and never runs under pnpm test
+pnpm --filter @mentor/api test:live:openai
 
 # Premium user — chat:
 POST /v1/coach/chat { "message": "Nasıl çalışmalıyım?" }
@@ -70,6 +73,7 @@ pnpm --filter @mentor/api test -- --grep "ai"
 |---|---|
 | `POST /v1/coach/chat` | AI coach chat (multi-turn, RAG-grounded) |
 | `POST /v1/coach/chat/stream` | Streaming chat (SSE over POST; delta → done/error) |
+| `POST /v1/coach/conversations/:id/regenerate/stream` | Regenerate the last coach reply (SSE; same spend as a message) |
 | `GET /v1/coach/conversations` | The user's chat threads, most-recently-active first |
 | `GET /v1/coach/conversations/:id/messages` | One thread's paginated history |
 | `DELETE /v1/coach/conversations/:id` | Delete one thread (messages cascade) |
@@ -78,6 +82,8 @@ pnpm --filter @mentor/api test -- --grep "ai"
 | `DELETE /v1/coach/memory` | Reset the memory profile (KVKK) |
 | `GET /v1/coach/access` | Access probe (PREMIUM/COIN/NONE) |
 | `POST /v1/coach/mood-reflection` | Premium mood AI reflection |
+| `POST /v1/coach/daily-greeting` | Premium proactive daily greeting (cached per user+day) |
+| `POST /v1/coach/plan-draft` | Premium 7-day plan draft PREVIEW (never persisted; user confirms via W2 bulk) |
 | `POST /v1/coach/ghost-narration` | Premium ghost AI narration |
 | `POST /v1/coach/vision-note` | Premium vision board AI note |
 | `GET /v1/coach/photo-access` | Photo categorize access (upload URL) |
@@ -291,7 +297,131 @@ pnpm --filter @mentor/api test -- --grep "ai"
   `coach-conversation.repository.ts`, `coach-memory.repository.ts`, `weekly-review-cache.repository.ts`,
   `admin-users.service.ts`(+spec), `admin-users.repository.ts`, `admin.module.ts`, `ai.module.ts`.
 
+- **Chat QoL paketi (2026-07-15)** — üç günlük-kullanım pürüzü kapandı: (1) `GET /v1/coach/access`
+  PREMIUM yanıtı artık `dailyMessagesRemaining` döndürür (rolling-24h; `assertPremiumRateLimit` ile
+  aynı `AiUsageRepository.countSince` sayacı — hint enforcement'la tutarlı). FE `/koc/chat`
+  composer üstünde kalan ≤5 iken sakin muted hint gösterir (0 → anti-shaming "yarın devam" metni;
+  composer kilitlenmez, 429 yolu aynen kalır); COIN modda mevcut `freeCoinMessagesRemainingToday`
+  kullanılır, her başarılı mesajda local decrement (refetch yok). **§4 #3:** chat bölgesinde yalnız
+  mesaj SAYISI, coin miktarı asla. (2) Koç balonu artık markdown render eder: `CoachMarkdown`
+  (react-markdown + remark-gfm, zaten kurulu; dar eleman seti p/strong/em/ul/ol/li, raw HTML kapalı,
+  heading/kod paragrafa düşer); system prompt'a "yalnız basit markdown" BİÇİM kuralı eklendi; user
+  balonu düz metin. (3) Feedback satırına kopyala butonu (clipboard + 1.5s Check). Migration/endpoint/
+  bağımlılık yok; api-client regen gerekmedi (FE `@mentor/types`'ı doğrudan kullanıyor). Dosyalar:
+  `coach-access.service.ts`(+yeni spec), `ai.constants.ts`, `packages/types/ai.ts`,
+  `coach-markdown.tsx` (yeni), `coach-transcript.tsx`, `koc-chat-shell.tsx`,
+  `ai-coach.e2e-spec.ts`, `messages/{tr,en}.json`.
+
+- **Proaktif günlük koç selamı (2026-07-15)** — `/koc` hub'ında premium kullanıcıya Puhu bubble'da
+  güne özel 2-3 cümlelik LLM selamı: `POST /v1/coach/daily-greeting` (body yok). Birebir
+  mood-reflection deseni; cache yeni `ai_daily_greetings` tablosunda (`UNIQUE(user, greeting_date)`,
+  UTC gün, RLS self-or-service; migration `0051_w3_daily_greeting` — WIP `topics` diff'ini
+  süpürmemek için `drizzle-kit generate --custom` + elle SQL). Gün boyu sabit mesaj (fingerprint
+  tazeleme YOK — bilinçli), kullanıcı+gün başına en fazla 1 LLM çağrısı; `AiUsageFeature.DAILY_GREETING`
+  ile ölçülür, budget guard'a tabi. Prompt `buildDailyGreetingPrompt` mevcut PII-free `CoachContext`'e
+  (plan/seri yerine: countdown, mood, bugünkü plan, son seanslar, memory profili) dayanır; KESİN
+  KURALLAR blokları aynen. **Free:** 403 — FE (`KocDailyGreeting`) yalnız `access.mode=PREMIUM`'da
+  çağırır, hata/budget'ta sessizce görünmez (kural tabanlı brief herkes için kalır). **KVKK:**
+  `AiErasureService` artık `ai_daily_greetings`'i de siler. Dosyalar: `daily-greeting.service.ts`(+spec),
+  `daily-greeting.repository.ts`, `ai-mood.controller.ts`, `ai.constants.ts`, `schema.ts`,
+  `ai-erasure.service.ts`(+spec), `packages/types/ai.ts`, `koc-daily-greeting.tsx`, `koc-hub.tsx`,
+  `coach.ts` (web), `AiCostCards.tsx` (admin), `ai-coach.e2e-spec.ts`, `messages/{tr,en}.json`.
+
+- **In-chat takip önerileri (2026-07-15)** — koç her yanıtın sonuna 2-3 kısa takip sorusu ekler:
+  yeni `<<FOLLOWUP["soru","soru"]>>` marker'ı (Dilim 4 `<<TASK>>` altyapısının aynası).
+  **Sıra sözleşmesi:** yanıt sonunda önce FOLLOWUP, en sonda TASK; backend önce TASK'ı, sonra
+  FOLLOWUP'ı soyar (`extractFollowUps`, max 3 × 120 char). Stream holdback filtresi genelleşti —
+  `createTaskMarkerFilter` artık iki marker prefix'ini de tutar (chunk sınırında bölünme dahil).
+  `CoachChatReplyDto.followUps?` (append-only) hem `POST /chat` hem stream `done`'da. **Ephemeral:**
+  persist edilmez, migration yok — FE (`koc-chat-shell`) chip'leri yalnız EN SON yanıtın altında
+  gösterir, reload'da düşer. Chip tıklaması composer'ı DOLDURUR, göndermez (coin modunda kazara
+  harcama yok — `?seed=` felsefesi). Fake adapter "nasıl" geçen mesajda deterministik 2 soru üretir
+  (e2e varsayılan mesajı kapsar). Dosyalar: `suggested-task.ts`(+spec), `chat.service.ts`(+spec),
+  `ai.constants.ts`, `fake-llm.adapter.ts`, `packages/types/ai.ts`, `coach-transcript.tsx`,
+  `koc-chat-shell.tsx`, `ai-coach.e2e-spec.ts`, `messages/{tr,en}.json`.
+
+- **Yanıtı yeniden üret — regenerate (2026-07-15)** — beğenilmeyen son koç yanıtı aynı soruyla
+  yeniden üretilir: `POST /v1/coach/conversations/:id/regenerate/stream` (SSE, gövdesiz).
+  **Spend normal mesajla aynı** (premium günlük haktan düşer, coin harcar; her regenerate yeni
+  `spendRefId` — idempotency yok, kullanıcı kararı). **Satır yerinde güncellenir, silinmez:**
+  `CoachMessageRepository.updateCoachReply` eski COACH satırının içerik/model/sources/suggestedTask'ını
+  üretim BAŞARILI olunca değiştirir, feedback sıfırlanır; orta-akış hatasında history'ye dokunulmaz
+  (coin refund mevcut yol). Üretimde history'den son USER+COACH çifti düşülür (`prepareChat
+  excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sayısı sabit → memory
+  tetikleyicisi bilinçli atlanır; `appendExchange` çağrılmaz. Stream sarmalayıcısı ortak
+  `streamLlm` helper'ına çıkarıldı (replyStream de kullanır). FE: son koç yanıtının altında ↻
+  (yalnız `activeConversationId` varken); delta'lar balonu yerinde günceller, hata eski yanıtı
+  geri koyar; takip chip'leri ve kalan-hak göstergesi yenilenir. **Gotcha:** `contextMockExamId`
+  persist edilmediği için regenerate deneme bağlamı OLMADAN üretir (mevcut "context is not
+  persisted" gotcha'sının doğal sonucu). Dosyalar: `coach-message.repository.ts`,
+  `chat.service.ts`(+spec), `ai-chat.controller.ts`, `coach.ts` (web, ortak SSE parser),
+  `coach-transcript.tsx`, `koc-chat-shell.tsx`, `ai-coach.e2e-spec.ts`, `messages/{tr,en}.json`.
+
+- **OpenAI gerçek-provider hardening (2026-07-15)** — `OpenAiLlmAdapter` ve
+  `OpenAiVisionAdapter` için fetch kontrat testleri eklendi; blocking chat, parçalı SSE, token usage,
+  1536-sonlu embedding invariantı, vision data URL/whitelist ve güvenli hata eşlemesi kapsanır.
+  Provider response body/model çıktısı loglanmaz; yalnız HTTP status + varsa `x-request-id` tutulur.
+  Production `AI_PROVIDER=fake` artık boot'u durdurur; AI kapatma `ai.enabled` ile yapılır. Kullanım:
+  `pnpm --filter @mentor/api test:live:openai` dört düşük maliyetli gerçek çağrı yapar ve normal test
+  suite'ine dahil değildir. Gotcha: komut gerçek ücret/ağ erişimi ve `apps/api/.env` içinde geçerli
+  `OPENAI_API_KEY` ister. Dosyalar: `env.validation.ts`, `openai-{llm,vision}.adapter.ts`,
+  `openai-adapters.spec.ts`, `vitest.live.config.ts`, `test/live/openai-live.spec.ts`.
+
+- **Koç yapımı haftalık plan — Dilim 1/2: backend (2026-07-16)** — Faz 2 kalemi başladı:
+  `POST /v1/coach/plan-draft` (premium §4 #5; opsiyonel `note` ≤500) mevcut `CoachContext`'e dayalı
+  7 günlük plan TASLAĞI döner. LLM'den JSON-only çıktı istenir (`buildPlanDraftPrompt` —
+  `PLAN_DRAFT_JSON_SENTINEL` fake adapter'ın da anahtarı); saf `parsePlanDraft`
+  (`domain/plan-draft.ts`) code-fence toleranslı parse eder ve KLAMPLAR: [bugün, bugün+6], günde
+  max 3, toplam max 15, title 200 / subject 80. Parse edilemezse 503 ama çağrı yine metered.
+  Maliyet: yeni `ai.plan_draft.daily_limit` (default 5) + `AiUsageRepository.countFeatureSince` +
+  budget guard; `AiUsageFeature.PLAN_DRAFT`. **Guardrail (workstreams §2): taslak persist
+  EDİLMEZ, AI plan tablolarına yazmaz** — kullanıcı FE'de onaylayınca kayıt W2
+  `POST /v1/plan-tasks/bulk` ile olur (bkz. coaching.md; iki endpoint arasında otomatik köprü yok).
+  **Sıradaki tur (Dilim 2/2):** /plan sayfasında "Koçtan haftalık plan iste" butonu + önizleme/onay
+  sheet'i (FE). Dosyalar: `plan-draft.ts`(+spec), `plan-draft.service.ts`(+spec), `ai.constants.ts`,
+  `ai-usage.repository.ts`, `ai-chat.controller.ts`, `ai.dto.ts`, `ai.module.ts`,
+  `fake-llm.adapter.ts`, `config.catalog.ts`, `packages/{types,validation}`, `AiCostCards.tsx`,
+  `ai-coach.e2e-spec.ts`.
+
+- **Koç yapımı haftalık plan — Dilim 2/2: web onayı (2026-07-16)** — `/plan` üzerindeki ikincil
+  CTA erişimi yalnız tıklanınca kontrol eder; Premium kullanıcı opsiyonel notla taslak üretir,
+  görevleri checkbox ile seçer ve kullanıcı onayından sonra W2 bulk endpoint'ine yollar. Sayfa
+  açılışında AI/abonelik isteği yoktur; bulk retry aynı taslağı korur ve yeni LLM çağrısı yapmaz.
+  Gotcha: mevcut görevler replace/dedupe edilmez, seçilenler append edilir. Dosyalar:
+  `plan-coach-draft-action.tsx`, `plan-coach-draft-utils.ts` (web `src/lib` — spec'i
+  `apps/api/src/plan-coach-draft-utils.spec.ts`, plan-seans-link deseni; api vitest include'u
+  web altındaki spec'leri KOŞMAZ), `coach.ts`, `plan-tasks.ts`. Gerçek-provider E2E doğrulaması
+  2026-07-16'da yapıldı (gpt-4o-mini; not→taslak→seçimli onay→bulk→/plan listesi).
+
+- **Günlük selam /panel'de (2026-07-16)** — proaktif günlük selam artık panelde de: "Bugünkü ritim"
+  kartındaki statik `rhythm_copy` satırı premium'da AI selamıyla değişir (yeni görsel eleman yok,
+  dismiss yok — kartın doğal parçası). `/koc` hub'daki Puhu bubble KALDI (aynı user+gün cache'i —
+  ekstra LLM maliyeti yok). Ortak `useDailyGreeting` hook'u (`apps/web/src/lib/use-daily-greeting.ts`):
+  hata/403'te (free) null döner → statik satır kalır, sayfa asla kırılmaz; StrictMode-güvenli tek
+  istek. Free kullanıcı panel başına 1 adet 403 probe'u yapar (ucuz — bilinçli, access ctx panele
+  taşınmadı). Backend/i18n değişmedi. Dosyalar: `use-daily-greeting.ts`, `panel-shell.tsx`.
+
+- **Prompt kalite turu — görünür çekirdek (2026-07-16)** — 4 prompt (chat+FOLLOWUP/TASK, günlük
+  selam, plan taslağı, mood) gerçek gpt-4o-mini problarıyla değerlendirildi; rapor:
+  [`plans/2026-07-16-prompt-kalite-turu.md`](../plans/2026-07-16-prompt-kalite-turu.md).
+  **İki kod düzeltmesi:** (1) `extractReplyMarkers` — TASK/FOLLOWUP çıkarımı artık sıra-bağımsız +
+  bozuk-yazılmış marker enkazı asla sızmaz (canlıda iki sızıntı türü de görüldü); chat'in 3 yolu
+  buna geçti. (2) Premium chat limiti ve `dailyMessagesRemaining` artık yalnız `feature=chat`
+  sayar (`countFeatureSince`) — selam/plan/mood çağrıları chat kotasını yemez. **Prompt ayarları:**
+  chat'e kısalık + emoji≤1 + bağlam-sızması + kullanıcı-sesli FOLLOWUP kuralları; selama "max 3
+  cümle, markdown/emoji yok" (selam düz metin render edilir — bold sızıntısı canlıda görüldü);
+  plan taslağına "bugünkü plandaki görevi tekrar önerme"; mood'a markdown/emoji koruması.
+  Sonra-probları: sızıntı yok, yanıtlar kısa, "merhaba"da chip'ler geliyor, selam 3 cümle/düz.
+  Dosyalar: `suggested-task.ts`(+spec), `chat.service.ts`, `coach-access.service.ts`(+spec),
+  `ai.constants.ts`, rapor.
+
 ## Gotchas / Known issues
+
+- **Daily-greeting ilk üretimi yarışabilir** — cache satırı henüz yokken eşzamanlı iki istek
+  ikisi de LLM çağırabilir; `onConflictDoNothing` sayesinde tek satır kazanır ve sonraki tüm
+  istekler cache'ten döner. Dev'deki StrictMode çift-effect kaynağı FE'de `requestedRef` guard'ıyla
+  kapatıldı (2026-07-15, `koc-daily-greeting.tsx`); kalan tek yarış prod'da aynı anda açılan iki
+  sekme — üst sınır fazladan 1 çağrı, kabul edildi (budget guard + günlük cache kapsıyor).
 
 - **No RAG in Slice 1** — the coach refuses official-info questions until RAG retrieval lands.
 - **§4 #1 preserved:** prompt grounds ONLY on retrieved verified articles; critical dates still go to
@@ -360,3 +490,5 @@ pnpm --filter @mentor/api test -- --grep "ai"
   attempts return the existing 404 and the current coin-refund path remains intact. Related files:
   `aiChatSchema`, `chat.service.ts`, `ai.constants.ts`, `ai-chat.controller.ts`,
   `koc-chat-shell.tsx`, `apps/web/src/lib/coach.ts`, generated OpenAPI client.
+
+- **Single-question topic classification (2026-07-15)** — The Premium vision contract returns one `subjectSlug` and optional `topicSlug` from the active exam whitelist; the prompt keeps the no-solving/no-explanation guardrail. The server verifies the parent relation: an invalid topic falls back to the valid subject, while an invalid subject yields an empty result. Usage: upload one question photo in `Yanlışlarım`. Gotcha: OCR, confidence, and correction CRUD remain out of scope; photo/topic signals are not added to the AI coach prompt. Related: `vision.port.ts`, vision adapters, `photo-categorize.service.ts`.

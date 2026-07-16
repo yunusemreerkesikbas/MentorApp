@@ -454,6 +454,7 @@
       "brief_plan_empty": "No planned tasks today",
       "brief_streak": "Streak: {days} days",
       "suggestions_label": "Things to ask your coach",
+      "daily_greeting_dismiss": "Dismiss daily message",
       "chip_focus": "{subject} focus",
       "seed_focus": "I'm struggling with {subject} — how should I study it?",
       "chip_task": "Start the next task",
@@ -480,7 +481,9 @@
     "chat": {
       "header_title": "Chat",
       "empty_hint": "Write your first message — your coach is here.",
-      "stream_error": "Couldn't get a reply — please try again."
+      "stream_error": "Couldn't get a reply — please try again.",
+      "remaining_hint": "Messages left today: {count}",
+      "remaining_hint_zero": "You're out of messages for today — see you tomorrow."
     }
   },
   "profile": {
@@ -691,7 +694,21 @@
     "date_sheet_title": "Pick a date",
     "date_sheet_apply": "Apply",
     "date_sheet_label": "Day",
-    "past_readonly_notice": "Past days are read-only. You can edit today and future days only."
+    "past_readonly_notice": "Past days are read-only. You can edit today and future days only.",
+    "coach_draft_cta": "Ask the coach for a weekly plan",
+    "coach_draft_note_title": "Your coach-made weekly plan",
+    "coach_draft_note_label": "Your note for this week (optional)",
+    "coach_draft_note_placeholder": "e.g. Give a little more weight to maths.",
+    "coach_draft_note_hint": "{count}/500 characters",
+    "coach_draft_note_invalid": "The note can be at most 500 characters.",
+    "coach_draft_generate": "Create draft",
+    "coach_draft_preview_title": "Coach plan draft",
+    "coach_draft_preview_notice": "Your existing tasks stay unchanged; only selected tasks will be added.",
+    "coach_draft_selected_count": "{count} tasks selected",
+    "coach_draft_select_required": "Select at least one task to add to your plan.",
+    "coach_draft_add_selected": "Add selected tasks",
+    "coach_draft_success_title": "Your plan is ready",
+    "coach_draft_success_message": "{count} tasks were added to your plan."
   },
   "analysis": {
     "loading": "Loading…",
@@ -719,6 +736,8 @@
     "avg_template": "Avg. {avg} · {count} exams",
     "photo_signals_title": "Subject signals",
     "photo_signals_subtitle": "Hints from photo analysis",
+    "photo_topic_signals_title": "Topic signals",
+    "photo_topic_signals_subtitle": "Topics repeating in your wrong-answer photos",
     "photo_count": "{count} photos",
     "back_panel": "← Back to Dashboard",
     "needs_exam_chip": "Exam type required",
@@ -738,7 +757,6 @@
       "last_net": "Latest net: {net}",
       "delta": "Vs. previous attempt: {delta}",
       "weak_subject": "Let's strengthen {subject}",
-      "next_focus": "Your next focus: {subject}",
       "new_entry": "Enter new exam",
       "empty": "No exams yet — let's enter your first result."
     },
@@ -749,6 +767,9 @@
       "source_average": "Exam average",
       "evidence": "{count} signals",
       "cta": "Add to my plan",
+      "coach_cta": "Talk to the coach",
+      "coach_seed": "The {topic} topic in {subject} keeps appearing in my wrong-answer photos. How should I study it?",
+      "coach_seed_subject": "Let us clarify my {subject} study focus together. How should I study this subject?",
       "recent_title": "Last 4 attempts",
       "recent_subtitle": "Net trend for the focus subject",
       "recent_delta": "{delta} net",
@@ -765,11 +786,12 @@
       "teaser_title": "Your record starts here",
       "teaser_desc": "After your first exam, we'll track your progress here."
     },
+    "evidence_title": "Evidence and history",
+    "evidence_subtitle": "Your trend, past-self comparison, and subject averages",
     "ghost_teaser_title": "Compare with your past",
     "ghost_teaser_desc": "Enter one more exam to start comparing with your past self.",
     "copy_last": "Copy last exam",
-    "coach_seed": "Can you comment on my progress based on my latest mock exam results?",
-    "coach_cta": "Ask the coach",
+    "coach_cta": "Talk to the coach",
     "trend_first": "First exam",
     "validation_over_count": "{subject}: total exceeds question count ({total}/{max}).",
     "saved_toast_title": "Mock exam saved",
@@ -816,6 +838,7 @@
     "photo_retry": "Try again",
     "photo_loading": "Loading photo access…",
     "photo_signals_window": "Photo signals linked only to your last four attempts.",
+    "photo_topic_signals_window": "Topic signals linked to your latest 12 attempts in the active exam.",
     "photo_signals_empty_action": "You can add your first wrong-answer photo above.",
     "weekly": {
       "title": "Your last week",
@@ -832,16 +855,10 @@
       "focus_title": "Your next step",
       "rhythm_focus": "Keep the rhythm",
       "rhythm_focus_message": "Two small focus sessions are enough to start.",
-      "generate": "Review my week",
-      "generating": "Your coach is reviewing the week…",
-      "coach_chip": "Coach reflection",
-      "add_to_plan": "Add to my plan",
-      "premium_teaser": "Coach reflection and a ready plan task are available with Premium",
       "enter_exam": "Enter mock exam",
       "start_session": "Start session",
       "retry": "Try again",
-      "load_error": "Weekly review could not be loaded.",
-      "generate_error": "Coach review could not be generated."
+      "load_error": "Weekly review could not be loaded."
     }
   },
   "session": {
@@ -969,18 +986,24 @@
     "locked_unavailable_title": "Photo analysis is unavailable",
     "locked_unavailable_subtitle": "This feature is temporarily unavailable. Please try again later.",
     "upgrade": "Upgrade to Premium",
-    "upload_subtitle": "Upload a photo of the wrong question; we'll guess which subject it belongs to (no solution).",
-    "upload_title": "Subject guess from photo",
+    "upload_subtitle": "Upload one wrong-question photo; we'll classify its subject and, when possible, its topic (no solution).",
+    "upload_title": "Subject and topic guess from photo",
     "remaining": "Remaining analyses this month: {count}",
     "file_label": "Question photo (JPEG/PNG)",
     "analyzing": "Analyzing…",
-    "result_prefix": "This question is likely:"
+    "result_prefix": "This question is likely:",
+    "topic_undetermined": "The subject was identified; the topic was not clear in this photo.",
+    "result_empty": "No safe subject or topic match was found for this photo."
   },
   "coach_chat": {
     "suggested_task_label": "Coach's suggestion",
     "add_to_plan": "Add to plan",
     "feedback_up": "This reply was helpful",
     "feedback_down": "This reply was not helpful",
+    "copy": "Copy reply",
+    "copied": "Copied",
+    "followups_label": "Follow-up questions",
+    "regenerate": "Regenerate reply",
     "input_label": "Write a message to your coach",
     "input_placeholder": "Ask your coach something…",
     "send": "Send",

@@ -16,7 +16,7 @@ const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 /**
  * OpenAI vision adapter (fetch — mirrors GeminiVisionAdapter). Selected by VISION_PROVIDER=openai
  * so chat + vision can run on a single OPENAI_API_KEY. Classifies exam question photos into
- * editorial subject slugs only (§4 #2 — never solves).
+ * editorial subject/topic slugs (§4 #2 — never solves).
  */
 @Injectable()
 export class OpenAiVisionAdapter implements VisionPort {
@@ -24,23 +24,31 @@ export class OpenAiVisionAdapter implements VisionPort {
 
   constructor(private readonly config: ConfigService<Env, true>) {}
 
-  async categorizeImage(input: VisionCategorizeInput): Promise<VisionCategorizeResult> {
+  async categorizeImage(
+    input: VisionCategorizeInput,
+  ): Promise<VisionCategorizeResult> {
     const apiKey = this.config.get("OPENAI_API_KEY", { infer: true });
     if (!apiKey) {
-      throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+      throw new DomainError(
+        ErrorCode.AI_PROVIDER_ERROR,
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
     const model = this.config.get("OPENAI_MODEL", { infer: true });
-    const subjectList = JSON.stringify(
-      input.allowedSubjects.map((s) => ({ slug: s.slug, name: s.name })),
-    );
-    const userPrompt =
-      `Aşağıdaki ders listesinden görseldeki soruya en uygun slug(ları) seç. JSON only.\nDersler: ${subjectList}`;
+    const taxonomy = JSON.stringify({
+      subjects: input.allowedSubjects,
+      topics: input.allowedTopics,
+    });
+    const userPrompt = `Bu whitelist içinden tek subjectSlug ve ona bağlı topicSlug seç. JSON only.\nTaksonomi: ${taxonomy}`;
     const dataUrl = `data:${input.mimeType};base64,${input.imageBytes.toString("base64")}`;
 
     try {
       const res = await fetch(OPENAI_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
         signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
         body: JSON.stringify({
           model,
@@ -61,8 +69,14 @@ export class OpenAiVisionAdapter implements VisionPort {
         }),
       });
       if (!res.ok) {
-        this.logger.error(`OpenAI vision ${res.status}: ${await res.text().catch(() => "")}`);
-        throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+        const requestId = res.headers.get("x-request-id");
+        this.logger.error(
+          `OpenAI vision ${res.status}${requestId ? ` request_id=${requestId}` : ""}`,
+        );
+        throw new DomainError(
+          ErrorCode.AI_PROVIDER_ERROR,
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
       }
       const data = (await res.json()) as {
         choices?: { message?: { content?: string } }[];
@@ -70,22 +84,31 @@ export class OpenAiVisionAdapter implements VisionPort {
       };
       const text = data.choices?.[0]?.message?.content?.trim();
       if (!text) {
-        throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+        throw new DomainError(
+          ErrorCode.AI_PROVIDER_ERROR,
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
       }
-      const parsed = JSON.parse(text) as { subjectSlugs?: string[] };
-      const subjectSlugs = Array.isArray(parsed.subjectSlugs)
-        ? parsed.subjectSlugs.filter((s) => typeof s === "string")
-        : [];
+      const parsed = JSON.parse(text) as {
+        subjectSlug?: unknown;
+        topicSlug?: unknown;
+      };
       return {
-        subjectSlugs,
+        subjectSlug:
+          typeof parsed.subjectSlug === "string" ? parsed.subjectSlug : null,
+        topicSlug:
+          typeof parsed.topicSlug === "string" ? parsed.topicSlug : null,
         model,
         promptTokens: data.usage?.prompt_tokens ?? 0,
         completionTokens: data.usage?.completion_tokens ?? 0,
       };
     } catch (err) {
       if (err instanceof DomainError) throw err;
-      this.logger.error(`OpenAI vision failed: ${String(err)}`);
-      throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+      this.logger.error("OpenAI vision request failed");
+      throw new DomainError(
+        ErrorCode.AI_PROVIDER_ERROR,
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
   }
 }

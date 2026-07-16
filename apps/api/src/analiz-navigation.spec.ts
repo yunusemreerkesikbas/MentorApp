@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildAnalysisCoachHref,
   buildAnalizTabHref,
+  shouldOpenAnalysisEvidence,
   shouldRevealFirstInsight,
   shouldNavigateAnalizTab,
 } from "../../web/src/app/[locale]/(app)/analiz/_components/analiz-types";
@@ -25,5 +27,16 @@ describe("analysis tab navigation", () => {
     expect(shouldRevealFirstInsight(0)).toBe(true);
     expect(shouldRevealFirstInsight(1)).toBe(false);
   });
-});
 
+  it("keeps evidence collapsed when a next focus is available", () => {
+    expect(shouldOpenAnalysisEvidence(true)).toBe(false);
+    expect(shouldOpenAnalysisEvidence(false)).toBe(true);
+  });
+
+  it("opens an editable coach seed without attaching or sending context", () => {
+    expect(buildAnalysisCoachHref("Matematik odağımı konuşalım")).toEqual({
+      pathname: "/koc/chat",
+      query: { seed: "Matematik odağımı konuşalım" },
+    });
+  });
+});

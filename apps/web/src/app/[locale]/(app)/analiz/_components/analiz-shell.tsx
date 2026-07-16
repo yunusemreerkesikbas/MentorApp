@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type {
   AuthUser,
-  CoachAccessDto,
   CoachingAnalysisDto,
   ExamCalendarDto,
   ExamSubjectDto,
@@ -15,7 +14,6 @@ import type {
   WeeklyReviewDto,
 } from "@mentor/types";
 import {
-  aiChatControllerGetAccess,
   ApiClientError,
   contentControllerCalendarByFamily,
   contentControllerSubjectsBySlug,
@@ -56,10 +54,7 @@ type ExamAsyncState<T> =
   | { status: "ready"; examId: string; data: T }
   | { status: "error"; examId: string; message: string };
 
-type DevelopmentExtras = {
-  weeklyReview: WeeklyReviewDto;
-  premium: boolean;
-};
+type DevelopmentExtras = WeeklyReviewDto;
 
 type LoadState =
   | { status: "loading" }
@@ -162,7 +157,9 @@ export function AnalizShell() {
           return;
         }
 
-        const calendarRes = await contentControllerCalendarByFamily(me.examType);
+        const calendarRes = await contentControllerCalendarByFamily(
+          me.examType,
+        );
         if (!active) return;
 
         const calendar = calendarRes as unknown as ExamCalendarDto | null;
@@ -221,23 +218,12 @@ export function AnalizShell() {
     async (examId: string) => {
       setDevelopmentExtras({ status: "loading", examId });
       try {
-        const [weeklyReview, coachAccessResult] = await Promise.all([
-          http<WeeklyReviewDto>(getWeeklyReviewUrl(examId)),
-          aiChatControllerGetAccess(),
-        ]);
-        const coachAccess =
-          (coachAccessResult as unknown as { data?: CoachAccessDto }).data ??
-          (coachAccessResult as unknown as CoachAccessDto);
+        const weeklyReview = await http<WeeklyReviewDto>(
+          getWeeklyReviewUrl(examId),
+        );
         setDevelopmentExtras((current) =>
           current.status === "loading" && current.examId === examId
-            ? {
-                status: "ready",
-                examId,
-                data: {
-                  weeklyReview,
-                  premium: coachAccess.mode === "PREMIUM",
-                },
-              }
+            ? { status: "ready", examId, data: weeklyReview }
             : current,
         );
       } catch (loadError) {
@@ -310,7 +296,9 @@ export function AnalizShell() {
 
   const refreshAnalysis = useCallback(async () => {
     if (!exam || loadState.status !== "ready") return;
-    const analysisRes = await http<CoachingAnalysisDto>(getAnalysisUrl(exam.id));
+    const analysisRes = await http<CoachingAnalysisDto>(
+      getAnalysisUrl(exam.id),
+    );
     setLoadState((current) =>
       current.status === "ready" && current.data.exam?.id === exam.id
         ? {
@@ -503,7 +491,6 @@ export function AnalizShell() {
           >
             {tab === "gelisim" ? (
               <AnalizTabGelisim
-                examId={exam?.id ?? ""}
                 analysis={analysis}
                 extras={developmentExtras}
                 onRetryExtras={() => {
@@ -572,6 +559,3 @@ function ExamTypeGate() {
     </Card>
   );
 }
-
-
-

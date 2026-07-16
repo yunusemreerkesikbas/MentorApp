@@ -1,7 +1,4 @@
-import type {
-  ExamSubjectDto,
-  MockExamTrendPointDto,
-} from "@mentor/types";
+import type { ExamSubjectDto, MockExamTrendPointDto } from "@mentor/types";
 
 export type AnalizTab = "gir" | "gelisim" | "yanlislar";
 
@@ -31,6 +28,17 @@ export function shouldNavigateAnalizTab(
 
 export function shouldRevealFirstInsight(attemptCount: number): boolean {
   return attemptCount === 0;
+}
+
+export function shouldOpenAnalysisEvidence(hasNextFocus: boolean): boolean {
+  return !hasNextFocus;
+}
+
+export function buildAnalysisCoachHref(seed: string) {
+  return {
+    pathname: "/koc/chat" as const,
+    query: { seed },
+  };
 }
 
 export function buildAnalizTabHref(
@@ -119,7 +127,3 @@ export function validateSubjectCounts(
   }
   return null;
 }
-
-
-
-
