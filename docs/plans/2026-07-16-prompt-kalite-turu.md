@@ -80,7 +80,40 @@ risk, bir sonraki gerçek kullanım doğrular.)*
 AI modülü 129/129 birim + `ai-coach` e2e 13/13 (fake) + typecheck yeşil. Değişen dosyalar:
 `suggested-task.ts`(+spec), `chat.service.ts`, `coach-access.service.ts`(+spec), `ai.constants.ts`.
 
+## Tur 2 — Kalan 5 prompt (aynı gün)
+
+Veri kurulumu: `seed:analysis-demo` (8 deneme) + vision board + finalize edilmiş seans + mikro
+check-in. 5 önce-probu + 4 sonra-probu (memory job-driven olduğundan yalnız mevcut damıtma
+incelendi; cache'ler SQL ile temizlendi, weekly `WEEKLY_REVIEW_PROMPT_VERSION` v1→v2 bump'ıyla
+kendi kendine yeniden üretildi).
+
+| Prompt | Bulgu | Değişiklik | Sonra |
+|---|---|---|---|
+| Ghost | 🎉 emoji, 5 cümle, "harika"×3 | max 3 cümle + markdown/emoji/coşku yasağı | 3 cümle, emoji'siz ✓ |
+| Vision note | "Sevgili öğrencim" hitabı, 4 cümle | hitap kalıbı yasağı + max 3 cümle + emoji/markdown yasağı | hitap gitti, 3 cümle ✓ |
+| Seans yansıması | uzun + coşku + TASK'ta bugünkü plandaki görevin kopyası | max 3 cümle + coşku/emoji yasağı + "plandaki görevi önerme" | kısa ✓, öneri notla ilgili ✓; **kalıntı:** model mevcut görevi bazen başka kelimelerle yine öneriyor (zararsız — kullanıcı onayı şart; deterministik benzerlik filtresi backlog) |
+| Haftalık özet | zaten iyi (3 cümle, sakin) | yalnız markdown/emoji koruması + v2 bump (cache yenilensin) | 3 cümle düz ✓ |
+| Memory damıtma | içerik mükemmel ama `**bold**` markdown (FE kartı düz metin — ham yıldız) | "markdown/emoji yok, düz 'Etiket: değer' maddeleri" kuralı | job-driven — bir sonraki damıtmada doğrulanır (düşük risk) |
+
+Test durumu (tur 2 sonrası): AI birim 129/129 · `ai-coach` e2e 13/13 · typecheck yeşil.
+Değişen dosyalar: `ai.constants.ts` (ghost/vision/seans/memory prompt'ları),
+`weekly-review-prompt.ts` (kural + v2).
+
+## Prompt eval v1 ve ciddi-sinyal güvenlik kapısı (2026-07-17)
+
+Opt-in `pnpm --filter @mentor/api test:eval:openai` komutu 10 sentetik vakayı raporlar:
+9 gerçek OpenAI completion + 1 deterministik ciddi-mood güvenlik yolu. Nesnel ihlaller hard,
+üretken modelin cümle sayısı gibi stil sapmaları review uyarısıdır. Son doğrulama: 10 vaka,
+0 hard failure, 2 review uyarısı; güvenlik vakası 0 token/0 maliyet.
+
+Gerçek eval, ciddi sinyal prompt'una rağmen modelin çalışma görevi önerebildiğini tekrarlı biçimde
+gösterdi. Prompt'u tekrar sıkılaştırmak yerine `MoodReflectionService` içine cache ve LLM'den önce
+yüksek güvenli TR/EN ifade algısı eklendi. Eşleşmede lokalize sabit destek mesajı `model: safety`
+olarak döner; context, bütçe, provider, usage ve DB yazımı çalışmaz. Yeni endpoint, migration,
+bağımlılık veya kullanıcı verisi yoktur.
+
 ## Kapsam dışı / sonraki tur
 
-Diğer 5 prompt (ghost · vision note · seans yansıması · haftalık özet · memory damıtma),
-temperature/parametre tuning, otomatik eval altyapısı.
+Temperature/parametre tuning, seans-TASK mükerrer önerisi için
+deterministik benzerlik filtresi, memory damıtmasının canlı doğrulaması (bir sonraki 10-mesaj
+job'ında kendiliğinden).

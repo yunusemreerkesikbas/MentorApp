@@ -30,6 +30,11 @@ export interface AiChatDto {
   contextMockExamId?: string;
 }
 
+export interface PlanDraftBodyDto {
+  /** @maxLength 500 */
+  note?: string;
+}
+
 export interface CoachFeedbackDto { [key: string]: unknown }
 
 export interface SessionReflectionBodyDto { [key: string]: unknown }
@@ -49,6 +54,8 @@ export interface CreateMoodCheckinDto { [key: string]: unknown }
 export interface UpsertVisionDto { [key: string]: unknown }
 
 export interface CreatePlanTaskDto { [key: string]: unknown }
+
+export interface BulkCreatePlanTasksDto { [key: string]: unknown }
 
 export interface UpdatePlanTaskDto { [key: string]: unknown }
 
@@ -1010,6 +1017,73 @@ export const aiChatControllerReplyStream = async (aiChatDto: AiChatDto, options?
 
 
 
+export type aiChatControllerPlanDraftPreviewResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type aiChatControllerPlanDraftPreviewResponseSuccess = (aiChatControllerPlanDraftPreviewResponse201) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerPlanDraftPreviewResponse = (aiChatControllerPlanDraftPreviewResponseSuccess)
+
+export const getAiChatControllerPlanDraftPreviewUrl = () => {
+
+
+  
+
+  return `/v1/coach/plan-draft`
+}
+
+export const aiChatControllerPlanDraftPreview = async (planDraftBodyDto: PlanDraftBodyDto, options?: RequestInit): Promise<aiChatControllerPlanDraftPreviewResponse> => {
+  
+  return http<aiChatControllerPlanDraftPreviewResponse>(getAiChatControllerPlanDraftPreviewUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      planDraftBodyDto,)
+  }
+);}
+
+
+
+export type aiChatControllerRegenerateStreamResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type aiChatControllerRegenerateStreamResponseSuccess = (aiChatControllerRegenerateStreamResponse201) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerRegenerateStreamResponse = (aiChatControllerRegenerateStreamResponseSuccess)
+
+export const getAiChatControllerRegenerateStreamUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coach/conversations/${id}/regenerate/stream`
+}
+
+export const aiChatControllerRegenerateStream = async (id: string, options?: RequestInit): Promise<aiChatControllerRegenerateStreamResponse> => {
+  
+  return http<aiChatControllerRegenerateStreamResponse>(getAiChatControllerRegenerateStreamUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
 export type aiChatControllerListConversationsResponse200 = {
   data: void
   status: 200
@@ -1233,6 +1307,39 @@ export const getAiMoodControllerReflectUrl = () => {
 export const aiMoodControllerReflect = async ( options?: RequestInit): Promise<aiMoodControllerReflectResponse> => {
   
   return http<aiMoodControllerReflectResponse>(getAiMoodControllerReflectUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type aiMoodControllerGreetResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type aiMoodControllerGreetResponseSuccess = (aiMoodControllerGreetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiMoodControllerGreetResponse = (aiMoodControllerGreetResponseSuccess)
+
+export const getAiMoodControllerGreetUrl = () => {
+
+
+  
+
+  return `/v1/coach/daily-greeting`
+}
+
+export const aiMoodControllerGreet = async ( options?: RequestInit): Promise<aiMoodControllerGreetResponse> => {
+  
+  return http<aiMoodControllerGreetResponse>(getAiMoodControllerGreetUrl(),
   {      
     ...options,
     method: 'POST'
@@ -2385,6 +2492,40 @@ export const planTaskControllerListCalendar = async ( options?: RequestInit): Pr
     method: 'GET'
     
     
+  }
+);}
+
+
+
+export type planTaskControllerCreateManyResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type planTaskControllerCreateManyResponseSuccess = (planTaskControllerCreateManyResponse201) & {
+  headers: Headers;
+};
+;
+
+export type planTaskControllerCreateManyResponse = (planTaskControllerCreateManyResponseSuccess)
+
+export const getPlanTaskControllerCreateManyUrl = () => {
+
+
+  
+
+  return `/v1/plan-tasks/bulk`
+}
+
+export const planTaskControllerCreateMany = async (bulkCreatePlanTasksDto: BulkCreatePlanTasksDto, options?: RequestInit): Promise<planTaskControllerCreateManyResponse> => {
+  
+  return http<planTaskControllerCreateManyResponse>(getPlanTaskControllerCreateManyUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      bulkCreatePlanTasksDto,)
   }
 );}
 
@@ -3877,6 +4018,237 @@ export const communityControllerGetLeaderboard = async (params?: CommunityContro
   {      
     ...options,
     method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type buddyControllerGetViewResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type buddyControllerGetViewResponseSuccess = (buddyControllerGetViewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type buddyControllerGetViewResponse = (buddyControllerGetViewResponseSuccess)
+
+export const getBuddyControllerGetViewUrl = () => {
+
+
+  
+
+  return `/v1/buddy`
+}
+
+export const buddyControllerGetView = async ( options?: RequestInit): Promise<buddyControllerGetViewResponse> => {
+  
+  return http<buddyControllerGetViewResponse>(getBuddyControllerGetViewUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type buddyControllerEndResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type buddyControllerEndResponseSuccess = (buddyControllerEndResponse204) & {
+  headers: Headers;
+};
+;
+
+export type buddyControllerEndResponse = (buddyControllerEndResponseSuccess)
+
+export const getBuddyControllerEndUrl = () => {
+
+
+  
+
+  return `/v1/buddy`
+}
+
+export const buddyControllerEnd = async ( options?: RequestInit): Promise<buddyControllerEndResponse> => {
+  
+  return http<buddyControllerEndResponse>(getBuddyControllerEndUrl(),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type buddyControllerGetSuggestionsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type buddyControllerGetSuggestionsResponseSuccess = (buddyControllerGetSuggestionsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type buddyControllerGetSuggestionsResponse = (buddyControllerGetSuggestionsResponseSuccess)
+
+export const getBuddyControllerGetSuggestionsUrl = () => {
+
+
+  
+
+  return `/v1/buddy/suggestions`
+}
+
+export const buddyControllerGetSuggestions = async ( options?: RequestInit): Promise<buddyControllerGetSuggestionsResponse> => {
+  
+  return http<buddyControllerGetSuggestionsResponse>(getBuddyControllerGetSuggestionsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type buddyControllerRequestResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type buddyControllerRequestResponseSuccess = (buddyControllerRequestResponse201) & {
+  headers: Headers;
+};
+;
+
+export type buddyControllerRequestResponse = (buddyControllerRequestResponseSuccess)
+
+export const getBuddyControllerRequestUrl = (username: string,) => {
+
+
+  
+
+  return `/v1/buddy/requests/${username}`
+}
+
+export const buddyControllerRequest = async (username: string, options?: RequestInit): Promise<buddyControllerRequestResponse> => {
+  
+  return http<buddyControllerRequestResponse>(getBuddyControllerRequestUrl(username),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type buddyControllerAcceptResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type buddyControllerAcceptResponseSuccess = (buddyControllerAcceptResponse201) & {
+  headers: Headers;
+};
+;
+
+export type buddyControllerAcceptResponse = (buddyControllerAcceptResponseSuccess)
+
+export const getBuddyControllerAcceptUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/buddy/requests/${id}/accept`
+}
+
+export const buddyControllerAccept = async (id: string, options?: RequestInit): Promise<buddyControllerAcceptResponse> => {
+  
+  return http<buddyControllerAcceptResponse>(getBuddyControllerAcceptUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type buddyControllerDeleteRequestResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type buddyControllerDeleteRequestResponseSuccess = (buddyControllerDeleteRequestResponse204) & {
+  headers: Headers;
+};
+;
+
+export type buddyControllerDeleteRequestResponse = (buddyControllerDeleteRequestResponseSuccess)
+
+export const getBuddyControllerDeleteRequestUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/buddy/requests/${id}`
+}
+
+export const buddyControllerDeleteRequest = async (id: string, options?: RequestInit): Promise<buddyControllerDeleteRequestResponse> => {
+  
+  return http<buddyControllerDeleteRequestResponse>(getBuddyControllerDeleteRequestUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type buddyControllerNudgeResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type buddyControllerNudgeResponseSuccess = (buddyControllerNudgeResponse201) & {
+  headers: Headers;
+};
+;
+
+export type buddyControllerNudgeResponse = (buddyControllerNudgeResponseSuccess)
+
+export const getBuddyControllerNudgeUrl = () => {
+
+
+  
+
+  return `/v1/buddy/nudge`
+}
+
+export const buddyControllerNudge = async ( options?: RequestInit): Promise<buddyControllerNudgeResponse> => {
+  
+  return http<buddyControllerNudgeResponse>(getBuddyControllerNudgeUrl(),
+  {      
+    ...options,
+    method: 'POST'
     
     
   }

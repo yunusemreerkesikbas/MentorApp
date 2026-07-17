@@ -237,6 +237,13 @@ export interface CoachingAnalysisDto {
   ghost: GhostComparisonDto | null;
 }
 
+/** Daily focus goal progress for /seans; `goalMinutes` null = no goal set. */
+export interface FocusGoalDto {
+  goalMinutes: number | null;
+  /** Sum of today's COMPLETED session focus, rounded to minutes (no min-focus filter). */
+  focusMinutesToday: number;
+}
+
 /** Composite panel payload — one request → whole daily hub. */
 export interface TodayPanelResponse {
   greetingName: string;
@@ -249,6 +256,13 @@ export interface TodayPanelResponse {
   sessionPresets: SessionPresetDto[];
   /** Today's mood check-in if the user already checked in, else `null`. */
   mood: MoodCheckinDto | null;
+  /** Daily focus goal progress (/seans idle surface). */
+  focusGoal: FocusGoalDto;
+  /**
+   * Anonymous count of users focusing right now (aggregate-only ambience);
+   * null when below the server-side visibility threshold.
+   */
+  focusingNow: number | null;
 }
 
 /**

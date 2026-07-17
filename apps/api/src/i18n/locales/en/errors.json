@@ -67,5 +67,9 @@
   "FORUM_ZONE_NOT_FOUND": "This room was not found.",
   "FORUM_ATTACHMENT_INVALID": "Invalid attachment. Please pick a supported image (JPEG/PNG/WebP).",
   "SOCIAL_CANNOT_FOLLOW_SELF": "You can't follow yourself.",
+  "SOCIAL_BUDDY_SELF": "You can't buddy up with yourself.",
+  "SOCIAL_BUDDY_REQUEST_EXISTS": "You already have a pending buddy request with this user.",
+  "SOCIAL_BUDDY_ALREADY_ACTIVE": "You already have an active study buddy.",
+  "SOCIAL_BUDDY_NUDGE_COOLDOWN": "You nudged your buddy recently — try again a bit later.",
   "COACHING_WEEKLY_REVIEW_INSUFFICIENT": "A mock exam or two completed sessions are required for the weekly coach review."
 }

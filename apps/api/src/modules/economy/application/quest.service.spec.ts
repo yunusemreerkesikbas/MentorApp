@@ -19,6 +19,8 @@ function service(options: {
     hasMoodCheckin?: boolean;
     completedFocusSessions?: number;
     completedPlanTasks?: number;
+    focusMinutesToday?: number;
+    dailyFocusGoalMinutes?: number | null;
   };
   user?: { examType: string | null; emailVerified: boolean };
   subscription?: unknown;
@@ -47,6 +49,8 @@ function service(options: {
       hasMoodCheckin: options.signals?.hasMoodCheckin ?? false,
       completedFocusSessions: options.signals?.completedFocusSessions ?? 0,
       completedPlanTasks: options.signals?.completedPlanTasks ?? 0,
+      focusMinutesToday: options.signals?.focusMinutesToday ?? 0,
+      dailyFocusGoalMinutes: options.signals?.dailyFocusGoalMinutes ?? null,
     })),
   };
   const streak = {
@@ -108,6 +112,64 @@ function service(options: {
     streak,
   };
 }
+
+describe("QuestService — daily.focus-goal-met", () => {
+  it("is hidden from views when the user has no goal set", async () => {
+    const quests = await service().service.getUserProgress("user-1");
+    expect(quests.find((q) => q.id === "daily.focus-goal-met")).toBeUndefined();
+  });
+
+  it("is visible with daily XP reward when a goal is set", async () => {
+    const quests = await service({
+      signals: { dailyFocusGoalMinutes: 120, focusMinutesToday: 30 },
+    }).service.getUserProgress("user-1");
+    const quest = quests.find((q) => q.id === "daily.focus-goal-met");
+    expect(quest).toMatchObject({
+      rewardUnit: "XP",
+      rewardAmount: 5,
+      completed: false,
+    });
+  });
+
+  it("grants XP once when today's focus minutes reach the goal", async () => {
+    const subject = service({
+      signals: { dailyFocusGoalMinutes: 120, focusMinutesToday: 125 },
+    });
+    await subject.service.evaluateAndGrant("user-1");
+
+    expect(
+      subject.rows.some((row) => row.questId === "daily.focus-goal-met"),
+    ).toBe(true);
+    expect(subject.economy.grantInServiceTx).toHaveBeenCalledWith(
+      "user-1",
+      Currency.XP,
+      5,
+      expect.objectContaining({ reason: "quest.daily.focus-goal-met" }),
+      expect.anything(),
+    );
+
+    // Second evaluation on the same day is idempotent.
+    subject.economy.grantInServiceTx.mockClear();
+    await subject.service.evaluateAndGrant("user-1");
+    expect(subject.economy.grantInServiceTx).not.toHaveBeenCalledWith(
+      "user-1",
+      Currency.XP,
+      5,
+      expect.objectContaining({ reason: "quest.daily.focus-goal-met" }),
+      expect.anything(),
+    );
+  });
+
+  it("does not grant when focus minutes are below the goal", async () => {
+    const subject = service({
+      signals: { dailyFocusGoalMinutes: 120, focusMinutesToday: 119 },
+    });
+    await subject.service.evaluateAndGrant("user-1");
+    expect(
+      subject.rows.some((row) => row.questId === "daily.focus-goal-met"),
+    ).toBe(false);
+  });
+});
 
 describe("QuestService", () => {
   it("returns daily ritual and onboarding quests with their reward metadata", async () => {

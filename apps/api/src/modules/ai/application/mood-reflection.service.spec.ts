@@ -6,6 +6,7 @@ import { MoodReflectionService } from "./mood-reflection.service";
 
 const USER_ID = "u1";
 const USER = { id: USER_ID, roles: ["STUDENT"] } as never;
+const SAFETY_MESSAGE = "Bunu tek başına taşımak zorunda değilsin.";
 
 describe("MoodReflectionService", () => {
   let complete: ReturnType<typeof vi.fn>;
@@ -15,6 +16,8 @@ describe("MoodReflectionService", () => {
   let getEntitlement: ReturnType<typeof vi.fn>;
   let getToday: ReturnType<typeof vi.fn>;
   let setTodayAiReflection: ReturnType<typeof vi.fn>;
+  let assertWithinBudget: ReturnType<typeof vi.fn>;
+  let translate: ReturnType<typeof vi.fn>;
   let service: MoodReflectionService;
 
   beforeEach(() => {
@@ -38,6 +41,8 @@ describe("MoodReflectionService", () => {
     getEntitlement = vi.fn(async () => ({ isPremium: true }));
     getToday = vi.fn(async () => ({ mood: 2, struggleNote: null, aiReflection: null }));
     setTodayAiReflection = vi.fn(async () => undefined);
+    assertWithinBudget = vi.fn(async () => undefined);
+    translate = vi.fn(() => SAFETY_MESSAGE);
 
     service = new MoodReflectionService(
       { complete } as never,
@@ -46,7 +51,8 @@ describe("MoodReflectionService", () => {
       { get: configGet } as never,
       { getEntitlement } as never,
       { getToday, setTodayAiReflection } as never,
-      { assertWithinBudget: vi.fn(async () => undefined) } as never,
+      { assertWithinBudget } as never,
+      { translate } as never,
     );
   });
 
@@ -79,6 +85,27 @@ describe("MoodReflectionService", () => {
     const res = await service.reflect(USER);
     expect(res).toEqual({ reflection: "Önceki yansıma.", model: "cache" });
     expect(complete).not.toHaveBeenCalled();
+    expect(setTodayAiReflection).not.toHaveBeenCalled();
+  });
+
+  it("returns localized deterministic support before cache or LLM for serious distress", async () => {
+    getToday.mockResolvedValue({
+      mood: 1,
+      struggleNote: "Hiçbir şeyin anlamı yok gibi hissediyorum.",
+      aiReflection: "Eski ve uygunsuz cache.",
+    });
+
+    await expect(service.reflect(USER)).resolves.toEqual({
+      reflection: SAFETY_MESSAGE,
+      model: "safety",
+    });
+    expect(translate).toHaveBeenCalledWith("coaching.mood.SERIOUS_DISTRESS", {
+      lang: undefined,
+    });
+    expect(build).not.toHaveBeenCalled();
+    expect(assertWithinBudget).not.toHaveBeenCalled();
+    expect(complete).not.toHaveBeenCalled();
+    expect(append).not.toHaveBeenCalled();
     expect(setTodayAiReflection).not.toHaveBeenCalled();
   });
 

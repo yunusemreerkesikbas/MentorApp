@@ -94,6 +94,15 @@ export const updateMeSchema = z
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .refine((s) => !Number.isNaN(new Date(`${s}T00:00:00Z`).getTime()) && s === new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10))
       .optional(),
+    /** Daily focus goal in minutes (15-min steps); null clears the goal. */
+    dailyFocusGoalMinutes: z
+      .number()
+      .int()
+      .min(15)
+      .max(600)
+      .multipleOf(15)
+      .nullable()
+      .optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "empty" });
 export type UpdateMeInput = z.infer<typeof updateMeSchema>;

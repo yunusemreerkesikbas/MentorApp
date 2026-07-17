@@ -13,7 +13,7 @@ export default defineConfig({
       JWT_ACCESS_SECRET: "test-secret-test-secret-test-secret!!",
       PAYMENTS_WEBHOOK_SECRET: "test-payments-webhook-secret",
     },
-    include: ["src/**/*.spec.ts", "test/**/*.e2e-spec.ts"],
+    include: ["src/**/*.spec.ts", "test/**/*.e2e-spec.ts", "test/eval/**/*.spec.ts"],
     // e2e files mutate process.env.DATABASE_URL → run files sequentially to avoid races.
     fileParallelism: false,
     // Migrate the test DB once before the suite (e2e needs real tables + RLS).

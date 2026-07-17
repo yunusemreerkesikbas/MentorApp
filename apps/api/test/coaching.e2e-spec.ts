@@ -482,10 +482,11 @@ describe("coaching (e2e)", () => {
   });
 
   it("mock exam POST computes net → GET analysis returns trend", async () => {
-    const exams = await request(app.getHttpServer()).get("/v1/content/exams?page=1&pageSize=20");
-    expect(exams.status).toBe(200);
-    const exam = exams.body.items.find((e: { slug: string }) => e.slug === "kpss-lisans-2026");
-    expect(exam?.id).toBeTruthy();
+    const calendar = await request(app.getHttpServer()).get(
+      "/v1/content/exams/kpss-lisans-2026/calendar",
+    );
+    expect(calendar.status).toBe(200);
+    const exam = calendar.body.exam as { id: string };
 
     const subjects = await request(app.getHttpServer()).get(
       `/v1/content/exams/kpss-lisans-2026/subjects`,
@@ -541,12 +542,11 @@ describe("coaching (e2e)", () => {
   });
 
   it("updates and permanently deletes an owned mock exam", async () => {
-    const exams = await request(app.getHttpServer()).get(
-      "/v1/content/exams?page=1&pageSize=20",
+    const calendar = await request(app.getHttpServer()).get(
+      "/v1/content/exams/kpss-lisans-2026/calendar",
     );
-    const exam = exams.body.items.find(
-      (item: { slug: string }) => item.slug === "kpss-lisans-2026",
-    );
+    expect(calendar.status).toBe(200);
+    const exam = calendar.body.exam as { id: string };
 
     const created = await request(app.getHttpServer())
       .post("/v1/mock-exams")
@@ -629,8 +629,11 @@ describe("coaching (e2e)", () => {
   });
 
   it("mock exam data is isolated per user (RLS)", async () => {
-    const exams = await request(app.getHttpServer()).get("/v1/content/exams?page=1&pageSize=20");
-    const exam = exams.body.items.find((e: { slug: string }) => e.slug === "kpss-lisans-2026");
+    const calendar = await request(app.getHttpServer()).get(
+      "/v1/content/exams/kpss-lisans-2026/calendar",
+    );
+    expect(calendar.status).toBe(200);
+    const exam = calendar.body.exam as { id: string };
 
     const createA = await request(app.getHttpServer())
       .post("/v1/mock-exams")

@@ -257,7 +257,7 @@ Pomodoro = sayaç değil; **günlük veri + hesap verebilirlik ritüeli** ve AI'
 - **Sırası:** sayaç; solo (varsayılan) veya **canlı çalışma odası** (body-doubling, mahalleye bağlı, anonim/avatar, sohbet kısıtlı).
 - **Sonrası:** 5 sn'lik mikro check-in (mood 😩😐🙂 + opsiyonel "zorlandığın konu") → AI'a öznel zorluk sinyali.
 - **Döngü:** Plan → seans → seans verisi → AI yorumu/plan revizyonu → haftalık analiz. (Pomodoro AI koçluğunu kuru sayaçtan ayıran şey.)
-- **Esnek süreler** (25/5, 50/10, 90/20 + özel), sade varsayılan.
+- **Esnek süreler** (25/5, 50/10 + özel), sade varsayılan. _(90/20 preseti backlog'dan kaldırıldı — 2026-07-17; özel süre zaten kapsıyor.)_
 - **Streak = gerçek çalışma** (tamamlanmış min. seans, sadece login değil); arka plan inaktiflik kontrolü; **coin ile streak onarma** (tavanlı).
 - **Ödül:** seans → XP (coin değil); streak rozetleri kimlik rozetlerini besler; **mahalle grup istatistiği** (kolektif gurur).
 

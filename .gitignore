@@ -69,3 +69,4 @@ Thumbs.db
 **/.impeccable/
 apps/web/test-results/
 apps/web/playwright-report/
+apps/api/eval-results/

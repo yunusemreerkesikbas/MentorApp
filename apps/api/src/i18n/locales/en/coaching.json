@@ -1,6 +1,7 @@
 {
   "mood": {
     "VERY_LOW": "I know today feels heavy. Be gentle with yourself — a small break is part of progress too. I'm here with you.",
+    "SERIOUS_DISTRESS": "You do not have to carry this alone. Contact someone you trust now; if you may hurt yourself, call your local emergency number or go to the nearest emergency department.",
     "LOW": "Hard days happen. Just take one small step today and leave the rest for tomorrow. I'm here.",
     "OKAY": "You're doing fine. Accept today as it is and do what you can — that's enough.",
     "GOOD": "Your energy is up, great! Carry this motivation into today's plan — you'll get a lot done.",

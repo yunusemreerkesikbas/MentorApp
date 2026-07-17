@@ -17,6 +17,8 @@ import {
 } from "@/lib/economy-quest-utils";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { scheduleSessionReturnReminder } from "@/lib/notification-api";
+import { getProfileLinks } from "@/lib/profile-links";
+import { resolveSessionShare } from "@/lib/session-share";
 
 function unwrapTodayResponse(response: unknown): TodayPanelResponse {
   return ((response as { data?: TodayPanelResponse }).data ?? response) as TodayPanelResponse;
@@ -171,6 +173,31 @@ export function SessionDoneState({
       void maybeReflect();
     } catch {
       setStatus("idle");
+    }
+  };
+
+  const shareParts = resolveSessionShare(focusElapsed, currentStreak);
+  const handleShare = async () => {
+    if (!shareParts) return;
+    const text = shareParts.streakDays
+      ? t("share_text_with_streak", {
+          minutes: shareParts.minutes,
+          days: shareParts.streakDays,
+        })
+      : t("share_text", { minutes: shareParts.minutes });
+    const url = getProfileLinks().shareUrl;
+    try {
+      if (navigator.share) {
+        await navigator.share({ text, url });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(`${text} ${url}`);
+        toast.success({ title: t("share_copied_title"), duration: 2500 });
+      } else {
+        throw new Error("clipboard unavailable");
+      }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      toast.error({ title: t("share_error_title"), duration: 3000 });
     }
   };
 
@@ -392,6 +419,11 @@ export function SessionDoneState({
         >
           {remindStatus === "done" ? t("return_remind_done") : t("return_remind_cta")}
         </Button>
+        {shareParts && (
+          <Button onClick={() => void handleShare()} variant="secondary" fullWidth>
+            {t("share_cta")}
+          </Button>
+        )}
         <Link
           href="/panel"
           className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"

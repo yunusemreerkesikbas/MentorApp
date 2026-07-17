@@ -15,6 +15,7 @@ import { EconomyService } from "../../economy/application/economy.service";
 import { ForumService } from "../../forum/application/forum.service";
 import { UsersService } from "../../identity/application/users.service";
 import { FollowService } from "../../identity/application/follow.service";
+import { BuddyService } from "../../identity/application/buddy.service";
 import { deriveBadges } from "../domain/badges";
 import { deriveLevel } from "../domain/level";
 import { previousWindowStart, resolveMovement, windowStart } from "../domain/leaderboard-window";
@@ -35,6 +36,7 @@ export class CommunityService {
     private readonly forum: ForumService,
     private readonly economy: EconomyService,
     private readonly follow: FollowService,
+    private readonly buddy: BuddyService,
     private readonly config: ConfigRegistryService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
@@ -92,13 +94,17 @@ export class CommunityService {
     }
     const economyEnabled = await this.config.get("economy.enabled");
     const isSelf = viewerId === user.id;
-    const [currentStreak, activity, followerCount, followingCount, isFollowing] = await Promise.all([
-      this.streak.getCurrentStreak(user.id),
-      this.forum.getAuthorActivity(user.id),
-      this.follow.countFollowers(user.id),
-      this.follow.countFollowing(user.id),
-      isSelf ? Promise.resolve(false) : this.follow.isFollowing(viewerId, user.id),
-    ]);
+    const [currentStreak, activity, followerCount, followingCount, isFollowing, buddyStatus] =
+      await Promise.all([
+        this.streak.getCurrentStreak(user.id),
+        this.forum.getAuthorActivity(user.id),
+        this.follow.countFollowers(user.id),
+        this.follow.countFollowing(user.id),
+        isSelf ? Promise.resolve(false) : this.follow.isFollowing(viewerId, user.id),
+        isSelf
+          ? Promise.resolve("none" as const)
+          : this.buddy.getStatusBetween(viewerId, user.id),
+      ]);
     const badges = deriveBadges({
       currentStreak,
       memberSince: new Date(user.createdAt),
@@ -123,6 +129,7 @@ export class CommunityService {
       followerCount,
       followingCount,
       isFollowing,
+      buddyStatus,
     };
   }
 

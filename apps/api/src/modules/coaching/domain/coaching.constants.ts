@@ -33,6 +33,25 @@ export const SESSION_PRESETS: readonly SessionPresetDto[] = [
   { id: "50_10", label: "50 / 10 dk", focusMinutes: 50, breakMinutes: 10 },
 ] as const;
 
+/**
+ * Grace beyond the planned focus length before an orphaned IN_PROGRESS session
+ * (tab died before finalize) is lazily auto-closed as ABANDONED on next start.
+ * ponytail: domain constant; promote to config catalog only if ops needs tuning.
+ */
+export const STALE_SESSION_GRACE_MINUTES = 60;
+
+/* --------------------------- live focus ambience ---------------------------- */
+
+/**
+ * "Şu an N kişi odaklanıyor" window: IN_PROGRESS sessions started within this many
+ * minutes count (covers the 120-min max custom session + stale-cleanup lag).
+ */
+export const FOCUSING_NOW_WINDOW_MINUTES = 120;
+/** Below this count the API returns null — no cold-start embarrassment (privacy/product rule). */
+export const FOCUSING_NOW_MIN_VISIBLE = 3;
+/** In-memory cache TTL for the aggregate count (one query per instance per minute). */
+export const FOCUSING_NOW_CACHE_MS = 60_000;
+
 /** Whether a finalized session meets the platform min-focus threshold (streak/XP/quests). */
 export function qualifiesAsFocusSession(
   actualFocusSeconds: number,

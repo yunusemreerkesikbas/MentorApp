@@ -54,14 +54,58 @@ interface ProfileHeaderProps {
   /** The viewer's own profile → no follow button (can't follow yourself). */
   isOwn: boolean;
   onToggleFollow: () => void;
+  onBuddyRequest: () => void;
   onOpenFollowers: () => void;
   onOpenFollowing: () => void;
+}
+
+/** Secondary buddy action next to follow — driven by the viewer's buddyStatus. */
+function BuddyAction({
+  status,
+  onRequest,
+}: {
+  status: PublicProfile["buddyStatus"];
+  onRequest: () => void;
+}) {
+  const t = useTranslations("topluluk");
+  // "unavailable" = viewer already paired with someone else → no action to offer.
+  if (status === "unavailable") return null;
+  if (status === "pending_incoming") {
+    return (
+      <Link
+        href="/seans"
+        className="inline-flex items-center rounded-[var(--radius-card)] border border-black/10 bg-white px-3 py-2 text-[13px] font-semibold transition-colors hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        style={{ color: "var(--color-main)" }}
+      >
+        {t("buddy_respond")}
+      </Link>
+    );
+  }
+  if (status === "active" || status === "pending_outgoing") {
+    return (
+      <span
+        className="inline-flex items-center rounded-[var(--radius-card)] px-3 py-2 text-[13px] font-semibold"
+        style={{
+          background: "color-mix(in srgb, var(--color-progress) 12%, transparent)",
+          color: "var(--color-main)",
+        }}
+      >
+        {status === "active" ? t("buddy_active") : t("buddy_pending")}
+      </span>
+    );
+  }
+  return (
+    <Button variant="secondary" onClick={onRequest}>
+      {t("buddy_request")}
+    </Button>
+  );
 }
 
 export function ProfileHeader({
   profile,
   isOwn,
   onToggleFollow,
+  onBuddyRequest,
   onOpenFollowers,
   onOpenFollowing,
 }: ProfileHeaderProps) {
@@ -137,12 +181,15 @@ export function ProfileHeader({
               {t("edit_profile")}
             </Link>
           ) : (
-            <Button
-              variant={profile.isFollowing ? "secondary" : "primary"}
-              onClick={onToggleFollow}
-            >
-              {profile.isFollowing ? t("following_state") : t("follow")}
-            </Button>
+            <div className="flex flex-col items-end gap-2">
+              <Button
+                variant={profile.isFollowing ? "secondary" : "primary"}
+                onClick={onToggleFollow}
+              >
+                {profile.isFollowing ? t("following_state") : t("follow")}
+              </Button>
+              <BuddyAction status={profile.buddyStatus} onRequest={onBuddyRequest} />
+            </div>
           )}
         </div>
       </div>

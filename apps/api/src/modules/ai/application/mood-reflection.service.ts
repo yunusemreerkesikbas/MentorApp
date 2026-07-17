@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { I18nContext, I18nService } from "nestjs-i18n";
 import type { MoodReflectionDto } from "@mentor/types";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -8,6 +9,7 @@ import { FeatureFlag } from "../../../common/config/config.catalog";
 import { MoodService } from "../../coaching/application/mood.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
+import { hasSeriousDistressSignal } from "../domain/serious-distress";
 import { AiUsageFeature, buildMoodReflectionPrompt, estimateCostMicros } from "../domain/ai.constants";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
@@ -32,6 +34,7 @@ export class MoodReflectionService {
     private readonly entitlement: EntitlementService,
     private readonly mood: MoodService,
     private readonly budget: AiBudgetGuard,
+    private readonly i18n: I18nService,
   ) {}
 
   async reflect(user: RequestUser): Promise<MoodReflectionDto> {
@@ -47,6 +50,13 @@ export class MoodReflectionService {
     const today = await this.mood.getToday(user.id);
     if (!today) {
       throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST);
+    }
+
+    if (hasSeriousDistressSignal(today.struggleNote)) {
+      const reflection = this.i18n.translate("coaching.mood.SERIOUS_DISTRESS", {
+        lang: I18nContext.current()?.lang,
+      }) as unknown as string;
+      return { reflection, model: "safety" };
     }
 
     // Idempotent cache: reuse today's reflection (no LLM call / no cost) until the mood changes.

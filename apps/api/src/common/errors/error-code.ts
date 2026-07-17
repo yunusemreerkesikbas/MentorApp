@@ -87,6 +87,10 @@ export const ErrorCode = {
   FORUM_ATTACHMENT_INVALID: "FORUM_ATTACHMENT_INVALID",
   // social / follow (Phase-2→MVP) — module-prefixed, append-only (workstreams rule)
   SOCIAL_CANNOT_FOLLOW_SELF: "SOCIAL_CANNOT_FOLLOW_SELF",
+  SOCIAL_BUDDY_SELF: "SOCIAL_BUDDY_SELF",
+  SOCIAL_BUDDY_REQUEST_EXISTS: "SOCIAL_BUDDY_REQUEST_EXISTS",
+  SOCIAL_BUDDY_ALREADY_ACTIVE: "SOCIAL_BUDDY_ALREADY_ACTIVE",
+  SOCIAL_BUDDY_NUDGE_COOLDOWN: "SOCIAL_BUDDY_NUDGE_COOLDOWN",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

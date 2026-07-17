@@ -21,4 +21,4 @@ AI never writes `plan_tasks`.
 - Free rule-based suggestion
 - Automatic plan table writes / multi-suggestion
 - Regenerating old caches that lack a task
-- Ambient / 90/20 / history polish
+- Ambient / history polish _(90/20 preseti backlog'dan kaldırıldı — 2026-07-17)_

@@ -137,6 +137,9 @@ export class UsersService {
         ...(patch.website !== undefined && { website: patch.website }),
         ...(patch.examType !== undefined && { examType: patch.examType }),
         ...(patch.examDate !== undefined && { examDate: patch.examDate }),
+        ...(patch.dailyFocusGoalMinutes !== undefined && {
+          dailyFocusGoalMinutes: patch.dailyFocusGoalMinutes,
+        }),
       });
     } catch (err) {
       if (isUniqueViolation(err)) {

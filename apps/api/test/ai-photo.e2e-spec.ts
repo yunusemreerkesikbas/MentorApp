@@ -71,8 +71,11 @@ describe("ai photo categorize (e2e)", () => {
     await grantRole(premiumId, UserRole.STAFF);
     premiumToken = await login(premium.email);
 
-    const exams = await request(app.getHttpServer()).get("/v1/content/exams?page=1&pageSize=20");
-    const exam = exams.body.items.find((e: { slug: string }) => e.slug === "kpss-lisans-2026");
+    const calendar = await request(app.getHttpServer()).get(
+      "/v1/content/exams/kpss-lisans-2026/calendar",
+    );
+    expect(calendar.status).toBe(200);
+    const exam = calendar.body.exam as { id: string };
     const create = await request(app.getHttpServer())
       .post("/v1/mock-exams")
       .set({ Authorization: `Bearer ${premiumToken}` })

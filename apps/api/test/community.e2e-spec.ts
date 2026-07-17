@@ -108,7 +108,11 @@ describe("community summary (e2e)", () => {
     expect(res.body.economyEnabled).toBe(true);
     expect(res.body.xp).toBeGreaterThanOrEqual(100);
     expect(res.body.leaderboard.window).toBe("weekly");
-    const me = res.body.leaderboard.items.find((e: { isMe: boolean }) => e.isMe);
+    // Shared test DB: parallel suites may push this user out of the top-10 items —
+    // fall back to the `me` standing (same pattern as the windowed-leaderboard test below).
+    const me =
+      res.body.leaderboard.items.find((e: { isMe: boolean }) => e.isMe) ??
+      res.body.leaderboard.me;
     expect(me?.xp).toBeGreaterThanOrEqual(100);
     // Phase 2: percentile denominator + avatar field on each row.
     expect(res.body.leaderboard.totalParticipants).toBeGreaterThanOrEqual(1);
@@ -122,7 +126,7 @@ describe("community summary (e2e)", () => {
     expect(res.status).toBe(200);
     expect(res.body.window).toBe("all_time");
     expect(Array.isArray(res.body.items)).toBe(true);
-    const me = res.body.items.find((e: { isMe: boolean }) => e.isMe);
+    const me = res.body.items.find((e: { isMe: boolean }) => e.isMe) ?? res.body.me;
     expect(me?.xp).toBeGreaterThanOrEqual(100); // seeded in the previous test, within all_time
     // all_time has no meaningful movement → null.
     expect(me?.movement).toBeNull();
@@ -132,7 +136,8 @@ describe("community summary (e2e)", () => {
     const weekly = await request(app.getHttpServer())
       .get("/v1/community/leaderboard?window=weekly")
       .set({ Authorization: `Bearer ${userToken}` });
-    const weeklyMe = weekly.body.items.find((e: { isMe: boolean }) => e.isMe);
+    const weeklyMe =
+      weekly.body.items.find((e: { isMe: boolean }) => e.isMe) ?? weekly.body.me;
     expect(weeklyMe).toHaveProperty("movement");
     expect([null, "up", "down", "same", "new"]).toContain(weeklyMe.movement);
 

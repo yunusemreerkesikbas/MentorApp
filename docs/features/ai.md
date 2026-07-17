@@ -414,6 +414,32 @@ pnpm --filter @mentor/api test -- --grep "ai"
   Sonra-probları: sızıntı yok, yanıtlar kısa, "merhaba"da chip'ler geliyor, selam 3 cümle/düz.
   Dosyalar: `suggested-task.ts`(+spec), `chat.service.ts`, `coach-access.service.ts`(+spec),
   `ai.constants.ts`, rapor.
+- **Prompt kalite turu — kalan 5 prompt (2026-07-16, tur 2)** — ghost · vision note · seans
+  yansıması · haftalık özet · memory damıtma gerçek problarla değerlendirildi (aynı rapora eklendi).
+  Ayarlar: hepsine max-3-cümle/markdown-emoji-coşku yasağı varyantları; vision'a hitap kalıbı
+  yasağı ("Sevgili öğrencim" canlıda görüldü); seans TASK'ına "bugünkü plandaki görevi önerme";
+  memory'ye "düz 'Etiket: değer' maddeleri" (bold profil FE kartında ham `**` görünüyordu);
+  `WEEKLY_REVIEW_PROMPT_VERSION` v1→v2 (cache'li anlatılar yeni kurallarla yeniden üretilsin).
+  **Bilinen kalıntı:** seans yansıması TASK'ı, plandaki mevcut görevi bazen başka kelimelerle yine
+  önerebiliyor — zararsız (kullanıcı onaysız yazılmaz), deterministik benzerlik filtresi backlog.
+  Dosyalar: `ai.constants.ts`, `weekly-review-prompt.ts`.
+- **AI prompt kalite eval v1 (2026-07-16)** — `pnpm --filter @mentor/api test:eval:openai`
+  10 sentetik vaka çalıştırır: dokuzu mevcut `OpenAiLlmAdapter` ile gerçek completion, ciddi mood
+  sinyali ise production gibi deterministik güvenlik yoludur (0 token/0 maliyet). Chat resmî-bilgi/
+  kaygı, günlük selam, mood güvenliği, plan taslağı, seans, ghost, vision, haftalık değerlendirme ve
+  memory kapsanır. Gerçek kullanıcı/DB verisi yoktur; komut opt-in'dir ve CI'a dahil değildir. Resmî
+  bilgi uydurma, PII, marker sızıntısı, geçersiz JSON ve ciddi-sinyal güvenliği **hard** kontroldür;
+  cümle uzunluğu gibi üretken-model stil sapmaları flaky kapı olmaması için **review** uyarısıdır.
+  Her koşu model, token, tahmini maliyet, gecikme, ham sentetik çıktı ve manuel rubric'i
+  `apps/api/eval-results/latest.md` dosyasına yazar; dizin gitignore'dadır. Yeni endpoint, tablo,
+  migration veya eval bağımlılığı yoktur.
+- **Ciddi mood sinyali güvenlik bypass'ı (2026-07-17)** — `MoodReflectionService`, açık ve yüksek
+  güvenli TR/EN zarar/yaşam sinyallerini LLM ve cache'den **önce** algılar; lokalize sabit destek
+  mesajını `model: safety` ile döndürür. Bu yol context, bütçe, provider, kullanım ölçümü ve DB yazımı
+  yapmaz; böylece eski uygunsuz bir cache de gösterilmez. Kapsam bilinçli olarak yüksek güvenli
+  ifadelerle sınırlıdır; daha geniş kapsama ancak gerçek veri ihtiyacı doğrulanırsa ayrı moderation/
+  safety classifier eklenir. Dosyalar: `serious-distress.ts`(+spec), `mood-reflection.service.ts`
+  (+spec), `i18n/locales/{tr,en}/coaching.json`, `test/eval/openai-prompt.eval.ts`.
 
 ## Gotchas / Known issues
 

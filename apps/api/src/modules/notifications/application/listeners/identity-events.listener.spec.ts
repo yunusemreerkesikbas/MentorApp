@@ -55,4 +55,29 @@ describe("IdentityEventsListener", () => {
       }),
     ).resolves.toBeUndefined();
   });
+
+  const buddyEvent = {
+    recipientId: "uB",
+    actorId: "uA",
+    actorDisplayName: "Alice",
+    actorUsername: "alice",
+  };
+
+  it("notifies buddy request / accept / nudge, naming the actor and linking to /seans", async () => {
+    await listener.onBuddyRequested(buddyEvent);
+    await listener.onBuddyAccepted(buddyEvent);
+    await listener.onBuddyNudged(buddyEvent);
+    expect(notifications.createInApp).toHaveBeenCalledTimes(3);
+    for (const call of notifications.createInApp.mock.calls) {
+      expect(call[0]).toBe("uB");
+      expect(call[1]).toBe("FORUM");
+      expect(call[3]).toContain("Alice");
+      expect(call[4]).toBe("/seans");
+    }
+  });
+
+  it("buddy notifications are best-effort too", async () => {
+    notifications.createInApp.mockRejectedValueOnce(new Error("db down"));
+    await expect(listener.onBuddyNudged(buddyEvent)).resolves.toBeUndefined();
+  });
 });

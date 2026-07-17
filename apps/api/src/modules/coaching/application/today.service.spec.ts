@@ -11,9 +11,16 @@ function build(overrides: {
   calendar?: unknown;
   currentStreak?: number;
   mood?: unknown;
+  dailyFocusGoalMinutes?: number | null;
+  focusMinutesToday?: number;
+  focusingNow?: number | null;
 }) {
   const users = {
-    getMe: vi.fn(async () => ({ displayName: "Elif", examType: overrides.examType ?? "KPSS" })),
+    getMe: vi.fn(async () => ({
+      displayName: "Elif",
+      examType: overrides.examType ?? "KPSS",
+      dailyFocusGoalMinutes: overrides.dailyFocusGoalMinutes ?? null,
+    })),
   };
   const plan = {
     listForDate: vi.fn(async () => [
@@ -28,6 +35,10 @@ function build(overrides: {
     })),
   };
   const mood = { getToday: vi.fn(async () => overrides.mood ?? null) };
+  const sessions = {
+    getTodayFocusMinutes: vi.fn(async () => overrides.focusMinutesToday ?? 0),
+    getFocusingNowCount: vi.fn(async () => overrides.focusingNow ?? null),
+  };
   const content = {
     getExamCalendar: vi.fn(async () =>
       overrides.calendar === undefined
@@ -46,10 +57,11 @@ function build(overrides: {
     plan as never,
     streak as never,
     mood as never,
+    sessions as never,
     content as never,
     i18nFake,
   );
-  return { service, users, plan, streak, mood, content };
+  return { service, users, plan, streak, mood, sessions, content };
 }
 
 describe("TodayService — composite panel payload", () => {
@@ -78,5 +90,30 @@ describe("TodayService — composite panel payload", () => {
     const { service } = build({ calendar: null });
     const result = await service.getToday(USER);
     expect(result.countdown).toBeNull();
+  });
+
+  it("surfaces the focus goal with today's focus minutes when a goal is set", async () => {
+    const { service } = build({ dailyFocusGoalMinutes: 120, focusMinutesToday: 45 });
+    const result = await service.getToday(USER);
+    expect(result.focusGoal).toEqual({ goalMinutes: 120, focusMinutesToday: 45 });
+  });
+
+  it("surfaces a null goal (no default) when the user never set one", async () => {
+    const { service } = build({ focusMinutesToday: 30 });
+    const result = await service.getToday(USER);
+    expect(result.focusGoal).toEqual({ goalMinutes: null, focusMinutesToday: 30 });
+  });
+
+  it("passes the focusing-now ambience count through (null below threshold)", async () => {
+    expect((await build({ focusingNow: 12 }).service.getToday(USER)).focusingNow).toBe(12);
+    expect((await build({}).service.getToday(USER)).focusingNow).toBeNull();
+  });
+
+  it("degrades focusingNow to null when the aggregate read fails (hub stays up)", async () => {
+    const { service, sessions } = build({});
+    sessions.getFocusingNowCount.mockRejectedValue(new Error("db hiccup"));
+    const result = await service.getToday(USER);
+    expect(result.focusingNow).toBeNull();
+    expect(result.greetingName).toBe("Elif");
   });
 });

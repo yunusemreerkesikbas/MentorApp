@@ -1,6 +1,7 @@
 {
   "mood": {
     "VERY_LOW": "Bugün ağır bir gün, biliyorum. Kendine nazik ol — küçük bir mola da ilerlemenin parçası. Yanındayım.",
+    "SERIOUS_DISTRESS": "Bunu tek başına taşımak zorunda değilsin. Şimdi güvendiğin birine ulaş; kendine zarar verme riski varsa 112'yi ara veya en yakın acil servise git.",
     "LOW": "Zor günler olur. Bugün sadece tek bir küçük adım at, gerisi yarına kalsın. Buradayım.",
     "OKAY": "İyi gidiyorsun. Bugünü olduğu gibi kabul et ve elinden geleni yap — bu yeterli.",
     "GOOD": "Enerjin yerinde, harika! Bu motivasyonu bugünkü planına taşı, çok şey başaracaksın.",

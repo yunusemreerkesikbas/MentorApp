@@ -191,3 +191,33 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   (`ForumService.getAuthorActivity`), profil **identity** `UsersService.getMe`. `community.repository.ts`
   silindi; modül artık tablo sahibi değil, sadece public servisleri orkestre ediyor. Service catalog
   (`api.md §6`) güncellendi. *(APP-017)*
+
+- **Yol arkadaşı v1 (2026-07-17)** — Karşılıklı onaylı 1-1 accountability partner: profil sayfasından
+  kullanıcı adına istek → karşı taraf /seans'taki buddy kartından kabul eder; tek aktif buddy/kullanıcı.
+  İlişki `identity`'de (`buddy_pairs`, migration `0053`; RLS'siz SERVICE-context repo — `user_follows`
+  emsali; decline/cancel/ayrıl = satır silinir). Partner kartı kompozisyonu community'de
+  (`BuddyViewService` + `BuddyController`, `/v1/buddy*`): partnerin bugünkü odak dakikası + streak —
+  **yalnız çaba, asla sonuç/net (§4)**. Dürtme: yön başına 4 saat cooldown (pair satırında timestamp),
+  cooldown'da 429. Bildirimler mevcut FORUM kategorisi + `identity-events.listener` kalıbıyla
+  (istek/kabul/dürtme → `linkUrl: /seans`). Profil butonu `PublicProfile.buddyStatus` ile sürülür
+  ("unavailable" = başkasıyla aktif → buton yok). Gotcha: accept tx'i her iki tarafın diğer PENDING
+  satırlarını temizler (UPDATE `returning` ile doğrulanır — kabul anında iptal edilen istek 409 döner);
+  partial unique indeksler DB kemeri, asıl güvence tx içi re-check.
+  **Bilinçli v1 kararları (kapsam dışı):** aktif buddy'si olana gönderilen istek beklemede tutulur (iptal
+  edilmez); bir taraf BAN/SUSPEND olsa bile ACTIVE çift kartta görünür kalır (kullanıcı "ayrıl"la
+  çıkabilsin diye — gizlenmiş görünmez eşleşme yok). İlgili:
+  `identity/{buddy.repository,buddy.service}`, `community/{buddy-view.service,buddy.controller}`,
+  `session-buddy-card.tsx`, `profile-header.tsx`, `lib/buddy.ts`, hata kodları `SOCIAL_BUDDY_*`.
+
+- **Yol arkadaşı keşfi (2026-07-17)** — Buddy'nin cold-start boşluğu kapatıldı: artık istek göndermek
+  için kullanıcı adı bilmeye gerek yok. `/seans` buddy kartının boş durumu, aynı sınav türü kohortundan
+  (`suggestCohortPeers`, newest-first) henüz eşleşmemiş kullanıcıları satır-içi listeler; tek tıkla istek
+  gönder → kart pending'e döner. Yeni: `GET /v1/buddy/suggestions` (sabit limit 5) →
+  `BuddyViewService.getSuggestions` → `BuddyService.getSuggestionCandidates` (kohort havuzunu `limit*4`
+  tamponuyla çekip `BuddyRepository.listRelatedOrActivelyPairedIds` ile eler). **Elenenler:** kendisi,
+  viewer ile herhangi bir ilişkisi olan, zaten ACTIVE buddy'si olan aday (eşleşemez); viewer zaten aktifse
+  öneri boş. Guardrail: kohort sınav türüne göre (çaba/sosyal — sonuç yok), ref'ler public-safe (PII yok).
+  Öneri yoksa mevcut sessiz `/topluluk` link fallback'i kalır. Aktivite-duyarlı sıralama v2'ye ertelendi.
+  İlgili: `buddy.repository.ts` (`listRelatedOrActivelyPairedIds`), `buddy.service.ts`
+  (`getSuggestionCandidates`), `buddy-view.service.ts`, `buddy.controller.ts`, `session-buddy-card.tsx`
+  (`BuddyEmptyState`), `lib/buddy.ts` (`getBuddySuggestions`).

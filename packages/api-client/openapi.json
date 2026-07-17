@@ -673,6 +673,63 @@
         ]
       }
     },
+    "/v1/coach/plan-draft": {
+      "post": {
+        "operationId": "AiChatController_planDraftPreview",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanDraftBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/conversations/{id}/regenerate/stream": {
+      "post": {
+        "operationId": "AiChatController_regenerateStream",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/coach/conversations": {
       "get": {
         "operationId": "AiChatController_listConversations",
@@ -825,6 +882,25 @@
     "/v1/coach/mood-reflection": {
       "post": {
         "operationId": "AiMoodController_reflect",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/daily-greeting": {
+      "post": {
+        "operationId": "AiMoodController_greet",
         "parameters": [],
         "responses": {
           "200": {
@@ -1599,6 +1675,35 @@
         "parameters": [],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/plan-tasks/bulk": {
+      "post": {
+        "operationId": "PlanTaskController_createMany",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkCreatePlanTasksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": ""
           }
         },
@@ -2857,6 +2962,164 @@
         ],
         "tags": [
           "community"
+        ]
+      }
+    },
+    "/v1/buddy": {
+      "get": {
+        "operationId": "BuddyController_getView",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "buddy"
+        ]
+      },
+      "delete": {
+        "operationId": "BuddyController_end",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "buddy"
+        ]
+      }
+    },
+    "/v1/buddy/suggestions": {
+      "get": {
+        "operationId": "BuddyController_getSuggestions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "buddy"
+        ]
+      }
+    },
+    "/v1/buddy/requests/{username}": {
+      "post": {
+        "operationId": "BuddyController_request",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "buddy"
+        ]
+      }
+    },
+    "/v1/buddy/requests/{id}/accept": {
+      "post": {
+        "operationId": "BuddyController_accept",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "buddy"
+        ]
+      }
+    },
+    "/v1/buddy/requests/{id}": {
+      "delete": {
+        "operationId": "BuddyController_deleteRequest",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "buddy"
+        ]
+      }
+    },
+    "/v1/buddy/nudge": {
+      "post": {
+        "operationId": "BuddyController_nudge",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "buddy"
         ]
       }
     },
@@ -4484,6 +4747,15 @@
           "message"
         ]
       },
+      "PlanDraftBodyDto": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
       "CoachFeedbackDto": {
         "type": "object",
         "properties": {}
@@ -4521,6 +4793,10 @@
         "properties": {}
       },
       "CreatePlanTaskDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "BulkCreatePlanTasksDto": {
         "type": "object",
         "properties": {}
       },

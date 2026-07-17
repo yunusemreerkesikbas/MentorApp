@@ -53,7 +53,7 @@ describe("content (e2e)", () => {
   const auth = () => ({ Authorization: `Bearer ${userToken}` });
 
   it("GET /v1/content/exams returns seeded KPSS rows (public, no auth)", async () => {
-    const res = await request(app.getHttpServer()).get("/v1/content/exams");
+    const res = await request(app.getHttpServer()).get("/v1/content/exams?page=1&pageSize=100");
     expect(res.status).toBe(200);
     expect(res.body.total).toBeGreaterThanOrEqual(3);
     const kpss = res.body.items.filter((e: { family: string }) => e.family === "KPSS");

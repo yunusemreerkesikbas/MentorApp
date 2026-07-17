@@ -106,6 +106,8 @@ export const users = pgTable(
     /** Minimal onboarding; deep diagnosis comes with coaching (W2). */
     examType: text("exam_type"),
     examDate: date("exam_date"),
+    /** Daily focus goal in minutes (/seans progress + XP quest); null = no goal set. */
+    dailyFocusGoalMinutes: integer("daily_focus_goal_minutes"),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     /** KVKK consent timestamp — signup is rejected without consent (§7/§9). */
     kvkkAcceptedAt: timestamp("kvkk_accepted_at", {
@@ -1623,6 +1625,52 @@ export const userFollows = pgTable(
     uniqueIndex("user_follows_pair_unique_idx").on(t.followerId, t.followeeId),
     index("user_follows_followee_created_idx").on(t.followeeId, t.createdAt),
     index("user_follows_follower_created_idx").on(t.followerId, t.createdAt),
+  ],
+);
+
+/**
+ * Study-buddy 1-1 pairing (yol arkadaşı). Mutual-consent accountability partner:
+ * PENDING request → ACTIVE on accept; decline/cancel/end DELETEs the row (unfollow
+ * semantics — no archival state in v1). Runs in SERVICE context and is own-user
+ * scoped by the WHERE clause (same trust model as `user_follows` — no RLS policy).
+ * Partner card shows effort only (focus minutes/streak) — never exam results (§4).
+ */
+export const buddyPairs = pgTable(
+  "buddy_pairs",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    requesterId: uuid("requester_id")
+      .notNull()
+      .references(() => users.id),
+    addresseeId: uuid("addressee_id")
+      .notNull()
+      .references(() => users.id),
+    /** PENDING | ACTIVE. */
+    status: text("status").notNull().default("PENDING"),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    /** Per-direction nudge cooldown anchors (4h — buddy.service constant). */
+    requesterLastNudgeAt: timestamp("requester_last_nudge_at", { withTimezone: true }),
+    addresseeLastNudgeAt: timestamp("addressee_last_nudge_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    // One row per user pair regardless of direction.
+    uniqueIndex("buddy_pairs_pair_unique_idx").on(
+      sql`least(${t.requesterId}, ${t.addresseeId})`,
+      sql`greatest(${t.requesterId}, ${t.addresseeId})`,
+    ),
+    // DB belt for one-active-buddy per user; the authoritative check is the accept tx.
+    uniqueIndex("buddy_pairs_requester_active_idx")
+      .on(t.requesterId)
+      .where(sql`${t.status} = 'ACTIVE'`),
+    uniqueIndex("buddy_pairs_addressee_active_idx")
+      .on(t.addresseeId)
+      .where(sql`${t.status} = 'ACTIVE'`),
+    index("buddy_pairs_addressee_status_idx").on(t.addresseeId, t.status),
   ],
 );
 

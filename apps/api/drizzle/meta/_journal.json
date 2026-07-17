@@ -365,6 +365,20 @@
       "when": 1784075749301,
       "tag": "0051_w3_daily_greeting",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1784241487936,
+      "tag": "0052_clumsy_lord_hawal",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1784271394394,
+      "tag": "0053_easy_morph",
+      "breakpoints": true
     }
   ]
 }

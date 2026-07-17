@@ -1,6 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
-import { IdentityEventTopic, type UserFollowed } from "../../../identity/domain/identity.events";
+import {
+  IdentityEventTopic,
+  type BuddyEvent,
+  type UserFollowed,
+} from "../../../identity/domain/identity.events";
 import { NotificationsService } from "../notifications.service";
 
 /**
@@ -24,6 +28,48 @@ export class IdentityEventsListener {
       .createInApp(e.recipientId, "FORUM", "Yeni takipçi", `${e.actorDisplayName} seni takip etti.`, link)
       .catch((err: unknown) =>
         this.logger.warn(`follow notification failed for ${e.recipientId}: ${String(err)}`),
+      );
+  }
+
+  // Buddy notifications land on /seans — the buddy card there handles accept/nudge-back.
+
+  @OnEvent(IdentityEventTopic.BUDDY_REQUESTED)
+  async onBuddyRequested(e: BuddyEvent): Promise<void> {
+    await this.createBuddyNotification(
+      e,
+      "Yol arkadaşı daveti",
+      `${e.actorDisplayName} seni yol arkadaşı olmak için davet etti.`,
+    );
+  }
+
+  @OnEvent(IdentityEventTopic.BUDDY_ACCEPTED)
+  async onBuddyAccepted(e: BuddyEvent): Promise<void> {
+    await this.createBuddyNotification(
+      e,
+      "Davetin kabul edildi",
+      `${e.actorDisplayName} davetini kabul etti — artık yol arkadaşısınız.`,
+    );
+  }
+
+  @OnEvent(IdentityEventTopic.BUDDY_NUDGED)
+  async onBuddyNudged(e: BuddyEvent): Promise<void> {
+    await this.createBuddyNotification(
+      e,
+      "Yol arkadaşından dürtme",
+      `${e.actorDisplayName} seni dürttü — bugün bir seansa var mısın?`,
+    );
+  }
+
+  private async createBuddyNotification(
+    e: BuddyEvent,
+    title: string,
+    body: string,
+  ): Promise<void> {
+    if (e.recipientId === e.actorId) return;
+    await this.notifications
+      .createInApp(e.recipientId, "FORUM", title, body, "/seans")
+      .catch((err: unknown) =>
+        this.logger.warn(`buddy notification failed for ${e.recipientId}: ${String(err)}`),
       );
   }
 }
