@@ -5,18 +5,30 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   Res,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
-import type { CoachAccessDto, CoachChatStreamEvent, CoachMessageDto, Paginated } from "@mentor/types";
+import type {
+  CoachAccessDto,
+  CoachChatStreamEvent,
+  CoachPlanDraftDto,
+  CoachConversationDto,
+  CoachMemoryDto,
+  CoachMessageDto,
+  Paginated,
+} from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { CoachAccessService } from "../application/coach-access.service";
 import { ChatService, type CoachReplyResult } from "../application/chat.service";
-import { AiChatDto, ListCoachMessagesQueryDto } from "./ai.dto";
+import { AiChatDto, CoachFeedbackDto, ListCoachMessagesQueryDto, PlanDraftBodyDto } from "./ai.dto";
+import { PlanDraftService } from "../application/plan-draft.service";
 
 /**
  * AI coach chat (W3). Premium = flat + rate-limit; free = earned coin spend (economy.enabled).
@@ -29,6 +41,7 @@ export class AiChatController {
   constructor(
     private readonly chat: ChatService,
     private readonly access: CoachAccessService,
+    private readonly planDraft: PlanDraftService,
   ) {}
 
   @Get("access")
@@ -38,7 +51,13 @@ export class AiChatController {
 
   @Post("chat")
   reply(@CurrentUser() user: RequestUser, @Body() dto: AiChatDto): Promise<CoachReplyResult> {
-    return this.chat.reply(user, dto.message, dto.clientMessageId);
+    return this.chat.reply(
+      user,
+      dto.message,
+      dto.clientMessageId,
+      dto.conversationId,
+      dto.contextMockExamId,
+    );
   }
 
   /**
@@ -52,7 +71,13 @@ export class AiChatController {
     @Body() dto: AiChatDto,
     @Res() res: Response,
   ): Promise<void> {
-    const stream = this.chat.replyStream(user, dto.message, dto.clientMessageId);
+    const stream = this.chat.replyStream(
+      user,
+      dto.message,
+      dto.clientMessageId,
+      dto.conversationId,
+      dto.contextMockExamId,
+    );
     // Pre-stream gating: let the first pull throw before SSE headers are committed.
     const first = await stream.next();
 
@@ -76,19 +101,101 @@ export class AiChatController {
     }
   }
 
-  /** Persisted rolling history, newest-first (auth-only — reading your own history needs no gate). */
-  @Get("messages")
-  listMessages(
+  /**
+   * Koç yapımı haftalık plan TASLAĞI (premium). Preview only — nothing is persisted; the user
+   * confirms in the FE and tasks are written via POST /v1/plan-tasks/bulk (W2).
+   */
+  @Post("plan-draft")
+  planDraftPreview(
     @CurrentUser() user: RequestUser,
-    @Query() query: ListCoachMessagesQueryDto,
-  ): Promise<Paginated<CoachMessageDto>> {
-    return this.chat.listMessages(user.id, query.page, query.pageSize);
+    @Body() dto: PlanDraftBodyDto,
+  ): Promise<CoachPlanDraftDto> {
+    return this.planDraft.draft(user, dto.note);
   }
 
-  /** "Yeni sohbet" — clears the user's own rolling conversation. */
-  @Delete("messages")
+  /**
+   * Regenerate the LAST coach reply of a thread (SSE over POST, no body). Same pre-stream gating
+   * contract as `chat/stream`: the first event is awaited before headers are written.
+   */
+  @Post("conversations/:id/regenerate/stream")
+  async regenerateStream(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const stream = this.chat.regenerateStream(user, id);
+    const first = await stream.next();
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    const write = (event: CoachChatStreamEvent) => {
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    };
+
+    try {
+      if (!first.done && first.value) write(first.value);
+      for await (const event of stream) write(event);
+    } catch (err) {
+      const code = err instanceof DomainError ? err.code : "AI_PROVIDER_ERROR";
+      write({ error: { code, message: "" } });
+    } finally {
+      res.end();
+    }
+  }
+
+  /** The user's chat threads, most-recently-active first ("Son sohbetler"). */
+  @Get("conversations")
+  listConversations(
+    @CurrentUser() user: RequestUser,
+    @Query() query: ListCoachMessagesQueryDto,
+  ): Promise<Paginated<CoachConversationDto>> {
+    return this.chat.listConversations(user.id, query.page, query.pageSize);
+  }
+
+  /** One thread's history, newest-first (ownership enforced). */
+  @Get("conversations/:id/messages")
+  listConversationMessages(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Query() query: ListCoachMessagesQueryDto,
+  ): Promise<Paginated<CoachMessageDto>> {
+    return this.chat.listConversationMessages(user.id, id, query.page, query.pageSize);
+  }
+
+  /** Delete one thread (its messages cascade). The memory profile is kept. */
+  @Delete("conversations/:id")
   @HttpCode(HttpStatus.NO_CONTENT)
-  clearMessages(@CurrentUser() user: RequestUser): Promise<void> {
-    return this.chat.clearMessages(user.id);
+  deleteConversation(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    return this.chat.deleteConversation(user.id, id);
+  }
+
+  /** Rate a coach reply (👍/👎/none). */
+  @Patch("messages/:id/feedback")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  setFeedback(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: CoachFeedbackDto,
+  ): Promise<void> {
+    return this.chat.setMessageFeedback(user.id, id, dto.feedback);
+  }
+
+  /** The coach's distilled PII-free profile of the user (null until built). */
+  @Get("memory")
+  getMemory(@CurrentUser() user: RequestUser): Promise<CoachMemoryDto | null> {
+    return this.chat.getMemory(user.id);
+  }
+
+  /** Reset the memory profile (user-controlled, KVKK). */
+  @Delete("memory")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  clearMemory(@CurrentUser() user: RequestUser): Promise<void> {
+    return this.chat.clearMemory(user.id);
   }
 }

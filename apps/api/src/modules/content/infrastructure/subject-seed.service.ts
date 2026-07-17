@@ -8,6 +8,18 @@ interface SeedSubject {
   name: string;
 }
 
+interface SeedTopic {
+  subjectSlug: string;
+  slug: string;
+  name: string;
+}
+interface SeedExamTopic {
+  examSlug: string;
+  subjectSlug: string;
+  topicSlug: string;
+  sortOrder: number;
+}
+
 interface SeedExamSubject {
   examSlug: string;
   subjectSlug: string;
@@ -16,8 +28,12 @@ interface SeedExamSubject {
 }
 
 interface SeedFile {
+  sourceUrl: string;
+  verifiedAt: string;
   subjects: SeedSubject[];
+  topics: SeedTopic[];
   examSubjects: SeedExamSubject[];
+  examTopics: SeedExamTopic[];
 }
 
 /**
@@ -39,12 +55,18 @@ export class SubjectSeedService implements OnModuleInit {
       for (const subject of data.subjects) {
         await this.content.upsertSubject(subject);
       }
+      for (const topic of data.topics) {
+        await this.content.upsertTopic(topic);
+      }
       for (const link of data.examSubjects) {
         await this.content.linkExamSubject(link);
       }
+      for (const link of data.examTopics) {
+        await this.content.linkExamTopic(link);
+      }
 
       this.logger.log(
-        `Subject taxonomy seed applied (${data.subjects.length} subjects, ${data.examSubjects.length} exam links).`,
+        `Subject/topic taxonomy seed applied (${data.subjects.length} subjects, ${data.topics.length} topics, verified ${data.verifiedAt}).`,
       );
     } catch (err) {
       this.logger.error("Subject taxonomy seed failed.", err);

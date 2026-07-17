@@ -7,11 +7,14 @@ import { FeatureFlag } from "../../../common/config/config.catalog";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { MockExamService } from "../../coaching/application/mock-exam.service";
 import { PHOTO_MONTHLY_WINDOW_MS } from "../domain/photo-classify.constants";
+import { AiBudgetGuard } from "./ai-budget.guard";
 
 function denialStatus(reason: string | undefined): HttpStatus {
   switch (reason) {
     case ErrorCode.AI_DISABLED:
       return HttpStatus.NOT_FOUND;
+    case ErrorCode.AI_BUDGET_EXCEEDED:
+      return HttpStatus.SERVICE_UNAVAILABLE;
     case ErrorCode.AI_PHOTO_RATE_LIMITED:
       return HttpStatus.TOO_MANY_REQUESTS;
     case ErrorCode.PAYMENT_PREMIUM_REQUIRED:
@@ -30,11 +33,15 @@ export class PhotoAccessService {
     private readonly entitlement: EntitlementService,
     private readonly config: ConfigRegistryService,
     private readonly mockExams: MockExamService,
+    private readonly budget: AiBudgetGuard,
   ) {}
 
   async getAccess(userId: string, rolesHint?: string[]): Promise<PhotoAccessDto> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       return { canCategorize: false, reason: ErrorCode.AI_DISABLED };
+    }
+    if (!(await this.budget.isWithinBudget())) {
+      return { canCategorize: false, reason: ErrorCode.AI_BUDGET_EXCEEDED };
     }
 
     const ent = await this.entitlement.getEntitlement(userId, rolesHint);

@@ -86,7 +86,6 @@ export interface UseSessionAmbientSoundOptions {
 export interface UseSessionAmbientSoundResult {
   trackId: AmbientTrackId;
   muted: boolean;
-  isAudible: boolean;
   setTrackId: (trackId: AmbientTrackId) => void;
   toggleMute: () => void;
 }
@@ -100,11 +99,14 @@ export function useSessionAmbientSound({
   const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewActiveRef = useRef(false);
   const phaseRef = useRef(phase);
-  phaseRef.current = phase;
 
   const [preference, setPreference] = useState<AmbientSoundPreference>(() =>
     readPreference(),
   );
+
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
 
   const clearPreview = useCallback(() => {
     if (previewTimerRef.current) {
@@ -252,14 +254,10 @@ export function useSessionAmbientSound({
     });
   }, [phase, isPaused]);
 
-  const isAudible =
-    previewActiveRef.current ||
-    shouldPlayAudio(phase, isPaused, preference.trackId, preference.muted);
 
   return {
     trackId: preference.trackId,
     muted: preference.muted,
-    isAudible,
     setTrackId,
     toggleMute,
   };

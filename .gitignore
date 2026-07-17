@@ -67,3 +67,6 @@ Thumbs.db
 
 # impeccable design-hook runtime cache
 **/.impeccable/
+apps/web/test-results/
+apps/web/playwright-report/
+apps/api/eval-results/

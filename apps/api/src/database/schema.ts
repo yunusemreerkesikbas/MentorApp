@@ -47,8 +47,12 @@ export const jobs = pgTable(
     maxAttempts: integer("max_attempts").notNull().default(5),
     lastError: text("last_error"),
     runAt: timestamp("run_at", { withTimezone: true }).notNull().defaultNow(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [index("jobs_status_run_at_idx").on(t.status, t.runAt)],
 );
@@ -71,8 +75,12 @@ export const organizations = pgTable("organizations", {
   settings: jsonb("settings")
     .notNull()
     .default(sql`'{}'::jsonb`),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export const users = pgTable(
@@ -98,13 +106,21 @@ export const users = pgTable(
     /** Minimal onboarding; deep diagnosis comes with coaching (W2). */
     examType: text("exam_type"),
     examDate: date("exam_date"),
+    /** Daily focus goal in minutes (/seans progress + XP quest); null = no goal set. */
+    dailyFocusGoalMinutes: integer("daily_focus_goal_minutes"),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     /** KVKK consent timestamp — signup is rejected without consent (§7/§9). */
-    kvkkAcceptedAt: timestamp("kvkk_accepted_at", { withTimezone: true }).notNull(),
+    kvkkAcceptedAt: timestamp("kvkk_accepted_at", {
+      withTimezone: true,
+    }).notNull(),
     /** ACTIVE | SUSPENDED | BANNED (graduated enforcement — §9). */
     status: text("status").notNull().default("ACTIVE"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("users_email_unique_idx").on(sql`lower(${t.email})`),
@@ -129,8 +145,12 @@ export const coachStudents = pgTable(
     status: text("status").notNull().default("PENDING"),
     /** INVITE | MARKETPLACE (§11). */
     source: text("source").notNull().default("INVITE"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [uniqueIndex("coach_students_pair_idx").on(t.coachId, t.studentId)],
 );
@@ -153,7 +173,9 @@ export const refreshTokens = pgTable(
     familyId: uuid("family_id").notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("refresh_tokens_hash_idx").on(t.tokenHash),
@@ -176,7 +198,9 @@ export const emailTokens = pgTable(
     tokenHash: text("token_hash").notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     usedAt: timestamp("used_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("email_tokens_hash_idx").on(t.tokenHash),
@@ -196,15 +220,22 @@ export const userAuthAccounts = pgTable(
     provider: text("provider").notNull(),
     providerSubject: text("provider_subject").notNull(),
     providerEmail: text("provider_email").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("user_auth_accounts_provider_subject_idx").on(
       t.provider,
       t.providerSubject,
     ),
-    uniqueIndex("user_auth_accounts_user_provider_idx").on(t.userId, t.provider),
+    uniqueIndex("user_auth_accounts_user_provider_idx").on(
+      t.userId,
+      t.provider,
+    ),
     index("user_auth_accounts_user_idx").on(t.userId),
   ],
 );
@@ -219,7 +250,9 @@ export const emailVerificationResendAttempts = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index("email_verification_resend_attempts_user_created_idx").on(
@@ -253,10 +286,17 @@ export const exams = pgTable(
     /** Editorial override when multiple exams share a family (countdown selection). */
     isCurrent: boolean("is_current").notNull().default(false),
     orgId: uuid("org_id").references(() => organizations.id),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (t) => [uniqueIndex("exams_slug_unique_idx").on(t.slug), index("exams_family_idx").on(t.family)],
+  (t) => [
+    uniqueIndex("exams_slug_unique_idx").on(t.slug),
+    index("exams_family_idx").on(t.family),
+  ],
 );
 
 /** A dated editorial event for an exam (EXAM_DATE first; more types later). */
@@ -276,8 +316,12 @@ export const examEvents = pgTable(
     sourceUrl: text("source_url").notNull(),
     verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
     verifiedBy: text("verified_by").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("exam_events_exam_type_unique_idx").on(t.examId, t.type),
@@ -308,8 +352,12 @@ export const infoArticles = pgTable(
     /** pgvector — content only; populated by W3 after ArticlePublished (§4 #6). */
     embedding: vector("embedding", { dimensions: 1536 }),
     publishedAt: timestamp("published_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("info_articles_slug_unique_idx").on(t.slug),
@@ -326,8 +374,12 @@ export const subjects = pgTable(
       .default(sql`gen_random_uuid()`),
     slug: text("slug").notNull(),
     name: text("name").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [uniqueIndex("subjects_slug_unique_idx").on(t.slug)],
 );
@@ -347,9 +399,56 @@ export const examSubjects = pgTable(
       .references(() => subjects.id, { onDelete: "cascade" }),
     questionCount: integer("question_count"),
     sortOrder: integer("sort_order").notNull().default(0),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [uniqueIndex("exam_subjects_pair_idx").on(t.examId, t.subjectId)],
+);
+
+/** Topic taxonomy scoped by parent subject. */
+export const topics = pgTable(
+  "topics",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    subjectId: uuid("subject_id")
+      .notNull()
+      .references(() => subjects.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("topics_subject_slug_unique_idx").on(t.subjectId, t.slug),
+  ],
+);
+
+/** Exam ↔ topic link (display order; mirrors exam_subjects). */
+export const examTopics = pgTable(
+  "exam_topics",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    examId: uuid("exam_id")
+      .notNull()
+      .references(() => exams.id, { onDelete: "cascade" }),
+    topicId: uuid("topic_id")
+      .notNull()
+      .references(() => topics.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("exam_topics_pair_idx").on(t.examId, t.topicId)],
 );
 
 /* ===================== W2 · coaching =====================
@@ -381,8 +480,12 @@ export const planTasks = pgTable(
     /** PENDING | DONE (PlanTaskStatus). */
     status: text("status").notNull().default("PENDING"),
     sortOrder: integer("sort_order").notNull().default(0),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [index("plan_tasks_user_date_idx").on(t.userId, t.taskDate)],
 );
@@ -407,7 +510,9 @@ export const studySessions = pgTable(
     /** Nullable SOFT ref → content subject. */
     subject: text("subject"),
     /** Optional link to the plan task this session was started from (roadmap §259). */
-    planTaskId: uuid("plan_task_id").references(() => planTasks.id, { onDelete: "set null" }),
+    planTaskId: uuid("plan_task_id").references(() => planTasks.id, {
+      onDelete: "set null",
+    }),
     /** Post-session micro check-in: subjective effort/mood 1-3 (😩😐🙂); null until captured. */
     sessionMood: integer("session_mood"),
     /** Optional post-session "what challenged you" free-text signal for the AI; null when blank. */
@@ -416,10 +521,16 @@ export const studySessions = pgTable(
     aiReflection: text("ai_reflection"),
     aiModel: text("ai_model"),
     aiReflectedAt: timestamp("ai_reflected_at", { withTimezone: true }),
+    /** Cached plan-task suggestion from session reflection ({title, subject}); null when none. */
+    aiSuggestedTask: jsonb("ai_suggested_task"),
     /** IN_PROGRESS | COMPLETED | ABANDONED (StudySessionStatus). */
     status: text("status").notNull().default("IN_PROGRESS"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [index("study_sessions_user_started_idx").on(t.userId, t.startedAt)],
 );
@@ -437,10 +548,19 @@ export const dailyActivity = pgTable(
     activityDate: date("activity_date").notNull(),
     hasSession: boolean("has_session").notNull().default(false),
     tasksDone: integer("tasks_done").notNull().default(0),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (t) => [uniqueIndex("daily_activity_user_date_unique_idx").on(t.userId, t.activityDate)],
+  (t) => [
+    uniqueIndex("daily_activity_user_date_unique_idx").on(
+      t.userId,
+      t.activityDate,
+    ),
+  ],
 );
 
 /** Per-user streak snapshot/cache (current is derived on read; longest is a high-water mark). */
@@ -459,8 +579,12 @@ export const streakState = pgTable(
     lastActiveDate: date("last_active_date"),
     /** "YYYY-MM" — monthly freeze-token reset key. */
     freezeMonth: text("freeze_month"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [uniqueIndex("streak_state_user_unique_idx").on(t.userId)],
 );
@@ -486,10 +610,19 @@ export const moodCheckins = pgTable(
     aiReflection: text("ai_reflection"),
     aiModel: text("ai_model"),
     aiReflectedAt: timestamp("ai_reflected_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (t) => [uniqueIndex("mood_checkins_user_date_unique_idx").on(t.userId, t.checkinDate)],
+  (t) => [
+    uniqueIndex("mood_checkins_user_date_unique_idx").on(
+      t.userId,
+      t.checkinDate,
+    ),
+  ],
 );
 
 /**
@@ -512,8 +645,12 @@ export const visionBoards = pgTable(
     aiNote: text("ai_note"),
     aiModel: text("ai_model"),
     aiNoteAt: timestamp("ai_note_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [uniqueIndex("vision_boards_user_unique_idx").on(t.userId)],
 );
@@ -543,8 +680,12 @@ export const mockExams = pgTable(
     aiGhostNarration: text("ai_ghost_narration"),
     aiGhostModel: text("ai_ghost_model"),
     aiGhostAt: timestamp("ai_ghost_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [index("mock_exams_user_taken_idx").on(t.userId, t.takenAt)],
 );
@@ -566,7 +707,9 @@ export const mockExamSubjects = pgTable(
     blank: integer("blank").notNull(),
     /** Server-computed net for this subject. */
     net: numeric("net", { precision: 6, scale: 2 }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index("mock_exam_subjects_mock_idx").on(t.mockExamId),
@@ -588,9 +731,13 @@ export const mockExamPhotoCategorizations = pgTable(
       .notNull()
       .references(() => mockExams.id, { onDelete: "cascade" }),
     subjectRef: text("subject_ref").notNull(),
+    /** Nullable for legacy and subject-only classifications. */
+    topicRef: text("topic_ref"),
     storageKey: text("storage_key").notNull(),
     clientRequestId: uuid("client_request_id"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index("mock_exam_photo_cat_user_created_idx").on(t.userId, t.createdAt),
@@ -622,8 +769,12 @@ export const plans = pgTable("plans", {
   currency: text("currency").notNull().default("TRY"),
   trialDays: integer("trial_days").notNull().default(7),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 /**
@@ -646,12 +797,18 @@ export const subscriptions = pgTable(
     provider: text("provider").notNull(), // FAKE | IYZICO
     providerRef: text("provider_ref"),
     trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
-    currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
+    currentPeriodStart: timestamp("current_period_start", {
+      withTimezone: true,
+    }),
     currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
     cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
     canceledAt: timestamp("canceled_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [index("subscriptions_user_idx").on(t.userId)],
 );
@@ -677,7 +834,9 @@ export const paymentTransactions = pgTable(
     raw: jsonb("raw")
       .notNull()
       .default(sql`'{}'::jsonb`),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("payment_tx_provider_event_idx").on(t.providerEventId),
@@ -698,9 +857,13 @@ export const paymentWebhookEvents = pgTable(
     payload: jsonb("payload")
       .notNull()
       .default(sql`'{}'::jsonb`),
-    processedAt: timestamp("processed_at", { withTimezone: true }).notNull().defaultNow(),
+    processedAt: timestamp("processed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (t) => [uniqueIndex("payment_webhook_provider_event_idx").on(t.provider, t.eventId)],
+  (t) => [
+    uniqueIndex("payment_webhook_provider_event_idx").on(t.provider, t.eventId),
+  ],
 );
 
 /* ===================== W5 · notifications =====================
@@ -720,7 +883,9 @@ export const pushSubscriptions = pgTable(
     endpoint: text("endpoint").notNull(),
     p256dh: text("p256dh").notNull(),
     auth: text("auth").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("push_subscriptions_endpoint_unique_idx").on(t.endpoint),
@@ -734,8 +899,12 @@ export const notificationPreferences = pgTable("notification_preferences", {
     .references(() => users.id, { onDelete: "cascade" }),
   emailEnabled: boolean("email_enabled").notNull().default(true),
   pushEnabled: boolean("push_enabled").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 /** Idempotent delivery log — prevents duplicate daily reminders etc. */
@@ -751,10 +920,17 @@ export const notificationDeliveries = pgTable(
     channel: text("channel").notNull(), // EMAIL | PUSH
     template: text("template").notNull(),
     dedupeKey: text("dedupe_key").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
-    uniqueIndex("notification_deliveries_dedupe_idx").on(t.userId, t.channel, t.template, t.dedupeKey),
+    uniqueIndex("notification_deliveries_dedupe_idx").on(
+      t.userId,
+      t.channel,
+      t.template,
+      t.dedupeKey,
+    ),
   ],
 );
 
@@ -773,9 +949,13 @@ export const userNotifications = pgTable(
     body: text("body").notNull(),
     readAt: timestamp("read_at", { withTimezone: true }),
     linkUrl: text("link_url"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (t) => [index("user_notifications_user_created_idx").on(t.userId, t.createdAt)],
+  (t) => [
+    index("user_notifications_user_created_idx").on(t.userId, t.createdAt),
+  ],
 );
 
 /* ================================ W6 · admin ================================
@@ -808,7 +988,9 @@ export const adminAuditLog = pgTable(
     before: jsonb("before"),
     after: jsonb("after"),
     ip: text("ip"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index("admin_audit_log_created_at_idx").on(t.createdAt),
@@ -826,7 +1008,9 @@ export const configOverrides = pgTable("config_overrides", {
   key: text("key").primaryKey(),
   value: jsonb("value").notNull(),
   updatedBy: uuid("updated_by").references(() => users.id),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 /* ============================== W6 · economy ==============================
@@ -858,7 +1042,9 @@ export const ledgerEntries = pgTable(
     note: text("note"),
     /** Admin/actor for manual adjustments (null for system grants). */
     createdBy: uuid("created_by").references(() => users.id),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index("ledger_entries_user_unit_idx").on(t.userId, t.unit),
@@ -880,7 +1066,9 @@ export const invites = pgTable(
       .primaryKey()
       .references(() => users.id, { onDelete: "cascade" }),
     code: text("code").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [uniqueIndex("invites_code_unique_idx").on(t.code)],
 );
@@ -901,7 +1089,9 @@ export const inviteRedemptions = pgTable(
     code: text("code").notNull(),
     /** PENDING → CONVERTED (on the invited user's subscription activation). */
     status: text("status").notNull().default("PENDING"),
-    redeemedAt: timestamp("redeemed_at", { withTimezone: true }).notNull().defaultNow(),
+    redeemedAt: timestamp("redeemed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     convertedAt: timestamp("converted_at", { withTimezone: true }),
   },
   (t) => [
@@ -928,11 +1118,19 @@ export const userQuestProgress = pgTable(
     /** "once" for one-shot onboarding quests; yyyy-mm-dd for daily ritual quests. */
     periodKey: text("period_key").notNull().default("once"),
     status: text("status").notNull().default("COMPLETED"),
-    completedAt: timestamp("completed_at", { withTimezone: true }).notNull().defaultNow(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
-    uniqueIndex("user_quest_progress_user_quest_period_unique_idx").on(t.userId, t.questId, t.periodKey),
+    uniqueIndex("user_quest_progress_user_quest_period_unique_idx").on(
+      t.userId,
+      t.questId,
+      t.periodKey,
+    ),
     index("user_quest_progress_user_idx").on(t.userId),
   ],
 );
@@ -951,18 +1149,48 @@ export const aiUsage = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     model: text("model").notNull(),
+    /** Which AI feature produced this call (chat/vision/mood/...); null on pre-labeling rows. */
+    feature: text("feature"),
     promptTokens: integer("prompt_tokens").notNull().default(0),
     completionTokens: integer("completion_tokens").notNull().default(0),
     /** Estimated cost in micro-USD (integer; per-call cost is far below 1 minor unit). */
     costMicros: integer("cost_micros").notNull().default(0),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [index("ai_usage_user_created_idx").on(t.userId, t.createdAt)],
 );
 
-/* --- AI coach chat history (W3, Faz 2 multi-turn): one row per message, single rolling
- * conversation per user (no thread table — add a conversation_id column if threads ever land).
- * §4 #6: content is the user's own words / the coach reply (user-authored + generated — no
+/* --- AI coach conversations (W3, threads): one row per chat thread. Title is derived from the
+ * first user message (no LLM). `last_message_at` drives the "Son sohbetler" list order.
+ * KVKK: title is user-authored free-text — same erasure follow-up as coach_messages.
+ * RLS: self-or-service (per-user behavioral data, 0001 pattern). */
+export const coachConversations = pgTable(
+  "coach_conversations",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** Bumped on every persisted exchange — the list sort key. */
+    lastMessageAt: timestamp("last_message_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("coach_conversations_user_last_idx").on(t.userId, t.lastMessageAt),
+  ],
+);
+
+/* --- AI coach chat history (W3, Faz 2 multi-turn): one row per message, scoped to a conversation
+ * (thread). §4 #6: content is the user's own words / the coach reply (user-authored + generated — no
  * third-party PII). KVKK: behavioral free-text — included in the erasure follow-up (ai.md Gotchas).
  * RLS: self-or-service (per-user behavioral data, 0001 pattern). */
 export const coachMessages = pgTable(
@@ -974,6 +1202,10 @@ export const coachMessages = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    /** Thread this message belongs to (deleting a conversation cascades its messages). */
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => coachConversations.id, { onDelete: "cascade" }),
     /** CoachMessageRole: USER | COACH. */
     role: text("role").notNull(),
     content: text("content").notNull(),
@@ -981,10 +1213,39 @@ export const coachMessages = pgTable(
     sources: jsonb("sources"),
     /** LLM model that produced a COACH row; null on USER rows. */
     model: text("model"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** User rating on a COACH row: 1 = 👍, -1 = 👎, null = none. */
+    feedback: smallint("feedback"),
+    /** Persisted coach plan-task suggestion ({title, subject}) on a COACH row; null otherwise. */
+    suggestedTask: jsonb("suggested_task"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (t) => [index("coach_messages_user_created_idx").on(t.userId, t.createdAt)],
+  (t) => [
+    index("coach_messages_user_created_idx").on(t.userId, t.createdAt),
+    index("coach_messages_conversation_created_idx").on(
+      t.conversationId,
+      t.createdAt,
+    ),
+  ],
 );
+
+/* --- AI coach memory profile (W3, Faz 2): one distilled PII-free summary per user, refreshed by an
+ * async job every N messages. §4 #6: goal / recurring struggles / study prefs only — never name,
+ * email, contact. KVKK: behavioral free-text (erasure follow-up); user can reset via DELETE.
+ * RLS: self-or-service (0001 pattern). */
+export const coachMemory = pgTable("coach_memory", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  summary: text("summary").notNull(),
+  model: text("model").notNull(),
+  /** Message count at which this profile was distilled — the refresh threshold guard. */
+  messageCount: integer("message_count").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 /* ============================== forum ==============================
  * Zone primitive (announcement/chat/qa) + scoped membership (owner/mod/member).
@@ -1014,8 +1275,12 @@ export const forumZones = pgTable(
     organizationId: uuid("organization_id").references(() => organizations.id),
     createdBy: uuid("created_by").references(() => users.id),
     isArchived: boolean("is_archived").notNull().default(false),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("forum_zones_slug_idx").on(t.slug),
@@ -1039,8 +1304,12 @@ export const forumZoneMembers = pgTable(
     role: text("role").notNull().default("MEMBER"),
     /** ZoneMemberStatus: ACTIVE | PENDING. */
     status: text("status").notNull().default("ACTIVE"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("forum_zone_members_unique_idx").on(t.zoneId, t.userId),
@@ -1073,12 +1342,18 @@ export const forumThreads = pgTable(
     isPinned: boolean("is_pinned").notNull().default(false),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     deletedBy: uuid("deleted_by").references(() => users.id),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index("forum_threads_zone_created_idx").on(t.zoneId, t.createdAt),
-    index("forum_threads_zone_pinned_idx").on(t.zoneId).where(sql`${t.isPinned}`),
+    index("forum_threads_zone_pinned_idx")
+      .on(t.zoneId)
+      .where(sql`${t.isPinned}`),
   ],
 );
 
@@ -1095,7 +1370,9 @@ export const forumPosts = pgTable(
       .references(() => forumThreads.id),
     /** Reply target (APP-017 recursive threads). Null = top-level comment on the thread; set = a
      * reply to another comment. Self-FK; the row still carries the root `thread_id` for zone lookup. */
-    parentPostId: uuid("parent_post_id").references((): AnyPgColumn => forumPosts.id),
+    parentPostId: uuid("parent_post_id").references(
+      (): AnyPgColumn => forumPosts.id,
+    ),
     authorId: uuid("author_id")
       .notNull()
       .references(() => users.id),
@@ -1103,8 +1380,12 @@ export const forumPosts = pgTable(
     isAccepted: boolean("is_accepted").notNull().default(false),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     deletedBy: uuid("deleted_by").references(() => users.id),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index("forum_posts_thread_created_idx").on(t.threadId, t.createdAt),
@@ -1126,10 +1407,16 @@ export const forumPostReactions = pgTable(
       .notNull()
       .references(() => users.id),
     emoji: text("emoji").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
-    uniqueIndex("forum_post_reactions_unique_idx").on(t.postId, t.userId, t.emoji),
+    uniqueIndex("forum_post_reactions_unique_idx").on(
+      t.postId,
+      t.userId,
+      t.emoji,
+    ),
     index("forum_post_reactions_post_idx").on(t.postId),
   ],
 );
@@ -1148,7 +1435,9 @@ export const forumReactions = pgTable(
       .notNull()
       .references(() => users.id),
     emoji: text("emoji").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("forum_reactions_unique_idx").on(t.threadId, t.userId, t.emoji),
@@ -1181,10 +1470,16 @@ export const forumReports = pgTable(
     status: text("status").notNull().default("OPEN"),
     resolvedBy: uuid("resolved_by").references(() => users.id),
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
-    uniqueIndex("forum_reports_unique_idx").on(t.targetType, t.targetId, t.reporterId),
+    uniqueIndex("forum_reports_unique_idx").on(
+      t.targetType,
+      t.targetId,
+      t.reporterId,
+    ),
     index("forum_reports_zone_status_idx").on(t.zoneId, t.status),
     index("forum_reports_status_idx").on(t.status),
   ],
@@ -1210,9 +1505,16 @@ export const forumModerationActions = pgTable(
       .notNull()
       .references(() => forumZones.id),
     reason: text("reason"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (t) => [index("forum_moderation_actions_zone_created_idx").on(t.zoneId, t.createdAt)],
+  (t) => [
+    index("forum_moderation_actions_zone_created_idx").on(
+      t.zoneId,
+      t.createdAt,
+    ),
+  ],
 );
 
 /* Post attachments (APP-018). Polymorphic target (THREAD | POST) like forum_reports. Phase 1 = images;
@@ -1240,7 +1542,9 @@ export const forumAttachments = pgTable(
     width: integer("width"),
     height: integer("height"),
     position: integer("position").notNull().default(0),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index("forum_attachments_target_idx").on(t.targetType, t.targetId),
@@ -1260,7 +1564,9 @@ export const forumPendingAttachments = pgTable(
     authorId: uuid("author_id")
       .notNull()
       .references(() => users.id),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [index("forum_pending_attachments_created_idx").on(t.createdAt)],
 );
@@ -1280,10 +1586,16 @@ export const forumBookmarks = pgTable(
     /** ModerationTargetType: THREAD | POST */
     targetType: text("target_type").notNull(),
     targetId: uuid("target_id").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
-    uniqueIndex("forum_bookmarks_user_target_unique_idx").on(t.userId, t.targetType, t.targetId),
+    uniqueIndex("forum_bookmarks_user_target_unique_idx").on(
+      t.userId,
+      t.targetType,
+      t.targetId,
+    ),
     index("forum_bookmarks_user_created_idx").on(t.userId, t.createdAt),
   ],
 );
@@ -1305,7 +1617,9 @@ export const userFollows = pgTable(
     followeeId: uuid("followee_id")
       .notNull()
       .references(() => users.id),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("user_follows_pair_unique_idx").on(t.followerId, t.followeeId),
@@ -1314,21 +1628,74 @@ export const userFollows = pgTable(
   ],
 );
 
+/**
+ * Study-buddy 1-1 pairing (yol arkadaşı). Mutual-consent accountability partner:
+ * PENDING request → ACTIVE on accept; decline/cancel/end DELETEs the row (unfollow
+ * semantics — no archival state in v1). Runs in SERVICE context and is own-user
+ * scoped by the WHERE clause (same trust model as `user_follows` — no RLS policy).
+ * Partner card shows effort only (focus minutes/streak) — never exam results (§4).
+ */
+export const buddyPairs = pgTable(
+  "buddy_pairs",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    requesterId: uuid("requester_id")
+      .notNull()
+      .references(() => users.id),
+    addresseeId: uuid("addressee_id")
+      .notNull()
+      .references(() => users.id),
+    /** PENDING | ACTIVE. */
+    status: text("status").notNull().default("PENDING"),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    /** Per-direction nudge cooldown anchors (4h — buddy.service constant). */
+    requesterLastNudgeAt: timestamp("requester_last_nudge_at", { withTimezone: true }),
+    addresseeLastNudgeAt: timestamp("addressee_last_nudge_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    // One row per user pair regardless of direction.
+    uniqueIndex("buddy_pairs_pair_unique_idx").on(
+      sql`least(${t.requesterId}, ${t.addresseeId})`,
+      sql`greatest(${t.requesterId}, ${t.addresseeId})`,
+    ),
+    // DB belt for one-active-buddy per user; the authoritative check is the accept tx.
+    uniqueIndex("buddy_pairs_requester_active_idx")
+      .on(t.requesterId)
+      .where(sql`${t.status} = 'ACTIVE'`),
+    uniqueIndex("buddy_pairs_addressee_active_idx")
+      .on(t.addresseeId)
+      .where(sql`${t.status} = 'ACTIVE'`),
+    index("buddy_pairs_addressee_status_idx").on(t.addresseeId, t.status),
+  ],
+);
 
 /* --- Premium weekly review narration cache (W3). Aggregated/generated text only; no raw notes. */
 export const aiWeeklyReviews = pgTable(
   "ai_weekly_reviews",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
     examId: uuid("exam_id").notNull(),
     weekStart: date("week_start").notNull(),
     locale: text("locale").notNull(),
     sourceFingerprint: text("source_fingerprint").notNull(),
     narration: text("narration").notNull(),
     model: text("model").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("ai_weekly_reviews_user_exam_week_locale_idx").on(
@@ -1340,3 +1707,27 @@ export const aiWeeklyReviews = pgTable(
   ],
 );
 
+/** W3 · Premium proactive daily coach greeting on /koc — at most one LLM call per (user, day). */
+export const aiDailyGreetings = pgTable(
+  "ai_daily_greetings",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    greetingDate: date("greeting_date").notNull(),
+    greeting: text("greeting").notNull(),
+    model: text("model").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("ai_daily_greetings_user_date_idx").on(
+      t.userId,
+      t.greetingDate,
+    ),
+  ],
+);

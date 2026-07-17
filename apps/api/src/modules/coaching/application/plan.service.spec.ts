@@ -209,6 +209,38 @@ describe("PlanService — task toggle keeps daily_activity in sync", () => {
   });
 });
 
+describe("PlanService.createMany", () => {
+  let planRepo: ReturnType<typeof makePlanRepoFake>;
+  let service: PlanService;
+
+  beforeEach(() => {
+    planRepo = makePlanRepoFake([]);
+    service = new PlanService(fakeDb, planRepo as never, makeActivityFake() as never, {
+      emit: () => {},
+    } as never);
+  });
+
+  it("creates every task in one pass (dates default to today)", async () => {
+    const out = await service.createMany(USER, [
+      { title: "Matematik: 20 soru", subject: "Matematik" },
+      { title: "Paragraf: 15 soru", subject: "Türkçe", taskDate: TODAY },
+    ]);
+    expect(out).toHaveLength(2);
+    expect(planRepo.rows).toHaveLength(2);
+    expect(planRepo.rows.every((r) => r.taskDate === TODAY)).toBe(true);
+  });
+
+  it("writes NOTHING when any date is in the past (all-or-nothing)", async () => {
+    await expect(
+      service.createMany(USER, [
+        { title: "Geçerli", taskDate: TODAY },
+        { title: "Geçmiş", taskDate: "2020-01-01" },
+      ]),
+    ).rejects.toBeInstanceOf(DomainError);
+    expect(planRepo.rows).toHaveLength(0);
+  });
+});
+
 describe("PlanService.getTodaySummary", () => {
   let planRepo: ReturnType<typeof makePlanRepoFake>;
   let service: PlanService;

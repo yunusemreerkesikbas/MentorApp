@@ -4,6 +4,7 @@ import {
   notificationIdParamSchema,
   pushSubscribeSchema,
   pushUnsubscribeSchema,
+  scheduleSessionReturnReminderSchema,
   updateNotificationPreferencesSchema,
 } from "@mentor/validation";
 
@@ -14,3 +15,6 @@ export class UpdateNotificationPreferencesDto extends createZodDto(
 ) {}
 export class ListNotificationsDto extends createZodDto(listNotificationsSchema) {}
 export class NotificationIdParamDto extends createZodDto(notificationIdParamSchema) {}
+export class ScheduleSessionReturnReminderDto extends createZodDto(
+  scheduleSessionReturnReminderSchema,
+) {}

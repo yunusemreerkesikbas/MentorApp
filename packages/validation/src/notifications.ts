@@ -41,3 +41,11 @@ export const notificationIdParamSchema = z.object({
   id: z.string().uuid(),
 });
 export type NotificationIdParamInput = z.infer<typeof notificationIdParamSchema>;
+
+/** Opt-in “remind me tomorrow” after a study session (API-first soft return). */
+export const scheduleSessionReturnReminderSchema = z.object({
+  subject: z.string().trim().min(1).max(80).optional(),
+});
+export type ScheduleSessionReturnReminderInput = z.infer<
+  typeof scheduleSessionReturnReminderSchema
+>;

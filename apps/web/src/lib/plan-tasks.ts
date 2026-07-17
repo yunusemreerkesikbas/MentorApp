@@ -6,7 +6,11 @@ import {
   planTaskControllerRemove,
   planTaskControllerUpdate,
 } from "@mentor/api-client";
-import type { CreatePlanTaskInput, UpdatePlanTaskInput } from "@mentor/validation";
+import type {
+  BulkCreatePlanTasksInput,
+  CreatePlanTaskInput,
+  UpdatePlanTaskInput,
+} from "@mentor/validation";
 
 /** List plan tasks for a date — generated client omits the `date` query param. */
 export async function listPlanTasksForDate(date: string, pageSize = 50): Promise<PlanTaskDto[]> {
@@ -34,6 +38,16 @@ export async function createPlanTask(
   input: Parameters<typeof planTaskControllerCreate>[0],
 ): Promise<PlanTaskDto> {
   return (await planTaskControllerCreate(input)) as unknown as PlanTaskDto;
+}
+
+/** User-confirmed all-or-nothing batch add (for example, an accepted coach draft). */
+export async function createPlanTasksBulk(
+  input: BulkCreatePlanTasksInput,
+): Promise<PlanTaskDto[]> {
+  return (await http<PlanTaskDto[]>("/v1/plan-tasks/bulk", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })) as PlanTaskDto[];
 }
 
 export async function updatePlanTask(

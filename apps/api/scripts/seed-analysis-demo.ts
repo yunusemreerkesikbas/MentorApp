@@ -24,14 +24,70 @@ const SUBJECTS = [
 ] as const;
 
 const ATTEMPTS: SubjectScoreInput[][] = [
-  [[18, 6, 6], [12, 6, 12], [14, 7, 6], [10, 4, 4], [5, 2, 2], [3, 1, 2]],
-  [[19, 5, 6], [14, 5, 11], [15, 6, 6], [11, 3, 4], [6, 1, 2], [3, 1, 2]],
-  [[20, 5, 5], [16, 4, 10], [16, 5, 6], [11, 3, 4], [6, 1, 2], [4, 1, 1]],
-  [[17, 7, 6], [15, 6, 9], [15, 7, 5], [10, 5, 3], [5, 2, 2], [3, 2, 1]],
-  [[19, 6, 5], [17, 5, 8], [16, 6, 5], [12, 3, 3], [6, 2, 1], [4, 1, 1]],
-  [[18, 7, 5], [18, 4, 8], [17, 5, 5], [12, 3, 3], [6, 2, 1], [4, 1, 1]],
-  [[20, 6, 4], [19, 4, 7], [18, 4, 5], [13, 2, 3], [7, 1, 1], [4, 1, 1]],
-  [[21, 5, 4], [21, 3, 6], [19, 4, 4], [14, 2, 2], [7, 1, 1], [5, 0, 1]],
+  [
+    [18, 6, 6],
+    [12, 6, 12],
+    [14, 7, 6],
+    [10, 4, 4],
+    [5, 2, 2],
+    [3, 1, 2],
+  ],
+  [
+    [19, 5, 6],
+    [14, 5, 11],
+    [15, 6, 6],
+    [11, 3, 4],
+    [6, 1, 2],
+    [3, 1, 2],
+  ],
+  [
+    [20, 5, 5],
+    [16, 4, 10],
+    [16, 5, 6],
+    [11, 3, 4],
+    [6, 1, 2],
+    [4, 1, 1],
+  ],
+  [
+    [17, 7, 6],
+    [15, 6, 9],
+    [15, 7, 5],
+    [10, 5, 3],
+    [5, 2, 2],
+    [3, 2, 1],
+  ],
+  [
+    [19, 6, 5],
+    [17, 5, 8],
+    [16, 6, 5],
+    [12, 3, 3],
+    [6, 2, 1],
+    [4, 1, 1],
+  ],
+  [
+    [18, 7, 5],
+    [18, 4, 8],
+    [17, 5, 5],
+    [12, 3, 3],
+    [6, 2, 1],
+    [4, 1, 1],
+  ],
+  [
+    [20, 6, 4],
+    [19, 4, 7],
+    [18, 4, 5],
+    [13, 2, 3],
+    [7, 1, 1],
+    [4, 1, 1],
+  ],
+  [
+    [21, 5, 4],
+    [21, 3, 6],
+    [19, 4, 4],
+    [14, 2, 2],
+    [7, 1, 1],
+    [5, 0, 1],
+  ],
 ].map((attempt) =>
   attempt.map(([correct, wrong, blank]) => ({ correct, wrong, blank })),
 );
@@ -58,6 +114,25 @@ function requiredEmail(): string {
   return value;
 }
 
+const PUBLISHERS = [
+  "Yargı Yayınları",
+  "Pegem Akademi",
+  "Benim Hocam",
+  "İsem Yayıncılık",
+  "Data Yayınları",
+  "Yediiklim",
+  "Lider Yayınları",
+  "Hız ve Renk",
+] as const;
+
+const PHOTO_SIGNALS = [
+  { subjectRef: "turkce", attemptIndex: 7 },
+  { subjectRef: "turkce", attemptIndex: 6 },
+  { subjectRef: "turkce", attemptIndex: 5 },
+  { subjectRef: "matematik", attemptIndex: 7 },
+  { subjectRef: "matematik", attemptIndex: 6 },
+  { subjectRef: "tarih", attemptIndex: 4 },
+] as const;
 function stableUuid(seed: string): string {
   const hex = createHash("sha256").update(seed).digest("hex").slice(0, 32);
   return [
@@ -117,7 +192,8 @@ async function main(): Promise<void> {
       [user.exam_type],
     );
     const exam = examResult.rows[0];
-    if (!exam) throw new Error("Current exam not found for the user's exam type.");
+    if (!exam)
+      throw new Error("Current exam not found for the user's exam type.");
 
     const taxonomy = await client.query<{
       slug: string;
@@ -186,7 +262,7 @@ async function main(): Promise<void> {
           exam.id,
           takenAt(offsets[attemptIndex]!),
           totalNet,
-          `Mentor Demo ${attemptIndex + 1}`,
+          PUBLISHERS[attemptIndex]!,
         ],
       );
 
@@ -215,22 +291,34 @@ async function main(): Promise<void> {
       }
     }
 
-    for (let index = 0; index < 3; index++) {
+    await client.query(
+      "delete from mock_exam_photo_categorizations " +
+        "where user_id = $1 and storage_key like 'analysis-demo/%'",
+      [user.id],
+    );
+    for (let index = 0; index < PHOTO_SIGNALS.length; index++) {
+      const signal = PHOTO_SIGNALS[index]!;
       const clientRequestId = stableUuid(
-        `${user.id}:analysis-demo:photo-request:${index + 1}`,
+        user.id + ":analysis-demo:photo-request:" + (index + 1),
       );
       await client.query(
-        `insert into mock_exam_photo_categorizations
-           (id, user_id, mock_exam_id, subject_ref, storage_key, client_request_id)
-         values ($1, $2, $3, 'turkce', $4, $5)
-         on conflict (user_id, client_request_id, subject_ref) do update set
-           mock_exam_id = excluded.mock_exam_id,
-           storage_key = excluded.storage_key`,
+        "insert into mock_exam_photo_categorizations " +
+          "(id, user_id, mock_exam_id, subject_ref, storage_key, client_request_id) " +
+          "values ($1, $2, $3, $4, $5, $6) " +
+          "on conflict (user_id, client_request_id, subject_ref) do update set " +
+          "mock_exam_id = excluded.mock_exam_id, storage_key = excluded.storage_key",
         [
-          stableUuid(`${user.id}:analysis-demo:photo:${index + 1}`),
+          stableUuid(user.id + ":analysis-demo:photo:" + (index + 1)),
           user.id,
-          examIds[examIds.length - 1],
-          `analysis-demo/${user.id}/turkce-${index + 1}.jpg`,
+          examIds[signal.attemptIndex],
+          signal.subjectRef,
+          "analysis-demo/" +
+            user.id +
+            "/" +
+            signal.subjectRef +
+            "-" +
+            (index + 1) +
+            ".jpg",
           clientRequestId,
         ],
       );
@@ -269,7 +357,7 @@ async function verifySeed(
     exams: exams.rows[0]?.count ?? 0,
     photos: photos.rows[0]?.count ?? 0,
   };
-  if (result.exams !== 8 || result.photos !== 3) {
+  if (result.exams !== 8 || result.photos !== 6) {
     throw new Error(
       `Seed verification failed: ${result.exams} exams, ${result.photos} photos`,
     );
@@ -284,4 +372,3 @@ void main().catch((error: unknown) => {
   );
   process.exit(1);
 });
-

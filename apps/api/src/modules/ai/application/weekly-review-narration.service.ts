@@ -14,8 +14,9 @@ import {
   WEEKLY_REVIEW_PROMPT_VERSION,
 } from "../domain/weekly-review-prompt";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
+import { AiBudgetGuard } from "./ai-budget.guard";
 import { WeeklyReviewCacheRepository } from "../infrastructure/weekly-review-cache.repository";
-import { estimateCostMicros } from "../domain/ai.constants";
+import { AiUsageFeature, estimateCostMicros } from "../domain/ai.constants";
 
 @Injectable()
 export class WeeklyReviewNarrationService {
@@ -26,6 +27,7 @@ export class WeeklyReviewNarrationService {
     private readonly coaching: CoachingWeeklyReviewService,
     private readonly cache: WeeklyReviewCacheRepository,
     private readonly usage: AiUsageRepository,
+    private readonly budget: AiBudgetGuard,
   ) {}
 
   async narrate(user: RequestUser, examId: string) {
@@ -68,10 +70,12 @@ export class WeeklyReviewNarrationService {
     }
 
     const prompt = buildWeeklyReviewPrompt(evidence.review, locale);
+    await this.budget.assertWithinBudget();
     const result = await this.llm.complete(prompt);
     await this.usage.append({
       userId: user.id,
       model: result.model,
+      feature: AiUsageFeature.WEEKLY_REVIEW,
       promptTokens: result.promptTokens,
       completionTokens: result.completionTokens,
       costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),

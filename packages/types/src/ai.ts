@@ -17,15 +17,30 @@ export interface CoachAccessDto {
   chatCost?: number;
   /** Remaining free-coin messages today (COIN path only). */
   freeCoinMessagesRemainingToday?: number;
+  /** Remaining messages in the rolling-24h premium limit (PREMIUM only; a message count, never coins §4 #3). */
+  dailyMessagesRemaining?: number;
+}
+
+/** GET /v1/coach/conversations item — one chat thread. */
+export interface CoachConversationDto {
+  id: string;
+  /** Derived from the first user message (no LLM). */
+  title: string;
+  lastMessageAt: string;
+  messageCount: number;
 }
 
 /** POST /v1/coach/chat response (no coin fields in the chat zone §4 #3). */
 export interface CoachChatReplyDto {
   reply: string;
   model: string;
+  /** Thread this exchange belongs to — new when the request omitted `conversationId`. */
+  conversationId: string;
   sources: { title: string; slug: string; url: string }[];
   /** Optional coach-suggested plan task — FE renders a "Plana ekle" card (user confirms; AI never writes). */
   suggestedTask?: { title: string; subject: string | null };
+  /** Ephemeral follow-up question chips (max 3) — never persisted; only on the live reply. */
+  followUps?: string[];
 }
 
 /**
@@ -51,7 +66,61 @@ export interface CoachMessageDto {
   content: string;
   /** RAG source chips on COACH rows; empty on USER rows. */
   sources: { title: string; slug: string; url: string }[];
+  /** User rating on a COACH row: 1 = 👍, -1 = 👎, null = none. */
+  feedback: number | null;
+  /** Persisted coach plan-task suggestion on a COACH row (survives reload). */
+  suggestedTask?: { title: string; subject: string | null };
   createdAt: string;
+}
+
+/** GET /v1/coach/memory — the coach's distilled PII-free profile of the user (null until built). */
+export interface CoachMemoryDto {
+  summary: string;
+  updatedAt: string;
+}
+
+/** One time-window's aggregate AI usage (admin cost dashboard). Cost is micro-USD. */
+export interface AiCostWindowDto {
+  costMicros: number;
+  calls: number;
+  promptTokens: number;
+  completionTokens: number;
+}
+
+/** GET /v1/admin/metrics/coach-feedback — coach reply satisfaction (Dilim 6 signal → admin report). */
+export interface AdminCoachFeedbackDto {
+  /** 👍 count on coach replies (all-time). */
+  up: number;
+  /** 👎 count on coach replies (all-time). */
+  down: number;
+  /** Total rated coach replies (up + down). */
+  rated: number;
+  /** up / (up + down); null when nothing has been rated yet. */
+  satisfactionRate: number | null;
+  /** Most recent 👎 replies with the question that prompted each (admin-only free text). */
+  downrated: {
+    id: string;
+    userId: string;
+    question: string | null;
+    reply: string;
+    createdAt: string;
+  }[];
+  generatedAt: string;
+}
+
+/** GET /v1/admin/metrics/ai — LLM cost visibility (§7). All windows are rolling from now. */
+export interface AdminAiCostDto {
+  /** Rolling windows: last 24h / 7d / 30d. */
+  windows: { d1: AiCostWindowDto; d7: AiCostWindowDto; d30: AiCostWindowDto };
+  /** Per-model breakdown over the last 30d, highest cost first. */
+  byModel: (AiCostWindowDto & { model: string })[];
+  /** Per-feature breakdown over the last 30d (chat/vision/...), highest cost first. */
+  byFeature: (AiCostWindowDto & { feature: string })[];
+  /** Top spenders over the last 30d (admin-only PII). */
+  topSpenders: { userId: string; email: string; displayName: string; costMicros: number; calls: number }[];
+  /** Monthly budget guard status (calendar-month; capMicros 0 = no cap). */
+  budget: { capMicros: number; spentMicros: number; exceeded: boolean };
+  generatedAt: string;
 }
 
 /**
@@ -70,6 +139,26 @@ export interface MoodReflectionDto {
  */
 export interface SessionReflectionDto {
   reflection: string;
+  model: string;
+  /** Plan-task suggestion extracted from the reflection (user confirms via /plan?add=1). */
+  suggestedTask?: { title: string; subject: string | null };
+}
+
+/**
+ * POST /v1/coach/plan-draft response — a clamped 7-day plan PREVIEW (§4 #5 premium-only).
+ * Never persisted; the user confirms in the FE and tasks are written via POST /v1/plan-tasks/bulk.
+ */
+export interface CoachPlanDraftDto {
+  days: { date: string; tasks: { title: string; subject: string | null }[] }[];
+  model: string;
+}
+
+/**
+ * POST /v1/coach/daily-greeting response — premium proactive daily greeting on the /koc hub
+ * (§4 #5 premium-only; cached per user+day, `model` is "cache" on a hit).
+ */
+export interface DailyGreetingDto {
+  greeting: string;
   model: string;
 }
 
@@ -110,6 +199,7 @@ export interface PhotoUploadUrlDto {
 /** POST /v1/mock-exams/{id}/categorize-photo response — classification only (§4 #2). */
 export interface CategorizePhotoResultDto {
   subjectRefs: { slug: string; name: string }[];
+  topicRefs: { slug: string; name: string; subjectSlug: string; subjectName: string }[];
 }
 
 

@@ -8,9 +8,15 @@ import { AI_MAX_OUTPUT_TOKENS, AI_REQUEST_TIMEOUT_MS, AI_TEMPERATURE } from "../
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const OPENAI_EMBED_URL = "https://api.openai.com/v1/embeddings";
+const EMBED_DIMENSIONS = 1536;
+
+function providerErrorLog(operation: string, response: Response): string {
+  const requestId = response.headers.get("x-request-id");
+  return `OpenAI ${operation} ${response.status}${requestId ? ` request_id=${requestId}` : ""}`;
+}
 
 /**
- * Real OpenAI Chat Completions adapter (fetch — no extra dependency). Skeleton: it needs
+ * Real OpenAI Chat Completions adapter (fetch — no extra dependency). It needs
  * OPENAI_API_KEY (Phase-0 ops) and is selected only when AI_PROVIDER=openai; otherwise the fake
  * adapter runs. Failures surface as a generic AI_PROVIDER_ERROR (no provider internals leak).
  */
@@ -44,7 +50,7 @@ export class OpenAiLlmAdapter implements LlmPort {
         }),
       });
       if (!res.ok) {
-        this.logger.error(`OpenAI ${res.status}: ${await res.text().catch(() => "")}`);
+        this.logger.error(providerErrorLog("chat", res));
         throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
       }
       const data = (await res.json()) as {
@@ -61,7 +67,7 @@ export class OpenAiLlmAdapter implements LlmPort {
       };
     } catch (err) {
       if (err instanceof DomainError) throw err;
-      this.logger.error(`OpenAI request failed: ${String(err)}`);
+      this.logger.error("OpenAI chat request failed");
       throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
     }
   }
@@ -96,12 +102,12 @@ export class OpenAiLlmAdapter implements LlmPort {
           stream_options: { include_usage: true },
         }),
       });
-    } catch (err) {
-      this.logger.error(`OpenAI stream request failed: ${String(err)}`);
+    } catch {
+      this.logger.error("OpenAI stream request failed");
       throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
     }
     if (!res.ok || !res.body) {
-      this.logger.error(`OpenAI stream ${res.status}: ${await res.text().catch(() => "")}`);
+      this.logger.error(providerErrorLog("stream", res));
       throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
@@ -135,8 +141,8 @@ export class OpenAiLlmAdapter implements LlmPort {
           }
         }
       }
-    } catch (err) {
-      this.logger.error(`OpenAI stream read failed: ${String(err)}`);
+    } catch {
+      this.logger.error("OpenAI stream read failed");
       throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
@@ -167,18 +173,22 @@ export class OpenAiLlmAdapter implements LlmPort {
         body: JSON.stringify({ model, input: text }),
       });
       if (!res.ok) {
-        this.logger.error(`OpenAI embed ${res.status}: ${await res.text().catch(() => "")}`);
+        this.logger.error(providerErrorLog("embedding", res));
         throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
       }
-      const data = (await res.json()) as { data?: { embedding?: number[] }[] };
+      const data = (await res.json()) as { data?: { embedding?: unknown[] }[] };
       const vector = data.data?.[0]?.embedding;
-      if (!vector?.length) {
+      if (
+        !vector ||
+        vector.length !== EMBED_DIMENSIONS ||
+        !vector.every((value) => typeof value === "number" && Number.isFinite(value))
+      ) {
         throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
       }
-      return vector;
+      return vector as number[];
     } catch (err) {
       if (err instanceof DomainError) throw err;
-      this.logger.error(`OpenAI embed failed: ${String(err)}`);
+      this.logger.error("OpenAI embedding request failed");
       throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
     }
   }

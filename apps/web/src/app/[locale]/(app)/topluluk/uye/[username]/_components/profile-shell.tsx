@@ -9,7 +9,9 @@ import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
 import { getPublicProfile } from "@/lib/community";
+import { sendBuddyRequest } from "@/lib/buddy";
 import { followUser, unfollowUser } from "@/lib/follow";
+import { useMentorToast } from "@/lib/mentor-toast";
 import { toggleReaction } from "@/lib/forum-reactions";
 import {
   bookmarkPost,
@@ -44,6 +46,7 @@ type State =
 /** A user's public forum profile — header (identity + gamification) + their activity feed. */
 export function ProfileShell({ username }: { username: string }) {
   const t = useTranslations("topluluk");
+  const { error: showErrorToast } = useMentorToast();
   const { user } = useAuth();
   const isOwn = !!user?.username && user.username === username;
   const [tab, setTab] = useState<"posts" | "saved">("posts");
@@ -164,6 +167,23 @@ export function ProfileShell({ username }: { username: string }) {
     });
   }, [patchReady, username]);
 
+  /** Optimistic buddy request — flips to pending_outgoing, reverts + toasts on failure. */
+  const onBuddyRequest = useCallback(() => {
+    const step = (status: PublicProfile["buddyStatus"]) => (r: Ready) => ({
+      ...r,
+      profile: { ...r.profile, buddyStatus: status },
+    });
+    patchReady(step("pending_outgoing"));
+    sendBuddyRequest(username).catch((err: unknown) => {
+      patchReady(step("none"));
+      showErrorToast({
+        title: t("buddy_request_error_title"),
+        message: err instanceof ApiClientError ? err.body.message : undefined,
+        duration: 3000,
+      });
+    });
+  }, [patchReady, showErrorToast, t, username]);
+
   if (state.status === "loading") return <Centered>{t("loading")}</Centered>;
   if (state.status === "disabled") return <Centered>{t("soon_title")}</Centered>;
   if (state.status === "notfound") return <Centered>{t("profile_not_found")}</Centered>;
@@ -193,6 +213,7 @@ export function ProfileShell({ username }: { username: string }) {
         profile={profile}
         isOwn={isOwn}
         onToggleFollow={onToggleFollow}
+        onBuddyRequest={onBuddyRequest}
         onOpenFollowers={() => setListView("followers")}
         onOpenFollowing={() => setListView("following")}
       />

@@ -5,7 +5,8 @@ import CircleAlert from "lucide-react/dist/esm/icons/circle-alert.mjs";
 import type { ToastVariant } from "@mentor/ui";
 import { PuhuImage, type PuhuVariant } from "@/components/puhu-image";
 
-const TOAST_PUHU_SIZE = 40;
+/** Toast companion — `sm` (40px; DESIGN.md §8.2). */
+const TOAST_PUHU_SIZE = "sm" as const;
 
 /** Shared error circle icon for toast + confirm dialog. */
 export function ErrorLeading() {

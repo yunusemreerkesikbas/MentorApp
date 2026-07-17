@@ -87,6 +87,7 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 | `DELETE /v1/notifications/:id` | Delete one notification (JWT; 204) |
 | `POST /v1/notifications/stream-token` | Issue a 60s one-time SSE token (JWT) |
 | `GET /v1/notifications/stream?token=` | SSE stream — push `new_notification` events (token-auth, public route) |
+| `POST /v1/notifications/session-return-reminder` | Opt-in soft return (~24h in-app + push; body optional `subject`) |
 | `GET /v1/admin/config` | List config catalog + effective values (SUPER_ADMIN) |
 | `PATCH /v1/admin/config/:key` | Update a config/flag value (SUPER_ADMIN, audited) |
 
@@ -165,6 +166,12 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
   - **Org-readiness decision (§4 #7):** `config_overrides` is global platform config by design (no
     `org_id`); per-org/B2B overrides will use the existing `organizations.settings` jsonb (already
     org-ready) — NOT this table.
+- **Seans “Yarın hatırlat” (2026-07-12)** — API-first soft return: `POST /v1/notifications/session-return-reminder`
+  `{ subject? }` → `notification_deliveries` SCHEDULE dedupe `session-return:{UTC-day}` →
+  `JobQueuePort.enqueue(SESSION_RETURN_REMINDER, { runAt: now+24h })`. Handler: in-app COACH +
+  optional push (no email v1); link `/seans?subject=`. FE: seans done CTA. Mobile aynı endpoint.
+  Dosyalar: `session-return-reminder.service.ts`, `session-return-reminder.handler.ts`,
+  `notifications.controller.ts`, `notification-api.ts`, `session-done-state.tsx`. Seam: [coaching.md](./coaching.md).
 
 ## Gotchas / Known issues
 
@@ -181,6 +188,8 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
   `tx.execute`.
 - **Postmark is US-hosted** — disclose in KVKK/privacy copy when email is enabled.
 - **Daily reminders dedupe** via `notification_deliveries` key `daily-reminder:{userId}:{YYYY-MM-DD}`.
+- **Session return reminder** uses `+24h` UTC (not user TZ); may land near the daily reminder window —
+  different copy/opt-in; user TZ = backlog. SCHEDULE channel dedupe is per target UTC day.
 - **AI contextual notifications are out of scope** (W3); copy is fixed Turkish templates only.
 - **Cache is per-process** → a flag change is instant on the instance that served the PATCH; other
   instances pick it up on next cold read. MVP = 1 instance, so fine; Phase 2 = pub/sub or short TTL.

@@ -104,6 +104,18 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     priority: 20,
   },
   {
+    /** Hidden from views (and never granted) while the user has no goal set. */
+    id: "daily.focus-goal-met",
+    category: "daily_ritual",
+    period: "daily",
+    type: QuestType.DAILY_RITUAL,
+    title: "Günlük odak hedefine ulaş",
+    badgeLabel: "Odak",
+    action: "study-session",
+    rewardUnit: "XP",
+    priority: 25,
+  },
+  {
     id: "daily.mood-checkin",
     category: "daily_ritual",
     period: "daily",

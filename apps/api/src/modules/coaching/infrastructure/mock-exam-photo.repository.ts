@@ -1,11 +1,13 @@
 import { Injectable } from "@nestjs/common";
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
-import { mockExamPhotoCategorizations, mockExams } from "../../../database/schema";
+import {
+  mockExamPhotoCategorizations,
+  mockExams,
+} from "../../../database/schema";
 
 export type MockExamPhotoRow = typeof mockExamPhotoCategorizations.$inferSelect;
 
-/** Data access for premium photo → subject categorization rows (RLS-scoped). */
 @Injectable()
 export class MockExamPhotoRepository {
   async insert(
@@ -14,6 +16,7 @@ export class MockExamPhotoRepository {
       userId: string;
       mockExamId: string;
       subjectRef: string;
+      topicRef?: string | null;
       storageKey: string;
       clientRequestId?: string;
     },
@@ -24,6 +27,7 @@ export class MockExamPhotoRepository {
         userId: row.userId,
         mockExamId: row.mockExamId,
         subjectRef: row.subjectRef,
+        topicRef: row.topicRef ?? null,
         storageKey: row.storageKey,
         clientRequestId: row.clientRequestId ?? null,
       })
@@ -35,7 +39,7 @@ export class MockExamPhotoRepository {
     db: Database | DatabaseTx,
     userId: string,
     clientRequestId: string,
-  ): Promise<MockExamPhotoRow[]> {
+  ) {
     return db
       .select()
       .from(mockExamPhotoCategorizations)
@@ -47,7 +51,11 @@ export class MockExamPhotoRepository {
       );
   }
 
-  async countSince(db: Database | DatabaseTx, userId: string, since: Date): Promise<number> {
+  async countSince(
+    db: Database | DatabaseTx,
+    userId: string,
+    since: Date,
+  ): Promise<number> {
     const rows = await db
       .select({ n: sql<number>`count(*)::int` })
       .from(mockExamPhotoCategorizations)
@@ -81,24 +89,75 @@ export class MockExamPhotoRepository {
     db: Database | DatabaseTx,
     userId: string,
     examId?: string,
+    mockExamIds?: string[],
   ): Promise<Array<{ subjectRef: string; count: number }>> {
+    if (mockExamIds?.length === 0) return [];
     const rows = await db
       .select({
         subjectRef: mockExamPhotoCategorizations.subjectRef,
         count: sql<number>`count(*)::int`,
       })
       .from(mockExamPhotoCategorizations)
-      .innerJoin(mockExams, eq(mockExamPhotoCategorizations.mockExamId, mockExams.id))
+      .innerJoin(
+        mockExams,
+        eq(mockExamPhotoCategorizations.mockExamId, mockExams.id),
+      )
       .where(
-        examId
-          ? and(
-              eq(mockExamPhotoCategorizations.userId, userId),
-              eq(mockExams.examId, examId),
-            )
-          : eq(mockExamPhotoCategorizations.userId, userId),
+        and(
+          eq(mockExamPhotoCategorizations.userId, userId),
+          examId ? eq(mockExams.examId, examId) : undefined,
+          mockExamIds
+            ? inArray(mockExamPhotoCategorizations.mockExamId, mockExamIds)
+            : undefined,
+        ),
       )
       .groupBy(mockExamPhotoCategorizations.subjectRef)
       .orderBy(desc(sql`count(*)`));
-    return rows.map((r) => ({ subjectRef: r.subjectRef, count: r.count }));
+    return rows;
+  }
+
+  async listPhotoTopicSignals(
+    db: Database | DatabaseTx,
+    userId: string,
+    examId: string | undefined,
+    mockExamIds: string[],
+  ): Promise<
+    Array<{
+      subjectRef: string;
+      topicRef: string;
+      count: number;
+      latestAt: Date;
+    }>
+  > {
+    if (mockExamIds.length === 0) return [];
+    const rows = await db
+      .select({
+        subjectRef: mockExamPhotoCategorizations.subjectRef,
+        topicRef: mockExamPhotoCategorizations.topicRef,
+        count: sql<number>`count(*)::int`,
+        latestAt: sql<Date>`max(${mockExamPhotoCategorizations.createdAt})`,
+      })
+      .from(mockExamPhotoCategorizations)
+      .innerJoin(
+        mockExams,
+        eq(mockExamPhotoCategorizations.mockExamId, mockExams.id),
+      )
+      .where(
+        and(
+          eq(mockExamPhotoCategorizations.userId, userId),
+          isNotNull(mockExamPhotoCategorizations.topicRef),
+          examId ? eq(mockExams.examId, examId) : undefined,
+          inArray(mockExamPhotoCategorizations.mockExamId, mockExamIds),
+        ),
+      )
+      .groupBy(
+        mockExamPhotoCategorizations.subjectRef,
+        mockExamPhotoCategorizations.topicRef,
+      )
+      .orderBy(
+        desc(sql`count(*)`),
+        desc(sql`max(${mockExamPhotoCategorizations.createdAt})`),
+      );
+    return rows.map((row) => ({ ...row, topicRef: row.topicRef! }));
   }
 }

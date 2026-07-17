@@ -1,17 +1,34 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { I18nContext, I18nService } from "nestjs-i18n";
-import type { CoachingAnalysisDto, GhostComparisonDto, MockExamDto, Paginated } from "@mentor/types";
-import type { CreateMockExamInput, ListMockExamsQuery, UpdateMockExamInput } from "@mentor/validation";
+import type {
+  CoachingAnalysisDto,
+  GhostComparisonDto,
+  MockExamDto,
+  Paginated,
+} from "@mentor/types";
+import type {
+  CreateMockExamInput,
+  ListMockExamsQuery,
+  UpdateMockExamInput,
+} from "@mentor/validation";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
-import { CONTENT_PORT, type ContentPort, type ExamRef, type ExamSubjectRef } from "../domain/content.port";
+import {
+  STORAGE_PORT,
+  type StoragePort,
+} from "../../../shared/ports/storage.port";
+import {
+  CONTENT_PORT,
+  type ContentPort,
+  type ExamRef,
+  type ExamSubjectRef,
+} from "../domain/content.port";
 import { computeGhost } from "../domain/ghost";
 import { computeSubjectNet, computeTotalNet, formatNet } from "../domain/net";
-import { selectAnalysisFocus } from "../domain/analysis-focus";
+import { buildFocusTrend, selectAnalysisFocus } from "../domain/analysis-focus";
 import {
   MockExamRepository,
   type MockExamRow,
@@ -38,12 +55,19 @@ export class MockExamService {
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
 
-  async create(userId: string, input: CreateMockExamInput): Promise<MockExamDto> {
+  async create(
+    userId: string,
+    input: CreateMockExamInput,
+  ): Promise<MockExamDto> {
     const exam = await this.content.getExamById(input.examId);
     if (!exam) {
-      throw new DomainError(ErrorCode.CONTENT_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND, {
-        examId: input.examId,
-      });
+      throw new DomainError(
+        ErrorCode.CONTENT_EXAM_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+        {
+          examId: input.examId,
+        },
+      );
     }
 
     const taxonomy = await this.content.listExamSubjects(input.examId);
@@ -70,9 +94,14 @@ export class MockExamService {
     return withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.mockExams.findById(tx, userId, id);
       if (!row) {
-        throw new DomainError(ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND);
+        throw new DomainError(
+          ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
       }
-      const subjectsMap = await this.mockExams.listSubjectsByMockExamIds(tx, [row.exam.id]);
+      const subjectsMap = await this.mockExams.listSubjectsByMockExamIds(tx, [
+        row.exam.id,
+      ]);
       const [dto] = await this.buildMockExamDtos(tx, [row.exam], subjectsMap);
       return dto!;
     });
@@ -94,11 +123,17 @@ export class MockExamService {
 
       const exam = await this.content.getExamById(existing.exam.examId);
       if (!exam) {
-        throw new DomainError(ErrorCode.CONTENT_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND, {
-          examId: existing.exam.examId,
-        });
+        throw new DomainError(
+          ErrorCode.CONTENT_EXAM_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+          {
+            examId: existing.exam.examId,
+          },
+        );
       }
-      const taxonomy = await this.content.listExamSubjects(existing.exam.examId);
+      const taxonomy = await this.content.listExamSubjects(
+        existing.exam.examId,
+      );
       const prepared = this.prepareResult(exam, taxonomy, input.subjects);
       const updated = await this.mockExams.update(tx, userId, id, {
         takenAt: new Date(input.takenAt),
@@ -127,30 +162,37 @@ export class MockExamService {
   }
 
   async remove(userId: string, id: string): Promise<void> {
-    const storageKeys = await withUserContext(this.db, { userId }, async (tx) => {
-      const existing = await this.mockExams.findById(tx, userId, id);
-      if (!existing) {
-        throw new DomainError(
-          ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND,
-          HttpStatus.NOT_FOUND,
+    const storageKeys = await withUserContext(
+      this.db,
+      { userId },
+      async (tx) => {
+        const existing = await this.mockExams.findById(tx, userId, id);
+        if (!existing) {
+          throw new DomainError(
+            ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND,
+            HttpStatus.NOT_FOUND,
+          );
+        }
+        const keys = await this.photoRows.listStorageKeys(tx, userId, id);
+        await this.mockExams.delete(tx, userId, id);
+        await this.mockExams.clearGhostNarrations(
+          tx,
+          userId,
+          existing.exam.examId,
         );
-      }
-      const keys = await this.photoRows.listStorageKeys(tx, userId, id);
-      await this.mockExams.delete(tx, userId, id);
-      await this.mockExams.clearGhostNarrations(
-        tx,
-        userId,
-        existing.exam.examId,
-      );
-      return keys;
-    });
+        return keys;
+      },
+    );
 
     await Promise.allSettled(
       storageKeys.map((storageKey) => this.storage.deleteObject(storageKey)),
     );
   }
 
-  async list(userId: string, query: ListMockExamsQuery): Promise<Paginated<MockExamDto>> {
+  async list(
+    userId: string,
+    query: ListMockExamsQuery,
+  ): Promise<Paginated<MockExamDto>> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const { items, total } = await this.mockExams.listPaged(
         tx,
@@ -171,32 +213,51 @@ export class MockExamService {
     });
   }
 
-  async getAnalysis(userId: string, examId?: string): Promise<CoachingAnalysisDto> {
+  async getAnalysis(
+    userId: string,
+    examId?: string,
+  ): Promise<CoachingAnalysisDto> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const trendRows = await this.mockExams.listTrend(tx, userId, 12, examId);
-      const breakdown = await this.mockExams.listSubjectBreakdown(tx, userId, examId);
+      const breakdown = await this.mockExams.listSubjectBreakdown(
+        tx,
+        userId,
+        examId,
+      );
+      const recentRows = trendRows.slice(0, 4);
+      const recentIds = recentRows.map((row) => row.id);
+      const recentSubjectsByMockExamId =
+        await this.mockExams.listSubjectsByMockExamIds(tx, recentIds);
 
       const examIds = [...new Set(trendRows.map((r) => r.examId))];
-      const [taxonomyEntries, examEntries] = await Promise.all([
-        Promise.all(examIds.map((id) => this.content.listExamSubjects(id))),
-        Promise.all(examIds.map((id) => this.content.getExamById(id))),
-      ]);
+      const [taxonomyEntries, topicTaxonomyEntries, examEntries] =
+        await Promise.all([
+          Promise.all(examIds.map((id) => this.content.listExamSubjects(id))),
+          Promise.all(examIds.map((id) => this.content.listExamTopics(id))),
+          Promise.all(examIds.map((id) => this.content.getExamById(id))),
+        ]);
 
       const slugToName = new Map<string, string>();
       const questionCountsBySlug = new Map<string, Set<number | null>>();
       for (const taxonomy of taxonomyEntries) {
         for (const subject of taxonomy) {
           slugToName.set(subject.slug, subject.name);
-          const counts = questionCountsBySlug.get(subject.slug) ?? new Set<number | null>();
+          const counts =
+            questionCountsBySlug.get(subject.slug) ?? new Set<number | null>();
           counts.add(subject.questionCount ?? null);
           questionCountsBySlug.set(subject.slug, counts);
         }
       }
 
+      const topicByKey = new Map(
+        topicTaxonomyEntries
+          .flat()
+          .map((topic) => [topic.subjectSlug + ":" + topic.slug, topic]),
+      );
+
       const examNameById = new Map(
         examIds.map((id, i) => [id, examEntries[i]?.name ?? "Deneme"]),
       );
-
       const trend = trendRows.map((row) => ({
         id: row.id,
         takenAt: row.takenAt.toISOString(),
@@ -204,48 +265,135 @@ export class MockExamService {
         examName: examNameById.get(row.examId) ?? "Deneme",
       }));
 
-      const subjects = breakdown.map((row) => {
-        const counts = questionCountsBySlug.get(row.subjectRef);
+      const toStrength = (
+        subjectRef: string,
+        averageNet: string,
+        attemptCount: number,
+      ) => {
+        const counts = questionCountsBySlug.get(subjectRef);
         const questionCount =
           counts?.size === 1 ? ([...counts][0] ?? null) : null;
         return {
-          subjectRef: row.subjectRef,
-          subjectName: slugToName.get(row.subjectRef) ?? row.subjectRef,
-          averageNet: row.avgNet,
-          attemptCount: row.attemptCount,
+          subjectRef,
+          subjectName: slugToName.get(subjectRef) ?? subjectRef,
+          averageNet,
+          attemptCount,
           questionCount,
           normalizedAveragePercent:
             questionCount != null && questionCount > 0
-              ? ((Number(row.avgNet) / questionCount) * 100).toFixed(2)
+              ? ((Number(averageNet) / questionCount) * 100).toFixed(2)
               : null,
         };
-      });
+      };
+      const subjects = breakdown.map((row) =>
+        toStrength(row.subjectRef, row.avgNet, row.attemptCount),
+      );
 
-      const photoSignals = await this.photoRows.listPhotoSubjectSignals(tx, userId, examId);
+      const recentTotals = new Map<string, { sum: number; count: number }>();
+      for (const rows of recentSubjectsByMockExamId.values()) {
+        for (const row of rows) {
+          const current = recentTotals.get(row.subjectRef) ?? {
+            sum: 0,
+            count: 0,
+          };
+          current.sum += Number(row.net);
+          current.count += 1;
+          recentTotals.set(row.subjectRef, current);
+        }
+      }
+      const recentSubjects = [...recentTotals].map(([subjectRef, total]) =>
+        toStrength(
+          subjectRef,
+          (total.sum / total.count).toFixed(2),
+          total.count,
+        ),
+      );
+
+      const [photoSignals, topicSignalRows] = await Promise.all([
+        this.photoRows.listPhotoSubjectSignals(tx, userId, examId, recentIds),
+        this.photoRows.listPhotoTopicSignals(
+          tx,
+          userId,
+          examId,
+          trendRows.map((row) => row.id),
+        ),
+      ]);
       const photoSubjectSignals = photoSignals.map((row) => ({
         subjectRef: row.subjectRef,
         subjectName: slugToName.get(row.subjectRef) ?? row.subjectRef,
         count: row.count,
       }));
-      const focus = selectAnalysisFocus(subjects, photoSubjectSignals);
-      const nextFocus = focus
-        ? {
-            ...focus,
-            message: this.translateFocus(
-              `coaching.focus.${focus.source}_${focus.evidenceLevel}`,
-              focus.subjectName,
-            ),
-            suggestedTaskTitle: this.translateFocus(
-              `coaching.focus.TASK_TITLE_${focus.source}`,
-              focus.subjectName,
-            ),
-          }
+      const topicFocusSignals = topicSignalRows.flatMap((row) => {
+        const topic = topicByKey.get(row.subjectRef + ":" + row.topicRef);
+        return topic
+          ? [
+              {
+                subjectRef: row.subjectRef,
+                subjectName: topic.subjectName,
+                topicRef: row.topicRef,
+                topicName: topic.name,
+                count: row.count,
+                latestAt: new Date(row.latestAt).toISOString(),
+              },
+            ]
+          : [];
+      });
+      const photoTopicSignals = topicFocusSignals.map(
+        ({ latestAt: _latestAt, ...signal }) => signal,
+      );
+      const focus = selectAnalysisFocus(
+        recentSubjects,
+        photoSubjectSignals,
+        topicFocusSignals,
+      );
+      const focusTrend = focus
+        ? buildFocusTrend(
+            focus.subjectRef,
+            recentRows,
+            recentSubjectsByMockExamId,
+          )
         : null;
+      const nextFocus =
+        focus && focusTrend
+          ? {
+              ...focus,
+              message: this.translateFocus(
+                focus.topicName
+                  ? "coaching.focus.PHOTO_TOPIC_REPEATED"
+                  : `coaching.focus.${focus.source}_${focus.evidenceLevel}`,
+                focus.subjectName,
+                focus.topicName,
+              ),
+              suggestedTaskTitle: this.translateFocus(
+                focus.topicName
+                  ? "coaching.focus.TASK_TITLE_PHOTO_TOPIC"
+                  : `coaching.focus.TASK_TITLE_${focus.source}`,
+                focus.subjectName,
+                focus.topicName,
+              ),
+              ...focusTrend,
+              trendMessage: this.translateFocus(
+                `coaching.focus.TREND_${focusTrend.trendDirection}`,
+                focus.subjectName,
+              ),
+            }
+          : null;
 
       const ghost = await this.buildGhost(tx, userId, examId);
-      const personalRecordNet = await this.mockExams.maxTotalNet(tx, userId, examId);
-
-      return { trend, subjects, photoSubjectSignals, nextFocus, personalRecordNet, ghost };
+      const personalRecordNet = await this.mockExams.maxTotalNet(
+        tx,
+        userId,
+        examId,
+      );
+      return {
+        trend,
+        subjects,
+        photoSubjectSignals,
+        photoTopicSignals,
+        nextFocus,
+        personalRecordNet,
+        ghost,
+      };
     });
   }
 
@@ -272,7 +420,12 @@ export class MockExamService {
     await withUserContext(this.db, { userId }, async (tx) => {
       const latest = await this.mockExams.listTrend(tx, userId, 1, examId);
       if (latest.length === 0) return;
-      await this.mockExams.setGhostNarration(tx, latest[0]!.id, narration, model);
+      await this.mockExams.setGhostNarration(
+        tx,
+        latest[0]!.id,
+        narration,
+        model,
+      );
     });
   }
 
@@ -295,7 +448,10 @@ export class MockExamService {
     ]);
     const slugToName = new Map(taxonomy.map((s) => [s.slug, s.name]));
     const subjectOrder = new Map(
-      taxonomy.map((subject, index) => [subject.slug, subject.sortOrder ?? index]),
+      taxonomy.map((subject, index) => [
+        subject.slug,
+        subject.sortOrder ?? index,
+      ]),
     );
 
     const { headlineKey, ...rest } = computeGhost({
@@ -332,7 +488,10 @@ export class MockExamService {
   }
 
   /** Count photo categorizations in the rolling window (premium rate-limit). */
-  async countPhotoCategorizationsSince(userId: string, since: Date): Promise<number> {
+  async countPhotoCategorizationsSince(
+    userId: string,
+    since: Date,
+  ): Promise<number> {
     return withUserContext(this.db, { userId }, async (tx) =>
       this.photoRows.countSince(tx, userId, since),
     );
@@ -347,11 +506,17 @@ export class MockExamService {
     );
   }
 
-  async getOwnedMockExam(userId: string, mockExamId: string): Promise<MockExamRow> {
+  async getOwnedMockExam(
+    userId: string,
+    mockExamId: string,
+  ): Promise<MockExamRow> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.mockExams.findById(tx, userId, mockExamId);
       if (!row) {
-        throw new DomainError(ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND);
+        throw new DomainError(
+          ErrorCode.COACHING_MOCK_EXAM_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
       }
       return row.exam;
     });
@@ -360,16 +525,17 @@ export class MockExamService {
   async recordPhotoCategorizations(
     userId: string,
     mockExamId: string,
-    subjectSlugs: string[],
+    classifications: Array<{ subjectRef: string; topicRef: string | null }>,
     storageKey: string,
     clientRequestId?: string,
   ): Promise<void> {
     await withUserContext(this.db, { userId }, async (tx) => {
-      for (const slug of subjectSlugs) {
+      for (const classification of classifications) {
         await this.photoRows.insert(tx, {
           userId,
           mockExamId,
-          subjectRef: slug,
+          subjectRef: classification.subjectRef,
+          topicRef: classification.topicRef,
           storageKey,
           clientRequestId,
         });
@@ -400,7 +566,9 @@ export class MockExamService {
       );
     }
 
-    const taxonomyBySlug = new Map(taxonomy.map((subject) => [subject.slug, subject]));
+    const taxonomyBySlug = new Map(
+      taxonomy.map((subject) => [subject.slug, subject]),
+    );
     for (const subject of subjects) {
       const meta = taxonomyBySlug.get(subject.subjectRef);
       if (!meta) {
@@ -434,14 +602,16 @@ export class MockExamService {
         ...subject,
         net: formatNet(subjectNets[index]!),
       })),
-      slugToName: new Map(taxonomy.map((subject) => [subject.slug, subject.name])),
+      slugToName: new Map(
+        taxonomy.map((subject) => [subject.slug, subject.name]),
+      ),
     };
   }
 
-  private translateFocus(key: string, subject: string): string {
+  private translateFocus(key: string, subject: string, topic?: string): string {
     return this.i18n.translate(key, {
       lang: I18nContext.current()?.lang,
-      args: { subject },
+      args: { subject, topic },
     }) as unknown as string;
   }
 

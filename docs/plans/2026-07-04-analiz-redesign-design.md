@@ -19,10 +19,10 @@
 
 ## Visual assets (optional)
 
-| Asset | Path | Prompt keywords |
-|-------|------|-----------------|
-| Hero bg | `apps/web/public/analiz/analiz-hero-bg.png` | soft light mobile hero, white base, blurred pastel blobs #9BC1FB #BDEBFF #FF2DAB 25%, top 45% empty, calm exam prep, no dark/neon |
-| Empty state | `apps/web/public/analiz/analiz-empty-first.png` | minimal flat student entering scores, violet #BEA1FE blue #55ACEE, encouraging, no trophy |
+| Asset       | Path                                            | Prompt keywords                                                                                                                   |
+| ----------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Hero bg     | `apps/web/public/analiz/analiz-hero-bg.png`     | soft light mobile hero, white base, blurred pastel blobs #9BC1FB #BDEBFF #FF2DAB 25%, top 45% empty, calm exam prep, no dark/neon |
+| Empty state | `apps/web/public/analiz/analiz-empty-first.png` | minimal flat student entering scores, violet #BEA1FE blue #55ACEE, encouraging, no trophy                                         |
 
 CSS blob fallback when PNGs absent (see `analiz-hero-backdrop.tsx`).
 
@@ -39,3 +39,11 @@ CSS blob fallback when PNGs absent (see `analiz-hero-backdrop.tsx`).
 - Web: `apps/web/src/app/[locale]/(app)/analiz/_components/*`
 - API: `apps/api/src/modules/coaching/*` (Phase 2)
 - Feature doc: `docs/features/coaching.md`
+
+## 2026-07-16 evolution — Focus to action
+
+- `Gelişim` uses one decision hierarchy: next focus → compact weekly review → progressive evidence.
+- The primary action is Plan prefill with explicit user confirmation; Coach is a secondary editable-seed handoff.
+- General trend, past-self, and subject averages live in native `<details>`; it starts closed when a focus exists and open otherwise.
+- Page-level coach CTA, weekly narration UI, ghost narration UI, and coach-access fetch were removed from this surface. Existing backend endpoints remain backward-compatible.
+- No new API, migration, dependency, or persistent focus-to-task relation was introduced.

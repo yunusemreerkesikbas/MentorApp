@@ -1,20 +1,21 @@
 # Analiz Phase 3 — Backlog Epic
 
-> Deferred from the 2026-07-04 analiz redesign. Track separately; do not scope-creep into P1/P2 PRs.
+> Deferred from the 2026-07-04 redesign. Status refreshed after the actionable three-tab delivery on 2026-07-13.
 
 ## Features
 
-| Item | Description | Modules |
-|------|-------------|---------|
-| OCR auto-fill | Photo of result sheet → auto D/Y/B (roadmap F2) | AI vision + coaching validation |
-| Weekly AI summary | Scheduled job + cached premium narrative | AI + coaching + jobs |
-| Delete / edit attempts | `DELETE/PATCH /v1/mock-exams/:id` | coaching |
-| Subject time series | Per-subject net over time on `GET /coaching/analysis` | coaching |
-| Plan integration | "Add focus task for weak subject" CTA | coaching → plan port |
-| Coach context injection | `contextMockExamId` on `POST /v1/coach/chat` | AI context builder |
+| Item                    | Description                                                  | Modules                         | Status                                |
+| ----------------------- | ------------------------------------------------------------ | ------------------------------- | ------------------------------------- |
+| OCR auto-fill           | Photo of result sheet → auto D/Y/B (roadmap F2)              | AI vision + coaching validation | Backlog                               |
+| Weekly AI summary       | Completed-week rule summary + cached premium narrative       | AI + coaching + jobs            | Partially shipped; scheduling remains |
+| Delete / edit attempts  | PUT/DELETE /v1/mock-exams/:id                                | coaching                        | Shipped 2026-07-11                    |
+| Subject time series     | Latest-four net trend for the selected focus subject         | coaching                        | Shipped 2026-07-13                    |
+| Plan integration        | Prefill a focus task; explicit user confirmation before save | coaching → plan                 | Shipped 2026-07-10                    |
+| Coach context injection | contextMockExamId on blocking/SSE coach chat                  | AI + coaching public boundary   | Shipped 2026-07-14                    |
 
 ## Notes
 
-- OCR must respect guardrails: categorize/parse only; no solution generation.
-- Weekly summary copy must stay encouraging; no cross-user ranking.
-- Delete/edit requires audit/idempotency review (append-only spirit for behavioral history).
+- OCR must respect guardrails: parse/classify only; never generate a solution.
+- Weekly copy must stay encouraging; no cross-user ranking.
+- Edit/delete is server-recomputed and owned-record scoped.
+- The shipped focus series intentionally covers only the latest four attempts; full per-subject history remains out of scope.

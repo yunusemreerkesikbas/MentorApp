@@ -10,14 +10,18 @@ import type {
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
-import { withUserContext } from "../../../database/rls";
+import { withServiceContext, withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { toIsoDate, todayIso } from "../domain/date.util";
 import {
+  FOCUSING_NOW_CACHE_MS,
+  FOCUSING_NOW_MIN_VISIBLE,
+  FOCUSING_NOW_WINDOW_MINUTES,
   qualifiesAsFocusSession,
   RECENT_SESSION_WINDOW_DAYS,
   RECENT_SUBJECTS_MAX,
+  STALE_SESSION_GRACE_MINUTES,
   type RecentSessionSummary,
 } from "../domain/coaching.constants";
 import {
@@ -51,6 +55,26 @@ export class SessionService {
 
   private getMinFocusSeconds(): Promise<number> {
     return this.config.get("coaching.session.min_focus_seconds");
+  }
+
+  /** ponytail: per-instance cache is fine (Nest singleton); no cache lib needed. */
+  private focusingNowCache: { value: number; expiresAt: number } | null = null;
+
+  /**
+   * Anonymous "focusing right now" ambience count. Aggregate-only cross-user read in
+   * SERVICE context (sanctioned pattern — leaderboard/follows). Returns null below
+   * the visibility threshold so a lonely count never reaches any client.
+   */
+  async getFocusingNowCount(): Promise<number | null> {
+    const now = Date.now();
+    if (!this.focusingNowCache || this.focusingNowCache.expiresAt <= now) {
+      const value = await withServiceContext(this.db, (tx) =>
+        this.sessions.countFocusingNow(tx, FOCUSING_NOW_WINDOW_MINUTES),
+      );
+      this.focusingNowCache = { value, expiresAt: now + FOCUSING_NOW_CACHE_MS };
+    }
+    const count = this.focusingNowCache.value;
+    return count >= FOCUSING_NOW_MIN_VISIBLE ? count : null;
   }
 
   /**
@@ -88,6 +112,14 @@ export class SessionService {
     });
   }
 
+  /** Today's accumulated COMPLETED focus minutes (UTC day, consistent with daily_activity). */
+  async getTodayFocusMinutes(userId: string): Promise<number> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const seconds = await this.sessions.sumCompletedFocusSecondsOnDate(tx, userId, todayIso());
+      return Math.round(seconds / 60);
+    });
+  }
+
   /** Paginated finalized-session history (most recent first) for the "Son seanslar" surface. */
   async list(
     userId: string,
@@ -101,6 +133,8 @@ export class SessionService {
         query.page,
         query.pageSize,
         query.subject,
+        query.from,
+        query.to,
       );
       return {
         items: items.map(({ planTaskTitle, ...row }) =>
@@ -119,6 +153,8 @@ export class SessionService {
     const plannedFocusMinutes =
       input.preset === "custom" ? (input.focusMinutes ?? null) : null;
     return withUserContext(this.db, { userId }, async (tx) => {
+      // Orphaned IN_PROGRESS rows (tab died) are lazily abandoned on next start.
+      await this.sessions.closeStaleOpenSessions(tx, userId, STALE_SESSION_GRACE_MINUTES);
       if (input.planTaskId) {
         const task = await this.planTasks.findById(tx, userId, input.planTaskId);
         if (!task) {
@@ -232,7 +268,7 @@ export class SessionService {
         sessionMood: input.mood,
         struggleNote: nextNote,
         ...(changed
-          ? { aiReflection: null, aiModel: null, aiReflectedAt: null }
+          ? { aiReflection: null, aiModel: null, aiReflectedAt: null, aiSuggestedTask: null }
           : {}),
       });
       return toStudySessionDto(updated!, minFocusSeconds);
@@ -243,12 +279,14 @@ export class SessionService {
    * Cache the premium AI session reflection (written by W3 via this public surface so
    * `study_sessions` is only mutated inside coaching — workstreams §2). Requires a finalized
    * session; returns the updated DTO for callers that need the cached text.
+   * Optional `suggestedTask` is the stripped <<TASK>> plan suggestion (null clears / none).
    */
   async setAiReflection(
     userId: string,
     id: string,
     reflection: string,
     model: string,
+    suggestedTask: { title: string; subject: string | null } | null = null,
   ): Promise<StudySessionDto> {
     const minFocusSeconds = await this.getMinFocusSeconds();
     return withUserContext(this.db, { userId }, async (tx) => {
@@ -263,6 +301,7 @@ export class SessionService {
         aiReflection: reflection,
         aiModel: model,
         aiReflectedAt: new Date(),
+        aiSuggestedTask: suggestedTask,
       });
       return toStudySessionDto(updated!, minFocusSeconds);
     });

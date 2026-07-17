@@ -10,6 +10,8 @@ export const UserStatus = {
   ACTIVE: "ACTIVE",
   SUSPENDED: "SUSPENDED",
   BANNED: "BANNED",
+  /** Self-service KVKK erasure ("hesabımı sil"). Login is blocked by the `status !== ACTIVE` gate. */
+  DELETED: "DELETED",
 } as const;
 export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
 

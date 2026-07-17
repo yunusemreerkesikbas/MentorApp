@@ -24,7 +24,10 @@ function makeExam(overrides: Partial<ExamRow> = {}): ExamRow {
   };
 }
 
-function makeEvent(examId: string, overrides: Partial<ExamEventRow> = {}): ExamEventRow {
+function makeEvent(
+  examId: string,
+  overrides: Partial<ExamEventRow> = {},
+): ExamEventRow {
   return {
     id: "evt-1",
     examId,
@@ -58,7 +61,9 @@ function buildService(overrides?: {
     { exam: lisans, event: makeEvent(lisans.id) },
     {
       exam: onlisans,
-      event: makeEvent(onlisans.id, { eventAt: new Date("2026-07-19T06:00:00.000Z") }),
+      event: makeEvent(onlisans.id, {
+        eventAt: new Date("2026-07-19T06:00:00.000Z"),
+      }),
     },
   ];
 
@@ -68,30 +73,52 @@ function buildService(overrides?: {
     Object.fromEntries(candidates.map(({ exam, event }) => [exam.id, [event]]));
 
   const exams = {
-    listPaged: vi.fn(async () => ({ items: candidates.map((c) => c.exam), total: candidates.length })),
+    listPaged: vi.fn(async () => ({
+      items: candidates.map((c) => c.exam),
+      total: candidates.length,
+    })),
     findBySlug: vi.fn(async (_db: unknown, slug: string) => {
       if (overrides?.findBySlug !== undefined) return overrides.findBySlug;
       return candidates.find((c) => c.exam.slug === slug)?.exam;
     }),
     listFamilyCandidates: vi.fn(async () => candidates),
     findNetRuleForFamily: vi.fn(async () => ({ kind: "PENALTY", divisor: 4 })),
-    findById: vi.fn(async (_db: unknown, id: string) => candidates.find((c) => c.exam.id === id)?.exam),
+    findById: vi.fn(
+      async (_db: unknown, id: string) =>
+        candidates.find((c) => c.exam.id === id)?.exam,
+    ),
     upsertBySlug: vi.fn(),
   };
 
   const events = {
-    listByExamId: vi.fn(async (_tx: unknown, examId: string) => eventsByExamId[examId] ?? []),
+    listByExamId: vi.fn(
+      async (_tx: unknown, examId: string) => eventsByExamId[examId] ?? [],
+    ),
     upsertByExamAndType: vi.fn(),
     findByExamAndType: vi.fn(),
   };
 
   const articles = {
-    findBySlug: vi.fn(async (): Promise<InfoArticleRow | undefined> => undefined),
+    findBySlug: vi.fn(
+      async (): Promise<InfoArticleRow | undefined> => undefined,
+    ),
     listPublishedByFamily: vi.fn(
-      async (): Promise<{ items: InfoArticleRow[]; total: number }> => ({ items: [], total: 0 }),
+      async (): Promise<{ items: InfoArticleRow[]; total: number }> => ({
+        items: [],
+        total: 0,
+      }),
     ),
     upsertBySlug: vi.fn(),
-    setPublishedAt: vi.fn(async (): Promise<InfoArticleRow | undefined> => undefined),
+    setPublishedAt: vi.fn(
+      async (): Promise<InfoArticleRow | undefined> => undefined,
+    ),
+  };
+
+  const topics = {
+    listByExamId: vi.fn(async () => []),
+    findByParentAndSlug: vi.fn(),
+    upsert: vi.fn(),
+    linkExam: vi.fn(),
   };
 
   const eventEmitter = { emit: vi.fn() };
@@ -114,6 +141,7 @@ function buildService(overrides?: {
     events as never,
     articles as never,
     subjects as never,
+    topics as never,
     eventEmitter as never,
   );
   return { service, exams, events, articles, subjects, eventEmitter };
@@ -167,14 +195,18 @@ describe("ContentService — exam calendar resolution", () => {
 
   it("rejects invalid exam family", async () => {
     const { service } = buildService();
-    await expect(service.getExamCalendarByFamily("INVALID")).rejects.toMatchObject({
+    await expect(
+      service.getExamCalendarByFamily("INVALID"),
+    ).rejects.toMatchObject({
       code: ErrorCode.CONTENT_INVALID_EXAM_FAMILY,
     });
   });
 
   it("getCalendarBySlug throws when slug is missing", async () => {
     const { service } = buildService({ findBySlug: undefined });
-    await expect(service.getCalendarBySlug("missing-slug")).rejects.toBeInstanceOf(DomainError);
+    await expect(
+      service.getCalendarBySlug("missing-slug"),
+    ).rejects.toBeInstanceOf(DomainError);
   });
 });
 
@@ -204,9 +236,16 @@ describe("ContentService — info articles", () => {
   it("listInfoArticles returns published summaries only", async () => {
     const row = makeArticle();
     const { service, articles } = buildService();
-    articles.listPublishedByFamily.mockResolvedValue({ items: [row], total: 1 });
+    articles.listPublishedByFamily.mockResolvedValue({
+      items: [row],
+      total: 1,
+    });
 
-    const page = await service.listInfoArticles({ family: "KPSS", page: 1, pageSize: 10 });
+    const page = await service.listInfoArticles({
+      family: "KPSS",
+      page: 1,
+      pageSize: 10,
+    });
     expect(page.items).toHaveLength(1);
     expect(page.items[0]?.slug).toBe("kpss-basvuru-sureci");
     expect(Object.hasOwn(page.items[0] ?? {}, "body")).toBe(false);
@@ -216,7 +255,9 @@ describe("ContentService — info articles", () => {
     const { service, articles } = buildService();
     articles.findBySlug.mockResolvedValue(makeArticle({ publishedAt: null }));
 
-    await expect(service.getInfoArticleBySlug("kpss-basvuru-sureci")).rejects.toMatchObject({
+    await expect(
+      service.getInfoArticleBySlug("kpss-basvuru-sureci"),
+    ).rejects.toMatchObject({
       code: ErrorCode.CONTENT_ARTICLE_NOT_FOUND,
     });
   });
@@ -225,10 +266,15 @@ describe("ContentService — info articles", () => {
     const draft = makeArticle({ publishedAt: null });
     const published = makeArticle();
     const { service, articles, eventEmitter } = buildService();
-    articles.findBySlug.mockResolvedValueOnce(draft).mockResolvedValueOnce(published);
+    articles.findBySlug
+      .mockResolvedValueOnce(draft)
+      .mockResolvedValueOnce(published);
     articles.setPublishedAt.mockResolvedValue(published);
 
-    await service.publishArticle("kpss-basvuru-sureci", "2026-06-01T12:00:00.000Z");
+    await service.publishArticle(
+      "kpss-basvuru-sureci",
+      "2026-06-01T12:00:00.000Z",
+    );
 
     expect(eventEmitter.emit).toHaveBeenCalledTimes(1);
     expect(eventEmitter.emit).toHaveBeenCalledWith(
@@ -271,5 +317,18 @@ describe("ContentService — info articles", () => {
     ).rejects.toMatchObject({
       code: ErrorCode.CONTENT_INVALID_ARTICLE_CATEGORY,
     });
+  });
+
+  it("rejects a topic whose parent subject does not exist", async () => {
+    const { service, subjects } = buildService();
+    subjects.findBySlug.mockResolvedValue(undefined);
+
+    await expect(
+      service.upsertTopic({
+        subjectSlug: "unknown",
+        slug: "topic",
+        name: "Topic",
+      }),
+    ).rejects.toMatchObject({ code: ErrorCode.CONTENT_SUBJECT_NOT_FOUND });
   });
 });

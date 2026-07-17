@@ -48,6 +48,7 @@
   "AI_DISABLED": "AI özelliği şu anda kullanılamıyor.",
   "AI_PROVIDER_ERROR": "AI sağlayıcısına ulaşılamadı. Lütfen daha sonra tekrar dene.",
   "AI_RATE_LIMITED": "Günlük AI mesaj limitine ulaştın. Lütfen yarın tekrar dene.",
+  "AI_BUDGET_EXCEEDED": "AI özellikleri şu anda geçici olarak kullanılamıyor. Lütfen daha sonra tekrar dene.",
   "AI_PHOTO_RATE_LIMITED": "Aylık foto analiz limitine ulaştın. Daha sonra tekrar dene veya Premium'a geç.",
   "AI_PHOTO_INVALID_IMAGE": "Fotoğraf işlenemedi. 5 MB altında JPEG veya PNG kullan.",
   "ADMIN_USER_NOT_FOUND": "Bu kullanıcı bulunamadı.",
@@ -66,5 +67,9 @@
   "FORUM_ZONE_NOT_FOUND": "Bu oda bulunamadı.",
   "FORUM_ATTACHMENT_INVALID": "Ek geçersiz. Lütfen desteklenen bir görsel (JPEG/PNG/WebP) seç.",
   "SOCIAL_CANNOT_FOLLOW_SELF": "Kendini takip edemezsin.",
+  "SOCIAL_BUDDY_SELF": "Kendini yol arkadaşı olarak ekleyemezsin.",
+  "SOCIAL_BUDDY_REQUEST_EXISTS": "Bu kullanıcıyla zaten bekleyen bir yol arkadaşı isteğin var.",
+  "SOCIAL_BUDDY_ALREADY_ACTIVE": "Zaten aktif bir yol arkadaşın var.",
+  "SOCIAL_BUDDY_NUDGE_COOLDOWN": "Yol arkadaşını yakın zamanda dürttün — biraz sonra tekrar dene.",
   "COACHING_WEEKLY_REVIEW_INSUFFICIENT": "Haftalık koç değerlendirmesi için bir deneme veya iki tamamlanmış seans gerekiyor."
 }

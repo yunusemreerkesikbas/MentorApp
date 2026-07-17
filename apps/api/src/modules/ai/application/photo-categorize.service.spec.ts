@@ -16,10 +16,12 @@ describe("PhotoCategorizeService", () => {
   let readObject: ReturnType<typeof vi.fn>;
   let findByClientRequestId: ReturnType<typeof vi.fn>;
   let assertCanCategorize: ReturnType<typeof vi.fn>;
+  let recordPhotoCategorizations: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     categorizeImage = vi.fn(async () => ({
-      subjectSlugs: ["turkce"],
+      subjectSlug: "turkce",
+      topicSlug: "paragraf",
       model: "fake-vision",
       promptTokens: 1,
       completionTokens: 1,
@@ -27,6 +29,7 @@ describe("PhotoCategorizeService", () => {
     readObject = vi.fn(async () => Buffer.from("jpeg"));
     findByClientRequestId = vi.fn(async () => []);
     assertCanCategorize = vi.fn(async () => undefined);
+    recordPhotoCategorizations = vi.fn(async () => undefined);
 
     const config = {
       get: vi.fn(async (key: string) => {
@@ -43,15 +46,24 @@ describe("PhotoCategorizeService", () => {
         listExamSubjectsByExamId: vi.fn(async () => [
           { slug: "turkce", name: "Türkçe" },
         ]),
+        listExamTopicsByExamId: vi.fn(async () => [
+          {
+            subjectSlug: "turkce",
+            subjectName: "Türkçe",
+            slug: "paragraf",
+            name: "Paragraf",
+          },
+        ]),
       } as never,
       {
         findPhotoCategorizationsByClientRequestId: findByClientRequestId,
         getOwnedMockExam: vi.fn(async () => ({ examId: "exam-1" })),
-        recordPhotoCategorizations: vi.fn(async () => undefined),
+        recordPhotoCategorizations,
         countPhotoCategorizationsSince: vi.fn(),
       } as never,
       { append: vi.fn() } as never,
       { assertCanCategorize } as never,
+      { assertWithinBudget: vi.fn(async () => undefined) } as never,
     );
   });
 
@@ -60,6 +72,7 @@ describe("PhotoCategorizeService", () => {
       {
         mockExamId: MOCK_EXAM_ID,
         subjectRef: "turkce",
+        topicRef: "paragraf",
         storageKey: STORAGE_KEY,
         clientRequestId: CLIENT_REQUEST_ID,
       },
@@ -71,6 +84,14 @@ describe("PhotoCategorizeService", () => {
     });
 
     expect(result.subjectRefs).toEqual([{ slug: "turkce", name: "Türkçe" }]);
+    expect(result.topicRefs).toEqual([
+      {
+        slug: "paragraf",
+        name: "Paragraf",
+        subjectSlug: "turkce",
+        subjectName: "Türkçe",
+      },
+    ]);
     expect(categorizeImage).not.toHaveBeenCalled();
     expect(assertCanCategorize).not.toHaveBeenCalled();
   });
@@ -103,7 +124,67 @@ describe("PhotoCategorizeService", () => {
     });
 
     expect(assertCanCategorize).toHaveBeenCalledOnce();
-    expect(categorizeImage).toHaveBeenCalledOnce();
+    expect(categorizeImage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allowedSubjects: [{ slug: "turkce", name: "Türkçe" }],
+        allowedTopics: [
+          { subjectSlug: "turkce", slug: "paragraf", name: "Paragraf" },
+        ],
+      }),
+    );
     expect(result.subjectRefs).toEqual([{ slug: "turkce", name: "Türkçe" }]);
+    expect(result.topicRefs).toHaveLength(1);
+    expect(recordPhotoCategorizations).toHaveBeenCalledWith(
+      USER_ID,
+      MOCK_EXAM_ID,
+      [{ subjectRef: "turkce", topicRef: "paragraf" }],
+      STORAGE_KEY,
+      CLIENT_REQUEST_ID,
+    );
+  });
+
+  it("keeps a valid subject when the provider returns an invalid topic", async () => {
+    categorizeImage.mockResolvedValue({
+      subjectSlug: "turkce",
+      topicSlug: "whitelist-disi",
+      model: "fake-vision",
+      promptTokens: 1,
+      completionTokens: 1,
+    });
+    const result = await service.categorize(USER_ID, [], MOCK_EXAM_ID, {
+      storageKey: STORAGE_KEY,
+      clientRequestId: CLIENT_REQUEST_ID,
+    });
+    expect(result.subjectRefs).toEqual([{ slug: "turkce", name: "Türkçe" }]);
+    expect(result.topicRefs).toEqual([]);
+    expect(recordPhotoCategorizations).toHaveBeenCalledWith(
+      USER_ID,
+      MOCK_EXAM_ID,
+      [{ subjectRef: "turkce", topicRef: null }],
+      STORAGE_KEY,
+      CLIENT_REQUEST_ID,
+    );
+  });
+
+  it("returns an empty classification for an invalid subject", async () => {
+    categorizeImage.mockResolvedValue({
+      subjectSlug: "whitelist-disi",
+      topicSlug: "paragraf",
+      model: "fake-vision",
+      promptTokens: 1,
+      completionTokens: 1,
+    });
+    const result = await service.categorize(USER_ID, [], MOCK_EXAM_ID, {
+      storageKey: STORAGE_KEY,
+      clientRequestId: CLIENT_REQUEST_ID,
+    });
+    expect(result).toEqual({ subjectRefs: [], topicRefs: [] });
+    expect(recordPhotoCategorizations).toHaveBeenCalledWith(
+      USER_ID,
+      MOCK_EXAM_ID,
+      [],
+      STORAGE_KEY,
+      CLIENT_REQUEST_ID,
+    );
   });
 });

@@ -9,6 +9,7 @@ import { Card, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
 import { AccountLinksCard } from "./account-links-card";
+import { DeleteAccountCard } from "./delete-account-card";
 import { ApplicationSupportCard } from "./application-support-card";
 import { EconomySection } from "./economy-section";
 import { NotificationSettings } from "./notification-settings";
@@ -149,6 +150,10 @@ export function ProfilShell() {
                 setEconomyRefreshKey((k) => k + 1);
               }}
             />
+          </motion.div>
+
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <DeleteAccountCard />
           </motion.div>
         </aside>
       </motion.div>

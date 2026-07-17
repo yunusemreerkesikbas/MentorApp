@@ -141,6 +141,11 @@ export const CONFIG_CATALOG = {
   "forum.xp.thread_posted": economyCount(2, 1000, "XP granted for posting a forum thread/message (feeds the effort leaderboard; capped per day)."),
   "forum.xp.thread_posted_daily_cap": economyCount(10, 1000, "Max posts per day that earn XP (anti-farm shield for the leaderboard)."),
   "ai.chat.daily_limit": aiCount(30, 100000, "Max AI coach chat messages a premium user may send per day (cost cap §7)."),
+  "ai.plan_draft.daily_limit": aiCount(
+    5,
+    100000,
+    "Max AI weekly plan drafts a premium user may generate per day (cost cap §7).",
+  ),
   "ai.chat.free_coin_daily_limit": aiCount(
     5,
     100000,
@@ -150,6 +155,11 @@ export const CONFIG_CATALOG = {
     30,
     100000,
     "Max photo→subject categorizations a premium user may run per rolling 30-day window.",
+  ),
+  "ai.budget.monthly_cap_usd_cents": aiCount(
+    0,
+    100_000_000,
+    "Monthly AI spend cap in US cents (0 = no cap; e.g. 5000 = $50). Over cap → all AI blocked until next month (§7).",
   ),
   "coaching.session.min_focus_seconds": coachingCount(
     300,

@@ -37,6 +37,7 @@ describe("WeeklyReviewNarrationService", () => {
       { getAiEvidence: vi.fn(async () => evidence) } as never,
       { find, upsert } as never,
       { append: vi.fn(async () => undefined) } as never,
+      { assertWithinBudget: vi.fn(async () => undefined) } as never,
     );
   });
 

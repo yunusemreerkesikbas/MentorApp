@@ -7,6 +7,7 @@ import { SubjectSeedService } from "./infrastructure/subject-seed.service";
 import { ArticleSeedService } from "./infrastructure/article-seed.service";
 import { InfoArticleRepository } from "./infrastructure/info-article.repository";
 import { SubjectRepository } from "./infrastructure/subject.repository";
+import { TopicRepository } from "./infrastructure/topic.repository";
 import { ContentController } from "./presentation/content.controller";
 import { InfoArticleController } from "./presentation/info-article.controller";
 
@@ -22,6 +23,7 @@ import { InfoArticleController } from "./presentation/info-article.controller";
     ExamEventRepository,
     InfoArticleRepository,
     SubjectRepository,
+    TopicRepository,
     ContentSeedService,
     SubjectSeedService,
     ArticleSeedService,

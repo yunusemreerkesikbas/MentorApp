@@ -1,6 +1,6 @@
 import type { SubjectStrengthDto } from "@mentor/types";
 import { describe, expect, it } from "vitest";
-import { selectAnalysisFocus } from "./analysis-focus";
+import { buildFocusTrend, selectAnalysisFocus } from "./analysis-focus";
 
 describe("selectAnalysisFocus", () => {
   it("prefers the most frequent photo signal and breaks ties by subject ref", () => {
@@ -93,5 +93,123 @@ describe("selectAnalysisFocus", () => {
 
   it("returns null without analysis evidence", () => {
     expect(selectAnalysisFocus([], [])).toBeNull();
+  });
+
+  it("adds a repeated topic to a photo-driven focus and prefers the newest tie", () => {
+    expect(
+      selectAnalysisFocus(
+        [],
+        [{ subjectRef: "turkce", subjectName: "Türkçe", count: 4 }],
+        [
+          {
+            subjectRef: "turkce",
+            subjectName: "Türkçe",
+            topicRef: "paragraf",
+            topicName: "Paragraf",
+            count: 2,
+            latestAt: "2026-07-10T10:00:00.000Z",
+          },
+          {
+            subjectRef: "turkce",
+            subjectName: "Türkçe",
+            topicRef: "dil-bilgisi",
+            topicName: "Dil bilgisi",
+            count: 2,
+            latestAt: "2026-07-12T10:00:00.000Z",
+          },
+        ],
+      ),
+    ).toMatchObject({
+      subjectRef: "turkce",
+      topicRef: "dil-bilgisi",
+      topicName: "Dil bilgisi",
+    });
+  });
+
+  it("promotes repeated topic evidence even when it is outside the four-attempt subject window", () => {
+    expect(
+      selectAnalysisFocus(
+        [],
+        [],
+        [
+          {
+            subjectRef: "tarih",
+            subjectName: "Tarih",
+            topicRef: "osmanli-tarihi",
+            topicName: "Osmanlı tarihi",
+            count: 2,
+            latestAt: "2026-07-01T10:00:00.000Z",
+          },
+        ],
+      ),
+    ).toMatchObject({
+      subjectRef: "tarih",
+      topicRef: "osmanli-tarihi",
+      evidenceCount: 2,
+    });
+  });
+
+  it("does not promote a topic from a single photo", () => {
+    expect(
+      selectAnalysisFocus(
+        [],
+        [{ subjectRef: "turkce", subjectName: "Türkçe", count: 1 }],
+        [
+          {
+            subjectRef: "turkce",
+            subjectName: "Türkçe",
+            topicRef: "paragraf",
+            topicName: "Paragraf",
+            count: 1,
+            latestAt: "2026-07-10T10:00:00.000Z",
+          },
+        ],
+      ),
+    ).not.toHaveProperty("topicRef");
+  });
+});
+
+describe("buildFocusTrend", () => {
+  const attempts = [
+    { id: "m4", takenAt: new Date("2026-07-10T10:00:00Z") },
+    { id: "m3", takenAt: new Date("2026-07-03T10:00:00Z") },
+    { id: "m2", takenAt: new Date("2026-06-26T10:00:00Z") },
+    { id: "m1", takenAt: new Date("2026-06-19T10:00:00Z") },
+  ];
+
+  it.each([
+    ["UP", ["18.00", "16.00", "15.00", "14.00"], "+2.00"],
+    ["DOWN", ["14.00", "16.00", "15.00", "14.00"], "-2.00"],
+    ["STEADY", ["16.00", "16.00", "15.00", "14.00"], "0.00"],
+  ] as const)(
+    "returns %s from the latest two subject nets",
+    (direction, nets, delta) => {
+      const subjects = new Map(
+        attempts.map((attempt, index) => [
+          attempt.id,
+          [{ subjectRef: "turkce", net: nets[index] }],
+        ]),
+      );
+
+      expect(buildFocusTrend("turkce", attempts, subjects)).toEqual({
+        recentTrend: attempts.map((attempt, index) => ({
+          mockExamId: attempt.id,
+          takenAt: attempt.takenAt.toISOString(),
+          net: nets[index],
+        })),
+        recentDelta: delta,
+        trendDirection: direction,
+      });
+    },
+  );
+
+  it("returns FIRST without a delta when only one point exists", () => {
+    expect(
+      buildFocusTrend(
+        "turkce",
+        attempts.slice(0, 1),
+        new Map([["m4", [{ subjectRef: "turkce", net: "18.00" }]]]),
+      ),
+    ).toMatchObject({ recentDelta: null, trendDirection: "FIRST" });
   });
 });

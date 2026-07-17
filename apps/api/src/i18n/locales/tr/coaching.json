@@ -1,6 +1,7 @@
 {
   "mood": {
     "VERY_LOW": "Bugün ağır bir gün, biliyorum. Kendine nazik ol — küçük bir mola da ilerlemenin parçası. Yanındayım.",
+    "SERIOUS_DISTRESS": "Bunu tek başına taşımak zorunda değilsin. Şimdi güvendiğin birine ulaş; kendine zarar verme riski varsa 112'yi ara veya en yakın acil servise git.",
     "LOW": "Zor günler olur. Bugün sadece tek bir küçük adım at, gerisi yarına kalsın. Buradayım.",
     "OKAY": "İyi gidiyorsun. Bugünü olduğu gibi kabul et ve elinden geleni yap — bu yeterli.",
     "GOOD": "Enerjin yerinde, harika! Bu motivasyonu bugünkü planına taşı, çok şey başaracaksın.",
@@ -25,7 +26,13 @@
     "LOWEST_AVERAGE_EARLY": "{subject} ilk denemende diğer derslere göre daha fazla desteğe ihtiyaç duyuyor. Küçük bir tekrar iyi bir başlangıç olabilir.",
     "LOWEST_AVERAGE_REPEATED": "{subject} denemelerinde tekrar eden çalışma alanın olarak görünüyor. Küçük bir tekrar iyi bir sonraki adım olabilir.",
     "TASK_TITLE_PHOTO_SIGNAL": "{subject} yanlışlarını gözden geçir",
-    "TASK_TITLE_LOWEST_AVERAGE": "{subject} tekrar et"
+    "TASK_TITLE_LOWEST_AVERAGE": "{subject} tekrar et",
+    "TREND_FIRST": "{subject} için ilk yakın dönem sinyalin oluştu. Bir deneme daha yönü görünür kılacak.",
+    "TREND_UP": "{subject} yakın dönemde yukarı yönlü ilerliyor. Bu ritmi küçük bir tekrar ile sürdürelim.",
+    "TREND_DOWN": "{subject} son denemede biraz daha desteğe ihtiyaç duydu. Tek bir sonuca takılmadan küçük bir tekrar planlayalım.",
+    "TREND_STEADY": "{subject} son iki denemede dengeli kaldı. Küçük bir tekrar yeni hareket alanı açabilir.",
+    "PHOTO_TOPIC_REPEATED": "{subject} içindeki {topic} yanlış fotoğraflarında tekrar ediyor. Küçük bir konu tekrarı iyi bir sonraki adım.",
+    "TASK_TITLE_PHOTO_TOPIC": "{topic} konusunu gözden geçir"
   },
   "weekly": {
     "INSUFFICIENT": "Geçen haftayı değerlendirmek için bir deneme ya da iki tamamlanmış seans yeterli.",

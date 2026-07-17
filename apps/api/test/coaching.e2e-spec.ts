@@ -90,6 +90,44 @@ describe("coaching (e2e)", () => {
     expect(after.body.motivationalLine.length).toBeGreaterThan(0);
   });
 
+  it("bulk create adds all tasks; a single past date rejects the whole batch (403)", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const ok = await request(app.getHttpServer())
+      .post("/v1/plan-tasks/bulk")
+      .set(authA())
+      .send({
+        tasks: [
+          { title: "Bulk 1", subject: "Matematik", taskDate: today },
+          { title: "Bulk 2", subject: "Türkçe", taskDate: today },
+        ],
+      });
+    expect(ok.status).toBe(201);
+    expect(ok.body).toHaveLength(2);
+
+    const list = await request(app.getHttpServer())
+      .get(`/v1/plan-tasks?date=${today}`)
+      .set(authA());
+    const titles = list.body.items.map((t: { title: string }) => t.title);
+    expect(titles).toEqual(expect.arrayContaining(["Bulk 1", "Bulk 2"]));
+
+    const rejected = await request(app.getHttpServer())
+      .post("/v1/plan-tasks/bulk")
+      .set(authA())
+      .send({
+        tasks: [
+          { title: "Geçerli", taskDate: today },
+          { title: "Geçmiş", taskDate: "2020-01-01" },
+        ],
+      });
+    expect(rejected.status).toBe(403); // COACHING_TASK_DATE_READONLY — same as single create
+    const after = await request(app.getHttpServer())
+      .get(`/v1/plan-tasks?date=${today}`)
+      .set(authA());
+    expect(
+      after.body.items.some((t: { title: string }) => t.title === "Geçerli"),
+    ).toBe(false); // all-or-nothing
+  });
+
   it("user A cannot PATCH user B's plan task (404 — RLS hides foreign rows)", async () => {
     const createB = await request(app.getHttpServer())
       .post("/v1/plan-tasks")
@@ -344,6 +382,36 @@ describe("coaching (e2e)", () => {
     expect(empty.body.total).toBe(0);
   });
 
+  it("GET /study-sessions filters by from/to UTC day bounds on started_at", async () => {
+    const start = await request(app.getHttpServer())
+      .post("/v1/study-sessions")
+      .set(authA())
+      .send({ preset: "25_5", subject: "Tarih" });
+    expect(start.status).toBe(201);
+    await request(app.getHttpServer())
+      .patch(`/v1/study-sessions/${start.body.id}`)
+      .set(authA())
+      .send({ status: "COMPLETED", actualFocusSeconds: 1500 });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const inRange = await request(app.getHttpServer())
+      .get(`/v1/study-sessions?page=1&pageSize=10&from=${today}&to=${today}`)
+      .set(authA());
+    expect(inRange.status).toBe(200);
+    expect(inRange.body.items.some((s: { id: string }) => s.id === start.body.id)).toBe(true);
+
+    const outOfRange = await request(app.getHttpServer())
+      .get("/v1/study-sessions?page=1&pageSize=10&from=2000-01-01&to=2000-01-02")
+      .set(authA());
+    expect(outOfRange.status).toBe(200);
+    expect(outOfRange.body.items.some((s: { id: string }) => s.id === start.body.id)).toBe(false);
+
+    const badRange = await request(app.getHttpServer())
+      .get("/v1/study-sessions?page=1&pageSize=10&from=2026-07-20&to=2026-07-10")
+      .set(authA());
+    expect(badRange.status).toBe(400);
+  });
+
   it("study session start persists planTaskId when linked from a plan task", async () => {
     const createTask = await request(app.getHttpServer())
       .post("/v1/plan-tasks")
@@ -414,10 +482,11 @@ describe("coaching (e2e)", () => {
   });
 
   it("mock exam POST computes net → GET analysis returns trend", async () => {
-    const exams = await request(app.getHttpServer()).get("/v1/content/exams?page=1&pageSize=20");
-    expect(exams.status).toBe(200);
-    const exam = exams.body.items.find((e: { slug: string }) => e.slug === "kpss-lisans-2026");
-    expect(exam?.id).toBeTruthy();
+    const calendar = await request(app.getHttpServer()).get(
+      "/v1/content/exams/kpss-lisans-2026/calendar",
+    );
+    expect(calendar.status).toBe(200);
+    const exam = calendar.body.exam as { id: string };
 
     const subjects = await request(app.getHttpServer()).get(
       `/v1/content/exams/kpss-lisans-2026/subjects`,
@@ -473,12 +542,11 @@ describe("coaching (e2e)", () => {
   });
 
   it("updates and permanently deletes an owned mock exam", async () => {
-    const exams = await request(app.getHttpServer()).get(
-      "/v1/content/exams?page=1&pageSize=20",
+    const calendar = await request(app.getHttpServer()).get(
+      "/v1/content/exams/kpss-lisans-2026/calendar",
     );
-    const exam = exams.body.items.find(
-      (item: { slug: string }) => item.slug === "kpss-lisans-2026",
-    );
+    expect(calendar.status).toBe(200);
+    const exam = calendar.body.exam as { id: string };
 
     const created = await request(app.getHttpServer())
       .post("/v1/mock-exams")
@@ -561,8 +629,11 @@ describe("coaching (e2e)", () => {
   });
 
   it("mock exam data is isolated per user (RLS)", async () => {
-    const exams = await request(app.getHttpServer()).get("/v1/content/exams?page=1&pageSize=20");
-    const exam = exams.body.items.find((e: { slug: string }) => e.slug === "kpss-lisans-2026");
+    const calendar = await request(app.getHttpServer()).get(
+      "/v1/content/exams/kpss-lisans-2026/calendar",
+    );
+    expect(calendar.status).toBe(200);
+    const exam = calendar.body.exam as { id: string };
 
     const createA = await request(app.getHttpServer())
       .post("/v1/mock-exams")

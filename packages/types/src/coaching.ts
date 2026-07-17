@@ -49,6 +49,11 @@ export interface StudySessionDto {
   struggleNote: string | null;
   /** Premium AI session reflection (null until generated / for free tier). */
   aiReflection: string | null;
+  /**
+   * Cached plan-task suggestion from session reflection ({title, subject}); null when none /
+   * free / cleared. Used by W3 session-reflection cache; not shown on history list UI.
+   */
+  aiSuggestedTask: { title: string; subject: string | null } | null;
   /** True when this finalized session meets the platform min-focus threshold (streak/XP/quests). */
   countsAsFocusSession: boolean;
   /** True when finalize auto-marked the linked plan task DONE (this request only). */
@@ -147,10 +152,28 @@ export interface PhotoSubjectSignalDto {
   count: number;
 }
 
+export interface PhotoTopicSignalDto {
+  subjectRef: string;
+  subjectName: string;
+  topicRef: string;
+  topicName: string;
+  count: number;
+}
+
 /** Server-selected next study focus from personal analysis evidence. */
+export type AnalysisFocusTrendDirection = "FIRST" | "UP" | "DOWN" | "STEADY";
+
+export interface AnalysisFocusTrendPointDto {
+  mockExamId: string;
+  takenAt: string;
+  net: string;
+}
+
 export interface AnalysisFocusDto {
   subjectRef: string;
   subjectName: string;
+  topicRef?: string;
+  topicName?: string;
   source: "PHOTO_SIGNAL" | "LOWEST_AVERAGE";
   evidenceCount: number;
   evidenceLevel: "EARLY" | "REPEATED";
@@ -158,6 +181,13 @@ export interface AnalysisFocusDto {
   message: string;
   /** Backend-localized Plan task title prefill. */
   suggestedTaskTitle: string;
+  /** Selected subject's latest exam-scoped points, newest first (max 4). */
+  recentTrend: AnalysisFocusTrendPointDto[];
+  /** Latest minus previous subject net; null until two comparable points exist. */
+  recentDelta: string | null;
+  trendDirection: AnalysisFocusTrendDirection;
+  /** Backend-localized interpretation; clients render it verbatim. */
+  trendMessage: string;
 }
 
 /** Per-subject "geçmiş-ben" delta: this attempt's subject net vs the previous attempt's. */
@@ -198,12 +228,20 @@ export interface CoachingAnalysisDto {
   trend: MockExamTrendPointDto[];
   subjects: SubjectStrengthDto[];
   photoSubjectSignals: PhotoSubjectSignalDto[];
+  photoTopicSignals: PhotoTopicSignalDto[];
   /** `null` until a mock-exam or photo signal supplies personal evidence. */
   nextFocus: AnalysisFocusDto | null;
   /** All-time best total net across all attempts; null when no attempts. */
   personalRecordNet: string | null;
   /** Latest-vs-own-past comparison; `null` when fewer than 2 attempts. */
   ghost: GhostComparisonDto | null;
+}
+
+/** Daily focus goal progress for /seans; `goalMinutes` null = no goal set. */
+export interface FocusGoalDto {
+  goalMinutes: number | null;
+  /** Sum of today's COMPLETED session focus, rounded to minutes (no min-focus filter). */
+  focusMinutesToday: number;
 }
 
 /** Composite panel payload — one request → whole daily hub. */
@@ -218,6 +256,13 @@ export interface TodayPanelResponse {
   sessionPresets: SessionPresetDto[];
   /** Today's mood check-in if the user already checked in, else `null`. */
   mood: MoodCheckinDto | null;
+  /** Daily focus goal progress (/seans idle surface). */
+  focusGoal: FocusGoalDto;
+  /**
+   * Anonymous count of users focusing right now (aggregate-only ambience);
+   * null when below the server-side visibility threshold.
+   */
+  focusingNow: number | null;
 }
 
 /**
@@ -233,8 +278,6 @@ export interface VisionDto {
   createdAt: string;
   updatedAt: string;
 }
-
-
 
 /** Completed-week rule-based review (Europe/Istanbul, active exam scoped). */
 export type WeeklyReviewStatus = "READY" | "INSUFFICIENT";
@@ -272,4 +315,3 @@ export interface WeeklyReviewDto {
     message: string;
   } | null;
 }
-

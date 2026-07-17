@@ -3,14 +3,12 @@
 import type { ReactNode } from "react";
 import { PuhuImage, type PuhuVariant } from "@/components/puhu-image";
 
-const DIALOG_PUHU_SIZE = 72;
-
-/** Promo dialog hero — Puhu mascot at 72px (Stitch Prompt 02 variant C). */
+/** Promo dialog hero — Puhu mascot at `md` (72px; DESIGN.md §8.2). */
 export function getDialogHero(puhuVariant: PuhuVariant = "encouraging"): ReactNode {
   return (
     <PuhuImage
       variant={puhuVariant}
-      size={DIALOG_PUHU_SIZE}
+      size="md"
       className="mx-auto"
     />
   );

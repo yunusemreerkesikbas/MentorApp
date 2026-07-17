@@ -1,8 +1,9 @@
+import { randomUUID } from "node:crypto";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
 import request from "supertest";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ContentService } from "../src/modules/content/application/content.service";
 
 /**
@@ -14,6 +15,8 @@ describe("content (e2e)", () => {
   let userToken = "";
 
   beforeAll(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-06-11T12:00:00.000Z"));
     process.env.DATABASE_URL =
       process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
     process.env.JWT_ACCESS_SECRET ??= "test-secret-test-secret-test-secret!!";
@@ -26,7 +29,7 @@ describe("content (e2e)", () => {
     await app.init();
 
     const signup = await request(app.getHttpServer()).post("/v1/auth/signup").send({
-      email: `w1-${Date.now()}@test.local`,
+      email: `w1-${randomUUID()}@test.local`,
       password: "Sifre1234",
       displayName: "Content Test",
       kvkkAccepted: true,
@@ -44,12 +47,13 @@ describe("content (e2e)", () => {
 
   afterAll(async () => {
     await app?.close();
+    vi.useRealTimers();
   });
 
   const auth = () => ({ Authorization: `Bearer ${userToken}` });
 
   it("GET /v1/content/exams returns seeded KPSS rows (public, no auth)", async () => {
-    const res = await request(app.getHttpServer()).get("/v1/content/exams");
+    const res = await request(app.getHttpServer()).get("/v1/content/exams?page=1&pageSize=100");
     expect(res.status).toBe(200);
     expect(res.body.total).toBeGreaterThanOrEqual(3);
     const kpss = res.body.items.filter((e: { family: string }) => e.family === "KPSS");

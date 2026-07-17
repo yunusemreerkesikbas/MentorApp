@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorCode } from "../../../common/errors/error-code";
+import { STALE_SESSION_GRACE_MINUTES } from "../domain/coaching.constants";
 import { CoachingEventTopic } from "../domain/coaching.events";
 import { SessionService } from "./session.service";
 import type { RecentSummaryRow } from "../infrastructure/study-session.repository";
@@ -24,7 +25,7 @@ function makeService(
 ): SessionService {
   return new SessionService(
     fakeDb,
-    sessionsRepo as never,
+    { closeStaleOpenSessions: vi.fn(), ...sessionsRepo } as never,
     (opts?.planTasks ?? { findById: vi.fn() }) as never,
     (opts?.activity ?? {}) as never,
     (opts?.events ?? { emit: () => {} }) as never,
@@ -63,6 +64,39 @@ describe("SessionService.start", () => {
       expect.objectContaining({ planTaskId, subject: "Tarih" }),
     );
     expect(result.planTaskId).toBe(planTaskId);
+  });
+
+  it("lazily abandons stale IN_PROGRESS sessions before creating a new one", async () => {
+    const calls: string[] = [];
+    const closeStaleOpenSessions = vi.fn(async () => {
+      calls.push("cleanup");
+    });
+    const create = vi.fn(async (_tx, data) => {
+      calls.push("create");
+      return {
+        id: "s1",
+        preset: data.preset,
+        status: "IN_PROGRESS",
+        subject: null,
+        planTaskId: null,
+        startedAt: data.startedAt,
+        endedAt: null,
+        actualFocusSeconds: 0,
+        plannedFocusMinutes: null,
+        sessionMood: null,
+        struggleNote: null,
+        aiReflection: null,
+      };
+    });
+
+    await makeService({ create, closeStaleOpenSessions }).start(USER, { preset: "25_5" });
+
+    expect(closeStaleOpenSessions).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      STALE_SESSION_GRACE_MINUTES,
+    );
+    expect(calls).toEqual(["cleanup", "create"]);
   });
 
   it("rejects start when planTaskId does not belong to the user", async () => {
@@ -111,6 +145,42 @@ describe("SessionService.start", () => {
   });
 });
 
+describe("SessionService.getTodayFocusMinutes", () => {
+  it("rounds today's summed focus seconds to minutes", async () => {
+    const sumCompletedFocusSecondsOnDate = vi.fn(async () => 2730); // 45.5 dk → 46
+    const result = await makeService({ sumCompletedFocusSecondsOnDate }).getTodayFocusMinutes(
+      USER,
+    );
+    expect(result).toBe(46);
+    expect(sumCompletedFocusSecondsOnDate).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      TODAY,
+    );
+  });
+});
+
+describe("SessionService.getFocusingNowCount", () => {
+  it("clamps below-threshold counts to null and caches for 60s", async () => {
+    vi.useFakeTimers();
+    try {
+      const countFocusingNow = vi.fn(async () => 2);
+      const svc = makeService({ countFocusingNow });
+
+      expect(await svc.getFocusingNowCount()).toBeNull(); // 2 < 3 → hidden
+      expect(await svc.getFocusingNowCount()).toBeNull();
+      expect(countFocusingNow).toHaveBeenCalledTimes(1); // cache hit within TTL
+
+      countFocusingNow.mockResolvedValue(7);
+      vi.advanceTimersByTime(61_000);
+      expect(await svc.getFocusingNowCount()).toBe(7); // TTL expired → fresh query
+      expect(countFocusingNow).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe("SessionService.list", () => {
   it("includes planTaskTitle from the list join", async () => {
     const startedAt = new Date("2026-07-10T10:00:00Z");
@@ -145,6 +215,26 @@ describe("SessionService.list", () => {
 
     expect(result.items[0]?.planTaskTitle).toBe("Seans bağlantısı");
     expect(result.items[0]?.planTaskId).toBe("task-1");
+  });
+
+  it("forwards from/to date bounds and subject to listPaged", async () => {
+    const listPaged = vi.fn(async () => ({ items: [], total: 0 }));
+    await makeService({ listPaged }).list(USER, {
+      page: 2,
+      pageSize: 15,
+      subject: "Matematik",
+      from: "2026-07-01",
+      to: "2026-07-12",
+    });
+    expect(listPaged).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      2,
+      15,
+      "Matematik",
+      "2026-07-01",
+      "2026-07-12",
+    );
   });
 });
 
@@ -238,6 +328,7 @@ describe("SessionService.recordFeedback / setAiReflection", () => {
         aiReflection: null,
         aiModel: null,
         aiReflectedAt: null,
+        aiSuggestedTask: null,
       }),
     );
   });

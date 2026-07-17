@@ -1,18 +1,696 @@
 {
+  "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf",
+  "verifiedAt": "2026-07-15",
   "subjects": [
-    { "slug": "turkce", "name": "Türkçe" },
-    { "slug": "matematik", "name": "Matematik" },
-    { "slug": "tarih", "name": "Tarih" },
-    { "slug": "cografya", "name": "Coğrafya" },
-    { "slug": "vatandaslik", "name": "Vatandaşlık" },
-    { "slug": "guncel", "name": "Güncel Bilgiler" }
+    {
+      "slug": "turkce",
+      "name": "Türkçe"
+    },
+    {
+      "slug": "matematik",
+      "name": "Matematik"
+    },
+    {
+      "slug": "tarih",
+      "name": "Tarih"
+    },
+    {
+      "slug": "cografya",
+      "name": "Coğrafya"
+    },
+    {
+      "slug": "vatandaslik",
+      "name": "Vatandaşlık"
+    },
+    {
+      "slug": "guncel",
+      "name": "Güncel Bilgiler"
+    }
+  ],
+  "topics": [
+    {
+      "subjectSlug": "turkce",
+      "slug": "sozcukte-anlam",
+      "name": "Sözcükte anlam"
+    },
+    {
+      "subjectSlug": "turkce",
+      "slug": "cumlede-anlam",
+      "name": "Cümlede anlam"
+    },
+    {
+      "subjectSlug": "turkce",
+      "slug": "paragraf",
+      "name": "Paragraf"
+    },
+    {
+      "subjectSlug": "turkce",
+      "slug": "dil-bilgisi",
+      "name": "Dil bilgisi"
+    },
+    {
+      "subjectSlug": "turkce",
+      "slug": "yazim-ve-noktalama",
+      "name": "Yazım ve noktalama"
+    },
+    {
+      "subjectSlug": "turkce",
+      "slug": "sozel-mantik",
+      "name": "Sözel mantık"
+    },
+    {
+      "subjectSlug": "matematik",
+      "slug": "temel-kavramlar-ve-sayilar",
+      "name": "Temel kavramlar ve sayılar"
+    },
+    {
+      "subjectSlug": "matematik",
+      "slug": "cebirsel-islemler-ve-denklemler",
+      "name": "Cebirsel işlemler ve denklemler"
+    },
+    {
+      "subjectSlug": "matematik",
+      "slug": "oran-yuzde-ve-oranti",
+      "name": "Oran, yüzde ve orantı"
+    },
+    {
+      "subjectSlug": "matematik",
+      "slug": "problemler",
+      "name": "Problemler"
+    },
+    {
+      "subjectSlug": "matematik",
+      "slug": "sayisal-mantik",
+      "name": "Sayısal mantık"
+    },
+    {
+      "subjectSlug": "matematik",
+      "slug": "geometri",
+      "name": "Geometri"
+    },
+    {
+      "subjectSlug": "matematik",
+      "slug": "tablo-ve-grafik-yorumlama",
+      "name": "Tablo ve grafik yorumlama"
+    },
+    {
+      "subjectSlug": "tarih",
+      "slug": "osmanli-oncesi-turk-devletleri",
+      "name": "Osmanlı öncesi Türk devletleri tarihi"
+    },
+    {
+      "subjectSlug": "tarih",
+      "slug": "osmanli-tarihi",
+      "name": "Osmanlı tarihi"
+    },
+    {
+      "subjectSlug": "tarih",
+      "slug": "ataturk-ilkeleri-ve-inkilap-tarihi",
+      "name": "Atatürk İlkeleri ve İnkılap Tarihi"
+    },
+    {
+      "subjectSlug": "tarih",
+      "slug": "cagdas-turk-ve-dunya-tarihi",
+      "name": "Çağdaş Türk ve Dünya Tarihi"
+    },
+    {
+      "subjectSlug": "cografya",
+      "slug": "turkiyenin-fiziki-ozellikleri",
+      "name": "Türkiye'nin fiziki özellikleri"
+    },
+    {
+      "subjectSlug": "cografya",
+      "slug": "turkiyenin-beseri-ozellikleri",
+      "name": "Türkiye'nin beşerî özellikleri"
+    },
+    {
+      "subjectSlug": "cografya",
+      "slug": "turkiyenin-ekonomik-ozellikleri",
+      "name": "Türkiye'nin ekonomik özellikleri"
+    },
+    {
+      "subjectSlug": "vatandaslik",
+      "slug": "hukukun-temel-kavramlari",
+      "name": "Hukukun temel kavramları"
+    },
+    {
+      "subjectSlug": "vatandaslik",
+      "slug": "anayasa-ve-insan-haklari-hukuku",
+      "name": "Anayasa ve İnsan Hakları Hukuku"
+    },
+    {
+      "subjectSlug": "vatandaslik",
+      "slug": "idare",
+      "name": "İdare"
+    },
+    {
+      "subjectSlug": "guncel",
+      "slug": "turkiye-ve-dunya-guncel-konular",
+      "name": "Türkiye ve dünya ile ilgili genel, kültürel ve sosyoekonomik konular"
+    }
   ],
   "examSubjects": [
-    { "examSlug": "kpss-lisans-2026", "subjectSlug": "turkce", "questionCount": 30, "sortOrder": 0 },
-    { "examSlug": "kpss-lisans-2026", "subjectSlug": "matematik", "questionCount": 30, "sortOrder": 1 },
-    { "examSlug": "kpss-lisans-2026", "subjectSlug": "tarih", "questionCount": 27, "sortOrder": 2 },
-    { "examSlug": "kpss-lisans-2026", "subjectSlug": "cografya", "questionCount": 18, "sortOrder": 3 },
-    { "examSlug": "kpss-lisans-2026", "subjectSlug": "vatandaslik", "questionCount": 9, "sortOrder": 4 },
-    { "examSlug": "kpss-lisans-2026", "subjectSlug": "guncel", "questionCount": 6, "sortOrder": 5 }
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "turkce",
+      "questionCount": 30,
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "matematik",
+      "questionCount": 30,
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "tarih",
+      "questionCount": 27,
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "cografya",
+      "questionCount": 18,
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "vatandaslik",
+      "questionCount": 9,
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "guncel",
+      "questionCount": 6,
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "turkce",
+      "questionCount": 30,
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "matematik",
+      "questionCount": 30,
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "tarih",
+      "questionCount": 27,
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "cografya",
+      "questionCount": 18,
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "vatandaslik",
+      "questionCount": 9,
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "guncel",
+      "questionCount": 6,
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "turkce",
+      "questionCount": 30,
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "matematik",
+      "questionCount": 30,
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "tarih",
+      "questionCount": 27,
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "cografya",
+      "questionCount": 18,
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "vatandaslik",
+      "questionCount": 9,
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "guncel",
+      "questionCount": 6,
+      "sortOrder": 5
+    }
+  ],
+  "examTopics": [
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "sozcukte-anlam",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "cumlede-anlam",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "paragraf",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "dil-bilgisi",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "yazim-ve-noktalama",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "sozel-mantik",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "temel-kavramlar-ve-sayilar",
+      "sortOrder": 6
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "cebirsel-islemler-ve-denklemler",
+      "sortOrder": 7
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "oran-yuzde-ve-oranti",
+      "sortOrder": 8
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "problemler",
+      "sortOrder": 9
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "sayisal-mantik",
+      "sortOrder": 10
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "geometri",
+      "sortOrder": 11
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "tablo-ve-grafik-yorumlama",
+      "sortOrder": 12
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "osmanli-oncesi-turk-devletleri",
+      "sortOrder": 13
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "osmanli-tarihi",
+      "sortOrder": 14
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "ataturk-ilkeleri-ve-inkilap-tarihi",
+      "sortOrder": 15
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "cagdas-turk-ve-dunya-tarihi",
+      "sortOrder": 16
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "turkiyenin-fiziki-ozellikleri",
+      "sortOrder": 17
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "turkiyenin-beseri-ozellikleri",
+      "sortOrder": 18
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "turkiyenin-ekonomik-ozellikleri",
+      "sortOrder": 19
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "hukukun-temel-kavramlari",
+      "sortOrder": 20
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "anayasa-ve-insan-haklari-hukuku",
+      "sortOrder": 21
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "idare",
+      "sortOrder": 22
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "guncel",
+      "topicSlug": "turkiye-ve-dunya-guncel-konular",
+      "sortOrder": 23
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "sozcukte-anlam",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "cumlede-anlam",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "paragraf",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "dil-bilgisi",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "yazim-ve-noktalama",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "sozel-mantik",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "temel-kavramlar-ve-sayilar",
+      "sortOrder": 6
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "cebirsel-islemler-ve-denklemler",
+      "sortOrder": 7
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "oran-yuzde-ve-oranti",
+      "sortOrder": 8
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "problemler",
+      "sortOrder": 9
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "sayisal-mantik",
+      "sortOrder": 10
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "geometri",
+      "sortOrder": 11
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "tablo-ve-grafik-yorumlama",
+      "sortOrder": 12
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "osmanli-oncesi-turk-devletleri",
+      "sortOrder": 13
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "osmanli-tarihi",
+      "sortOrder": 14
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "ataturk-ilkeleri-ve-inkilap-tarihi",
+      "sortOrder": 15
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "cagdas-turk-ve-dunya-tarihi",
+      "sortOrder": 16
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "turkiyenin-fiziki-ozellikleri",
+      "sortOrder": 17
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "turkiyenin-beseri-ozellikleri",
+      "sortOrder": 18
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "turkiyenin-ekonomik-ozellikleri",
+      "sortOrder": 19
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "hukukun-temel-kavramlari",
+      "sortOrder": 20
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "anayasa-ve-insan-haklari-hukuku",
+      "sortOrder": 21
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "idare",
+      "sortOrder": 22
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "guncel",
+      "topicSlug": "turkiye-ve-dunya-guncel-konular",
+      "sortOrder": 23
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "sozcukte-anlam",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "cumlede-anlam",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "paragraf",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "dil-bilgisi",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "yazim-ve-noktalama",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "sozel-mantik",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "temel-kavramlar-ve-sayilar",
+      "sortOrder": 6
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "cebirsel-islemler-ve-denklemler",
+      "sortOrder": 7
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "oran-yuzde-ve-oranti",
+      "sortOrder": 8
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "problemler",
+      "sortOrder": 9
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "sayisal-mantik",
+      "sortOrder": 10
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "geometri",
+      "sortOrder": 11
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "tablo-ve-grafik-yorumlama",
+      "sortOrder": 12
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "osmanli-oncesi-turk-devletleri",
+      "sortOrder": 13
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "osmanli-tarihi",
+      "sortOrder": 14
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "ataturk-ilkeleri-ve-inkilap-tarihi",
+      "sortOrder": 15
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "cagdas-turk-ve-dunya-tarihi",
+      "sortOrder": 16
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "turkiyenin-fiziki-ozellikleri",
+      "sortOrder": 17
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "turkiyenin-beseri-ozellikleri",
+      "sortOrder": 18
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "turkiyenin-ekonomik-ozellikleri",
+      "sortOrder": 19
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "hukukun-temel-kavramlari",
+      "sortOrder": 20
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "anayasa-ve-insan-haklari-hukuku",
+      "sortOrder": 21
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "idare",
+      "sortOrder": 22
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "guncel",
+      "topicSlug": "turkiye-ve-dunya-guncel-konular",
+      "sortOrder": 23
+    }
   ]
 }

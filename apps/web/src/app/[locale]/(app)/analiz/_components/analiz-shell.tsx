@@ -1,34 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { motion, useReducedMotion } from "framer-motion";
 import type {
   AuthUser,
-  CoachAccessDto,
   CoachingAnalysisDto,
   ExamCalendarDto,
   ExamSubjectDto,
   ExamSummaryDto,
   MockExamDto,
+  PhotoAccessDto,
   WeeklyReviewDto,
 } from "@mentor/types";
 import {
-  aiChatControllerGetAccess,
   ApiClientError,
   contentControllerCalendarByFamily,
   contentControllerSubjectsBySlug,
   http,
   usersControllerMe,
 } from "@mentor/api-client";
-import { Card } from "@mentor/ui";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Button, Card } from "@mentor/ui";
+import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { fetchPhotoAccess } from "@/lib/analiz";
-import type { PhotoAccessDto } from "@mentor/types";
-import { staggerListVariants } from "@/lib/stagger-motion";
 import { AnalizContentSkeleton } from "./analiz-content-skeleton";
 import { AnalizSegmentControl } from "./analiz-segment-control";
 import { AnalizSummaryBand } from "./analiz-summary-band";
@@ -36,9 +32,12 @@ import { AnalizTabGelisim } from "./analiz-tab-gelisim";
 import { AnalizTabGir } from "./analiz-tab-gir";
 import { AnalizTabYanlislarim } from "./analiz-tab-yanlislarim";
 import {
+  buildAnalizTabHref,
   emptyScores,
   parseAnalizTab,
   scoresFromMockExam,
+  shouldNavigateAnalizTab,
+  shouldRevealFirstInsight,
   type AnalizTab,
   type SubjectScores,
 } from "./analiz-types";
@@ -47,10 +46,15 @@ type ReadyData = {
   exam: ExamSummaryDto | null;
   subjects: ExamSubjectDto[];
   analysis: CoachingAnalysisDto | null;
-  weeklyReview: WeeklyReviewDto | null;
-  weeklyReviewError: string | null;
-  coachAccess: CoachAccessDto | null;
 };
+
+type ExamAsyncState<T> =
+  | { status: "idle"; examId: string | null }
+  | { status: "loading"; examId: string }
+  | { status: "ready"; examId: string; data: T }
+  | { status: "error"; examId: string; message: string };
+
+type DevelopmentExtras = WeeklyReviewDto;
 
 type LoadState =
   | { status: "loading" }
@@ -68,7 +72,7 @@ function getWeeklyReviewUrl(examId: string): string {
 }
 
 function getMockExamsUrl(): string {
-  return `/v1/mock-exams`;
+  return "/v1/mock-exams";
 }
 
 /**
@@ -77,11 +81,10 @@ function getMockExamsUrl(): string {
 export function AnalizShell() {
   const t = useTranslations("analysis");
   const toast = useMentorToast();
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const reduceMotion = useReducedMotion();
-
-  const tab = parseAnalizTab(searchParams.get("tab"));
+  const [tab, setActiveTab] = useState<AnalizTab>(() =>
+    parseAnalizTab(searchParams.get("tab")),
+  );
 
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [scores, setScores] = useState<Record<string, SubjectScores>>({});
@@ -92,15 +95,54 @@ export function AnalizShell() {
   const [takenAtDate, setTakenAtDate] = useState(() =>
     new Date().toISOString().slice(0, 10),
   );
-  const [photoAccess, setPhotoAccess] = useState<PhotoAccessDto | null>(null);
-  const [photoAccessError, setPhotoAccessError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [developmentExtras, setDevelopmentExtras] = useState<
+    ExamAsyncState<DevelopmentExtras>
+  >({ status: "idle", examId: null });
+  const [photoAccessState, setPhotoAccessState] = useState<
+    ExamAsyncState<PhotoAccessDto>
+  >({ status: "idle", examId: null });
+  const entryScrollRequested = useRef(false);
 
   const setTab = useCallback(
     (next: AnalizTab) => {
-      router.replace(`/analiz?tab=${next}`);
+      if (!shouldNavigateAnalizTab(tab, next)) return;
+      setActiveTab(next);
+      window.history.replaceState(
+        window.history.state,
+        "",
+        buildAnalizTabHref(
+          window.location.pathname,
+          window.location.search,
+          next,
+        ),
+      );
     },
-    [router],
+    [tab],
   );
+
+  const activateEntryForm = useCallback(() => {
+    const form = document.getElementById("analiz-form");
+    form?.scrollIntoView({ block: "start" });
+    form
+      ?.querySelector<HTMLInputElement>('input[type="number"]')
+      ?.focus({ preventScroll: true });
+  }, []);
+
+  const openEntryForm = useCallback(() => {
+    if (tab === "gir") {
+      activateEntryForm();
+      return;
+    }
+    entryScrollRequested.current = true;
+    setTab("gir");
+  }, [activateEntryForm, setTab, tab]);
+
+  useEffect(() => {
+    if (tab !== "gir" || !entryScrollRequested.current) return;
+    entryScrollRequested.current = false;
+    requestAnimationFrame(activateEntryForm);
+  }, [activateEntryForm, tab]);
 
   useEffect(() => {
     let active = true;
@@ -115,70 +157,44 @@ export function AnalizShell() {
           return;
         }
 
-        const [calendarRes, photoAccessResult, coachAccessResult] = await Promise.all([
-          contentControllerCalendarByFamily(me.examType),
-          fetchPhotoAccess().catch((err: unknown) => ({ error: err })),
-          aiChatControllerGetAccess().catch(() => null),
-        ]);
+        const calendarRes = await contentControllerCalendarByFamily(
+          me.examType,
+        );
         if (!active) return;
-
-        if ("error" in photoAccessResult) {
-          const err = photoAccessResult.error;
-          setPhotoAccess(null);
-          setPhotoAccessError(
-            err instanceof Error ? err.message : t("photo_access_error"),
-          );
-        } else {
-          setPhotoAccess(photoAccessResult);
-          setPhotoAccessError(null);
-        }
 
         const calendar = calendarRes as unknown as ExamCalendarDto | null;
         const current = calendar?.exam ?? null;
-        const [analysis, subjectRows, weeklyResult] = current
+        const [analysis, subjectRows] = current
           ? await Promise.all([
               http<CoachingAnalysisDto>(getAnalysisUrl(current.id)),
-              contentControllerSubjectsBySlug(current.slug) as unknown as Promise<
-                ExamSubjectDto[]
-              >,
-              http<WeeklyReviewDto>(getWeeklyReviewUrl(current.id)).catch(
-                (error: unknown) => ({ error }),
-              ),
+              contentControllerSubjectsBySlug(
+                current.slug,
+              ) as unknown as Promise<ExamSubjectDto[]>,
             ])
-          : [null, [], null];
+          : [null, []];
         if (!active) return;
 
         setScores(emptyScores(subjectRows));
+        setDevelopmentExtras({ status: "idle", examId: current?.id ?? null });
+        setPhotoAccessState({ status: "idle", examId: current?.id ?? null });
         setLoadState({
           status: "ready",
           data: {
             exam: current,
             subjects: subjectRows,
             analysis,
-            weeklyReview:
-              weeklyResult && !("error" in weeklyResult) ? weeklyResult : null,
-            weeklyReviewError:
-              weeklyResult && "error" in weeklyResult
-                ? weeklyResult.error instanceof Error
-                  ? weeklyResult.error.message
-                  : t("weekly.load_error")
-                : null,
-            coachAccess: coachAccessResult
-              ? ((coachAccessResult as unknown as { data?: CoachAccessDto }).data ??
-                (coachAccessResult as unknown as CoachAccessDto))
-              : null,
           },
         });
-      } catch (err) {
+      } catch (loadError) {
         if (!active) return;
         setLoadState({
           status: "error",
           message:
-            err instanceof ApiClientError
-              ? err.message
-              : err instanceof Error
-                ? err.message
-                : String(err),
+            loadError instanceof ApiClientError
+              ? loadError.message
+              : loadError instanceof Error
+                ? loadError.message
+                : String(loadError),
         });
       }
     }
@@ -187,7 +203,7 @@ export function AnalizShell() {
     return () => {
       active = false;
     };
-  }, [t]);
+  }, [loadAttempt]);
 
   const readyData = loadState.status === "ready" ? loadState.data : null;
   const exam = readyData?.exam ?? null;
@@ -196,58 +212,118 @@ export function AnalizShell() {
     [readyData?.subjects],
   );
   const analysis = readyData?.analysis ?? null;
-  const personalRecordNet = analysis?.personalRecordNet ?? null;
-
   const activeMockExamId = analysis?.trend[0]?.id ?? null;
+
+  const loadDevelopmentExtras = useCallback(
+    async (examId: string) => {
+      setDevelopmentExtras({ status: "loading", examId });
+      try {
+        const weeklyReview = await http<WeeklyReviewDto>(
+          getWeeklyReviewUrl(examId),
+        );
+        setDevelopmentExtras((current) =>
+          current.status === "loading" && current.examId === examId
+            ? { status: "ready", examId, data: weeklyReview }
+            : current,
+        );
+      } catch (loadError) {
+        setDevelopmentExtras((current) =>
+          current.status === "loading" && current.examId === examId
+            ? {
+                status: "error",
+                examId,
+                message:
+                  loadError instanceof Error
+                    ? loadError.message
+                    : t("weekly.load_error"),
+              }
+            : current,
+        );
+      }
+    },
+    [t],
+  );
+
+  const loadPhotoAccess = useCallback(
+    async (examId: string) => {
+      setPhotoAccessState({ status: "loading", examId });
+      try {
+        const access = await fetchPhotoAccess();
+        setPhotoAccessState((current) =>
+          current.status === "loading" && current.examId === examId
+            ? { status: "ready", examId, data: access }
+            : current,
+        );
+      } catch (loadError) {
+        setPhotoAccessState((current) =>
+          current.status === "loading" && current.examId === examId
+            ? {
+                status: "error",
+                examId,
+                message:
+                  loadError instanceof Error
+                    ? loadError.message
+                    : t("photo_access_error"),
+              }
+            : current,
+        );
+      }
+    },
+    [t],
+  );
+
+  useEffect(() => {
+    if (!exam || tab !== "gelisim") return;
+    if (
+      developmentExtras.examId === exam.id &&
+      developmentExtras.status !== "idle"
+    ) {
+      return;
+    }
+    void loadDevelopmentExtras(exam.id);
+  }, [developmentExtras, exam, loadDevelopmentExtras, tab]);
+
+  useEffect(() => {
+    if (!exam || tab !== "yanlislar") return;
+    if (
+      photoAccessState.examId === exam.id &&
+      photoAccessState.status !== "idle"
+    ) {
+      return;
+    }
+    void loadPhotoAccess(exam.id);
+  }, [exam, loadPhotoAccess, photoAccessState, tab]);
 
   const refreshAnalysis = useCallback(async () => {
     if (!exam || loadState.status !== "ready") return;
-    const [analysisRes, weeklyResult] = await Promise.all([
-      http<CoachingAnalysisDto>(getAnalysisUrl(exam.id)),
-      http<WeeklyReviewDto>(getWeeklyReviewUrl(exam.id)).catch(
-        (refreshError: unknown) => ({ error: refreshError }),
-      ),
-    ]);
-    setLoadState({
-      status: "ready",
-      data: {
-        ...loadState.data,
-        exam,
-        subjects,
-        analysis: analysisRes,
-        weeklyReview:
-          !("error" in weeklyResult) ? weeklyResult : loadState.data.weeklyReview,
-        weeklyReviewError:
-          "error" in weeklyResult
-            ? weeklyResult.error instanceof Error
-              ? weeklyResult.error.message
-              : t("weekly.load_error")
-            : null,
-      },
-    });
-  }, [exam, loadState, subjects, t]);
+    const analysisRes = await http<CoachingAnalysisDto>(
+      getAnalysisUrl(exam.id),
+    );
+    setLoadState((current) =>
+      current.status === "ready" && current.data.exam?.id === exam.id
+        ? {
+            status: "ready",
+            data: { ...current.data, analysis: analysisRes },
+          }
+        : current,
+    );
+  }, [exam, loadState.status]);
+
+  const invalidateExtraData = useCallback(() => {
+    setDevelopmentExtras({ status: "idle", examId: exam?.id ?? null });
+    setPhotoAccessState({ status: "idle", examId: exam?.id ?? null });
+  }, [exam?.id]);
 
   const handleHistoryChanged = useCallback(() => {
     setHistoryRefreshKey((key) => key + 1);
+    invalidateExtraData();
     void refreshAnalysis();
-  }, [refreshAnalysis]);
+  }, [invalidateExtraData, refreshAnalysis]);
 
   const handlePhotoCategorized = useCallback(() => {
-    void Promise.all([
-      refreshAnalysis(),
-      fetchPhotoAccess()
-        .then((access) => {
-          setPhotoAccess(access);
-          setPhotoAccessError(null);
-        })
-        .catch((err: unknown) => {
-          setPhotoAccess(null);
-          setPhotoAccessError(
-            err instanceof Error ? err.message : t("photo_access_error"),
-          );
-        }),
-    ]);
-  }, [refreshAnalysis, t]);
+    invalidateExtraData();
+    void refreshAnalysis();
+  }, [invalidateExtraData, refreshAnalysis]);
 
   function updateScore(
     slug: string,
@@ -265,31 +341,33 @@ export function AnalizShell() {
       setScores(scoresFromMockExam(subjects, mock.subjects));
       setPublisherName(mock.publisherName ?? "");
       setTakenAtDate(mock.takenAt.slice(0, 10));
-      setTab("gir");
-      requestAnimationFrame(() => {
-        document.getElementById("analiz-form")?.scrollIntoView({ behavior: "smooth" });
-      });
+      openEntryForm();
     },
-    [subjects, setTab],
+    [openEntryForm, subjects],
   );
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!exam || submitting || loadState.status !== "ready") return;
+    const revealFirstInsight = shouldRevealFirstInsight(
+      analysis?.trend.length ?? 0,
+    );
     setSubmitting(true);
     setError(null);
     try {
       const payload = {
         examId: exam.id,
-        ...(publisherName.trim() ? { publisherName: publisherName.trim() } : {}),
+        ...(publisherName.trim()
+          ? { publisherName: publisherName.trim() }
+          : {}),
         ...(takenAtDate
           ? { takenAt: new Date(`${takenAtDate}T12:00:00`).toISOString() }
           : {}),
-        subjects: subjects.map((s) => ({
-          subjectRef: s.slug,
-          correct: Number(scores[s.slug]?.correct || 0),
-          wrong: Number(scores[s.slug]?.wrong || 0),
-          blank: Number(scores[s.slug]?.blank || 0),
+        subjects: subjects.map((subject) => ({
+          subjectRef: subject.slug,
+          correct: Number(scores[subject.slug]?.correct || 0),
+          wrong: Number(scores[subject.slug]?.wrong || 0),
+          blank: Number(scores[subject.slug]?.blank || 0),
         })),
       };
       const result = await http<MockExamDto>(getMockExamsUrl(), {
@@ -300,42 +378,30 @@ export function AnalizShell() {
         title: t("saved_toast_title"),
         message: t("saved_toast_message", { net: result.totalNet }),
       });
+      invalidateExtraData();
       await refreshAnalysis();
-      setHistoryRefreshKey((k) => k + 1);
+      setHistoryRefreshKey((key) => key + 1);
       setScores(emptyScores(subjects));
       setPublisherName("");
       setTakenAtDate(new Date().toISOString().slice(0, 10));
-    } catch (err) {
+      if (revealFirstInsight) {
+        setTab("gelisim");
+        requestAnimationFrame(() => {
+          document.getElementById("analiz-tab-gelisim")?.focus();
+        });
+      }
+    } catch (submitError) {
       setError(
-        err instanceof ApiClientError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : String(err),
+        submitError instanceof ApiClientError
+          ? submitError.message
+          : submitError instanceof Error
+            ? submitError.message
+            : String(submitError),
       );
     } finally {
       setSubmitting(false);
     }
   }
-
-  const headerMotion = reduceMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: 0.3, ease: "easeOut" as const },
-        },
-      };
-
-  const gridMotion = reduceMotion
-    ? {}
-    : {
-        initial: "hidden" as const,
-        animate: "show" as const,
-        variants: staggerListVariants,
-      };
 
   if (loadState.status === "loading") {
     return <AnalizContentSkeleton />;
@@ -344,14 +410,26 @@ export function AnalizShell() {
   if (loadState.status === "error") {
     return (
       <main className="mx-auto w-full max-w-5xl px-5 py-8 lg:px-8 lg:py-10">
-        <FormError message={loadState.message} />
+        <Card className="flex flex-col items-start gap-4">
+          <FormError message={loadState.message} />
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setLoadState({ status: "loading" });
+              setLoadAttempt((attempt) => attempt + 1);
+            }}
+          >
+            {t("load_retry")}
+          </Button>
+        </Card>
       </main>
     );
   }
 
   return (
     <main className="mx-auto w-full max-w-5xl px-5 py-8 lg:px-8 lg:py-10">
-      <motion.header className="mb-6" {...headerMotion}>
+      <header className="mb-6">
         <h1
           className="text-3xl font-bold text-balance"
           style={{
@@ -367,32 +445,23 @@ export function AnalizShell() {
         >
           {t("subtitle")}
         </p>
-      </motion.header>
+      </header>
 
       <FormError message={error} />
 
       {loadState.status === "needs_exam_type" ? (
         <ExamTypeGate />
       ) : (
-        <motion.div className="flex flex-col gap-6" {...gridMotion}>
-          <AnalizSummaryBand
-            analysis={analysis}
-            onNewEntry={() => {
-              setTab("gir");
-              requestAnimationFrame(() => {
-                document
-                  .getElementById("analiz-form")
-                  ?.scrollIntoView({ behavior: "smooth" });
-              });
-            }}
-          />
+        <div className="flex flex-col gap-6">
+          <AnalizSummaryBand analysis={analysis} onNewEntry={openEntryForm} />
 
           <AnalizSegmentControl value={tab} onChange={setTab} />
 
           <div
             role="tabpanel"
-            id={`analiz-panel-${tab}`}
-            aria-labelledby={`analiz-tab-${tab}`}
+            id="analiz-panel-gir"
+            aria-labelledby="analiz-tab-gir"
+            hidden={tab !== "gir"}
           >
             {tab === "gir" ? (
               <AnalizTabGir
@@ -407,32 +476,49 @@ export function AnalizShell() {
                 onPublisherChange={setPublisherName}
                 onTakenAtChange={setTakenAtDate}
                 onScoreChange={updateScore}
-                onSubmit={(e) => void submit(e)}
+                onSubmit={(event) => void submit(event)}
                 onCopyLast={handleCopyLast}
                 onHistoryChanged={handleHistoryChanged}
               />
             ) : null}
+          </div>
+
+          <div
+            role="tabpanel"
+            id="analiz-panel-gelisim"
+            aria-labelledby="analiz-tab-gelisim"
+            hidden={tab !== "gelisim"}
+          >
             {tab === "gelisim" ? (
               <AnalizTabGelisim
-                examId={exam?.id ?? ""}
                 analysis={analysis}
-                personalRecordNet={personalRecordNet}
-                weeklyReview={readyData?.weeklyReview ?? null}
-                weeklyReviewError={readyData?.weeklyReviewError ?? null}
-                premium={readyData?.coachAccess?.mode === "PREMIUM"}
-              />
-            ) : null}
-            {tab === "yanlislar" ? (
-              <AnalizTabYanlislarim
-                activeMockExamId={activeMockExamId}
-                photoAccess={photoAccess}
-                photoAccessError={photoAccessError}
-                analysis={analysis}
-                onCategorized={handlePhotoCategorized}
+                extras={developmentExtras}
+                onRetryExtras={() => {
+                  if (exam) void loadDevelopmentExtras(exam.id);
+                }}
               />
             ) : null}
           </div>
-        </motion.div>
+
+          <div
+            role="tabpanel"
+            id="analiz-panel-yanlislar"
+            aria-labelledby="analiz-tab-yanlislar"
+            hidden={tab !== "yanlislar"}
+          >
+            {tab === "yanlislar" ? (
+              <AnalizTabYanlislarim
+                activeMockExamId={activeMockExamId}
+                photoAccessState={photoAccessState}
+                analysis={analysis}
+                onCategorized={handlePhotoCategorized}
+                onRetryAccess={() => {
+                  if (exam) void loadPhotoAccess(exam.id);
+                }}
+              />
+            ) : null}
+          </div>
+        </div>
       )}
     </main>
   );
@@ -473,7 +559,3 @@ function ExamTypeGate() {
     </Card>
   );
 }
-
-
-
-

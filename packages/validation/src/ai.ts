@@ -6,8 +6,24 @@ export const aiChatSchema = z.object({
   message: z.string().trim().min(1).max(2000),
   /** Idempotency key for coin spend (free path) — prevents double-debit on retry. */
   clientMessageId: z.string().uuid().optional(),
+  /** Existing thread to continue; omit to start a new conversation. */
+  conversationId: z.string().uuid().optional(),
+  /** Owned mock exam whose authoritative result summary should ground this message. */
+  contextMockExamId: z.string().uuid().optional(),
 });
 export type AiChatInput = z.infer<typeof aiChatSchema>;
+
+/** POST /v1/coach/plan-draft — optional free-text wish for the weekly draft. */
+export const planDraftSchema = z.object({
+  note: z.string().trim().max(500).optional(),
+});
+export type PlanDraftInput = z.infer<typeof planDraftSchema>;
+
+/** PATCH /v1/coach/messages/:id/feedback — 1 = 👍, -1 = 👎, null = clear. */
+export const coachFeedbackSchema = z.object({
+  feedback: z.union([z.literal(1), z.literal(-1), z.null()]),
+});
+export type CoachFeedbackInput = z.infer<typeof coachFeedbackSchema>;
 
 /** Mock-exam wrong-question photo upload (signed URL). */
 export const photoUploadUrlSchema = z.object({

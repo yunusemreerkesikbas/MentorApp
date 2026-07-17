@@ -1,19 +1,28 @@
 import type { INestApplication } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
+import { validateEnv } from "../src/config/env.validation";
+import { DatabaseModule } from "../src/database/database.module";
+import { HealthModule } from "../src/health/health.module";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 /**
  * Readiness must report 503 when the DB is unreachable, while liveness stays 200.
- * Points the pool at an unreachable port (lazy pool → app boots; the SELECT 1 fails).
+ * Boots only the real health + database boundary, without unrelated feature lifecycle hooks.
  */
 describe("health when DB is down (e2e)", () => {
   let app: INestApplication;
 
   beforeAll(async () => {
     process.env.DATABASE_URL = "postgres://mentor:mentor@localhost:1/mentor";
-    const { AppModule } = await import("../src/app.module");
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+        DatabaseModule,
+        HealthModule,
+      ],
+    }).compile();
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     await app.init();

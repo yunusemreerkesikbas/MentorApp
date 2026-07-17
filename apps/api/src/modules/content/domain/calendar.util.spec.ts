@@ -31,6 +31,37 @@ describe("selectExamForCountdown", () => {
     expect(picked?.slug).toBe("kpss-lisans-2026");
   });
 
+  it("falls through a stale current marker to the nearest upcoming exam", () => {
+    const rows = toExamCandidates([
+      {
+        exam: {
+          id: "past",
+          slug: "kpss-lisans-2026",
+          name: "KPSS Lisans",
+          family: "KPSS",
+          variant: "LISANS",
+          isCurrent: true,
+        },
+        event: { eventAt: new Date("2026-07-12T06:00:00.000Z") },
+      },
+      {
+        exam: {
+          id: "next",
+          slug: "kpss-onlisans-2026",
+          name: "KPSS Önlisans",
+          family: "KPSS",
+          variant: "ONLISANS",
+          isCurrent: false,
+        },
+        event: { eventAt: new Date("2026-07-19T06:00:00.000Z") },
+      },
+    ]);
+
+    expect(selectExamForCountdown(rows, "2026-07-14")?.slug).toBe(
+      "kpss-onlisans-2026",
+    );
+  });
+
   it("picks nearest upcoming when no isCurrent", () => {
     const rows = toExamCandidates([
       {

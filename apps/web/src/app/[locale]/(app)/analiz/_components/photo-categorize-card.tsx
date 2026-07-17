@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import Image from "next/image";
-import type { PhotoAccessDto } from "@mentor/types";
+import type { CategorizePhotoResultDto, PhotoAccessDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button, Card, Chip, ProgressBar, SectionHeading } from "@mentor/ui";
 import { FormError } from "@/components/form";
@@ -34,7 +34,7 @@ export function PhotoCategorizeCard({
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [chips, setChips] = useState<{ slug: string; name: string }[]>([]);
+  const [result, setResult] = useState<CategorizePhotoResultDto | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -49,7 +49,8 @@ export function PhotoCategorizeCard({
     (file: File | null) => {
       clearPreview();
       if (!file) return;
-      const contentType = file.type === "image/png" ? "image/png" : "image/jpeg";
+      const contentType =
+        file.type === "image/png" ? "image/png" : "image/jpeg";
       if (contentType !== file.type && file.type !== "") {
         setError(translate("error_type"));
         return;
@@ -67,7 +68,8 @@ export function PhotoCategorizeCard({
       setError(null);
       setBusy(true);
       try {
-        const contentType = file.type === "image/png" ? "image/png" : "image/jpeg";
+        const contentType =
+          file.type === "image/png" ? "image/png" : "image/jpeg";
         const upload = await createPhotoUploadUrl(contentType);
         if (file.size > upload.maxBytes) {
           setError(translate("error_too_big"));
@@ -80,7 +82,7 @@ export function PhotoCategorizeCard({
           upload.key,
           clientRequestId,
         );
-        setChips(result.subjectRefs);
+        setResult(result);
         clearPreview();
         onCategorized?.();
       } catch (err) {
@@ -100,30 +102,35 @@ export function PhotoCategorizeCard({
 
   if (!access.canCategorize) {
     const isRateLimited = access.reason === "AI_PHOTO_RATE_LIMITED";
+    const isPremiumRequired = access.reason === "PAYMENT_PREMIUM_REQUIRED";
+    const title = isRateLimited
+      ? translate("locked_rate_limited_title")
+      : isPremiumRequired
+        ? translate("locked_premium_title")
+        : translate("locked_unavailable_title");
+    const subtitle = isRateLimited
+      ? translate("locked_rate_limited_subtitle")
+      : isPremiumRequired
+        ? translate("locked_premium_subtitle")
+        : translate("locked_unavailable_subtitle");
+
     return (
       <Card className="flex flex-col items-start gap-3">
         <Chip>
           {isRateLimited
             ? translate("chip_rate_limited")
-            : translate("chip_premium")}
+            : isPremiumRequired
+              ? translate("chip_premium")
+              : translate("chip_unavailable")}
         </Chip>
-        <SectionHeading
-          as="h2"
-          subtitle={
-            isRateLimited
-              ? translate("locked_rate_limited_subtitle")
-              : translate("locked_premium_subtitle")
-          }
-        >
-          {isRateLimited
-            ? translate("locked_rate_limited_title")
-            : translate("locked_premium_title")}
+        <SectionHeading as="h2" subtitle={subtitle}>
+          {title}
         </SectionHeading>
-        {isRateLimited ? null : (
+        {isPremiumRequired ? (
           <Button onClick={() => router.push("/abonelik")}>
             {translate("upgrade")}
           </Button>
-        )}
+        ) : null}
       </Card>
     );
   }
@@ -193,7 +200,10 @@ export function PhotoCategorizeCard({
               : "rgba(255,255,255,0.5)",
           }}
         >
-          <p className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+          <p
+            className="text-sm font-semibold"
+            style={{ color: "var(--color-main)" }}
+          >
             {translate("file_label")}
           </p>
           <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
@@ -246,19 +256,44 @@ export function PhotoCategorizeCard({
       )}
 
       {busy && !pendingFile ? (
-        <p className="text-sm" role="status" style={{ color: "var(--color-secondary)" }}>
+        <p
+          className="text-sm"
+          role="status"
+          style={{ color: "var(--color-secondary)" }}
+        >
           {translate("analyzing")}
         </p>
       ) : null}
 
-      {chips.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          <span className="text-sm" style={{ color: "var(--color-secondary)" }}>
-            {translate("result_prefix")}
-          </span>
-          {chips.map((c) => (
-            <Chip key={c.slug}>{c.name}</Chip>
-          ))}
+      {result ? (
+        <div className="flex flex-col gap-2" role="status">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className="text-sm"
+              style={{ color: "var(--color-secondary)" }}
+            >
+              {translate("result_prefix")}
+            </span>
+            {result.topicRefs.map((topic) => (
+              <Chip key={topic.subjectSlug + ":" + topic.slug}>
+                {topic.subjectName} · {topic.name}
+              </Chip>
+            ))}
+            {result.topicRefs.length === 0
+              ? result.subjectRefs.map((subject) => (
+                  <Chip key={subject.slug}>{subject.name}</Chip>
+                ))
+              : null}
+          </div>
+          {result.topicRefs.length === 0 && result.subjectRefs.length > 0 ? (
+            <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+              {translate("topic_undetermined")}
+            </p>
+          ) : result.subjectRefs.length === 0 ? (
+            <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+              {translate("result_empty")}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </Card>

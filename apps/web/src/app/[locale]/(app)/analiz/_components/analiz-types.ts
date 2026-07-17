@@ -1,14 +1,8 @@
-import type {
-  CoachingAnalysisDto,
-  ExamSubjectDto,
-  GhostComparisonDto,
-  MockExamTrendPointDto,
-  SubjectStrengthDto,
-} from "@mentor/types";
+import type { ExamSubjectDto, MockExamTrendPointDto } from "@mentor/types";
 
 export type AnalizTab = "gir" | "gelisim" | "yanlislar";
 
-export type TrendWindow = "4" | "8" | "all";
+export type TrendWindow = "4" | "8" | "12";
 
 export interface SubjectScores {
   correct: string;
@@ -25,11 +19,47 @@ export function parseAnalizTab(value: string | null): AnalizTab {
   return "gir";
 }
 
+export function shouldNavigateAnalizTab(
+  current: AnalizTab,
+  next: AnalizTab,
+): boolean {
+  return current !== next;
+}
+
+export function shouldRevealFirstInsight(attemptCount: number): boolean {
+  return attemptCount === 0;
+}
+
+export function shouldOpenAnalysisEvidence(hasNextFocus: boolean): boolean {
+  return !hasNextFocus;
+}
+
+export function buildAnalysisCoachHref(seed: string) {
+  return {
+    pathname: "/koc/chat" as const,
+    query: { seed },
+  };
+}
+
+export function buildAnalizTabHref(
+  pathname: string,
+  search: string,
+  tab: AnalizTab,
+): string {
+  const params = new URLSearchParams(search);
+  params.set("tab", tab);
+  params.delete("_rsc");
+  return `${pathname}?${params.toString()}`;
+}
+
 export function emptyScores(
   subjects: ExamSubjectDto[],
 ): Record<string, SubjectScores> {
   return Object.fromEntries(
-    subjects.map((s) => [s.slug, { correct: "", wrong: "", blank: "" }]),
+    subjects.map((subject) => [
+      subject.slug,
+      { correct: "", wrong: "", blank: "" },
+    ]),
   );
 }
 
@@ -37,12 +67,12 @@ export function scoresFromMockExam(
   subjects: ExamSubjectDto[],
   rows: { subjectRef: string; correct: number; wrong: number; blank: number }[],
 ): Record<string, SubjectScores> {
-  const byRef = new Map(rows.map((r) => [r.subjectRef, r]));
+  const byRef = new Map(rows.map((row) => [row.subjectRef, row]));
   return Object.fromEntries(
-    subjects.map((s) => {
-      const row = byRef.get(s.slug);
+    subjects.map((subject) => {
+      const row = byRef.get(subject.slug);
       return [
-        s.slug,
+        subject.slug,
         {
           correct: row ? String(row.correct) : "",
           wrong: row ? String(row.wrong) : "",
@@ -65,9 +95,7 @@ export function sliceTrend(
   trend: MockExamTrendPointDto[],
   window: TrendWindow,
 ): MockExamTrendPointDto[] {
-  if (window === "all") return trend;
-  const n = window === "4" ? 4 : 8;
-  return trend.slice(0, n);
+  return trend.slice(0, Number(window));
 }
 
 /** Sparkline reads oldest → newest (left to right). */
@@ -75,31 +103,6 @@ export function trendForSparkline(
   trend: MockExamTrendPointDto[],
 ): MockExamTrendPointDto[] {
   return [...trend].reverse();
-}
-
-export function computePersonalRecordNet(
-  analysis: CoachingAnalysisDto | null,
-  personalRecordNet?: string | null,
-): number | null {
-  const fromApi = personalRecordNet ?? analysis?.personalRecordNet ?? null;
-  if (fromApi != null) return Number(fromApi);
-  if (!analysis?.trend.length) return null;
-  const ghost = analysis.ghost;
-  if (ghost) {
-    return ghost.isNewRecord
-      ? Number(ghost.latest.totalNet)
-      : Number(ghost.bestPreviousNet);
-  }
-  return Math.max(...analysis.trend.map((p) => Number(p.totalNet)));
-}
-
-export function findWeakestSubject(
-  subjects: SubjectStrengthDto[],
-): SubjectStrengthDto | null {
-  if (subjects.length === 0) return null;
-  return subjects.reduce((min, s) =>
-    Number(s.averageNet) < Number(min.averageNet) ? s : min,
-  );
 }
 
 export function subjectTotal(scores: SubjectScores): number {
@@ -114,17 +117,13 @@ export function validateSubjectCounts(
   subjects: ExamSubjectDto[],
   scores: Record<string, SubjectScores>,
 ): string | null {
-  for (const s of subjects) {
-    const row = scores[s.slug];
-    if (!row || s.questionCount == null) continue;
+  for (const subject of subjects) {
+    const row = scores[subject.slug];
+    if (!row || subject.questionCount == null) continue;
     const total = subjectTotal(row);
-    if (total > s.questionCount) {
-      return s.slug;
+    if (total > subject.questionCount) {
+      return subject.slug;
     }
   }
   return null;
-}
-
-export function ghostDeltaLabel(ghost: GhostComparisonDto): string {
-  return ghost.previousDelta;
 }

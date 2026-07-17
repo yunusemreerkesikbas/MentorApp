@@ -7,19 +7,19 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { ContentService } from "../../content/application/content.service";
 import { MockExamService } from "../../coaching/application/mock-exam.service";
-import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
-import { VISION_PORT, type VisionPort } from "../domain/vision.port";
-import { estimateCostMicros } from "../domain/ai.constants";
 import {
-  PHOTO_MAX_BYTES,
-} from "../domain/photo-classify.constants";
+  STORAGE_PORT,
+  type StoragePort,
+} from "../../../shared/ports/storage.port";
+import { VISION_PORT, type VisionPort } from "../domain/vision.port";
+import { AiUsageFeature, estimateCostMicros } from "../domain/ai.constants";
+import { PHOTO_MAX_BYTES } from "../domain/photo-classify.constants";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
+import { AiBudgetGuard } from "./ai-budget.guard";
 import { isValidPhotoStorageKey } from "./photo-upload.service";
 import { PhotoAccessService } from "./photo-access.service";
 
-/**
- * Premium photo → subject categorization (§4 #2 classify-only, never solve).
- */
+/** Premium single-question photo → subject/topic classification; never solves. */
 @Injectable()
 export class PhotoCategorizeService {
   constructor(
@@ -30,6 +30,7 @@ export class PhotoCategorizeService {
     private readonly mockExams: MockExamService,
     private readonly usage: AiUsageRepository,
     private readonly photoAccess: PhotoAccessService,
+    private readonly budget: AiBudgetGuard,
   ) {}
 
   async categorize(
@@ -42,73 +43,95 @@ export class PhotoCategorizeService {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
 
-    // Idempotent retry: return the already-recorded result without re-gating or re-running vision
-    // (a retry of the user's own prior categorization, so no premium/cap re-check needed).
     if (input.clientRequestId) {
-      const existing = await this.mockExams.findPhotoCategorizationsByClientRequestId(
-        userId,
-        input.clientRequestId,
-      );
+      const existing =
+        await this.mockExams.findPhotoCategorizationsByClientRequestId(
+          userId,
+          input.clientRequestId,
+        );
       if (existing.length > 0) {
-        const wrongExam = existing.some((row) => row.mockExamId !== mockExamId);
-        if (wrongExam) {
+        if (existing.some((row) => row.mockExamId !== mockExamId)) {
           throw new DomainError(ErrorCode.CONFLICT, HttpStatus.CONFLICT);
         }
         const owned = await this.mockExams.getOwnedMockExam(userId, mockExamId);
-        const taxonomy = await this.content.listExamSubjectsByExamId(owned.examId);
-        const slugToName = new Map(taxonomy.map((s) => [s.slug, s.name]));
-        const slugs = [...new Set(existing.map((r) => r.subjectRef))];
-        return {
-          subjectRefs: slugs.map((slug) => ({
-            slug,
-            name: slugToName.get(slug) ?? slug,
-          })),
-        };
+        const [subjects, topics] = await Promise.all([
+          this.content.listExamSubjectsByExamId(owned.examId),
+          this.content.listExamTopicsByExamId(owned.examId),
+        ]);
+        return this.toResult(existing, subjects, topics);
       }
     }
 
-    // Authorize (premium + monthly cap) BEFORE validating resource details for a NEW categorization,
-    // so free users get a consistent PAYMENT_PREMIUM_REQUIRED (403), not input-validation behavior.
     await this.photoAccess.assertCanCategorize(userId, rolesHint);
-
     if (!isValidPhotoStorageKey(userId, input.storageKey)) {
-      throw new DomainError(ErrorCode.AI_PHOTO_INVALID_IMAGE, HttpStatus.BAD_REQUEST);
+      throw new DomainError(
+        ErrorCode.AI_PHOTO_INVALID_IMAGE,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const owned = await this.mockExams.getOwnedMockExam(userId, mockExamId);
-
     const imageBytes = await this.storage.readObject(input.storageKey);
-    if (!imageBytes || imageBytes.length === 0) {
-      throw new DomainError(ErrorCode.AI_PHOTO_INVALID_IMAGE, HttpStatus.BAD_REQUEST);
+    if (!imageBytes?.length) {
+      throw new DomainError(
+        ErrorCode.AI_PHOTO_INVALID_IMAGE,
+        HttpStatus.BAD_REQUEST,
+      );
     }
     if (imageBytes.length > PHOTO_MAX_BYTES) {
-      throw new DomainError(ErrorCode.PAYLOAD_TOO_LARGE, HttpStatus.PAYLOAD_TOO_LARGE);
+      throw new DomainError(
+        ErrorCode.PAYLOAD_TOO_LARGE,
+        HttpStatus.PAYLOAD_TOO_LARGE,
+      );
     }
 
-    const taxonomy = await this.content.listExamSubjectsByExamId(owned.examId);
-    const allowedSubjects = taxonomy.map((s) => ({ slug: s.slug, name: s.name }));
-    const mimeType = input.storageKey.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
+    const [subjects, topics] = await Promise.all([
+      this.content.listExamSubjectsByExamId(owned.examId),
+      this.content.listExamTopicsByExamId(owned.examId),
+    ]);
+    const allowedSubjects = subjects.map(({ slug, name }) => ({ slug, name }));
+    const allowedTopics = topics.map(({ subjectSlug, slug, name }) => ({
+      subjectSlug,
+      slug,
+      name,
+    }));
+    const mimeType = input.storageKey.toLowerCase().endsWith(".png")
+      ? "image/png"
+      : "image/jpeg";
 
+    await this.budget.assertWithinBudget();
     const visionResult = await this.vision.categorizeImage({
       imageBytes,
       mimeType,
       allowedSubjects,
+      allowedTopics,
     });
 
-    const allowedSlugs = new Set(allowedSubjects.map((s) => s.slug));
-    const validSlugs = [...new Set(visionResult.subjectSlugs.filter((s) => allowedSlugs.has(s)))];
+    const subject = allowedSubjects.find(
+      (item) => item.slug === visionResult.subjectSlug,
+    );
+    const topic = subject
+      ? allowedTopics.find(
+          (item) =>
+            item.subjectSlug === subject.slug &&
+            item.slug === visionResult.topicSlug,
+        )
+      : undefined;
+    const classifications = subject
+      ? [{ subjectRef: subject.slug, topicRef: topic?.slug ?? null }]
+      : [];
 
     await this.mockExams.recordPhotoCategorizations(
       userId,
       mockExamId,
-      validSlugs,
+      classifications,
       input.storageKey,
       input.clientRequestId,
     );
-
     await this.usage.append({
       userId,
       model: visionResult.model,
+      feature: AiUsageFeature.VISION,
       promptTokens: visionResult.promptTokens,
       completionTokens: visionResult.completionTokens,
       costMicros: estimateCostMicros(
@@ -118,12 +141,54 @@ export class PhotoCategorizeService {
       ),
     });
 
-    const slugToName = new Map(allowedSubjects.map((s) => [s.slug, s.name]));
     return {
-      subjectRefs: validSlugs.map((slug) => ({
+      subjectRefs: subject ? [{ slug: subject.slug, name: subject.name }] : [],
+      topicRefs:
+        topic && subject
+          ? [
+              {
+                slug: topic.slug,
+                name: topic.name,
+                subjectSlug: subject.slug,
+                subjectName: subject.name,
+              },
+            ]
+          : [],
+    };
+  }
+
+  private toResult(
+    rows: Array<{ subjectRef: string; topicRef: string | null }>,
+    subjects: Array<{ slug: string; name: string }>,
+    topics: Array<{
+      subjectSlug: string;
+      subjectName: string;
+      slug: string;
+      name: string;
+    }>,
+  ): CategorizePhotoResultDto {
+    const subjectBySlug = new Map(
+      subjects.map((subject) => [subject.slug, subject]),
+    );
+    const uniqueSubjects = [...new Set(rows.map((row) => row.subjectRef))];
+    const topicKeys = new Set(
+      rows.flatMap((row) =>
+        row.topicRef ? [row.subjectRef + ":" + row.topicRef] : [],
+      ),
+    );
+    return {
+      subjectRefs: uniqueSubjects.map((slug) => ({
         slug,
-        name: slugToName.get(slug) ?? slug,
+        name: subjectBySlug.get(slug)?.name ?? slug,
       })),
+      topicRefs: topics
+        .filter((topic) => topicKeys.has(topic.subjectSlug + ":" + topic.slug))
+        .map((topic) => ({
+          slug: topic.slug,
+          name: topic.name,
+          subjectSlug: topic.subjectSlug,
+          subjectName: topic.subjectName,
+        })),
     };
   }
 }

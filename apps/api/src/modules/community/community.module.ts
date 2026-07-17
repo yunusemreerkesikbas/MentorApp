@@ -3,7 +3,9 @@ import { CoachingModule } from "../coaching/coaching.module";
 import { EconomyModule } from "../economy/economy.module";
 import { ForumModule } from "../forum/forum.module";
 import { IdentityModule } from "../identity/identity.module";
+import { BuddyViewService } from "./application/buddy-view.service";
 import { CommunityService } from "./application/community.service";
+import { BuddyController } from "./presentation/buddy.controller";
 import { CommunityController } from "./presentation/community.controller";
 
 /**
@@ -14,7 +16,7 @@ import { CommunityController } from "./presentation/community.controller";
  */
 @Module({
   imports: [IdentityModule, CoachingModule, ForumModule, EconomyModule],
-  controllers: [CommunityController],
-  providers: [CommunityService],
+  controllers: [CommunityController, BuddyController],
+  providers: [CommunityService, BuddyViewService],
 })
 export class CommunityModule {}

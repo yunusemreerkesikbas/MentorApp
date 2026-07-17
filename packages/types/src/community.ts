@@ -83,6 +83,55 @@ export interface PublicProfile {
   followingCount: number;
   /** Whether the viewer follows this profile. false when it's the viewer's own profile (can't follow self). */
   isFollowing: boolean;
+  /** Viewer's study-buddy relation to this profile (drives the profile buddy button). */
+  buddyStatus: BuddyStatus;
+}
+
+/**
+ * Viewer↔profile study-buddy relation. "unavailable" = the viewer already has an active
+ * buddy with someone else (button hidden — one active buddy per user in v1).
+ */
+export type BuddyStatus =
+  | "none"
+  | "pending_outgoing"
+  | "pending_incoming"
+  | "active"
+  | "unavailable";
+
+/** A buddy counterpart reference (public-safe — no PII, effort fields only). */
+export interface BuddyUserRef {
+  userId: string;
+  displayName: string;
+  username: string | null;
+  avatarUrl: string | null;
+}
+
+/** An incoming/outgoing pending buddy request. */
+export interface BuddyRequestRef {
+  id: string;
+  partner: BuddyUserRef;
+  createdAt: string; // ISO
+}
+
+/** The viewer's active pairing with the partner's TODAY effort (never exam results — §4). */
+export interface BuddyActiveView {
+  pairId: string;
+  partner: BuddyUserRef;
+  /** Partner's accumulated COMPLETED focus minutes today. */
+  focusMinutesToday: number;
+  /** Partner's current study streak (days). */
+  currentStreak: number;
+  /** False while the viewer's nudge cooldown is running. */
+  canNudge: boolean;
+  /** ISO end of the viewer's nudge cooldown; null when nudging is available. */
+  nudgeCooldownEndsAt: string | null;
+}
+
+/** GET /v1/buddy — the whole buddy surface in one call. */
+export interface BuddyViewDto {
+  active: BuddyActiveView | null;
+  outgoing: BuddyRequestRef | null;
+  incoming: BuddyRequestRef[];
 }
 
 /**

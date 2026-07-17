@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createTaskMarkerFilter, extractSuggestedTask } from "./suggested-task";
+import {
+  createTaskMarkerFilter,
+  extractFollowUps,
+  extractReplyMarkers,
+  extractSuggestedTask,
+} from "./suggested-task";
 
 const MARKER = '<<TASK{"title":"Matematik: 20 soru çöz","subject":"Matematik"}>>';
 
@@ -61,5 +66,96 @@ describe("createTaskMarkerFilter", () => {
     const f = createTaskMarkerFilter();
     const out = f.push('Yanıt. <<TASK{"title":"yarı') + f.flush();
     expect(out).toBe("Yanıt. ");
+  });
+
+  it("suppresses a FOLLOWUP marker split across delta boundaries", () => {
+    const f = createTaskMarkerFilter();
+    const out =
+      f.push("Kolay gelsin. <<FOLLOW") + f.push('UP["Soru bir?","Soru iki?"]') + f.push(">>") + f.flush();
+    expect(out).toBe("Kolay gelsin. ");
+    expect(out).not.toContain("<<FOLLOWUP");
+  });
+
+  it("suppresses FOLLOWUP followed by TASK (order contract)", () => {
+    const f = createTaskMarkerFilter();
+    const out =
+      f.push('Yanıt. <<FOLLOWUP["Soru?"]>>\n') + f.push(MARKER) + f.flush();
+    expect(out).toBe("Yanıt. ");
+  });
+
+  it("drops a truncated FOLLOWUP at flush", () => {
+    const f = createTaskMarkerFilter();
+    const out = f.push('Yanıt. <<FOLLOWUP["yar') + f.flush();
+    expect(out).toBe("Yanıt. ");
+  });
+});
+
+describe("extractFollowUps", () => {
+  it("parses and strips a trailing marker", () => {
+    const { text, followUps } = extractFollowUps('Yanıt.\n<<FOLLOWUP["Soru bir?","Soru iki?"]>>');
+    expect(text).toBe("Yanıt.");
+    expect(followUps).toEqual(["Soru bir?", "Soru iki?"]);
+  });
+
+  it("returns text untouched when there is no marker", () => {
+    const { text, followUps } = extractFollowUps("Sade bir yanıt.");
+    expect(text).toBe("Sade bir yanıt.");
+    expect(followUps).toEqual([]);
+  });
+
+  it("strips the marker but suggests nothing on broken JSON", () => {
+    const { text, followUps } = extractFollowUps("Yanıt. <<FOLLOWUP[bozuk]>>");
+    expect(text).toBe("Yanıt.");
+    expect(followUps).toEqual([]);
+  });
+
+  it("caps at 3 items, trims, drops empties and non-strings", () => {
+    const { followUps } = extractFollowUps(
+      'Y. <<FOLLOWUP["  a  ","","b",42,"c","d"]>>',
+    );
+    expect(followUps).toEqual(["a", "b", "c"]);
+  });
+
+  it("works together with the trailing TASK marker (TASK stripped first)", () => {
+    const stepOne = extractSuggestedTask(`Yanıt. <<FOLLOWUP["Soru?"]>>\n${MARKER}`);
+    expect(stepOne.task).not.toBeNull();
+    const stepTwo = extractFollowUps(stepOne.text);
+    expect(stepTwo.text).toBe("Yanıt.");
+    expect(stepTwo.followUps).toEqual(["Soru?"]);
+  });
+});
+
+describe("extractReplyMarkers", () => {
+  it("extracts both markers in the contract order (FOLLOWUP then TASK)", () => {
+    const out = extractReplyMarkers(`Yanıt. <<FOLLOWUP["Soru?"]>>\n${MARKER}`);
+    expect(out.text).toBe("Yanıt.");
+    expect(out.task).toEqual({ title: "Matematik: 20 soru çöz", subject: "Matematik" });
+    expect(out.followUps).toEqual(["Soru?"]);
+  });
+
+  it("extracts both markers when the model REVERSES the order (live gpt-4o-mini bug)", () => {
+    const out = extractReplyMarkers(`Yanıt. ${MARKER}\n<<FOLLOWUP["Soru?"]>>`);
+    expect(out.text).toBe("Yanıt.");
+    expect(out.task).toEqual({ title: "Matematik: 20 soru çöz", subject: "Matematik" });
+    expect(out.followUps).toEqual(["Soru?"]);
+    expect(out.text).not.toContain("<<");
+  });
+
+  it("never leaks a MALFORMED marker (missing `>>` — seen live)", () => {
+    const out = extractReplyMarkers('Yanıt.\n\n<<FOLLOWUP["Soru bir?","Soru iki?"]]');
+    expect(out.text).toBe("Yanıt.");
+    expect(out.text).not.toContain("<<");
+    expect(out.followUps).toEqual([]); // unparseable — dropped, not guessed
+  });
+
+  it("handles a single marker and plain text", () => {
+    expect(extractReplyMarkers("Sade yanıt.")).toEqual({
+      text: "Sade yanıt.",
+      task: null,
+      followUps: [],
+    });
+    const only = extractReplyMarkers(`Yanıt. ${MARKER}`);
+    expect(only.task).not.toBeNull();
+    expect(only.followUps).toEqual([]);
   });
 });

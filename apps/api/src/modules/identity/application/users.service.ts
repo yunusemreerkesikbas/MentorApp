@@ -67,6 +67,18 @@ export class UsersService {
     };
   }
 
+  /**
+   * KVKK erasure of the identity row. Called by the account-erasure orchestrator (self-service
+   * `DELETE /v1/account` and the admin anonymize) — identity owns the `users` table, so nobody
+   * writes it from the outside. `status` is DELETED for self-service, BANNED for an admin action.
+   * Returns before/after PII for the audit trail + the avatar key for storage cleanup.
+   */
+  async anonymizeAccount(userId: string, status: string) {
+    const change = await this.usersRepo.anonymizeAccount(userId, status);
+    if (!change) throw new NotFoundError();
+    return change;
+  }
+
   /** Minimal contact fields for async notification jobs (W5 — no table access outside identity). */
   async getNotificationContact(
     userId: string,
@@ -125,6 +137,9 @@ export class UsersService {
         ...(patch.website !== undefined && { website: patch.website }),
         ...(patch.examType !== undefined && { examType: patch.examType }),
         ...(patch.examDate !== undefined && { examDate: patch.examDate }),
+        ...(patch.dailyFocusGoalMinutes !== undefined && {
+          dailyFocusGoalMinutes: patch.dailyFocusGoalMinutes,
+        }),
       });
     } catch (err) {
       if (isUniqueViolation(err)) {

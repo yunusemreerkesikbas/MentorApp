@@ -4,14 +4,22 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ExamSubjectDto, MockExamDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Card, SectionHeading } from "@mentor/ui";
+import {
+  Button,
+  Card,
+  SectionHeading,
+  Skeleton,
+  SkeletonGroup,
+  skeletonStaggerStyle,
+} from "@mentor/ui";
 import { fetchMockExamsList } from "@/lib/analiz";
 import { formatTrendDate } from "./analiz-types";
 import { AnalizHistoryDetail } from "./analiz-history-detail";
 
+const PAGE_SIZE = 5;
+
 interface AnalizHistoryListProps {
   examId: string;
-  /** Bump to refetch after a new save. */
   refreshKey: number;
   subjects: ExamSubjectDto[];
   onCopyLast: (exam: MockExamDto) => void;
@@ -30,35 +38,73 @@ export function AnalizHistoryList({
   const locale = useLocale();
   const [items, setItems] = useState<MockExamDto[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [moreError, setMoreError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const load = useCallback(async () => {
+  const loadFirstPage = useCallback(async () => {
+    setLoading(true);
+    setItems([]);
+    setPage(1);
+    setTotal(0);
+    setError(null);
+    setMoreError(null);
+    setSelectedId(null);
     try {
-      const res = await fetchMockExamsList(1, 5, examId);
-      setItems(res.items);
-      setError(null);
-    } catch (err) {
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : String(err),
-      );
+      const response = await fetchMockExamsList(1, PAGE_SIZE, examId);
+      setItems(response.items);
+      setTotal(response.total);
+    } catch (loadError) {
+      setError(toErrorMessage(loadError));
+    } finally {
+      setLoading(false);
     }
   }, [examId]);
 
   useEffect(() => {
-    // `load` kicks off the fetch (setting its own loading state) — deliberate data-fetch trigger.
+    // Deliberate fetch trigger after mount and mutations.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load();
-  }, [load, refreshKey]);
+    void loadFirstPage();
+  }, [loadFirstPage, refreshKey]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || items.length >= total) return;
+    setLoadingMore(true);
+    setMoreError(null);
+    try {
+      const nextPage = page + 1;
+      const response = await fetchMockExamsList(
+        nextPage,
+        PAGE_SIZE,
+        examId,
+      );
+      setItems((current) => [...current, ...response.items]);
+      setPage(response.page);
+      setTotal(response.total);
+    } catch {
+      setMoreError(t("load_more_error"));
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [examId, items.length, loadingMore, page, t, total]);
+
+  if (loading) {
+    return <HistoryListSkeleton />;
+  }
 
   if (error) {
     return (
-      <p className="text-sm" style={{ color: "var(--color-danger)" }}>
-        {error}
-      </p>
+      <Card className="flex flex-col items-start gap-3">
+        <p className="text-sm" style={{ color: "var(--color-danger)" }}>
+          {error}
+        </p>
+        <Button type="button" variant="secondary" onClick={() => void loadFirstPage()}>
+          {t("retry")}
+        </Button>
+      </Card>
     );
   }
 
@@ -74,37 +120,82 @@ export function AnalizHistoryList({
     <>
       <Card>
         <SectionHeading as="h3">{t("title")}</SectionHeading>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <ul
+          className="mt-3 divide-y"
+          style={{
+            borderColor:
+              "color-mix(in srgb, var(--color-main) 10%, transparent)",
+          }}
+        >
           {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setSelectedId(item.id)}
-              className="min-h-[44px] cursor-pointer rounded-[var(--radius-card)] px-3 py-2 text-left text-sm transition-colors hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
-              style={{
-                background: "color-mix(in srgb, var(--color-chip) 15%, white)",
-                color: "var(--color-main)",
-              }}
-            >
-              <span className="block font-bold tabular-nums">{item.totalNet}</span>
-              {item.publisherName ? (
-                <span className="block truncate text-xs font-semibold">
-                  {item.publisherName}
-                </span>
-              ) : null}
-              <span
-                className="block text-xs"
-                style={{ color: "var(--color-secondary)" }}
+            <li key={item.id}>
+              <button
+                type="button"
+                onClick={() => setSelectedId(item.id)}
+                className="grid min-h-11 w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-[var(--radius-card)] px-2 py-3 text-left transition-colors duration-200 hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
               >
-                {formatTrendDate(item.takenAt, locale)}
-              </span>
-            </button>
+                <span className="min-w-0">
+                  <span
+                    className="block truncate text-sm font-semibold"
+                    style={{ color: "var(--color-main)" }}
+                  >
+                    {item.publisherName || t("publisher_fallback")}
+                  </span>
+                  <span
+                    className="block text-xs"
+                    style={{ color: "var(--color-secondary)" }}
+                  >
+                    {formatTrendDate(item.takenAt, locale)}
+                  </span>
+                </span>
+                <span
+                  className="text-right text-base font-bold tabular-nums"
+                  style={{
+                    color: "var(--color-main)",
+                    fontFamily: "var(--font-heading)",
+                  }}
+                >
+                  {t("net", { net: item.totalNet })}
+                </span>
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
+
+        {items.length < total ? (
+          <div className="mt-3 flex flex-col items-start gap-2 border-t pt-3">
+            <Button
+              type="button"
+              variant="secondary"
+              busy={loadingMore}
+              onClick={() => void loadMore()}
+            >
+              {t("load_more")}
+            </Button>
+            {moreError ? (
+              <div className="flex flex-wrap items-center gap-3" role="alert">
+                <p
+                  className="text-sm"
+                  style={{ color: "var(--color-secondary)" }}
+                >
+                  {moreError}
+                </p>
+                <button
+                  type="button"
+                  className="min-h-11 text-sm font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                  onClick={() => void loadMore()}
+                >
+                  {t("retry")}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <button
           type="button"
           onClick={() => onCopyLast(items[0]!)}
-          className="mt-4 min-h-[44px] text-sm font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="mt-4 min-h-11 text-sm font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           style={{ color: "var(--color-main)" }}
         >
           {tAnalysis("copy_last")}
@@ -119,3 +210,39 @@ export function AnalizHistoryList({
     </>
   );
 }
+
+function HistoryListSkeleton() {
+  const t = useTranslations("analysis.history");
+
+  return (
+    <SkeletonGroup label={t("loading")} className="block">
+      <Card>
+        <Skeleton className="h-6 w-40 rounded-[var(--radius-card)]" />
+        <div className="mt-3 flex flex-col">
+          {Array.from({ length: PAGE_SIZE }, (_, index) => (
+            <div
+              key={index}
+              className="grid min-h-16 grid-cols-[minmax(0,1fr)_5rem] items-center gap-4 border-t px-2 py-3 first:border-t-0"
+              style={skeletonStaggerStyle(index)}
+            >
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-4 w-32 rounded-[var(--radius-card)]" />
+                <Skeleton className="h-3 w-20 rounded-[var(--radius-card)]" />
+              </div>
+              <Skeleton className="h-5 w-20 rounded-[var(--radius-card)]" />
+            </div>
+          ))}
+        </div>
+      </Card>
+    </SkeletonGroup>
+  );
+}
+
+function toErrorMessage(error: unknown): string {
+  return error instanceof ApiClientError
+    ? error.message
+    : error instanceof Error
+      ? error.message
+      : String(error);
+}
+

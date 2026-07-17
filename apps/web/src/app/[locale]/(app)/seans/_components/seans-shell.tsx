@@ -1,18 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import type { QuestProgressView, SessionPresetDto, TodayPanelResponse } from "@mentor/types";
+import type {
+  FocusGoalDto,
+  QuestProgressView,
+  SessionPresetDto,
+  TodayPanelResponse,
+} from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
 import { Card } from "@mentor/ui";
 import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
 import { parsePlanTaskContextFromParams } from "@/lib/plan-seans-link";
+import { readActiveSession, resolveResume } from "@/lib/session-persistence";
 import { SessionAmbientPicker } from "./session-ambient-picker";
 import { SessionAmbientToggle } from "./session-ambient-toggle";
 import { SessionControls } from "./session-controls";
+import { SessionBuddyCard } from "./session-buddy-card";
 import { SessionDoneState } from "./session-done-state";
+import { SessionFocusGoalCard } from "./session-focus-goal-card";
 import { SessionHistory } from "./session-history";
 import { SessionSubjectPicker } from "./session-subject-picker";
 import { SessionTimerRing } from "./session-timer-ring";
@@ -70,6 +78,14 @@ function parseInitialSelectedPresetId(
   }
   if (presetParam === "50_10") return "50_10";
   return "25_5";
+}
+
+/** Persisted session the timer hook will actually resume (not stale/finished). */
+function readRestorableRecord() {
+  const record = readActiveSession();
+  if (!record) return null;
+  const kind = resolveResume(record, Date.now()).kind;
+  return kind === "discard" || kind === "done" ? null : record;
 }
 
 function unwrapTodayResponse(response: unknown): TodayPanelResponse {
@@ -148,18 +164,27 @@ export function SeansShell() {
   const subjectParam = searchParams.get("subject");
   const taskTitleParam = searchParams.get("taskTitle");
   const taskIdParam = searchParams.get("taskId");
+  // Resume context (subject / plan-task chips) survives a reload alongside the timer.
+  const [restored] = useState(readRestorableRecord);
   const [subject, setSubject] = useState<string | null>(() =>
-    subjectParam?.trim() ? subjectParam.trim() : null,
+    subjectParam?.trim() ? subjectParam.trim() : (restored?.subject ?? null),
   );
-  const [planTaskContext, setPlanTaskContext] = useState(() =>
-    parsePlanTaskContextFromParams({
+  const [planTaskContext, setPlanTaskContext] = useState(() => {
+    const fromParams = parsePlanTaskContextFromParams({
       taskTitle: taskTitleParam,
       taskId: taskIdParam,
-    }),
-  );
+    });
+    if (fromParams.taskId || fromParams.taskTitle) return fromParams;
+    return {
+      taskTitle: restored?.planTaskTitle ?? null,
+      taskId: restored?.planTaskId ?? null,
+    };
+  });
 
   const [presets, setPresets] = useState<SessionPresetDto[]>(DEFAULT_PRESETS);
   const [presetNotice, setPresetNotice] = useState<string | null>(null);
+  const [focusGoal, setFocusGoal] = useState<FocusGoalDto | null>(null);
+  const [focusingNow, setFocusingNow] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(() =>
     parseInitialSelectedPresetId(presetParam, minutesParam),
@@ -173,18 +198,29 @@ export function SeansShell() {
     initialPreset: parseInitialPreset(presetParam, minutesParam),
     subject,
     planTaskId: planTaskContext.taskId,
+    planTaskTitle: planTaskContext.taskTitle,
   });
 
+  // Fetched on mount and re-fetched whenever the timer returns to idle, so the
+  // focus-goal progress reflects the session that just finished.
+  const timerPhase = timer.phase;
   useEffect(() => {
+    if (timerPhase !== "idle") return;
     let active = true;
     coachingControllerGetToday()
       .then((res) => {
         if (!active) return;
-        const data = res as { sessionPresets?: SessionPresetDto[] };
+        const data = res as {
+          sessionPresets?: SessionPresetDto[];
+          focusGoal?: FocusGoalDto;
+          focusingNow?: number | null;
+        };
         if (data.sessionPresets?.length) {
           setPresets(data.sessionPresets);
           setPresetNotice(null);
         }
+        if (data.focusGoal) setFocusGoal(data.focusGoal);
+        setFocusingNow(data.focusingNow ?? null);
       })
       .catch((err: unknown) => {
         if (!active) return;
@@ -196,7 +232,7 @@ export function SeansShell() {
     return () => {
       active = false;
     };
-  }, [t]);
+  }, [timerPhase, t]);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30_000);
@@ -223,6 +259,31 @@ export function SeansShell() {
   } = timer;
 
   const ambient = useSessionAmbientSound({ phase, isPaused });
+
+  // Countdown in the tab title while focus/break runs (visible from other tabs).
+  const initialTitleRef = useRef<string | null>(null);
+  useEffect(() => {
+    initialTitleRef.current ??= document.title;
+    if (phase === "focus" || phase === "break") {
+      const mm = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
+      const ss = String(secondsLeft % 60).padStart(2, "0");
+      const label =
+        phase === "break"
+          ? t("break_label")
+          : isPaused
+            ? t("paused")
+            : t("focusing");
+      document.title = `${mm}:${ss} · ${label} — Mentor`;
+    } else {
+      document.title = initialTitleRef.current;
+    }
+  }, [phase, secondsLeft, isPaused, t]);
+  useEffect(
+    () => () => {
+      if (initialTitleRef.current) document.title = initialTitleRef.current;
+    },
+    [],
+  );
 
   const handleStartSession = async () => {
     try {
@@ -418,6 +479,19 @@ export function SeansShell() {
         <p className="mt-1 text-base" style={{ color: "var(--color-secondary)" }}>
           {t("subtitle")}
         </p>
+        {focusingNow !== null && (
+          <p
+            className="mt-2 flex items-center gap-1.5 text-sm"
+            style={{ color: "var(--color-secondary)" }}
+          >
+            <span
+              aria-hidden
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: "var(--color-progress)" }}
+            />
+            {t("focusing_now", { count: focusingNow })}
+          </p>
+        )}
       </motion.header>
 
       {presetNotice && (
@@ -492,6 +566,18 @@ export function SeansShell() {
         </AnimatePresence>
       </Card>
 
+      {phase === "idle" && (
+        <SessionFocusGoalCard
+          focusGoal={focusGoal}
+          onGoalChange={(goalMinutes) =>
+            setFocusGoal((g) => ({
+              goalMinutes,
+              focusMinutesToday: g?.focusMinutesToday ?? 0,
+            }))
+          }
+        />
+      )}
+      {phase === "idle" && <SessionBuddyCard />}
       {phase === "idle" && <SessionHistory />}
     </main>
   );

@@ -53,6 +53,10 @@ export function toStudySessionDto(
     sessionMood: row.sessionMood ?? null,
     struggleNote: row.struggleNote ?? null,
     aiReflection: row.aiReflection ?? null,
+    aiSuggestedTask: (row.aiSuggestedTask as {
+      title: string;
+      subject: string | null;
+    } | null) ?? null,
     countsAsFocusSession,
     planTaskAutoCompleted: extras?.planTaskAutoCompleted ?? false,
   };

@@ -1,6 +1,6 @@
 import { Controller, Get } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { UserRole } from "@mentor/types";
+import { UserRole, type AdminAiCostDto, type AdminCoachFeedbackDto } from "@mentor/types";
 import { Roles } from "../../../common/auth/roles.decorator";
 import { UsersService, type UserStats } from "../../identity/application/users.service";
 import {
@@ -9,6 +9,8 @@ import {
 } from "../../payments/application/subscriptions.service";
 import { EconomyService } from "../../economy/application/economy.service";
 import { InviteService } from "../../economy/application/invite.service";
+import { AiCostStatsService } from "../../ai/application/ai-cost-stats.service";
+import { CoachFeedbackStatsService } from "../../ai/application/coach-feedback-stats.service";
 
 interface AdminMetrics {
   users: UserStats;
@@ -32,6 +34,8 @@ export class AdminMetricsController {
     private readonly subscriptions: SubscriptionsService,
     private readonly economy: EconomyService,
     private readonly invites: InviteService,
+    private readonly aiCost: AiCostStatsService,
+    private readonly coachFeedback: CoachFeedbackStatsService,
   ) {}
 
   @Get()
@@ -48,5 +52,17 @@ export class AdminMetricsController {
       economy: { ...economy, invite },
       generatedAt: new Date().toISOString(),
     };
+  }
+
+  /** LLM cost visibility (§7): rolling-window totals + per-model + top spenders (admin-only PII). */
+  @Get("ai")
+  aiCostStats(): Promise<AdminAiCostDto> {
+    return this.aiCost.getCostStats();
+  }
+
+  /** Coach reply satisfaction: 👍/👎 rate + recent 👎 replies with their question (admin-only text). */
+  @Get("coach-feedback")
+  coachFeedbackStats(): Promise<AdminCoachFeedbackDto> {
+    return this.coachFeedback.getFeedbackStats();
   }
 }

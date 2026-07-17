@@ -83,6 +83,11 @@ export class QuestService {
           return signals.hasDonePlanTask;
         case "daily.focus-session-completed":
           return signals.hasCompletedFocusSession;
+        case "daily.focus-goal-met":
+          return (
+            signals.dailyFocusGoalMinutes != null &&
+            signals.focusMinutesToday >= signals.dailyFocusGoalMinutes
+          );
         case "daily.mood-checkin":
           return signals.hasMoodCheckin;
         case "onboarding.profile-setup":
@@ -185,7 +190,11 @@ export class QuestService {
       this.quests.listForUser(userId, this.activePeriodKeys(signals)),
     ]);
     const byKey = new Map(rows.map((r) => [progressKey(r.questId, r.periodKey), r]));
-    return QUEST_CATALOG.map((q) => {
+    // The goal quest only exists for users who chose a goal — no default target.
+    const visible = QUEST_CATALOG.filter(
+      (q) => q.id !== "daily.focus-goal-met" || signals.dailyFocusGoalMinutes != null,
+    );
+    return visible.map((q) => {
       const periodKey = this.periodKey(q, signals);
       const row = byKey.get(progressKey(q.id, periodKey));
       const rewardAmount =

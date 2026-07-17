@@ -8,8 +8,9 @@ import { FeatureFlag } from "../../../common/config/config.catalog";
 import { MockExamService } from "../../coaching/application/mock-exam.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
-import { buildGhostPrompt, estimateCostMicros } from "../domain/ai.constants";
+import { AiUsageFeature, buildGhostPrompt, estimateCostMicros } from "../domain/ai.constants";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
+import { AiBudgetGuard } from "./ai-budget.guard";
 
 /**
  * Premium AI narration of the user's "geçmiş-ben" progress (W3 · §4 #5 premium-only — free tier
@@ -26,6 +27,7 @@ export class GhostNarrationService {
     private readonly config: ConfigRegistryService,
     private readonly entitlement: EntitlementService,
     private readonly mockExams: MockExamService,
+    private readonly budget: AiBudgetGuard,
   ) {}
 
   async narrate(user: RequestUser, examId?: string): Promise<GhostNarrationDto> {
@@ -50,11 +52,13 @@ export class GhostNarrationService {
     }
 
     const { system, user: userMsg } = buildGhostPrompt(ghost);
+    await this.budget.assertWithinBudget();
     const result = await this.llm.complete({ system, user: userMsg });
 
     await this.usage.append({
       userId: user.id,
       model: result.model,
+      feature: AiUsageFeature.GHOST,
       promptTokens: result.promptTokens,
       completionTokens: result.completionTokens,
       costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),

@@ -323,6 +323,62 @@
       "when": 1783767682293,
       "tag": "0045_vengeful_shinobi_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1783801078359,
+      "tag": "0046_curly_siren",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1783805175421,
+      "tag": "0047_supreme_eternals",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1783975933633,
+      "tag": "0048_chemical_lady_mastermind",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1784014269910,
+      "tag": "0049_colorful_madrox",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1784074894931,
+      "tag": "0050_whole_sentinel",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1784075749301,
+      "tag": "0051_w3_daily_greeting",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1784241487936,
+      "tag": "0052_clumsy_lord_hawal",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1784271394394,
+      "tag": "0053_easy_morph",
+      "breakpoints": true
     }
   ]
 }

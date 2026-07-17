@@ -19,8 +19,8 @@ export interface ExamCandidate {
 
 /**
  * Select the exam used for countdown within a family.
- * 1. Prefer rows marked `isCurrent` when present among candidates.
- * 2. Among the pool, pick the nearest upcoming EXAM_DATE (>= today).
+ * 1. Keep only upcoming EXAM_DATE rows (>= today).
+ * 2. Prefer an `isCurrent` row within that pool; otherwise pick the nearest.
  * 3. If none upcoming, return null (no silent fallback to past dates).
  */
 export function selectExamForCountdown(
@@ -29,14 +29,11 @@ export function selectExamForCountdown(
 ): ExamCandidate | null {
   if (candidates.length === 0) return null;
 
-  const currentMarked = candidates.filter((c) => c.isCurrent);
-  const pool = currentMarked.length > 0 ? currentMarked : candidates;
-
-  const upcoming = pool
-    .filter((c) => c.examDate >= today)
+  const upcoming = candidates
+    .filter((candidate) => candidate.examDate >= today)
     .sort((a, b) => a.examDate.localeCompare(b.examDate));
 
-  return upcoming[0] ?? null;
+  return upcoming.find((candidate) => candidate.isCurrent) ?? upcoming[0] ?? null;
 }
 
 /** Map DB rows to selection candidates. */

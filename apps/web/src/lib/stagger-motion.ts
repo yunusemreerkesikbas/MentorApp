@@ -1,6 +1,10 @@
 import type { Variants } from "framer-motion";
 
-/** Staggered section entrance — use with `useReducedMotion()` to skip animation. */
+/**
+ * Content-layer stagger (DESIGN.md §9).
+ * Pair with `useReducedMotion()` — skip variants when reduced.
+ * Layers: micro / chrome / content (this) / ambient (blobs) / moment (≤600ms).
+ */
 export const staggerListVariants: Variants = {
   hidden: { opacity: 0 },
   show: {

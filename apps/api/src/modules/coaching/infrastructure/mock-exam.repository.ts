@@ -70,7 +70,9 @@ export class MockExamRepository {
     db: Database | DatabaseTx,
     userId: string,
     id: string,
-  ): Promise<{ exam: MockExamRow; subjects: MockExamSubjectRow[] } | undefined> {
+  ): Promise<
+    { exam: MockExamRow; subjects: MockExamSubjectRow[] } | undefined
+  > {
     const examRows = await db
       .select()
       .from(mockExams)
@@ -96,7 +98,9 @@ export class MockExamRepository {
       publisherName: string | null;
       subjects: NewMockExamSubject[];
     },
-  ): Promise<{ exam: MockExamRow; subjects: MockExamSubjectRow[] } | undefined> {
+  ): Promise<
+    { exam: MockExamRow; subjects: MockExamSubjectRow[] } | undefined
+  > {
     const examRows = await tx
       .update(mockExams)
       .set({
@@ -110,7 +114,9 @@ export class MockExamRepository {
     const exam = examRows[0];
     if (!exam) return undefined;
 
-    await tx.delete(mockExamSubjects).where(eq(mockExamSubjects.mockExamId, id));
+    await tx
+      .delete(mockExamSubjects)
+      .where(eq(mockExamSubjects.mockExamId, id));
     const subjects = await tx
       .insert(mockExamSubjects)
       .values(data.subjects.map((subject) => ({ ...subject, mockExamId: id })))
@@ -154,7 +160,11 @@ export class MockExamRepository {
         .select()
         .from(mockExams)
         .where(userExamScope(userId, examId))
-        .orderBy(desc(mockExams.takenAt))
+        .orderBy(
+          desc(mockExams.takenAt),
+          desc(mockExams.createdAt),
+          desc(mockExams.id),
+        )
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       db
@@ -206,7 +216,11 @@ export class MockExamRepository {
   ): Promise<void> {
     await tx
       .update(mockExams)
-      .set({ aiGhostNarration: narration, aiGhostModel: model, aiGhostAt: new Date() })
+      .set({
+        aiGhostNarration: narration,
+        aiGhostModel: model,
+        aiGhostAt: new Date(),
+      })
       .where(eq(mockExams.id, id));
   }
 
@@ -234,7 +248,11 @@ export class MockExamRepository {
       .select()
       .from(mockExams)
       .where(userExamScope(userId, examId))
-      .orderBy(desc(mockExams.takenAt))
+      .orderBy(
+        desc(mockExams.takenAt),
+        desc(mockExams.createdAt),
+        desc(mockExams.id),
+      )
       .limit(limit);
   }
 
@@ -242,7 +260,9 @@ export class MockExamRepository {
     db: Database | DatabaseTx,
     userId: string,
     examId?: string,
-  ): Promise<Array<{ subjectRef: string; avgNet: string; attemptCount: number }>> {
+  ): Promise<
+    Array<{ subjectRef: string; avgNet: string; attemptCount: number }>
+  > {
     const rows = await db
       .select({
         subjectRef: mockExamSubjects.subjectRef,

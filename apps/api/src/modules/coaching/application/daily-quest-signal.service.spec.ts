@@ -1,29 +1,44 @@
 import { describe, expect, it, vi } from "vitest";
 import { DailyQuestSignalService } from "./daily-quest-signal.service";
 
+const db = {
+  transaction: async <T>(cb: (tx: unknown) => Promise<T>) =>
+    cb({ execute: async () => undefined }),
+} as never;
+
+function build(options: { goal?: number | null; getMeFails?: boolean } = {}) {
+  const planTasks = {
+    countDone: vi.fn(async () => 1),
+    countDoneAllTime: vi.fn(async () => 25),
+  };
+  const sessions = {
+    hasCompletedOnDate: vi.fn(async () => true),
+    countCompleted: vi.fn(async () => 10),
+    sumCompletedFocusSecondsOnDate: vi.fn(async () => 2730), // 45.5 dk → 46
+  };
+  const moods = { findByDate: vi.fn(async () => ({ id: "mood-1" })) };
+  const users = {
+    getMe: options.getMeFails
+      ? vi.fn(async () => {
+          throw new Error("gone");
+        })
+      : vi.fn(async () => ({ dailyFocusGoalMinutes: options.goal ?? null })),
+  };
+  const config = { get: vi.fn(async () => 300) };
+  const service = new DailyQuestSignalService(
+    db,
+    planTasks as never,
+    sessions as never,
+    moods as never,
+    users as never,
+    config as never,
+  );
+  return { service, planTasks, sessions, moods, users, config };
+}
+
 describe("DailyQuestSignalService", () => {
   it("returns today's quest signals from coaching repositories", async () => {
-    const db = {
-      transaction: async <T>(cb: (tx: unknown) => Promise<T>) =>
-        cb({ execute: async () => undefined }),
-    } as never;
-    const planTasks = {
-      countDone: vi.fn(async () => 1),
-      countDoneAllTime: vi.fn(async () => 25),
-    };
-    const sessions = {
-      hasCompletedOnDate: vi.fn(async () => true),
-      countCompleted: vi.fn(async () => 10),
-    };
-    const moods = { findByDate: vi.fn(async () => ({ id: "mood-1" })) };
-    const config = { get: vi.fn(async () => 300) };
-    const service = new DailyQuestSignalService(
-      db,
-      planTasks as never,
-      sessions as never,
-      moods as never,
-      config as never,
-    );
+    const { service, planTasks, sessions, moods, config } = build({ goal: 120 });
 
     const result = await service.getToday("user-1");
 
@@ -33,6 +48,8 @@ describe("DailyQuestSignalService", () => {
       hasMoodCheckin: true,
       completedFocusSessions: 10,
       completedPlanTasks: 25,
+      focusMinutesToday: 46,
+      dailyFocusGoalMinutes: 120,
     });
     expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(config.get).toHaveBeenCalledWith("coaching.session.min_focus_seconds");
@@ -45,6 +62,19 @@ describe("DailyQuestSignalService", () => {
       300,
     );
     expect(sessions.countCompleted).toHaveBeenCalledWith(expect.anything(), "user-1", 300);
+    expect(sessions.sumCompletedFocusSecondsOnDate).toHaveBeenCalledWith(
+      expect.anything(),
+      "user-1",
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+    );
     expect(moods.findByDate).toHaveBeenCalled();
+  });
+
+  it("reports a null goal when the user has none (or the identity read fails)", async () => {
+    const { service } = build();
+    expect((await service.getToday("user-1")).dailyFocusGoalMinutes).toBeNull();
+
+    const failing = build({ getMeFails: true });
+    expect((await failing.service.getToday("user-1")).dailyFocusGoalMinutes).toBeNull();
   });
 });

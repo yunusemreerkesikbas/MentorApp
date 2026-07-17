@@ -18,6 +18,8 @@ export interface AuthUser {
   organizationId: string | null;
   examType: ExamType | null;
   examDate: string | null; // ISO date (yyyy-mm-dd)
+  /** Daily focus goal in minutes; null = no goal set. */
+  dailyFocusGoalMinutes: number | null;
   emailVerified: boolean;
   createdAt: string; // ISO datetime
 }

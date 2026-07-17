@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { I18nContext, I18nService } from "nestjs-i18n";
 import type { CountdownDto, TodayPanelResponse } from "@mentor/types";
 import { UsersService } from "../../identity/application/users.service";
@@ -7,6 +7,7 @@ import { CONTENT_PORT, type ContentPort } from "../domain/content.port";
 import { daysBetween, formatTurkishDate, todayIso } from "../domain/date.util";
 import { MoodService } from "./mood.service";
 import { PlanService } from "./plan.service";
+import { SessionService } from "./session.service";
 import { StreakService } from "./streak.service";
 
 /**
@@ -19,11 +20,14 @@ import { StreakService } from "./streak.service";
  */
 @Injectable()
 export class TodayService {
+  private readonly logger = new Logger(TodayService.name);
+
   constructor(
     private readonly users: UsersService,
     private readonly plan: PlanService,
     private readonly streak: StreakService,
     private readonly mood: MoodService,
+    private readonly sessions: SessionService,
     @Inject(CONTENT_PORT) private readonly content: ContentPort,
     private readonly i18n: I18nService,
   ) {}
@@ -33,11 +37,17 @@ export class TodayService {
     // Identity owns the profile (display name + exam type) — read via its service, not a coaching query.
     const profile = await this.users.getMe(userId);
 
-    const [countdown, streak, tasks, mood] = await Promise.all([
+    const [countdown, streak, tasks, mood, focusMinutesToday, focusingNow] = await Promise.all([
       this.buildCountdown(profile.examType, today),
       this.streak.getSummary(userId),
       this.plan.listForDate(userId, today),
       this.mood.getToday(userId),
+      this.sessions.getTodayFocusMinutes(userId),
+      // Ambience only — a failed aggregate must never take the daily hub down (logged fallback).
+      this.sessions.getFocusingNowCount().catch((err: unknown) => {
+        this.logger.warn(`focusingNow unavailable: ${String(err)}`);
+        return null;
+      }),
     ]);
 
     return {
@@ -48,6 +58,11 @@ export class TodayService {
       tasks,
       sessionPresets: [...SESSION_PRESETS],
       mood,
+      focusGoal: {
+        goalMinutes: profile.dailyFocusGoalMinutes,
+        focusMinutesToday,
+      },
+      focusingNow,
     };
   }
 

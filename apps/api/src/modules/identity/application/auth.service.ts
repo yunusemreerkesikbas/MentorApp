@@ -237,6 +237,7 @@ export function toAuthUser(
     organizationId: user.organizationId,
     examType: (user.examType as AuthUser["examType"]) ?? null,
     examDate: user.examDate ?? null,
+    dailyFocusGoalMinutes: user.dailyFocusGoalMinutes ?? null,
     emailVerified: user.emailVerifiedAt != null,
     createdAt: user.createdAt.toISOString(),
   };

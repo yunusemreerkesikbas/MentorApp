@@ -7,6 +7,8 @@ import type { ExamSubjectDto, MockExamDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button, Card } from "@mentor/ui";
 import { FormError } from "@/components/form";
+import { Link } from "@/i18n/navigation";
+import { buildCoachMockExamHref } from "@/lib/coach";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import {
@@ -20,6 +22,15 @@ import {
   scoresFromMockExam,
   type SubjectScores,
 } from "./analiz-types";
+
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
 
 interface AnalizHistoryDetailProps {
   mockExamId: string | null;
@@ -35,10 +46,13 @@ export function AnalizHistoryDetail({
   onChanged,
 }: AnalizHistoryDetailProps) {
   const t = useTranslations("analysis.history");
+  const tAnalysis = useTranslations("analysis");
   const locale = useLocale();
   const dialog = useMentorDialog();
   const toast = useMentorToast();
+  const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const [detail, setDetail] = useState<MockExamDto | null>(null);
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [scores, setScores] = useState<Record<string, SubjectScores>>({});
@@ -52,6 +66,8 @@ export function AnalizHistoryDetail({
 
   useEffect(() => {
     if (!mockExamId) {
+      // Reset drawer-local state after the parent clears the selected record.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDetail(null);
       setMode("view");
       setError(null);
@@ -65,8 +81,8 @@ export function AnalizHistoryDetail({
       .then((dto) => {
         if (active) setDetail(dto);
       })
-      .catch((err: unknown) => {
-        if (active) setError(toErrorMessage(err));
+      .catch((loadError: unknown) => {
+        if (active) setError(toErrorMessage(loadError));
       });
     return () => {
       active = false;
@@ -74,14 +90,60 @@ export function AnalizHistoryDetail({
   }, [mockExamId]);
 
   useEffect(() => {
-    if (open) closeButtonRef.current?.focus();
+    if (!open) return;
+
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    document.documentElement.classList.add("mentor-drawer-open");
+    const frame = requestAnimationFrame(() => closeButtonRef.current?.focus());
+
+    return () => {
+      cancelAnimationFrame(frame);
+      document.documentElement.classList.remove("mentor-drawer-open");
+      const previousFocus = previousFocusRef.current;
+      previousFocusRef.current = null;
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
+
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !mutating) onClose();
+      if (event.key === "Escape") {
+        if (!mutating) onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const focusable = Array.from(
+        panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR) ??
+          [],
+      ).filter((element) => element.getClientRects().length > 0);
+
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey && (activeElement === first || !panelRef.current?.contains(activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (
+        !event.shiftKey &&
+        (activeElement === last || !panelRef.current?.contains(activeElement))
+      ) {
+        event.preventDefault();
+        first.focus();
+      }
     };
+
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [mutating, onClose, open]);
@@ -129,8 +191,8 @@ export function AnalizHistoryDetail({
         title: t("update_success_title"),
         message: t("update_success_message"),
       });
-    } catch (err) {
-      setError(toErrorMessage(err));
+    } catch (updateError) {
+      setError(toErrorMessage(updateError));
     } finally {
       setSaving(false);
     }
@@ -159,8 +221,8 @@ export function AnalizHistoryDetail({
         title: t("delete_success_title"),
         message: t("delete_success_message"),
       });
-    } catch (err) {
-      setError(toErrorMessage(err));
+    } catch (deleteError) {
+      setError(toErrorMessage(deleteError));
     } finally {
       setDeleting(false);
     }
@@ -179,6 +241,7 @@ export function AnalizHistoryDetail({
         aria-hidden
       />
       <div
+        ref={panelRef}
         className="fixed bottom-0 right-0 z-30 flex w-full max-w-md flex-col overflow-hidden sm:rounded-tl-[var(--radius-card)]"
         style={{
           top: "3.5rem",
@@ -280,6 +343,26 @@ export function AnalizHistoryDetail({
                     </li>
                   ))}
                 </ul>
+                {!mutating ? (
+                  <Link
+                    href={buildCoachMockExamHref(
+                      t("coach_seed", {
+                        date: formatTrendDate(detail.takenAt, locale),
+                        exam: detail.examName,
+                      }),
+                      detail.id,
+                    )}
+                    className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+                    style={{
+                      backgroundColor: "var(--color-btn)",
+                      color: "white",
+                      boxShadow: "var(--shadow-card)",
+                      fontFamily: "var(--font-body)",
+                    }}
+                  >
+                    {tAnalysis("coach_cta")}
+                  </Link>
+                ) : null}
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Button
                     type="button"
@@ -319,3 +402,4 @@ function toErrorMessage(error: unknown): string {
       ? error.message
       : String(error);
 }
+

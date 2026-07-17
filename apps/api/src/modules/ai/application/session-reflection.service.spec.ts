@@ -17,6 +17,7 @@ function baseSession(overrides: Record<string, unknown> = {}) {
     sessionMood: 2,
     struggleNote: null,
     aiReflection: null,
+    aiSuggestedTask: null,
     ...overrides,
   };
 }
@@ -51,7 +52,9 @@ describe("SessionReflectionService", () => {
     configGet = vi.fn(async (key: string) => (key === FeatureFlag.AI_ENABLED ? true : null));
     getEntitlement = vi.fn(async () => ({ isPremium: true }));
     getById = vi.fn(async () => baseSession());
-    setAiReflection = vi.fn(async () => baseSession({ aiReflection: "Güzel bir seans oldu; yarın aynı ritmi koru." }));
+    setAiReflection = vi.fn(async () =>
+      baseSession({ aiReflection: "Güzel bir seans oldu; yarın aynı ritmi koru." }),
+    );
 
     service = new SessionReflectionService(
       { complete } as never,
@@ -60,6 +63,7 @@ describe("SessionReflectionService", () => {
       { get: configGet } as never,
       { getEntitlement } as never,
       { getById, setAiReflection } as never,
+      { assertWithinBudget: vi.fn(async () => undefined) } as never,
     );
   });
 
@@ -104,16 +108,53 @@ describe("SessionReflectionService", () => {
     expect(setAiReflection).not.toHaveBeenCalled();
   });
 
+  it("returns cached suggestedTask with the reflection on cache hit", async () => {
+    getById.mockResolvedValue(
+      baseSession({
+        aiReflection: "Önceki seans yansıması.",
+        aiSuggestedTask: { title: "Mat: 10 soru", subject: "Matematik" },
+      }),
+    );
+    const res = await service.reflect(USER, SESSION_ID);
+    expect(res).toEqual({
+      reflection: "Önceki seans yansıması.",
+      model: "cache",
+      suggestedTask: { title: "Mat: 10 soru", subject: "Matematik" },
+    });
+    expect(complete).not.toHaveBeenCalled();
+  });
+
   it("generates, meters and caches a reflection for premium", async () => {
     const res = await service.reflect(USER, SESSION_ID);
     expect(res.reflection).toBe("Güzel bir seans oldu; yarın aynı ritmi koru.");
     expect(res.model).toBe("fake");
+    expect(res.suggestedTask).toBeUndefined();
     expect(append).toHaveBeenCalledOnce();
     expect(setAiReflection).toHaveBeenCalledWith(
       USER_ID,
       SESSION_ID,
       "Güzel bir seans oldu; yarın aynı ritmi koru.",
       "fake",
+      null,
+    );
+  });
+
+  it("extracts and strips <<TASK>> then caches suggestedTask", async () => {
+    complete.mockResolvedValue({
+      text: 'İyi tempoydu; yarın aynı konuda 10 soru çöz.\n<<TASK{"title":"Mat: 10 soru","subject":"Matematik"}>>',
+      promptTokens: 12,
+      completionTokens: 10,
+      model: "fake",
+    });
+    const res = await service.reflect(USER, SESSION_ID);
+    expect(res.reflection).toBe("İyi tempoydu; yarın aynı konuda 10 soru çöz.");
+    expect(res.suggestedTask).toEqual({ title: "Mat: 10 soru", subject: "Matematik" });
+    expect(setAiReflection).toHaveBeenCalledWith(
+      USER_ID,
+      SESSION_ID,
+      "İyi tempoydu; yarın aynı konuda 10 soru çöz.",
+      "fake",
+      { title: "Mat: 10 soru", subject: "Matematik" },
     );
   });
 });

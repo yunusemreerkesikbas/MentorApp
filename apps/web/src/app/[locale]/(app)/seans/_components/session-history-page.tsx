@@ -6,11 +6,17 @@ import { useTranslations } from "next-intl";
 import type { StudySessionDto } from "@mentor/types";
 import { Button, Chip, SectionHeading } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
+import {
+  type HistoryDatePreset,
+  historyDateRange,
+} from "@/lib/history-date-range";
 import { listStudySessions } from "@/lib/study-sessions";
 import { SessionHistoryRow } from "./session-history-row";
 
 const HISTORY_FULL_PAGE_SIZE = 15;
 const SUBJECT_DISCOVERY_PAGE_SIZE = 30;
+
+const DATE_PRESETS: HistoryDatePreset[] = ["all", "today", "7d", "30d"];
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -26,7 +32,7 @@ function distinctSubjects(items: StudySessionDto[]): string[] {
 }
 
 /**
- * Full-page session history at `/seans/gecmis` — paginated list with optional subject filter.
+ * Full-page session history at `/seans/gecmis` — paginated list with optional subject + date filters.
  */
 export function SessionHistoryPage() {
   const t = useTranslations("session");
@@ -34,6 +40,7 @@ export function SessionHistoryPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [datePreset, setDatePreset] = useState<HistoryDatePreset>("all");
   const [filterSubjects, setFilterSubjects] = useState<string[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [loadingMore, setLoadingMore] = useState(false);
@@ -61,10 +68,13 @@ export function SessionHistoryPage() {
     async function load() {
       setState("loading");
       try {
+        const { from, to } = historyDateRange(datePreset);
         const res = await listStudySessions(
           1,
           HISTORY_FULL_PAGE_SIZE,
           selectedSubject ?? undefined,
+          from,
+          to,
         );
         if (!active) return;
         setSessions(res.items);
@@ -81,9 +91,10 @@ export function SessionHistoryPage() {
     return () => {
       active = false;
     };
-  }, [selectedSubject]);
+  }, [selectedSubject, datePreset]);
 
   const hasMore = sessions.length < total;
+  const filtersActive = selectedSubject != null || datePreset !== "all";
 
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return;
@@ -91,10 +102,13 @@ export function SessionHistoryPage() {
     setLoadMoreError(false);
     const nextPage = page + 1;
     try {
+      const { from, to } = historyDateRange(datePreset);
       const res = await listStudySessions(
         nextPage,
         HISTORY_FULL_PAGE_SIZE,
         selectedSubject ?? undefined,
+        from,
+        to,
       );
       setSessions((prev) => [...prev, ...res.items]);
       setTotal(res.total);
@@ -104,7 +118,7 @@ export function SessionHistoryPage() {
     } finally {
       setLoadingMore(false);
     }
-  }, [hasMore, loadingMore, page, selectedSubject]);
+  }, [datePreset, hasMore, loadingMore, page, selectedSubject]);
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-5 py-8">
@@ -120,8 +134,42 @@ export function SessionHistoryPage() {
         <SectionHeading>{t("history_page_title")}</SectionHeading>
       </div>
 
+      <div
+        className="flex flex-wrap gap-2"
+        role="group"
+        aria-label={t("history_date_filter_label")}
+      >
+        {DATE_PRESETS.map((preset) => (
+          <button
+            key={preset}
+            type="button"
+            onClick={() => setDatePreset(preset)}
+            aria-pressed={datePreset === preset}
+            className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          >
+            <Chip
+              className="px-3 py-1 text-xs font-semibold uppercase"
+              style={
+                datePreset === preset
+                  ? {
+                      backgroundColor: "var(--color-main)",
+                      color: "var(--color-surface)",
+                    }
+                  : undefined
+              }
+            >
+              {t(`history_date_${preset}`)}
+            </Chip>
+          </button>
+        ))}
+      </div>
+
       {filterSubjects.length > 0 ? (
-        <div className="flex flex-wrap gap-2" role="group" aria-label={t("history_page_title")}>
+        <div
+          className="flex flex-wrap gap-2"
+          role="group"
+          aria-label={t("history_subject_filter_label")}
+        >
           <button
             type="button"
             onClick={() => setSelectedSubject(null)}
@@ -182,7 +230,7 @@ export function SessionHistoryPage() {
 
       {state === "ready" && sessions.length === 0 ? (
         <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-          {t("history_empty")}
+          {filtersActive ? t("history_empty_filtered") : t("history_empty")}
         </p>
       ) : null}
 

@@ -133,6 +133,7 @@ export function OnboardingStepLayout({
         <PuhuImage
           variant={mascot}
           size={mode === "centered" ? 140 : 150}
+          priority
         />
       </div>
       <h1

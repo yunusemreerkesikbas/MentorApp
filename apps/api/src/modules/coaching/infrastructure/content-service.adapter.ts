@@ -1,5 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import type { ContentPort, ExamCalendar, ExamRef, ExamSubjectRef, NetRule } from "../domain/content.port";
+import type {
+  ContentPort,
+  ExamCalendar,
+  ExamRef,
+  ExamSubjectRef,
+  ExamTopicRef,
+  NetRule,
+} from "../domain/content.port";
 import { ContentService } from "../../content/application/content.service";
 
 /**
@@ -10,11 +17,15 @@ import { ContentService } from "../../content/application/content.service";
 export class ContentServiceAdapter implements ContentPort {
   constructor(private readonly content: ContentService) {}
 
-  async getExamCalendar(examType: string | null | undefined): Promise<ExamCalendar | null> {
+  async getExamCalendar(
+    examType: string | null | undefined,
+  ): Promise<ExamCalendar | null> {
     return this.content.getExamCalendarForCoaching(examType);
   }
 
-  async getNetRule(examType: string | null | undefined): Promise<NetRule | null> {
+  async getNetRule(
+    examType: string | null | undefined,
+  ): Promise<NetRule | null> {
     return this.content.getNetRuleByFamily(examType);
   }
 
@@ -24,5 +35,9 @@ export class ContentServiceAdapter implements ContentPort {
 
   async listExamSubjects(examId: string): Promise<ExamSubjectRef[]> {
     return this.content.listExamSubjectsByExamId(examId);
+  }
+
+  async listExamTopics(examId: string): Promise<ExamTopicRef[]> {
+    return this.content.listExamTopicsByExamId(examId);
   }
 }

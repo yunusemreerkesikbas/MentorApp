@@ -7,7 +7,7 @@
 |---|---|---|---|
 | **Neon** | Postgres + pgvector (DB) | `DATABASE_URL` | MVP |
 | **Own JWT** | Auth (access/refresh) | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | MVP |
-| **OpenAI** | AI text (GPT-5) | `OPENAI_API_KEY`, `AI_PROVIDER` | MVP |
+| **OpenAI** | AI text, embeddings + vision classification | `OPENAI_API_KEY`, `OPENAI_*_MODEL`, `AI_PROVIDER`, `VISION_PROVIDER` | MVP |
 | **Gemini** | AI vision (photo→categorize) | `GEMINI_API_KEY`, `GEMINI_MODEL`, `VISION_PROVIDER` | MVP (premium) |
 | **iyzico** | Subscription/payments | `IYZICO_*` | MVP |
 | **Cloudflare R2** | Object storage (mock-exam photos) | `R2_*`, `STORAGE_PROVIDER`, `R2_PUBLIC_BASE_URL` | MVP |
@@ -27,7 +27,12 @@
 
 ### OpenAI / Gemini (AI)
 - OpenAI key → `OPENAI_API_KEY` (no-training API; KVKK transfer disclosure). Text provider finalized via
-  Turkish eval (§8). `AI_PROVIDER=openai` in prod when chat LLM is live.
+  Turkish eval (§8). Production uses `AI_PROVIDER=openai`; `AI_PROVIDER=fake` fails boot. To pause AI,
+  keep the real provider configured and disable the runtime `ai.enabled` flag.
+- OpenAI live contract check: `pnpm --filter @mentor/api test:live:openai`. It reads `apps/api/.env`,
+  makes four low-cost real calls (chat, stream, embedding, vision), and is never part of `pnpm test`.
+- `OPENAI_EMBED_MODEL` must return 1536 finite dimensions. Changing `AI_PROVIDER`/embedding model
+  requires one `POST /v1/admin/ai/reembed` run so stored and query vectors stay compatible.
 - Google AI Studio key → `GEMINI_API_KEY` (vision, rate-limit + premium). Photo categorize:
   `VISION_PROVIDER=gemini` + `GEMINI_MODEL` (default `gemini-2.0-flash`). Dev/test: `VISION_PROVIDER=fake`.
 - Mock-exam photo uploads: `STORAGE_PROVIDER=r2` + `R2_*` in prod; `fake` uses in-memory

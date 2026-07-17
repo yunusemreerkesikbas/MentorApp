@@ -7,6 +7,7 @@ import { http } from "@mentor/api-client";
 import type {
   NotificationCategory,
   NotificationListDto,
+  SessionReturnReminderDto,
   UserNotificationDto,
 } from "@mentor/types";
 
@@ -40,4 +41,18 @@ export async function deleteNotification(id: string): Promise<void> {
 export async function getNotificationStreamToken(): Promise<string> {
   const res = await http<{ token: string }>("/v1/notifications/stream-token", { method: "POST" });
   return res.token;
+}
+
+/** Opt-in soft return after a study session (~24h reminder; mobile-ready). */
+export async function scheduleSessionReturnReminder(
+  subject?: string | null,
+): Promise<SessionReturnReminderDto> {
+  const body =
+    subject?.trim()
+      ? JSON.stringify({ subject: subject.trim().slice(0, 80) })
+      : JSON.stringify({});
+  return http<SessionReturnReminderDto>("/v1/notifications/session-return-reminder", {
+    method: "POST",
+    body,
+  });
 }

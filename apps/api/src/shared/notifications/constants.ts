@@ -13,6 +13,7 @@ export const JobName = {
   SEND_EMAIL: "notifications.send-email",
   SEND_PUSH: "notifications.send-push",
   DISPATCH_DAILY_REMINDERS: "notifications.dispatch-daily-reminders",
+  SESSION_RETURN_REMINDER: "notifications.session-return-reminder",
 } as const;
 export type JobName = (typeof JobName)[keyof typeof JobName];
 
@@ -25,3 +26,9 @@ export const EmailTemplate = {
   DAILY_REMINDER: "coaching.daily-reminder",
 } as const;
 export type EmailTemplate = (typeof EmailTemplate)[keyof typeof EmailTemplate];
+
+/** Delivery / schedule template ids (notification_deliveries.template — not only email). */
+export const DeliveryTemplate = {
+  SESSION_RETURN: "coaching.session-return",
+} as const;
+export type DeliveryTemplate = (typeof DeliveryTemplate)[keyof typeof DeliveryTemplate];

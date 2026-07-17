@@ -48,6 +48,7 @@ describe("GhostNarrationService", () => {
       { get: configGet } as never,
       { getEntitlement } as never,
       { getGhostComparison, setLatestGhostNarration } as never,
+      { assertWithinBudget: vi.fn(async () => undefined) } as never,
     );
   });
 
