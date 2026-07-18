@@ -4,6 +4,7 @@ import type {
   InviteCodeView,
   QuestProgressView,
   RedeemInviteResult,
+  StreakRescueView,
 } from "@mentor/types";
 import { ApiClientError, http } from "@mentor/api-client";
 
@@ -44,6 +45,16 @@ export async function redeemInviteCode(code: string): Promise<RedeemInviteResult
     method: "POST",
     body: JSON.stringify({ code }),
   })) as RedeemInviteResult;
+}
+
+export async function fetchStreakRescue(): Promise<StreakRescueView> {
+  return (await http<StreakRescueView>("/v1/economy/streak-rescue")) as StreakRescueView;
+}
+
+export async function purchaseStreakRescue(): Promise<StreakRescueView> {
+  return (await http<StreakRescueView>("/v1/economy/streak-rescue", {
+    method: "POST",
+  })) as StreakRescueView;
 }
 
 /** True when the economy feature flag is off — profile hub should not render. */

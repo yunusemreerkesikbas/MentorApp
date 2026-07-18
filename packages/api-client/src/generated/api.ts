@@ -2116,6 +2116,72 @@ export const economyControllerQuestsList = async ( options?: RequestInit): Promi
 
 
 
+export type economyControllerStreakRescueStateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type economyControllerStreakRescueStateResponseSuccess = (economyControllerStreakRescueStateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerStreakRescueStateResponse = (economyControllerStreakRescueStateResponseSuccess)
+
+export const getEconomyControllerStreakRescueStateUrl = () => {
+
+
+  
+
+  return `/v1/economy/streak-rescue`
+}
+
+export const economyControllerStreakRescueState = async ( options?: RequestInit): Promise<economyControllerStreakRescueStateResponse> => {
+  
+  return http<economyControllerStreakRescueStateResponse>(getEconomyControllerStreakRescueStateUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type economyControllerStreakRescuePurchaseResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type economyControllerStreakRescuePurchaseResponseSuccess = (economyControllerStreakRescuePurchaseResponse201) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerStreakRescuePurchaseResponse = (economyControllerStreakRescuePurchaseResponseSuccess)
+
+export const getEconomyControllerStreakRescuePurchaseUrl = () => {
+
+
+  
+
+  return `/v1/economy/streak-rescue`
+}
+
+export const economyControllerStreakRescuePurchase = async ( options?: RequestInit): Promise<economyControllerStreakRescuePurchaseResponse> => {
+  
+  return http<economyControllerStreakRescuePurchaseResponse>(getEconomyControllerStreakRescuePurchaseUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
 export type economyControllerRedeemResponse201 = {
   data: void
   status: 201

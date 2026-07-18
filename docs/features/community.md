@@ -67,6 +67,11 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Level eğrisi 12 seviyeye uzadı (2026-07-18)** — `TIER_THRESHOLDS` 8→12 seviye, tavan
+  3000→10000 XP (`4200, 5600, 7500, 10000` eklendi); Efsane artık tier 12. i18n `level_1..12`
+  tr/en güncellendi (yeni isimler: Disiplinli/Öncü/Şampiyon/Zirve; mevcut isimler kaydı —
+  economy.enabled default kapalı olduğundan kullanıcı etkisi yok). Web bileşenleri
+  `t(level_{tier})` ile dinamik okuduğundan kod değişikliği gerekmedi.
 - **Profil bio + web sitesi — `getPublicProfile` enrich (APP-024)** — `PublicProfile` + `getPublicProfile`
   artık `bio`/`website` taşıyor (public-safe kimlik; email yok). Şema/`updateMe`/`AuthUser`/düzenleme formu
   + community profil header/`ProfileCard` gösterimi identity tarafında: [`identity.md`](./identity.md) *(APP-024)*. *(APP-024)*

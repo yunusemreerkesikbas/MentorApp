@@ -1,15 +1,24 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { StreakSummaryDto } from "@mentor/types";
+import { DomainError } from "../../../common/errors/domain-error";
+import { ErrorCode } from "../../../common/errors/error-code";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
 import { FREEZE_TOKENS_PER_MONTH, STREAK_LOOKBACK_DAYS } from "../domain/coaching.constants";
-import { addDays, monthKey, todayIso } from "../domain/date.util";
+import { addDays, monthKey, todayIso, type IsoDate } from "../domain/date.util";
 import { deriveStreak } from "../domain/streak";
 import { CoachingEventTopic, STREAK_MILESTONES, StreakBroken, StreakMilestone } from "../domain/coaching.events";
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
+import { StreakFreezeRepository } from "../infrastructure/streak-freeze.repository";
 import { StreakStateRepository } from "../infrastructure/streak-state.repository";
+
+/** Rescue offer for the streak-freeze coin sink: which day is buyable (only yesterday in MVP). */
+export interface FreezeRescueState {
+  eligible: boolean;
+  date: IsoDate | null;
+}
 
 /**
  * Read-time streak derivation (MVP — no cron). The pure rules live in `domain/streak.ts`;
@@ -26,6 +35,7 @@ export class StreakService {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly activity: DailyActivityRepository,
     private readonly streak: StreakStateRepository,
+    private readonly freezes: StreakFreezeRepository,
     private readonly events: EventEmitter2,
   ) {}
 
@@ -53,13 +63,18 @@ export class StreakService {
     const result = await withUserContext(this.db, { userId }, async (tx) => {
       const activeDatesList = await this.activity.listActiveDatesSince(tx, userId, since);
       const activeDates = new Set(activeDatesList);
+      const purchased = new Set(await this.freezes.listDatesSince(tx, userId, since));
 
       const { currentStreak, bridgedDates } = deriveStreak(
         today,
         activeDates,
         FREEZE_TOKENS_PER_MONTH,
+        purchased,
       );
-      const usedThisMonth = bridgedDates.filter((d) => monthKey(d) === currentMonth).length;
+      // Purchased bridges don't consume the free monthly allowance — count free ones only.
+      const usedThisMonth = bridgedDates.filter(
+        (d) => monthKey(d) === currentMonth && !purchased.has(d),
+      ).length;
       const freezeTokens = Math.max(0, FREEZE_TOKENS_PER_MONTH - usedThisMonth);
 
       const existing = await this.streak.findByUser(tx, userId);
@@ -98,5 +113,42 @@ export class StreakService {
     }
 
     return result;
+  }
+
+  /**
+   * Which day can be rescued with a coin-purchased freeze (economy streak-rescue sink).
+   * The walk bridges the NEWEST gaps first, so when the monthly pool runs out the streak breaks
+   * at the OLDEST un-coverable gap — that break day (`stoppedAt`) is the purchase target.
+   * Eligible ⟺ the walk stopped on a SINGLE gap (the day before it is active). A 2+ day gap
+   * stays unrescuable — the anti-shaming soft-reset rule is untouched.
+   */
+  getFreezeRescueState(userId: string): Promise<FreezeRescueState> {
+    const today = todayIso();
+    const since = addDays(today, -STREAK_LOOKBACK_DAYS);
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const activeDates = new Set(await this.activity.listActiveDatesSince(tx, userId, since));
+      const purchased = new Set(await this.freezes.listDatesSince(tx, userId, since));
+      const { stoppedAt } = deriveStreak(today, activeDates, FREEZE_TOKENS_PER_MONTH, purchased);
+      if (!stoppedAt || !activeDates.has(addDays(stoppedAt, -1))) {
+        return { eligible: false, date: null };
+      }
+      return { eligible: true, date: stoppedAt };
+    });
+  }
+
+  /**
+   * Record a coin-purchased freeze for `date` (validated against the CURRENT rescue state) and
+   * refresh the streak snapshot. Idempotent on (userId, date) — a concurrent duplicate is a no-op.
+   * Called by economy's streak-rescue purchase AFTER the coin spend (coaching never calls economy).
+   */
+  async applyPurchasedFreeze(userId: string, date: IsoDate): Promise<void> {
+    const state = await this.getFreezeRescueState(userId);
+    if (!state.eligible || state.date !== date) {
+      throw new DomainError(ErrorCode.STREAK_RESCUE_NOT_ELIGIBLE, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+    await withUserContext(this.db, { userId }, (tx) => this.freezes.insert(tx, userId, date));
+    // Refresh the snapshot so panel reads reflect the rescued streak immediately. A re-crossed
+    // milestone may re-emit — the quest is once-idempotent and the notification dedupes per day.
+    await this.getSummary(userId);
   }
 }

@@ -61,10 +61,26 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 | `GET /v1/economy/quests` | Quest catalog + progress (auto-grants) |
 | `GET /v1/economy/invite` | Get/generate invite code |
 | `POST /v1/economy/invite/redeem` | Redeem invite code |
+| `GET /v1/economy/streak-rescue` | Streak-rescue offer (eligible? cost? affordable?) |
+| `POST /v1/economy/streak-rescue` | Buy the freeze for the break day (coin sink, idempotent) |
 | `POST /v1/admin/users/:id/economy/adjust` | Admin manual adjust (audited) |
 
 ## Geliştirmeler (timeline)
 
+- **Economy hardening + streak-rescue coin sink (2026-07-18)** — İkinci coin harcama yeri geldi:
+  `GET/POST /v1/economy/streak-rescue`, aylık ücretsiz havuz yetmediğinde derivation'ın KOPTUĞU
+  tek-boşluk gününü `economy.coin.streak_freeze_cost` (default 20) coin ile dondurur (walk en yeni
+  boşlukları önce köprülediği için kopma en eski bu-ay boşluğunda görülür — hedef `stoppedAt`,
+  "dün" değil). Uygunluk kuralları coaching'de (`StreakService.getFreezeRescueState` — kopma günü
+  tek boşluk olmalı: önceki gün aktif; 2+ gün boşluk kurtarılamaz), debit ledger'da; spend→apply, apply hatasında compensating `streak.freeze.refund`
+  (AI chat pattern'i). Idempotent uçtan uca: spend `(streak_freeze, userId:date)`, insert
+  `(user_id, date)` unique. Web: panel `WeeklyStreakCard` uygunsa iki-dokunuşlu onaylı
+  "Serini kurtar" CTA'sı gösterir (best-effort; economy kapalıysa gizli). Ayrıca: cap muhasebesi
+  artık sadece organik kazanımı sayar (refund + admin adjust hariç — `coinEarnedSince`), forum
+  self-accept XP farm kapandı (`canAcceptAnswer` cevap yazarını da kontrol eder), level eğrisi
+  12 seviye / 10000 XP tavana uzadı. Dosyalar: `streak-rescue.service.ts`, `streak.service.ts`,
+  `streak-freeze.repository.ts`, `streak.ts`, `ledger.repository.ts`, `forum.policy.ts`,
+  `level.ts`, `panel-shell.tsx`, migration `0054`.
 - **Seans → XP ödül döngüsü (2026-07-10)** — roadmap §262: tamamlanan seans artık XP'yi anında
   tetikler (lazy `/profil` beklemesi yok). `coaching.session-completed` event'i →
   `SessionCompletedListener` → `QuestService.evaluateAndGrant` (günlük `daily.focus-session-completed`
@@ -147,6 +163,9 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 ## Gotchas / Known issues
 
 - **Caps are rolling windows** (now−24h / now−7d), not calendar — simple, TZ-free.
+- **Cap accounting counts ORGANIC earnings only** — admin adjustments (`created_by` set) and
+  `ai.chat.refund` rows are corrections, excluded from `coinEarnedSince` so they never squeeze the
+  user's daily/weekly headroom.
 - **Admin adjust bypasses caps** (`enforceLimits:false`) — it's a correction; organic earning passes
   caps.
 - **Invite: forward-only** — reward fires only on conversion AFTER redeem. Premium-at-redeem rejected.

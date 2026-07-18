@@ -59,6 +59,7 @@
   "ECONOMY_DISABLED": "The economy feature is currently disabled.",
   "ECONOMY_LIMIT_EXCEEDED": "The coin earning limit has been exceeded.",
   "INSUFFICIENT_COIN": "You don't have enough earned rights for the AI coach. Complete quests or go Premium.",
+  "STREAK_RESCUE_NOT_ELIGIBLE": "There is no streak day that can be rescued right now.",
   "INVITE_CODE_INVALID": "The invite code is invalid.",
   "INVITE_SELF": "You can't use your own invite code.",
   "INVITE_ALREADY_REDEEMED": "You have already used an invite code.",

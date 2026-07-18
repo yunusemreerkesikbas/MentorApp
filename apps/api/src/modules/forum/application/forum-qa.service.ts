@@ -107,12 +107,13 @@ export class ForumQaService {
     await this.assertEnabled();
     const thread = await this.requireQuestion(threadId, actor.id);
     const forumActor: ForumActor = { userId: actor.id, platformRoles: actor.roles, zoneRole: null };
-    if (!canAcceptAnswer(forumActor, thread.authorId)) {
-      throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
-    }
     const post = await this.posts.findById(postId, actor.id);
     if (!post || post.threadId !== threadId) {
       throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    // Post fetched first so the policy can also reject self-accept (asker accepting their own answer).
+    if (!canAcceptAnswer(forumActor, thread.authorId, post.authorId)) {
+      throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
     // Atomic one-shot claim: the conditional UPDATE wins exactly once. Concurrent accepts (or a
     // re-accept) get `false` → 409. setAccepted/emit run only for the winner (no double XP grant).

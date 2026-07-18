@@ -7,6 +7,8 @@
  *  - Today not being active yet does NOT break the streak (the day is still in progress).
  *  - A SINGLE missed day can be bridged by one freeze token (monthly pool, anti-shaming).
  *  - Two consecutive missed days end the streak (soft reset), regardless of tokens.
+ *  - A coin-purchased freeze (streak-rescue, economy sink) bridges its exact day permanently;
+ *    purchase-time validation keeps it a single-gap rescue, so the soft-reset rule stands.
  *
  * This function is intentionally idempotent: it always derives from `activeDates` + the
  * monthly freeze allowance, so repeated reads never double-spend tokens. The path to a
@@ -19,7 +21,15 @@ export interface StreakComputation {
   currentStreak: number;
   /** The missed days that were bridged by a freeze token (yyyy-mm-dd). */
   bridgedDates: IsoDate[];
+  /**
+   * The missed day the walk broke on (yyyy-mm-dd) — the gap no token could cover. Null only when
+   * the defensive guard ran out. This is the streak-rescue purchase target: buying a freeze for
+   * it lets the walk continue past it.
+   */
+  stoppedAt: IsoDate | null;
 }
+
+const NO_PURCHASED: ReadonlySet<IsoDate> = new Set();
 
 /**
  * Derive the current streak by walking backward from `today` over `activeDates`.
@@ -27,13 +37,18 @@ export interface StreakComputation {
  * @param today                 server's "today" (yyyy-mm-dd)
  * @param activeDates           set of active calendar days (yyyy-mm-dd)
  * @param monthlyFreezeAllowance number of freeze tokens available to bridge single gaps
+ * @param purchasedFrozenDates  coin-purchased freeze days: bridge unconditionally (no adjacency
+ *                              requirement — validated at purchase time), never consume the
+ *                              monthly allowance, unaffected by month boundaries
  */
 export function deriveStreak(
   today: IsoDate,
   activeDates: ReadonlySet<IsoDate>,
   monthlyFreezeAllowance: number,
+  purchasedFrozenDates: ReadonlySet<IsoDate> = NO_PURCHASED,
 ): StreakComputation {
   const bridgedDates: IsoDate[] = [];
+  let stoppedAt: IsoDate | null = null;
   let streak = 0;
 
   // If today isn't active yet, measure the run ending yesterday (don't penalize an in-progress day).
@@ -54,6 +69,13 @@ export function deriveStreak(
       cursor = addDays(cursor, -1);
       continue;
     }
+    // A coin-purchased freeze bridges its day unconditionally (paid rescue — eligibility was
+    // validated at purchase) and leaves the free monthly allowance untouched.
+    if (purchasedFrozenDates.has(cursor)) {
+      bridgedDates.push(cursor);
+      cursor = addDays(cursor, -1);
+      continue;
+    }
     // `cursor` is a missed day. Bridge it only if it's a SINGLE gap (the prior day is active)
     // and a freeze token is available; otherwise the streak ends here (soft reset).
     const previous = addDays(cursor, -1);
@@ -63,8 +85,9 @@ export function deriveStreak(
       cursor = previous;
       continue;
     }
+    stoppedAt = cursor;
     break;
   }
 
-  return { currentStreak: streak, bridgedDates };
+  return { currentStreak: streak, bridgedDates, stoppedAt };
 }

@@ -135,6 +135,18 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Coin ile streak kurtarma — satın alınmış freeze (2026-07-18)** — Yeni `streak_freezes` tablosu
+  (unique `user_id+date`, RLS self-or-service, migration `0054`): coin ile satın alınan dondurma
+  günleri kalıcı kayıt. `deriveStreak` 4. parametre `purchasedFrozenDates` aldı — satın alınmış gün
+  koşulsuz köprülenir, aylık ücretsiz hakkı TÜKETMEZ, ay sınırından etkilenmez; `getSummary`'deki
+  `usedThisMonth` sayacı satın alınmış köprüleri hariç tutar. `deriveStreak` ayrıca `stoppedAt`
+  (walk'ın koptuğu gün) döndürür — walk en yeni boşlukları önce köprülediğinden havuz tükenmesi
+  en eski bu-ay boşluğunda kopar; rescue hedefi bu gündür. Yeni public boundary:
+  `getFreezeRescueState` (kopma günü tek boşluksa uygun; 2+ gün boşluk asla) +
+  `applyPurchasedFreeze` (doğrula → insert → snapshot tazele). Satın alma orkestrasyonu economy'de
+  (`StreakRescueService`) — coaching economy'yi ÇAĞIRMAZ (yön korunur). Rescue sonrası snapshot
+  tazelenirken milestone yeniden emit olabilir: quest `once`-idempotent, bildirim günlük dedupe —
+  kabul edilen edge.
 - **Analiz yayın sertleştirme (2026-07-16)** — `/analiz` kritik UI sözleşmeleri mobil
   (375×812) ve masaüstü (1280×800) Chromium projelerinde deterministik Playwright smoke testleriyle
   korunur. Testler auth ve Analiz API cevaplarını `@mentor/types` tabanlı fixture ile mock'lar;

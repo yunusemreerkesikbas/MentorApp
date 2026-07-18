@@ -35,8 +35,17 @@ function makeRepoFake() {
     },
     balanceService: async (userId: string) => balance(userId),
     balanceSelf: async (userId: string) => balance(userId),
+    // Mirrors the real repo: organic earnings only — admin rows (createdBy set) and
+    // ai.chat.refund rows never consume cap headroom.
     coinEarnedSince: async (userId: string) =>
-      sum((r) => r.userId === userId && r.unit === Currency.COIN && r.amount > 0),
+      sum(
+        (r) =>
+          r.userId === userId &&
+          r.unit === Currency.COIN &&
+          r.amount > 0 &&
+          r.createdBy == null &&
+          r.reason !== "ai.chat.refund",
+      ),
     coinChatSpendsSince: async (userId: string, reason?: string) =>
       rows.filter(
         (r) =>
@@ -107,6 +116,20 @@ describe("EconomyService", () => {
       enforceLimits: false,
     });
     expect(bal.coinConfirmed).toBe(999);
+  });
+
+  it("refunds and admin adjustments do not consume the organic earning cap", async () => {
+    const svc = service();
+    // 40 coin of refund + 999 of admin adjust land first — neither is organic earning.
+    await svc.grant("u1", Currency.COIN, 40, { reason: "ai.chat.refund", enforceLimits: false });
+    await svc.grant("u1", Currency.COIN, 999, {
+      reason: "support correction",
+      actorId: "admin-1",
+      enforceLimits: false,
+    });
+    // Daily cap is 50; the full 50 must still be grantable organically.
+    const bal = await svc.grant("u1", Currency.COIN, 50, { reason: "quest.onboarding.email-verified" });
+    expect(bal.coinConfirmed).toBe(40 + 999 + 50);
   });
 
   it("is idempotent on refType/refId", async () => {

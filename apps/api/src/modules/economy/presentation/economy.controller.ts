@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpStatus, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { EconomyLedgerEntryView } from "@mentor/types";
+import type { EconomyLedgerEntryView, StreakRescueView } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -8,6 +8,7 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { EconomyService } from "../application/economy.service";
 import { InviteService } from "../application/invite.service";
 import { QuestService, type QuestProgressView } from "../application/quest.service";
+import { StreakRescueService } from "../application/streak-rescue.service";
 import type { Balance } from "../infrastructure/ledger.repository";
 import { EconomyLedgerQueryDto, RedeemInviteDto } from "./economy.dto";
 import { toLedgerEntryView } from "./ledger-entry-view";
@@ -24,6 +25,7 @@ export class EconomyController {
     private readonly economy: EconomyService,
     private readonly invites: InviteService,
     private readonly quests: QuestService,
+    private readonly streakRescue: StreakRescueService,
     private readonly config: ConfigRegistryService,
   ) {}
 
@@ -60,6 +62,20 @@ export class EconomyController {
   async questsList(@CurrentUser() user: RequestUser): Promise<QuestProgressView[]> {
     await this.assertEnabled();
     return this.quests.getUserProgress(user.id);
+  }
+
+  /** Streak-rescue offer (coin sink): can yesterday be frozen, at what cost. */
+  @Get("streak-rescue")
+  async streakRescueState(@CurrentUser() user: RequestUser): Promise<StreakRescueView> {
+    await this.assertEnabled();
+    return this.streakRescue.getState(user.id);
+  }
+
+  /** Buy the freeze for yesterday (idempotent; 422 when not eligible / insufficient coin). */
+  @Post("streak-rescue")
+  async streakRescuePurchase(@CurrentUser() user: RequestUser): Promise<StreakRescueView> {
+    await this.assertEnabled();
+    return this.streakRescue.purchase(user.id);
   }
 
   @Post("invite/redeem")

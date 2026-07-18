@@ -590,6 +590,29 @@ export const streakState = pgTable(
 );
 
 /**
+ * Coin-purchased streak freezes — one immutable row per bridged calendar day (economy
+ * streak-rescue sink). Purchased dates bridge unconditionally in the streak derivation and
+ * never consume the monthly free-token allowance.
+ */
+export const streakFreezes = pgTable(
+  "streak_freezes",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** The missed calendar day this freeze bridges (yyyy-mm-dd). */
+    date: date("date").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("streak_freezes_user_date_unique_idx").on(t.userId, t.date)],
+);
+
+/**
  * One gentle mood check-in per day (1..5). `struggleNote` is an OPTIONAL, user-typed subjective
  * signal ("bugün seni en çok zorlayan konu") — never AI-generated. The `ai*` columns cache the
  * premium AI-adaptive reflection (one per day; regenerated in place). Free tier reads only the
