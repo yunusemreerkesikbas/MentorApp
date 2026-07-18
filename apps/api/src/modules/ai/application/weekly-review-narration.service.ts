@@ -7,6 +7,7 @@ import { FeatureFlag } from "../../../common/config/config.catalog";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { WeeklyReviewService as CoachingWeeklyReviewService } from "../../coaching/application/weekly-review.service";
+import { DeepAnalysisService } from "../../economy/application/deep-analysis.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
 import {
@@ -24,6 +25,7 @@ export class WeeklyReviewNarrationService {
     @Inject(LLM_PORT) private readonly llm: LlmPort,
     private readonly config: ConfigRegistryService,
     private readonly entitlement: EntitlementService,
+    private readonly deepAnalysis: DeepAnalysisService,
     private readonly coaching: CoachingWeeklyReviewService,
     private readonly cache: WeeklyReviewCacheRepository,
     private readonly usage: AiUsageRepository,
@@ -35,16 +37,22 @@ export class WeeklyReviewNarrationService {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
     const entitlement = await this.entitlement.getEntitlement(user.id, user.roles);
-    if (!entitlement.isPremium) {
-      throw new DomainError(ErrorCode.PAYMENT_PREMIUM_REQUIRED, HttpStatus.FORBIDDEN);
-    }
-
     const evidence = await this.coaching.getAiEvidence(user.id, examId);
     if (evidence.review.status !== "READY") {
       throw new DomainError(
         ErrorCode.COACHING_WEEKLY_REVIEW_INSUFFICIENT,
         HttpStatus.BAD_REQUEST,
       );
+    }
+    // Premium includes the narration; free users pass with a coin unlock for this exam+week
+    // (deep-analysis sink, economy-gated). Otherwise: premium required, as before.
+    if (!entitlement.isPremium) {
+      const unlocked =
+        (await this.config.get("economy.enabled")) &&
+        (await this.deepAnalysis.isUnlocked(user.id, examId, evidence.review.period.startDate));
+      if (!unlocked) {
+        throw new DomainError(ErrorCode.PAYMENT_PREMIUM_REQUIRED, HttpStatus.FORBIDDEN);
+      }
     }
 
     const locale = I18nContext.current()?.lang ?? "tr";

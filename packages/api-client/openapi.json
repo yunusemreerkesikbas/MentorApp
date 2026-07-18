@@ -4825,6 +4825,11 @@
           "contextMockExamId": {
             "type": "string",
             "format": "uuid"
+          },
+          "contextArticleSlug": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^[a-z0-9-]+$"
           }
         },
         "required": [

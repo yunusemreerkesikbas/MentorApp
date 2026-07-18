@@ -89,6 +89,7 @@ export class ChatService {
     clientMessageId?: string,
     conversationId?: string,
     contextMockExamId?: string,
+    contextArticleSlug?: string,
   ): Promise<CoachReplyResult> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
@@ -111,7 +112,7 @@ export class ChatService {
         ? await this.mockExams.getById(user.id, contextMockExamId)
         : undefined;
       const threadId = await this.resolveConversation(user.id, message, conversationId);
-      return await this.completeChat(user.id, threadId, message, mockExam);
+      return await this.completeChat(user.id, threadId, message, mockExam, contextArticleSlug);
     } catch (err) {
       if (!ent.isPremium && shouldRefundOnFailure && coinCost > 0) {
         await this.refundCoinSpend(user.id, coinCost, spendRefId).catch((refundErr) => {
@@ -177,7 +178,7 @@ export class ChatService {
     conversationId: string,
     message: string,
     mockExam?: MockExamDto,
-    opts?: { excludeTailExchange?: boolean },
+    opts?: { excludeTailExchange?: boolean; contextArticleSlug?: string },
   ) {
     const ctx = await this.context.build(userId);
 
@@ -202,13 +203,22 @@ export class ChatService {
     let retrieved: { title: string; slug: string; sourceUrl: string; snippet: string }[] = [];
     if (ctx.examType) {
       try {
-        const vector = await this.llm.embed(message);
-        retrieved = await this.content.searchSimilarArticles(
-          ctx.examType,
-          vector,
-          RAG_TOP_K,
-          RAG_MAX_DISTANCE,
-        );
+        if (opts?.contextArticleSlug) {
+          const exact = await this.content.getInfoArticleSource(
+            opts.contextArticleSlug,
+            ctx.examType,
+          );
+          if (exact) retrieved = [exact];
+        }
+        if (retrieved.length === 0) {
+          const vector = await this.llm.embed(message);
+          retrieved = await this.content.searchSimilarArticles(
+            ctx.examType,
+            vector,
+            RAG_TOP_K,
+            RAG_MAX_DISTANCE,
+          );
+        }
       } catch (err) {
         this.logger.warn(`RAG retrieval skipped: ${String(err)}`);
       }
@@ -266,12 +276,14 @@ export class ChatService {
     conversationId: string,
     message: string,
     mockExam?: MockExamDto,
+    contextArticleSlug?: string,
   ): Promise<CoachReplyResult> {
     const { llmInput, sources } = await this.prepareChat(
       userId,
       conversationId,
       message,
       mockExam,
+      { contextArticleSlug },
     );
     const result = await this.llm.complete(llmInput);
     // Order-agnostic: models sometimes reverse the FOLLOWUP/TASK order — never leak a marker.
@@ -305,6 +317,7 @@ export class ChatService {
     clientMessageId?: string,
     conversationId?: string,
     contextMockExamId?: string,
+    contextArticleSlug?: string,
   ): AsyncGenerator<CoachChatStreamEvent> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
@@ -332,6 +345,7 @@ export class ChatService {
         threadId,
         message,
         mockExam,
+        { contextArticleSlug },
       );
       const final = yield* this.streamLlm(llmInput);
       const { text: reply, task, followUps } = extractReplyMarkers(final.text);

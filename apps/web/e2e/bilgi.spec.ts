@@ -122,6 +122,9 @@ test("yalnız sınav günü varken timeline tekrarını göstermez", async ({
 test("makaleyi Koç composerına taşır ama otomatik göndermez", async ({
   page,
 }) => {
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
   const api = await mockKnowledgeApi(page);
   await page.goto(`/tr/bilgi/${article.slug}`);
   const jsonLd = await page.locator('script[type="application/ld+json"]').allTextContents();
@@ -129,6 +132,8 @@ test("makaleyi Koç composerına taşır ama otomatik göndermez", async ({
   expect(jsonLd.join(" ")).toContain("BreadcrumbList");
   expect(jsonLd.join(" ")).toContain("https://www.osym.gov.tr");
   await page.getByRole("link", { name: "Koçla konuş" }).click();
+
+  expect(new URL(page.url()).searchParams.get("contextArticleSlug")).toBe(article.slug);
 
   await expect(
     page.getByRole("textbox", { name: "Koçuna mesaj yaz" }),

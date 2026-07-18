@@ -10,8 +10,8 @@ import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
 import {
   CoachStreamError,
-  removeMockExamContextFromUrl,
-  resolvePendingMockExamContext,
+  removeCoachContextFromUrl,
+  resolvePendingCoachContext,
   setCoachMessageFeedback,
   streamCoachMessage,
   streamRegenerate,
@@ -63,9 +63,11 @@ export function KocChatShell() {
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const seedAppliedRef = useRef(false);
   const appliedContextMockExamIdRef = useRef<string | null>(null);
+  const appliedContextArticleSlugRef = useRef<string | null>(null);
 
   const seed = searchParams.get("seed");
   const contextMockExamId = searchParams.get("contextMockExamId");
+  const contextArticleSlug = searchParams.get("contextArticleSlug");
   // `?c=<id>` opens an existing thread; no param means a fresh chat.
   const routeConversationId = searchParams.get("c");
   const appliedRouteRef = useRef<string | null | undefined>(undefined);
@@ -98,9 +100,13 @@ export function KocChatShell() {
     setFollowUps([]);
 
     const wasNewChat = activeConversationId === null;
-    const pendingContextMockExamId = resolvePendingMockExamContext(
+    const pendingContextMockExamId = resolvePendingCoachContext(
       contextMockExamId,
       appliedContextMockExamIdRef.current,
+    );
+    const pendingContextArticleSlug = resolvePendingCoachContext(
+      contextArticleSlug,
+      appliedContextArticleSlugRef.current,
     );
     const clientMessageId = newId();
     const userMessage: ChatMessage = {
@@ -128,6 +134,7 @@ export function KocChatShell() {
         },
         activeConversationId ?? undefined,
         pendingContextMockExamId,
+        pendingContextArticleSlug,
       );
       // Finalize with the authoritative reply + source chips (covers zero-delta fallbacks too).
       if (received === "") {
@@ -137,12 +144,17 @@ export function KocChatShell() {
       }
       setFollowUps(nextFollowUps ?? []);
 
-      if (pendingContextMockExamId) {
-        appliedContextMockExamIdRef.current = pendingContextMockExamId;
+      if (pendingContextMockExamId || pendingContextArticleSlug) {
+        if (pendingContextMockExamId) {
+          appliedContextMockExamIdRef.current = pendingContextMockExamId;
+        }
+        if (pendingContextArticleSlug) {
+          appliedContextArticleSlugRef.current = pendingContextArticleSlug;
+        }
         window.history.replaceState(
           window.history.state,
           "",
-          removeMockExamContextFromUrl(window.location.href),
+          removeCoachContextFromUrl(window.location.href),
         );
       }
 
