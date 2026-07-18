@@ -50,9 +50,10 @@ export class QuestService {
   async evaluateAndGrant(userId: string): Promise<void> {
     if (!(await this.config.get("economy.enabled"))) return;
 
-    const [signals, streak] = await Promise.all([
+    const [signals, streak, cfg] = await Promise.all([
       this.dailySignals.getToday(userId),
       this.streak.getSummary(userId),
+      this.readQuestConfig(),
     ]);
     const activePeriodKeys = this.activePeriodKeys(signals);
     const completed = new Set(
@@ -61,6 +62,7 @@ export class QuestService {
       ),
     );
     const pending = QUEST_CATALOG.filter((q) => {
+      if (cfg.disabledIds.has(q.id)) return false; // admin kill-switch
       const periodKey = this.periodKey(q, signals);
       return !completed.has(progressKey(q.id, periodKey));
     });
@@ -74,9 +76,8 @@ export class QuestService {
     const redeemed = await this.invites.findRedemptionByInvited(userId);
 
     const isMet = (q: QuestDef): boolean => {
-      if (q.type === QuestType.MILESTONE) {
-        const target = q.progressTarget ?? Number.POSITIVE_INFINITY;
-        return milestoneCurrent(q, signals, streak.currentStreak) >= target;
+      if (q.type === QuestType.MILESTONE || q.type === QuestType.WEEKLY_RITUAL) {
+        return sourceCurrent(q, signals, streak.currentStreak) >= questTarget(q, cfg.targets);
       }
       switch (q.id) {
         case "daily.plan-task-done":
@@ -103,34 +104,14 @@ export class QuestService {
       }
     };
 
-    const [
-      onboardingRewardCoin,
-      dailyRewardXp,
-      streakMilestoneRewardXp,
-      effortMilestoneRewardXp,
-    ] = await Promise.all([
-      this.config.get("economy.quest.onboarding_reward_coin"),
-      this.config.get("economy.quest.daily_ritual_reward_xp"),
-      this.config.get("economy.quest.streak_milestone_reward_xp"),
-      this.config.get("economy.quest.effort_milestone_reward_xp"),
-    ]);
-
     for (const q of pending) {
       if (!isMet(q)) continue;
       const periodKey = this.periodKey(q, signals);
       const reward =
         q.rewardUnit === "XP"
-          ? {
-              unit: Currency.XP,
-              amount: xpReward(
-                q,
-                dailyRewardXp,
-                streakMilestoneRewardXp,
-                effortMilestoneRewardXp,
-              ),
-            }
+          ? { unit: Currency.XP, amount: xpReward(q, cfg) }
           : q.rewardUnit === "COIN"
-            ? { unit: Currency.COIN, amount: onboardingRewardCoin }
+            ? { unit: Currency.COIN, amount: cfg.onboardingRewardCoin }
             : null;
       try {
         await this.quests.withServiceTx(async (tx) => {
@@ -172,91 +153,144 @@ export class QuestService {
   }
 
   private async toViews(userId: string): Promise<QuestProgressView[]> {
-    const [signals, streak] = await Promise.all([
+    const [signals, streak, cfg] = await Promise.all([
       this.dailySignals.getToday(userId),
       this.streak.getSummary(userId),
+      this.readQuestConfig(),
     ]);
-    const [
-      onboardingRewardCoin,
-      dailyRewardXp,
-      streakMilestoneRewardXp,
-      effortMilestoneRewardXp,
-      rows,
-    ] = await Promise.all([
-      this.config.get("economy.quest.onboarding_reward_coin"),
-      this.config.get("economy.quest.daily_ritual_reward_xp"),
-      this.config.get("economy.quest.streak_milestone_reward_xp"),
-      this.config.get("economy.quest.effort_milestone_reward_xp"),
-      this.quests.listForUser(userId, this.activePeriodKeys(signals)),
-    ]);
+    const rows = await this.quests.listForUser(userId, this.activePeriodKeys(signals));
     const byKey = new Map(rows.map((r) => [progressKey(r.questId, r.periodKey), r]));
     // The goal quest only exists for users who chose a goal — no default target.
     const visible = QUEST_CATALOG.filter(
-      (q) => q.id !== "daily.focus-goal-met" || signals.dailyFocusGoalMinutes != null,
+      (q) =>
+        !cfg.disabledIds.has(q.id) &&
+        (q.id !== "daily.focus-goal-met" || signals.dailyFocusGoalMinutes != null),
     );
     return visible.map((q) => {
       const periodKey = this.periodKey(q, signals);
       const row = byKey.get(progressKey(q.id, periodKey));
       const rewardAmount =
-        q.rewardUnit === "XP"
-          ? xpReward(q, dailyRewardXp, streakMilestoneRewardXp, effortMilestoneRewardXp)
-          : q.rewardUnit === "COIN"
-            ? onboardingRewardCoin
-            : 0;
+        q.rewardUnit === "XP" ? xpReward(q, cfg) : q.rewardUnit === "COIN" ? cfg.onboardingRewardCoin : 0;
+      const hasTarget = q.progressTarget != null || q.targetConfigKey != null;
+      const target = hasTarget ? questTarget(q, cfg.targets) : undefined;
       return {
         id: q.id,
         category: q.category,
         period: q.period,
         periodKey,
         type: q.type,
-        title: q.title,
+        title: target != null ? q.title.replace("{target}", String(target)) : q.title,
         badgeLabel: q.badgeLabel,
         action: q.action,
         rewardUnit: q.rewardUnit,
         rewardAmount,
         rewardCoin: q.rewardUnit === "COIN" ? rewardAmount : 0,
         progressCurrent:
-          q.type === QuestType.MILESTONE
+          target != null
             ? row
-              ? q.progressTarget
-              : Math.min(
-                  milestoneCurrent(q, signals, streak.currentStreak),
-                  q.progressTarget ?? 0,
-                )
+              ? target
+              : Math.min(sourceCurrent(q, signals, streak.currentStreak), target)
             : undefined,
-        progressTarget: q.progressTarget,
+        progressTarget: target,
         completed: row !== undefined,
         completedAt: row?.completedAt.toISOString() ?? null,
       };
     });
   }
 
+  /** All quest-related config in one batch (rewards, weekly targets, kill-switch list). */
+  private async readQuestConfig(): Promise<QuestConfig> {
+    const [
+      onboardingRewardCoin,
+      dailyRewardXp,
+      streakMilestoneRewardXp,
+      effortMilestoneRewardXp,
+      weeklyRitualRewardXp,
+      weeklyFocusTarget,
+      weeklyPlanTarget,
+      disabledCsv,
+    ] = await Promise.all([
+      this.config.get("economy.quest.onboarding_reward_coin"),
+      this.config.get("economy.quest.daily_ritual_reward_xp"),
+      this.config.get("economy.quest.streak_milestone_reward_xp"),
+      this.config.get("economy.quest.effort_milestone_reward_xp"),
+      this.config.get("economy.quest.weekly_ritual_reward_xp"),
+      this.config.get("economy.quest.weekly_focus_sessions_target"),
+      this.config.get("economy.quest.weekly_plan_tasks_target"),
+      this.config.get("economy.quest.disabled_ids"),
+    ]);
+    return {
+      onboardingRewardCoin,
+      dailyRewardXp,
+      streakMilestoneRewardXp,
+      effortMilestoneRewardXp,
+      weeklyRitualRewardXp,
+      targets: new Map([
+        ["economy.quest.weekly_focus_sessions_target", weeklyFocusTarget],
+        ["economy.quest.weekly_plan_tasks_target", weeklyPlanTarget],
+      ]),
+      disabledIds: new Set(
+        disabledCsv
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      ),
+    };
+  }
+
   private periodKey(q: QuestDef, signals: DailyQuestSignals): string {
-    return q.type === QuestType.DAILY_RITUAL ? signals.date : QUEST_PERIOD_ONCE;
+    if (q.type === QuestType.DAILY_RITUAL) return signals.date;
+    if (q.type === QuestType.WEEKLY_RITUAL) return signals.weekKey;
+    return QUEST_PERIOD_ONCE;
   }
 
   private activePeriodKeys(signals: DailyQuestSignals): string[] {
-    return [QUEST_PERIOD_ONCE, signals.date];
+    return [QUEST_PERIOD_ONCE, signals.date, signals.weekKey];
   }
+}
+
+interface QuestConfig {
+  onboardingRewardCoin: number;
+  dailyRewardXp: number;
+  streakMilestoneRewardXp: number;
+  effortMilestoneRewardXp: number;
+  weeklyRitualRewardXp: number;
+  /** targetConfigKey → resolved value (admin-tunable weekly targets). */
+  targets: Map<string, number>;
+  disabledIds: Set<string>;
 }
 
 function progressKey(questId: string, periodKey: string): string {
   return `${questId}:${periodKey}`;
 }
 
-function milestoneCurrent(q: QuestDef, signals: DailyQuestSignals, currentStreak: number): number {
-  if (q.progressSource === "streak") return currentStreak;
-  if (q.progressSource === "completed_focus_sessions") return signals.completedFocusSessions;
-  if (q.progressSource === "completed_plan_tasks") return signals.completedPlanTasks;
-  return 0;
+/** The quest's completion target: config-resolved when `targetConfigKey` is set. */
+function questTarget(q: QuestDef, targets: Map<string, number>): number {
+  const fromConfig = q.targetConfigKey ? targets.get(q.targetConfigKey) : undefined;
+  return fromConfig ?? q.progressTarget ?? Number.POSITIVE_INFINITY;
 }
 
-function xpReward(
-  q: QuestDef,
-  dailyRewardXp: number,
-  streakMilestoneRewardXp: number,
-  effortMilestoneRewardXp: number,
-): number {
-  if (q.type !== QuestType.MILESTONE) return dailyRewardXp;
-  return q.progressSource === "streak" ? streakMilestoneRewardXp : effortMilestoneRewardXp;
+function sourceCurrent(q: QuestDef, signals: DailyQuestSignals, currentStreak: number): number {
+  switch (q.progressSource) {
+    case "streak":
+      return currentStreak;
+    case "completed_focus_sessions":
+      return signals.completedFocusSessions;
+    case "completed_plan_tasks":
+      return signals.completedPlanTasks;
+    case "weekly_focus_sessions":
+      return signals.weeklyCompletedFocusSessions;
+    case "weekly_plan_tasks":
+      return signals.weeklyCompletedPlanTasks;
+    case "weekly_active_days":
+      return signals.weeklyActiveDays;
+    default:
+      return 0;
+  }
+}
+
+function xpReward(q: QuestDef, cfg: QuestConfig): number {
+  if (q.type === QuestType.WEEKLY_RITUAL) return cfg.weeklyRitualRewardXp;
+  if (q.type !== QuestType.MILESTONE) return cfg.dailyRewardXp;
+  return q.progressSource === "streak" ? cfg.streakMilestoneRewardXp : cfg.effortMilestoneRewardXp;
 }

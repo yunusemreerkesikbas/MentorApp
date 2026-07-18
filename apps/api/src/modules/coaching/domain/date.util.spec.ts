@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { addDays, daysBetween, formatTurkishDate, monthKey, toIsoDate } from "./date.util";
+import {
+  addDays,
+  daysBetween,
+  formatTurkishDate,
+  isoWeekKey,
+  isoWeekStart,
+  monthKey,
+  toIsoDate,
+} from "./date.util";
 
 describe("date.util", () => {
   it("formats a Turkish display date", () => {
@@ -25,5 +33,27 @@ describe("date.util", () => {
 
   it("renders a Date as a UTC iso date", () => {
     expect(toIsoDate(new Date("2026-06-10T22:30:00Z"))).toBe("2026-06-10");
+  });
+
+  it("derives the ISO week key (Monday start, zero-padded)", () => {
+    expect(isoWeekKey("2026-07-13")).toBe("2026-W29"); // Monday
+    expect(isoWeekKey("2026-07-19")).toBe("2026-W29"); // Sunday, same week
+    expect(isoWeekKey("2026-07-20")).toBe("2026-W30"); // next Monday
+    expect(isoWeekKey("2026-01-05")).toBe("2026-W02");
+  });
+
+  it("assigns year-boundary days to the ISO week year (Thursday rule)", () => {
+    // 2026-01-01 is a Thursday → week 1 of 2026; 2025-12-29 (Mon) opens that same week.
+    expect(isoWeekKey("2025-12-29")).toBe("2026-W01");
+    expect(isoWeekKey("2026-01-01")).toBe("2026-W01");
+    // 2027-01-01 is a Friday → still week 53 of 2026.
+    expect(isoWeekKey("2027-01-01")).toBe("2026-W53");
+    expect(isoWeekKey("2026-12-28")).toBe("2026-W53"); // Monday of that W53
+  });
+
+  it("finds the Monday of the ISO week", () => {
+    expect(isoWeekStart("2026-07-13")).toBe("2026-07-13"); // Monday is itself
+    expect(isoWeekStart("2026-07-19")).toBe("2026-07-13"); // Sunday → back to Monday
+    expect(isoWeekStart("2026-01-01")).toBe("2025-12-29"); // year boundary
   });
 });

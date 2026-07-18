@@ -63,6 +63,16 @@ const economyCount = (def: number, max: number, description: string): ConfigEntr
   description,
 });
 
+/** Like economyCount but min 1 — quest targets of 0 would auto-complete. */
+const economyTarget = (def: number, max: number, description: string): ConfigEntryDef => ({
+  category: ConfigCategory.ECONOMY,
+  type: ConfigValueType.NUMBER,
+  schema: z.number().int().min(1).max(max),
+  default: def,
+  sensitive: true,
+  description,
+});
+
 const aiCount = (def: number, max: number, description: string): ConfigEntryDef => ({
   category: ConfigCategory.AI,
   type: ConfigValueType.NUMBER,
@@ -136,6 +146,18 @@ export const CONFIG_CATALOG = {
   "economy.quest.daily_ritual_reward_xp": economyCount(5, 100000, "XP granted per completed daily ritual quest."),
   "economy.quest.streak_milestone_reward_xp": economyCount(25, 100000, "XP granted per completed streak milestone quest."),
   "economy.quest.effort_milestone_reward_xp": economyCount(25, 100000, "XP granted per completed effort milestone quest."),
+  "economy.quest.weekly_ritual_reward_xp": economyCount(20, 100000, "XP granted per completed weekly ritual quest."),
+  "economy.quest.weekly_focus_sessions_target": economyTarget(5, 100, "Completed focus sessions required for the weekly focus quest."),
+  "economy.quest.weekly_plan_tasks_target": economyTarget(10, 500, "Done plan tasks required for the weekly plan quest."),
+  "economy.quest.disabled_ids": {
+    category: ConfigCategory.ECONOMY,
+    type: ConfigValueType.STRING,
+    schema: z.string().max(2000),
+    default: "",
+    sensitive: false,
+    description:
+      "Comma-separated quest ids to disable (kill-switch): hidden from all views, never granted. Deploy-free rollback for a misbehaving quest.",
+  },
   "economy.coin.ai_chat_cost": economyCount(5, 100000, "Coin debited per AI coach chat message (free earned-right path)."),
   "economy.coin.streak_freeze_cost": economyCount(20, 100000, "Coin debited to rescue a broken streak by freezing the single missed day it broke on."),
   "forum.xp.accepted_answer": economyCount(25, 1000, "XP granted to a user when their forum answer is accepted (slice 3)."),

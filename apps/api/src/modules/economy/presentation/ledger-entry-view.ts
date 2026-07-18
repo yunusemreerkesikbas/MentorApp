@@ -3,7 +3,11 @@ import { EconomyLedger } from "../domain/economy.constants";
 import { QUEST_CATALOG } from "../domain/quest.catalog";
 import type { LedgerRow } from "../infrastructure/ledger.repository";
 
-const questTitles = new Map(QUEST_CATALOG.map((quest) => [`quest.${quest.id}`, quest.title]));
+// Ledger rows outlive config: strip the `{target}` placeholder instead of resolving it
+// ("Bu hafta {target} odak seansı tamamla" → "Bu hafta odak seansı tamamla").
+const questTitles = new Map(
+  QUEST_CATALOG.map((quest) => [`quest.${quest.id}`, quest.title.replace(/\{target\}\s?/, "")]),
+);
 
 export function toLedgerEntryView(row: LedgerRow): EconomyLedgerEntryView {
   const display = displayFor(row);

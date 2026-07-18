@@ -14,25 +14,32 @@ import { STREAK_MILESTONES } from "@mentor/core";
 export const QuestType = {
   ONBOARDING: "onboarding",
   DAILY_RITUAL: "daily_ritual",
+  WEEKLY_RITUAL: "weekly_ritual",
   MILESTONE: "milestone",
 } as const;
 export type QuestType = (typeof QuestType)[keyof typeof QuestType];
 export type QuestProgressSource =
   | "streak"
   | "completed_focus_sessions"
-  | "completed_plan_tasks";
+  | "completed_plan_tasks"
+  | "weekly_focus_sessions"
+  | "weekly_plan_tasks"
+  | "weekly_active_days";
 
 export interface QuestDef {
   id: string;
   category: QuestCategory;
   period: QuestPeriod;
   type: QuestType;
+  /** May contain a `{target}` placeholder, resolved at view time from `targetConfigKey`. */
   title: string;
   badgeLabel: string;
   action: QuestAction;
   rewardUnit: QuestRewardUnit;
   priority: number;
   progressTarget?: number;
+  /** Config key resolving the target at runtime (admin-tunable); overrides `progressTarget`. */
+  targetConfigKey?: string;
   progressSource?: QuestProgressSource;
 }
 
@@ -125,6 +132,46 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     action: "mood-checkin",
     rewardUnit: "XP",
     priority: 30,
+  },
+  {
+    id: "weekly.focus-sessions",
+    category: "weekly_ritual",
+    period: "weekly",
+    type: QuestType.WEEKLY_RITUAL,
+    title: "Bu hafta {target} odak seansı tamamla",
+    badgeLabel: "Odak",
+    action: "study-session",
+    rewardUnit: "XP",
+    priority: 40,
+    targetConfigKey: "economy.quest.weekly_focus_sessions_target",
+    progressSource: "weekly_focus_sessions",
+  },
+  {
+    id: "weekly.plan-tasks",
+    category: "weekly_ritual",
+    period: "weekly",
+    type: QuestType.WEEKLY_RITUAL,
+    title: "Bu hafta {target} plan görevi tamamla",
+    badgeLabel: "Plan",
+    action: "plan",
+    rewardUnit: "XP",
+    priority: 45,
+    targetConfigKey: "economy.quest.weekly_plan_tasks_target",
+    progressSource: "weekly_plan_tasks",
+  },
+  {
+    /** Only completable on the week's last day by design (7/7 active days). */
+    id: "weekly.streak-full-week",
+    category: "weekly_ritual",
+    period: "weekly",
+    type: QuestType.WEEKLY_RITUAL,
+    title: "Haftanın 7 gününde aktif ol",
+    badgeLabel: "Ritim",
+    action: "panel",
+    rewardUnit: "XP",
+    priority: 48,
+    progressTarget: 7,
+    progressSource: "weekly_active_days",
   },
   ...STREAK_MILESTONES.map(streakMilestoneQuest),
   ...[10, 25, 50, 100].map(focusSessionMilestoneQuest),
