@@ -17,7 +17,21 @@ function isSafeExternalUrl(href: string | undefined): href is string {
 }
 
 /** Editorial markdown body — no raw HTML; external links limited to http(s) (guardrail XSS). */
-export function ArticleMarkdown({ body }: { body: string }) {
+export function ArticleMarkdown({
+  body,
+  format,
+}: {
+  body: string;
+  format: "MARKDOWN" | "HTML";
+}) {
+  if (format === "HTML") {
+    return (
+      <div
+        className="mentor-article-body"
+        dangerouslySetInnerHTML={{ __html: body }}
+      />
+    );
+  }
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}

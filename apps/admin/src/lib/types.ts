@@ -63,6 +63,8 @@ export interface AdminArticle {
     slug: string;
     title: string;
     body: string;
+    bodyFormat: "MARKDOWN" | "HTML";
+    editorBodyHtml: string | null;
     family: string;
     category: string;
     source: string;
@@ -71,10 +73,26 @@ export interface AdminArticle {
     verifiedBy: string;
     metaTitle: string | null;
     metaDescription: string | null;
+    authorName: string | null;
+    authorTitle: string | null;
+    authorBio: string | null;
+    coverImageKey: string | null;
+    coverImageUrl: string | null;
+    coverImageAlt: string | null;
+    coverImageWidth: number | null;
+    coverImageHeight: number | null;
     isPublished: boolean;
     publishedAt: string | null;
     createdAt: string;
     updatedAt: string;
+}
+
+export interface ArticleImageUploadUrl {
+    uploadUrl: string;
+    key: string;
+    publicUrl: string;
+    expiresAt: string;
+    maxBytes: number;
 }
 
 export interface AdminExam {

@@ -2530,6 +2530,35 @@
         ]
       }
     },
+    "/v1/admin/content/articles/images/upload-url": {
+      "post": {
+        "operationId": "AdminContentController_createImageUploadUrl",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArticleImageUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/admin/content/articles/{slug}/publish": {
       "post": {
         "operationId": "AdminContentController_publish",
@@ -4852,6 +4881,10 @@
         "properties": {}
       },
       "AdjustEconomyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ArticleImageUploadDto": {
         "type": "object",
         "properties": {}
       },

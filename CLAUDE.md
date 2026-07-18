@@ -25,6 +25,8 @@ pnpm build | lint | typecheck
 - Relevant **standard** before coding: `docs/standards/{backend,frontend,mobile,code-review}.md`.
 - Parallel work: your track's boundaries → `docs/core/workstreams.md` (don't touch other tracks' modules).
 - **After every meaningful development, append a timeline entry to the matching feature doc under `docs/features/`** (usage/gotchas) — mandatory.
+- **Testing scope:** during development run only the affected module's tests
+  (`pnpm --filter @mentor/api test -- <spec-name>`); full suite + lint + typecheck **once, right before opening the PR** — CI repeats it anyway.
 - Don't implement out-of-scope ideas inline → backlog (phase discipline, roadmap §10).
 - This repo is **its own git repository** (isolated from the home directory).
 

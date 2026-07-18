@@ -97,6 +97,30 @@ describe("admin content editor (e2e)", () => {
     expect(res.status).toBe(400);
   });
 
+  it("gates and validates article image upload URLs", async () => {
+    const forbidden = await request(app.getHttpServer())
+      .post("/v1/admin/content/articles/images/upload-url")
+      .set({ Authorization: `Bearer ${studentToken}` })
+      .send({ purpose: "BODY", contentType: "image/webp" });
+    expect(forbidden.status).toBe(403);
+
+    const invalid = await request(app.getHttpServer())
+      .post("/v1/admin/content/articles/images/upload-url")
+      .set(asEditor())
+      .send({ purpose: "BODY", contentType: "image/gif" });
+    expect(invalid.status).toBe(400);
+
+    const valid = await request(app.getHttpServer())
+      .post("/v1/admin/content/articles/images/upload-url")
+      .set(asEditor())
+      .send({ purpose: "COVER", contentType: "image/webp" });
+    expect(valid.status).toBe(201);
+    expect(valid.body).toMatchObject({
+      key: expect.stringMatching(/^content\/articles\/cover\/.+\.webp$/),
+      maxBytes: 5 * 1024 * 1024,
+    });
+  });
+
   it("EDITOR creates a draft; it is listed but NOT public", async () => {
     const create = await request(app.getHttpServer())
       .post("/v1/admin/content/articles")
@@ -131,5 +155,37 @@ describe("admin content editor (e2e)", () => {
 
     const pubHidden = await request(app.getHttpServer()).get(`/v1/content/info-articles/${SLUG}`);
     expect(pubHidden.status).toBe(404);
+  });
+
+  it("sanitizes and publishes an HTML article with optional author metadata", async () => {
+    const slug = `${SLUG}-html`;
+    const create = await request(app.getHttpServer())
+      .post("/v1/admin/content/articles")
+      .set(asEditor())
+      .send(
+        article({
+          slug,
+          bodyFormat: "HTML",
+          body: '<h2 onclick="alert(1)">Başvuru</h2><p>Kimliğini hazırla.</p>',
+          authorName: "Ayşe Yılmaz",
+          authorTitle: "Eğitim Editörü",
+        }),
+      );
+    expect(create.status).toBe(201);
+    expect(create.body.editorBodyHtml).toBe("<h2>Başvuru</h2><p>Kimliğini hazırla.</p>");
+
+    await request(app.getHttpServer())
+      .post(`/v1/admin/content/articles/${slug}/publish`)
+      .set(asEditor())
+      .expect(201);
+    const published = await request(app.getHttpServer()).get(
+      `/v1/content/info-articles/${slug}`,
+    );
+    expect(published.status).toBe(200);
+    expect(published.body).toMatchObject({
+      bodyFormat: "HTML",
+      body: "<h2>Başvuru</h2><p>Kimliğini hazırla.</p>",
+      author: { name: "Ayşe Yılmaz", title: "Eğitim Editörü", bio: null },
+    });
   });
 });

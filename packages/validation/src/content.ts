@@ -31,6 +31,10 @@ const EXAM_FAMILIES = ["KPSS", "YKS", "LGS"] as const;
 const ARTICLE_CATEGORIES = ["EXAM_PROCESS", "APPLICATION", "GENERAL"] as const;
 export const ARTICLE_BODY_FORMATS = ["MARKDOWN", "HTML"] as const;
 const EXAM_VARIANTS = ["LISANS", "ONLISANS", "ORTAOGRETIM"] as const;
+const httpUrlSchema = z
+  .string()
+  .url()
+  .refine((value) => /^https?:\/\//i.test(value), { message: "invalid_http_url" });
 /** Editorial calendar event types (mirrors content.constants ExamEventType). */
 export const EXAM_EVENT_TYPES = [
   "EXAM_DATE",
@@ -58,7 +62,7 @@ export const upsertArticleSchema = z
     family: z.enum(EXAM_FAMILIES),
     category: z.enum(ARTICLE_CATEGORIES),
     source: z.string().trim().min(1).max(200),
-    sourceUrl: z.string().url(),
+    sourceUrl: httpUrlSchema,
     verifiedBy: z.string().trim().min(1).max(120),
     verifiedAt: z.string().min(4).refine((s) => !Number.isNaN(Date.parse(s)), { message: "invalid_date" }),
     metaTitle: z.string().trim().max(200).optional(),
@@ -66,7 +70,12 @@ export const upsertArticleSchema = z
     authorName: z.string().trim().min(1).max(120).nullish(),
     authorTitle: z.string().trim().min(1).max(160).nullish(),
     authorBio: z.string().trim().min(1).max(500).nullish(),
-    coverImageKey: z.string().trim().min(1).max(500).nullish(),
+    coverImageKey: z
+      .string()
+      .trim()
+      .startsWith("content/articles/cover/")
+      .max(500)
+      .nullish(),
     coverImageAlt: z.string().trim().min(1).max(300).nullish(),
     coverImageWidth: z.number().int().positive().nullish(),
     coverImageHeight: z.number().int().positive().nullish(),
@@ -127,7 +136,7 @@ export const upsertExamEventSchema = z.object({
   type: z.enum(EXAM_EVENT_TYPES),
   eventAt: z.string().min(4).refine((s) => !Number.isNaN(Date.parse(s)), { message: "invalid_date" }),
   source: z.string().trim().min(1).max(200),
-  sourceUrl: z.string().url(),
+  sourceUrl: httpUrlSchema,
   verifiedBy: z.string().trim().min(1).max(120),
   verifiedAt: z.string().min(4).refine((s) => !Number.isNaN(Date.parse(s)), { message: "invalid_date" }),
 });

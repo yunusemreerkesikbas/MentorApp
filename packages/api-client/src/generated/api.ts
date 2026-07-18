@@ -75,6 +75,8 @@ export interface UpdateConfigDto { [key: string]: unknown }
 
 export interface AdjustEconomyDto { [key: string]: unknown }
 
+export interface ArticleImageUploadDto { [key: string]: unknown }
+
 export interface UpsertArticleDto { [key: string]: unknown }
 
 export interface UpsertExamDto { [key: string]: unknown }
@@ -213,7 +215,7 @@ export type healthControllerLivenessResponse200 = {
   data: void
   status: 200
 }
-    
+
 export type healthControllerLivenessResponseSuccess = (healthControllerLivenessResponse200) & {
   headers: Headers;
 };
@@ -224,15 +226,15 @@ export type healthControllerLivenessResponse = (healthControllerLivenessResponse
 export const getHealthControllerLivenessUrl = () => {
 
 
-  
+
 
   return `/v1/health`
 }
 
 export const healthControllerLiveness = async ( options?: RequestInit): Promise<healthControllerLivenessResponse> => {
-  
+
   return http<healthControllerLivenessResponse>(getHealthControllerLivenessUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
     
@@ -3478,6 +3480,40 @@ export const adminContentControllerGet = async (slug: string, options?: RequestI
     method: 'GET'
     
     
+  }
+);}
+
+
+
+export type adminContentControllerCreateImageUploadUrlResponse201 = {
+  data: void
+  status: 201
+}
+
+export type adminContentControllerCreateImageUploadUrlResponseSuccess = (adminContentControllerCreateImageUploadUrlResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminContentControllerCreateImageUploadUrlResponse = (adminContentControllerCreateImageUploadUrlResponseSuccess)
+
+export const getAdminContentControllerCreateImageUploadUrlUrl = () => {
+
+
+
+
+  return `/v1/admin/content/articles/images/upload-url`
+}
+
+export const adminContentControllerCreateImageUploadUrl = async (articleImageUploadDto: ArticleImageUploadDto, options?: RequestInit): Promise<adminContentControllerCreateImageUploadUrlResponse> => {
+
+  return http<adminContentControllerCreateImageUploadUrlResponse>(getAdminContentControllerCreateImageUploadUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      articleImageUploadDto,)
   }
 );}
 

@@ -89,9 +89,6 @@ function buildService(overrides?: {
         candidates.find((c) => c.exam.id === id)?.exam,
     ),
     upsertBySlug: vi.fn(),
-    findById: vi.fn(
-      async (): Promise<InfoArticleRow | undefined> => undefined,
-    ),
   };
 
   const events = {
@@ -113,6 +110,9 @@ function buildService(overrides?: {
       }),
     ),
     upsertBySlug: vi.fn(),
+    findById: vi.fn(
+      async (): Promise<InfoArticleRow | undefined> => undefined,
+    ),
     setPublishedAt: vi.fn(
       async (): Promise<InfoArticleRow | undefined> => undefined,
     ),
@@ -371,6 +371,33 @@ describe("ContentService — info articles", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("rejects unsafe source schemes and non-cover storage keys", () => {
+    const base = {
+      slug: "safe-links",
+      title: "Safe links",
+      body: "Body",
+      family: "KPSS",
+      category: "GENERAL",
+      source: "ÖSYM",
+      verifiedAt: "2026-06-01T10:00:00.000Z",
+      verifiedBy: "editorial-test",
+    };
+
+    expect(
+      upsertArticleSchema.safeParse({ ...base, sourceUrl: "javascript:alert(1)" }).success,
+    ).toBe(false);
+    expect(
+      upsertArticleSchema.safeParse({
+        ...base,
+        sourceUrl: "https://www.osym.gov.tr",
+        coverImageKey: "avatars/another-user.webp",
+        coverImageAlt: "Cover",
+        coverImageWidth: 1200,
+        coverImageHeight: 630,
+      }).success,
+    ).toBe(false);
   });
 
   it("sanitizes HTML and requeues embedding when published content changes", async () => {

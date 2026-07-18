@@ -6,7 +6,7 @@
 ## Overview
 
 Content is the verified-information layer. It owns editorial `exams` + `exam_events` (the
-authoritative countdown source), `info_articles` (knowledge-center markdown with trust metadata +
+authoritative countdown source), `info_articles` (knowledge-center Markdown/allowlisted HTML with trust metadata +
 nullable pgvector embedding for RAG), and `subjects`/`exam_subjects` (taxonomy for deneme entry).
 It exposes public read endpoints (calendar, articles, taxonomy) and a `ContentPort` that coaching
 consumes for the countdown (never a coaching query on `users`, never `users.examDate`). It also
@@ -72,6 +72,7 @@ pnpm --filter @mentor/api-client generate
 | `GET /v1/content/exams/:slug/subjects`         | Editorial taxonomy (deneme form)           |
 | `GET /v1/content/info-articles?family=`        | Published articles (newest first)          |
 | `GET /v1/content/info-articles/:slug`          | Published article detail                   |
+| `POST /v1/admin/content/articles/images/upload-url` | EDITOR+ article image upload URL      |
 
 ## Geliştirmeler (timeline)
 
@@ -104,12 +105,23 @@ pnpm --filter @mentor/api-client generate
 - **Bilgi UI polish + landing editorial** — `BilgiShell` header fade + DataCard/chip empty states +
   exam-type gate CTA; public `ArticleContent` motion + trust footer; landing server-fetch of KPSS
   seed articles → `LandingEditorial` links to `/bilgi/[slug]`. Shared `lib/content-labels.ts`. _(0039.)_
+- **Rich editorial content, SEO/GEO and consented analytics (2026-07-18)** — `info_articles` now
+  supports legacy Markdown or sanitized HTML, optional author and one cover/social image. Admin uses
+  the existing Jodit editor and direct R2/fake uploads; published body/title edits clear and requeue
+  the content embedding, while startup seed only inserts missing articles. Public articles render a
+  visible summary, byline, cover, publication/update/source dates, TR canonical, Article + Breadcrumb
+  JSON-LD and sitemap entries; EN remains `noindex,follow` until localized. GA4 loads only after the
+  TR/EN consent choice and receives four PII-free article events. Apply migration `0054`, configure
+  `R2_PUBLIC_BASE_URL`, `NEXT_PUBLIC_GA_MEASUREMENT_ID` and optional Search Console verification.
+  Gotcha: body images must be Mentor-storage URLs with non-empty alt text; cover also requires valid
+  dimensions. Related: content body sanitizer/service, admin `ArticleForm`, public article route,
+  analytics consent provider.
 
 ## Gotchas / Known issues
 
 - **Never generate official dates/process copy via LLM or coaching code** — only editorial seed/admin
-  writes (guardrail §4 #1). Body is **markdown** (no HTML/jodit → no sanitization surface; web renders
-  via react-markdown).
+  writes (guardrail §4 #1). Legacy Markdown remains supported; HTML is sanitized server-side and
+  source/iframe/style/script/external image inputs are not trusted.
 - **YKS/LGS seed rows exist but have no `EXAM_DATE` events yet** → calendar returns `null` for those
   families until editorial adds events.
 - **Seed path resolves from compiled `dist/` at runtime** — keep `seed/exams.seed.json` copied by

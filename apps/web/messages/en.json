@@ -1183,7 +1183,25 @@
     "coach_body": "The Coach can help explain it using verified sources.",
     "coach_cta": "Ask the Coach",
     "coach_sign_in_cta": "Sign in to ask the Coach",
-    "coach_seed": "Can you explain \"{title}\" using verified sources?"
+    "coach_seed": "Can you explain \"{title}\" using verified sources?",
+    "author_byline": "Author: {name}",
+    "published_at": "Published: {date}",
+    "updated_at": "Updated: {date}"
+  },
+  "analyticsConsent": {
+    "title": "Your analytics cookie choice",
+    "body": "We measure anonymous usage data only with your permission to improve Mentor.",
+    "details": "View details and preferences",
+    "reject": "Reject",
+    "accept": "Accept",
+    "reopen": "Cookie preferences",
+    "back": "Back to home",
+    "page_title": "Cookie and analytics preferences",
+    "page_body": "GA4 loads only after you accept. In knowledge articles we measure views, read completion, source links, and Coach calls to action; no user identity or personal information is sent. You can change your choice at any time.",
+    "current": "Current choice: {value}",
+    "accepted": "Accepted",
+    "rejected": "Rejected",
+    "unset": "Not chosen yet"
   },
   "onboarding": {
     "loading": "Loading…",

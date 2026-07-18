@@ -22,6 +22,9 @@ const article: InfoArticleDto = {
   slug: "kpss-basvuru-sureci",
   title: "KPSS Başvuru Süreci",
   body: "## Başvuru özeti\n\nDoğrulanmış başvuru rehberi.",
+  bodyFormat: "MARKDOWN",
+  author: null,
+  coverImage: null,
   family: "KPSS",
   category: "APPLICATION",
   metaTitle: "KPSS Başvuru Süreci | Mentor Bilgi Merkezi",
@@ -31,6 +34,7 @@ const article: InfoArticleDto = {
   sourceUrl: "https://www.osym.gov.tr",
   verifiedAt: "2026-01-02T10:00:00.000Z",
   verifiedBy: "editorial-test",
+  updatedAt: "2026-01-03T10:00:00.000Z",
 };
 
 const exam = {
@@ -120,6 +124,10 @@ test("makaleyi Koç composerına taşır ama otomatik göndermez", async ({
 }) => {
   const api = await mockKnowledgeApi(page);
   await page.goto(`/tr/bilgi/${article.slug}`);
+  const jsonLd = await page.locator('script[type="application/ld+json"]').allTextContents();
+  expect(jsonLd.join(" ")).toContain("Article");
+  expect(jsonLd.join(" ")).toContain("BreadcrumbList");
+  expect(jsonLd.join(" ")).toContain("https://www.osym.gov.tr");
   await page.getByRole("link", { name: "Koçla konuş" }).click();
 
   await expect(
@@ -145,6 +153,14 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   await expect(
     page.getByRole("link", { name: "Sign in to ask the Coach" }),
   ).toHaveAttribute("href", "/en/giris");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    /noindex, follow/i,
+  );
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    new RegExp(`/tr/bilgi/${article.slug}$`),
+  );
   expect(api.unexpected).toEqual([]);
 
   const hub = await page.context().newPage();
@@ -176,7 +192,10 @@ function event(type: string, eventAt: string) {
 
 async function mockKnowledgeApi(
   page: Page,
-  options: { authenticated?: boolean; calendar?: ExamCalendarDto } = {},
+  options: {
+    authenticated?: boolean;
+    calendar?: ExamCalendarDto;
+  } = {},
 ) {
   const authenticated = options.authenticated ?? true;
   const requests: Array<{ method: string; path: string }> = [];

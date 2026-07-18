@@ -87,6 +87,7 @@ targetId, before, after })` for rich diffs.
 | `POST/DELETE /admin/users/:id/roles/:role` · `…/roles/staff` | Role assignment (SUPER_ADMIN, audited) |
 | `GET /admin/audit-log` | Newest-first audit trail |
 | `GET/POST /admin/content/articles` · `POST …/:slug/{publish,unpublish}` | Article editor (ADMIN/EDITOR) |
+| `POST /admin/content/articles/images/upload-url` | Cover/body image presign (EDITOR+, JPEG/PNG/WebP, client cap 5 MB) |
 | `GET/POST /admin/content/exams` · `POST …/:slug/events` · `DELETE …/:slug/events/:type` | Exam-calendar editor (ADMIN/EDITOR) |
 | `GET /admin/users/:id/subscription` · `POST …/refund` · `POST …/cancel` | Subscription view / refund / cancel (FINANCE) |
 | `GET /admin/metrics` | KPI snapshot (read-only, no audit) |
@@ -103,6 +104,13 @@ targetId, before, after })` for rich diffs.
 - **Admin content editor (articles)** — list (drafts incl.) / create-edit / publish-unpublish for
   `info_articles`; wraps the W1 `ContentService` on an ADMIN/EDITOR-guarded, audited surface; trust
   metadata required by Zod; markdown body. Admin reads in SERVICE context (drafts visible under RLS). *(0023.)*
+- **Rich article editor + cover/SEO fields (2026-07-18)** — the article form now lazy-loads the
+  installed Jodit editor with a restricted H2/H3/emphasis/list/quote/link/table/image toolbar and
+  updates form state on blur. Cover/body files upload directly through StoragePort presigns; cover
+  has preview/remove/alt/dimensions, and optional author plus meta counters/search-social preview are
+  available. Existing Markdown opens as sanitized editor HTML and becomes HTML on first save.
+  Gotcha: source mode, iframe, inline style, SVG/GIF and files over 5 MB are intentionally excluded.
+  Related: `ArticleForm.tsx`, admin content controller/DTO, content sanitizer.
 - **Admin exam-calendar editor** — `exams` + `exam_events` CRUD (audited, ADMIN/EDITOR); event types
   extended (`APPLICATION_*`, `RESULT_DATE`); trust metadata required. Surfacing new event types on
   web = backlog. *(0024.)*
