@@ -39,4 +39,5 @@ export type InfoArticleCategory =
 /** Domain event topic strings (code-style §4). */
 export const ContentEventTopic = {
   ARTICLE_PUBLISHED: "content.article.published",
+  ARTICLE_UPDATED: "content.article.updated",
 } as const;

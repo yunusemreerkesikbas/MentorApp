@@ -38,6 +38,7 @@ export class ArticleSeedService implements OnModuleInit {
       const data = JSON.parse(raw) as SeedFile;
 
       for (const article of data.articles) {
+        if (await this.content.hasArticle(article.slug)) continue;
         await this.content.upsertArticle({
           slug: article.slug,
           title: article.title,

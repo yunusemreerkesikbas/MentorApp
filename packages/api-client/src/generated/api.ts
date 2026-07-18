@@ -75,6 +75,8 @@ export interface UpdateConfigDto { [key: string]: unknown }
 
 export interface AdjustEconomyDto { [key: string]: unknown }
 
+export interface ArticleImageUploadDto { [key: string]: unknown }
+
 export interface UpsertArticleDto { [key: string]: unknown }
 
 export interface UpsertExamDto { [key: string]: unknown }
@@ -213,7 +215,7 @@ export type healthControllerLivenessResponse200 = {
   data: void
   status: 200
 }
-    
+
 export type healthControllerLivenessResponseSuccess = (healthControllerLivenessResponse200) & {
   headers: Headers;
 };
@@ -224,15 +226,15 @@ export type healthControllerLivenessResponse = (healthControllerLivenessResponse
 export const getHealthControllerLivenessUrl = () => {
 
 
-  
+
 
   return `/v1/health`
 }
 
 export const healthControllerLiveness = async ( options?: RequestInit): Promise<healthControllerLivenessResponse> => {
-  
+
   return http<healthControllerLivenessResponse>(getHealthControllerLivenessUrl(),
-  {      
+  {
     ...options,
     method: 'GET'
     
@@ -3483,6 +3485,40 @@ export const adminContentControllerGet = async (slug: string, options?: RequestI
 
 
 
+export type adminContentControllerCreateImageUploadUrlResponse201 = {
+  data: void
+  status: 201
+}
+
+export type adminContentControllerCreateImageUploadUrlResponseSuccess = (adminContentControllerCreateImageUploadUrlResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminContentControllerCreateImageUploadUrlResponse = (adminContentControllerCreateImageUploadUrlResponseSuccess)
+
+export const getAdminContentControllerCreateImageUploadUrlUrl = () => {
+
+
+
+
+  return `/v1/admin/content/articles/images/upload-url`
+}
+
+export const adminContentControllerCreateImageUploadUrl = async (articleImageUploadDto: ArticleImageUploadDto, options?: RequestInit): Promise<adminContentControllerCreateImageUploadUrlResponse> => {
+
+  return http<adminContentControllerCreateImageUploadUrlResponse>(getAdminContentControllerCreateImageUploadUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      articleImageUploadDto,)
+  }
+);}
+
+
+
 export type adminContentControllerPublishResponse201 = {
   data: void
   status: 201
@@ -4246,6 +4282,39 @@ export const getBuddyControllerNudgeUrl = () => {
 export const buddyControllerNudge = async ( options?: RequestInit): Promise<buddyControllerNudgeResponse> => {
   
   return http<buddyControllerNudgeResponse>(getBuddyControllerNudgeUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type buddyControllerStudyInviteResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type buddyControllerStudyInviteResponseSuccess = (buddyControllerStudyInviteResponse201) & {
+  headers: Headers;
+};
+;
+
+export type buddyControllerStudyInviteResponse = (buddyControllerStudyInviteResponseSuccess)
+
+export const getBuddyControllerStudyInviteUrl = () => {
+
+
+  
+
+  return `/v1/buddy/study-invite`
+}
+
+export const buddyControllerStudyInvite = async ( options?: RequestInit): Promise<buddyControllerStudyInviteResponse> => {
+  
+  return http<buddyControllerStudyInviteResponse>(getBuddyControllerStudyInviteUrl(),
   {      
     ...options,
     method: 'POST'

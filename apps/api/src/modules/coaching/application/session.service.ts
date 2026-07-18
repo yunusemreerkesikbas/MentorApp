@@ -15,9 +15,9 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { toIsoDate, todayIso } from "../domain/date.util";
 import {
+  ACTIVE_SESSION_GRACE_MINUTES,
   FOCUSING_NOW_CACHE_MS,
   FOCUSING_NOW_MIN_VISIBLE,
-  FOCUSING_NOW_WINDOW_MINUTES,
   qualifiesAsFocusSession,
   RECENT_SESSION_WINDOW_DAYS,
   RECENT_SUBJECTS_MAX,
@@ -69,7 +69,7 @@ export class SessionService {
     const now = Date.now();
     if (!this.focusingNowCache || this.focusingNowCache.expiresAt <= now) {
       const value = await withServiceContext(this.db, (tx) =>
-        this.sessions.countFocusingNow(tx, FOCUSING_NOW_WINDOW_MINUTES),
+        this.sessions.countFocusingNow(tx, ACTIVE_SESSION_GRACE_MINUTES),
       );
       this.focusingNowCache = { value, expiresAt: now + FOCUSING_NOW_CACHE_MS };
     }
@@ -110,6 +110,13 @@ export class SessionService {
         lastStruggleNote,
       };
     });
+  }
+
+  /** Whether the user is in a focus session right now (RLS-scoped read). */
+  async isStudyingNow(userId: string): Promise<boolean> {
+    return withUserContext(this.db, { userId }, (tx) =>
+      this.sessions.hasActiveSession(tx, userId, ACTIVE_SESSION_GRACE_MINUTES),
+    );
   }
 
   /** Today's accumulated COMPLETED focus minutes (UTC day, consistent with daily_activity). */

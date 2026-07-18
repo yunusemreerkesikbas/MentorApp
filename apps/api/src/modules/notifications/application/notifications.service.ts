@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
-import { interval, merge, Observable, Subject } from "rxjs";
+import { EMPTY, interval, merge, Observable, of, Subject } from "rxjs";
 import { finalize, map } from "rxjs/operators";
 import type { MessageEvent } from "@nestjs/common";
 import { DRIZZLE } from "../../../database/database.constants";
@@ -20,11 +20,19 @@ import { NOTIFICATION_PAGE_SIZE, UserNotificationRepository } from "../infrastru
 
 const STREAM_TOKEN_TTL_MS = 60_000;
 const HEARTBEAT_INTERVAL_MS = 25_000;
+/**
+ * How long a realtime cue waits for an offline recipient. A live SSE push only lands if the
+ * client happens to be connected; queuing it briefly means a user who opens/focuses the tab
+ * moments later still gets it (the durable notification remains the long-term fallback).
+ */
+export const REALTIME_QUEUE_TTL_MS = 5 * 60_000;
 
 @Injectable()
 export class NotificationsService implements OnModuleInit, OnModuleDestroy {
   private readonly streamTokens = new Map<string, { userId: string; exp: number }>();
   private readonly streams = new Map<string, Set<Subject<MessageEvent>>>();
+  /** Realtime cues for users who weren't connected — flushed on their next stream connect. */
+  private readonly pendingRealtime = new Map<string, { data: Record<string, unknown>; exp: number }>();
   private tokenCleanupTimer?: ReturnType<typeof setInterval>;
 
   constructor(
@@ -40,6 +48,9 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
       const now = Date.now();
       for (const [token, entry] of this.streamTokens) {
         if (entry.exp < now) this.streamTokens.delete(token);
+      }
+      for (const [userId, entry] of this.pendingRealtime) {
+        if (entry.exp < now) this.pendingRealtime.delete(userId);
       }
     }, 60_000);
   }
@@ -77,7 +88,11 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
       map(() => ({ data: "" } as MessageEvent)),
     );
 
-    return merge(subject.asObservable(), heartbeat).pipe(
+    // Flush a cue that arrived while this user had no open stream (e.g. a study invite
+    // sent seconds before they focused the tab) — emitted on subscribe, before live events.
+    const queued = this.takePendingRealtime(userId);
+
+    return merge(queued ? of(queued) : EMPTY, subject.asObservable(), heartbeat).pipe(
       finalize(() => {
         set?.delete(subject);
         if (set?.size === 0) this.streams.delete(userId);
@@ -86,10 +101,40 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
   }
 
   private pushToStreams(userId: string): void {
+    this.pushRealtimeEvent(userId, "new_notification");
+  }
+
+  /**
+   * Push a typed realtime event to a user's live SSE streams (no-op if they're not
+   * connected). Beyond the generic bell ping, this carries a payload the client can
+   * branch on — e.g. a live "study_invite" modal cue. The durable notification is the
+   * async fallback; this only reaches an online recipient.
+   */
+  pushRealtimeEvent(
+    userId: string,
+    event: string,
+    extra?: Record<string, unknown>,
+    queueTtlMs?: number,
+  ): void {
+    const data = { event, ...extra };
     const set = this.streams.get(userId);
-    if (!set) return;
-    const event: MessageEvent = { data: { event: "new_notification" } };
-    for (const s of set) s.next(event);
+    if (set && set.size > 0) {
+      for (const s of set) s.next({ data } as MessageEvent);
+      return;
+    }
+    // Nobody listening — hold it briefly so an about-to-connect client still sees it.
+    if (queueTtlMs) {
+      this.pendingRealtime.set(userId, { data, exp: Date.now() + queueTtlMs });
+    }
+  }
+
+  /** Take (and clear) a still-valid queued cue for this user. */
+  private takePendingRealtime(userId: string): MessageEvent | null {
+    const pending = this.pendingRealtime.get(userId);
+    if (!pending) return null;
+    this.pendingRealtime.delete(userId);
+    if (pending.exp < Date.now()) return null;
+    return { data: pending.data } as MessageEvent;
   }
 
   async subscribePush(userId: string, input: PushSubscriptionInput): Promise<void> {

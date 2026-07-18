@@ -1,24 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslations, useLocale } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
-import type {
-  AuthUser,
-  ExamCalendarDto,
-  InfoArticleSummaryDto,
-} from "@mentor/types";
+import type { ExamCalendarDto, InfoArticleSummaryDto } from "@mentor/types";
 import {
   ApiClientError,
   contentControllerCalendarByFamily,
-  usersControllerMe,
 } from "@mentor/api-client";
 import { Card, Chip, DataCard, SectionHeading } from "@mentor/ui";
 import { FormError } from "@/components/form";
-import { INFO_ARTICLE_CATEGORY_LABELS } from "@/lib/content-labels";
+import { Link } from "@/i18n/navigation";
+import { useAuth } from "@/lib/auth-context";
 import { fetchInfoArticlesByFamily } from "@/lib/content-api";
+import { buildExamCalendarIcs } from "@/lib/exam-calendar-export";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import { BilgiContentSkeleton } from "./bilgi-content-skeleton";
+import { ExamProcessTimeline } from "./exam-process-timeline";
 
 type LoadState =
   | { status: "loading" }
@@ -26,36 +24,37 @@ type LoadState =
   | { status: "no_exam_type" }
   | {
       status: "ready";
-      examType: string;
       calendar: ExamCalendarDto | null;
       articles: InfoArticleSummaryDto[];
     };
 
-/** Bilgi Merkezi — exam-day data card + editorial article list (guardrail #1). */
+/** Bilgi Merkezi — verified exam calendar + editorial article guidance. */
 export function BilgiShell() {
   const t = useTranslations("knowledge");
   const ui = useTranslations("common");
   const locale = useLocale();
   const reduceMotion = useReducedMotion();
+  const { status: authStatus, user } = useAuth();
+  const examType = user?.examType;
   const [state, setState] = useState<LoadState>({ status: "loading" });
 
   const load = useCallback(() => {
-    usersControllerMe()
-      .then(async (meRes) => {
-        const me = meRes as unknown as AuthUser;
-        if (!me.examType) {
-          setState({ status: "no_exam_type" });
-          return;
-        }
-        const [calRes, articlesRes] = await Promise.all([
-          contentControllerCalendarByFamily(me.examType),
-          fetchInfoArticlesByFamily(me.examType),
-        ]);
+    if (authStatus === "loading") return;
+    if (!examType) {
+      setState({ status: "no_exam_type" });
+      return;
+    }
+
+    setState({ status: "loading" });
+    Promise.all([
+      contentControllerCalendarByFamily(examType),
+      fetchInfoArticlesByFamily(examType),
+    ])
+      .then(([calRes, articlesRes]) => {
         const calendar = calRes as unknown as ExamCalendarDto | null;
         setState({
           status: "ready",
-          examType: me.examType,
-          calendar: calendar?.examDateLabel ? calendar : null,
+          calendar,
           articles: articlesRes.items,
         });
       })
@@ -70,7 +69,7 @@ export function BilgiShell() {
                 : String(err),
         }),
       );
-  }, []);
+  }, [authStatus, examType]);
 
   const loadRef = useRef(load);
   useEffect(() => {
@@ -78,7 +77,7 @@ export function BilgiShell() {
   }, [load]);
   useEffect(() => {
     loadRef.current();
-  }, []);
+  }, [authStatus, examType]);
 
   const headerMotion = reduceMotion
     ? {}
@@ -99,13 +98,7 @@ export function BilgiShell() {
         variants: staggerListVariants,
       };
 
-  if (state.status === "loading") {
-    return (
-      <main className="mx-auto flex min-h-[40vh] w-full max-w-6xl items-center justify-center px-5 py-8">
-        <p style={{ color: "var(--color-secondary)" }}>{t("loading")}</p>
-      </main>
-    );
-  }
+  if (state.status === "loading") return <BilgiContentSkeleton />;
 
   if (state.status === "error") {
     return (
@@ -113,11 +106,8 @@ export function BilgiShell() {
         <FormError message={state.message} />
         <button
           type="button"
-          onClick={() => {
-            setState({ status: "loading" });
-            loadRef.current();
-          }}
-          className="mt-4 flex min-h-[44px] items-center rounded-[var(--radius-card)] px-4 text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+          onClick={load}
+          className="mt-4 flex min-h-11 items-center rounded-[var(--radius-card)] px-4 text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
           style={{
             color: "var(--color-main)",
             fontFamily: "var(--font-heading)",
@@ -132,61 +122,53 @@ export function BilgiShell() {
   if (state.status === "no_exam_type") {
     return (
       <main className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
-        <motion.header className="mb-6" {...headerMotion}>
-          <h1
-            className="text-2xl font-bold lg:text-3xl"
-            style={{
-              color: "var(--color-main)",
-              fontFamily: "var(--font-heading)",
-            }}
-          >
-            {t("title")}
-          </h1>
-          <p
-            className="mt-1 text-base"
-            style={{ color: "var(--color-secondary)" }}
-          >
-            {t("subtitle")}
-          </p>
-        </motion.header>
+        <KnowledgeHeader
+          title={t("title")}
+          subtitle={t("subtitle")}
+          motion={headerMotion}
+        />
         <ExamTypeGate />
       </main>
     );
   }
 
   const { calendar, articles } = state;
-  const examDateEvent = calendar?.events.find((e) => e.type === "EXAM_DATE");
+  const examDateEvent = calendar?.events.find(
+    (event) => event.type === "EXAM_DATE",
+  );
   const verifiedLabel = examDateEvent
-    ? new Date(examDateEvent.verifiedAt).toLocaleDateString(locale, {
+    ? new Intl.DateTimeFormat(locale, {
         day: "numeric",
         month: "long",
         year: "numeric",
+      }).format(new Date(examDateEvent.verifiedAt))
+    : null;
+  const calendarIcs = calendar?.nextEvent
+    ? buildExamCalendarIcs(calendar, {
+        locale,
+        calendarName: t("calendar_name"),
+        eventLabels: {
+          APPLICATION_START: t("timeline.application_start"),
+          APPLICATION_END: t("timeline.application_end"),
+          EXAM_DATE: t("timeline.exam_date"),
+          RESULT_DATE: t("timeline.result_date"),
+        },
+        sourcePrefix: t("source_label"),
+        lastVerifiedPrefix: t("last_verified_prefix"),
       })
     : null;
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
-      <motion.header className="mb-6" {...headerMotion}>
-        <h1
-          className="text-2xl font-bold lg:text-3xl"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          {t("title")}
-        </h1>
-        <p
-          className="mt-1 text-base"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {t("subtitle")}
-        </p>
-      </motion.header>
+      <KnowledgeHeader
+        title={t("title")}
+        subtitle={t("subtitle")}
+        motion={headerMotion}
+      />
 
       <motion.div className="flex flex-col gap-6" {...gridMotion}>
         <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-          {calendar ? (
+          {calendar?.examDateLabel ? (
             <DataCard
               label={t("exam_day")}
               value={calendar.examDateLabel}
@@ -208,7 +190,7 @@ export function BilgiShell() {
                       className="mt-1 block text-xs"
                       style={{ color: "var(--color-secondary)" }}
                     >
-                      {t("last_verified")}: {verifiedLabel}
+                      {t("last_verified", { date: verifiedLabel })}
                     </span>
                   ) : null}
                 </>
@@ -225,28 +207,37 @@ export function BilgiShell() {
             />
           ) : (
             <Card>
-              <div className="flex flex-col items-center gap-4 py-4 text-center">
-                <span
-                  className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold capitalize"
-                  style={{
-                    backgroundColor:
-                      "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-                    color: "var(--color-chip-text)",
-                    fontFamily: "var(--font-body)",
-                  }}
-                >
-                  {t("calendar_pending_chip")}
-                </span>
-                <p
-                  className="text-sm"
-                  style={{ color: "var(--color-secondary)" }}
-                >
-                  {t("calendar_pending_desc")}
-                </p>
-              </div>
+              <EmptyState
+                chip={t("calendar_pending_chip")}
+                description={t("calendar_pending_desc")}
+              />
             </Card>
           )}
+          {calendar && calendarIcs ? (
+            <a
+              href={`data:text/calendar;charset=utf-8,${encodeURIComponent(calendarIcs)}`}
+              download={`${calendar.exam.slug}-takvim.ics`}
+              className="mt-3 flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-4 text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+              style={{
+                border: "1px solid var(--color-border)",
+                color: "var(--color-main)",
+                fontFamily: "var(--font-heading)",
+              }}
+            >
+              {t("calendar_download")}
+            </a>
+          ) : null}
         </motion.div>
+
+        {calendar ? (
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <ExamProcessTimeline
+              events={calendar.events}
+              nextEvent={calendar.nextEvent}
+              daysUntilNextEvent={calendar.daysUntilNextEvent}
+            />
+          </motion.div>
+        ) : null}
 
         <motion.section
           variants={reduceMotion ? undefined : staggerItemVariants}
@@ -256,25 +247,10 @@ export function BilgiShell() {
           </SectionHeading>
           {articles.length === 0 ? (
             <Card className="mt-4">
-              <div className="flex flex-col items-center gap-4 py-6 text-center">
-                <span
-                  className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold capitalize"
-                  style={{
-                    backgroundColor:
-                      "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-                    color: "var(--color-chip-text)",
-                    fontFamily: "var(--font-body)",
-                  }}
-                >
-                  {t("articles_empty_chip")}
-                </span>
-                <p
-                  className="text-base"
-                  style={{ color: "var(--color-secondary)" }}
-                >
-                  {t("articles_empty_desc")}
-                </p>
-              </div>
+              <EmptyState
+                chip={t("articles_empty_chip")}
+                description={t("articles_empty_desc")}
+              />
             </Card>
           ) : (
             <motion.ul
@@ -307,8 +283,7 @@ export function BilgiShell() {
                           {article.title}
                         </p>
                         <Chip className="shrink-0 px-3 py-1 text-xs">
-                          {INFO_ARTICLE_CATEGORY_LABELS[article.category] ??
-                            article.category}
+                          {t(`categories.${article.category.toLowerCase()}`)}
                         </Chip>
                       </div>
                       <p
@@ -328,7 +303,7 @@ export function BilgiShell() {
         <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
           <Link
             href="/panel"
-            className="flex min-h-[44px] items-center justify-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            className="flex min-h-11 items-center justify-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
             style={{
               color: "var(--color-main)",
               fontFamily: "var(--font-heading)",
@@ -342,29 +317,70 @@ export function BilgiShell() {
   );
 }
 
+function KnowledgeHeader({
+  title,
+  subtitle,
+  motion: animation,
+}: {
+  title: string;
+  subtitle: string;
+  motion: object;
+}) {
+  return (
+    <motion.header className="mb-6" {...animation}>
+      <h1
+        className="text-2xl font-bold lg:text-3xl"
+        style={{
+          color: "var(--color-main)",
+          fontFamily: "var(--font-heading)",
+        }}
+      >
+        {title}
+      </h1>
+      <p className="mt-1 text-base" style={{ color: "var(--color-secondary)" }}>
+        {subtitle}
+      </p>
+    </motion.header>
+  );
+}
+
+function EmptyState({
+  chip,
+  description,
+}: {
+  chip: string;
+  description: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-4 py-4 text-center">
+      <span
+        className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold capitalize"
+        style={{
+          backgroundColor:
+            "color-mix(in srgb, var(--color-chip) 30%, transparent)",
+          color: "var(--color-chip-text)",
+          fontFamily: "var(--font-body)",
+        }}
+      >
+        {chip}
+      </span>
+      <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+        {description}
+      </p>
+    </div>
+  );
+}
+
 function ExamTypeGate() {
   const t = useTranslations("knowledge");
 
   return (
     <Card>
       <div className="flex flex-col items-center gap-4 py-4 text-center">
-        <span
-          className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold capitalize"
-          style={{
-            backgroundColor:
-              "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-            color: "var(--color-chip-text)",
-            fontFamily: "var(--font-body)",
-          }}
-        >
-          {t("no_exam_chip")}
-        </span>
-        <p className="text-base" style={{ color: "var(--color-secondary)" }}>
-          {t("no_exam_desc")}
-        </p>
+        <EmptyState chip={t("no_exam_chip")} description={t("no_exam_desc")} />
         <Link
           href="/profil"
-          className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none sm:w-auto"
+          className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none sm:w-auto"
           style={{
             backgroundColor: "var(--color-btn)",
             boxShadow: "var(--shadow-card)",

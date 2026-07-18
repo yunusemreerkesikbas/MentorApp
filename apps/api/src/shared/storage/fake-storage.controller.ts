@@ -15,12 +15,16 @@ import {
 
 /** Forum accepts images + files; the authoritative per-kind size cap is enforced in resolveForumAttachments. */
 const FORUM_ATTACHMENT_MIME = new Set([...FORUM_IMAGE_MIME, ...FORUM_FILE_MIME]);
+const ARTICLE_IMAGE_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 /** Per-resource size + mime rules, keyed by the object's prefix (matches each upload-url endpoint). */
 function limitsForKey(key: string): { maxBytes: number; allowedMime: Set<string> } {
   if (key.startsWith("avatars/")) return { maxBytes: AVATAR_MAX_BYTES, allowedMime: AVATAR_ALLOWED_MIME };
   if (key.startsWith("forum-attachments/")) {
     return { maxBytes: FORUM_FILE_MAX_BYTES, allowedMime: FORUM_ATTACHMENT_MIME };
+  }
+  if (key.startsWith("content/articles/")) {
+    return { maxBytes: 5 * 1024 * 1024, allowedMime: ARTICLE_IMAGE_MIME };
   }
   return { maxBytes: PHOTO_MAX_BYTES, allowedMime: PHOTO_ALLOWED_MIME };
 }

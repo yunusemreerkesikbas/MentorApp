@@ -12,3 +12,11 @@ export class ArticlePublished {
     readonly family: string,
   ) {}
 }
+
+export class ArticleUpdated {
+  constructor(
+    readonly articleId: string,
+    readonly slug: string,
+    readonly family: string,
+  ) {}
+}

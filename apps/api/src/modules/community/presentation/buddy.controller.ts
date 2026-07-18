@@ -72,4 +72,11 @@ export class BuddyController {
     await this.buddy.nudge(user.id);
     return { status: "ok" };
   }
+
+  @Post("study-invite")
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  async studyInvite(@CurrentUser() user: RequestUser): Promise<{ status: string }> {
+    await this.buddy.sendStudyInvite(user.id);
+    return { status: "ok" };
+  }
 }

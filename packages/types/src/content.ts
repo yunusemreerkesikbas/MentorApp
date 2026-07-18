@@ -29,6 +29,10 @@ export interface ExamCalendarDto {
   examDateLabel: string | null;
   /** Days until EXAM_DATE (server-computed); null when no upcoming date. */
   daysRemaining: number | null;
+  /** Today's or the nearest future verified calendar event. */
+  nextEvent: ExamEventDto | null;
+  /** UTC calendar days until nextEvent; null when no event remains. */
+  daysUntilNextEvent: number | null;
 }
 
 export interface NetRuleDto {
@@ -47,11 +51,38 @@ export interface InfoArticleSummaryDto {
   sourceUrl: string;
   verifiedAt: string;
   verifiedBy: string;
+  updatedAt: string;
+}
+
+export type InfoArticleBodyFormat = "MARKDOWN" | "HTML";
+
+export interface InfoArticleAuthorDto {
+  name: string;
+  title: string | null;
+  bio: string | null;
+}
+
+export interface InfoArticleCoverImageDto {
+  url: string;
+  alt: string;
+  width: number;
+  height: number;
+}
+
+export interface ArticleImageUploadUrlDto {
+  uploadUrl: string;
+  key: string;
+  publicUrl: string;
+  expiresAt: string;
+  maxBytes: number;
 }
 
 /** Full editorial article for detail/SEO (no embedding in API). */
 export interface InfoArticleDto extends InfoArticleSummaryDto {
   body: string;
+  bodyFormat: InfoArticleBodyFormat;
+  author: InfoArticleAuthorDto | null;
+  coverImage: InfoArticleCoverImageDto | null;
   metaDescription: string | null;
 }
 

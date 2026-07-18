@@ -25,6 +25,7 @@ const make = (opts: {
   focusMinutes?: number;
   streak?: number;
   suggestions?: unknown[];
+  studyingNow?: boolean;
 } = {}) => {
   const buddy = {
     getActivePair: vi.fn(async () => opts.active),
@@ -32,7 +33,10 @@ const make = (opts: {
     listIncomingPending: vi.fn(async () => opts.incoming ?? []),
     getSuggestionCandidates: vi.fn(async () => opts.suggestions ?? []),
   };
-  const sessions = { getTodayFocusMinutes: vi.fn(async () => opts.focusMinutes ?? 0) };
+  const sessions = {
+    getTodayFocusMinutes: vi.fn(async () => opts.focusMinutes ?? 0),
+    isStudyingNow: vi.fn(async () => opts.studyingNow ?? false),
+  };
   const streak = { getCurrentStreak: vi.fn(async () => opts.streak ?? 0) };
   const storage = { getPublicUrl: (k: string) => `https://cdn/${k}` };
   const svc = new BuddyViewService(
@@ -50,11 +54,13 @@ describe("BuddyViewService.getView", () => {
       active: pairRow(),
       focusMinutes: 45,
       streak: 7,
+      studyingNow: true,
     });
 
     const view = await svc.getView("me");
 
     expect(sessions.getTodayFocusMinutes).toHaveBeenCalledWith("uB");
+    expect(sessions.isStudyingNow).toHaveBeenCalledWith("uB");
     expect(streak.getCurrentStreak).toHaveBeenCalledWith("uB");
     expect(view.active).toEqual({
       pairId: "pair1",
@@ -66,6 +72,7 @@ describe("BuddyViewService.getView", () => {
       },
       focusMinutesToday: 45,
       currentStreak: 7,
+      partnerStudyingNow: true,
       canNudge: true,
       nudgeCooldownEndsAt: null,
     });

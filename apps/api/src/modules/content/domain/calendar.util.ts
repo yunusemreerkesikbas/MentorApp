@@ -16,6 +16,21 @@ export interface ExamCandidate {
   examDate: IsoDate;
   eventAt: Date;
 }
+/** Pick today's or the nearest future editorial event, deterministically. */
+export function selectNextEvent<T extends { type: string; eventAt: Date }>(
+  events: T[],
+  today: IsoDate = todayIso(),
+): T | null {
+  return (
+    events
+      .filter((event) => toIsoDate(event.eventAt) >= today)
+      .sort(
+        (left, right) =>
+          left.eventAt.getTime() - right.eventAt.getTime() ||
+          left.type.localeCompare(right.type),
+      )[0] ?? null
+  );
+}
 
 /**
  * Select the exam used for countdown within a family.
@@ -33,12 +48,24 @@ export function selectExamForCountdown(
     .filter((candidate) => candidate.examDate >= today)
     .sort((a, b) => a.examDate.localeCompare(b.examDate));
 
-  return upcoming.find((candidate) => candidate.isCurrent) ?? upcoming[0] ?? null;
+  return (
+    upcoming.find((candidate) => candidate.isCurrent) ?? upcoming[0] ?? null
+  );
 }
 
 /** Map DB rows to selection candidates. */
 export function toExamCandidates(
-  rows: Array<{ exam: { id: string; slug: string; name: string; family: string; variant: string | null; isCurrent: boolean }; event: { eventAt: Date } }>,
+  rows: Array<{
+    exam: {
+      id: string;
+      slug: string;
+      name: string;
+      family: string;
+      variant: string | null;
+      isCurrent: boolean;
+    };
+    event: { eventAt: Date };
+  }>,
 ): ExamCandidate[] {
   return rows.map(({ exam, event }) => ({
     examId: exam.id,

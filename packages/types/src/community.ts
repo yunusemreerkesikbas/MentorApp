@@ -121,7 +121,9 @@ export interface BuddyActiveView {
   focusMinutesToday: number;
   /** Partner's current study streak (days). */
   currentStreak: number;
-  /** False while the viewer's nudge cooldown is running. */
+  /** Whether the partner is in a focus session right now (live presence). */
+  partnerStudyingNow: boolean;
+  /** False while the viewer's poke (nudge/invite) cooldown is running. */
   canNudge: boolean;
   /** ISO end of the viewer's nudge cooldown; null when nudging is available. */
   nudgeCooldownEndsAt: string | null;

@@ -9,6 +9,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { ToastProviderShell } from "@/lib/toast-provider-shell";
 import { DialogProviderShell } from "@/lib/dialog-provider-shell";
 import { BottomSheetProviderShell } from "@/lib/bottom-sheet-provider-shell";
+import { AnalyticsConsentProvider } from "@/lib/analytics-consent";
 import "../globals.css";
 
 /* DESIGN.md §3 — one smooth UI family for headings + body. latin-ext covers Turkish glyphs
@@ -45,6 +46,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const m = locale === "en" ? META.en : META.tr;
+  const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
   return {
     title: m.title,
     description: m.description,
@@ -53,6 +55,7 @@ export async function generateMetadata({
       description: m.description,
       locale: m.ogLocale,
     },
+    verification: googleVerification ? { google: googleVerification } : undefined,
   };
 }
 
@@ -84,7 +87,9 @@ export default async function LocaleLayout({
           <ToastProviderShell>
             <DialogProviderShell>
               <BottomSheetProviderShell>
-                <AuthProvider>{children}</AuthProvider>
+                <AnalyticsConsentProvider>
+                  <AuthProvider>{children}</AuthProvider>
+                </AnalyticsConsentProvider>
               </BottomSheetProviderShell>
             </DialogProviderShell>
           </ToastProviderShell>

@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { STALE_SESSION_GRACE_MINUTES } from "../domain/coaching.constants";
+import {
+  ACTIVE_SESSION_GRACE_MINUTES,
+  STALE_SESSION_GRACE_MINUTES,
+} from "../domain/coaching.constants";
 import { CoachingEventTopic } from "../domain/coaching.events";
 import { SessionService } from "./session.service";
 import type { RecentSummaryRow } from "../infrastructure/study-session.repository";
@@ -142,6 +145,26 @@ describe("SessionService.start", () => {
       expect.objectContaining({ planTaskId: null }),
     );
     expect(result.planTaskId).toBeNull();
+  });
+});
+
+describe("SessionService.isStudyingNow", () => {
+  it("asks the repo with the planned-length grace, not a blanket window", async () => {
+    // Regression: a 120-min blanket window showed orphaned IN_PROGRESS rows (tab died)
+    // as "studying now" for hours. The grace is applied to the session's OWN planned end.
+    const hasActiveSession = vi.fn(async () => true);
+    const result = await makeService({ hasActiveSession }).isStudyingNow(USER);
+    expect(result).toBe(true);
+    expect(hasActiveSession).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      ACTIVE_SESSION_GRACE_MINUTES,
+    );
+  });
+
+  it("reports false when no session is running", async () => {
+    const hasActiveSession = vi.fn(async () => false);
+    expect(await makeService({ hasActiveSession }).isStudyingNow(USER)).toBe(false);
   });
 });
 
