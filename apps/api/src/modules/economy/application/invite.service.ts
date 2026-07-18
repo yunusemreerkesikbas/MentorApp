@@ -7,6 +7,7 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { EconomyService } from "./economy.service";
 import { QuestService } from "./quest.service";
+import { EconomyLedger } from "../domain/economy.constants";
 import { InviteRepository } from "../infrastructure/invite.repository";
 
 export interface InviteSummary {
@@ -86,8 +87,8 @@ export class InviteService {
     // logged but swallowed so this event listener never throws uncaught (reconcile = backlog/outbox).
     try {
       await this.economy.grant(redemption.inviterUserId, Currency.COIN, reward, {
-        reason: "invite.converted",
-        refType: "invite-redemption",
+        reason: EconomyLedger.INVITE_CONVERTED_REASON,
+        refType: EconomyLedger.INVITE_REF_TYPE,
         refId: redemption.id,
         enforceLimits: true,
       });
@@ -103,6 +104,37 @@ export class InviteService {
           "invite reward failed (conversion recorded, reward not granted)",
         );
       }
+    }
+  }
+
+  /**
+   * On refund of the invited user's charge: compensating reversal of the inviter's conversion
+   * reward. Refund-only policy — a period-end cancel keeps the reward (the period was paid).
+   * Clamp-to-zero + idempotent (EconomyService.reverse). Called by the refund-event listener.
+   */
+  async onInvitedRefunded(invitedUserId: string): Promise<void> {
+    const redemption = await this.repo.findRedemptionByInvited(invitedUserId);
+    if (!redemption || redemption.status !== "CONVERTED") return;
+    try {
+      const reversed = await this.economy.reverse(redemption.inviterUserId, {
+        originalRefType: EconomyLedger.INVITE_REF_TYPE,
+        originalRefId: redemption.id,
+        reason: EconomyLedger.INVITE_REVERSAL_REASON,
+        refType: EconomyLedger.INVITE_REVERSAL_REF_TYPE,
+        refId: redemption.id,
+      });
+      if (reversed > 0) {
+        this.logger.log(
+          { inviterUserId: redemption.inviterUserId, redemptionId: redemption.id, reversed },
+          "invite reward reversed on refund",
+        );
+      }
+    } catch (err) {
+      // Refund is already recorded in payments; a reversal failure must not break the flow.
+      this.logger.error(
+        { err, inviterUserId: redemption.inviterUserId, redemptionId: redemption.id },
+        "invite reward reversal failed",
+      );
     }
   }
 

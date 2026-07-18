@@ -8,6 +8,7 @@ export const PaymentsEventTopic = {
   SUBSCRIPTION_ACTIVATED: "payments.subscription.activated",
   SUBSCRIPTION_CANCELED: "payments.subscription.canceled",
   PAYMENT_FAILED: "payments.payment.failed",
+  PAYMENT_REFUNDED: "payments.payment.refunded",
 } as const;
 
 export class SubscriptionActivated {
@@ -32,5 +33,13 @@ export class PaymentFailed {
     readonly userId: string,
     readonly subscriptionId: string,
     readonly graceUntil: Date,
+  ) {}
+}
+
+export class PaymentRefunded {
+  constructor(
+    readonly userId: string,
+    readonly subscriptionId: string,
+    readonly amountMinor: number,
   ) {}
 }

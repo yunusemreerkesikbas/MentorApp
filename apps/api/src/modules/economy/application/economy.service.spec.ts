@@ -12,6 +12,8 @@ interface Row extends NewLedgerEntry {
 /** In-memory ledger fake (append-only; ref dedupe; balance = sum). */
 function makeRepoFake() {
   const rows: Row[] = [];
+  /** Ordered trace of repo calls — lets tests assert lock-before-check-before-append (F1). */
+  const trace: string[] = [];
   const sum = (pred: (r: Row) => boolean) =>
     rows.filter(pred).reduce((acc, r) => acc + r.amount, 0);
   const balance = (userId: string) => ({
@@ -25,9 +27,14 @@ function makeRepoFake() {
   });
   return {
     rows,
+    trace,
     // The enforced-grant path runs check+append inside withServiceTx; the fake just runs the fn.
     withServiceTx: async <T>(fn: (tx: unknown) => Promise<T>) => fn({}),
+    acquireUserLock: async (userId: string) => {
+      trace.push(`lock:${userId}`);
+    },
     append: async (entry: NewLedgerEntry) => {
+      trace.push("append");
       if (entry.refId && rows.some((r) => r.refType === entry.refType && r.refId === entry.refId)) {
         return; // idempotent no-op
       }
@@ -37,15 +44,17 @@ function makeRepoFake() {
     balanceSelf: async (userId: string) => balance(userId),
     // Mirrors the real repo: organic earnings only — admin rows (createdBy set) and
     // ai.chat.refund rows never consume cap headroom.
-    coinEarnedSince: async (userId: string) =>
-      sum(
+    coinEarnedSince: async (userId: string) => {
+      trace.push("capRead");
+      return sum(
         (r) =>
           r.userId === userId &&
           r.unit === Currency.COIN &&
           r.amount > 0 &&
           r.createdBy == null &&
           r.reason !== "ai.chat.refund",
-      ),
+      );
+    },
     coinChatSpendsSince: async (userId: string, reason?: string) =>
       rows.filter(
         (r) =>
@@ -56,6 +65,8 @@ function makeRepoFake() {
       ).length,
     existsByRef: async (refType: string, refId: string) =>
       rows.some((r) => r.refType === refType && r.refId === refId),
+    findByRef: async (refType: string, refId: string) =>
+      rows.find((r) => r.refType === refType && r.refId === refId),
   };
 }
 
@@ -158,6 +169,29 @@ describe("EconomyService", () => {
     ).rejects.toMatchObject({ code: ErrorCode.INSUFFICIENT_COIN });
   });
 
+  it("capped coin grant acquires the per-user lock before cap reads and append (F1)", async () => {
+    await service().grant("u1", Currency.COIN, 10, { reason: "quest.x" });
+    expect(repo.trace[0]).toBe("lock:u1");
+    expect(repo.trace.indexOf("capRead")).toBeGreaterThan(0);
+    expect(repo.trace.indexOf("append")).toBeGreaterThan(repo.trace.indexOf("capRead"));
+  });
+
+  it("XP grants and enforceLimits:false corrections skip the lock (pure inserts)", async () => {
+    const svc = service();
+    await svc.grant("u1", Currency.XP, 5, { reason: "quest.daily" });
+    await svc.grant("u1", Currency.COIN, 99, { reason: "admin", enforceLimits: false });
+    expect(repo.trace.filter((t) => t.startsWith("lock:"))).toHaveLength(0);
+  });
+
+  it("spend acquires the per-user lock before the balance check (F1)", async () => {
+    const svc = service();
+    await svc.grant("u1", Currency.COIN, 10, { reason: "seed", enforceLimits: false });
+    repo.trace.length = 0;
+    await svc.spend("u1", 5, { reason: "ai.chat.spend", refType: "ai_chat", refId: "m1" });
+    expect(repo.trace[0]).toBe("lock:u1");
+    expect(repo.trace.indexOf("append")).toBeGreaterThan(0);
+  });
+
   it("spend is idempotent on refType/refId", async () => {
     const svc = service();
     await svc.grant("u1", Currency.COIN, 10, { reason: "test", enforceLimits: false });
@@ -165,5 +199,60 @@ describe("EconomyService", () => {
     const second = await svc.spend("u1", 5, { reason: "ai.chat.spend", refType: "ai_chat", refId: "msg-3" });
     expect(second.alreadySpent).toBe(true);
     expect(second.balance.coinConfirmed).toBe(5);
+  });
+
+  const REVERSE_OPTS = {
+    originalRefType: "invite-redemption",
+    originalRefId: "r1",
+    reason: "invite.reverted",
+    refType: "invite_reversal",
+    refId: "r1",
+  };
+
+  it("reverse debits the originally granted amount", async () => {
+    const svc = service();
+    await svc.grant("u1", Currency.COIN, 20, {
+      reason: "invite.converted",
+      refType: "invite-redemption",
+      refId: "r1",
+      enforceLimits: false,
+    });
+    const reversed = await svc.reverse("u1", REVERSE_OPTS);
+    expect(reversed).toBe(20);
+    expect((await svc.getAdminBalance("u1")).coinConfirmed).toBe(0);
+  });
+
+  it("reverse clamps to the confirmed balance (never negative)", async () => {
+    const svc = service();
+    await svc.grant("u1", Currency.COIN, 20, {
+      reason: "invite.converted",
+      refType: "invite-redemption",
+      refId: "r1",
+      enforceLimits: false,
+    });
+    await svc.spend("u1", 15, { reason: "ai.chat.spend", refType: "ai_chat", refId: "m1" });
+    const reversed = await svc.reverse("u1", REVERSE_OPTS);
+    expect(reversed).toBe(5);
+    expect((await svc.getAdminBalance("u1")).coinConfirmed).toBe(0);
+  });
+
+  it("reverse is idempotent — a second call reverses nothing", async () => {
+    const svc = service();
+    await svc.grant("u1", Currency.COIN, 20, {
+      reason: "invite.converted",
+      refType: "invite-redemption",
+      refId: "r1",
+      enforceLimits: false,
+    });
+    await svc.reverse("u1", REVERSE_OPTS);
+    const second = await svc.reverse("u1", REVERSE_OPTS);
+    expect(second).toBe(0);
+    expect((await svc.getAdminBalance("u1")).coinConfirmed).toBe(0);
+  });
+
+  it("reverse no-ops when the original grant never landed (cap-denied)", async () => {
+    const reversed = await service().reverse("u1", REVERSE_OPTS);
+    expect(reversed).toBe(0);
+    expect(repo.rows).toHaveLength(0);
   });
 });

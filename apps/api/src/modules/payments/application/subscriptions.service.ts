@@ -26,6 +26,7 @@ import {
 import { GRACE_PERIOD_DAYS, TxStatus, TxType } from "../domain/payments.constants";
 import {
   PaymentFailed,
+  PaymentRefunded,
   PaymentsEventTopic,
   SubscriptionActivated,
   SubscriptionCanceled,
@@ -213,6 +214,12 @@ export class SubscriptionsService {
 
       return { subscriptionId: lastCharge.subscriptionId, remainingAfter: remaining - amountMinor };
     });
+
+    // Post-commit (same discipline as webhook side-effects): a rolled-back refund emits nothing.
+    this.events.emit(
+      PaymentsEventTopic.PAYMENT_REFUNDED,
+      new PaymentRefunded(userId, result.subscriptionId, amountMinor),
+    );
 
     return {
       view: await this.getAdminView(userId),

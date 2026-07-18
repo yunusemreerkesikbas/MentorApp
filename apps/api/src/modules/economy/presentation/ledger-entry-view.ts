@@ -36,10 +36,34 @@ function displayFor(row: LedgerRow): { title: string; description: string } {
       description: "Kullanılamayan sohbet hakkı hesabına geri işlendi.",
     };
   }
-  if (row.reason === "invite.converted") {
+  if (row.reason === EconomyLedger.STREAK_FREEZE_SPEND_REASON) {
+    return {
+      title: "Seri kurtarma",
+      description: "Kaçırılan gün coin ile donduruldu, serin korundu.",
+    };
+  }
+  if (row.reason === EconomyLedger.STREAK_FREEZE_REFUND_REASON) {
+    return {
+      title: "Seri kurtarma iadesi",
+      description: "Uygulanamayan dondurma hesabına iade edildi.",
+    };
+  }
+  if (row.reason === EconomyLedger.INVITE_CONVERTED_REASON) {
     return {
       title: "Davet ödülü",
       description: "Davetin aktifleştikçe hesabına hak işlendi.",
+    };
+  }
+  if (row.reason === EconomyLedger.INVITE_REVERSAL_REASON) {
+    return {
+      title: "Davet ödülü geri alındı",
+      description: "İade edilen abonelik nedeniyle davet ödülü düşüldü.",
+    };
+  }
+  if (row.reason === EconomyLedger.DEEP_ANALYSIS_SPEND_REASON) {
+    return {
+      title: "Derin analiz açıldı",
+      description: "Haftalık derin analiz raporu coin ile açıldı.",
     };
   }
   if (row.reason === "forum.answer.accepted" || row.reason === "forum.thread.posted") {
