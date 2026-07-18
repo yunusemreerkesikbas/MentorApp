@@ -3123,6 +3123,25 @@
         ]
       }
     },
+    "/v1/buddy/study-invite": {
+      "post": {
+        "operationId": "BuddyController_studyInvite",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "buddy"
+        ]
+      }
+    },
     "/v1/forum/zones": {
       "get": {
         "operationId": "ForumController_list",

@@ -58,44 +58,52 @@ pnpm --filter @mentor/api openapi:export
 pnpm --filter @mentor/api-client generate
 ```
 
-- Bilgi UI loads `/v1/users/me` for `examType`, then `/v1/content/exams/by-type/{type}/calendar`.
+- Bilgi UI uses the auth context `examType`, then loads the calendar and articles in parallel.
 - Seed subjects load on API boot (`SubjectSeedService` after exam calendar seed).
 - `ExamSummaryDto` includes `id` (needed for mock-exam POST).
 
 ## API
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /v1/content/exams` | List exams |
+| Endpoint                                       | Purpose                                    |
+| ---------------------------------------------- | ------------------------------------------ |
+| `GET /v1/content/exams`                        | List exams                                 |
 | `GET /v1/content/exams/by-type/:type/calendar` | Calendar by exam family (countdown source) |
-| `GET /v1/content/exams/:slug/calendar` | Calendar by slug |
-| `GET /v1/content/exams/:slug/subjects` | Editorial taxonomy (deneme form) |
-| `GET /v1/content/info-articles?family=` | Published articles (newest first) |
-| `GET /v1/content/info-articles/:slug` | Published article detail |
+| `GET /v1/content/exams/:slug/calendar`         | Calendar by slug                           |
+| `GET /v1/content/exams/:slug/subjects`         | Editorial taxonomy (deneme form)           |
+| `GET /v1/content/info-articles?family=`        | Published articles (newest first)          |
+| `GET /v1/content/info-articles/:slug`          | Published article detail                   |
 
 ## Geliştirmeler (timeline)
 
 - **Exam calendar (Slice 1)** — new `modules/content` bounded context; `exams` + `exam_events` tables,
   seed JSON, public read endpoints, countdown selection (`selectExamForCountdown`);
   `ContentServiceAdapter` replaces the coaching stub (no hardcoded dates); `/bilgi` renders the
-  EXAM_DATE data card with source + verification metadata. Migration `0005` + idempotent startup seed. *(0016.)*
+  EXAM_DATE data card with source + verification metadata. Migration `0005` + idempotent startup seed. _(0016.)_
 - **Knowledge center (Slice 2)** — `info_articles` table (nullable `embedding vector(1536)`, pgvector
   content-only); public read endpoints (published only); `ArticlePublished` domain event (W3 embedding
   seam); markdown seed (3 KPSS editorial articles with trust metadata); web hub `(app)/bilgi` +
   public SSR `/bilgi/[slug]` (generateMetadata, OpenGraph, JSON-LD, react-markdown, trust footer).
-  Migration `0006` + RLS. *(0017.)*
+  Migration `0006` + RLS. _(0017.)_
 - **Subjects + mock-exam taxonomy** — `subjects`/`exam_subjects` schema + migration `0011` + KPSS
   Lisans seed; `GET /v1/content/exams/:slug/subjects` editorial taxonomy for the deneme form.
-  Consumed by [coaching](./coaching.md) mock-exam entry. *(0022-w2.)*
+  Consumed by [coaching](./coaching.md) mock-exam entry. _(0022-w2.)_
 - **Exam-calendar admin editor** — `exams` + `exam_events` admin CRUD (audited, role-gated
   ADMIN/EDITOR); event types extended (`APPLICATION_*`, `RESULT_DATE`); trust metadata required by
-  Zod. Surfacing the extra event types on web = backlog. *(0024 — see [admin.md](./admin.md).)*
+  Zod. Extra event types are now surfaced on web. _(0024 — see [admin.md](./admin.md).)_
+- **Student guidance v1 (2026-07-18)** — `/bilgi` renders verified calendar events chronologically
+  with source metadata, and article pages hand their title to the existing Coach composer without
+  sending automatically. Auth context removes the duplicate `/users/me` request. Related: Bilgi route components and `bilgi.spec.ts`.
+- **Actionable exam calendar v1 (2026-07-18)** - calendar responses now expose deterministic
+  `nextEvent` / `daysUntilNextEvent`; `/bilgi` highlights that verified event and downloads it
+  plus later events as a locale-aware all-day `.ics` file. Use the single **Takvime ekle** link
+  below the exam card; it is hidden when no future event remains. Reminder scheduling and calendar
+  subscriptions remain deferred. Related: content mapper/calendar util, Bilgi timeline, ICS utility.
 - **RAG source + embedding pipeline** — `InfoArticleRepository` gains `searchSimilar` (pgvector `<=>`
   cosine, family-filtered); async embedding pipeline (`ArticlePublished` → `ai.embed-article` job →
-  `LlmPort.embed` → `ContentService.setArticleEmbedding`). Content-owned embedding. *(0043 — see [ai.md](./ai.md).)*
+  `LlmPort.embed` → `ContentService.setArticleEmbedding`). Content-owned embedding. _(0043 — see [ai.md](./ai.md).)_
 - **Bilgi UI polish + landing editorial** — `BilgiShell` header fade + DataCard/chip empty states +
   exam-type gate CTA; public `ArticleContent` motion + trust footer; landing server-fetch of KPSS
-  seed articles → `LandingEditorial` links to `/bilgi/[slug]`. Shared `lib/content-labels.ts`. *(0039.)*
+  seed articles → `LandingEditorial` links to `/bilgi/[slug]`. Shared `lib/content-labels.ts`. _(0039.)_
 
 ## Gotchas / Known issues
 

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { upsertArticleSchema } from "@mentor/validation";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import type { ExamEventRow, ExamRow } from "../infrastructure/exam.repository";
@@ -88,6 +89,9 @@ function buildService(overrides?: {
         candidates.find((c) => c.exam.id === id)?.exam,
     ),
     upsertBySlug: vi.fn(),
+    findById: vi.fn(
+      async (): Promise<InfoArticleRow | undefined> => undefined,
+    ),
   };
 
   const events = {
@@ -122,6 +126,16 @@ function buildService(overrides?: {
   };
 
   const eventEmitter = { emit: vi.fn() };
+  const storage = {
+    getPublicUrl: vi.fn(
+      (key: string) => `https://cdn.mentor.test/${key}`,
+    ),
+    createUploadUrl: vi.fn(async ({ key }: { key: string }) => ({
+      url: "https://upload.mentor.test/signed",
+      key,
+      expiresAt: "2026-06-11T12:15:00.000Z",
+    })),
+  };
 
   const subjects = {
     listByExamId: vi.fn(async () => []),
@@ -143,8 +157,9 @@ function buildService(overrides?: {
     subjects as never,
     topics as never,
     eventEmitter as never,
+    storage as never,
   );
-  return { service, exams, events, articles, subjects, eventEmitter };
+  return { service, exams, events, articles, subjects, eventEmitter, storage };
 }
 
 describe("ContentService — exam calendar resolution", () => {
@@ -216,6 +231,14 @@ function makeArticle(overrides: Partial<InfoArticleRow> = {}): InfoArticleRow {
     slug: "kpss-basvuru-sureci",
     title: "KPSS Başvuru Süreci",
     body: "Body",
+    bodyFormat: "MARKDOWN",
+    authorName: null,
+    authorTitle: null,
+    authorBio: null,
+    coverImageKey: null,
+    coverImageAlt: null,
+    coverImageWidth: null,
+    coverImageHeight: null,
     family: "KPSS",
     category: "APPLICATION",
     source: "ÖSYM",
@@ -330,5 +353,118 @@ describe("ContentService — info articles", () => {
         name: "Topic",
       }),
     ).rejects.toMatchObject({ code: ErrorCode.CONTENT_SUBJECT_NOT_FOUND });
+  });
+
+  it("requires complete cover metadata when a cover is provided", () => {
+    const result = upsertArticleSchema.safeParse({
+      slug: "cover-test",
+      title: "Cover test",
+      body: "Body",
+      bodyFormat: "HTML",
+      family: "KPSS",
+      category: "GENERAL",
+      source: "ÖSYM",
+      sourceUrl: "https://www.osym.gov.tr",
+      verifiedAt: "2026-06-01T10:00:00.000Z",
+      verifiedBy: "editorial-test",
+      coverImageKey: "content/articles/cover/example.webp",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("sanitizes HTML and requeues embedding when published content changes", async () => {
+    const existing = makeArticle({ body: "<p>Old</p>", bodyFormat: "HTML" });
+    const updated = makeArticle({
+      body: "<h2>New</h2>",
+      bodyFormat: "HTML",
+    });
+    const { service, articles, eventEmitter } = buildService();
+    articles.findBySlug.mockResolvedValue(existing);
+    articles.upsertBySlug.mockResolvedValue(updated);
+
+    await service.upsertArticle({
+      slug: existing.slug,
+      title: existing.title,
+      body: '<h2 onclick="alert(1)">New</h2>',
+      bodyFormat: "HTML",
+      family: existing.family,
+      category: existing.category,
+      source: existing.source,
+      sourceUrl: existing.sourceUrl,
+      verifiedAt: existing.verifiedAt.toISOString(),
+      verifiedBy: existing.verifiedBy,
+    } as never);
+
+    expect(articles.upsertBySlug).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ body: "<h2>New</h2>", bodyFormat: "HTML" }),
+      true,
+    );
+    expect(eventEmitter.emit).toHaveBeenCalledWith(
+      "content.article.updated",
+      expect.objectContaining({ articleId: existing.id }),
+    );
+  });
+
+  it("does not requeue embedding for SEO-only edits", async () => {
+    const existing = makeArticle({ body: "<p>Same</p>", bodyFormat: "HTML" });
+    const { service, articles, eventEmitter } = buildService();
+    articles.findBySlug.mockResolvedValue(existing);
+    articles.upsertBySlug.mockResolvedValue(existing);
+
+    await service.upsertArticle({
+      slug: existing.slug,
+      title: existing.title,
+      body: existing.body,
+      bodyFormat: existing.bodyFormat,
+      family: existing.family,
+      category: existing.category,
+      source: existing.source,
+      sourceUrl: existing.sourceUrl,
+      verifiedAt: existing.verifiedAt.toISOString(),
+      verifiedBy: existing.verifiedBy,
+      metaTitle: "Updated SEO title",
+    } as never);
+
+    expect(articles.upsertBySlug).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      false,
+    );
+    expect(eventEmitter.emit).not.toHaveBeenCalled();
+  });
+
+  it("creates a storage-scoped article image upload URL", async () => {
+    const { service, storage } = buildService();
+
+    const result = await service.createArticleImageUploadUrl(
+      "BODY",
+      "image/webp",
+    );
+
+    expect(storage.createUploadUrl).toHaveBeenCalledWith({
+      key: expect.stringMatching(/^content\/articles\/body\/.+\.webp$/),
+      contentType: "image/webp",
+    });
+    expect(result).toMatchObject({
+      uploadUrl: "https://upload.mentor.test/signed",
+      maxBytes: 5 * 1024 * 1024,
+    });
+  });
+
+  it("returns plain text for HTML embedding", async () => {
+    const { service, articles } = buildService();
+    articles.findById.mockResolvedValue(
+      makeArticle({
+        title: "Application",
+        body: "<h2>Required documents</h2><p>Bring your ID.</p>",
+        bodyFormat: "HTML",
+      }),
+    );
+
+    await expect(service.getArticleForEmbedding("article-1")).resolves.toMatchObject({
+      body: "Required documents Bring your ID.",
+    });
   });
 });

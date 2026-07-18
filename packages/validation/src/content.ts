@@ -29,6 +29,7 @@ export type InfoArticleSlugParam = z.infer<typeof infoArticleSlugParamSchema>;
 
 const EXAM_FAMILIES = ["KPSS", "YKS", "LGS"] as const;
 const ARTICLE_CATEGORIES = ["EXAM_PROCESS", "APPLICATION", "GENERAL"] as const;
+export const ARTICLE_BODY_FORMATS = ["MARKDOWN", "HTML"] as const;
 const EXAM_VARIANTS = ["LISANS", "ONLISANS", "ORTAOGRETIM"] as const;
 /** Editorial calendar event types (mirrors content.constants ExamEventType). */
 export const EXAM_EVENT_TYPES = [
@@ -48,20 +49,50 @@ export type AdminListArticlesQuery = z.infer<typeof adminListArticlesQuerySchema
  * Editorial article create/update (§4 #1): trust metadata is REQUIRED — the LLM never generates
  * official info; an editor enters it with a verifiable source.
  */
-export const upsertArticleSchema = z.object({
-  slug: z.string().trim().min(1).max(128).regex(/^[a-z0-9-]+$/, "invalid_slug"),
-  title: z.string().trim().min(1).max(200),
-  body: z.string().trim().min(1),
-  family: z.enum(EXAM_FAMILIES),
-  category: z.enum(ARTICLE_CATEGORIES),
-  source: z.string().trim().min(1).max(200),
-  sourceUrl: z.string().url(),
-  verifiedBy: z.string().trim().min(1).max(120),
-  verifiedAt: z.string().min(4).refine((s) => !Number.isNaN(Date.parse(s)), { message: "invalid_date" }),
-  metaTitle: z.string().trim().max(200).optional(),
-  metaDescription: z.string().trim().max(320).optional(),
-});
+export const upsertArticleSchema = z
+  .object({
+    slug: z.string().trim().min(1).max(128).regex(/^[a-z0-9-]+$/, "invalid_slug"),
+    title: z.string().trim().min(1).max(200),
+    body: z.string().trim().min(1),
+    bodyFormat: z.enum(ARTICLE_BODY_FORMATS).default("MARKDOWN"),
+    family: z.enum(EXAM_FAMILIES),
+    category: z.enum(ARTICLE_CATEGORIES),
+    source: z.string().trim().min(1).max(200),
+    sourceUrl: z.string().url(),
+    verifiedBy: z.string().trim().min(1).max(120),
+    verifiedAt: z.string().min(4).refine((s) => !Number.isNaN(Date.parse(s)), { message: "invalid_date" }),
+    metaTitle: z.string().trim().max(200).optional(),
+    metaDescription: z.string().trim().max(320).optional(),
+    authorName: z.string().trim().min(1).max(120).nullish(),
+    authorTitle: z.string().trim().min(1).max(160).nullish(),
+    authorBio: z.string().trim().min(1).max(500).nullish(),
+    coverImageKey: z.string().trim().min(1).max(500).nullish(),
+    coverImageAlt: z.string().trim().min(1).max(300).nullish(),
+    coverImageWidth: z.number().int().positive().nullish(),
+    coverImageHeight: z.number().int().positive().nullish(),
+  })
+  .superRefine((value, ctx) => {
+    const cover = [
+      value.coverImageKey,
+      value.coverImageAlt,
+      value.coverImageWidth,
+      value.coverImageHeight,
+    ];
+    if (cover.some((field) => field != null) && cover.some((field) => field == null)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "incomplete_cover_image",
+        path: ["coverImageKey"],
+      });
+    }
+  });
 export type UpsertArticle = z.infer<typeof upsertArticleSchema>;
+
+export const articleImageUploadSchema = z.object({
+  purpose: z.enum(["COVER", "BODY"]),
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+});
+export type ArticleImageUpload = z.infer<typeof articleImageUploadSchema>;
 
 /* --------------------- admin exam-calendar editor (W6) --------------------- */
 

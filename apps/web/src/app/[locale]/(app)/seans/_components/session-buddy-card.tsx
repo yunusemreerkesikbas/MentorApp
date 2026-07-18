@@ -12,6 +12,7 @@ import {
   endBuddy,
   getBuddy,
   getBuddySuggestions,
+  inviteBuddyToStudy,
   nudgeBuddy,
   sendBuddyRequest,
 } from "@/lib/buddy";
@@ -40,9 +41,24 @@ export function SessionBuddyCard() {
       .catch(() => setState({ status: "hidden" }));
   }, []);
 
+  // Silent refetch for polling — a transient failure must not hide the card.
+  const refresh = useCallback(() => {
+    getBuddy()
+      .then((view) => setState({ status: "ready", view }))
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     load();
   }, [load]);
+
+  // Keep the partner's "studying now" presence live while an active pairing is shown.
+  const hasActivePair = state.status === "ready" && state.view.active !== null;
+  useEffect(() => {
+    if (!hasActivePair) return;
+    const id = setInterval(refresh, 60_000);
+    return () => clearInterval(id);
+  }, [hasActivePair, refresh]);
 
   const run = async (action: () => Promise<void>, successToast?: { title: string; message?: string }) => {
     setBusy(true);
@@ -59,6 +75,26 @@ export function SessionBuddyCard() {
     } finally {
       setBusy(false);
       setEndConfirm(false);
+    }
+  };
+
+  // Request by username (from suggestions or the invite input). Returns success so the
+  // input can clear itself; the card flips to outgoing-pending via load() on success.
+  const requestByUsername = async (username: string): Promise<boolean> => {
+    setBusy(true);
+    try {
+      await sendBuddyRequest(username);
+      load();
+      return true;
+    } catch (err) {
+      showErrorToast({
+        title: t("buddy_action_error_title"),
+        message: err instanceof ApiClientError ? err.body.message : t("buddy_invite_not_found"),
+        duration: 3000,
+      });
+      return false;
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -87,44 +123,80 @@ export function SessionBuddyCard() {
       </span>
 
       {active ? (
-        <div className="flex items-center gap-3">
-          <AuthorAvatar name={active.partner.displayName} size={40} src={active.partner.avatarUrl} />
-          <div className="min-w-0 flex-1 leading-tight">
-            <p
-              className="truncate text-sm font-bold"
-              style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-            >
-              {active.partner.displayName}
-            </p>
-            <p className="text-xs tabular-nums" style={{ color: "var(--color-secondary)" }}>
-              {t("buddy_active_stats", {
-                minutes: active.focusMinutesToday,
-                days: active.currentStreak,
-              })}
-            </p>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <AuthorAvatar name={active.partner.displayName} size={40} src={active.partner.avatarUrl} />
+            <div className="min-w-0 flex-1 leading-tight">
+              <p
+                className="truncate text-sm font-bold"
+                style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+              >
+                {active.partner.displayName}
+              </p>
+              {active.partnerStudyingNow ? (
+                <p
+                  className="flex items-center gap-1.5 text-xs font-semibold"
+                  style={{ color: "var(--color-success)" }}
+                >
+                  <span
+                    aria-hidden
+                    className="h-2 w-2 rounded-full animate-pulse motion-reduce:animate-none"
+                    style={{ backgroundColor: "var(--color-success)" }}
+                  />
+                  {t("buddy_studying_now")}
+                </p>
+              ) : (
+                <p className="text-xs tabular-nums" style={{ color: "var(--color-secondary)" }}>
+                  {t("buddy_active_stats", {
+                    minutes: active.focusMinutesToday,
+                    days: active.currentStreak,
+                  })}
+                </p>
+              )}
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+              <button
+                type="button"
+                disabled={busy || !active.canNudge}
+                onClick={() =>
+                  void run(nudgeBuddy, {
+                    title: t("buddy_nudge_sent_title"),
+                    message: t("buddy_nudge_sent_message", { name: active.partner.displayName }),
+                  })
+                }
+                className="rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+                style={{
+                  backgroundColor: "color-mix(in srgb, var(--color-chip) 30%, transparent)",
+                  color: "var(--color-main)",
+                }}
+              >
+                {t("buddy_nudge")}
+              </button>
+              {endConfirm
+                ? textButton(t("buddy_end_confirm"), () => void run(endBuddy), "accent")
+                : textButton(t("buddy_end"), () => setEndConfirm(true))}
+            </div>
           </div>
-          <div className="flex shrink-0 items-center gap-3">
+          {/* Partner already studying → the presence dot is the cue to join; no invite needed. */}
+          {!active.partnerStudyingNow ? (
             <button
               type="button"
               disabled={busy || !active.canNudge}
               onClick={() =>
-                void run(nudgeBuddy, {
-                  title: t("buddy_nudge_sent_title"),
-                  message: t("buddy_nudge_sent_message", { name: active.partner.displayName }),
+                void run(inviteBuddyToStudy, {
+                  title: t("buddy_invite_study_sent_title"),
+                  message: t("buddy_invite_study_sent_message", { name: active.partner.displayName }),
                 })
               }
-              className="rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+              className="w-full rounded-full px-3 py-2 text-xs font-semibold disabled:opacity-40"
               style={{
-                backgroundColor: "color-mix(in srgb, var(--color-chip) 30%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--color-progress) 14%, transparent)",
                 color: "var(--color-main)",
               }}
             >
-              {t("buddy_nudge")}
+              {t("buddy_invite_study")}
             </button>
-            {endConfirm
-              ? textButton(t("buddy_end_confirm"), () => void run(endBuddy), "accent")
-              : textButton(t("buddy_end"), () => setEndConfirm(true))}
-          </div>
+          ) : null}
         </div>
       ) : incoming.length > 0 || outgoing ? (
         <div className="flex flex-col gap-2.5">
@@ -159,25 +231,27 @@ export function SessionBuddyCard() {
           ) : null}
         </div>
       ) : (
-        <BuddyEmptyState busy={busy} onRequest={(username) => run(() => sendBuddyRequest(username))} />
+        <BuddyEmptyState busy={busy} onRequest={requestByUsername} />
       )}
     </Card>
   );
 }
 
 /**
- * Empty state: same-cohort suggestions with one-tap request; falls back to the quiet
- * community link when there's no one to suggest (or the fetch fails).
+ * Empty state: a username invite box (always) + same-cohort suggestions with one-tap
+ * request. When there's no one to suggest, a quiet community link sits below the box.
+ * `onRequest` returns success so the invite input can clear itself.
  */
 function BuddyEmptyState({
   busy,
   onRequest,
 }: {
   busy: boolean;
-  onRequest: (username: string) => void;
+  onRequest: (username: string) => Promise<boolean>;
 }) {
   const t = useTranslations("session");
   const [suggestions, setSuggestions] = useState<BuddyUserRef[] | null>(null);
+  const [inviteValue, setInviteValue] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -193,13 +267,90 @@ function BuddyEmptyState({
     };
   }, []);
 
-  // No one to suggest (or still loading / failed) → the original quiet invite.
-  if (!suggestions || suggestions.length === 0) {
-    return (
-      <div className="flex flex-col gap-1.5">
-        <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-          {t("buddy_empty")}
-        </p>
+  const submitInvite = async () => {
+    const username = inviteValue.trim().replace(/^@+/, "");
+    if (!username || busy) return;
+    const ok = await onRequest(username);
+    if (ok) setInviteValue("");
+  };
+
+  const inviteBox = (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        void submitInvite();
+      }}
+      className="flex flex-col gap-2"
+    >
+      <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+        {t("buddy_invite_title")}
+      </p>
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={inviteValue}
+          onChange={(e) => setInviteValue(e.target.value)}
+          placeholder={t("buddy_invite_placeholder")}
+          aria-label={t("buddy_invite_title")}
+          autoComplete="off"
+          className="min-w-0 flex-1 rounded-[var(--radius-card)] border bg-white/60 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
+          style={{ borderColor: "var(--color-progress-track)", color: "var(--color-main)" }}
+        />
+        <button
+          type="submit"
+          disabled={busy || !inviteValue.trim()}
+          className="shrink-0 rounded-full px-3 py-2 text-xs font-semibold disabled:opacity-50"
+          style={{ backgroundColor: "var(--color-progress)", color: "var(--color-bg)" }}
+        >
+          {t("buddy_invite_action")}
+        </button>
+      </div>
+    </form>
+  );
+
+  const hasSuggestions = suggestions !== null && suggestions.length > 0;
+
+  return (
+    <div className="flex flex-col gap-4">
+      {inviteBox}
+
+      {hasSuggestions ? (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+            {t("buddy_suggest_title")}
+          </p>
+          <ul className="flex flex-col gap-2.5">
+            {suggestions.map((u) => (
+              <li key={u.userId} className="flex items-center gap-3">
+                <AuthorAvatar name={u.displayName} size={36} src={u.avatarUrl} />
+                <div className="min-w-0 flex-1 leading-tight">
+                  <p className="truncate text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+                    {u.displayName}
+                  </p>
+                  {u.username ? (
+                    <p className="truncate text-xs" style={{ color: "var(--color-secondary)" }}>
+                      @{u.username}
+                    </p>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  disabled={busy || !u.username}
+                  onClick={() => u.username && void onRequest(u.username)}
+                  className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                  style={{
+                    backgroundColor: "color-mix(in srgb, var(--color-progress) 14%, transparent)",
+                    color: "var(--color-main)",
+                  }}
+                >
+                  {t("buddy_suggest_action")}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : suggestions !== null ? (
+        // Suggestions resolved empty → a quiet path to find someone in the community.
         <Link
           href="/topluluk"
           className="w-fit text-sm font-semibold hover:underline"
@@ -207,44 +358,7 @@ function BuddyEmptyState({
         >
           {t("buddy_empty_cta")}
         </Link>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-        {t("buddy_suggest_title")}
-      </p>
-      <ul className="flex flex-col gap-2.5">
-        {suggestions.map((u) => (
-          <li key={u.userId} className="flex items-center gap-3">
-            <AuthorAvatar name={u.displayName} size={36} src={u.avatarUrl} />
-            <div className="min-w-0 flex-1 leading-tight">
-              <p className="truncate text-sm font-semibold" style={{ color: "var(--color-main)" }}>
-                {u.displayName}
-              </p>
-              {u.username ? (
-                <p className="truncate text-xs" style={{ color: "var(--color-secondary)" }}>
-                  @{u.username}
-                </p>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              disabled={busy || !u.username}
-              onClick={() => u.username && onRequest(u.username)}
-              className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
-              style={{
-                backgroundColor: "color-mix(in srgb, var(--color-progress) 14%, transparent)",
-                color: "var(--color-main)",
-              }}
-            >
-              {t("buddy_suggest_action")}
-            </button>
-          </li>
-        ))}
-      </ul>
+      ) : null}
     </div>
   );
 }

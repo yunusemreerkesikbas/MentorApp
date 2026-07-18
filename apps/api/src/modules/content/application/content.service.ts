@@ -1,6 +1,8 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { randomUUID } from "node:crypto";
 import type {
+  ArticleImageUploadUrlDto,
   ExamCalendarDto,
   ExamSubjectDto,
   ExamSummaryDto,
@@ -19,6 +21,10 @@ import { ExamType } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
+import {
+  STORAGE_PORT,
+  type StoragePort,
+} from "../../../shared/ports/storage.port";
 import {
   DomainError,
   ValidationFailedError,
@@ -50,7 +56,11 @@ import {
   TopicRepository,
   type ExamTopicRow,
 } from "../infrastructure/topic.repository";
-import { ArticlePublished, ContentEventTopic } from "../domain/content.events";
+import {
+  ArticlePublished,
+  ArticleUpdated,
+  ContentEventTopic,
+} from "../domain/content.events";
 import {
   toExamCalendarDto,
   toExamSubjectDto,
@@ -58,6 +68,11 @@ import {
   toPaginatedExams,
   toPaginatedInfoArticles,
 } from "./content.mappers";
+import {
+  ArticleBodyError,
+  articleBodyToPlainText,
+  sanitizeArticleHtml,
+} from "./article-body";
 
 /** Admin-facing article view (incl. drafts + trust metadata; no embedding/secrets). */
 export interface AdminArticleView {
@@ -65,6 +80,8 @@ export interface AdminArticleView {
   slug: string;
   title: string;
   body: string;
+  bodyFormat: "MARKDOWN" | "HTML";
+  editorBodyHtml: string | null;
   family: string;
   category: string;
   source: string;
@@ -73,6 +90,14 @@ export interface AdminArticleView {
   verifiedBy: string;
   metaTitle: string | null;
   metaDescription: string | null;
+  authorName: string | null;
+  authorTitle: string | null;
+  authorBio: string | null;
+  coverImageKey: string | null;
+  coverImageUrl: string | null;
+  coverImageAlt: string | null;
+  coverImageWidth: number | null;
+  coverImageHeight: number | null;
   isPublished: boolean;
   publishedAt: string | null;
   createdAt: string;
@@ -85,6 +110,8 @@ function toAdminArticleView(row: InfoArticleRow): AdminArticleView {
     slug: row.slug,
     title: row.title,
     body: row.body,
+    bodyFormat: row.bodyFormat as "MARKDOWN" | "HTML",
+    editorBodyHtml: row.bodyFormat === "HTML" ? row.body : null,
     family: row.family,
     category: row.category,
     source: row.source,
@@ -93,6 +120,14 @@ function toAdminArticleView(row: InfoArticleRow): AdminArticleView {
     verifiedBy: row.verifiedBy,
     metaTitle: row.metaTitle,
     metaDescription: row.metaDescription,
+    authorName: row.authorName,
+    authorTitle: row.authorTitle,
+    authorBio: row.authorBio,
+    coverImageKey: row.coverImageKey,
+    coverImageUrl: null,
+    coverImageAlt: row.coverImageAlt,
+    coverImageWidth: row.coverImageWidth,
+    coverImageHeight: row.coverImageHeight,
     isPublished: row.publishedAt !== null,
     publishedAt: row.publishedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
@@ -187,6 +222,7 @@ export class ContentService {
     private readonly subjects: SubjectRepository,
     private readonly topics: TopicRepository,
     private readonly eventEmitter: EventEmitter2,
+    @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
 
   async listExams(query: PaginationQuery): Promise<Paginated<ExamSummaryDto>> {
@@ -583,7 +619,10 @@ export class ContentService {
         { slug },
       );
     }
-    return toInfoArticleDto(row);
+    return toInfoArticleDto(
+      row,
+      row.coverImageKey ? this.storage.getPublicUrl(row.coverImageKey) : null,
+    );
   }
 
   /**
@@ -618,7 +657,45 @@ export class ContentService {
         { slug },
       );
     }
-    return toAdminArticleView(row);
+    const view = toAdminArticleView(row);
+    return {
+      ...view,
+      editorBodyHtml:
+        row.bodyFormat === "HTML"
+          ? row.body
+          : await this.toEditorHtml(row.body),
+      coverImageUrl: row.coverImageKey
+        ? this.storage.getPublicUrl(row.coverImageKey)
+        : null,
+    };
+  }
+
+  async hasArticle(slug: string): Promise<boolean> {
+    const row = await withServiceContext(this.db, (tx) =>
+      this.articles.findBySlug(tx, slug),
+    );
+    return row !== undefined;
+  }
+
+  async createArticleImageUploadUrl(
+    purpose: "COVER" | "BODY",
+    contentType: "image/jpeg" | "image/png" | "image/webp",
+  ): Promise<ArticleImageUploadUrlDto> {
+    const extension = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+    }[contentType];
+    const directory = purpose === "COVER" ? "cover" : "body";
+    const key = `content/articles/${directory}/${randomUUID()}.${extension}`;
+    const signed = await this.storage.createUploadUrl({ key, contentType });
+    return {
+      uploadUrl: signed.url,
+      key: signed.key,
+      publicUrl: this.storage.getPublicUrl(signed.key),
+      expiresAt: signed.expiresAt,
+      maxBytes: 5 * 1024 * 1024,
+    };
   }
 
   /** Unpublish (back to draft). Hides it from the public knowledge center. */
@@ -641,6 +718,7 @@ export class ContentService {
     slug: string;
     title: string;
     body: string;
+    bodyFormat?: "MARKDOWN" | "HTML";
     family: string;
     category: string;
     source: string;
@@ -649,15 +727,41 @@ export class ContentService {
     verifiedBy: string;
     metaTitle?: string | null;
     metaDescription?: string | null;
+    authorName?: string | null;
+    authorTitle?: string | null;
+    authorBio?: string | null;
+    coverImageKey?: string | null;
+    coverImageAlt?: string | null;
+    coverImageWidth?: number | null;
+    coverImageHeight?: number | null;
     publishedAt?: string | null;
   }): Promise<void> {
     this.assertValidFamily(data.family);
     this.assertValidCategory(data.category);
+    const bodyFormat = data.bodyFormat ?? "MARKDOWN";
+    let body = data.body;
+    if (bodyFormat === "HTML") {
+      try {
+        body = sanitizeArticleHtml(data.body, this.articleBodyImagePrefix());
+      } catch (error) {
+        if (error instanceof ArticleBodyError) {
+          throw new ValidationFailedError({ reason: error.message });
+        }
+        throw error;
+      }
+    }
     await withServiceContext(this.db, async (tx) => {
-      await this.articles.upsertBySlug(tx, {
+      const existing = await this.articles.findBySlug(tx, data.slug);
+      const contentChanged =
+        existing !== undefined &&
+        (existing.title !== data.title ||
+          existing.body !== body ||
+          existing.bodyFormat !== bodyFormat);
+      const row = await this.articles.upsertBySlug(tx, {
         slug: data.slug,
         title: data.title,
-        body: data.body,
+        body,
+        bodyFormat,
         family: data.family,
         category: data.category,
         source: data.source,
@@ -666,8 +770,22 @@ export class ContentService {
         verifiedBy: data.verifiedBy,
         metaTitle: data.metaTitle ?? null,
         metaDescription: data.metaDescription ?? null,
+        authorName: data.authorName ?? null,
+        authorTitle: data.authorTitle ?? null,
+        authorBio: data.authorBio ?? null,
+        coverImageKey: data.coverImageKey ?? null,
+        coverImageAlt: data.coverImageAlt ?? null,
+        coverImageWidth: data.coverImageWidth ?? null,
+        coverImageHeight: data.coverImageHeight ?? null,
         publishedAt: data.publishedAt ? new Date(data.publishedAt) : null,
-      });
+      }, Boolean(existing?.publishedAt && contentChanged));
+
+      if (existing?.publishedAt && contentChanged) {
+        this.eventEmitter.emit(
+          ContentEventTopic.ARTICLE_UPDATED,
+          new ArticleUpdated(row.id, row.slug, row.family),
+        );
+      }
     });
   }
 
@@ -710,7 +828,16 @@ export class ContentService {
       this.articles.findById(tx, id),
     );
     if (!row) return null;
-    return { id: row.id, title: row.title, body: row.body, family: row.family };
+    return {
+      id: row.id,
+      title: row.title,
+      body: await articleBodyToPlainText(
+        row.body,
+        row.bodyFormat as "MARKDOWN" | "HTML",
+        this.articleBodyImagePrefix(),
+      ),
+      family: row.family,
+    };
   }
 
   /** Store the RAG embedding (content owns the column; AI computes the vector). */
@@ -799,5 +926,21 @@ export class ContentService {
       throw new ValidationFailedError(formatZodIssues(result.error));
     }
     return result.data.slug;
+  }
+
+  private articleBodyImagePrefix(): string {
+    return this.storage.getPublicUrl("content/articles/body/");
+  }
+
+  private async toEditorHtml(markdown: string): Promise<string> {
+    try {
+      const { markdownToEditorHtml } = await import("./article-body");
+      return await markdownToEditorHtml(markdown, this.articleBodyImagePrefix());
+    } catch (error) {
+      if (error instanceof ArticleBodyError) {
+        throw new ValidationFailedError({ reason: error.message });
+      }
+      throw error;
+    }
   }
 }

@@ -4256,6 +4256,39 @@ export const buddyControllerNudge = async ( options?: RequestInit): Promise<budd
 
 
 
+export type buddyControllerStudyInviteResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type buddyControllerStudyInviteResponseSuccess = (buddyControllerStudyInviteResponse201) & {
+  headers: Headers;
+};
+;
+
+export type buddyControllerStudyInviteResponse = (buddyControllerStudyInviteResponseSuccess)
+
+export const getBuddyControllerStudyInviteUrl = () => {
+
+
+  
+
+  return `/v1/buddy/study-invite`
+}
+
+export const buddyControllerStudyInvite = async ( options?: RequestInit): Promise<buddyControllerStudyInviteResponse> => {
+  
+  return http<buddyControllerStudyInviteResponse>(getBuddyControllerStudyInviteUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
 export type forumControllerListResponse200 = {
   data: void
   status: 200

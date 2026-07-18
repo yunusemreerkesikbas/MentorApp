@@ -50,9 +50,10 @@ export class BuddyViewService {
     }
 
     const partnerId = active.otherUserId;
-    const [focusMinutesToday, currentStreak] = await Promise.all([
+    const [focusMinutesToday, currentStreak, partnerStudyingNow] = await Promise.all([
       this.sessions.getTodayFocusMinutes(partnerId),
       this.streak.getCurrentStreak(partnerId),
+      this.sessions.isStudyingNow(partnerId),
     ]);
     const myLastNudgeAt =
       active.requesterId === userId ? active.requesterLastNudgeAt : active.addresseeLastNudgeAt;
@@ -67,6 +68,7 @@ export class BuddyViewService {
         partner: this.toUserRef(active),
         focusMinutesToday,
         currentStreak,
+        partnerStudyingNow,
         canNudge,
         nudgeCooldownEndsAt: canNudge ? null : cooldownEndsAt!.toISOString(),
       },

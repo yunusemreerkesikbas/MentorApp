@@ -1,7 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 import { JOB_QUEUE_PORT, type JobQueuePort } from "../../../shared/ports/job-queue.port";
-import { ArticlePublished, ContentEventTopic } from "../../content/domain/content.events";
+import {
+  ArticlePublished,
+  ArticleUpdated,
+  ContentEventTopic,
+} from "../../content/domain/content.events";
 import { AI_EMBED_JOB } from "../domain/ai.constants";
 
 /**
@@ -15,6 +19,11 @@ export class ArticleEmbeddingListener {
 
   @OnEvent(ContentEventTopic.ARTICLE_PUBLISHED)
   async onPublished(event: ArticlePublished): Promise<void> {
+    await this.queue.enqueue(AI_EMBED_JOB, { articleId: event.articleId });
+  }
+
+  @OnEvent(ContentEventTopic.ARTICLE_UPDATED)
+  async onUpdated(event: ArticleUpdated): Promise<void> {
     await this.queue.enqueue(AI_EMBED_JOB, { articleId: event.articleId });
   }
 }

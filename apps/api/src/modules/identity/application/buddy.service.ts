@@ -84,16 +84,31 @@ export class BuddyService {
 
   /** Nudge the active partner. 404 when no active pairing; 429 inside the cooldown. */
   async nudge(userId: string): Promise<void> {
+    const pair = await this.pokeBuddy(userId);
+    await this.emitBuddyEvent(IdentityEventTopic.BUDDY_NUDGED, userId, pair.otherUserId);
+  }
+
+  /**
+   * Invite the active partner to study together now. Same 404/429 semantics as nudge;
+   * shares the poke cooldown (one nudge-or-invite per window — anti-spam, no extra state).
+   */
+  async sendStudyInvite(userId: string): Promise<void> {
+    const pair = await this.pokeBuddy(userId);
+    await this.emitBuddyEvent(IdentityEventTopic.BUDDY_STUDY_INVITE, userId, pair.otherUserId);
+  }
+
+  /** Shared poke: resolve active pair, enforce the per-direction cooldown, record it. */
+  private async pokeBuddy(userId: string): Promise<BuddyPairWithUserRow> {
     const pair = await this.pairs.findActiveByUser(userId);
     if (!pair) throw new NotFoundError();
     const side = pair.requesterId === userId ? "requester" : "addressee";
-    const lastNudgeAt =
+    const lastPokeAt =
       side === "requester" ? pair.requesterLastNudgeAt : pair.addresseeLastNudgeAt;
-    if (lastNudgeAt && Date.now() - lastNudgeAt.getTime() < BUDDY_NUDGE_COOLDOWN_MS) {
+    if (lastPokeAt && Date.now() - lastPokeAt.getTime() < BUDDY_NUDGE_COOLDOWN_MS) {
       throw new DomainError(ErrorCode.SOCIAL_BUDDY_NUDGE_COOLDOWN, HttpStatus.TOO_MANY_REQUESTS);
     }
     await this.pairs.recordNudge(pair.id, side, new Date());
-    await this.emitBuddyEvent(IdentityEventTopic.BUDDY_NUDGED, userId, pair.otherUserId);
+    return pair;
   }
 
   /**

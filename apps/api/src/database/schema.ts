@@ -339,6 +339,14 @@ export const infoArticles = pgTable(
     slug: text("slug").notNull(),
     title: text("title").notNull(),
     body: text("body").notNull(),
+    bodyFormat: text("body_format").notNull().default("MARKDOWN"),
+    authorName: text("author_name"),
+    authorTitle: text("author_title"),
+    authorBio: text("author_bio"),
+    coverImageKey: text("cover_image_key"),
+    coverImageAlt: text("cover_image_alt"),
+    coverImageWidth: integer("cover_image_width"),
+    coverImageHeight: integer("cover_image_height"),
     /** KPSS | YKS | LGS — matches users.examType. */
     family: text("family").notNull(),
     /** InfoArticleCategory constant. */

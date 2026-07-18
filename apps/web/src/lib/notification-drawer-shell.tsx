@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Brain from "lucide-react/dist/esm/icons/brain.mjs";
 import FileText from "lucide-react/dist/esm/icons/file-text.mjs";
@@ -8,7 +8,7 @@ import ListCheck from "lucide-react/dist/esm/icons/list-check.mjs";
 import MessageCircle from "lucide-react/dist/esm/icons/message-circle.mjs";
 import { useTranslations } from "next-intl";
 import type { NotificationCategory, NotificationListDto, UserNotificationDto } from "@mentor/types";
-import { NotificationDrawerProvider } from "@mentor/ui";
+import { NotificationDrawerProvider, useDialog } from "@mentor/ui";
 import { PuhuImage } from "@/components/puhu-image";
 import {
   deleteNotification,
@@ -58,12 +58,34 @@ const CATEGORY_FALLBACK: Record<NotificationCategory, string> = {
 /** Web-layer wrapper: fetches data, injects i18n labels and Puhu icons. */
 export function NotificationDrawerShell({ children }: NotificationDrawerShellProps) {
   const t = useTranslations("notifications");
+  const tSession = useTranslations("session");
   const router = useRouter();
+  const dialog = useDialog();
   const [data, setData] = useState<NotificationListDto>(EMPTY);
 
   useEffect(() => {
     listNotifications().then(setData).catch(() => {/* non-blocking — drawer shows empty */});
   }, []);
+
+  // Live "study together" invite → attention-grabbing modal. Kept in a ref so the SSE
+  // connection (below) never reconnects when dialog/router/locale change. Fires only on a
+  // real-time push — never on history load — so a stale invite can't pop hours later.
+  const showStudyInviteRef = useRef<(actorName: string) => void>(() => {});
+  useEffect(() => {
+    showStudyInviteRef.current = (actorName: string) => {
+      void dialog
+        .promo({
+          title: tSession("buddy_invite_modal_title", { name: actorName }),
+          message: tSession("buddy_invite_modal_body"),
+          primaryLabel: tSession("buddy_invite_modal_start"),
+          linkLabel: tSession("buddy_invite_modal_later"),
+          closeLabel: t("close"),
+        })
+        .then((result) => {
+          if (result === "primary") router.push("/seans");
+        });
+    };
+  });
 
   // SSE: real-time bell updates — connect once on mount, reconnect on visibility
   useEffect(() => {
@@ -78,7 +100,19 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
         const token = await getNotificationStreamToken();
         if (cancelled) return; // cleanup ran while awaiting token
         es = new EventSource(`${apiBase}/v1/notifications/stream?token=${token}`);
-        es.onmessage = () => {
+        es.onmessage = (ev: MessageEvent) => {
+          // Branch on the typed payload: a live study-invite opens a modal (in addition
+          // to the drawer refresh); every event still refreshes the bell.
+          let payload: { event?: string; actorName?: string } | null = null;
+          try {
+            payload = JSON.parse(ev.data as string);
+          } catch {
+            payload = null; // heartbeat sends an empty frame — nothing to do
+          }
+          if (!payload?.event) return;
+          if (payload.event === "study_invite" && payload.actorName) {
+            showStudyInviteRef.current(payload.actorName);
+          }
           listNotifications().then(setData).catch(() => {});
         };
         es.onerror = () => {

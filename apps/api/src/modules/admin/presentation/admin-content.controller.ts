@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query, Req, UseInterceptors } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { Paginated } from "@mentor/types";
+import type { ArticleImageUploadUrlDto, Paginated } from "@mentor/types";
 import { UserRole } from "@mentor/types";
 import { Roles } from "../../../common/auth/roles.decorator";
 import { ContentService, type AdminArticleView } from "../../content/application/content.service";
@@ -8,7 +8,11 @@ import { AuditAction, AuditTargetType } from "../domain/admin.constants";
 import { AdminAuditInterceptor } from "./admin-audit.interceptor";
 import { Audit } from "./audit.decorator";
 import { setAuditContext, type AuditableRequest } from "./audit-context";
-import { AdminListArticlesQueryDto, UpsertArticleDto } from "./admin.dto";
+import {
+  AdminListArticlesQueryDto,
+  ArticleImageUploadDto,
+  UpsertArticleDto,
+} from "./admin.dto";
 
 /**
  * Admin content editor (W6) — knowledge-center articles. Editorial only: trust metadata is required
@@ -31,6 +35,13 @@ export class AdminContentController {
   @Get(":slug")
   get(@Param("slug") slug: string): Promise<AdminArticleView> {
     return this.content.getArticleForAdmin(slug);
+  }
+
+  @Post("images/upload-url")
+  createImageUploadUrl(
+    @Body() dto: ArticleImageUploadDto,
+  ): Promise<ArticleImageUploadUrlDto> {
+    return this.content.createArticleImageUploadUrl(dto.purpose, dto.contentType);
   }
 
   /** Create or update by slug (idempotent upsert). */
