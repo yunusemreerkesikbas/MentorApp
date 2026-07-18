@@ -15,6 +15,20 @@ export type NewStudySession = typeof studySessions.$inferInsert;
  */
 const RECENT_SUMMARY_SCAN_ROWS = 20;
 
+/**
+ * "This session is plausibly running right now": IN_PROGRESS, not finalized, and still
+ * within its OWN planned length (+ grace). Mirrors `closeStaleOpenSessions`' bound, so an
+ * orphaned row (tab died) stops reading as active once its planned time elapses instead of
+ * lingering for hours. Preset lengths are the domain defaults when `plannedFocusMinutes` is null.
+ */
+function runningNow(graceMinutes: number) {
+  return and(
+    eq(studySessions.status, StudySessionStatus.IN_PROGRESS),
+    isNull(studySessions.endedAt),
+    sql`now() < ${studySessions.startedAt} + (coalesce(${studySessions.plannedFocusMinutes}, case ${studySessions.preset} when '50_10' then 50 else 25 end) + ${graceMinutes}) * interval '1 minute'`,
+  );
+}
+
 /** Raw shape for {@link StudySessionRepository.recentSummary} (service maps it to the domain summary). */
 export interface RecentSummaryRow {
   count7d: number;
@@ -205,22 +219,29 @@ export class StudySessionRepository {
   }
 
   /**
-   * Distinct users with a running focus session started in the last `windowMinutes`.
+   * Distinct users with a running focus session RIGHT NOW.
    * CROSS-USER aggregate — must be called in SERVICE context, and only ever exposed
    * as a bare count (privacy model: no per-user data crosses the RLS boundary).
    */
-  async countFocusingNow(tx: DatabaseTx, windowMinutes: number): Promise<number> {
+  async countFocusingNow(tx: DatabaseTx, graceMinutes: number): Promise<number> {
     const rows = await tx
       .select({ n: sql<number>`count(distinct ${studySessions.userId})::int` })
       .from(studySessions)
-      .where(
-        and(
-          eq(studySessions.status, StudySessionStatus.IN_PROGRESS),
-          isNull(studySessions.endedAt),
-          sql`${studySessions.startedAt} > now() - ${windowMinutes} * interval '1 minute'`,
-        ),
-      );
+      .where(and(runningNow(graceMinutes)));
     return rows[0]?.n ?? 0;
+  }
+
+  /**
+   * Whether the user is in a focus session RIGHT NOW. Single-user read — call in the
+   * user's own RLS context; drives the buddy "studying now" presence dot.
+   */
+  async hasActiveSession(tx: DatabaseTx, userId: string, graceMinutes: number): Promise<boolean> {
+    const rows = await tx
+      .select({ id: studySessions.id })
+      .from(studySessions)
+      .where(and(eq(studySessions.userId, userId), runningNow(graceMinutes)))
+      .limit(1);
+    return rows.length > 0;
   }
 
   async countCompleted(tx: DatabaseTx, userId: string, minFocusSeconds: number): Promise<number> {

@@ -1,6 +1,7 @@
 import {
   adminListArticlesQuerySchema,
   adminListExamsQuerySchema,
+  articleImageUploadSchema,
   adminRefundSchema,
   auditLogQuerySchema,
   economyAdjustSchema,
@@ -20,6 +21,7 @@ export class UpdateConfigDto extends createZodDto(updateConfigSchema) {}
 export class AdjustEconomyDto extends createZodDto(economyAdjustSchema) {}
 export class AdminListArticlesQueryDto extends createZodDto(adminListArticlesQuerySchema) {}
 export class UpsertArticleDto extends createZodDto(upsertArticleSchema) {}
+export class ArticleImageUploadDto extends createZodDto(articleImageUploadSchema) {}
 export class AdminListExamsQueryDto extends createZodDto(adminListExamsQuerySchema) {}
 export class UpsertExamDto extends createZodDto(upsertExamSchema) {}
 export class UpsertExamEventDto extends createZodDto(upsertExamEventSchema) {}

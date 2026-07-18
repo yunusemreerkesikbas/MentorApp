@@ -9,7 +9,13 @@ import type {
 } from "@mentor/types";
 import type { ExamEventRow, ExamRow } from "../infrastructure/exam.repository";
 import type { InfoArticleRow } from "../infrastructure/info-article.repository";
-import { daysBetween, formatTurkishDate, toIsoDate, todayIso } from "../domain/date.util";
+import {
+  daysBetween,
+  formatTurkishDate,
+  toIsoDate,
+  todayIso,
+} from "../domain/date.util";
+import { selectNextEvent } from "../domain/calendar.util";
 
 export function toExamSummary(row: ExamRow): ExamSummaryDto {
   return {
@@ -40,12 +46,18 @@ export function toExamCalendarDto(
 ): ExamCalendarDto {
   const examDateEvent = events.find((e) => e.type === "EXAM_DATE");
   const examDateIso = examDateEvent ? toIsoDate(examDateEvent.eventAt) : null;
+  const nextEvent = selectNextEvent(events, today);
+  const nextEventIso = nextEvent ? toIsoDate(nextEvent.eventAt) : null;
   return {
     exam: toExamSummary(exam),
     events: events.map(toExamEventDto),
     examDateLabel: examDateIso ? formatTurkishDate(examDateIso) : null,
     daysRemaining:
-      examDateIso !== null ? Math.max(0, daysBetween(today, examDateIso)) : null,
+      examDateIso !== null
+        ? Math.max(0, daysBetween(today, examDateIso))
+        : null,
+    nextEvent: nextEvent ? toExamEventDto(nextEvent) : null,
+    daysUntilNextEvent: nextEventIso ? daysBetween(today, nextEventIso) : null,
   };
 }
 
@@ -58,7 +70,9 @@ export function toPaginatedExams(
   return { items: items.map(toExamSummary), total, page, pageSize };
 }
 
-export function toInfoArticleSummary(row: InfoArticleRow): InfoArticleSummaryDto {
+export function toInfoArticleSummary(
+  row: InfoArticleRow,
+): InfoArticleSummaryDto {
   return {
     slug: row.slug,
     title: row.title,
@@ -70,13 +84,33 @@ export function toInfoArticleSummary(row: InfoArticleRow): InfoArticleSummaryDto
     sourceUrl: row.sourceUrl,
     verifiedAt: row.verifiedAt.toISOString(),
     verifiedBy: row.verifiedBy,
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 
-export function toInfoArticleDto(row: InfoArticleRow): InfoArticleDto {
+export function toInfoArticleDto(
+  row: InfoArticleRow,
+  coverImageUrl: string | null,
+): InfoArticleDto {
   return {
     ...toInfoArticleSummary(row),
     body: row.body,
+    bodyFormat: row.bodyFormat as InfoArticleDto["bodyFormat"],
+    author: row.authorName
+      ? { name: row.authorName, title: row.authorTitle, bio: row.authorBio }
+      : null,
+    coverImage:
+      coverImageUrl &&
+      row.coverImageAlt &&
+      row.coverImageWidth &&
+      row.coverImageHeight
+        ? {
+            url: coverImageUrl,
+            alt: row.coverImageAlt,
+            width: row.coverImageWidth,
+            height: row.coverImageHeight,
+          }
+        : null,
     metaDescription: row.metaDescription,
   };
 }

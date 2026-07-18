@@ -50,7 +50,11 @@ export class InfoArticleRepository {
     return { items, total: totalRow[0]?.count ?? 0 };
   }
 
-  async upsertBySlug(tx: DatabaseTx, data: NewInfoArticle): Promise<InfoArticleRow> {
+  async upsertBySlug(
+    tx: DatabaseTx,
+    data: NewInfoArticle,
+    resetEmbedding = false,
+  ): Promise<InfoArticleRow> {
     const rows = await tx
       .insert(infoArticles)
       .values(data)
@@ -59,6 +63,7 @@ export class InfoArticleRepository {
         set: {
           title: data.title,
           body: data.body,
+          bodyFormat: data.bodyFormat,
           family: data.family,
           category: data.category,
           source: data.source,
@@ -67,6 +72,14 @@ export class InfoArticleRepository {
           verifiedBy: data.verifiedBy,
           metaTitle: data.metaTitle,
           metaDescription: data.metaDescription,
+          authorName: data.authorName,
+          authorTitle: data.authorTitle,
+          authorBio: data.authorBio,
+          coverImageKey: data.coverImageKey,
+          coverImageAlt: data.coverImageAlt,
+          coverImageWidth: data.coverImageWidth,
+          coverImageHeight: data.coverImageHeight,
+          ...(resetEmbedding ? { embedding: null } : {}),
         },
       })
       .returning();

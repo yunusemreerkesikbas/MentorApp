@@ -43,10 +43,13 @@ export const STALE_SESSION_GRACE_MINUTES = 60;
 /* --------------------------- live focus ambience ---------------------------- */
 
 /**
- * "Şu an N kişi odaklanıyor" window: IN_PROGRESS sessions started within this many
- * minutes count (covers the 120-min max custom session + stale-cleanup lag).
+ * Grace past a session's PLANNED end before it stops counting as "running now".
+ * An IN_PROGRESS row is only live evidence until its own planned length elapses —
+ * a blanket window would show orphaned rows (tab died) as studying for hours.
+ * ponytail: no client heartbeat; an orphan can still read as active until its
+ * planned end. Add a last-seen ping if that proves too loose.
  */
-export const FOCUSING_NOW_WINDOW_MINUTES = 120;
+export const ACTIVE_SESSION_GRACE_MINUTES = 10;
 /** Below this count the API returns null — no cold-start embarrassment (privacy/product rule). */
 export const FOCUSING_NOW_MIN_VISIBLE = 3;
 /** In-memory cache TTL for the aggregate count (one query per instance per minute). */

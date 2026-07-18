@@ -226,3 +226,49 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   İlgili: `buddy.repository.ts` (`listRelatedOrActivelyPairedIds`), `buddy.service.ts`
   (`getSuggestionCandidates`), `buddy-view.service.ts`, `buddy.controller.ts`, `session-buddy-card.tsx`
   (`BuddyEmptyState`), `lib/buddy.ts` (`getBuddySuggestions`).
+  **Ek (2026-07-18):** Öneriler rastgele kohorttu; belirli bir arkadaşı davet etmenin kart üstünde yolu
+  yoktu (yalnız profil sayfasındaki buton). `BuddyEmptyState`'e her zaman görünen **kullanıcı adıyla davet
+  kutusu** eklendi (@handle → mevcut `sendBuddyRequest`; kullanıcı yoksa "bulunamadı" toast'ı, varsa kart
+  pending'e döner). Yeni endpoint yok — mevcut `POST /v1/buddy/requests/:username` yeniden kullanıldı.
+
+- **Yol arkadaşı aktivite sinyali (2026-07-18)** — Buddy accountability döngüsüne pasif sinyal
+  eklendi: bir kullanıcı günün ilk qualifying seansını tamamladığında (mevcut `FIRST_SESSION` event'i)
+  aktif yol arkadaşına "Yol arkadaşından haber — {ad} bugün ilk seansını tamamladı 👏" in-app bildirimi
+  düşer (`linkUrl: /seans`). Yeni `BuddyActivityListener` (notifications) `getActivePair` ile partneri
+  çözer, `NotificationDeliveryRepository.tryRecord` ile günlük dedupe eder, aktör adını
+  `UsersRepository.findByIdService` ile alır. Buddy'siz kullanıcı tek sorguda döner (hot-path büyümez).
+  **Çaba-odaklı** (seans tamamlandı — sonuç/net yok; partner bu bilgiyi zaten buddy kartında görüyor,
+  yeni ifşa yok), kategori FORUM. Best-effort — event emit'ini kırmaz. Yeni endpoint/migration yok.
+  Kapsam dışı (bilinçli): "hedefe ulaştı" varyantı — öyle bir event yok (quest-only), yeni emit ister.
+  İlgili: `notifications/application/listeners/buddy-activity.listener.ts`, `notifications.module.ts`,
+  `coaching/application/session.service.ts` (FIRST_SESSION emit — değişmedi).
+
+- **Yol arkadaşı canlı presence + birlikte-çalış daveti (2026-07-18)** — Buddy döngüsü "asenkron
+  snapshot"tan "birlikte çalışma" hissine taşındı (senkron oda değil — o Faz 2/Redis). (1) **Canlı
+  presence:** `GET /v1/buddy` active view'ına `partnerStudyingNow` eklendi — partnerin şu an
+  IN_PROGRESS bir seansı var mı (`SessionService.isStudyingNow` → `hasActiveSession`, 120 dk pencere,
+  partnerin kendi RLS bağlamında okunur; stale IN_PROGRESS satırları pencere sınırlar). Kart aktifken
+  ~60 sn'de bir sessizce yenilenir (poll); "şu an odakta" yeşil nabız göstergesi (`--color-success`).
+  (2) **Birlikte çalış daveti:** `POST /v1/buddy/study-invite` → partnere "…seninle çalışmak istiyor —
+  sen de bir seansa başla 🔥" bildirimi (`BUDDY_STUDY_INVITE` event). Nudge ile **paylaşımlı cooldown**
+  (`pokeBuddy` helper — yön başına 4h; migration yok, anti-spam). Partner zaten çalışıyorsa davet butonu
+  gizlenir (presence noktası zaten "katıl" ipucu). Guardrail: çaba-odaklı, iki taraf da rızalı, partner
+  bu bilgiyi zaten kartta görüyor. İlgili: `study-session.repository.ts` (`hasActiveSession`),
+  `session.service.ts` (`isStudyingNow`), `buddy.service.ts` (`pokeBuddy`/`sendStudyInvite`),
+  `buddy-view.service.ts`, `buddy.controller.ts`, `identity-events.listener.ts`, `session-buddy-card.tsx`.
+
+- **Davet modalı + iki bug fix (2026-07-18)** — (1) **Davet modalı:** davet artık bildirim
+  çekmecesine gömülmüyor; alıcıya tipli `study_invite` SSE olayı gidiyor ve app-shell'de
+  `useDialog().promo` modalı açılıyor ("… seninle çalışmak istiyor 🔥 · Başla → `/seans`").
+  Bildirim kalıcı/asenkron kayıt olarak korunuyor. (2) **Bug: modal hiç gelmiyordu** — tipli olay
+  fire-and-forget'ti, alıcının SSE akışı o an bağlı değilse (iki pencere arası geçişte tipik
+  durum) kayboluyordu. Artık bağlı akış yoksa olay **TTL'li kuyruğa** alınıyor
+  (`REALTIME_QUEUE_TTL_MS`, 5 dk) ve alıcının bir sonraki stream bağlantısında flush ediliyor;
+  tek sefer teslim edilir. (3) **Bug: "şu an odakta" yanlış görünüyordu** — presence 120 dk'lık
+  düz pencere kullanıyordu, bu yüzden yarım kalmış (sekme kapanmış) IN_PROGRESS satırları saatlerce
+  "çalışıyor" gösteriyordu. Artık ortak `runningNow` yüklemi seansın **kendi planlanan süresi +
+  `ACTIVE_SESSION_GRACE_MINUTES`** ile sınırlıyor (stale-cleanup'ın bound'uyla aynı); aynı düzeltme
+  toplu "N kişi odaklanıyor" sayacına da uygulandı. Ceiling: client heartbeat'i yok — yetim bir satır
+  kendi planlanan sonuna kadar aktif okunabilir. İlgili: `notifications.service.ts`
+  (`pushRealtimeEvent` kuyruk + `createStream` flush), `study-session.repository.ts` (`runningNow`),
+  `notification-drawer-shell.tsx`, testler: `realtime-queue.spec.ts`, `session.service.spec.ts`.

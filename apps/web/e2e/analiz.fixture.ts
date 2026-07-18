@@ -223,6 +223,8 @@ export async function mockAnalysisApi(page: Page, options: MockApiOptions = {}):
         events: [],
         examDateLabel: "26 Temmuz 2026",
         daysRemaining: 10,
+        nextEvent: null,
+        daysUntilNextEvent: null,
       };
       return json(route, calendar);
     }

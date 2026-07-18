@@ -14,6 +14,7 @@
 | **Cloudflare Turnstile** | Bot/Sybil | `TURNSTILE_SECRET_KEY`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | MVP |
 | **Postmark** | Transactional email | `POSTMARK_TOKEN` | MVP |
 | **Sentry** | Error monitoring | `SENTRY_DSN` | MVP |
+| **Google Analytics / Search Console** | Consent-gated article analytics + ownership verification | `NEXT_PUBLIC_GA_MEASUREMENT_ID`, `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | MVP |
 | **Render** | Hosting (PaaS) | — (dashboard) | MVP |
 | **Redis** | Presence/leaderboard/cache/queue | (later) | **Phase 2** |
 
@@ -52,6 +53,12 @@
 
 ### Sentry
 - Project (node + nextjs) → `SENTRY_DSN`.
+
+### Google Analytics 4 / Search Console
+- Set the public GA4 measurement ID only in deployments where analytics is enabled. The GA script is
+  absent until the visitor explicitly accepts; withdrawal disables collection and clears GA cookies.
+- Search Console verification is optional and is emitted through Next metadata. GA/consent copy must
+  receive product-owner legal/KVKK review before production publication.
 
 ### Render (hosting)
 - Dockerized service, single region **Frankfurt/EU**. Env variables go into the Render dashboard.

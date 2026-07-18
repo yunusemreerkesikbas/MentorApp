@@ -11,6 +11,8 @@ export const IdentityEventTopic = {
   BUDDY_ACCEPTED: "identity.buddy.accepted",
   /** A buddy nudged their partner → the partner is notified. */
   BUDDY_NUDGED: "identity.buddy.nudged",
+  /** A buddy invited their partner to study together now → the partner is notified. */
+  BUDDY_STUDY_INVITE: "identity.buddy.study-invite",
 } as const;
 
 /**

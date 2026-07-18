@@ -2566,6 +2566,35 @@
         ]
       }
     },
+    "/v1/admin/content/articles/images/upload-url": {
+      "post": {
+        "operationId": "AdminContentController_createImageUploadUrl",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArticleImageUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/admin/content/articles/{slug}/publish": {
       "post": {
         "operationId": "AdminContentController_publish",
@@ -3143,6 +3172,25 @@
     "/v1/buddy/nudge": {
       "post": {
         "operationId": "BuddyController_nudge",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "buddy"
+        ]
+      }
+    },
+    "/v1/buddy/study-invite": {
+      "post": {
+        "operationId": "BuddyController_studyInvite",
         "parameters": [],
         "responses": {
           "201": {
@@ -4869,6 +4917,10 @@
         "properties": {}
       },
       "AdjustEconomyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ArticleImageUploadDto": {
         "type": "object",
         "properties": {}
       },
