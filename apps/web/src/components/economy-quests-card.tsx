@@ -40,10 +40,12 @@ export function EconomyQuestsCard({
   const [resendingVerification, setResendingVerification] = useState(false);
   const [selectedTab, setSelectedTab] = useState<QuestTabKey>("daily_ritual");
   const dailyQuests = quests.filter((quest) => quest.category === "daily_ritual");
+  const weeklyQuests = quests.filter((quest) => quest.category === "weekly_ritual");
   const milestoneQuests = quests.filter((quest) => quest.category === "milestone");
   const onboardingQuests = quests.filter((quest) => quest.category === "onboarding");
   const questTabs = ([
     { key: "daily_ritual", label: translate("quests_daily_section"), quests: dailyQuests },
+    { key: "weekly_ritual", label: translate("quests_weekly_section"), quests: weeklyQuests },
     { key: "milestone", label: translate("quests_milestone_section"), quests: milestoneQuests },
     { key: "onboarding", label: translate("quests_onboarding_section"), quests: onboardingQuests },
   ] satisfies Array<{
@@ -300,10 +302,16 @@ function QuestRow({
         <span className="mt-1 block text-xs font-bold text-[var(--color-secondary)]">
           {quest.badgeLabel}
           {hasProgress
-            ? ` · ${translate("quest_progress_days", {
-                current: progressCurrent,
-                target: progressTarget,
-              })}`
+            ? ` · ${translate(
+                // Only streak-style quests count days; session/task quests are plain counts.
+                quest.id.startsWith("milestone.streak.") || quest.id === "weekly.streak-full-week"
+                  ? "quest_progress_days"
+                  : "quest_progress_count",
+                {
+                  current: progressCurrent,
+                  target: progressTarget,
+                },
+              )}`
             : null}
         </span>
         {hasProgress ? (

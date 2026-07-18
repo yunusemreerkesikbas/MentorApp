@@ -156,6 +156,27 @@ export class PlanTaskRepository {
     return rows[0]?.count ?? 0;
   }
 
+  /** DONE tasks dated within [fromDate, toDate] (weekly quest window). */
+  async countDoneBetween(
+    tx: DatabaseTx,
+    userId: string,
+    fromDate: string,
+    toDate: string,
+  ): Promise<number> {
+    const rows = await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(planTasks)
+      .where(
+        and(
+          eq(planTasks.userId, userId),
+          gte(planTasks.taskDate, fromDate),
+          lte(planTasks.taskDate, toDate),
+          eq(planTasks.status, "DONE"),
+        ),
+      );
+    return rows[0]?.count ?? 0;
+  }
+
   async countDoneAllTime(tx: DatabaseTx, userId: string): Promise<number> {
     const rows = await tx
       .select({ count: sql<number>`count(*)::int` })

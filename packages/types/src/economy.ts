@@ -33,8 +33,8 @@ export interface StreakRescueView {
   canAfford: boolean;
 }
 
-export type QuestCategory = "daily_ritual" | "milestone" | "onboarding";
-export type QuestPeriod = "daily" | "once";
+export type QuestCategory = "daily_ritual" | "weekly_ritual" | "milestone" | "onboarding";
+export type QuestPeriod = "daily" | "weekly" | "once";
 export type QuestRewardUnit = "XP" | "COIN" | "NONE";
 export type QuestAction =
   | "plan"

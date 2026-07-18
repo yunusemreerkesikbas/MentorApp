@@ -61,16 +61,27 @@ function makeRepoFake() {
 describe("InviteService", () => {
   let repo: ReturnType<typeof makeRepoFake>;
   let grants: Array<{ userId: string; unit: string; amount: number; reason: string }>;
+  let reversals: Array<{ userId: string; opts: Record<string, string> }>;
+  let reverseResult: number;
+  let reverseError: Error | null;
   let premium: boolean;
 
   const service = () => {
     grants = [];
+    reversals = [];
+    reverseResult = 20;
+    reverseError = null;
     premium = false;
     const entitlement = { getEntitlement: async () => ({ isPremium: premium }) };
     const economy = {
       grant: async (userId: string, unit: string, amount: number, opts: { reason: string }) => {
         grants.push({ userId, unit, amount, reason: opts.reason });
         return { xp: 0, coinConfirmed: amount, coinPending: 0 };
+      },
+      reverse: async (userId: string, opts: Record<string, string>) => {
+        if (reverseError) throw reverseError;
+        reversals.push({ userId, opts });
+        return reverseResult;
       },
     };
     const config = { get: async () => 20 };
@@ -142,5 +153,44 @@ describe("InviteService", () => {
     const svc = service();
     await svc.onInvitedConverted("nobody");
     expect(grants).toHaveLength(0);
+  });
+
+  it("on refund: reverses the inviter's conversion reward (redemption-keyed, idempotent ref)", async () => {
+    const svc = service();
+    const code = await svc.getOrCreateCode("ayse");
+    await svc.redeem("burak", code);
+    await svc.onInvitedConverted("burak");
+
+    await svc.onInvitedRefunded("burak");
+    expect(reversals).toEqual([
+      {
+        userId: "ayse",
+        opts: {
+          originalRefType: "invite-redemption",
+          originalRefId: "r1",
+          reason: "invite.reverted",
+          refType: "invite_reversal",
+          refId: "r1",
+        },
+      },
+    ]);
+  });
+
+  it("refund without a CONVERTED redemption is a no-op", async () => {
+    const svc = service();
+    const code = await svc.getOrCreateCode("ayse");
+    await svc.redeem("burak", code); // still PENDING
+    await svc.onInvitedRefunded("burak");
+    await svc.onInvitedRefunded("nobody");
+    expect(reversals).toHaveLength(0);
+  });
+
+  it("refund reversal failure is swallowed (refund already recorded in payments)", async () => {
+    const svc = service();
+    const code = await svc.getOrCreateCode("ayse");
+    await svc.redeem("burak", code);
+    await svc.onInvitedConverted("burak");
+    reverseError = new Error("db down");
+    await expect(svc.onInvitedRefunded("burak")).resolves.toBeUndefined();
   });
 });

@@ -7,6 +7,7 @@ import { ForumEventsListener } from "./application/forum-events.listener";
 import { ThreadPostedListener } from "./application/thread-posted.listener";
 import { InviteService } from "./application/invite.service";
 import { InviteEventsListener } from "./application/invite-events.listener";
+import { RefundEventsListener } from "./application/refund-events.listener";
 import { QuestService } from "./application/quest.service";
 import { QuestEventsListener } from "./application/quest-events.listener";
 import { StreakRescueService } from "./application/streak-rescue.service";
@@ -30,6 +31,7 @@ import { EconomyController } from "./presentation/economy.controller";
     InviteService,
     InviteRepository,
     InviteEventsListener,
+    RefundEventsListener,
     QuestService,
     QuestRepository,
     QuestEventsListener,

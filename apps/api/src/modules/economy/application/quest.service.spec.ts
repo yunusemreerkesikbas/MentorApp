@@ -13,6 +13,8 @@ interface ProgressRow {
 function service(options: {
   economyEnabled?: boolean;
   date?: string;
+  weekKey?: string;
+  disabledIds?: string;
   signals?: {
     hasDonePlanTask?: boolean;
     hasCompletedFocusSession?: boolean;
@@ -21,6 +23,9 @@ function service(options: {
     completedPlanTasks?: number;
     focusMinutesToday?: number;
     dailyFocusGoalMinutes?: number | null;
+    weeklyCompletedFocusSessions?: number;
+    weeklyCompletedPlanTasks?: number;
+    weeklyActiveDays?: number;
   };
   user?: { examType: string | null; emailVerified: boolean };
   subscription?: unknown;
@@ -31,6 +36,7 @@ function service(options: {
 } = {}) {
   const rows = options.rows ?? [];
   const date = options.date ?? "2026-07-06";
+  const weekKey = options.weekKey ?? "2026-W28";
   const config = {
     get: vi.fn(async (key: string) => {
       if (key === "economy.enabled") return options.economyEnabled ?? true;
@@ -38,6 +44,10 @@ function service(options: {
       if (key === "economy.quest.daily_ritual_reward_xp") return 5;
       if (key === "economy.quest.streak_milestone_reward_xp") return 25;
       if (key === "economy.quest.effort_milestone_reward_xp") return 25;
+      if (key === "economy.quest.weekly_ritual_reward_xp") return 20;
+      if (key === "economy.quest.weekly_focus_sessions_target") return 5;
+      if (key === "economy.quest.weekly_plan_tasks_target") return 10;
+      if (key === "economy.quest.disabled_ids") return options.disabledIds ?? "";
       return 0;
     }),
   };
@@ -51,6 +61,10 @@ function service(options: {
       completedPlanTasks: options.signals?.completedPlanTasks ?? 0,
       focusMinutesToday: options.signals?.focusMinutesToday ?? 0,
       dailyFocusGoalMinutes: options.signals?.dailyFocusGoalMinutes ?? null,
+      weekKey,
+      weeklyCompletedFocusSessions: options.signals?.weeklyCompletedFocusSessions ?? 0,
+      weeklyCompletedPlanTasks: options.signals?.weeklyCompletedPlanTasks ?? 0,
+      weeklyActiveDays: options.signals?.weeklyActiveDays ?? 0,
     })),
   };
   const streak = {
@@ -175,7 +189,7 @@ describe("QuestService", () => {
   it("returns daily ritual and onboarding quests with their reward metadata", async () => {
     const quests = await service().service.getUserProgress("user-1");
 
-    expect(quests).toHaveLength(20);
+    expect(quests).toHaveLength(23);
     expect(quests[0]).toMatchObject({
       id: "daily.plan-task-done",
       category: "daily_ritual",
@@ -378,7 +392,11 @@ describe("QuestService", () => {
     await subject.service.evaluateAndGrant("user-1");
     await subject.service.evaluateAndGrant("user-1");
 
-    expect(subject.quests.listForUser).toHaveBeenNthCalledWith(1, "user-1", ["once", "2026-07-06"]);
+    expect(subject.quests.listForUser).toHaveBeenNthCalledWith(1, "user-1", [
+      "once",
+      "2026-07-06",
+      "2026-W28",
+    ]);
     expect(subject.quests.markCompleted).toHaveBeenCalledTimes(1);
     expect(subject.economy.grantInServiceTx).toHaveBeenCalledTimes(1);
     expect(subject.economy.grantInServiceTx).toHaveBeenCalledWith(
@@ -465,5 +483,82 @@ describe("QuestService", () => {
 
     expect(subject.quests.listForUser).not.toHaveBeenCalled();
     expect(subject.economy.grantInServiceTx).not.toHaveBeenCalled();
+  });
+});
+
+describe("QuestService — weekly quests (v3)", () => {
+  it("grants weekly XP once per ISO week, keyed on the week period", async () => {
+    const subject = service({ signals: { weeklyCompletedFocusSessions: 5 } });
+    await subject.service.evaluateAndGrant("user-1");
+    expect(subject.economy.grantInServiceTx).toHaveBeenCalledWith(
+      "user-1",
+      Currency.XP,
+      20,
+      expect.objectContaining({ reason: "quest.weekly.focus-sessions" }),
+      {},
+    );
+    expect(subject.rows).toContainEqual(
+      expect.objectContaining({ questId: "weekly.focus-sessions", periodKey: "2026-W28" }),
+    );
+
+    // Same week again → no double grant.
+    subject.economy.grantInServiceTx.mockClear();
+    await subject.service.evaluateAndGrant("user-1");
+    expect(subject.economy.grantInServiceTx).not.toHaveBeenCalled();
+  });
+
+  it("is re-grantable in the next ISO week (fresh period key)", async () => {
+    const rows: ProgressRow[] = [
+      {
+        id: "weekly.focus-sessions:2026-W27",
+        questId: "weekly.focus-sessions",
+        periodKey: "2026-W27",
+        completedAt: new Date("2026-07-05T10:00:00.000Z"),
+      },
+    ];
+    const subject = service({ rows, signals: { weeklyCompletedFocusSessions: 5 } });
+    await subject.service.evaluateAndGrant("user-1");
+    expect(subject.rows).toContainEqual(
+      expect.objectContaining({ questId: "weekly.focus-sessions", periodKey: "2026-W28" }),
+    );
+  });
+
+  it("does not grant below the config-driven target and resolves {target} in the view title", async () => {
+    const subject = service({ signals: { weeklyCompletedFocusSessions: 4 } });
+    const views = await subject.service.getUserProgress("user-1");
+    expect(subject.economy.grantInServiceTx).not.toHaveBeenCalled();
+    const quest = views.find((q) => q.id === "weekly.focus-sessions");
+    expect(quest).toMatchObject({
+      title: "Bu hafta 5 odak seansı tamamla",
+      progressCurrent: 4,
+      progressTarget: 5,
+      rewardUnit: "XP",
+      rewardAmount: 20,
+      periodKey: "2026-W28",
+      completed: false,
+    });
+  });
+
+  it("weekly.streak-full-week requires all 7 active days", async () => {
+    const six = service({ signals: { weeklyActiveDays: 6 } });
+    await six.service.evaluateAndGrant("user-1");
+    expect(six.rows.find((r) => r.questId === "weekly.streak-full-week")).toBeUndefined();
+
+    const seven = service({ signals: { weeklyActiveDays: 7 } });
+    await seven.service.evaluateAndGrant("user-1");
+    expect(seven.rows).toContainEqual(
+      expect.objectContaining({ questId: "weekly.streak-full-week", periodKey: "2026-W28" }),
+    );
+  });
+
+  it("a disabled quest id is neither listed nor granted (kill-switch)", async () => {
+    const subject = service({
+      disabledIds: "weekly.focus-sessions, daily.plan-task-done",
+      signals: { weeklyCompletedFocusSessions: 5, hasDonePlanTask: true },
+    });
+    const views = await subject.service.getUserProgress("user-1");
+    expect(views.find((q) => q.id === "weekly.focus-sessions")).toBeUndefined();
+    expect(views.find((q) => q.id === "daily.plan-task-done")).toBeUndefined();
+    expect(subject.rows).toHaveLength(0);
   });
 });

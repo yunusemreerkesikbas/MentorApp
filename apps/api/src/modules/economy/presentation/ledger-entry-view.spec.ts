@@ -33,6 +33,30 @@ describe("toLedgerEntryView", () => {
     });
   });
 
+  it("maps streak-freeze purchases to a friendly label", () => {
+    expect(toLedgerEntryView(row("streak.freeze.purchase", Currency.COIN))).toMatchObject({
+      title: "Seri kurtarma",
+    });
+  });
+
+  it("maps streak-freeze refunds to a friendly label", () => {
+    expect(toLedgerEntryView(row("streak.freeze.refund", Currency.COIN))).toMatchObject({
+      title: "Seri kurtarma iadesi",
+    });
+  });
+
+  it("maps invite reversals to a friendly label", () => {
+    expect(toLedgerEntryView(row("invite.reverted", Currency.COIN))).toMatchObject({
+      title: "Davet ödülü geri alındı",
+    });
+  });
+
+  it("maps deep-analysis purchases to a friendly label", () => {
+    expect(toLedgerEntryView(row("analysis.deep.purchase", Currency.COIN))).toMatchObject({
+      title: "Derin analiz açıldı",
+    });
+  });
+
   it("uses a safe fallback for unknown reasons", () => {
     expect(toLedgerEntryView(row("internal.debug.reason"))).toMatchObject({
       title: "Ekonomi hareketi",

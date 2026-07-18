@@ -36,6 +36,15 @@ export interface SpendResult {
   alreadySpent: boolean;
 }
 
+export interface ReverseOptions {
+  /** Ref of the original grant being reversed. */
+  originalRefType: string;
+  originalRefId: string;
+  reason: string;
+  refType: string;
+  refId: string;
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -94,6 +103,8 @@ export class EconomyService {
       const weeklyCap = await this.config.get("economy.coin.weekly_cap");
       const now = Date.now();
       const run = async (tx: DatabaseTx) => {
+        // F1: per-user advisory lock — serializes concurrent capped grants beyond tx isolation.
+        await this.repo.acquireUserLock(userId, tx);
         if (minXp > 0 && (await this.repo.balanceService(userId, tx)).xp < minXp) {
           throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
         }
@@ -137,6 +148,8 @@ export class EconomyService {
     }
     let alreadySpent = false;
     await this.repo.withServiceTx(async (tx) => {
+      // F1: lock closes the double-debit window between two concurrent spends with different refIds.
+      await this.repo.acquireUserLock(userId, tx);
       if (await this.repo.existsByRef(opts.refType, opts.refId, tx)) {
         alreadySpent = true;
         return;
@@ -162,6 +175,41 @@ export class EconomyService {
     });
     const balance = await this.repo.balanceService(userId);
     return { balance, alreadySpent };
+  }
+
+  /**
+   * Compensating reversal of a prior COIN grant (refund flows). Clamp-to-zero policy: debits at
+   * most the originally granted amount and never below the user's confirmed coin — a non-monetary
+   * currency never goes negative. Idempotent on (refType, refId); no-op when the original grant
+   * doesn't exist (it was cap-denied). Returns the reversed amount (0 = nothing reversed).
+   */
+  async reverse(userId: string, opts: ReverseOptions): Promise<number> {
+    let reversed = 0;
+    await this.repo.withServiceTx(async (tx) => {
+      await this.repo.acquireUserLock(userId, tx);
+      if (await this.repo.existsByRef(opts.refType, opts.refId, tx)) return; // already reversed
+      const original = await this.repo.findByRef(opts.originalRefType, opts.originalRefId, tx);
+      if (!original || original.amount <= 0) return; // grant never landed (cap-denied at grant time)
+      const balance = await this.repo.balanceService(userId, tx);
+      const amount = Math.min(original.amount, Math.max(0, balance.coinConfirmed));
+      if (amount <= 0) return; // already spent down to zero — clamp forfeits the remainder
+      await this.repo.append(
+        {
+          userId,
+          unit: Currency.COIN,
+          amount: -amount,
+          reason: opts.reason,
+          status: LedgerStatus.CONFIRMED,
+          refType: opts.refType,
+          refId: opts.refId,
+          note: `orig:${original.amount}`,
+          createdBy: null,
+        },
+        tx,
+      );
+      reversed = amount;
+    });
+    return reversed;
   }
 
   /** Rolling 24h count of AI chat coin spends (free-coin daily limit). */

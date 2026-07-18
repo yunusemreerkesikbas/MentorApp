@@ -258,4 +258,26 @@ export class StudySessionRepository {
       );
     return rows[0]?.count ?? 0;
   }
+
+  /** COMPLETED sessions started on/after `sinceDate` (weekly quest window). */
+  async countCompletedSince(
+    tx: DatabaseTx,
+    userId: string,
+    sinceDate: string,
+    minFocusSeconds: number,
+  ): Promise<number> {
+    const rows = await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(studySessions)
+      .where(
+        and(
+          eq(studySessions.userId, userId),
+          eq(studySessions.status, StudySessionStatus.COMPLETED),
+          isNotNull(studySessions.endedAt),
+          gte(studySessions.actualFocusSeconds, minFocusSeconds),
+          gte(studySessions.startedAt, new Date(`${sinceDate}T00:00:00Z`)),
+        ),
+      );
+    return rows[0]?.count ?? 0;
+  }
 }

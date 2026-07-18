@@ -10,13 +10,18 @@ function build(options: { goal?: number | null; getMeFails?: boolean } = {}) {
   const planTasks = {
     countDone: vi.fn(async () => 1),
     countDoneAllTime: vi.fn(async () => 25),
+    countDoneBetween: vi.fn(async () => 7),
   };
   const sessions = {
     hasCompletedOnDate: vi.fn(async () => true),
     countCompleted: vi.fn(async () => 10),
+    countCompletedSince: vi.fn(async () => 3),
     sumCompletedFocusSecondsOnDate: vi.fn(async () => 2730), // 45.5 dk → 46
   };
   const moods = { findByDate: vi.fn(async () => ({ id: "mood-1" })) };
+  const dailyActivity = {
+    listActiveDatesSince: vi.fn(async () => ["2026-07-13", "2026-07-14"]),
+  };
   const users = {
     getMe: options.getMeFails
       ? vi.fn(async () => {
@@ -30,15 +35,16 @@ function build(options: { goal?: number | null; getMeFails?: boolean } = {}) {
     planTasks as never,
     sessions as never,
     moods as never,
+    dailyActivity as never,
     users as never,
     config as never,
   );
-  return { service, planTasks, sessions, moods, users, config };
+  return { service, planTasks, sessions, moods, dailyActivity, users, config };
 }
 
 describe("DailyQuestSignalService", () => {
   it("returns today's quest signals from coaching repositories", async () => {
-    const { service, planTasks, sessions, moods, config } = build({ goal: 120 });
+    const { service, planTasks, sessions, moods, dailyActivity, config } = build({ goal: 120 });
 
     const result = await service.getToday("user-1");
 
@@ -50,8 +56,21 @@ describe("DailyQuestSignalService", () => {
       completedPlanTasks: 25,
       focusMinutesToday: 46,
       dailyFocusGoalMinutes: 120,
+      weeklyCompletedFocusSessions: 3,
+      weeklyCompletedPlanTasks: 7,
+      weeklyActiveDays: 2,
     });
     expect(result.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(result.weekKey).toMatch(/^\d{4}-W\d{2}$/);
+    // Weekly windows are bounded by the ISO week's Monday.
+    expect(sessions.countCompletedSince).toHaveBeenCalledWith(
+      expect.anything(),
+      "user-1",
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      300,
+    );
+    expect(planTasks.countDoneBetween).toHaveBeenCalled();
+    expect(dailyActivity.listActiveDatesSince).toHaveBeenCalled();
     expect(config.get).toHaveBeenCalledWith("coaching.session.min_focus_seconds");
     expect(planTasks.countDone).toHaveBeenCalled();
     expect(planTasks.countDoneAllTime).toHaveBeenCalled();

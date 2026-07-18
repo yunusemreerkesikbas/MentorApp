@@ -58,6 +58,25 @@ export function daysBetween(from: IsoDate, to: IsoDate): number {
   return Math.round(ms / 86_400_000);
 }
 
+/** ISO-8601 week key for a date, e.g. "2026-W29" (Monday start; week year = its Thursday's year). */
+export function isoWeekKey(date: IsoDate): string {
+  const d = parseIsoDate(date);
+  const day = d.getUTCDay() || 7; // Mon=1 … Sun=7
+  d.setUTCDate(d.getUTCDate() + 4 - day); // shift to this week's Thursday
+  const year = d.getUTCFullYear();
+  const yearStart = Date.UTC(year, 0, 1);
+  const week = Math.ceil(((d.getTime() - yearStart) / 86_400_000 + 1) / 7);
+  return `${year}-W${String(week).padStart(2, "0")}`;
+}
+
+/** The Monday (yyyy-mm-dd) of the ISO week containing `date`. */
+export function isoWeekStart(date: IsoDate): IsoDate {
+  const d = parseIsoDate(date);
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() - (day - 1));
+  return toIsoDate(d);
+}
+
 /** Format a yyyy-mm-dd as a Turkish display label, e.g. "12 Temmuz 2026". */
 export function formatTurkishDate(date: IsoDate): string {
   const [year, month, day] = date.split("-").map((p) => Number(p));

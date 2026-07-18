@@ -48,6 +48,15 @@ export class LedgerRepository {
     return exec ? fn(exec) : withServiceContext(this.db, fn);
   }
 
+  /**
+   * Per-user advisory lock (F1) serializing check-then-write economy paths (cap-check + append,
+   * balance-check + debit). Transaction-scoped: auto-released at commit/rollback, reentrant within
+   * the same tx. Must be the first statement of the calling SERVICE tx.
+   */
+  async acquireUserLock(userId: string, tx: DatabaseTx): Promise<void> {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${"economy:" + userId}, 0))`);
+  }
+
   /** Append one immutable entry. Idempotent on (refType,refId): a duplicate is a no-op. */
   async append(entry: NewLedgerEntry, exec?: DatabaseTx): Promise<void> {
     await this.onService(exec, async (tx) => {
@@ -141,6 +150,18 @@ export class LedgerRepository {
           ),
         );
       return rows[0]?.total ?? 0;
+    });
+  }
+
+  /** The ledger row for (refType, refId), if any — reversals debit the actually-granted amount. */
+  async findByRef(refType: string, refId: string, exec?: DatabaseTx): Promise<LedgerRow | undefined> {
+    return this.onService(exec, async (tx) => {
+      const rows = await tx
+        .select()
+        .from(ledgerEntries)
+        .where(and(eq(ledgerEntries.refType, refType), eq(ledgerEntries.refId, refId)))
+        .limit(1);
+      return rows[0];
     });
   }
 
