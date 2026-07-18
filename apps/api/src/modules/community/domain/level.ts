@@ -5,7 +5,7 @@ import type { CommunityLevelView } from "@mentor/types";
  * live in the client i18n (`topluluk.level.*`). // ponytail: static thresholds; move to config only
  * if product wants to tune the curve live.
  */
-const TIER_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2200, 3000] as const;
+const TIER_THRESHOLDS = [0, 100, 300, 600, 1000, 1500, 2200, 3000, 4200, 5600, 7500, 10000] as const;
 
 /** Map total XP to a 1-based tier + the threshold for the next tier (null at the top). */
 export function deriveLevel(xp: number): CommunityLevelView {

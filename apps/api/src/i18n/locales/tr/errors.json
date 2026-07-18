@@ -59,6 +59,7 @@
   "ECONOMY_DISABLED": "Ekonomi özelliği şu anda kapalı.",
   "ECONOMY_LIMIT_EXCEEDED": "Coin kazanım sınırı aşıldı.",
   "INSUFFICIENT_COIN": "AI koç için yeterli hakkın yok. Görevleri tamamla veya Premium'a geç.",
+  "STREAK_RESCUE_NOT_ELIGIBLE": "Şu anda kurtarılabilecek bir seri günü yok.",
   "INVITE_CODE_INVALID": "Davet kodu geçersiz.",
   "INVITE_SELF": "Kendi davet kodunu kullanamazsın.",
   "INVITE_ALREADY_REDEEMED": "Zaten bir davet kodu kullandın.",

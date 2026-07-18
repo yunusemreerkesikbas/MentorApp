@@ -12,8 +12,13 @@ describe("deriveLevel", () => {
     expect(deriveLevel(1000)).toEqual({ tier: 5, xp: 1000, nextAt: 1500 });
   });
 
+  it("continues past the old 3000 ceiling into the extended tiers", () => {
+    expect(deriveLevel(3000)).toEqual({ tier: 8, xp: 3000, nextAt: 4200 });
+    expect(deriveLevel(5600)).toEqual({ tier: 10, xp: 5600, nextAt: 7500 });
+  });
+
   it("caps nextAt at null on the top tier", () => {
-    expect(deriveLevel(3000)).toEqual({ tier: 8, xp: 3000, nextAt: null });
-    expect(deriveLevel(99999)).toEqual({ tier: 8, xp: 99999, nextAt: null });
+    expect(deriveLevel(10000)).toEqual({ tier: 12, xp: 10000, nextAt: null });
+    expect(deriveLevel(99999)).toEqual({ tier: 12, xp: 99999, nextAt: null });
   });
 });

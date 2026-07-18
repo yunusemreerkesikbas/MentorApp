@@ -9,6 +9,7 @@ import type {
   PlanTaskStatus,
   QuestProgressView,
   SessionPresetDto,
+  StreakRescueView,
   TodayPanelResponse,
 } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday, planTaskControllerUpdate } from "@mentor/api-client";
@@ -32,7 +33,13 @@ import {
 import { EconomyQuestsCard } from "@/components/economy-quests-card";
 import { PuhuImage } from "@/components/puhu-image";
 import { Link } from "@/i18n/navigation";
-import { fetchEconomyBalance, fetchQuests, isEconomyDisabled } from "@/lib/economy";
+import {
+  fetchEconomyBalance,
+  fetchQuests,
+  fetchStreakRescue,
+  isEconomyDisabled,
+  purchaseStreakRescue,
+} from "@/lib/economy";
 import {
   findNewlyCompletedQuests,
   formatRewardSummary,
@@ -64,6 +71,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [economyBalance, setEconomyBalance] = useState<EconomyBalance | null>(null);
+  const [streakRescue, setStreakRescue] = useState<StreakRescueView | null>(null);
   const [quests, setQuests] = useState<QuestProgressView[] | null>(null);
   const questsRef = useRef<QuestProgressView[] | null>(null);
   const WELCOME_TOAST_KEY = "mentor_panel_welcome_date";
@@ -75,6 +83,15 @@ export function PanelShell({ initialData }: PanelShellProps) {
       if (!isEconomyDisabled(err)) {
         setEconomyBalance(null);
       }
+    }
+  }, []);
+
+  // Best-effort: economy off / error → no rescue offer, card renders as before.
+  const refreshStreakRescue = useCallback(async () => {
+    try {
+      setStreakRescue(await fetchStreakRescue());
+    } catch {
+      setStreakRescue(null);
     }
   }, []);
 
@@ -141,6 +158,26 @@ export function PanelShell({ initialData }: PanelShellProps) {
     await refreshQuests({ announceRewards: true, refreshBalance: true });
   }, [refreshQuests, refreshToday]);
 
+  const handleStreakRescue = useCallback(async () => {
+    try {
+      await purchaseStreakRescue();
+      setStreakRescue(null);
+      toast.success({
+        title: t("streak_rescue_success_title"),
+        message: t("streak_rescue_success_message"),
+        duration: 4000,
+      });
+      await refreshToday({ silent: true });
+      await refreshEconomyBalance();
+    } catch (err) {
+      toast.error({
+        title: t("streak_rescue_error_title"),
+        message: err instanceof ApiClientError ? err.message : t("streak_rescue_error_message"),
+      });
+      await refreshStreakRescue();
+    }
+  }, [refreshEconomyBalance, refreshStreakRescue, refreshToday, t, toast]);
+
   const moodCheckin = useMoodCheckin({
     initial: data?.mood ?? null,
     onSaved: () => {
@@ -169,6 +206,13 @@ export function PanelShell({ initialData }: PanelShellProps) {
         if (active && balance) {
           setEconomyBalance(balance);
         }
+      });
+    fetchStreakRescue()
+      .then((state) => {
+        if (active) setStreakRescue(state);
+      })
+      .catch(() => {
+        if (active) setStreakRescue(null);
       });
 
     return () => {
@@ -272,7 +316,12 @@ export function PanelShell({ initialData }: PanelShellProps) {
           ) : null}
 
           <motion.div variants={staggerItemVariants}>
-            <WeeklyStreakCard streakDays={data.streak.currentStreak} freezeCount={data.streak.freezeTokens} />
+            <WeeklyStreakCard
+              streakDays={data.streak.currentStreak}
+              freezeCount={data.streak.freezeTokens}
+              rescue={streakRescue}
+              onRescue={handleStreakRescue}
+            />
           </motion.div>
 
           <motion.div variants={staggerItemVariants}>
@@ -539,8 +588,34 @@ function MetricTile({
   );
 }
 
-function WeeklyStreakCard({ streakDays, freezeCount }: { streakDays: number; freezeCount: number }) {
+function WeeklyStreakCard({
+  streakDays,
+  freezeCount,
+  rescue,
+  onRescue,
+}: {
+  streakDays: number;
+  freezeCount: number;
+  rescue: StreakRescueView | null;
+  onRescue: () => Promise<void>;
+}) {
   const t = useTranslations("panel");
+  // Two-tap confirm: first tap arms ("emin misin?"), second tap spends. No extra dialog infra.
+  const [rescueArmed, setRescueArmed] = useState(false);
+  const [rescueBusy, setRescueBusy] = useState(false);
+  const handleRescueClick = async () => {
+    if (!rescueArmed) {
+      setRescueArmed(true);
+      return;
+    }
+    setRescueBusy(true);
+    try {
+      await onRescue();
+    } finally {
+      setRescueBusy(false);
+      setRescueArmed(false);
+    }
+  };
   const days = [
     t("week_mon"),
     t("week_tue"),
@@ -607,6 +682,29 @@ function WeeklyStreakCard({ streakDays, freezeCount }: { streakDays: number; fre
           );
         })}
       </div>
+
+      {rescue?.eligible ? (
+        <div className="mt-4 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-progress-track)_35%,white)] p-4">
+          <p className="text-sm font-medium text-[var(--color-main)]">{t("streak_rescue_hint")}</p>
+          {rescue.canAfford ? (
+            <button
+              type="button"
+              onClick={() => void handleRescueClick()}
+              disabled={rescueBusy}
+              className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] bg-[var(--color-progress)] px-4 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
+            >
+              <Snowflake className="size-4" aria-hidden />
+              {rescueArmed
+                ? t("streak_rescue_confirm", { cost: rescue.cost })
+                : t("streak_rescue_cta", { cost: rescue.cost })}
+            </button>
+          ) : (
+            <p className="mt-2 text-sm text-[var(--color-secondary)]">
+              {t("streak_rescue_insufficient", { cost: rescue.cost })}
+            </p>
+          )}
+        </div>
+      ) : null}
 
       <Link
         href="/seans"

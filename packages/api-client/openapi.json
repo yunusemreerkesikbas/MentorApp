@@ -1425,6 +1425,42 @@
         ]
       }
     },
+    "/v1/economy/streak-rescue": {
+      "get": {
+        "operationId": "EconomyController_streakRescueState",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      },
+      "post": {
+        "operationId": "EconomyController_streakRescuePurchase",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
     "/v1/economy/invite/redeem": {
       "post": {
         "operationId": "EconomyController_redeem",

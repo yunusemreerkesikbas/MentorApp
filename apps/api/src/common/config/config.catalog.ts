@@ -137,6 +137,7 @@ export const CONFIG_CATALOG = {
   "economy.quest.streak_milestone_reward_xp": economyCount(25, 100000, "XP granted per completed streak milestone quest."),
   "economy.quest.effort_milestone_reward_xp": economyCount(25, 100000, "XP granted per completed effort milestone quest."),
   "economy.coin.ai_chat_cost": economyCount(5, 100000, "Coin debited per AI coach chat message (free earned-right path)."),
+  "economy.coin.streak_freeze_cost": economyCount(20, 100000, "Coin debited to rescue a broken streak by freezing the single missed day it broke on."),
   "forum.xp.accepted_answer": economyCount(25, 1000, "XP granted to a user when their forum answer is accepted (slice 3)."),
   "forum.xp.thread_posted": economyCount(2, 1000, "XP granted for posting a forum thread/message (feeds the effort leaderboard; capped per day)."),
   "forum.xp.thread_posted_daily_cap": economyCount(10, 1000, "Max posts per day that earn XP (anti-farm shield for the leaderboard)."),

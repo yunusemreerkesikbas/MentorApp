@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, gte, isNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, lt, ne, sql } from "drizzle-orm";
 import { Currency, LedgerStatus } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
@@ -84,7 +84,11 @@ export class LedgerRepository {
     return this.onService(exec, (tx) => this.computeBalance(userId, tx));
   }
 
-  /** Sum of positive COIN grants since `since` (for daily/weekly earning caps). */
+  /**
+   * Sum of positive ORGANIC coin grants since `since` (for daily/weekly earning caps).
+   * Excludes admin adjustments (createdBy set) and AI-chat refunds — both are corrections,
+   * not earnings, and must not consume the user's organic cap headroom.
+   */
   async coinEarnedSince(userId: string, since: Date, exec?: DatabaseTx): Promise<number> {
     return this.onService(exec, async (tx) => {
       const rows = await tx
@@ -97,6 +101,8 @@ export class LedgerRepository {
             eq(ledgerEntries.userId, userId),
             eq(ledgerEntries.unit, Currency.COIN),
             gte(ledgerEntries.createdAt, since),
+            isNull(ledgerEntries.createdBy),
+            ne(ledgerEntries.reason, EconomyLedger.AI_CHAT_REFUND_REASON),
           ),
         );
       return rows[0]?.total ?? 0;

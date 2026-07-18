@@ -96,6 +96,11 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Self-accept XP farm kapatıldı (2026-07-18)** — `canAcceptAnswer(actor, questionAuthorId,
+  answerAuthorId)`: soran kişi KENDİ cevabını kabul edemez (thread başına 25 XP self-farm vektörü).
+  `accept()` post'u önce fetch edip policy'ye cevap yazarını da geçirir; web soru ekranı kendi
+  cevabında kabul butonunu göstermez. Dış davranış değişikliği: soran-olmayan probé artık 403 yerine
+  404 alabilir (post fetch öne alındı — bilgi sızıntısı açısından daha iyi).
 - **Dosya ekleri — PDF + Office (APP-027)** — Forum ekleri artık **görsel + dosya** taşıyor (görsel altyapısı
   genelleştirildi). Türler: `application/pdf` + modern OOXML (docx/xlsx/pptx; legacy .doc/.xls/.ppt hariç),
   **10MB/dosya**, mevcut **birleşik 4-ek limiti** (görsel 5MB / dosya 10MB, sunucu-uygulamalı). Migration

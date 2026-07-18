@@ -38,10 +38,22 @@ describe("deriveStreak", () => {
   });
 
   it("soft-resets on a missed day when no freeze tokens remain", () => {
-    // Same single gap but zero allowance → streak is just today.
+    // Same single gap but zero allowance → streak is just today; the gap is the rescue target.
     const result = deriveStreak(TODAY, active("2026-06-08", "2026-06-10"), 0);
     expect(result.currentStreak).toBe(1);
     expect(result.bridgedDates).toEqual([]);
+    expect(result.stoppedAt).toBe("2026-06-09");
+  });
+
+  it("stops at the OLDEST gap when the pool runs out (rescue target is stoppedAt, not yesterday)", () => {
+    // Three single gaps this month (06-09, 06-07, 06-05) with 2 tokens: the two newest bridge,
+    // the walk breaks on the oldest — that day is the streak-rescue purchase target.
+    const result = deriveStreak(
+      TODAY,
+      active("2026-06-10", "2026-06-08", "2026-06-06", "2026-06-04"),
+      2,
+    );
+    expect(result.stoppedAt).toBe("2026-06-05");
   });
 
   it("breaks on two consecutive missed days even with freeze tokens", () => {
@@ -66,6 +78,37 @@ describe("deriveStreak", () => {
   it("returns zero when there is no activity at all", () => {
     const result = deriveStreak(TODAY, active(), FREEZE_TOKENS_PER_MONTH);
     expect(result.currentStreak).toBe(0);
+  });
+
+  it("bridges a purchased frozen date without consuming the free allowance", () => {
+    // 06-09 MISSED but purchased; free allowance is 0 → the paid freeze alone keeps the run alive.
+    const result = deriveStreak(
+      TODAY,
+      active("2026-06-08", "2026-06-10"),
+      0,
+      new Set(["2026-06-09"]),
+    );
+    expect(result.currentStreak).toBe(2);
+    expect(result.bridgedDates).toEqual(["2026-06-09"]);
+  });
+
+  it("purchased freeze leaves the free token available for an earlier gap", () => {
+    // Gaps on 06-09 (purchased) and 06-07 (free token). Allowance of 1 must survive the paid bridge.
+    const result = deriveStreak(
+      TODAY,
+      active("2026-06-10", "2026-06-08", "2026-06-06"),
+      1,
+      new Set(["2026-06-09"]),
+    );
+    expect(result.currentStreak).toBe(3);
+    expect(result.bridgedDates).toEqual(["2026-06-09", "2026-06-07"]);
+  });
+
+  it("purchased freeze bridges without requiring the prior day to be active", () => {
+    // 06-09 purchased but 06-08 is ALSO missed and unpurchased → walk passes 06-09, stops at 06-08.
+    const result = deriveStreak(TODAY, active("2026-06-10"), 0, new Set(["2026-06-09"]));
+    expect(result.currentStreak).toBe(1);
+    expect(result.bridgedDates).toEqual(["2026-06-09"]);
   });
 
   it("resets freeze tokens per calendar month when walking backward", () => {

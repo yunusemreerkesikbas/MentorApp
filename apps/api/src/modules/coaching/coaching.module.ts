@@ -18,6 +18,7 @@ import { COACHING_QUERY_PORT } from "./domain/coaching-query.port";
 import { DailyActivityRepository } from "./infrastructure/daily-activity.repository";
 import { MoodCheckinRepository } from "./infrastructure/mood-checkin.repository";
 import { PlanTaskRepository } from "./infrastructure/plan-task.repository";
+import { StreakFreezeRepository } from "./infrastructure/streak-freeze.repository";
 import { StreakStateRepository } from "./infrastructure/streak-state.repository";
 import { StudySessionRepository } from "./infrastructure/study-session.repository";
 import { MockExamRepository } from "./infrastructure/mock-exam.repository";
@@ -58,6 +59,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     MockExamPhotoRepository,
     DailyActivityRepository,
     StreakStateRepository,
+    StreakFreezeRepository,
     MoodCheckinRepository,
     VisionBoardRepository,
     WeeklyReviewRepository,

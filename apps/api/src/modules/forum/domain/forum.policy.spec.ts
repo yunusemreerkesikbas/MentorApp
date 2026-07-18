@@ -109,9 +109,14 @@ describe("forum.policy", () => {
 
   describe("canAcceptAnswer", () => {
     it("only the question author may accept (no staff override)", () => {
-      expect(canAcceptAnswer(actor([UserRole.STUDENT]), "u1")).toBe(true); // actor.userId === "u1"
-      expect(canAcceptAnswer(actor([UserRole.STUDENT]), "someoneElse")).toBe(false);
-      expect(canAcceptAnswer(actor([UserRole.ADMIN]), "someoneElse")).toBe(false);
+      expect(canAcceptAnswer(actor([UserRole.STUDENT]), "u1", "answerer")).toBe(true); // actor.userId === "u1"
+      expect(canAcceptAnswer(actor([UserRole.STUDENT]), "someoneElse", "answerer")).toBe(false);
+      expect(canAcceptAnswer(actor([UserRole.ADMIN]), "someoneElse", "answerer")).toBe(false);
+    });
+
+    it("rejects accepting your own answer (self-accept XP farm)", () => {
+      // Asker "u1" answered their own question — accept must be denied.
+      expect(canAcceptAnswer(actor([UserRole.STUDENT]), "u1", "u1")).toBe(false);
     });
   });
 

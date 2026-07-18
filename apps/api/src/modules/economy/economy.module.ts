@@ -9,6 +9,7 @@ import { InviteService } from "./application/invite.service";
 import { InviteEventsListener } from "./application/invite-events.listener";
 import { QuestService } from "./application/quest.service";
 import { QuestEventsListener } from "./application/quest-events.listener";
+import { StreakRescueService } from "./application/streak-rescue.service";
 import { SessionCompletedListener } from "./application/session-completed.listener";
 import { LedgerRepository } from "./infrastructure/ledger.repository";
 import { InviteRepository } from "./infrastructure/invite.repository";
@@ -32,6 +33,7 @@ import { EconomyController } from "./presentation/economy.controller";
     QuestService,
     QuestRepository,
     QuestEventsListener,
+    StreakRescueService,
     SessionCompletedListener,
     ForumEventsListener,
     ThreadPostedListener,

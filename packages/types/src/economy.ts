@@ -20,6 +20,19 @@ export interface EconomyLedgerEntryView {
   createdAt: string;
 }
 
+/**
+ * GET/POST /v1/economy/streak-rescue — coin-purchased streak freeze for the single missed day the
+ * streak derivation broke on. `canAfford` compares confirmed coin against `cost`; `date` is the
+ * buyable day (yyyy-mm-dd).
+ */
+export interface StreakRescueView {
+  eligible: boolean;
+  date: string | null;
+  cost: number;
+  coinConfirmed: number;
+  canAfford: boolean;
+}
+
 export type QuestCategory = "daily_ritual" | "milestone" | "onboarding";
 export type QuestPeriod = "daily" | "once";
 export type QuestRewardUnit = "XP" | "COIN" | "NONE";

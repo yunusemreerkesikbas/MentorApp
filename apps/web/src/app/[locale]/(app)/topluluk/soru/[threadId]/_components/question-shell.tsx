@@ -170,7 +170,8 @@ export function QuestionShell({ threadId }: { threadId: string }) {
               shareHref={`/topluluk/soru/${question.id}`}
               onToggleBookmark={(adding) => onToggleAnswerBookmark(a.id, adding)}
               accept={
-                canAccept && !a.isAccepted ? (
+                // Own answers are never acceptable (API rejects self-accept — XP farm guard).
+                canAccept && !a.isAccepted && a.authorId !== user?.id ? (
                   <AcceptButton threadId={threadId} postId={a.id} onAccepted={() => void load()} />
                 ) : undefined
               }

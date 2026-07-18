@@ -89,9 +89,17 @@ export function canSearchMembers(actor: ForumActor, memberStatus: string | null)
   return memberStatus === ZoneMemberStatus.ACTIVE || canModerateZone(actor);
 }
 
-/** Only the question's author may accept an answer (asker-only; no staff override in MVP). */
-export function canAcceptAnswer(actor: ForumActor, questionAuthorId: string): boolean {
-  return actor.userId === questionAuthorId;
+/**
+ * Only the question's author may accept an answer (asker-only; no staff override in MVP), and
+ * never their own answer — self-accept would be a free XP farm (25 XP per thread via the
+ * `forum.answer.accepted` grant).
+ */
+export function canAcceptAnswer(
+  actor: ForumActor,
+  questionAuthorId: string,
+  answerAuthorId: string,
+): boolean {
+  return actor.userId === questionAuthorId && answerAuthorId !== questionAuthorId;
 }
 
 /** Delete a thread: its author, or a zone owner/mod / platform staff (moderation). */
