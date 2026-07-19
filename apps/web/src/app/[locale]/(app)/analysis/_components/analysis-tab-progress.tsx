@@ -16,6 +16,7 @@ import {
   type TrendWindow,
 } from "./analysis-types";
 import { GhostCard } from "./ghost-card";
+import { AnalysisDeepAnalysisCard } from "./analysis-deep-analysis-card";
 import {
   AnalysisWeeklyReviewCard,
   AnalysisWeeklyReviewSkeleton,
@@ -278,7 +279,14 @@ function WeeklyReviewSlot({
   const t = useTranslations("analysis.weekly");
 
   if (extras.status === "ready") {
-    return <AnalysisWeeklyReviewCard review={extras.data} />;
+    return (
+      <>
+        <AnalysisWeeklyReviewCard review={extras.data} />
+        {extras.data.status === "READY" ? (
+          <AnalysisDeepAnalysisCard examId={extras.examId} />
+        ) : null}
+      </>
+    );
   }
 
   if (extras.status === "error") {

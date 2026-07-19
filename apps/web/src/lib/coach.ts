@@ -9,6 +9,7 @@ import type {
   DailyGreetingDto,
   Paginated,
   SessionReflectionDto,
+  WeeklyReviewNarrationDto,
 } from "@mentor/types";
 import type { PlanDraftInput } from "@mentor/validation";
 import { http, httpRaw, throwApiClientError } from "@mentor/api-client";
@@ -241,4 +242,14 @@ export async function requestSessionReflection(
     method: "POST",
     body: JSON.stringify({ sessionId }),
   })) as SessionReflectionDto;
+}
+
+/** Weekly-review AI narration; premium included, free users need the deep-analysis coin unlock (403 otherwise). */
+export async function narrateWeeklyReview(
+  examId: string,
+): Promise<WeeklyReviewNarrationDto> {
+  return (await http<WeeklyReviewNarrationDto>("/v1/coach/weekly-review", {
+    method: "POST",
+    body: JSON.stringify({ examId }),
+  })) as WeeklyReviewNarrationDto;
 }

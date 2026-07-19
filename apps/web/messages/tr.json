@@ -872,6 +872,23 @@
       "start_session": "Seans başlat",
       "retry": "Tekrar dene",
       "load_error": "Haftalık değerlendirme yüklenemedi."
+    },
+    "deep": {
+      "title": "Derin Analiz",
+      "subtitle": "Haftanın AI koç değerlendirmesi",
+      "loading": "Derin analiz yükleniyor",
+      "locked_hint": "Bu haftanın derinlemesine AI değerlendirmesini coin ile açabilirsin.",
+      "unlock_cta": "{cost} coin ile aç",
+      "confirm_cta": "Emin misin? {cost} coin harcanacak",
+      "unlocked_chip": "Açıldı",
+      "premium_chip": "Premium'a dahil",
+      "unlocked_hint": "Bu haftanın derin analizi hazır — getirip okuyabilirsin.",
+      "fetch_cta": "Derin analizi getir",
+      "fetching": "Hazırlanıyor…",
+      "insufficient": "Yeterli coinin yok ({balance}/{cost}). Görev tamamlayarak kazanabilirsin.",
+      "go_earn": "Görevlere git",
+      "suggested_title": "Önerilen görev",
+      "action_error": "Bir şeyler ters gitti, tekrar deneyebilirsin."
     }
   },
   "session": {

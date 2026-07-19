@@ -875,6 +875,23 @@
       "start_session": "Start session",
       "retry": "Try again",
       "load_error": "Weekly review could not be loaded."
+    },
+    "deep": {
+      "title": "Deep Analysis",
+      "subtitle": "This week's AI coach review",
+      "loading": "Loading deep analysis",
+      "locked_hint": "Unlock this week's in-depth AI review with coins.",
+      "unlock_cta": "Unlock for {cost} coins",
+      "confirm_cta": "Are you sure? {cost} coins will be spent",
+      "unlocked_chip": "Unlocked",
+      "premium_chip": "Included in Premium",
+      "unlocked_hint": "This week's deep analysis is ready — fetch it to read.",
+      "fetch_cta": "Get deep analysis",
+      "fetching": "Preparing…",
+      "insufficient": "Not enough coins ({balance}/{cost}). Complete quests to earn more.",
+      "go_earn": "Go to quests",
+      "suggested_title": "Suggested task",
+      "action_error": "Something went wrong, you can try again."
     }
   },
   "session": {
