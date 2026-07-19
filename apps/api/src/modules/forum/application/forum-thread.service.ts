@@ -172,7 +172,7 @@ export class ForumThreadService {
       threadId: row.id,
       authorId: actor.id,
     });
-    const mentionLink = `/community/${zone.type === ZoneType.QA ? "soru" : "mesaj"}/${row.id}`;
+    const mentionLink = `/community/${zone.type === ZoneType.QA ? "question" : "message"}/${row.id}`;
     void this.mentions.dispatch(dto.body, actor.id, mentionLink);
     // fetch with JOIN so authorName is populated in the immediate response
     const rowWithAuthor = await this.threads.findById(row.id, actor.id);

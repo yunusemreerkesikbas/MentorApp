@@ -482,7 +482,7 @@ describe("forum zones (e2e)", () => {
 
     // A different user (admin) requests to join → the owner (user) is notified.
     await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asAdmin());
-    expect(await pollForumNotif(asUser(), `/topluluk/${slug}/yonetim`)).toBe(true);
+    expect(await pollForumNotif(asUser(), `/community/${slug}/yonetim`)).toBe(true);
   });
 
   it("notifications: commenting on a thread notifies its author (in-app, APP-018)", async () => {
@@ -502,7 +502,7 @@ describe("forum zones (e2e)", () => {
       .set(asAdmin())
       .send({ body: "güzel gönderi" });
 
-    expect(await pollForumNotif(asUser(), `/topluluk/mesaj/${threadId}`)).toBe(true);
+    expect(await pollForumNotif(asUser(), `/community/message/${threadId}`)).toBe(true);
   });
 
   it("notifications: an @mention notifies the mentioned user (in-app, APP-018)", async () => {
@@ -523,7 +523,7 @@ describe("forum zones (e2e)", () => {
       .send({ body: `selam @${handle} nasılsın` });
     const threadId = posted.body.id as string;
 
-    expect(await pollForumNotif(asUser(), `/topluluk/mesaj/${threadId}`)).toBe(true);
+    expect(await pollForumNotif(asUser(), `/community/message/${threadId}`)).toBe(true);
   });
 
   it("profile: activity feed + public header (no email); unknown username → 404 (APP-018)", async () => {
@@ -1020,7 +1020,7 @@ describe("forum zones (e2e)", () => {
     expect(feedIds).not.toContain(cThreadId);
 
     // B is notified that A followed them (link → A's profile).
-    expect(await pollForumNotif(asB(), `/topluluk/uye/${aHandle}`)).toBe(true);
+    expect(await pollForumNotif(asB(), `/community/member/${aHandle}`)).toBe(true);
 
     // Self-follow is rejected.
     await request(app.getHttpServer()).put(`/v1/users/${aHandle}/follow`).set(asUser()).expect(400);
