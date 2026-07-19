@@ -56,7 +56,6 @@
 - **B2C web UI polish** — series complete; cross-cutting sweep ([web-shell](../features/web-shell.md)).
 - **B2C web i18n (TR/EN)** — URL-based next-intl; tüm FE static copy `useTranslations`/`getTranslations`, statik
   render + public ISR ([i18n](../features/i18n.md)). Yeni FE işleri localize yapılır (frontend.md §i18n).
-- **`apps/admin` not yet committed** — to be sent as a separate commit/PR (per owner).
 - **B2C web economy/invite UI** (`apps/web`) — earn hub on `/profil` (balance, quests, invite) ([economy](../features/economy.md)); ledger history UI = slice 2 backlog. Requires `economy.enabled=true`.
 - **Migration journal drift** — RECONCILED ([ai](../features/ai.md) — mood AI-adaptive slice): re-added the
   missing `0006_info_articles` journal entry and restored the HEAD snapshot (`meta/0017_snapshot.json`)

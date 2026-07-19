@@ -165,7 +165,7 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
   );
 
   const openMoodDialog = useCallback(
-    (_source: "manual" | "auto" = "manual") => {
+    () => {
       const isMandatory = MOOD_PROMPT_MODE === "mandatory";
 
       if (MOOD_PROMPT_MODE === "soft" && mood == null) {
@@ -227,7 +227,7 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
     if (!mayAutoPrompt) return;
 
     autoPromptAttemptedRef.current = true;
-    openMoodDialog("auto");
+    openMoodDialog();
   }, [mood, openMoodDialog]);
 
   return {
@@ -235,7 +235,7 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
     message,
     reflection,
     reflecting,
-    openMoodDialog: () => openMoodDialog("manual"),
+    openMoodDialog: () => openMoodDialog(),
     needsMoodToday: mood == null,
   };
 }

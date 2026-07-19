@@ -1,7 +1,7 @@
 "use client";
 
 import type { PlanTaskDto } from "@mentor/types";
-import { Card, ProgressBar } from "@mentor/ui";
+import { Card } from "@mentor/ui";
 import { useLocale, useTranslations } from "next-intl";
 import { PlanWeekSkeleton } from "./plan-content-skeleton";
 import { PlanProgress } from "./plan-progress";
