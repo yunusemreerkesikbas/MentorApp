@@ -79,7 +79,7 @@ export function DialogPanel({ dialog, onAction }: DialogPanelProps) {
         </Chip>
       ) : null}
 
-      <div className="flex w-full flex-col gap-3">
+      <div className="flex w-full gap-3">
         {dialog.actions.map((action) => {
           const isBusy = action.busy || dialog.busyActionId === action.id;
           if (action.variant === "link") {

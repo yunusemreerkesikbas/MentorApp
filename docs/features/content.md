@@ -111,11 +111,19 @@ pnpm --filter @mentor/api-client generate
   the content embedding, while startup seed only inserts missing articles. Public articles render a
   visible summary, byline, cover, publication/update/source dates, TR canonical, Article + Breadcrumb
   JSON-LD and sitemap entries; EN remains `noindex,follow` until localized. GA4 loads only after the
-  TR/EN consent choice and receives four PII-free article events. Apply migration `0054`, configure
+  TR/EN consent choice and receives four PII-free article events. Apply migrations through `0056`, configure
   `R2_PUBLIC_BASE_URL`, `NEXT_PUBLIC_GA_MEASUREMENT_ID` and optional Search Console verification.
   Gotcha: body images must be Mentor-storage URLs with non-empty alt text; cover also requires valid
   dimensions. Related: content body sanitizer/service, admin `ArticleForm`, public article route,
   analytics consent provider.
+
+- **Rich article migration ordering repair (2026-07-18)** — Added idempotent forward migration
+  `0056` because databases that had already applied `0055` could skip the older-timestamped `0054`.
+  Run `pnpm --filter @mentor/api db:migrate`; existing upgraded databases remain unchanged.
+
+- **Bilgi → Koç source handoff (2026-07-18)** — The article CTA now passes its slug as explicit
+  first-message context. The coach reads only the matching published article, so missing embeddings
+  no longer produce a false “verified content not found” response.
 
 ## Gotchas / Known issues
 

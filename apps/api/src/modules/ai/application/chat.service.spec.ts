@@ -38,6 +38,10 @@ describe("ChatService coin refund", () => {
   let createConversation: ReturnType<typeof vi.fn>;
   let isOwned: ReturnType<typeof vi.fn>;
   let getMockExam: ReturnType<typeof vi.fn>;
+  let contextBuild: ReturnType<typeof vi.fn>;
+  let getInfoArticleSource: ReturnType<typeof vi.fn>;
+  let searchSimilarArticles: ReturnType<typeof vi.fn>;
+  let llmEmbed: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     llmComplete = vi.fn();
@@ -50,6 +54,14 @@ describe("ChatService coin refund", () => {
     createConversation = vi.fn(async () => CONV_ID);
     isOwned = vi.fn(async () => true);
     getMockExam = vi.fn(async () => MOCK_EXAM);
+    contextBuild = vi.fn(async () => ({
+      examType: null,
+      daysRemaining: null,
+      examDateLabel: null,
+    }));
+    getInfoArticleSource = vi.fn();
+    searchSimilarArticles = vi.fn();
+    llmEmbed = vi.fn();
 
     const config = {
       get: vi.fn(async (key: string) => {
@@ -69,10 +81,10 @@ describe("ChatService coin refund", () => {
     grant.mockResolvedValue({ coinConfirmed: 10 });
 
     service = new ChatService(
-      { complete: llmComplete, completeStream: llmCompleteStream, embed: vi.fn() } as never,
-      { build: vi.fn(async () => ({ examType: null, daysRemaining: null, examDateLabel: null })) } as never,
+      { complete: llmComplete, completeStream: llmCompleteStream, embed: llmEmbed } as never,
+      { build: contextBuild } as never,
       { append: vi.fn(), countSince: vi.fn() } as never,
-      { searchSimilarArticles: vi.fn() } as never,
+      { getInfoArticleSource, searchSimilarArticles } as never,
       config as never,
       entitlement as never,
       {
@@ -142,6 +154,36 @@ describe("ChatService coin refund", () => {
         ],
       }),
     );
+  });
+
+  it("grounds an article CTA directly without requiring an embedding", async () => {
+    contextBuild.mockResolvedValue({ examType: "KPSS", daysRemaining: null, examDateLabel: null });
+    getInfoArticleSource.mockResolvedValue({
+      title: "KPSS Başvuru Süreci",
+      slug: "kpss-basvuru-sureci",
+      sourceUrl: "https://www.osym.gov.tr",
+      snippet: "Doğrulanmış başvuru içeriği",
+    });
+    llmComplete.mockResolvedValue({ text: "Yanıt", promptTokens: 1, completionTokens: 1, model: "fake" });
+
+    const result = await service.reply(
+      USER,
+      "Başvuru sürecini açıklar mısın?",
+      MSG_ID,
+      undefined,
+      undefined,
+      "kpss-basvuru-sureci",
+    );
+
+    expect(getInfoArticleSource).toHaveBeenCalledWith("kpss-basvuru-sureci", "KPSS");
+    expect(llmEmbed).not.toHaveBeenCalled();
+    expect(result.sources).toEqual([
+      {
+        title: "KPSS Başvuru Süreci",
+        slug: "kpss-basvuru-sureci",
+        url: "https://www.osym.gov.tr",
+      },
+    ]);
   });
 
   it("persists the exchange only after a successful reply", async () => {

@@ -625,6 +625,26 @@ export class ContentService {
     );
   }
 
+  /** Exact published article selected by a Bilgi → Coach handoff. */
+  async getInfoArticleSource(
+    slug: string,
+    family: string,
+  ): Promise<{ title: string; slug: string; sourceUrl: string; snippet: string } | null> {
+    const article = await this.getInfoArticleBySlug(slug);
+    if (article.family !== family) return null;
+    const text = await articleBodyToPlainText(
+      article.body,
+      article.bodyFormat,
+      this.articleBodyImagePrefix(),
+    );
+    return {
+      title: article.title,
+      slug: article.slug,
+      sourceUrl: article.sourceUrl,
+      snippet: text.slice(0, 400),
+    };
+  }
+
   /**
    * Admin article list — includes drafts. MUST run in SERVICE context: the info_articles RLS
    * `public_read` policy only exposes published rows to anon/pool reads; SERVICE/ADMIN sees drafts.

@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { CoachingModule } from "../coaching/coaching.module";
 import { IdentityModule } from "../identity/identity.module";
 import { PaymentsModule } from "../payments/payments.module";
+import { DeepAnalysisService } from "./application/deep-analysis.service";
 import { EconomyService } from "./application/economy.service";
 import { ForumEventsListener } from "./application/forum-events.listener";
 import { ThreadPostedListener } from "./application/thread-posted.listener";
@@ -36,10 +37,11 @@ import { EconomyController } from "./presentation/economy.controller";
     QuestRepository,
     QuestEventsListener,
     StreakRescueService,
+    DeepAnalysisService,
     SessionCompletedListener,
     ForumEventsListener,
     ThreadPostedListener,
   ],
-  exports: [EconomyService, InviteService, QuestService],
+  exports: [EconomyService, InviteService, QuestService, DeepAnalysisService],
 })
 export class EconomyModule {}

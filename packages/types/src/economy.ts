@@ -33,6 +33,20 @@ export interface StreakRescueView {
   canAfford: boolean;
 }
 
+/** GET/POST /v1/economy/deep-analysis — weekly deep-analysis unlock state (coin sink). */
+export interface DeepAnalysisView {
+  /** The weekly review is READY — there is a report to unlock. */
+  eligible: boolean;
+  /** ISO start date of the review week; null when not eligible. */
+  weekStart: string | null;
+  cost: number;
+  coinConfirmed: number;
+  canAfford: boolean;
+  /** Unlocked for this exam+week (purchased, or included via premium). */
+  unlocked: boolean;
+  premium: boolean;
+}
+
 export type QuestCategory = "daily_ritual" | "weekly_ritual" | "milestone" | "onboarding";
 export type QuestPeriod = "daily" | "weekly" | "once";
 export type QuestRewardUnit = "XP" | "COIN" | "NONE";

@@ -57,6 +57,7 @@ export class AiChatController {
       dto.clientMessageId,
       dto.conversationId,
       dto.contextMockExamId,
+      dto.contextArticleSlug,
     );
   }
 
@@ -77,6 +78,7 @@ export class AiChatController {
       dto.clientMessageId,
       dto.conversationId,
       dto.contextMockExamId,
+      dto.contextArticleSlug,
     );
     // Pre-stream gating: let the first pull throw before SSE headers are committed.
     const first = await stream.next();

@@ -35,18 +35,19 @@ export function buildCoachMockExamHref(
   };
 }
 
-export function resolvePendingMockExamContext(
-  contextMockExamId: string | null,
-  appliedContextMockExamId: string | null,
+export function resolvePendingCoachContext(
+  context: string | null,
+  appliedContext: string | null,
 ): string | undefined {
-  return contextMockExamId && contextMockExamId !== appliedContextMockExamId
-    ? contextMockExamId
+  return context && context !== appliedContext
+    ? context
     : undefined;
 }
 
-export function removeMockExamContextFromUrl(href: string): string {
+export function removeCoachContextFromUrl(href: string): string {
   const url = new URL(href);
   url.searchParams.delete("contextMockExamId");
+  url.searchParams.delete("contextArticleSlug");
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
@@ -69,6 +70,7 @@ export async function sendCoachMessage(
   clientMessageId?: string,
   conversationId?: string,
   contextMockExamId?: string,
+  contextArticleSlug?: string,
 ): Promise<CoachReply> {
   return (await http<CoachReply>("/v1/coach/chat", {
     method: "POST",
@@ -77,6 +79,7 @@ export async function sendCoachMessage(
       ...(clientMessageId ? { clientMessageId } : {}),
       ...(conversationId ? { conversationId } : {}),
       ...(contextMockExamId ? { contextMockExamId } : {}),
+      ...(contextArticleSlug ? { contextArticleSlug } : {}),
     }),
   })) as CoachReply;
 }
@@ -100,6 +103,7 @@ export async function streamCoachMessage(
   onDelta: (delta: string) => void,
   conversationId?: string,
   contextMockExamId?: string,
+  contextArticleSlug?: string,
 ): Promise<CoachReply> {
   const res = await httpRaw("/v1/coach/chat/stream", {
     method: "POST",
@@ -108,11 +112,18 @@ export async function streamCoachMessage(
       ...(clientMessageId ? { clientMessageId } : {}),
       ...(conversationId ? { conversationId } : {}),
       ...(contextMockExamId ? { contextMockExamId } : {}),
+      ...(contextArticleSlug ? { contextArticleSlug } : {}),
     }),
   });
   if (!res.ok) await throwApiClientError(res);
   if (!res.body) {
-    return sendCoachMessage(message, clientMessageId, conversationId, contextMockExamId);
+    return sendCoachMessage(
+      message,
+      clientMessageId,
+      conversationId,
+      contextMockExamId,
+      contextArticleSlug,
+    );
   }
   return readCoachSseStream(res.body, onDelta);
 }

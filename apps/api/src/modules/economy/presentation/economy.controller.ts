@@ -1,16 +1,17 @@
 import { Body, Controller, Get, HttpStatus, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { EconomyLedgerEntryView, StreakRescueView } from "@mentor/types";
+import type { DeepAnalysisView, EconomyLedgerEntryView, StreakRescueView } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
+import { DeepAnalysisService } from "../application/deep-analysis.service";
 import { EconomyService } from "../application/economy.service";
 import { InviteService } from "../application/invite.service";
 import { QuestService, type QuestProgressView } from "../application/quest.service";
 import { StreakRescueService } from "../application/streak-rescue.service";
 import type { Balance } from "../infrastructure/ledger.repository";
-import { EconomyLedgerQueryDto, RedeemInviteDto } from "./economy.dto";
+import { DeepAnalysisDto, EconomyLedgerQueryDto, RedeemInviteDto } from "./economy.dto";
 import { toLedgerEntryView } from "./ledger-entry-view";
 
 /**
@@ -26,6 +27,7 @@ export class EconomyController {
     private readonly invites: InviteService,
     private readonly quests: QuestService,
     private readonly streakRescue: StreakRescueService,
+    private readonly deepAnalysis: DeepAnalysisService,
     private readonly config: ConfigRegistryService,
   ) {}
 
@@ -76,6 +78,26 @@ export class EconomyController {
   async streakRescuePurchase(@CurrentUser() user: RequestUser): Promise<StreakRescueView> {
     await this.assertEnabled();
     return this.streakRescue.purchase(user.id);
+  }
+
+  /** Deep-analysis unlock state (coin sink): review eligibility + cost + unlock. */
+  @Get("deep-analysis")
+  async deepAnalysisState(
+    @CurrentUser() user: RequestUser,
+    @Query() query: DeepAnalysisDto,
+  ): Promise<DeepAnalysisView> {
+    await this.assertEnabled();
+    return this.deepAnalysis.getState(user.id, user.roles, query.examId);
+  }
+
+  /** Unlock this week's deep analysis (idempotent; 422 when not eligible / insufficient coin). */
+  @Post("deep-analysis")
+  async deepAnalysisPurchase(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: DeepAnalysisDto,
+  ): Promise<DeepAnalysisView> {
+    await this.assertEnabled();
+    return this.deepAnalysis.purchase(user.id, user.roles, dto.examId);
   }
 
   @Post("invite/redeem")

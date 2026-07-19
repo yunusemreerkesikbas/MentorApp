@@ -26,3 +26,9 @@ export const redeemInviteSchema = z.object({
   code: z.string().trim().min(4).max(64),
 });
 export type RedeemInvite = z.infer<typeof redeemInviteSchema>;
+
+/** Deep-analysis unlock (coin sink): the exam whose weekly review is being unlocked. */
+export const deepAnalysisSchema = z.object({
+  examId: z.string().uuid(),
+});
+export type DeepAnalysis = z.infer<typeof deepAnalysisSchema>;

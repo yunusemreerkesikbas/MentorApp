@@ -6,14 +6,17 @@ import CreditCard from "lucide-react/dist/esm/icons/credit-card.mjs";
 import CalendarDays from "lucide-react/dist/esm/icons/calendar-days.mjs";
 import GraduationCap from "lucide-react/dist/esm/icons/graduation-cap.mjs";
 import LogOut from "lucide-react/dist/esm/icons/log-out.mjs";
-import { Link } from "@/i18n/navigation";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2.mjs";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useState } from "react";
 import type { ReactElement } from "react";
 import type { AuthUser, ExamType } from "@mentor/types";
-import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
+import { ApiClientError, http, usersControllerUpdateMe } from "@mentor/api-client";
 import { Card, SectionHeading } from "@mentor/ui";
 import { useAuth } from "@/lib/auth-context";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
+import { useMentorDialog } from "@/lib/mentor-dialog";
+import { FormError } from "@/components/form";
 import { useMentorToast } from "@/lib/mentor-toast";
 
 export function ListRow({
@@ -25,8 +28,10 @@ export function ListRow({
   onClick,
   showChevron = true,
   trailing,
+  danger = false,
 }: {
   children: string;
+  danger?: boolean;
   description?: number | string;
   externalHref?: string;
   href?: string;
@@ -37,10 +42,10 @@ export function ListRow({
 }) {
   const className =
     "flex min-h-[60px] w-full min-w-0 items-center justify-between gap-3 bg-white px-3 py-2 text-left transition-colors hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
-  const style = { color: "var(--color-main)" };
+  const style = { color: danger ? "var(--color-danger)" : "var(--color-main)" };
   const label = (
     <span className="flex min-w-0 items-center gap-3">
-      <span className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]">
+      <span className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]" style={style}>
         {icon}
       </span>
       <span className="min-w-0">
@@ -116,9 +121,13 @@ export function AccountLinksCard({
   const tExam = useTranslations("profile.exam_settings");
   const locale = useLocale();
   const { logout } = useAuth();
+  const router = useRouter();
   const { actionSheet } = useMentorBottomSheet();
   const toast = useMentorToast();
+  const { confirm } = useMentorDialog();
   const [savingExam, setSavingExam] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const joined = new Intl.DateTimeFormat(locale, {
     month: "long",
     year: "numeric",
@@ -159,6 +168,35 @@ export function AccountLinksCard({
     }
   }
 
+  async function deleteAccount() {
+    if (deleting) return;
+
+    const confirmed = await confirm({
+      title: t("delete_account.title"),
+      message: t("delete_account.description"),
+      confirmLabel: t("delete_account.confirm_cta"),
+      cancelLabel: t("delete_account.cancel"),
+    });
+    if (!confirmed) return;
+
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      await http<void>("/v1/account", { method: "DELETE" });
+      await logout();
+      router.replace("/");
+    } catch (err) {
+      setDeleteError(
+        err instanceof ApiClientError
+          ? err.body.message
+          : err instanceof Error
+            ? err.message
+            : String(err),
+      );
+      setDeleting(false);
+    }
+  }
+
   return (
     <Card solid className="p-4">
       <SectionHeading>{tAccount("title")}</SectionHeading>
@@ -187,7 +225,18 @@ export function AccountLinksCard({
         >
           {tAccount("logout")}
         </ListRow>
+        <ListRow
+          danger
+          icon={<Trash2 size={20} aria-hidden />}
+          onClick={() => void deleteAccount()}
+          showChevron={false}
+        >
+          {deleting ? t("delete_account.deleting") : t("delete_account.cta")}
+        </ListRow>
       </div>
+      {deleteError ? (
+        <div className="mt-3"><FormError message={deleteError} /></div>
+      ) : null}
     </Card>
   );
 }

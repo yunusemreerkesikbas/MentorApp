@@ -24,6 +24,9 @@ export class AiChatDto extends createZodDto(aiChatSchema) {
 
   @ApiPropertyOptional({ format: "uuid" })
   override contextMockExamId?: string;
+
+  @ApiPropertyOptional({ maxLength: 128, pattern: "^[a-z0-9-]+$" })
+  override contextArticleSlug?: string;
 }
 /** Body for POST /v1/coach/plan-draft (optional free-text wish). */
 export class PlanDraftBodyDto extends createZodDto(planDraftSchema) {

@@ -71,8 +71,8 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /v1/coach/chat` | AI coach chat (multi-turn, RAG-grounded) |
-| `POST /v1/coach/chat/stream` | Streaming chat (SSE over POST; delta → done/error) |
+| `POST /v1/coach/chat` | AI coach chat (multi-turn, RAG-grounded; optional `contextArticleSlug`) |
+| `POST /v1/coach/chat/stream` | Streaming chat (SSE; optional `contextArticleSlug`; delta → done/error) |
 | `POST /v1/coach/conversations/:id/regenerate/stream` | Regenerate the last coach reply (SSE; same spend as a message) |
 | `GET /v1/coach/conversations` | The user's chat threads, most-recently-active first |
 | `GET /v1/coach/conversations/:id/messages` | One thread's paginated history |
@@ -518,3 +518,7 @@ pnpm --filter @mentor/api test -- --grep "ai"
   `koc-chat-shell.tsx`, `apps/web/src/lib/coach.ts`, generated OpenAPI client.
 
 - **Single-question topic classification (2026-07-15)** — The Premium vision contract returns one `subjectSlug` and optional `topicSlug` from the active exam whitelist; the prompt keeps the no-solving/no-explanation guardrail. The server verifies the parent relation: an invalid topic falls back to the valid subject, while an invalid subject yields an empty result. Usage: upload one question photo in `Yanlışlarım`. Gotcha: OCR, confidence, and correction CRUD remain out of scope; photo/topic signals are not added to the AI coach prompt. Related: `vision.port.ts`, vision adapters, `photo-categorize.service.ts`.
+
+- **Bilgi makalesinden kesin kaynak aktarımı (2026-07-18)** — Bilgi → Koç CTA'sı ilk mesajda
+  `contextArticleSlug` taşır. Backend yalnız yayımlanmış ve kullanıcının sınav ailesiyle eşleşen
+  makaleyi kaynak yapar; ilk yanıt embedding backfill'ine bağlı değildir.

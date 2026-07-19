@@ -574,9 +574,6 @@
       "title": "Hesabımı sil",
       "description": "Hesabın ve verilerin kalıcı olarak silinir: koç sohbetlerin, notların, hedef panon ve yüklediğin fotoğraflar. Aktif aboneliğin varsa iptal edilir. Fatura kayıtları yasal saklama yükümlülüğü gereği korunur. Bu işlem geri alınamaz.",
       "cta": "Hesabımı sil",
-      "confirm_phrase": "HESABIMI SİL",
-      "confirm_hint": "Onaylamak için aşağıya {phrase} yaz.",
-      "confirm_label": "Onay metni",
       "confirm_cta": "Kalıcı olarak sil",
       "deleting": "Siliniyor…",
       "cancel": "Vazgeç"

@@ -28,6 +28,11 @@ export interface AiChatDto {
   clientMessageId?: string;
   conversationId?: string;
   contextMockExamId?: string;
+  /**
+   * @maxLength 128
+   * @pattern ^[a-z0-9-]+$
+   */
+  contextArticleSlug?: string;
 }
 
 export interface PlanDraftBodyDto {
@@ -196,7 +201,7 @@ window?: CommunityControllerGetLeaderboardWindow;
 export type CommunityControllerGetLeaderboardWindow = typeof CommunityControllerGetLeaderboardWindow[keyof typeof CommunityControllerGetLeaderboardWindow];
 
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
+
 export const CommunityControllerGetLeaderboardWindow = {
   today: 'today',
   weekly: 'weekly',
@@ -224,9 +229,6 @@ export type healthControllerLivenessResponseSuccess = (healthControllerLivenessR
 export type healthControllerLivenessResponse = (healthControllerLivenessResponseSuccess)
 
 export const getHealthControllerLivenessUrl = () => {
-
-
-
 
   return `/v1/health`
 }
@@ -3564,9 +3566,6 @@ export type adminContentControllerCreateImageUploadUrlResponseSuccess = (adminCo
 export type adminContentControllerCreateImageUploadUrlResponse = (adminContentControllerCreateImageUploadUrlResponseSuccess)
 
 export const getAdminContentControllerCreateImageUploadUrlUrl = () => {
-
-
-
 
   return `/v1/admin/content/articles/images/upload-url`
 }

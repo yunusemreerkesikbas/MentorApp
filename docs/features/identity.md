@@ -85,6 +85,7 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **Hesap silme UI sadeleştirmesi (2026-07-18)** — `/profil`deki ayrı “Tehlikeli bölge” kartı kaldırıldı; **Hesap** kartına kırmızı “Hesabımı sil” satırı eklendi. Usage: satıra dokununca mevcut paylaşılan onay dialogu geri alınamazlık, silinen veriler, abonelik iptali ve yasal olarak korunan fatura kayıtları açıklamasıyla açılır; kullanıcı onay verirse mevcut `DELETE /v1/account` çağrılır. Gotcha: silme hâlâ sunucu tarafındaki KVKK anonimleştirme akışını kullanır; yeni endpoint veya modal altyapısı yoktur. Related: `account-links-card.tsx`, `mentor-dialog.ts`, `profile.spec.ts`.
 - **Profil bio + web sitesi (APP-024)** — Kullanıcı artık kendisi hakkında kısa bir **bio** + bir **web
   sitesi** linki girip düzenleyebiliyor ("profil kartı sosyal alanları" backlog'unun son parçası). `users`
   tablosuna iki nullable kolon (`bio`, `website` — migration `0042`). `updateMeSchema`'ya `bio` (≤200) +

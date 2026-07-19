@@ -577,9 +577,6 @@
       "title": "Delete my account",
       "description": "Your account and data are permanently deleted: coach chats, notes, goal board and uploaded photos. An active subscription is cancelled. Invoice records are kept as required by law. This cannot be undone.",
       "cta": "Delete my account",
-      "confirm_phrase": "DELETE MY ACCOUNT",
-      "confirm_hint": "Type {phrase} below to confirm.",
-      "confirm_label": "Confirmation text",
       "confirm_cta": "Delete permanently",
       "deleting": "Deleting…",
       "cancel": "Cancel"
