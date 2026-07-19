@@ -15,7 +15,7 @@
 | **W3 AI** | 🟡 | premium AI coach chat + persisted conversations · **SSE streaming** · **RAG grounding + source links** · **coin→AI chat spend** · **photo→subject/topic categorize** · mood/ghost AI narration · **real OpenAI contract hardening** ([ai](../features/ai.md)) | model eval + Responses API migration |
 | **W4 Payments** | ✅ | PaymentsPort fake/iyzico, trial state machine, entitlement + PremiumGuard, idempotent webhook, /abonelik, abonelik UI polish ([payments](../features/payments.md)) | iyzico prod keys + e-archive (Phase-0 ops) |
 | **W5 Notifications** | ✅ | JobQueuePort + cron runner, Postmark email, web push, daily reminders; in-app inbox + SSE real-time bell; notification tap navigation (linkUrl); contextual motivational notifications (streak milestone / low mood / first session / plan completed — event-driven, template, deduped) ([notifications](../features/notifications.md)) | Phase 2: AI frekans ayarı |
-| **W6 Admin + Economy** | ✅ | see breakdown below — all MVP slices shipped ([admin](../features/admin.md) · [economy](../features/economy.md)) | Phase 2: habit/milestone quests |
+| **W6 Admin + Economy** | ✅ | see breakdown below — all MVP slices shipped incl. weekly quests + refund reversal + deep-analysis sink (APP-025) ([admin](../features/admin.md) · [economy](../features/economy.md)) | Phase 2: forum coin, Redis leaderboard |
 | **W7 Forum / Community** | ✅ | Phase-2 feature **pulled into MVP** (design [`plans/2026-06-22`](../plans/2026-06-22-forum-community-design.md)) — see breakdown below. Backend (zones · feed · QA+XP+search · moderation · public SEO) + web (participation · moderation tools · public QA pages · unified layout + author display). **51 backend tests green.** Behind `forum.enabled` flag ([forum](../features/forum.md)) | Phase 2: verification tiers · coin rewards · C-layer (AI ingest) · mahalle/live rooms · Tier-1 auto-moderation |
 
 ## W6 breakdown (this stream's focus)
@@ -64,7 +64,8 @@
   timestamp**, forward-only. Caveat: a local DB that already skipped 0006 won't auto-apply it (drizzle
   applies `when > last`) — apply `0006_info_articles.sql` once by hand if `info_articles` is missing.
 - **Economy reconcile** — invite reward on transient grant failure isn't retried (cap denial is by
-  design); outbox/retry = Phase 2. Coin reversal (churn/refund) = Phase 2.
+  design); outbox/retry = Phase 2. Refund coin reversal shipped (APP-025, refund-only +
+  clamp-to-zero); churn-based reversal deliberately not implemented.
 - **Local RLS masking** — local `mentor` DB user is superuser → RLS bypassed locally; always verify
   RLS-sensitive reads (admin drafts, etc.) run in the right context (caught for content editor).
 - **Forum / community (W7)** — entire surface gated by `forum.enabled` (default **off**); flip per

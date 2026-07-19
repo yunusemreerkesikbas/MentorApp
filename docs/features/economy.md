@@ -1,8 +1,9 @@
 # Economy
 
 > Light append-only ledger substrate: XP reputation + non-monetary Coin (→ earned AI right). Module:
-> `modules/economy`. Workstream: W6. Roadmap: MVP light substrate shipped; Phase 2 adds
-> habit/milestone quests, coin reversal, real economy expansion.
+> `modules/economy`. Workstream: W6. Roadmap: MVP substrate + weekly quests + refund reversal +
+> deep-analysis sink shipped (APP-025, launch-ready); Phase 2 = forum coin, Redis leaderboard,
+> mahalle, real economy expansion.
 
 ## Overview
 
@@ -63,10 +64,51 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 | `POST /v1/economy/invite/redeem` | Redeem invite code |
 | `GET /v1/economy/streak-rescue` | Streak-rescue offer (eligible? cost? affordable?) |
 | `POST /v1/economy/streak-rescue` | Buy the freeze for the break day (coin sink, idempotent) |
+| `GET /v1/economy/deep-analysis?examId=` | Deep-analysis unlock state (eligible? cost? unlocked?) |
+| `POST /v1/economy/deep-analysis` | Unlock this week's deep analysis (coin sink, idempotent) |
 | `POST /v1/admin/users/:id/economy/adjust` | Admin manual adjust (audited) |
 
 ## Geliştirmeler (timeline)
 
+- **Derin analiz coin sink'i (APP-025 WP-C, 2026-07-19)** — Üçüncü coin harcama yeri:
+  `GET/POST /v1/economy/deep-analysis` — premium'a dahil haftalık AI değerlendirme anlatımı
+  (`POST /v1/coach/weekly-review`, web'de ilk kez tüketiliyor) free kullanıcıya (sınav, ISO-hafta)
+  başına tek seferlik `economy.coin.deep_analysis_cost` (default 25) ile açılır. Unlock durumu =
+  ledger spend satırı varlığı (`deep_analysis`, `userId:examId:weekStart`) — tablo yok, apply adımı
+  ve refund yok (satın alınan şey kalıcı unlock satırının kendisi; narration hatası ücretsiz retry,
+  sonuç `weekly_review_cache`'te). Eligibility harcamadan ÖNCE (review READY şartı) →
+  `DEEP_ANALYSIS_NOT_ELIGIBLE` 422. Narration gate: `!premium` → `economy.enabled` VE
+  `DeepAnalysisService.isUnlocked` şartı, yoksa eskisi gibi `PAYMENT_PREMIUM_REQUIRED`. Web:
+  `/analysis` gelişim tab'inde READY weekly review altında kart — premium doğrudan getirir, free
+  iki-dokunuş onaylı unlock (streak-rescue UX emsali), yetersiz coin → görev hub'ına link, flag
+  kapalıysa gizli. AI chat bölgesinde DEĞİL (§4 #3). Dosyalar: `deep-analysis.service.ts`,
+  `economy.controller.ts`, `weekly-review-narration.service.ts`, `analysis-deep-analysis-card.tsx`.
+- **Quest v3 — haftalık ritüel görevleri + kill-switch (APP-025 WP-B, 2026-07-19)** — Üç haftalık
+  görev (ISO-hafta dönemli, `period_key` = `2026-W29`): `weekly.focus-sessions` (hedef config, 5),
+  `weekly.plan-tasks` (hedef config, 10), `weekly.streak-full-week` (7/7 aktif gün — doğası gereği
+  ancak haftanın son günü tamamlanır, bilinçli). Ödül `economy.quest.weekly_ritual_reward_xp` (20,
+  yalnız XP — salt aktiviteye coin verilmez). Haftalık sinyaller coaching'den
+  (`DailyQuestSignalService`: `weekKey`, haftalık seans/görev/aktif-gün sayaçları; economy coaching
+  tablosu okumaz). `{target}` başlık şablonu view-time config'ten çözülür. **Kill-switch:**
+  `economy.quest.disabled_ids` (CSV) — admin herhangi bir görevi deploy'suz kapatır (listelenmez +
+  grant edilmez). Web: quests card'da "Bu Hafta" tab'ı; gün-bazlı olmayan sayaçlar artık "X/Y gün"
+  yerine "X/Y" gösterir. Dosyalar: `date.util.ts`, `daily-quest-signal.service.ts`,
+  `quest.catalog.ts`, `quest.service.ts`, `config.catalog.ts`, `economy-quests-card.tsx`.
+- **Sertleştirme: advisory lock + refund reversal + ledger etiketleri (APP-025 WP-A, 2026-07-19)** —
+  (1) **F1 kapandı:** `pg_advisory_xact_lock(hashtextextended('economy:'||userId, 0))` cap'li grant
+  ve spend yollarının SERVICE tx'inde ilk statement — eşzamanlı cap-aşımı ve farklı-refId'li çifte
+  harcama pencereleri kapandı (tx-scoped, reentrant; XP ve `enforceLimits:false` saf insert, lock
+  yok). (2) **Refund'da davet ödülü geri alma:** `refundLastCharge` commit sonrası
+  `payments.payment.refunded` emit eder → `RefundEventsListener` → `InviteService.onInvitedRefunded`
+  → `EconomyService.reverse` (`invite.reverted`, refId = redemption id). Politika: **refund-only**
+  (dönem sonu iptalde ödül kalır — ödemesi alınmıştı) + **clamp-to-zero** (bakiye asla eksiye
+  düşmez; harcanmışsa kalan kısım silinmez, `note: orig:<amount>`). Idempotent: reversal refId
+  pre-check + unique index; grant hiç düşmemişse (cap-denied) no-op. Onboarding `first-subscription`
+  coin'i v1'de geri alınmaz (bilinçli — istismar vektörü davet ödülü). (3) Ledger TR etiketleri:
+  `streak.freeze.purchase/refund`, `invite.reverted`, `analysis.deep.purchase` artık genel
+  "Ekonomi hareketi" yerine anlamlı başlık taşır. Dosyalar: `ledger.repository.ts`,
+  `economy.service.ts`, `invite.service.ts`, `refund-events.listener.ts`, `payments.events.ts`,
+  `subscriptions.service.ts`, `ledger-entry-view.ts`.
 - **Economy hardening + streak-rescue coin sink (2026-07-18)** — İkinci coin harcama yeri geldi:
   `GET/POST /v1/economy/streak-rescue`, aylık ücretsiz havuz yetmediğinde derivation'ın KOPTUĞU
   tek-boşluk gününü `economy.coin.streak_freeze_cost` (default 20) coin ile dondurur (walk en yeni
@@ -171,10 +213,20 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 - **Invite: forward-only** — reward fires only on conversion AFTER redeem. Premium-at-redeem rejected.
 - **Free daily coin cap** counts ledger rows with `reason=ai.chat.spend` in rolling 24h.
 - **LLM fail after spend** → compensating `ai.chat.refund` grant (logged if refund fails).
-- **Churn/refund reversal** = Phase 2 (negative compensating entry).
-- **F1 (backlog — REQUIRED before more organic earning):** cap check + append are atomic now
-  (fixed in 0022), but advisory-lock = backlog for extreme concurrency.
-- **Weekly ritual quests / richer milestones** = backlog (weekly period rules and future totals need a product pass).
+- **Refund reversal is refund-only + clamp-to-zero** (APP-025): a period-end cancel keeps the
+  inviter's reward (the period was paid); a spent-down balance forfeits the un-reversible remainder
+  (recorded in `note`). Churn-based reversal deliberately NOT implemented.
+- **F1 resolved (APP-025):** per-user `pg_advisory_xact_lock` serializes capped grants + spends
+  beyond single-tx atomicity. XP grants and `enforceLimits:false` corrections skip the lock (pure
+  inserts).
+- **Quest lifecycle rules (APP-025):** quest ids are IMMUTABLE and never reused (they key
+  `user_quest_progress` + ledger refs). Removing a quest = add its id to
+  `economy.quest.disabled_ids` first (deploy-free), delete the catalog code in a later release;
+  progress + ledger history stays, an unknown-id ledger row falls back to the generic label.
+  `weekly.streak-full-week` is only completable on the week's last day (by design).
+- **Deep-analysis unlock has no refund leg** (by design): the ledger spend row IS the unlock; a
+  narration/LLM failure after purchase retries free (cache in `weekly_review_cache`). Eligibility
+  (review READY) is checked BEFORE spending, so an ungeneratable report can't be bought.
 
 ## Related
 

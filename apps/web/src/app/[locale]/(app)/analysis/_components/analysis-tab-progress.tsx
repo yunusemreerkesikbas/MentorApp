@@ -283,7 +283,7 @@ function WeeklyReviewSlot({
       <>
         <AnalysisWeeklyReviewCard review={extras.data} />
         {extras.data.status === "READY" ? (
-          <AnalysisDeepAnalysisCard examId={extras.examId} />
+          <AnalysisDeepAnalysisCard key={extras.examId} examId={extras.examId} />
         ) : null}
       </>
     );

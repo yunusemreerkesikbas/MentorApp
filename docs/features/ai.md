@@ -93,6 +93,12 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **Weekly-review narration: coin unlock gate (APP-025, 2026-07-19)** — `POST /v1/coach/weekly-review`
+  artık salt premium değil: `!premium` ise `economy.enabled` VE o (sınav, hafta) için derin analiz
+  unlock'ı (`DeepAnalysisService.isUnlocked`, ledger spend satırı) şartıyla geçer; yoksa eskisi gibi
+  `PAYMENT_PREMIUM_REQUIRED` 403. Evidence artık premium kontrolünden önce okunur (weekStart gate
+  için gerekli); budget/metering/cache değişmedi. Web'de ilk tüketici: `/analysis` derin analiz kartı
+  (bkz. [economy.md](./economy.md)). AI chat bölgesinde coin UI yok (§4 #3).
 - **Coach source naming and localized routes (2026-07-19)** — Web source folders, components, symbols,
   tests, and the hero asset moved from `koc-*`/`Koc*` to `coach-*`/`Coach*`; Turkish users still
   navigate through `/koc` and `/koc/sohbet`, while English uses `/en/coach` and

@@ -33,9 +33,9 @@ export function AnalysisDeepAnalysisCard({ examId }: { examId: string }) {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(false);
 
+  // Mounted with key={examId} — an exam switch remounts with a fresh "loading" initial state.
   useEffect(() => {
     let cancelled = false;
-    setState({ status: "loading" });
     fetchDeepAnalysis(examId)
       .then((view) => {
         if (cancelled) return;
@@ -66,7 +66,7 @@ export function AnalysisDeepAnalysisCard({ examId }: { examId: string }) {
   }
 
   // Two-tap confirm (streak-rescue precedent): first tap arms, second tap spends.
-  async function handleUnlockClick(view: DeepAnalysisView) {
+  async function handleUnlockClick() {
     if (!armed) {
       setArmed(true);
       return;
@@ -151,7 +151,7 @@ export function AnalysisDeepAnalysisCard({ examId }: { examId: string }) {
           <p className="text-sm leading-6" style={{ color: "var(--color-secondary)" }}>
             {t("locked_hint")}
           </p>
-          <Button type="button" onClick={() => void handleUnlockClick(view)} disabled={busy}>
+          <Button type="button" onClick={() => void handleUnlockClick()} disabled={busy}>
             {busy ? (
               <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
             ) : (

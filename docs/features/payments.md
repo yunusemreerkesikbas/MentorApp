@@ -69,6 +69,12 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+- **`payments.payment.refunded` event'i (APP-025, 2026-07-19)** — `refundLastCharge` artık tx
+  commit SONRASI `payments.payment.refunded` (`PaymentRefunded {userId, subscriptionId,
+  amountMinor}`) emit eder (webhook side-effect disiplini: rollback hiçbir şey yayınlamaz).
+  Tüketici: economy `RefundEventsListener` — iade edilen kullanıcının davetçisinin dönüşüm ödülünü
+  geri alır (refund-only + clamp-to-zero; bkz. [economy.md](./economy.md)). Refund akışının kendisi
+  değişmedi (record-only, capped).
 - **English payments/account source naming (2026-07-19)** — Subscription and profile source folders,
   components, and symbols now use English canonical names. Public Turkish paths remain
   `/abonelik`, `/abonelik/sonuc`, and `/profil`; English uses `/en/subscription`,
