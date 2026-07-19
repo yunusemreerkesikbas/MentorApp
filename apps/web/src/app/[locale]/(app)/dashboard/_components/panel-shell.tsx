@@ -452,8 +452,10 @@ function PanelTopBar({ balance, name }: { balance: EconomyBalance | null; name?:
 
 function EconomyPill({ balance }: { balance: EconomyBalance | null }) {
   const t = useTranslations("panel");
-  const confirmed = balance?.coinConfirmed ?? 0;
-  const xp = balance?.xp ?? 0;
+  // Economy off (404) or not yet loaded → no pill; a "0 0" pill would leak a dormant surface.
+  if (!balance) return null;
+  const confirmed = balance.coinConfirmed;
+  const xp = balance.xp;
 
   return (
     <div

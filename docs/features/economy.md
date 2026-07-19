@@ -70,6 +70,17 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+- **Economy flip provası — 10/10 smoke PASS (2026-07-19)** — `economy.enabled` ilk kez uçtan uca
+  canlı prova edildi (lokal dev, all-fake providers + gerçek browser): admin config bound'ları +
+  audit, balance/UI açılışı, günlük+haftalık görev grant'leri (period `2026-W29`), davet →
+  webhook dönüşüm (+20) → admin refund reversal (−20 clamp, ikinci refund idempotent), streak
+  rescue 2-tap (−20 + freeze satırı), derin analiz 2-tap (−25, narration render, double-debit yok),
+  `/koc` guardrail temiz, kill-switch (disable→gizli+grant yok, clear→anında geri), flip-off
+  (404'lar + UI gizleme + narration 403). Prova runbook'u: [core/setup.md](../core/setup.md)
+  § Economy smoke test. **Bulunan ve düzeltilen:** panel `EconomyPill` flag kapalıyken "0 0"
+  render ediyordu → balance null'da artık hiç render olmaz (dormant yüzey sızıntısı). Gotcha
+  notları: weekly review GEÇEN tamamlanmış haftayı `ended_at` ile değerlendirir (lokal test
+  backdate ister); route rename sonrası bayat `.next` cache tüm sayfaları 404 yapar.
 - **Derin analiz coin sink'i (APP-025 WP-C, 2026-07-19)** — Üçüncü coin harcama yeri:
   `GET/POST /v1/economy/deep-analysis` — premium'a dahil haftalık AI değerlendirme anlatımı
   (`POST /v1/coach/weekly-review`, web'de ilk kez tüketiliyor) free kullanıcıya (sınav, ISO-hafta)
@@ -232,4 +243,5 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 - Seam: [ai.md](./ai.md) (coin spend), [forum.md](./forum.md) (XP on accepted answer),
   [payments.md](./payments.md) (subscription event), [admin.md](./admin.md) (config/economy UI)
+- Smoke: [core/setup.md](../core/setup.md) § Economy smoke test (pre-flip, 10 adım)
 - Status: [core/mvp-status.md](../core/mvp-status.md) (W6 breakdown)
