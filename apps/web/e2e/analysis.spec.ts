@@ -123,6 +123,14 @@ test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({ page }
   });
 
   const developmentTab = page.getByRole("tab", { name: "Gelişim" });
+  await expect(developmentTab).toHaveAttribute(
+    "aria-controls",
+    "analysis-panel-progress",
+  );
+  await expect(page.locator("#analysis-panel-progress")).toHaveAttribute(
+    "aria-labelledby",
+    "analysis-tab-progress",
+  );
   await developmentTab.focus();
   await page.keyboard.press("ArrowRight");
   await expect(page.getByRole("tab", { name: "Yanlışlarım" })).toBeFocused();

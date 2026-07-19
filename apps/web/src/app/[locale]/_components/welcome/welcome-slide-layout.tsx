@@ -8,7 +8,6 @@ import { Button } from "@mentor/ui";
 import { DashProgress } from "@/components/dash-progress";
 import type { PuhuVariant } from "@/components/puhu-image";
 import { PuhuImage } from "@/components/puhu-image";
-import { WelcomeHeroSlogan } from "./welcome-hero-slogan";
 
 const TOTAL = 3;
 
@@ -16,8 +15,6 @@ const TOTAL = 3;
 export function WelcomeSlideLayout({
   step,
   title,
-  titleLead,
-  titleEmphasis,
   subtitle,
   mascot,
   heroSrc,
@@ -31,12 +28,9 @@ export function WelcomeSlideLayout({
 }: {
   step: number;
   title: string;
-  /** Designed hero slogan — lead + pill emphasis (slide 1). */
-  titleLead?: string;
-  titleEmphasis?: string;
   subtitle: string;
   mascot: PuhuVariant;
-  /** Soft-fade poster; when set, replaces small Puhu + uses designed slogan. */
+  /** Full-bleed poster; slogan lives in the art when set. */
   heroSrc?: string;
   onBack?: () => void;
   onSkip?: () => void;
@@ -49,7 +43,6 @@ export function WelcomeSlideLayout({
   const t = useTranslations("welcome");
   const reduceMotion = useReducedMotion();
   const isHero = Boolean(heroSrc);
-  const designedSlogan = Boolean(titleLead && titleEmphasis);
 
   const fade = reduceMotion
     ? {}
@@ -63,7 +56,7 @@ export function WelcomeSlideLayout({
       };
 
   const topBar = (
-    <div className="relative z-10 flex h-11 shrink-0 items-center justify-between">
+    <div className="flex h-11 shrink-0 items-center justify-between">
       {onBack ? (
         <button
           type="button"
@@ -92,104 +85,87 @@ export function WelcomeSlideLayout({
     </div>
   );
 
+  const footer = (
+    <>
+      <DashProgress
+        step={step}
+        total={TOTAL}
+        ariaLabel={t("progress_aria", { current: step + 1, total: TOTAL })}
+      />
+      {primaryLabel && onPrimary ? (
+        <div className="mt-6 w-full">
+          <Button type="button" fullWidth onClick={onPrimary}>
+            {primaryLabel}
+          </Button>
+        </div>
+      ) : null}
+      {secondaryLabel && onSecondary ? (
+        <div className="mt-3 w-full">
+          <Button type="button" fullWidth variant="secondary" onClick={onSecondary}>
+            {secondaryLabel}
+          </Button>
+        </div>
+      ) : null}
+    </>
+  );
+
+  if (isHero) {
+    return (
+      <main className="relative min-h-screen w-full overflow-hidden">
+        <Image
+          src={heroSrc!}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+        {/* Soft bottom into white so pagination + CTA stay readable */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%]"
+          style={{
+            background:
+              "linear-gradient(to bottom, transparent 0%, var(--color-bg) 72%)",
+          }}
+          aria-hidden
+        />
+        <motion.div
+          className="relative z-10 flex min-h-screen w-full flex-col px-5 pb-8 pt-8"
+          {...fade}
+        >
+          {topBar}
+          <h1 className="sr-only">{title}</h1>
+          <div className="mt-auto w-full max-w-md mx-auto">{footer}</div>
+        </motion.div>
+      </main>
+    );
+  }
+
   return (
     <main
-      className={`flex min-h-screen w-full flex-col ${isHero ? "px-0" : "px-5"}`}
+      className="flex min-h-screen w-full flex-col px-5"
       style={{ backgroundColor: "var(--color-bg)" }}
     >
-      <motion.div
-        className={`mx-auto flex w-full max-w-md flex-1 flex-col ${isHero ? "pb-8" : "px-0 py-8"}`}
-        {...fade}
-      >
-        {isHero ? (
-          <div className="relative w-full shrink-0 overflow-hidden px-5 pt-8">
-            {topBar}
-            <div
-              className="relative -mx-5 mt-1 w-[calc(100%+2.5rem)] overflow-hidden"
-              style={{ height: "min(52vh, 420px)" }}
-            >
-              <Image
-                src={heroSrc!}
-                alt=""
-                fill
-                priority
-                sizes="(max-width: 448px) 100vw, 448px"
-                className="object-cover object-[center_12%]"
-                style={{
-                  maskImage:
-                    "linear-gradient(to bottom, #000 0%, #000 58%, transparent 100%)",
-                  WebkitMaskImage:
-                    "linear-gradient(to bottom, #000 0%, #000 58%, transparent 100%)",
-                }}
-              />
-            </div>
-            <div className="relative z-10 -mt-10 flex flex-col items-center px-1">
-              {designedSlogan ? (
-                <WelcomeHeroSlogan
-                  lead={titleLead!}
-                  emphasis={titleEmphasis!}
-                  fullTitle={title}
-                />
-              ) : (
-                <h1
-                  className="text-center text-xl font-bold leading-snug tracking-[-0.02em] lg:text-2xl"
-                  style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-                >
-                  {title}
-                </h1>
-              )}
-              <p
-                className="mt-4 max-w-sm text-center text-base leading-relaxed text-pretty"
-                style={{ color: "var(--color-secondary)", fontFamily: "var(--font-body)" }}
-              >
-                {subtitle}
-              </p>
-            </div>
+      <motion.div className="mx-auto flex w-full max-w-md flex-1 flex-col py-8" {...fade}>
+        {topBar}
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <div className="mb-5 flex justify-center">
+            <PuhuImage variant={mascot} size={140} priority />
           </div>
-        ) : (
-          <>
-            <div className="px-5">{topBar}</div>
-            <div className="flex flex-1 flex-col items-center justify-center px-5">
-              <div className="mb-5 flex justify-center">
-                <PuhuImage variant={mascot} size={140} priority />
-              </div>
-              <h1
-                className="text-center text-xl font-semibold leading-snug lg:text-2xl"
-                style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-              >
-                {title}
-              </h1>
-              <p
-                className="mt-3 max-w-sm text-center text-base leading-relaxed"
-                style={{ color: "var(--color-body)", fontFamily: "var(--font-body)" }}
-              >
-                {subtitle}
-              </p>
-            </div>
-          </>
-        )}
-
-        <div className={`mt-auto w-full ${isHero ? "px-5 pt-6" : "mt-6 px-5"}`}>
-          <DashProgress
-            step={step}
-            total={TOTAL}
-            ariaLabel={t("progress_aria", { current: step + 1, total: TOTAL })}
-          />
-          {primaryLabel && onPrimary ? (
-            <div className="mt-6 w-full">
-              <Button type="button" fullWidth onClick={onPrimary}>
-                {primaryLabel}
-              </Button>
-            </div>
-          ) : null}
-          {secondaryLabel && onSecondary ? (
-            <div className="mt-3 w-full">
-              <Button type="button" fullWidth variant="secondary" onClick={onSecondary}>
-                {secondaryLabel}
-              </Button>
-            </div>
-          ) : null}
+          <h1
+            className="text-center text-xl font-semibold leading-snug lg:text-2xl"
+            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+          >
+            {title}
+          </h1>
+          <p
+            className="mt-3 max-w-sm text-center text-base leading-relaxed"
+            style={{ color: "var(--color-body)", fontFamily: "var(--font-body)" }}
+          >
+            {subtitle}
+          </p>
         </div>
+        <div className="mt-6 w-full">{footer}</div>
       </motion.div>
     </main>
   );

@@ -133,7 +133,9 @@ test("makaleyi Koç composerına taşır ama otomatik göndermez", async ({
   expect(jsonLd.join(" ")).toContain("https://www.osym.gov.tr");
   await page.getByRole("link", { name: "Koçla konuş" }).click();
 
-  expect(new URL(page.url()).searchParams.get("contextArticleSlug")).toBe(article.slug);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("contextArticleSlug"))
+    .toBe(article.slug);
 
   await expect(
     page.getByRole("textbox", { name: "Koçuna mesaj yaz" }),

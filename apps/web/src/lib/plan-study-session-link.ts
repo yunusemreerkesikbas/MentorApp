@@ -39,7 +39,7 @@ export interface PlanTaskStudySessionContext {
   taskId: string | null;
 }
 
-/** Parse plan-task query params on the seans screen (URL-decoded by Next.js). */
+/** Parse plan-task query params on the study-session screen (URL-decoded by Next.js). */
 export function parsePlanTaskContextFromParams(params: {
   taskTitle: string | null;
   taskId: string | null;

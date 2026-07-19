@@ -10,7 +10,7 @@ export const aiChatSchema = z.object({
   conversationId: z.string().uuid().optional(),
   /** Owned mock exam whose authoritative result summary should ground this message. */
   contextMockExamId: z.string().uuid().optional(),
-  /** Published Bilgi article selected by the user as the source for this message. */
+  /** Published Knowledge article selected by the user as the source for this message. */
   contextArticleSlug: z.string().trim().min(1).max(128).regex(/^[a-z0-9-]+$/).optional(),
 });
 export type AiChatInput = z.infer<typeof aiChatSchema>;

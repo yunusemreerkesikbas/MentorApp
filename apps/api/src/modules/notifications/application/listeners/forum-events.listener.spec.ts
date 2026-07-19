@@ -92,7 +92,7 @@ describe("ForumEventsListener", () => {
       "FORUM",
       expect.any(String),
       expect.any(String),
-      "/community/kpss/yonetim",
+      "/community/kpss/management",
     );
   });
 });

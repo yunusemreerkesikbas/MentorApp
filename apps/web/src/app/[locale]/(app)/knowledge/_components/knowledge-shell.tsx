@@ -28,7 +28,7 @@ type LoadState =
       articles: InfoArticleSummaryDto[];
     };
 
-/** Bilgi Merkezi — verified exam calendar + editorial article guidance. */
+/** Knowledge center — verified exam calendar and editorial article guidance. */
 export function KnowledgeShell() {
   const t = useTranslations("knowledge");
   const ui = useTranslations("common");

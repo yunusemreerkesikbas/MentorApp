@@ -96,7 +96,7 @@ export class ForumEventsListener {
           e.requesterId,
           "Alanınıza katılım isteği",
           "Yönettiğin bir alana yeni bir katılım isteği geldi.",
-          `/community/${e.slug}/yonetim`,
+          `/community/${e.slug}/management`,
         ),
       ),
     );

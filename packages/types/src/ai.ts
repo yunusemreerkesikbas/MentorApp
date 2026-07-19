@@ -154,7 +154,7 @@ export interface CoachPlanDraftDto {
 }
 
 /**
- * POST /v1/coach/daily-greeting response — premium proactive daily greeting on the /koc hub
+ * POST /v1/coach/daily-greeting response — premium proactive daily greeting on the /coach hub
  * (§4 #5 premium-only; cached per user+day, `model` is "cache" on a hit).
  */
 export interface DailyGreetingDto {

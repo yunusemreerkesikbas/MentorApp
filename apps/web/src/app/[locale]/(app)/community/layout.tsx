@@ -11,7 +11,7 @@ import { HideCompanion } from "./_components/hide-companion";
  * only — no card chrome, mirroring the reference. Below xl the right column can't fit, so the board
  * moves into a slide-in drawer (`EffortBoardDrawer`) — mirroring the left `ZoneDrawer` mobile pattern.
  */
-export default function ToplulukLayout({ children }: { children: ReactNode }) {
+export default function CommunityLayout({ children }: { children: ReactNode }) {
   return (
     <div className="bg-white">
       {/* Mobile chrome (outside the flex row): left "Kanallar" drawer + right "Sıralama" drawer.

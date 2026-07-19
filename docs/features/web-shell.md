@@ -63,12 +63,10 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
-- **Welcome slide 1 soft-hero + designed slogan (2026-07-19)** — Pre-auth `/` first slide uses
-  `/visuals/welcome-hero.png` with CSS soft-bottom mask; slogan is UI typography (lead + pill
-  emphasis with check), not plain H1 and not baked into the art. Usage: first visit welcome only;
-  slides 2–3 keep compact Puhu layout. Gotcha: regenerate hero art without embedded text when
-  possible — mask currently clips the poster’s lower type. Related: `welcome-slide-layout.tsx`,
-  `welcome-hero-slogan.tsx`, `welcome-carousel.tsx`, `messages/{tr,en}.json`.
+- **Welcome slide 1 full-bleed hero (2026-07-19)** — Pre-auth `/` first slide uses
+  `/img/welcome-hero.png` full-screen (`object-cover`); slogan only in art; UI keeps skip,
+  pagination, and CTA over a soft white bottom fade. Slides 2–3 keep compact Puhu + copy.
+  Related: `welcome-slide-layout.tsx`, `welcome-carousel.tsx`.
 - **English internal route source names (2026-07-19)** — Auth, onboarding, dashboard, profile,
   subscription, and cookie-preference App Router folders and source hrefs now use English canonical
   names; users still see localized Turkish paths such as `/giris`, `/panel`, and `/profil`.

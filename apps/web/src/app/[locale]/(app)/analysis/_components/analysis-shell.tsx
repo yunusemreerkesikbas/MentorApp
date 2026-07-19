@@ -28,9 +28,9 @@ import { fetchPhotoAccess } from "@/lib/mock-exams";
 import { AnalysisContentSkeleton } from "./analysis-content-skeleton";
 import { AnalysisSegmentControl } from "./analysis-segment-control";
 import { AnalysisSummaryBand } from "./analysis-summary-band";
-import { AnalysisTabGelisim } from "./analysis-tab-progress";
-import { AnalysisTabGir } from "./analysis-tab-entry";
-import { AnalysisTabYanlislarim } from "./analysis-tab-mistakes";
+import { AnalysisTabProgress } from "./analysis-tab-progress";
+import { AnalysisTabEntry } from "./analysis-tab-entry";
+import { AnalysisTabMistakes } from "./analysis-tab-mistakes";
 import {
   buildAnalysisTabHref,
   emptyScores,
@@ -387,7 +387,7 @@ export function AnalysisShell() {
       if (revealFirstInsight) {
         setTab("progress");
         requestAnimationFrame(() => {
-          document.getElementById("analysis-tab-gelisim")?.focus();
+          document.getElementById("analysis-tab-progress")?.focus();
         });
       }
     } catch (submitError) {
@@ -459,12 +459,12 @@ export function AnalysisShell() {
 
           <div
             role="tabpanel"
-            id="analysis-panel-gir"
-            aria-labelledby="analysis-tab-gir"
+            id="analysis-panel-entry"
+            aria-labelledby="analysis-tab-entry"
             hidden={tab !== "entry"}
           >
             {tab === "entry" ? (
-              <AnalysisTabGir
+              <AnalysisTabEntry
                 examId={exam?.id ?? ""}
                 exam={exam}
                 subjects={subjects}
@@ -485,12 +485,12 @@ export function AnalysisShell() {
 
           <div
             role="tabpanel"
-            id="analysis-panel-gelisim"
-            aria-labelledby="analysis-tab-gelisim"
+            id="analysis-panel-progress"
+            aria-labelledby="analysis-tab-progress"
             hidden={tab !== "progress"}
           >
             {tab === "progress" ? (
-              <AnalysisTabGelisim
+              <AnalysisTabProgress
                 analysis={analysis}
                 extras={developmentExtras}
                 onRetryExtras={() => {
@@ -502,12 +502,12 @@ export function AnalysisShell() {
 
           <div
             role="tabpanel"
-            id="analysis-panel-yanlislar"
-            aria-labelledby="analysis-tab-yanlislar"
+            id="analysis-panel-mistakes"
+            aria-labelledby="analysis-tab-mistakes"
             hidden={tab !== "mistakes"}
           >
             {tab === "mistakes" ? (
-              <AnalysisTabYanlislarim
+              <AnalysisTabMistakes
                 activeMockExamId={activeMockExamId}
                 photoAccessState={photoAccessState}
                 analysis={analysis}

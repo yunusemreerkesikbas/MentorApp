@@ -28,17 +28,17 @@ type DevelopmentExtrasState =
   | { status: "ready"; examId: string; data: WeeklyReviewDto }
   | { status: "error"; examId: string; message: string };
 
-interface AnalysisTabGelisimProps {
+interface AnalysisTabProgressProps {
   analysis: CoachingAnalysisDto | null;
   extras: DevelopmentExtrasState;
   onRetryExtras: () => void;
 }
 
-export function AnalysisTabGelisim({
+export function AnalysisTabProgress({
   analysis,
   extras,
   onRetryExtras,
-}: AnalysisTabGelisimProps) {
+}: AnalysisTabProgressProps) {
   const t = useTranslations("analysis");
   const locale = useLocale();
   const [window, setWindow] = useState<TrendWindow>("12");

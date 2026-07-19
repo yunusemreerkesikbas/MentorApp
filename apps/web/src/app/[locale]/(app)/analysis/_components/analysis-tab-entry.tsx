@@ -7,7 +7,7 @@ import type { SubjectScores } from "./analysis-types";
 import { AnalysisHistoryList } from "./analysis-history-list";
 import { AnalysisMockExamForm } from "./analysis-mock-exam-form";
 
-interface AnalysisTabGirProps {
+interface AnalysisTabEntryProps {
   examId: string;
   exam: ExamSummaryDto | null;
   subjects: ExamSubjectDto[];
@@ -44,7 +44,7 @@ function NoExamSeed() {
   );
 }
 
-export function AnalysisTabGir({
+export function AnalysisTabEntry({
   examId,
   exam,
   subjects,
@@ -59,7 +59,7 @@ export function AnalysisTabGir({
   onSubmit,
   onCopyLast,
   onHistoryChanged,
-}: AnalysisTabGirProps) {
+}: AnalysisTabEntryProps) {
   const t = useTranslations("analysis");
 
   return (

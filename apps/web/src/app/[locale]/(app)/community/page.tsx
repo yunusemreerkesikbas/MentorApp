@@ -1,7 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
 import { GeneralFeed } from "./_components/general-feed";
 
-export default async function ToplulukPage({
+export default async function CommunityPage({
   params,
 }: {
   params: Promise<{ locale: string }>;

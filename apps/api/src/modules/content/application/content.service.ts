@@ -625,7 +625,7 @@ export class ContentService {
     );
   }
 
-  /** Exact published article selected by a Bilgi → Coach handoff. */
+  /** Exact published article selected by a Knowledge → Coach handoff. */
   async getInfoArticleSource(
     slug: string,
     family: string,

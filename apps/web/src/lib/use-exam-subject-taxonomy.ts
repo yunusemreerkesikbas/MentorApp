@@ -14,7 +14,7 @@ export interface ExamSubjectTaxonomyState {
   loaded: boolean;
 }
 
-/** Loads exam subject taxonomy for the current user (plan + seans subject pickers). */
+/** Loads exam subject taxonomy for the current user (plan + study-session subject pickers). */
 export function useExamSubjectTaxonomy(): ExamSubjectTaxonomyState {
   const [subjects, setSubjects] = useState<ExamSubjectDto[]>([]);
   const [needsExamType, setNeedsExamType] = useState(false);

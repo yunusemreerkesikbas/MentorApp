@@ -482,7 +482,7 @@ describe("forum zones (e2e)", () => {
 
     // A different user (admin) requests to join → the owner (user) is notified.
     await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asAdmin());
-    expect(await pollForumNotif(asUser(), `/community/${slug}/yonetim`)).toBe(true);
+    expect(await pollForumNotif(asUser(), `/community/${slug}/management`)).toBe(true);
   });
 
   it("notifications: commenting on a thread notifies its author (in-app, APP-018)", async () => {

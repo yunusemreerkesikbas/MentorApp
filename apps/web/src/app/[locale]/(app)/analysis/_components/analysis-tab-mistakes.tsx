@@ -20,7 +20,7 @@ type PhotoAccessState =
   | { status: "ready"; examId: string; data: PhotoAccessDto }
   | { status: "error"; examId: string; message: string };
 
-interface AnalysisTabYanlislarimProps {
+interface AnalysisTabMistakesProps {
   activeMockExamId: string | null;
   photoAccessState: PhotoAccessState;
   analysis: CoachingAnalysisDto | null;
@@ -28,13 +28,13 @@ interface AnalysisTabYanlislarimProps {
   onRetryAccess: () => void;
 }
 
-export function AnalysisTabYanlislarim({
+export function AnalysisTabMistakes({
   activeMockExamId,
   photoAccessState,
   analysis,
   onCategorized,
   onRetryAccess,
-}: AnalysisTabYanlislarimProps) {
+}: AnalysisTabMistakesProps) {
   const t = useTranslations("analysis");
   const signals = analysis?.photoSubjectSignals ?? [];
   const topicSignals = analysis?.photoTopicSignals ?? [];
