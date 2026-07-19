@@ -1,4 +1,7 @@
 import type { PublicQuestionRef, PublicQuestionView } from "@mentor/types";
+
+import { getPathname } from "../i18n/navigation";
+
 import { apiBaseUrl } from "./api-base";
 
 export const publicApiBase = apiBaseUrl;
@@ -10,7 +13,13 @@ export function siteUrl(): string {
 
 /** Canonical (TR) URL for a public QA question. */
 export function questionUrl(id: string): string {
-  return `${siteUrl()}/tr/forum/soru/${id}`;
+  return `${siteUrl()}${getPathname({
+    locale: "tr",
+    href: {
+      pathname: "/forum/question/[id]",
+      params: { id },
+    },
+  })}`;
 }
 
 /** Public (anon) indexable QA question, or null (404 / not indexable). ISR-cached. */

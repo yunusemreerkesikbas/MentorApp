@@ -162,8 +162,12 @@ export class GoogleAuthService {
   redirectUrl(state: GoogleOAuthState, user: UserRow | AuthResult["user"]): string {
     const appUrl = this.config.get("APP_URL", { infer: true }).replace(/\/$/, "");
     const destination =
-      user.username && user.examType ? sanitizeReturnTo(state.returnTo) : "/onboarding";
-    return `${appUrl}/${state.locale}${destination}`;
+      user.username && user.examType
+        ? sanitizeReturnTo(state.returnTo)
+        : state.locale === "tr"
+          ? "/baslangic"
+          : "/en/onboarding";
+    return `${appUrl}${destination}`;
   }
 
   private async exchangeCode(code: string): Promise<GoogleOAuthProfile> {
@@ -316,7 +320,7 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 function sanitizeReturnTo(value: string): string {
-  return /^\/(?!\/)[a-z0-9/_-]*$/i.test(value) ? value : "/panel";
+  return /^\/(?!\/)[a-z0-9/_-]*$/i.test(value) ? value : "/dashboard";
 }
 
 function displayNameFromGoogle(name: string | undefined, email: string): string {

@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { Link } from "@/i18n/navigation";
 
 /** Auth footer/nav link — 44px touch, no bare underline. */
@@ -5,7 +6,7 @@ export function AuthNavLink({
   href,
   children,
 }: {
-  href: string;
+  href: ComponentProps<typeof Link>["href"];
   children: string;
 }) {
   return (

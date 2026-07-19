@@ -21,9 +21,14 @@ export function SuggestedTaskCard({
   className?: string;
 }) {
   const translate = useTranslations("coach_chat");
-  const href = `/plan?add=1&title=${encodeURIComponent(task.title)}${
-    task.subject ? `&subject=${encodeURIComponent(task.subject)}` : ""
-  }`;
+  const href = {
+    pathname: "/plan",
+    query: {
+      add: "1",
+      title: task.title,
+      ...(task.subject ? { subject: task.subject } : {}),
+    },
+  } as const;
   return (
     <div className={className ?? "flex justify-start"}>
       <div

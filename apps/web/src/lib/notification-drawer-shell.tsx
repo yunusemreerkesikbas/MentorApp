@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import Brain from "lucide-react/dist/esm/icons/brain.mjs";
 import FileText from "lucide-react/dist/esm/icons/file-text.mjs";
 import ListCheck from "lucide-react/dist/esm/icons/list-check.mjs";
@@ -10,6 +9,7 @@ import { useTranslations } from "next-intl";
 import type { NotificationCategory, NotificationListDto, UserNotificationDto } from "@mentor/types";
 import { NotificationDrawerProvider, useDialog } from "@mentor/ui";
 import { PuhuImage } from "@/components/puhu-image";
+import { useRouter } from "@/i18n/navigation";
 import {
   deleteNotification,
   getNotificationStreamToken,
@@ -49,10 +49,10 @@ interface NotificationDrawerShellProps {
 }
 
 const CATEGORY_FALLBACK: Record<NotificationCategory, string> = {
-  COACH: "/panel",
+  COACH: "/dashboard",
   PLAN: "/plan",
-  CONTENT: "/bilgi",
-  FORUM: "/topluluk",
+  CONTENT: "/knowledge",
+  FORUM: "/community",
 };
 
 /** Web-layer wrapper: fetches data, injects i18n labels and Puhu icons. */
@@ -82,7 +82,7 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
           closeLabel: t("close"),
         })
         .then((result) => {
-          if (result === "primary") router.push("/seans");
+          if (result === "primary") router.push("/study-session");
         });
     };
   });
@@ -198,7 +198,10 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
   );
 
   function handleNotificationClick(notification: UserNotificationDto) {
-    router.push(notification.linkUrl ?? CATEGORY_FALLBACK[notification.category]);
+    const href = notification.linkUrl ?? CATEGORY_FALLBACK[notification.category];
+    // Notification targets are canonical internal paths produced by the API.
+    // @ts-expect-error -- the DTO intentionally transports the path as a string.
+    router.push(href);
   }
 
   return (

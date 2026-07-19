@@ -1,11 +1,20 @@
 import type { InfoArticleDto, InfoArticleSummaryDto, Paginated } from "@mentor/types";
+
+import { getPathname } from "../i18n/navigation";
+
 import { apiBaseUrl, resolveApiUrl } from "./api-base";
 import { siteUrl } from "./forum-public";
 
 export const publicApiBase = apiBaseUrl;
 
 export function infoArticleUrl(slug: string): string {
-  return `${siteUrl()}/tr/bilgi/${encodeURIComponent(slug)}`;
+  return `${siteUrl()}${getPathname({
+    locale: "tr",
+    href: {
+      pathname: "/knowledge/[slug]",
+      params: { slug },
+    },
+  })}`;
 }
 
 export async function fetchInfoArticleBySlug(slug: string): Promise<InfoArticleDto | null> {
@@ -49,7 +58,7 @@ export async function fetchInfoArticlesByFamily(
     page: String(page),
     pageSize: String(pageSize),
   });
-  // Server callers (landing) pass revalidate for ISR; client callers (bilgi-shell,
+  // Server callers (landing) pass revalidate for ISR; client callers (knowledge-shell,
   // per-user) keep no-store.
   const cacheInit: RequestInit =
     opts?.revalidate != null

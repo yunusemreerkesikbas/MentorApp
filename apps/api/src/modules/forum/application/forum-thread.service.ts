@@ -172,7 +172,7 @@ export class ForumThreadService {
       threadId: row.id,
       authorId: actor.id,
     });
-    const mentionLink = `/topluluk/${zone.type === ZoneType.QA ? "soru" : "mesaj"}/${row.id}`;
+    const mentionLink = `/community/${zone.type === ZoneType.QA ? "soru" : "mesaj"}/${row.id}`;
     void this.mentions.dispatch(dto.body, actor.id, mentionLink);
     // fetch with JOIN so authorName is populated in the immediate response
     const rowWithAuthor = await this.threads.findById(row.id, actor.id);
@@ -437,7 +437,7 @@ export class ForumThreadService {
       actorId: actor.id,
     });
     // @mentions in the comment — exclude the thread author (already gets the comment notification).
-    void this.mentions.dispatch(dto.body, actor.id, `/topluluk/mesaj/${threadId}`, [thread.authorId]);
+    void this.mentions.dispatch(dto.body, actor.id, `/community/message/${threadId}`, [thread.authorId]);
     return this.requireCommentView(post.id, actor.id);
   }
 
@@ -461,7 +461,7 @@ export class ForumThreadService {
       actorId: actor.id,
     });
     // @mentions in the reply — exclude the parent author (already gets the reply notification).
-    void this.mentions.dispatch(dto.body, actor.id, `/topluluk/yorum/${post.id}`, [parent.authorId]);
+    void this.mentions.dispatch(dto.body, actor.id, `/community/comment/${post.id}`, [parent.authorId]);
     return this.requireCommentView(post.id, actor.id);
   }
 

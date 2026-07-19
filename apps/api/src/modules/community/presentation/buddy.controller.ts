@@ -6,7 +6,7 @@ import { CurrentUser, type RequestUser } from "../../../common/auth/current-user
 import { BuddyService } from "../../identity/application/buddy.service";
 import { BuddyViewService } from "../application/buddy-view.service";
 
-/** How many buddy suggestions the /seans empty-state list requests. */
+/** How many buddy suggestions the /study-session empty-state list requests. */
 const BUDDY_SUGGESTION_LIMIT = 5;
 
 /**

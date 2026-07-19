@@ -11,11 +11,11 @@ import { NotificationDeliveryRepository } from "../infrastructure/notification-d
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-/** Build /seans deep-link with optional subject query (mobile-ready). */
+/** Build /study-session deep-link with optional subject query (mobile-ready). */
 export function buildSessionReturnLinkUrl(subject?: string | null): string {
   const trimmed = subject?.trim();
-  if (!trimmed) return "/seans";
-  return `/seans?subject=${encodeURIComponent(trimmed.slice(0, 80))}`;
+  if (!trimmed) return "/study-session";
+  return `/study-session?subject=${encodeURIComponent(trimmed.slice(0, 80))}`;
 }
 
 /**

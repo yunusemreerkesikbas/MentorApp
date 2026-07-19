@@ -39,7 +39,7 @@ export class ForumEventsListener {
       e.actorId,
       "Sorunuza cevap geldi",
       "Sorduğun soruya yeni bir cevap yazıldı.",
-      `/topluluk/soru/${e.threadId}`,
+      `/community/question/${e.threadId}`,
     );
   }
 
@@ -50,7 +50,7 @@ export class ForumEventsListener {
       e.actorId,
       "Gönderinize yorum yapıldı",
       "Paylaşımına yeni bir yorum yapıldı.",
-      `/topluluk/mesaj/${e.threadId}`,
+      `/community/message/${e.threadId}`,
     );
   }
 
@@ -61,7 +61,7 @@ export class ForumEventsListener {
       e.actorId,
       "Yorumunuza yanıt geldi",
       "Yorumuna yeni bir yanıt geldi.",
-      `/topluluk/yorum/${e.parentPostId}`,
+      `/community/comment/${e.parentPostId}`,
     );
   }
 
@@ -72,7 +72,7 @@ export class ForumEventsListener {
       e.askerId,
       "Cevabınız kabul edildi 🎉",
       "Yazdığın cevap en iyi cevap olarak seçildi!",
-      `/topluluk/soru/${e.threadId}`,
+      `/community/question/${e.threadId}`,
     );
   }
 
@@ -96,7 +96,7 @@ export class ForumEventsListener {
           e.requesterId,
           "Alanınıza katılım isteği",
           "Yönettiğin bir alana yeni bir katılım isteği geldi.",
-          `/topluluk/${e.slug}/yonetim`,
+          `/community/${e.slug}/yonetim`,
         ),
       ),
     );

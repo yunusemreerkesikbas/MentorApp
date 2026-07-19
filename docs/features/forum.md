@@ -96,6 +96,11 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Localized forum/community links (2026-07-19)** — Public question source routes now use
+  `forum/question/[id]` while Turkish stays `/forum/soru/[id]`; community dynamic links use typed
+  `pathname/params/query` objects. Share URLs are localized through `getPathname`. Untranslated
+  English public questions stay `noindex,follow` with a prefixes-free Turkish canonical. Related:
+  public question page, `forum-public.ts`, community `send-button.tsx`, `routing.spec.ts`.
 - **Self-accept XP farm kapatıldı (2026-07-18)** — `canAcceptAnswer(actor, questionAuthorId,
   answerAuthorId)`: soran kişi KENDİ cevabını kabul edemez (thread başına 25 XP self-farm vektörü).
   `accept()` post'u önce fetch edip policy'ye cevap yazarını da geçirir; web soru ekranı kendi

@@ -14,7 +14,7 @@ import { DailyGreetingRepository } from "../infrastructure/daily-greeting.reposi
 import { AiBudgetGuard } from "./ai-budget.guard";
 
 /**
- * Premium proactive daily greeting on the /koc hub (W3 · §4 #5 premium-only — free tier keeps the
+ * Premium proactive daily greeting on the /coach hub (W3 · §4 #5 premium-only — free tier keeps the
  * rule-based brief). Cost is bounded by an idempotent daily cache: at most one LLM call per
  * (user, UTC day); the message stays fixed for the day (no fingerprint refresh — deliberate).
  * Mirrors {@link MoodReflectionService}; usage metered into `ai_usage` (§7).

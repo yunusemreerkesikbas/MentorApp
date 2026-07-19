@@ -6,7 +6,7 @@ import Check from "lucide-react/dist/esm/icons/check.mjs";
 import EllipsisVertical from "lucide-react/dist/esm/icons/ellipsis-vertical.mjs";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { buildSeansHrefFromPlanTask } from "@/lib/plan-seans-link";
+import { buildStudySessionHrefFromPlanTask } from "@/lib/plan-study-session-link";
 
 export function PlanTaskRow({
   task,
@@ -68,7 +68,7 @@ export function PlanTaskRow({
           ) : null}
           {!done && !readOnly ? (
             <Link
-              href={buildSeansHrefFromPlanTask(task)}
+              href={buildStudySessionHrefFromPlanTask(task)}
               className="text-xs font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2"
               style={{ color: "var(--color-progress)" }}
             >

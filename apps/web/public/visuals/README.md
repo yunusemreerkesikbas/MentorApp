@@ -8,6 +8,7 @@ Runtime path: `/visuals/{filename}`
 
 | File | Use |
 |---|---|
+| `welcome-hero.png` | Pre-auth welcome slide 1 soft-fade poster (Puhu in scene; slogan is UI, not baked-in) |
 | `plan-empty.webp` | Plan empty / nudge |
 | `analiz-empty.webp` | Analiz chart / list empty |
 | `bilgi-category.webp` | Knowledge category thumb (optional) |

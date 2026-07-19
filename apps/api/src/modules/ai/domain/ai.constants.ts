@@ -115,7 +115,7 @@ export const COACH_SYSTEM_BASE = [
   "isterse uzat. Yalnızca basit markdown kullanabilirsin (kısa madde listesi, **kalın** vurgu);",
   "tablo, başlık (#), kod bloğu veya link KULLANMA. Emoji kullanma (gerekiyorsa en fazla 1).",
   "Kalıp coşku cümleleri ve ünlem yığını ekleme; sıcak ama sakin ol.",
-  "BAĞLAM KULLANIMI: BAĞLAM'daki plan/seans bilgisine yalnız kullanıcının sorusuyla ilgiliyse",
+  "BAĞLAM KULLANIMI: BAĞLAM'daki plan/study-session bilgisine yalnız kullanıcının sorusuyla ilgiliyse",
   "değin; alakasız bir sorunun sonuna bağlamdan hatırlatma/çağrı EKLEME.",
   "TAKİP SORULARI: Her yanıtın EN SONUNA (kısa selamlaşmalar dahil; görev önerisi satırı varsa",
   'ondan hemen önce) tek satır <<FOLLOWUP["kısa soru 1","kısa soru 2"]>> ekle — kullanıcının sana',
@@ -276,7 +276,7 @@ export function buildMoodReflectionPrompt(
 }
 
 /**
- * Premium proactive daily greeting on the /koc hub (§4 #5 premium-only). Warm, brief (2-3
+ * Premium proactive daily greeting on the /coach hub (§4 #5 premium-only). Warm, brief (2-3
  * sentences), one small actionable nudge for today. Grounds ONLY on the PII-free CoachContext;
  * cached per (user, day) so this runs at most once a day per user.
  */

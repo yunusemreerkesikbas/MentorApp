@@ -69,6 +69,11 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+- **English payments/account source naming (2026-07-19)** — Subscription and profile source folders,
+  components, and symbols now use English canonical names. Public Turkish paths remain
+  `/abonelik`, `/abonelik/sonuc`, and `/profil`; English uses `/en/subscription`,
+  `/en/subscription/result`, and `/en/profile`. Related: `subscription-shell.tsx`,
+  `profile-shell.tsx`, `i18n/routing.ts`.
 - **W4 Payments (subscriptions + entitlement)** — schema 0003; PaymentsPort + dual adapter (fake
   deterministic / iyzico skeleton); webhook-driven state machine; EntitlementService + PremiumGuard
   exported; STAFF entitlement; e-Arşiv InvoicePort stub; web `/abonelik` + `/abonelik/sonuc`;

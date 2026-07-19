@@ -106,7 +106,7 @@ export const users = pgTable(
     /** Minimal onboarding; deep diagnosis comes with coaching (W2). */
     examType: text("exam_type"),
     examDate: date("exam_date"),
-    /** Daily focus goal in minutes (/seans progress + XP quest); null = no goal set. */
+    /** Daily focus goal in minutes (/study-session progress + XP quest); null = no goal set. */
     dailyFocusGoalMinutes: integer("daily_focus_goal_minutes"),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     /** KVKK consent timestamp — signup is rejected without consent (§7/§9). */
@@ -1738,7 +1738,7 @@ export const aiWeeklyReviews = pgTable(
   ],
 );
 
-/** W3 · Premium proactive daily coach greeting on /koc — at most one LLM call per (user, day). */
+/** W3 · Premium proactive daily coach greeting on /coach — at most one LLM call per (user, day). */
 export const aiDailyGreetings = pgTable(
   "ai_daily_greetings",
   {

@@ -12,7 +12,7 @@ export function OnboardingGuard({ children }: { children: ReactNode }) {
   const t = useTranslations("onboarding");
 
   useEffect(() => {
-    if (status === "anonymous") router.replace("/giris");
+    if (status === "anonymous") router.replace("/login");
   }, [status, router]);
 
   if (status !== "authenticated") {

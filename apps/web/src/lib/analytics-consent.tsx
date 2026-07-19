@@ -94,7 +94,7 @@ export function AnalyticsConsentProvider({ children }: { children: ReactNode }) 
           style={{ borderColor: "color-mix(in srgb, var(--color-secondary) 24%, transparent)" }}
         >
           <h2 className="font-bold" style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}>{translate("title")}</h2>
-          <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--color-secondary)" }}>{translate("body")} <Link className="underline" href="/cerez-tercihleri">{translate("details")}</Link></p>
+          <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--color-secondary)" }}>{translate("body")} <Link className="underline" href="/cookie-preferences">{translate("details")}</Link></p>
           <div className="mt-3 flex flex-wrap justify-end gap-2">
             <button type="button" onClick={reject} className="min-h-11 rounded-[var(--radius-card)] border px-4 text-sm font-semibold" style={{ color: "var(--color-main)" }}>{translate("reject")}</button>
             <button type="button" onClick={accept} className="min-h-11 rounded-[var(--radius-card)] px-4 text-sm font-bold text-white" style={{ backgroundColor: "var(--color-btn)" }}>{translate("accept")}</button>

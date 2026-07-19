@@ -39,7 +39,7 @@ function useSubjectPickerLabels(namespace: SubjectPickerNamespace) {
 
 /**
  * Shared exam-subject picker — taxonomy chips when available, free text otherwise.
- * Used by plan add-task sheet and pre-session setup on /seans.
+ * Used by plan add-task sheet and pre-session setup on /study-session.
  */
 export function SubjectPicker({
   value,
@@ -65,7 +65,7 @@ export function SubjectPicker({
           {labels.hint}
         </p>
         <Link
-          href="/profil"
+          href="/profile"
           className="text-sm font-semibold"
           style={{ color: "var(--color-progress)" }}
         >

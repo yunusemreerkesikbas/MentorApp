@@ -5,7 +5,7 @@ const user: AuthUser = {
   id: "33333333-3333-4333-8333-333333333333",
   email: "profil@test.local",
   displayName: "Profil Test",
-  username: "profil_test",
+  username: "profile_test",
   avatarUrl: null,
   bio: null,
   website: null,
@@ -25,7 +25,7 @@ test("hesap silme satırı açıklamayı paylaşılan onay dialogunda gösterir"
   await page.addInitScript(() =>
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
   );
-  await page.goto("/tr/profil");
+  await page.goto("/profil");
 
   await expect(page.getByRole("heading", { name: "Hesap" })).toBeVisible();
   await expect(

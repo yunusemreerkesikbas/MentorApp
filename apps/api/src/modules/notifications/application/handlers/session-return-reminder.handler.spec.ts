@@ -24,7 +24,7 @@ describe("SessionReturnReminderHandler", () => {
 
     await handler.handle({
       userId: USER,
-      linkUrl: "/seans?subject=Matematik",
+      linkUrl: "/study-session?subject=Matematik",
       subject: "Matematik",
       targetDate: "2026-07-13",
     });
@@ -34,13 +34,13 @@ describe("SessionReturnReminderHandler", () => {
       "COACH",
       "Yarınki adımın bekliyor",
       expect.stringContaining("Matematik"),
-      "/seans?subject=Matematik",
+      "/study-session?subject=Matematik",
     );
     expect(enqueue).toHaveBeenCalledWith(
       JobName.SEND_PUSH,
       expect.objectContaining({
         userId: USER,
-        url: "/seans?subject=Matematik",
+        url: "/study-session?subject=Matematik",
         template: DeliveryTemplate.SESSION_RETURN,
         dedupeKey: "session-return-push:2026-07-13",
       }),
@@ -59,7 +59,7 @@ describe("SessionReturnReminderHandler", () => {
 
     await handler.handle({
       userId: USER,
-      linkUrl: "/seans",
+      linkUrl: "/study-session",
       subject: null,
       targetDate: "2026-07-13",
     });

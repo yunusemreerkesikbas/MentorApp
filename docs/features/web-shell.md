@@ -63,6 +63,17 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **Welcome slide 1 soft-hero + designed slogan (2026-07-19)** — Pre-auth `/` first slide uses
+  `/visuals/welcome-hero.png` with CSS soft-bottom mask; slogan is UI typography (lead + pill
+  emphasis with check), not plain H1 and not baked into the art. Usage: first visit welcome only;
+  slides 2–3 keep compact Puhu layout. Gotcha: regenerate hero art without embedded text when
+  possible — mask currently clips the poster’s lower type. Related: `welcome-slide-layout.tsx`,
+  `welcome-hero-slogan.tsx`, `welcome-carousel.tsx`, `messages/{tr,en}.json`.
+- **English internal route source names (2026-07-19)** — Auth, onboarding, dashboard, profile,
+  subscription, and cookie-preference App Router folders and source hrefs now use English canonical
+  names; users still see localized Turkish paths such as `/giris`, `/panel`, and `/profil`.
+  Google OAuth and notification destinations follow the same contract. Related: `i18n/routing.ts`,
+  `post-auth-destination.ts`, `google-auth-button.tsx`, `notification-drawer-shell.tsx`.
 - **Global typography smoothing** — B2C shell switched from League Spartan/Lato to one Nunito Sans
   latin-ext family for heading/body tokens. Usage: all screens continue using `--font-heading` and
   `--font-body`; no component API changes. Gotcha: visual QA should check dense pages like

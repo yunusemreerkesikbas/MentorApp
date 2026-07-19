@@ -32,14 +32,14 @@ describe("ForumMentionService", () => {
       ]),
     );
     const svc = new ForumMentionService(users as never, events as never);
-    await svc.dispatch("hey @alice @bob @self @mod", "uActor", "/topluluk/mesaj/t1", ["uMod"]);
+    await svc.dispatch("hey @alice @bob @self @mod", "uActor", "/community/message/t1", ["uMod"]);
 
     const recipients = events.emit.mock.calls.map((c) => (c[1] as { recipientId: string }).recipientId);
     expect(recipients.sort()).toEqual(["uA", "uB"]); // actor (self) + excluded (mod) skipped
     expect(events.emit).toHaveBeenCalledWith("forum.user.mentioned", {
       recipientId: "uA",
       actorId: "uActor",
-      link: "/topluluk/mesaj/t1",
+      link: "/community/message/t1",
     });
   });
 

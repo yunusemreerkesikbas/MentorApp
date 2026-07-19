@@ -76,6 +76,12 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **Localized knowledge routes and English source names (2026-07-19)** — The internal source route and
+  components moved from `bilgi`/`Bilgi*` to `knowledge`/`Knowledge*`; Turkish public URLs remain
+  `/bilgi/[slug]` and English URLs are `/en/knowledge/[slug]`. Article canonical and breadcrumb
+  JSON-LD URLs are generated through `getPathname`; untranslated English articles remain
+  `noindex,follow` with the Turkish canonical. Related: `content-api.ts`, public article page,
+  `knowledge-shell.tsx`, `knowledge.spec.ts`.
 - **Exam calendar (Slice 1)** — new `modules/content` bounded context; `exams` + `exam_events` tables,
   seed JSON, public read endpoints, countdown selection (`selectExamForCountdown`);
   `ContentServiceAdapter` replaces the coaching stub (no hardcoded dates); `/bilgi` renders the

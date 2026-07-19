@@ -65,7 +65,7 @@ export function EconomyQuestsCard({
     onboardingQuests.find((quest) => !quest.completed && quest.action) ??
     null;
 
-  function navigateAfterDismiss(path: "/plan" | "/seans" | "/panel" | "/abonelik" | "/profil") {
+  function navigateAfterDismiss(path: "/plan" | "/study-session" | "/dashboard" | "/subscription" | "/profile") {
     flushSync(() => {
       onDismiss?.();
     });
@@ -79,19 +79,19 @@ export function EconomyQuestsCard({
       return;
     }
     if (action === "study-session") {
-      navigateAfterDismiss("/seans");
+      navigateAfterDismiss("/study-session");
       return;
     }
     if (action === "mood-checkin") {
-      navigateAfterDismiss("/panel");
+      navigateAfterDismiss("/dashboard");
       return;
     }
     if (action === "panel") {
-      navigateAfterDismiss("/panel");
+      navigateAfterDismiss("/dashboard");
       return;
     }
     if (action === "subscription") {
-      navigateAfterDismiss("/abonelik");
+      navigateAfterDismiss("/subscription");
       return;
     }
     if (action === "invite") {
@@ -99,7 +99,7 @@ export function EconomyQuestsCard({
         onInviteRequested();
         return;
       }
-      navigateAfterDismiss("/profil");
+      navigateAfterDismiss("/profile");
       return;
     }
     if (action !== "verify-email" || resendingVerification) return;

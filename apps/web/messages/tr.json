@@ -31,6 +31,8 @@
     "login": "Giriş yap",
     "slide1": {
       "title": "Sınav yolunda yalnız değilsin.",
+      "title_lead": "Sınav yolunda",
+      "title_emphasis": "yalnız değilsin.",
       "subtitle": "Bilgi platformu değil — seni anlayan, devam ettiren ve yalnız bırakmayan bir yoldaşlık platformu."
     },
     "slide2": {
@@ -182,7 +184,7 @@
     "task_done_streak": "{count} günlük serini korudun. Devam et!",
     "task_done_message": "Görev tamamlandı."
   },
-  "topluluk": {
+  "community": {
     "title": "Topluluk",
     "subtitle": "Aynı yolda yürüyenlerle birlikte.",
     "soon_title": "Topluluk yakında",
@@ -770,9 +772,9 @@
     "no_seed_desc": "Sınav takvimi veya ders listesi henüz yayımlanmadı. Editorial içerik güncellendiğinde form burada açılacak.",
     "tabs": {
       "label": "Analiz bölümleri",
-      "gir": "Gir",
-      "gelisim": "Gelişim",
-      "yanlislar": "Yanlışlarım"
+      "entry": "Gir",
+      "progress": "Gelişim",
+      "mistakes": "Yanlışlarım"
     },
     "summary": {
       "last_net": "Son net: {net}",

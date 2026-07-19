@@ -31,6 +31,8 @@
     "login": "Sign in",
     "slide1": {
       "title": "You're not alone on the road to your exam.",
+      "title_lead": "On the exam road",
+      "title_emphasis": "you're not alone.",
       "subtitle": "Not a knowledge platform — a companionship platform that understands you, keeps you going, and never leaves you alone."
     },
     "slide2": {
@@ -182,7 +184,7 @@
     "task_done_streak": "You kept your {count}-day streak going. Keep it up!",
     "task_done_message": "Task completed."
   },
-  "topluluk": {
+  "community": {
     "title": "Community",
     "subtitle": "Together with others on the same path.",
     "soon_title": "Community coming soon",
@@ -763,9 +765,9 @@
     "no_seed_desc": "The exam calendar or subject list hasn't been published yet. The form will appear here when editorial content is updated.",
     "tabs": {
       "label": "Analysis sections",
-      "gir": "Enter",
-      "gelisim": "Progress",
-      "yanlislar": "Wrong answers"
+      "entry": "Enter",
+      "progress": "Progress",
+      "mistakes": "Wrong answers"
     },
     "summary": {
       "last_net": "Latest net: {net}",

@@ -30,7 +30,7 @@ export function buildCoachMockExamHref(
   contextMockExamId: string,
 ) {
   return {
-    pathname: "/koc/chat" as const,
+    pathname: "/coach/chat" as const,
     query: { seed, contextMockExamId },
   };
 }
@@ -226,7 +226,7 @@ export async function clearCoachMemory(): Promise<void> {
   await http<void>("/v1/coach/memory", { method: "DELETE" });
 }
 
-/** Premium proactive daily greeting on the /koc hub; 403 for free — caller should stay silent. */
+/** Premium proactive daily greeting on the /coach hub; 403 for free — caller should stay silent. */
 export async function fetchDailyGreeting(): Promise<DailyGreetingDto> {
   return (await http<DailyGreetingDto>("/v1/coach/daily-greeting", {
     method: "POST",

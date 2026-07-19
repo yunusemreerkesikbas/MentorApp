@@ -93,6 +93,10 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **Coach source naming and localized routes (2026-07-19)** — Web source folders, components, symbols,
+  tests, and the hero asset moved from `koc-*`/`Koc*` to `coach-*`/`Coach*`; Turkish users still
+  navigate through `/koc` and `/koc/sohbet`, while English uses `/en/coach` and
+  `/en/coach/chat`. Related: coach route components, `coach.ts`, `coach-hero.png`.
 - **Slice 1 — Lean chat** — premium-gated, single-turn, `LlmPort` (fake/OpenAI), §4 #1 refusal,
   `ai_usage` metering, premium daily rate-limit. *(0030.)*
 - **RAG grounding** — async embedding pipeline (`ArticlePublished` → job), pgvector cosine retrieval,

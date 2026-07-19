@@ -23,7 +23,7 @@ export class BuddyViewService {
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
 
-  /** Same-cohort buddy suggestions for the /seans empty-state list (public-safe refs). */
+  /** Same-cohort buddy suggestions for the /study-session empty-state list (public-safe refs). */
   async getSuggestions(userId: string, limit: number): Promise<BuddyUserRef[]> {
     const candidates = await this.buddy.getSuggestionCandidates(userId, limit);
     return candidates.map((c) => ({

@@ -65,10 +65,14 @@ spinners for content placeholders (button `LoaderCircle` for in-flight actions i
 - [ ] **Internal navigation uses `@/i18n/navigation`** (`Link`, `useRouter`, `usePathname`, `redirect`) — never
   `next/link` or `next/navigation` for in-app links (those drop the locale prefix). `useSearchParams` + `notFound`
   stay on `next/navigation`.
+- [ ] **Routes use English internal canonicals.** App Router folders and source hrefs use names such as
+  `/dashboard`, `/knowledge/[slug]`, and `/community/message/[threadId]`; `i18n/routing.ts`
+  localizes those canonicals to prefixes-free Turkish and `/en` English public URLs. Static links pass
+  the canonical string; dynamic links pass `{pathname, params, query}`. Never hardcode `/tr`.
 - [ ] **Locale-aware formatting:** dates/numbers via the active `locale` (`useLocale()` / `getLocale()`), not a hardcoded `"tr-TR"`.
 - [ ] **Static rendering on** (pages `●`/ISR). Every server page/layout calls `setRequestLocale(locale)` (from awaited
   `params`); `[locale]/layout.tsx` owns `<html>`/`<body>` + has `generateStaticParams`. Client `(app)` pages → call it
-  in the page; `(auth)` → in the layout. Public pages (landing, `bilgi/[slug]`) use ISR (`export const revalidate = 3600`).
+  in the page; `(auth)` → in the layout. Public pages (landing, `knowledge/[slug]`) use ISR (`export const revalidate = 3600`).
   Unknown locale → `notFound()`. Turbopack needs `turbopack.resolveAlias` for `next-intl/config` in `next.config.ts`
   (next-intl 3.x writes it to the wrong key) — see [i18n feature doc](../features/i18n.md).
 

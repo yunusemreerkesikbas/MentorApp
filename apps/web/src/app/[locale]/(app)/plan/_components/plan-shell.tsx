@@ -586,7 +586,7 @@ export function PlanShell() {
             variants={reduceMotion ? undefined : staggerItemVariants}
           >
             <Link
-              href="/panel"
+              href="/dashboard"
               className="flex min-h-11 items-center justify-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2"
               style={{
                 color: "var(--color-main)",

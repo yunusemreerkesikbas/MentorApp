@@ -135,6 +135,11 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **English coaching source naming and localized routes (2026-07-19)** — Internal folders, files, and
+  symbols now use `analysis`, `study-session`, and `vision-board`; Turkish public paths remain
+  `/analiz`, `/seans`, and `/hedef`. Analysis query tabs are locale-independent
+  `entry|progress|mistakes`. Related: `mock-exams.ts`, `analysis-*`,
+  `plan-study-session-link.ts`, `study-session-shell.tsx`, `vision-board-shell.tsx`.
 - **Coin ile streak kurtarma — satın alınmış freeze (2026-07-18)** — Yeni `streak_freezes` tablosu
   (unique `user_id+date`, RLS self-or-service, migration `0054`): coin ile satın alınan dondurma
   günleri kalıcı kayıt. `deriveStreak` 4. parametre `purchasedFrozenDates` aldı — satın alınmış gün

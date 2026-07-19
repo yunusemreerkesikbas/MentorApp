@@ -22,14 +22,14 @@ import { LanguageToggle } from "@/components/language-toggle";
  */
 
 const NAV_ITEMS = [
-  { href: "/panel", labelKey: "home", icon: House },
+  { href: "/dashboard", labelKey: "home", icon: House },
   { href: "/plan", labelKey: "plan", icon: Calendar },
-  { href: "/koc", labelKey: "coach", icon: MessageCircle },
-  { href: "/analiz", labelKey: "analysis", icon: ChartColumn },
-  { href: "/bilgi", labelKey: "knowledge", icon: BookOpen },
+  { href: "/coach", labelKey: "coach", icon: MessageCircle },
+  { href: "/analysis", labelKey: "analysis", icon: ChartColumn },
+  { href: "/knowledge", labelKey: "knowledge", icon: BookOpen },
   // Sidebar-only (desktop): the mobile tab bar stays at 6; community entry on mobile is the panel card.
-  { href: "/topluluk", labelKey: "community", icon: Users, sidebarOnly: true },
-  { href: "/profil", labelKey: "profile", icon: User },
+  { href: "/community", labelKey: "community", icon: Users, sidebarOnly: true },
+  { href: "/profile", labelKey: "profile", icon: User },
 ] as const;
 
 const TAB_ITEMS = NAV_ITEMS.filter((i) => !("sidebarOnly" in i && i.sidebarOnly));
@@ -48,7 +48,7 @@ export function AppNav() {
       >
         <div className="mb-6 flex items-center justify-between">
           <Link
-            href="/panel"
+            href="/dashboard"
             className="inline-flex min-h-[44px] items-center text-2xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
             style={{
               color: "var(--color-main)",
@@ -83,7 +83,7 @@ export function AppNav() {
       {/* Mobile top bar */}
       <header className="fixed inset-x-0 top-0 z-20 flex h-14 items-center justify-between border-b border-black/10 bg-white/80 px-4 backdrop-blur lg:hidden">
         <Link
-          href="/panel"
+          href="/dashboard"
           className="text-xl font-bold"
           style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
         >

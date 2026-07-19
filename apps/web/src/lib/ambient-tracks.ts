@@ -1,4 +1,4 @@
-/** Client-side ambient catalog for /seans (no backend). */
+/** Client-side ambient catalog for /study-session (no backend). */
 export const AMBIENT_TRACK_IDS = ["off", "soft", "rain", "warm"] as const;
 
 export type AmbientTrackId = (typeof AMBIENT_TRACK_IDS)[number];

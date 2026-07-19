@@ -1,7 +1,9 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { useRouter, usePathname } from "@/i18n/navigation";
+import type { Locale } from "@/i18n/routing";
 import { useTransition } from "react";
 
 /**
@@ -12,16 +14,22 @@ export function LanguageToggle() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const t = useTranslations("nav");
   const [isPending, startTransition] = useTransition();
 
-  function switchLocale(next: string) {
+  function switchLocale(next: Locale) {
     startTransition(() => {
-      router.replace(pathname, { locale: next });
+      const query = Object.fromEntries(searchParams.entries());
+      const href =
+        searchParams.size > 0 ? { pathname, query } : { pathname };
+      // next-intl resolves this concrete runtime pathname; dynamic params are not available here.
+      // @ts-expect-error -- locale switching intentionally passes the current concrete pathname.
+      router.replace(href, { locale: next });
     });
   }
 
-  const button = (loc: string, label: string) => (
+  const button = (loc: Locale, label: string) => (
     <button
       key={loc}
       type="button"
