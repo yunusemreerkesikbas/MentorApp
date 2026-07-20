@@ -95,6 +95,21 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **OpenAI Responses API migrasyonu (APP-028 WP-G, 2026-07-20)** — `openai-llm.adapter.ts` artık
+  Chat Completions yerine `POST /v1/responses` çağırıyor: `system` → top-level `instructions`;
+  `user` + `history` → `input` mesaj dizisi (basit string content, 1:1 `LlmHistoryMessage`);
+  `max_tokens` → `max_output_tokens`. Yanıt `output[]` içindeki `message`/`output_text` parçaları
+  yürünerek toplanır (`output_text` convenience'ına güvenilmez — raw HTTP JSON'da yoktur);
+  `usage.input_tokens/output_tokens` → prompt/completion. Streaming SSE tipli event'lere geçti:
+  `response.output_text.delta` → `{delta}`, `response.completed` → usage yakala,
+  `response.failed|incomplete|error` → `AI_PROVIDER_ERROR`; `[DONE]` sentinel ve
+  `stream_options.include_usage` kaldırıldı. **Zero-SDK fetch stili korundu**; `LlmPort` sözleşmesi,
+  fake/gemini adapter'ları, embeddings (`/v1/embeddings` değişmez) ve 9 çağrı yerinin hiçbiri
+  değişmedi. Rollback: tek dosya, `AI_PROVIDER=openai` arkasında (`git revert` chat/completions'a
+  döner); pricing tablosu değişmez (`gpt-4o-mini` aynı). Spec fixture'ları Responses şekline yeniden
+  yazıldı (16/16). **Vision ERTELENDİ:** `openai-vision.adapter.ts` hâlâ chat/completions'ta
+  (`response_format` + `input_image` remap'i ayrı bir structured-output turuna bırakıldı); live
+  contract testi bunu dürüst tutar. Dosyalar: `openai-llm.adapter.ts`, `openai-adapters.spec.ts`.
 - **Durable coach history + recoverable transcript (2026-07-20)** — New conversations are no longer
   inserted before provider success. Blocking chat, SSE, and verified official replies use one
   transaction that creates the conversation when needed, writes the USER+COACH pair, and returns the
@@ -497,6 +512,10 @@ excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sa
   the data card. No relevant source → no fabrication.
 - **Content-owned embedding** — AI never touches `info_articles`; it computes + calls ContentService.
 - **No vector index yet** — seq scan is exact + fast at MVP article counts; HNSW/ivfflat = backlog.
+- **Vision hâlâ chat/completions'ta** (APP-028 WP-G) — LLM adapter'ı Responses API'ye geçti ama
+  `openai-vision.adapter.ts` migre edilmedi: `response_format` → `text.format` ve `image_url` →
+  `input_image` remap'i sıfır davranış kazancına ayrı bir iş. Yapılandırılmış çıktı geçişiyle
+  birlikte migre edilecek; Chat Completions deprecated değil, live contract testi kapsıyor.
 - **Fake embed is lexical** (token buckets) — semantically rough but deterministic for reliable tests.
 - **Photo upload URL gate** — was initially un-gated; fixed in review: `PhotoAccessService.assertCanCategorize`
   runs before `createUploadUrl`.
