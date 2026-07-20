@@ -84,6 +84,11 @@ export function ZoneShell({ slug }: { slug: string }) {
     [patchReady],
   );
 
+  const onLeft = useCallback(
+    () => patchReady((r) => ({ ...r, zone: { ...r.zone, myStatus: null, myRole: null } })),
+    [patchReady],
+  );
+
   const onPost = useCallback(
     async (body: string, attachments: AttachmentInput[]) => {
       const ready = state.status === "ready" ? state : null;
@@ -254,7 +259,14 @@ export function ZoneShell({ slug }: { slug: string }) {
           </div>
         </div>
         <div className="flex flex-shrink-0 items-center gap-2">
-          <JoinButton zoneId={zone.id} myStatus={zone.myStatus} onJoined={onJoined} />
+          <JoinButton
+            zoneId={zone.id}
+            myStatus={zone.myStatus}
+            myRole={zone.myRole}
+            joinPolicy={zone.joinPolicy}
+            onJoined={onJoined}
+            onLeft={onLeft}
+          />
           {zone.canModerate ? (
             <Link
               href={{

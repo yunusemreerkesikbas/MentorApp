@@ -48,6 +48,14 @@ export function canRemoveMember(actor: ForumActor, targetRole: ZoneRole): boolea
 }
 
 /**
+ * Voluntary self-leave (or canceling one's own pending request). The OWNER cannot leave —
+ * a zone must not go ownerless; transfer-ownership is backlog.
+ */
+export function canLeaveZone(role: ZoneRole | null): boolean {
+  return role !== ZoneRole.OWNER;
+}
+
+/**
  * Who may post a feed item (Slice 2):
  *  - ANNOUNCEMENT → broadcast: only owner/mod or platform staff.
  *  - CHAT → any ACTIVE member (join-to-participate), or owner/mod/staff.

@@ -69,9 +69,12 @@
   RLS-sensitive reads (admin drafts, etc.) run in the right context (caught for content editor).
 - **Forum / community (W7)** — entire surface gated by `forum.enabled` (default **off**); flip per
   environment to go live. Public SEO QA reads run in **service context** (forum tables are RLS-forced)
-  hard-filtered to indexable QA (`PublicQuestionView` omits PII). Backlogs: a member-**reject/removal** endpoint (web shows approve-only);
-  forum endpoints have **no OpenAPI response schema** (web uses raw `fetch` + `@mentor/types`, so
-  api-client regen is a no-op). `NEXT_PUBLIC_SITE_URL` drives canonical/sitemap/robots.
+  hard-filtered to indexable QA (`PublicQuestionView` omits PII). Membership management is complete:
+  reject (`{approve:false}`), kick (`DELETE members/:userId`, OWNER-protected) and voluntary
+  **leave/withdraw** (`POST /zones/:id/leave`, OWNER 409) all shipped with web UI. Forum endpoints
+  **intentionally ship without OpenAPI response schemas** — web consumes `http<T>()` + `@mentor/types`
+  (api-client regen is a no-op); API-wide `@ApiOkResponse`/CLI-plugin adoption is a deliberately
+  deferred, separate round. `NEXT_PUBLIC_SITE_URL` drives canonical/sitemap/robots.
 
 ## Guardrails honored (AGENTS §4)
 Coin non-monetary/capped · append-only ledgers (never edited/deleted) · reward tied to verified action ·

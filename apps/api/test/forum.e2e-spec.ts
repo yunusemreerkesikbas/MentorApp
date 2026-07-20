@@ -180,6 +180,92 @@ describe("forum zones (e2e)", () => {
     expect(approved.status).toBe(201);
   });
 
+  it("reject ({approve:false}) deletes a pending request; kick removes an active member; self-DELETE stays 403", async () => {
+    const created = await request(app.getHttpServer())
+      .post("/v1/forum/zones")
+      .set(asAdmin())
+      .send({ type: ZoneType.CHAT, title: "Ret-Çıkarma Odası", joinPolicy: ZoneJoinPolicy.REQUEST });
+    const zoneId = created.body.id as string;
+
+    // Reject: PENDING request → {approve:false} → membership row gone.
+    const rejectee = await signup("rejectee");
+    await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/join`)
+      .set({ Authorization: `Bearer ${rejectee.accessToken}` });
+    await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/members/${rejectee.user.id}/approve`)
+      .set(asAdmin())
+      .send({ approve: false })
+      .expect(201);
+    const pendingAfter = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/members?status=${ZoneMemberStatus.PENDING}`)
+      .set(asAdmin());
+    expect(pendingAfter.body.map((m: { userId: string }) => m.userId)).not.toContain(rejectee.user.id);
+
+    // Kick: ACTIVE member removed by staff via DELETE.
+    const kickee = await signup("kickee");
+    await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/join`)
+      .set({ Authorization: `Bearer ${kickee.accessToken}` });
+    await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/members/${kickee.user.id}/approve`)
+      .set(asAdmin())
+      .send({ approve: true });
+    // Self-DELETE by a plain member is moderation-only → 403 (leave is the self-scoped path).
+    await request(app.getHttpServer())
+      .delete(`/v1/forum/zones/${zoneId}/members/${kickee.user.id}`)
+      .set({ Authorization: `Bearer ${kickee.accessToken}` })
+      .expect(403);
+    await request(app.getHttpServer())
+      .delete(`/v1/forum/zones/${zoneId}/members/${kickee.user.id}`)
+      .set(asAdmin())
+      .expect(204);
+    const activeAfter = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${zoneId}/members?status=${ZoneMemberStatus.ACTIVE}`)
+      .set(asAdmin());
+    expect(activeAfter.body.map((m: { userId: string }) => m.userId)).not.toContain(kickee.user.id);
+  });
+
+  it("voluntary leave: ACTIVE member leaves (idempotent), PENDING withdraws, owner gets 409", async () => {
+    // OPEN zone: member joins → leaves → myStatus resets → re-leave is a 204 no-op.
+    const open = await request(app.getHttpServer())
+      .post("/v1/forum/zones")
+      .set(asAdmin())
+      .send({ type: ZoneType.CHAT, title: "Ayrılma Odası", joinPolicy: ZoneJoinPolicy.OPEN });
+    const openId = open.body.id as string;
+    const leaver = await signup("leaver");
+    const asLeaver = { Authorization: `Bearer ${leaver.accessToken}` };
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${openId}/join`).set(asLeaver);
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${openId}/leave`).set(asLeaver).expect(204);
+    const zone = await request(app.getHttpServer()).get(`/v1/forum/zones/${openId}`).set(asLeaver);
+    expect(zone.body.myStatus ?? null).toBeNull();
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${openId}/leave`).set(asLeaver).expect(204);
+
+    // REQUEST zone: pending requester withdraws their own request.
+    const req = await request(app.getHttpServer())
+      .post("/v1/forum/zones")
+      .set(asAdmin())
+      .send({ type: ZoneType.CHAT, title: "Geri Çekme Odası", joinPolicy: ZoneJoinPolicy.REQUEST });
+    const reqId = req.body.id as string;
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${reqId}/join`).set(asLeaver);
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${reqId}/leave`).set(asLeaver).expect(204);
+    const pending = await request(app.getHttpServer())
+      .get(`/v1/forum/zones/${reqId}/members?status=${ZoneMemberStatus.PENDING}`)
+      .set(asAdmin());
+    expect(pending.body.map((m: { userId: string }) => m.userId)).not.toContain(leaver.user.id);
+
+    // OWNER cannot leave (zone must not go ownerless).
+    const owner = await signup("zone-owner");
+    await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${openId}/owner`)
+      .set(asAdmin())
+      .send({ userId: owner.user.id });
+    await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${openId}/leave`)
+      .set({ Authorization: `Bearer ${owner.accessToken}` })
+      .expect(409);
+  });
+
   it("member search (@mention autocomplete): ACTIVE member finds prefix matches; non-member is 403 (APP-021)", async () => {
     const created = await request(app.getHttpServer())
       .post("/v1/forum/zones")
