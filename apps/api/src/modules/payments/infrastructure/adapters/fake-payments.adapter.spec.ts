@@ -18,6 +18,26 @@ describe("FakePaymentsAdapter", () => {
     expect(res.providerRef.startsWith("fake_")).toBe(true);
   });
 
+  it("instantCheckout is true (fake completes without a hosted page)", () => {
+    expect(adapter.instantCheckout).toBe(true);
+  });
+
+  it("refund returns a deterministic ref derived from the idempotency key", async () => {
+    const a = await adapter.refund("fake_x", 24900, "admin-refund:key-1");
+    const b = await adapter.refund("fake_x", 24900, "admin-refund:key-1");
+    expect(a.refundRef).toBe(b.refundRef); // same key → same ref (idempotent retry)
+    expect(a.refundRef).toContain("admin-refund:key-1");
+  });
+
+  it("verifyWebhook accepts a signed checkout_completed event", () => {
+    const { body, headers } = signFakeWebhook(SECRET, {
+      type: "checkout_completed",
+      providerRef: "fake_x",
+    });
+    const event = adapter.verifyWebhook(Buffer.from(body), headers);
+    expect(event.type).toBe("checkout_completed");
+  });
+
   it("verifyWebhook accepts a correctly signed payload", () => {
     const { body, headers } = signFakeWebhook(SECRET, {
       type: "payment_succeeded",

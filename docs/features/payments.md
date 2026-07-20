@@ -98,18 +98,28 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
   ADMIN-only). `SubscriptionsService.getAdminView` + `refundLastCharge` (atomic, `SELECT … FOR UPDATE`,
   capped to last charge − prior refunds). Refund = negative ledger row; never alters status. *(0025 —
   see [admin.md](./admin.md).)*
+- **Verification gate + refund wiring (WP-I)** — checkout-INIT status now depends on the provider:
+  instant providers (FAKE) grant TRIALING/ACTIVE immediately, hosted-page providers (IYZICO,
+  `instantCheckout=false`) create an **INCOMPLETE** row that grants no premium until a signed
+  `checkout_completed` webhook activates it. `PaymentsPort.refund(providerRef, amountMinor,
+  idempotencyKey)` is wired — called (fake: deterministic no-op; iyzico: `notVerified` until keys)
+  **before** the ledger append, so a provider failure rolls back the record; the `admin-refund:<uuid>`
+  is the Idempotency-Key. No DB migration (status is a text column). *(2026-07-20.)*
 
 ## Gotchas / Known issues
 
 - **iyzico adapter is UNVERIFIED** — fails loudly until Phase-0 sandbox keys. **Prod lock:** `fake`
-  forbidden in production (env validation at boot).
-- **iyzico verification gate (F2 TODO):** rows start TRIALING at checkout-INIT — correct for FAKE
-  (instant), **wrong for real iyzico** (abandoned payment page must not grant premium). When verifying
-  the adapter: start as INCOMPLETE, activate only on the checkout-completed webhook.
-- **Record-only refund (decision):** appends a `REFUND`/`REFUNDED` ledger row with negative
-  `amountMinor`; the iyzico refund API is **not** called (adapter unverified, no prod keys). The
-  actual money movement is done manually in the provider panel until `PaymentsPort.refund()` is wired
-  (backlog).
+  forbidden in production (env validation at boot). `createCheckout`/`cancel`/`verifyWebhook`/`refund`
+  all `notVerified()` until the real HTTP + HMAC-SHA1 mapping lands with sandbox creds.
+- **Verification gate (shipped, WP-I):** hosted-page providers create an INCOMPLETE row at
+  checkout-INIT; only `checkout_completed` activates it (INCOMPLETE→TRIALING/ACTIVE by the row's
+  `trialEndsAt`). INCOMPLETE grants no premium (`computeEntitlement` → `free("INCOMPLETE")`). An
+  abandoned INCOMPLETE row is **deleted** on the next checkout (not expired) so the user isn't locked
+  out and trial-once stays intact. The FAKE provider stays instant (its INCOMPLETE path is exercised
+  only via a seeded row + signed webhook in e2e).
+- **Refund calls the provider (shipped, WP-I):** `refundLastCharge` invokes `PaymentsPort.refund()`
+  before appending the `REFUND`/`REFUNDED` ledger row; the returned `refundRef` is stored in the row's
+  `raw`. Real iyzico refund still needs prod keys (stub throws); fake is a deterministic no-op.
 - **Refund ≠ access change (decision):** a refund never alters subscription status/entitlement. To end
   access use the separate **Cancel** action (access until period end).
 - **Append-only ledger (§3):** the original charge row is never edited/deleted; net revenue = Σ amounts.
@@ -122,8 +132,8 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Backlog
 
-- `PaymentsPort.refund()` + real iyzico refund (Phase-0 prod) · `Idempotency-Key` on refund ·
-  CANCELED→reactivate endpoint · outbox for payment events · all-subscriptions list / metrics.
+- Real iyzico adapter (createCheckout/cancel/verifyWebhook/**refund**) against sandbox keys (Phase-0
+  prod) · CANCELED→reactivate endpoint · outbox for payment events · all-subscriptions list / metrics.
 
 ## Related
 

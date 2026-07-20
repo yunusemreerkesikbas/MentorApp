@@ -19,12 +19,27 @@ const evt = (name: string) => `evt_${name}_${RUN}`;
  */
 describe("payments (e2e)", () => {
   let app: INestApplication;
+  let pool: Pool;
   let accessToken = "";
   let providerRef = "";
+
+  /** SERVICE-context helper to seed an INCOMPLETE (verification-gate) row the fake provider can't produce. */
+  const svc = async (fn: (c: import("pg").PoolClient) => Promise<void>) => {
+    const c = await pool.connect();
+    try {
+      await c.query("begin");
+      await c.query("select set_config('app.role','SERVICE',true)");
+      await fn(c);
+      await c.query("commit");
+    } finally {
+      c.release();
+    }
+  };
 
   beforeAll(async () => {
     process.env.DATABASE_URL =
       process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
+    pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
     const { AppModule } = await import("../src/app.module");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -53,6 +68,7 @@ describe("payments (e2e)", () => {
 
   afterAll(async () => {
     await app?.close();
+    await pool?.end();
   });
 
   const auth = () => ({ Authorization: `Bearer ${accessToken}` });
@@ -231,5 +247,49 @@ describe("payments (e2e)", () => {
     const view = await request(app.getHttpServer()).get("/v1/subscription").set(auth());
     expect(view.body.subscription.status).toBe("ACTIVE"); // no TRIALING this time
     expect(view.body.subscription.trialEndsAt).toBeNull();
+  });
+
+  // Verification gate (real-iyzico path): the fake provider is instant, so an INCOMPLETE row is
+  // seeded directly, then activated by a signed checkout_completed webhook.
+  it("INCOMPLETE row grants no premium until checkout_completed activates it", async () => {
+    const gateUser = await request(app.getHttpServer()).post("/v1/auth/signup").send({
+      email: `w4-gate-${RUN}@test.local`,
+      password: "Sifre1234",
+      displayName: "W4 Gate",
+      kvkkAccepted: true,
+    });
+    const gateAuth = { Authorization: `Bearer ${gateUser.body.accessToken}` };
+    const gateUserId = gateUser.body.user.id as string;
+    const gateRef = `fake_gate_${RUN}`;
+
+    await svc(async (c) => {
+      await c.query(
+        `insert into subscriptions (user_id,plan_id,status,provider,provider_ref,current_period_start,current_period_end)
+         values ($1,'premium-monthly','INCOMPLETE','IYZICO',$2, now(), now() + interval '30 days')`,
+        [gateUserId, gateRef],
+      );
+    });
+
+    // Before activation: the gate withholds premium (an abandoned payment page grants nothing).
+    const before = await request(app.getHttpServer()).get("/v1/subscription").set(gateAuth);
+    expect(before.body.subscription.status).toBe("INCOMPLETE");
+    expect(before.body.entitlement.isPremium).toBe(false);
+    expect(before.body.entitlement.reason).toBe("INCOMPLETE");
+
+    // Signed checkout_completed → ACTIVE + premium.
+    const { body, headers } = signFakeWebhook(SECRET, {
+      eventId: evt("gate"),
+      type: "checkout_completed",
+      providerRef: gateRef,
+    });
+    const hook = await request(app.getHttpServer())
+      .post("/v1/webhooks/payments")
+      .set(headers)
+      .send(JSON.parse(body));
+    expect(hook.status).toBe(200);
+
+    const after = await request(app.getHttpServer()).get("/v1/subscription").set(gateAuth);
+    expect(after.body.subscription.status).toBe("ACTIVE");
+    expect(after.body.entitlement.isPremium).toBe(true);
   });
 });

@@ -31,6 +31,12 @@ describe("computeEntitlement (state matrix)", () => {
     expect(e.reason).toBe("NONE");
   });
 
+  it("INCOMPLETE → FREE (verification gate withholds premium until webhook activation)", () => {
+    const e = computeEntitlement(sub({ status: "INCOMPLETE", trialEndsAt: days(5) }), NOW);
+    expect(e.isPremium).toBe(false);
+    expect(e.reason).toBe("INCOMPLETE");
+  });
+
   it("TRIALING within trial → PREMIUM until trialEndsAt", () => {
     const e = computeEntitlement(sub({ status: "TRIALING", trialEndsAt: days(5) }), NOW);
     expect(e.isPremium).toBe(true);

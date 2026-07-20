@@ -9,6 +9,8 @@
 export const PAYMENTS_PORT = Symbol("PAYMENTS_PORT");
 
 export type ProviderEventType =
+  /** Provider confirmed the checkout — activates an INCOMPLETE row (verification gate). */
+  | "checkout_completed"
   | "trial_started"
   | "payment_succeeded"
   | "payment_failed"
@@ -47,15 +49,34 @@ export interface CheckoutResult {
   providerRef: string;
 }
 
+export interface RefundResult {
+  /** Provider-side refund reference (fake: synthetic; iyzico: provider refund id). */
+  refundRef: string;
+}
+
 export interface PaymentsPort {
   /** Which provider this adapter represents (stored on the subscription row). */
   readonly provider: "FAKE" | "IYZICO";
+
+  /**
+   * Whether checkout completes instantly (no external payment page). FAKE=true → the subscription
+   * is granted its status at checkout-init. IYZICO=false → checkout-init creates an INCOMPLETE row
+   * that only the provider's `checkout_completed` webhook may activate (verification gate — an
+   * abandoned payment page must not grant premium).
+   */
+  readonly instantCheckout: boolean;
 
   /** Start a carded-trial subscription checkout (§7: explicit consent handled by FE copy). */
   createCheckout(req: CheckoutRequest): Promise<CheckoutResult>;
 
   /** Stop renewals provider-side (access until period end is OUR state machine's job). */
   cancel(providerRef: string): Promise<void>;
+
+  /**
+   * Refund a charge provider-side. `idempotencyKey` dedupes retries at the provider.
+   * MUST be called before appending the ledger row so a provider failure aborts the record.
+   */
+  refund(providerRef: string, amountMinor: number, idempotencyKey: string): Promise<RefundResult>;
 
   /**
    * Verify the webhook signature and parse the payload into a normalized event.
