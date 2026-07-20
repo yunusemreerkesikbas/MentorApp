@@ -15,6 +15,10 @@ import { coachConversations, coachMessages } from "../../../database/schema";
 type SourceChip = { title: string; slug: string; url: string };
 type SuggestedTask = { title: string; subject: string | null };
 
+export type CoachConversationTarget =
+  | { kind: "existing"; conversationId: string }
+  | { kind: "new"; title: string };
+
 /** Cross-user feedback aggregate (admin report). */
 export interface FeedbackCounts {
   up: number;
@@ -57,12 +61,10 @@ function toDto(row: CoachMessageRow): CoachMessageDto {
 export class CoachMessageRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
-  /**
-   * Persist one exchange and bump the thread's `last_message_at` in the same transaction.
-   */
-  async appendExchange(
+  /** Persist a complete exchange; new threads and both messages share one transaction. */
+  async persistExchange(
     userId: string,
-    conversationId: string,
+    target: CoachConversationTarget,
     userContent: string,
     coach: {
       content: string;
@@ -71,28 +73,54 @@ export class CoachMessageRepository {
       suggestedTask?: SuggestedTask;
       officialCountdown?: CountdownDto;
     },
-  ): Promise<void> {
+  ): Promise<string> {
     return withUserContext(this.db, { userId }, async (tx) => {
-      await tx.insert(coachMessages).values({
-        userId,
-        conversationId,
-        role: CoachMessageRole.USER,
-        content: userContent,
-      });
-      await tx.insert(coachMessages).values({
-        userId,
-        conversationId,
-        role: CoachMessageRole.COACH,
-        content: coach.content,
-        sources: coach.sources,
-        model: coach.model,
-        suggestedTask: coach.suggestedTask ?? null,
-        officialCountdown: coach.officialCountdown ?? null,
-      });
-      await tx
+      const conversationId =
+        target.kind === "existing"
+          ? target.conversationId
+          : (
+              await tx
+                .insert(coachConversations)
+                .values({ userId, title: target.title })
+                .returning({ id: coachConversations.id })
+            )[0]!.id;
+
+      const userCreatedAt = new Date();
+      const coachCreatedAt = new Date(userCreatedAt.getTime() + 1);
+      await tx.insert(coachMessages).values([
+        {
+          userId,
+          conversationId,
+          role: CoachMessageRole.USER,
+          content: userContent,
+          createdAt: userCreatedAt,
+        },
+        {
+          userId,
+          conversationId,
+          role: CoachMessageRole.COACH,
+          content: coach.content,
+          createdAt: coachCreatedAt,
+          sources: coach.sources,
+          model: coach.model,
+          suggestedTask: coach.suggestedTask ?? null,
+          officialCountdown: coach.officialCountdown ?? null,
+        },
+      ]);
+      const updated = await tx
         .update(coachConversations)
-        .set({ lastMessageAt: new Date() })
-        .where(eq(coachConversations.id, conversationId));
+        .set({ lastMessageAt: coachCreatedAt })
+        .where(
+          and(
+            eq(coachConversations.id, conversationId),
+            eq(coachConversations.userId, userId),
+          ),
+        )
+        .returning({ id: coachConversations.id });
+      if (updated.length === 0) {
+        throw new Error("Coach conversation disappeared during persistence");
+      }
+      return conversationId;
     });
   }
 

@@ -18,10 +18,14 @@ export const CoachComposer = forwardRef<
     onChange: (v: string) => void;
     onSend: () => void;
     busy: boolean;
+    disabled?: boolean;
   }
->(function CoachComposer({ value, onChange, onSend, busy }, ref) {
+>(function CoachComposer(
+  { value, onChange, onSend, busy, disabled = false },
+  ref,
+) {
   const translate = useTranslations("coach_chat");
-  const canSend = value.trim().length > 0 && !busy;
+  const canSend = value.trim().length > 0 && !busy && !disabled;
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -44,7 +48,7 @@ export const CoachComposer = forwardRef<
           ref={ref}
           rows={1}
           value={value}
-          disabled={busy}
+          disabled={busy || disabled}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder={translate("input_placeholder")}

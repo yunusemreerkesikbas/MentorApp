@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, exists, sql } from "drizzle-orm";
 import type { CoachConversationDto, Paginated } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
@@ -14,36 +14,48 @@ import { coachConversations, coachMessages } from "../../../database/schema";
 export class CoachConversationRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
-  /** Start a new thread. Title comes from the first user message (caller truncates). */
-  async create(userId: string, title: string): Promise<string> {
-    return withUserContext(this.db, { userId }, async (tx) => {
-      const rows = await tx
-        .insert(coachConversations)
-        .values({ userId, title })
-        .returning({ id: coachConversations.id });
-      return rows[0]!.id;
-    });
-  }
-
   /** True when the conversation exists and belongs to the user. */
   async isOwned(userId: string, conversationId: string): Promise<boolean> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const rows = await tx
         .select({ id: coachConversations.id })
         .from(coachConversations)
-        .where(and(eq(coachConversations.id, conversationId), eq(coachConversations.userId, userId)))
+        .where(
+          and(
+            eq(coachConversations.id, conversationId),
+            eq(coachConversations.userId, userId),
+          ),
+        )
         .limit(1);
       return rows.length > 0;
     });
   }
 
   /** Newest-active-first thread list with each thread's message count ("Son sohbetler"). */
-  async listPaged(userId: string, page: number, pageSize: number): Promise<Paginated<CoachConversationDto>> {
+  async listPaged(
+    userId: string,
+    page: number,
+    pageSize: number,
+  ): Promise<Paginated<CoachConversationDto>> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const messageCount = sql<number>`(
         select count(*)::int from ${coachMessages}
         where ${coachMessages.conversationId} = ${coachConversations.id}
       )`;
+      const visible = and(
+        eq(coachConversations.userId, userId),
+        exists(
+          tx
+            .select({ id: coachMessages.id })
+            .from(coachMessages)
+            .where(
+              eq(
+                coachMessages.conversationId,
+                coachConversations.id,
+              ),
+            ),
+        ),
+      );
       const [rows, totals] = await Promise.all([
         tx
           .select({
@@ -53,21 +65,24 @@ export class CoachConversationRepository {
             messageCount,
           })
           .from(coachConversations)
-          .where(eq(coachConversations.userId, userId))
-          .orderBy(desc(coachConversations.lastMessageAt), desc(coachConversations.id))
+          .where(visible)
+          .orderBy(
+            desc(coachConversations.lastMessageAt),
+            desc(coachConversations.id),
+          )
           .limit(pageSize)
           .offset((page - 1) * pageSize),
         tx
           .select({ n: sql<number>`count(*)::int` })
           .from(coachConversations)
-          .where(eq(coachConversations.userId, userId)),
+          .where(visible),
       ]);
       return {
-        items: rows.map((r) => ({
-          id: r.id,
-          title: r.title,
-          lastMessageAt: r.lastMessageAt.toISOString(),
-          messageCount: r.messageCount,
+        items: rows.map((row) => ({
+          id: row.id,
+          title: row.title,
+          lastMessageAt: row.lastMessageAt.toISOString(),
+          messageCount: row.messageCount,
         })),
         page,
         pageSize,
@@ -79,7 +94,9 @@ export class CoachConversationRepository {
   /** KVKK erasure: drop ALL of a user's threads (their messages cascade). Idempotent. SERVICE ctx. */
   async deleteAllForUser(userId: string): Promise<void> {
     await withServiceContext(this.db, async (tx) => {
-      await tx.delete(coachConversations).where(eq(coachConversations.userId, userId));
+      await tx
+        .delete(coachConversations)
+        .where(eq(coachConversations.userId, userId));
     });
   }
 
@@ -88,7 +105,12 @@ export class CoachConversationRepository {
     return withUserContext(this.db, { userId }, async (tx) => {
       const deleted = await tx
         .delete(coachConversations)
-        .where(and(eq(coachConversations.id, conversationId), eq(coachConversations.userId, userId)))
+        .where(
+          and(
+            eq(coachConversations.id, conversationId),
+            eq(coachConversations.userId, userId),
+          ),
+        )
         .returning({ id: coachConversations.id });
       return deleted.length > 0;
     });

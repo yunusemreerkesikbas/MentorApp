@@ -39,7 +39,7 @@ export function CoachHub() {
   const access = useCoachAccess();
   const router = useRouter();
   const reduceMotion = useReducedMotion();
-  const { conversations, startNewChat, hydrated } = useCoachSession();
+  const { conversations, startNewChat } = useCoachSession();
 
   const [nextActionKind, setNextActionKind] =
     useState<DailyNextActionKind | null>(null);
@@ -158,7 +158,7 @@ export function CoachHub() {
         </div>
       </motion.section>
 
-      {access?.canChat && hydrated ? <CoachConversationList /> : null}
+      {access?.canChat ? <CoachConversationList /> : null}
     </main>
   );
 }

@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
 import { CoachAccessMode } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import {
   CoachStreamError,
   removeCoachContextFromUrl,
@@ -33,15 +33,23 @@ export function CoachChatShell() {
   const tCoach = useTranslations("coach");
   const tChat = useTranslations("coach.chat");
   const access = useCoachAccess()!;
+  const router = useRouter();
   const searchParams = useSearchParams();
   const reduceMotion = useReducedMotion();
   const {
     messages,
     activeConversationId,
+    historyStatus,
+    historyError,
+    hasOlderMessages,
+    loadingOlderMessages,
+    olderMessagesError,
     appendMessage,
     updateMessage,
     removeMessage,
     openConversation,
+    retryConversationHistory,
+    loadOlderMessages,
     startNewChat,
     adoptConversation,
     refreshConversations,
@@ -188,6 +196,8 @@ export function CoachChatShell() {
       }
     } catch (err) {
       if (received !== "") removeMessage(coachMessageId);
+      removeMessage(clientMessageId);
+      setInput(trimmed);
       setChatError(
         err instanceof CoachStreamError
           ? tChat("stream_error")
@@ -275,6 +285,13 @@ export function CoachChatShell() {
     });
   }
 
+  const historyBlocked =
+    routeConversationId !== null && historyStatus !== "ready";
+
+  function handleNewChat() {
+    startNewChat();
+    router.replace("/coach/chat");
+  }
   const headerMotion = reduceMotion
     ? {}
     : {
@@ -336,6 +353,14 @@ export function CoachChatShell() {
         onRegenerate={
           activeConversationId ? () => void regenerate() : undefined
         }
+        historyStatus={historyStatus}
+        historyError={historyError}
+        hasOlderMessages={hasOlderMessages}
+        loadingOlderMessages={loadingOlderMessages}
+        olderMessagesError={olderMessagesError}
+        onRetryHistory={() => void retryConversationHistory()}
+        onNewChat={handleNewChat}
+        onLoadOlder={loadOlderMessages}
       />
       {remaining !== null && remaining <= REMAINING_HINT_THRESHOLD ? (
         <p
@@ -353,6 +378,7 @@ export function CoachChatShell() {
         onChange={setInput}
         onSend={() => void send(input)}
         busy={busy}
+        disabled={historyBlocked}
       />
     </main>
   );

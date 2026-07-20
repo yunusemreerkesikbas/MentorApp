@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2.mjs";
 import MessageSquare from "lucide-react/dist/esm/icons/message-square.mjs";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2.mjs";
 import { useLocale, useTranslations } from "next-intl";
+import { Button, Skeleton, SkeletonGroup } from "@mentor/ui";
+import { FormError } from "@/components/form";
 import { Link } from "@/i18n/navigation";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useCoachSession } from "./coach-session-context";
@@ -23,8 +25,45 @@ export function CoachConversationList() {
   const t = useTranslations("coach.conversations");
   const locale = useLocale();
   const dialog = useMentorDialog();
-  const { conversations, deleteConversation } = useCoachSession();
+  const {
+    conversations,
+    conversationStatus,
+    conversationError,
+    refreshConversations,
+    deleteConversation,
+  } = useCoachSession();
   const [pendingId, setPendingId] = useState<string | null>(null);
+
+  if (
+    conversationStatus === "idle" ||
+    conversationStatus === "loading"
+  ) {
+    return (
+      <SkeletonGroup
+        label={t("loading")}
+        className="mt-4 flex flex-col gap-2"
+      >
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-16 w-full rounded-[var(--radius-card)]" />
+      </SkeletonGroup>
+    );
+  }
+
+  if (conversationStatus === "error") {
+    return (
+      <section className="mt-4 rounded-[var(--radius-card)] bg-white p-4 shadow-[var(--shadow-card)]">
+        <FormError message={conversationError ?? t("load_error")} />
+        <Button
+          type="button"
+          variant="secondary"
+          className="mt-3"
+          onClick={() => void refreshConversations()}
+        >
+          {t("retry")}
+        </Button>
+      </section>
+    );
+  }
 
   if (conversations.length === 0) return null;
 
@@ -53,13 +92,16 @@ export function CoachConversationList() {
         {t("title")}
       </h2>
       <ul className="flex flex-col gap-2">
-        {conversations.map((c) => (
+        {conversations.map((conversation) => (
           <li
-            key={c.id}
+            key={conversation.id}
             className="flex items-center gap-2 rounded-[var(--radius-card)] bg-white px-3 py-2 shadow-[var(--shadow-card)]"
           >
             <Link
-              href={{ pathname: "/coach/chat", query: { c: c.id } }}
+              href={{
+                pathname: "/coach/chat",
+                query: { c: conversation.id },
+              }}
               className="flex min-h-11 flex-1 items-center gap-3 overflow-hidden transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
             >
               <MessageSquare
@@ -72,21 +114,23 @@ export function CoachConversationList() {
                   className="block truncate text-sm font-bold"
                   style={{ color: "var(--color-main)" }}
                 >
-                  {c.title}
+                  {conversation.title}
                 </span>
                 <span
                   className="block text-xs"
                   style={{ color: "var(--color-secondary)" }}
                 >
-                  {formatDate(c.lastMessageAt, locale)}
+                  {formatDate(conversation.lastMessageAt, locale)}
                 </span>
               </span>
             </Link>
             <button
               type="button"
-              onClick={() => void remove(c.id, c.title)}
-              disabled={pendingId === c.id}
-              aria-label={t("delete_aria", { title: c.title })}
+              onClick={() =>
+                void remove(conversation.id, conversation.title)
+              }
+              disabled={pendingId === conversation.id}
+              aria-label={t("delete_aria", { title: conversation.title })}
               className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-black/5 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
               style={{ color: "var(--color-secondary)" }}
             >

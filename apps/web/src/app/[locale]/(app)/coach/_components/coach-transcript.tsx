@@ -8,7 +8,7 @@ import ThumbsDown from "lucide-react/dist/esm/icons/thumbs-down.mjs";
 import Copy from "lucide-react/dist/esm/icons/copy.mjs";
 import Check from "lucide-react/dist/esm/icons/check.mjs";
 import CalendarDays from "lucide-react/dist/esm/icons/calendar-days.mjs";
-import { DataCard } from "@mentor/ui";
+import { Button, DataCard, Skeleton, SkeletonGroup } from "@mentor/ui";
 import type { CountdownDto } from "@mentor/types";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw.mjs";
 import { Link } from "@/i18n/navigation";
@@ -43,6 +43,14 @@ export function CoachTranscript({
   followUps,
   onFollowUp,
   onRegenerate,
+  historyStatus,
+  historyError,
+  hasOlderMessages,
+  loadingOlderMessages,
+  olderMessagesError,
+  onRetryHistory,
+  onNewChat,
+  onLoadOlder,
 }: {
   messages: ChatMessage[];
   busy: boolean;
@@ -56,19 +64,45 @@ export function CoachTranscript({
   onFollowUp?: (question: string) => void;
   /** Regenerate the LAST coach reply (spends like a normal message). Undefined hides the control. */
   onRegenerate?: () => void;
+  historyStatus: "idle" | "loading" | "ready" | "error";
+  historyError: string | null;
+  hasOlderMessages: boolean;
+  loadingOlderMessages: boolean;
+  olderMessagesError: string | true | null;
+  onRetryHistory: () => void;
+  onNewChat: () => void;
+  onLoadOlder: () => Promise<void>;
 }) {
   const reduceMotion = useReducedMotion();
   const translate = useTranslations("coach_chat");
+  const stateText = useTranslations("coach.chat");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
+  const newestMessageId = messages.at(-1)?.id;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
       behavior: reduceMotion ? "auto" : "smooth",
       block: "end",
     });
-  }, [messages.length, busy, reduceMotion]);
+  }, [newestMessageId, busy, reduceMotion]);
 
-  const isEmpty = messages.length === 0 && !busy;
+  const isEmpty =
+    historyStatus !== "loading" &&
+    historyStatus !== "error" &&
+    messages.length === 0 &&
+    !busy;
+
+  async function loadOlder() {
+    const log = logRef.current;
+    const previousHeight = log?.scrollHeight ?? 0;
+    const previousScroll = window.scrollY;
+    await onLoadOlder();
+    window.requestAnimationFrame(() => {
+      const addedHeight = (log?.scrollHeight ?? previousHeight) - previousHeight;
+      window.scrollTo({ top: previousScroll + addedHeight });
+    });
+  }
   // ↻ appears only under the newest coach reply — older ones are history, not candidates.
   const lastCoachId = [...messages]
     .reverse()
@@ -76,12 +110,60 @@ export function CoachTranscript({
 
   return (
     <div
+      ref={logRef}
       role="log"
       aria-live="polite"
       aria-relevant="additions"
       aria-label={translate("transcript_label")}
       className="flex flex-1 flex-col gap-3 px-5 py-4"
     >
+      {historyStatus === "loading" ? (
+        <SkeletonGroup
+          label={stateText("history_loading")}
+          className="flex flex-col gap-3 py-6"
+        >
+          <Skeleton className="h-12 w-3/5 rounded-[var(--radius-card)]" />
+          <Skeleton className="ml-auto h-12 w-2/5 rounded-[var(--radius-card)]" />
+          <Skeleton className="h-12 w-1/2 rounded-[var(--radius-card)]" />
+        </SkeletonGroup>
+      ) : null}
+
+      {historyStatus === "error" ? (
+        <div className="my-auto flex flex-col items-center gap-3 py-12 text-center">
+          <FormError message={historyError ?? stateText("history_error")} />
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button type="button" onClick={onRetryHistory}>
+              {stateText("history_retry")}
+            </Button>
+            <Button type="button" variant="secondary" onClick={onNewChat}>
+              {stateText("history_new_chat")}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {historyStatus === "ready" &&
+      (hasOlderMessages || olderMessagesError) ? (
+        <div className="flex flex-col items-center gap-2">
+          {olderMessagesError ? (
+            <FormError
+              message={
+                typeof olderMessagesError === "string"
+                  ? olderMessagesError
+                  : stateText("older_history_error")
+              }
+            />
+          ) : null}
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={loadingOlderMessages}
+            onClick={() => void loadOlder()}
+          >
+            {stateText("load_older")}
+          </Button>
+        </div>
+      ) : null}
       {isEmpty ? (
         <motion.div
           className="flex flex-1 flex-col items-center justify-center gap-3 py-12 text-center"

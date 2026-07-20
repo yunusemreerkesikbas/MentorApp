@@ -498,12 +498,21 @@
       "delete_confirm_title": "Sohbet silinsin mi?",
       "delete_confirm_message": "\"{title}\" sohbeti ve içindeki tüm mesajlar kalıcı olarak silinecek.",
       "delete_confirm_yes": "Sil",
-      "delete_confirm_no": "Vazgeç"
+      "delete_confirm_no": "Vazgeç",
+      "loading": "Sohbetlerin yükleniyor…",
+      "load_error": "Sohbetlerin şu an yüklenemedi.",
+      "retry": "Tekrar dene"
     },
     "chat": {
       "header_title": "Sohbet",
       "empty_hint": "İlk mesajını yaz — koçun burada.",
       "stream_error": "Yanıt alınamadı — lütfen tekrar dene.",
+      "history_loading": "Sohbet geçmişin yükleniyor…",
+      "history_error": "Sohbet geçmişi şu an yüklenemedi.",
+      "older_history_error": "Daha eski mesajlar yüklenemedi.",
+      "history_retry": "Tekrar dene",
+      "history_new_chat": "Yeni sohbet",
+      "load_older": "Daha eski mesajları yükle",
       "remaining_hint": "Kalan mesaj hakkın: {count}",
       "remaining_hint_zero": "Bugünlük mesaj hakkın doldu — yarın devam."
     }

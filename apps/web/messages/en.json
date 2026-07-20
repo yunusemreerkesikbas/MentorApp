@@ -498,12 +498,21 @@
       "delete_confirm_title": "Delete this chat?",
       "delete_confirm_message": "The chat \"{title}\" and all of its messages will be permanently deleted.",
       "delete_confirm_yes": "Delete",
-      "delete_confirm_no": "Cancel"
+      "delete_confirm_no": "Cancel",
+      "loading": "Loading your chats…",
+      "load_error": "Your chats could not be loaded right now.",
+      "retry": "Try again"
     },
     "chat": {
       "header_title": "Chat",
       "empty_hint": "Write your first message — your coach is here.",
       "stream_error": "Couldn't get a reply — please try again.",
+      "history_loading": "Loading your chat history…",
+      "history_error": "Chat history could not be loaded right now.",
+      "older_history_error": "Older messages could not be loaded.",
+      "history_retry": "Try again",
+      "history_new_chat": "New chat",
+      "load_older": "Load older messages",
       "remaining_hint": "Messages left today: {count}",
       "remaining_hint_zero": "You're out of messages for today — see you tomorrow."
     }

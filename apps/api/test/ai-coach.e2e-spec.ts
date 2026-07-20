@@ -6,6 +6,7 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { UserRole } from "@mentor/types";
 import { buildSystemPrompt } from "../src/modules/ai/domain/ai.constants";
+import { CoachMessageRepository } from "../src/modules/ai/infrastructure/coach-message.repository";
 
 const RUN = Date.now();
 
@@ -193,6 +194,14 @@ describe("ai coach chat (e2e)", () => {
     expect(res.body.reply).not.toContain("<<");
     expect(await aiUsageCount(premiumId)).toBeGreaterThan(0);
     expect(await coinBalance(premiumId)).toBe(before);
+
+    const history = await request(app.getHttpServer())
+      .get(`/v1/coach/conversations/${res.body.conversationId}/messages`)
+      .set({ Authorization: `Bearer ${premiumToken}` });
+    expect(history.status).toBe(200);
+    expect(
+      history.body.items.map((message: { role: string }) => message.role),
+    ).toEqual(["COACH", "USER"]);
   });
 
   it("free user with coin spends on chat (201, balance drops)", async () => {
@@ -249,6 +258,70 @@ describe("ai coach chat (e2e)", () => {
     }
   });
 
+  it("rolls back a new conversation when exchange insertion fails", async () => {
+    const title = `Rollback thread ${RUN}`;
+    const messages = app.get(CoachMessageRepository);
+
+    await expect(
+      messages.persistExchange(
+        premiumId,
+        { kind: "new", title },
+        "Kullanıcı mesajı",
+        {
+          content: undefined as never,
+          model: "fake",
+          sources: [],
+        },
+      ),
+    ).rejects.toBeDefined();
+
+    const client = await pool.connect();
+    try {
+      await client.query("begin");
+      await client.query("select set_config('app.role','SERVICE',true)");
+      const result = await client.query<{ count: number }>(
+        "select count(*)::int as count from coach_conversations where user_id=$1 and title=$2",
+        [premiumId, title],
+      );
+      expect(result.rows[0]?.count).toBe(0);
+      await client.query("commit");
+    } finally {
+      client.release();
+    }
+  });
+  it("hides legacy empty conversations from list and direct history", async () => {
+    const client = await pool.connect();
+    let emptyConversationId = "";
+    try {
+      await client.query("begin");
+      await client.query("select set_config('app.role','SERVICE',true)");
+      const inserted = await client.query<{ id: string }>(
+        "insert into coach_conversations (user_id, title) values ($1, $2) returning id",
+        [premiumId, "Legacy empty thread"],
+      );
+      emptyConversationId = inserted.rows[0]!.id;
+      await client.query("commit");
+    } finally {
+      client.release();
+    }
+
+    const conversations = await request(app.getHttpServer())
+      .get("/v1/coach/conversations?page=1&pageSize=20")
+      .set({ Authorization: `Bearer ${premiumToken}` });
+    expect(conversations.status).toBe(200);
+    expect(
+      conversations.body.items.some(
+        (conversation: { id: string }) =>
+          conversation.id === emptyConversationId,
+      ),
+    ).toBe(false);
+    expect(conversations.body.total).toBe(conversations.body.items.length);
+
+    const history = await request(app.getHttpServer())
+      .get(`/v1/coach/conversations/${emptyConversationId}/messages`)
+      .set({ Authorization: `Bearer ${premiumToken}` });
+    expect(history.status).toBe(404);
+  });
   it("regenerate replaces the last coach reply in place (SSE; count stable, feedback reset)", async () => {
     const first = await chat(premiumToken);
     expect(first.status).toBe(201);

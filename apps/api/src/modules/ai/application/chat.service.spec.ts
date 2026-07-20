@@ -33,9 +33,9 @@ describe("ChatService coin refund", () => {
   let grant: ReturnType<typeof vi.fn>;
   let llmCompleteStream: ReturnType<typeof vi.fn>;
   let lastN: ReturnType<typeof vi.fn>;
-  let appendExchange: ReturnType<typeof vi.fn>;
+  let persistExchange: ReturnType<typeof vi.fn>;
   let updateCoachReply: ReturnType<typeof vi.fn>;
-  let createConversation: ReturnType<typeof vi.fn>;
+  let listPagedByConversation: ReturnType<typeof vi.fn>;
   let isOwned: ReturnType<typeof vi.fn>;
   let getMockExam: ReturnType<typeof vi.fn>;
   let contextBuild: ReturnType<typeof vi.fn>;
@@ -52,9 +52,12 @@ describe("ChatService coin refund", () => {
     spend = vi.fn();
     grant = vi.fn();
     lastN = vi.fn(async () => []);
-    appendExchange = vi.fn(async () => undefined);
+    persistExchange = vi.fn(
+      async (_userId: string, target: { kind: string; conversationId?: string }) =>
+        target.kind === "existing" ? target.conversationId : CONV_ID,
+    );
     updateCoachReply = vi.fn(async () => true);
-    createConversation = vi.fn(async () => CONV_ID);
+    listPagedByConversation = vi.fn();
     isOwned = vi.fn(async () => true);
     getMockExam = vi.fn(async () => MOCK_EXAM);
     contextBuild = vi.fn(async () => ({
@@ -109,13 +112,12 @@ describe("ChatService coin refund", () => {
       } as never,
       {
         lastN,
-        appendExchange,
+        persistExchange,
         updateCoachReply,
-        listPagedByConversation: vi.fn(),
+        listPagedByConversation,
         setFeedback: vi.fn(),
       } as never,
       {
-        create: createConversation,
         isOwned,
         listPaged: vi.fn(),
         delete: vi.fn(),
@@ -139,6 +141,52 @@ describe("ChatService coin refund", () => {
     );
 
     expect(spend).toHaveBeenCalledOnce();
+    expect(grant).toHaveBeenCalledWith(
+      USER.id,
+      Currency.COIN,
+      5,
+      expect.objectContaining({ refId: MSG_ID }),
+    );
+    expect(persistExchange).not.toHaveBeenCalled();
+  });
+
+  it("creates a new thread atomically only after the completion succeeds", async () => {
+    llmComplete.mockResolvedValue({
+      text: "Yanıt",
+      promptTokens: 1,
+      completionTokens: 1,
+      model: "fake",
+    });
+
+    const result = await service.reply(
+      USER,
+      "Türkçe paragrafta zorlanıyorum",
+      MSG_ID,
+    );
+    expect(lastN).not.toHaveBeenCalled();
+    expect(persistExchange).toHaveBeenCalledWith(
+      USER.id,
+      { kind: "new", title: "Türkçe paragrafta zorlanıyorum" },
+      "Türkçe paragrafta zorlanıyorum",
+      expect.objectContaining({ content: "Yanıt", model: "fake" }),
+    );
+    expect(result.conversationId).toBe(CONV_ID);
+  });
+
+  it("refunds coin but keeps actual usage when history persistence fails", async () => {
+    llmComplete.mockResolvedValue({
+      text: "Yanıt",
+      promptTokens: 1,
+      completionTokens: 1,
+      model: "fake",
+    });
+    persistExchange.mockRejectedValue(new Error("database unavailable"));
+
+    await expect(service.reply(USER, "Merhaba", MSG_ID)).rejects.toThrow(
+      "database unavailable",
+    );
+
+    expect(usageAppend).toHaveBeenCalledOnce();
     expect(grant).toHaveBeenCalledWith(
       USER.id,
       Currency.COIN,
@@ -186,7 +234,7 @@ describe("ChatService coin refund", () => {
       model: "fake",
     });
 
-    await service.reply(USER, "Yeni soru", MSG_ID);
+    await service.reply(USER, "Yeni soru", MSG_ID, CONV_ID);
 
     expect(llmComplete).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -287,9 +335,9 @@ describe("ChatService coin refund", () => {
     expect(budgetAssert).not.toHaveBeenCalled();
     expect(spend).not.toHaveBeenCalled();
     expect(usageAppend).not.toHaveBeenCalled();
-    expect(appendExchange).toHaveBeenCalledWith(
+    expect(persistExchange).toHaveBeenCalledWith(
       USER.id,
-      CONV_ID,
+      expect.objectContaining({ kind: "new" }),
       "KPSS sinavi ne zaman?",
       expect.objectContaining({
         model: "verified-content",
@@ -467,7 +515,11 @@ describe("ChatService coin refund", () => {
 
     await service.reply(USER, "Merhaba", MSG_ID);
 
-    expect(appendExchange).toHaveBeenCalledWith(USER.id, CONV_ID, "Merhaba", {
+    expect(persistExchange).toHaveBeenCalledWith(
+      USER.id,
+      expect.objectContaining({ kind: "new" }),
+      "Merhaba",
+      {
       content: "Yanıt",
       model: "fake",
       sources: [],
@@ -481,7 +533,7 @@ describe("ChatService coin refund", () => {
       "LLM down",
     );
 
-    expect(appendExchange).not.toHaveBeenCalled();
+    expect(persistExchange).not.toHaveBeenCalled();
   });
 
   it("streams deltas then a done event, persisting the exchange once", async () => {
@@ -514,7 +566,7 @@ describe("ChatService coin refund", () => {
         },
       },
     ]);
-    expect(appendExchange).toHaveBeenCalledOnce();
+    expect(persistExchange).toHaveBeenCalledOnce();
   });
 
   it("refunds coin and persists nothing when the stream fails mid-flight", async () => {
@@ -536,7 +588,7 @@ describe("ChatService coin refund", () => {
       5,
       expect.objectContaining({ refId: MSG_ID }),
     );
-    expect(appendExchange).not.toHaveBeenCalled();
+    expect(persistExchange).not.toHaveBeenCalled();
   });
 
   it("extracts a suggested task and persists the cleaned reply", async () => {
@@ -554,9 +606,9 @@ describe("ChatService coin refund", () => {
       title: "Tarih: 10 soru",
       subject: "Tarih",
     });
-    expect(appendExchange).toHaveBeenCalledWith(
+    expect(persistExchange).toHaveBeenCalledWith(
       USER.id,
-      CONV_ID,
+      expect.objectContaining({ kind: "new" }),
       "Bana görev öner",
       {
         content: "Harika!",
@@ -583,9 +635,9 @@ describe("ChatService coin refund", () => {
       title: "Tarih: 10 soru",
       subject: "Tarih",
     });
-    expect(appendExchange).toHaveBeenCalledWith(
+    expect(persistExchange).toHaveBeenCalledWith(
       USER.id,
-      CONV_ID,
+      expect.objectContaining({ kind: "new" }),
       "Bana görev öner",
       expect.objectContaining({ content: "Harika!" }),
     );
@@ -643,13 +695,14 @@ describe("ChatService coin refund", () => {
       MSG_ID,
     );
 
-    expect(createConversation).toHaveBeenCalledWith(
+    expect(persistExchange).toHaveBeenCalledWith(
       USER.id,
+      { kind: "new", title: "Türkçe paragrafta zorlanıyorum" },
       "Türkçe paragrafta zorlanıyorum",
+      expect.any(Object),
     );
     expect(res.conversationId).toBe(CONV_ID);
-    // History window is scoped to the new thread, not the whole user.
-    expect(lastN).toHaveBeenCalledWith(USER.id, CONV_ID, expect.any(Number));
+    expect(lastN).not.toHaveBeenCalled();
   });
 
   it("reuses an owned thread and does not create a new one", async () => {
@@ -664,7 +717,6 @@ describe("ChatService coin refund", () => {
     const res = await service.reply(USER, "Devam", MSG_ID, existing);
 
     expect(isOwned).toHaveBeenCalledWith(USER.id, existing);
-    expect(createConversation).not.toHaveBeenCalled();
     expect(res.conversationId).toBe(existing);
     expect(lastN).toHaveBeenCalledWith(USER.id, existing, expect.any(Number));
   });
@@ -683,6 +735,18 @@ describe("ChatService coin refund", () => {
     expect(llmComplete).not.toHaveBeenCalled();
   });
 
+  it("rejects a legacy empty thread instead of opening it as a usable chat", async () => {
+    listPagedByConversation.mockResolvedValue({
+      items: [],
+      page: 1,
+      pageSize: 30,
+      total: 0,
+    });
+
+    await expect(
+      service.listConversationMessages(USER.id, CONV_ID, 1, 30),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
   it("still replies when history load fails (defensive)", async () => {
     lastN.mockRejectedValue(new Error("db down"));
     llmComplete.mockResolvedValue({
@@ -738,8 +802,6 @@ describe("ChatService coin refund", () => {
         MOCK_EXAM_ID,
       ),
     ).rejects.toBe(notFound);
-
-    expect(createConversation).not.toHaveBeenCalled();
     expect(llmComplete).not.toHaveBeenCalled();
     expect(grant).toHaveBeenCalledWith(
       USER.id,
@@ -829,13 +891,69 @@ describe("ChatService coin refund", () => {
       "m-coach",
       expect.objectContaining({ content: "Yeni yanıt.", model: "fake" }),
     );
-    expect(appendExchange).not.toHaveBeenCalled();
+    expect(persistExchange).not.toHaveBeenCalled();
     // The old (disliked) reply must not be replayed into the prompt history.
     expect(llmCompleteStream).toHaveBeenCalledWith(
       expect.objectContaining({ user: "Nasıl çalışmalıyım?", history: [] }),
     );
   });
 
+  it("regenerate propagates persistence failure, refunds coin, and keeps usage", async () => {
+    lastN.mockResolvedValue(TAIL);
+    llmCompleteStream.mockImplementation(async function* () {
+      yield { delta: "Yeni yanıt." };
+      yield {
+        final: {
+          text: "Yeni yanıt.",
+          promptTokens: 1,
+          completionTokens: 1,
+          model: "fake",
+        },
+      };
+    });
+    updateCoachReply.mockRejectedValue(new Error("database unavailable"));
+
+    const consume = async () => {
+      for await (const event of service.regenerateStream(USER, CONV_ID))
+        void event;
+    };
+    await expect(consume()).rejects.toThrow("database unavailable");
+
+    expect(usageAppend).toHaveBeenCalledOnce();
+    expect(grant).toHaveBeenCalledWith(
+      USER.id,
+      Currency.COIN,
+      5,
+      expect.objectContaining({ refId: expect.any(String) }),
+    );
+  });
+  it("regenerate rejects a missing coach row and refunds coin", async () => {
+    lastN.mockResolvedValue(TAIL);
+    llmCompleteStream.mockImplementation(async function* () {
+      yield {
+        final: {
+          text: "Yeni yanıt.",
+          promptTokens: 1,
+          completionTokens: 1,
+          model: "fake",
+        },
+      };
+    });
+    updateCoachReply.mockResolvedValue(false);
+
+    const consume = async () => {
+      for await (const event of service.regenerateStream(USER, CONV_ID))
+        void event;
+    };
+    await expect(consume()).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(usageAppend).toHaveBeenCalledOnce();
+    expect(grant).toHaveBeenCalledWith(
+      USER.id,
+      Currency.COIN,
+      5,
+      expect.objectContaining({ refId: expect.any(String) }),
+    );
+  });
   it("regenerate rejects a thread that does not end in a completed exchange", async () => {
     lastN.mockResolvedValue([]);
 

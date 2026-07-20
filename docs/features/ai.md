@@ -95,6 +95,22 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **Durable coach history + recoverable transcript (2026-07-20)** — New conversations are no longer
+  inserted before provider success. Blocking chat, SSE, and verified official replies use one
+  transaction that creates the conversation when needed, writes the USER+COACH pair, and returns the
+  persisted conversation ID. Persistence failure is now a request failure: coin spend is refunded,
+  while real provider usage and Premium allowance consumption remain recorded. Regenerate follows
+  the same rule and emits no terminal success unless the replacement row is durably updated. Legacy
+  empty rows are
+  retained but excluded from conversation items and total; direct empty-history links return 404.
+  On web, list/history loading and failure states are explicit, first-page failure locks the composer,
+  and retry/new-chat recovery is available. History stays at 30 messages per page; “Daha eski
+  mesajları yükle” prepends deduplicated pages without moving the visible reading position. Stream or
+  persistence failure removes the complete optimistic exchange and restores the submitted text.
+  Gotcha: loading an older page can fail independently without clearing visible history or locking the
+  composer. Public endpoints and DTOs are unchanged. Related: chat.service.ts,
+  coach-message.repository.ts, coach-conversation.repository.ts, coach-session-context.tsx,
+  coach-transcript.tsx, coach-chat-shell.tsx, coach-conversation-list.tsx.
 - **Daily continuity + verified official flow (2026-07-20)** — `/coach` is available even when chat
   access is unavailable and starts its independent `GET /v1/coaching/today` request immediately.
   The primary card renders the backend-localized `nextAction`; `/coach/chat` remains access-gated.
@@ -218,8 +234,8 @@ pnpm --filter @mentor/api test -- --grep "ai"
   smallint: 1/-1/null) + Dilim 4 "Plana ekle" önerisi artık kalıcı (`coach_messages.suggested_task`
   jsonb — reload sonrası kart korunur). Migration `0046_curly_siren`. Yeni endpoint
   `PATCH /v1/coach/messages/:id/feedback` (yalnız kullanıcının kendi COACH satırı — RLS + role guard;
-  yoksa 404). `appendExchange` artık `suggestedTask`'ı persist eder ve toplam mesaj sayısını döndürür
-  (memory tetiği için). FE: `FeedbackRow` (optimistic, hata revert); hydrate feedback+suggestedTask'ı
+  yoksa 404). Exchange persistence `suggestedTask`'ı da USER+COACH çiftiyle birlikte saklar; güncel
+  zorunlu/atomik persistence davranışı bu timeline'ın 2026-07-20 kaydında açıklanır. FE: `FeedbackRow` (optimistic, hata revert); hydrate feedback+suggestedTask'ı
   taşır. Dosyalar: `schema.ts`, `coach-message.repository.ts`, `chat.service.ts`, `ai-chat.controller.ts`,
   `packages/{types,validation}`, `coach-transcript.tsx`, `koc-chat-shell.tsx`, `coach-session-context.tsx`.
 - **Memory profile (2026-07-11)** — koç oturumlar arası kullanıcıyı "tanır": yeni `coach_memory` tablosu
@@ -375,7 +391,7 @@ anonymize` yalnız `users` satırını temizliyordu, kullanıcının **koça yaz
   üretim BAŞARILI olunca değiştirir, feedback sıfırlanır; orta-akış hatasında history'ye dokunulmaz
   (coin refund mevcut yol). Üretimde history'den son USER+COACH çifti düşülür (`prepareChat
 excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sayısı sabit → memory
-  tetikleyicisi bilinçli atlanır; `appendExchange` çağrılmaz. Stream sarmalayıcısı ortak
+  tetikleyicisi bilinçli atlanır; `persistExchange` çağrılmaz. Stream sarmalayıcısı ortak
   `streamLlm` helper'ına çıkarıldı (replyStream de kullanır). FE: son koç yanıtının altında ↻
   (yalnız `activeConversationId` varken); delta'lar balonu yerinde günceller, hata eski yanıtı
   geri koyar; takip chip'leri ve kalan-hak göstergesi yenilenir. **Gotcha:** `contextMockExamId`
@@ -511,9 +527,10 @@ excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sa
   olmalı; `AI_PROVIDER` değişince `POST /v1/admin/ai/reembed` (SUPER_ADMIN) çalıştırılmazsa RAG
   retrieval anlamsızlaşır (hata vermez, alakasız/boş kaynak döner). Maliyeti sentlerle ölçülür.
   `MODEL_PRICING_MICROS_PER_TOKEN` tablosuna yeni model eklenmezse `ai_usage.cost_micros` 0 yazar.
-- **Stream yarıda kesilirse persist yok** — `coach_messages` yalnız tamamlanan exchange'i yazar;
-  FE de parçalı balonu kaldırır, tekrar deneme yeni `clientMessageId` ile yeni spend'dir (aynı id
-  ile idempotent).
+- **Stream veya history persistence yarıda kesilirse exchange yok** — yeni thread + USER + COACH
+  aynı transaction'dadır; hata rollback olur ve FE iki optimistic balonu da kaldırıp metni composer'a
+  döndürür. Provider kullanımı gerçekten oluştuysa usage/Premium hakkı korunur; coin mevcut hata
+  yoluyla iade edilir. Tekrar deneme yeni clientMessageId ile yeni spend'dir (aynı id ile idempotent).
 
 ## Related
 

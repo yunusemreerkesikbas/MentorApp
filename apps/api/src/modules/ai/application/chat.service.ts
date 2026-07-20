@@ -40,7 +40,10 @@ import {
 import { classifyOfficialIntent } from "../domain/official-intent";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
-import { CoachMessageRepository } from "../infrastructure/coach-message.repository";
+import {
+  CoachMessageRepository,
+  type CoachConversationTarget,
+} from "../infrastructure/coach-message.repository";
 import { CoachMemoryRepository } from "../infrastructure/coach-memory.repository";
 import { CoachConversationRepository } from "../infrastructure/coach-conversation.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
@@ -74,22 +77,19 @@ export class ChatService {
     private readonly i18n: I18nService,
   ) {}
 
-  /**
-   * Resolve the thread this message belongs to: verify ownership of an existing one, or open a new
-   * conversation titled after the message (first ~60 chars — no LLM call).
-   */
-  private async resolveConversation(
+  /** Validate an existing thread, or describe the new thread to create after a successful reply. */
+  private async resolveConversationTarget(
     userId: string,
     message: string,
     conversationId?: string,
-  ): Promise<string> {
-    if (conversationId) {
-      if (!(await this.conversations.isOwned(userId, conversationId))) {
-        throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
-      }
-      return conversationId;
+  ): Promise<CoachConversationTarget> {
+    if (!conversationId) {
+      return { kind: "new", title: buildConversationTitle(message) };
     }
-    return this.conversations.create(userId, buildConversationTitle(message));
+    if (!(await this.conversations.isOwned(userId, conversationId))) {
+      throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    return { kind: "existing", conversationId };
   }
 
   private async resolveOfficialContent(
@@ -188,19 +188,24 @@ export class ChatService {
     );
     if (!official) return null;
 
-    const threadId = await this.resolveConversation(
+    const target = await this.resolveConversationTarget(
       userId,
       message,
       conversationId,
     );
-    await this.messages.appendExchange(userId, threadId, message, {
-      content: official.reply,
-      model: official.model,
-      sources: official.sources,
-      ...(official.officialCountdown
-        ? { officialCountdown: official.officialCountdown }
-        : {}),
-    });
+    const threadId = await this.messages.persistExchange(
+      userId,
+      target,
+      message,
+      {
+        content: official.reply,
+        model: official.model,
+        sources: official.sources,
+        ...(official.officialCountdown
+          ? { officialCountdown: official.officialCountdown }
+          : {}),
+      },
+    );
     return { ...official, conversationId: threadId };
   }
 
@@ -242,14 +247,14 @@ export class ChatService {
       const mockExam = contextMockExamId
         ? await this.mockExams.getById(user.id, contextMockExamId)
         : undefined;
-      const threadId = await this.resolveConversation(
+      const target = await this.resolveConversationTarget(
         user.id,
         message,
         conversationId,
       );
       return await this.completeChat(
         user.id,
-        threadId,
+        target,
         message,
         mockExam,
         contextArticleSlug,
@@ -333,7 +338,7 @@ export class ChatService {
   /** Shared prompt prep: PII-free context + this thread's multi-turn history + RAG retrieval. */
   private async prepareChat(
     userId: string,
-    conversationId: string,
+    conversationId: string | undefined,
     message: string,
     mockExam?: MockExamDto,
     opts?: { excludeTailExchange?: boolean; contextArticleSlug?: string },
@@ -344,20 +349,26 @@ export class ChatService {
     // replies — no third-party PII, §4 #6). Defensive: a history failure never blocks the chat.
     // Regenerate excludes the tail USER+COACH pair — the model must not anchor on the reply being
     // replaced, and the user message is re-sent as the live prompt.
-    const history: LlmHistoryMessage[] = await this.messages
-      .lastN(userId, conversationId, CHAT_HISTORY_MAX_MESSAGES)
-      .then((rows) => (opts?.excludeTailExchange ? rows.slice(0, -2) : rows))
-      .then((rows) =>
-        rows.map((m) => ({
-          role: m.role === "USER" ? ("user" as const) : ("assistant" as const),
-          content: m.content,
-        })),
-      )
-      .catch((err) => {
-        this.logger.warn(`Chat history load skipped: ${String(err)}`);
-        return [];
-      });
-
+    const history: LlmHistoryMessage[] = conversationId
+      ? await this.messages
+          .lastN(userId, conversationId, CHAT_HISTORY_MAX_MESSAGES)
+          .then((rows) =>
+            opts?.excludeTailExchange ? rows.slice(0, -2) : rows,
+          )
+          .then((rows) =>
+            rows.map((m) => ({
+              role:
+                m.role === "USER"
+                  ? ("user" as const)
+                  : ("assistant" as const),
+              content: m.content,
+            })),
+          )
+          .catch((err) => {
+            this.logger.warn("Chat history load skipped: " + String(err));
+            return [];
+          })
+      : [];
     let retrieved: {
       title: string;
       slug: string;
@@ -390,10 +401,10 @@ export class ChatService {
     };
   }
 
-  /** Post-success bookkeeping: usage meter and persisted thread history. */
+  /** Record actual provider usage, then require the complete exchange to persist. */
   private async recordSuccess(
     userId: string,
-    conversationId: string,
+    target: CoachConversationTarget,
     message: string,
     result: {
       text: string;
@@ -403,7 +414,7 @@ export class ChatService {
     },
     sources: { title: string; slug: string; url: string }[],
     suggestedTask?: { title: string; subject: string | null },
-  ): Promise<void> {
+  ): Promise<string> {
     await this.usage.append({
       userId,
       model: result.model,
@@ -417,30 +428,23 @@ export class ChatService {
       ),
     });
 
-    // Best-effort: a persist failure must not swallow the reply the user already paid for.
-    await this.messages
-      .appendExchange(userId, conversationId, message, {
-        content: result.text,
-        model: result.model,
-        sources,
-        suggestedTask,
-      })
-      .catch((err) => {
-        this.logger.error(`Chat history persist failed: ${String(err)}`);
-        return null;
-      });
+    return this.messages.persistExchange(userId, target, message, {
+      content: result.text,
+      model: result.model,
+      sources,
+      suggestedTask,
+    });
   }
-
   private async completeChat(
     userId: string,
-    conversationId: string,
+    target: CoachConversationTarget,
     message: string,
     mockExam?: MockExamDto,
     contextArticleSlug?: string,
   ): Promise<CoachReplyResult> {
     const { llmInput, sources } = await this.prepareChat(
       userId,
-      conversationId,
+      target.kind === "existing" ? target.conversationId : undefined,
       message,
       mockExam,
       { contextArticleSlug },
@@ -448,9 +452,9 @@ export class ChatService {
     const result = await this.llm.complete(llmInput);
     // Order-agnostic: models sometimes reverse the FOLLOWUP/TASK order — never leak a marker.
     const { text: reply, task, followUps } = extractReplyMarkers(result.text);
-    await this.recordSuccess(
+    const conversationId = await this.recordSuccess(
       userId,
-      conversationId,
+      target,
       message,
       { ...result, text: reply },
       sources,
@@ -512,23 +516,23 @@ export class ChatService {
       const mockExam = contextMockExamId
         ? await this.mockExams.getById(user.id, contextMockExamId)
         : undefined;
-      const threadId = await this.resolveConversation(
+      const target = await this.resolveConversationTarget(
         user.id,
         message,
         conversationId,
       );
       const { llmInput, sources } = await this.prepareChat(
         user.id,
-        threadId,
+        target.kind === "existing" ? target.conversationId : undefined,
         message,
         mockExam,
         { contextArticleSlug },
       );
       const final = yield* this.streamLlm(llmInput);
       const { text: reply, task, followUps } = extractReplyMarkers(final.text);
-      await this.recordSuccess(
+      const threadId = await this.recordSuccess(
         user.id,
-        threadId,
+        target,
         message,
         { ...final, text: reply },
         sources,
@@ -575,9 +579,8 @@ export class ChatService {
     if (!(await this.conversations.isOwned(user.id, conversationId))) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    // The thread must end in a completed exchange (one USER + one COACH row). Order within the
-    // pair is NOT trusted: appendExchange writes both rows in one tx, so their timestamps can tie
-    // and the uuid tie-breaker is random.
+    // Locate the final exchange by role rather than by position; legacy rows can share timestamps
+    // and therefore have a UUID-based tie order.
     const tail = await this.messages.lastN(user.id, conversationId, 2);
     const userMsg = tail.find((m) => m.role === "USER");
     const coachMsg = tail.find((m) => m.role === "COACH");
@@ -647,17 +650,19 @@ export class ChatService {
           final.completionTokens,
         ),
       });
-      // Best-effort like recordSuccess: a persist failure must not swallow the paid reply.
-      await this.messages
-        .updateCoachReply(user.id, coachMsg.id, {
+      const updated = await this.messages.updateCoachReply(
+        user.id,
+        coachMsg.id,
+        {
           content: reply,
           model: final.model,
           sources,
           suggestedTask: task ?? undefined,
-        })
-        .catch((err) => {
-          this.logger.error(`Regenerated reply persist failed: ${String(err)}`);
-        });
+        },
+      );
+      if (!updated) {
+        throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+      }
 
       yield {
         done: {
@@ -744,12 +749,16 @@ export class ChatService {
     if (!(await this.conversations.isOwned(userId, conversationId))) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    return this.messages.listPagedByConversation(
+    const result = await this.messages.listPagedByConversation(
       userId,
       conversationId,
       page,
       pageSize,
     );
+    if (result.total === 0) {
+      throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    return result;
   }
 
   /** DELETE /v1/coach/conversations/:id — drop one thread (messages cascade). Memory profile is kept. */
