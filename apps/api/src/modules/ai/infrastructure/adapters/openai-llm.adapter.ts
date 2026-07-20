@@ -6,7 +6,7 @@ import { ErrorCode } from "../../../../common/errors/error-code";
 import type { LlmCompleteInput, LlmPort, LlmResult, LlmStreamEvent } from "../../domain/llm.port";
 import { AI_MAX_OUTPUT_TOKENS, AI_REQUEST_TIMEOUT_MS, AI_TEMPERATURE } from "../../domain/ai.constants";
 
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+const OPENAI_URL = "https://api.openai.com/v1/responses";
 const OPENAI_EMBED_URL = "https://api.openai.com/v1/embeddings";
 const EMBED_DIMENSIONS = 1536;
 
@@ -16,9 +16,49 @@ function providerErrorLog(operation: string, response: Response): string {
 }
 
 /**
- * Real OpenAI Chat Completions adapter (fetch — no extra dependency). It needs
- * OPENAI_API_KEY (Phase-0 ops) and is selected only when AI_PROVIDER=openai; otherwise the fake
- * adapter runs. Failures surface as a generic AI_PROVIDER_ERROR (no provider internals leak).
+ * Responses API request body. `system` maps to top-level `instructions` (never duplicated into
+ * `input`); history + the user turn use the simplified string-content message form (typed parts
+ * are only needed for multimodal). `max_output_tokens` replaces chat/completions' `max_tokens`.
+ */
+function buildBody(model: string, input: LlmCompleteInput): Record<string, unknown> {
+  return {
+    model,
+    instructions: input.system,
+    input: [...(input.history ?? []), { role: "user", content: input.user }],
+    max_output_tokens: AI_MAX_OUTPUT_TOKENS,
+    temperature: AI_TEMPERATURE,
+  };
+}
+
+interface ResponsesUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+}
+
+/** Raw-HTTP shape: `output_text` is an SDK convenience only — walk the output items instead. */
+function collectOutputText(output: unknown): string {
+  if (!Array.isArray(output)) return "";
+  return output
+    .filter((item): item is { type: string; content?: unknown[] } =>
+      typeof item === "object" && item !== null && (item as { type?: string }).type === "message",
+    )
+    .flatMap((item) => (Array.isArray(item.content) ? item.content : []))
+    .filter(
+      (part): part is { type: string; text: string } =>
+        typeof part === "object" &&
+        part !== null &&
+        (part as { type?: string }).type === "output_text" &&
+        typeof (part as { text?: unknown }).text === "string",
+    )
+    .map((part) => part.text)
+    .join("");
+}
+
+/**
+ * Real OpenAI **Responses API** adapter (fetch — no extra dependency). It needs OPENAI_API_KEY
+ * (Phase-0 ops) and is selected only when AI_PROVIDER=openai; otherwise the fake adapter runs.
+ * Failures surface as a generic AI_PROVIDER_ERROR (no provider internals leak). Embeddings stay
+ * on /v1/embeddings (unchanged by the migration); vision remains on chat/completions for now.
  */
 @Injectable()
 export class OpenAiLlmAdapter implements LlmPort {
@@ -36,45 +76,40 @@ export class OpenAiLlmAdapter implements LlmPort {
       const res = await fetch(OPENAI_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        // Bound the request: timeout (never hang the HTTP request) + max_tokens (cap per-call cost §7).
+        // Bound the request: timeout (never hang the HTTP request) + max_output_tokens (cap per-call cost §7).
         signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: input.system },
-            ...(input.history ?? []),
-            { role: "user", content: input.user },
-          ],
-          max_tokens: AI_MAX_OUTPUT_TOKENS,
-          temperature: AI_TEMPERATURE,
-        }),
+        body: JSON.stringify(buildBody(model, input)),
       });
       if (!res.ok) {
-        this.logger.error(providerErrorLog("chat", res));
+        this.logger.error(providerErrorLog("responses", res));
         throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
       }
       const data = (await res.json()) as {
-        choices?: { message?: { content?: string } }[];
-        usage?: { prompt_tokens?: number; completion_tokens?: number };
+        status?: string;
+        output?: unknown;
+        usage?: ResponsesUsage;
       };
-      const text = data.choices?.[0]?.message?.content?.trim();
-      if (!text) throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+      const text = collectOutputText(data.output).trim();
+      if (!text || data.status === "incomplete" || data.status === "failed") {
+        throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+      }
       return {
         text,
-        promptTokens: data.usage?.prompt_tokens ?? 0,
-        completionTokens: data.usage?.completion_tokens ?? 0,
+        promptTokens: data.usage?.input_tokens ?? 0,
+        completionTokens: data.usage?.output_tokens ?? 0,
         model,
       };
     } catch (err) {
       if (err instanceof DomainError) throw err;
-      this.logger.error("OpenAI chat request failed");
+      this.logger.error("OpenAI responses request failed");
       throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
     }
   }
 
   /**
-   * Streaming completion: OpenAI SSE (`stream: true` + `include_usage` so the final chunk carries
-   * token counts). Yields deltas as they arrive, then one `final` with the accumulated text.
+   * Streaming completion: Responses SSE emits typed events — `response.output_text.delta` carries
+   * text deltas, `response.completed` carries usage. Every `data:` payload self-describes via
+   * `type`, so `event:` lines are ignored. Yields deltas as they arrive, then one `final`.
    */
   async *completeStream(input: LlmCompleteInput): AsyncIterable<LlmStreamEvent> {
     const apiKey = this.config.get("OPENAI_API_KEY", { infer: true });
@@ -89,18 +124,7 @@ export class OpenAiLlmAdapter implements LlmPort {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
         signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: input.system },
-            ...(input.history ?? []),
-            { role: "user", content: input.user },
-          ],
-          max_tokens: AI_MAX_OUTPUT_TOKENS,
-          temperature: AI_TEMPERATURE,
-          stream: true,
-          stream_options: { include_usage: true },
-        }),
+        body: JSON.stringify({ ...buildBody(model, input), stream: true }),
       });
     } catch {
       this.logger.error("OpenAI stream request failed");
@@ -114,7 +138,7 @@ export class OpenAiLlmAdapter implements LlmPort {
     const decoder = new TextDecoder();
     let buffer = "";
     let text = "";
-    let usage: { prompt_tokens?: number; completion_tokens?: number } | undefined;
+    let usage: ResponsesUsage | undefined;
 
     try {
       for await (const chunk of res.body as unknown as AsyncIterable<Uint8Array>) {
@@ -128,20 +152,30 @@ export class OpenAiLlmAdapter implements LlmPort {
             .filter((l) => l.startsWith("data:"))
             .map((l) => l.slice(5).trim())
             .join("");
-          if (!data || data === "[DONE]") continue;
+          if (!data) continue;
           const parsed = JSON.parse(data) as {
-            choices?: { delta?: { content?: string } }[];
-            usage?: { prompt_tokens?: number; completion_tokens?: number };
+            type?: string;
+            delta?: string;
+            response?: { status?: string; usage?: ResponsesUsage };
           };
-          if (parsed.usage) usage = parsed.usage;
-          const delta = parsed.choices?.[0]?.delta?.content;
-          if (delta) {
-            text += delta;
-            yield { delta };
+          if (parsed.type === "response.output_text.delta" && parsed.delta) {
+            text += parsed.delta;
+            yield { delta: parsed.delta };
+          } else if (parsed.type === "response.completed") {
+            usage = parsed.response?.usage;
+          } else if (
+            parsed.type === "response.failed" ||
+            parsed.type === "response.incomplete" ||
+            parsed.type === "error"
+          ) {
+            this.logger.error(`OpenAI stream ended with ${parsed.type}`);
+            throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
           }
+          // All other typed events (response.created, output_item.added, content_part.*, …) are ignored.
         }
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof DomainError) throw err;
       this.logger.error("OpenAI stream read failed");
       throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
     }
@@ -152,8 +186,8 @@ export class OpenAiLlmAdapter implements LlmPort {
     yield {
       final: {
         text: text.trim(),
-        promptTokens: usage?.prompt_tokens ?? 0,
-        completionTokens: usage?.completion_tokens ?? 0,
+        promptTokens: usage?.input_tokens ?? 0,
+        completionTokens: usage?.output_tokens ?? 0,
         model,
       },
     };
