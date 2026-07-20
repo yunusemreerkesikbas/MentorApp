@@ -273,20 +273,23 @@ describe("OpenAI adapters", () => {
   });
 
   describe("OpenAiVisionAdapter", () => {
-    it("sends the image data URL and taxonomy whitelist", async () => {
+    it("sends the image as a Responses input_image + text.format json, returns provider usage", async () => {
       fetchMock.mockResolvedValue(
         jsonResponse({
-          id: "chatcmpl-vision",
-          choices: [
+          id: "resp-vision",
+          object: "response",
+          status: "completed",
+          model: MODEL,
+          output: [
             {
-              message: {
-                role: "assistant",
-                content: JSON.stringify({ subjectSlug: "matematik", topicSlug: "problemler" }),
-              },
-              finish_reason: "stop",
+              type: "message",
+              role: "assistant",
+              content: [
+                { type: "output_text", text: JSON.stringify({ subjectSlug: "matematik", topicSlug: "problemler" }) },
+              ],
             },
           ],
-          usage: { prompt_tokens: 20, completion_tokens: 8, total_tokens: 28 },
+          usage: { input_tokens: 20, output_tokens: 8, total_tokens: 28 },
         }),
       );
 
@@ -299,20 +302,33 @@ describe("OpenAI adapters", () => {
         ],
       });
 
+      expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.openai.com/v1/responses");
       const request = fetchMock.mock.calls[0]?.[1];
       const body = JSON.parse(String(request?.body)) as {
-        messages: { role: string; content: string | { type: string; text?: string; image_url?: { url: string } }[] }[];
-        response_format: { type: string };
+        instructions: string;
+        input: { role: string; content: { type: string; text?: string; image_url?: string }[] }[];
+        text: { format: { type: string } };
+        max_output_tokens: number;
+        messages?: unknown;
+        response_format?: unknown;
+        max_tokens?: unknown;
       };
-      const userContent = body.messages[1]?.content;
+      const userContent = body.input[0]?.content;
       expect(Array.isArray(userContent)).toBe(true);
-      if (!Array.isArray(userContent)) throw new Error("Expected multimodal user content");
+      if (!Array.isArray(userContent)) throw new Error("Expected multimodal input content");
+      expect(userContent[0]).toMatchObject({ type: "input_text" });
       expect(userContent[0]?.text).toContain('"slug":"matematik"');
       expect(userContent[0]?.text).toContain('"slug":"problemler"');
-      expect(userContent[1]?.image_url?.url).toBe(
-        `data:image/png;base64,${Buffer.from("synthetic-image").toString("base64")}`,
-      );
-      expect(body.response_format).toEqual({ type: "json_object" });
+      expect(userContent[1]).toEqual({
+        type: "input_image",
+        image_url: `data:image/png;base64,${Buffer.from("synthetic-image").toString("base64")}`,
+      });
+      expect(body.text.format).toEqual({ type: "json_object" });
+      expect(body.max_output_tokens).toBe(128);
+      // No chat/completions leftovers.
+      expect(body.messages).toBeUndefined();
+      expect(body.response_format).toBeUndefined();
+      expect(body.max_tokens).toBeUndefined();
       expect(result).toEqual({
         subjectSlug: "matematik",
         topicSlug: "problemler",
@@ -349,7 +365,12 @@ describe("OpenAI adapters", () => {
     it("maps malformed provider JSON to AI_PROVIDER_ERROR", async () => {
       const errorSpy = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
       fetchMock.mockResolvedValue(
-        jsonResponse({ choices: [{ message: { content: "sensitive-vision-json" } }] }),
+        jsonResponse({
+          status: "completed",
+          output: [
+            { type: "message", role: "assistant", content: [{ type: "output_text", text: "sensitive-vision-json" }] },
+          ],
+        }),
       );
 
       await expect(

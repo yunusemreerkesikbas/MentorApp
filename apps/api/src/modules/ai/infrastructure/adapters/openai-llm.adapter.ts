@@ -5,15 +5,11 @@ import { DomainError } from "../../../../common/errors/domain-error";
 import { ErrorCode } from "../../../../common/errors/error-code";
 import type { LlmCompleteInput, LlmPort, LlmResult, LlmStreamEvent } from "../../domain/llm.port";
 import { AI_MAX_OUTPUT_TOKENS, AI_REQUEST_TIMEOUT_MS, AI_TEMPERATURE } from "../../domain/ai.constants";
+import { collectOutputText, providerErrorLog } from "./openai-responses.util";
 
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const OPENAI_EMBED_URL = "https://api.openai.com/v1/embeddings";
 const EMBED_DIMENSIONS = 1536;
-
-function providerErrorLog(operation: string, response: Response): string {
-  const requestId = response.headers.get("x-request-id");
-  return `OpenAI ${operation} ${response.status}${requestId ? ` request_id=${requestId}` : ""}`;
-}
 
 /**
  * Responses API request body. `system` maps to top-level `instructions` (never duplicated into
@@ -35,30 +31,11 @@ interface ResponsesUsage {
   output_tokens?: number;
 }
 
-/** Raw-HTTP shape: `output_text` is an SDK convenience only — walk the output items instead. */
-function collectOutputText(output: unknown): string {
-  if (!Array.isArray(output)) return "";
-  return output
-    .filter((item): item is { type: string; content?: unknown[] } =>
-      typeof item === "object" && item !== null && (item as { type?: string }).type === "message",
-    )
-    .flatMap((item) => (Array.isArray(item.content) ? item.content : []))
-    .filter(
-      (part): part is { type: string; text: string } =>
-        typeof part === "object" &&
-        part !== null &&
-        (part as { type?: string }).type === "output_text" &&
-        typeof (part as { text?: unknown }).text === "string",
-    )
-    .map((part) => part.text)
-    .join("");
-}
-
 /**
  * Real OpenAI **Responses API** adapter (fetch — no extra dependency). It needs OPENAI_API_KEY
  * (Phase-0 ops) and is selected only when AI_PROVIDER=openai; otherwise the fake adapter runs.
  * Failures surface as a generic AI_PROVIDER_ERROR (no provider internals leak). Embeddings stay
- * on /v1/embeddings (unchanged by the migration); vision remains on chat/completions for now.
+ * on /v1/embeddings (unchanged by the migration); the vision adapter is on /v1/responses too.
  */
 @Injectable()
 export class OpenAiLlmAdapter implements LlmPort {
