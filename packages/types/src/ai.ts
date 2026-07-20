@@ -5,13 +5,14 @@ export const CoachAccessMode = {
   COIN: "COIN",
   NONE: "NONE",
 } as const;
-export type CoachAccessMode = (typeof CoachAccessMode)[keyof typeof CoachAccessMode];
+export type CoachAccessMode =
+  (typeof CoachAccessMode)[keyof typeof CoachAccessMode];
 
 /** GET /v1/coach/access — whether the user may send a coach chat message. */
 export interface CoachAccessDto {
   canChat: boolean;
   mode: CoachAccessMode;
-  /** Machine reason when mode=NONE (e.g. INSUFFICIENT_COIN, PAYMENT_PREMIUM_REQUIRED). */
+  /** Machine reason when chat is unavailable (including rate-limited PREMIUM mode). */
   reason?: string;
   /** Coin cost per message (COIN path only; never shown inside the chat zone §4 #3). */
   chatCost?: number;
@@ -37,6 +38,8 @@ export interface CoachChatReplyDto {
   /** Thread this exchange belongs to — new when the request omitted `conversationId`. */
   conversationId: string;
   sources: { title: string; slug: string; url: string }[];
+  /** Authoritative exam-date card; critical facts are never repeated in reply text. */
+  officialCountdown?: import("./coaching.js").CountdownDto;
   /** Optional coach-suggested plan task — FE renders a "Plana ekle" card (user confirms; AI never writes). */
   suggestedTask?: { title: string; subject: string | null };
   /** Ephemeral follow-up question chips (max 3) — never persisted; only on the live reply. */
@@ -57,7 +60,8 @@ export const CoachMessageRole = {
   USER: "USER",
   COACH: "COACH",
 } as const;
-export type CoachMessageRole = (typeof CoachMessageRole)[keyof typeof CoachMessageRole];
+export type CoachMessageRole =
+  (typeof CoachMessageRole)[keyof typeof CoachMessageRole];
 
 /** GET /v1/coach/messages item — one persisted chat message (single rolling conversation). */
 export interface CoachMessageDto {
@@ -71,9 +75,11 @@ export interface CoachMessageDto {
   /** Persisted coach plan-task suggestion on a COACH row (survives reload). */
   suggestedTask?: { title: string; subject: string | null };
   createdAt: string;
+  /** Persisted authoritative exam-date card for deterministic replies. */
+  officialCountdown?: import("./coaching.js").CountdownDto;
 }
 
-/** GET /v1/coach/memory — the coach's distilled PII-free profile of the user (null until built). */
+/** GET /v1/coach/memory — legacy saved summary; automatic generation is disabled. */
 export interface CoachMemoryDto {
   summary: string;
   updatedAt: string;
@@ -117,7 +123,13 @@ export interface AdminAiCostDto {
   /** Per-feature breakdown over the last 30d (chat/vision/...), highest cost first. */
   byFeature: (AiCostWindowDto & { feature: string })[];
   /** Top spenders over the last 30d (admin-only PII). */
-  topSpenders: { userId: string; email: string; displayName: string; costMicros: number; calls: number }[];
+  topSpenders: {
+    userId: string;
+    email: string;
+    displayName: string;
+    costMicros: number;
+    calls: number;
+  }[];
   /** Monthly budget guard status (calendar-month; capMicros 0 = no cap). */
   budget: { capMicros: number; spentMicros: number; exceeded: boolean };
   generatedAt: string;
@@ -199,9 +211,13 @@ export interface PhotoUploadUrlDto {
 /** POST /v1/mock-exams/{id}/categorize-photo response — classification only (§4 #2). */
 export interface CategorizePhotoResultDto {
   subjectRefs: { slug: string; name: string }[];
-  topicRefs: { slug: string; name: string; subjectSlug: string; subjectName: string }[];
+  topicRefs: {
+    slug: string;
+    name: string;
+    subjectSlug: string;
+    subjectName: string;
+  }[];
 }
-
 
 /** Premium weekly coach narration plus deterministic plan-task prefill. */
 export interface WeeklyReviewNarrationDto {
@@ -209,4 +225,3 @@ export interface WeeklyReviewNarrationDto {
   model: string;
   suggestedTask: { subjectRef: string | null; title: string };
 }
-

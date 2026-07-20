@@ -1,17 +1,20 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Button } from "@mentor/ui";
+import type { DailyNextActionKind } from "@mentor/types";
 import { useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { useCoachSession } from "./coach-session-context";
+import { useCoachAccess } from "./coach-access-shell";
+import { trackCoachEvent } from "@/lib/analytics";
 import { CoachConversationList } from "./coach-conversation-list";
-import { CoachMemoryCard } from "./coach-memory-card";
 import { CoachDailyGreeting } from "./coach-daily-greeting";
 import { CoachHubBrief } from "./coach-hub-brief";
-import { CoachHubSkeleton } from "./coach-content-skeleton";
+import { CoachMemoryCard } from "./coach-memory-card";
+import { useCoachSession } from "./coach-session-context";
 
 function greetingKeyForHour():
   | "greeting_morning"
@@ -28,15 +31,29 @@ function firstName(displayName: string): string {
   return part || displayName;
 }
 
-/**
- * /coach hub — generated hero poster, start/continue chat CTAs.
- */
+/** /coach hub: daily continuity first; chat access is secondary. */
 export function CoachHub() {
   const t = useTranslations("coach.hub");
+  const tGate = useTranslations("coach.gate");
   const { user } = useAuth();
+  const access = useCoachAccess();
   const router = useRouter();
   const reduceMotion = useReducedMotion();
   const { conversations, startNewChat, hydrated } = useCoachSession();
+
+  const [nextActionKind, setNextActionKind] =
+    useState<DailyNextActionKind | null>(null);
+  const hubViewTrackedRef = useRef(false);
+  const accessMode = access?.mode;
+
+  useEffect(() => {
+    if (hubViewTrackedRef.current || !accessMode || !nextActionKind) return;
+    hubViewTrackedRef.current = true;
+    trackCoachEvent("coach_hub_view", {
+      access_mode: accessMode,
+      next_action_kind: nextActionKind,
+    });
+  }, [accessMode, nextActionKind]);
 
   const name = user?.displayName
     ? firstName(user.displayName)
@@ -47,10 +64,6 @@ export function CoachHub() {
   function goNewChat() {
     startNewChat();
     router.push("/coach/chat");
-  }
-
-  if (!hydrated) {
-    return <CoachHubSkeleton />;
   }
 
   return (
@@ -86,31 +99,66 @@ export function CoachHub() {
         </div>
 
         <div className="relative z-10 mt-auto flex flex-col gap-3 px-5 pb-6 pt-72">
+          <CoachHubBrief onLoaded={setNextActionKind} />
           <CoachDailyGreeting />
           <CoachMemoryCard />
-          <CoachHubBrief />
-          <Button type="button" className="w-full" onClick={goNewChat}>
-            {mostRecent ? t("new_chat") : t("start_chat")}
-          </Button>
-          {mostRecent ? (
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full"
-              onClick={() =>
-                router.push({
-                  pathname: "/coach/chat",
-                  query: { c: mostRecent.id },
-                })
-              }
-            >
-              {t("continue_chat")}
-            </Button>
+
+          {access?.canChat ? (
+            <>
+              <Button type="button" className="w-full" onClick={goNewChat}>
+                {mostRecent ? t("new_chat") : t("start_chat")}
+              </Button>
+              {mostRecent ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() =>
+                    router.push({
+                      pathname: "/coach/chat",
+                      query: { c: mostRecent.id },
+                    })
+                  }
+                >
+                  {t("continue_chat")}
+                </Button>
+              ) : null}
+            </>
+          ) : access ? (
+            <div className="rounded-[var(--radius-card)] bg-white/90 px-4 py-3 shadow-[var(--shadow-card)]">
+              <p
+                className="text-sm font-bold"
+                style={{ color: "var(--color-main)" }}
+              >
+                {access.reason === "AI_RATE_LIMITED"
+                  ? tGate("heading_rate_limited")
+                  : access.reason === "INSUFFICIENT_COIN"
+                    ? tGate("heading_insufficient")
+                    : tGate("heading_default")}
+              </p>
+              {access.reason === "INSUFFICIENT_COIN" ? (
+                <Button
+                  variant="secondary"
+                  className="mt-2"
+                  onClick={() => router.push("/profile")}
+                >
+                  {tGate("go_profile")}
+                </Button>
+              ) : access.reason === "PAYMENT_PREMIUM_REQUIRED" ? (
+                <Button
+                  variant="secondary"
+                  className="mt-2"
+                  onClick={() => router.push("/subscription")}
+                >
+                  {tGate("upgrade")}
+                </Button>
+              ) : null}
+            </div>
           ) : null}
         </div>
       </motion.section>
 
-      <CoachConversationList />
+      {access?.canChat && hydrated ? <CoachConversationList /> : null}
     </main>
   );
 }

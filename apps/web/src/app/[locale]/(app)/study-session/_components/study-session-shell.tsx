@@ -13,6 +13,7 @@ import type {
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
 import { Card } from "@mentor/ui";
 import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
+import { trackCoachEvent } from "@/lib/analytics";
 import { parsePlanTaskContextFromParams } from "@/lib/plan-study-session-link";
 import { readActiveSession, resolveResume } from "@/lib/session-persistence";
 import { SessionAmbientPicker } from "./session-ambient-picker";
@@ -89,7 +90,8 @@ function readRestorableRecord() {
 }
 
 function unwrapTodayResponse(response: unknown): TodayPanelResponse {
-  return ((response as { data?: TodayPanelResponse }).data ?? response) as TodayPanelResponse;
+  return ((response as { data?: TodayPanelResponse }).data ??
+    response) as TodayPanelResponse;
 }
 
 /** Calm pastel backdrop for the immersive focus/break view (DESIGN.md blobs, softened). */
@@ -127,7 +129,10 @@ function SetupStat({ label, value }: { label: string; value: string }) {
       </span>
       <span
         className="text-sm font-bold tabular-nums"
-        style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+        style={{
+          color: "var(--color-main)",
+          fontFamily: "var(--font-heading)",
+        }}
       >
         {value}
       </span>
@@ -140,7 +145,8 @@ function PlanTaskContextChip({ title }: { title: string }) {
     <span
       className="max-w-full truncate rounded-full px-3 py-1 text-xs font-semibold"
       style={{
-        backgroundColor: "color-mix(in srgb, var(--color-progress) 14%, transparent)",
+        backgroundColor:
+          "color-mix(in srgb, var(--color-progress) 14%, transparent)",
         color: "var(--color-main)",
         fontFamily: "var(--font-body)",
       }}
@@ -164,6 +170,8 @@ export function StudySessionShell() {
   const subjectParam = searchParams.get("subject");
   const taskTitleParam = searchParams.get("taskTitle");
   const taskIdParam = searchParams.get("taskId");
+  const sourceParam = searchParams.get("source");
+  const coachSessionTrackedRef = useRef(false);
   // Resume context (subject / plan-task chips) survives a reload alongside the timer.
   const [restored] = useState(readRestorableRecord);
   const [subject, setSubject] = useState<string | null>(() =>
@@ -189,7 +197,9 @@ export function StudySessionShell() {
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(() =>
     parseInitialSelectedPresetId(presetParam, minutesParam),
   );
-  const [questBaseline, setQuestBaseline] = useState<QuestProgressView[] | null>(null);
+  const [questBaseline, setQuestBaseline] = useState<
+    QuestProgressView[] | null
+  >(null);
   const [streakBaseline, setStreakBaseline] = useState<number | null>(null);
 
   const timer = useSessionTimer({
@@ -288,7 +298,9 @@ export function StudySessionShell() {
   const handleStartSession = async () => {
     try {
       const [questsResult, todayResult] = await Promise.all([
-        fetchQuests().catch((err) => (isEconomyDisabled(err) ? null : Promise.reject(err))),
+        fetchQuests().catch((err) =>
+          isEconomyDisabled(err) ? null : Promise.reject(err),
+        ),
         coachingControllerGetToday(),
       ]);
       setQuestBaseline(questsResult);
@@ -297,7 +309,11 @@ export function StudySessionShell() {
       setQuestBaseline(null);
       setStreakBaseline(null);
     }
-    await startSession();
+    const started = await startSession();
+    if (started && sourceParam === "coach" && !coachSessionTrackedRef.current) {
+      coachSessionTrackedRef.current = true;
+      trackCoachEvent("coach_session_start", {});
+    }
   };
 
   const handleReset = () => {
@@ -349,7 +365,9 @@ export function StudySessionShell() {
 
   const planTaskTitle = planTaskContext.taskTitle;
   const planTaskChip = planTaskTitle ? (
-    <PlanTaskContextChip title={t("from_plan_task", { title: planTaskTitle })} />
+    <PlanTaskContextChip
+      title={t("from_plan_task", { title: planTaskTitle })}
+    />
   ) : null;
 
   const contextChips =
@@ -375,7 +393,8 @@ export function StudySessionShell() {
     <div
       className="flex w-full items-center rounded-[var(--radius-card)] px-1 py-2.5"
       style={{
-        backgroundColor: "color-mix(in srgb, var(--color-chip) 18%, transparent)",
+        backgroundColor:
+          "color-mix(in srgb, var(--color-chip) 18%, transparent)",
       }}
     >
       <SetupStat
@@ -476,7 +495,10 @@ export function StudySessionShell() {
         >
           {t("title")}
         </h1>
-        <p className="mt-1 text-base" style={{ color: "var(--color-secondary)" }}>
+        <p
+          className="mt-1 text-base"
+          style={{ color: "var(--color-secondary)" }}
+        >
           {t("subtitle")}
         </p>
         {focusingNow !== null && (

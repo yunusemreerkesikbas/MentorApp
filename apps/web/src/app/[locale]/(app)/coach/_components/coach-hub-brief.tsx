@@ -3,138 +3,101 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { CoachingAnalysisDto, TodayPanelResponse } from "@mentor/types";
-import { coachingControllerGetToday, http } from "@mentor/api-client";
+import type { DailyNextActionKind, TodayPanelResponse } from "@mentor/types";
+import { coachingControllerGetToday } from "@mentor/api-client";
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
+import { buildStudySessionHrefFromPlanTask } from "@/lib/plan-study-session-link";
+import { trackCoachEvent } from "@/lib/analytics";
 
-interface BriefData {
-  today: TodayPanelResponse | null;
-  analysis: CoachingAnalysisDto | null;
+interface CoachHubBriefProps {
+  onLoaded?: (kind: DailyNextActionKind) => void;
 }
 
-interface SuggestionChip {
-  label: string;
-  seed: string;
-}
-
-/**
- * Rule-based daily brief + suggestion chips on the /coach hub (no LLM call — data comes from the
- * existing /coaching/today + /coaching/analysis endpoints; chips deep-link via the ?seed= composer
- * pre-fill that already exists on /coach/chat).
- */
-export function CoachHubBrief() {
+/** Rule-based single next step from the existing daily panel endpoint. */
+export function CoachHubBrief({ onLoaded }: CoachHubBriefProps) {
   const t = useTranslations("coach.hub");
   const tCoach = useTranslations("coach");
   const reduceMotion = useReducedMotion();
-  const [data, setData] = useState<BriefData | null>(null);
+  const [today, setToday] = useState<TodayPanelResponse | null | undefined>();
 
   useEffect(() => {
     let active = true;
-    // Both fetches are defensive: the brief simply doesn't render what it can't load
-    // (analysis 400s when examType is missing — that's a normal state, not an error).
-    Promise.all([
-      coachingControllerGetToday().catch(() => null),
-      http<CoachingAnalysisDto>("/v1/coaching/analysis").catch(() => null),
-    ]).then(([today, analysis]) => {
-      if (active) setData({ today: today as TodayPanelResponse | null, analysis });
-    });
+    coachingControllerGetToday()
+      .then((result) => {
+        if (!active) return;
+        const panel = result as unknown as TodayPanelResponse;
+        setToday(panel);
+        onLoaded?.(panel.nextAction.kind);
+      })
+      .catch(() => {
+        if (active) setToday(null);
+      });
     return () => {
       active = false;
     };
-  }, []);
+  }, [onLoaded]);
 
-  // Loading: hold the layout with placeholders so the CTA block doesn't jump when data lands.
-  if (data === null) {
+  if (today === undefined) {
     return (
-      <SkeletonGroup label={tCoach("loading")} className="flex flex-col gap-3">
-        <Skeleton className="h-14 w-full rounded-[var(--radius-card)]" />
-        <div className="flex gap-2">
-          <Skeleton className="h-11 w-32 rounded-full" />
-          <Skeleton className="h-11 w-28 rounded-full" />
-        </div>
+      <SkeletonGroup label={tCoach("loading")}>
+        <Skeleton className="h-28 w-full rounded-[var(--radius-card)]" />
       </SkeletonGroup>
     );
   }
 
-  if (!data.today) return null;
+  if (!today) return null;
 
-  const { today, analysis } = data;
-  const total = today.tasks.length;
-  const done = today.tasks.filter((task) => task.status === "DONE").length;
-  const streakDays = today.streak.currentStreak;
-  const nextFocus = analysis?.nextFocus ?? null;
-  const firstPending = today.tasks.find((task) => task.status !== "DONE") ?? null;
-
-  const chips: SuggestionChip[] = [];
-  if (nextFocus) {
-    chips.push({
-      label: t("chip_focus", { subject: nextFocus.subjectName }),
-      seed: t("seed_focus", { subject: nextFocus.subjectName }),
-    });
-  }
-  if (firstPending) {
-    chips.push({
-      label: t("chip_task"),
-      seed: t("seed_task", { title: firstPending.title }),
-    });
-  } else if (total > 0) {
-    chips.push({ label: t("chip_done_day"), seed: t("seed_done_day") });
-  } else {
-    chips.push({ label: t("chip_plan_day"), seed: t("seed_plan_day") });
-  }
-  if (streakDays > 0) {
-    chips.push({
-      label: t("chip_streak"),
-      seed: t("seed_streak", { days: streakDays }),
-    });
-  }
-
-  const summaryParts = [
-    total > 0
-      ? t("brief_plan", { done, total })
-      : t("brief_plan_empty"),
-    ...(streakDays > 0 ? [t("brief_streak", { days: streakDays })] : []),
-  ];
+  const { nextAction } = today;
+  const task = nextAction.taskId
+    ? today.tasks.find((item) => item.id === nextAction.taskId)
+    : null;
+  const href =
+    nextAction.kind === "START_TASK" && task
+      ? buildStudySessionHrefFromPlanTask(task, "coach")
+      : nextAction.kind === "ADD_TASK"
+        ? { pathname: "/plan" as const, query: { add: "1", source: "coach" } }
+        : null;
 
   return (
-    <motion.div
-      className="flex flex-col gap-3"
+    <motion.section
+      className="rounded-[var(--radius-card)] bg-white/90 px-4 py-4 shadow-[var(--shadow-card)]"
       initial={reduceMotion ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, ease: "easeOut" }}
+      aria-labelledby="coach-next-action-title"
+      data-testid="coach-next-action"
     >
-      <div
-        className="rounded-[var(--radius-card)] bg-white/90 px-4 py-3 shadow-[var(--shadow-card)]"
-        style={{ color: "var(--color-main)" }}
+      <h3
+        id="coach-next-action-title"
+        className="text-base font-bold"
+        style={{
+          color: "var(--color-main)",
+          fontFamily: "var(--font-heading)",
+        }}
       >
-        <p className="text-sm font-bold">{summaryParts.join(" · ")}</p>
-        {nextFocus ? (
-          <p
-            className="mt-1 text-[13px]"
-            style={{ color: "var(--color-secondary)" }}
-          >
-            {nextFocus.message}
-          </p>
-        ) : null}
-      </div>
-
-      <div
-        className="flex flex-wrap gap-2"
-        role="group"
-        aria-label={t("suggestions_label")}
-      >
-        {chips.slice(0, 3).map((chip) => (
-          <Link
-            key={chip.label}
-            href={{ pathname: "/coach/chat", query: { seed: chip.seed } }}
-            className="inline-flex min-h-11 cursor-pointer items-center rounded-full bg-white/90 px-4 text-sm font-bold shadow-[var(--shadow-card)] transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            style={{ color: "var(--color-progress)" }}
-          >
-            {chip.label}
-          </Link>
-        ))}
-      </div>
-    </motion.div>
+        {nextAction.title}
+      </h3>
+      <p className="mt-1 text-sm" style={{ color: "var(--color-secondary)" }}>
+        {nextAction.message}
+      </p>
+      {href ? (
+        <Link
+          onClick={() =>
+            trackCoachEvent("coach_next_action_click", {
+              next_action_kind: nextAction.kind,
+            })
+          }
+          href={href}
+          className="mt-3 inline-flex min-h-11 items-center rounded-[var(--radius-button)] bg-[var(--color-progress)] px-4 text-sm font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+        >
+          {t(
+            nextAction.kind === "START_TASK"
+              ? "next_action_start"
+              : "next_action_add",
+          )}
+        </Link>
+      ) : null}
+    </motion.section>
   );
 }

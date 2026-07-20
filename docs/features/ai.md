@@ -2,7 +2,7 @@
 
 > AI coach: context injection (not training), LLM + pgvector RAG, photo→subject categorize, mood
 > reflection, ghost narration, vision board note. Module: `modules/ai`. Workstream: W3.
-> Roadmap: MVP; Phase 2 adds multi-turn, streaming, memory profile, topic-level vision.
+> Roadmap: MVP; multi-turn, streaming, and topic-level vision are live; automatic cross-thread memory is retired.
 
 ## Overview
 
@@ -14,19 +14,21 @@ motivation notes. Cost is controlled by premium gating + coin spending + rate-li
 ## Architecture (key decisions)
 
 - **Context injection, not training:** single model; personalization = injecting the user's structured
-  summary into the prompt on every reply. `ContextBuilder` builds `CoachContext` from identity + content
-  + coaching + mood — PII-free (§4 #6).
-- **§4 #1 (hardest guardrail):** the system prompt FORBIDS generating official info (dates/process/
-  placement) and redirects to `/bilgi` + data card — no hallucination. RAG grounds answers in verified
-  `info_articles`; if no relevant source found → "doğrulanmış içerik bulamadım → /bilgi" (no fabrication).
+  summary into the prompt on every reply. `ContextBuilder` builds `CoachContext` from identity +
+  coaching signals — PII-free and without an exact countdown or cross-thread memory (§4 #6).
+- **§4 #1 (hardest guardrail):** a deterministic intent resolver intercepts official dates/process/
+  placement before budget, rate-limit, or spend checks. Dates render as persisted verified data cards;
+  other official intents return only Knowledge Center sources. Completion is never called for this path.
+  The system prompt remains a second-line refusal guard for non-deterministic chat.
 - **LlmPort** (domain port): `FakeLlmAdapter` (dev default, deterministic) + `OpenAiLlmAdapter`
   (real, fetch-based, no new dependency). Selected by `AI_PROVIDER` env.
 - **VisionPort** (module-local): `FakeVisionAdapter` + `GeminiVisionAdapter` + `OpenAiVisionAdapter` — photo→subject/topic classify only
   (§4 #2 — never solves).
 - **StoragePort** (shared): `FakeStorageAdapter` + `R2StorageAdapter` — signed upload URL flow.
 - **RAG:** async embedding pipeline (`ArticlePublished` → job → `LlmPort.embed` → `ContentService.
-  setArticleEmbedding`), retrieval via pgvector cosine similarity (≤0.6 threshold). Content-owned
-  embedding (§3 — AI computes, content stores/searches).
+setArticleEmbedding`), retrieval via pgvector cosine similarity (≤0.6 threshold). Content-owned
+  embedding (§3 — AI computes, content stores/searches). General coaching text is never embedded;
+  official lookup embeds only `examType + fixed intent`, while article CTA chat uses its exact slug.
 - **Cost (§7):** `ai_usage` table (model + tokens + estimated `cost_micros`). Premium daily rate-limit
   (`ai.chat.daily_limit`, default 30). Coin spend = separate free daily coin allowance.
 - **Flags:** `ai.enabled` (global kill-switch → 404) + `economy.enabled` (coin path).
@@ -69,29 +71,44 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## API
 
-| Endpoint | Purpose |
-|---|---|
-| `POST /v1/coach/chat` | AI coach chat (multi-turn, RAG-grounded; optional `contextArticleSlug`) |
-| `POST /v1/coach/chat/stream` | Streaming chat (SSE; optional `contextArticleSlug`; delta → done/error) |
-| `POST /v1/coach/conversations/:id/regenerate/stream` | Regenerate the last coach reply (SSE; same spend as a message) |
-| `GET /v1/coach/conversations` | The user's chat threads, most-recently-active first |
-| `GET /v1/coach/conversations/:id/messages` | One thread's paginated history |
-| `DELETE /v1/coach/conversations/:id` | Delete one thread (messages cascade) |
-| `PATCH /v1/coach/messages/:id/feedback` | Rate a coach reply (👍 1 / 👎 -1 / null) |
-| `GET /v1/coach/memory` | Distilled PII-free memory profile (null until built) |
-| `DELETE /v1/coach/memory` | Reset the memory profile (KVKK) |
-| `GET /v1/coach/access` | Access probe (PREMIUM/COIN/NONE) |
-| `POST /v1/coach/mood-reflection` | Premium mood AI reflection |
-| `POST /v1/coach/daily-greeting` | Premium proactive daily greeting (cached per user+day) |
-| `POST /v1/coach/plan-draft` | Premium 7-day plan draft PREVIEW (never persisted; user confirms via W2 bulk) |
-| `POST /v1/coach/ghost-narration` | Premium ghost AI narration |
-| `POST /v1/coach/vision-note` | Premium vision board AI note |
-| `GET /v1/coach/photo-access` | Photo categorize access (upload URL) |
-| `POST /v1/admin/ai/reembed` | Backfill article embeddings (SUPER_ADMIN) |
-| `GET /v1/admin/metrics/ai` | LLM cost dashboard (window/model/top-spenders; SUPPORT+FINANCE) |
-| `GET /v1/admin/metrics/coach-feedback` | Coach 👍/👎 satisfaction + recent 👎 replies (SUPPORT+FINANCE) |
+| Endpoint                                             | Purpose                                                                       |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `POST /v1/coach/chat`                                | AI coach chat (multi-turn, RAG-grounded; optional `contextArticleSlug`)       |
+| `POST /v1/coach/chat/stream`                         | Streaming chat (SSE; optional `contextArticleSlug`; delta → done/error)       |
+| `POST /v1/coach/conversations/:id/regenerate/stream` | Regenerate the last coach reply (SSE; same spend as a message)                |
+| `GET /v1/coach/conversations`                        | The user's chat threads, most-recently-active first                           |
+| `GET /v1/coach/conversations/:id/messages`           | One thread's paginated history                                                |
+| `DELETE /v1/coach/conversations/:id`                 | Delete one thread (messages cascade)                                          |
+| `PATCH /v1/coach/messages/:id/feedback`              | Rate a coach reply (👍 1 / 👎 -1 / null)                                      |
+| `GET /v1/coach/memory`                               | Read a legacy saved summary (not generated or injected into prompts)          |
+| `DELETE /v1/coach/memory`                            | Delete the legacy saved summary (KVKK)                                        |
+| `GET /v1/coach/access`                               | Access probe (PREMIUM/COIN/NONE)                                              |
+| `POST /v1/coach/mood-reflection`                     | Premium mood AI reflection                                                    |
+| `POST /v1/coach/daily-greeting`                      | Premium proactive daily greeting (cached per user+day)                        |
+| `POST /v1/coach/plan-draft`                          | Premium 7-day plan draft PREVIEW (never persisted; user confirms via W2 bulk) |
+| `POST /v1/coach/ghost-narration`                     | Premium ghost AI narration                                                    |
+| `POST /v1/coach/vision-note`                         | Premium vision board AI note                                                  |
+| `GET /v1/coach/photo-access`                         | Photo categorize access (upload URL)                                          |
+| `POST /v1/admin/ai/reembed`                          | Backfill article embeddings (SUPER_ADMIN)                                     |
+| `GET /v1/admin/metrics/ai`                           | LLM cost dashboard (window/model/top-spenders; SUPPORT+FINANCE)               |
+| `GET /v1/admin/metrics/coach-feedback`               | Coach 👍/👎 satisfaction + recent 👎 replies (SUPPORT+FINANCE)                |
 
 ## Geliştirmeler (timeline)
+
+- **Daily continuity + verified official flow (2026-07-20)** — `/coach` is available even when chat
+  access is unavailable and starts its independent `GET /v1/coaching/today` request immediately.
+  The primary card renders the backend-localized `nextAction`; `/coach/chat` remains access-gated.
+  Official intent (`EXAM_DATE`, `APPLICATION`, `RESULT_PLACEMENT`, `PROCESS`) is resolved before AI
+  budget/rate/spend checks. Exam dates are returned and atomically persisted as `officialCountdown`
+  with `model: "verified-content"` (migration `0057`) and reload as `@mentor/ui` `DataCard`; other
+  official questions return verified article sources without completion or usage rows. General chat
+  no longer sends raw messages to embeddings; an explicit `contextArticleSlug` still enables exact-
+  article grounded conversation. Exact countdown and legacy memory were removed from all coach
+  prompts/context; new chats no longer enqueue memory jobs, while the registered legacy handler
+  validates and no-ops queued payloads. Consent-gated `coach_hub_view`, `coach_next_action_click`,
+  and successful `coach_session_start` events contain only access/action enums. Related:
+  `chat.service.ts`, `official-intent.ts`, `context-builder.service.ts`, coach web components,
+  `analytics.ts`, `0057_sturdy_korvac.sql`.
 
 - **Weekly-review narration: coin unlock gate (APP-025, 2026-07-19)** — `POST /v1/coach/weekly-review`
   artık salt premium değil: `!premium` ise `economy.enabled` VE o (sınav, hafta) için derin analiz
@@ -104,20 +121,20 @@ pnpm --filter @mentor/api test -- --grep "ai"
   navigate through `/koc` and `/koc/sohbet`, while English uses `/en/coach` and
   `/en/coach/chat`. Related: coach route components, `coach.ts`, `coach-hero.png`.
 - **Slice 1 — Lean chat** — premium-gated, single-turn, `LlmPort` (fake/OpenAI), §4 #1 refusal,
-  `ai_usage` metering, premium daily rate-limit. *(0030.)*
+  `ai_usage` metering, premium daily rate-limit. _(0030.)_
 - **RAG grounding** — async embedding pipeline (`ArticlePublished` → job), pgvector cosine retrieval,
-  source chips in web koç UI, admin backfill endpoint. Content-owned embedding. *(0043.)*
+  source chips in web koç UI, admin backfill endpoint. Content-owned embedding. _(0043.)_
 - **Coin → AI chat spend** — `EconomyService.spend()`, free daily coin allowance, LLM-failure refund.
-  *(0045.)*
+  _(0045.)_
 - **Photo → subject categorize** — `VisionPort` + `StoragePort` + `FakeVisionAdapter`/`GeminiVisionAdapter`,
-  premium monthly cap, subject-level only (§4 #2). *(0047.)*
+  premium monthly cap, subject-level only (§4 #2). _(0047.)_
 - **Mood AI-adaptive** — premium mood reflection (PII-free grounding: exam + countdown + coarse mood),
-  daily idempotent cache, coach chat mood-aware. *(0048.)*
+  daily idempotent cache, coach chat mood-aware. _(0048.)_
 - **Ghost AI narration** — premium AI narration on latest mock-exam attempt, rule-based comparison for
-  all users. *(0049.)*
-- **Koç hub + chat split** — `/koc` hub (greeting, shortcut cards, session recent pills, start/continue CTAs) and `/koc/chat` (back header, transcript, composer). `CoachSessionProvider` in `koc/layout.tsx` persists messages + recent topics in `sessionStorage` (`mentor:coach-session:v1`) for the browser tab only — no backend history. Hub shortcuts and panel coach CTA deep-link via `?seed=` (composer pre-fill). Gate blocks both routes when `canChat=false`. Puhu avatar on coach bubbles; Encouraging Puhu on gate. *(2026-06-30.)*
-- **Puhu coach bubble** — reusable `PuhuCoachBubble` (`apps/web/src/components/puhu-coach-bubble.tsx`): white speech card + tail (`.mentor-coach-bubble`), dismiss X, optional bounce; wired on `/koc` gate (reason-specific copy) and hub welcome. *(2026-06-30.)*
-- **Koç hub generated hero** — `/koc` now uses the generated `koc-hero.png` as the main app-poster visual, with only a greeting overlay and start/continue CTAs. Dense shortcut-card grid and prompt chips were removed. Usage unchanged (`/koc`, `/koc/chat?seed=...`). Gotcha: chat route and access gate were intentionally left unchanged. Files: `koc-hub.tsx`, `koc-content-skeleton.tsx`. *(2026-07-03.)*
+  all users. _(0049.)_
+- **Koç hub + chat split** — `/koc` hub (greeting, shortcut cards, session recent pills, start/continue CTAs) and `/koc/chat` (back header, transcript, composer). `CoachSessionProvider` in `koc/layout.tsx` persists messages + recent topics in `sessionStorage` (`mentor:coach-session:v1`) for the browser tab only — no backend history. Hub shortcuts and panel coach CTA deep-link via `?seed=` (composer pre-fill). Gate blocks both routes when `canChat=false`. Puhu avatar on coach bubbles; Encouraging Puhu on gate. _(2026-06-30.)_
+- **Puhu coach bubble** — reusable `PuhuCoachBubble` (`apps/web/src/components/puhu-coach-bubble.tsx`): white speech card + tail (`.mentor-coach-bubble`), dismiss X, optional bounce; wired on `/koc` gate (reason-specific copy) and hub welcome. _(2026-06-30.)_
+- **Koç hub generated hero** — `/koc` now uses the generated `koc-hero.png` as the main app-poster visual, with only a greeting overlay and start/continue CTAs. Dense shortcut-card grid and prompt chips were removed. Usage unchanged (`/koc`, `/koc/chat?seed=...`). Gotcha: chat route and access gate were intentionally left unchanged. Files: `koc-hub.tsx`, `koc-content-skeleton.tsx`. _(2026-07-03.)_
 - **Koç seans-farkında (2026-07-09)** — roadmap §258/§259 payoff'unun context katmanı: `CoachContext`'e
   PII-free `recentSessions` özeti eklendi (son 7 gün seans/odak + distinct konular + son `struggle_note`).
   `ContextBuilder` artık coaching'in `SessionService.getRecentSummary`'sini de okuyor (mood ile aynı
@@ -296,7 +313,7 @@ pnpm --filter @mentor/api test -- --grep "ai"
   `coach-session-context.tsx`, `coach-conversation-list.tsx`, `koc-hub.tsx`, `koc-chat-shell.tsx`, `coach.ts`.
 
 - **KVKK bütünsel silme (2026-07-14)** — dokümanlarda uzun süredir işaretli açık kapandı: `admin
-  anonymize` yalnız `users` satırını temizliyordu, kullanıcının **koça yazdığı tüm mesajlar** DB'de
+anonymize` yalnız `users` satırını temizliyordu, kullanıcının **koça yazdığı tüm mesajlar** DB'de
   duruyordu. Artık her modül kendi verisini siler (workstreams §2 — admin orkestre eder, başkasının
   tablosuna yazmaz): `AiErasureService` (yeni, AiModule export) koç thread'leri + `coach_memory` +
   `ai_weekly_reviews`'ı siler; `CoachingErasureService` (bkz. coaching.md) coaching serbest metnini
@@ -357,7 +374,7 @@ pnpm --filter @mentor/api test -- --grep "ai"
   `CoachMessageRepository.updateCoachReply` eski COACH satırının içerik/model/sources/suggestedTask'ını
   üretim BAŞARILI olunca değiştirir, feedback sıfırlanır; orta-akış hatasında history'ye dokunulmaz
   (coin refund mevcut yol). Üretimde history'den son USER+COACH çifti düşülür (`prepareChat
-  excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sayısı sabit → memory
+excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sayısı sabit → memory
   tetikleyicisi bilinçli atlanır; `appendExchange` çağrılmaz. Stream sarmalayıcısı ortak
   `streamLlm` helper'ına çıkarıldı (replyStream de kullanır). FE: son koç yanıtının altında ↻
   (yalnız `activeConversationId` varken); delta'lar balonu yerinde günceller, hata eski yanıtı
@@ -482,15 +499,14 @@ pnpm --filter @mentor/api test -- --grep "ai"
   **`ai_usage` KALIR** (token/maliyet meta, PII yok — §7 maliyet muhasebesi). Kullanıcı ayrıca kendi
   profilini `DELETE /v1/coach/memory`, tek bir thread'i `DELETE /v1/coach/conversations/:id` ile siler.
   **Kapsam dışı:** forum içeriği (kamuya açık topluluk içeriği; yazar "Silinmiş Kullanıcı" görünür).
-- **Memory profili yaklaşık ve gecikmelidir** — her 10 mesajda bir async job ile yenilenir; en son
-  ~40 mesajdan damıtılır. Job runner (Cron/dev tick) çalışmıyorsa profil güncellenmez ama chat
-  çalışmaya devam eder (context satırı düşer).
+- **Legacy memory is inactive** — new chats do not enqueue or regenerate `coach_memory`, and saved
+  summaries are not injected into any prompt. `GET/DELETE /v1/coach/memory` and existing rows remain
+  solely for backward compatibility and the user's deletion right; queued legacy jobs validate then no-op.
 - **Multi-turn penceresi sabittir** (`CHAT_HISTORY_MAX_MESSAGES=10`, `ai.constants.ts`) — runtime
   config değil; tuning ihtiyacı doğarsa config catalog'a taşınır. Pencere **aktif thread'e** dairdir.
-- **Thread vs memory kapsamı** — sohbet bağlamı thread-scoped (`lastN`), memory profili
-  kullanıcı-geneli (`recentForUser`, tüm thread'lerden). Yani koç yeni bir thread'de eski thread'in
-  mesajlarını hatırlamaz ama **profilini** (hedef/zorluklar) hatırlar. Thread silmek profili silmez
-  (`DELETE /v1/coach/memory` ayrı).
+- **Thread context only** — the rolling prompt window is scoped to the active thread (`lastN`). A new
+  thread does not receive messages or summaries from older threads. Deleting a thread still does not
+  delete a pre-existing legacy summary; `DELETE /v1/coach/memory` remains separate.
 - **Provider değişimi = 1 kez reembed** — sorgu embedding'i ile makale embedding'i aynı modelden
   olmalı; `AI_PROVIDER` değişince `POST /v1/admin/ai/reembed` (SUPER_ADMIN) çalıştırılmazsa RAG
   retrieval anlamsızlaşır (hata vermez, alakasız/boş kaynak döner). Maliyeti sentlerle ölçülür.
@@ -506,14 +522,11 @@ pnpm --filter @mentor/api test -- --grep "ai"
 - Web: [i18n.md](./i18n.md) (koc namespace)
 - Status: [core/mvp-status.md](../core/mvp-status.md) (W3)
 
-
 - **Premium haftalık koç yorumu (2026-07-11)** — `POST /v1/coach/weekly-review` aktif sınavın
   coaching tarafından hazırlanmış PII-minimal haftalık özetini en fazla üç kısa cümleyle yorumlar.
   Free kullanıcıya LLM çağrısı yapılmaz. Sonuç kullanıcı+sınav+hafta+locale ve aggregate fingerprint
   ile `ai_weekly_reviews` tablosunda cache'lenir; veri değişirse yeniden üretilir. Plan görevi AI
   tarafından yazılmaz, deterministik coaching odağından gelir. Migration: `0045_vengeful_shinobi_shaw.sql`.
-
-
 
 - **Latest mock exam as explicit coach context (2026-07-14)** — `POST /v1/coach/chat` and
   `/chat/stream` now accept optional `contextMockExamId`. `ChatService` verifies ownership through

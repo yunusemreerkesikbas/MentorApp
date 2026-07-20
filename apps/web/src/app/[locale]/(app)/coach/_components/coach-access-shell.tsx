@@ -13,18 +13,20 @@ import { FormError } from "@/components/form";
 import { fetchCoachAccess } from "@/lib/coach";
 import { CoachAccessGate } from "./coach-access-gate";
 import { CoachSessionProvider } from "./coach-session-context";
-import { CoachChatSkeleton, CoachHubSkeleton } from "./coach-content-skeleton";
+import { CoachChatSkeleton } from "./coach-content-skeleton";
 
 type AccessState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "ready"; access: CoachAccessDto };
 
-const CoachAccessContext = createContext<CoachAccessDto | null>(null);
+const CoachAccessContext = createContext<CoachAccessDto | null | undefined>(
+  undefined,
+);
 
-export function useCoachAccess(): CoachAccessDto {
+export function useCoachAccess(): CoachAccessDto | null {
   const access = useContext(CoachAccessContext);
-  if (!access) {
+  if (access === undefined) {
     throw new Error("useCoachAccess must be used within CoachAccessShell");
   }
   return access;
@@ -36,7 +38,8 @@ export function useCoachAccess(): CoachAccessDto {
 export function CoachAccessShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [state, setState] = useState<AccessState>({ status: "loading" });
-  const isChatRoute = pathname === "/coach/chat" || pathname.endsWith("/coach/chat");
+  const isChatRoute =
+    pathname === "/coach/chat" || pathname.endsWith("/coach/chat");
 
   useEffect(() => {
     let active = true;
@@ -57,25 +60,24 @@ export function CoachAccessShell({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  if (state.status === "loading") {
-    return isChatRoute ? <CoachChatSkeleton /> : <CoachHubSkeleton />;
-  }
-
-  if (state.status === "error") {
+  if (isChatRoute && state.status === "loading") return <CoachChatSkeleton />;
+  if (isChatRoute && state.status === "error") {
     return (
       <main className="mx-auto max-w-2xl px-5 py-10">
         <FormError message={state.message} />
       </main>
     );
   }
-
-  if (!state.access.canChat) {
+  if (isChatRoute && state.status === "ready" && !state.access.canChat) {
     return <CoachAccessGate access={state.access} />;
   }
 
+  const access = state.status === "ready" ? state.access : null;
   return (
-    <CoachAccessContext.Provider value={state.access}>
-      <CoachSessionProvider>{children}</CoachSessionProvider>
+    <CoachAccessContext.Provider value={access}>
+      <CoachSessionProvider enabled={access?.canChat === true}>
+        {children}
+      </CoachSessionProvider>
     </CoachAccessContext.Provider>
   );
 }

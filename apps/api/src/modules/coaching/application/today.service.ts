@@ -1,6 +1,12 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { I18nContext, I18nService } from "nestjs-i18n";
-import type { CountdownDto, TodayPanelResponse } from "@mentor/types";
+import type {
+  CountdownDto,
+  DailyNextActionDto,
+  MoodCheckinDto,
+  PlanTaskDto,
+  TodayPanelResponse,
+} from "@mentor/types";
 import { UsersService } from "../../identity/application/users.service";
 import { SESSION_PRESETS } from "../domain/coaching.constants";
 import { CONTENT_PORT, type ContentPort } from "../domain/content.port";
@@ -37,18 +43,19 @@ export class TodayService {
     // Identity owns the profile (display name + exam type) — read via its service, not a coaching query.
     const profile = await this.users.getMe(userId);
 
-    const [countdown, streak, tasks, mood, focusMinutesToday, focusingNow] = await Promise.all([
-      this.buildCountdown(profile.examType, today),
-      this.streak.getSummary(userId),
-      this.plan.listForDate(userId, today),
-      this.mood.getToday(userId),
-      this.sessions.getTodayFocusMinutes(userId),
-      // Ambience only — a failed aggregate must never take the daily hub down (logged fallback).
-      this.sessions.getFocusingNowCount().catch((err: unknown) => {
-        this.logger.warn(`focusingNow unavailable: ${String(err)}`);
-        return null;
-      }),
-    ]);
+    const [countdown, streak, tasks, mood, focusMinutesToday, focusingNow] =
+      await Promise.all([
+        this.buildCountdown(profile.examType, today),
+        this.streak.getSummary(userId),
+        this.plan.listForDate(userId, today),
+        this.mood.getToday(userId),
+        this.sessions.getTodayFocusMinutes(userId),
+        // Ambience only — a failed aggregate must never take the daily hub down (logged fallback).
+        this.sessions.getFocusingNowCount().catch((err: unknown) => {
+          this.logger.warn(`focusingNow unavailable: ${String(err)}`);
+          return null;
+        }),
+      ]);
 
     return {
       greetingName: profile.displayName,
@@ -56,6 +63,7 @@ export class TodayService {
       countdown,
       streak,
       tasks,
+      nextAction: this.nextAction(tasks, mood),
       sessionPresets: [...SESSION_PRESETS],
       mood,
       focusGoal: {
@@ -63,6 +71,36 @@ export class TodayService {
         focusMinutesToday,
       },
       focusingNow,
+    };
+  }
+
+  private nextAction(
+    tasks: PlanTaskDto[],
+    mood: MoodCheckinDto | null,
+  ): DailyNextActionDto {
+    const pending = tasks.find((task) => task.status === "PENDING");
+    const kind = pending
+      ? "START_TASK"
+      : tasks.length === 0
+        ? "ADD_TASK"
+        : "DAY_COMPLETE";
+    const messageKey =
+      kind === "START_TASK" && mood?.mood != null && mood.mood <= 2
+        ? "coaching.nextAction.START_TASK.lowMoodMessage"
+        : `coaching.nextAction.${kind}.message`;
+    const lang = I18nContext.current()?.lang;
+
+    return {
+      kind,
+      title: this.i18n.translate(`coaching.nextAction.${kind}.title`, {
+        lang,
+        args: { taskTitle: pending?.title },
+      }) as unknown as string,
+      message: this.i18n.translate(messageKey, {
+        lang,
+        args: { taskTitle: pending?.title },
+      }) as unknown as string,
+      taskId: pending?.id ?? null,
     };
   }
 
@@ -85,7 +123,12 @@ export class TodayService {
 
   /** Rule-based, backend-localized motivational line (no AI on this surface — §4 #5). */
   private motivationalLine(currentStreak: number): string {
-    const key = currentStreak > 0 ? "coaching.motivation.GOING" : "coaching.motivation.START";
-    return this.i18n.translate(key, { lang: I18nContext.current()?.lang }) as unknown as string;
+    const key =
+      currentStreak > 0
+        ? "coaching.motivation.GOING"
+        : "coaching.motivation.START";
+    return this.i18n.translate(key, {
+      lang: I18nContext.current()?.lang,
+    }) as unknown as string;
   }
 }

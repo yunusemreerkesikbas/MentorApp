@@ -1,7 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { CoachMessageRole, type CoachMessageDto, type Paginated } from "@mentor/types";
+import {
+  CoachMessageRole,
+  type CoachMessageDto,
+  type CountdownDto,
+  type Paginated,
+} from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
@@ -30,6 +35,7 @@ type CoachMessageRow = typeof coachMessages.$inferSelect;
 
 function toDto(row: CoachMessageRow): CoachMessageDto {
   const task = (row.suggestedTask as SuggestedTask | null) ?? null;
+  const countdown = (row.officialCountdown as CountdownDto | null) ?? null;
   return {
     id: row.id,
     role: row.role as CoachMessageRole,
@@ -37,13 +43,14 @@ function toDto(row: CoachMessageRow): CoachMessageDto {
     sources: (row.sources as SourceChip[] | null) ?? [],
     feedback: row.feedback ?? null,
     ...(task ? { suggestedTask: task } : {}),
+    ...(countdown ? { officialCountdown: countdown } : {}),
     createdAt: row.createdAt.toISOString(),
   };
 }
 
 /**
  * Persisted coach chat history (W3, multi-turn threads). Messages are scoped to a conversation;
- * the prompt window reads one thread, the memory profile reads across threads.
+ * the prompt window reads one thread.
  * All access runs in the user's RLS context (per-user behavioral data, §4 #6 / KVKK).
  */
 @Injectable()
@@ -51,16 +58,20 @@ export class CoachMessageRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
   /**
-   * Persist one exchange (user message + coach reply) atomically after a successful LLM call, and
-   * bump the thread's `last_message_at` in the same tx. Returns the user's total message count
-   * (across threads) so the caller can decide whether to refresh the memory profile.
+   * Persist one exchange and bump the thread's `last_message_at` in the same transaction.
    */
   async appendExchange(
     userId: string,
     conversationId: string,
     userContent: string,
-    coach: { content: string; model: string; sources: SourceChip[]; suggestedTask?: SuggestedTask },
-  ): Promise<{ totalMessages: number }> {
+    coach: {
+      content: string;
+      model: string;
+      sources: SourceChip[];
+      suggestedTask?: SuggestedTask;
+      officialCountdown?: CountdownDto;
+    },
+  ): Promise<void> {
     return withUserContext(this.db, { userId }, async (tx) => {
       await tx.insert(coachMessages).values({
         userId,
@@ -76,16 +87,12 @@ export class CoachMessageRepository {
         sources: coach.sources,
         model: coach.model,
         suggestedTask: coach.suggestedTask ?? null,
+        officialCountdown: coach.officialCountdown ?? null,
       });
       await tx
         .update(coachConversations)
         .set({ lastMessageAt: new Date() })
         .where(eq(coachConversations.id, conversationId));
-      const totals = await tx
-        .select({ n: sql<number>`count(*)::int` })
-        .from(coachMessages)
-        .where(eq(coachMessages.userId, userId));
-      return { totalMessages: totals[0]?.n ?? 0 };
     });
   }
 
@@ -96,7 +103,13 @@ export class CoachMessageRepository {
   async updateCoachReply(
     userId: string,
     messageId: string,
-    coach: { content: string; model: string; sources: SourceChip[]; suggestedTask?: SuggestedTask },
+    coach: {
+      content: string;
+      model: string;
+      sources: SourceChip[];
+      suggestedTask?: SuggestedTask;
+      officialCountdown?: CountdownDto;
+    },
   ): Promise<boolean> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const updated = await tx
@@ -107,6 +120,7 @@ export class CoachMessageRepository {
           sources: coach.sources,
           suggestedTask: coach.suggestedTask ?? null,
           feedback: null,
+          officialCountdown: coach.officialCountdown ?? null,
         })
         .where(
           and(
@@ -121,7 +135,11 @@ export class CoachMessageRepository {
   }
 
   /** Set 👍/👎/none on the user's own COACH message. Returns false when no such row (wrong id/role/owner). */
-  async setFeedback(userId: string, messageId: string, feedback: number | null): Promise<boolean> {
+  async setFeedback(
+    userId: string,
+    messageId: string,
+    feedback: number | null,
+  ): Promise<boolean> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const updated = await tx
         .update(coachMessages)
@@ -139,25 +157,16 @@ export class CoachMessageRepository {
   }
 
   /** Last `n` messages of ONE thread, chronological — the multi-turn prompt window. */
-  async lastN(userId: string, conversationId: string, n: number): Promise<CoachMessageDto[]> {
+  async lastN(
+    userId: string,
+    conversationId: string,
+    n: number,
+  ): Promise<CoachMessageDto[]> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const rows = await tx
         .select()
         .from(coachMessages)
         .where(eq(coachMessages.conversationId, conversationId))
-        .orderBy(desc(coachMessages.createdAt), desc(coachMessages.id))
-        .limit(n);
-      return rows.reverse().map(toDto);
-    });
-  }
-
-  /** Last `n` messages across ALL threads, chronological — the memory-profile distillation window. */
-  async recentForUser(userId: string, n: number): Promise<CoachMessageDto[]> {
-    return withUserContext(this.db, { userId }, async (tx) => {
-      const rows = await tx
-        .select()
-        .from(coachMessages)
-        .where(eq(coachMessages.userId, userId))
         .orderBy(desc(coachMessages.createdAt), desc(coachMessages.id))
         .limit(n);
       return rows.reverse().map(toDto);
@@ -185,7 +194,12 @@ export class CoachMessageRepository {
           .from(coachMessages)
           .where(eq(coachMessages.conversationId, conversationId)),
       ]);
-      return { items: rows.map(toDto), page, pageSize, total: totals[0]?.n ?? 0 };
+      return {
+        items: rows.map(toDto),
+        page,
+        pageSize,
+        total: totals[0]?.n ?? 0,
+      };
     });
   }
 
@@ -228,7 +242,12 @@ export class CoachMessageRepository {
           question,
         })
         .from(coachMessages)
-        .where(and(eq(coachMessages.role, CoachMessageRole.COACH), eq(coachMessages.feedback, -1)))
+        .where(
+          and(
+            eq(coachMessages.role, CoachMessageRole.COACH),
+            eq(coachMessages.feedback, -1),
+          ),
+        )
         .orderBy(desc(coachMessages.createdAt))
         .limit(limit);
       return rows.map((r) => ({

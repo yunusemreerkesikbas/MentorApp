@@ -243,6 +243,14 @@ export interface FocusGoalDto {
   /** Sum of today's COMPLETED session focus, rounded to minutes (no min-focus filter). */
   focusMinutesToday: number;
 }
+export type DailyNextActionKind = "START_TASK" | "ADD_TASK" | "DAY_COMPLETE";
+
+export interface DailyNextActionDto {
+  kind: DailyNextActionKind;
+  title: string;
+  message: string;
+  taskId: string | null;
+}
 
 /** Composite panel payload — one request → whole daily hub. */
 export interface TodayPanelResponse {
@@ -253,6 +261,8 @@ export interface TodayPanelResponse {
   countdown: CountdownDto | null;
   streak: StreakSummaryDto;
   tasks: PlanTaskDto[];
+  /** Single rule-based step selected by the backend from today's ordered tasks. */
+  nextAction: DailyNextActionDto;
   sessionPresets: SessionPresetDto[];
   /** Today's mood check-in if the user already checked in, else `null`. */
   mood: MoodCheckinDto | null;

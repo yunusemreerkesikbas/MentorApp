@@ -32,7 +32,7 @@ const REMAINING_HINT_THRESHOLD = 5;
 export function CoachChatShell() {
   const tCoach = useTranslations("coach");
   const tChat = useTranslations("coach.chat");
-  const access = useCoachAccess();
+  const access = useCoachAccess()!;
   const searchParams = useSearchParams();
   const reduceMotion = useReducedMotion();
   const {
@@ -120,7 +120,15 @@ export function CoachChatShell() {
     const coachMessageId = newId();
     let received = "";
     try {
-      const { reply, sources, suggestedTask, followUps: nextFollowUps, conversationId } = await streamCoachMessage(
+      const {
+        reply,
+        sources,
+        suggestedTask,
+        officialCountdown,
+        followUps: nextFollowUps,
+        conversationId,
+        model,
+      } = await streamCoachMessage(
         trimmed,
         clientMessageId,
         (delta) => {
@@ -138,9 +146,21 @@ export function CoachChatShell() {
       );
       // Finalize with the authoritative reply + source chips (covers zero-delta fallbacks too).
       if (received === "") {
-        appendMessage({ id: coachMessageId, role: "coach", text: reply, sources, suggestedTask });
+        appendMessage({
+          id: coachMessageId,
+          role: "coach",
+          text: reply,
+          sources,
+          suggestedTask,
+          officialCountdown,
+        });
       } else {
-        updateMessage(coachMessageId, { text: reply, sources, suggestedTask });
+        updateMessage(coachMessageId, {
+          text: reply,
+          sources,
+          suggestedTask,
+          officialCountdown,
+        });
       }
       setFollowUps(nextFollowUps ?? []);
 
@@ -163,7 +183,9 @@ export function CoachChatShell() {
         adoptConversation(conversationId);
       }
       void refreshConversations();
-      setRemaining((r) => (r === null ? null : Math.max(0, r - 1)));
+      if (model !== "verified-content") {
+        setRemaining((r) => (r === null ? null : Math.max(0, r - 1)));
+      }
     } catch (err) {
       if (received !== "") removeMessage(coachMessageId);
       setChatError(
@@ -191,25 +213,43 @@ export function CoachChatShell() {
     setFollowUps([]);
     setBusy(true);
     // Old reply stays visible until the first delta; a failure restores this snapshot.
-    updateMessage(lastCoach.id, { sources: undefined, suggestedTask: undefined, feedback: null });
+    updateMessage(lastCoach.id, {
+      sources: undefined,
+      suggestedTask: undefined,
+      officialCountdown: undefined,
+      feedback: null,
+    });
     let received = "";
     try {
-      const { reply, sources, suggestedTask, followUps: nextFollowUps } = await streamRegenerate(
-        activeConversationId,
-        (delta) => {
-          received += delta;
-          setStreamStarted(true);
-          updateMessage(lastCoach.id, { text: received });
-        },
-      );
-      updateMessage(lastCoach.id, { text: reply, sources, suggestedTask, feedback: null });
+      const {
+        reply,
+        sources,
+        suggestedTask,
+        officialCountdown,
+        followUps: nextFollowUps,
+        model,
+      } = await streamRegenerate(activeConversationId, (delta) => {
+        received += delta;
+        setStreamStarted(true);
+        updateMessage(lastCoach.id, { text: received });
+      });
+      updateMessage(lastCoach.id, {
+        text: reply,
+        sources,
+        suggestedTask,
+        officialCountdown,
+        feedback: null,
+      });
       setFollowUps(nextFollowUps ?? []);
-      setRemaining((r) => (r === null ? null : Math.max(0, r - 1)));
+      if (model !== "verified-content") {
+        setRemaining((r) => (r === null ? null : Math.max(0, r - 1)));
+      }
     } catch (err) {
       updateMessage(lastCoach.id, {
         text: lastCoach.text,
         sources: lastCoach.sources,
         suggestedTask: lastCoach.suggestedTask,
+        officialCountdown: lastCoach.officialCountdown,
         feedback: lastCoach.feedback ?? null,
       });
       setChatError(
@@ -293,7 +333,9 @@ export function CoachChatShell() {
           setInput(q);
           composerRef.current?.focus();
         }}
-        onRegenerate={activeConversationId ? () => void regenerate() : undefined}
+        onRegenerate={
+          activeConversationId ? () => void regenerate() : undefined
+        }
       />
       {remaining !== null && remaining <= REMAINING_HINT_THRESHOLD ? (
         <p

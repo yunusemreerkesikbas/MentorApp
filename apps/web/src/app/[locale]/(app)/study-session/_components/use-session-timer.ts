@@ -50,7 +50,7 @@ export interface UseSessionTimerResult {
   isPaused: boolean;
   session: StudySessionDto | null;
   busy: boolean;
-  startSession: () => Promise<void>;
+  startSession: () => Promise<boolean>;
   togglePause: () => void;
   finalize: (status: "COMPLETED" | "ABANDONED") => Promise<void>;
   recordFeedback: (mood: number, struggleNote?: string) => Promise<void>;
@@ -304,7 +304,9 @@ export function useSessionTimer(
     try {
       const preset = selectedPresetRef.current;
       const trimmedSubject = subject?.trim() ? subject.trim() : undefined;
-      const trimmedPlanTaskId = planTaskId?.trim() ? planTaskId.trim() : undefined;
+      const trimmedPlanTaskId = planTaskId?.trim()
+        ? planTaskId.trim()
+        : undefined;
       const shared = {
         subject: trimmedSubject,
         ...(trimmedPlanTaskId ? { planTaskId: trimmedPlanTaskId } : {}),
@@ -319,8 +321,10 @@ export function useSessionTimer(
       focusElapsedRef.current = 0;
       setFocusElapsed(0);
       beginPhase("focus", presetSeconds(focusMinutes));
+      return true;
     } catch (err) {
       showSessionError(err);
+      return false;
     } finally {
       setBusy(false);
     }

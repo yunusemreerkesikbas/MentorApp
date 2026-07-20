@@ -7,6 +7,9 @@ import ThumbsUp from "lucide-react/dist/esm/icons/thumbs-up.mjs";
 import ThumbsDown from "lucide-react/dist/esm/icons/thumbs-down.mjs";
 import Copy from "lucide-react/dist/esm/icons/copy.mjs";
 import Check from "lucide-react/dist/esm/icons/check.mjs";
+import CalendarDays from "lucide-react/dist/esm/icons/calendar-days.mjs";
+import { DataCard } from "@mentor/ui";
+import type { CountdownDto } from "@mentor/types";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw.mjs";
 import { Link } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
@@ -20,6 +23,8 @@ export interface ChatMessage {
   role: "user" | "coach";
   text: string;
   sources?: CoachSource[];
+  /** Verified official date card persisted with deterministic replies. */
+  officialCountdown?: CountdownDto;
   /** Coach-suggested plan task → "Plana ekle" card (persisted with the reply). */
   suggestedTask?: { title: string; subject: string | null };
   /** 👍 = 1, 👎 = -1, null = none (COACH rows only; undefined on optimistic/streaming rows). */
@@ -65,7 +70,9 @@ export function CoachTranscript({
 
   const isEmpty = messages.length === 0 && !busy;
   // ↻ appears only under the newest coach reply — older ones are history, not candidates.
-  const lastCoachId = [...messages].reverse().find((m) => m.role === "coach")?.id;
+  const lastCoachId = [...messages]
+    .reverse()
+    .find((m) => m.role === "coach")?.id;
 
   return (
     <div
@@ -101,8 +108,14 @@ export function CoachTranscript({
       {messages.map((m) => (
         <Fragment key={m.id}>
           <MessageBubble message={m} reduceMotion={reduceMotion} />
+          {m.role === "coach" && m.officialCountdown ? (
+            <OfficialCountdownCard countdown={m.officialCountdown} />
+          ) : null}
           {m.role === "coach" && m.suggestedTask ? (
-            <SuggestedTaskCard task={m.suggestedTask} className="flex justify-start pl-10" />
+            <SuggestedTaskCard
+              task={m.suggestedTask}
+              className="flex justify-start pl-10"
+            />
           ) : null}
           {m.role === "coach" && m.sources ? (
             <SourceChips sources={m.sources} />
@@ -112,7 +125,9 @@ export function CoachTranscript({
               value={m.feedback ?? null}
               onRate={(v) => onFeedback(m.id, v)}
               text={m.text}
-              onRegenerate={m.id === lastCoachId && !busy ? onRegenerate : undefined}
+              onRegenerate={
+                m.id === lastCoachId && !busy ? onRegenerate : undefined
+              }
             />
           ) : null}
         </Fragment>
@@ -147,6 +162,34 @@ export function CoachTranscript({
   );
 }
 
+function OfficialCountdownCard({ countdown }: { countdown: CountdownDto }) {
+  const translate = useTranslations("coach_chat");
+
+  return (
+    <div className="flex justify-start pl-10">
+      <DataCard
+        className="w-full max-w-[85%]"
+        label={translate("official_card_label")}
+        value={translate("official_card_days", {
+          count: countdown.daysRemaining,
+        })}
+        caption={`${countdown.examName} · ${countdown.examDateLabel}`}
+        icon={
+          <CalendarDays
+            className="size-7"
+            style={{ color: "var(--color-progress)" }}
+            aria-hidden
+          />
+        }
+        source={{
+          label: countdown.source,
+          url: countdown.sourceUrl,
+          prefix: translate("source_label"),
+        }}
+      />
+    </div>
+  );
+}
 function MessageBubble({
   message,
   reduceMotion,
@@ -174,7 +217,9 @@ function MessageBubble({
       ) : null}
       <div
         className={`max-w-[85%] rounded-[var(--radius-card)] px-4 py-2.5 text-base leading-relaxed ${
-          isUser ? "whitespace-pre-wrap text-white" : "border border-white bg-white/50"
+          isUser
+            ? "whitespace-pre-wrap text-white"
+            : "border border-white bg-white/50"
         }`}
         style={{
           fontFamily: "var(--font-body)",
@@ -221,7 +266,10 @@ function FeedbackRow({
         aria-pressed={value === 1}
         onClick={() => onRate(value === 1 ? null : 1)}
         className={base}
-        style={{ color: value === 1 ? "var(--color-progress)" : "var(--color-secondary)" }}
+        style={{
+          color:
+            value === 1 ? "var(--color-progress)" : "var(--color-secondary)",
+        }}
       >
         <ThumbsUp className="size-4" aria-hidden />
       </button>
@@ -231,7 +279,9 @@ function FeedbackRow({
         aria-pressed={value === -1}
         onClick={() => onRate(value === -1 ? null : -1)}
         className={base}
-        style={{ color: value === -1 ? "var(--color-main)" : "var(--color-secondary)" }}
+        style={{
+          color: value === -1 ? "var(--color-main)" : "var(--color-secondary)",
+        }}
       >
         <ThumbsDown className="size-4" aria-hidden />
       </button>

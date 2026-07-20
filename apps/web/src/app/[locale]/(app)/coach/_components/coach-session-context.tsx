@@ -50,7 +50,9 @@ const CoachSessionContext = createContext<CoachSessionContextValue | null>(
   null,
 );
 
-function toChatMessages(items: Awaited<ReturnType<typeof listCoachMessages>>["items"]) {
+function toChatMessages(
+  items: Awaited<ReturnType<typeof listCoachMessages>>["items"],
+) {
   // API returns newest-first; the transcript renders oldest-first.
   return [...items].reverse().map((m) => ({
     id: m.id,
@@ -59,38 +61,53 @@ function toChatMessages(items: Awaited<ReturnType<typeof listCoachMessages>>["it
     sources: m.sources,
     feedback: m.feedback,
     suggestedTask: m.suggestedTask,
+    officialCountdown: m.officialCountdown,
   }));
 }
 
-export function CoachSessionProvider({ children }: { children: ReactNode }) {
+export function CoachSessionProvider({
+  children,
+  enabled,
+}: {
+  children: ReactNode;
+  enabled: boolean;
+}) {
   const [messages, setMessagesState] = useState<ChatMessage[]>([]);
-  const [conversations, setConversations] = useState<CoachConversationDto[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [hydrated, setHydrated] = useState(false);
+  const [conversations, setConversations] = useState<CoachConversationDto[]>(
+    [],
+  );
+  const [activeConversationId, setActiveConversationId] = useState<
+    string | null
+  >(null);
+  const [conversationHydrated, setConversationHydrated] = useState(false);
 
   const refreshConversations = useCallback(async () => {
+    if (!enabled) return;
     try {
       const { items } = await listCoachConversations(1, CONVERSATION_PAGE_SIZE);
       setConversations(items);
     } catch {
       // Thread list unavailable (offline, ai.enabled off) — chat still works.
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     let active = true;
+    if (!enabled) return;
     listCoachConversations(1, CONVERSATION_PAGE_SIZE)
       .then(({ items }) => {
         if (active) setConversations(items);
       })
       .catch(() => {})
       .finally(() => {
-        if (active) setHydrated(true);
+        if (active) setConversationHydrated(true);
       });
     return () => {
       active = false;
     };
-  }, []);
+  }, [enabled]);
+
+  const hydrated = !enabled || conversationHydrated;
 
   const openConversation = useCallback(async (id: string) => {
     setActiveConversationId(id);
@@ -107,11 +124,14 @@ export function CoachSessionProvider({ children }: { children: ReactNode }) {
     setMessagesState((prev) => [...prev, message]);
   }, []);
 
-  const updateMessage = useCallback((id: string, patch: Partial<ChatMessage>) => {
-    setMessagesState((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, ...patch } : m)),
-    );
-  }, []);
+  const updateMessage = useCallback(
+    (id: string, patch: Partial<ChatMessage>) => {
+      setMessagesState((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+      );
+    },
+    [],
+  );
 
   const removeMessage = useCallback((id: string) => {
     setMessagesState((prev) => prev.filter((m) => m.id !== id));
@@ -126,19 +146,16 @@ export function CoachSessionProvider({ children }: { children: ReactNode }) {
     setActiveConversationId(id);
   }, []);
 
-  const deleteConversation = useCallback(
-    async (id: string) => {
-      await deleteCoachConversation(id);
-      setConversations((prev) => prev.filter((c) => c.id !== id));
-      // Deleting the open thread drops you back into a fresh chat.
-      setActiveConversationId((current) => {
-        if (current !== id) return current;
-        setMessagesState([]);
-        return null;
-      });
-    },
-    [],
-  );
+  const deleteConversation = useCallback(async (id: string) => {
+    await deleteCoachConversation(id);
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    // Deleting the open thread drops you back into a fresh chat.
+    setActiveConversationId((current) => {
+      if (current !== id) return current;
+      setMessagesState([]);
+      return null;
+    });
+  }, []);
 
   const value = useMemo(
     () => ({

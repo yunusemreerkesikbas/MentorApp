@@ -483,10 +483,13 @@
       "chip_plan_day": "Plan my day",
       "seed_plan_day": "How should I plan my day?",
       "chip_streak": "Keep my streak",
+      "next_action_start": "Start a focus session",
+      "next_action_add": "Add a task to your plan",
       "seed_streak": "I have a {days}-day streak — what should I do today to keep it?"
     },
     "memory": {
       "title": "What your coach knows about you",
+      "legacy_notice": "This saved summary is no longer used in coach replies.",
       "reset": "Reset"
     },
     "conversations": {
@@ -1112,6 +1115,8 @@
     "suggestion_2": "How do I manage my exam anxiety?",
     "suggestion_3": "Suggest a study plan for me",
     "source_label": "Source:",
+    "official_card_label": "Time to exam",
+    "official_card_days": "{count, plural, one {# day} other {# days}}",
     "typing": "Coach is typing"
   },
   "countdown": {

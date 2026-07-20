@@ -6,7 +6,10 @@ export const PLAN_TASK_TITLE_MAX = 80;
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export type PlanTaskStudySessionLinkInput = Pick<PlanTaskDto, "id" | "title" | "subject">;
+export type PlanTaskStudySessionLinkInput = Pick<
+  PlanTaskDto,
+  "id" | "title" | "subject"
+>;
 
 export type StudySessionHref =
   | "/study-session"
@@ -16,11 +19,15 @@ export type StudySessionHref =
     };
 
 /** Deep-link from a plan task into `/study-session` with subject + task context (FE-only; no backend taskId). */
-export function buildStudySessionHrefFromPlanTask(task: PlanTaskStudySessionLinkInput): StudySessionHref {
+export function buildStudySessionHrefFromPlanTask(
+  task: PlanTaskStudySessionLinkInput,
+  source?: "coach",
+): StudySessionHref {
   const query: Record<string, string> = {
     taskId: task.id,
   };
 
+  if (source) query.source = source;
   const title = task.title.trim().slice(0, PLAN_TASK_TITLE_MAX);
   if (title) {
     query.taskTitle = title;

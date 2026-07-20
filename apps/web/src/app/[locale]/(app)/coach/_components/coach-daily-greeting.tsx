@@ -15,7 +15,7 @@ import { useCoachAccess } from "./coach-access-shell";
 export function CoachDailyGreeting() {
   const t = useTranslations("coach.hub");
   const access = useCoachAccess();
-  const isPremium = access.mode === CoachAccessMode.PREMIUM;
+  const isPremium = access?.mode === CoachAccessMode.PREMIUM;
   const [greeting, setGreeting] = useState<string | null>(null);
   // One request per mount — StrictMode re-runs the effect, which would double the day's
   // first (billable) LLM call. No cleanup flag: the resolved value must still land after

@@ -45,8 +45,16 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
       ? t("insufficient_coin_subtitle")
       : t("default_subtitle");
 
-  const valueKeys = ["value_plan", "value_sources", "value_motivation"] as const;
-  const teaserKeys = ["teaser_study", "teaser_anxiety", "teaser_subject"] as const;
+  const valueKeys = [
+    "value_plan",
+    "value_sources",
+    "value_motivation",
+  ] as const;
+  const teaserKeys = [
+    "teaser_study",
+    "teaser_anxiety",
+    "teaser_subject",
+  ] as const;
 
   const bubbleMessage = isRateLimited
     ? t("bubble_rate_limited")
@@ -82,7 +90,10 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
         </p>
       </motion.header>
 
-      <motion.div className="flex w-full flex-col items-center gap-5" {...cardMotion}>
+      <motion.div
+        className="flex w-full flex-col items-center gap-5"
+        {...cardMotion}
+      >
         <PuhuCoachBubble
           message={bubbleMessage}
           variant="encouraging"
@@ -127,17 +138,15 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
             })}
           </ul>
 
-          <div className="flex flex-wrap gap-2">
+          {isInsufficientCoin ? (
+            <Button onClick={() => router.push("/profile")}>
+              {t("go_profile")}
+            </Button>
+          ) : access.reason === "PAYMENT_PREMIUM_REQUIRED" ? (
             <Button onClick={() => router.push("/subscription")}>
               {t("upgrade")}
             </Button>
-            {isInsufficientCoin ||
-            access.reason === "PAYMENT_PREMIUM_REQUIRED" ? (
-              <Button variant="secondary" onClick={() => router.push("/profile")}>
-                {t("go_profile")}
-              </Button>
-            ) : null}
-          </div>
+          ) : null}
         </Card>
       </motion.div>
 

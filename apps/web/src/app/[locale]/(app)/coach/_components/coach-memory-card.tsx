@@ -6,7 +6,7 @@ import type { CoachMemoryDto } from "@mentor/types";
 import { clearCoachMemory, fetchCoachMemory } from "@/lib/coach";
 
 /**
- * "Koçun seni nasıl tanıyor" — the distilled memory profile with a reset control (KVKK).
+ * Legacy saved coach summary with an explicit deletion control (KVKK).
  * Renders nothing until a profile exists (new users see no footprint).
  */
 export function CoachMemoryCard() {
@@ -57,6 +57,9 @@ export function CoachMemoryCard() {
           {t("reset")}
         </button>
       </div>
+      <p className="mt-1 text-xs" style={{ color: "var(--color-secondary)" }}>
+        {t("legacy_notice")}
+      </p>
       <p
         className="mt-1 whitespace-pre-wrap text-[13px]"
         style={{ color: "var(--color-secondary)" }}
