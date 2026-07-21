@@ -86,6 +86,7 @@ pnpm --filter @mentor/api test -- --grep "ai"
 | `POST /v1/coach/mood-reflection`                     | Premium mood AI reflection                                                    |
 | `POST /v1/coach/daily-greeting`                      | Premium proactive daily greeting (cached per user+day)                        |
 | `POST /v1/coach/plan-draft`                          | Premium 7-day plan draft PREVIEW (never persisted; user confirms via W2 bulk) |
+| `POST /v1/coach/plan-adaptation`                     | Premium safe plan adaptation preview (user-confirmed apply via coaching)      |
 | `POST /v1/coach/ghost-narration`                     | Premium ghost AI narration                                                    |
 | `POST /v1/coach/vision-note`                         | Premium vision board AI note                                                  |
 | `GET /v1/coach/photo-access`                         | Photo categorize access (upload URL)                                          |
@@ -94,6 +95,23 @@ pnpm --filter @mentor/api test -- --grep "ai"
 | `GET /v1/admin/metrics/coach-feedback`               | Coach 👍/👎 satisfaction + recent 👎 replies (SUPPORT+FINANCE)                |
 
 ## Geliştirmeler (timeline)
+
+- **Kullanıcı onaylı adaptif plan önizlemesi (2026-07-21)** —
+  `POST /v1/coach/plan-adaptation`, bugün + 6 günlük bekleyen planı coaching'in public
+  `PlanService` sınırından alır ve modele yalnız geçici `T1` referansları, sınav türü, kaba
+  çalışma özeti ve açık kaynak sinyalini gönderir. `PLAN` kaynağındaki opsiyonel not kullanıcı
+  tarafından açıkça yazılmışsa prompt'a girer; mood ve seans struggle notları girmez. Parser;
+  bilinmeyen referansları, aynı güne/pencere dışına taşımaları, tekrarları ve günlük üç görev
+  kapasitesini reddeder. `MOOD` ve `SESSION` kaynakları backend'de tekrar doğrulanır; uygulanabilir
+  düşük-mood görevi yoksa `model: rules` ile LLM/usage olmadan `NO_CHANGE` döner. Gerçek çağrılar
+  `plan_adaptation` usage etiketiyle yazılır ve legacy `plan-draft` ile aynı
+  `ai.plan_draft.daily_limit` kotasını paylaşır. Free/AI-disabled/budget/provider hatalarında plan
+  mutasyonu veya coin yolu yoktur. Önizleme hiçbir coaching tablosuna yazmaz; kullanıcı seçimini
+  ayrıca `POST /v1/plan-tasks/adapt` ile uygular. Eski `POST /v1/coach/plan-draft` endpoint'i
+  geriye uyumluluk için korunur; yeni web akışı onu çağırmaz. İlgili dosyalar:
+  `plan-adaptation.ts`, `plan-adaptation.service.ts`, `plan-draft.service.ts`,
+  `ai-chat.controller.ts`, `packages/{types,validation}`,
+  `plan-coach-adaptation-action.tsx`.
 
 - **Vision adapter Responses API'ye taşındı (WP-H, 2026-07-20)** — `openai-vision.adapter.ts` de
   `POST /v1/responses` kullanıyor; APP-028'de ertelenen tek yarım thread kapandı. Değişimler:

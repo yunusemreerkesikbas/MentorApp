@@ -702,6 +702,90 @@
         ]
       }
     },
+    "/v1/coach/plan-adaptation": {
+      "post": {
+        "operationId": "AiChatController_planAdaptationPreview",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "source"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "source": {
+                        "type": "string",
+                        "enum": [
+                          "PLAN"
+                        ]
+                      },
+                      "note": {
+                        "type": "string",
+                        "maxLength": 500
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "source"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "source": {
+                        "type": "string",
+                        "enum": [
+                          "MOOD"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "source",
+                      "sessionId"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "source": {
+                        "type": "string",
+                        "enum": [
+                          "SESSION"
+                        ]
+                      },
+                      "sessionId": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/coach/conversations/{id}/regenerate/stream": {
       "post": {
         "operationId": "AiChatController_regenerateStream",
@@ -1786,6 +1870,35 @@
         },
         "responses": {
           "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/plan-tasks/adapt": {
+      "post": {
+        "operationId": "PlanTaskController_applyAdaptation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyPlanAdaptationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
             "description": ""
           }
         },
@@ -3393,6 +3506,34 @@
         ]
       }
     },
+    "/v1/forum/zones/{id}/leave": {
+      "post": {
+        "operationId": "ForumController_leave",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
     "/v1/forum/zones/{id}/members": {
       "get": {
         "operationId": "ForumController_members",
@@ -4936,6 +5077,10 @@
         "properties": {}
       },
       "BulkCreatePlanTasksDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ApplyPlanAdaptationDto": {
         "type": "object",
         "properties": {}
       },

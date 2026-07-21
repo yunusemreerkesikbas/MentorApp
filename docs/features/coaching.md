@@ -132,6 +132,7 @@ pnpm --filter @mentor/api test
 | `GET /v1/coaching/today`                                         | Composite daily payload with localized `nextAction` and existing panel fields |
 | `GET/POST /v1/plan-tasks` · `PATCH/DELETE /:id`                  | Plan-task CRUD; list by `date` **or** inclusive `from`/`to` range (week view) |
 | `POST /v1/plan-tasks/bulk`                                       | User-confirmed batch add, max 21, all-or-nothing (accepted coach draft)       |
+| `POST /v1/plan-tasks/adapt`                                      | Revision-guarded atomic MOVE + ADD for a user-confirmed coach preview         |
 | `GET /v1/study-sessions`                                         | Paginated finalized-session history ("Son seanslar")                          |
 | `POST /v1/study-sessions` · `PATCH /:id`                         | Pomodoro start / complete-abandon (recomputes `daily_activity`)               |
 | `PATCH /v1/study-sessions/:id/feedback`                          | Post-session micro check-in (mood 1-3 + optional note → AI signal)            |
@@ -140,6 +141,24 @@ pnpm --filter @mentor/api test
 | `GET/POST /v1/coaching/vision`                                   | Vision board (idempotent upsert, single row per user)                         |
 
 ## Geliştirmeler (timeline)
+
+- **Koçla planla: atomik ve kullanıcı onaylı uyarlama (2026-07-21)** — Plan ekranındaki tek
+  “Koçla planla” aksiyonu, boş planda `ADD`, dolu planda güvenli `MOVE` + `ADD` önerilerini
+  aynı sheet'te tarihe göre gruplar; her değişiklik ayrı seçilir ve taşımalarda eski/yeni tarih
+  gösterilir. Free kullanıcı tıklamada AI isteği yapılmadan aboneliğe gider. Mood 1–2 ve kaydedilmiş
+  seans mood 1 girişleri yalnız `/plan?coach=adapt&source=...` bağlantısı üretir; query StrictMode
+  altında bir kez tüketilip temizlenir. `POST /v1/plan-tasks/adapt`, bugün + 6 günlük snapshot'ın
+  görev kimliği/tarih/durum/içerik/sıra/`updatedAt` alanlarından üretilen opaque
+  `planRevision` değerini transaction içinde yeniden hesaplar. Tamamlanmış görev, sahiplik,
+  kaynak/hedef tarih, tekrar ve günlük kapasite yeniden doğrulanır; tüm MOVE + ADD seçimi ya birlikte
+  uygulanır ya tamamen rollback olur. Taşınan/eklenen görevler hedef günün son sırasına eklenir.
+  `COACHING_PLAN_CHANGED` (`409`) sonrası plan yenilenir fakat yeni LLM çağrısı otomatik
+  yapılmaz; kullanıcı “Yeniden hazırla”yı seçer. Diğer apply hataları önizleme ve checkbox seçimini
+  korur. Analytics yalnız `source`, `move_count`, `add_count` taşır ve consent yoksa dataLayer'a
+  yazmaz. Eski bulk + plan-draft akışı geriye uyumluluk için korunur. İlgili dosyalar:
+  `plan-adaptation.ts`, `plan.service.ts`, `plan-task.controller.ts`,
+  `plan-coach-adaptation-action.tsx`, `plan-shell.tsx`, `panel-shell.tsx`,
+  `study-session-shell.tsx`.
 
 - **Bugünün tek küçük adımı (2026-07-20)** — `GET /v1/coaching/today` artık zorunlu, backend-
   localized `nextAction` döner: sıralı ilk `PENDING` görev `START_TASK`, görev yoksa `ADD_TASK`, tüm

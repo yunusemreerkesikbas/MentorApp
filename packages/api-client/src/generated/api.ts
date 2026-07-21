@@ -102,6 +102,10 @@ export interface BulkCreatePlanTasksDto {
   [key: string]: unknown;
 }
 
+export interface ApplyPlanAdaptationDto {
+  [key: string]: unknown;
+}
+
 export interface UpdatePlanTaskDto {
   [key: string]: unknown;
 }
@@ -285,6 +289,50 @@ export type HealthControllerReadiness503 = {
   error?: HealthControllerReadiness503Error;
   details?: HealthControllerReadiness503Details;
 };
+
+export type AiChatControllerPlanAdaptationPreviewBodyOneOfSource =
+  (typeof AiChatControllerPlanAdaptationPreviewBodyOneOfSource)[keyof typeof AiChatControllerPlanAdaptationPreviewBodyOneOfSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AiChatControllerPlanAdaptationPreviewBodyOneOfSource = {
+  PLAN: "PLAN",
+} as const;
+
+export type AiChatControllerPlanAdaptationPreviewBodyOneOf = {
+  source: AiChatControllerPlanAdaptationPreviewBodyOneOfSource;
+  /** @maxLength 500 */
+  note?: string;
+};
+
+export type AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource =
+  (typeof AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource)[keyof typeof AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource = {
+  MOOD: "MOOD",
+} as const;
+
+export type AiChatControllerPlanAdaptationPreviewBodyOneOfThree = {
+  source: AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource;
+};
+
+export type AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource =
+  (typeof AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource)[keyof typeof AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource = {
+  SESSION: "SESSION",
+} as const;
+
+export type AiChatControllerPlanAdaptationPreviewBodyOneOfFive = {
+  source: AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource;
+  sessionId: string;
+};
+
+export type AiChatControllerPlanAdaptationPreviewBody =
+  | AiChatControllerPlanAdaptationPreviewBodyOneOf
+  | AiChatControllerPlanAdaptationPreviewBodyOneOfThree
+  | AiChatControllerPlanAdaptationPreviewBodyOneOfFive;
 
 export type AiGhostControllerNarrateBody = {
   examId?: string;
@@ -1042,6 +1090,37 @@ export const aiChatControllerPlanDraftPreview = async (
       method: "POST",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(planDraftBodyDto),
+    },
+  );
+};
+
+export type aiChatControllerPlanAdaptationPreviewResponse201 = {
+  data: void;
+  status: 201;
+};
+
+export type aiChatControllerPlanAdaptationPreviewResponseSuccess =
+  aiChatControllerPlanAdaptationPreviewResponse201 & {
+    headers: Headers;
+  };
+export type aiChatControllerPlanAdaptationPreviewResponse =
+  aiChatControllerPlanAdaptationPreviewResponseSuccess;
+
+export const getAiChatControllerPlanAdaptationPreviewUrl = () => {
+  return `/v1/coach/plan-adaptation`;
+};
+
+export const aiChatControllerPlanAdaptationPreview = async (
+  aiChatControllerPlanAdaptationPreviewBody: AiChatControllerPlanAdaptationPreviewBody,
+  options?: RequestInit,
+): Promise<aiChatControllerPlanAdaptationPreviewResponse> => {
+  return http<aiChatControllerPlanAdaptationPreviewResponse>(
+    getAiChatControllerPlanAdaptationPreviewUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(aiChatControllerPlanAdaptationPreviewBody),
     },
   );
 };
@@ -2455,6 +2534,37 @@ export const planTaskControllerCreateMany = async (
       method: "POST",
       headers: { "Content-Type": "application/json", ...options?.headers },
       body: JSON.stringify(bulkCreatePlanTasksDto),
+    },
+  );
+};
+
+export type planTaskControllerApplyAdaptationResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type planTaskControllerApplyAdaptationResponseSuccess =
+  planTaskControllerApplyAdaptationResponse200 & {
+    headers: Headers;
+  };
+export type planTaskControllerApplyAdaptationResponse =
+  planTaskControllerApplyAdaptationResponseSuccess;
+
+export const getPlanTaskControllerApplyAdaptationUrl = () => {
+  return `/v1/plan-tasks/adapt`;
+};
+
+export const planTaskControllerApplyAdaptation = async (
+  applyPlanAdaptationDto: ApplyPlanAdaptationDto,
+  options?: RequestInit,
+): Promise<planTaskControllerApplyAdaptationResponse> => {
+  return http<planTaskControllerApplyAdaptationResponse>(
+    getPlanTaskControllerApplyAdaptationUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(applyPlanAdaptationDto),
     },
   );
 };
@@ -4173,6 +4283,31 @@ export const forumControllerJoin = async (
   options?: RequestInit,
 ): Promise<forumControllerJoinResponse> => {
   return http<forumControllerJoinResponse>(getForumControllerJoinUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export type forumControllerLeaveResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type forumControllerLeaveResponseSuccess =
+  forumControllerLeaveResponse204 & {
+    headers: Headers;
+  };
+export type forumControllerLeaveResponse = forumControllerLeaveResponseSuccess;
+
+export const getForumControllerLeaveUrl = (id: string) => {
+  return `/v1/forum/zones/${id}/leave`;
+};
+
+export const forumControllerLeave = async (
+  id: string,
+  options?: RequestInit,
+): Promise<forumControllerLeaveResponse> => {
+  return http<forumControllerLeaveResponse>(getForumControllerLeaveUrl(id), {
     ...options,
     method: "POST",
   });
