@@ -12,9 +12,10 @@ import {
   Query,
   Res,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import type {
+  CoachPlanAdaptationDto,
   CoachAccessDto,
   CoachChatStreamEvent,
   CoachPlanDraftDto,
@@ -24,10 +25,23 @@ import type {
   Paginated,
 } from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
-import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
+import {
+  CurrentUser,
+  type RequestUser,
+} from "../../../common/auth/current-user";
+import { PlanAdaptationService } from "../application/plan-adaptation.service";
 import { CoachAccessService } from "../application/coach-access.service";
-import { ChatService, type CoachReplyResult } from "../application/chat.service";
-import { AiChatDto, CoachFeedbackDto, ListCoachMessagesQueryDto, PlanDraftBodyDto } from "./ai.dto";
+import {
+  ChatService,
+  type CoachReplyResult,
+} from "../application/chat.service";
+import {
+  AiChatDto,
+  CoachFeedbackDto,
+  ListCoachMessagesQueryDto,
+  PlanAdaptationBodyDto,
+  PlanDraftBodyDto,
+} from "./ai.dto";
 import { PlanDraftService } from "../application/plan-draft.service";
 
 /**
@@ -42,6 +56,7 @@ export class AiChatController {
     private readonly chat: ChatService,
     private readonly access: CoachAccessService,
     private readonly planDraft: PlanDraftService,
+    private readonly planAdaptation: PlanAdaptationService,
   ) {}
 
   @Get("access")
@@ -50,7 +65,10 @@ export class AiChatController {
   }
 
   @Post("chat")
-  reply(@CurrentUser() user: RequestUser, @Body() dto: AiChatDto): Promise<CoachReplyResult> {
+  reply(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: AiChatDto,
+  ): Promise<CoachReplyResult> {
     return this.chat.reply(
       user,
       dto.message,
@@ -115,6 +133,57 @@ export class AiChatController {
     return this.planDraft.draft(user, dto.note);
   }
 
+  /** Premium adaptation preview. AI proposes; coaching mutates only after explicit confirmation. */
+  @ApiBody({
+    schema: {
+      oneOf: [
+        {
+          type: "object",
+          required: ["source"],
+          additionalProperties: false,
+          properties: {
+            source: { type: "string", enum: ["PLAN"] },
+            note: { type: "string", maxLength: 500 },
+          },
+        },
+        {
+          type: "object",
+          required: ["source"],
+          additionalProperties: false,
+          properties: { source: { type: "string", enum: ["MOOD"] } },
+        },
+        {
+          type: "object",
+          required: ["source", "sessionId"],
+          additionalProperties: false,
+          properties: {
+            source: { type: "string", enum: ["SESSION"] },
+            sessionId: { type: "string", format: "uuid" },
+          },
+        },
+      ],
+    },
+  })
+  @Post("plan-adaptation")
+  planAdaptationPreview(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: PlanAdaptationBodyDto,
+  ): Promise<CoachPlanAdaptationDto> {
+    if (dto.source === "SESSION") {
+      return this.planAdaptation.preview(user, {
+        source: "SESSION",
+        sessionId: dto.sessionId!,
+      });
+    }
+    if (dto.source === "MOOD") {
+      return this.planAdaptation.preview(user, { source: "MOOD" });
+    }
+    return this.planAdaptation.preview(user, {
+      source: "PLAN",
+      ...(dto.note ? { note: dto.note } : {}),
+    });
+  }
+
   /**
    * Regenerate the LAST coach reply of a thread (SSE over POST, no body). Same pre-stream gating
    * contract as `chat/stream`: the first event is awaited before headers are written.
@@ -164,7 +233,12 @@ export class AiChatController {
     @Param("id", ParseUUIDPipe) id: string,
     @Query() query: ListCoachMessagesQueryDto,
   ): Promise<Paginated<CoachMessageDto>> {
-    return this.chat.listConversationMessages(user.id, id, query.page, query.pageSize);
+    return this.chat.listConversationMessages(
+      user.id,
+      id,
+      query.page,
+      query.pageSize,
+    );
   }
 
   /** Delete one thread (its messages cascade). The memory profile is kept. */

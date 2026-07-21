@@ -11,7 +11,13 @@ export const aiChatSchema = z.object({
   /** Owned mock exam whose authoritative result summary should ground this message. */
   contextMockExamId: z.string().uuid().optional(),
   /** Published Knowledge article selected by the user as the source for this message. */
-  contextArticleSlug: z.string().trim().min(1).max(128).regex(/^[a-z0-9-]+$/).optional(),
+  contextArticleSlug: z
+    .string()
+    .trim()
+    .min(1)
+    .max(128)
+    .regex(/^[a-z0-9-]+$/)
+    .optional(),
 });
 export type AiChatInput = z.infer<typeof aiChatSchema>;
 
@@ -20,6 +26,41 @@ export const planDraftSchema = z.object({
   note: z.string().trim().max(500).optional(),
 });
 export type PlanDraftInput = z.infer<typeof planDraftSchema>;
+
+/** POST /v1/coach/plan-adaptation — explicit, user-triggered preview source. */
+export const coachPlanAdaptationSchema = z
+  .object({
+    source: z.enum(["PLAN", "MOOD", "SESSION"]),
+    note: z.string().trim().max(500).optional(),
+    sessionId: z.string().uuid().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.source === "SESSION" && !value.sessionId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sessionId"],
+        message: "sessionId is required for SESSION source",
+      });
+    }
+    if (value.source !== "SESSION" && value.sessionId !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sessionId"],
+        message: "sessionId is only allowed for SESSION source",
+      });
+    }
+    if (value.source !== "PLAN" && value.note !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["note"],
+        message: "note is only allowed for PLAN source",
+      });
+    }
+  });
+export type CoachPlanAdaptationInput =
+  | { source: "PLAN"; note?: string }
+  | { source: "MOOD" }
+  | { source: "SESSION"; sessionId: string };
 
 /** PATCH /v1/coach/messages/:id/feedback — 1 = 👍, -1 = 👎, null = clear. */
 export const coachFeedbackSchema = z.object({
@@ -54,12 +95,10 @@ export const ghostNarrationSchema = z
   .default({});
 export type GhostNarrationInput = z.infer<typeof ghostNarrationSchema>;
 
-
-
-
 /** Premium weekly review generation request. */
 export const weeklyReviewNarrationSchema = z.object({
   examId: z.string().uuid(),
 });
-export type WeeklyReviewNarrationInput = z.infer<typeof weeklyReviewNarrationSchema>;
-
+export type WeeklyReviewNarrationInput = z.infer<
+  typeof weeklyReviewNarrationSchema
+>;

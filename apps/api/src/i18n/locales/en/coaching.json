@@ -26,6 +26,10 @@
       "message": "That is enough for today. Notice your effort and rest."
     }
   },
+  "planAdaptation": {
+    "READY": "I prepared a safe preview without changing your plan. Select only the changes you want.",
+    "NO_CHANGE": "Your plan does not need a change right now. You can continue with the current small steps."
+  },
   "official": {
     "EXAM_DATE": "You can see the official exam date in the verified card.",
     "APPLICATION": "For application information, I only share verified Knowledge Hub sources.",

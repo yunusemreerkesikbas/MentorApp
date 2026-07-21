@@ -13,7 +13,7 @@ describe("PlanDraftService", () => {
   let append: ReturnType<typeof vi.fn>;
   let configGet: ReturnType<typeof vi.fn>;
   let getEntitlement: ReturnType<typeof vi.fn>;
-  let countFeatureSince: ReturnType<typeof vi.fn>;
+  let countFeaturesSince: ReturnType<typeof vi.fn>;
   let service: PlanDraftService;
 
   beforeEach(() => {
@@ -37,7 +37,7 @@ describe("PlanDraftService", () => {
       return null;
     });
     getEntitlement = vi.fn(async () => ({ isPremium: true }));
-    countFeatureSince = vi.fn(async () => 0);
+    countFeaturesSince = vi.fn(async () => 0);
 
     service = new PlanDraftService(
       { complete } as never,
@@ -50,7 +50,7 @@ describe("PlanDraftService", () => {
           todayPlan: null,
         })),
       } as never,
-      { append, countFeatureSince } as never,
+      { append, countFeaturesSince } as never,
       { get: configGet } as never,
       { getEntitlement } as never,
       { assertWithinBudget: vi.fn(async () => undefined) } as never,
@@ -67,7 +67,7 @@ describe("PlanDraftService", () => {
   });
 
   it("throws AI_RATE_LIMITED when the per-feature daily cap is reached", async () => {
-    countFeatureSince.mockResolvedValue(5);
+    countFeaturesSince.mockResolvedValue(5);
     await expect(service.draft(USER)).rejects.toMatchObject({
       code: ErrorCode.AI_RATE_LIMITED,
       httpStatus: HttpStatus.TOO_MANY_REQUESTS,
