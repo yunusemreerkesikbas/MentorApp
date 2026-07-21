@@ -22,6 +22,26 @@ export class PlanTaskRepository {
       .orderBy(asc(planTasks.sortOrder), asc(planTasks.createdAt));
   }
 
+  /** Bounded internal read used by the seven-day coach adaptation snapshot. */
+  listByDateRange(
+    tx: DatabaseTx,
+    userId: string,
+    from: string,
+    to: string,
+  ): Promise<PlanTaskRow[]> {
+    return tx
+      .select()
+      .from(planTasks)
+      .where(
+        and(
+          eq(planTasks.userId, userId),
+          gte(planTasks.taskDate, from),
+          lte(planTasks.taskDate, to),
+        ),
+      )
+      .orderBy(asc(planTasks.taskDate), asc(planTasks.sortOrder), asc(planTasks.createdAt));
+  }
+
   /** Paginated list for a date (kept paginated to honor the "no unbounded list" standard). */
   async listByDatePaged(
     tx: DatabaseTx,

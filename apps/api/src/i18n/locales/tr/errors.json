@@ -24,6 +24,7 @@
   "AUTH_GOOGLE_ACCOUNT_NOT_FOUND": "Bu Google hesabıyla kayıtlı bir Mentor hesabı yok. Önce hesap oluştur.",
   "COACHING_TASK_NOT_FOUND": "Bu görev bulunamadı.",
   "COACHING_TASK_DATE_READONLY": "Geçmiş günler salt okunur; yalnızca bugün ve gelecek günler düzenlenebilir.",
+  "COACHING_PLAN_CHANGED": "Planın bu önizlemeden sonra değişti. Güncel planı açıp yeniden deneyebilirsin.",
   "COACHING_SESSION_NOT_FOUND": "Bu çalışma seansı bulunamadı.",
   "COACHING_SESSION_ALREADY_CLOSED": "Bu çalışma seansı zaten tamamlanmış.",
   "COACHING_MOCK_EXAM_NOT_FOUND": "Bu deneme kaydı bulunamadı.",

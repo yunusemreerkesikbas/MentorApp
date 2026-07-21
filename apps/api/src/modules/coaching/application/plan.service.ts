@@ -1,7 +1,13 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import type { Paginated, PlanTaskCalendarDto, PlanTaskDto } from "@mentor/types";
 import type {
+  ApplyPlanAdaptationResultDto,
+  Paginated,
+  PlanTaskCalendarDto,
+  PlanTaskDto,
+} from "@mentor/types";
+import type {
+  ApplyPlanAdaptationInput,
   CreatePlanTaskInput,
   ListPlanTasksQuery,
   PlanTaskCalendarQuery,
@@ -12,7 +18,12 @@ import type { Database } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { todayIso } from "../domain/date.util";
+import { addDays, todayIso } from "../domain/date.util";
+import {
+  buildPlanRevision,
+  PLAN_ADAPTATION_WINDOW_DAYS,
+  type PlanAdaptationSnapshot,
+} from "../domain/plan-adaptation";
 import {
   PlanTaskStatus,
   TODAY_PLAN_PENDING_MAX,
@@ -139,6 +150,136 @@ export class PlanService {
         );
       }
       return rows.map(toPlanTaskDto);
+    });
+  }
+
+  getAdaptationSnapshot(userId: string): Promise<PlanAdaptationSnapshot> {
+    const from = todayIso();
+    const to = addDays(from, PLAN_ADAPTATION_WINDOW_DAYS - 1);
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const rows = await this.tasks.listByDateRange(tx, userId, from, to);
+      return {
+        window: { from, to },
+        planRevision: buildPlanRevision(rows),
+        tasks: rows.map(({ id, taskDate, title, subject, status, sortOrder }) => ({
+          id,
+          taskDate,
+          title,
+          subject,
+          status,
+          sortOrder,
+        })),
+      };
+    });
+  }
+
+  async applyAdaptation(
+    userId: string,
+    input: ApplyPlanAdaptationInput,
+  ): Promise<ApplyPlanAdaptationResultDto> {
+    const from = todayIso();
+    const to = addDays(from, PLAN_ADAPTATION_WINDOW_DAYS - 1);
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const rows = await this.tasks.listByDateRange(tx, userId, from, to);
+      if (buildPlanRevision(rows) !== input.planRevision) {
+        throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
+      }
+
+      const byId = new Map(rows.map((row) => [row.id, row]));
+      const pendingByDate = new Map<string, number>();
+      const maxOrderByDate = new Map<string, number>();
+      const titleKeys = new Set<string>();
+      for (const row of rows) {
+        if (row.status === PlanTaskStatus.PENDING) {
+          pendingByDate.set(row.taskDate, (pendingByDate.get(row.taskDate) ?? 0) + 1);
+          titleKeys.add(`${row.taskDate}:${row.title.trim().toLocaleLowerCase("tr-TR")}`);
+        }
+        maxOrderByDate.set(
+          row.taskDate,
+          Math.max(maxOrderByDate.get(row.taskDate) ?? -1, row.sortOrder),
+        );
+      }
+
+      const movedIds = new Set<string>();
+      const moves: Array<{
+        row: (typeof rows)[number];
+        toDate: string;
+        sortOrder: number;
+      }> = [];
+      const additions: Array<{
+        title: string;
+        subject: string | null;
+        taskDate: string;
+        sortOrder: number;
+      }> = [];
+      const nextOrder = (date: string) => {
+        const next = (maxOrderByDate.get(date) ?? -1) + 1;
+        maxOrderByDate.set(date, next);
+        return next;
+      };
+      const assertDate = (date: string) => {
+        if (date < from || date > to) {
+          throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
+        }
+      };
+
+      for (const change of input.changes) {
+        if (change.kind === "MOVE") {
+          const row = byId.get(change.taskId);
+          if (
+            !row ||
+            row.status !== PlanTaskStatus.PENDING ||
+            row.taskDate !== change.fromDate ||
+            change.fromDate === change.toDate ||
+            movedIds.has(row.id)
+          ) {
+            throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
+          }
+          assertDate(change.toDate);
+          if ((pendingByDate.get(change.toDate) ?? 0) >= 3) {
+            throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
+          }
+          movedIds.add(row.id);
+          pendingByDate.set(row.taskDate, (pendingByDate.get(row.taskDate) ?? 1) - 1);
+          pendingByDate.set(change.toDate, (pendingByDate.get(change.toDate) ?? 0) + 1);
+          titleKeys.delete(`${row.taskDate}:${row.title.trim().toLocaleLowerCase("tr-TR")}`);
+          titleKeys.add(`${change.toDate}:${row.title.trim().toLocaleLowerCase("tr-TR")}`);
+          moves.push({ row, toDate: change.toDate, sortOrder: nextOrder(change.toDate) });
+          continue;
+        }
+
+        assertDate(change.taskDate);
+        const titleKey = `${change.taskDate}:${change.title.trim().toLocaleLowerCase("tr-TR")}`;
+        if (titleKeys.has(titleKey) || (pendingByDate.get(change.taskDate) ?? 0) >= 3) {
+          throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
+        }
+        titleKeys.add(titleKey);
+        pendingByDate.set(change.taskDate, (pendingByDate.get(change.taskDate) ?? 0) + 1);
+        additions.push({
+          title: change.title,
+          subject: change.subject,
+          taskDate: change.taskDate,
+          sortOrder: nextOrder(change.taskDate),
+        });
+      }
+
+      const moved = [];
+      for (const move of moves) {
+        const row = await this.tasks.update(tx, userId, move.row.id, {
+          taskDate: move.toDate,
+          sortOrder: move.sortOrder,
+          updatedAt: new Date(),
+        });
+        if (!row) throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
+        moved.push(toPlanTaskDto(row));
+      }
+
+      const added = [];
+      for (const addition of additions) {
+        const row = await this.tasks.create(tx, { userId, ...addition });
+        added.push(toPlanTaskDto(row));
+      }
+      return { moved, added };
     });
   }
 

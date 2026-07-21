@@ -23,6 +23,43 @@ export interface PlanTaskDto {
   taskDate: string; // yyyy-mm-dd
 }
 
+export type CoachPlanAdaptationSource = "PLAN" | "MOOD" | "SESSION";
+export type CoachPlanAdaptationStatus = "READY" | "NO_CHANGE";
+
+export type CoachPlanAdaptationChangeDto =
+  | {
+      kind: "MOVE";
+      taskId: string;
+      title: string;
+      subject: string | null;
+      fromDate: string;
+      toDate: string;
+    }
+  | {
+      kind: "ADD";
+      title: string;
+      subject: string | null;
+      taskDate: string;
+    };
+
+/** Premium coach preview; no plan row is written until the user confirms selected changes. */
+export interface CoachPlanAdaptationDto {
+  status: CoachPlanAdaptationStatus;
+  /** Backend-localized calm summary. */
+  message: string;
+  window: { from: string; to: string };
+  /** Opaque snapshot hash used to reject stale confirmations. */
+  planRevision: string;
+  changes: CoachPlanAdaptationChangeDto[];
+  model: string;
+}
+
+/** Result of atomically applying a user-selected adaptation preview. */
+export interface ApplyPlanAdaptationResultDto {
+  moved: PlanTaskDto[];
+  added: PlanTaskDto[];
+}
+
 /** Distinct calendar dates that have ≥1 plan task (datepicker dots). */
 export interface PlanTaskCalendarDto {
   dates: string[];

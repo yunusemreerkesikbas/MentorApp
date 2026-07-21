@@ -24,6 +24,7 @@
   "AUTH_GOOGLE_ACCOUNT_NOT_FOUND": "No Mentor account is registered with this Google account. Create an account first.",
   "COACHING_TASK_NOT_FOUND": "This task was not found.",
   "COACHING_TASK_DATE_READONLY": "Past days are read-only; only today and future days can be edited.",
+  "COACHING_PLAN_CHANGED": "Your plan changed after this preview. Open the current plan and try again.",
   "COACHING_SESSION_NOT_FOUND": "This study session was not found.",
   "COACHING_SESSION_ALREADY_CLOSED": "This study session is already completed.",
   "COACHING_MOCK_EXAM_NOT_FOUND": "This mock exam record was not found.",
