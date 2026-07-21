@@ -15,6 +15,7 @@ export type PlanAdaptationParseResult =
 const MAX_PENDING_PER_DAY = 3;
 const TITLE_MAX = 200;
 const SUBJECT_MAX = 80;
+export const PLAN_ADAPTATION_MAX_PROMPT_TASKS = 21;
 
 function addDays(date: string, days: number): string {
   const value = new Date(`${date}T00:00:00.000Z`);
@@ -26,12 +27,19 @@ function normalizedTitle(title: string): string {
   return title.trim().replace(/\s+/g, " ").toLocaleLowerCase("tr-TR");
 }
 
+function isWindowDate(date: string, start: string, end: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < start || date > end) return false;
+  const parsed = new Date(`${date}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date;
+}
+
 /** Parse and clamp provider JSON. Invalid individual changes are dropped; invalid JSON is distinct. */
 export function parsePlanAdaptation(
   text: string,
   todayIso: string,
   source: CoachPlanAdaptationSource,
   tasks: readonly PromptPlanTask[],
+  capacityTasks: readonly PlanAdaptationSnapshotTask[] = tasks,
 ): PlanAdaptationParseResult {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
@@ -70,8 +78,7 @@ export function parsePlanAdaptation(
     if (
       !task ||
       seenMoveIds.has(task.id) ||
-      toDate < todayIso ||
-      toDate > windowEnd ||
+      !isWindowDate(toDate, todayIso, windowEnd) ||
       toDate === task.taskDate ||
       (source === "MOOD" && (task.taskDate !== todayIso || toDate <= todayIso))
     ) {
@@ -88,44 +95,58 @@ export function parsePlanAdaptation(
     });
   }
 
-  const pendingByDate = new Map<string, number>();
-  for (const task of tasks) {
+  const initialPendingByDate = new Map<string, number>();
+  const initialTitleCounts = new Map<string, number>();
+  const adjustCount = (counts: Map<string, number>, key: string, delta: number) => {
+    const next = (counts.get(key) ?? 0) + delta;
+    if (next <= 0) counts.delete(key);
+    else counts.set(key, next);
+  };
+  for (const task of capacityTasks) {
     if (task.status === "PENDING") {
-      pendingByDate.set(
+      initialPendingByDate.set(
         task.taskDate,
-        (pendingByDate.get(task.taskDate) ?? 0) + 1,
+        (initialPendingByDate.get(task.taskDate) ?? 0) + 1,
+      );
+      adjustCount(
+        initialTitleCounts,
+        `${task.taskDate}:${normalizedTitle(task.title)}`,
+        1,
       );
     }
   }
-  // Account for all candidate outbound moves first, so the final capacity check is order-independent.
-  for (const move of moveCandidates) {
-    pendingByDate.set(
-      move.fromDate,
-      Math.max(0, (pendingByDate.get(move.fromDate) ?? 1) - 1),
-    );
-  }
 
-  const moves: typeof moveCandidates = [];
-  for (const move of moveCandidates) {
-    if ((pendingByDate.get(move.toDate) ?? 0) >= MAX_PENDING_PER_DAY) {
-      pendingByDate.set(
-        move.fromDate,
-        (pendingByDate.get(move.fromDate) ?? 0) + 1,
-      );
-      continue;
+  let moves: typeof moveCandidates = [];
+  let pendingByDate = initialPendingByDate;
+  let titleCounts = initialTitleCounts;
+  // At most three candidates: choose the largest subset whose final state is valid.
+  for (let mask = 1; mask < 1 << moveCandidates.length; mask += 1) {
+    const selected = moveCandidates.filter((_, index) => (mask & (1 << index)) !== 0);
+    if (selected.length <= moves.length) continue;
+    const nextPending = new Map(initialPendingByDate);
+    const nextTitles = new Map(initialTitleCounts);
+    for (const move of selected) {
+      adjustCount(nextPending, move.fromDate, -1);
+      adjustCount(nextTitles, `${move.fromDate}:${normalizedTitle(move.title)}`, -1);
     }
-    pendingByDate.set(move.toDate, (pendingByDate.get(move.toDate) ?? 0) + 1);
-    moves.push(move);
-  }
-
-  const titleKeys = new Set(
-    tasks
-      .filter((task) => task.status === "PENDING")
-      .map((task) => `${task.taskDate}:${normalizedTitle(task.title)}`),
-  );
-  for (const move of moves) {
-    titleKeys.delete(`${move.fromDate}:${normalizedTitle(move.title)}`);
-    titleKeys.add(`${move.toDate}:${normalizedTitle(move.title)}`);
+    let valid = true;
+    for (const move of selected) {
+      const targetTitleKey = `${move.toDate}:${normalizedTitle(move.title)}`;
+      if (
+        (nextPending.get(move.toDate) ?? 0) >= MAX_PENDING_PER_DAY ||
+        (nextTitles.get(targetTitleKey) ?? 0) > 0
+      ) {
+        valid = false;
+        break;
+      }
+      adjustCount(nextPending, move.toDate, 1);
+      adjustCount(nextTitles, targetTitleKey, 1);
+    }
+    if (valid) {
+      moves = selected;
+      pendingByDate = nextPending;
+      titleCounts = nextTitles;
+    }
   }
 
   const additions: Array<
@@ -144,21 +165,20 @@ export function parsePlanAdaptation(
     const title = rawTitle.trim().replace(/\s+/g, " ").slice(0, TITLE_MAX);
     if (
       !title ||
-      taskDate < todayIso ||
-      taskDate > windowEnd ||
+      !isWindowDate(taskDate, todayIso, windowEnd) ||
       (source === "SESSION" && taskDate <= todayIso) ||
       (pendingByDate.get(taskDate) ?? 0) >= MAX_PENDING_PER_DAY
     ) {
       continue;
     }
     const key = `${taskDate}:${normalizedTitle(title)}`;
-    if (titleKeys.has(key)) continue;
+    if ((titleCounts.get(key) ?? 0) > 0) continue;
     const rawSubject = (raw as { subject?: unknown }).subject;
     const subject =
       typeof rawSubject === "string" && rawSubject.trim()
         ? rawSubject.trim().slice(0, SUBJECT_MAX)
         : null;
-    titleKeys.add(key);
+    adjustCount(titleCounts, key, 1);
     pendingByDate.set(taskDate, (pendingByDate.get(taskDate) ?? 0) + 1);
     additions.push({ kind: "ADD", title, subject, taskDate });
   }

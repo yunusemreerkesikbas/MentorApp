@@ -11,6 +11,7 @@ import {
   studySessions,
   visionBoards,
 } from "../../../database/schema";
+import { acquireUserPlanLock } from "./plan-task.repository";
 
 /** `plan_tasks.title` is NOT NULL — scrubbed to a neutral placeholder rather than nulled. */
 export const ERASED_TASK_TITLE = "Silinmiş görev";
@@ -31,6 +32,7 @@ export class CoachingErasureRepository {
 
   async eraseUserData(userId: string): Promise<{ photoStorageKeys: string[] }> {
     return withServiceContext(this.db, async (tx) => {
+      await acquireUserPlanLock(tx, userId);
       // Collect the photo objects before dropping their rows.
       const photos = await tx
         .select({ storageKey: mockExamPhotoCategorizations.storageKey })

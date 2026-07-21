@@ -19,6 +19,7 @@ import { LLM_PORT, type LlmPort } from "../domain/llm.port";
 import {
   buildPlanAdaptationPrompt,
   parsePlanAdaptation,
+  PLAN_ADAPTATION_MAX_PROMPT_TASKS,
   type PromptPlanTask,
 } from "../domain/plan-adaptation";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
@@ -95,12 +96,12 @@ export class PlanAdaptationService {
       );
     }
 
-    const referencedTasks: PromptPlanTask[] = pendingTasks.map(
-      (task, index) => ({
+    const referencedTasks: PromptPlanTask[] = pendingTasks
+      .slice(0, PLAN_ADAPTATION_MAX_PROMPT_TASKS)
+      .map((task, index) => ({
         ...task,
         ref: `T${index + 1}`,
-      }),
-    );
+      }));
     const promptTasks =
       input.source === "MOOD"
         ? referencedTasks.filter(
@@ -141,7 +142,8 @@ export class PlanAdaptationService {
       result.text,
       snapshot.window.from,
       input.source,
-      referencedTasks,
+      promptTasks,
+      pendingTasks,
     );
     if (parsed.kind === "MALFORMED") {
       throw new DomainError(

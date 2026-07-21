@@ -149,7 +149,10 @@ pnpm --filter @mentor/api test
   seans mood 1 girişleri yalnız `/plan?coach=adapt&source=...` bağlantısı üretir; query StrictMode
   altında bir kez tüketilip temizlenir. `POST /v1/plan-tasks/adapt`, bugün + 6 günlük snapshot'ın
   görev kimliği/tarih/durum/içerik/sıra/`updatedAt` alanlarından üretilen opaque
-  `planRevision` değerini transaction içinde yeniden hesaplar. Tamamlanmış görev, sahiplik,
+  `planRevision` değerini transaction içinde yeniden hesaplar. Plan CRUD/bulk, adaptation apply,
+  seans auto-complete ve KVKK scrub aynı kullanıcı bazlı transaction advisory lock'ını paylaşır;
+  revision kontrolü
+  ile mutation arasına eşzamanlı plan değişikliği giremez. Tamamlanmış görev, sahiplik,
   kaynak/hedef tarih, tekrar ve günlük kapasite yeniden doğrulanır; tüm MOVE + ADD seçimi ya birlikte
   uygulanır ya tamamen rollback olur. Taşınan/eklenen görevler hedef günün son sırasına eklenir.
   `COACHING_PLAN_CHANGED` (`409`) sonrası plan yenilenir fakat yeni LLM çağrısı otomatik

@@ -167,6 +167,104 @@ describe("parsePlanAdaptation", () => {
     });
   });
 
+  it("rejects malformed dates and MOVE title collisions", () => {
+    const tasks = [
+      ...TASKS,
+      {
+        ...TASKS[1]!,
+        ref: "T3",
+        id: "task-3",
+        title: " matematik ÇÖZ ",
+      },
+    ];
+    const result = parsePlanAdaptation(
+      JSON.stringify({
+        changes: [
+          { kind: "MOVE", taskRef: "T1", toDate: "2026-07-22" },
+          {
+            kind: "ADD",
+            title: "Geçersiz tarih",
+            taskDate: "2026-07-23junk",
+          },
+        ],
+      }),
+      TODAY,
+      "PLAN",
+      tasks,
+    );
+
+    expect(result).toEqual({ kind: "VALID", changes: [] });
+  });
+
+  it("uses the complete snapshot for capacity when prompt tasks are capped", () => {
+    const capacityTasks = [
+      ...TASKS,
+      {
+        ...TASKS[1]!,
+        id: "hidden-1",
+        title: "Tarih",
+      },
+      {
+        ...TASKS[1]!,
+        id: "hidden-2",
+        title: "Coğrafya",
+      },
+    ];
+    const result = parsePlanAdaptation(
+      JSON.stringify({
+        changes: [{ kind: "MOVE", taskRef: "T1", toDate: "2026-07-22" }],
+      }),
+      TODAY,
+      "PLAN",
+      [TASKS[0]!],
+      capacityTasks,
+    );
+
+    expect(result).toEqual({ kind: "VALID", changes: [] });
+  });
+
+  it("drops a move chain when its capacity dependency is rejected", () => {
+    const tasks = [
+      ...TASKS,
+      { ...TASKS[1]!, ref: "T3", id: "b-2", title: "B2" },
+      { ...TASKS[1]!, ref: "T4", id: "b-3", title: "B3" },
+      {
+        ...TASKS[1]!,
+        ref: "T5",
+        id: "c-1",
+        taskDate: "2026-07-23",
+        title: "C1",
+      },
+      {
+        ...TASKS[1]!,
+        ref: "T6",
+        id: "c-2",
+        taskDate: "2026-07-23",
+        title: "C2",
+      },
+      {
+        ...TASKS[1]!,
+        ref: "T7",
+        id: "c-3",
+        taskDate: "2026-07-23",
+        title: "C3",
+      },
+    ];
+    const result = parsePlanAdaptation(
+      JSON.stringify({
+        changes: [
+          { kind: "MOVE", taskRef: "T1", toDate: "2026-07-22" },
+          { kind: "MOVE", taskRef: "T2", toDate: "2026-07-23" },
+        ],
+      }),
+      TODAY,
+      "PLAN",
+      tasks,
+    );
+
+    expect(result).toEqual({ kind: "VALID", changes: [] });
+  });
+
   it("limits SESSION to two moves and one later ADD", () => {
     const many = [
       ...TASKS,

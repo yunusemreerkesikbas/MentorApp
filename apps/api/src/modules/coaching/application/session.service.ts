@@ -196,6 +196,13 @@ export class SessionService {
       if (existing.endedAt) {
         throw new DomainError(ErrorCode.COACHING_SESSION_ALREADY_CLOSED, HttpStatus.CONFLICT);
       }
+      const shouldAutoCompletePlanTask =
+        input.status === "COMPLETED" &&
+        qualifiesAsFocusSession(input.actualFocusSeconds, minFocusSeconds) &&
+        Boolean(existing.planTaskId);
+      if (shouldAutoCompletePlanTask) {
+        await this.planTasks.acquireUserLock(tx, userId);
+      }
       const updated = await this.sessions.update(tx, userId, id, {
         status: input.status,
         actualFocusSeconds: input.actualFocusSeconds,
@@ -211,11 +218,7 @@ export class SessionService {
       if (!prior?.hasSession && hasSession) firstSessionToday = true;
 
       let planTaskAutoCompleted = false;
-      if (
-        input.status === "COMPLETED" &&
-        qualifiesAsFocusSession(input.actualFocusSeconds, minFocusSeconds) &&
-        existing.planTaskId
-      ) {
+      if (shouldAutoCompletePlanTask && existing.planTaskId) {
         const task = await this.planTasks.findById(tx, userId, existing.planTaskId);
         if (task && task.status !== "DONE" && task.taskDate >= todayIso()) {
           await this.planTasks.update(tx, userId, task.id, { status: "DONE" });

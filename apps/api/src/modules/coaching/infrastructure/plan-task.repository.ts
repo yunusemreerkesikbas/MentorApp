@@ -6,6 +6,13 @@ import { planTasks } from "../../../database/schema";
 export type PlanTaskRow = typeof planTasks.$inferSelect;
 export type NewPlanTask = typeof planTasks.$inferInsert;
 
+/** Transaction-scoped lock shared by every plan writer, including KVKK erasure. */
+export async function acquireUserPlanLock(tx: DatabaseTx, userId: string): Promise<void> {
+  await tx.execute(
+    sql`select pg_advisory_xact_lock(hashtextextended(${"coaching:plan:" + userId}, 0))`,
+  );
+}
+
 /**
  * Data access for `plan_tasks`. Methods receive the RLS-scoped `tx` opened by the service
  * via `withUserContext`, so multi-table writes (task ↔ daily_activity) stay in one transaction.
@@ -13,6 +20,11 @@ export type NewPlanTask = typeof planTasks.$inferInsert;
  */
 @Injectable()
 export class PlanTaskRepository {
+  /** Serialize every plan mutation for one user within the caller's transaction. */
+  async acquireUserLock(tx: DatabaseTx, userId: string): Promise<void> {
+    await acquireUserPlanLock(tx, userId);
+  }
+
   /** All of a user's tasks for a date, ordered for display (no pagination — bounded per day). */
   listByDate(tx: DatabaseTx, userId: string, date: string): Promise<PlanTaskRow[]> {
     return tx

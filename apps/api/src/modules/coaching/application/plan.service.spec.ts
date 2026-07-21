@@ -27,6 +27,7 @@ const fakeDb = {
 function makePlanRepoFake(rows: TaskRow[]) {
   return {
     rows,
+    acquireUserLock: async () => undefined,
     listByDate: async (_tx: unknown, userId: string, date: string) =>
       rows.filter((r) => r.userId === userId && r.taskDate === date),
     listByDateRange: async (_tx: unknown, userId: string, from: string, to: string) =>
@@ -443,6 +444,39 @@ describe("PlanService plan adaptations", () => {
       { id: "t5", taskDate: targetDate, sortOrder: 8 },
       { id: "t2", taskDate: finalDate, sortOrder: 0 },
     ]);
+  });
+
+  it("rejects a move that duplicates a normalized title on the target day", async () => {
+    const targetDate = addDays(TODAY, 1);
+    planRepo.rows.push({
+      id: "t3",
+      userId: USER,
+      taskDate: TODAY,
+      title: "  matematik  ",
+      subject: "Matematik",
+      status: "PENDING",
+      sortOrder: 1,
+      createdAt: new Date("2026-07-21T09:00:00Z"),
+      updatedAt: new Date("2026-07-21T09:00:00Z"),
+    });
+    const snapshot = await service.getAdaptationSnapshot(USER);
+
+    await expect(
+      service.applyAdaptation(USER, {
+        planRevision: snapshot.planRevision,
+        changes: [
+          {
+            kind: "MOVE",
+            taskId: "t3",
+            title: "matematik",
+            subject: "Matematik",
+            fromDate: TODAY,
+            toDate: targetDate,
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: "COACHING_PLAN_CHANGED" });
+    expect(planRepo.rows.find((row) => row.id === "t3")!.taskDate).toBe(TODAY);
   });
 
   it("rejects a stale revision without changing the plan", async () => {

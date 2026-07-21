@@ -102,7 +102,9 @@ pnpm --filter @mentor/api test -- --grep "ai"
   çalışma özeti ve açık kaynak sinyalini gönderir. `PLAN` kaynağındaki opsiyonel not kullanıcı
   tarafından açıkça yazılmışsa prompt'a girer; mood ve seans struggle notları girmez. Parser;
   bilinmeyen referansları, aynı güne/pencere dışına taşımaları, tekrarları ve günlük üç görev
-  kapasitesini reddeder. `MOOD` ve `SESSION` kaynakları backend'de tekrar doğrulanır; uygulanabilir
+  kapasitesini reddeder. Model-visible görev listesi 21 bekleyen görevle sınırlıdır; revision,
+  duplicate ve kapasite doğrulaması yine tam yedi günlük snapshot üzerinden yapılır. `MOOD` ve
+  `SESSION` kaynakları backend'de tekrar doğrulanır; uygulanabilir
   düşük-mood görevi yoksa `model: rules` ile LLM/usage olmadan `NO_CHANGE` döner. Gerçek çağrılar
   `plan_adaptation` usage etiketiyle yazılır ve legacy `plan-draft` ile aynı
   `ai.plan_draft.daily_limit` kotasını paylaşır. Free/AI-disabled/budget/provider hatalarında plan

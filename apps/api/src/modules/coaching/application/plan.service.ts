@@ -118,6 +118,7 @@ export class PlanService {
     const taskDate = input.taskDate ?? todayIso();
     this.assertTaskDateMutable(taskDate);
     return withUserContext(this.db, { userId }, async (tx) => {
+      await this.tasks.acquireUserLock(tx, userId);
       const row = await this.tasks.create(tx, {
         userId,
         taskDate,
@@ -138,6 +139,7 @@ export class PlanService {
     for (const input of withDates) this.assertTaskDateMutable(input.taskDate);
     return withUserContext(this.db, { userId }, async (tx) => {
       const rows = [];
+      await this.tasks.acquireUserLock(tx, userId);
       for (const input of withDates) {
         rows.push(
           await this.tasks.create(tx, {
@@ -180,6 +182,7 @@ export class PlanService {
     const from = todayIso();
     const to = addDays(from, PLAN_ADAPTATION_WINDOW_DAYS - 1);
     return withUserContext(this.db, { userId }, async (tx) => {
+      await this.tasks.acquireUserLock(tx, userId);
       const rows = await this.tasks.listByDateRange(tx, userId, from, to);
       if (buildPlanRevision(rows) !== input.planRevision) {
         throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
@@ -252,11 +255,15 @@ export class PlanService {
       }
 
       for (const move of moves) {
-        if ((pendingByDate.get(move.toDate) ?? 0) >= 3) {
+        const targetTitleKey = titleKey(move.toDate, move.row.title);
+        if (
+          (pendingByDate.get(move.toDate) ?? 0) >= 3 ||
+          (titleCounts.get(targetTitleKey) ?? 0) > 0
+        ) {
           throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
         }
         pendingByDate.set(move.toDate, (pendingByDate.get(move.toDate) ?? 0) + 1);
-        adjustTitleCount(titleKey(move.toDate, move.row.title), 1);
+        adjustTitleCount(targetTitleKey, 1);
         move.sortOrder = nextOrder(move.toDate);
       }
 
@@ -303,6 +310,7 @@ export class PlanService {
   async update(userId: string, id: string, input: UpdatePlanTaskInput): Promise<PlanTaskDto> {
     let planCompleted: number | null = null;
     const result = await withUserContext(this.db, { userId }, async (tx) => {
+      await this.tasks.acquireUserLock(tx, userId);
       const existing = await this.tasks.findById(tx, userId, id);
       if (!existing) {
         throw new DomainError(ErrorCode.COACHING_TASK_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -333,6 +341,7 @@ export class PlanService {
 
   async remove(userId: string, id: string): Promise<void> {
     await withUserContext(this.db, { userId }, async (tx) => {
+      await this.tasks.acquireUserLock(tx, userId);
       const existing = await this.tasks.findById(tx, userId, id);
       if (!existing) {
         throw new DomainError(ErrorCode.COACHING_TASK_NOT_FOUND, HttpStatus.NOT_FOUND);

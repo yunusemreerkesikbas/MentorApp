@@ -251,6 +251,38 @@ describe("PlanAdaptationService", () => {
     expect(complete.mock.calls[0][0].user).not.toContain("Tamamlanan görev");
   });
 
+  it("caps model-visible tasks while retaining the full plan snapshot", async () => {
+    getSnapshot.mockResolvedValue({
+      window: {
+        from: TODAY,
+        to: new Date(Date.now() + 6 * 86_400_000).toISOString().slice(0, 10),
+      },
+      planRevision: "large-revision",
+      tasks: Array.from({ length: 25 }, (_, index) => ({
+        id: `task-${index + 1}`,
+        taskDate: TODAY,
+        title: `Görev ${index + 1}`,
+        subject: null,
+        status: "PENDING",
+        sortOrder: index,
+      })),
+    });
+    complete.mockResolvedValue({
+      text: '{"changes":[]}',
+      promptTokens: 10,
+      completionTokens: 2,
+      model: "fake",
+    });
+
+    await service.preview(USER, { source: "PLAN" });
+
+    const prompt = complete.mock.calls[0][0].user as string;
+    expect(prompt).toContain('"ref":"T21"');
+    expect(prompt).toContain('"title":"Görev 21"');
+    expect(prompt).not.toContain('"title":"Görev 22"');
+    expect(prompt).not.toContain('"ref":"T22"');
+  });
+
   it("meters malformed provider output but never mutates the plan", async () => {
     complete.mockResolvedValue({
       text: "bad-json",
