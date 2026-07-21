@@ -33,7 +33,8 @@ export class ForumZoneRepository {
     examType?: string | null;
     emoji?: string | null;
     joinPolicy: string;
-    createdBy: string;
+    /** Null for seeded zones (created before any staff user exists). */
+    createdBy: string | null;
   }): Promise<ZoneRow> {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx
@@ -50,6 +51,37 @@ export class ForumZoneRepository {
         })
         .returning();
       return rows[0]!;
+    });
+  }
+
+  /**
+   * Insert a launch zone if its slug is free. Idempotent via the unique slug index, so the boot
+   * seed can run on every start (and on every instance) without duplicating rows. Returns true
+   * when this call created the zone.
+   */
+  async seedZone(input: {
+    type: string;
+    title: string;
+    slug: string;
+    description?: string | null;
+    emoji?: string | null;
+    joinPolicy: string;
+  }): Promise<boolean> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .insert(forumZones)
+        .values({
+          type: input.type,
+          title: input.title,
+          slug: input.slug,
+          description: input.description ?? null,
+          emoji: input.emoji ?? null,
+          joinPolicy: input.joinPolicy,
+          createdBy: null,
+        })
+        .onConflictDoNothing({ target: forumZones.slug })
+        .returning({ id: forumZones.id });
+      return rows.length > 0;
     });
   }
 

@@ -19,12 +19,15 @@ import { BookmarkButton } from "../../../_components/bookmark-button";
 export function AnswerItem({
   answer,
   shareHref,
+  sharePublicUrl,
   onToggleBookmark,
   accept,
   report,
 }: {
   answer: AnswerView;
   shareHref: ShareHref;
+  /** Anonymous URL of the parent question, when it is publicly indexable. */
+  sharePublicUrl?: string;
   onToggleBookmark: (adding: boolean) => void;
   accept?: ReactNode;
   report?: ReactNode;
@@ -52,7 +55,7 @@ export function AnswerItem({
       </p>
       <AttachmentGallery attachments={answer.attachments} />
       <div className="-ml-1.5 mt-3 flex items-center gap-1">
-        <SendButton href={shareHref} />
+        <SendButton href={shareHref} publicUrl={sharePublicUrl} />
         <BookmarkButton bookmarked={answer.myBookmarked} onToggle={onToggleBookmark} />
         {accept}
         {report}

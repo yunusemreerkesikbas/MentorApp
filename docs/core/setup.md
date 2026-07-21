@@ -55,6 +55,16 @@ curl -X POST http://localhost:3001/v1/internal/cron/dispatch-daily-reminders \
 
 Quick checks: register a user → job row in `jobs` → `process-jobs` → completed; `/profil` → enable push → dispatch + process cron.
 
+**Cron kaydı gerektiren işler (Render Cron):** yalnız yukarıdaki **ikisi** — `process-jobs` ve
+`dispatch-daily-reminders`. Forum'un öksüz-ek temizliği (`cleanup-forum-attachments`) **kayıt
+istemez**: `ForumMaintenanceService` her API instance'ında 6 saatlik kendi timer'ıyla koşar
+(`forum.enabled` kapalıysa atlar). Endpoint manuel/acil tetikleme için durur:
+
+```bash
+curl -X POST http://localhost:3001/v1/internal/cron/cleanup-forum-attachments \
+  -H "x-cron-secret: $CRON_SECRET"
+```
+
 ## Economy smoke test (pre-flip)
 
 10 adımlık uçtan uca prova: `economy.enabled` açılmadan önce staging'de (veya lokalde) koşulur.

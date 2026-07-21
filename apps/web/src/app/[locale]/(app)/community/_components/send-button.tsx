@@ -24,17 +24,21 @@ export type ShareHref =
 
 /**
  * Twitter-style "send": share a post's link. Native share sheet where available (mobile), else copy
- * to the clipboard + toast. `path` is the locale-agnostic in-app detail path (e.g. /community/message/ID);
+ * to the clipboard + toast. `href` is the locale-agnostic in-app detail path (e.g. /community/message/ID);
  * the absolute URL is built with the current locale (tr has no prefix — routing is `as-needed`).
+ *
+ * `publicUrl` overrides it with the anonymous, indexable page (QA questions) so a recipient without
+ * an account can open the link. Callers pass it ONLY when the question is actually indexable —
+ * ForumPublicService requires ≥1 non-deleted answer, so an answerless question would 404.
  */
-export function SendButton({ href }: { href: ShareHref }) {
+export function SendButton({ href, publicUrl }: { href: ShareHref; publicUrl?: string }) {
   const t = useTranslations("community");
   const locale = useLocale();
   const toast = useMentorToast();
 
   const share = async () => {
     const path = getPathname({ locale: locale as Locale, href });
-    const url = `${window.location.origin}${path}`;
+    const url = publicUrl ?? `${window.location.origin}${path}`;
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ url });

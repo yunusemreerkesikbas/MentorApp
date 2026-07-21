@@ -1,0 +1,20 @@
+{
+  "zones": [
+    {
+      "slug": "genel-sohbet",
+      "type": "CHAT",
+      "title": "Genel Sohbet",
+      "description": "Sınav yolculuğunda aklına takılan her şey: motivasyon, çalışma düzeni, günlük paylaşımlar.",
+      "emoji": "💬",
+      "joinPolicy": "OPEN"
+    },
+    {
+      "slug": "soru-cevap",
+      "type": "QA",
+      "title": "Soru-Cevap",
+      "description": "Takıldığın soruyu sor, çözen arkadaşlarından yanıt al. En iyi cevabı işaretlemeyi unutma.",
+      "emoji": "❓",
+      "joinPolicy": "OPEN"
+    }
+  ]
+}
