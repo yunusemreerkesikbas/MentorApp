@@ -376,6 +376,75 @@ describe("PlanService plan adaptations", () => {
     ]);
   });
 
+  it("validates target capacity from the final selected move set", async () => {
+    const targetDate = addDays(TODAY, 1);
+    const sourceDate = addDays(TODAY, 2);
+    const finalDate = addDays(TODAY, 3);
+    planRepo.rows.push(
+      {
+        id: "t3",
+        userId: USER,
+        taskDate: targetDate,
+        title: "Geometri",
+        subject: "Matematik",
+        status: "PENDING",
+        sortOrder: 6,
+        createdAt: new Date("2026-07-21T09:00:00Z"),
+        updatedAt: new Date("2026-07-21T09:00:00Z"),
+      },
+      {
+        id: "t4",
+        userId: USER,
+        taskDate: targetDate,
+        title: "Problemler",
+        subject: "Matematik",
+        status: "PENDING",
+        sortOrder: 7,
+        createdAt: new Date("2026-07-21T09:00:00Z"),
+        updatedAt: new Date("2026-07-21T09:00:00Z"),
+      },
+      {
+        id: "t5",
+        userId: USER,
+        taskDate: sourceDate,
+        title: "Vatandaşlık",
+        subject: "Vatandaşlık",
+        status: "PENDING",
+        sortOrder: 0,
+        createdAt: new Date("2026-07-21T09:00:00Z"),
+        updatedAt: new Date("2026-07-21T09:00:00Z"),
+      },
+    );
+    const snapshot = await service.getAdaptationSnapshot(USER);
+
+    const result = await service.applyAdaptation(USER, {
+      planRevision: snapshot.planRevision,
+      changes: [
+        {
+          kind: "MOVE",
+          taskId: "t5",
+          title: "Vatandaşlık",
+          subject: "Vatandaşlık",
+          fromDate: sourceDate,
+          toDate: targetDate,
+        },
+        {
+          kind: "MOVE",
+          taskId: "t2",
+          title: "Matematik",
+          subject: "Matematik",
+          fromDate: targetDate,
+          toDate: finalDate,
+        },
+      ],
+    });
+
+    expect(result.moved).toMatchObject([
+      { id: "t5", taskDate: targetDate, sortOrder: 8 },
+      { id: "t2", taskDate: finalDate, sortOrder: 0 },
+    ]);
+  });
+
   it("rejects a stale revision without changing the plan", async () => {
     const snapshot = await service.getAdaptationSnapshot(USER);
     planRepo.rows[0]!.title = "Changed elsewhere";

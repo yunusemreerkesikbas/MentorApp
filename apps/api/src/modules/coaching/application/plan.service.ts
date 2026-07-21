@@ -188,11 +188,18 @@ export class PlanService {
       const byId = new Map(rows.map((row) => [row.id, row]));
       const pendingByDate = new Map<string, number>();
       const maxOrderByDate = new Map<string, number>();
-      const titleKeys = new Set<string>();
+      const titleCounts = new Map<string, number>();
+      const titleKey = (date: string, title: string) =>
+        `${date}:${title.trim().toLocaleLowerCase("tr-TR")}`;
+      const adjustTitleCount = (key: string, delta: number) => {
+        const next = (titleCounts.get(key) ?? 0) + delta;
+        if (next <= 0) titleCounts.delete(key);
+        else titleCounts.set(key, next);
+      };
       for (const row of rows) {
         if (row.status === PlanTaskStatus.PENDING) {
           pendingByDate.set(row.taskDate, (pendingByDate.get(row.taskDate) ?? 0) + 1);
-          titleKeys.add(`${row.taskDate}:${row.title.trim().toLocaleLowerCase("tr-TR")}`);
+          adjustTitleCount(titleKey(row.taskDate, row.title), 1);
         }
         maxOrderByDate.set(
           row.taskDate,
@@ -204,7 +211,7 @@ export class PlanService {
       const moves: Array<{
         row: (typeof rows)[number];
         toDate: string;
-        sortOrder: number;
+        sortOrder?: number;
       }> = [];
       const additions: Array<{
         title: string;
@@ -223,37 +230,47 @@ export class PlanService {
         }
       };
 
+      // Resolve and remove all move sources first so capacity checks reflect the
+      // selected adaptation's final state, regardless of change order.
       for (const change of input.changes) {
-        if (change.kind === "MOVE") {
-          const row = byId.get(change.taskId);
-          if (
-            !row ||
-            row.status !== PlanTaskStatus.PENDING ||
-            row.taskDate !== change.fromDate ||
-            change.fromDate === change.toDate ||
-            movedIds.has(row.id)
-          ) {
-            throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
-          }
-          assertDate(change.toDate);
-          if ((pendingByDate.get(change.toDate) ?? 0) >= 3) {
-            throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
-          }
-          movedIds.add(row.id);
-          pendingByDate.set(row.taskDate, (pendingByDate.get(row.taskDate) ?? 1) - 1);
-          pendingByDate.set(change.toDate, (pendingByDate.get(change.toDate) ?? 0) + 1);
-          titleKeys.delete(`${row.taskDate}:${row.title.trim().toLocaleLowerCase("tr-TR")}`);
-          titleKeys.add(`${change.toDate}:${row.title.trim().toLocaleLowerCase("tr-TR")}`);
-          moves.push({ row, toDate: change.toDate, sortOrder: nextOrder(change.toDate) });
-          continue;
-        }
-
-        assertDate(change.taskDate);
-        const titleKey = `${change.taskDate}:${change.title.trim().toLocaleLowerCase("tr-TR")}`;
-        if (titleKeys.has(titleKey) || (pendingByDate.get(change.taskDate) ?? 0) >= 3) {
+        if (change.kind !== "MOVE") continue;
+        const row = byId.get(change.taskId);
+        if (
+          !row ||
+          row.status !== PlanTaskStatus.PENDING ||
+          row.taskDate !== change.fromDate ||
+          change.fromDate === change.toDate ||
+          movedIds.has(row.id)
+        ) {
           throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
         }
-        titleKeys.add(titleKey);
+        assertDate(change.toDate);
+        movedIds.add(row.id);
+        pendingByDate.set(row.taskDate, (pendingByDate.get(row.taskDate) ?? 1) - 1);
+        adjustTitleCount(titleKey(row.taskDate, row.title), -1);
+        moves.push({ row, toDate: change.toDate });
+      }
+
+      for (const move of moves) {
+        if ((pendingByDate.get(move.toDate) ?? 0) >= 3) {
+          throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
+        }
+        pendingByDate.set(move.toDate, (pendingByDate.get(move.toDate) ?? 0) + 1);
+        adjustTitleCount(titleKey(move.toDate, move.row.title), 1);
+        move.sortOrder = nextOrder(move.toDate);
+      }
+
+      for (const change of input.changes) {
+        if (change.kind !== "ADD") continue;
+        assertDate(change.taskDate);
+        const additionTitleKey = titleKey(change.taskDate, change.title);
+        if (
+          (titleCounts.get(additionTitleKey) ?? 0) > 0 ||
+          (pendingByDate.get(change.taskDate) ?? 0) >= 3
+        ) {
+          throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
+        }
+        adjustTitleCount(additionTitleKey, 1);
         pendingByDate.set(change.taskDate, (pendingByDate.get(change.taskDate) ?? 0) + 1);
         additions.push({
           title: change.title,
@@ -267,7 +284,7 @@ export class PlanService {
       for (const move of moves) {
         const row = await this.tasks.update(tx, userId, move.row.id, {
           taskDate: move.toDate,
-          sortOrder: move.sortOrder,
+          sortOrder: move.sortOrder!,
           updatedAt: new Date(),
         });
         if (!row) throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
