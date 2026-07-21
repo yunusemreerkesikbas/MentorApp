@@ -11,6 +11,28 @@
     "START": "Bugün küçük bir adım at — yeterli. Yanındayım.",
     "GOING": "İstikrarın harika gidiyor. Bugün de devam edelim, yanındayım."
   },
+  "nextAction": {
+    "START_TASK": {
+      "title": "{taskTitle} ile ba\u015fla",
+      "message": "Bug\u00fcn\u00fcn tek k\u00fc\u00e7\u00fck ad\u0131m\u0131 bu. Haz\u0131rsan ba\u015flayal\u0131m.",
+      "lowMoodMessage": "Bug\u00fcn sadece bu k\u00fc\u00e7\u00fck ad\u0131ma odaklan. K\u0131sa tutmak da tamam."
+    },
+    "ADD_TASK": {
+      "title": "Bug\u00fcn i\u00e7in bir g\u00f6rev ekle",
+      "message": "K\u00fc\u00e7\u00fck ve ger\u00e7ek\u00e7i bir g\u00f6rev se\u00e7; tek ad\u0131m yeter."
+    },
+    "DAY_COMPLETE": {
+      "title": "Bug\u00fcn\u00fcn plan\u0131 tamam",
+      "message": "Bug\u00fcnl\u00fck bu kadar. Eme\u011fini fark et ve dinlen."
+    }
+  },
+  "official": {
+    "EXAM_DATE": "Resm\u00ee s\u0131nav tarihini do\u011frulanm\u0131\u015f kartta g\u00f6rebilirsin.",
+    "APPLICATION": "Ba\u015fvuru bilgisi i\u00e7in yaln\u0131z do\u011frulanm\u0131\u015f Bilgi Merkezi kaynaklar\u0131n\u0131 payla\u015f\u0131yorum.",
+    "RESULT_PLACEMENT": "Sonu\u00e7 ve yerle\u015ftirme bilgisi i\u00e7in yaln\u0131z do\u011frulanm\u0131\u015f kaynaklar\u0131 payla\u015f\u0131yorum.",
+    "PROCESS": "Resm\u00ee s\u00fcre\u00e7 i\u00e7in yaln\u0131z do\u011frulanm\u0131\u015f Bilgi Merkezi kaynaklar\u0131n\u0131 payla\u015f\u0131yorum.",
+    "UNAVAILABLE": "Bu konuda do\u011frulanm\u0131\u015f bir kart veya kaynak \u015fu anda mevcut de\u011fil. Bilgi Merkezi'ni kontrol edebilirsin."
+  },
   "ghost": {
     "NEW_RECORD": "Yeni rekor! Şimdiye kadarki en iyi netini geçtin. Geçmiş-ben'i resmen geride bıraktın.",
     "BEAT_PREVIOUS": "Geçen denemeni geçtin — geçmiş-ben'i yendin. İvme seninle.",

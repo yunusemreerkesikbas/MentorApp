@@ -16,6 +16,7 @@ import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.po
 import {
   canApproveMember,
   canCreateZone,
+  canLeaveZone,
   canModerateZone,
   canRemoveMember,
   canSearchMembers,
@@ -161,6 +162,20 @@ export class ForumService {
       throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
     await this.repo.deleteMember(zoneId, targetUserId);
+  }
+
+  /**
+   * Voluntary self-leave: an ACTIVE member leaves, a PENDING requester withdraws their request
+   * (same delete). Idempotent — no membership is a no-op (mirrors `join`). OWNER cannot leave.
+   */
+  async leave(zoneId: string, userId: string): Promise<void> {
+    await this.assertEnabled();
+    const membership = await this.repo.findMembership(zoneId, userId);
+    if (!membership) return; // already gone — retry-safe
+    if (!canLeaveZone(membership.role as ZoneRole)) {
+      throw new DomainError(ErrorCode.FORUM_OWNER_CANNOT_LEAVE, HttpStatus.CONFLICT);
+    }
+    await this.repo.deleteMember(zoneId, userId);
   }
 
   async listZones(

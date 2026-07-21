@@ -7,7 +7,11 @@ import { markWelcomeSeen } from "@/lib/welcome-seen";
 import { WelcomeSlideLayout } from "./welcome-slide-layout";
 
 const SLIDES = [
-  { mascot: "encouraging" as const, copyKey: "slide1" },
+  {
+    mascot: "encouraging" as const,
+    copyKey: "slide1",
+    heroSrc: "/img/welcome-hero.png",
+  },
   { mascot: "default" as const, copyKey: "slide2" },
   { mascot: "happy" as const, copyKey: "slide3" },
 ];
@@ -22,23 +26,24 @@ export function WelcomeCarousel() {
 
   function handleSkip() {
     markWelcomeSeen();
-    router.push("/giris");
+    router.push("/login");
   }
 
   function handleRegister() {
     markWelcomeSeen();
-    router.push("/kayit");
+    router.push("/signup");
   }
 
   function handleLogin() {
     markWelcomeSeen();
-    router.push("/giris");
+    router.push("/login");
   }
 
   return (
     <WelcomeSlideLayout
       step={step}
       mascot={slide.mascot}
+      heroSrc={"heroSrc" in slide ? slide.heroSrc : undefined}
       title={t(`${slide.copyKey}.title`)}
       subtitle={t(`${slide.copyKey}.subtitle`)}
       onBack={step > 0 ? () => setStep((s) => s - 1) : undefined}

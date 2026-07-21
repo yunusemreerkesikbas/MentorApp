@@ -13,10 +13,6 @@ export const AI_REQUEST_TIMEOUT_MS = 30_000;
  * ponytail: constant, not config — move to the config catalog if tuning is ever needed. */
 export const CHAT_HISTORY_MAX_MESSAGES = 10;
 
-/** Memory profile: refresh the distilled summary every N persisted messages (user+coach rows). */
-export const MEMORY_REFRESH_EVERY_N_MESSAGES = 10;
-/** How many recent messages the memory job distills from. */
-export const MEMORY_DISTILL_WINDOW = 40;
 /** AI memory-refresh job name (own constant — runner matches by string). */
 export const AI_MEMORY_JOB = "ai.refresh-memory";
 
@@ -41,11 +37,11 @@ export const AiUsageFeature = {
   VISION_NOTE: "vision_note",
   SESSION_REFLECTION: "session_reflection",
   WEEKLY_REVIEW: "weekly_review",
-  MEMORY: "memory",
   DAILY_GREETING: "daily_greeting",
   PLAN_DRAFT: "plan_draft",
 } as const;
-export type AiUsageFeature = (typeof AiUsageFeature)[keyof typeof AiUsageFeature];
+export type AiUsageFeature =
+  (typeof AiUsageFeature)[keyof typeof AiUsageFeature];
 
 /** RAG retrieval: how many articles to ground on, and the max cosine distance to accept (lower = closer). */
 export const RAG_TOP_K = 3;
@@ -56,8 +52,6 @@ export const AI_EMBED_JOB = "ai.embed-article";
 /** PII-free grounding context passed to the LLM (§4 #6 — no email/name/behavioral data). */
 export interface CoachContext {
   examType: string | null;
-  daysRemaining: number | null;
-  examDateLabel: string | null;
   /** Coarse subjective signal from today's mood check-in (1..5; null if not checked in). */
   moodLevel: number | null;
   /** Optional user-typed "zorlandığın konu" from today's check-in (null if none). */
@@ -75,8 +69,6 @@ export interface CoachContext {
   } | null;
   /** PII-free summary of today's plan tasks (null when no tasks scheduled today). */
   todayPlan: TodayPlanSummary | null;
-  /** Distilled PII-free profile from past conversations (null until the memory job builds one). */
-  memoryProfile: string | null;
 }
 
 /** A retrieved, verified article used to ground the answer (RAG, §1). */
@@ -115,7 +107,7 @@ export const COACH_SYSTEM_BASE = [
   "isterse uzat. Yalnızca basit markdown kullanabilirsin (kısa madde listesi, **kalın** vurgu);",
   "tablo, başlık (#), kod bloğu veya link KULLANMA. Emoji kullanma (gerekiyorsa en fazla 1).",
   "Kalıp coşku cümleleri ve ünlem yığını ekleme; sıcak ama sakin ol.",
-  "BAĞLAM KULLANIMI: BAĞLAM'daki plan/seans bilgisine yalnız kullanıcının sorusuyla ilgiliyse",
+  "BAĞLAM KULLANIMI: BAĞLAM'daki plan/study-session bilgisine yalnız kullanıcının sorusuyla ilgiliyse",
   "değin; alakasız bir sorunun sonuna bağlamdan hatırlatma/çağrı EKLEME.",
   "TAKİP SORULARI: Her yanıtın EN SONUNA (kısa selamlaşmalar dahil; görev önerisi satırı varsa",
   'ondan hemen önce) tek satır <<FOLLOWUP["kısa soru 1","kısa soru 2"]>> ekle — kullanıcının sana',
@@ -133,11 +125,17 @@ export const COACH_SYSTEM_BASE = [
  * PII-free one-line summary of recent study sessions for grounding (§4 #6 — aggregate counts +
  * the user's own subject names + own note only). Returns null when there is no recent activity.
  */
-export function formatRecentSessionsLine(rs: CoachContext["recentSessions"]): string | null {
+export function formatRecentSessionsLine(
+  rs: CoachContext["recentSessions"],
+): string | null {
   if (!rs) return null;
-  const parts = [`Son 7 gün: ${rs.count7d} seans, ${rs.focusMinutes7d} dk odak`];
-  if (rs.subjects.length > 0) parts.push(`çalıştığı konular: ${rs.subjects.join(", ")}`);
-  if (rs.lastStruggleNote) parts.push(`son zorlandığı: "${rs.lastStruggleNote}"`);
+  const parts = [
+    `Son 7 gün: ${rs.count7d} seans, ${rs.focusMinutes7d} dk odak`,
+  ];
+  if (rs.subjects.length > 0)
+    parts.push(`çalıştığı konular: ${rs.subjects.join(", ")}`);
+  if (rs.lastStruggleNote)
+    parts.push(`son zorlandığı: "${rs.lastStruggleNote}"`);
   return `${parts.join("; ")}.`;
 }
 
@@ -145,7 +143,9 @@ export function formatRecentSessionsLine(rs: CoachContext["recentSessions"]): st
  * PII-free one-line summary of today's plan for grounding (§4 #6 — counts + own task titles only).
  * Returns null when there are no tasks today.
  */
-export function formatTodayPlanLine(tp: CoachContext["todayPlan"]): string | null {
+export function formatTodayPlanLine(
+  tp: CoachContext["todayPlan"],
+): string | null {
   if (!tp) return null;
   const parts = [`Bugünün planı: ${tp.done}/${tp.total} tamam`];
   if (tp.pendingTitles.length > 0) {
@@ -162,9 +162,6 @@ export function buildSystemPrompt(
 ): string {
   const lines = [
     ctx.examType ? `Sınav türü: ${ctx.examType}` : "Sınav türü: belirtilmemiş",
-    ctx.daysRemaining != null
-      ? `Sınava kalan gün: ${ctx.daysRemaining}${ctx.examDateLabel ? ` (${ctx.examDateLabel})` : ""}`
-      : "Sınav tarihi: bilinmiyor",
   ];
   if (ctx.moodLevel != null) {
     lines.push(
@@ -176,11 +173,12 @@ export function buildSystemPrompt(
   if (planLine) lines.push(planLine);
   const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
   if (sessionsLine) lines.push(sessionsLine);
-  if (ctx.memoryProfile) {
-    lines.push(`Kullanıcı profili (geçmiş sohbetlerden): ${ctx.memoryProfile}`);
-  }
   if (mockExam) {
-    const takenAt = mockExam.takenAt.slice(0, 10).split("-").reverse().join(".");
+    const takenAt = mockExam.takenAt
+      .slice(0, 10)
+      .split("-")
+      .reverse()
+      .join(".");
     lines.push(
       "Son deneme (backend tarafından doğrulandı; netleri yeniden hesaplama):",
       `Sınav: ${mockExam.examName}; tarih: ${takenAt}; toplam net: ${mockExam.totalNet}.`,
@@ -211,36 +209,6 @@ export function buildSystemPrompt(
 }
 
 /**
- * Distill a PII-free memory profile from recent chat history (memory job). Output = a short 2-4
- * bullet Turkish summary of the user's goal, recurring struggles, and study preferences. §4 #6:
- * NEVER name / email / contact / any personal identifier; §4 #1 official-info ban still applies.
- * `history` is oldest-first; empty history → caller skips the LLM call.
- */
-export function buildMemoryProfilePrompt(
-  history: { role: "user" | "assistant"; content: string }[],
-): { system: string; user: string } {
-  const system = [
-    "Sen bir sınav hazırlık koçunun hafıza asistanısın. Aşağıdaki sohbet geçmişinden öğrenci hakkında",
-    "kalıcı, KISA bir profil çıkar (en fazla 4 madde, Türkçe). Yalnızca şunları özetle: öğrencinin hedefi,",
-    "tekrar eden zorlukları/konu eksikleri, çalışma tercihleri ve alışkanlıkları.",
-    "KESİN KURALLAR:",
-    "1) İsim, e-posta, telefon, adres veya herhangi bir kişisel/iletişim bilgisi YAZMA.",
-    "2) Resmî bilgi (sınav tarihi, başvuru, yerleştirme, puan) üretme.",
-    "3) En fazla 4 satır yaz; her satır tam olarak 'Etiket: değer' biçiminde olsun. Çıkarım yoksa",
-    "   tek satır 'Örüntü: Belirgin bir örüntü yok.' yaz.",
-    "4) Markdown, emoji, tire/madde işareti ve numaralandırma KULLANMA; çıktı düz metin olarak",
-    "   gösterilir ve başka prompt'lara satır olarak eklenir.",
-  ].join("\n");
-
-  const transcript = history
-    .map((m) => `${m.role === "user" ? "Öğrenci" : "Koç"}: ${m.content}`)
-    .join("\n");
-  const user = `Sohbet geçmişi:\n${transcript}`;
-
-  return { system, user };
-}
-
-/**
  * Premium AI-adaptive mood reflection prompt (§4 #5 premium-only). Warm, brief, empathetic; reuses
  * the hard guardrails (#1 no official info, #4 no medical/legal advice → professional on serious
  * signals). Grounds only on PII-free context + today's mood level + the optional user note.
@@ -263,24 +231,27 @@ export function buildMoodReflectionPrompt(
     "3) Ödeme/abonelik/coin veya teknik konulara girme. Kişisel veri isteme.",
   ].join("\n");
 
-  const ctxLine =
-    ctx.daysRemaining != null ? ` Sınava kalan gün: ${ctx.daysRemaining}.` : "";
-  const noteLine = struggleNote ? ` Bugün en çok zorlandığı konu: "${struggleNote}".` : "";
+  const noteLine = struggleNote
+    ? ` Bugün en çok zorlandığı konu: "${struggleNote}".`
+    : "";
   const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
   const studyLine = sessionsLine ? ` ${sessionsLine}` : "";
   const planLine = formatTodayPlanLine(ctx.todayPlan);
   const planContextLine = planLine ? ` ${planLine}` : "";
-  const user = `Öğrencinin bugünkü ruh hali: ${MOOD_LABEL[mood] ?? "orta"} (${mood}/5).${noteLine}${ctxLine}${studyLine}${planContextLine}`;
+  const user = `Öğrencinin bugünkü ruh hali: ${MOOD_LABEL[mood] ?? "orta"} (${mood}/5).${noteLine}${studyLine}${planContextLine}`;
 
   return { system, user };
 }
 
 /**
- * Premium proactive daily greeting on the /koc hub (§4 #5 premium-only). Warm, brief (2-3
+ * Premium proactive daily greeting on the /coach hub (§4 #5 premium-only). Warm, brief (2-3
  * sentences), one small actionable nudge for today. Grounds ONLY on the PII-free CoachContext;
  * cached per (user, day) so this runs at most once a day per user.
  */
-export function buildDailyGreetingPrompt(ctx: CoachContext): { system: string; user: string } {
+export function buildDailyGreetingPrompt(ctx: CoachContext): {
+  system: string;
+  user: string;
+} {
   const system = [
     "Sen Mentor uygulamasının sınav hazırlık koçusun. Öğrenci uygulamayı yeni açtı; güne özel TAM",
     "OLARAK 2 veya 3 cümlelik, tek paragraflık sıcak bir karşılama yaz. Yanıtı bitirmeden cümleleri",
@@ -298,15 +269,19 @@ export function buildDailyGreetingPrompt(ctx: CoachContext): { system: string; u
 
   const parts: string[] = [];
   if (ctx.examType) parts.push(`Hazırlandığı sınav: ${ctx.examType}.`);
-  if (ctx.daysRemaining != null) parts.push(`Sınava kalan gün: ${ctx.daysRemaining}.`);
-  if (ctx.moodLevel != null) parts.push(`Bugünkü ruh hali: ${MOOD_LABEL[ctx.moodLevel] ?? "orta"} (${ctx.moodLevel}/5).`);
+  if (ctx.moodLevel != null)
+    parts.push(
+      `Bugünkü ruh hali: ${MOOD_LABEL[ctx.moodLevel] ?? "orta"} (${ctx.moodLevel}/5).`,
+    );
   const planLine = formatTodayPlanLine(ctx.todayPlan);
   if (planLine) parts.push(planLine);
 
   const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
   if (sessionsLine) parts.push(sessionsLine);
-  if (ctx.memoryProfile) parts.push(`Kullanıcı profili (geçmiş sohbetlerden): ${ctx.memoryProfile}`);
-  const user = parts.length > 0 ? parts.join(" ") : "Bugün için henüz veri yok — genel, sıcak bir güne başlama mesajı yaz.";
+  const user =
+    parts.length > 0
+      ? parts.join(" ")
+      : "Bugün için henüz veri yok — genel, sıcak bir güne başlama mesajı yaz.";
 
   return { system, user };
 }
@@ -342,7 +317,6 @@ export function buildPlanDraftPrompt(
 
   const parts: string[] = [`Bugün: ${todayIso}.`];
   if (ctx.examType) parts.push(`Hazırlandığı sınav: ${ctx.examType}.`);
-  if (ctx.daysRemaining != null) parts.push(`Sınava kalan gün: ${ctx.daysRemaining}.`);
   const planLine = formatTodayPlanLine(ctx.todayPlan);
   if (planLine) parts.push(planLine);
   if (ctx.todayPlan?.pendingTitles.length) {
@@ -352,7 +326,6 @@ export function buildPlanDraftPrompt(
   }
   const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
   if (sessionsLine) parts.push(sessionsLine);
-  if (ctx.memoryProfile) parts.push(`Kullanıcı profili (geçmiş sohbetlerden): ${ctx.memoryProfile}`);
   if (note) parts.push(`Öğrencinin isteği: "${note}"`);
 
   return { system, user: parts.join(" ") };
@@ -399,11 +372,10 @@ export function buildSessionReflectionPrompt(
   const noteLine = session.struggleNote
     ? ` Seans sırasında zorlandığı: "${session.struggleNote}".`
     : "";
-  const ctxLine = ctx.daysRemaining != null ? ` Sınava kalan gün: ${ctx.daysRemaining}.` : "";
   const planLine = formatTodayPlanLine(ctx.todayPlan);
   const planContextLine = planLine ? ` ${planLine}` : "";
   const moodLabel = SESSION_MOOD_LABEL[session.sessionMood] ?? "idare eder";
-  const user = `Öğrenci ${session.focusMinutes} dk odaklandı.${subjectLine} Seans nasıl geçti: ${moodLabel} (${session.sessionMood}/3).${noteLine}${ctxLine}${planContextLine}`;
+  const user = `Öğrenci ${session.focusMinutes} dk odaklandı.${subjectLine} Seans nasıl geçti: ${moodLabel} (${session.sessionMood}/3).${noteLine}${planContextLine}`;
 
   return { system, user };
 }
@@ -413,7 +385,10 @@ export function buildSessionReflectionPrompt(
  * grounded ONLY on the user's own net deltas (§0 no cross-user ranking; §4 #1 no official info;
  * §4 #6 PII-free — numbers + subject names only).
  */
-export function buildGhostPrompt(ghost: GhostComparisonDto): { system: string; user: string } {
+export function buildGhostPrompt(ghost: GhostComparisonDto): {
+  system: string;
+  user: string;
+} {
   const system = [
     "Sen Mentor uygulamasının sınav hazırlık koçusun. Öğrencinin KENDİ geçmiş performansına göre",
     "ilerlemesini KISA — EN FAZLA 3 cümle — sıcak ve motive edici şekilde anlat. Başka kişiyle",
@@ -471,8 +446,7 @@ export function buildVisionNotePrompt(
 
   const cityLine = targetCity ? ` Hedef şehir: ${targetCity}.` : "";
   const whyLine = motivation ? ` Nedeni: "${motivation}".` : "";
-  const ctxLine = ctx.daysRemaining != null ? ` Sınava kalan gün: ${ctx.daysRemaining}.` : "";
-  const user = `Öğrencinin hedefi: "${goalTitle}".${cityLine}${whyLine}${ctxLine}`;
+  const user = `Öğrencinin hedefi: "${goalTitle}".${cityLine}${whyLine}`;
 
   return { system, user };
 }
@@ -481,7 +455,10 @@ export function buildVisionNotePrompt(
  * Per-model price in micro-USD per token (input/output). Used to estimate `cost_micros` per call
  * (§7 cost visibility). `fake` is zero-cost. Update when models/pricing change.
  */
-export const MODEL_PRICING_MICROS_PER_TOKEN: Record<string, { input: number; output: number }> = {
+export const MODEL_PRICING_MICROS_PER_TOKEN: Record<
+  string,
+  { input: number; output: number }
+> = {
   "gpt-4o-mini": { input: 0.15, output: 0.6 },
   fake: { input: 0, output: 0 },
   "fake-vision": { input: 0, output: 0 },

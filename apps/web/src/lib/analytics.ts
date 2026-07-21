@@ -1,3 +1,5 @@
+import type { CoachAccessMode, DailyNextActionKind } from "@mentor/types";
+
 export const ANALYTICS_CONSENT_KEY = "mentor.analytics-consent.v1";
 
 export type ArticleAnalyticsEvent =
@@ -13,6 +15,16 @@ export interface ArticleAnalyticsParams {
   locale: string;
 }
 
+export interface CoachAnalyticsParams {
+  coach_hub_view: {
+    access_mode: CoachAccessMode;
+    next_action_kind: DailyNextActionKind;
+  };
+  coach_next_action_click: { next_action_kind: DailyNextActionKind };
+  coach_session_start: Record<string, never>;
+}
+export type CoachAnalyticsEvent = keyof CoachAnalyticsParams;
+
 declare global {
   interface Window {
     dataLayer?: unknown[];
@@ -20,13 +32,26 @@ declare global {
   }
 }
 
+function trackEvent(event: string, params: object): void {
+  if (typeof window === "undefined") return;
+  if (window.localStorage.getItem(ANALYTICS_CONSENT_KEY) !== "accepted") return;
+  window.dataLayer = window.dataLayer ?? [];
+  window.gtag =
+    window.gtag ?? ((...args: unknown[]) => window.dataLayer?.push(args));
+  window.gtag?.("event", event, params);
+}
+
 export function trackArticleEvent(
   event: ArticleAnalyticsEvent,
   params: ArticleAnalyticsParams,
 ): void {
-  if (typeof window === "undefined") return;
-  if (window.localStorage.getItem(ANALYTICS_CONSENT_KEY) !== "accepted") return;
-  window.dataLayer = window.dataLayer ?? [];
-  window.gtag = window.gtag ?? ((...args: unknown[]) => window.dataLayer?.push(args));
-  window.gtag?.("event", event, params);
+  trackEvent(event, params);
+}
+
+/** Consent-gated coach events. Payload types intentionally exclude task/user content. */
+export function trackCoachEvent<Event extends CoachAnalyticsEvent>(
+  event: Event,
+  params: CoachAnalyticsParams[Event],
+): void {
+  trackEvent(event, params);
 }

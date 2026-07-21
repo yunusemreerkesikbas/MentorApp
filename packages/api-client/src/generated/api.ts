@@ -4,20 +4,34 @@
  * Mentor API
  * OpenAPI spec version: 1.0
  */
-import { http } from '../http';
-export interface SignupDto { [key: string]: unknown }
+import { http } from "../http";
+export interface SignupDto {
+  [key: string]: unknown;
+}
 
-export interface LoginDto { [key: string]: unknown }
+export interface LoginDto {
+  [key: string]: unknown;
+}
 
-export interface VerifyEmailDto { [key: string]: unknown }
+export interface VerifyEmailDto {
+  [key: string]: unknown;
+}
 
-export interface ForgotPasswordDto { [key: string]: unknown }
+export interface ForgotPasswordDto {
+  [key: string]: unknown;
+}
 
-export interface ResetPasswordDto { [key: string]: unknown }
+export interface ResetPasswordDto {
+  [key: string]: unknown;
+}
 
-export interface UpdateMeDto { [key: string]: unknown }
+export interface UpdateMeDto {
+  [key: string]: unknown;
+}
 
-export interface AvatarUploadUrlDto { [key: string]: unknown }
+export interface AvatarUploadUrlDto {
+  [key: string]: unknown;
+}
 
 export interface AiChatDto {
   /**
@@ -40,104 +54,192 @@ export interface PlanDraftBodyDto {
   note?: string;
 }
 
-export interface CoachFeedbackDto { [key: string]: unknown }
+export interface CoachFeedbackDto {
+  [key: string]: unknown;
+}
 
-export interface SessionReflectionBodyDto { [key: string]: unknown }
+export interface SessionReflectionBodyDto {
+  [key: string]: unknown;
+}
 
-export interface WeeklyReviewNarrationBodyDto { [key: string]: unknown }
+export interface WeeklyReviewNarrationBodyDto {
+  [key: string]: unknown;
+}
 
-export interface PhotoUploadUrlDto { [key: string]: unknown }
+export interface PhotoUploadUrlDto {
+  [key: string]: unknown;
+}
 
-export interface CategorizePhotoDto { [key: string]: unknown }
+export interface CategorizePhotoDto {
+  [key: string]: unknown;
+}
 
-export interface CheckoutDto { [key: string]: unknown }
+export interface CheckoutDto {
+  [key: string]: unknown;
+}
 
-export interface RedeemInviteDto { [key: string]: unknown }
+export interface DeepAnalysisDto {
+  [key: string]: unknown;
+}
 
-export interface CreateMoodCheckinDto { [key: string]: unknown }
+export interface RedeemInviteDto {
+  [key: string]: unknown;
+}
 
-export interface UpsertVisionDto { [key: string]: unknown }
+export interface CreateMoodCheckinDto {
+  [key: string]: unknown;
+}
 
-export interface CreatePlanTaskDto { [key: string]: unknown }
+export interface UpsertVisionDto {
+  [key: string]: unknown;
+}
 
-export interface BulkCreatePlanTasksDto { [key: string]: unknown }
+export interface CreatePlanTaskDto {
+  [key: string]: unknown;
+}
 
-export interface UpdatePlanTaskDto { [key: string]: unknown }
+export interface BulkCreatePlanTasksDto {
+  [key: string]: unknown;
+}
 
-export interface StartStudySessionDto { [key: string]: unknown }
+export interface UpdatePlanTaskDto {
+  [key: string]: unknown;
+}
 
-export interface UpdateStudySessionDto { [key: string]: unknown }
+export interface StartStudySessionDto {
+  [key: string]: unknown;
+}
 
-export interface SessionFeedbackDto { [key: string]: unknown }
+export interface UpdateStudySessionDto {
+  [key: string]: unknown;
+}
 
-export interface CreateMockExamDto { [key: string]: unknown }
+export interface SessionFeedbackDto {
+  [key: string]: unknown;
+}
 
-export interface UpdateMockExamDto { [key: string]: unknown }
+export interface CreateMockExamDto {
+  [key: string]: unknown;
+}
 
-export interface UpdateUserStatusDto { [key: string]: unknown }
+export interface UpdateMockExamDto {
+  [key: string]: unknown;
+}
 
-export interface UpdateConfigDto { [key: string]: unknown }
+export interface UpdateUserStatusDto {
+  [key: string]: unknown;
+}
 
-export interface AdjustEconomyDto { [key: string]: unknown }
+export interface UpdateConfigDto {
+  [key: string]: unknown;
+}
 
-export interface ArticleImageUploadDto { [key: string]: unknown }
+export interface AdjustEconomyDto {
+  [key: string]: unknown;
+}
 
-export interface UpsertArticleDto { [key: string]: unknown }
+export interface ArticleImageUploadDto {
+  [key: string]: unknown;
+}
 
-export interface UpsertExamDto { [key: string]: unknown }
+export interface UpsertArticleDto {
+  [key: string]: unknown;
+}
 
-export interface UpsertExamEventDto { [key: string]: unknown }
+export interface UpsertExamDto {
+  [key: string]: unknown;
+}
 
-export interface RefundSubscriptionDto { [key: string]: unknown }
+export interface UpsertExamEventDto {
+  [key: string]: unknown;
+}
 
-export interface CreateZoneDto { [key: string]: unknown }
+export interface RefundSubscriptionDto {
+  [key: string]: unknown;
+}
 
-export interface AssignOwnerDto { [key: string]: unknown }
+export interface CreateZoneDto {
+  [key: string]: unknown;
+}
 
-export interface ApproveMemberDto { [key: string]: unknown }
+export interface AssignOwnerDto {
+  [key: string]: unknown;
+}
 
-export interface AttachmentUploadUrlDto { [key: string]: unknown }
+export interface ApproveMemberDto {
+  [key: string]: unknown;
+}
 
-export interface CreateThreadDto { [key: string]: unknown }
+export interface AttachmentUploadUrlDto {
+  [key: string]: unknown;
+}
 
-export interface CreateAnswerDto { [key: string]: unknown }
+export interface CreateThreadDto {
+  [key: string]: unknown;
+}
 
-export interface ReactionDto { [key: string]: unknown }
+export interface CreateAnswerDto {
+  [key: string]: unknown;
+}
 
-export interface PinThreadDto { [key: string]: unknown }
+export interface ReactionDto {
+  [key: string]: unknown;
+}
 
-export interface CreateReportDto { [key: string]: unknown }
+export interface PinThreadDto {
+  [key: string]: unknown;
+}
 
-export interface ResolveReportDto { [key: string]: unknown }
+export interface CreateReportDto {
+  [key: string]: unknown;
+}
 
-export interface PushSubscribeDto { [key: string]: unknown }
+export interface ResolveReportDto {
+  [key: string]: unknown;
+}
 
-export interface PushUnsubscribeDto { [key: string]: unknown }
+export interface PushSubscribeDto {
+  [key: string]: unknown;
+}
 
-export interface UpdateNotificationPreferencesDto { [key: string]: unknown }
+export interface PushUnsubscribeDto {
+  [key: string]: unknown;
+}
 
-export interface ScheduleSessionReturnReminderDto { [key: string]: unknown }
+export interface UpdateNotificationPreferencesDto {
+  [key: string]: unknown;
+}
+
+export interface ScheduleSessionReturnReminderDto {
+  [key: string]: unknown;
+}
 
 /**
  * @nullable
  */
-export type HealthControllerReadiness200Info = {[key: string]: {
-  status: string;
-  [key: string]: unknown;
- }} | null;
+export type HealthControllerReadiness200Info = {
+  [key: string]: {
+    status: string;
+    [key: string]: unknown;
+  };
+} | null;
 
 /**
  * @nullable
  */
-export type HealthControllerReadiness200Error = {[key: string]: {
-  status: string;
-  [key: string]: unknown;
- }} | null;
+export type HealthControllerReadiness200Error = {
+  [key: string]: {
+    status: string;
+    [key: string]: unknown;
+  };
+} | null;
 
-export type HealthControllerReadiness200Details = {[key: string]: {
-  status: string;
-  [key: string]: unknown;
- }};
+export type HealthControllerReadiness200Details = {
+  [key: string]: {
+    status: string;
+    [key: string]: unknown;
+  };
+};
 
 export type HealthControllerReadiness200 = {
   status?: string;
@@ -151,23 +253,29 @@ export type HealthControllerReadiness200 = {
 /**
  * @nullable
  */
-export type HealthControllerReadiness503Info = {[key: string]: {
-  status: string;
-  [key: string]: unknown;
- }} | null;
+export type HealthControllerReadiness503Info = {
+  [key: string]: {
+    status: string;
+    [key: string]: unknown;
+  };
+} | null;
 
 /**
  * @nullable
  */
-export type HealthControllerReadiness503Error = {[key: string]: {
-  status: string;
-  [key: string]: unknown;
- }} | null;
+export type HealthControllerReadiness503Error = {
+  [key: string]: {
+    status: string;
+    [key: string]: unknown;
+  };
+} | null;
 
-export type HealthControllerReadiness503Details = {[key: string]: {
-  status: string;
-  [key: string]: unknown;
- }};
+export type HealthControllerReadiness503Details = {
+  [key: string]: {
+    status: string;
+    [key: string]: unknown;
+  };
+};
 
 export type HealthControllerReadiness503 = {
   status?: string;
@@ -183,6172 +291,5502 @@ export type AiGhostControllerNarrateBody = {
 };
 
 export type CoachingControllerGetAnalysisParams = {
-examId?: string;
+  examId?: string;
 };
 
 export type CoachingControllerGetWeeklyReviewParams = {
-examId: string;
+  examId: string;
 };
 
 export type MockExamControllerListParams = {
-examId?: string;
+  examId?: string;
 };
 
 export type CommunityControllerGetLeaderboardParams = {
-window?: CommunityControllerGetLeaderboardWindow;
+  window?: CommunityControllerGetLeaderboardWindow;
 };
 
-export type CommunityControllerGetLeaderboardWindow = typeof CommunityControllerGetLeaderboardWindow[keyof typeof CommunityControllerGetLeaderboardWindow];
+export type CommunityControllerGetLeaderboardWindow =
+  (typeof CommunityControllerGetLeaderboardWindow)[keyof typeof CommunityControllerGetLeaderboardWindow];
 
-
-
+// eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CommunityControllerGetLeaderboardWindow = {
-  today: 'today',
-  weekly: 'weekly',
-  all_time: 'all_time',
+  today: "today",
+  weekly: "weekly",
+  all_time: "all_time",
 } as const;
 
 export type ForumPublicControllerQuestionsParams = {
-limit: string;
+  limit: string;
 };
 
 export type NotificationsControllerStreamParams = {
-token: string;
+  token: string;
 };
 
 export type healthControllerLivenessResponse200 = {
-  data: void
-  status: 200
-}
-
-export type healthControllerLivenessResponseSuccess = (healthControllerLivenessResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type healthControllerLivenessResponse = (healthControllerLivenessResponseSuccess)
+export type healthControllerLivenessResponseSuccess =
+  healthControllerLivenessResponse200 & {
+    headers: Headers;
+  };
+export type healthControllerLivenessResponse =
+  healthControllerLivenessResponseSuccess;
 
 export const getHealthControllerLivenessUrl = () => {
+  return `/v1/health`;
+};
 
-  return `/v1/health`
-}
-
-export const healthControllerLiveness = async ( options?: RequestInit): Promise<healthControllerLivenessResponse> => {
-
-  return http<healthControllerLivenessResponse>(getHealthControllerLivenessUrl(),
-  {
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const healthControllerLiveness = async (
+  options?: RequestInit,
+): Promise<healthControllerLivenessResponse> => {
+  return http<healthControllerLivenessResponse>(
+    getHealthControllerLivenessUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type healthControllerReadinessResponse200 = {
-  data: HealthControllerReadiness200
-  status: 200
-}
+  data: HealthControllerReadiness200;
+  status: 200;
+};
 
 export type healthControllerReadinessResponse503 = {
-  data: HealthControllerReadiness503
-  status: 503
-}
-    
-export type healthControllerReadinessResponseSuccess = (healthControllerReadinessResponse200) & {
-  headers: Headers;
-};
-export type healthControllerReadinessResponseError = (healthControllerReadinessResponse503) & {
-  headers: Headers;
+  data: HealthControllerReadiness503;
+  status: 503;
 };
 
-export type healthControllerReadinessResponse = (healthControllerReadinessResponseSuccess | healthControllerReadinessResponseError)
+export type healthControllerReadinessResponseSuccess =
+  healthControllerReadinessResponse200 & {
+    headers: Headers;
+  };
+export type healthControllerReadinessResponseError =
+  healthControllerReadinessResponse503 & {
+    headers: Headers;
+  };
+
+export type healthControllerReadinessResponse =
+  | healthControllerReadinessResponseSuccess
+  | healthControllerReadinessResponseError;
 
 export const getHealthControllerReadinessUrl = () => {
+  return `/v1/health/ready`;
+};
 
-
-  
-
-  return `/v1/health/ready`
-}
-
-export const healthControllerReadiness = async ( options?: RequestInit): Promise<healthControllerReadinessResponse> => {
-  
-  return http<healthControllerReadinessResponse>(getHealthControllerReadinessUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const healthControllerReadiness = async (
+  options?: RequestInit,
+): Promise<healthControllerReadinessResponse> => {
+  return http<healthControllerReadinessResponse>(
+    getHealthControllerReadinessUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type accountControllerDeleteMyAccountResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type accountControllerDeleteMyAccountResponseSuccess = (accountControllerDeleteMyAccountResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type accountControllerDeleteMyAccountResponse = (accountControllerDeleteMyAccountResponseSuccess)
+export type accountControllerDeleteMyAccountResponseSuccess =
+  accountControllerDeleteMyAccountResponse204 & {
+    headers: Headers;
+  };
+export type accountControllerDeleteMyAccountResponse =
+  accountControllerDeleteMyAccountResponseSuccess;
 
 export const getAccountControllerDeleteMyAccountUrl = () => {
+  return `/v1/account`;
+};
 
-
-  
-
-  return `/v1/account`
-}
-
-export const accountControllerDeleteMyAccount = async ( options?: RequestInit): Promise<accountControllerDeleteMyAccountResponse> => {
-  
-  return http<accountControllerDeleteMyAccountResponse>(getAccountControllerDeleteMyAccountUrl(),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const accountControllerDeleteMyAccount = async (
+  options?: RequestInit,
+): Promise<accountControllerDeleteMyAccountResponse> => {
+  return http<accountControllerDeleteMyAccountResponse>(
+    getAccountControllerDeleteMyAccountUrl(),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type authControllerSignupResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type authControllerSignupResponseSuccess = (authControllerSignupResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type authControllerSignupResponse = (authControllerSignupResponseSuccess)
+export type authControllerSignupResponseSuccess =
+  authControllerSignupResponse201 & {
+    headers: Headers;
+  };
+export type authControllerSignupResponse = authControllerSignupResponseSuccess;
 
 export const getAuthControllerSignupUrl = () => {
+  return `/v1/auth/signup`;
+};
 
-
-  
-
-  return `/v1/auth/signup`
-}
-
-export const authControllerSignup = async (signupDto: SignupDto, options?: RequestInit): Promise<authControllerSignupResponse> => {
-  
-  return http<authControllerSignupResponse>(getAuthControllerSignupUrl(),
-  {      
+export const authControllerSignup = async (
+  signupDto: SignupDto,
+  options?: RequestInit,
+): Promise<authControllerSignupResponse> => {
+  return http<authControllerSignupResponse>(getAuthControllerSignupUrl(), {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      signupDto,)
-  }
-);}
-
-
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(signupDto),
+  });
+};
 
 export type authControllerLoginResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type authControllerLoginResponseSuccess = (authControllerLoginResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type authControllerLoginResponse = (authControllerLoginResponseSuccess)
+export type authControllerLoginResponseSuccess =
+  authControllerLoginResponse200 & {
+    headers: Headers;
+  };
+export type authControllerLoginResponse = authControllerLoginResponseSuccess;
 
 export const getAuthControllerLoginUrl = () => {
+  return `/v1/auth/login`;
+};
 
-
-  
-
-  return `/v1/auth/login`
-}
-
-export const authControllerLogin = async (loginDto: LoginDto, options?: RequestInit): Promise<authControllerLoginResponse> => {
-  
-  return http<authControllerLoginResponse>(getAuthControllerLoginUrl(),
-  {      
+export const authControllerLogin = async (
+  loginDto: LoginDto,
+  options?: RequestInit,
+): Promise<authControllerLoginResponse> => {
+  return http<authControllerLoginResponse>(getAuthControllerLoginUrl(), {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      loginDto,)
-  }
-);}
-
-
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(loginDto),
+  });
+};
 
 export type authControllerGoogleStartResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type authControllerGoogleStartResponseSuccess = (authControllerGoogleStartResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type authControllerGoogleStartResponse = (authControllerGoogleStartResponseSuccess)
+export type authControllerGoogleStartResponseSuccess =
+  authControllerGoogleStartResponse200 & {
+    headers: Headers;
+  };
+export type authControllerGoogleStartResponse =
+  authControllerGoogleStartResponseSuccess;
 
 export const getAuthControllerGoogleStartUrl = () => {
+  return `/v1/auth/google/start`;
+};
 
-
-  
-
-  return `/v1/auth/google/start`
-}
-
-export const authControllerGoogleStart = async ( options?: RequestInit): Promise<authControllerGoogleStartResponse> => {
-  
-  return http<authControllerGoogleStartResponse>(getAuthControllerGoogleStartUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const authControllerGoogleStart = async (
+  options?: RequestInit,
+): Promise<authControllerGoogleStartResponse> => {
+  return http<authControllerGoogleStartResponse>(
+    getAuthControllerGoogleStartUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type authControllerGoogleStatusResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type authControllerGoogleStatusResponseSuccess = (authControllerGoogleStatusResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type authControllerGoogleStatusResponse = (authControllerGoogleStatusResponseSuccess)
+export type authControllerGoogleStatusResponseSuccess =
+  authControllerGoogleStatusResponse200 & {
+    headers: Headers;
+  };
+export type authControllerGoogleStatusResponse =
+  authControllerGoogleStatusResponseSuccess;
 
 export const getAuthControllerGoogleStatusUrl = () => {
+  return `/v1/auth/google/status`;
+};
 
-
-  
-
-  return `/v1/auth/google/status`
-}
-
-export const authControllerGoogleStatus = async ( options?: RequestInit): Promise<authControllerGoogleStatusResponse> => {
-  
-  return http<authControllerGoogleStatusResponse>(getAuthControllerGoogleStatusUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const authControllerGoogleStatus = async (
+  options?: RequestInit,
+): Promise<authControllerGoogleStatusResponse> => {
+  return http<authControllerGoogleStatusResponse>(
+    getAuthControllerGoogleStatusUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type authControllerGoogleCallbackResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type authControllerGoogleCallbackResponseSuccess = (authControllerGoogleCallbackResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type authControllerGoogleCallbackResponse = (authControllerGoogleCallbackResponseSuccess)
+export type authControllerGoogleCallbackResponseSuccess =
+  authControllerGoogleCallbackResponse200 & {
+    headers: Headers;
+  };
+export type authControllerGoogleCallbackResponse =
+  authControllerGoogleCallbackResponseSuccess;
 
 export const getAuthControllerGoogleCallbackUrl = () => {
+  return `/v1/auth/google/callback`;
+};
 
-
-  
-
-  return `/v1/auth/google/callback`
-}
-
-export const authControllerGoogleCallback = async ( options?: RequestInit): Promise<authControllerGoogleCallbackResponse> => {
-  
-  return http<authControllerGoogleCallbackResponse>(getAuthControllerGoogleCallbackUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const authControllerGoogleCallback = async (
+  options?: RequestInit,
+): Promise<authControllerGoogleCallbackResponse> => {
+  return http<authControllerGoogleCallbackResponse>(
+    getAuthControllerGoogleCallbackUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type authControllerRefreshResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type authControllerRefreshResponseSuccess = (authControllerRefreshResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type authControllerRefreshResponse = (authControllerRefreshResponseSuccess)
+export type authControllerRefreshResponseSuccess =
+  authControllerRefreshResponse200 & {
+    headers: Headers;
+  };
+export type authControllerRefreshResponse =
+  authControllerRefreshResponseSuccess;
 
 export const getAuthControllerRefreshUrl = () => {
+  return `/v1/auth/refresh`;
+};
 
-
-  
-
-  return `/v1/auth/refresh`
-}
-
-export const authControllerRefresh = async ( options?: RequestInit): Promise<authControllerRefreshResponse> => {
-  
-  return http<authControllerRefreshResponse>(getAuthControllerRefreshUrl(),
-  {      
+export const authControllerRefresh = async (
+  options?: RequestInit,
+): Promise<authControllerRefreshResponse> => {
+  return http<authControllerRefreshResponse>(getAuthControllerRefreshUrl(), {
     ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+    method: "POST",
+  });
+};
 
 export type authControllerLogoutResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type authControllerLogoutResponseSuccess = (authControllerLogoutResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type authControllerLogoutResponse = (authControllerLogoutResponseSuccess)
+export type authControllerLogoutResponseSuccess =
+  authControllerLogoutResponse204 & {
+    headers: Headers;
+  };
+export type authControllerLogoutResponse = authControllerLogoutResponseSuccess;
 
 export const getAuthControllerLogoutUrl = () => {
+  return `/v1/auth/logout`;
+};
 
-
-  
-
-  return `/v1/auth/logout`
-}
-
-export const authControllerLogout = async ( options?: RequestInit): Promise<authControllerLogoutResponse> => {
-  
-  return http<authControllerLogoutResponse>(getAuthControllerLogoutUrl(),
-  {      
+export const authControllerLogout = async (
+  options?: RequestInit,
+): Promise<authControllerLogoutResponse> => {
+  return http<authControllerLogoutResponse>(getAuthControllerLogoutUrl(), {
     ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+    method: "POST",
+  });
+};
 
 export type authControllerVerifyEmailResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type authControllerVerifyEmailResponseSuccess = (authControllerVerifyEmailResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type authControllerVerifyEmailResponse = (authControllerVerifyEmailResponseSuccess)
+export type authControllerVerifyEmailResponseSuccess =
+  authControllerVerifyEmailResponse200 & {
+    headers: Headers;
+  };
+export type authControllerVerifyEmailResponse =
+  authControllerVerifyEmailResponseSuccess;
 
 export const getAuthControllerVerifyEmailUrl = () => {
+  return `/v1/auth/verify-email`;
+};
 
-
-  
-
-  return `/v1/auth/verify-email`
-}
-
-export const authControllerVerifyEmail = async (verifyEmailDto: VerifyEmailDto, options?: RequestInit): Promise<authControllerVerifyEmailResponse> => {
-  
-  return http<authControllerVerifyEmailResponse>(getAuthControllerVerifyEmailUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      verifyEmailDto,)
-  }
-);}
-
-
+export const authControllerVerifyEmail = async (
+  verifyEmailDto: VerifyEmailDto,
+  options?: RequestInit,
+): Promise<authControllerVerifyEmailResponse> => {
+  return http<authControllerVerifyEmailResponse>(
+    getAuthControllerVerifyEmailUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(verifyEmailDto),
+    },
+  );
+};
 
 export type authControllerForgotPasswordResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type authControllerForgotPasswordResponseSuccess = (authControllerForgotPasswordResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type authControllerForgotPasswordResponse = (authControllerForgotPasswordResponseSuccess)
+export type authControllerForgotPasswordResponseSuccess =
+  authControllerForgotPasswordResponse200 & {
+    headers: Headers;
+  };
+export type authControllerForgotPasswordResponse =
+  authControllerForgotPasswordResponseSuccess;
 
 export const getAuthControllerForgotPasswordUrl = () => {
+  return `/v1/auth/forgot-password`;
+};
 
-
-  
-
-  return `/v1/auth/forgot-password`
-}
-
-export const authControllerForgotPassword = async (forgotPasswordDto: ForgotPasswordDto, options?: RequestInit): Promise<authControllerForgotPasswordResponse> => {
-  
-  return http<authControllerForgotPasswordResponse>(getAuthControllerForgotPasswordUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      forgotPasswordDto,)
-  }
-);}
-
-
+export const authControllerForgotPassword = async (
+  forgotPasswordDto: ForgotPasswordDto,
+  options?: RequestInit,
+): Promise<authControllerForgotPasswordResponse> => {
+  return http<authControllerForgotPasswordResponse>(
+    getAuthControllerForgotPasswordUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(forgotPasswordDto),
+    },
+  );
+};
 
 export type authControllerResetPasswordResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type authControllerResetPasswordResponseSuccess = (authControllerResetPasswordResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type authControllerResetPasswordResponse = (authControllerResetPasswordResponseSuccess)
+export type authControllerResetPasswordResponseSuccess =
+  authControllerResetPasswordResponse200 & {
+    headers: Headers;
+  };
+export type authControllerResetPasswordResponse =
+  authControllerResetPasswordResponseSuccess;
 
 export const getAuthControllerResetPasswordUrl = () => {
+  return `/v1/auth/reset-password`;
+};
 
-
-  
-
-  return `/v1/auth/reset-password`
-}
-
-export const authControllerResetPassword = async (resetPasswordDto: ResetPasswordDto, options?: RequestInit): Promise<authControllerResetPasswordResponse> => {
-  
-  return http<authControllerResetPasswordResponse>(getAuthControllerResetPasswordUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      resetPasswordDto,)
-  }
-);}
-
-
+export const authControllerResetPassword = async (
+  resetPasswordDto: ResetPasswordDto,
+  options?: RequestInit,
+): Promise<authControllerResetPasswordResponse> => {
+  return http<authControllerResetPasswordResponse>(
+    getAuthControllerResetPasswordUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(resetPasswordDto),
+    },
+  );
+};
 
 export type usersControllerMeResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type usersControllerMeResponseSuccess = (usersControllerMeResponse200) & {
+  data: void;
+  status: 200;
+};
+
+export type usersControllerMeResponseSuccess = usersControllerMeResponse200 & {
   headers: Headers;
 };
-;
-
-export type usersControllerMeResponse = (usersControllerMeResponseSuccess)
+export type usersControllerMeResponse = usersControllerMeResponseSuccess;
 
 export const getUsersControllerMeUrl = () => {
+  return `/v1/users/me`;
+};
 
-
-  
-
-  return `/v1/users/me`
-}
-
-export const usersControllerMe = async ( options?: RequestInit): Promise<usersControllerMeResponse> => {
-  
-  return http<usersControllerMeResponse>(getUsersControllerMeUrl(),
-  {      
+export const usersControllerMe = async (
+  options?: RequestInit,
+): Promise<usersControllerMeResponse> => {
+  return http<usersControllerMeResponse>(getUsersControllerMeUrl(), {
     ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+    method: "GET",
+  });
+};
 
 export type usersControllerUpdateMeResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type usersControllerUpdateMeResponseSuccess = (usersControllerUpdateMeResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type usersControllerUpdateMeResponse = (usersControllerUpdateMeResponseSuccess)
+export type usersControllerUpdateMeResponseSuccess =
+  usersControllerUpdateMeResponse200 & {
+    headers: Headers;
+  };
+export type usersControllerUpdateMeResponse =
+  usersControllerUpdateMeResponseSuccess;
 
 export const getUsersControllerUpdateMeUrl = () => {
+  return `/v1/users/me`;
+};
 
-
-  
-
-  return `/v1/users/me`
-}
-
-export const usersControllerUpdateMe = async (updateMeDto: UpdateMeDto, options?: RequestInit): Promise<usersControllerUpdateMeResponse> => {
-  
-  return http<usersControllerUpdateMeResponse>(getUsersControllerUpdateMeUrl(),
-  {      
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateMeDto,)
-  }
-);}
-
-
+export const usersControllerUpdateMe = async (
+  updateMeDto: UpdateMeDto,
+  options?: RequestInit,
+): Promise<usersControllerUpdateMeResponse> => {
+  return http<usersControllerUpdateMeResponse>(
+    getUsersControllerUpdateMeUrl(),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateMeDto),
+    },
+  );
+};
 
 export type usersControllerCreateAvatarUploadUrlResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type usersControllerCreateAvatarUploadUrlResponseSuccess = (usersControllerCreateAvatarUploadUrlResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type usersControllerCreateAvatarUploadUrlResponse = (usersControllerCreateAvatarUploadUrlResponseSuccess)
+export type usersControllerCreateAvatarUploadUrlResponseSuccess =
+  usersControllerCreateAvatarUploadUrlResponse201 & {
+    headers: Headers;
+  };
+export type usersControllerCreateAvatarUploadUrlResponse =
+  usersControllerCreateAvatarUploadUrlResponseSuccess;
 
 export const getUsersControllerCreateAvatarUploadUrlUrl = () => {
+  return `/v1/users/me/avatar-upload-url`;
+};
 
-
-  
-
-  return `/v1/users/me/avatar-upload-url`
-}
-
-export const usersControllerCreateAvatarUploadUrl = async (avatarUploadUrlDto: AvatarUploadUrlDto, options?: RequestInit): Promise<usersControllerCreateAvatarUploadUrlResponse> => {
-  
-  return http<usersControllerCreateAvatarUploadUrlResponse>(getUsersControllerCreateAvatarUploadUrlUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      avatarUploadUrlDto,)
-  }
-);}
-
-
+export const usersControllerCreateAvatarUploadUrl = async (
+  avatarUploadUrlDto: AvatarUploadUrlDto,
+  options?: RequestInit,
+): Promise<usersControllerCreateAvatarUploadUrlResponse> => {
+  return http<usersControllerCreateAvatarUploadUrlResponse>(
+    getUsersControllerCreateAvatarUploadUrlUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(avatarUploadUrlDto),
+    },
+  );
+};
 
 export type usersControllerResendVerificationEmailResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type usersControllerResendVerificationEmailResponseSuccess = (usersControllerResendVerificationEmailResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type usersControllerResendVerificationEmailResponse = (usersControllerResendVerificationEmailResponseSuccess)
+export type usersControllerResendVerificationEmailResponseSuccess =
+  usersControllerResendVerificationEmailResponse200 & {
+    headers: Headers;
+  };
+export type usersControllerResendVerificationEmailResponse =
+  usersControllerResendVerificationEmailResponseSuccess;
 
 export const getUsersControllerResendVerificationEmailUrl = () => {
+  return `/v1/users/me/verification-email`;
+};
 
-
-  
-
-  return `/v1/users/me/verification-email`
-}
-
-export const usersControllerResendVerificationEmail = async ( options?: RequestInit): Promise<usersControllerResendVerificationEmailResponse> => {
-  
-  return http<usersControllerResendVerificationEmailResponse>(getUsersControllerResendVerificationEmailUrl(),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const usersControllerResendVerificationEmail = async (
+  options?: RequestInit,
+): Promise<usersControllerResendVerificationEmailResponse> => {
+  return http<usersControllerResendVerificationEmailResponse>(
+    getUsersControllerResendVerificationEmailUrl(),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type followControllerFollowUserResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type followControllerFollowUserResponseSuccess = (followControllerFollowUserResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type followControllerFollowUserResponse = (followControllerFollowUserResponseSuccess)
+export type followControllerFollowUserResponseSuccess =
+  followControllerFollowUserResponse200 & {
+    headers: Headers;
+  };
+export type followControllerFollowUserResponse =
+  followControllerFollowUserResponseSuccess;
 
-export const getFollowControllerFollowUserUrl = (username: string,) => {
+export const getFollowControllerFollowUserUrl = (username: string) => {
+  return `/v1/users/${username}/follow`;
+};
 
-
-  
-
-  return `/v1/users/${username}/follow`
-}
-
-export const followControllerFollowUser = async (username: string, options?: RequestInit): Promise<followControllerFollowUserResponse> => {
-  
-  return http<followControllerFollowUserResponse>(getFollowControllerFollowUserUrl(username),
-  {      
-    ...options,
-    method: 'PUT'
-    
-    
-  }
-);}
-
-
+export const followControllerFollowUser = async (
+  username: string,
+  options?: RequestInit,
+): Promise<followControllerFollowUserResponse> => {
+  return http<followControllerFollowUserResponse>(
+    getFollowControllerFollowUserUrl(username),
+    {
+      ...options,
+      method: "PUT",
+    },
+  );
+};
 
 export type followControllerUnfollowUserResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type followControllerUnfollowUserResponseSuccess = (followControllerUnfollowUserResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type followControllerUnfollowUserResponse = (followControllerUnfollowUserResponseSuccess)
+export type followControllerUnfollowUserResponseSuccess =
+  followControllerUnfollowUserResponse204 & {
+    headers: Headers;
+  };
+export type followControllerUnfollowUserResponse =
+  followControllerUnfollowUserResponseSuccess;
 
-export const getFollowControllerUnfollowUserUrl = (username: string,) => {
+export const getFollowControllerUnfollowUserUrl = (username: string) => {
+  return `/v1/users/${username}/follow`;
+};
 
-
-  
-
-  return `/v1/users/${username}/follow`
-}
-
-export const followControllerUnfollowUser = async (username: string, options?: RequestInit): Promise<followControllerUnfollowUserResponse> => {
-  
-  return http<followControllerUnfollowUserResponse>(getFollowControllerUnfollowUserUrl(username),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const followControllerUnfollowUser = async (
+  username: string,
+  options?: RequestInit,
+): Promise<followControllerUnfollowUserResponse> => {
+  return http<followControllerUnfollowUserResponse>(
+    getFollowControllerUnfollowUserUrl(username),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type followControllerFollowersResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type followControllerFollowersResponseSuccess = (followControllerFollowersResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type followControllerFollowersResponse = (followControllerFollowersResponseSuccess)
+export type followControllerFollowersResponseSuccess =
+  followControllerFollowersResponse200 & {
+    headers: Headers;
+  };
+export type followControllerFollowersResponse =
+  followControllerFollowersResponseSuccess;
 
-export const getFollowControllerFollowersUrl = (username: string,) => {
+export const getFollowControllerFollowersUrl = (username: string) => {
+  return `/v1/users/${username}/followers`;
+};
 
-
-  
-
-  return `/v1/users/${username}/followers`
-}
-
-export const followControllerFollowers = async (username: string, options?: RequestInit): Promise<followControllerFollowersResponse> => {
-  
-  return http<followControllerFollowersResponse>(getFollowControllerFollowersUrl(username),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const followControllerFollowers = async (
+  username: string,
+  options?: RequestInit,
+): Promise<followControllerFollowersResponse> => {
+  return http<followControllerFollowersResponse>(
+    getFollowControllerFollowersUrl(username),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type followControllerFollowingResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type followControllerFollowingResponseSuccess = (followControllerFollowingResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type followControllerFollowingResponse = (followControllerFollowingResponseSuccess)
+export type followControllerFollowingResponseSuccess =
+  followControllerFollowingResponse200 & {
+    headers: Headers;
+  };
+export type followControllerFollowingResponse =
+  followControllerFollowingResponseSuccess;
 
-export const getFollowControllerFollowingUrl = (username: string,) => {
+export const getFollowControllerFollowingUrl = (username: string) => {
+  return `/v1/users/${username}/following`;
+};
 
-
-  
-
-  return `/v1/users/${username}/following`
-}
-
-export const followControllerFollowing = async (username: string, options?: RequestInit): Promise<followControllerFollowingResponse> => {
-  
-  return http<followControllerFollowingResponse>(getFollowControllerFollowingUrl(username),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const followControllerFollowing = async (
+  username: string,
+  options?: RequestInit,
+): Promise<followControllerFollowingResponse> => {
+  return http<followControllerFollowingResponse>(
+    getFollowControllerFollowingUrl(username),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type aiChatControllerGetAccessResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type aiChatControllerGetAccessResponseSuccess = (aiChatControllerGetAccessResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type aiChatControllerGetAccessResponse = (aiChatControllerGetAccessResponseSuccess)
+export type aiChatControllerGetAccessResponseSuccess =
+  aiChatControllerGetAccessResponse200 & {
+    headers: Headers;
+  };
+export type aiChatControllerGetAccessResponse =
+  aiChatControllerGetAccessResponseSuccess;
 
 export const getAiChatControllerGetAccessUrl = () => {
+  return `/v1/coach/access`;
+};
 
-
-  
-
-  return `/v1/coach/access`
-}
-
-export const aiChatControllerGetAccess = async ( options?: RequestInit): Promise<aiChatControllerGetAccessResponse> => {
-  
-  return http<aiChatControllerGetAccessResponse>(getAiChatControllerGetAccessUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const aiChatControllerGetAccess = async (
+  options?: RequestInit,
+): Promise<aiChatControllerGetAccessResponse> => {
+  return http<aiChatControllerGetAccessResponse>(
+    getAiChatControllerGetAccessUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type aiChatControllerReplyResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type aiChatControllerReplyResponseSuccess = (aiChatControllerReplyResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type aiChatControllerReplyResponse = (aiChatControllerReplyResponseSuccess)
+export type aiChatControllerReplyResponseSuccess =
+  aiChatControllerReplyResponse201 & {
+    headers: Headers;
+  };
+export type aiChatControllerReplyResponse =
+  aiChatControllerReplyResponseSuccess;
 
 export const getAiChatControllerReplyUrl = () => {
+  return `/v1/coach/chat`;
+};
 
-
-  
-
-  return `/v1/coach/chat`
-}
-
-export const aiChatControllerReply = async (aiChatDto: AiChatDto, options?: RequestInit): Promise<aiChatControllerReplyResponse> => {
-  
-  return http<aiChatControllerReplyResponse>(getAiChatControllerReplyUrl(),
-  {      
+export const aiChatControllerReply = async (
+  aiChatDto: AiChatDto,
+  options?: RequestInit,
+): Promise<aiChatControllerReplyResponse> => {
+  return http<aiChatControllerReplyResponse>(getAiChatControllerReplyUrl(), {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      aiChatDto,)
-  }
-);}
-
-
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aiChatDto),
+  });
+};
 
 export type aiChatControllerReplyStreamResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type aiChatControllerReplyStreamResponseSuccess = (aiChatControllerReplyStreamResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type aiChatControllerReplyStreamResponse = (aiChatControllerReplyStreamResponseSuccess)
+export type aiChatControllerReplyStreamResponseSuccess =
+  aiChatControllerReplyStreamResponse201 & {
+    headers: Headers;
+  };
+export type aiChatControllerReplyStreamResponse =
+  aiChatControllerReplyStreamResponseSuccess;
 
 export const getAiChatControllerReplyStreamUrl = () => {
+  return `/v1/coach/chat/stream`;
+};
 
-
-  
-
-  return `/v1/coach/chat/stream`
-}
-
-export const aiChatControllerReplyStream = async (aiChatDto: AiChatDto, options?: RequestInit): Promise<aiChatControllerReplyStreamResponse> => {
-  
-  return http<aiChatControllerReplyStreamResponse>(getAiChatControllerReplyStreamUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      aiChatDto,)
-  }
-);}
-
-
+export const aiChatControllerReplyStream = async (
+  aiChatDto: AiChatDto,
+  options?: RequestInit,
+): Promise<aiChatControllerReplyStreamResponse> => {
+  return http<aiChatControllerReplyStreamResponse>(
+    getAiChatControllerReplyStreamUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(aiChatDto),
+    },
+  );
+};
 
 export type aiChatControllerPlanDraftPreviewResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type aiChatControllerPlanDraftPreviewResponseSuccess = (aiChatControllerPlanDraftPreviewResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type aiChatControllerPlanDraftPreviewResponse = (aiChatControllerPlanDraftPreviewResponseSuccess)
+export type aiChatControllerPlanDraftPreviewResponseSuccess =
+  aiChatControllerPlanDraftPreviewResponse201 & {
+    headers: Headers;
+  };
+export type aiChatControllerPlanDraftPreviewResponse =
+  aiChatControllerPlanDraftPreviewResponseSuccess;
 
 export const getAiChatControllerPlanDraftPreviewUrl = () => {
+  return `/v1/coach/plan-draft`;
+};
 
-
-  
-
-  return `/v1/coach/plan-draft`
-}
-
-export const aiChatControllerPlanDraftPreview = async (planDraftBodyDto: PlanDraftBodyDto, options?: RequestInit): Promise<aiChatControllerPlanDraftPreviewResponse> => {
-  
-  return http<aiChatControllerPlanDraftPreviewResponse>(getAiChatControllerPlanDraftPreviewUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      planDraftBodyDto,)
-  }
-);}
-
-
+export const aiChatControllerPlanDraftPreview = async (
+  planDraftBodyDto: PlanDraftBodyDto,
+  options?: RequestInit,
+): Promise<aiChatControllerPlanDraftPreviewResponse> => {
+  return http<aiChatControllerPlanDraftPreviewResponse>(
+    getAiChatControllerPlanDraftPreviewUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(planDraftBodyDto),
+    },
+  );
+};
 
 export type aiChatControllerRegenerateStreamResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type aiChatControllerRegenerateStreamResponseSuccess = (aiChatControllerRegenerateStreamResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type aiChatControllerRegenerateStreamResponse = (aiChatControllerRegenerateStreamResponseSuccess)
+export type aiChatControllerRegenerateStreamResponseSuccess =
+  aiChatControllerRegenerateStreamResponse201 & {
+    headers: Headers;
+  };
+export type aiChatControllerRegenerateStreamResponse =
+  aiChatControllerRegenerateStreamResponseSuccess;
 
-export const getAiChatControllerRegenerateStreamUrl = (id: string,) => {
+export const getAiChatControllerRegenerateStreamUrl = (id: string) => {
+  return `/v1/coach/conversations/${id}/regenerate/stream`;
+};
 
-
-  
-
-  return `/v1/coach/conversations/${id}/regenerate/stream`
-}
-
-export const aiChatControllerRegenerateStream = async (id: string, options?: RequestInit): Promise<aiChatControllerRegenerateStreamResponse> => {
-  
-  return http<aiChatControllerRegenerateStreamResponse>(getAiChatControllerRegenerateStreamUrl(id),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const aiChatControllerRegenerateStream = async (
+  id: string,
+  options?: RequestInit,
+): Promise<aiChatControllerRegenerateStreamResponse> => {
+  return http<aiChatControllerRegenerateStreamResponse>(
+    getAiChatControllerRegenerateStreamUrl(id),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type aiChatControllerListConversationsResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type aiChatControllerListConversationsResponseSuccess = (aiChatControllerListConversationsResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type aiChatControllerListConversationsResponse = (aiChatControllerListConversationsResponseSuccess)
+export type aiChatControllerListConversationsResponseSuccess =
+  aiChatControllerListConversationsResponse200 & {
+    headers: Headers;
+  };
+export type aiChatControllerListConversationsResponse =
+  aiChatControllerListConversationsResponseSuccess;
 
 export const getAiChatControllerListConversationsUrl = () => {
+  return `/v1/coach/conversations`;
+};
 
-
-  
-
-  return `/v1/coach/conversations`
-}
-
-export const aiChatControllerListConversations = async ( options?: RequestInit): Promise<aiChatControllerListConversationsResponse> => {
-  
-  return http<aiChatControllerListConversationsResponse>(getAiChatControllerListConversationsUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const aiChatControllerListConversations = async (
+  options?: RequestInit,
+): Promise<aiChatControllerListConversationsResponse> => {
+  return http<aiChatControllerListConversationsResponse>(
+    getAiChatControllerListConversationsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type aiChatControllerListConversationMessagesResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type aiChatControllerListConversationMessagesResponseSuccess = (aiChatControllerListConversationMessagesResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type aiChatControllerListConversationMessagesResponse = (aiChatControllerListConversationMessagesResponseSuccess)
+export type aiChatControllerListConversationMessagesResponseSuccess =
+  aiChatControllerListConversationMessagesResponse200 & {
+    headers: Headers;
+  };
+export type aiChatControllerListConversationMessagesResponse =
+  aiChatControllerListConversationMessagesResponseSuccess;
 
-export const getAiChatControllerListConversationMessagesUrl = (id: string,) => {
+export const getAiChatControllerListConversationMessagesUrl = (id: string) => {
+  return `/v1/coach/conversations/${id}/messages`;
+};
 
-
-  
-
-  return `/v1/coach/conversations/${id}/messages`
-}
-
-export const aiChatControllerListConversationMessages = async (id: string, options?: RequestInit): Promise<aiChatControllerListConversationMessagesResponse> => {
-  
-  return http<aiChatControllerListConversationMessagesResponse>(getAiChatControllerListConversationMessagesUrl(id),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const aiChatControllerListConversationMessages = async (
+  id: string,
+  options?: RequestInit,
+): Promise<aiChatControllerListConversationMessagesResponse> => {
+  return http<aiChatControllerListConversationMessagesResponse>(
+    getAiChatControllerListConversationMessagesUrl(id),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type aiChatControllerDeleteConversationResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type aiChatControllerDeleteConversationResponseSuccess = (aiChatControllerDeleteConversationResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type aiChatControllerDeleteConversationResponse = (aiChatControllerDeleteConversationResponseSuccess)
+export type aiChatControllerDeleteConversationResponseSuccess =
+  aiChatControllerDeleteConversationResponse204 & {
+    headers: Headers;
+  };
+export type aiChatControllerDeleteConversationResponse =
+  aiChatControllerDeleteConversationResponseSuccess;
 
-export const getAiChatControllerDeleteConversationUrl = (id: string,) => {
+export const getAiChatControllerDeleteConversationUrl = (id: string) => {
+  return `/v1/coach/conversations/${id}`;
+};
 
-
-  
-
-  return `/v1/coach/conversations/${id}`
-}
-
-export const aiChatControllerDeleteConversation = async (id: string, options?: RequestInit): Promise<aiChatControllerDeleteConversationResponse> => {
-  
-  return http<aiChatControllerDeleteConversationResponse>(getAiChatControllerDeleteConversationUrl(id),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const aiChatControllerDeleteConversation = async (
+  id: string,
+  options?: RequestInit,
+): Promise<aiChatControllerDeleteConversationResponse> => {
+  return http<aiChatControllerDeleteConversationResponse>(
+    getAiChatControllerDeleteConversationUrl(id),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type aiChatControllerSetFeedbackResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type aiChatControllerSetFeedbackResponseSuccess = (aiChatControllerSetFeedbackResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type aiChatControllerSetFeedbackResponse = (aiChatControllerSetFeedbackResponseSuccess)
+export type aiChatControllerSetFeedbackResponseSuccess =
+  aiChatControllerSetFeedbackResponse204 & {
+    headers: Headers;
+  };
+export type aiChatControllerSetFeedbackResponse =
+  aiChatControllerSetFeedbackResponseSuccess;
 
-export const getAiChatControllerSetFeedbackUrl = (id: string,) => {
+export const getAiChatControllerSetFeedbackUrl = (id: string) => {
+  return `/v1/coach/messages/${id}/feedback`;
+};
 
-
-  
-
-  return `/v1/coach/messages/${id}/feedback`
-}
-
-export const aiChatControllerSetFeedback = async (id: string,
-    coachFeedbackDto: CoachFeedbackDto, options?: RequestInit): Promise<aiChatControllerSetFeedbackResponse> => {
-  
-  return http<aiChatControllerSetFeedbackResponse>(getAiChatControllerSetFeedbackUrl(id),
-  {      
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      coachFeedbackDto,)
-  }
-);}
-
-
+export const aiChatControllerSetFeedback = async (
+  id: string,
+  coachFeedbackDto: CoachFeedbackDto,
+  options?: RequestInit,
+): Promise<aiChatControllerSetFeedbackResponse> => {
+  return http<aiChatControllerSetFeedbackResponse>(
+    getAiChatControllerSetFeedbackUrl(id),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(coachFeedbackDto),
+    },
+  );
+};
 
 export type aiChatControllerGetMemoryResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type aiChatControllerGetMemoryResponseSuccess = (aiChatControllerGetMemoryResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type aiChatControllerGetMemoryResponse = (aiChatControllerGetMemoryResponseSuccess)
+export type aiChatControllerGetMemoryResponseSuccess =
+  aiChatControllerGetMemoryResponse200 & {
+    headers: Headers;
+  };
+export type aiChatControllerGetMemoryResponse =
+  aiChatControllerGetMemoryResponseSuccess;
 
 export const getAiChatControllerGetMemoryUrl = () => {
+  return `/v1/coach/memory`;
+};
 
-
-  
-
-  return `/v1/coach/memory`
-}
-
-export const aiChatControllerGetMemory = async ( options?: RequestInit): Promise<aiChatControllerGetMemoryResponse> => {
-  
-  return http<aiChatControllerGetMemoryResponse>(getAiChatControllerGetMemoryUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const aiChatControllerGetMemory = async (
+  options?: RequestInit,
+): Promise<aiChatControllerGetMemoryResponse> => {
+  return http<aiChatControllerGetMemoryResponse>(
+    getAiChatControllerGetMemoryUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type aiChatControllerClearMemoryResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type aiChatControllerClearMemoryResponseSuccess = (aiChatControllerClearMemoryResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type aiChatControllerClearMemoryResponse = (aiChatControllerClearMemoryResponseSuccess)
+export type aiChatControllerClearMemoryResponseSuccess =
+  aiChatControllerClearMemoryResponse204 & {
+    headers: Headers;
+  };
+export type aiChatControllerClearMemoryResponse =
+  aiChatControllerClearMemoryResponseSuccess;
 
 export const getAiChatControllerClearMemoryUrl = () => {
+  return `/v1/coach/memory`;
+};
 
-
-  
-
-  return `/v1/coach/memory`
-}
-
-export const aiChatControllerClearMemory = async ( options?: RequestInit): Promise<aiChatControllerClearMemoryResponse> => {
-  
-  return http<aiChatControllerClearMemoryResponse>(getAiChatControllerClearMemoryUrl(),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const aiChatControllerClearMemory = async (
+  options?: RequestInit,
+): Promise<aiChatControllerClearMemoryResponse> => {
+  return http<aiChatControllerClearMemoryResponse>(
+    getAiChatControllerClearMemoryUrl(),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type aiMoodControllerReflectResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type aiMoodControllerReflectResponseSuccess = (aiMoodControllerReflectResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type aiMoodControllerReflectResponse = (aiMoodControllerReflectResponseSuccess)
+export type aiMoodControllerReflectResponseSuccess =
+  aiMoodControllerReflectResponse200 & {
+    headers: Headers;
+  };
+export type aiMoodControllerReflectResponse =
+  aiMoodControllerReflectResponseSuccess;
 
 export const getAiMoodControllerReflectUrl = () => {
+  return `/v1/coach/mood-reflection`;
+};
 
-
-  
-
-  return `/v1/coach/mood-reflection`
-}
-
-export const aiMoodControllerReflect = async ( options?: RequestInit): Promise<aiMoodControllerReflectResponse> => {
-  
-  return http<aiMoodControllerReflectResponse>(getAiMoodControllerReflectUrl(),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const aiMoodControllerReflect = async (
+  options?: RequestInit,
+): Promise<aiMoodControllerReflectResponse> => {
+  return http<aiMoodControllerReflectResponse>(
+    getAiMoodControllerReflectUrl(),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type aiMoodControllerGreetResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type aiMoodControllerGreetResponseSuccess = (aiMoodControllerGreetResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type aiMoodControllerGreetResponse = (aiMoodControllerGreetResponseSuccess)
+export type aiMoodControllerGreetResponseSuccess =
+  aiMoodControllerGreetResponse200 & {
+    headers: Headers;
+  };
+export type aiMoodControllerGreetResponse =
+  aiMoodControllerGreetResponseSuccess;
 
 export const getAiMoodControllerGreetUrl = () => {
+  return `/v1/coach/daily-greeting`;
+};
 
-
-  
-
-  return `/v1/coach/daily-greeting`
-}
-
-export const aiMoodControllerGreet = async ( options?: RequestInit): Promise<aiMoodControllerGreetResponse> => {
-  
-  return http<aiMoodControllerGreetResponse>(getAiMoodControllerGreetUrl(),
-  {      
+export const aiMoodControllerGreet = async (
+  options?: RequestInit,
+): Promise<aiMoodControllerGreetResponse> => {
+  return http<aiMoodControllerGreetResponse>(getAiMoodControllerGreetUrl(), {
     ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+    method: "POST",
+  });
+};
 
 export type aiSessionControllerReflectResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type aiSessionControllerReflectResponseSuccess = (aiSessionControllerReflectResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type aiSessionControllerReflectResponse = (aiSessionControllerReflectResponseSuccess)
+export type aiSessionControllerReflectResponseSuccess =
+  aiSessionControllerReflectResponse200 & {
+    headers: Headers;
+  };
+export type aiSessionControllerReflectResponse =
+  aiSessionControllerReflectResponseSuccess;
 
 export const getAiSessionControllerReflectUrl = () => {
+  return `/v1/coach/session-reflection`;
+};
 
-
-  
-
-  return `/v1/coach/session-reflection`
-}
-
-export const aiSessionControllerReflect = async (sessionReflectionBodyDto: SessionReflectionBodyDto, options?: RequestInit): Promise<aiSessionControllerReflectResponse> => {
-  
-  return http<aiSessionControllerReflectResponse>(getAiSessionControllerReflectUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      sessionReflectionBodyDto,)
-  }
-);}
-
-
+export const aiSessionControllerReflect = async (
+  sessionReflectionBodyDto: SessionReflectionBodyDto,
+  options?: RequestInit,
+): Promise<aiSessionControllerReflectResponse> => {
+  return http<aiSessionControllerReflectResponse>(
+    getAiSessionControllerReflectUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(sessionReflectionBodyDto),
+    },
+  );
+};
 
 export type aiGhostControllerNarrateResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type aiGhostControllerNarrateResponseSuccess = (aiGhostControllerNarrateResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type aiGhostControllerNarrateResponse = (aiGhostControllerNarrateResponseSuccess)
+export type aiGhostControllerNarrateResponseSuccess =
+  aiGhostControllerNarrateResponse200 & {
+    headers: Headers;
+  };
+export type aiGhostControllerNarrateResponse =
+  aiGhostControllerNarrateResponseSuccess;
 
 export const getAiGhostControllerNarrateUrl = () => {
+  return `/v1/coach/ghost-narration`;
+};
 
-
-  
-
-  return `/v1/coach/ghost-narration`
-}
-
-export const aiGhostControllerNarrate = async (aiGhostControllerNarrateBody?: AiGhostControllerNarrateBody, options?: RequestInit): Promise<aiGhostControllerNarrateResponse> => {
-  
-  return http<aiGhostControllerNarrateResponse>(getAiGhostControllerNarrateUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      aiGhostControllerNarrateBody,)
-  }
-);}
-
-
+export const aiGhostControllerNarrate = async (
+  aiGhostControllerNarrateBody?: AiGhostControllerNarrateBody,
+  options?: RequestInit,
+): Promise<aiGhostControllerNarrateResponse> => {
+  return http<aiGhostControllerNarrateResponse>(
+    getAiGhostControllerNarrateUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(aiGhostControllerNarrateBody),
+    },
+  );
+};
 
 export type aiVisionControllerNoteResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type aiVisionControllerNoteResponseSuccess = (aiVisionControllerNoteResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type aiVisionControllerNoteResponse = (aiVisionControllerNoteResponseSuccess)
+export type aiVisionControllerNoteResponseSuccess =
+  aiVisionControllerNoteResponse200 & {
+    headers: Headers;
+  };
+export type aiVisionControllerNoteResponse =
+  aiVisionControllerNoteResponseSuccess;
 
 export const getAiVisionControllerNoteUrl = () => {
+  return `/v1/coach/vision-note`;
+};
 
-
-  
-
-  return `/v1/coach/vision-note`
-}
-
-export const aiVisionControllerNote = async ( options?: RequestInit): Promise<aiVisionControllerNoteResponse> => {
-  
-  return http<aiVisionControllerNoteResponse>(getAiVisionControllerNoteUrl(),
-  {      
+export const aiVisionControllerNote = async (
+  options?: RequestInit,
+): Promise<aiVisionControllerNoteResponse> => {
+  return http<aiVisionControllerNoteResponse>(getAiVisionControllerNoteUrl(), {
     ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+    method: "POST",
+  });
+};
 
 export type aiWeeklyReviewControllerNarrateResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type aiWeeklyReviewControllerNarrateResponseSuccess = (aiWeeklyReviewControllerNarrateResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type aiWeeklyReviewControllerNarrateResponse = (aiWeeklyReviewControllerNarrateResponseSuccess)
+export type aiWeeklyReviewControllerNarrateResponseSuccess =
+  aiWeeklyReviewControllerNarrateResponse200 & {
+    headers: Headers;
+  };
+export type aiWeeklyReviewControllerNarrateResponse =
+  aiWeeklyReviewControllerNarrateResponseSuccess;
 
 export const getAiWeeklyReviewControllerNarrateUrl = () => {
+  return `/v1/coach/weekly-review`;
+};
 
-
-  
-
-  return `/v1/coach/weekly-review`
-}
-
-export const aiWeeklyReviewControllerNarrate = async (weeklyReviewNarrationBodyDto: WeeklyReviewNarrationBodyDto, options?: RequestInit): Promise<aiWeeklyReviewControllerNarrateResponse> => {
-  
-  return http<aiWeeklyReviewControllerNarrateResponse>(getAiWeeklyReviewControllerNarrateUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      weeklyReviewNarrationBodyDto,)
-  }
-);}
-
-
+export const aiWeeklyReviewControllerNarrate = async (
+  weeklyReviewNarrationBodyDto: WeeklyReviewNarrationBodyDto,
+  options?: RequestInit,
+): Promise<aiWeeklyReviewControllerNarrateResponse> => {
+  return http<aiWeeklyReviewControllerNarrateResponse>(
+    getAiWeeklyReviewControllerNarrateUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(weeklyReviewNarrationBodyDto),
+    },
+  );
+};
 
 export type aiPhotoControllerGetPhotoAccessResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type aiPhotoControllerGetPhotoAccessResponseSuccess = (aiPhotoControllerGetPhotoAccessResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type aiPhotoControllerGetPhotoAccessResponse = (aiPhotoControllerGetPhotoAccessResponseSuccess)
+export type aiPhotoControllerGetPhotoAccessResponseSuccess =
+  aiPhotoControllerGetPhotoAccessResponse200 & {
+    headers: Headers;
+  };
+export type aiPhotoControllerGetPhotoAccessResponse =
+  aiPhotoControllerGetPhotoAccessResponseSuccess;
 
 export const getAiPhotoControllerGetPhotoAccessUrl = () => {
+  return `/v1/coach/photo-access`;
+};
 
-
-  
-
-  return `/v1/coach/photo-access`
-}
-
-export const aiPhotoControllerGetPhotoAccess = async ( options?: RequestInit): Promise<aiPhotoControllerGetPhotoAccessResponse> => {
-  
-  return http<aiPhotoControllerGetPhotoAccessResponse>(getAiPhotoControllerGetPhotoAccessUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const aiPhotoControllerGetPhotoAccess = async (
+  options?: RequestInit,
+): Promise<aiPhotoControllerGetPhotoAccessResponse> => {
+  return http<aiPhotoControllerGetPhotoAccessResponse>(
+    getAiPhotoControllerGetPhotoAccessUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type aiMockExamPhotoControllerCreatePhotoUploadUrlResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type aiMockExamPhotoControllerCreatePhotoUploadUrlResponseSuccess = (aiMockExamPhotoControllerCreatePhotoUploadUrlResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type aiMockExamPhotoControllerCreatePhotoUploadUrlResponse = (aiMockExamPhotoControllerCreatePhotoUploadUrlResponseSuccess)
+export type aiMockExamPhotoControllerCreatePhotoUploadUrlResponseSuccess =
+  aiMockExamPhotoControllerCreatePhotoUploadUrlResponse201 & {
+    headers: Headers;
+  };
+export type aiMockExamPhotoControllerCreatePhotoUploadUrlResponse =
+  aiMockExamPhotoControllerCreatePhotoUploadUrlResponseSuccess;
 
 export const getAiMockExamPhotoControllerCreatePhotoUploadUrlUrl = () => {
+  return `/v1/mock-exams/photo-upload-url`;
+};
 
-
-  
-
-  return `/v1/mock-exams/photo-upload-url`
-}
-
-export const aiMockExamPhotoControllerCreatePhotoUploadUrl = async (photoUploadUrlDto: PhotoUploadUrlDto, options?: RequestInit): Promise<aiMockExamPhotoControllerCreatePhotoUploadUrlResponse> => {
-  
-  return http<aiMockExamPhotoControllerCreatePhotoUploadUrlResponse>(getAiMockExamPhotoControllerCreatePhotoUploadUrlUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      photoUploadUrlDto,)
-  }
-);}
-
-
+export const aiMockExamPhotoControllerCreatePhotoUploadUrl = async (
+  photoUploadUrlDto: PhotoUploadUrlDto,
+  options?: RequestInit,
+): Promise<aiMockExamPhotoControllerCreatePhotoUploadUrlResponse> => {
+  return http<aiMockExamPhotoControllerCreatePhotoUploadUrlResponse>(
+    getAiMockExamPhotoControllerCreatePhotoUploadUrlUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(photoUploadUrlDto),
+    },
+  );
+};
 
 export type aiMockExamPhotoControllerCategorizePhotoResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type aiMockExamPhotoControllerCategorizePhotoResponseSuccess = (aiMockExamPhotoControllerCategorizePhotoResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type aiMockExamPhotoControllerCategorizePhotoResponse = (aiMockExamPhotoControllerCategorizePhotoResponseSuccess)
+export type aiMockExamPhotoControllerCategorizePhotoResponseSuccess =
+  aiMockExamPhotoControllerCategorizePhotoResponse201 & {
+    headers: Headers;
+  };
+export type aiMockExamPhotoControllerCategorizePhotoResponse =
+  aiMockExamPhotoControllerCategorizePhotoResponseSuccess;
 
-export const getAiMockExamPhotoControllerCategorizePhotoUrl = (id: string,) => {
+export const getAiMockExamPhotoControllerCategorizePhotoUrl = (id: string) => {
+  return `/v1/mock-exams/${id}/categorize-photo`;
+};
 
-
-  
-
-  return `/v1/mock-exams/${id}/categorize-photo`
-}
-
-export const aiMockExamPhotoControllerCategorizePhoto = async (id: string,
-    categorizePhotoDto: CategorizePhotoDto, options?: RequestInit): Promise<aiMockExamPhotoControllerCategorizePhotoResponse> => {
-  
-  return http<aiMockExamPhotoControllerCategorizePhotoResponse>(getAiMockExamPhotoControllerCategorizePhotoUrl(id),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      categorizePhotoDto,)
-  }
-);}
-
-
+export const aiMockExamPhotoControllerCategorizePhoto = async (
+  id: string,
+  categorizePhotoDto: CategorizePhotoDto,
+  options?: RequestInit,
+): Promise<aiMockExamPhotoControllerCategorizePhotoResponse> => {
+  return http<aiMockExamPhotoControllerCategorizePhotoResponse>(
+    getAiMockExamPhotoControllerCategorizePhotoUrl(id),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(categorizePhotoDto),
+    },
+  );
+};
 
 export type adminEmbeddingControllerReembedResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type adminEmbeddingControllerReembedResponseSuccess = (adminEmbeddingControllerReembedResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type adminEmbeddingControllerReembedResponse = (adminEmbeddingControllerReembedResponseSuccess)
+export type adminEmbeddingControllerReembedResponseSuccess =
+  adminEmbeddingControllerReembedResponse201 & {
+    headers: Headers;
+  };
+export type adminEmbeddingControllerReembedResponse =
+  adminEmbeddingControllerReembedResponseSuccess;
 
 export const getAdminEmbeddingControllerReembedUrl = () => {
+  return `/v1/admin/ai/reembed`;
+};
 
-
-  
-
-  return `/v1/admin/ai/reembed`
-}
-
-export const adminEmbeddingControllerReembed = async ( options?: RequestInit): Promise<adminEmbeddingControllerReembedResponse> => {
-  
-  return http<adminEmbeddingControllerReembedResponse>(getAdminEmbeddingControllerReembedUrl(),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const adminEmbeddingControllerReembed = async (
+  options?: RequestInit,
+): Promise<adminEmbeddingControllerReembedResponse> => {
+  return http<adminEmbeddingControllerReembedResponse>(
+    getAdminEmbeddingControllerReembedUrl(),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type contentControllerListExamsResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type contentControllerListExamsResponseSuccess = (contentControllerListExamsResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type contentControllerListExamsResponse = (contentControllerListExamsResponseSuccess)
+export type contentControllerListExamsResponseSuccess =
+  contentControllerListExamsResponse200 & {
+    headers: Headers;
+  };
+export type contentControllerListExamsResponse =
+  contentControllerListExamsResponseSuccess;
 
 export const getContentControllerListExamsUrl = () => {
+  return `/v1/content/exams`;
+};
 
-
-  
-
-  return `/v1/content/exams`
-}
-
-export const contentControllerListExams = async ( options?: RequestInit): Promise<contentControllerListExamsResponse> => {
-  
-  return http<contentControllerListExamsResponse>(getContentControllerListExamsUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const contentControllerListExams = async (
+  options?: RequestInit,
+): Promise<contentControllerListExamsResponse> => {
+  return http<contentControllerListExamsResponse>(
+    getContentControllerListExamsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type contentControllerCalendarByFamilyResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type contentControllerCalendarByFamilyResponseSuccess = (contentControllerCalendarByFamilyResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type contentControllerCalendarByFamilyResponse = (contentControllerCalendarByFamilyResponseSuccess)
+export type contentControllerCalendarByFamilyResponseSuccess =
+  contentControllerCalendarByFamilyResponse200 & {
+    headers: Headers;
+  };
+export type contentControllerCalendarByFamilyResponse =
+  contentControllerCalendarByFamilyResponseSuccess;
 
-export const getContentControllerCalendarByFamilyUrl = (type: string,) => {
+export const getContentControllerCalendarByFamilyUrl = (type: string) => {
+  return `/v1/content/exams/by-type/${type}/calendar`;
+};
 
-
-  
-
-  return `/v1/content/exams/by-type/${type}/calendar`
-}
-
-export const contentControllerCalendarByFamily = async (type: string, options?: RequestInit): Promise<contentControllerCalendarByFamilyResponse> => {
-  
-  return http<contentControllerCalendarByFamilyResponse>(getContentControllerCalendarByFamilyUrl(type),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const contentControllerCalendarByFamily = async (
+  type: string,
+  options?: RequestInit,
+): Promise<contentControllerCalendarByFamilyResponse> => {
+  return http<contentControllerCalendarByFamilyResponse>(
+    getContentControllerCalendarByFamilyUrl(type),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type contentControllerCalendarBySlugResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type contentControllerCalendarBySlugResponseSuccess = (contentControllerCalendarBySlugResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type contentControllerCalendarBySlugResponse = (contentControllerCalendarBySlugResponseSuccess)
+export type contentControllerCalendarBySlugResponseSuccess =
+  contentControllerCalendarBySlugResponse200 & {
+    headers: Headers;
+  };
+export type contentControllerCalendarBySlugResponse =
+  contentControllerCalendarBySlugResponseSuccess;
 
-export const getContentControllerCalendarBySlugUrl = (slug: string,) => {
+export const getContentControllerCalendarBySlugUrl = (slug: string) => {
+  return `/v1/content/exams/${slug}/calendar`;
+};
 
-
-  
-
-  return `/v1/content/exams/${slug}/calendar`
-}
-
-export const contentControllerCalendarBySlug = async (slug: string, options?: RequestInit): Promise<contentControllerCalendarBySlugResponse> => {
-  
-  return http<contentControllerCalendarBySlugResponse>(getContentControllerCalendarBySlugUrl(slug),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const contentControllerCalendarBySlug = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<contentControllerCalendarBySlugResponse> => {
+  return http<contentControllerCalendarBySlugResponse>(
+    getContentControllerCalendarBySlugUrl(slug),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type contentControllerSubjectsBySlugResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type contentControllerSubjectsBySlugResponseSuccess = (contentControllerSubjectsBySlugResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type contentControllerSubjectsBySlugResponse = (contentControllerSubjectsBySlugResponseSuccess)
+export type contentControllerSubjectsBySlugResponseSuccess =
+  contentControllerSubjectsBySlugResponse200 & {
+    headers: Headers;
+  };
+export type contentControllerSubjectsBySlugResponse =
+  contentControllerSubjectsBySlugResponseSuccess;
 
-export const getContentControllerSubjectsBySlugUrl = (slug: string,) => {
+export const getContentControllerSubjectsBySlugUrl = (slug: string) => {
+  return `/v1/content/exams/${slug}/subjects`;
+};
 
-
-  
-
-  return `/v1/content/exams/${slug}/subjects`
-}
-
-export const contentControllerSubjectsBySlug = async (slug: string, options?: RequestInit): Promise<contentControllerSubjectsBySlugResponse> => {
-  
-  return http<contentControllerSubjectsBySlugResponse>(getContentControllerSubjectsBySlugUrl(slug),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const contentControllerSubjectsBySlug = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<contentControllerSubjectsBySlugResponse> => {
+  return http<contentControllerSubjectsBySlugResponse>(
+    getContentControllerSubjectsBySlugUrl(slug),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type infoArticleControllerListArticlesResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type infoArticleControllerListArticlesResponseSuccess = (infoArticleControllerListArticlesResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type infoArticleControllerListArticlesResponse = (infoArticleControllerListArticlesResponseSuccess)
+export type infoArticleControllerListArticlesResponseSuccess =
+  infoArticleControllerListArticlesResponse200 & {
+    headers: Headers;
+  };
+export type infoArticleControllerListArticlesResponse =
+  infoArticleControllerListArticlesResponseSuccess;
 
 export const getInfoArticleControllerListArticlesUrl = () => {
+  return `/v1/content/info-articles`;
+};
 
-
-  
-
-  return `/v1/content/info-articles`
-}
-
-export const infoArticleControllerListArticles = async ( options?: RequestInit): Promise<infoArticleControllerListArticlesResponse> => {
-  
-  return http<infoArticleControllerListArticlesResponse>(getInfoArticleControllerListArticlesUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const infoArticleControllerListArticles = async (
+  options?: RequestInit,
+): Promise<infoArticleControllerListArticlesResponse> => {
+  return http<infoArticleControllerListArticlesResponse>(
+    getInfoArticleControllerListArticlesUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type infoArticleControllerGetArticleResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type infoArticleControllerGetArticleResponseSuccess = (infoArticleControllerGetArticleResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type infoArticleControllerGetArticleResponse = (infoArticleControllerGetArticleResponseSuccess)
+export type infoArticleControllerGetArticleResponseSuccess =
+  infoArticleControllerGetArticleResponse200 & {
+    headers: Headers;
+  };
+export type infoArticleControllerGetArticleResponse =
+  infoArticleControllerGetArticleResponseSuccess;
 
-export const getInfoArticleControllerGetArticleUrl = (slug: string,) => {
+export const getInfoArticleControllerGetArticleUrl = (slug: string) => {
+  return `/v1/content/info-articles/${slug}`;
+};
 
-
-  
-
-  return `/v1/content/info-articles/${slug}`
-}
-
-export const infoArticleControllerGetArticle = async (slug: string, options?: RequestInit): Promise<infoArticleControllerGetArticleResponse> => {
-  
-  return http<infoArticleControllerGetArticleResponse>(getInfoArticleControllerGetArticleUrl(slug),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const infoArticleControllerGetArticle = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<infoArticleControllerGetArticleResponse> => {
+  return http<infoArticleControllerGetArticleResponse>(
+    getInfoArticleControllerGetArticleUrl(slug),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type subscriptionsControllerListPlansResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type subscriptionsControllerListPlansResponseSuccess = (subscriptionsControllerListPlansResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type subscriptionsControllerListPlansResponse = (subscriptionsControllerListPlansResponseSuccess)
+export type subscriptionsControllerListPlansResponseSuccess =
+  subscriptionsControllerListPlansResponse200 & {
+    headers: Headers;
+  };
+export type subscriptionsControllerListPlansResponse =
+  subscriptionsControllerListPlansResponseSuccess;
 
 export const getSubscriptionsControllerListPlansUrl = () => {
+  return `/v1/plans`;
+};
 
-
-  
-
-  return `/v1/plans`
-}
-
-export const subscriptionsControllerListPlans = async ( options?: RequestInit): Promise<subscriptionsControllerListPlansResponse> => {
-  
-  return http<subscriptionsControllerListPlansResponse>(getSubscriptionsControllerListPlansUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const subscriptionsControllerListPlans = async (
+  options?: RequestInit,
+): Promise<subscriptionsControllerListPlansResponse> => {
+  return http<subscriptionsControllerListPlansResponse>(
+    getSubscriptionsControllerListPlansUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type subscriptionsControllerGetMineResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type subscriptionsControllerGetMineResponseSuccess = (subscriptionsControllerGetMineResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type subscriptionsControllerGetMineResponse = (subscriptionsControllerGetMineResponseSuccess)
+export type subscriptionsControllerGetMineResponseSuccess =
+  subscriptionsControllerGetMineResponse200 & {
+    headers: Headers;
+  };
+export type subscriptionsControllerGetMineResponse =
+  subscriptionsControllerGetMineResponseSuccess;
 
 export const getSubscriptionsControllerGetMineUrl = () => {
+  return `/v1/subscription`;
+};
 
-
-  
-
-  return `/v1/subscription`
-}
-
-export const subscriptionsControllerGetMine = async ( options?: RequestInit): Promise<subscriptionsControllerGetMineResponse> => {
-  
-  return http<subscriptionsControllerGetMineResponse>(getSubscriptionsControllerGetMineUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const subscriptionsControllerGetMine = async (
+  options?: RequestInit,
+): Promise<subscriptionsControllerGetMineResponse> => {
+  return http<subscriptionsControllerGetMineResponse>(
+    getSubscriptionsControllerGetMineUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type subscriptionsControllerCheckoutResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type subscriptionsControllerCheckoutResponseSuccess = (subscriptionsControllerCheckoutResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type subscriptionsControllerCheckoutResponse = (subscriptionsControllerCheckoutResponseSuccess)
+export type subscriptionsControllerCheckoutResponseSuccess =
+  subscriptionsControllerCheckoutResponse200 & {
+    headers: Headers;
+  };
+export type subscriptionsControllerCheckoutResponse =
+  subscriptionsControllerCheckoutResponseSuccess;
 
 export const getSubscriptionsControllerCheckoutUrl = () => {
+  return `/v1/subscription/checkout`;
+};
 
-
-  
-
-  return `/v1/subscription/checkout`
-}
-
-export const subscriptionsControllerCheckout = async (checkoutDto: CheckoutDto, options?: RequestInit): Promise<subscriptionsControllerCheckoutResponse> => {
-  
-  return http<subscriptionsControllerCheckoutResponse>(getSubscriptionsControllerCheckoutUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      checkoutDto,)
-  }
-);}
-
-
+export const subscriptionsControllerCheckout = async (
+  checkoutDto: CheckoutDto,
+  options?: RequestInit,
+): Promise<subscriptionsControllerCheckoutResponse> => {
+  return http<subscriptionsControllerCheckoutResponse>(
+    getSubscriptionsControllerCheckoutUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(checkoutDto),
+    },
+  );
+};
 
 export type subscriptionsControllerCancelResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type subscriptionsControllerCancelResponseSuccess = (subscriptionsControllerCancelResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type subscriptionsControllerCancelResponse = (subscriptionsControllerCancelResponseSuccess)
+export type subscriptionsControllerCancelResponseSuccess =
+  subscriptionsControllerCancelResponse200 & {
+    headers: Headers;
+  };
+export type subscriptionsControllerCancelResponse =
+  subscriptionsControllerCancelResponseSuccess;
 
 export const getSubscriptionsControllerCancelUrl = () => {
+  return `/v1/subscription/cancel`;
+};
 
-
-  
-
-  return `/v1/subscription/cancel`
-}
-
-export const subscriptionsControllerCancel = async ( options?: RequestInit): Promise<subscriptionsControllerCancelResponse> => {
-  
-  return http<subscriptionsControllerCancelResponse>(getSubscriptionsControllerCancelUrl(),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const subscriptionsControllerCancel = async (
+  options?: RequestInit,
+): Promise<subscriptionsControllerCancelResponse> => {
+  return http<subscriptionsControllerCancelResponse>(
+    getSubscriptionsControllerCancelUrl(),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type paymentsWebhookControllerHandleResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type paymentsWebhookControllerHandleResponseSuccess = (paymentsWebhookControllerHandleResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type paymentsWebhookControllerHandleResponse = (paymentsWebhookControllerHandleResponseSuccess)
+export type paymentsWebhookControllerHandleResponseSuccess =
+  paymentsWebhookControllerHandleResponse200 & {
+    headers: Headers;
+  };
+export type paymentsWebhookControllerHandleResponse =
+  paymentsWebhookControllerHandleResponseSuccess;
 
 export const getPaymentsWebhookControllerHandleUrl = () => {
+  return `/v1/webhooks/payments`;
+};
 
-
-  
-
-  return `/v1/webhooks/payments`
-}
-
-export const paymentsWebhookControllerHandle = async ( options?: RequestInit): Promise<paymentsWebhookControllerHandleResponse> => {
-  
-  return http<paymentsWebhookControllerHandleResponse>(getPaymentsWebhookControllerHandleUrl(),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const paymentsWebhookControllerHandle = async (
+  options?: RequestInit,
+): Promise<paymentsWebhookControllerHandleResponse> => {
+  return http<paymentsWebhookControllerHandleResponse>(
+    getPaymentsWebhookControllerHandleUrl(),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type economyControllerBalanceResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type economyControllerBalanceResponseSuccess = (economyControllerBalanceResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type economyControllerBalanceResponse = (economyControllerBalanceResponseSuccess)
+export type economyControllerBalanceResponseSuccess =
+  economyControllerBalanceResponse200 & {
+    headers: Headers;
+  };
+export type economyControllerBalanceResponse =
+  economyControllerBalanceResponseSuccess;
 
 export const getEconomyControllerBalanceUrl = () => {
+  return `/v1/economy/balance`;
+};
 
-
-  
-
-  return `/v1/economy/balance`
-}
-
-export const economyControllerBalance = async ( options?: RequestInit): Promise<economyControllerBalanceResponse> => {
-  
-  return http<economyControllerBalanceResponse>(getEconomyControllerBalanceUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const economyControllerBalance = async (
+  options?: RequestInit,
+): Promise<economyControllerBalanceResponse> => {
+  return http<economyControllerBalanceResponse>(
+    getEconomyControllerBalanceUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type economyControllerLedgerResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type economyControllerLedgerResponseSuccess = (economyControllerLedgerResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type economyControllerLedgerResponse = (economyControllerLedgerResponseSuccess)
+export type economyControllerLedgerResponseSuccess =
+  economyControllerLedgerResponse200 & {
+    headers: Headers;
+  };
+export type economyControllerLedgerResponse =
+  economyControllerLedgerResponseSuccess;
 
 export const getEconomyControllerLedgerUrl = () => {
+  return `/v1/economy/ledger`;
+};
 
-
-  
-
-  return `/v1/economy/ledger`
-}
-
-export const economyControllerLedger = async ( options?: RequestInit): Promise<economyControllerLedgerResponse> => {
-  
-  return http<economyControllerLedgerResponse>(getEconomyControllerLedgerUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const economyControllerLedger = async (
+  options?: RequestInit,
+): Promise<economyControllerLedgerResponse> => {
+  return http<economyControllerLedgerResponse>(
+    getEconomyControllerLedgerUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type economyControllerInviteResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type economyControllerInviteResponseSuccess = (economyControllerInviteResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type economyControllerInviteResponse = (economyControllerInviteResponseSuccess)
+export type economyControllerInviteResponseSuccess =
+  economyControllerInviteResponse200 & {
+    headers: Headers;
+  };
+export type economyControllerInviteResponse =
+  economyControllerInviteResponseSuccess;
 
 export const getEconomyControllerInviteUrl = () => {
+  return `/v1/economy/invite`;
+};
 
-
-  
-
-  return `/v1/economy/invite`
-}
-
-export const economyControllerInvite = async ( options?: RequestInit): Promise<economyControllerInviteResponse> => {
-  
-  return http<economyControllerInviteResponse>(getEconomyControllerInviteUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const economyControllerInvite = async (
+  options?: RequestInit,
+): Promise<economyControllerInviteResponse> => {
+  return http<economyControllerInviteResponse>(
+    getEconomyControllerInviteUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type economyControllerQuestsListResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type economyControllerQuestsListResponseSuccess = (economyControllerQuestsListResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type economyControllerQuestsListResponse = (economyControllerQuestsListResponseSuccess)
+export type economyControllerQuestsListResponseSuccess =
+  economyControllerQuestsListResponse200 & {
+    headers: Headers;
+  };
+export type economyControllerQuestsListResponse =
+  economyControllerQuestsListResponseSuccess;
 
 export const getEconomyControllerQuestsListUrl = () => {
+  return `/v1/economy/quests`;
+};
 
-
-  
-
-  return `/v1/economy/quests`
-}
-
-export const economyControllerQuestsList = async ( options?: RequestInit): Promise<economyControllerQuestsListResponse> => {
-  
-  return http<economyControllerQuestsListResponse>(getEconomyControllerQuestsListUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const economyControllerQuestsList = async (
+  options?: RequestInit,
+): Promise<economyControllerQuestsListResponse> => {
+  return http<economyControllerQuestsListResponse>(
+    getEconomyControllerQuestsListUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type economyControllerStreakRescueStateResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type economyControllerStreakRescueStateResponseSuccess = (economyControllerStreakRescueStateResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type economyControllerStreakRescueStateResponse = (economyControllerStreakRescueStateResponseSuccess)
+export type economyControllerStreakRescueStateResponseSuccess =
+  economyControllerStreakRescueStateResponse200 & {
+    headers: Headers;
+  };
+export type economyControllerStreakRescueStateResponse =
+  economyControllerStreakRescueStateResponseSuccess;
 
 export const getEconomyControllerStreakRescueStateUrl = () => {
+  return `/v1/economy/streak-rescue`;
+};
 
-
-  
-
-  return `/v1/economy/streak-rescue`
-}
-
-export const economyControllerStreakRescueState = async ( options?: RequestInit): Promise<economyControllerStreakRescueStateResponse> => {
-  
-  return http<economyControllerStreakRescueStateResponse>(getEconomyControllerStreakRescueStateUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const economyControllerStreakRescueState = async (
+  options?: RequestInit,
+): Promise<economyControllerStreakRescueStateResponse> => {
+  return http<economyControllerStreakRescueStateResponse>(
+    getEconomyControllerStreakRescueStateUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type economyControllerStreakRescuePurchaseResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type economyControllerStreakRescuePurchaseResponseSuccess = (economyControllerStreakRescuePurchaseResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type economyControllerStreakRescuePurchaseResponse = (economyControllerStreakRescuePurchaseResponseSuccess)
+export type economyControllerStreakRescuePurchaseResponseSuccess =
+  economyControllerStreakRescuePurchaseResponse201 & {
+    headers: Headers;
+  };
+export type economyControllerStreakRescuePurchaseResponse =
+  economyControllerStreakRescuePurchaseResponseSuccess;
 
 export const getEconomyControllerStreakRescuePurchaseUrl = () => {
+  return `/v1/economy/streak-rescue`;
+};
 
+export const economyControllerStreakRescuePurchase = async (
+  options?: RequestInit,
+): Promise<economyControllerStreakRescuePurchaseResponse> => {
+  return http<economyControllerStreakRescuePurchaseResponse>(
+    getEconomyControllerStreakRescuePurchaseUrl(),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
-  
+export type economyControllerDeepAnalysisStateResponse200 = {
+  data: void;
+  status: 200;
+};
 
-  return `/v1/economy/streak-rescue`
-}
+export type economyControllerDeepAnalysisStateResponseSuccess =
+  economyControllerDeepAnalysisStateResponse200 & {
+    headers: Headers;
+  };
+export type economyControllerDeepAnalysisStateResponse =
+  economyControllerDeepAnalysisStateResponseSuccess;
 
-export const economyControllerStreakRescuePurchase = async ( options?: RequestInit): Promise<economyControllerStreakRescuePurchaseResponse> => {
-  
-  return http<economyControllerStreakRescuePurchaseResponse>(getEconomyControllerStreakRescuePurchaseUrl(),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
+export const getEconomyControllerDeepAnalysisStateUrl = () => {
+  return `/v1/economy/deep-analysis`;
+};
 
+export const economyControllerDeepAnalysisState = async (
+  options?: RequestInit,
+): Promise<economyControllerDeepAnalysisStateResponse> => {
+  return http<economyControllerDeepAnalysisStateResponse>(
+    getEconomyControllerDeepAnalysisStateUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
+export type economyControllerDeepAnalysisPurchaseResponse201 = {
+  data: void;
+  status: 201;
+};
+
+export type economyControllerDeepAnalysisPurchaseResponseSuccess =
+  economyControllerDeepAnalysisPurchaseResponse201 & {
+    headers: Headers;
+  };
+export type economyControllerDeepAnalysisPurchaseResponse =
+  economyControllerDeepAnalysisPurchaseResponseSuccess;
+
+export const getEconomyControllerDeepAnalysisPurchaseUrl = () => {
+  return `/v1/economy/deep-analysis`;
+};
+
+export const economyControllerDeepAnalysisPurchase = async (
+  deepAnalysisDto: DeepAnalysisDto,
+  options?: RequestInit,
+): Promise<economyControllerDeepAnalysisPurchaseResponse> => {
+  return http<economyControllerDeepAnalysisPurchaseResponse>(
+    getEconomyControllerDeepAnalysisPurchaseUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(deepAnalysisDto),
+    },
+  );
+};
 
 export type economyControllerRedeemResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type economyControllerRedeemResponseSuccess = (economyControllerRedeemResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type economyControllerRedeemResponse = (economyControllerRedeemResponseSuccess)
+export type economyControllerRedeemResponseSuccess =
+  economyControllerRedeemResponse201 & {
+    headers: Headers;
+  };
+export type economyControllerRedeemResponse =
+  economyControllerRedeemResponseSuccess;
 
 export const getEconomyControllerRedeemUrl = () => {
+  return `/v1/economy/invite/redeem`;
+};
 
-
-  
-
-  return `/v1/economy/invite/redeem`
-}
-
-export const economyControllerRedeem = async (redeemInviteDto: RedeemInviteDto, options?: RequestInit): Promise<economyControllerRedeemResponse> => {
-  
-  return http<economyControllerRedeemResponse>(getEconomyControllerRedeemUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      redeemInviteDto,)
-  }
-);}
-
-
+export const economyControllerRedeem = async (
+  redeemInviteDto: RedeemInviteDto,
+  options?: RequestInit,
+): Promise<economyControllerRedeemResponse> => {
+  return http<economyControllerRedeemResponse>(
+    getEconomyControllerRedeemUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(redeemInviteDto),
+    },
+  );
+};
 
 export type coachingControllerGetTodayResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type coachingControllerGetTodayResponseSuccess = (coachingControllerGetTodayResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type coachingControllerGetTodayResponse = (coachingControllerGetTodayResponseSuccess)
+export type coachingControllerGetTodayResponseSuccess =
+  coachingControllerGetTodayResponse200 & {
+    headers: Headers;
+  };
+export type coachingControllerGetTodayResponse =
+  coachingControllerGetTodayResponseSuccess;
 
 export const getCoachingControllerGetTodayUrl = () => {
+  return `/v1/coaching/today`;
+};
 
-
-  
-
-  return `/v1/coaching/today`
-}
-
-export const coachingControllerGetToday = async ( options?: RequestInit): Promise<coachingControllerGetTodayResponse> => {
-  
-  return http<coachingControllerGetTodayResponse>(getCoachingControllerGetTodayUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const coachingControllerGetToday = async (
+  options?: RequestInit,
+): Promise<coachingControllerGetTodayResponse> => {
+  return http<coachingControllerGetTodayResponse>(
+    getCoachingControllerGetTodayUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type coachingControllerGetAnalysisResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type coachingControllerGetAnalysisResponseSuccess = (coachingControllerGetAnalysisResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type coachingControllerGetAnalysisResponse = (coachingControllerGetAnalysisResponseSuccess)
+export type coachingControllerGetAnalysisResponseSuccess =
+  coachingControllerGetAnalysisResponse200 & {
+    headers: Headers;
+  };
+export type coachingControllerGetAnalysisResponse =
+  coachingControllerGetAnalysisResponseSuccess;
 
-export const getCoachingControllerGetAnalysisUrl = (params?: CoachingControllerGetAnalysisParams,) => {
+export const getCoachingControllerGetAnalysisUrl = (
+  params?: CoachingControllerGetAnalysisParams,
+) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/v1/coaching/analysis?${stringifiedParams}` : `/v1/coaching/analysis`
-}
+  return stringifiedParams.length > 0
+    ? `/v1/coaching/analysis?${stringifiedParams}`
+    : `/v1/coaching/analysis`;
+};
 
-export const coachingControllerGetAnalysis = async (params?: CoachingControllerGetAnalysisParams, options?: RequestInit): Promise<coachingControllerGetAnalysisResponse> => {
-  
-  return http<coachingControllerGetAnalysisResponse>(getCoachingControllerGetAnalysisUrl(params),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const coachingControllerGetAnalysis = async (
+  params?: CoachingControllerGetAnalysisParams,
+  options?: RequestInit,
+): Promise<coachingControllerGetAnalysisResponse> => {
+  return http<coachingControllerGetAnalysisResponse>(
+    getCoachingControllerGetAnalysisUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type coachingControllerGetWeeklyReviewResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type coachingControllerGetWeeklyReviewResponseSuccess = (coachingControllerGetWeeklyReviewResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type coachingControllerGetWeeklyReviewResponse = (coachingControllerGetWeeklyReviewResponseSuccess)
+export type coachingControllerGetWeeklyReviewResponseSuccess =
+  coachingControllerGetWeeklyReviewResponse200 & {
+    headers: Headers;
+  };
+export type coachingControllerGetWeeklyReviewResponse =
+  coachingControllerGetWeeklyReviewResponseSuccess;
 
-export const getCoachingControllerGetWeeklyReviewUrl = (params: CoachingControllerGetWeeklyReviewParams,) => {
+export const getCoachingControllerGetWeeklyReviewUrl = (
+  params: CoachingControllerGetWeeklyReviewParams,
+) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/v1/coaching/weekly-review?${stringifiedParams}` : `/v1/coaching/weekly-review`
-}
+  return stringifiedParams.length > 0
+    ? `/v1/coaching/weekly-review?${stringifiedParams}`
+    : `/v1/coaching/weekly-review`;
+};
 
-export const coachingControllerGetWeeklyReview = async (params: CoachingControllerGetWeeklyReviewParams, options?: RequestInit): Promise<coachingControllerGetWeeklyReviewResponse> => {
-  
-  return http<coachingControllerGetWeeklyReviewResponse>(getCoachingControllerGetWeeklyReviewUrl(params),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const coachingControllerGetWeeklyReview = async (
+  params: CoachingControllerGetWeeklyReviewParams,
+  options?: RequestInit,
+): Promise<coachingControllerGetWeeklyReviewResponse> => {
+  return http<coachingControllerGetWeeklyReviewResponse>(
+    getCoachingControllerGetWeeklyReviewUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type coachingControllerUpsertMoodResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type coachingControllerUpsertMoodResponseSuccess = (coachingControllerUpsertMoodResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type coachingControllerUpsertMoodResponse = (coachingControllerUpsertMoodResponseSuccess)
+export type coachingControllerUpsertMoodResponseSuccess =
+  coachingControllerUpsertMoodResponse200 & {
+    headers: Headers;
+  };
+export type coachingControllerUpsertMoodResponse =
+  coachingControllerUpsertMoodResponseSuccess;
 
 export const getCoachingControllerUpsertMoodUrl = () => {
+  return `/v1/coaching/mood-checkins`;
+};
 
-
-  
-
-  return `/v1/coaching/mood-checkins`
-}
-
-export const coachingControllerUpsertMood = async (createMoodCheckinDto: CreateMoodCheckinDto, options?: RequestInit): Promise<coachingControllerUpsertMoodResponse> => {
-  
-  return http<coachingControllerUpsertMoodResponse>(getCoachingControllerUpsertMoodUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createMoodCheckinDto,)
-  }
-);}
-
-
+export const coachingControllerUpsertMood = async (
+  createMoodCheckinDto: CreateMoodCheckinDto,
+  options?: RequestInit,
+): Promise<coachingControllerUpsertMoodResponse> => {
+  return http<coachingControllerUpsertMoodResponse>(
+    getCoachingControllerUpsertMoodUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(createMoodCheckinDto),
+    },
+  );
+};
 
 export type coachingControllerListMoodResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type coachingControllerListMoodResponseSuccess = (coachingControllerListMoodResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type coachingControllerListMoodResponse = (coachingControllerListMoodResponseSuccess)
+export type coachingControllerListMoodResponseSuccess =
+  coachingControllerListMoodResponse200 & {
+    headers: Headers;
+  };
+export type coachingControllerListMoodResponse =
+  coachingControllerListMoodResponseSuccess;
 
 export const getCoachingControllerListMoodUrl = () => {
+  return `/v1/coaching/mood-checkins`;
+};
 
-
-  
-
-  return `/v1/coaching/mood-checkins`
-}
-
-export const coachingControllerListMood = async ( options?: RequestInit): Promise<coachingControllerListMoodResponse> => {
-  
-  return http<coachingControllerListMoodResponse>(getCoachingControllerListMoodUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const coachingControllerListMood = async (
+  options?: RequestInit,
+): Promise<coachingControllerListMoodResponse> => {
+  return http<coachingControllerListMoodResponse>(
+    getCoachingControllerListMoodUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type coachingControllerGetVisionResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type coachingControllerGetVisionResponseSuccess = (coachingControllerGetVisionResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type coachingControllerGetVisionResponse = (coachingControllerGetVisionResponseSuccess)
+export type coachingControllerGetVisionResponseSuccess =
+  coachingControllerGetVisionResponse200 & {
+    headers: Headers;
+  };
+export type coachingControllerGetVisionResponse =
+  coachingControllerGetVisionResponseSuccess;
 
 export const getCoachingControllerGetVisionUrl = () => {
+  return `/v1/coaching/vision`;
+};
 
-
-  
-
-  return `/v1/coaching/vision`
-}
-
-export const coachingControllerGetVision = async ( options?: RequestInit): Promise<coachingControllerGetVisionResponse> => {
-  
-  return http<coachingControllerGetVisionResponse>(getCoachingControllerGetVisionUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const coachingControllerGetVision = async (
+  options?: RequestInit,
+): Promise<coachingControllerGetVisionResponse> => {
+  return http<coachingControllerGetVisionResponse>(
+    getCoachingControllerGetVisionUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type coachingControllerUpsertVisionResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type coachingControllerUpsertVisionResponseSuccess = (coachingControllerUpsertVisionResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type coachingControllerUpsertVisionResponse = (coachingControllerUpsertVisionResponseSuccess)
+export type coachingControllerUpsertVisionResponseSuccess =
+  coachingControllerUpsertVisionResponse200 & {
+    headers: Headers;
+  };
+export type coachingControllerUpsertVisionResponse =
+  coachingControllerUpsertVisionResponseSuccess;
 
 export const getCoachingControllerUpsertVisionUrl = () => {
+  return `/v1/coaching/vision`;
+};
 
-
-  
-
-  return `/v1/coaching/vision`
-}
-
-export const coachingControllerUpsertVision = async (upsertVisionDto: UpsertVisionDto, options?: RequestInit): Promise<coachingControllerUpsertVisionResponse> => {
-  
-  return http<coachingControllerUpsertVisionResponse>(getCoachingControllerUpsertVisionUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      upsertVisionDto,)
-  }
-);}
-
-
+export const coachingControllerUpsertVision = async (
+  upsertVisionDto: UpsertVisionDto,
+  options?: RequestInit,
+): Promise<coachingControllerUpsertVisionResponse> => {
+  return http<coachingControllerUpsertVisionResponse>(
+    getCoachingControllerUpsertVisionUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(upsertVisionDto),
+    },
+  );
+};
 
 export type planTaskControllerListResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type planTaskControllerListResponseSuccess = (planTaskControllerListResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type planTaskControllerListResponse = (planTaskControllerListResponseSuccess)
+export type planTaskControllerListResponseSuccess =
+  planTaskControllerListResponse200 & {
+    headers: Headers;
+  };
+export type planTaskControllerListResponse =
+  planTaskControllerListResponseSuccess;
 
 export const getPlanTaskControllerListUrl = () => {
+  return `/v1/plan-tasks`;
+};
 
-
-  
-
-  return `/v1/plan-tasks`
-}
-
-export const planTaskControllerList = async ( options?: RequestInit): Promise<planTaskControllerListResponse> => {
-  
-  return http<planTaskControllerListResponse>(getPlanTaskControllerListUrl(),
-  {      
+export const planTaskControllerList = async (
+  options?: RequestInit,
+): Promise<planTaskControllerListResponse> => {
+  return http<planTaskControllerListResponse>(getPlanTaskControllerListUrl(), {
     ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+    method: "GET",
+  });
+};
 
 export type planTaskControllerCreateResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type planTaskControllerCreateResponseSuccess = (planTaskControllerCreateResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type planTaskControllerCreateResponse = (planTaskControllerCreateResponseSuccess)
+export type planTaskControllerCreateResponseSuccess =
+  planTaskControllerCreateResponse201 & {
+    headers: Headers;
+  };
+export type planTaskControllerCreateResponse =
+  planTaskControllerCreateResponseSuccess;
 
 export const getPlanTaskControllerCreateUrl = () => {
+  return `/v1/plan-tasks`;
+};
 
-
-  
-
-  return `/v1/plan-tasks`
-}
-
-export const planTaskControllerCreate = async (createPlanTaskDto: CreatePlanTaskDto, options?: RequestInit): Promise<planTaskControllerCreateResponse> => {
-  
-  return http<planTaskControllerCreateResponse>(getPlanTaskControllerCreateUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createPlanTaskDto,)
-  }
-);}
-
-
+export const planTaskControllerCreate = async (
+  createPlanTaskDto: CreatePlanTaskDto,
+  options?: RequestInit,
+): Promise<planTaskControllerCreateResponse> => {
+  return http<planTaskControllerCreateResponse>(
+    getPlanTaskControllerCreateUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(createPlanTaskDto),
+    },
+  );
+};
 
 export type planTaskControllerListCalendarResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type planTaskControllerListCalendarResponseSuccess = (planTaskControllerListCalendarResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type planTaskControllerListCalendarResponse = (planTaskControllerListCalendarResponseSuccess)
+export type planTaskControllerListCalendarResponseSuccess =
+  planTaskControllerListCalendarResponse200 & {
+    headers: Headers;
+  };
+export type planTaskControllerListCalendarResponse =
+  planTaskControllerListCalendarResponseSuccess;
 
 export const getPlanTaskControllerListCalendarUrl = () => {
+  return `/v1/plan-tasks/calendar`;
+};
 
-
-  
-
-  return `/v1/plan-tasks/calendar`
-}
-
-export const planTaskControllerListCalendar = async ( options?: RequestInit): Promise<planTaskControllerListCalendarResponse> => {
-  
-  return http<planTaskControllerListCalendarResponse>(getPlanTaskControllerListCalendarUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const planTaskControllerListCalendar = async (
+  options?: RequestInit,
+): Promise<planTaskControllerListCalendarResponse> => {
+  return http<planTaskControllerListCalendarResponse>(
+    getPlanTaskControllerListCalendarUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type planTaskControllerCreateManyResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type planTaskControllerCreateManyResponseSuccess = (planTaskControllerCreateManyResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type planTaskControllerCreateManyResponse = (planTaskControllerCreateManyResponseSuccess)
+export type planTaskControllerCreateManyResponseSuccess =
+  planTaskControllerCreateManyResponse201 & {
+    headers: Headers;
+  };
+export type planTaskControllerCreateManyResponse =
+  planTaskControllerCreateManyResponseSuccess;
 
 export const getPlanTaskControllerCreateManyUrl = () => {
+  return `/v1/plan-tasks/bulk`;
+};
 
-
-  
-
-  return `/v1/plan-tasks/bulk`
-}
-
-export const planTaskControllerCreateMany = async (bulkCreatePlanTasksDto: BulkCreatePlanTasksDto, options?: RequestInit): Promise<planTaskControllerCreateManyResponse> => {
-  
-  return http<planTaskControllerCreateManyResponse>(getPlanTaskControllerCreateManyUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      bulkCreatePlanTasksDto,)
-  }
-);}
-
-
+export const planTaskControllerCreateMany = async (
+  bulkCreatePlanTasksDto: BulkCreatePlanTasksDto,
+  options?: RequestInit,
+): Promise<planTaskControllerCreateManyResponse> => {
+  return http<planTaskControllerCreateManyResponse>(
+    getPlanTaskControllerCreateManyUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(bulkCreatePlanTasksDto),
+    },
+  );
+};
 
 export type planTaskControllerUpdateResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type planTaskControllerUpdateResponseSuccess = (planTaskControllerUpdateResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type planTaskControllerUpdateResponse = (planTaskControllerUpdateResponseSuccess)
+export type planTaskControllerUpdateResponseSuccess =
+  planTaskControllerUpdateResponse200 & {
+    headers: Headers;
+  };
+export type planTaskControllerUpdateResponse =
+  planTaskControllerUpdateResponseSuccess;
 
-export const getPlanTaskControllerUpdateUrl = (id: string,) => {
+export const getPlanTaskControllerUpdateUrl = (id: string) => {
+  return `/v1/plan-tasks/${id}`;
+};
 
-
-  
-
-  return `/v1/plan-tasks/${id}`
-}
-
-export const planTaskControllerUpdate = async (id: string,
-    updatePlanTaskDto: UpdatePlanTaskDto, options?: RequestInit): Promise<planTaskControllerUpdateResponse> => {
-  
-  return http<planTaskControllerUpdateResponse>(getPlanTaskControllerUpdateUrl(id),
-  {      
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updatePlanTaskDto,)
-  }
-);}
-
-
+export const planTaskControllerUpdate = async (
+  id: string,
+  updatePlanTaskDto: UpdatePlanTaskDto,
+  options?: RequestInit,
+): Promise<planTaskControllerUpdateResponse> => {
+  return http<planTaskControllerUpdateResponse>(
+    getPlanTaskControllerUpdateUrl(id),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updatePlanTaskDto),
+    },
+  );
+};
 
 export type planTaskControllerRemoveResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type planTaskControllerRemoveResponseSuccess = (planTaskControllerRemoveResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type planTaskControllerRemoveResponse = (planTaskControllerRemoveResponseSuccess)
+export type planTaskControllerRemoveResponseSuccess =
+  planTaskControllerRemoveResponse204 & {
+    headers: Headers;
+  };
+export type planTaskControllerRemoveResponse =
+  planTaskControllerRemoveResponseSuccess;
 
-export const getPlanTaskControllerRemoveUrl = (id: string,) => {
+export const getPlanTaskControllerRemoveUrl = (id: string) => {
+  return `/v1/plan-tasks/${id}`;
+};
 
-
-  
-
-  return `/v1/plan-tasks/${id}`
-}
-
-export const planTaskControllerRemove = async (id: string, options?: RequestInit): Promise<planTaskControllerRemoveResponse> => {
-  
-  return http<planTaskControllerRemoveResponse>(getPlanTaskControllerRemoveUrl(id),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const planTaskControllerRemove = async (
+  id: string,
+  options?: RequestInit,
+): Promise<planTaskControllerRemoveResponse> => {
+  return http<planTaskControllerRemoveResponse>(
+    getPlanTaskControllerRemoveUrl(id),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type studySessionControllerListResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type studySessionControllerListResponseSuccess = (studySessionControllerListResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type studySessionControllerListResponse = (studySessionControllerListResponseSuccess)
+export type studySessionControllerListResponseSuccess =
+  studySessionControllerListResponse200 & {
+    headers: Headers;
+  };
+export type studySessionControllerListResponse =
+  studySessionControllerListResponseSuccess;
 
 export const getStudySessionControllerListUrl = () => {
+  return `/v1/study-sessions`;
+};
 
-
-  
-
-  return `/v1/study-sessions`
-}
-
-export const studySessionControllerList = async ( options?: RequestInit): Promise<studySessionControllerListResponse> => {
-  
-  return http<studySessionControllerListResponse>(getStudySessionControllerListUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const studySessionControllerList = async (
+  options?: RequestInit,
+): Promise<studySessionControllerListResponse> => {
+  return http<studySessionControllerListResponse>(
+    getStudySessionControllerListUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type studySessionControllerStartResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type studySessionControllerStartResponseSuccess = (studySessionControllerStartResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type studySessionControllerStartResponse = (studySessionControllerStartResponseSuccess)
+export type studySessionControllerStartResponseSuccess =
+  studySessionControllerStartResponse201 & {
+    headers: Headers;
+  };
+export type studySessionControllerStartResponse =
+  studySessionControllerStartResponseSuccess;
 
 export const getStudySessionControllerStartUrl = () => {
+  return `/v1/study-sessions`;
+};
 
-
-  
-
-  return `/v1/study-sessions`
-}
-
-export const studySessionControllerStart = async (startStudySessionDto: StartStudySessionDto, options?: RequestInit): Promise<studySessionControllerStartResponse> => {
-  
-  return http<studySessionControllerStartResponse>(getStudySessionControllerStartUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      startStudySessionDto,)
-  }
-);}
-
-
+export const studySessionControllerStart = async (
+  startStudySessionDto: StartStudySessionDto,
+  options?: RequestInit,
+): Promise<studySessionControllerStartResponse> => {
+  return http<studySessionControllerStartResponse>(
+    getStudySessionControllerStartUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(startStudySessionDto),
+    },
+  );
+};
 
 export type studySessionControllerFinalizeResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type studySessionControllerFinalizeResponseSuccess = (studySessionControllerFinalizeResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type studySessionControllerFinalizeResponse = (studySessionControllerFinalizeResponseSuccess)
+export type studySessionControllerFinalizeResponseSuccess =
+  studySessionControllerFinalizeResponse200 & {
+    headers: Headers;
+  };
+export type studySessionControllerFinalizeResponse =
+  studySessionControllerFinalizeResponseSuccess;
 
-export const getStudySessionControllerFinalizeUrl = (id: string,) => {
+export const getStudySessionControllerFinalizeUrl = (id: string) => {
+  return `/v1/study-sessions/${id}`;
+};
 
-
-  
-
-  return `/v1/study-sessions/${id}`
-}
-
-export const studySessionControllerFinalize = async (id: string,
-    updateStudySessionDto: UpdateStudySessionDto, options?: RequestInit): Promise<studySessionControllerFinalizeResponse> => {
-  
-  return http<studySessionControllerFinalizeResponse>(getStudySessionControllerFinalizeUrl(id),
-  {      
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateStudySessionDto,)
-  }
-);}
-
-
+export const studySessionControllerFinalize = async (
+  id: string,
+  updateStudySessionDto: UpdateStudySessionDto,
+  options?: RequestInit,
+): Promise<studySessionControllerFinalizeResponse> => {
+  return http<studySessionControllerFinalizeResponse>(
+    getStudySessionControllerFinalizeUrl(id),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateStudySessionDto),
+    },
+  );
+};
 
 export type studySessionControllerRecordFeedbackResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type studySessionControllerRecordFeedbackResponseSuccess = (studySessionControllerRecordFeedbackResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type studySessionControllerRecordFeedbackResponse = (studySessionControllerRecordFeedbackResponseSuccess)
+export type studySessionControllerRecordFeedbackResponseSuccess =
+  studySessionControllerRecordFeedbackResponse200 & {
+    headers: Headers;
+  };
+export type studySessionControllerRecordFeedbackResponse =
+  studySessionControllerRecordFeedbackResponseSuccess;
 
-export const getStudySessionControllerRecordFeedbackUrl = (id: string,) => {
+export const getStudySessionControllerRecordFeedbackUrl = (id: string) => {
+  return `/v1/study-sessions/${id}/feedback`;
+};
 
-
-  
-
-  return `/v1/study-sessions/${id}/feedback`
-}
-
-export const studySessionControllerRecordFeedback = async (id: string,
-    sessionFeedbackDto: SessionFeedbackDto, options?: RequestInit): Promise<studySessionControllerRecordFeedbackResponse> => {
-  
-  return http<studySessionControllerRecordFeedbackResponse>(getStudySessionControllerRecordFeedbackUrl(id),
-  {      
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      sessionFeedbackDto,)
-  }
-);}
-
-
+export const studySessionControllerRecordFeedback = async (
+  id: string,
+  sessionFeedbackDto: SessionFeedbackDto,
+  options?: RequestInit,
+): Promise<studySessionControllerRecordFeedbackResponse> => {
+  return http<studySessionControllerRecordFeedbackResponse>(
+    getStudySessionControllerRecordFeedbackUrl(id),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(sessionFeedbackDto),
+    },
+  );
+};
 
 export type mockExamControllerCreateResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type mockExamControllerCreateResponseSuccess = (mockExamControllerCreateResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type mockExamControllerCreateResponse = (mockExamControllerCreateResponseSuccess)
+export type mockExamControllerCreateResponseSuccess =
+  mockExamControllerCreateResponse201 & {
+    headers: Headers;
+  };
+export type mockExamControllerCreateResponse =
+  mockExamControllerCreateResponseSuccess;
 
 export const getMockExamControllerCreateUrl = () => {
+  return `/v1/mock-exams`;
+};
 
-
-  
-
-  return `/v1/mock-exams`
-}
-
-export const mockExamControllerCreate = async (createMockExamDto: CreateMockExamDto, options?: RequestInit): Promise<mockExamControllerCreateResponse> => {
-  
-  return http<mockExamControllerCreateResponse>(getMockExamControllerCreateUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createMockExamDto,)
-  }
-);}
-
-
+export const mockExamControllerCreate = async (
+  createMockExamDto: CreateMockExamDto,
+  options?: RequestInit,
+): Promise<mockExamControllerCreateResponse> => {
+  return http<mockExamControllerCreateResponse>(
+    getMockExamControllerCreateUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(createMockExamDto),
+    },
+  );
+};
 
 export type mockExamControllerListResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type mockExamControllerListResponseSuccess = (mockExamControllerListResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type mockExamControllerListResponse = (mockExamControllerListResponseSuccess)
+export type mockExamControllerListResponseSuccess =
+  mockExamControllerListResponse200 & {
+    headers: Headers;
+  };
+export type mockExamControllerListResponse =
+  mockExamControllerListResponseSuccess;
 
-export const getMockExamControllerListUrl = (params?: MockExamControllerListParams,) => {
+export const getMockExamControllerListUrl = (
+  params?: MockExamControllerListParams,
+) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/v1/mock-exams?${stringifiedParams}` : `/v1/mock-exams`
-}
+  return stringifiedParams.length > 0
+    ? `/v1/mock-exams?${stringifiedParams}`
+    : `/v1/mock-exams`;
+};
 
-export const mockExamControllerList = async (params?: MockExamControllerListParams, options?: RequestInit): Promise<mockExamControllerListResponse> => {
-  
-  return http<mockExamControllerListResponse>(getMockExamControllerListUrl(params),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const mockExamControllerList = async (
+  params?: MockExamControllerListParams,
+  options?: RequestInit,
+): Promise<mockExamControllerListResponse> => {
+  return http<mockExamControllerListResponse>(
+    getMockExamControllerListUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type mockExamControllerGetByIdResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type mockExamControllerGetByIdResponseSuccess = (mockExamControllerGetByIdResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type mockExamControllerGetByIdResponse = (mockExamControllerGetByIdResponseSuccess)
+export type mockExamControllerGetByIdResponseSuccess =
+  mockExamControllerGetByIdResponse200 & {
+    headers: Headers;
+  };
+export type mockExamControllerGetByIdResponse =
+  mockExamControllerGetByIdResponseSuccess;
 
-export const getMockExamControllerGetByIdUrl = (id: string,) => {
+export const getMockExamControllerGetByIdUrl = (id: string) => {
+  return `/v1/mock-exams/${id}`;
+};
 
-
-  
-
-  return `/v1/mock-exams/${id}`
-}
-
-export const mockExamControllerGetById = async (id: string, options?: RequestInit): Promise<mockExamControllerGetByIdResponse> => {
-  
-  return http<mockExamControllerGetByIdResponse>(getMockExamControllerGetByIdUrl(id),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const mockExamControllerGetById = async (
+  id: string,
+  options?: RequestInit,
+): Promise<mockExamControllerGetByIdResponse> => {
+  return http<mockExamControllerGetByIdResponse>(
+    getMockExamControllerGetByIdUrl(id),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type mockExamControllerUpdateResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type mockExamControllerUpdateResponseSuccess = (mockExamControllerUpdateResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type mockExamControllerUpdateResponse = (mockExamControllerUpdateResponseSuccess)
+export type mockExamControllerUpdateResponseSuccess =
+  mockExamControllerUpdateResponse200 & {
+    headers: Headers;
+  };
+export type mockExamControllerUpdateResponse =
+  mockExamControllerUpdateResponseSuccess;
 
-export const getMockExamControllerUpdateUrl = (id: string,) => {
+export const getMockExamControllerUpdateUrl = (id: string) => {
+  return `/v1/mock-exams/${id}`;
+};
 
-
-  
-
-  return `/v1/mock-exams/${id}`
-}
-
-export const mockExamControllerUpdate = async (id: string,
-    updateMockExamDto: UpdateMockExamDto, options?: RequestInit): Promise<mockExamControllerUpdateResponse> => {
-  
-  return http<mockExamControllerUpdateResponse>(getMockExamControllerUpdateUrl(id),
-  {      
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateMockExamDto,)
-  }
-);}
-
-
+export const mockExamControllerUpdate = async (
+  id: string,
+  updateMockExamDto: UpdateMockExamDto,
+  options?: RequestInit,
+): Promise<mockExamControllerUpdateResponse> => {
+  return http<mockExamControllerUpdateResponse>(
+    getMockExamControllerUpdateUrl(id),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateMockExamDto),
+    },
+  );
+};
 
 export type mockExamControllerRemoveResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type mockExamControllerRemoveResponseSuccess = (mockExamControllerRemoveResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type mockExamControllerRemoveResponse = (mockExamControllerRemoveResponseSuccess)
+export type mockExamControllerRemoveResponseSuccess =
+  mockExamControllerRemoveResponse204 & {
+    headers: Headers;
+  };
+export type mockExamControllerRemoveResponse =
+  mockExamControllerRemoveResponseSuccess;
 
-export const getMockExamControllerRemoveUrl = (id: string,) => {
+export const getMockExamControllerRemoveUrl = (id: string) => {
+  return `/v1/mock-exams/${id}`;
+};
 
-
-  
-
-  return `/v1/mock-exams/${id}`
-}
-
-export const mockExamControllerRemove = async (id: string, options?: RequestInit): Promise<mockExamControllerRemoveResponse> => {
-  
-  return http<mockExamControllerRemoveResponse>(getMockExamControllerRemoveUrl(id),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const mockExamControllerRemove = async (
+  id: string,
+  options?: RequestInit,
+): Promise<mockExamControllerRemoveResponse> => {
+  return http<mockExamControllerRemoveResponse>(
+    getMockExamControllerRemoveUrl(id),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type adminUsersControllerSearchUsersResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminUsersControllerSearchUsersResponseSuccess = (adminUsersControllerSearchUsersResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminUsersControllerSearchUsersResponse = (adminUsersControllerSearchUsersResponseSuccess)
+export type adminUsersControllerSearchUsersResponseSuccess =
+  adminUsersControllerSearchUsersResponse200 & {
+    headers: Headers;
+  };
+export type adminUsersControllerSearchUsersResponse =
+  adminUsersControllerSearchUsersResponseSuccess;
 
 export const getAdminUsersControllerSearchUsersUrl = () => {
+  return `/v1/admin/users`;
+};
 
-
-  
-
-  return `/v1/admin/users`
-}
-
-export const adminUsersControllerSearchUsers = async ( options?: RequestInit): Promise<adminUsersControllerSearchUsersResponse> => {
-  
-  return http<adminUsersControllerSearchUsersResponse>(getAdminUsersControllerSearchUsersUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const adminUsersControllerSearchUsers = async (
+  options?: RequestInit,
+): Promise<adminUsersControllerSearchUsersResponse> => {
+  return http<adminUsersControllerSearchUsersResponse>(
+    getAdminUsersControllerSearchUsersUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type adminUsersControllerGetUserResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminUsersControllerGetUserResponseSuccess = (adminUsersControllerGetUserResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminUsersControllerGetUserResponse = (adminUsersControllerGetUserResponseSuccess)
+export type adminUsersControllerGetUserResponseSuccess =
+  adminUsersControllerGetUserResponse200 & {
+    headers: Headers;
+  };
+export type adminUsersControllerGetUserResponse =
+  adminUsersControllerGetUserResponseSuccess;
 
-export const getAdminUsersControllerGetUserUrl = (userId: string,) => {
+export const getAdminUsersControllerGetUserUrl = (userId: string) => {
+  return `/v1/admin/users/${userId}`;
+};
 
-
-  
-
-  return `/v1/admin/users/${userId}`
-}
-
-export const adminUsersControllerGetUser = async (userId: string, options?: RequestInit): Promise<adminUsersControllerGetUserResponse> => {
-  
-  return http<adminUsersControllerGetUserResponse>(getAdminUsersControllerGetUserUrl(userId),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const adminUsersControllerGetUser = async (
+  userId: string,
+  options?: RequestInit,
+): Promise<adminUsersControllerGetUserResponse> => {
+  return http<adminUsersControllerGetUserResponse>(
+    getAdminUsersControllerGetUserUrl(userId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type adminUsersControllerSetStatusResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminUsersControllerSetStatusResponseSuccess = (adminUsersControllerSetStatusResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminUsersControllerSetStatusResponse = (adminUsersControllerSetStatusResponseSuccess)
+export type adminUsersControllerSetStatusResponseSuccess =
+  adminUsersControllerSetStatusResponse200 & {
+    headers: Headers;
+  };
+export type adminUsersControllerSetStatusResponse =
+  adminUsersControllerSetStatusResponseSuccess;
 
-export const getAdminUsersControllerSetStatusUrl = (userId: string,) => {
+export const getAdminUsersControllerSetStatusUrl = (userId: string) => {
+  return `/v1/admin/users/${userId}/status`;
+};
 
-
-  
-
-  return `/v1/admin/users/${userId}/status`
-}
-
-export const adminUsersControllerSetStatus = async (userId: string,
-    updateUserStatusDto: UpdateUserStatusDto, options?: RequestInit): Promise<adminUsersControllerSetStatusResponse> => {
-  
-  return http<adminUsersControllerSetStatusResponse>(getAdminUsersControllerSetStatusUrl(userId),
-  {      
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateUserStatusDto,)
-  }
-);}
-
-
+export const adminUsersControllerSetStatus = async (
+  userId: string,
+  updateUserStatusDto: UpdateUserStatusDto,
+  options?: RequestInit,
+): Promise<adminUsersControllerSetStatusResponse> => {
+  return http<adminUsersControllerSetStatusResponse>(
+    getAdminUsersControllerSetStatusUrl(userId),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateUserStatusDto),
+    },
+  );
+};
 
 export type adminUsersControllerExportUserResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminUsersControllerExportUserResponseSuccess = (adminUsersControllerExportUserResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminUsersControllerExportUserResponse = (adminUsersControllerExportUserResponseSuccess)
+export type adminUsersControllerExportUserResponseSuccess =
+  adminUsersControllerExportUserResponse200 & {
+    headers: Headers;
+  };
+export type adminUsersControllerExportUserResponse =
+  adminUsersControllerExportUserResponseSuccess;
 
-export const getAdminUsersControllerExportUserUrl = (userId: string,) => {
+export const getAdminUsersControllerExportUserUrl = (userId: string) => {
+  return `/v1/admin/users/${userId}/export`;
+};
 
-
-  
-
-  return `/v1/admin/users/${userId}/export`
-}
-
-export const adminUsersControllerExportUser = async (userId: string, options?: RequestInit): Promise<adminUsersControllerExportUserResponse> => {
-  
-  return http<adminUsersControllerExportUserResponse>(getAdminUsersControllerExportUserUrl(userId),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const adminUsersControllerExportUser = async (
+  userId: string,
+  options?: RequestInit,
+): Promise<adminUsersControllerExportUserResponse> => {
+  return http<adminUsersControllerExportUserResponse>(
+    getAdminUsersControllerExportUserUrl(userId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type adminUsersControllerAnonymizeUserResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type adminUsersControllerAnonymizeUserResponseSuccess = (adminUsersControllerAnonymizeUserResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type adminUsersControllerAnonymizeUserResponse = (adminUsersControllerAnonymizeUserResponseSuccess)
+export type adminUsersControllerAnonymizeUserResponseSuccess =
+  adminUsersControllerAnonymizeUserResponse201 & {
+    headers: Headers;
+  };
+export type adminUsersControllerAnonymizeUserResponse =
+  adminUsersControllerAnonymizeUserResponseSuccess;
 
-export const getAdminUsersControllerAnonymizeUserUrl = (userId: string,) => {
+export const getAdminUsersControllerAnonymizeUserUrl = (userId: string) => {
+  return `/v1/admin/users/${userId}/anonymize`;
+};
 
-
-  
-
-  return `/v1/admin/users/${userId}/anonymize`
-}
-
-export const adminUsersControllerAnonymizeUser = async (userId: string, options?: RequestInit): Promise<adminUsersControllerAnonymizeUserResponse> => {
-  
-  return http<adminUsersControllerAnonymizeUserResponse>(getAdminUsersControllerAnonymizeUserUrl(userId),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const adminUsersControllerAnonymizeUser = async (
+  userId: string,
+  options?: RequestInit,
+): Promise<adminUsersControllerAnonymizeUserResponse> => {
+  return http<adminUsersControllerAnonymizeUserResponse>(
+    getAdminUsersControllerAnonymizeUserUrl(userId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type adminUsersControllerGrantStaffResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type adminUsersControllerGrantStaffResponseSuccess = (adminUsersControllerGrantStaffResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type adminUsersControllerGrantStaffResponse = (adminUsersControllerGrantStaffResponseSuccess)
+export type adminUsersControllerGrantStaffResponseSuccess =
+  adminUsersControllerGrantStaffResponse201 & {
+    headers: Headers;
+  };
+export type adminUsersControllerGrantStaffResponse =
+  adminUsersControllerGrantStaffResponseSuccess;
 
-export const getAdminUsersControllerGrantStaffUrl = (userId: string,) => {
+export const getAdminUsersControllerGrantStaffUrl = (userId: string) => {
+  return `/v1/admin/users/${userId}/roles/staff`;
+};
 
-
-  
-
-  return `/v1/admin/users/${userId}/roles/staff`
-}
-
-export const adminUsersControllerGrantStaff = async (userId: string, options?: RequestInit): Promise<adminUsersControllerGrantStaffResponse> => {
-  
-  return http<adminUsersControllerGrantStaffResponse>(getAdminUsersControllerGrantStaffUrl(userId),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const adminUsersControllerGrantStaff = async (
+  userId: string,
+  options?: RequestInit,
+): Promise<adminUsersControllerGrantStaffResponse> => {
+  return http<adminUsersControllerGrantStaffResponse>(
+    getAdminUsersControllerGrantStaffUrl(userId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type adminUsersControllerRevokeStaffResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminUsersControllerRevokeStaffResponseSuccess = (adminUsersControllerRevokeStaffResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminUsersControllerRevokeStaffResponse = (adminUsersControllerRevokeStaffResponseSuccess)
+export type adminUsersControllerRevokeStaffResponseSuccess =
+  adminUsersControllerRevokeStaffResponse200 & {
+    headers: Headers;
+  };
+export type adminUsersControllerRevokeStaffResponse =
+  adminUsersControllerRevokeStaffResponseSuccess;
 
-export const getAdminUsersControllerRevokeStaffUrl = (userId: string,) => {
+export const getAdminUsersControllerRevokeStaffUrl = (userId: string) => {
+  return `/v1/admin/users/${userId}/roles/staff`;
+};
 
-
-  
-
-  return `/v1/admin/users/${userId}/roles/staff`
-}
-
-export const adminUsersControllerRevokeStaff = async (userId: string, options?: RequestInit): Promise<adminUsersControllerRevokeStaffResponse> => {
-  
-  return http<adminUsersControllerRevokeStaffResponse>(getAdminUsersControllerRevokeStaffUrl(userId),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const adminUsersControllerRevokeStaff = async (
+  userId: string,
+  options?: RequestInit,
+): Promise<adminUsersControllerRevokeStaffResponse> => {
+  return http<adminUsersControllerRevokeStaffResponse>(
+    getAdminUsersControllerRevokeStaffUrl(userId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type adminUsersControllerGrantRoleResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type adminUsersControllerGrantRoleResponseSuccess = (adminUsersControllerGrantRoleResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type adminUsersControllerGrantRoleResponse = (adminUsersControllerGrantRoleResponseSuccess)
+export type adminUsersControllerGrantRoleResponseSuccess =
+  adminUsersControllerGrantRoleResponse201 & {
+    headers: Headers;
+  };
+export type adminUsersControllerGrantRoleResponse =
+  adminUsersControllerGrantRoleResponseSuccess;
 
-export const getAdminUsersControllerGrantRoleUrl = (userId: string,
-    role: string,) => {
+export const getAdminUsersControllerGrantRoleUrl = (
+  userId: string,
+  role: string,
+) => {
+  return `/v1/admin/users/${userId}/roles/${role}`;
+};
 
-
-  
-
-  return `/v1/admin/users/${userId}/roles/${role}`
-}
-
-export const adminUsersControllerGrantRole = async (userId: string,
-    role: string, options?: RequestInit): Promise<adminUsersControllerGrantRoleResponse> => {
-  
-  return http<adminUsersControllerGrantRoleResponse>(getAdminUsersControllerGrantRoleUrl(userId,role),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const adminUsersControllerGrantRole = async (
+  userId: string,
+  role: string,
+  options?: RequestInit,
+): Promise<adminUsersControllerGrantRoleResponse> => {
+  return http<adminUsersControllerGrantRoleResponse>(
+    getAdminUsersControllerGrantRoleUrl(userId, role),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type adminUsersControllerRevokeRoleResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminUsersControllerRevokeRoleResponseSuccess = (adminUsersControllerRevokeRoleResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminUsersControllerRevokeRoleResponse = (adminUsersControllerRevokeRoleResponseSuccess)
+export type adminUsersControllerRevokeRoleResponseSuccess =
+  adminUsersControllerRevokeRoleResponse200 & {
+    headers: Headers;
+  };
+export type adminUsersControllerRevokeRoleResponse =
+  adminUsersControllerRevokeRoleResponseSuccess;
 
-export const getAdminUsersControllerRevokeRoleUrl = (userId: string,
-    role: string,) => {
+export const getAdminUsersControllerRevokeRoleUrl = (
+  userId: string,
+  role: string,
+) => {
+  return `/v1/admin/users/${userId}/roles/${role}`;
+};
 
-
-  
-
-  return `/v1/admin/users/${userId}/roles/${role}`
-}
-
-export const adminUsersControllerRevokeRole = async (userId: string,
-    role: string, options?: RequestInit): Promise<adminUsersControllerRevokeRoleResponse> => {
-  
-  return http<adminUsersControllerRevokeRoleResponse>(getAdminUsersControllerRevokeRoleUrl(userId,role),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const adminUsersControllerRevokeRole = async (
+  userId: string,
+  role: string,
+  options?: RequestInit,
+): Promise<adminUsersControllerRevokeRoleResponse> => {
+  return http<adminUsersControllerRevokeRoleResponse>(
+    getAdminUsersControllerRevokeRoleUrl(userId, role),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type adminUsersControllerListAuditLogResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminUsersControllerListAuditLogResponseSuccess = (adminUsersControllerListAuditLogResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminUsersControllerListAuditLogResponse = (adminUsersControllerListAuditLogResponseSuccess)
+export type adminUsersControllerListAuditLogResponseSuccess =
+  adminUsersControllerListAuditLogResponse200 & {
+    headers: Headers;
+  };
+export type adminUsersControllerListAuditLogResponse =
+  adminUsersControllerListAuditLogResponseSuccess;
 
 export const getAdminUsersControllerListAuditLogUrl = () => {
+  return `/v1/admin/audit-log`;
+};
 
-
-  
-
-  return `/v1/admin/audit-log`
-}
-
-export const adminUsersControllerListAuditLog = async ( options?: RequestInit): Promise<adminUsersControllerListAuditLogResponse> => {
-  
-  return http<adminUsersControllerListAuditLogResponse>(getAdminUsersControllerListAuditLogUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const adminUsersControllerListAuditLog = async (
+  options?: RequestInit,
+): Promise<adminUsersControllerListAuditLogResponse> => {
+  return http<adminUsersControllerListAuditLogResponse>(
+    getAdminUsersControllerListAuditLogUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type adminConfigControllerListResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminConfigControllerListResponseSuccess = (adminConfigControllerListResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminConfigControllerListResponse = (adminConfigControllerListResponseSuccess)
+export type adminConfigControllerListResponseSuccess =
+  adminConfigControllerListResponse200 & {
+    headers: Headers;
+  };
+export type adminConfigControllerListResponse =
+  adminConfigControllerListResponseSuccess;
 
 export const getAdminConfigControllerListUrl = () => {
+  return `/v1/admin/config`;
+};
 
-
-  
-
-  return `/v1/admin/config`
-}
-
-export const adminConfigControllerList = async ( options?: RequestInit): Promise<adminConfigControllerListResponse> => {
-  
-  return http<adminConfigControllerListResponse>(getAdminConfigControllerListUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const adminConfigControllerList = async (
+  options?: RequestInit,
+): Promise<adminConfigControllerListResponse> => {
+  return http<adminConfigControllerListResponse>(
+    getAdminConfigControllerListUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type adminConfigControllerUpdateResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminConfigControllerUpdateResponseSuccess = (adminConfigControllerUpdateResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminConfigControllerUpdateResponse = (adminConfigControllerUpdateResponseSuccess)
+export type adminConfigControllerUpdateResponseSuccess =
+  adminConfigControllerUpdateResponse200 & {
+    headers: Headers;
+  };
+export type adminConfigControllerUpdateResponse =
+  adminConfigControllerUpdateResponseSuccess;
 
-export const getAdminConfigControllerUpdateUrl = (key: string,) => {
+export const getAdminConfigControllerUpdateUrl = (key: string) => {
+  return `/v1/admin/config/${key}`;
+};
 
-
-  
-
-  return `/v1/admin/config/${key}`
-}
-
-export const adminConfigControllerUpdate = async (key: string,
-    updateConfigDto: UpdateConfigDto, options?: RequestInit): Promise<adminConfigControllerUpdateResponse> => {
-  
-  return http<adminConfigControllerUpdateResponse>(getAdminConfigControllerUpdateUrl(key),
-  {      
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateConfigDto,)
-  }
-);}
-
-
+export const adminConfigControllerUpdate = async (
+  key: string,
+  updateConfigDto: UpdateConfigDto,
+  options?: RequestInit,
+): Promise<adminConfigControllerUpdateResponse> => {
+  return http<adminConfigControllerUpdateResponse>(
+    getAdminConfigControllerUpdateUrl(key),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateConfigDto),
+    },
+  );
+};
 
 export type adminEconomyControllerOverviewResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminEconomyControllerOverviewResponseSuccess = (adminEconomyControllerOverviewResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminEconomyControllerOverviewResponse = (adminEconomyControllerOverviewResponseSuccess)
+export type adminEconomyControllerOverviewResponseSuccess =
+  adminEconomyControllerOverviewResponse200 & {
+    headers: Headers;
+  };
+export type adminEconomyControllerOverviewResponse =
+  adminEconomyControllerOverviewResponseSuccess;
 
-export const getAdminEconomyControllerOverviewUrl = (userId: string,) => {
+export const getAdminEconomyControllerOverviewUrl = (userId: string) => {
+  return `/v1/admin/users/${userId}/economy`;
+};
 
-
-  
-
-  return `/v1/admin/users/${userId}/economy`
-}
-
-export const adminEconomyControllerOverview = async (userId: string, options?: RequestInit): Promise<adminEconomyControllerOverviewResponse> => {
-  
-  return http<adminEconomyControllerOverviewResponse>(getAdminEconomyControllerOverviewUrl(userId),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const adminEconomyControllerOverview = async (
+  userId: string,
+  options?: RequestInit,
+): Promise<adminEconomyControllerOverviewResponse> => {
+  return http<adminEconomyControllerOverviewResponse>(
+    getAdminEconomyControllerOverviewUrl(userId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type adminEconomyControllerAdjustResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type adminEconomyControllerAdjustResponseSuccess = (adminEconomyControllerAdjustResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type adminEconomyControllerAdjustResponse = (adminEconomyControllerAdjustResponseSuccess)
+export type adminEconomyControllerAdjustResponseSuccess =
+  adminEconomyControllerAdjustResponse201 & {
+    headers: Headers;
+  };
+export type adminEconomyControllerAdjustResponse =
+  adminEconomyControllerAdjustResponseSuccess;
 
-export const getAdminEconomyControllerAdjustUrl = (userId: string,) => {
+export const getAdminEconomyControllerAdjustUrl = (userId: string) => {
+  return `/v1/admin/users/${userId}/economy/adjust`;
+};
 
-
-  
-
-  return `/v1/admin/users/${userId}/economy/adjust`
-}
-
-export const adminEconomyControllerAdjust = async (userId: string,
-    adjustEconomyDto: AdjustEconomyDto, options?: RequestInit): Promise<adminEconomyControllerAdjustResponse> => {
-  
-  return http<adminEconomyControllerAdjustResponse>(getAdminEconomyControllerAdjustUrl(userId),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      adjustEconomyDto,)
-  }
-);}
-
-
+export const adminEconomyControllerAdjust = async (
+  userId: string,
+  adjustEconomyDto: AdjustEconomyDto,
+  options?: RequestInit,
+): Promise<adminEconomyControllerAdjustResponse> => {
+  return http<adminEconomyControllerAdjustResponse>(
+    getAdminEconomyControllerAdjustUrl(userId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(adjustEconomyDto),
+    },
+  );
+};
 
 export type adminContentControllerListResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminContentControllerListResponseSuccess = (adminContentControllerListResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminContentControllerListResponse = (adminContentControllerListResponseSuccess)
+export type adminContentControllerListResponseSuccess =
+  adminContentControllerListResponse200 & {
+    headers: Headers;
+  };
+export type adminContentControllerListResponse =
+  adminContentControllerListResponseSuccess;
 
 export const getAdminContentControllerListUrl = () => {
+  return `/v1/admin/content/articles`;
+};
 
-
-  
-
-  return `/v1/admin/content/articles`
-}
-
-export const adminContentControllerList = async ( options?: RequestInit): Promise<adminContentControllerListResponse> => {
-  
-  return http<adminContentControllerListResponse>(getAdminContentControllerListUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const adminContentControllerList = async (
+  options?: RequestInit,
+): Promise<adminContentControllerListResponse> => {
+  return http<adminContentControllerListResponse>(
+    getAdminContentControllerListUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type adminContentControllerUpsertResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type adminContentControllerUpsertResponseSuccess = (adminContentControllerUpsertResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type adminContentControllerUpsertResponse = (adminContentControllerUpsertResponseSuccess)
+export type adminContentControllerUpsertResponseSuccess =
+  adminContentControllerUpsertResponse201 & {
+    headers: Headers;
+  };
+export type adminContentControllerUpsertResponse =
+  adminContentControllerUpsertResponseSuccess;
 
 export const getAdminContentControllerUpsertUrl = () => {
+  return `/v1/admin/content/articles`;
+};
 
-
-  
-
-  return `/v1/admin/content/articles`
-}
-
-export const adminContentControllerUpsert = async (upsertArticleDto: UpsertArticleDto, options?: RequestInit): Promise<adminContentControllerUpsertResponse> => {
-  
-  return http<adminContentControllerUpsertResponse>(getAdminContentControllerUpsertUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      upsertArticleDto,)
-  }
-);}
-
-
+export const adminContentControllerUpsert = async (
+  upsertArticleDto: UpsertArticleDto,
+  options?: RequestInit,
+): Promise<adminContentControllerUpsertResponse> => {
+  return http<adminContentControllerUpsertResponse>(
+    getAdminContentControllerUpsertUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(upsertArticleDto),
+    },
+  );
+};
 
 export type adminContentControllerGetResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminContentControllerGetResponseSuccess = (adminContentControllerGetResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminContentControllerGetResponse = (adminContentControllerGetResponseSuccess)
+export type adminContentControllerGetResponseSuccess =
+  adminContentControllerGetResponse200 & {
+    headers: Headers;
+  };
+export type adminContentControllerGetResponse =
+  adminContentControllerGetResponseSuccess;
 
-export const getAdminContentControllerGetUrl = (slug: string,) => {
+export const getAdminContentControllerGetUrl = (slug: string) => {
+  return `/v1/admin/content/articles/${slug}`;
+};
 
-
-  
-
-  return `/v1/admin/content/articles/${slug}`
-}
-
-export const adminContentControllerGet = async (slug: string, options?: RequestInit): Promise<adminContentControllerGetResponse> => {
-  
-  return http<adminContentControllerGetResponse>(getAdminContentControllerGetUrl(slug),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const adminContentControllerGet = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<adminContentControllerGetResponse> => {
+  return http<adminContentControllerGetResponse>(
+    getAdminContentControllerGetUrl(slug),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type adminContentControllerCreateImageUploadUrlResponse201 = {
-  data: void
-  status: 201
-}
-
-export type adminContentControllerCreateImageUploadUrlResponseSuccess = (adminContentControllerCreateImageUploadUrlResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type adminContentControllerCreateImageUploadUrlResponse = (adminContentControllerCreateImageUploadUrlResponseSuccess)
+export type adminContentControllerCreateImageUploadUrlResponseSuccess =
+  adminContentControllerCreateImageUploadUrlResponse201 & {
+    headers: Headers;
+  };
+export type adminContentControllerCreateImageUploadUrlResponse =
+  adminContentControllerCreateImageUploadUrlResponseSuccess;
 
 export const getAdminContentControllerCreateImageUploadUrlUrl = () => {
+  return `/v1/admin/content/articles/images/upload-url`;
+};
 
-  return `/v1/admin/content/articles/images/upload-url`
-}
-
-export const adminContentControllerCreateImageUploadUrl = async (articleImageUploadDto: ArticleImageUploadDto, options?: RequestInit): Promise<adminContentControllerCreateImageUploadUrlResponse> => {
-
-  return http<adminContentControllerCreateImageUploadUrlResponse>(getAdminContentControllerCreateImageUploadUrlUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      articleImageUploadDto,)
-  }
-);}
-
-
+export const adminContentControllerCreateImageUploadUrl = async (
+  articleImageUploadDto: ArticleImageUploadDto,
+  options?: RequestInit,
+): Promise<adminContentControllerCreateImageUploadUrlResponse> => {
+  return http<adminContentControllerCreateImageUploadUrlResponse>(
+    getAdminContentControllerCreateImageUploadUrlUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(articleImageUploadDto),
+    },
+  );
+};
 
 export type adminContentControllerPublishResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type adminContentControllerPublishResponseSuccess = (adminContentControllerPublishResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type adminContentControllerPublishResponse = (adminContentControllerPublishResponseSuccess)
+export type adminContentControllerPublishResponseSuccess =
+  adminContentControllerPublishResponse201 & {
+    headers: Headers;
+  };
+export type adminContentControllerPublishResponse =
+  adminContentControllerPublishResponseSuccess;
 
-export const getAdminContentControllerPublishUrl = (slug: string,) => {
+export const getAdminContentControllerPublishUrl = (slug: string) => {
+  return `/v1/admin/content/articles/${slug}/publish`;
+};
 
-
-  
-
-  return `/v1/admin/content/articles/${slug}/publish`
-}
-
-export const adminContentControllerPublish = async (slug: string, options?: RequestInit): Promise<adminContentControllerPublishResponse> => {
-  
-  return http<adminContentControllerPublishResponse>(getAdminContentControllerPublishUrl(slug),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const adminContentControllerPublish = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<adminContentControllerPublishResponse> => {
+  return http<adminContentControllerPublishResponse>(
+    getAdminContentControllerPublishUrl(slug),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type adminContentControllerUnpublishResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type adminContentControllerUnpublishResponseSuccess = (adminContentControllerUnpublishResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type adminContentControllerUnpublishResponse = (adminContentControllerUnpublishResponseSuccess)
+export type adminContentControllerUnpublishResponseSuccess =
+  adminContentControllerUnpublishResponse201 & {
+    headers: Headers;
+  };
+export type adminContentControllerUnpublishResponse =
+  adminContentControllerUnpublishResponseSuccess;
 
-export const getAdminContentControllerUnpublishUrl = (slug: string,) => {
+export const getAdminContentControllerUnpublishUrl = (slug: string) => {
+  return `/v1/admin/content/articles/${slug}/unpublish`;
+};
 
-
-  
-
-  return `/v1/admin/content/articles/${slug}/unpublish`
-}
-
-export const adminContentControllerUnpublish = async (slug: string, options?: RequestInit): Promise<adminContentControllerUnpublishResponse> => {
-  
-  return http<adminContentControllerUnpublishResponse>(getAdminContentControllerUnpublishUrl(slug),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const adminContentControllerUnpublish = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<adminContentControllerUnpublishResponse> => {
+  return http<adminContentControllerUnpublishResponse>(
+    getAdminContentControllerUnpublishUrl(slug),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type adminExamCalendarControllerListResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminExamCalendarControllerListResponseSuccess = (adminExamCalendarControllerListResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminExamCalendarControllerListResponse = (adminExamCalendarControllerListResponseSuccess)
+export type adminExamCalendarControllerListResponseSuccess =
+  adminExamCalendarControllerListResponse200 & {
+    headers: Headers;
+  };
+export type adminExamCalendarControllerListResponse =
+  adminExamCalendarControllerListResponseSuccess;
 
 export const getAdminExamCalendarControllerListUrl = () => {
+  return `/v1/admin/content/exams`;
+};
 
-
-  
-
-  return `/v1/admin/content/exams`
-}
-
-export const adminExamCalendarControllerList = async ( options?: RequestInit): Promise<adminExamCalendarControllerListResponse> => {
-  
-  return http<adminExamCalendarControllerListResponse>(getAdminExamCalendarControllerListUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const adminExamCalendarControllerList = async (
+  options?: RequestInit,
+): Promise<adminExamCalendarControllerListResponse> => {
+  return http<adminExamCalendarControllerListResponse>(
+    getAdminExamCalendarControllerListUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type adminExamCalendarControllerUpsertResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type adminExamCalendarControllerUpsertResponseSuccess = (adminExamCalendarControllerUpsertResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type adminExamCalendarControllerUpsertResponse = (adminExamCalendarControllerUpsertResponseSuccess)
+export type adminExamCalendarControllerUpsertResponseSuccess =
+  adminExamCalendarControllerUpsertResponse201 & {
+    headers: Headers;
+  };
+export type adminExamCalendarControllerUpsertResponse =
+  adminExamCalendarControllerUpsertResponseSuccess;
 
 export const getAdminExamCalendarControllerUpsertUrl = () => {
+  return `/v1/admin/content/exams`;
+};
 
-
-  
-
-  return `/v1/admin/content/exams`
-}
-
-export const adminExamCalendarControllerUpsert = async (upsertExamDto: UpsertExamDto, options?: RequestInit): Promise<adminExamCalendarControllerUpsertResponse> => {
-  
-  return http<adminExamCalendarControllerUpsertResponse>(getAdminExamCalendarControllerUpsertUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      upsertExamDto,)
-  }
-);}
-
-
+export const adminExamCalendarControllerUpsert = async (
+  upsertExamDto: UpsertExamDto,
+  options?: RequestInit,
+): Promise<adminExamCalendarControllerUpsertResponse> => {
+  return http<adminExamCalendarControllerUpsertResponse>(
+    getAdminExamCalendarControllerUpsertUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(upsertExamDto),
+    },
+  );
+};
 
 export type adminExamCalendarControllerGetResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminExamCalendarControllerGetResponseSuccess = (adminExamCalendarControllerGetResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminExamCalendarControllerGetResponse = (adminExamCalendarControllerGetResponseSuccess)
+export type adminExamCalendarControllerGetResponseSuccess =
+  adminExamCalendarControllerGetResponse200 & {
+    headers: Headers;
+  };
+export type adminExamCalendarControllerGetResponse =
+  adminExamCalendarControllerGetResponseSuccess;
 
-export const getAdminExamCalendarControllerGetUrl = (slug: string,) => {
+export const getAdminExamCalendarControllerGetUrl = (slug: string) => {
+  return `/v1/admin/content/exams/${slug}`;
+};
 
-
-  
-
-  return `/v1/admin/content/exams/${slug}`
-}
-
-export const adminExamCalendarControllerGet = async (slug: string, options?: RequestInit): Promise<adminExamCalendarControllerGetResponse> => {
-  
-  return http<adminExamCalendarControllerGetResponse>(getAdminExamCalendarControllerGetUrl(slug),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const adminExamCalendarControllerGet = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<adminExamCalendarControllerGetResponse> => {
+  return http<adminExamCalendarControllerGetResponse>(
+    getAdminExamCalendarControllerGetUrl(slug),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type adminExamCalendarControllerUpsertEventResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type adminExamCalendarControllerUpsertEventResponseSuccess = (adminExamCalendarControllerUpsertEventResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type adminExamCalendarControllerUpsertEventResponse = (adminExamCalendarControllerUpsertEventResponseSuccess)
+export type adminExamCalendarControllerUpsertEventResponseSuccess =
+  adminExamCalendarControllerUpsertEventResponse201 & {
+    headers: Headers;
+  };
+export type adminExamCalendarControllerUpsertEventResponse =
+  adminExamCalendarControllerUpsertEventResponseSuccess;
 
-export const getAdminExamCalendarControllerUpsertEventUrl = (slug: string,) => {
+export const getAdminExamCalendarControllerUpsertEventUrl = (slug: string) => {
+  return `/v1/admin/content/exams/${slug}/events`;
+};
 
-
-  
-
-  return `/v1/admin/content/exams/${slug}/events`
-}
-
-export const adminExamCalendarControllerUpsertEvent = async (slug: string,
-    upsertExamEventDto: UpsertExamEventDto, options?: RequestInit): Promise<adminExamCalendarControllerUpsertEventResponse> => {
-  
-  return http<adminExamCalendarControllerUpsertEventResponse>(getAdminExamCalendarControllerUpsertEventUrl(slug),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      upsertExamEventDto,)
-  }
-);}
-
-
+export const adminExamCalendarControllerUpsertEvent = async (
+  slug: string,
+  upsertExamEventDto: UpsertExamEventDto,
+  options?: RequestInit,
+): Promise<adminExamCalendarControllerUpsertEventResponse> => {
+  return http<adminExamCalendarControllerUpsertEventResponse>(
+    getAdminExamCalendarControllerUpsertEventUrl(slug),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(upsertExamEventDto),
+    },
+  );
+};
 
 export type adminExamCalendarControllerDeleteEventResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type adminExamCalendarControllerDeleteEventResponseSuccess = (adminExamCalendarControllerDeleteEventResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type adminExamCalendarControllerDeleteEventResponse = (adminExamCalendarControllerDeleteEventResponseSuccess)
+export type adminExamCalendarControllerDeleteEventResponseSuccess =
+  adminExamCalendarControllerDeleteEventResponse204 & {
+    headers: Headers;
+  };
+export type adminExamCalendarControllerDeleteEventResponse =
+  adminExamCalendarControllerDeleteEventResponseSuccess;
 
-export const getAdminExamCalendarControllerDeleteEventUrl = (slug: string,
-    type: string,) => {
+export const getAdminExamCalendarControllerDeleteEventUrl = (
+  slug: string,
+  type: string,
+) => {
+  return `/v1/admin/content/exams/${slug}/events/${type}`;
+};
 
-
-  
-
-  return `/v1/admin/content/exams/${slug}/events/${type}`
-}
-
-export const adminExamCalendarControllerDeleteEvent = async (slug: string,
-    type: string, options?: RequestInit): Promise<adminExamCalendarControllerDeleteEventResponse> => {
-  
-  return http<adminExamCalendarControllerDeleteEventResponse>(getAdminExamCalendarControllerDeleteEventUrl(slug,type),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const adminExamCalendarControllerDeleteEvent = async (
+  slug: string,
+  type: string,
+  options?: RequestInit,
+): Promise<adminExamCalendarControllerDeleteEventResponse> => {
+  return http<adminExamCalendarControllerDeleteEventResponse>(
+    getAdminExamCalendarControllerDeleteEventUrl(slug, type),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type adminSubscriptionControllerOverviewResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminSubscriptionControllerOverviewResponseSuccess = (adminSubscriptionControllerOverviewResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminSubscriptionControllerOverviewResponse = (adminSubscriptionControllerOverviewResponseSuccess)
+export type adminSubscriptionControllerOverviewResponseSuccess =
+  adminSubscriptionControllerOverviewResponse200 & {
+    headers: Headers;
+  };
+export type adminSubscriptionControllerOverviewResponse =
+  adminSubscriptionControllerOverviewResponseSuccess;
 
-export const getAdminSubscriptionControllerOverviewUrl = (userId: string,) => {
+export const getAdminSubscriptionControllerOverviewUrl = (userId: string) => {
+  return `/v1/admin/users/${userId}/subscription`;
+};
 
-
-  
-
-  return `/v1/admin/users/${userId}/subscription`
-}
-
-export const adminSubscriptionControllerOverview = async (userId: string, options?: RequestInit): Promise<adminSubscriptionControllerOverviewResponse> => {
-  
-  return http<adminSubscriptionControllerOverviewResponse>(getAdminSubscriptionControllerOverviewUrl(userId),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const adminSubscriptionControllerOverview = async (
+  userId: string,
+  options?: RequestInit,
+): Promise<adminSubscriptionControllerOverviewResponse> => {
+  return http<adminSubscriptionControllerOverviewResponse>(
+    getAdminSubscriptionControllerOverviewUrl(userId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type adminSubscriptionControllerRefundResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type adminSubscriptionControllerRefundResponseSuccess = (adminSubscriptionControllerRefundResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type adminSubscriptionControllerRefundResponse = (adminSubscriptionControllerRefundResponseSuccess)
+export type adminSubscriptionControllerRefundResponseSuccess =
+  adminSubscriptionControllerRefundResponse201 & {
+    headers: Headers;
+  };
+export type adminSubscriptionControllerRefundResponse =
+  adminSubscriptionControllerRefundResponseSuccess;
 
-export const getAdminSubscriptionControllerRefundUrl = (userId: string,) => {
+export const getAdminSubscriptionControllerRefundUrl = (userId: string) => {
+  return `/v1/admin/users/${userId}/subscription/refund`;
+};
 
-
-  
-
-  return `/v1/admin/users/${userId}/subscription/refund`
-}
-
-export const adminSubscriptionControllerRefund = async (userId: string,
-    refundSubscriptionDto: RefundSubscriptionDto, options?: RequestInit): Promise<adminSubscriptionControllerRefundResponse> => {
-  
-  return http<adminSubscriptionControllerRefundResponse>(getAdminSubscriptionControllerRefundUrl(userId),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      refundSubscriptionDto,)
-  }
-);}
-
-
+export const adminSubscriptionControllerRefund = async (
+  userId: string,
+  refundSubscriptionDto: RefundSubscriptionDto,
+  options?: RequestInit,
+): Promise<adminSubscriptionControllerRefundResponse> => {
+  return http<adminSubscriptionControllerRefundResponse>(
+    getAdminSubscriptionControllerRefundUrl(userId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(refundSubscriptionDto),
+    },
+  );
+};
 
 export type adminSubscriptionControllerCancelResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminSubscriptionControllerCancelResponseSuccess = (adminSubscriptionControllerCancelResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminSubscriptionControllerCancelResponse = (adminSubscriptionControllerCancelResponseSuccess)
+export type adminSubscriptionControllerCancelResponseSuccess =
+  adminSubscriptionControllerCancelResponse200 & {
+    headers: Headers;
+  };
+export type adminSubscriptionControllerCancelResponse =
+  adminSubscriptionControllerCancelResponseSuccess;
 
-export const getAdminSubscriptionControllerCancelUrl = (userId: string,) => {
+export const getAdminSubscriptionControllerCancelUrl = (userId: string) => {
+  return `/v1/admin/users/${userId}/subscription/cancel`;
+};
 
-
-  
-
-  return `/v1/admin/users/${userId}/subscription/cancel`
-}
-
-export const adminSubscriptionControllerCancel = async (userId: string, options?: RequestInit): Promise<adminSubscriptionControllerCancelResponse> => {
-  
-  return http<adminSubscriptionControllerCancelResponse>(getAdminSubscriptionControllerCancelUrl(userId),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const adminSubscriptionControllerCancel = async (
+  userId: string,
+  options?: RequestInit,
+): Promise<adminSubscriptionControllerCancelResponse> => {
+  return http<adminSubscriptionControllerCancelResponse>(
+    getAdminSubscriptionControllerCancelUrl(userId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type adminMetricsControllerOverviewResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminMetricsControllerOverviewResponseSuccess = (adminMetricsControllerOverviewResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminMetricsControllerOverviewResponse = (adminMetricsControllerOverviewResponseSuccess)
+export type adminMetricsControllerOverviewResponseSuccess =
+  adminMetricsControllerOverviewResponse200 & {
+    headers: Headers;
+  };
+export type adminMetricsControllerOverviewResponse =
+  adminMetricsControllerOverviewResponseSuccess;
 
 export const getAdminMetricsControllerOverviewUrl = () => {
+  return `/v1/admin/metrics`;
+};
 
-
-  
-
-  return `/v1/admin/metrics`
-}
-
-export const adminMetricsControllerOverview = async ( options?: RequestInit): Promise<adminMetricsControllerOverviewResponse> => {
-  
-  return http<adminMetricsControllerOverviewResponse>(getAdminMetricsControllerOverviewUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const adminMetricsControllerOverview = async (
+  options?: RequestInit,
+): Promise<adminMetricsControllerOverviewResponse> => {
+  return http<adminMetricsControllerOverviewResponse>(
+    getAdminMetricsControllerOverviewUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type adminMetricsControllerAiCostStatsResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminMetricsControllerAiCostStatsResponseSuccess = (adminMetricsControllerAiCostStatsResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminMetricsControllerAiCostStatsResponse = (adminMetricsControllerAiCostStatsResponseSuccess)
+export type adminMetricsControllerAiCostStatsResponseSuccess =
+  adminMetricsControllerAiCostStatsResponse200 & {
+    headers: Headers;
+  };
+export type adminMetricsControllerAiCostStatsResponse =
+  adminMetricsControllerAiCostStatsResponseSuccess;
 
 export const getAdminMetricsControllerAiCostStatsUrl = () => {
+  return `/v1/admin/metrics/ai`;
+};
 
-
-  
-
-  return `/v1/admin/metrics/ai`
-}
-
-export const adminMetricsControllerAiCostStats = async ( options?: RequestInit): Promise<adminMetricsControllerAiCostStatsResponse> => {
-  
-  return http<adminMetricsControllerAiCostStatsResponse>(getAdminMetricsControllerAiCostStatsUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const adminMetricsControllerAiCostStats = async (
+  options?: RequestInit,
+): Promise<adminMetricsControllerAiCostStatsResponse> => {
+  return http<adminMetricsControllerAiCostStatsResponse>(
+    getAdminMetricsControllerAiCostStatsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type adminMetricsControllerCoachFeedbackStatsResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type adminMetricsControllerCoachFeedbackStatsResponseSuccess = (adminMetricsControllerCoachFeedbackStatsResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type adminMetricsControllerCoachFeedbackStatsResponse = (adminMetricsControllerCoachFeedbackStatsResponseSuccess)
+export type adminMetricsControllerCoachFeedbackStatsResponseSuccess =
+  adminMetricsControllerCoachFeedbackStatsResponse200 & {
+    headers: Headers;
+  };
+export type adminMetricsControllerCoachFeedbackStatsResponse =
+  adminMetricsControllerCoachFeedbackStatsResponseSuccess;
 
 export const getAdminMetricsControllerCoachFeedbackStatsUrl = () => {
+  return `/v1/admin/metrics/coach-feedback`;
+};
 
-
-  
-
-  return `/v1/admin/metrics/coach-feedback`
-}
-
-export const adminMetricsControllerCoachFeedbackStats = async ( options?: RequestInit): Promise<adminMetricsControllerCoachFeedbackStatsResponse> => {
-  
-  return http<adminMetricsControllerCoachFeedbackStatsResponse>(getAdminMetricsControllerCoachFeedbackStatsUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const adminMetricsControllerCoachFeedbackStats = async (
+  options?: RequestInit,
+): Promise<adminMetricsControllerCoachFeedbackStatsResponse> => {
+  return http<adminMetricsControllerCoachFeedbackStatsResponse>(
+    getAdminMetricsControllerCoachFeedbackStatsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type communityControllerGetSummaryResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type communityControllerGetSummaryResponseSuccess = (communityControllerGetSummaryResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type communityControllerGetSummaryResponse = (communityControllerGetSummaryResponseSuccess)
+export type communityControllerGetSummaryResponseSuccess =
+  communityControllerGetSummaryResponse200 & {
+    headers: Headers;
+  };
+export type communityControllerGetSummaryResponse =
+  communityControllerGetSummaryResponseSuccess;
 
 export const getCommunityControllerGetSummaryUrl = () => {
+  return `/v1/community/summary`;
+};
 
-
-  
-
-  return `/v1/community/summary`
-}
-
-export const communityControllerGetSummary = async ( options?: RequestInit): Promise<communityControllerGetSummaryResponse> => {
-  
-  return http<communityControllerGetSummaryResponse>(getCommunityControllerGetSummaryUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const communityControllerGetSummary = async (
+  options?: RequestInit,
+): Promise<communityControllerGetSummaryResponse> => {
+  return http<communityControllerGetSummaryResponse>(
+    getCommunityControllerGetSummaryUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type communityControllerGetProfileResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type communityControllerGetProfileResponseSuccess = (communityControllerGetProfileResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type communityControllerGetProfileResponse = (communityControllerGetProfileResponseSuccess)
+export type communityControllerGetProfileResponseSuccess =
+  communityControllerGetProfileResponse200 & {
+    headers: Headers;
+  };
+export type communityControllerGetProfileResponse =
+  communityControllerGetProfileResponseSuccess;
 
-export const getCommunityControllerGetProfileUrl = (username: string,) => {
+export const getCommunityControllerGetProfileUrl = (username: string) => {
+  return `/v1/community/profile/${username}`;
+};
 
-
-  
-
-  return `/v1/community/profile/${username}`
-}
-
-export const communityControllerGetProfile = async (username: string, options?: RequestInit): Promise<communityControllerGetProfileResponse> => {
-  
-  return http<communityControllerGetProfileResponse>(getCommunityControllerGetProfileUrl(username),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const communityControllerGetProfile = async (
+  username: string,
+  options?: RequestInit,
+): Promise<communityControllerGetProfileResponse> => {
+  return http<communityControllerGetProfileResponse>(
+    getCommunityControllerGetProfileUrl(username),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type communityControllerGetLeaderboardResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type communityControllerGetLeaderboardResponseSuccess = (communityControllerGetLeaderboardResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type communityControllerGetLeaderboardResponse = (communityControllerGetLeaderboardResponseSuccess)
+export type communityControllerGetLeaderboardResponseSuccess =
+  communityControllerGetLeaderboardResponse200 & {
+    headers: Headers;
+  };
+export type communityControllerGetLeaderboardResponse =
+  communityControllerGetLeaderboardResponseSuccess;
 
-export const getCommunityControllerGetLeaderboardUrl = (params?: CommunityControllerGetLeaderboardParams,) => {
+export const getCommunityControllerGetLeaderboardUrl = (
+  params?: CommunityControllerGetLeaderboardParams,
+) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/v1/community/leaderboard?${stringifiedParams}` : `/v1/community/leaderboard`
-}
+  return stringifiedParams.length > 0
+    ? `/v1/community/leaderboard?${stringifiedParams}`
+    : `/v1/community/leaderboard`;
+};
 
-export const communityControllerGetLeaderboard = async (params?: CommunityControllerGetLeaderboardParams, options?: RequestInit): Promise<communityControllerGetLeaderboardResponse> => {
-  
-  return http<communityControllerGetLeaderboardResponse>(getCommunityControllerGetLeaderboardUrl(params),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const communityControllerGetLeaderboard = async (
+  params?: CommunityControllerGetLeaderboardParams,
+  options?: RequestInit,
+): Promise<communityControllerGetLeaderboardResponse> => {
+  return http<communityControllerGetLeaderboardResponse>(
+    getCommunityControllerGetLeaderboardUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type buddyControllerGetViewResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type buddyControllerGetViewResponseSuccess = (buddyControllerGetViewResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type buddyControllerGetViewResponse = (buddyControllerGetViewResponseSuccess)
+export type buddyControllerGetViewResponseSuccess =
+  buddyControllerGetViewResponse200 & {
+    headers: Headers;
+  };
+export type buddyControllerGetViewResponse =
+  buddyControllerGetViewResponseSuccess;
 
 export const getBuddyControllerGetViewUrl = () => {
+  return `/v1/buddy`;
+};
 
-
-  
-
-  return `/v1/buddy`
-}
-
-export const buddyControllerGetView = async ( options?: RequestInit): Promise<buddyControllerGetViewResponse> => {
-  
-  return http<buddyControllerGetViewResponse>(getBuddyControllerGetViewUrl(),
-  {      
+export const buddyControllerGetView = async (
+  options?: RequestInit,
+): Promise<buddyControllerGetViewResponse> => {
+  return http<buddyControllerGetViewResponse>(getBuddyControllerGetViewUrl(), {
     ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+    method: "GET",
+  });
+};
 
 export type buddyControllerEndResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type buddyControllerEndResponseSuccess = (buddyControllerEndResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type buddyControllerEndResponse = (buddyControllerEndResponseSuccess)
+export type buddyControllerEndResponseSuccess =
+  buddyControllerEndResponse204 & {
+    headers: Headers;
+  };
+export type buddyControllerEndResponse = buddyControllerEndResponseSuccess;
 
 export const getBuddyControllerEndUrl = () => {
+  return `/v1/buddy`;
+};
 
-
-  
-
-  return `/v1/buddy`
-}
-
-export const buddyControllerEnd = async ( options?: RequestInit): Promise<buddyControllerEndResponse> => {
-  
-  return http<buddyControllerEndResponse>(getBuddyControllerEndUrl(),
-  {      
+export const buddyControllerEnd = async (
+  options?: RequestInit,
+): Promise<buddyControllerEndResponse> => {
+  return http<buddyControllerEndResponse>(getBuddyControllerEndUrl(), {
     ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+    method: "DELETE",
+  });
+};
 
 export type buddyControllerGetSuggestionsResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type buddyControllerGetSuggestionsResponseSuccess = (buddyControllerGetSuggestionsResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type buddyControllerGetSuggestionsResponse = (buddyControllerGetSuggestionsResponseSuccess)
+export type buddyControllerGetSuggestionsResponseSuccess =
+  buddyControllerGetSuggestionsResponse200 & {
+    headers: Headers;
+  };
+export type buddyControllerGetSuggestionsResponse =
+  buddyControllerGetSuggestionsResponseSuccess;
 
 export const getBuddyControllerGetSuggestionsUrl = () => {
+  return `/v1/buddy/suggestions`;
+};
 
-
-  
-
-  return `/v1/buddy/suggestions`
-}
-
-export const buddyControllerGetSuggestions = async ( options?: RequestInit): Promise<buddyControllerGetSuggestionsResponse> => {
-  
-  return http<buddyControllerGetSuggestionsResponse>(getBuddyControllerGetSuggestionsUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const buddyControllerGetSuggestions = async (
+  options?: RequestInit,
+): Promise<buddyControllerGetSuggestionsResponse> => {
+  return http<buddyControllerGetSuggestionsResponse>(
+    getBuddyControllerGetSuggestionsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type buddyControllerRequestResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type buddyControllerRequestResponseSuccess = (buddyControllerRequestResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type buddyControllerRequestResponse = (buddyControllerRequestResponseSuccess)
+export type buddyControllerRequestResponseSuccess =
+  buddyControllerRequestResponse201 & {
+    headers: Headers;
+  };
+export type buddyControllerRequestResponse =
+  buddyControllerRequestResponseSuccess;
 
-export const getBuddyControllerRequestUrl = (username: string,) => {
+export const getBuddyControllerRequestUrl = (username: string) => {
+  return `/v1/buddy/requests/${username}`;
+};
 
-
-  
-
-  return `/v1/buddy/requests/${username}`
-}
-
-export const buddyControllerRequest = async (username: string, options?: RequestInit): Promise<buddyControllerRequestResponse> => {
-  
-  return http<buddyControllerRequestResponse>(getBuddyControllerRequestUrl(username),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const buddyControllerRequest = async (
+  username: string,
+  options?: RequestInit,
+): Promise<buddyControllerRequestResponse> => {
+  return http<buddyControllerRequestResponse>(
+    getBuddyControllerRequestUrl(username),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type buddyControllerAcceptResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type buddyControllerAcceptResponseSuccess = (buddyControllerAcceptResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type buddyControllerAcceptResponse = (buddyControllerAcceptResponseSuccess)
+export type buddyControllerAcceptResponseSuccess =
+  buddyControllerAcceptResponse201 & {
+    headers: Headers;
+  };
+export type buddyControllerAcceptResponse =
+  buddyControllerAcceptResponseSuccess;
 
-export const getBuddyControllerAcceptUrl = (id: string,) => {
+export const getBuddyControllerAcceptUrl = (id: string) => {
+  return `/v1/buddy/requests/${id}/accept`;
+};
 
-
-  
-
-  return `/v1/buddy/requests/${id}/accept`
-}
-
-export const buddyControllerAccept = async (id: string, options?: RequestInit): Promise<buddyControllerAcceptResponse> => {
-  
-  return http<buddyControllerAcceptResponse>(getBuddyControllerAcceptUrl(id),
-  {      
+export const buddyControllerAccept = async (
+  id: string,
+  options?: RequestInit,
+): Promise<buddyControllerAcceptResponse> => {
+  return http<buddyControllerAcceptResponse>(getBuddyControllerAcceptUrl(id), {
     ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+    method: "POST",
+  });
+};
 
 export type buddyControllerDeleteRequestResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type buddyControllerDeleteRequestResponseSuccess = (buddyControllerDeleteRequestResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type buddyControllerDeleteRequestResponse = (buddyControllerDeleteRequestResponseSuccess)
+export type buddyControllerDeleteRequestResponseSuccess =
+  buddyControllerDeleteRequestResponse204 & {
+    headers: Headers;
+  };
+export type buddyControllerDeleteRequestResponse =
+  buddyControllerDeleteRequestResponseSuccess;
 
-export const getBuddyControllerDeleteRequestUrl = (id: string,) => {
+export const getBuddyControllerDeleteRequestUrl = (id: string) => {
+  return `/v1/buddy/requests/${id}`;
+};
 
-
-  
-
-  return `/v1/buddy/requests/${id}`
-}
-
-export const buddyControllerDeleteRequest = async (id: string, options?: RequestInit): Promise<buddyControllerDeleteRequestResponse> => {
-  
-  return http<buddyControllerDeleteRequestResponse>(getBuddyControllerDeleteRequestUrl(id),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const buddyControllerDeleteRequest = async (
+  id: string,
+  options?: RequestInit,
+): Promise<buddyControllerDeleteRequestResponse> => {
+  return http<buddyControllerDeleteRequestResponse>(
+    getBuddyControllerDeleteRequestUrl(id),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type buddyControllerNudgeResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type buddyControllerNudgeResponseSuccess = (buddyControllerNudgeResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type buddyControllerNudgeResponse = (buddyControllerNudgeResponseSuccess)
+export type buddyControllerNudgeResponseSuccess =
+  buddyControllerNudgeResponse201 & {
+    headers: Headers;
+  };
+export type buddyControllerNudgeResponse = buddyControllerNudgeResponseSuccess;
 
 export const getBuddyControllerNudgeUrl = () => {
+  return `/v1/buddy/nudge`;
+};
 
-
-  
-
-  return `/v1/buddy/nudge`
-}
-
-export const buddyControllerNudge = async ( options?: RequestInit): Promise<buddyControllerNudgeResponse> => {
-  
-  return http<buddyControllerNudgeResponse>(getBuddyControllerNudgeUrl(),
-  {      
+export const buddyControllerNudge = async (
+  options?: RequestInit,
+): Promise<buddyControllerNudgeResponse> => {
+  return http<buddyControllerNudgeResponse>(getBuddyControllerNudgeUrl(), {
     ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+    method: "POST",
+  });
+};
 
 export type buddyControllerStudyInviteResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type buddyControllerStudyInviteResponseSuccess = (buddyControllerStudyInviteResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type buddyControllerStudyInviteResponse = (buddyControllerStudyInviteResponseSuccess)
+export type buddyControllerStudyInviteResponseSuccess =
+  buddyControllerStudyInviteResponse201 & {
+    headers: Headers;
+  };
+export type buddyControllerStudyInviteResponse =
+  buddyControllerStudyInviteResponseSuccess;
 
 export const getBuddyControllerStudyInviteUrl = () => {
+  return `/v1/buddy/study-invite`;
+};
 
-
-  
-
-  return `/v1/buddy/study-invite`
-}
-
-export const buddyControllerStudyInvite = async ( options?: RequestInit): Promise<buddyControllerStudyInviteResponse> => {
-  
-  return http<buddyControllerStudyInviteResponse>(getBuddyControllerStudyInviteUrl(),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const buddyControllerStudyInvite = async (
+  options?: RequestInit,
+): Promise<buddyControllerStudyInviteResponse> => {
+  return http<buddyControllerStudyInviteResponse>(
+    getBuddyControllerStudyInviteUrl(),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type forumControllerListResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumControllerListResponseSuccess = (forumControllerListResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumControllerListResponse = (forumControllerListResponseSuccess)
+export type forumControllerListResponseSuccess =
+  forumControllerListResponse200 & {
+    headers: Headers;
+  };
+export type forumControllerListResponse = forumControllerListResponseSuccess;
 
 export const getForumControllerListUrl = () => {
+  return `/v1/forum/zones`;
+};
 
-
-  
-
-  return `/v1/forum/zones`
-}
-
-export const forumControllerList = async ( options?: RequestInit): Promise<forumControllerListResponse> => {
-  
-  return http<forumControllerListResponse>(getForumControllerListUrl(),
-  {      
+export const forumControllerList = async (
+  options?: RequestInit,
+): Promise<forumControllerListResponse> => {
+  return http<forumControllerListResponse>(getForumControllerListUrl(), {
     ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+    method: "GET",
+  });
+};
 
 export type forumControllerCreateResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumControllerCreateResponseSuccess = (forumControllerCreateResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumControllerCreateResponse = (forumControllerCreateResponseSuccess)
+export type forumControllerCreateResponseSuccess =
+  forumControllerCreateResponse201 & {
+    headers: Headers;
+  };
+export type forumControllerCreateResponse =
+  forumControllerCreateResponseSuccess;
 
 export const getForumControllerCreateUrl = () => {
+  return `/v1/forum/zones`;
+};
 
-
-  
-
-  return `/v1/forum/zones`
-}
-
-export const forumControllerCreate = async (createZoneDto: CreateZoneDto, options?: RequestInit): Promise<forumControllerCreateResponse> => {
-  
-  return http<forumControllerCreateResponse>(getForumControllerCreateUrl(),
-  {      
+export const forumControllerCreate = async (
+  createZoneDto: CreateZoneDto,
+  options?: RequestInit,
+): Promise<forumControllerCreateResponse> => {
+  return http<forumControllerCreateResponse>(getForumControllerCreateUrl(), {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createZoneDto,)
-  }
-);}
-
-
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createZoneDto),
+  });
+};
 
 export type forumControllerGetResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumControllerGetResponseSuccess = (forumControllerGetResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumControllerGetResponse = (forumControllerGetResponseSuccess)
+export type forumControllerGetResponseSuccess =
+  forumControllerGetResponse200 & {
+    headers: Headers;
+  };
+export type forumControllerGetResponse = forumControllerGetResponseSuccess;
 
-export const getForumControllerGetUrl = (slug: string,) => {
+export const getForumControllerGetUrl = (slug: string) => {
+  return `/v1/forum/zones/${slug}`;
+};
 
-
-  
-
-  return `/v1/forum/zones/${slug}`
-}
-
-export const forumControllerGet = async (slug: string, options?: RequestInit): Promise<forumControllerGetResponse> => {
-  
-  return http<forumControllerGetResponse>(getForumControllerGetUrl(slug),
-  {      
+export const forumControllerGet = async (
+  slug: string,
+  options?: RequestInit,
+): Promise<forumControllerGetResponse> => {
+  return http<forumControllerGetResponse>(getForumControllerGetUrl(slug), {
     ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+    method: "GET",
+  });
+};
 
 export type forumControllerAssignOwnerResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumControllerAssignOwnerResponseSuccess = (forumControllerAssignOwnerResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumControllerAssignOwnerResponse = (forumControllerAssignOwnerResponseSuccess)
+export type forumControllerAssignOwnerResponseSuccess =
+  forumControllerAssignOwnerResponse201 & {
+    headers: Headers;
+  };
+export type forumControllerAssignOwnerResponse =
+  forumControllerAssignOwnerResponseSuccess;
 
-export const getForumControllerAssignOwnerUrl = (id: string,) => {
+export const getForumControllerAssignOwnerUrl = (id: string) => {
+  return `/v1/forum/zones/${id}/owner`;
+};
 
-
-  
-
-  return `/v1/forum/zones/${id}/owner`
-}
-
-export const forumControllerAssignOwner = async (id: string,
-    assignOwnerDto: AssignOwnerDto, options?: RequestInit): Promise<forumControllerAssignOwnerResponse> => {
-  
-  return http<forumControllerAssignOwnerResponse>(getForumControllerAssignOwnerUrl(id),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      assignOwnerDto,)
-  }
-);}
-
-
+export const forumControllerAssignOwner = async (
+  id: string,
+  assignOwnerDto: AssignOwnerDto,
+  options?: RequestInit,
+): Promise<forumControllerAssignOwnerResponse> => {
+  return http<forumControllerAssignOwnerResponse>(
+    getForumControllerAssignOwnerUrl(id),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(assignOwnerDto),
+    },
+  );
+};
 
 export type forumControllerJoinResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumControllerJoinResponseSuccess = (forumControllerJoinResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumControllerJoinResponse = (forumControllerJoinResponseSuccess)
+export type forumControllerJoinResponseSuccess =
+  forumControllerJoinResponse201 & {
+    headers: Headers;
+  };
+export type forumControllerJoinResponse = forumControllerJoinResponseSuccess;
 
-export const getForumControllerJoinUrl = (id: string,) => {
+export const getForumControllerJoinUrl = (id: string) => {
+  return `/v1/forum/zones/${id}/join`;
+};
 
-
-  
-
-  return `/v1/forum/zones/${id}/join`
-}
-
-export const forumControllerJoin = async (id: string, options?: RequestInit): Promise<forumControllerJoinResponse> => {
-  
-  return http<forumControllerJoinResponse>(getForumControllerJoinUrl(id),
-  {      
+export const forumControllerJoin = async (
+  id: string,
+  options?: RequestInit,
+): Promise<forumControllerJoinResponse> => {
+  return http<forumControllerJoinResponse>(getForumControllerJoinUrl(id), {
     ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+    method: "POST",
+  });
+};
 
 export type forumControllerMembersResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumControllerMembersResponseSuccess = (forumControllerMembersResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumControllerMembersResponse = (forumControllerMembersResponseSuccess)
+export type forumControllerMembersResponseSuccess =
+  forumControllerMembersResponse200 & {
+    headers: Headers;
+  };
+export type forumControllerMembersResponse =
+  forumControllerMembersResponseSuccess;
 
-export const getForumControllerMembersUrl = (id: string,) => {
+export const getForumControllerMembersUrl = (id: string) => {
+  return `/v1/forum/zones/${id}/members`;
+};
 
-
-  
-
-  return `/v1/forum/zones/${id}/members`
-}
-
-export const forumControllerMembers = async (id: string, options?: RequestInit): Promise<forumControllerMembersResponse> => {
-  
-  return http<forumControllerMembersResponse>(getForumControllerMembersUrl(id),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumControllerMembers = async (
+  id: string,
+  options?: RequestInit,
+): Promise<forumControllerMembersResponse> => {
+  return http<forumControllerMembersResponse>(
+    getForumControllerMembersUrl(id),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumControllerSearchMembersResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumControllerSearchMembersResponseSuccess = (forumControllerSearchMembersResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumControllerSearchMembersResponse = (forumControllerSearchMembersResponseSuccess)
+export type forumControllerSearchMembersResponseSuccess =
+  forumControllerSearchMembersResponse200 & {
+    headers: Headers;
+  };
+export type forumControllerSearchMembersResponse =
+  forumControllerSearchMembersResponseSuccess;
 
-export const getForumControllerSearchMembersUrl = (id: string,) => {
+export const getForumControllerSearchMembersUrl = (id: string) => {
+  return `/v1/forum/zones/${id}/members/search`;
+};
 
-
-  
-
-  return `/v1/forum/zones/${id}/members/search`
-}
-
-export const forumControllerSearchMembers = async (id: string, options?: RequestInit): Promise<forumControllerSearchMembersResponse> => {
-  
-  return http<forumControllerSearchMembersResponse>(getForumControllerSearchMembersUrl(id),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumControllerSearchMembers = async (
+  id: string,
+  options?: RequestInit,
+): Promise<forumControllerSearchMembersResponse> => {
+  return http<forumControllerSearchMembersResponse>(
+    getForumControllerSearchMembersUrl(id),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumControllerRemoveMemberResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type forumControllerRemoveMemberResponseSuccess = (forumControllerRemoveMemberResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type forumControllerRemoveMemberResponse = (forumControllerRemoveMemberResponseSuccess)
+export type forumControllerRemoveMemberResponseSuccess =
+  forumControllerRemoveMemberResponse204 & {
+    headers: Headers;
+  };
+export type forumControllerRemoveMemberResponse =
+  forumControllerRemoveMemberResponseSuccess;
 
-export const getForumControllerRemoveMemberUrl = (id: string,
-    userId: string,) => {
+export const getForumControllerRemoveMemberUrl = (
+  id: string,
+  userId: string,
+) => {
+  return `/v1/forum/zones/${id}/members/${userId}`;
+};
 
-
-  
-
-  return `/v1/forum/zones/${id}/members/${userId}`
-}
-
-export const forumControllerRemoveMember = async (id: string,
-    userId: string, options?: RequestInit): Promise<forumControllerRemoveMemberResponse> => {
-  
-  return http<forumControllerRemoveMemberResponse>(getForumControllerRemoveMemberUrl(id,userId),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const forumControllerRemoveMember = async (
+  id: string,
+  userId: string,
+  options?: RequestInit,
+): Promise<forumControllerRemoveMemberResponse> => {
+  return http<forumControllerRemoveMemberResponse>(
+    getForumControllerRemoveMemberUrl(id, userId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type forumControllerApproveResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumControllerApproveResponseSuccess = (forumControllerApproveResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumControllerApproveResponse = (forumControllerApproveResponseSuccess)
+export type forumControllerApproveResponseSuccess =
+  forumControllerApproveResponse201 & {
+    headers: Headers;
+  };
+export type forumControllerApproveResponse =
+  forumControllerApproveResponseSuccess;
 
-export const getForumControllerApproveUrl = (id: string,
-    userId: string,) => {
+export const getForumControllerApproveUrl = (id: string, userId: string) => {
+  return `/v1/forum/zones/${id}/members/${userId}/approve`;
+};
 
-
-  
-
-  return `/v1/forum/zones/${id}/members/${userId}/approve`
-}
-
-export const forumControllerApprove = async (id: string,
-    userId: string,
-    approveMemberDto: ApproveMemberDto, options?: RequestInit): Promise<forumControllerApproveResponse> => {
-  
-  return http<forumControllerApproveResponse>(getForumControllerApproveUrl(id,userId),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      approveMemberDto,)
-  }
-);}
-
-
+export const forumControllerApprove = async (
+  id: string,
+  userId: string,
+  approveMemberDto: ApproveMemberDto,
+  options?: RequestInit,
+): Promise<forumControllerApproveResponse> => {
+  return http<forumControllerApproveResponse>(
+    getForumControllerApproveUrl(id, userId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(approveMemberDto),
+    },
+  );
+};
 
 export type forumThreadControllerAttachmentUploadUrlResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumThreadControllerAttachmentUploadUrlResponseSuccess = (forumThreadControllerAttachmentUploadUrlResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumThreadControllerAttachmentUploadUrlResponse = (forumThreadControllerAttachmentUploadUrlResponseSuccess)
+export type forumThreadControllerAttachmentUploadUrlResponseSuccess =
+  forumThreadControllerAttachmentUploadUrlResponse201 & {
+    headers: Headers;
+  };
+export type forumThreadControllerAttachmentUploadUrlResponse =
+  forumThreadControllerAttachmentUploadUrlResponseSuccess;
 
 export const getForumThreadControllerAttachmentUploadUrlUrl = () => {
+  return `/v1/forum/attachments/upload-url`;
+};
 
-
-  
-
-  return `/v1/forum/attachments/upload-url`
-}
-
-export const forumThreadControllerAttachmentUploadUrl = async (attachmentUploadUrlDto: AttachmentUploadUrlDto, options?: RequestInit): Promise<forumThreadControllerAttachmentUploadUrlResponse> => {
-  
-  return http<forumThreadControllerAttachmentUploadUrlResponse>(getForumThreadControllerAttachmentUploadUrlUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      attachmentUploadUrlDto,)
-  }
-);}
-
-
+export const forumThreadControllerAttachmentUploadUrl = async (
+  attachmentUploadUrlDto: AttachmentUploadUrlDto,
+  options?: RequestInit,
+): Promise<forumThreadControllerAttachmentUploadUrlResponse> => {
+  return http<forumThreadControllerAttachmentUploadUrlResponse>(
+    getForumThreadControllerAttachmentUploadUrlUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(attachmentUploadUrlDto),
+    },
+  );
+};
 
 export type forumThreadControllerPostResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumThreadControllerPostResponseSuccess = (forumThreadControllerPostResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumThreadControllerPostResponse = (forumThreadControllerPostResponseSuccess)
+export type forumThreadControllerPostResponseSuccess =
+  forumThreadControllerPostResponse201 & {
+    headers: Headers;
+  };
+export type forumThreadControllerPostResponse =
+  forumThreadControllerPostResponseSuccess;
 
-export const getForumThreadControllerPostUrl = (id: string,) => {
+export const getForumThreadControllerPostUrl = (id: string) => {
+  return `/v1/forum/zones/${id}/threads`;
+};
 
-
-  
-
-  return `/v1/forum/zones/${id}/threads`
-}
-
-export const forumThreadControllerPost = async (id: string,
-    createThreadDto: CreateThreadDto, options?: RequestInit): Promise<forumThreadControllerPostResponse> => {
-  
-  return http<forumThreadControllerPostResponse>(getForumThreadControllerPostUrl(id),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createThreadDto,)
-  }
-);}
-
-
+export const forumThreadControllerPost = async (
+  id: string,
+  createThreadDto: CreateThreadDto,
+  options?: RequestInit,
+): Promise<forumThreadControllerPostResponse> => {
+  return http<forumThreadControllerPostResponse>(
+    getForumThreadControllerPostUrl(id),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(createThreadDto),
+    },
+  );
+};
 
 export type forumThreadControllerFeedResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumThreadControllerFeedResponseSuccess = (forumThreadControllerFeedResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumThreadControllerFeedResponse = (forumThreadControllerFeedResponseSuccess)
+export type forumThreadControllerFeedResponseSuccess =
+  forumThreadControllerFeedResponse200 & {
+    headers: Headers;
+  };
+export type forumThreadControllerFeedResponse =
+  forumThreadControllerFeedResponseSuccess;
 
-export const getForumThreadControllerFeedUrl = (id: string,) => {
+export const getForumThreadControllerFeedUrl = (id: string) => {
+  return `/v1/forum/zones/${id}/threads`;
+};
 
-
-  
-
-  return `/v1/forum/zones/${id}/threads`
-}
-
-export const forumThreadControllerFeed = async (id: string, options?: RequestInit): Promise<forumThreadControllerFeedResponse> => {
-  
-  return http<forumThreadControllerFeedResponse>(getForumThreadControllerFeedUrl(id),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumThreadControllerFeed = async (
+  id: string,
+  options?: RequestInit,
+): Promise<forumThreadControllerFeedResponse> => {
+  return http<forumThreadControllerFeedResponse>(
+    getForumThreadControllerFeedUrl(id),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumThreadControllerFollowingFeedResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumThreadControllerFollowingFeedResponseSuccess = (forumThreadControllerFollowingFeedResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumThreadControllerFollowingFeedResponse = (forumThreadControllerFollowingFeedResponseSuccess)
+export type forumThreadControllerFollowingFeedResponseSuccess =
+  forumThreadControllerFollowingFeedResponse200 & {
+    headers: Headers;
+  };
+export type forumThreadControllerFollowingFeedResponse =
+  forumThreadControllerFollowingFeedResponseSuccess;
 
 export const getForumThreadControllerFollowingFeedUrl = () => {
+  return `/v1/forum/feed/following`;
+};
 
-
-  
-
-  return `/v1/forum/feed/following`
-}
-
-export const forumThreadControllerFollowingFeed = async ( options?: RequestInit): Promise<forumThreadControllerFollowingFeedResponse> => {
-  
-  return http<forumThreadControllerFollowingFeedResponse>(getForumThreadControllerFollowingFeedUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumThreadControllerFollowingFeed = async (
+  options?: RequestInit,
+): Promise<forumThreadControllerFollowingFeedResponse> => {
+  return http<forumThreadControllerFollowingFeedResponse>(
+    getForumThreadControllerFollowingFeedUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumThreadControllerFollowSuggestionsResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumThreadControllerFollowSuggestionsResponseSuccess = (forumThreadControllerFollowSuggestionsResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumThreadControllerFollowSuggestionsResponse = (forumThreadControllerFollowSuggestionsResponseSuccess)
+export type forumThreadControllerFollowSuggestionsResponseSuccess =
+  forumThreadControllerFollowSuggestionsResponse200 & {
+    headers: Headers;
+  };
+export type forumThreadControllerFollowSuggestionsResponse =
+  forumThreadControllerFollowSuggestionsResponseSuccess;
 
 export const getForumThreadControllerFollowSuggestionsUrl = () => {
+  return `/v1/forum/follow-suggestions`;
+};
 
-
-  
-
-  return `/v1/forum/follow-suggestions`
-}
-
-export const forumThreadControllerFollowSuggestions = async ( options?: RequestInit): Promise<forumThreadControllerFollowSuggestionsResponse> => {
-  
-  return http<forumThreadControllerFollowSuggestionsResponse>(getForumThreadControllerFollowSuggestionsUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumThreadControllerFollowSuggestions = async (
+  options?: RequestInit,
+): Promise<forumThreadControllerFollowSuggestionsResponse> => {
+  return http<forumThreadControllerFollowSuggestionsResponse>(
+    getForumThreadControllerFollowSuggestionsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumThreadControllerDetailResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumThreadControllerDetailResponseSuccess = (forumThreadControllerDetailResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumThreadControllerDetailResponse = (forumThreadControllerDetailResponseSuccess)
+export type forumThreadControllerDetailResponseSuccess =
+  forumThreadControllerDetailResponse200 & {
+    headers: Headers;
+  };
+export type forumThreadControllerDetailResponse =
+  forumThreadControllerDetailResponseSuccess;
 
-export const getForumThreadControllerDetailUrl = (threadId: string,) => {
+export const getForumThreadControllerDetailUrl = (threadId: string) => {
+  return `/v1/forum/threads/${threadId}/detail`;
+};
 
-
-  
-
-  return `/v1/forum/threads/${threadId}/detail`
-}
-
-export const forumThreadControllerDetail = async (threadId: string, options?: RequestInit): Promise<forumThreadControllerDetailResponse> => {
-  
-  return http<forumThreadControllerDetailResponse>(getForumThreadControllerDetailUrl(threadId),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumThreadControllerDetail = async (
+  threadId: string,
+  options?: RequestInit,
+): Promise<forumThreadControllerDetailResponse> => {
+  return http<forumThreadControllerDetailResponse>(
+    getForumThreadControllerDetailUrl(threadId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumThreadControllerCommentResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumThreadControllerCommentResponseSuccess = (forumThreadControllerCommentResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumThreadControllerCommentResponse = (forumThreadControllerCommentResponseSuccess)
+export type forumThreadControllerCommentResponseSuccess =
+  forumThreadControllerCommentResponse201 & {
+    headers: Headers;
+  };
+export type forumThreadControllerCommentResponse =
+  forumThreadControllerCommentResponseSuccess;
 
-export const getForumThreadControllerCommentUrl = (threadId: string,) => {
+export const getForumThreadControllerCommentUrl = (threadId: string) => {
+  return `/v1/forum/threads/${threadId}/comments`;
+};
 
-
-  
-
-  return `/v1/forum/threads/${threadId}/comments`
-}
-
-export const forumThreadControllerComment = async (threadId: string,
-    createAnswerDto: CreateAnswerDto, options?: RequestInit): Promise<forumThreadControllerCommentResponse> => {
-  
-  return http<forumThreadControllerCommentResponse>(getForumThreadControllerCommentUrl(threadId),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createAnswerDto,)
-  }
-);}
-
-
+export const forumThreadControllerComment = async (
+  threadId: string,
+  createAnswerDto: CreateAnswerDto,
+  options?: RequestInit,
+): Promise<forumThreadControllerCommentResponse> => {
+  return http<forumThreadControllerCommentResponse>(
+    getForumThreadControllerCommentUrl(threadId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(createAnswerDto),
+    },
+  );
+};
 
 export type forumThreadControllerCommentDetailResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumThreadControllerCommentDetailResponseSuccess = (forumThreadControllerCommentDetailResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumThreadControllerCommentDetailResponse = (forumThreadControllerCommentDetailResponseSuccess)
+export type forumThreadControllerCommentDetailResponseSuccess =
+  forumThreadControllerCommentDetailResponse200 & {
+    headers: Headers;
+  };
+export type forumThreadControllerCommentDetailResponse =
+  forumThreadControllerCommentDetailResponseSuccess;
 
-export const getForumThreadControllerCommentDetailUrl = (postId: string,) => {
+export const getForumThreadControllerCommentDetailUrl = (postId: string) => {
+  return `/v1/forum/posts/${postId}`;
+};
 
-
-  
-
-  return `/v1/forum/posts/${postId}`
-}
-
-export const forumThreadControllerCommentDetail = async (postId: string, options?: RequestInit): Promise<forumThreadControllerCommentDetailResponse> => {
-  
-  return http<forumThreadControllerCommentDetailResponse>(getForumThreadControllerCommentDetailUrl(postId),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumThreadControllerCommentDetail = async (
+  postId: string,
+  options?: RequestInit,
+): Promise<forumThreadControllerCommentDetailResponse> => {
+  return http<forumThreadControllerCommentDetailResponse>(
+    getForumThreadControllerCommentDetailUrl(postId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumThreadControllerReplyResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumThreadControllerReplyResponseSuccess = (forumThreadControllerReplyResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumThreadControllerReplyResponse = (forumThreadControllerReplyResponseSuccess)
+export type forumThreadControllerReplyResponseSuccess =
+  forumThreadControllerReplyResponse201 & {
+    headers: Headers;
+  };
+export type forumThreadControllerReplyResponse =
+  forumThreadControllerReplyResponseSuccess;
 
-export const getForumThreadControllerReplyUrl = (postId: string,) => {
+export const getForumThreadControllerReplyUrl = (postId: string) => {
+  return `/v1/forum/posts/${postId}/replies`;
+};
 
-
-  
-
-  return `/v1/forum/posts/${postId}/replies`
-}
-
-export const forumThreadControllerReply = async (postId: string,
-    createAnswerDto: CreateAnswerDto, options?: RequestInit): Promise<forumThreadControllerReplyResponse> => {
-  
-  return http<forumThreadControllerReplyResponse>(getForumThreadControllerReplyUrl(postId),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createAnswerDto,)
-  }
-);}
-
-
+export const forumThreadControllerReply = async (
+  postId: string,
+  createAnswerDto: CreateAnswerDto,
+  options?: RequestInit,
+): Promise<forumThreadControllerReplyResponse> => {
+  return http<forumThreadControllerReplyResponse>(
+    getForumThreadControllerReplyUrl(postId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(createAnswerDto),
+    },
+  );
+};
 
 export type forumThreadControllerReactPostResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumThreadControllerReactPostResponseSuccess = (forumThreadControllerReactPostResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumThreadControllerReactPostResponse = (forumThreadControllerReactPostResponseSuccess)
+export type forumThreadControllerReactPostResponseSuccess =
+  forumThreadControllerReactPostResponse200 & {
+    headers: Headers;
+  };
+export type forumThreadControllerReactPostResponse =
+  forumThreadControllerReactPostResponseSuccess;
 
-export const getForumThreadControllerReactPostUrl = (postId: string,) => {
+export const getForumThreadControllerReactPostUrl = (postId: string) => {
+  return `/v1/forum/posts/${postId}/reactions`;
+};
 
-
-  
-
-  return `/v1/forum/posts/${postId}/reactions`
-}
-
-export const forumThreadControllerReactPost = async (postId: string,
-    reactionDto: ReactionDto, options?: RequestInit): Promise<forumThreadControllerReactPostResponse> => {
-  
-  return http<forumThreadControllerReactPostResponse>(getForumThreadControllerReactPostUrl(postId),
-  {      
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      reactionDto,)
-  }
-);}
-
-
+export const forumThreadControllerReactPost = async (
+  postId: string,
+  reactionDto: ReactionDto,
+  options?: RequestInit,
+): Promise<forumThreadControllerReactPostResponse> => {
+  return http<forumThreadControllerReactPostResponse>(
+    getForumThreadControllerReactPostUrl(postId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(reactionDto),
+    },
+  );
+};
 
 export type forumThreadControllerUnreactPostResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type forumThreadControllerUnreactPostResponseSuccess = (forumThreadControllerUnreactPostResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type forumThreadControllerUnreactPostResponse = (forumThreadControllerUnreactPostResponseSuccess)
+export type forumThreadControllerUnreactPostResponseSuccess =
+  forumThreadControllerUnreactPostResponse204 & {
+    headers: Headers;
+  };
+export type forumThreadControllerUnreactPostResponse =
+  forumThreadControllerUnreactPostResponseSuccess;
 
-export const getForumThreadControllerUnreactPostUrl = (postId: string,) => {
+export const getForumThreadControllerUnreactPostUrl = (postId: string) => {
+  return `/v1/forum/posts/${postId}/reactions`;
+};
 
-
-  
-
-  return `/v1/forum/posts/${postId}/reactions`
-}
-
-export const forumThreadControllerUnreactPost = async (postId: string,
-    reactionDto: ReactionDto, options?: RequestInit): Promise<forumThreadControllerUnreactPostResponse> => {
-  
-  return http<forumThreadControllerUnreactPostResponse>(getForumThreadControllerUnreactPostUrl(postId),
-  {      
-    ...options,
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      reactionDto,)
-  }
-);}
-
-
+export const forumThreadControllerUnreactPost = async (
+  postId: string,
+  reactionDto: ReactionDto,
+  options?: RequestInit,
+): Promise<forumThreadControllerUnreactPostResponse> => {
+  return http<forumThreadControllerUnreactPostResponse>(
+    getForumThreadControllerUnreactPostUrl(postId),
+    {
+      ...options,
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(reactionDto),
+    },
+  );
+};
 
 export type forumThreadControllerPinResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumThreadControllerPinResponseSuccess = (forumThreadControllerPinResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumThreadControllerPinResponse = (forumThreadControllerPinResponseSuccess)
+export type forumThreadControllerPinResponseSuccess =
+  forumThreadControllerPinResponse201 & {
+    headers: Headers;
+  };
+export type forumThreadControllerPinResponse =
+  forumThreadControllerPinResponseSuccess;
 
-export const getForumThreadControllerPinUrl = (threadId: string,) => {
+export const getForumThreadControllerPinUrl = (threadId: string) => {
+  return `/v1/forum/threads/${threadId}/pin`;
+};
 
-
-  
-
-  return `/v1/forum/threads/${threadId}/pin`
-}
-
-export const forumThreadControllerPin = async (threadId: string,
-    pinThreadDto: PinThreadDto, options?: RequestInit): Promise<forumThreadControllerPinResponse> => {
-  
-  return http<forumThreadControllerPinResponse>(getForumThreadControllerPinUrl(threadId),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      pinThreadDto,)
-  }
-);}
-
-
+export const forumThreadControllerPin = async (
+  threadId: string,
+  pinThreadDto: PinThreadDto,
+  options?: RequestInit,
+): Promise<forumThreadControllerPinResponse> => {
+  return http<forumThreadControllerPinResponse>(
+    getForumThreadControllerPinUrl(threadId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(pinThreadDto),
+    },
+  );
+};
 
 export type forumThreadControllerRemoveResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type forumThreadControllerRemoveResponseSuccess = (forumThreadControllerRemoveResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type forumThreadControllerRemoveResponse = (forumThreadControllerRemoveResponseSuccess)
+export type forumThreadControllerRemoveResponseSuccess =
+  forumThreadControllerRemoveResponse204 & {
+    headers: Headers;
+  };
+export type forumThreadControllerRemoveResponse =
+  forumThreadControllerRemoveResponseSuccess;
 
-export const getForumThreadControllerRemoveUrl = (threadId: string,) => {
+export const getForumThreadControllerRemoveUrl = (threadId: string) => {
+  return `/v1/forum/threads/${threadId}`;
+};
 
-
-  
-
-  return `/v1/forum/threads/${threadId}`
-}
-
-export const forumThreadControllerRemove = async (threadId: string, options?: RequestInit): Promise<forumThreadControllerRemoveResponse> => {
-  
-  return http<forumThreadControllerRemoveResponse>(getForumThreadControllerRemoveUrl(threadId),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const forumThreadControllerRemove = async (
+  threadId: string,
+  options?: RequestInit,
+): Promise<forumThreadControllerRemoveResponse> => {
+  return http<forumThreadControllerRemoveResponse>(
+    getForumThreadControllerRemoveUrl(threadId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type forumQaControllerQuestionResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumQaControllerQuestionResponseSuccess = (forumQaControllerQuestionResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumQaControllerQuestionResponse = (forumQaControllerQuestionResponseSuccess)
+export type forumQaControllerQuestionResponseSuccess =
+  forumQaControllerQuestionResponse200 & {
+    headers: Headers;
+  };
+export type forumQaControllerQuestionResponse =
+  forumQaControllerQuestionResponseSuccess;
 
-export const getForumQaControllerQuestionUrl = (threadId: string,) => {
+export const getForumQaControllerQuestionUrl = (threadId: string) => {
+  return `/v1/forum/threads/${threadId}`;
+};
 
-
-  
-
-  return `/v1/forum/threads/${threadId}`
-}
-
-export const forumQaControllerQuestion = async (threadId: string, options?: RequestInit): Promise<forumQaControllerQuestionResponse> => {
-  
-  return http<forumQaControllerQuestionResponse>(getForumQaControllerQuestionUrl(threadId),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumQaControllerQuestion = async (
+  threadId: string,
+  options?: RequestInit,
+): Promise<forumQaControllerQuestionResponse> => {
+  return http<forumQaControllerQuestionResponse>(
+    getForumQaControllerQuestionUrl(threadId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumThreadControllerReactResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumThreadControllerReactResponseSuccess = (forumThreadControllerReactResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumThreadControllerReactResponse = (forumThreadControllerReactResponseSuccess)
+export type forumThreadControllerReactResponseSuccess =
+  forumThreadControllerReactResponse200 & {
+    headers: Headers;
+  };
+export type forumThreadControllerReactResponse =
+  forumThreadControllerReactResponseSuccess;
 
-export const getForumThreadControllerReactUrl = (threadId: string,) => {
+export const getForumThreadControllerReactUrl = (threadId: string) => {
+  return `/v1/forum/threads/${threadId}/reactions`;
+};
 
-
-  
-
-  return `/v1/forum/threads/${threadId}/reactions`
-}
-
-export const forumThreadControllerReact = async (threadId: string,
-    reactionDto: ReactionDto, options?: RequestInit): Promise<forumThreadControllerReactResponse> => {
-  
-  return http<forumThreadControllerReactResponse>(getForumThreadControllerReactUrl(threadId),
-  {      
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      reactionDto,)
-  }
-);}
-
-
+export const forumThreadControllerReact = async (
+  threadId: string,
+  reactionDto: ReactionDto,
+  options?: RequestInit,
+): Promise<forumThreadControllerReactResponse> => {
+  return http<forumThreadControllerReactResponse>(
+    getForumThreadControllerReactUrl(threadId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(reactionDto),
+    },
+  );
+};
 
 export type forumThreadControllerUnreactResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type forumThreadControllerUnreactResponseSuccess = (forumThreadControllerUnreactResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type forumThreadControllerUnreactResponse = (forumThreadControllerUnreactResponseSuccess)
+export type forumThreadControllerUnreactResponseSuccess =
+  forumThreadControllerUnreactResponse204 & {
+    headers: Headers;
+  };
+export type forumThreadControllerUnreactResponse =
+  forumThreadControllerUnreactResponseSuccess;
 
-export const getForumThreadControllerUnreactUrl = (threadId: string,) => {
+export const getForumThreadControllerUnreactUrl = (threadId: string) => {
+  return `/v1/forum/threads/${threadId}/reactions`;
+};
 
-
-  
-
-  return `/v1/forum/threads/${threadId}/reactions`
-}
-
-export const forumThreadControllerUnreact = async (threadId: string,
-    reactionDto: ReactionDto, options?: RequestInit): Promise<forumThreadControllerUnreactResponse> => {
-  
-  return http<forumThreadControllerUnreactResponse>(getForumThreadControllerUnreactUrl(threadId),
-  {      
-    ...options,
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      reactionDto,)
-  }
-);}
-
-
+export const forumThreadControllerUnreact = async (
+  threadId: string,
+  reactionDto: ReactionDto,
+  options?: RequestInit,
+): Promise<forumThreadControllerUnreactResponse> => {
+  return http<forumThreadControllerUnreactResponse>(
+    getForumThreadControllerUnreactUrl(threadId),
+    {
+      ...options,
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(reactionDto),
+    },
+  );
+};
 
 export type forumThreadControllerBookmarksResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumThreadControllerBookmarksResponseSuccess = (forumThreadControllerBookmarksResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumThreadControllerBookmarksResponse = (forumThreadControllerBookmarksResponseSuccess)
+export type forumThreadControllerBookmarksResponseSuccess =
+  forumThreadControllerBookmarksResponse200 & {
+    headers: Headers;
+  };
+export type forumThreadControllerBookmarksResponse =
+  forumThreadControllerBookmarksResponseSuccess;
 
 export const getForumThreadControllerBookmarksUrl = () => {
+  return `/v1/forum/bookmarks`;
+};
 
-
-  
-
-  return `/v1/forum/bookmarks`
-}
-
-export const forumThreadControllerBookmarks = async ( options?: RequestInit): Promise<forumThreadControllerBookmarksResponse> => {
-  
-  return http<forumThreadControllerBookmarksResponse>(getForumThreadControllerBookmarksUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumThreadControllerBookmarks = async (
+  options?: RequestInit,
+): Promise<forumThreadControllerBookmarksResponse> => {
+  return http<forumThreadControllerBookmarksResponse>(
+    getForumThreadControllerBookmarksUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumThreadControllerUserActivityResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumThreadControllerUserActivityResponseSuccess = (forumThreadControllerUserActivityResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumThreadControllerUserActivityResponse = (forumThreadControllerUserActivityResponseSuccess)
+export type forumThreadControllerUserActivityResponseSuccess =
+  forumThreadControllerUserActivityResponse200 & {
+    headers: Headers;
+  };
+export type forumThreadControllerUserActivityResponse =
+  forumThreadControllerUserActivityResponseSuccess;
 
-export const getForumThreadControllerUserActivityUrl = (username: string,) => {
+export const getForumThreadControllerUserActivityUrl = (username: string) => {
+  return `/v1/forum/users/${username}/activity`;
+};
 
-
-  
-
-  return `/v1/forum/users/${username}/activity`
-}
-
-export const forumThreadControllerUserActivity = async (username: string, options?: RequestInit): Promise<forumThreadControllerUserActivityResponse> => {
-  
-  return http<forumThreadControllerUserActivityResponse>(getForumThreadControllerUserActivityUrl(username),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumThreadControllerUserActivity = async (
+  username: string,
+  options?: RequestInit,
+): Promise<forumThreadControllerUserActivityResponse> => {
+  return http<forumThreadControllerUserActivityResponse>(
+    getForumThreadControllerUserActivityUrl(username),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumThreadControllerBookmarkThreadResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumThreadControllerBookmarkThreadResponseSuccess = (forumThreadControllerBookmarkThreadResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumThreadControllerBookmarkThreadResponse = (forumThreadControllerBookmarkThreadResponseSuccess)
+export type forumThreadControllerBookmarkThreadResponseSuccess =
+  forumThreadControllerBookmarkThreadResponse200 & {
+    headers: Headers;
+  };
+export type forumThreadControllerBookmarkThreadResponse =
+  forumThreadControllerBookmarkThreadResponseSuccess;
 
-export const getForumThreadControllerBookmarkThreadUrl = (threadId: string,) => {
+export const getForumThreadControllerBookmarkThreadUrl = (threadId: string) => {
+  return `/v1/forum/threads/${threadId}/bookmark`;
+};
 
-
-  
-
-  return `/v1/forum/threads/${threadId}/bookmark`
-}
-
-export const forumThreadControllerBookmarkThread = async (threadId: string, options?: RequestInit): Promise<forumThreadControllerBookmarkThreadResponse> => {
-  
-  return http<forumThreadControllerBookmarkThreadResponse>(getForumThreadControllerBookmarkThreadUrl(threadId),
-  {      
-    ...options,
-    method: 'PUT'
-    
-    
-  }
-);}
-
-
+export const forumThreadControllerBookmarkThread = async (
+  threadId: string,
+  options?: RequestInit,
+): Promise<forumThreadControllerBookmarkThreadResponse> => {
+  return http<forumThreadControllerBookmarkThreadResponse>(
+    getForumThreadControllerBookmarkThreadUrl(threadId),
+    {
+      ...options,
+      method: "PUT",
+    },
+  );
+};
 
 export type forumThreadControllerUnbookmarkThreadResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type forumThreadControllerUnbookmarkThreadResponseSuccess = (forumThreadControllerUnbookmarkThreadResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type forumThreadControllerUnbookmarkThreadResponse = (forumThreadControllerUnbookmarkThreadResponseSuccess)
+export type forumThreadControllerUnbookmarkThreadResponseSuccess =
+  forumThreadControllerUnbookmarkThreadResponse204 & {
+    headers: Headers;
+  };
+export type forumThreadControllerUnbookmarkThreadResponse =
+  forumThreadControllerUnbookmarkThreadResponseSuccess;
 
-export const getForumThreadControllerUnbookmarkThreadUrl = (threadId: string,) => {
+export const getForumThreadControllerUnbookmarkThreadUrl = (
+  threadId: string,
+) => {
+  return `/v1/forum/threads/${threadId}/bookmark`;
+};
 
-
-  
-
-  return `/v1/forum/threads/${threadId}/bookmark`
-}
-
-export const forumThreadControllerUnbookmarkThread = async (threadId: string, options?: RequestInit): Promise<forumThreadControllerUnbookmarkThreadResponse> => {
-  
-  return http<forumThreadControllerUnbookmarkThreadResponse>(getForumThreadControllerUnbookmarkThreadUrl(threadId),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const forumThreadControllerUnbookmarkThread = async (
+  threadId: string,
+  options?: RequestInit,
+): Promise<forumThreadControllerUnbookmarkThreadResponse> => {
+  return http<forumThreadControllerUnbookmarkThreadResponse>(
+    getForumThreadControllerUnbookmarkThreadUrl(threadId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type forumThreadControllerBookmarkPostResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumThreadControllerBookmarkPostResponseSuccess = (forumThreadControllerBookmarkPostResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumThreadControllerBookmarkPostResponse = (forumThreadControllerBookmarkPostResponseSuccess)
+export type forumThreadControllerBookmarkPostResponseSuccess =
+  forumThreadControllerBookmarkPostResponse200 & {
+    headers: Headers;
+  };
+export type forumThreadControllerBookmarkPostResponse =
+  forumThreadControllerBookmarkPostResponseSuccess;
 
-export const getForumThreadControllerBookmarkPostUrl = (postId: string,) => {
+export const getForumThreadControllerBookmarkPostUrl = (postId: string) => {
+  return `/v1/forum/posts/${postId}/bookmark`;
+};
 
-
-  
-
-  return `/v1/forum/posts/${postId}/bookmark`
-}
-
-export const forumThreadControllerBookmarkPost = async (postId: string, options?: RequestInit): Promise<forumThreadControllerBookmarkPostResponse> => {
-  
-  return http<forumThreadControllerBookmarkPostResponse>(getForumThreadControllerBookmarkPostUrl(postId),
-  {      
-    ...options,
-    method: 'PUT'
-    
-    
-  }
-);}
-
-
+export const forumThreadControllerBookmarkPost = async (
+  postId: string,
+  options?: RequestInit,
+): Promise<forumThreadControllerBookmarkPostResponse> => {
+  return http<forumThreadControllerBookmarkPostResponse>(
+    getForumThreadControllerBookmarkPostUrl(postId),
+    {
+      ...options,
+      method: "PUT",
+    },
+  );
+};
 
 export type forumThreadControllerUnbookmarkPostResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type forumThreadControllerUnbookmarkPostResponseSuccess = (forumThreadControllerUnbookmarkPostResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type forumThreadControllerUnbookmarkPostResponse = (forumThreadControllerUnbookmarkPostResponseSuccess)
+export type forumThreadControllerUnbookmarkPostResponseSuccess =
+  forumThreadControllerUnbookmarkPostResponse204 & {
+    headers: Headers;
+  };
+export type forumThreadControllerUnbookmarkPostResponse =
+  forumThreadControllerUnbookmarkPostResponseSuccess;
 
-export const getForumThreadControllerUnbookmarkPostUrl = (postId: string,) => {
+export const getForumThreadControllerUnbookmarkPostUrl = (postId: string) => {
+  return `/v1/forum/posts/${postId}/bookmark`;
+};
 
-
-  
-
-  return `/v1/forum/posts/${postId}/bookmark`
-}
-
-export const forumThreadControllerUnbookmarkPost = async (postId: string, options?: RequestInit): Promise<forumThreadControllerUnbookmarkPostResponse> => {
-  
-  return http<forumThreadControllerUnbookmarkPostResponse>(getForumThreadControllerUnbookmarkPostUrl(postId),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const forumThreadControllerUnbookmarkPost = async (
+  postId: string,
+  options?: RequestInit,
+): Promise<forumThreadControllerUnbookmarkPostResponse> => {
+  return http<forumThreadControllerUnbookmarkPostResponse>(
+    getForumThreadControllerUnbookmarkPostUrl(postId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type forumQaControllerSearchResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumQaControllerSearchResponseSuccess = (forumQaControllerSearchResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumQaControllerSearchResponse = (forumQaControllerSearchResponseSuccess)
+export type forumQaControllerSearchResponseSuccess =
+  forumQaControllerSearchResponse200 & {
+    headers: Headers;
+  };
+export type forumQaControllerSearchResponse =
+  forumQaControllerSearchResponseSuccess;
 
 export const getForumQaControllerSearchUrl = () => {
+  return `/v1/forum/search`;
+};
 
-
-  
-
-  return `/v1/forum/search`
-}
-
-export const forumQaControllerSearch = async ( options?: RequestInit): Promise<forumQaControllerSearchResponse> => {
-  
-  return http<forumQaControllerSearchResponse>(getForumQaControllerSearchUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumQaControllerSearch = async (
+  options?: RequestInit,
+): Promise<forumQaControllerSearchResponse> => {
+  return http<forumQaControllerSearchResponse>(
+    getForumQaControllerSearchUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumQaControllerAnswerResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumQaControllerAnswerResponseSuccess = (forumQaControllerAnswerResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumQaControllerAnswerResponse = (forumQaControllerAnswerResponseSuccess)
+export type forumQaControllerAnswerResponseSuccess =
+  forumQaControllerAnswerResponse201 & {
+    headers: Headers;
+  };
+export type forumQaControllerAnswerResponse =
+  forumQaControllerAnswerResponseSuccess;
 
-export const getForumQaControllerAnswerUrl = (threadId: string,) => {
+export const getForumQaControllerAnswerUrl = (threadId: string) => {
+  return `/v1/forum/threads/${threadId}/answers`;
+};
 
-
-  
-
-  return `/v1/forum/threads/${threadId}/answers`
-}
-
-export const forumQaControllerAnswer = async (threadId: string,
-    createAnswerDto: CreateAnswerDto, options?: RequestInit): Promise<forumQaControllerAnswerResponse> => {
-  
-  return http<forumQaControllerAnswerResponse>(getForumQaControllerAnswerUrl(threadId),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createAnswerDto,)
-  }
-);}
-
-
+export const forumQaControllerAnswer = async (
+  threadId: string,
+  createAnswerDto: CreateAnswerDto,
+  options?: RequestInit,
+): Promise<forumQaControllerAnswerResponse> => {
+  return http<forumQaControllerAnswerResponse>(
+    getForumQaControllerAnswerUrl(threadId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(createAnswerDto),
+    },
+  );
+};
 
 export type forumQaControllerAcceptResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumQaControllerAcceptResponseSuccess = (forumQaControllerAcceptResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumQaControllerAcceptResponse = (forumQaControllerAcceptResponseSuccess)
+export type forumQaControllerAcceptResponseSuccess =
+  forumQaControllerAcceptResponse201 & {
+    headers: Headers;
+  };
+export type forumQaControllerAcceptResponse =
+  forumQaControllerAcceptResponseSuccess;
 
-export const getForumQaControllerAcceptUrl = (threadId: string,
-    postId: string,) => {
+export const getForumQaControllerAcceptUrl = (
+  threadId: string,
+  postId: string,
+) => {
+  return `/v1/forum/threads/${threadId}/accept/${postId}`;
+};
 
-
-  
-
-  return `/v1/forum/threads/${threadId}/accept/${postId}`
-}
-
-export const forumQaControllerAccept = async (threadId: string,
-    postId: string, options?: RequestInit): Promise<forumQaControllerAcceptResponse> => {
-  
-  return http<forumQaControllerAcceptResponse>(getForumQaControllerAcceptUrl(threadId,postId),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const forumQaControllerAccept = async (
+  threadId: string,
+  postId: string,
+  options?: RequestInit,
+): Promise<forumQaControllerAcceptResponse> => {
+  return http<forumQaControllerAcceptResponse>(
+    getForumQaControllerAcceptUrl(threadId, postId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type forumQaControllerRemoveAnswerResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type forumQaControllerRemoveAnswerResponseSuccess = (forumQaControllerRemoveAnswerResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type forumQaControllerRemoveAnswerResponse = (forumQaControllerRemoveAnswerResponseSuccess)
+export type forumQaControllerRemoveAnswerResponseSuccess =
+  forumQaControllerRemoveAnswerResponse204 & {
+    headers: Headers;
+  };
+export type forumQaControllerRemoveAnswerResponse =
+  forumQaControllerRemoveAnswerResponseSuccess;
 
-export const getForumQaControllerRemoveAnswerUrl = (postId: string,) => {
+export const getForumQaControllerRemoveAnswerUrl = (postId: string) => {
+  return `/v1/forum/answers/${postId}`;
+};
 
-
-  
-
-  return `/v1/forum/answers/${postId}`
-}
-
-export const forumQaControllerRemoveAnswer = async (postId: string, options?: RequestInit): Promise<forumQaControllerRemoveAnswerResponse> => {
-  
-  return http<forumQaControllerRemoveAnswerResponse>(getForumQaControllerRemoveAnswerUrl(postId),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
+export const forumQaControllerRemoveAnswer = async (
+  postId: string,
+  options?: RequestInit,
+): Promise<forumQaControllerRemoveAnswerResponse> => {
+  return http<forumQaControllerRemoveAnswerResponse>(
+    getForumQaControllerRemoveAnswerUrl(postId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
 
 export type forumModerationControllerReportResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumModerationControllerReportResponseSuccess = (forumModerationControllerReportResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumModerationControllerReportResponse = (forumModerationControllerReportResponseSuccess)
+export type forumModerationControllerReportResponseSuccess =
+  forumModerationControllerReportResponse201 & {
+    headers: Headers;
+  };
+export type forumModerationControllerReportResponse =
+  forumModerationControllerReportResponseSuccess;
 
 export const getForumModerationControllerReportUrl = () => {
+  return `/v1/forum/reports`;
+};
 
-
-  
-
-  return `/v1/forum/reports`
-}
-
-export const forumModerationControllerReport = async (createReportDto: CreateReportDto, options?: RequestInit): Promise<forumModerationControllerReportResponse> => {
-  
-  return http<forumModerationControllerReportResponse>(getForumModerationControllerReportUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createReportDto,)
-  }
-);}
-
-
+export const forumModerationControllerReport = async (
+  createReportDto: CreateReportDto,
+  options?: RequestInit,
+): Promise<forumModerationControllerReportResponse> => {
+  return http<forumModerationControllerReportResponse>(
+    getForumModerationControllerReportUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(createReportDto),
+    },
+  );
+};
 
 export type forumModerationControllerAllReportsResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumModerationControllerAllReportsResponseSuccess = (forumModerationControllerAllReportsResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumModerationControllerAllReportsResponse = (forumModerationControllerAllReportsResponseSuccess)
+export type forumModerationControllerAllReportsResponseSuccess =
+  forumModerationControllerAllReportsResponse200 & {
+    headers: Headers;
+  };
+export type forumModerationControllerAllReportsResponse =
+  forumModerationControllerAllReportsResponseSuccess;
 
 export const getForumModerationControllerAllReportsUrl = () => {
+  return `/v1/forum/reports`;
+};
 
-
-  
-
-  return `/v1/forum/reports`
-}
-
-export const forumModerationControllerAllReports = async ( options?: RequestInit): Promise<forumModerationControllerAllReportsResponse> => {
-  
-  return http<forumModerationControllerAllReportsResponse>(getForumModerationControllerAllReportsUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumModerationControllerAllReports = async (
+  options?: RequestInit,
+): Promise<forumModerationControllerAllReportsResponse> => {
+  return http<forumModerationControllerAllReportsResponse>(
+    getForumModerationControllerAllReportsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumModerationControllerZoneReportsResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumModerationControllerZoneReportsResponseSuccess = (forumModerationControllerZoneReportsResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumModerationControllerZoneReportsResponse = (forumModerationControllerZoneReportsResponseSuccess)
+export type forumModerationControllerZoneReportsResponseSuccess =
+  forumModerationControllerZoneReportsResponse200 & {
+    headers: Headers;
+  };
+export type forumModerationControllerZoneReportsResponse =
+  forumModerationControllerZoneReportsResponseSuccess;
 
-export const getForumModerationControllerZoneReportsUrl = (id: string,) => {
+export const getForumModerationControllerZoneReportsUrl = (id: string) => {
+  return `/v1/forum/zones/${id}/reports`;
+};
 
-
-  
-
-  return `/v1/forum/zones/${id}/reports`
-}
-
-export const forumModerationControllerZoneReports = async (id: string, options?: RequestInit): Promise<forumModerationControllerZoneReportsResponse> => {
-  
-  return http<forumModerationControllerZoneReportsResponse>(getForumModerationControllerZoneReportsUrl(id),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumModerationControllerZoneReports = async (
+  id: string,
+  options?: RequestInit,
+): Promise<forumModerationControllerZoneReportsResponse> => {
+  return http<forumModerationControllerZoneReportsResponse>(
+    getForumModerationControllerZoneReportsUrl(id),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumModerationControllerResolveResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumModerationControllerResolveResponseSuccess = (forumModerationControllerResolveResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumModerationControllerResolveResponse = (forumModerationControllerResolveResponseSuccess)
+export type forumModerationControllerResolveResponseSuccess =
+  forumModerationControllerResolveResponse201 & {
+    headers: Headers;
+  };
+export type forumModerationControllerResolveResponse =
+  forumModerationControllerResolveResponseSuccess;
 
-export const getForumModerationControllerResolveUrl = (id: string,) => {
+export const getForumModerationControllerResolveUrl = (id: string) => {
+  return `/v1/forum/reports/${id}/resolve`;
+};
 
-
-  
-
-  return `/v1/forum/reports/${id}/resolve`
-}
-
-export const forumModerationControllerResolve = async (id: string,
-    resolveReportDto: ResolveReportDto, options?: RequestInit): Promise<forumModerationControllerResolveResponse> => {
-  
-  return http<forumModerationControllerResolveResponse>(getForumModerationControllerResolveUrl(id),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      resolveReportDto,)
-  }
-);}
-
-
+export const forumModerationControllerResolve = async (
+  id: string,
+  resolveReportDto: ResolveReportDto,
+  options?: RequestInit,
+): Promise<forumModerationControllerResolveResponse> => {
+  return http<forumModerationControllerResolveResponse>(
+    getForumModerationControllerResolveUrl(id),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(resolveReportDto),
+    },
+  );
+};
 
 export type forumModerationControllerRestoreThreadResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumModerationControllerRestoreThreadResponseSuccess = (forumModerationControllerRestoreThreadResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumModerationControllerRestoreThreadResponse = (forumModerationControllerRestoreThreadResponseSuccess)
+export type forumModerationControllerRestoreThreadResponseSuccess =
+  forumModerationControllerRestoreThreadResponse201 & {
+    headers: Headers;
+  };
+export type forumModerationControllerRestoreThreadResponse =
+  forumModerationControllerRestoreThreadResponseSuccess;
 
-export const getForumModerationControllerRestoreThreadUrl = (threadId: string,) => {
+export const getForumModerationControllerRestoreThreadUrl = (
+  threadId: string,
+) => {
+  return `/v1/forum/threads/${threadId}/restore`;
+};
 
-
-  
-
-  return `/v1/forum/threads/${threadId}/restore`
-}
-
-export const forumModerationControllerRestoreThread = async (threadId: string, options?: RequestInit): Promise<forumModerationControllerRestoreThreadResponse> => {
-  
-  return http<forumModerationControllerRestoreThreadResponse>(getForumModerationControllerRestoreThreadUrl(threadId),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const forumModerationControllerRestoreThread = async (
+  threadId: string,
+  options?: RequestInit,
+): Promise<forumModerationControllerRestoreThreadResponse> => {
+  return http<forumModerationControllerRestoreThreadResponse>(
+    getForumModerationControllerRestoreThreadUrl(threadId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type forumModerationControllerRestoreAnswerResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumModerationControllerRestoreAnswerResponseSuccess = (forumModerationControllerRestoreAnswerResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumModerationControllerRestoreAnswerResponse = (forumModerationControllerRestoreAnswerResponseSuccess)
+export type forumModerationControllerRestoreAnswerResponseSuccess =
+  forumModerationControllerRestoreAnswerResponse201 & {
+    headers: Headers;
+  };
+export type forumModerationControllerRestoreAnswerResponse =
+  forumModerationControllerRestoreAnswerResponseSuccess;
 
-export const getForumModerationControllerRestoreAnswerUrl = (postId: string,) => {
+export const getForumModerationControllerRestoreAnswerUrl = (
+  postId: string,
+) => {
+  return `/v1/forum/answers/${postId}/restore`;
+};
 
-
-  
-
-  return `/v1/forum/answers/${postId}/restore`
-}
-
-export const forumModerationControllerRestoreAnswer = async (postId: string, options?: RequestInit): Promise<forumModerationControllerRestoreAnswerResponse> => {
-  
-  return http<forumModerationControllerRestoreAnswerResponse>(getForumModerationControllerRestoreAnswerUrl(postId),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const forumModerationControllerRestoreAnswer = async (
+  postId: string,
+  options?: RequestInit,
+): Promise<forumModerationControllerRestoreAnswerResponse> => {
+  return http<forumModerationControllerRestoreAnswerResponse>(
+    getForumModerationControllerRestoreAnswerUrl(postId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type forumPublicControllerQuestionsResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumPublicControllerQuestionsResponseSuccess = (forumPublicControllerQuestionsResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumPublicControllerQuestionsResponse = (forumPublicControllerQuestionsResponseSuccess)
+export type forumPublicControllerQuestionsResponseSuccess =
+  forumPublicControllerQuestionsResponse200 & {
+    headers: Headers;
+  };
+export type forumPublicControllerQuestionsResponse =
+  forumPublicControllerQuestionsResponseSuccess;
 
-export const getForumPublicControllerQuestionsUrl = (params: ForumPublicControllerQuestionsParams,) => {
+export const getForumPublicControllerQuestionsUrl = (
+  params: ForumPublicControllerQuestionsParams,
+) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/v1/forum/public/questions?${stringifiedParams}` : `/v1/forum/public/questions`
-}
+  return stringifiedParams.length > 0
+    ? `/v1/forum/public/questions?${stringifiedParams}`
+    : `/v1/forum/public/questions`;
+};
 
-export const forumPublicControllerQuestions = async (params: ForumPublicControllerQuestionsParams, options?: RequestInit): Promise<forumPublicControllerQuestionsResponse> => {
-  
-  return http<forumPublicControllerQuestionsResponse>(getForumPublicControllerQuestionsUrl(params),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumPublicControllerQuestions = async (
+  params: ForumPublicControllerQuestionsParams,
+  options?: RequestInit,
+): Promise<forumPublicControllerQuestionsResponse> => {
+  return http<forumPublicControllerQuestionsResponse>(
+    getForumPublicControllerQuestionsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumPublicControllerQuestionResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type forumPublicControllerQuestionResponseSuccess = (forumPublicControllerQuestionResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type forumPublicControllerQuestionResponse = (forumPublicControllerQuestionResponseSuccess)
+export type forumPublicControllerQuestionResponseSuccess =
+  forumPublicControllerQuestionResponse200 & {
+    headers: Headers;
+  };
+export type forumPublicControllerQuestionResponse =
+  forumPublicControllerQuestionResponseSuccess;
 
-export const getForumPublicControllerQuestionUrl = (id: string,) => {
+export const getForumPublicControllerQuestionUrl = (id: string) => {
+  return `/v1/forum/public/questions/${id}`;
+};
 
-
-  
-
-  return `/v1/forum/public/questions/${id}`
-}
-
-export const forumPublicControllerQuestion = async (id: string, options?: RequestInit): Promise<forumPublicControllerQuestionResponse> => {
-  
-  return http<forumPublicControllerQuestionResponse>(getForumPublicControllerQuestionUrl(id),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const forumPublicControllerQuestion = async (
+  id: string,
+  options?: RequestInit,
+): Promise<forumPublicControllerQuestionResponse> => {
+  return http<forumPublicControllerQuestionResponse>(
+    getForumPublicControllerQuestionUrl(id),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type forumInternalControllerCleanupAttachmentsResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type forumInternalControllerCleanupAttachmentsResponseSuccess = (forumInternalControllerCleanupAttachmentsResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type forumInternalControllerCleanupAttachmentsResponse = (forumInternalControllerCleanupAttachmentsResponseSuccess)
+export type forumInternalControllerCleanupAttachmentsResponseSuccess =
+  forumInternalControllerCleanupAttachmentsResponse201 & {
+    headers: Headers;
+  };
+export type forumInternalControllerCleanupAttachmentsResponse =
+  forumInternalControllerCleanupAttachmentsResponseSuccess;
 
 export const getForumInternalControllerCleanupAttachmentsUrl = () => {
+  return `/v1/internal/cron/cleanup-forum-attachments`;
+};
 
-
-  
-
-  return `/v1/internal/cron/cleanup-forum-attachments`
-}
-
-export const forumInternalControllerCleanupAttachments = async ( options?: RequestInit): Promise<forumInternalControllerCleanupAttachmentsResponse> => {
-  
-  return http<forumInternalControllerCleanupAttachmentsResponse>(getForumInternalControllerCleanupAttachmentsUrl(),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const forumInternalControllerCleanupAttachments = async (
+  options?: RequestInit,
+): Promise<forumInternalControllerCleanupAttachmentsResponse> => {
+  return http<forumInternalControllerCleanupAttachmentsResponse>(
+    getForumInternalControllerCleanupAttachmentsUrl(),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type cronControllerProcessJobsResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type cronControllerProcessJobsResponseSuccess = (cronControllerProcessJobsResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type cronControllerProcessJobsResponse = (cronControllerProcessJobsResponseSuccess)
+export type cronControllerProcessJobsResponseSuccess =
+  cronControllerProcessJobsResponse201 & {
+    headers: Headers;
+  };
+export type cronControllerProcessJobsResponse =
+  cronControllerProcessJobsResponseSuccess;
 
 export const getCronControllerProcessJobsUrl = () => {
+  return `/v1/internal/cron/process-jobs`;
+};
 
-
-  
-
-  return `/v1/internal/cron/process-jobs`
-}
-
-export const cronControllerProcessJobs = async ( options?: RequestInit): Promise<cronControllerProcessJobsResponse> => {
-  
-  return http<cronControllerProcessJobsResponse>(getCronControllerProcessJobsUrl(),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const cronControllerProcessJobs = async (
+  options?: RequestInit,
+): Promise<cronControllerProcessJobsResponse> => {
+  return http<cronControllerProcessJobsResponse>(
+    getCronControllerProcessJobsUrl(),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type cronControllerDispatchDailyRemindersResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type cronControllerDispatchDailyRemindersResponseSuccess = (cronControllerDispatchDailyRemindersResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type cronControllerDispatchDailyRemindersResponse = (cronControllerDispatchDailyRemindersResponseSuccess)
+export type cronControllerDispatchDailyRemindersResponseSuccess =
+  cronControllerDispatchDailyRemindersResponse201 & {
+    headers: Headers;
+  };
+export type cronControllerDispatchDailyRemindersResponse =
+  cronControllerDispatchDailyRemindersResponseSuccess;
 
 export const getCronControllerDispatchDailyRemindersUrl = () => {
+  return `/v1/internal/cron/dispatch-daily-reminders`;
+};
 
-
-  
-
-  return `/v1/internal/cron/dispatch-daily-reminders`
-}
-
-export const cronControllerDispatchDailyReminders = async ( options?: RequestInit): Promise<cronControllerDispatchDailyRemindersResponse> => {
-  
-  return http<cronControllerDispatchDailyRemindersResponse>(getCronControllerDispatchDailyRemindersUrl(),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const cronControllerDispatchDailyReminders = async (
+  options?: RequestInit,
+): Promise<cronControllerDispatchDailyRemindersResponse> => {
+  return http<cronControllerDispatchDailyRemindersResponse>(
+    getCronControllerDispatchDailyRemindersUrl(),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type notificationsControllerSubscribePushResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type notificationsControllerSubscribePushResponseSuccess = (notificationsControllerSubscribePushResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type notificationsControllerSubscribePushResponse = (notificationsControllerSubscribePushResponseSuccess)
+export type notificationsControllerSubscribePushResponseSuccess =
+  notificationsControllerSubscribePushResponse201 & {
+    headers: Headers;
+  };
+export type notificationsControllerSubscribePushResponse =
+  notificationsControllerSubscribePushResponseSuccess;
 
 export const getNotificationsControllerSubscribePushUrl = () => {
+  return `/v1/notifications/push-subscriptions`;
+};
 
-
-  
-
-  return `/v1/notifications/push-subscriptions`
-}
-
-export const notificationsControllerSubscribePush = async (pushSubscribeDto: PushSubscribeDto, options?: RequestInit): Promise<notificationsControllerSubscribePushResponse> => {
-  
-  return http<notificationsControllerSubscribePushResponse>(getNotificationsControllerSubscribePushUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      pushSubscribeDto,)
-  }
-);}
-
-
+export const notificationsControllerSubscribePush = async (
+  pushSubscribeDto: PushSubscribeDto,
+  options?: RequestInit,
+): Promise<notificationsControllerSubscribePushResponse> => {
+  return http<notificationsControllerSubscribePushResponse>(
+    getNotificationsControllerSubscribePushUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(pushSubscribeDto),
+    },
+  );
+};
 
 export type notificationsControllerUnsubscribePushResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type notificationsControllerUnsubscribePushResponseSuccess = (notificationsControllerUnsubscribePushResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type notificationsControllerUnsubscribePushResponse = (notificationsControllerUnsubscribePushResponseSuccess)
+export type notificationsControllerUnsubscribePushResponseSuccess =
+  notificationsControllerUnsubscribePushResponse200 & {
+    headers: Headers;
+  };
+export type notificationsControllerUnsubscribePushResponse =
+  notificationsControllerUnsubscribePushResponseSuccess;
 
 export const getNotificationsControllerUnsubscribePushUrl = () => {
+  return `/v1/notifications/push-subscriptions`;
+};
 
-
-  
-
-  return `/v1/notifications/push-subscriptions`
-}
-
-export const notificationsControllerUnsubscribePush = async (pushUnsubscribeDto: PushUnsubscribeDto, options?: RequestInit): Promise<notificationsControllerUnsubscribePushResponse> => {
-  
-  return http<notificationsControllerUnsubscribePushResponse>(getNotificationsControllerUnsubscribePushUrl(),
-  {      
-    ...options,
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      pushUnsubscribeDto,)
-  }
-);}
-
-
+export const notificationsControllerUnsubscribePush = async (
+  pushUnsubscribeDto: PushUnsubscribeDto,
+  options?: RequestInit,
+): Promise<notificationsControllerUnsubscribePushResponse> => {
+  return http<notificationsControllerUnsubscribePushResponse>(
+    getNotificationsControllerUnsubscribePushUrl(),
+    {
+      ...options,
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(pushUnsubscribeDto),
+    },
+  );
+};
 
 export type notificationsControllerGetPreferencesResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type notificationsControllerGetPreferencesResponseSuccess = (notificationsControllerGetPreferencesResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type notificationsControllerGetPreferencesResponse = (notificationsControllerGetPreferencesResponseSuccess)
+export type notificationsControllerGetPreferencesResponseSuccess =
+  notificationsControllerGetPreferencesResponse200 & {
+    headers: Headers;
+  };
+export type notificationsControllerGetPreferencesResponse =
+  notificationsControllerGetPreferencesResponseSuccess;
 
 export const getNotificationsControllerGetPreferencesUrl = () => {
+  return `/v1/notifications/preferences`;
+};
 
-
-  
-
-  return `/v1/notifications/preferences`
-}
-
-export const notificationsControllerGetPreferences = async ( options?: RequestInit): Promise<notificationsControllerGetPreferencesResponse> => {
-  
-  return http<notificationsControllerGetPreferencesResponse>(getNotificationsControllerGetPreferencesUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const notificationsControllerGetPreferences = async (
+  options?: RequestInit,
+): Promise<notificationsControllerGetPreferencesResponse> => {
+  return http<notificationsControllerGetPreferencesResponse>(
+    getNotificationsControllerGetPreferencesUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type notificationsControllerUpdatePreferencesResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type notificationsControllerUpdatePreferencesResponseSuccess = (notificationsControllerUpdatePreferencesResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type notificationsControllerUpdatePreferencesResponse = (notificationsControllerUpdatePreferencesResponseSuccess)
+export type notificationsControllerUpdatePreferencesResponseSuccess =
+  notificationsControllerUpdatePreferencesResponse200 & {
+    headers: Headers;
+  };
+export type notificationsControllerUpdatePreferencesResponse =
+  notificationsControllerUpdatePreferencesResponseSuccess;
 
 export const getNotificationsControllerUpdatePreferencesUrl = () => {
+  return `/v1/notifications/preferences`;
+};
 
-
-  
-
-  return `/v1/notifications/preferences`
-}
-
-export const notificationsControllerUpdatePreferences = async (updateNotificationPreferencesDto: UpdateNotificationPreferencesDto, options?: RequestInit): Promise<notificationsControllerUpdatePreferencesResponse> => {
-  
-  return http<notificationsControllerUpdatePreferencesResponse>(getNotificationsControllerUpdatePreferencesUrl(),
-  {      
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateNotificationPreferencesDto,)
-  }
-);}
-
-
+export const notificationsControllerUpdatePreferences = async (
+  updateNotificationPreferencesDto: UpdateNotificationPreferencesDto,
+  options?: RequestInit,
+): Promise<notificationsControllerUpdatePreferencesResponse> => {
+  return http<notificationsControllerUpdatePreferencesResponse>(
+    getNotificationsControllerUpdatePreferencesUrl(),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateNotificationPreferencesDto),
+    },
+  );
+};
 
 export type notificationsControllerScheduleSessionReturnResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type notificationsControllerScheduleSessionReturnResponseSuccess = (notificationsControllerScheduleSessionReturnResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type notificationsControllerScheduleSessionReturnResponse = (notificationsControllerScheduleSessionReturnResponseSuccess)
+export type notificationsControllerScheduleSessionReturnResponseSuccess =
+  notificationsControllerScheduleSessionReturnResponse201 & {
+    headers: Headers;
+  };
+export type notificationsControllerScheduleSessionReturnResponse =
+  notificationsControllerScheduleSessionReturnResponseSuccess;
 
 export const getNotificationsControllerScheduleSessionReturnUrl = () => {
+  return `/v1/notifications/session-return-reminder`;
+};
 
-
-  
-
-  return `/v1/notifications/session-return-reminder`
-}
-
-export const notificationsControllerScheduleSessionReturn = async (scheduleSessionReturnReminderDto: ScheduleSessionReturnReminderDto, options?: RequestInit): Promise<notificationsControllerScheduleSessionReturnResponse> => {
-  
-  return http<notificationsControllerScheduleSessionReturnResponse>(getNotificationsControllerScheduleSessionReturnUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      scheduleSessionReturnReminderDto,)
-  }
-);}
-
-
+export const notificationsControllerScheduleSessionReturn = async (
+  scheduleSessionReturnReminderDto: ScheduleSessionReturnReminderDto,
+  options?: RequestInit,
+): Promise<notificationsControllerScheduleSessionReturnResponse> => {
+  return http<notificationsControllerScheduleSessionReturnResponse>(
+    getNotificationsControllerScheduleSessionReturnUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(scheduleSessionReturnReminderDto),
+    },
+  );
+};
 
 export type notificationsControllerCreateStreamTokenResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type notificationsControllerCreateStreamTokenResponseSuccess = (notificationsControllerCreateStreamTokenResponse201) & {
-  headers: Headers;
+  data: void;
+  status: 201;
 };
-;
 
-export type notificationsControllerCreateStreamTokenResponse = (notificationsControllerCreateStreamTokenResponseSuccess)
+export type notificationsControllerCreateStreamTokenResponseSuccess =
+  notificationsControllerCreateStreamTokenResponse201 & {
+    headers: Headers;
+  };
+export type notificationsControllerCreateStreamTokenResponse =
+  notificationsControllerCreateStreamTokenResponseSuccess;
 
 export const getNotificationsControllerCreateStreamTokenUrl = () => {
+  return `/v1/notifications/stream-token`;
+};
 
-
-  
-
-  return `/v1/notifications/stream-token`
-}
-
-export const notificationsControllerCreateStreamToken = async ( options?: RequestInit): Promise<notificationsControllerCreateStreamTokenResponse> => {
-  
-  return http<notificationsControllerCreateStreamTokenResponse>(getNotificationsControllerCreateStreamTokenUrl(),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
+export const notificationsControllerCreateStreamToken = async (
+  options?: RequestInit,
+): Promise<notificationsControllerCreateStreamTokenResponse> => {
+  return http<notificationsControllerCreateStreamTokenResponse>(
+    getNotificationsControllerCreateStreamTokenUrl(),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
 
 export type notificationsControllerStreamResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type notificationsControllerStreamResponseSuccess = (notificationsControllerStreamResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type notificationsControllerStreamResponse = (notificationsControllerStreamResponseSuccess)
+export type notificationsControllerStreamResponseSuccess =
+  notificationsControllerStreamResponse200 & {
+    headers: Headers;
+  };
+export type notificationsControllerStreamResponse =
+  notificationsControllerStreamResponseSuccess;
 
-export const getNotificationsControllerStreamUrl = (params: NotificationsControllerStreamParams,) => {
+export const getNotificationsControllerStreamUrl = (
+  params: NotificationsControllerStreamParams,
+) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
-    
     if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : value.toString())
+      normalizedParams.append(key, value === null ? "null" : value.toString());
     }
   });
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/v1/notifications/stream?${stringifiedParams}` : `/v1/notifications/stream`
-}
+  return stringifiedParams.length > 0
+    ? `/v1/notifications/stream?${stringifiedParams}`
+    : `/v1/notifications/stream`;
+};
 
-export const notificationsControllerStream = async (params: NotificationsControllerStreamParams, options?: RequestInit): Promise<notificationsControllerStreamResponse> => {
-  
-  return http<notificationsControllerStreamResponse>(getNotificationsControllerStreamUrl(params),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const notificationsControllerStream = async (
+  params: NotificationsControllerStreamParams,
+  options?: RequestInit,
+): Promise<notificationsControllerStreamResponse> => {
+  return http<notificationsControllerStreamResponse>(
+    getNotificationsControllerStreamUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type notificationsControllerListNotificationsResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type notificationsControllerListNotificationsResponseSuccess = (notificationsControllerListNotificationsResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type notificationsControllerListNotificationsResponse = (notificationsControllerListNotificationsResponseSuccess)
+export type notificationsControllerListNotificationsResponseSuccess =
+  notificationsControllerListNotificationsResponse200 & {
+    headers: Headers;
+  };
+export type notificationsControllerListNotificationsResponse =
+  notificationsControllerListNotificationsResponseSuccess;
 
 export const getNotificationsControllerListNotificationsUrl = () => {
+  return `/v1/notifications`;
+};
 
-
-  
-
-  return `/v1/notifications`
-}
-
-export const notificationsControllerListNotifications = async ( options?: RequestInit): Promise<notificationsControllerListNotificationsResponse> => {
-  
-  return http<notificationsControllerListNotificationsResponse>(getNotificationsControllerListNotificationsUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
+export const notificationsControllerListNotifications = async (
+  options?: RequestInit,
+): Promise<notificationsControllerListNotificationsResponse> => {
+  return http<notificationsControllerListNotificationsResponse>(
+    getNotificationsControllerListNotificationsUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
 
 export type notificationsControllerMarkAllReadResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type notificationsControllerMarkAllReadResponseSuccess = (notificationsControllerMarkAllReadResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type notificationsControllerMarkAllReadResponse = (notificationsControllerMarkAllReadResponseSuccess)
+export type notificationsControllerMarkAllReadResponseSuccess =
+  notificationsControllerMarkAllReadResponse204 & {
+    headers: Headers;
+  };
+export type notificationsControllerMarkAllReadResponse =
+  notificationsControllerMarkAllReadResponseSuccess;
 
 export const getNotificationsControllerMarkAllReadUrl = () => {
+  return `/v1/notifications/read-all`;
+};
 
-
-  
-
-  return `/v1/notifications/read-all`
-}
-
-export const notificationsControllerMarkAllRead = async ( options?: RequestInit): Promise<notificationsControllerMarkAllReadResponse> => {
-  
-  return http<notificationsControllerMarkAllReadResponse>(getNotificationsControllerMarkAllReadUrl(),
-  {      
-    ...options,
-    method: 'PATCH'
-    
-    
-  }
-);}
-
-
+export const notificationsControllerMarkAllRead = async (
+  options?: RequestInit,
+): Promise<notificationsControllerMarkAllReadResponse> => {
+  return http<notificationsControllerMarkAllReadResponse>(
+    getNotificationsControllerMarkAllReadUrl(),
+    {
+      ...options,
+      method: "PATCH",
+    },
+  );
+};
 
 export type notificationsControllerMarkReadResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type notificationsControllerMarkReadResponseSuccess = (notificationsControllerMarkReadResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type notificationsControllerMarkReadResponse = (notificationsControllerMarkReadResponseSuccess)
+export type notificationsControllerMarkReadResponseSuccess =
+  notificationsControllerMarkReadResponse200 & {
+    headers: Headers;
+  };
+export type notificationsControllerMarkReadResponse =
+  notificationsControllerMarkReadResponseSuccess;
 
-export const getNotificationsControllerMarkReadUrl = (id: string,) => {
+export const getNotificationsControllerMarkReadUrl = (id: string) => {
+  return `/v1/notifications/${id}/read`;
+};
 
-
-  
-
-  return `/v1/notifications/${id}/read`
-}
-
-export const notificationsControllerMarkRead = async (id: string, options?: RequestInit): Promise<notificationsControllerMarkReadResponse> => {
-  
-  return http<notificationsControllerMarkReadResponse>(getNotificationsControllerMarkReadUrl(id),
-  {      
-    ...options,
-    method: 'PATCH'
-    
-    
-  }
-);}
-
-
+export const notificationsControllerMarkRead = async (
+  id: string,
+  options?: RequestInit,
+): Promise<notificationsControllerMarkReadResponse> => {
+  return http<notificationsControllerMarkReadResponse>(
+    getNotificationsControllerMarkReadUrl(id),
+    {
+      ...options,
+      method: "PATCH",
+    },
+  );
+};
 
 export type notificationsControllerMarkUnreadResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type notificationsControllerMarkUnreadResponseSuccess = (notificationsControllerMarkUnreadResponse200) & {
-  headers: Headers;
+  data: void;
+  status: 200;
 };
-;
 
-export type notificationsControllerMarkUnreadResponse = (notificationsControllerMarkUnreadResponseSuccess)
+export type notificationsControllerMarkUnreadResponseSuccess =
+  notificationsControllerMarkUnreadResponse200 & {
+    headers: Headers;
+  };
+export type notificationsControllerMarkUnreadResponse =
+  notificationsControllerMarkUnreadResponseSuccess;
 
-export const getNotificationsControllerMarkUnreadUrl = (id: string,) => {
+export const getNotificationsControllerMarkUnreadUrl = (id: string) => {
+  return `/v1/notifications/${id}/unread`;
+};
 
-
-  
-
-  return `/v1/notifications/${id}/unread`
-}
-
-export const notificationsControllerMarkUnread = async (id: string, options?: RequestInit): Promise<notificationsControllerMarkUnreadResponse> => {
-  
-  return http<notificationsControllerMarkUnreadResponse>(getNotificationsControllerMarkUnreadUrl(id),
-  {      
-    ...options,
-    method: 'PATCH'
-    
-    
-  }
-);}
-
-
+export const notificationsControllerMarkUnread = async (
+  id: string,
+  options?: RequestInit,
+): Promise<notificationsControllerMarkUnreadResponse> => {
+  return http<notificationsControllerMarkUnreadResponse>(
+    getNotificationsControllerMarkUnreadUrl(id),
+    {
+      ...options,
+      method: "PATCH",
+    },
+  );
+};
 
 export type notificationsControllerDeleteNotificationResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type notificationsControllerDeleteNotificationResponseSuccess = (notificationsControllerDeleteNotificationResponse204) & {
-  headers: Headers;
+  data: void;
+  status: 204;
 };
-;
 
-export type notificationsControllerDeleteNotificationResponse = (notificationsControllerDeleteNotificationResponseSuccess)
+export type notificationsControllerDeleteNotificationResponseSuccess =
+  notificationsControllerDeleteNotificationResponse204 & {
+    headers: Headers;
+  };
+export type notificationsControllerDeleteNotificationResponse =
+  notificationsControllerDeleteNotificationResponseSuccess;
 
-export const getNotificationsControllerDeleteNotificationUrl = (id: string,) => {
+export const getNotificationsControllerDeleteNotificationUrl = (id: string) => {
+  return `/v1/notifications/${id}`;
+};
 
-
-  
-
-  return `/v1/notifications/${id}`
-}
-
-export const notificationsControllerDeleteNotification = async (id: string, options?: RequestInit): Promise<notificationsControllerDeleteNotificationResponse> => {
-  
-  return http<notificationsControllerDeleteNotificationResponse>(getNotificationsControllerDeleteNotificationUrl(id),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
+export const notificationsControllerDeleteNotification = async (
+  id: string,
+  options?: RequestInit,
+): Promise<notificationsControllerDeleteNotificationResponse> => {
+  return http<notificationsControllerDeleteNotificationResponse>(
+    getNotificationsControllerDeleteNotificationUrl(id),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};

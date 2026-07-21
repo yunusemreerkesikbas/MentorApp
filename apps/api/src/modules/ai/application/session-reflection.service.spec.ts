@@ -41,19 +41,21 @@ describe("SessionReflectionService", () => {
     }));
     build = vi.fn(async () => ({
       examType: "KPSS",
-      daysRemaining: 100,
-      examDateLabel: null,
       moodLevel: null,
       struggleNote: null,
       recentSessions: null,
       todayPlan: null,
     }));
     append = vi.fn(async () => undefined);
-    configGet = vi.fn(async (key: string) => (key === FeatureFlag.AI_ENABLED ? true : null));
+    configGet = vi.fn(async (key: string) =>
+      key === FeatureFlag.AI_ENABLED ? true : null,
+    );
     getEntitlement = vi.fn(async () => ({ isPremium: true }));
     getById = vi.fn(async () => baseSession());
     setAiReflection = vi.fn(async () =>
-      baseSession({ aiReflection: "Güzel bir seans oldu; yarın aynı ritmi koru." }),
+      baseSession({
+        aiReflection: "Güzel bir seans oldu; yarın aynı ritmi koru.",
+      }),
     );
 
     service = new SessionReflectionService(
@@ -101,9 +103,14 @@ describe("SessionReflectionService", () => {
   });
 
   it("returns the cached reflection without calling the LLM", async () => {
-    getById.mockResolvedValue(baseSession({ aiReflection: "Önceki seans yansıması." }));
+    getById.mockResolvedValue(
+      baseSession({ aiReflection: "Önceki seans yansıması." }),
+    );
     const res = await service.reflect(USER, SESSION_ID);
-    expect(res).toEqual({ reflection: "Önceki seans yansıması.", model: "cache" });
+    expect(res).toEqual({
+      reflection: "Önceki seans yansıması.",
+      model: "cache",
+    });
     expect(complete).not.toHaveBeenCalled();
     expect(setAiReflection).not.toHaveBeenCalled();
   });
@@ -148,7 +155,10 @@ describe("SessionReflectionService", () => {
     });
     const res = await service.reflect(USER, SESSION_ID);
     expect(res.reflection).toBe("İyi tempoydu; yarın aynı konuda 10 soru çöz.");
-    expect(res.suggestedTask).toEqual({ title: "Mat: 10 soru", subject: "Matematik" });
+    expect(res.suggestedTask).toEqual({
+      title: "Mat: 10 soru",
+      subject: "Matematik",
+    });
     expect(setAiReflection).toHaveBeenCalledWith(
       USER_ID,
       SESSION_ID,

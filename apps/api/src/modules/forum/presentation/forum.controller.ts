@@ -76,6 +76,13 @@ export class ForumController {
     return this.forum.join(id, user.id, joinPolicy);
   }
 
+  /** Self-scoped: leave the zone (ACTIVE) or withdraw a pending join request. Idempotent. */
+  @Post("zones/:id/leave")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async leave(@CurrentUser() user: RequestUser, @Param("id") id: string): Promise<void> {
+    await this.forum.leave(id, user.id);
+  }
+
   @Get("zones/:id/members")
   async members(
     @CurrentUser() user: RequestUser,

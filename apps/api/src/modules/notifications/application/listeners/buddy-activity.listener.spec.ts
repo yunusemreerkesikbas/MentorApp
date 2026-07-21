@@ -39,7 +39,7 @@ describe("BuddyActivityListener.onBuddyFirstSession", () => {
     );
   });
 
-  it("notifies the partner, naming the actor and linking to /seans (effort only)", async () => {
+  it("notifies the partner, naming the actor and linking to /study-session (effort only)", async () => {
     await listener.onBuddyFirstSession({ userId: "actor" });
     expect(deliveries.tryRecord).toHaveBeenCalledWith(
       expect.anything(),
@@ -50,7 +50,7 @@ describe("BuddyActivityListener.onBuddyFirstSession", () => {
       "FORUM",
       expect.any(String),
       expect.stringContaining("Elif"),
-      "/seans",
+      "/study-session",
     );
   });
 

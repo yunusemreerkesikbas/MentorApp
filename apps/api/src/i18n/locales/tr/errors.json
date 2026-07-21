@@ -67,6 +67,7 @@
   "FORUM_DISABLED": "Forum özelliği şu anda kapalı.",
   "FORUM_ZONE_NOT_FOUND": "Bu oda bulunamadı.",
   "FORUM_ATTACHMENT_INVALID": "Ek geçersiz. Lütfen desteklenen bir görsel (JPEG/PNG/WebP) seç.",
+  "FORUM_OWNER_CANNOT_LEAVE": "Oda sahibi odadan ayrılamaz. Önce sahipliği devretmen gerekir.",
   "SOCIAL_CANNOT_FOLLOW_SELF": "Kendini takip edemezsin.",
   "SOCIAL_BUDDY_SELF": "Kendini yol arkadaşı olarak ekleyemezsin.",
   "SOCIAL_BUDDY_REQUEST_EXISTS": "Bu kullanıcıyla zaten bekleyen bir yol arkadaşı isteğin var.",

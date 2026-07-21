@@ -23,7 +23,7 @@ export function CompleteStep({
 
   function handleGoPanel() {
     onFinish();
-    router.push("/panel");
+    router.push("/dashboard");
   }
 
   return (

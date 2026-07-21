@@ -3,9 +3,85 @@ import { defineRouting } from "next-intl/routing";
 export const routing = defineRouting({
   locales: ["tr", "en"],
   defaultLocale: "tr",
-  // Turkish (default) has no prefix: /giris, /panel etc.
-  // English gets /en prefix: /en/giris, /en/panel etc.
   localePrefix: "as-needed",
+  localeDetection: false,
+  alternateLinks: false,
+  pathnames: {
+    "/": "/",
+    "/login": { tr: "/giris", en: "/login" },
+    "/signup": { tr: "/kayit", en: "/signup" },
+    "/verify-email": { tr: "/eposta-dogrula", en: "/verify-email" },
+    "/forgot-password": {
+      tr: "/sifremi-unuttum",
+      en: "/forgot-password",
+    },
+    "/reset-password": { tr: "/sifre-sifirla", en: "/reset-password" },
+    "/onboarding": { tr: "/baslangic", en: "/onboarding" },
+    "/cookie-preferences": {
+      tr: "/cerez-tercihleri",
+      en: "/cookie-preferences",
+    },
+    "/dashboard": { tr: "/panel", en: "/dashboard" },
+    "/plan": "/plan",
+    "/study-session": { tr: "/seans", en: "/study-session" },
+    "/study-session/history": {
+      tr: "/seans/gecmis",
+      en: "/study-session/history",
+    },
+    "/coach": { tr: "/koc", en: "/coach" },
+    "/coach/chat": { tr: "/koc/sohbet", en: "/coach/chat" },
+    "/analysis": { tr: "/analiz", en: "/analysis" },
+    "/knowledge": { tr: "/bilgi", en: "/knowledge" },
+    "/knowledge/[slug]": {
+      tr: "/bilgi/[slug]",
+      en: "/knowledge/[slug]",
+    },
+    "/profile": { tr: "/profil", en: "/profile" },
+    "/subscription": { tr: "/abonelik", en: "/subscription" },
+    "/subscription/result": {
+      tr: "/abonelik/sonuc",
+      en: "/subscription/result",
+    },
+    "/vision-board": { tr: "/hedef", en: "/vision-board" },
+    "/community": { tr: "/topluluk", en: "/community" },
+    "/community/feed": { tr: "/topluluk/akis", en: "/community/feed" },
+    "/community/saved": {
+      tr: "/topluluk/kayitli",
+      en: "/community/saved",
+    },
+    "/community/leaderboard": {
+      tr: "/topluluk/siralama",
+      en: "/community/leaderboard",
+    },
+    "/community/member/[username]": {
+      tr: "/topluluk/uye/[username]",
+      en: "/community/member/[username]",
+    },
+    "/community/message/[threadId]": {
+      tr: "/topluluk/mesaj/[threadId]",
+      en: "/community/message/[threadId]",
+    },
+    "/community/question/[threadId]": {
+      tr: "/topluluk/soru/[threadId]",
+      en: "/community/question/[threadId]",
+    },
+    "/community/comment/[postId]": {
+      tr: "/topluluk/yorum/[postId]",
+      en: "/community/comment/[postId]",
+    },
+    "/community/[slug]": {
+      tr: "/topluluk/[slug]",
+      en: "/community/[slug]",
+    },
+    "/community/[slug]/management": {
+      tr: "/topluluk/[slug]/yonetim",
+      en: "/community/[slug]/management",
+    },
+    "/forum/question/[id]": {
+      tr: "/forum/soru/[id]",
+      en: "/forum/question/[id]",
+    },
+  },
 });
 
 export type Locale = (typeof routing.locales)[number];

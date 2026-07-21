@@ -37,11 +37,13 @@ describe("CoachAccessService", () => {
     });
   });
 
-  it("premium remaining clamps to 0 when the limit is exceeded", async () => {
+  it("closes premium chat with the same rolling limit used by enforcement", async () => {
     countSince.mockResolvedValue(45);
 
-    await expect(service.getAccess("user-1")).resolves.toMatchObject({
-      canChat: true,
+    await expect(service.getAccess("user-1")).resolves.toEqual({
+      canChat: false,
+      mode: CoachAccessMode.PREMIUM,
+      reason: "AI_RATE_LIMITED",
       dailyMessagesRemaining: 0,
     });
   });

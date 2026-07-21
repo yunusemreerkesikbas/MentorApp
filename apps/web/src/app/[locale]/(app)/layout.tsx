@@ -10,7 +10,7 @@ import { NotificationDrawerShell } from "@/lib/notification-drawer-shell";
 import { hasCompletedOnboarding } from "@/lib/post-auth-destination";
 
 /**
- * App shell + auth guard: anonymous users are redirected to /giris.
+ * App shell + auth guard: anonymous users are redirected to /login.
  * Layout (DESIGN.md §8): bottom tab bar on mobile, left sidebar ≥1024px.
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -19,7 +19,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const t = useTranslations("panel");
 
   useEffect(() => {
-    if (status === "anonymous") router.replace("/giris");
+    if (status === "anonymous") router.replace("/login");
     if (status === "authenticated" && user && !hasCompletedOnboarding(user)) {
       router.replace("/onboarding");
     }

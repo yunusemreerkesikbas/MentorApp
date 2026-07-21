@@ -21,6 +21,8 @@ const evidence = {
 describe("WeeklyReviewNarrationService", () => {
   let complete: ReturnType<typeof vi.fn>;
   let getEntitlement: ReturnType<typeof vi.fn>;
+  let isUnlocked: ReturnType<typeof vi.fn>;
+  let economyEnabled: boolean;
   let find: ReturnType<typeof vi.fn>;
   let upsert: ReturnType<typeof vi.fn>;
   let service: WeeklyReviewNarrationService;
@@ -28,12 +30,19 @@ describe("WeeklyReviewNarrationService", () => {
   beforeEach(() => {
     complete = vi.fn(async () => ({ text: "İyi bir hafta.", model: "fake", promptTokens: 4, completionTokens: 3 }));
     getEntitlement = vi.fn(async () => ({ isPremium: true }));
+    isUnlocked = vi.fn(async () => false);
+    economyEnabled = false;
     find = vi.fn(async () => undefined);
     upsert = vi.fn(async () => undefined);
     service = new WeeklyReviewNarrationService(
       { complete } as never,
-      { get: vi.fn(async (key: string) => key === FeatureFlag.AI_ENABLED) } as never,
+      {
+        get: vi.fn(async (key: string) =>
+          key === FeatureFlag.AI_ENABLED ? true : key === "economy.enabled" ? economyEnabled : false,
+        ),
+      } as never,
       { getEntitlement } as never,
+      { isUnlocked } as never,
       { getAiEvidence: vi.fn(async () => evidence) } as never,
       { find, upsert } as never,
       { append: vi.fn(async () => undefined) } as never,
@@ -48,6 +57,32 @@ describe("WeeklyReviewNarrationService", () => {
       httpStatus: HttpStatus.FORBIDDEN,
     });
     expect(complete).not.toHaveBeenCalled();
+  });
+
+  it("lets a free user through with a deep-analysis unlock for this exam+week", async () => {
+    getEntitlement.mockResolvedValue({ isPremium: false });
+    economyEnabled = true;
+    isUnlocked.mockResolvedValue(true);
+
+    const result = await service.narrate(USER, "00000000-0000-4000-8000-000000000001");
+
+    expect(result.narration).toBe("İyi bir hafta.");
+    expect(isUnlocked).toHaveBeenCalledWith("u1", "00000000-0000-4000-8000-000000000001", "2026-06-29");
+  });
+
+  it("still blocks a free user with an unlock while the economy flag is off", async () => {
+    getEntitlement.mockResolvedValue({ isPremium: false });
+    economyEnabled = false;
+    isUnlocked.mockResolvedValue(true);
+
+    await expect(service.narrate(USER, "00000000-0000-4000-8000-000000000001")).rejects.toMatchObject({
+      code: ErrorCode.PAYMENT_PREMIUM_REQUIRED,
+    });
+  });
+
+  it("never consults the unlock for premium users", async () => {
+    await service.narrate(USER, "00000000-0000-4000-8000-000000000001");
+    expect(isUnlocked).not.toHaveBeenCalled();
   });
 
   it("reuses a matching fingerprint cache", async () => {

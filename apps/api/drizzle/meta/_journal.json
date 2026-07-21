@@ -400,6 +400,13 @@
       "when": 1784404674251,
       "tag": "0056_repair_info_article_rich_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1784499321764,
+      "tag": "0057_sturdy_korvac",
+      "breakpoints": true
     }
   ]
 }

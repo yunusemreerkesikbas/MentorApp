@@ -12,10 +12,10 @@
 | **W0 Identity** | ✅ | JWT + refresh rotation, RLS policies, guards, web auth screens, auth UI polish ([identity](../features/identity.md)) | — |
 | **W1 Content** | 🟡 | exam calendar · knowledge center · bilgi UI polish · subjects/exam-subjects · topics/exam-topics · exam-calendar admin editor · pgvector RAG embeddings ([content](../features/content.md)) | — (HNSW index at scale = backlog) |
 | **W2 Coaching** | 🟡 | daily loop · panel · plan/seans UI polish · mock-exam **analiz** UI polish + topic-level wrong map · **web profil** (exam-type picker, account hub) · **mood: struggle-note + premium AI-adaptive reflection** · **ghost (geçmiş-ben) comparison + premium AI narration** · **hayal/hedef panosu + premium AI notu** ([coaching](../features/coaching.md)) | — (MVP feature set complete) |
-| **W3 AI** | 🟡 | premium AI coach chat + persisted conversations · **SSE streaming** · **RAG grounding + source links** · **coin→AI chat spend** · **photo→subject/topic categorize** · mood/ghost AI narration · **real OpenAI contract hardening** ([ai](../features/ai.md)) | model eval + Responses API migration |
-| **W4 Payments** | ✅ | PaymentsPort fake/iyzico, trial state machine, entitlement + PremiumGuard, idempotent webhook, /abonelik, abonelik UI polish ([payments](../features/payments.md)) | iyzico prod keys + e-archive (Phase-0 ops) |
+| **W3 AI** | 🟡 | premium AI coach chat + persisted conversations · **SSE streaming** · **RAG grounding + source links** · **coin→AI chat spend** · **photo→subject/topic categorize** · mood/ghost AI narration · **Responses API migration + eval run (2026-07-20: live 4/4, eval 9/9 hard-clean)** ([ai](../features/ai.md)) | opsiyonel: model karşılaştırması (örn. gpt-4.1-mini) |
+| **W4 Payments** | ✅ | PaymentsPort fake/iyzico, trial state machine, entitlement + PremiumGuard, idempotent webhook, INCOMPLETE verification gate + wired refund (WP-I), /abonelik, abonelik UI polish ([payments](../features/payments.md)) | iyzico prod keys + e-archive + real iyzico adapter impl (Phase-0 ops) |
 | **W5 Notifications** | ✅ | JobQueuePort + cron runner, Postmark email, web push, daily reminders; in-app inbox + SSE real-time bell; notification tap navigation (linkUrl); contextual motivational notifications (streak milestone / low mood / first session / plan completed — event-driven, template, deduped) ([notifications](../features/notifications.md)) | Phase 2: AI frekans ayarı |
-| **W6 Admin + Economy** | ✅ | see breakdown below — all MVP slices shipped ([admin](../features/admin.md) · [economy](../features/economy.md)) | Phase 2: habit/milestone quests |
+| **W6 Admin + Economy** | ✅ | see breakdown below — all MVP slices shipped incl. weekly quests + refund reversal + deep-analysis sink (APP-025) ([admin](../features/admin.md) · [economy](../features/economy.md)) | Phase 2: forum coin, Redis leaderboard |
 | **W7 Forum / Community** | ✅ | Phase-2 feature **pulled into MVP** (design [`plans/2026-06-22`](../plans/2026-06-22-forum-community-design.md)) — see breakdown below. Backend (zones · feed · QA+XP+search · moderation · public SEO) + web (participation · moderation tools · public QA pages · unified layout + author display). **51 backend tests green.** Behind `forum.enabled` flag ([forum](../features/forum.md)) | Phase 2: verification tiers · coin rewards · C-layer (AI ingest) · mahalle/live rooms · Tier-1 auto-moderation |
 
 ## W6 breakdown (this stream's focus)
@@ -56,7 +56,6 @@
 - **B2C web UI polish** — series complete; cross-cutting sweep ([web-shell](../features/web-shell.md)).
 - **B2C web i18n (TR/EN)** — URL-based next-intl; tüm FE static copy `useTranslations`/`getTranslations`, statik
   render + public ISR ([i18n](../features/i18n.md)). Yeni FE işleri localize yapılır (frontend.md §i18n).
-- **`apps/admin` not yet committed** — to be sent as a separate commit/PR (per owner).
 - **B2C web economy/invite UI** (`apps/web`) — earn hub on `/profil` (balance, quests, invite) ([economy](../features/economy.md)); ledger history UI = slice 2 backlog. Requires `economy.enabled=true`.
 - **Migration journal drift** — RECONCILED ([ai](../features/ai.md) — mood AI-adaptive slice): re-added the
   missing `0006_info_articles` journal entry and restored the HEAD snapshot (`meta/0017_snapshot.json`)
@@ -64,14 +63,18 @@
   timestamp**, forward-only. Caveat: a local DB that already skipped 0006 won't auto-apply it (drizzle
   applies `when > last`) — apply `0006_info_articles.sql` once by hand if `info_articles` is missing.
 - **Economy reconcile** — invite reward on transient grant failure isn't retried (cap denial is by
-  design); outbox/retry = Phase 2. Coin reversal (churn/refund) = Phase 2.
+  design); outbox/retry = Phase 2. Refund coin reversal shipped (APP-025, refund-only +
+  clamp-to-zero); churn-based reversal deliberately not implemented.
 - **Local RLS masking** — local `mentor` DB user is superuser → RLS bypassed locally; always verify
   RLS-sensitive reads (admin drafts, etc.) run in the right context (caught for content editor).
 - **Forum / community (W7)** — entire surface gated by `forum.enabled` (default **off**); flip per
   environment to go live. Public SEO QA reads run in **service context** (forum tables are RLS-forced)
-  hard-filtered to indexable QA (`PublicQuestionView` omits PII). Backlogs: a member-**reject/removal** endpoint (web shows approve-only);
-  forum endpoints have **no OpenAPI response schema** (web uses raw `fetch` + `@mentor/types`, so
-  api-client regen is a no-op). `NEXT_PUBLIC_SITE_URL` drives canonical/sitemap/robots.
+  hard-filtered to indexable QA (`PublicQuestionView` omits PII). Membership management is complete:
+  reject (`{approve:false}`), kick (`DELETE members/:userId`, OWNER-protected) and voluntary
+  **leave/withdraw** (`POST /zones/:id/leave`, OWNER 409) all shipped with web UI. Forum endpoints
+  **intentionally ship without OpenAPI response schemas** — web consumes `http<T>()` + `@mentor/types`
+  (api-client regen is a no-op); API-wide `@ApiOkResponse`/CLI-plugin adoption is a deliberately
+  deferred, separate round. `NEXT_PUBLIC_SITE_URL` drives canonical/sitemap/robots.
 
 ## Guardrails honored (AGENTS §4)
 Coin non-monetary/capped · append-only ledgers (never edited/deleted) · reward tied to verified action ·

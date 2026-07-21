@@ -31,6 +31,8 @@
     "login": "Giriş yap",
     "slide1": {
       "title": "Sınav yolunda yalnız değilsin.",
+      "title_lead": "Sınav yolunda",
+      "title_emphasis": "yalnız değilsin.",
       "subtitle": "Bilgi platformu değil — seni anlayan, devam ettiren ve yalnız bırakmayan bir yoldaşlık platformu."
     },
     "slide2": {
@@ -182,7 +184,7 @@
     "task_done_streak": "{count} günlük serini korudun. Devam et!",
     "task_done_message": "Görev tamamlandı."
   },
-  "topluluk": {
+  "community": {
     "title": "Topluluk",
     "subtitle": "Aynı yolda yürüyenlerle birlikte.",
     "soon_title": "Topluluk yakında",
@@ -204,6 +206,12 @@
     "join": "Katıl",
     "joining": "Katılınıyor…",
     "join_pending": "Onay bekleniyor",
+    "leave": "Ayrıl",
+    "leaving": "Ayrılıyor…",
+    "cancel_request": "İsteği geri çek",
+    "leave_confirm_title": "Odadan ayrıl",
+    "leave_confirm_message": "Bu odadan ayrılırsan tekrar katılmak için onay beklemen gerekebilir. Ayrılmak istediğine emin misin?",
+    "leave_confirm_yes": "Ayrıl",
     "joined": "Üyesin",
     "back": "Topluluk",
     "back_short": "Geri",
@@ -481,10 +489,13 @@
       "chip_plan_day": "Günümü planla",
       "seed_plan_day": "Bugünü nasıl planlamalıyım?",
       "chip_streak": "Serimi koru",
+      "next_action_start": "Odak seans\u0131na ba\u015fla",
+      "next_action_add": "Plan\u0131na g\u00f6rev ekle",
       "seed_streak": "{days} günlük serim var, bunu korumak için bugün ne yapmalıyım?"
     },
     "memory": {
       "title": "Koçun seni nasıl tanıyor",
+      "legacy_notice": "Bu, art\u0131k ko\u00e7 yan\u0131tlar\u0131nda kullan\u0131lmayan kaydedilmi\u015f \u00f6zetindir.",
       "reset": "Sıfırla"
     },
     "conversations": {
@@ -493,12 +504,21 @@
       "delete_confirm_title": "Sohbet silinsin mi?",
       "delete_confirm_message": "\"{title}\" sohbeti ve içindeki tüm mesajlar kalıcı olarak silinecek.",
       "delete_confirm_yes": "Sil",
-      "delete_confirm_no": "Vazgeç"
+      "delete_confirm_no": "Vazgeç",
+      "loading": "Sohbetlerin yükleniyor…",
+      "load_error": "Sohbetlerin şu an yüklenemedi.",
+      "retry": "Tekrar dene"
     },
     "chat": {
       "header_title": "Sohbet",
       "empty_hint": "İlk mesajını yaz — koçun burada.",
       "stream_error": "Yanıt alınamadı — lütfen tekrar dene.",
+      "history_loading": "Sohbet geçmişin yükleniyor…",
+      "history_error": "Sohbet geçmişi şu an yüklenemedi.",
+      "older_history_error": "Daha eski mesajlar yüklenemedi.",
+      "history_retry": "Tekrar dene",
+      "history_new_chat": "Yeni sohbet",
+      "load_older": "Daha eski mesajları yükle",
       "remaining_hint": "Kalan mesaj hakkın: {count}",
       "remaining_hint_zero": "Bugünlük mesaj hakkın doldu — yarın devam."
     }
@@ -770,9 +790,9 @@
     "no_seed_desc": "Sınav takvimi veya ders listesi henüz yayımlanmadı. Editorial içerik güncellendiğinde form burada açılacak.",
     "tabs": {
       "label": "Analiz bölümleri",
-      "gir": "Gir",
-      "gelisim": "Gelişim",
-      "yanlislar": "Yanlışlarım"
+      "entry": "Gir",
+      "progress": "Gelişim",
+      "mistakes": "Yanlışlarım"
     },
     "summary": {
       "last_net": "Son net: {net}",
@@ -870,6 +890,23 @@
       "start_session": "Seans başlat",
       "retry": "Tekrar dene",
       "load_error": "Haftalık değerlendirme yüklenemedi."
+    },
+    "deep": {
+      "title": "Derin Analiz",
+      "subtitle": "Haftanın AI koç değerlendirmesi",
+      "loading": "Derin analiz yükleniyor",
+      "locked_hint": "Bu haftanın derinlemesine AI değerlendirmesini coin ile açabilirsin.",
+      "unlock_cta": "{cost} coin ile aç",
+      "confirm_cta": "Emin misin? {cost} coin harcanacak",
+      "unlocked_chip": "Açıldı",
+      "premium_chip": "Premium'a dahil",
+      "unlocked_hint": "Bu haftanın derin analizi hazır — getirip okuyabilirsin.",
+      "fetch_cta": "Derin analizi getir",
+      "fetching": "Hazırlanıyor…",
+      "insufficient": "Yeterli coinin yok ({balance}/{cost}). Görev tamamlayarak kazanabilirsin.",
+      "go_earn": "Görevlere git",
+      "suggested_title": "Önerilen görev",
+      "action_error": "Bir şeyler ters gitti, tekrar deneyebilirsin."
     }
   },
   "session": {
@@ -1091,6 +1128,8 @@
     "suggestion_2": "Sınav kaygımı nasıl yönetirim?",
     "suggestion_3": "Bana çalışma planı öner",
     "source_label": "Kaynak:",
+    "official_card_label": "S\u0131nava kalan",
+    "official_card_days": "{count} g\u00fcn",
     "typing": "Koç yazıyor"
   },
   "countdown": {

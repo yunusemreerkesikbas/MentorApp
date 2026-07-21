@@ -107,6 +107,12 @@ pnpm --filter @mentor/api test
       "taskDate": "2026-06-10",
     },
   ],
+  "nextAction": {
+    "kind": "START_TASK",
+    "title": "Bugünün tek küçük adımı",
+    "message": "Türkçe göreviyle sakin bir başlangıç yapabilirsin.",
+    "taskId": "…",
+  },
   "sessionPresets": [
     {
       "id": "25_5",
@@ -121,20 +127,35 @@ pnpm --filter @mentor/api test
 
 ## API
 
-| Endpoint                                                         | Purpose                                                                          |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `GET /v1/coaching/today`                                         | Composite Panel payload (greeting · countdown · streak · tasks · presets · mood) |
-| `GET/POST /v1/plan-tasks` · `PATCH/DELETE /:id`                  | Plan-task CRUD; list by `date` **or** inclusive `from`/`to` range (week view)    |
-| `POST /v1/plan-tasks/bulk`                                       | User-confirmed batch add, max 21, all-or-nothing (accepted coach draft)          |
-| `GET /v1/study-sessions`                                         | Paginated finalized-session history ("Son seanslar")                             |
-| `POST /v1/study-sessions` · `PATCH /:id`                         | Pomodoro start / complete-abandon (recomputes `daily_activity`)                  |
-| `PATCH /v1/study-sessions/:id/feedback`                          | Post-session micro check-in (mood 1-3 + optional note → AI signal)               |
-| `POST /v1/mock-exams` · `GET /:id` · `GET /v1/coaching/analysis` | Mock-exam entry + personal trend + ghost                                         |
-| `POST/GET /v1/coaching/mood-checkins`                            | Mood check-in (upsert today) + trend                                             |
-| `GET/POST /v1/coaching/vision`                                   | Vision board (idempotent upsert, single row per user)                            |
+| Endpoint                                                         | Purpose                                                                       |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `GET /v1/coaching/today`                                         | Composite daily payload with localized `nextAction` and existing panel fields |
+| `GET/POST /v1/plan-tasks` · `PATCH/DELETE /:id`                  | Plan-task CRUD; list by `date` **or** inclusive `from`/`to` range (week view) |
+| `POST /v1/plan-tasks/bulk`                                       | User-confirmed batch add, max 21, all-or-nothing (accepted coach draft)       |
+| `GET /v1/study-sessions`                                         | Paginated finalized-session history ("Son seanslar")                          |
+| `POST /v1/study-sessions` · `PATCH /:id`                         | Pomodoro start / complete-abandon (recomputes `daily_activity`)               |
+| `PATCH /v1/study-sessions/:id/feedback`                          | Post-session micro check-in (mood 1-3 + optional note → AI signal)            |
+| `POST /v1/mock-exams` · `GET /:id` · `GET /v1/coaching/analysis` | Mock-exam entry + personal trend + ghost                                      |
+| `POST/GET /v1/coaching/mood-checkins`                            | Mood check-in (upsert today) + trend                                          |
+| `GET/POST /v1/coaching/vision`                                   | Vision board (idempotent upsert, single row per user)                         |
 
 ## Geliştirmeler (timeline)
 
+- **Bugünün tek küçük adımı (2026-07-20)** — `GET /v1/coaching/today` artık zorunlu, backend-
+  localized `nextAction` döner: sıralı ilk `PENDING` görev `START_TASK`, görev yoksa `ADD_TASK`, tüm
+  görevler bittiyse baskısız `DAY_COMPLETE`. Mood 1–2 seçim yapılan görevi değiştirmez; yalnız mesajı
+  yumuşatır. Streak, analiz ve focus goal bu ilk sürümde önceliğe katılmaz. `/coach` kartı görevi
+  mevcut `/study-session` deep-link'ine (`source=coach`) taşır, boş planda `/plan?add=1&source=coach`
+  açar; görev oluşturma/değiştirme otomatik değildir. Seans backend'de başarıyla başladıktan sonra
+  consent-gated `coach_session_start` ölçülür. Usage: free veya chat limiti dolmuş kullanıcı da koç
+  merkezinde günlük adımı görür; yalnız `/coach/chat` access gate altında kalır. Related:
+  `today.service.ts`, `coach-hub-brief.tsx`, `plan-study-session-link.ts`, `study-session-shell.tsx`.
+
+- **English coaching source naming and localized routes (2026-07-19)** — Internal folders, files, and
+  symbols now use `analysis`, `study-session`, and `vision-board`; Turkish public paths remain
+  `/analiz`, `/seans`, and `/hedef`. Analysis query tabs are locale-independent
+  `entry|progress|mistakes`. Related: `mock-exams.ts`, `analysis-*`,
+  `plan-study-session-link.ts`, `study-session-shell.tsx`, `vision-board-shell.tsx`.
 - **Coin ile streak kurtarma — satın alınmış freeze (2026-07-18)** — Yeni `streak_freezes` tablosu
   (unique `user_id+date`, RLS self-or-service, migration `0054`): coin ile satın alınan dondurma
   günleri kalıcı kayıt. `deriveStreak` 4. parametre `purchasedFrozenDates` aldı — satın alınmış gün

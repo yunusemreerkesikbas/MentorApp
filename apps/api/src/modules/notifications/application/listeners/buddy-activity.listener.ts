@@ -56,7 +56,7 @@ export class BuddyActivityListener {
         "FORUM",
         "Yol arkadaşından haber",
         `${actor.displayName} bugün ilk seansını tamamladı 👏`,
-        "/seans",
+        "/study-session",
       )
       .catch(() => {});
   }

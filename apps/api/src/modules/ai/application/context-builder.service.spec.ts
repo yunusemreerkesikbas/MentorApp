@@ -4,27 +4,21 @@ import { ContextBuilder } from "./context-builder.service";
 
 describe("ContextBuilder (mood grounding)", () => {
   let getMe: ReturnType<typeof vi.fn>;
-  let getExamCalendarByFamily: ReturnType<typeof vi.fn>;
   let getToday: ReturnType<typeof vi.fn>;
   let getRecentSummary: ReturnType<typeof vi.fn>;
   let getTodaySummary: ReturnType<typeof vi.fn>;
-  let getMemory: ReturnType<typeof vi.fn>;
   let builder: ContextBuilder;
 
   beforeEach(() => {
     getMe = vi.fn(async () => ({ examType: "KPSS" }));
-    getExamCalendarByFamily = vi.fn(async () => ({ daysRemaining: 90, examDateLabel: "12 Tem 2026" }));
     getToday = vi.fn(async () => ({ mood: 2, struggleNote: "matematik" }));
     getRecentSummary = vi.fn(async () => null);
     getTodaySummary = vi.fn(async () => null);
-    getMemory = vi.fn(async () => null);
     builder = new ContextBuilder(
       { getMe } as never,
-      { getExamCalendarByFamily } as never,
       { getToday } as never,
       { getTodaySummary } as never,
       { getRecentSummary } as never,
-      { get: getMemory } as never,
     );
   });
 
@@ -94,25 +88,6 @@ describe("ContextBuilder (mood grounding)", () => {
     expect(buildSystemPrompt(ctx)).not.toContain("Bugünün planı");
   });
 
-  it("grounds the prompt with the memory profile when one exists", async () => {
-    getMemory.mockResolvedValue({
-      summary: "Hedefi: KPSS 90 net. Zorlandığı: paragraf.",
-      model: "fake",
-      messageCount: 10,
-      updatedAt: new Date(),
-    });
-    const ctx = await builder.build("u1");
-    expect(ctx.memoryProfile).toContain("Hedefi: KPSS 90 net");
-    expect(buildSystemPrompt(ctx)).toContain("Kullanıcı profili (geçmiş sohbetlerden):");
-  });
-
-  it("omits the profile line when there is no memory yet", async () => {
-    getMemory.mockResolvedValue(null);
-    const ctx = await builder.build("u1");
-    expect(ctx.memoryProfile).toBeNull();
-    expect(buildSystemPrompt(ctx)).not.toContain("Kullanıcı profili");
-  });
-
   it("still builds context (mood + sessions) when the user has no exam type", async () => {
     getMe.mockResolvedValue({ examType: null });
     getRecentSummary.mockResolvedValue({
@@ -153,5 +128,4 @@ describe("ContextBuilder (mood grounding)", () => {
     expect(prompt).toContain("Matematik: D 30, Y 8, Boş 2, net 28.00");
     expect(prompt).not.toContain("SECRET PUBLISHER");
   });
-
 });

@@ -6,6 +6,7 @@ import {
   canCommentInZone,
   canCreateZone,
   canDeleteThread,
+  canLeaveZone,
   canModerateZone,
   canPostInZone,
   canRemoveMember,
@@ -117,6 +118,15 @@ describe("forum.policy", () => {
     it("rejects accepting your own answer (self-accept XP farm)", () => {
       // Asker "u1" answered their own question — accept must be denied.
       expect(canAcceptAnswer(actor([UserRole.STUDENT]), "u1", "u1")).toBe(false);
+    });
+  });
+
+  describe("canLeaveZone", () => {
+    it("member/mod/non-member may leave; OWNER may not (zone must not go ownerless)", () => {
+      expect(canLeaveZone(ZoneRole.MEMBER)).toBe(true);
+      expect(canLeaveZone(ZoneRole.MODERATOR)).toBe(true);
+      expect(canLeaveZone(null)).toBe(true); // pending requester canceling
+      expect(canLeaveZone(ZoneRole.OWNER)).toBe(false);
     });
   });
 

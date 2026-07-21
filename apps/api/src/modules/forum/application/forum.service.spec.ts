@@ -170,4 +170,35 @@ describe("ForumService", () => {
       expect(repo.deleteMember).toHaveBeenCalledWith("z1", "u2");
     });
   });
+
+  describe("leave (voluntary self-leave)", () => {
+    it("an ACTIVE member leaves — membership row deleted", async () => {
+      repo.findMembership.mockResolvedValue({ role: ZoneRole.MEMBER, status: ZoneMemberStatus.ACTIVE });
+      await svc.leave("z1", "u1");
+      expect(repo.deleteMember).toHaveBeenCalledWith("z1", "u1");
+    });
+
+    it("a PENDING requester withdraws — same delete path", async () => {
+      repo.findMembership.mockResolvedValue({ role: ZoneRole.MEMBER, status: ZoneMemberStatus.PENDING });
+      await svc.leave("z1", "u1");
+      expect(repo.deleteMember).toHaveBeenCalledWith("z1", "u1");
+    });
+
+    it("no membership is a no-op (idempotent)", async () => {
+      repo.findMembership.mockResolvedValue(null);
+      await svc.leave("z1", "u1");
+      expect(repo.deleteMember).not.toHaveBeenCalled();
+    });
+
+    it("OWNER cannot leave (409 CONFLICT)", async () => {
+      repo.findMembership.mockResolvedValue({ role: ZoneRole.OWNER, status: ZoneMemberStatus.ACTIVE });
+      await expect(svc.leave("z1", "u1")).rejects.toMatchObject({ httpStatus: HttpStatus.CONFLICT });
+      expect(repo.deleteMember).not.toHaveBeenCalled();
+    });
+
+    it("404s when the feature flag is off", async () => {
+      config.get.mockResolvedValue(false);
+      await expect(svc.leave("z1", "u1")).rejects.toMatchObject({ httpStatus: HttpStatus.NOT_FOUND });
+    });
+  });
 });

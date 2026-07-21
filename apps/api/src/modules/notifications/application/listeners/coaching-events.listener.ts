@@ -31,7 +31,7 @@ export class CoachingEventsListener {
       "COACH",
       "Seriniz sıfırlandı",
       `${event.previousStreak} günlük seriniz sona erdi. Bugün yeniden başlayabilirsin! 💪`,
-      "/panel",
+      "/dashboard",
     ).catch(() => {});
   }
 
@@ -56,7 +56,7 @@ export class CoachingEventsListener {
           : m >= 14
             ? "İki haftadır düzenli çalışıyorsunuz. Devam edin!"
             : "7 günlük çalışma serinizi tamamladınız. Harika bir başlangıç!";
-    await this.notifications.createInApp(event.userId, "COACH", `${m} günlük seri! 🔥`, body, "/panel").catch(() => {});
+    await this.notifications.createInApp(event.userId, "COACH", `${m} günlük seri! 🔥`, body, "/dashboard").catch(() => {});
   }
 
   @OnEvent(CoachingEventTopic.MOOD_LOW)
@@ -76,7 +76,7 @@ export class CoachingEventsListener {
       "COACH",
       "Bugün zor bir gün olmuş olabilir",
       "Moraliniz biraz düşük görünüyor. Küçük bir adım bile yeterli — seninleyiz. 💙",
-      "/koc",
+      "/coach",
     ).catch(() => {});
   }
 
@@ -97,7 +97,7 @@ export class CoachingEventsListener {
       "COACH",
       "Günün ilk adımı atıldı! ✨",
       "İlk seans tamamlandı. En zor adım buydu — devam et!",
-      "/seans",
+      "/study-session",
     ).catch(() => {});
   }
 

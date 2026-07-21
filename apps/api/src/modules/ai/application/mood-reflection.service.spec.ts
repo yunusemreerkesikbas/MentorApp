@@ -29,17 +29,21 @@ describe("MoodReflectionService", () => {
     }));
     build = vi.fn(async () => ({
       examType: "KPSS",
-      daysRemaining: 100,
-      examDateLabel: null,
       moodLevel: 2,
       struggleNote: null,
       recentSessions: null,
       todayPlan: null,
     }));
     append = vi.fn(async () => undefined);
-    configGet = vi.fn(async (key: string) => (key === FeatureFlag.AI_ENABLED ? true : null));
+    configGet = vi.fn(async (key: string) =>
+      key === FeatureFlag.AI_ENABLED ? true : null,
+    );
     getEntitlement = vi.fn(async () => ({ isPremium: true }));
-    getToday = vi.fn(async () => ({ mood: 2, struggleNote: null, aiReflection: null }));
+    getToday = vi.fn(async () => ({
+      mood: 2,
+      struggleNote: null,
+      aiReflection: null,
+    }));
     setTodayAiReflection = vi.fn(async () => undefined);
     assertWithinBudget = vi.fn(async () => undefined);
     translate = vi.fn(() => SAFETY_MESSAGE);
@@ -81,7 +85,11 @@ describe("MoodReflectionService", () => {
   });
 
   it("returns the cached reflection without calling the LLM", async () => {
-    getToday.mockResolvedValue({ mood: 3, struggleNote: null, aiReflection: "Önceki yansıma." });
+    getToday.mockResolvedValue({
+      mood: 3,
+      struggleNote: null,
+      aiReflection: "Önceki yansıma.",
+    });
     const res = await service.reflect(USER);
     expect(res).toEqual({ reflection: "Önceki yansıma.", model: "cache" });
     expect(complete).not.toHaveBeenCalled();
@@ -114,6 +122,10 @@ describe("MoodReflectionService", () => {
     expect(res.reflection).toBe("Bugün küçük bir adım at.");
     expect(res.model).toBe("fake");
     expect(append).toHaveBeenCalledOnce();
-    expect(setTodayAiReflection).toHaveBeenCalledWith(USER_ID, "Bugün küçük bir adım at.", "fake");
+    expect(setTodayAiReflection).toHaveBeenCalledWith(
+      USER_ID,
+      "Bugün küçük bir adım at.",
+      "fake",
+    );
   });
 });

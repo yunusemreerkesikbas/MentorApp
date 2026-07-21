@@ -61,6 +61,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `GET /v1/forum/zones` | List zones (filter by type, examType) |
 | `POST /v1/forum/zones` | Create zone (staff) |
 | `POST /v1/forum/zones/:id/join` | Join zone (OPEN→ACTIVE, REQUEST→PENDING) |
+| `POST /v1/forum/zones/:id/leave` | Self-leave / withdraw pending request (204; OWNER → 409) |
 | `GET /v1/forum/zones/:id/members` | List members (owner/mod) |
 | `POST /v1/forum/zones/:id/members/:userId/approve` | Approve pending member |
 | `GET /v1/forum/zones/:id/members/search?q=` | @mention autocomplete — active-member username prefix search (APP-021) |
@@ -96,6 +97,21 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Gönüllü ayrılma + üyelik yönetimi uzlaşısı (2026-07-20)** — Üyelik durum makinesindeki son
+  boşluk kapandı: `POST /v1/forum/zones/:id/leave` (self-scoped, 204) — ACTIVE üye ayrılır, PENDING
+  istek sahibi isteğini geri çeker (aynı delete); üyelik yoksa no-op (idempotent, `join` emsali);
+  OWNER → 409 `FORUM_OWNER_CANNOT_LEAVE` (oda sahipsiz kalamaz; devir backlog). Policy:
+  `canLeaveZone` (`forum.policy.ts`). Web: zone header'daki `JoinButton` artık katıl/ayrıl/geri-çek
+  toggle'ı — ACTIVE'de "Ayrıl" (REQUEST zone'larda `useDialog().confirm` onayı, OPEN'da doğrudan),
+  PENDING'de bekleme notu + "İsteği geri çek", OWNER'da gizli. e2e kapsamı genişledi: reject
+  (`{approve:false}`), kick (staff DELETE, self-DELETE 403 kalır) ve leave akışları artık test
+  ediliyor (27/27). Bayat backlog notları düzeltildi: reject/kick zaten APP-017 (backend) +
+  APP-026 (web) ile shipped'dı; OpenAPI şemasızlığı bilinçli erteleme olarak dokümante edildi.
+- **Localized forum/community links (2026-07-19)** — Public question source routes now use
+  `forum/question/[id]` while Turkish stays `/forum/soru/[id]`; community dynamic links use typed
+  `pathname/params/query` objects. Share URLs are localized through `getPathname`. Untranslated
+  English public questions stay `noindex,follow` with a prefixes-free Turkish canonical. Related:
+  public question page, `forum-public.ts`, community `send-button.tsx`, `routing.spec.ts`.
 - **Self-accept XP farm kapatıldı (2026-07-18)** — `canAcceptAnswer(actor, questionAuthorId,
   answerAuthorId)`: soran kişi KENDİ cevabını kabul edemez (thread başına 25 XP self-farm vektörü).
   `accept()` post'u önce fetch edip policy'ye cevap yazarını da geçirir; web soru ekranı kendi
@@ -410,7 +426,12 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 - **Member removal: OWNER çıkarılamaz** — `canRemoveMember` OWNER rolünü bloklar; OWNER devri ayrı feature (backlog).
 - **Restore lives in the queue** — hidden content isn't visible in the member feed; the only
   reachable restore is the RESOLVED tab of the report queue.
-- **Forum endpoints have no OpenAPI response schema** — web uses raw `fetch` + `@mentor/types`.
+- **Forum endpoints intentionally have no OpenAPI response schema** — web consumes `http<T>()` +
+  `@mentor/types` end-to-end; api-client regen is a no-op for forum. Adding `@ApiOkResponse`/CLI-plugin
+  schemas is an API-wide convention change, deliberately deferred to its own round (not forum work).
+- **OWNER cannot leave a zone** — `POST /zones/:id/leave` returns 409 `FORUM_OWNER_CANNOT_LEAVE`;
+  ownership transfer is a separate backlog feature. Everyone else self-leaves (ACTIVE) or withdraws
+  their pending request with the same endpoint (idempotent; no-membership is a 204 no-op).
 - **Migration not auto-applied in some setups** — run `pnpm db:up && pnpm db:migrate` once.
 - **Tests need the DB** — vitest `globalSetup` migrates real Postgres before any spec.
 - **Unit tests: 76 green** (forum module spec'leri — policy + zone + thread + QA + mention + moderation). E2E testler ayrı çalışır (`pnpm db:up && pnpm db:migrate` sonrası).

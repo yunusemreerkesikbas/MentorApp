@@ -8,6 +8,7 @@ import type {
   CheckoutResult,
   PaymentsPort,
   ProviderEvent,
+  RefundResult,
 } from "../../../../shared/ports/payments.port";
 
 /**
@@ -21,6 +22,9 @@ import type {
 @Injectable()
 export class IyzicoPaymentsAdapter implements PaymentsPort {
   readonly provider = "IYZICO" as const;
+  // Real iyzico uses a hosted payment page — the row stays INCOMPLETE until the
+  // checkout_completed webhook confirms payment (verification gate).
+  readonly instantCheckout = false;
   private readonly logger = new Logger(IyzicoPaymentsAdapter.name);
 
   constructor(private readonly config: ConfigService<Env, true>) {}
@@ -35,6 +39,12 @@ export class IyzicoPaymentsAdapter implements PaymentsPort {
   async cancel(providerRef: string): Promise<void> {
     // Planned call: POST /v2/subscription/subscriptions/{providerRef}/cancel
     this.notVerified("cancel", { providerRef });
+  }
+
+  async refund(providerRef: string, amountMinor: number, idempotencyKey: string): Promise<RefundResult> {
+    // Planned call: POST {IYZICO_BASE_URL}/v2/payment/refund
+    //   { paymentTransactionId, price, currency }, header Idempotency-Key: idempotencyKey
+    this.notVerified("refund", { providerRef, amountMinor, idempotencyKey });
   }
 
   verifyWebhook(

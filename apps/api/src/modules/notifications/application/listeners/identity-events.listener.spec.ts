@@ -28,7 +28,7 @@ describe("IdentityEventsListener", () => {
       "FORUM",
       expect.any(String),
       expect.stringContaining("Alice"),
-      "/topluluk/uye/alice",
+      "/community/member/alice",
     );
   });
 
@@ -67,7 +67,7 @@ describe("IdentityEventsListener", () => {
     actorUsername: "alice",
   };
 
-  it("notifies buddy request / accept / nudge / study-invite, naming the actor and linking to /seans", async () => {
+  it("notifies buddy request / accept / nudge / study-invite, naming the actor and linking to /study-session", async () => {
     await listener.onBuddyRequested(buddyEvent);
     await listener.onBuddyAccepted(buddyEvent);
     await listener.onBuddyNudged(buddyEvent);
@@ -77,7 +77,7 @@ describe("IdentityEventsListener", () => {
       expect(call[0]).toBe("uB");
       expect(call[1]).toBe("FORUM");
       expect(call[3]).toContain("Alice");
-      expect(call[4]).toBe("/seans");
+      expect(call[4]).toBe("/study-session");
     }
   });
 

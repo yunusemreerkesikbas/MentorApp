@@ -212,7 +212,7 @@ describe("ForumThreadService", () => {
       actorId: "u1",
     });
     // @mentions dispatched with the thread author excluded (already gets the comment notification).
-    expect(mentions.dispatch).toHaveBeenCalledWith("yorum", "u1", "/topluluk/mesaj/t1", ["author"]);
+    expect(mentions.dispatch).toHaveBeenCalledWith("yorum", "u1", "/community/message/t1", ["author"]);
   });
 
   it("lets an ACTIVE member comment on an ANNOUNCEMENT thread (discussion is open)", async () => {

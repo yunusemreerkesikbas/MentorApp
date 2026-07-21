@@ -9,6 +9,7 @@ import type {
   DailyGreetingDto,
   Paginated,
   SessionReflectionDto,
+  WeeklyReviewNarrationDto,
 } from "@mentor/types";
 import type { PlanDraftInput } from "@mentor/validation";
 import { http, httpRaw, throwApiClientError } from "@mentor/api-client";
@@ -30,7 +31,7 @@ export function buildCoachMockExamHref(
   contextMockExamId: string,
 ) {
   return {
-    pathname: "/koc/chat" as const,
+    pathname: "/coach/chat" as const,
     query: { seed, contextMockExamId },
   };
 }
@@ -39,9 +40,7 @@ export function resolvePendingCoachContext(
   context: string | null,
   appliedContext: string | null,
 ): string | undefined {
-  return context && context !== appliedContext
-    ? context
-    : undefined;
+  return context && context !== appliedContext ? context : undefined;
 }
 
 export function removeCoachContextFromUrl(href: string): string {
@@ -136,9 +135,12 @@ export async function streamRegenerate(
   conversationId: string,
   onDelta: (delta: string) => void,
 ): Promise<CoachReply> {
-  const res = await httpRaw(`/v1/coach/conversations/${conversationId}/regenerate/stream`, {
-    method: "POST",
-  });
+  const res = await httpRaw(
+    `/v1/coach/conversations/${conversationId}/regenerate/stream`,
+    {
+      method: "POST",
+    },
+  );
   if (!res.ok) await throwApiClientError(res);
   if (!res.body) throw new CoachStreamError("AI_PROVIDER_ERROR");
   return readCoachSseStream(res.body, onDelta);
@@ -200,9 +202,13 @@ export async function listCoachMessages(
   )) as Paginated<CoachMessageDto>;
 }
 
-/** Delete one thread (its messages cascade). The memory profile is kept. */
-export async function deleteCoachConversation(conversationId: string): Promise<void> {
-  await http<void>(`/v1/coach/conversations/${conversationId}`, { method: "DELETE" });
+/** Delete one thread (its messages cascade). Any legacy saved summary is kept. */
+export async function deleteCoachConversation(
+  conversationId: string,
+): Promise<void> {
+  await http<void>(`/v1/coach/conversations/${conversationId}`, {
+    method: "DELETE",
+  });
 }
 
 /** Rate a coach message: 1 = 👍, -1 = 👎, null = clear. */
@@ -216,17 +222,19 @@ export async function setCoachMessageFeedback(
   });
 }
 
-/** The coach's distilled profile of the user (null until the memory job builds one). */
+/** Read the legacy saved summary. Automatic generation is disabled. */
 export async function fetchCoachMemory(): Promise<CoachMemoryDto | null> {
-  return (await http<CoachMemoryDto | null>("/v1/coach/memory")) as CoachMemoryDto | null;
+  return (await http<CoachMemoryDto | null>(
+    "/v1/coach/memory",
+  )) as CoachMemoryDto | null;
 }
 
-/** Reset the memory profile (user-controlled, KVKK). */
+/** Delete the legacy saved summary (user-controlled, KVKK). */
 export async function clearCoachMemory(): Promise<void> {
   await http<void>("/v1/coach/memory", { method: "DELETE" });
 }
 
-/** Premium proactive daily greeting on the /koc hub; 403 for free — caller should stay silent. */
+/** Premium proactive daily greeting on the /coach hub; 403 for free — caller should stay silent. */
 export async function fetchDailyGreeting(): Promise<DailyGreetingDto> {
   return (await http<DailyGreetingDto>("/v1/coach/daily-greeting", {
     method: "POST",
@@ -241,4 +249,14 @@ export async function requestSessionReflection(
     method: "POST",
     body: JSON.stringify({ sessionId }),
   })) as SessionReflectionDto;
+}
+
+/** Weekly-review AI narration; premium included, free users need the deep-analysis coin unlock (403 otherwise). */
+export async function narrateWeeklyReview(
+  examId: string,
+): Promise<WeeklyReviewNarrationDto> {
+  return (await http<WeeklyReviewNarrationDto>("/v1/coach/weekly-review", {
+    method: "POST",
+    body: JSON.stringify({ examId }),
+  })) as WeeklyReviewNarrationDto;
 }

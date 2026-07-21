@@ -19,7 +19,7 @@ describe("ForumEventsListener", () => {
       "FORUM",
       expect.any(String),
       expect.any(String),
-      "/topluluk/soru/t1",
+      "/community/question/t1",
     );
   });
 
@@ -30,7 +30,7 @@ describe("ForumEventsListener", () => {
       "FORUM",
       expect.any(String),
       expect.any(String),
-      "/topluluk/mesaj/t1",
+      "/community/message/t1",
     );
   });
 
@@ -41,7 +41,7 @@ describe("ForumEventsListener", () => {
       "FORUM",
       expect.any(String),
       expect.any(String),
-      "/topluluk/yorum/p1",
+      "/community/comment/p1",
     );
   });
 
@@ -57,18 +57,18 @@ describe("ForumEventsListener", () => {
       "FORUM",
       expect.any(String),
       expect.any(String),
-      "/topluluk/soru/t1",
+      "/community/question/t1",
     );
   });
 
   it("notifies a mentioned user with the carried link", async () => {
-    await listener.onUserMentioned({ recipientId: "u2", actorId: "u1", link: "/topluluk/mesaj/t1" });
+    await listener.onUserMentioned({ recipientId: "u2", actorId: "u1", link: "/community/message/t1" });
     expect(notifications.createInApp).toHaveBeenCalledWith(
       "u2",
       "FORUM",
       expect.any(String),
       expect.any(String),
-      "/topluluk/mesaj/t1",
+      "/community/message/t1",
     );
   });
 
@@ -92,7 +92,7 @@ describe("ForumEventsListener", () => {
       "FORUM",
       expect.any(String),
       expect.any(String),
-      "/topluluk/kpss/yonetim",
+      "/community/kpss/management",
     );
   });
 });

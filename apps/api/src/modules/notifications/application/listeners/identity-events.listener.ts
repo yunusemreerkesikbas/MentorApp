@@ -11,7 +11,7 @@ import { NotificationsService, REALTIME_QUEUE_TTL_MS } from "../notifications.se
  * Consumes identity domain events → in-app notifications. Best-effort: a failed notification never
  * breaks the emitter. The actor's display fields ride on the event payload, so this listener holds no
  * identity dependency (only the event contract). Reuses the FORUM category — the follow links into the
- * /topluluk social surface (no new category churn, per plan).
+ * /community social surface (no new category churn, per plan).
  */
 @Injectable()
 export class IdentityEventsListener {
@@ -23,7 +23,7 @@ export class IdentityEventsListener {
   async onUserFollowed(e: UserFollowed): Promise<void> {
     if (e.recipientId === e.actorId) return; // can't follow yourself, but stay safe
     // A follower without a handle has no linkable profile page → notify without a link.
-    const link = e.actorUsername ? `/topluluk/uye/${e.actorUsername}` : undefined;
+    const link = e.actorUsername ? `/community/member/${e.actorUsername}` : undefined;
     await this.notifications
       .createInApp(e.recipientId, "FORUM", "Yeni takipçi", `${e.actorDisplayName} seni takip etti.`, link)
       .catch((err: unknown) =>
@@ -31,7 +31,7 @@ export class IdentityEventsListener {
       );
   }
 
-  // Buddy notifications land on /seans — the buddy card there handles accept/nudge-back.
+  // Buddy notifications land on /study-session — the buddy card there handles accept/nudge-back.
 
   @OnEvent(IdentityEventTopic.BUDDY_REQUESTED)
   async onBuddyRequested(e: BuddyEvent): Promise<void> {
@@ -85,7 +85,7 @@ export class IdentityEventsListener {
   ): Promise<void> {
     if (e.recipientId === e.actorId) return;
     await this.notifications
-      .createInApp(e.recipientId, "FORUM", title, body, "/seans")
+      .createInApp(e.recipientId, "FORUM", title, body, "/study-session")
       .catch((err: unknown) =>
         this.logger.warn(`buddy notification failed for ${e.recipientId}: ${String(err)}`),
       );

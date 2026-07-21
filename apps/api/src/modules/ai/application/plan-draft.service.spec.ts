@@ -19,7 +19,12 @@ describe("PlanDraftService", () => {
   beforeEach(() => {
     complete = vi.fn(async () => ({
       text: JSON.stringify({
-        days: [{ date: TODAY, tasks: [{ title: "Matematik: 20 soru", subject: "Matematik" }] }],
+        days: [
+          {
+            date: TODAY,
+            tasks: [{ title: "Matematik: 20 soru", subject: "Matematik" }],
+          },
+        ],
       }),
       promptTokens: 10,
       completionTokens: 20,
@@ -39,13 +44,10 @@ describe("PlanDraftService", () => {
       {
         build: vi.fn(async () => ({
           examType: "KPSS",
-          daysRemaining: 90,
-          examDateLabel: null,
           moodLevel: null,
           struggleNote: null,
           recentSessions: null,
           todayPlan: null,
-          memoryProfile: null,
         })),
       } as never,
       { append, countFeatureSince } as never,
@@ -91,7 +93,10 @@ describe("PlanDraftService", () => {
     const res = await service.draft(USER, "hafta sonu yoğunum");
     expect(res.model).toBe("fake");
     expect(res.days).toEqual([
-      { date: TODAY, tasks: [{ title: "Matematik: 20 soru", subject: "Matematik" }] },
+      {
+        date: TODAY,
+        tasks: [{ title: "Matematik: 20 soru", subject: "Matematik" }],
+      },
     ]);
     expect(append.mock.calls[0][0].feature).toBe(AiUsageFeature.PLAN_DRAFT);
     // The user's wish reaches the prompt.

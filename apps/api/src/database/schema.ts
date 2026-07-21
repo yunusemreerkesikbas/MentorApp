@@ -106,7 +106,7 @@ export const users = pgTable(
     /** Minimal onboarding; deep diagnosis comes with coaching (W2). */
     examType: text("exam_type"),
     examDate: date("exam_date"),
-    /** Daily focus goal in minutes (/seans progress + XP quest); null = no goal set. */
+    /** Daily focus goal in minutes (/study-session progress + XP quest); null = no goal set. */
     dailyFocusGoalMinutes: integer("daily_focus_goal_minutes"),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     /** KVKK consent timestamp — signup is rejected without consent (§7/§9). */
@@ -617,7 +617,9 @@ export const streakFreezes = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [uniqueIndex("streak_freezes_user_date_unique_idx").on(t.userId, t.date)],
+  (t) => [
+    uniqueIndex("streak_freezes_user_date_unique_idx").on(t.userId, t.date),
+  ],
 );
 
 /**
@@ -1242,6 +1244,8 @@ export const coachMessages = pgTable(
     content: text("content").notNull(),
     /** RAG source chips on COACH rows ([{title, slug, url}]); null on USER rows. */
     sources: jsonb("sources"),
+    /** Authoritative countdown data card on deterministic official replies. */
+    officialCountdown: jsonb("official_countdown"),
     /** LLM model that produced a COACH row; null on USER rows. */
     model: text("model"),
     /** User rating on a COACH row: 1 = 👍, -1 = 👎, null = none. */
@@ -1682,8 +1686,12 @@ export const buddyPairs = pgTable(
     status: text("status").notNull().default("PENDING"),
     acceptedAt: timestamp("accepted_at", { withTimezone: true }),
     /** Per-direction nudge cooldown anchors (4h — buddy.service constant). */
-    requesterLastNudgeAt: timestamp("requester_last_nudge_at", { withTimezone: true }),
-    addresseeLastNudgeAt: timestamp("addressee_last_nudge_at", { withTimezone: true }),
+    requesterLastNudgeAt: timestamp("requester_last_nudge_at", {
+      withTimezone: true,
+    }),
+    addresseeLastNudgeAt: timestamp("addressee_last_nudge_at", {
+      withTimezone: true,
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1738,7 +1746,7 @@ export const aiWeeklyReviews = pgTable(
   ],
 );
 
-/** W3 · Premium proactive daily coach greeting on /koc — at most one LLM call per (user, day). */
+/** W3 · Premium proactive daily coach greeting on /coach — at most one LLM call per (user, day). */
 export const aiDailyGreetings = pgTable(
   "ai_daily_greetings",
   {

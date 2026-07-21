@@ -42,7 +42,7 @@ export class WebPushAdapter implements PushPort {
       JSON.stringify({
         title: input.title,
         body: input.body,
-        url: input.url ?? "/panel",
+        url: input.url ?? "/dashboard",
       }),
     );
   }

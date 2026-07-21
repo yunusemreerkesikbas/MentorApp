@@ -266,7 +266,7 @@ export function PlanCoachDraftAction({ onCreated }: PlanCoachDraftActionProps) {
     setCheckingAccess(false);
 
     if (!subscription.entitlement.isPremium) {
-      router.push("/abonelik");
+      router.push("/subscription");
       return;
     }
 

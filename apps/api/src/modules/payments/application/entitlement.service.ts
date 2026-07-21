@@ -58,6 +58,10 @@ export function computeEntitlement(sub: SubscriptionRow | null, now: Date): Enti
   if (!sub) return free("NONE");
 
   switch (sub.status) {
+    // Checkout started but the provider hasn't confirmed payment — the verification gate withholds
+    // premium until the checkout-completed webhook activates the row (an abandoned page grants nothing).
+    case SubscriptionStatus.INCOMPLETE:
+      return free("INCOMPLETE");
     case SubscriptionStatus.TRIALING: {
       const until = sub.trialEndsAt ?? sub.currentPeriodEnd;
       if (until && until.getTime() <= now.getTime()) return free("EXPIRED");

@@ -14,6 +14,7 @@ function build(overrides: {
   dailyFocusGoalMinutes?: number | null;
   focusMinutesToday?: number;
   focusingNow?: number | null;
+  tasks?: unknown[];
 }) {
   const users = {
     getMe: vi.fn(async () => ({
@@ -23,9 +24,19 @@ function build(overrides: {
     })),
   };
   const plan = {
-    listForDate: vi.fn(async () => [
-      { id: "t1", title: "Paragraf", subject: "Türkçe", status: "DONE", sortOrder: 0, taskDate: todayIso() },
-    ]),
+    listForDate: vi.fn(
+      async () =>
+        overrides.tasks ?? [
+          {
+            id: "t1",
+            title: "Paragraf",
+            subject: "Türkçe",
+            status: "DONE",
+            sortOrder: 0,
+            taskDate: todayIso(),
+          },
+        ],
+    ),
   };
   const streak = {
     getSummary: vi.fn(async () => ({
@@ -74,7 +85,11 @@ describe("TodayService — composite panel payload", () => {
     expect(result.countdown).not.toBeNull();
     expect(result.countdown?.examName).toBe("KPSS Lisans 2026");
     expect(result.countdown?.daysRemaining).toBe(30);
-    expect(result.streak).toEqual({ currentStreak: 7, longestStreak: 21, freezeTokens: 2 });
+    expect(result.streak).toEqual({
+      currentStreak: 7,
+      longestStreak: 21,
+      freezeTokens: 2,
+    });
     expect(result.tasks).toHaveLength(1);
     expect(result.sessionPresets.map((p) => p.id)).toEqual(["25_5", "50_10"]);
     expect(result.mood).toBeNull();
@@ -93,19 +108,30 @@ describe("TodayService — composite panel payload", () => {
   });
 
   it("surfaces the focus goal with today's focus minutes when a goal is set", async () => {
-    const { service } = build({ dailyFocusGoalMinutes: 120, focusMinutesToday: 45 });
+    const { service } = build({
+      dailyFocusGoalMinutes: 120,
+      focusMinutesToday: 45,
+    });
     const result = await service.getToday(USER);
-    expect(result.focusGoal).toEqual({ goalMinutes: 120, focusMinutesToday: 45 });
+    expect(result.focusGoal).toEqual({
+      goalMinutes: 120,
+      focusMinutesToday: 45,
+    });
   });
 
   it("surfaces a null goal (no default) when the user never set one", async () => {
     const { service } = build({ focusMinutesToday: 30 });
     const result = await service.getToday(USER);
-    expect(result.focusGoal).toEqual({ goalMinutes: null, focusMinutesToday: 30 });
+    expect(result.focusGoal).toEqual({
+      goalMinutes: null,
+      focusMinutesToday: 30,
+    });
   });
 
   it("passes the focusing-now ambience count through (null below threshold)", async () => {
-    expect((await build({ focusingNow: 12 }).service.getToday(USER)).focusingNow).toBe(12);
+    expect(
+      (await build({ focusingNow: 12 }).service.getToday(USER)).focusingNow,
+    ).toBe(12);
     expect((await build({}).service.getToday(USER)).focusingNow).toBeNull();
   });
 
@@ -115,5 +141,92 @@ describe("TodayService — composite panel payload", () => {
     const result = await service.getToday(USER);
     expect(result.focusingNow).toBeNull();
     expect(result.greetingName).toBe("Elif");
+  });
+
+  it("selects the first pending task as today's next action", async () => {
+    const tasks = [
+      {
+        id: "done",
+        title: "Done",
+        subject: null,
+        status: "DONE",
+        sortOrder: 0,
+        taskDate: todayIso(),
+      },
+      {
+        id: "first",
+        title: "Reading",
+        subject: "Language",
+        status: "PENDING",
+        sortOrder: 1,
+        taskDate: todayIso(),
+      },
+      {
+        id: "later",
+        title: "History",
+        subject: "History",
+        status: "PENDING",
+        sortOrder: 2,
+        taskDate: todayIso(),
+      },
+    ];
+
+    await expect(
+      build({ tasks }).service.getToday(USER),
+    ).resolves.toMatchObject({
+      nextAction: {
+        kind: "START_TASK",
+        title: "coaching.nextAction.START_TASK.title",
+        message: "coaching.nextAction.START_TASK.message",
+        taskId: "first",
+      },
+    });
+  });
+
+  it("keeps the pending task but uses gentler copy when mood is low", async () => {
+    const tasks = [
+      {
+        id: "first",
+        title: "Reading",
+        subject: "Language",
+        status: "PENDING",
+        sortOrder: 0,
+        taskDate: todayIso(),
+      },
+    ];
+
+    await expect(
+      build({ tasks, mood: { mood: 2 } }).service.getToday(USER),
+    ).resolves.toMatchObject({
+      nextAction: {
+        kind: "START_TASK",
+        message: "coaching.nextAction.START_TASK.lowMoodMessage",
+        taskId: "first",
+      },
+    });
+  });
+
+  it("asks the user to add one task when today's plan is empty", async () => {
+    await expect(
+      build({ tasks: [] }).service.getToday(USER),
+    ).resolves.toMatchObject({
+      nextAction: {
+        kind: "ADD_TASK",
+        title: "coaching.nextAction.ADD_TASK.title",
+        message: "coaching.nextAction.ADD_TASK.message",
+        taskId: null,
+      },
+    });
+  });
+
+  it("celebrates calmly without a CTA when every task is complete", async () => {
+    await expect(build({}).service.getToday(USER)).resolves.toMatchObject({
+      nextAction: {
+        kind: "DAY_COMPLETE",
+        title: "coaching.nextAction.DAY_COMPLETE.title",
+        message: "coaching.nextAction.DAY_COMPLETE.message",
+        taskId: null,
+      },
+    });
   });
 });

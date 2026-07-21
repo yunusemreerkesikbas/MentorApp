@@ -67,6 +67,11 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Community namespace and source routes in English (2026-07-19)** — App Router folders and dynamic
+  hrefs now use `community`, `feed`, `saved`, `leaderboard`, `member`, `message`,
+  `question`, `comment`, and `management`; localized Turkish paths remain under `/topluluk`.
+  The i18n namespace moved from `topluluk` to `community`. Related: `routing.ts`,
+  `messages/{tr,en}.json`, community route components.
 - **Level eğrisi 12 seviyeye uzadı (2026-07-18)** — `TIER_THRESHOLDS` 8→12 seviye, tavan
   3000→10000 XP (`4200, 5600, 7500, 10000` eklendi); Efsane artık tier 12. i18n `level_1..12`
   tr/en güncellendi (yeni isimler: Disiplinli/Öncü/Şampiyon/Zirve; mevcut isimler kaydı —

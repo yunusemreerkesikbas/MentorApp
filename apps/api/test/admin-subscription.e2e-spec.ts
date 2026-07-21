@@ -154,6 +154,23 @@ describe("admin subscription + refund (e2e)", () => {
     expect(refund.status).toBe("REFUNDED");
 
     expect(await auditCount("subscription.refund", subUserId)).toBeGreaterThan(0);
+
+    // The provider refund was invoked (before the ledger append) and its ref recorded: the fake
+    // adapter embeds the Idempotency-Key (the admin-refund event id) in the ref it returns.
+    const c = await pool.connect();
+    try {
+      await c.query("select set_config('app.role','SERVICE',true)");
+      const row = await c.query(
+        "select provider_event_id, raw from payment_transactions where user_id=$1 and type='REFUND' order by created_at desc limit 1",
+        [subUserId],
+      );
+      const eventId = row.rows[0]?.provider_event_id as string;
+      const rawRefundRef = row.rows[0]?.raw?.refundRef as string;
+      expect(eventId.startsWith("admin-refund:")).toBe(true);
+      expect(rawRefundRef).toBe(`fake_refund_${eventId}`); // provider.refund(providerRef, amount, key)
+    } finally {
+      c.release();
+    }
   });
 
   it("caps cumulative refunds to the charge (remaining only)", async () => {

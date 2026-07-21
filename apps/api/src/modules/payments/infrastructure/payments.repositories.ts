@@ -89,6 +89,17 @@ export class SubscriptionsRepository {
     });
   }
 
+  /**
+   * Hard-delete a subscription row. Used ONLY to discard an abandoned, never-confirmed INCOMPLETE
+   * checkout so the user can retry — a deleted (vs expired) row also keeps trial-once intact, since
+   * an unpaid checkout never consumed the trial.
+   */
+  async deleteById(id: string): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await tx.delete(subscriptions).where(eq(subscriptions.id, id));
+    });
+  }
+
   async update(
     id: string,
     patch: Partial<typeof subscriptions.$inferInsert>,
@@ -108,8 +119,9 @@ export class SubscriptionsRepository {
    * Row-lock a subscription for the duration of the caller tx (`SELECT … FOR UPDATE`).
    * Serializes concurrent admin refunds on the same subscription so the cap can't be raced.
    */
-  async lockById(id: string, tx: Exec): Promise<void> {
-    await tx.select({ id: subscriptions.id }).from(subscriptions).where(eq(subscriptions.id, id)).for("update");
+  async lockById(id: string, tx: Exec): Promise<SubscriptionRow | undefined> {
+    const rows = await tx.select().from(subscriptions).where(eq(subscriptions.id, id)).for("update");
+    return rows[0];
   }
 
   /** Admin metrics (W6) — subscription counts by status, single scan (SERVICE context). */

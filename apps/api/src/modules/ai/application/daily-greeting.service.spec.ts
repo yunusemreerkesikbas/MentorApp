@@ -27,16 +27,15 @@ describe("DailyGreetingService", () => {
     }));
     build = vi.fn(async () => ({
       examType: "KPSS",
-      daysRemaining: 100,
-      examDateLabel: null,
       moodLevel: null,
       struggleNote: null,
       recentSessions: null,
       todayPlan: null,
-      memoryProfile: null,
     }));
     append = vi.fn(async () => undefined);
-    configGet = vi.fn(async (key: string) => (key === FeatureFlag.AI_ENABLED ? true : null));
+    configGet = vi.fn(async (key: string) =>
+      key === FeatureFlag.AI_ENABLED ? true : null,
+    );
     getEntitlement = vi.fn(async () => ({ isPremium: true }));
     find = vi.fn(async () => undefined);
     insert = vi.fn(async () => undefined);

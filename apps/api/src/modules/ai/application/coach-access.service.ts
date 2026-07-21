@@ -25,12 +25,23 @@ export class CoachAccessService {
     private readonly usage: AiUsageRepository,
   ) {}
 
-  async getAccess(userId: string, rolesHint?: string[]): Promise<CoachAccessDto> {
+  async getAccess(
+    userId: string,
+    rolesHint?: string[],
+  ): Promise<CoachAccessDto> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
-      return { canChat: false, mode: CoachAccessMode.NONE, reason: ErrorCode.AI_DISABLED };
+      return {
+        canChat: false,
+        mode: CoachAccessMode.NONE,
+        reason: ErrorCode.AI_DISABLED,
+      };
     }
     if (!(await this.budget.isWithinBudget())) {
-      return { canChat: false, mode: CoachAccessMode.NONE, reason: ErrorCode.AI_BUDGET_EXCEEDED };
+      return {
+        canChat: false,
+        mode: CoachAccessMode.NONE,
+        reason: ErrorCode.AI_BUDGET_EXCEEDED,
+      };
     }
 
     const ent = await this.entitlement.getEntitlement(userId, rolesHint);
@@ -38,12 +49,18 @@ export class CoachAccessService {
       // Same counter as ChatService.assertPremiumRateLimit so the hint matches enforcement.
       const [dailyLimit, usedToday] = await Promise.all([
         this.config.get("ai.chat.daily_limit"),
-        this.usage.countFeatureSince(userId, AiUsageFeature.CHAT, new Date(Date.now() - DAY_MS)),
+        this.usage.countFeatureSince(
+          userId,
+          AiUsageFeature.CHAT,
+          new Date(Date.now() - DAY_MS),
+        ),
       ]);
+      const remaining = Math.max(0, dailyLimit - usedToday);
       return {
-        canChat: true,
+        canChat: remaining > 0,
         mode: CoachAccessMode.PREMIUM,
-        dailyMessagesRemaining: Math.max(0, dailyLimit - usedToday),
+        ...(remaining === 0 ? { reason: ErrorCode.AI_RATE_LIMITED } : {}),
+        dailyMessagesRemaining: remaining,
       };
     }
 

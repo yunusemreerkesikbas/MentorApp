@@ -81,7 +81,8 @@ export const PlanDatePickerSheet = forwardRef<
     [plannedDates],
   );
 
-  const monthKey = `${month.getFullYear()}-${month.getMonth()}`;
+  const monthYear = month.getFullYear();
+  const monthIndex = month.getMonth();
 
   useEffect(() => {
     // Merge freshly-seeded planned dates into local state — deliberate external-sync, not derived state.
@@ -91,7 +92,7 @@ export const PlanDatePickerSheet = forwardRef<
 
   useEffect(() => {
     let active = true;
-    const { from, to } = monthIsoBounds(month.getFullYear(), month.getMonth());
+    const { from, to } = monthIsoBounds(monthYear, monthIndex);
 
     listPlanTaskCalendarDates(from, to)
       .then((dates) => {
@@ -105,7 +106,7 @@ export const PlanDatePickerSheet = forwardRef<
     return () => {
       active = false;
     };
-  }, [monthKey]);
+  }, [monthYear, monthIndex]);
 
   useImperativeHandle(ref, () => ({
     getValue: () => value,

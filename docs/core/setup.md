@@ -55,6 +55,45 @@ curl -X POST http://localhost:3001/v1/internal/cron/dispatch-daily-reminders \
 
 Quick checks: register a user → job row in `jobs` → `process-jobs` → completed; `/profil` → enable push → dispatch + process cron.
 
+## Economy smoke test (pre-flip)
+
+10 adımlık uçtan uca prova: `economy.enabled` açılmadan önce staging'de (veya lokalde) koşulur.
+İlk tam koşu: 2026-07-19, 10/10 PASS — bkz. [features/economy.md](../features/economy.md) timeline.
+**All-fake env yeterli:** `AI_PROVIDER=fake` (narration FakeLlm ile çalışır), `PAYMENTS_PROVIDER=fake`.
+
+**Hazırlık**
+
+1. `pnpm db:up` → `pnpm --filter @mentor/api db:migrate` → `pnpm dev`.
+   Gotcha: web route klasörleri değiştiyse (ör. URL rename) **`apps/web/.next` silinmeli** — bayat
+   Turbopack cache'i tüm alt sayfaları 404 yapar.
+2. Üç kullanıcı kaydet (web `/kayit`): U1 (test), U2 (davet edilen), A1 (admin). SUPER_ADMIN:
+   `update users set roles = array_append(roles,'SUPER_ADMIN') where email='<A1>';` → `:3002/login`.
+3. Flip: admin `/config` → `economy.enabled` **Feature Flags grubunda** (economy grubunda değil).
+   SQL fallback: `insert into config_overrides(key,value) values ('economy.enabled','true'::jsonb)
+   on conflict (key) do update set value=excluded.value;` — **sonra API restart** (process-local cache).
+4. Coin fonlama (adım 6-7 için ≥45): `POST /v1/admin/users/<U1>/economy/adjust
+   {"unit":"COIN","amount":50,"reason":"smoke funding"}` — audit'li, cap'leri bilinçli bypass eder ve
+   organik cap muhasebesine girmez (davet ödülü +20 ise organiktir, 50/gün cap'ine sayılır).
+
+**Adımlar** (ledger sorgusu: `select reason, unit, amount, ref_type, ref_id from ledger_entries
+where user_id='<id>' order by created_at desc;`)
+
+| # | Aksiyon | Beklenen |
+|---|---|---|
+| 1 | Admin `/config`: economy anahtarları; `weekly_focus_sessions_target=0` ve `daily_cap=-1` dene | Anahtarlar görünür; ikisi de 400 (zod bound); `admin_audit_log`'da `config.update` satırı |
+| 2 | U1 `GET /v1/economy/balance`; web `/panel` + `/profil` | 200; balance pill + quest banner + earn hub görünür |
+| 3 | `/plan`da görev ekle + tamamla | +5 XP, ledger TR etiketli (`Görev ödülü`), `user_quest_progress.period_key=YYYY-AA-GG` |
+| 4 | Quest sheet "Bu Hafta" tab'ı; kısa bir odak seansı bitir (backdate: `startedAt` −12 dk, `actualFocusSeconds≥300`) | 3 haftalık görev, hedefler config'ten, `{target}` çözülmüş; seans → progress +1; `period_key=YYYY-Www` |
+| 5 | U1 kodu → U2 redeem → U2 fake checkout → imzalı `payment_succeeded` webhook (HMAC-SHA256, `x-fake-signature`, raw body birebir) → admin refund → tekrar refund | Redeem PENDING; checkout TRIALING (ödül yok); webhook → U1 +20 `invite.converted`; refund → `invite.reverted` −N (clamp, `note: orig:20`); ikinci refund 400 + reversal satırı hâlâ 1 |
+| 6 | Streak: `daily_activity`e T-2/T-4/T-6 satırı ekle (T-1/T-3/T-5 boş) → `/panel` "Serini kurtar" 2-tap | `GET /streak-rescue` eligible (en eski bu-ay boşluğu); −20 `streak.freeze.purchase`; `streak_freezes` satırı |
+| 7 | Derin analiz: geçen haftaya 2 COMPLETED seans gerekli — **review `ended_at` ile geçen haftayı sayar**, finalize `ended_at=now` yazdığından SQL ile geçen haftaya çek → `/analiz` Gelişim tab → 2-tap 25 coin | Kart "25 coin ile aç" → "Açıldı" + narration + önerilen görev; −25 tek satır; tekrar `POST /deep-analysis` → `unlocked:true`, debit YOK |
+| 8 | `/koc` + `/koc/sohbet` görsel tarama | Coin/maliyet/bakiye UI yok ("kalan mesaj hakkı" soyutlaması serbest) |
+| 9 | `disabled_ids="daily.mood-checkin"` → mood check-in yap → temizle | Görev listelenmez + grant edilmez; temizlenince listelenir ve koşul sağlanmışsa hemen grant |
+| 10 | `economy.enabled=false` | Economy endpoint'leri 404; `/panel` pill+banner, `/profil` hub, `/analiz` kartı gizli; narration unlock satırına rağmen 403. Staging'de false bırakılır |
+
+Webhook imza yardımcıları: `signFakeWebhook` (`fake-payments.adapter.ts`) veya eşdeğer node script
+(`createHmac("sha256", PAYMENTS_WEBHOOK_SECRET).update(rawBody)`).
+
 ## Tests
 ```bash
 pnpm db:up                              # e2e needs the local Postgres

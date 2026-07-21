@@ -34,6 +34,11 @@ export async function getZone(slug: string): Promise<ZoneView> {
   return (await http<ZoneView>(`/v1/forum/zones/${slug}`)) as ZoneView;
 }
 
+/** Self-scoped: leave the zone (ACTIVE) or withdraw a pending join request. Idempotent. */
+export async function leaveZone(zoneId: string): Promise<void> {
+  await http(`/v1/forum/zones/${zoneId}/leave`, { method: "POST" });
+}
+
 export async function joinZone(zoneId: string): Promise<{ status: ZoneMemberStatus }> {
   return (await http<{ status: ZoneMemberStatus }>(`/v1/forum/zones/${zoneId}/join`, {
     method: "POST",

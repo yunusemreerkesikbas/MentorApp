@@ -73,11 +73,12 @@ export function PlanWeekMiniCalendar({
     () => [...plannedDates].map(isoToLocalDate),
     [plannedDates],
   );
-  const monthKey = `${month.getFullYear()}-${month.getMonth()}`;
+  const monthYear = month.getFullYear();
+  const monthIndex = month.getMonth();
 
   useEffect(() => {
     let active = true;
-    const { from, to } = monthIsoBounds(month.getFullYear(), month.getMonth());
+    const { from, to } = monthIsoBounds(monthYear, monthIndex);
     listPlanTaskCalendarDates(from, to)
       .then((dates) => {
         if (!active) return;
@@ -89,7 +90,7 @@ export function PlanWeekMiniCalendar({
     return () => {
       active = false;
     };
-  }, [monthKey]);
+  }, [monthYear, monthIndex]);
 
   return (
     <Card className="overflow-hidden p-4">

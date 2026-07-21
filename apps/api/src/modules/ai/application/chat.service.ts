@@ -1,10 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
+import { I18nContext, I18nService } from "nestjs-i18n";
 import {
   Currency,
   type CoachChatReplyDto,
   type CoachChatStreamEvent,
   type MockExamDto,
+  type CountdownDto,
 } from "@mentor/types";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -12,32 +14,42 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { ContentService } from "../../content/application/content.service";
+import { ExamEventType } from "../../content/domain/content.constants";
 import { MockExamService } from "../../coaching/application/mock-exam.service";
 import { EconomyService } from "../../economy/application/economy.service";
 import { EconomyLedger } from "../../economy/domain/economy.constants";
 import { EntitlementService } from "../../payments/application/entitlement.service";
-import { LLM_PORT, type LlmHistoryMessage, type LlmPort } from "../domain/llm.port";
 import {
-  AI_MEMORY_JOB,
+  LLM_PORT,
+  type LlmHistoryMessage,
+  type LlmPort,
+} from "../domain/llm.port";
+import {
   AiUsageFeature,
   buildConversationTitle,
   buildSystemPrompt,
   CHAT_HISTORY_MAX_MESSAGES,
   estimateCostMicros,
-  MEMORY_REFRESH_EVERY_N_MESSAGES,
   RAG_MAX_DISTANCE,
   RAG_TOP_K,
 } from "../domain/ai.constants";
-import { createTaskMarkerFilter, extractReplyMarkers } from "../domain/suggested-task";
-import { JOB_QUEUE_PORT, type JobQueuePort } from "../../../shared/ports/job-queue.port";
+import {
+  createTaskMarkerFilter,
+  extractReplyMarkers,
+} from "../domain/suggested-task";
+import { classifyOfficialIntent } from "../domain/official-intent";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
-import { CoachMessageRepository } from "../infrastructure/coach-message.repository";
+import {
+  CoachMessageRepository,
+  type CoachConversationTarget,
+} from "../infrastructure/coach-message.repository";
 import { CoachMemoryRepository } from "../infrastructure/coach-memory.repository";
 import { CoachConversationRepository } from "../infrastructure/coach-conversation.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 
 export type CoachReplyResult = CoachChatReplyDto;
+type OfficialContent = Omit<CoachReplyResult, "conversationId">;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -61,26 +73,140 @@ export class ChatService {
     private readonly conversations: CoachConversationRepository,
     private readonly memory: CoachMemoryRepository,
     private readonly budget: AiBudgetGuard,
-    @Inject(JOB_QUEUE_PORT) private readonly queue: JobQueuePort,
     private readonly mockExams: MockExamService,
+    private readonly i18n: I18nService,
   ) {}
 
-  /**
-   * Resolve the thread this message belongs to: verify ownership of an existing one, or open a new
-   * conversation titled after the message (first ~60 chars — no LLM call).
-   */
-  private async resolveConversation(
+  /** Validate an existing thread, or describe the new thread to create after a successful reply. */
+  private async resolveConversationTarget(
     userId: string,
     message: string,
     conversationId?: string,
-  ): Promise<string> {
-    if (conversationId) {
-      if (!(await this.conversations.isOwned(userId, conversationId))) {
-        throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
-      }
-      return conversationId;
+  ): Promise<CoachConversationTarget> {
+    if (!conversationId) {
+      return { kind: "new", title: buildConversationTitle(message) };
     }
-    return this.conversations.create(userId, buildConversationTitle(message));
+    if (!(await this.conversations.isOwned(userId, conversationId))) {
+      throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    return { kind: "existing", conversationId };
+  }
+
+  private async resolveOfficialContent(
+    userId: string,
+    message: string,
+    contextArticleSlug?: string,
+  ): Promise<OfficialContent | null> {
+    const intent = classifyOfficialIntent(message);
+    if (!intent) return null;
+
+    const ctx = await this.context.build(userId);
+    const sources: CoachReplyResult["sources"] = [];
+    let officialCountdown: CountdownDto | undefined;
+
+    try {
+      if (intent === "EXAM_DATE" && ctx.examType) {
+        const calendar = await this.content.getExamCalendarByFamily(
+          ctx.examType,
+        );
+        const event = calendar?.events.find(
+          (item) => item.type === ExamEventType.EXAM_DATE,
+        );
+        if (
+          calendar &&
+          event &&
+          calendar.daysRemaining !== null &&
+          calendar.examDateLabel
+        ) {
+          officialCountdown = {
+            examType: calendar.exam.family,
+            examName: calendar.exam.name,
+            daysRemaining: calendar.daysRemaining,
+            examDateLabel: calendar.examDateLabel,
+            source: event.source,
+            sourceUrl: event.sourceUrl,
+          };
+        }
+      } else if (ctx.examType) {
+        let retrieved: {
+          title: string;
+          slug: string;
+          sourceUrl: string;
+          snippet: string;
+        }[] = [];
+        if (contextArticleSlug) {
+          const exact = await this.content.getInfoArticleSource(
+            contextArticleSlug,
+            ctx.examType,
+          );
+          if (exact) retrieved = [exact];
+        }
+        if (retrieved.length === 0) {
+          const vector = await this.llm.embed(`${ctx.examType} ${intent}`);
+          retrieved = await this.content.searchSimilarArticles(
+            ctx.examType,
+            vector,
+            RAG_TOP_K,
+            RAG_MAX_DISTANCE,
+          );
+        }
+        sources.push(
+          ...retrieved.map((item) => ({
+            title: item.title,
+            slug: item.slug,
+            url: item.sourceUrl,
+          })),
+        );
+      }
+    } catch (err) {
+      this.logger.warn(`Official content lookup skipped: ${String(err)}`);
+    }
+
+    const hasVerifiedContent =
+      officialCountdown !== undefined || sources.length > 0;
+    return {
+      reply: this.i18n.translate(
+        `coaching.official.${hasVerifiedContent ? intent : "UNAVAILABLE"}`,
+        { lang: I18nContext.current()?.lang },
+      ) as unknown as string,
+      model: "verified-content",
+      sources,
+      ...(officialCountdown ? { officialCountdown } : {}),
+    };
+  }
+
+  private async completeOfficialExchange(
+    userId: string,
+    message: string,
+    conversationId?: string,
+    contextArticleSlug?: string,
+  ): Promise<CoachReplyResult | null> {
+    const official = await this.resolveOfficialContent(
+      userId,
+      message,
+      contextArticleSlug,
+    );
+    if (!official) return null;
+
+    const target = await this.resolveConversationTarget(
+      userId,
+      message,
+      conversationId,
+    );
+    const threadId = await this.messages.persistExchange(
+      userId,
+      target,
+      message,
+      {
+        content: official.reply,
+        model: official.model,
+        sources: official.sources,
+        ...(official.officialCountdown
+          ? { officialCountdown: official.officialCountdown }
+          : {}),
+      },
+    );
+    return { ...official, conversationId: threadId };
   }
 
   async reply(
@@ -94,6 +220,13 @@ export class ChatService {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
+    const official = await this.completeOfficialExchange(
+      user.id,
+      message,
+      conversationId,
+      contextArticleSlug,
+    );
+    if (official) return official;
     await this.budget.assertWithinBudget();
 
     const ent = await this.entitlement.getEntitlement(user.id, user.roles);
@@ -104,20 +237,37 @@ export class ChatService {
     if (ent.isPremium) {
       await this.assertPremiumRateLimit(user.id);
     } else {
-      ({ cost: coinCost, shouldRefundOnFailure } = await this.prepareCoinSpend(user.id, spendRefId));
+      ({ cost: coinCost, shouldRefundOnFailure } = await this.prepareCoinSpend(
+        user.id,
+        spendRefId,
+      ));
     }
 
     try {
       const mockExam = contextMockExamId
         ? await this.mockExams.getById(user.id, contextMockExamId)
         : undefined;
-      const threadId = await this.resolveConversation(user.id, message, conversationId);
-      return await this.completeChat(user.id, threadId, message, mockExam, contextArticleSlug);
+      const target = await this.resolveConversationTarget(
+        user.id,
+        message,
+        conversationId,
+      );
+      return await this.completeChat(
+        user.id,
+        target,
+        message,
+        mockExam,
+        contextArticleSlug,
+      );
     } catch (err) {
       if (!ent.isPremium && shouldRefundOnFailure && coinCost > 0) {
-        await this.refundCoinSpend(user.id, coinCost, spendRefId).catch((refundErr) => {
-          this.logger.error(`Coin refund failed after LLM error: ${String(refundErr)}`);
-        });
+        await this.refundCoinSpend(user.id, coinCost, spendRefId).catch(
+          (refundErr) => {
+            this.logger.error(
+              `Coin refund failed after LLM error: ${String(refundErr)}`,
+            );
+          },
+        );
       }
       throw err;
     }
@@ -132,7 +282,10 @@ export class ChatService {
       new Date(Date.now() - DAY_MS),
     );
     if (usedToday >= dailyLimit) {
-      throw new DomainError(ErrorCode.AI_RATE_LIMITED, HttpStatus.TOO_MANY_REQUESTS);
+      throw new DomainError(
+        ErrorCode.AI_RATE_LIMITED,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
   }
 
@@ -141,7 +294,10 @@ export class ChatService {
     spendRefId: string,
   ): Promise<{ cost: number; shouldRefundOnFailure: boolean }> {
     if (!(await this.config.get(FeatureFlag.ECONOMY_ENABLED))) {
-      throw new DomainError(ErrorCode.PAYMENT_PREMIUM_REQUIRED, HttpStatus.FORBIDDEN);
+      throw new DomainError(
+        ErrorCode.PAYMENT_PREMIUM_REQUIRED,
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     const [chatCost, freeDailyLimit, usedToday] = await Promise.all([
@@ -151,7 +307,10 @@ export class ChatService {
     ]);
 
     if (usedToday >= freeDailyLimit) {
-      throw new DomainError(ErrorCode.AI_RATE_LIMITED, HttpStatus.TOO_MANY_REQUESTS);
+      throw new DomainError(
+        ErrorCode.AI_RATE_LIMITED,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
 
     const { alreadySpent } = await this.economy.spend(userId, chatCost, {
@@ -163,7 +322,11 @@ export class ChatService {
     return { cost: chatCost, shouldRefundOnFailure: !alreadySpent };
   }
 
-  private async refundCoinSpend(userId: string, amount: number, spendRefId: string): Promise<void> {
+  private async refundCoinSpend(
+    userId: string,
+    amount: number,
+    spendRefId: string,
+  ): Promise<void> {
     await this.economy.grant(userId, Currency.COIN, amount, {
       reason: EconomyLedger.AI_CHAT_REFUND_REASON,
       refType: EconomyLedger.AI_CHAT_REFUND_REF_TYPE,
@@ -175,7 +338,7 @@ export class ChatService {
   /** Shared prompt prep: PII-free context + this thread's multi-turn history + RAG retrieval. */
   private async prepareChat(
     userId: string,
-    conversationId: string,
+    conversationId: string | undefined,
     message: string,
     mockExam?: MockExamDto,
     opts?: { excludeTailExchange?: boolean; contextArticleSlug?: string },
@@ -186,21 +349,32 @@ export class ChatService {
     // replies — no third-party PII, §4 #6). Defensive: a history failure never blocks the chat.
     // Regenerate excludes the tail USER+COACH pair — the model must not anchor on the reply being
     // replaced, and the user message is re-sent as the live prompt.
-    const history: LlmHistoryMessage[] = await this.messages
-      .lastN(userId, conversationId, CHAT_HISTORY_MAX_MESSAGES)
-      .then((rows) => (opts?.excludeTailExchange ? rows.slice(0, -2) : rows))
-      .then((rows) =>
-        rows.map((m) => ({
-          role: m.role === "USER" ? ("user" as const) : ("assistant" as const),
-          content: m.content,
-        })),
-      )
-      .catch((err) => {
-        this.logger.warn(`Chat history load skipped: ${String(err)}`);
-        return [];
-      });
-
-    let retrieved: { title: string; slug: string; sourceUrl: string; snippet: string }[] = [];
+    const history: LlmHistoryMessage[] = conversationId
+      ? await this.messages
+          .lastN(userId, conversationId, CHAT_HISTORY_MAX_MESSAGES)
+          .then((rows) =>
+            opts?.excludeTailExchange ? rows.slice(0, -2) : rows,
+          )
+          .then((rows) =>
+            rows.map((m) => ({
+              role:
+                m.role === "USER"
+                  ? ("user" as const)
+                  : ("assistant" as const),
+              content: m.content,
+            })),
+          )
+          .catch((err) => {
+            this.logger.warn("Chat history load skipped: " + String(err));
+            return [];
+          })
+      : [];
+    let retrieved: {
+      title: string;
+      slug: string;
+      sourceUrl: string;
+      snippet: string;
+    }[] = [];
     if (ctx.examType) {
       try {
         if (opts?.contextArticleSlug) {
@@ -209,15 +383,6 @@ export class ChatService {
             ctx.examType,
           );
           if (exact) retrieved = [exact];
-        }
-        if (retrieved.length === 0) {
-          const vector = await this.llm.embed(message);
-          retrieved = await this.content.searchSimilarArticles(
-            ctx.examType,
-            vector,
-            RAG_TOP_K,
-            RAG_MAX_DISTANCE,
-          );
         }
       } catch (err) {
         this.logger.warn(`RAG retrieval skipped: ${String(err)}`);
@@ -228,59 +393,58 @@ export class ChatService {
 
     return {
       llmInput: { system, user: message, history },
-      sources: retrieved.map((s) => ({ title: s.title, slug: s.slug, url: s.sourceUrl })),
+      sources: retrieved.map((s) => ({
+        title: s.title,
+        slug: s.slug,
+        url: s.sourceUrl,
+      })),
     };
   }
 
-  /** Post-success bookkeeping: usage meter + persist the exchange + maybe refresh memory (only on success). */
+  /** Record actual provider usage, then require the complete exchange to persist. */
   private async recordSuccess(
     userId: string,
-    conversationId: string,
+    target: CoachConversationTarget,
     message: string,
-    result: { text: string; promptTokens: number; completionTokens: number; model: string },
+    result: {
+      text: string;
+      promptTokens: number;
+      completionTokens: number;
+      model: string;
+    },
     sources: { title: string; slug: string; url: string }[],
     suggestedTask?: { title: string; subject: string | null },
-  ): Promise<void> {
+  ): Promise<string> {
     await this.usage.append({
       userId,
       model: result.model,
       feature: AiUsageFeature.CHAT,
       promptTokens: result.promptTokens,
       completionTokens: result.completionTokens,
-      costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
+      costMicros: estimateCostMicros(
+        result.model,
+        result.promptTokens,
+        result.completionTokens,
+      ),
     });
 
-    // Best-effort: a persist failure must not swallow the reply the user already paid for.
-    const persisted = await this.messages
-      .appendExchange(userId, conversationId, message, {
-        content: result.text,
-        model: result.model,
-        sources,
-        suggestedTask,
-      })
-      .catch((err) => {
-        this.logger.error(`Chat history persist failed: ${String(err)}`);
-        return null;
-      });
-
-    // Memory profile: enqueue an async refresh every N messages (never blocks the chat).
-    if (persisted && persisted.totalMessages % MEMORY_REFRESH_EVERY_N_MESSAGES === 0) {
-      await this.queue.enqueue(AI_MEMORY_JOB, { userId }).catch((err) => {
-        this.logger.warn(`Memory refresh enqueue skipped: ${String(err)}`);
-      });
-    }
+    return this.messages.persistExchange(userId, target, message, {
+      content: result.text,
+      model: result.model,
+      sources,
+      suggestedTask,
+    });
   }
-
   private async completeChat(
     userId: string,
-    conversationId: string,
+    target: CoachConversationTarget,
     message: string,
     mockExam?: MockExamDto,
     contextArticleSlug?: string,
   ): Promise<CoachReplyResult> {
     const { llmInput, sources } = await this.prepareChat(
       userId,
-      conversationId,
+      target.kind === "existing" ? target.conversationId : undefined,
       message,
       mockExam,
       { contextArticleSlug },
@@ -288,9 +452,9 @@ export class ChatService {
     const result = await this.llm.complete(llmInput);
     // Order-agnostic: models sometimes reverse the FOLLOWUP/TASK order — never leak a marker.
     const { text: reply, task, followUps } = extractReplyMarkers(result.text);
-    await this.recordSuccess(
+    const conversationId = await this.recordSuccess(
       userId,
-      conversationId,
+      target,
       message,
       { ...result, text: reply },
       sources,
@@ -322,9 +486,19 @@ export class ChatService {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
-    await this.budget.assertWithinBudget();
+    const official = await this.completeOfficialExchange(
+      user.id,
+      message,
+      conversationId,
+      contextArticleSlug,
+    );
+    if (official) {
+      yield { done: official };
+      return;
+    }
 
     const ent = await this.entitlement.getEntitlement(user.id, user.roles);
+    await this.budget.assertWithinBudget();
     const spendRefId = clientMessageId ?? randomUUID();
     let coinCost = 0;
     let shouldRefundOnFailure = false;
@@ -332,26 +506,33 @@ export class ChatService {
     if (ent.isPremium) {
       await this.assertPremiumRateLimit(user.id);
     } else {
-      ({ cost: coinCost, shouldRefundOnFailure } = await this.prepareCoinSpend(user.id, spendRefId));
+      ({ cost: coinCost, shouldRefundOnFailure } = await this.prepareCoinSpend(
+        user.id,
+        spendRefId,
+      ));
     }
 
     try {
       const mockExam = contextMockExamId
         ? await this.mockExams.getById(user.id, contextMockExamId)
         : undefined;
-      const threadId = await this.resolveConversation(user.id, message, conversationId);
+      const target = await this.resolveConversationTarget(
+        user.id,
+        message,
+        conversationId,
+      );
       const { llmInput, sources } = await this.prepareChat(
         user.id,
-        threadId,
+        target.kind === "existing" ? target.conversationId : undefined,
         message,
         mockExam,
         { contextArticleSlug },
       );
       const final = yield* this.streamLlm(llmInput);
       const { text: reply, task, followUps } = extractReplyMarkers(final.text);
-      await this.recordSuccess(
+      const threadId = await this.recordSuccess(
         user.id,
-        threadId,
+        target,
         message,
         { ...final, text: reply },
         sources,
@@ -369,9 +550,13 @@ export class ChatService {
       };
     } catch (err) {
       if (!ent.isPremium && shouldRefundOnFailure && coinCost > 0) {
-        await this.refundCoinSpend(user.id, coinCost, spendRefId).catch((refundErr) => {
-          this.logger.error(`Coin refund failed after stream error: ${String(refundErr)}`);
-        });
+        await this.refundCoinSpend(user.id, coinCost, spendRefId).catch(
+          (refundErr) => {
+            this.logger.error(
+              `Coin refund failed after stream error: ${String(refundErr)}`,
+            );
+          },
+        );
       }
       throw err;
     }
@@ -381,8 +566,7 @@ export class ChatService {
    * Regenerate the LAST coach reply of a thread (POST /v1/coach/conversations/:id/regenerate/stream).
    * Same gating/spend as a normal message — every regenerate is a fresh spend (no idempotency key).
    * The old COACH row is overwritten IN PLACE only after a successful generation, so a mid-stream
-   * failure leaves history untouched (and refunds the coin). Message count is stable → the memory
-   * refresh trigger is intentionally skipped.
+   * failure leaves history untouched (and refunds the coin).
    */
   async *regenerateStream(
     user: RequestUser,
@@ -391,14 +575,12 @@ export class ChatService {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
-    await this.budget.assertWithinBudget();
 
     if (!(await this.conversations.isOwned(user.id, conversationId))) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    // The thread must end in a completed exchange (one USER + one COACH row). Order within the
-    // pair is NOT trusted: appendExchange writes both rows in one tx, so their timestamps can tie
-    // and the uuid tie-breaker is random.
+    // Locate the final exchange by role rather than by position; legacy rows can share timestamps
+    // and therefore have a UUID-based tie order.
     const tail = await this.messages.lastN(user.id, conversationId, 2);
     const userMsg = tail.find((m) => m.role === "USER");
     const coachMsg = tail.find((m) => m.role === "COACH");
@@ -406,15 +588,43 @@ export class ChatService {
       throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST);
     }
 
-    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
+    const official = await this.resolveOfficialContent(
+      user.id,
+      userMsg.content,
+    );
+    if (official) {
+      const updated = await this.messages.updateCoachReply(
+        user.id,
+        coachMsg.id,
+        {
+          content: official.reply,
+          model: official.model,
+          sources: official.sources,
+          ...(official.officialCountdown
+            ? { officialCountdown: official.officialCountdown }
+            : {}),
+        },
+      );
+      if (!updated) {
+        throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+      }
+      yield { done: { ...official, conversationId } };
+      return;
+    }
+
+    await this.budget.assertWithinBudget();
     const spendRefId = randomUUID();
     let coinCost = 0;
+    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
     let shouldRefundOnFailure = false;
 
     if (ent.isPremium) {
       await this.assertPremiumRateLimit(user.id);
     } else {
-      ({ cost: coinCost, shouldRefundOnFailure } = await this.prepareCoinSpend(user.id, spendRefId));
+      ({ cost: coinCost, shouldRefundOnFailure } = await this.prepareCoinSpend(
+        user.id,
+        spendRefId,
+      ));
     }
 
     try {
@@ -434,19 +644,25 @@ export class ChatService {
         feature: AiUsageFeature.CHAT,
         promptTokens: final.promptTokens,
         completionTokens: final.completionTokens,
-        costMicros: estimateCostMicros(final.model, final.promptTokens, final.completionTokens),
+        costMicros: estimateCostMicros(
+          final.model,
+          final.promptTokens,
+          final.completionTokens,
+        ),
       });
-      // Best-effort like recordSuccess: a persist failure must not swallow the paid reply.
-      await this.messages
-        .updateCoachReply(user.id, coachMsg.id, {
+      const updated = await this.messages.updateCoachReply(
+        user.id,
+        coachMsg.id,
+        {
           content: reply,
           model: final.model,
           sources,
           suggestedTask: task ?? undefined,
-        })
-        .catch((err) => {
-          this.logger.error(`Regenerated reply persist failed: ${String(err)}`);
-        });
+        },
+      );
+      if (!updated) {
+        throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+      }
 
       yield {
         done: {
@@ -460,9 +676,13 @@ export class ChatService {
       };
     } catch (err) {
       if (!ent.isPremium && shouldRefundOnFailure && coinCost > 0) {
-        await this.refundCoinSpend(user.id, coinCost, spendRefId).catch((refundErr) => {
-          this.logger.error(`Coin refund failed after regenerate error: ${String(refundErr)}`);
-        });
+        await this.refundCoinSpend(user.id, coinCost, spendRefId).catch(
+          (refundErr) => {
+            this.logger.error(
+              `Coin refund failed after regenerate error: ${String(refundErr)}`,
+            );
+          },
+        );
       }
       throw err;
     }
@@ -475,12 +695,21 @@ export class ChatService {
     history: LlmHistoryMessage[];
   }): AsyncGenerator<
     CoachChatStreamEvent,
-    { text: string; promptTokens: number; completionTokens: number; model: string }
+    {
+      text: string;
+      promptTokens: number;
+      completionTokens: number;
+      model: string;
+    }
   > {
     // The task/follow-up markers must never leak into deltas — the filter holds anything marker-like.
     const markerFilter = createTaskMarkerFilter();
-    let final: { text: string; promptTokens: number; completionTokens: number; model: string } | null =
-      null;
+    let final: {
+      text: string;
+      promptTokens: number;
+      completionTokens: number;
+      model: string;
+    } | null = null;
     for await (const ev of this.llm.completeStream(llmInput)) {
       if (ev.delta) {
         const safe = markerFilter.push(ev.delta);
@@ -489,7 +718,10 @@ export class ChatService {
       if (ev.final) final = ev.final;
     }
     if (!final) {
-      throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+      throw new DomainError(
+        ErrorCode.AI_PROVIDER_ERROR,
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
     const held = markerFilter.flush();
     if (held) yield { delta: held };
@@ -517,20 +749,37 @@ export class ChatService {
     if (!(await this.conversations.isOwned(userId, conversationId))) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    return this.messages.listPagedByConversation(userId, conversationId, page, pageSize);
+    const result = await this.messages.listPagedByConversation(
+      userId,
+      conversationId,
+      page,
+      pageSize,
+    );
+    if (result.total === 0) {
+      throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    return result;
   }
 
   /** DELETE /v1/coach/conversations/:id — drop one thread (messages cascade). Memory profile is kept. */
-  async deleteConversation(userId: string, conversationId: string): Promise<void> {
+  async deleteConversation(
+    userId: string,
+    conversationId: string,
+  ): Promise<void> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
     const deleted = await this.conversations.delete(userId, conversationId);
-    if (!deleted) throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+    if (!deleted)
+      throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
   }
 
   /** PATCH /v1/coach/messages/:id/feedback — 👍/👎/none on the user's own coach message. */
-  async setMessageFeedback(userId: string, messageId: string, feedback: number | null): Promise<void> {
+  async setMessageFeedback(
+    userId: string,
+    messageId: string,
+    feedback: number | null,
+  ): Promise<void> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
@@ -539,12 +788,16 @@ export class ChatService {
   }
 
   /** GET /v1/coach/memory — the coach's distilled profile of the user (null until built). */
-  async getMemory(userId: string): Promise<{ summary: string; updatedAt: string } | null> {
+  async getMemory(
+    userId: string,
+  ): Promise<{ summary: string; updatedAt: string } | null> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
     const row = await this.memory.get(userId);
-    return row ? { summary: row.summary, updatedAt: row.updatedAt.toISOString() } : null;
+    return row
+      ? { summary: row.summary, updatedAt: row.updatedAt.toISOString() }
+      : null;
   }
 
   /** DELETE /v1/coach/memory — reset the profile (user-controlled, KVKK). */

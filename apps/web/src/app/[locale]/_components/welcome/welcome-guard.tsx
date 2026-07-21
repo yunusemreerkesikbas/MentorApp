@@ -27,7 +27,7 @@ export function WelcomeGuard({ children }: { children: ReactNode }) {
       return;
     }
     if (welcomeSeen) {
-      router.replace("/giris");
+      router.replace("/login");
     }
   }, [status, user, router, welcomeSeen]);
 

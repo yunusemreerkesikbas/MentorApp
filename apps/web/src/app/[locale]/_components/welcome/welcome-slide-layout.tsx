@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
 import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left.mjs";
@@ -16,6 +17,7 @@ export function WelcomeSlideLayout({
   title,
   subtitle,
   mascot,
+  heroSrc,
   onBack,
   onSkip,
   skipLabel,
@@ -28,6 +30,8 @@ export function WelcomeSlideLayout({
   title: string;
   subtitle: string;
   mascot: PuhuVariant;
+  /** Full-bleed poster; slogan lives in the art when set. */
+  heroSrc?: string;
   onBack?: () => void;
   onSkip?: () => void;
   skipLabel?: string;
@@ -38,6 +42,7 @@ export function WelcomeSlideLayout({
 }) {
   const t = useTranslations("welcome");
   const reduceMotion = useReducedMotion();
+  const isHero = Boolean(heroSrc);
 
   const fade = reduceMotion
     ? {}
@@ -80,12 +85,68 @@ export function WelcomeSlideLayout({
     </div>
   );
 
+  const footer = (
+    <>
+      <DashProgress
+        step={step}
+        total={TOTAL}
+        ariaLabel={t("progress_aria", { current: step + 1, total: TOTAL })}
+      />
+      {primaryLabel && onPrimary ? (
+        <div className="mt-6 w-full">
+          <Button type="button" fullWidth onClick={onPrimary}>
+            {primaryLabel}
+          </Button>
+        </div>
+      ) : null}
+      {secondaryLabel && onSecondary ? (
+        <div className="mt-3 w-full">
+          <Button type="button" fullWidth variant="secondary" onClick={onSecondary}>
+            {secondaryLabel}
+          </Button>
+        </div>
+      ) : null}
+    </>
+  );
+
+  if (isHero) {
+    return (
+      <main className="relative min-h-screen w-full overflow-hidden">
+        <Image
+          src={heroSrc!}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+        {/* Soft bottom into white so pagination + CTA stay readable */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%]"
+          style={{
+            background:
+              "linear-gradient(to bottom, transparent 0%, var(--color-bg) 72%)",
+          }}
+          aria-hidden
+        />
+        <motion.div
+          className="relative z-10 flex min-h-screen w-full flex-col px-5 pb-8 pt-8"
+          {...fade}
+        >
+          {topBar}
+          <h1 className="sr-only">{title}</h1>
+          <div className="mt-auto w-full max-w-md mx-auto">{footer}</div>
+        </motion.div>
+      </main>
+    );
+  }
+
   return (
-    <main className="flex min-h-screen w-full flex-col px-5">
-      <motion.div
-        className="mx-auto flex w-full max-w-md flex-1 flex-col py-8"
-        {...fade}
-      >
+    <main
+      className="flex min-h-screen w-full flex-col px-5"
+      style={{ backgroundColor: "var(--color-bg)" }}
+    >
+      <motion.div className="mx-auto flex w-full max-w-md flex-1 flex-col py-8" {...fade}>
         {topBar}
         <div className="flex flex-1 flex-col items-center justify-center">
           <div className="mb-5 flex justify-center">
@@ -103,28 +164,8 @@ export function WelcomeSlideLayout({
           >
             {subtitle}
           </p>
-          <div className="mt-6 w-full">
-            <DashProgress
-              step={step}
-              total={TOTAL}
-              ariaLabel={t("progress_aria", { current: step + 1, total: TOTAL })}
-            />
-          </div>
-          {primaryLabel && onPrimary ? (
-            <div className="mt-6 w-full">
-              <Button type="button" fullWidth onClick={onPrimary}>
-                {primaryLabel}
-              </Button>
-            </div>
-          ) : null}
-          {secondaryLabel && onSecondary ? (
-            <div className="mt-3 w-full">
-              <Button type="button" fullWidth variant="secondary" onClick={onSecondary}>
-                {secondaryLabel}
-              </Button>
-            </div>
-          ) : null}
         </div>
+        <div className="mt-6 w-full">{footer}</div>
       </motion.div>
     </main>
   );

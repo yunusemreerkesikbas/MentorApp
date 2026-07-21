@@ -247,7 +247,7 @@ export function PlanShell() {
     });
   }
 
-  function appendTask(created: PlanTaskDto) {
+  const appendTask = useCallback((created: PlanTaskDto) => {
     if (created.taskDate === date) {
       setTasks((prev) => [...prev, created]);
     }
@@ -256,7 +256,7 @@ export function PlanShell() {
       const list = prev[day] ?? [];
       return { ...prev, [day]: [...list, created] };
     });
-  }
+  }, [date]);
 
   function appendCoachDraft(created: PlanTaskDto[]) {
     for (const task of created) appendTask(task);
@@ -376,7 +376,7 @@ export function PlanShell() {
         setError(null);
       },
     });
-  }, [date, filterSheet, readOnly, t]);
+  }, [appendTask, date, filterSheet, readOnly, t]);
 
   useEffect(() => {
     if (!prefill || prefillConsumed.current || readOnly) return;
@@ -586,7 +586,7 @@ export function PlanShell() {
             variants={reduceMotion ? undefined : staggerItemVariants}
           >
             <Link
-              href="/panel"
+              href="/dashboard"
               className="flex min-h-11 items-center justify-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2"
               style={{
                 color: "var(--color-main)",

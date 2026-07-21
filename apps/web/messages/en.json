@@ -31,6 +31,8 @@
     "login": "Sign in",
     "slide1": {
       "title": "You're not alone on the road to your exam.",
+      "title_lead": "On the exam road",
+      "title_emphasis": "you're not alone.",
       "subtitle": "Not a knowledge platform — a companionship platform that understands you, keeps you going, and never leaves you alone."
     },
     "slide2": {
@@ -182,7 +184,7 @@
     "task_done_streak": "You kept your {count}-day streak going. Keep it up!",
     "task_done_message": "Task completed."
   },
-  "topluluk": {
+  "community": {
     "title": "Community",
     "subtitle": "Together with others on the same path.",
     "soon_title": "Community coming soon",
@@ -204,6 +206,12 @@
     "join": "Join",
     "joining": "Joining…",
     "join_pending": "Awaiting approval",
+    "leave": "Leave",
+    "leaving": "Leaving…",
+    "cancel_request": "Withdraw request",
+    "leave_confirm_title": "Leave zone",
+    "leave_confirm_message": "If you leave this zone you may need approval to rejoin. Are you sure you want to leave?",
+    "leave_confirm_yes": "Leave",
     "joined": "Member",
     "back": "Community",
     "back_short": "Back",
@@ -481,10 +489,13 @@
       "chip_plan_day": "Plan my day",
       "seed_plan_day": "How should I plan my day?",
       "chip_streak": "Keep my streak",
+      "next_action_start": "Start a focus session",
+      "next_action_add": "Add a task to your plan",
       "seed_streak": "I have a {days}-day streak — what should I do today to keep it?"
     },
     "memory": {
       "title": "What your coach knows about you",
+      "legacy_notice": "This saved summary is no longer used in coach replies.",
       "reset": "Reset"
     },
     "conversations": {
@@ -493,12 +504,21 @@
       "delete_confirm_title": "Delete this chat?",
       "delete_confirm_message": "The chat \"{title}\" and all of its messages will be permanently deleted.",
       "delete_confirm_yes": "Delete",
-      "delete_confirm_no": "Cancel"
+      "delete_confirm_no": "Cancel",
+      "loading": "Loading your chats…",
+      "load_error": "Your chats could not be loaded right now.",
+      "retry": "Try again"
     },
     "chat": {
       "header_title": "Chat",
       "empty_hint": "Write your first message — your coach is here.",
       "stream_error": "Couldn't get a reply — please try again.",
+      "history_loading": "Loading your chat history…",
+      "history_error": "Chat history could not be loaded right now.",
+      "older_history_error": "Older messages could not be loaded.",
+      "history_retry": "Try again",
+      "history_new_chat": "New chat",
+      "load_older": "Load older messages",
       "remaining_hint": "Messages left today: {count}",
       "remaining_hint_zero": "You're out of messages for today — see you tomorrow."
     }
@@ -763,9 +783,9 @@
     "no_seed_desc": "The exam calendar or subject list hasn't been published yet. The form will appear here when editorial content is updated.",
     "tabs": {
       "label": "Analysis sections",
-      "gir": "Enter",
-      "gelisim": "Progress",
-      "yanlislar": "Wrong answers"
+      "entry": "Enter",
+      "progress": "Progress",
+      "mistakes": "Wrong answers"
     },
     "summary": {
       "last_net": "Latest net: {net}",
@@ -873,6 +893,23 @@
       "start_session": "Start session",
       "retry": "Try again",
       "load_error": "Weekly review could not be loaded."
+    },
+    "deep": {
+      "title": "Deep Analysis",
+      "subtitle": "This week's AI coach review",
+      "loading": "Loading deep analysis",
+      "locked_hint": "Unlock this week's in-depth AI review with coins.",
+      "unlock_cta": "Unlock for {cost} coins",
+      "confirm_cta": "Are you sure? {cost} coins will be spent",
+      "unlocked_chip": "Unlocked",
+      "premium_chip": "Included in Premium",
+      "unlocked_hint": "This week's deep analysis is ready — fetch it to read.",
+      "fetch_cta": "Get deep analysis",
+      "fetching": "Preparing…",
+      "insufficient": "Not enough coins ({balance}/{cost}). Complete quests to earn more.",
+      "go_earn": "Go to quests",
+      "suggested_title": "Suggested task",
+      "action_error": "Something went wrong, you can try again."
     }
   },
   "session": {
@@ -1093,6 +1130,8 @@
     "suggestion_2": "How do I manage my exam anxiety?",
     "suggestion_3": "Suggest a study plan for me",
     "source_label": "Source:",
+    "official_card_label": "Time to exam",
+    "official_card_days": "{count, plural, one {# day} other {# days}}",
     "typing": "Coach is typing"
   },
   "countdown": {

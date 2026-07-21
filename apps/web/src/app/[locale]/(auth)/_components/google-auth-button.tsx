@@ -2,6 +2,8 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { getPathname } from "@/i18n/navigation";
+import type { Locale } from "@/i18n/routing";
 import { apiBaseUrl } from "@/lib/api-base";
 import { fetchGoogleAuthEnabled } from "@/lib/google-auth";
 
@@ -63,7 +65,10 @@ export function GoogleAuthButton({ mode, onBeforeStart }: GoogleAuthButtonProps)
     const params = new URLSearchParams({
       mode,
       locale,
-      returnTo: "/panel",
+      returnTo: getPathname({
+        locale: locale as Locale,
+        href: "/dashboard",
+      }),
     });
     if (mode === "signup") params.set("kvkkAccepted", "true");
     window.location.assign(`${apiBaseUrl()}/v1/auth/google/start?${params.toString()}`);

@@ -5,6 +5,8 @@
 import type { SubscriptionTier } from "./index.js";
 
 export const SubscriptionStatus = {
+  /** Checkout started, provider payment not yet confirmed — grants NO premium (verification gate). */
+  INCOMPLETE: "INCOMPLETE",
   TRIALING: "TRIALING",
   ACTIVE: "ACTIVE",
   /** Renewal failed — premium continues during the grace period (dunning §7). */

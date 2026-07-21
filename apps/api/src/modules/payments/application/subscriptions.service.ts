@@ -159,11 +159,11 @@ export class SubscriptionsService {
   }
 
   /**
-   * Admin (W6): record-only refund of the user's last successful charge. Appends a negative-amount
-   * REFUND row to the append-only ledger (§3) — never touches the original charge, and does NOT
-   * change entitlement (use {@link cancel} to end access). Capped to the remaining refundable amount
-   * (last charge − prior refunds). The actual money movement happens in the provider panel until the
-   * iyzico refund API is wired (devnote 0015 backlog).
+   * Admin (W6): refund of the user's last successful charge. Calls the provider refund API (fake:
+   * deterministic no-op; iyzico: real refund) BEFORE appending a negative-amount REFUND row to the
+   * append-only ledger (§3) — a provider failure aborts the record. Never touches the original
+   * charge, and does NOT change entitlement (use {@link cancel} to end access). Capped to the
+   * remaining refundable amount (last charge − prior refunds).
    */
   async refundLastCharge(
     userId: string,
@@ -171,9 +171,13 @@ export class SubscriptionsService {
     reason: string,
     actorId: string,
   ): Promise<RefundResult> {
-    // Atomic: read → lock the subscription → re-read cap → append, all in ONE service tx. The
-    // FOR UPDATE lock serializes concurrent refunds on the same subscription so the cap can't be
-    // raced (TOCTOU). getAdminView (fresh reads) runs after commit.
+    // Stable idempotency key for the whole refund: passed to the provider (dedupes retries) and
+    // stored as the ledger providerEventId, so a retried refund maps to one provider operation.
+    const idempotencyKey = `admin-refund:${randomUUID()}`;
+    // Atomic: read → lock the subscription → re-read cap → provider refund → append, all in ONE
+    // service tx. The FOR UPDATE lock serializes concurrent refunds on the same subscription so the
+    // cap can't be raced (TOCTOU). The provider call sits inside the tx so its failure rolls back
+    // the ledger row (admin-only, single-row lock, rare — an acceptable hold across the call).
     const result = await withServiceContext(this.db, async (tx) => {
       const charges = await this.eventsRepo.listForUserAdmin(userId, 200, tx);
       const lastCharge = charges.find(
@@ -183,7 +187,7 @@ export class SubscriptionsService {
         throw new DomainError(ErrorCode.PAYMENT_REFUND_NO_CHARGE, HttpStatus.CONFLICT, { userId });
       }
 
-      await this.subsRepo.lockById(lastCharge.subscriptionId, tx);
+      const sub = await this.subsRepo.lockById(lastCharge.subscriptionId, tx);
 
       // Re-read AFTER acquiring the lock so a concurrent refund that committed first is counted.
       const locked = await this.eventsRepo.listForUserAdmin(userId, 200, tx);
@@ -198,6 +202,12 @@ export class SubscriptionsService {
         });
       }
 
+      // Move the money provider-side first; a provider error throws → tx rolls back, no ledger row.
+      const providerRef = sub?.providerRef;
+      const { refundRef } = providerRef
+        ? await this.provider.refund(providerRef, amountMinor, idempotencyKey)
+        : { refundRef: null };
+
       await this.eventsRepo.appendTransaction(
         {
           subscriptionId: lastCharge.subscriptionId,
@@ -206,8 +216,8 @@ export class SubscriptionsService {
           amountMinor: -amountMinor,
           currency: lastCharge.currency,
           status: TxStatus.REFUNDED,
-          providerEventId: `admin-refund:${randomUUID()}`,
-          raw: { reason, actorId },
+          providerEventId: idempotencyKey,
+          raw: { reason, actorId, refundRef },
         },
         tx,
       );
@@ -238,7 +248,15 @@ export class SubscriptionsService {
     if (!plan || !plan.isActive) throw new NotFoundError();
 
     const open = await this.subsRepo.findOpenForUser(user.id);
-    if (open) throw new DomainError(ErrorCode.PAYMENT_ALREADY_SUBSCRIBED, HttpStatus.CONFLICT);
+    if (open) {
+      // An abandoned, never-confirmed INCOMPLETE checkout must not lock the user out forever —
+      // discard it and let this checkout proceed. Any granting status is a real open subscription.
+      if (open.status === SubscriptionStatus.INCOMPLETE) {
+        await this.subsRepo.deleteById(open.id);
+      } else {
+        throw new DomainError(ErrorCode.PAYMENT_ALREADY_SUBSCRIBED, HttpStatus.CONFLICT);
+      }
+    }
 
     const hadAny = await this.subsRepo.hasAnyForUser(user.id);
     const withTrial = !hadAny && plan.trialDays > 0;
@@ -261,16 +279,20 @@ export class SubscriptionsService {
     const trialEndsAt = withTrial ? new Date(now.getTime() + plan.trialDays * DAY_MS) : null;
     const periodEnd = withTrial ? trialEndsAt! : addMonths(now, plan.periodMonths);
 
+    // Verification gate (§7): a provider with a hosted payment page (iyzico) creates an INCOMPLETE
+    // row that grants NO premium until its checkout_completed webhook activates it — an abandoned
+    // page must not grant access. The fake provider completes instantly, so it is granted its
+    // status right away. INCOMPLETE still records the intended trial/period for the activation step.
+    const initialStatus = this.provider.instantCheckout
+      ? withTrial
+        ? SubscriptionStatus.TRIALING
+        : SubscriptionStatus.ACTIVE
+      : SubscriptionStatus.INCOMPLETE;
     try {
-      // NOTE (review F2 — iyzico verification gate): with the FAKE provider checkout completes
-      // instantly, so starting at TRIALING/ACTIVE here is correct. When the iyzico adapter is
-      // verified, this must start as an INCOMPLETE row and only the provider's
-      // checkout-completed webhook may activate it (an abandoned payment page must NOT
-      // grant premium). Tracked in devnote 0015.
       await this.subsRepo.create({
         userId: user.id,
         planId: plan.id,
-        status: withTrial ? SubscriptionStatus.TRIALING : SubscriptionStatus.ACTIVE,
+        status: initialStatus,
         provider: this.provider.provider,
         providerRef,
         trialEndsAt,
@@ -326,6 +348,26 @@ export class SubscriptionsService {
     const plan = await this.plansRepo.findById(sub.planId, tx);
 
     switch (event.type) {
+      case "checkout_completed": {
+        // Verification gate: activate an INCOMPLETE row once the provider confirms the checkout.
+        // Idempotent — a row that already advanced past INCOMPLETE is left untouched. The row's
+        // trialEndsAt (set at checkout-init) decides trial vs paid activation.
+        if (sub.status !== SubscriptionStatus.INCOMPLETE) return none;
+        const isTrial = sub.trialEndsAt != null && sub.trialEndsAt.getTime() > Date.now();
+        await this.subsRepo.update(
+          sub.id,
+          { status: isTrial ? SubscriptionStatus.TRIALING : SubscriptionStatus.ACTIVE },
+          tx,
+        );
+        return {
+          emits: [
+            {
+              topic: PaymentsEventTopic.SUBSCRIPTION_ACTIVATED,
+              payload: new SubscriptionActivated(sub.userId, sub.id, sub.planId),
+            },
+          ],
+        };
+      }
       case "trial_started": {
         await this.eventsRepo.appendTransaction(
           {

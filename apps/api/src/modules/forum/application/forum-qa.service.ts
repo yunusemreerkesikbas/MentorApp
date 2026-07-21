@@ -96,7 +96,7 @@ export class ForumQaService {
       actorId: actor.id,
     });
     // @mentions in the answer — exclude the asker (already gets the answer notification).
-    void this.mentions.dispatch(dto.body, actor.id, `/topluluk/soru/${threadId}`, [thread.authorId]);
+    void this.mentions.dispatch(dto.body, actor.id, `/community/question/${threadId}`, [thread.authorId]);
     // fetch with JOIN so authorName is populated in the immediate response
     const postWithAuthor = await this.posts.findById(post.id, actor.id);
     if (!postWithAuthor) throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);

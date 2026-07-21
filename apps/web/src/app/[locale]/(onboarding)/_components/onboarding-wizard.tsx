@@ -31,7 +31,7 @@ export function OnboardingWizard() {
       return;
     }
     if (!sessionStorage.getItem(SESSION_KEY)) {
-      router.replace("/panel");
+      router.replace("/dashboard");
     }
   }, [user, router]);
 

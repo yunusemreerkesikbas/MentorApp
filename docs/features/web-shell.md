@@ -63,6 +63,15 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **Welcome slide 1 full-bleed hero (2026-07-19)** — Pre-auth `/` first slide uses
+  `/img/welcome-hero.png` full-screen (`object-cover`); slogan only in art; UI keeps skip,
+  pagination, and CTA over a soft white bottom fade. Slides 2–3 keep compact Puhu + copy.
+  Related: `welcome-slide-layout.tsx`, `welcome-carousel.tsx`.
+- **English internal route source names (2026-07-19)** — Auth, onboarding, dashboard, profile,
+  subscription, and cookie-preference App Router folders and source hrefs now use English canonical
+  names; users still see localized Turkish paths such as `/giris`, `/panel`, and `/profil`.
+  Google OAuth and notification destinations follow the same contract. Related: `i18n/routing.ts`,
+  `post-auth-destination.ts`, `google-auth-button.tsx`, `notification-drawer-shell.tsx`.
 - **Global typography smoothing** — B2C shell switched from League Spartan/Lato to one Nunito Sans
   latin-ext family for heading/body tokens. Usage: all screens continue using `--font-heading` and
   `--font-body`; no component API changes. Gotcha: visual QA should check dense pages like

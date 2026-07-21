@@ -1,4 +1,5 @@
 import type {
+  DeepAnalysisView,
   EconomyBalance,
   EconomyLedgerEntryView,
   InviteCodeView,
@@ -55,6 +56,20 @@ export async function purchaseStreakRescue(): Promise<StreakRescueView> {
   return (await http<StreakRescueView>("/v1/economy/streak-rescue", {
     method: "POST",
   })) as StreakRescueView;
+}
+
+export async function fetchDeepAnalysis(examId: string): Promise<DeepAnalysisView> {
+  const query = new URLSearchParams({ examId });
+  return (await http<DeepAnalysisView>(
+    `/v1/economy/deep-analysis?${query.toString()}`,
+  )) as DeepAnalysisView;
+}
+
+export async function purchaseDeepAnalysis(examId: string): Promise<DeepAnalysisView> {
+  return (await http<DeepAnalysisView>("/v1/economy/deep-analysis", {
+    method: "POST",
+    body: JSON.stringify({ examId }),
+  })) as DeepAnalysisView;
 }
 
 /** True when the economy feature flag is off — profile hub should not render. */

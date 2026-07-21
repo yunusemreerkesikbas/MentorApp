@@ -10,13 +10,15 @@ import type {
   VisionPort,
 } from "../../domain/vision.port";
 import { PHOTO_CLASSIFY_SYSTEM } from "../../domain/photo-classify.constants";
+import { collectOutputText, providerErrorLog } from "./openai-responses.util";
 
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+const OPENAI_URL = "https://api.openai.com/v1/responses";
 
 /**
- * OpenAI vision adapter (fetch — mirrors GeminiVisionAdapter). Selected by VISION_PROVIDER=openai
- * so chat + vision can run on a single OPENAI_API_KEY. Classifies exam question photos into
- * editorial subject/topic slugs (§4 #2 — never solves).
+ * OpenAI vision adapter (fetch — mirrors the LLM adapter, on the Responses API). Selected by
+ * VISION_PROVIDER=openai so chat + vision can run on a single OPENAI_API_KEY. Classifies exam
+ * question photos into editorial subject/topic slugs (§4 #2 — never solves). The image is a typed
+ * `input_image` content part; JSON output is requested via `text.format` (not `response_format`).
  */
 @Injectable()
 export class OpenAiVisionAdapter implements VisionPort {
@@ -52,38 +54,36 @@ export class OpenAiVisionAdapter implements VisionPort {
         signal: AbortSignal.timeout(AI_REQUEST_TIMEOUT_MS),
         body: JSON.stringify({
           model,
-          messages: [
-            { role: "system", content: PHOTO_CLASSIFY_SYSTEM },
+          instructions: PHOTO_CLASSIFY_SYSTEM,
+          input: [
             {
               role: "user",
               content: [
-                { type: "text", text: userPrompt },
-                { type: "image_url", image_url: { url: dataUrl } },
+                { type: "input_text", text: userPrompt },
+                { type: "input_image", image_url: dataUrl },
               ],
             },
           ],
-          response_format: { type: "json_object" },
+          text: { format: { type: "json_object" } },
           // Same bounds as the Gemini vision adapter (§7 cost cap).
           temperature: 0.1,
-          max_tokens: 128,
+          max_output_tokens: 128,
         }),
       });
       if (!res.ok) {
-        const requestId = res.headers.get("x-request-id");
-        this.logger.error(
-          `OpenAI vision ${res.status}${requestId ? ` request_id=${requestId}` : ""}`,
-        );
+        this.logger.error(providerErrorLog("vision", res));
         throw new DomainError(
           ErrorCode.AI_PROVIDER_ERROR,
           HttpStatus.SERVICE_UNAVAILABLE,
         );
       }
       const data = (await res.json()) as {
-        choices?: { message?: { content?: string } }[];
-        usage?: { prompt_tokens?: number; completion_tokens?: number };
+        status?: string;
+        output?: unknown;
+        usage?: { input_tokens?: number; output_tokens?: number };
       };
-      const text = data.choices?.[0]?.message?.content?.trim();
-      if (!text) {
+      const text = collectOutputText(data.output).trim();
+      if (!text || data.status === "incomplete" || data.status === "failed") {
         throw new DomainError(
           ErrorCode.AI_PROVIDER_ERROR,
           HttpStatus.SERVICE_UNAVAILABLE,
@@ -99,8 +99,8 @@ export class OpenAiVisionAdapter implements VisionPort {
         topicSlug:
           typeof parsed.topicSlug === "string" ? parsed.topicSlug : null,
         model,
-        promptTokens: data.usage?.prompt_tokens ?? 0,
-        completionTokens: data.usage?.completion_tokens ?? 0,
+        promptTokens: data.usage?.input_tokens ?? 0,
+        completionTokens: data.usage?.output_tokens ?? 0,
       };
     } catch (err) {
       if (err instanceof DomainError) throw err;

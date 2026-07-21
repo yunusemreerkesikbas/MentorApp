@@ -13,7 +13,7 @@ const STATE: GoogleOAuthState = {
   nonce: "nonce-1234567890",
   mode: "signup",
   locale: "tr",
-  returnTo: "/panel",
+  returnTo: "/dashboard",
   kvkkAccepted: true,
   expiresAt: Date.now() + 60_000,
 };
@@ -207,6 +207,6 @@ describe("Google OAuth redirect", () => {
         examType: "KPSS",
         username: null,
       } as never),
-    ).toBe("http://localhost:3000/tr/onboarding");
+    ).toBe("http://localhost:3000/baslangic");
   });
 });

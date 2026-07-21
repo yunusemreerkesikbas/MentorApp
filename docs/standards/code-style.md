@@ -36,9 +36,10 @@
 - **`any` is banned** → `unknown` + narrow. Name types meaningfully (`user`, `sessionInput`, not `u`/`data`).
 - **Language: identifiers are English** — components, functions, variables, types, files (`EffortBoard`,
   not `EmekPanosu`). A domain term with no clean English equivalent still gets an English symbol; keep the
-  Turkish wording in **i18n values / UI copy**, not the code. **Exceptions (intentional, not code symbols):**
-  localized Next.js route segment folders (`topluluk`, `giris`, `kayit`…) stay Turkish for market/SEO URLs,
-  and i18n message **values** are Turkish (keys stay English, e.g. `board_open`).
+  Turkish wording in **i18n values / UI copy**, not the code. Next.js route folders and internal hrefs are
+  English canonicals (`community`, `login`, `signup`); localized public segments live only in
+  `apps/web/src/i18n/routing.ts`. i18n message **values** may be Turkish, while keys stay English
+  (for example `board_open`).
 
 ## 3. Database (Drizzle / Postgres)
 

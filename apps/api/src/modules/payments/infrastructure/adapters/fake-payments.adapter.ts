@@ -10,6 +10,7 @@ import type {
   PaymentsPort,
   ProviderEvent,
   ProviderEventType,
+  RefundResult,
 } from "../../../../shared/ports/payments.port";
 
 /**
@@ -25,6 +26,9 @@ import type {
 @Injectable()
 export class FakePaymentsAdapter implements PaymentsPort {
   readonly provider = "FAKE" as const;
+  // Fake checkout completes instantly → the row is granted its status at checkout-init (no
+  // verification gate); real iyzico sets this false so an INCOMPLETE row waits for the webhook.
+  readonly instantCheckout = true;
 
   constructor(private readonly config: ConfigService<Env, true>) {}
 
@@ -39,6 +43,12 @@ export class FakePaymentsAdapter implements PaymentsPort {
 
   async cancel(_providerRef: string): Promise<void> {
     // Nothing to do provider-side for the fake provider.
+  }
+
+  async refund(providerRef: string, _amountMinor: number, idempotencyKey: string): Promise<RefundResult> {
+    // No real money movement — return a deterministic ref derived from the idempotency key so a
+    // retry with the same key yields the same ref (mirrors provider idempotency semantics).
+    return { refundRef: `fake_refund_${idempotencyKey}` };
   }
 
   verifyWebhook(

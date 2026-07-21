@@ -6,15 +6,15 @@ import {
 } from "./session-return-reminder.service";
 
 describe("buildSessionReturnLinkUrl", () => {
-  it("returns /seans without subject", () => {
-    expect(buildSessionReturnLinkUrl()).toBe("/seans");
-    expect(buildSessionReturnLinkUrl(null)).toBe("/seans");
-    expect(buildSessionReturnLinkUrl("  ")).toBe("/seans");
+  it("returns /study-session without subject", () => {
+    expect(buildSessionReturnLinkUrl()).toBe("/study-session");
+    expect(buildSessionReturnLinkUrl(null)).toBe("/study-session");
+    expect(buildSessionReturnLinkUrl("  ")).toBe("/study-session");
   });
 
   it("encodes subject query", () => {
-    expect(buildSessionReturnLinkUrl("Matematik")).toBe("/seans?subject=Matematik");
-    expect(buildSessionReturnLinkUrl("A & B")).toBe("/seans?subject=A%20%26%20B");
+    expect(buildSessionReturnLinkUrl("Matematik")).toBe("/study-session?subject=Matematik");
+    expect(buildSessionReturnLinkUrl("A & B")).toBe("/study-session?subject=A%20%26%20B");
   });
 });
 
@@ -54,7 +54,7 @@ describe("SessionReturnReminderService", () => {
       JobName.SESSION_RETURN_REMINDER,
       {
         userId: USER,
-        linkUrl: "/seans?subject=Tarih",
+        linkUrl: "/study-session?subject=Tarih",
         subject: "Tarih",
         targetDate: "2026-07-13",
       },
