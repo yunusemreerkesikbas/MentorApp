@@ -71,7 +71,11 @@
   environment to go live. Public SEO QA reads run in **service context** (forum tables are RLS-forced)
   hard-filtered to indexable QA (`PublicQuestionView` omits PII). Membership management is complete:
   reject (`{approve:false}`), kick (`DELETE members/:userId`, OWNER-protected) and voluntary
-  **leave/withdraw** (`POST /zones/:id/leave`, OWNER 409) all shipped with web UI. Forum endpoints
+  **leave/withdraw** (`POST /zones/:id/leave`, OWNER 409) all shipped with web UI. **Flip is
+  operationally ready (WP-J):** two launch zones are seeded at boot (idempotent, stable slugs) so
+  `/topluluk` is never an empty dead end, and the orphan-attachment sweep runs on its own 6h
+  in-process timer — **no Render Cron entry to register** (the HTTP endpoint stays as the manual
+  override). Forum endpoints
   **intentionally ship without OpenAPI response schemas** — web consumes `http<T>()` + `@mentor/types`
   (api-client regen is a no-op); API-wide `@ApiOkResponse`/CLI-plugin adoption is a deliberately
   deferred, separate round. `NEXT_PUBLIC_SITE_URL` drives canonical/sitemap/robots.
