@@ -307,6 +307,25 @@ export function SessionDoneState({
           >
             {t("checkin_saved")}
           </p>
+          {mood === 1 && sessionId ? (
+            <Link
+              href={{
+                pathname: "/plan",
+                query: {
+                  coach: "adapt",
+                  source: "session",
+                  sessionId,
+                },
+              }}
+              className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] border px-4 py-2.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2"
+              style={{
+                borderColor: "var(--color-progress-track)",
+                color: "var(--color-main)",
+              }}
+            >
+              {t("coach_adaptation_cta")}
+            </Link>
+          ) : null}
           {reflecting && (
             <p
               className="text-sm"

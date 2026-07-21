@@ -64,6 +64,7 @@ describe("coach analytics", () => {
       access_mode: "PREMIUM",
       next_action_kind: "START_TASK",
     });
+    trackCoachEvent("coach_plan_adaptation_request", { source: "MOOD" });
 
     expect(dataLayer).toEqual([]);
   });
@@ -83,6 +84,12 @@ describe("coach analytics", () => {
       access_mode: "COIN",
       next_action_kind: "ADD_TASK",
     });
+    trackCoachEvent("coach_plan_adaptation_request", { source: "PLAN" });
+    trackCoachEvent("coach_plan_adaptation_apply", {
+      source: "SESSION",
+      move_count: 2,
+      add_count: 1,
+    });
     trackCoachEvent("coach_next_action_click", {
       next_action_kind: "ADD_TASK",
     });
@@ -92,6 +99,12 @@ describe("coach analytics", () => {
         "event",
         "coach_hub_view",
         { access_mode: "COIN", next_action_kind: "ADD_TASK" },
+      ],
+      ["event", "coach_plan_adaptation_request", { source: "PLAN" }],
+      [
+        "event",
+        "coach_plan_adaptation_apply",
+        { source: "SESSION", move_count: 2, add_count: 1 },
       ],
       ["event", "coach_next_action_click", { next_action_kind: "ADD_TASK" }],
     ]);

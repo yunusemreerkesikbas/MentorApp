@@ -308,6 +308,25 @@ export function PanelShell({ initialData }: PanelShellProps) {
               onMoodClick={moodCheckin.openMoodDialog}
             />
           </motion.div>
+          {moodCheckin.mood != null && moodCheckin.mood <= 2 ? (
+            <motion.div variants={staggerItemVariants}>
+              <Link
+                href={{
+                  pathname: "/plan",
+                  query: { coach: "adapt", source: "mood" },
+                }}
+                className="flex min-h-11 items-center justify-between gap-3 rounded-[var(--radius-card)] border bg-white px-4 py-3 text-sm font-semibold shadow-[var(--shadow-card)] focus-visible:outline-none focus-visible:ring-2"
+                style={{
+                  borderColor: "var(--color-progress-track)",
+                  color: "var(--color-main)",
+                }}
+              >
+                {t("coach_adaptation_mood_cta")}
+                <ArrowRight className="size-4 shrink-0" aria-hidden />
+              </Link>
+            </motion.div>
+          ) : null}
+
 
           {quests ? (
             <motion.div variants={staggerItemVariants}>

@@ -5,13 +5,13 @@ import type {
   CoachConversationDto,
   CoachMemoryDto,
   CoachMessageDto,
-  CoachPlanDraftDto,
+  CoachPlanAdaptationDto,
   DailyGreetingDto,
   Paginated,
   SessionReflectionDto,
   WeeklyReviewNarrationDto,
 } from "@mentor/types";
-import type { PlanDraftInput } from "@mentor/validation";
+import type { CoachPlanAdaptationInput } from "@mentor/validation";
 import { http, httpRaw, throwApiClientError } from "@mentor/api-client";
 
 /**
@@ -54,14 +54,14 @@ export async function fetchCoachAccess(): Promise<CoachAccessDto> {
   return (await http<CoachAccessDto>("/v1/coach/access")) as CoachAccessDto;
 }
 
-/** Premium 7-day coach draft preview; persistence happens only after the separate W2 bulk confirm. */
-export async function requestCoachPlanDraft(
-  input: PlanDraftInput,
-): Promise<CoachPlanDraftDto> {
-  return (await http<CoachPlanDraftDto>("/v1/coach/plan-draft", {
+/** Premium adaptive-plan preview. This endpoint never mutates plan tasks. */
+export async function requestCoachPlanAdaptation(
+  input: CoachPlanAdaptationInput,
+): Promise<CoachPlanAdaptationDto> {
+  return (await http<CoachPlanAdaptationDto>("/v1/coach/plan-adaptation", {
     method: "POST",
     body: JSON.stringify(input),
-  })) as CoachPlanDraftDto;
+  })) as CoachPlanAdaptationDto;
 }
 
 export async function sendCoachMessage(

@@ -1,4 +1,9 @@
-import type { Paginated, PlanTaskCalendarDto, PlanTaskDto } from "@mentor/types";
+import type {
+  ApplyPlanAdaptationResultDto,
+  Paginated,
+  PlanTaskCalendarDto,
+  PlanTaskDto,
+} from "@mentor/types";
 import {
   getPlanTaskControllerListUrl,
   http,
@@ -7,15 +12,20 @@ import {
   planTaskControllerUpdate,
 } from "@mentor/api-client";
 import type {
-  BulkCreatePlanTasksInput,
+  ApplyPlanAdaptationInput,
   CreatePlanTaskInput,
   UpdatePlanTaskInput,
 } from "@mentor/validation";
 
 /** List plan tasks for a date — generated client omits the `date` query param. */
-export async function listPlanTasksForDate(date: string, pageSize = 50): Promise<PlanTaskDto[]> {
+export async function listPlanTasksForDate(
+  date: string,
+  pageSize = 50,
+): Promise<PlanTaskDto[]> {
   const url = `${getPlanTaskControllerListUrl()}?date=${encodeURIComponent(date)}&page=1&pageSize=${pageSize}`;
-  const res = (await http<Paginated<PlanTaskDto>>(url)) as Paginated<PlanTaskDto>;
+  const res = (await http<Paginated<PlanTaskDto>>(
+    url,
+  )) as Paginated<PlanTaskDto>;
   return res.items;
 }
 
@@ -40,14 +50,14 @@ export async function createPlanTask(
   return (await planTaskControllerCreate(input)) as unknown as PlanTaskDto;
 }
 
-/** User-confirmed all-or-nothing batch add (for example, an accepted coach draft). */
-export async function createPlanTasksBulk(
-  input: BulkCreatePlanTasksInput,
-): Promise<PlanTaskDto[]> {
-  return (await http<PlanTaskDto[]>("/v1/plan-tasks/bulk", {
+/** Apply the user's selected coach preview all-or-nothing. */
+export async function applyCoachPlanAdaptation(
+  input: ApplyPlanAdaptationInput,
+): Promise<ApplyPlanAdaptationResultDto> {
+  return (await http<ApplyPlanAdaptationResultDto>("/v1/plan-tasks/adapt", {
     method: "POST",
     body: JSON.stringify(input),
-  })) as PlanTaskDto[];
+  })) as ApplyPlanAdaptationResultDto;
 }
 
 export async function updatePlanTask(
@@ -77,7 +87,9 @@ export async function listPlanTasksForRange(
   pageSize = 100,
 ): Promise<PlanTaskDto[]> {
   const url = `${getPlanTaskControllerListUrl()}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&page=1&pageSize=${pageSize}`;
-  const res = (await http<Paginated<PlanTaskDto>>(url)) as Paginated<PlanTaskDto>;
+  const res = (await http<Paginated<PlanTaskDto>>(
+    url,
+  )) as Paginated<PlanTaskDto>;
   return res.items;
 }
 

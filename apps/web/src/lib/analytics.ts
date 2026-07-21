@@ -1,4 +1,8 @@
-import type { CoachAccessMode, DailyNextActionKind } from "@mentor/types";
+import type {
+  CoachAccessMode,
+  CoachPlanAdaptationSource,
+  DailyNextActionKind,
+} from "@mentor/types";
 
 export const ANALYTICS_CONSENT_KEY = "mentor.analytics-consent.v1";
 
@@ -22,6 +26,12 @@ export interface CoachAnalyticsParams {
   };
   coach_next_action_click: { next_action_kind: DailyNextActionKind };
   coach_session_start: Record<string, never>;
+  coach_plan_adaptation_request: { source: CoachPlanAdaptationSource };
+  coach_plan_adaptation_apply: {
+    source: CoachPlanAdaptationSource;
+    move_count: number;
+    add_count: number;
+  };
 }
 export type CoachAnalyticsEvent = keyof CoachAnalyticsParams;
 
