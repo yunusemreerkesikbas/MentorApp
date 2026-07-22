@@ -361,4 +361,5 @@ export interface WeeklyReviewDto {
     subjectName: string | null;
     message: string;
   } | null;
+  suggestedTask: { title: string; subject: string | null } | null;
 }

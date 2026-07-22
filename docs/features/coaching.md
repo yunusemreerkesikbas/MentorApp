@@ -142,6 +142,18 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Daily continuity loop and weekly action (2026-07-22)** — Dashboard and coach hub now render the
+  same data-only `CoachNextActionCard` from the existing `GET /v1/coaching/today` response. Dashboard
+  reuses its loaded payload; coach keeps its single fetch. `START_TASK` preserves a typed
+  `dashboard|coach` source, `ADD_TASK` opens the existing plan form, and `DAY_COMPLETE` adds no work.
+  Content-free impression/click/session-start events include only surface/action/source. The public
+  `SessionService` also exposes the seven-UTC-day session repeat aggregate from
+  `daily_activity.has_session`: active users studied on at least one distinct day, repeat users on
+  at least two, and a zero denominator returns `0`. Weekly READY reviews now include a localized
+  `suggestedTask`; weekly and deep-analysis cards prefill `/plan?add=1` without persisting until the
+  user confirms. Related: `coach-next-action-card.tsx`, dashboard/coach/study-session shells,
+  `daily-activity.repository.ts`, `session.service.ts`, `weekly-review.service.ts`, analysis cards.
+
 - **Koçla planla: atomik ve kullanıcı onaylı uyarlama (2026-07-21)** — Plan ekranındaki tek
   “Koçla planla” aksiyonu, boş planda `ADD`, dolu planda güvenli `MOVE` + `ADD` önerilerini
   aynı sheet'te tarihe göre gruplar; her değişiklik ayrı seçilir ve taşımalarda eski/yeni tarih

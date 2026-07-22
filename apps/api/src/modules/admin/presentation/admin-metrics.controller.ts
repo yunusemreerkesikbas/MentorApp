@@ -11,11 +11,17 @@ import { EconomyService } from "../../economy/application/economy.service";
 import { InviteService } from "../../economy/application/invite.service";
 import { AiCostStatsService } from "../../ai/application/ai-cost-stats.service";
 import { CoachFeedbackStatsService } from "../../ai/application/coach-feedback-stats.service";
+import { SessionService } from "../../coaching/application/session.service";
 
 interface AdminMetrics {
   users: UserStats;
   subscriptions: SubscriptionStats;
   economy: { coinIssued: number; xpIssued: number; invite: { invited: number; converted: number } };
+  coaching: {
+    activeUsers7d: number;
+    repeatUsers7d: number;
+    repeatRate7d: number;
+  };
   generatedAt: string;
 }
 
@@ -36,20 +42,23 @@ export class AdminMetricsController {
     private readonly invites: InviteService,
     private readonly aiCost: AiCostStatsService,
     private readonly coachFeedback: CoachFeedbackStatsService,
+    private readonly sessions: SessionService,
   ) {}
 
   @Get()
   async overview(): Promise<AdminMetrics> {
-    const [users, subscriptions, economy, invite] = await Promise.all([
+    const [users, subscriptions, economy, invite, coaching] = await Promise.all([
       this.users.getUserStats(),
       this.subscriptions.getSubscriptionStats(),
       this.economy.getEconomyStats(),
       this.invites.getGlobalStats(),
+      this.sessions.getSessionRepeatStats(),
     ]);
     return {
       users,
       subscriptions,
       economy: { ...economy, invite },
+      coaching,
       generatedAt: new Date().toISOString(),
     };
   }

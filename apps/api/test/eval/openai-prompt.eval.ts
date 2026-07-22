@@ -36,17 +36,14 @@ const REPORT_PATH = resolve(process.cwd(), "eval-results", "latest.md");
 const context: CoachContext = {
   examType: "KPSS",
   moodLevel: 2,
-  struggleNote: "Paragraf sorularında dikkatim dağılıyor",
   recentSessions: {
     count7d: 4,
     focusMinutes7d: 160,
     subjects: ["Türkçe", "Matematik"],
-    lastStruggleNote: "Paragrafta ana fikir",
   },
   todayPlan: {
     done: 1,
     total: 2,
-    pendingTitles: ["Matematik: 20 soru"],
   },
 };
 
@@ -81,6 +78,7 @@ const weeklyReview: WeeklyReviewDto = {
     message:
       "Paragraf yanlışları tekrar ettiği için bu hafta Türkçe odağını koru.",
   },
+  suggestedTask: { title: "Türkçe haftalık tekrar", subject: "Türkçe" },
 };
 
 const ghost: GhostComparisonDto = {
@@ -178,7 +176,6 @@ const sessionPrompt = buildSessionReflectionPrompt(context, {
   subject: "Türkçe",
   focusMinutes: 35,
   sessionMood: 1,
-  struggleNote: "Paragrafta ana fikri kaçırdım",
 });
 const ghostPrompt = buildGhostPrompt(ghost);
 const visionPrompt = buildVisionNotePrompt(

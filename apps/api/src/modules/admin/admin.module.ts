@@ -5,6 +5,7 @@ import { ContentModule } from "../content/content.module";
 import { EconomyModule } from "../economy/economy.module";
 import { IdentityModule } from "../identity/identity.module";
 import { PaymentsModule } from "../payments/payments.module";
+import { CoachingModule } from "../coaching/coaching.module";
 import { AdminAuditService } from "./application/admin-audit.service";
 import { AdminUsersService } from "./application/admin-users.service";
 import { AdminAuditRepository } from "./infrastructure/admin-audit.repository";
@@ -27,7 +28,15 @@ import { AdminUsersController } from "./presentation/admin-users.controller";
  */
 @Module({
   // AiModule → cost/feedback metrics; AccountModule → the shared KVKK erasure path (anonymize).
-  imports: [IdentityModule, EconomyModule, ContentModule, PaymentsModule, AiModule, AccountModule],
+  imports: [
+    IdentityModule,
+    EconomyModule,
+    ContentModule,
+    PaymentsModule,
+    AiModule,
+    AccountModule,
+    CoachingModule,
+  ],
   controllers: [
     AdminUsersController,
     AdminConfigController,

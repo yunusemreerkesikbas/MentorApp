@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { I18nContext } from "nestjs-i18n";
 import type { VisionNoteDto } from "@mentor/types";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -12,6 +13,7 @@ import { AiUsageFeature, buildVisionNotePrompt, estimateCostMicros } from "../do
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
+import { promptLocale } from "../domain/prompt-locale";
 
 /**
  * Premium AI motivation note for the vision/goal board ("hayal/hedef panosu") — W3 · §4 #5
@@ -47,8 +49,12 @@ export class VisionNoteService {
       throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST);
     }
 
+    const locale = promptLocale(I18nContext.current()?.lang);
     // Idempotent cache: reuse the note (no LLM call / no cost) until the goal changes.
-    if (board.aiNote) {
+    if (
+      board.aiNote &&
+      (await this.vision.getAiNoteLocale(user.id)) === locale
+    ) {
       return { note: board.aiNote, model: "cache" };
     }
 
@@ -58,6 +64,7 @@ export class VisionNoteService {
       board.goalTitle,
       board.targetCity,
       board.motivation,
+      locale,
     );
 
     await this.budget.assertWithinBudget();
@@ -72,7 +79,7 @@ export class VisionNoteService {
       costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
     });
 
-    await this.vision.setAiNote(user.id, result.text, result.model);
+    await this.vision.setAiNote(user.id, result.text, result.model, locale);
 
     return { note: result.text, model: result.model };
   }

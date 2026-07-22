@@ -25,6 +25,7 @@ import {
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { ContextBuilder } from "./context-builder.service";
+import { promptLocale } from "../domain/prompt-locale";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -121,6 +122,7 @@ export class PlanAdaptationService {
         : null,
       tasks: promptTasks,
       note: input.source === "PLAN" ? input.note : undefined,
+      locale: promptLocale(I18nContext.current()?.lang),
     });
 
     await this.budget.assertWithinBudget();

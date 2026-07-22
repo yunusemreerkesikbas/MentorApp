@@ -91,8 +91,14 @@ describe("coach analytics", () => {
       add_count: 1,
     });
     trackCoachEvent("coach_next_action_click", {
+      surface: "coach",
       next_action_kind: "ADD_TASK",
     });
+    trackCoachEvent("coach_next_action_impression", {
+      surface: "dashboard",
+      next_action_kind: "DAY_COMPLETE",
+    });
+    trackCoachEvent("coach_session_start", { source: "dashboard" });
 
     expect(dataLayer).toEqual([
       [
@@ -106,7 +112,17 @@ describe("coach analytics", () => {
         "coach_plan_adaptation_apply",
         { source: "SESSION", move_count: 2, add_count: 1 },
       ],
-      ["event", "coach_next_action_click", { next_action_kind: "ADD_TASK" }],
+      [
+        "event",
+        "coach_next_action_click",
+        { surface: "coach", next_action_kind: "ADD_TASK" },
+      ],
+      [
+        "event",
+        "coach_next_action_impression",
+        { surface: "dashboard", next_action_kind: "DAY_COMPLETE" },
+      ],
+      ["event", "coach_session_start", { source: "dashboard" }],
     ]);
     expect(JSON.stringify(dataLayer)).not.toMatch(/taskId|title|subject|user/i);
   });

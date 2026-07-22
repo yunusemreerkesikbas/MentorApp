@@ -168,6 +168,11 @@ export interface AdminMetrics {
         xpIssued: number;
         invite: { invited: number; converted: number };
     };
+    coaching: {
+        activeUsers7d: number;
+        repeatUsers7d: number;
+        repeatRate7d: number;
+    };
     generatedAt: string;
 }
 

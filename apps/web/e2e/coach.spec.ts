@@ -78,6 +78,36 @@ test("Free hub erişim hydration'ını beklemeden pending görevi seansa taşır
   await expect(start).toHaveAttribute("href", /\/seans\?.*source=coach/);
   await expect(start).toHaveAttribute("href", new RegExp(`taskId=${taskId}`));
   expect(api.conversationCalls).toBe(0);
+  expect(api.dailyGreetingCalls).toBe(0);
+});
+
+test("dashboard ve koç hub aynı aksiyonu gösterir; dashboard bugün verisini yalnız bir kez ister", async ({
+  page,
+  context,
+}) => {
+  const dashboardApi = await mockCoachApi(page, { today: pendingToday });
+  await page.goto("/panel");
+
+  const dashboardCard = page.getByTestId("coach-next-action");
+  await expect(
+    dashboardCard.getByText(pendingToday.nextAction.message),
+  ).toBeVisible();
+  await expect(
+    dashboardCard.getByRole("link", { name: "Odak seansına başla" }),
+  ).toHaveAttribute("href", /source=dashboard/);
+  expect(dashboardApi.todayCalls).toBe(1);
+  expect(dashboardApi.dailyGreetingCalls).toBe(1);
+
+  const coachPage = await context.newPage();
+  const coachApi = await mockCoachApi(coachPage, { today: pendingToday });
+  await coachPage.goto("/koc");
+  await expect(
+    coachPage
+      .getByTestId("coach-next-action")
+      .getByText(pendingToday.nextAction.message),
+  ).toBeVisible();
+  expect(coachApi.todayCalls).toBe(1);
+  expect(coachApi.dailyGreetingCalls).toBe(0);
 });
 
 test("boş plan için görev ekleme aksiyonunu gösterir", async ({ page }) => {
@@ -537,6 +567,7 @@ interface MockCoachOptions {
 
 async function mockCoachApi(page: Page, options: MockCoachOptions) {
   let todayCalls = 0;
+  let dailyGreetingCalls = 0;
   let conversationCalls = 0;
   let conversationsBlocked = (options.conversationFailures ?? 0) > 0;
   let messageFailures = options.messageFailures ?? 0;
@@ -590,6 +621,13 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
     if (method === "GET" && path === "/v1/coaching/today") {
       todayCalls += 1;
       return json(route, options.today);
+    }
+    if (method === "POST" && path === "/v1/coach/daily-greeting") {
+      dailyGreetingCalls += 1;
+      return json(route, { greeting: "Bugün tek küçük adım yeter.", model: "fake" });
+    }
+    if (method === "GET" && path === "/v1/coaching/vision") {
+      return json(route, null);
     }
     if (method === "GET" && path === "/v1/coach/memory")
       return json(route, null);
@@ -698,6 +736,9 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
     },
     get conversationCalls() {
       return conversationCalls;
+    },
+    get dailyGreetingCalls() {
+      return dailyGreetingCalls;
     },
     allowConversations() {
       conversationsBlocked = false;

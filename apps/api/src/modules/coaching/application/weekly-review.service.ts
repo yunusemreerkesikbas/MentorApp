@@ -116,6 +116,16 @@ export class WeeklyReviewService {
               subject: focusSelection.subjectName ?? "",
             }),
           };
+    const reviewSuggestedTask = ready
+      ? focusSelection?.subjectName
+        ? {
+            title: t("TASK_SUBJECT", {
+              subject: focusSelection.subjectName,
+            }),
+            subject: focusSelection.subjectName,
+          }
+        : { title: t("TASK_SESSION"), subject: null }
+      : null;
     const review: WeeklyReviewDto = {
       period: {
         startDate: windows.startDate,
@@ -158,6 +168,7 @@ export class WeeklyReviewService {
                     }),
             },
       focus,
+      suggestedTask: reviewSuggestedTask,
     };
 
     const suggestedTask =

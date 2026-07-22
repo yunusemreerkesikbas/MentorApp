@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { I18nContext, I18nService } from "nestjs-i18n";
 import type { SessionReflectionDto } from "@mentor/types";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -13,6 +14,8 @@ import { extractSuggestedTask } from "../domain/suggested-task";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
+import { promptLocale } from "../domain/prompt-locale";
+import { hasSeriousDistressSignal } from "../domain/serious-distress";
 
 /**
  * Premium AI reflection on a finalized study session after micro check-in (W3 · §4 #5).
@@ -30,6 +33,7 @@ export class SessionReflectionService {
     private readonly entitlement: EntitlementService,
     private readonly sessions: SessionService,
     private readonly budget: AiBudgetGuard,
+    private readonly i18n: I18nService,
   ) {}
 
   async reflect(user: RequestUser, sessionId: string): Promise<SessionReflectionDto> {
@@ -49,8 +53,19 @@ export class SessionReflectionService {
     if (session.sessionMood == null) {
       throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST);
     }
+    if (hasSeriousDistressSignal(session.struggleNote)) {
+      const reflection = this.i18n.translate(
+        "coaching.mood.SERIOUS_DISTRESS",
+        { lang: I18nContext.current()?.lang },
+      ) as unknown as string;
+      return { reflection, model: "safety" };
+    }
 
-    if (session.aiReflection) {
+    const locale = promptLocale(I18nContext.current()?.lang);
+    if (
+      session.aiReflection &&
+      (await this.sessions.getAiReflectionLocale(user.id, sessionId)) === locale
+    ) {
       return {
         reflection: session.aiReflection,
         model: "cache",
@@ -60,12 +75,15 @@ export class SessionReflectionService {
 
     const ctx = await this.context.build(user.id);
     const focusMinutes = Math.max(1, Math.round(session.actualFocusSeconds / 60));
-    const { system, user: userMsg } = buildSessionReflectionPrompt(ctx, {
-      subject: session.subject,
-      focusMinutes,
-      sessionMood: session.sessionMood,
-      struggleNote: session.struggleNote,
-    });
+    const { system, user: userMsg } = buildSessionReflectionPrompt(
+      ctx,
+      {
+        subject: session.subject,
+        focusMinutes,
+        sessionMood: session.sessionMood,
+      },
+      locale,
+    );
 
     await this.budget.assertWithinBudget();
     const result = await this.llm.complete({ system, user: userMsg });
@@ -80,7 +98,14 @@ export class SessionReflectionService {
       costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
     });
 
-    await this.sessions.setAiReflection(user.id, sessionId, text, result.model, task);
+    await this.sessions.setAiReflection(
+      user.id,
+      sessionId,
+      text,
+      result.model,
+      task,
+      locale,
+    );
 
     return {
       reflection: text,

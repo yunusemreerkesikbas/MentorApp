@@ -30,7 +30,9 @@ describe("SessionReflectionService", () => {
   let getEntitlement: ReturnType<typeof vi.fn>;
   let getById: ReturnType<typeof vi.fn>;
   let setAiReflection: ReturnType<typeof vi.fn>;
+  let getAiReflectionLocale: ReturnType<typeof vi.fn>;
   let service: SessionReflectionService;
+  let translate: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     complete = vi.fn(async () => ({
@@ -57,6 +59,8 @@ describe("SessionReflectionService", () => {
         aiReflection: "Güzel bir seans oldu; yarın aynı ritmi koru.",
       }),
     );
+    getAiReflectionLocale = vi.fn(async () => null);
+    translate = vi.fn(() => "Bunu tek başına taşımak zorunda değilsin.");
 
     service = new SessionReflectionService(
       { complete } as never,
@@ -64,8 +68,9 @@ describe("SessionReflectionService", () => {
       { append } as never,
       { get: configGet } as never,
       { getEntitlement } as never,
-      { getById, setAiReflection } as never,
+      { getById, getAiReflectionLocale, setAiReflection } as never,
       { assertWithinBudget: vi.fn(async () => undefined) } as never,
+      { translate } as never,
     );
   });
 
@@ -102,7 +107,22 @@ describe("SessionReflectionService", () => {
     expect(complete).not.toHaveBeenCalled();
   });
 
+  it("handles serious distress locally without sending the note to the LLM", async () => {
+    getById.mockResolvedValue(
+      baseSession({ struggleNote: "Kendime zarar vermeyi düşünüyorum." }),
+    );
+
+    await expect(service.reflect(USER, SESSION_ID)).resolves.toEqual({
+      reflection: "Bunu tek başına taşımak zorunda değilsin.",
+      model: "safety",
+    });
+    expect(complete).not.toHaveBeenCalled();
+    expect(build).not.toHaveBeenCalled();
+    expect(setAiReflection).not.toHaveBeenCalled();
+  });
+
   it("returns the cached reflection without calling the LLM", async () => {
+    getAiReflectionLocale.mockResolvedValue("tr");
     getById.mockResolvedValue(
       baseSession({ aiReflection: "Önceki seans yansıması." }),
     );
@@ -116,6 +136,7 @@ describe("SessionReflectionService", () => {
   });
 
   it("returns cached suggestedTask with the reflection on cache hit", async () => {
+    getAiReflectionLocale.mockResolvedValue("tr");
     getById.mockResolvedValue(
       baseSession({
         aiReflection: "Önceki seans yansıması.",
@@ -131,6 +152,17 @@ describe("SessionReflectionService", () => {
     expect(complete).not.toHaveBeenCalled();
   });
 
+  it("regenerates a cached reflection when its locale differs", async () => {
+    getAiReflectionLocale.mockResolvedValue("en");
+    getById.mockResolvedValue(
+      baseSession({ aiReflection: "Cached in English." }),
+    );
+
+    await service.reflect(USER, SESSION_ID);
+
+    expect(complete).toHaveBeenCalledOnce();
+  });
+
   it("generates, meters and caches a reflection for premium", async () => {
     const res = await service.reflect(USER, SESSION_ID);
     expect(res.reflection).toBe("Güzel bir seans oldu; yarın aynı ritmi koru.");
@@ -143,6 +175,7 @@ describe("SessionReflectionService", () => {
       "Güzel bir seans oldu; yarın aynı ritmi koru.",
       "fake",
       null,
+      "tr",
     );
   });
 
@@ -165,6 +198,7 @@ describe("SessionReflectionService", () => {
       "İyi tempoydu; yarın aynı konuda 10 soru çöz.",
       "fake",
       { title: "Mat: 10 soru", subject: "Matematik" },
+      "tr",
     );
   });
 });

@@ -33,7 +33,9 @@ Internally NestJS `EventEmitter`; moves to a queue if modules split out (same co
   summary into the prompt on every reply.
 - **Flow:** raw event → Postgres (RLS) → rule-engine summary/metrics (cheap) → **Context Builder**
   (PII-minimal structured summary) → LLM (no-training) [+ pgvector RAG knowledge center].
-- **Memory Profile:** a distilled persistent summary per user (reflection loop, async queue).
+- **Cross-thread memory is disabled.** Existing `coach_memory` rows and GET/DELETE surfaces remain
+  only for backward compatibility and the user's deletion right; summaries are not generated or
+  injected into prompts.
 - **Cost (§7):** hybrid (rule engine handles daily touch ~0) + model tiering + cache + rate-limit.
   Free = no LLM; premium = fair-use.
 

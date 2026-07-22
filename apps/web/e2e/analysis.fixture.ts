@@ -1,10 +1,12 @@
 import type {
   AuthUser,
   CoachingAnalysisDto,
+  DeepAnalysisView,
   ExamCalendarDto,
   ExamSubjectDto,
   PhotoAccessDto,
   WeeklyReviewDto,
+  WeeklyReviewNarrationDto,
 } from "@mentor/types";
 import type { Page, Route } from "@playwright/test";
 
@@ -146,6 +148,7 @@ export const insufficientWeekly: WeeklyReviewDto = {
   },
   performance: null,
   focus: null,
+  suggestedTask: null,
 };
 
 export const readyWeekly: WeeklyReviewDto = {
@@ -174,6 +177,10 @@ export const readyWeekly: WeeklyReviewDto = {
     subjectName: "Matematik",
     message: "Problemler için kısa bir tekrar planla.",
   },
+  suggestedTask: {
+    title: "Matematik haftalık tekrar",
+    subject: "Matematik",
+  },
 };
 
 interface MockApiOptions {
@@ -181,6 +188,8 @@ interface MockApiOptions {
   analysis?: CoachingAnalysisDto;
   weekly?: Array<WeeklyReviewDto | "error">;
   photoAccess?: PhotoAccessDto;
+  deepAnalysis?: DeepAnalysisView;
+  weeklyNarration?: WeeklyReviewNarrationDto;
 }
 
 export interface MockApiLog {
@@ -243,6 +252,18 @@ export async function mockAnalysisApi(page: Page, options: MockApiOptions = {}):
     if (method === "GET" && path === "/v1/coach/photo-access") {
       log.photoAccessCalls += 1;
       return json(route, options.photoAccess ?? { canCategorize: true, monthlyLimit: 10, remainingThisMonth: 7 });
+    }
+    if (method === "GET" && path.startsWith("/v1/economy/deep-analysis?")) {
+      return options.deepAnalysis
+        ? json(route, options.deepAnalysis)
+        : json(route, { code: "ECONOMY_DISABLED", message: "Kapalı" }, 404);
+    }
+    if (
+      method === "POST" &&
+      path === "/v1/coach/weekly-review" &&
+      options.weeklyNarration
+    ) {
+      return json(route, options.weeklyNarration);
     }
 
     if (/^\/v1\/(coaching|mock-exams|coach|plan-tasks)/.test(path)) {

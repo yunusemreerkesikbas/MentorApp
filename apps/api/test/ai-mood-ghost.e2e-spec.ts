@@ -104,15 +104,11 @@ describe("ai mood-reflection + ghost-narration (e2e)", () => {
     const mood = buildMoodReflectionPrompt(
       {
         examType: "KPSS",
-        daysRemaining: 90,
-        examDateLabel: null,
         moodLevel: 3,
-        struggleNote: null,
         recentSessions: null,
         todayPlan: null,
       },
       3,
-      null,
     );
     expect(mood.system).toMatch(/Resmî bilgi/);
     expect(mood.system).toContain("/bilgi");

@@ -14,8 +14,8 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Build /study-session deep-link with optional subject query (mobile-ready). */
 export function buildSessionReturnLinkUrl(subject?: string | null): string {
   const trimmed = subject?.trim();
-  if (!trimmed) return "/study-session";
-  return `/study-session?subject=${encodeURIComponent(trimmed.slice(0, 80))}`;
+  if (!trimmed) return "/study-session?source=reminder";
+  return `/study-session?subject=${encodeURIComponent(trimmed.slice(0, 80))}&source=reminder`;
 }
 
 /**

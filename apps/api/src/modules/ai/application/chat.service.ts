@@ -38,6 +38,7 @@ import {
   extractReplyMarkers,
 } from "../domain/suggested-task";
 import { classifyOfficialIntent } from "../domain/official-intent";
+import { promptLocale } from "../domain/prompt-locale";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import {
@@ -389,7 +390,12 @@ export class ChatService {
       }
     }
 
-    const system = buildSystemPrompt(ctx, retrieved, mockExam);
+    const system = buildSystemPrompt(
+      ctx,
+      retrieved,
+      mockExam,
+      promptLocale(I18nContext.current()?.lang),
+    );
 
     return {
       llmInput: { system, user: message, history },

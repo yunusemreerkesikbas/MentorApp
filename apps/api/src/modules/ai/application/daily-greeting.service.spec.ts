@@ -74,6 +74,7 @@ describe("DailyGreetingService", () => {
     expect(res).toEqual({ greeting: "Önceki selam.", model: "cache" });
     expect(complete).not.toHaveBeenCalled();
     expect(insert).not.toHaveBeenCalled();
+    expect(find).toHaveBeenCalledWith(USER_ID, expect.any(String), "tr");
   });
 
   it("generates, meters and caches a greeting on a fresh day", async () => {
@@ -87,6 +88,7 @@ describe("DailyGreetingService", () => {
       greetingDate: new Date().toISOString().slice(0, 10),
       greeting: "Günaydın! Bugün tek küçük adım yeter.",
       model: "fake",
+      locale: "tr",
     });
   });
 });

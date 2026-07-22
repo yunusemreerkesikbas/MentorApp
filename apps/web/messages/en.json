@@ -581,9 +581,6 @@
       "saved": "Saved",
       "saved_toast_title": "Exam type saved",
       "saved_toast_message": "Countdown and content will update to match.",
-      "saved_info_title": "Goal saved",
-      "saved_info_message": "Your coach and dashboard will motivate you around this goal.",
-      "saved_info_ok": "OK",
       "save_error": "Could not save.",
       "kpss_desc": "Civil Servant Selection Exam",
       "yks_desc": "Higher Education Institutions Exam",
@@ -897,7 +894,8 @@
       "enter_exam": "Enter mock exam",
       "start_session": "Start session",
       "retry": "Try again",
-      "load_error": "Weekly review could not be loaded."
+      "load_error": "Weekly review could not be loaded.",
+      "add_to_plan": "Add to my plan"
     },
     "deep": {
       "title": "Deep Analysis",
@@ -914,7 +912,8 @@
       "insufficient": "Not enough coins ({balance}/{cost}). Complete quests to earn more.",
       "go_earn": "Go to quests",
       "suggested_title": "Suggested task",
-      "action_error": "Something went wrong, you can try again."
+      "action_error": "Something went wrong, you can try again.",
+      "add_to_plan": "Add to my plan"
     }
   },
   "session": {
@@ -1051,6 +1050,7 @@
     "back_panel": "← Back to Dashboard",
     "no_exam_chip": "Exam type required",
     "no_exam_desc": "Once you choose your target exam from your profile, the official exam date and articles will appear here.",
+    "no_exam_cta": "Choose exam type",
     "categories": {
       "application": "Application",
       "exam_process": "Exam process",
@@ -1328,6 +1328,9 @@
     "save": "Save",
     "saving": "Saving…",
     "saved": "Saved",
+    "saved_info_title": "Goal saved",
+    "saved_info_message": "Your coach and dashboard will motivate you around this goal.",
+    "saved_info_ok": "OK",
     "save_error": "Couldn't save."
   },
   "notifications": {

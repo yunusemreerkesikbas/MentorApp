@@ -24,8 +24,15 @@ export interface CoachAnalyticsParams {
     access_mode: CoachAccessMode;
     next_action_kind: DailyNextActionKind;
   };
-  coach_next_action_click: { next_action_kind: DailyNextActionKind };
-  coach_session_start: Record<string, never>;
+  coach_next_action_impression: {
+    surface: "dashboard" | "coach";
+    next_action_kind: DailyNextActionKind;
+  };
+  coach_next_action_click: {
+    surface: "dashboard" | "coach";
+    next_action_kind: DailyNextActionKind;
+  };
+  coach_session_start: { source: "dashboard" | "coach" };
   coach_plan_adaptation_request: { source: CoachPlanAdaptationSource };
   coach_plan_adaptation_apply: {
     source: CoachPlanAdaptationSource;

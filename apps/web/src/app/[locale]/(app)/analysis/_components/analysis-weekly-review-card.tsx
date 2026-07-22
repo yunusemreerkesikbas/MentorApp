@@ -66,30 +66,49 @@ export function AnalysisWeeklyReviewCard({
           </div>
         </div>
       ) : (
-        <div className="grid gap-3 md:grid-cols-3">
-          <ReviewSection
-            title={t("rhythm_title")}
-            value={t("rhythm_value", {
-              sessions: review.rhythm.completedSessionCount,
-              minutes: review.rhythm.focusMinutes,
-              days: review.rhythm.activeDays,
-            })}
-            message={review.rhythm.message}
-          />
-          <ReviewSection
-            title={t("performance_title")}
-            value={
-              review.performance
-                ? t("net_value", { net: review.performance.averageNet })
-                : t("no_exam")
-            }
-            message={review.performance?.message ?? t("no_exam_message")}
-          />
-          <ReviewSection
-            title={t("focus_title")}
-            value={review.focus?.subjectName ?? t("rhythm_focus")}
-            message={review.focus?.message ?? t("rhythm_focus_message")}
-          />
+        <div className="flex flex-col gap-4">
+          <div className="grid gap-3 md:grid-cols-3">
+            <ReviewSection
+              title={t("rhythm_title")}
+              value={t("rhythm_value", {
+                sessions: review.rhythm.completedSessionCount,
+                minutes: review.rhythm.focusMinutes,
+                days: review.rhythm.activeDays,
+              })}
+              message={review.rhythm.message}
+            />
+            <ReviewSection
+              title={t("performance_title")}
+              value={
+                review.performance
+                  ? t("net_value", { net: review.performance.averageNet })
+                  : t("no_exam")
+              }
+              message={review.performance?.message ?? t("no_exam_message")}
+            />
+            <ReviewSection
+              title={t("focus_title")}
+              value={review.focus?.subjectName ?? t("rhythm_focus")}
+              message={review.focus?.message ?? t("rhythm_focus_message")}
+            />
+          </div>
+          {review.suggestedTask ? (
+            <Link
+              href={{
+                pathname: "/plan",
+                query: {
+                  add: "1",
+                  title: review.suggestedTask.title,
+                  ...(review.suggestedTask.subject
+                    ? { subject: review.suggestedTask.subject }
+                    : {}),
+                },
+              }}
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] bg-[var(--color-btn)] px-5 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] sm:w-fit"
+            >
+              {t("add_to_plan")}
+            </Link>
+          ) : null}
         </div>
       )}
     </Card>

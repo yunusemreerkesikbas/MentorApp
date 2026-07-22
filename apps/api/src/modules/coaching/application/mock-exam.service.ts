@@ -416,6 +416,7 @@ export class MockExamService {
     narration: string,
     model: string,
     examId?: string,
+    locale = "tr",
   ): Promise<void> {
     await withUserContext(this.db, { userId }, async (tx) => {
       const latest = await this.mockExams.listTrend(tx, userId, 1, examId);
@@ -425,7 +426,18 @@ export class MockExamService {
         latest[0]!.id,
         narration,
         model,
+        locale,
       );
+    });
+  }
+
+  async getLatestGhostNarrationLocale(
+    userId: string,
+    examId?: string,
+  ): Promise<string | null> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const latest = await this.mockExams.listTrend(tx, userId, 1, examId);
+      return latest[0]?.aiNarrationLocale ?? null;
     });
   }
 

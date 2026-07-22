@@ -15,11 +15,8 @@ import type {
 import { ApiClientError, coachingControllerGetToday, planTaskControllerUpdate } from "@mentor/api-client";
 import { CountdownCard } from "@mentor/ui";
 import {
-  BarChart3,
   ArrowRight,
   BookOpen,
-  Brain,
-  CalendarDays,
   Check,
   Coins,
   Flame,
@@ -31,6 +28,7 @@ import {
 } from "lucide-react";
 
 import { EconomyQuestsCard } from "@/components/economy-quests-card";
+import { CoachNextActionCard } from "@/components/coach-next-action-card";
 import { PuhuImage } from "@/components/puhu-image";
 import { Link } from "@/i18n/navigation";
 import {
@@ -354,7 +352,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
           </motion.div>
 
           <motion.div variants={staggerItemVariants}>
-            <CoachShortcutsCard />
+            <CoachNextActionCard today={data} surface="dashboard" />
           </motion.div>
         </section>
 
@@ -856,42 +854,6 @@ function TodayFocusCard({
         <Play className="size-4 fill-current" aria-hidden />
         {activePreset ? t("start_focus_with_minutes", { minutes: activePreset.focusMinutes }) : t("start_focus")}
       </Link>
-    </article>
-  );
-}
-
-function CoachShortcutsCard() {
-  const t = useTranslations("panel");
-  const tChat = useTranslations("coach_chat");
-  const studySeed = tChat("suggestion_1");
-  const shortcuts = [
-    {
-      href: { pathname: "/coach/chat", query: { seed: studySeed } } as const,
-      label: t("coach_shortcut_study"),
-      icon: <Brain className="size-4" aria-hidden />,
-    },
-    { href: "/plan", label: t("coach_shortcut_plan"), icon: <CalendarDays className="size-4" aria-hidden /> },
-    { href: "/analysis", label: t("coach_shortcut_analysis"), icon: <BarChart3 className="size-4" aria-hidden /> },
-  ] as const;
-
-  return (
-    <article className="rounded-[var(--radius-card)] bg-white p-5 shadow-[var(--shadow-card)]">
-      <h2 className="text-lg font-bold text-[var(--color-main)]">{t("coach_shortcuts_title")}</h2>
-      <p className="mt-1 text-sm leading-6 text-[var(--color-secondary)]">{t("coach_shortcuts_subtitle")}</p>
-      <div className="mt-4 grid gap-2">
-        {shortcuts.map((shortcut) => (
-          <Link
-            key={shortcut.label}
-            href={shortcut.href}
-            className="flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] border border-black/10 px-3 text-sm font-bold text-[var(--color-main)] transition hover:border-[var(--color-progress)] hover:bg-[color-mix(in_srgb,var(--color-progress-track)_25%,white)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-progress)]"
-          >
-            <span className="grid size-8 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_40%,white)] text-[var(--color-progress)]">
-              {shortcut.icon}
-            </span>
-            {shortcut.label}
-          </Link>
-        ))}
-      </div>
     </article>
   );
 }

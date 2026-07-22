@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { I18nContext } from "nestjs-i18n";
 import type { DailyGreetingDto } from "@mentor/types";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -12,11 +13,12 @@ import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { DailyGreetingRepository } from "../infrastructure/daily-greeting.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
+import { promptLocale } from "../domain/prompt-locale";
 
 /**
- * Premium proactive daily greeting on the /coach hub (W3 · §4 #5 premium-only — free tier keeps the
+ * Premium proactive daily greeting on the dashboard rhythm card (W3 · §4 #5 premium-only — free tier keeps the
  * rule-based brief). Cost is bounded by an idempotent daily cache: at most one LLM call per
- * (user, UTC day); the message stays fixed for the day (no fingerprint refresh — deliberate).
+ * (user, UTC day, locale); the message stays fixed for the day and language.
  * Mirrors {@link MoodReflectionService}; usage metered into `ai_usage` (§7).
  */
 @Injectable()
@@ -42,13 +44,17 @@ export class DailyGreetingService {
     }
 
     const today = new Date().toISOString().slice(0, 10); // UTC day — same day math as streak
-    const cached = await this.greetings.find(user.id, today);
+    const locale = promptLocale(I18nContext.current()?.lang);
+    const cached = await this.greetings.find(user.id, today, locale);
     if (cached) {
       return { greeting: cached.greeting, model: "cache" };
     }
 
     const ctx = await this.context.build(user.id);
-    const { system, user: userMsg } = buildDailyGreetingPrompt(ctx);
+    const { system, user: userMsg } = buildDailyGreetingPrompt(
+      ctx,
+      locale,
+    );
 
     await this.budget.assertWithinBudget();
     const result = await this.llm.complete({ system, user: userMsg });
@@ -67,6 +73,7 @@ export class DailyGreetingService {
       greetingDate: today,
       greeting: result.text,
       model: result.model,
+      locale,
     });
 
     return { greeting: result.text, model: result.model };

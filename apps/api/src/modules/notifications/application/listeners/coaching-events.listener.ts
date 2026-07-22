@@ -76,7 +76,7 @@ export class CoachingEventsListener {
       "COACH",
       "Bugün zor bir gün olmuş olabilir",
       "Moraliniz biraz düşük görünüyor. Küçük bir adım bile yeterli — seninleyiz. 💙",
-      "/coach",
+      "/dashboard",
     ).catch(() => {});
   }
 
@@ -118,7 +118,7 @@ export class CoachingEventsListener {
       "PLAN",
       "Günlük planı tamamladın! ✅",
       `${event.tasksCount} görevin hepsini bitirdin. Bugün harika gitti.`,
-      "/plan",
+      "/dashboard",
     ).catch(() => {});
   }
 }

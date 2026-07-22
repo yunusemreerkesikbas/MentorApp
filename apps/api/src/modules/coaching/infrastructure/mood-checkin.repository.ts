@@ -32,6 +32,7 @@ export class MoodCheckinRepository {
           struggleNote,
           aiReflection: sql`CASE WHEN ${unchanged} THEN ${moodCheckins.aiReflection} ELSE NULL END`,
           aiModel: sql`CASE WHEN ${unchanged} THEN ${moodCheckins.aiModel} ELSE NULL END`,
+          aiLocale: sql`CASE WHEN ${unchanged} THEN ${moodCheckins.aiLocale} ELSE NULL END`,
           aiReflectedAt: sql`CASE WHEN ${unchanged} THEN ${moodCheckins.aiReflectedAt} ELSE NULL END`,
         },
       })
@@ -46,10 +47,16 @@ export class MoodCheckinRepository {
     date: string,
     reflection: string,
     model: string,
+    locale: string,
   ): Promise<void> {
     await tx
       .update(moodCheckins)
-      .set({ aiReflection: reflection, aiModel: model, aiReflectedAt: new Date() })
+      .set({
+        aiReflection: reflection,
+        aiModel: model,
+        aiLocale: locale,
+        aiReflectedAt: new Date(),
+      })
       .where(and(eq(moodCheckins.userId, userId), eq(moodCheckins.checkinDate, date)));
   }
 

@@ -13,6 +13,7 @@ const evidence = {
     rhythm: { completedSessionCount: 0, focusMinutes: 0, activeDays: 0, moodCheckinCount: 1, energySignal: "MIXED", message: "Ritim" },
     performance: { mockExamCount: 1, averageNet: "70.00", previousWeekAverageNet: "68.00", delta: "+2.00", evidenceLevel: "COMPARABLE", message: "Gelişim" },
     focus: { source: "WEEKLY_DECLINE", subjectRef: "turkce", subjectName: "Türkçe", message: "Odak" },
+    suggestedTask: { title: "Türkçe haftalık tekrar", subject: "Türkçe" },
   },
   suggestedTask: { subjectRef: "turkce", title: "Türkçe haftalık tekrar" },
   fingerprintInput: { aggregate: true },

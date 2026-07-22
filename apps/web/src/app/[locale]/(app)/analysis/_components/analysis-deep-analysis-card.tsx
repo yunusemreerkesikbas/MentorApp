@@ -119,6 +119,21 @@ export function AnalysisDeepAnalysisCard({ examId }: { examId: string }) {
           <p className="mt-1 text-sm" style={{ color: "var(--color-secondary)" }}>
             {state.data.suggestedTask.title}
           </p>
+          <Link
+            href={{
+              pathname: "/plan",
+              query: {
+                add: "1",
+                title: state.data.suggestedTask.title,
+                ...(state.data.suggestedTask.subjectRef
+                  ? { subject: state.data.suggestedTask.subjectRef }
+                  : {}),
+              },
+            }}
+            className="mt-3 inline-flex min-h-11 items-center justify-center rounded-[var(--radius-card)] bg-[var(--color-btn)] px-4 text-sm font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          >
+            {t("add_to_plan")}
+          </Link>
         </div>
       </Card>
     );

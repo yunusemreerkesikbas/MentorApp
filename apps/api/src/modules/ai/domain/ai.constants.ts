@@ -1,6 +1,9 @@
 /** AI coach domain constants (W3): system prompt (§4 guardrails) + cost model + request limits. */
 import type { GhostComparisonDto, MockExamDto } from "@mentor/types";
-import type { TodayPlanSummary } from "../../coaching/domain/coaching.constants";
+import {
+  promptLanguageInstruction,
+  type PromptLocale,
+} from "./prompt-locale";
 
 /** Max completion tokens per call — bounds per-call cost (§7). */
 export const AI_MAX_OUTPUT_TOKENS = 600;
@@ -55,8 +58,6 @@ export interface CoachContext {
   examType: string | null;
   /** Coarse subjective signal from today's mood check-in (1..5; null if not checked in). */
   moodLevel: number | null;
-  /** Optional user-typed "zorlandığın konu" from today's check-in (null if none). */
-  struggleNote: string | null;
   /** PII-free rolling summary of recent study sessions (null when no recent activity). */
   recentSessions: {
     /** Finalized sessions in the last 7 days. */
@@ -65,11 +66,9 @@ export interface CoachContext {
     focusMinutes7d: number;
     /** Distinct recent subjects (most-recent first, capped). */
     subjects: string[];
-    /** Most recent post-session struggle note (null if none). */
-    lastStruggleNote: string | null;
   } | null;
-  /** PII-free summary of today's plan tasks (null when no tasks scheduled today). */
-  todayPlan: TodayPlanSummary | null;
+  /** Counts-only summary of today's plan tasks (null when no tasks are scheduled today). */
+  todayPlan: { total: number; done: number } | null;
 }
 
 /** A retrieved, verified article used to ground the answer (RAG, §1). */
@@ -124,7 +123,7 @@ export const COACH_SYSTEM_BASE = [
 
 /**
  * PII-free one-line summary of recent study sessions for grounding (§4 #6 — aggregate counts +
- * the user's own subject names + own note only). Returns null when there is no recent activity.
+ * taxonomy subjects only). Returns null when there is no recent activity.
  */
 export function formatRecentSessionsLine(
   rs: CoachContext["recentSessions"],
@@ -135,24 +134,18 @@ export function formatRecentSessionsLine(
   ];
   if (rs.subjects.length > 0)
     parts.push(`çalıştığı konular: ${rs.subjects.join(", ")}`);
-  if (rs.lastStruggleNote)
-    parts.push(`son zorlandığı: "${rs.lastStruggleNote}"`);
   return `${parts.join("; ")}.`;
 }
 
 /**
- * PII-free one-line summary of today's plan for grounding (§4 #6 — counts + own task titles only).
+ * PII-free one-line summary of today's plan for grounding (§4 #6 — counts only).
  * Returns null when there are no tasks today.
  */
 export function formatTodayPlanLine(
   tp: CoachContext["todayPlan"],
 ): string | null {
   if (!tp) return null;
-  const parts = [`Bugünün planı: ${tp.done}/${tp.total} tamam`];
-  if (tp.pendingTitles.length > 0) {
-    parts.push(`kalan: ${tp.pendingTitles.map((t) => `"${t}"`).join(", ")}`);
-  }
-  return `${parts.join("; ")}.`;
+  return `Bugünün planı: ${tp.done}/${tp.total} tamam.`;
 }
 
 /** Build the full system prompt: PII-free context + (RAG) verified source articles or a no-source rule. */
@@ -160,14 +153,14 @@ export function buildSystemPrompt(
   ctx: CoachContext,
   sources: CoachSource[] = [],
   mockExam?: MockExamDto,
+  locale: PromptLocale = "tr",
 ): string {
   const lines = [
     ctx.examType ? `Sınav türü: ${ctx.examType}` : "Sınav türü: belirtilmemiş",
   ];
   if (ctx.moodLevel != null) {
     lines.push(
-      `Bugünkü ruh hali: ${MOOD_LABEL[ctx.moodLevel] ?? "orta"} (${ctx.moodLevel}/5)` +
-        (ctx.struggleNote ? `, zorlandığı konu: "${ctx.struggleNote}"` : ""),
+      `Bugünkü ruh hali: ${MOOD_LABEL[ctx.moodLevel] ?? "orta"} (${ctx.moodLevel}/5)`,
     );
   }
   const planLine = formatTodayPlanLine(ctx.todayPlan);
@@ -191,7 +184,7 @@ export function buildSystemPrompt(
         .join("; ")}.`,
     );
   }
-  let prompt = `${COACH_SYSTEM_BASE}\n\nBAĞLAM:\n${lines.join("\n")}`;
+  let prompt = `${promptLanguageInstruction(locale)}\n${COACH_SYSTEM_BASE}\n\nBAĞLAM:\n${lines.join("\n")}`;
 
   if (sources.length > 0) {
     const block = sources
@@ -217,9 +210,10 @@ export function buildSystemPrompt(
 export function buildMoodReflectionPrompt(
   ctx: CoachContext,
   mood: number,
-  struggleNote: string | null,
+  locale: PromptLocale = "tr",
 ): { system: string; user: string } {
   const system = [
+    promptLanguageInstruction(locale),
     "Sen Mentor uygulamasının sınav hazırlık koçusun. Öğrencinin bugünkü ruh haline TAM OLARAK 2 veya",
     "3 cümlelik sıcak bir karşılık ver. Yanıtı bitirmeden cümleleri say; dördüncü cümleyi ASLA yazma.",
     "Yargılama; küçük ve uygulanabilir tek bir öneriyle bitir. Markdown, emoji ve ünlem işareti",
@@ -232,28 +226,29 @@ export function buildMoodReflectionPrompt(
     "3) Ödeme/abonelik/coin veya teknik konulara girme. Kişisel veri isteme.",
   ].join("\n");
 
-  const noteLine = struggleNote
-    ? ` Bugün en çok zorlandığı konu: "${struggleNote}".`
-    : "";
   const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
   const studyLine = sessionsLine ? ` ${sessionsLine}` : "";
   const planLine = formatTodayPlanLine(ctx.todayPlan);
   const planContextLine = planLine ? ` ${planLine}` : "";
-  const user = `Öğrencinin bugünkü ruh hali: ${MOOD_LABEL[mood] ?? "orta"} (${mood}/5).${noteLine}${studyLine}${planContextLine}`;
+  const user = `Öğrencinin bugünkü ruh hali: ${MOOD_LABEL[mood] ?? "orta"} (${mood}/5).${studyLine}${planContextLine}`;
 
   return { system, user };
 }
 
 /**
- * Premium proactive daily greeting on the /coach hub (§4 #5 premium-only). Warm, brief (2-3
+ * Premium proactive daily greeting on the dashboard rhythm card (§4 #5 premium-only). Warm, brief (2-3
  * sentences), one small actionable nudge for today. Grounds ONLY on the PII-free CoachContext;
- * cached per (user, day) so this runs at most once a day per user.
+ * cached per (user, day, locale) so this runs at most once a day per user and locale.
  */
-export function buildDailyGreetingPrompt(ctx: CoachContext): {
+export function buildDailyGreetingPrompt(
+  ctx: CoachContext,
+  locale: PromptLocale = "tr",
+): {
   system: string;
   user: string;
 } {
   const system = [
+    promptLanguageInstruction(locale),
     "Sen Mentor uygulamasının sınav hazırlık koçusun. Öğrenci uygulamayı yeni açtı; güne özel TAM",
     "OLARAK 2 veya 3 cümlelik, tek paragraflık sıcak bir karşılama yaz. Yanıtı bitirmeden cümleleri",
     "say; dördüncü cümleyi ASLA yazma. Selamı ayrı bir cümle yapma. Bağlamdaki verilerden yalnız EN",
@@ -299,8 +294,10 @@ export function buildPlanDraftPrompt(
   ctx: CoachContext,
   note: string | undefined,
   todayIso: string,
+  locale: PromptLocale = "tr",
 ): { system: string; user: string } {
   const system = [
+    promptLanguageInstruction(locale),
     "Sen Mentor uygulamasının sınav hazırlık koçusun. Öğrenci için önümüzdeki 7 güne yayılmış bir",
     "çalışma planı TASLAĞI hazırla. Yanıt olarak başka hiçbir metin, açıklama veya markdown OLMADAN",
     `${PLAN_DRAFT_JSON_SENTINEL}:`,
@@ -320,11 +317,6 @@ export function buildPlanDraftPrompt(
   if (ctx.examType) parts.push(`Hazırlandığı sınav: ${ctx.examType}.`);
   const planLine = formatTodayPlanLine(ctx.todayPlan);
   if (planLine) parts.push(planLine);
-  if (ctx.todayPlan?.pendingTitles.length) {
-    parts.push(
-      `YASAK BAŞLIKLAR (taslağa aynen yazma): ${JSON.stringify(ctx.todayPlan.pendingTitles)}.`,
-    );
-  }
   const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
   if (sessionsLine) parts.push(sessionsLine);
   if (note) parts.push(`Öğrencinin isteği: "${note}"`);
@@ -349,10 +341,11 @@ export function buildSessionReflectionPrompt(
     subject: string | null;
     focusMinutes: number;
     sessionMood: number;
-    struggleNote: string | null;
   },
+  locale: PromptLocale = "tr",
 ): { system: string; user: string } {
   const system = [
+    promptLanguageInstruction(locale),
     "Sen Mentor uygulamasının sınav hazırlık koçusun. Öğrencinin az önce bitirdiği çalışma seansına",
     "TAM OLARAK 2 veya 3 cümlelik sıcak bir karşılık ver. Yargılama; eforu takdir et; küçük ve",
     "uygulanabilir tek bir öneriyle bitir. Markdown, emoji ve ünlem işareti kullanma (düz metin",
@@ -370,13 +363,10 @@ export function buildSessionReflectionPrompt(
   ].join("\n");
 
   const subjectLine = session.subject ? ` Konu: "${session.subject}".` : "";
-  const noteLine = session.struggleNote
-    ? ` Seans sırasında zorlandığı: "${session.struggleNote}".`
-    : "";
   const planLine = formatTodayPlanLine(ctx.todayPlan);
   const planContextLine = planLine ? ` ${planLine}` : "";
   const moodLabel = SESSION_MOOD_LABEL[session.sessionMood] ?? "idare eder";
-  const user = `Öğrenci ${session.focusMinutes} dk odaklandı.${subjectLine} Seans nasıl geçti: ${moodLabel} (${session.sessionMood}/3).${noteLine}${planContextLine}`;
+  const user = `Öğrenci ${session.focusMinutes} dk odaklandı.${subjectLine} Seans nasıl geçti: ${moodLabel} (${session.sessionMood}/3).${planContextLine}`;
 
   return { system, user };
 }
@@ -386,11 +376,15 @@ export function buildSessionReflectionPrompt(
  * grounded ONLY on the user's own net deltas (§0 no cross-user ranking; §4 #1 no official info;
  * §4 #6 PII-free — numbers + subject names only).
  */
-export function buildGhostPrompt(ghost: GhostComparisonDto): {
+export function buildGhostPrompt(
+  ghost: GhostComparisonDto,
+  locale: PromptLocale = "tr",
+): {
   system: string;
   user: string;
 } {
   const system = [
+    promptLanguageInstruction(locale),
     "Sen Mentor uygulamasının sınav hazırlık koçusun. Öğrencinin KENDİ geçmiş performansına göre",
     "ilerlemesini KISA — EN FAZLA 3 cümle — sıcak ve motive edici şekilde anlat. Başka kişiyle",
     "kıyaslama yok. İlerleme varsa kutla; düşüş varsa tek denemeye takılmadan trende ve bir sonraki",
@@ -432,8 +426,10 @@ export function buildVisionNotePrompt(
   goalTitle: string,
   targetCity: string | null,
   motivation: string | null,
+  locale: PromptLocale = "tr",
 ): { system: string; user: string } {
   const system = [
+    promptLanguageInstruction(locale),
     "Sen Mentor uygulamasının sınav hazırlık koçusun. Öğrencinin hedefini hatırlatan KISA — EN FAZLA",
     "3 cümle — sıcak ve motive edici bir not yaz. Hedefi somut ve ulaşılabilir hissettir; tek küçük",
     "bir adım öner. Doğrudan 'sen' diliyle konuş; 'Sevgili öğrencim' gibi hitap kalıpları KULLANMA.",

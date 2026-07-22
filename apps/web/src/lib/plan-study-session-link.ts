@@ -21,7 +21,7 @@ export type StudySessionHref =
 /** Deep-link from a plan task into `/study-session` with subject + task context (FE-only; no backend taskId). */
 export function buildStudySessionHrefFromPlanTask(
   task: PlanTaskStudySessionLinkInput,
-  source?: "coach",
+  source?: "dashboard" | "coach",
 ): StudySessionHref {
   const query: Record<string, string> = {
     taskId: task.id,

@@ -98,6 +98,13 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
   satırlarını tek SERVICE-ctx tx'te hard delete eder; `AccountErasureService` zincirinin son adımı.
   Gotcha: modül `@Global` olduğundan `AccountModule` import etmeden resolve olur. Related:
   `notifications-erasure.service.ts`, `test/account-erasure.e2e-spec.ts`.
+- **Rule-based continuity deep-links (2026-07-22)** — Notification listeners still generate no AI
+  copy and depend on no LLM service. Low-mood and completed-plan notifications now open `/dashboard`
+  so the current mood/plan action is resolved from live deterministic data. The first-session action
+  remains `/study-session`; opt-in return reminders preserve the subject and add
+  `source=reminder`. Related: `coaching-events.listener.ts`,
+  `session-return-reminder.service.ts`, and their specs.
+
 - **Notifications + queue** — Postgres job queue (`JobQueuePort`, `FOR UPDATE SKIP LOCKED`);
   `JobRunnerService` (handler registry + retry/dead-letter); cron HTTP runner (`CRON_SECRET`-gated);
   email pipeline (`EMAIL_PORT` moved to NotificationsModule; Postmark/logger); web push

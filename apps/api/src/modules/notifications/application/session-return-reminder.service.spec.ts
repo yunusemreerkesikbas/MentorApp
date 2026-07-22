@@ -7,14 +7,18 @@ import {
 
 describe("buildSessionReturnLinkUrl", () => {
   it("returns /study-session without subject", () => {
-    expect(buildSessionReturnLinkUrl()).toBe("/study-session");
-    expect(buildSessionReturnLinkUrl(null)).toBe("/study-session");
-    expect(buildSessionReturnLinkUrl("  ")).toBe("/study-session");
+    expect(buildSessionReturnLinkUrl()).toBe("/study-session?source=reminder");
+    expect(buildSessionReturnLinkUrl(null)).toBe("/study-session?source=reminder");
+    expect(buildSessionReturnLinkUrl("  ")).toBe("/study-session?source=reminder");
   });
 
   it("encodes subject query", () => {
-    expect(buildSessionReturnLinkUrl("Matematik")).toBe("/study-session?subject=Matematik");
-    expect(buildSessionReturnLinkUrl("A & B")).toBe("/study-session?subject=A%20%26%20B");
+    expect(buildSessionReturnLinkUrl("Matematik")).toBe(
+      "/study-session?subject=Matematik&source=reminder",
+    );
+    expect(buildSessionReturnLinkUrl("A & B")).toBe(
+      "/study-session?subject=A%20%26%20B&source=reminder",
+    );
   });
 });
 
@@ -54,7 +58,7 @@ describe("SessionReturnReminderService", () => {
       JobName.SESSION_RETURN_REMINDER,
       {
         userId: USER,
-        linkUrl: "/study-session?subject=Tarih",
+        linkUrl: "/study-session?subject=Tarih&source=reminder",
         subject: "Tarih",
         targetDate: "2026-07-13",
       },
