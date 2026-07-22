@@ -56,7 +56,7 @@ export interface RefundResult {
 
 export interface PaymentsPort {
   /** Which provider this adapter represents (stored on the subscription row). */
-  readonly provider: "FAKE" | "IYZICO";
+  readonly provider: "DISABLED" | "FAKE" | "IYZICO";
 
   /**
    * Whether checkout completes instantly (no external payment page). FAKE=true → the subscription

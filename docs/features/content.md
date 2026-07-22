@@ -131,6 +131,14 @@ pnpm --filter @mentor/api-client generate
   first-message context. The coach reads only the matching published article, so missing embeddings
   no longer produce a false “verified content not found” response.
 
+- **Analytics consent banner hydration fix (2026-07-23)** — Banner no longer mounts until
+  `localStorage` (`mentor.analytics-consent.v1`) is read, so a prior accept/reject does not flash
+  the dialog on every navigation. The always-visible floating “Çerez tercihleri” reopen control was
+  removed; change preference via `/cookie-preferences` (linked from the banner details). Usage:
+  accept once → banner stays gone across reloads; reopen only on the preferences page. Gotcha:
+  without `NEXT_PUBLIC_GA_MEASUREMENT_ID` neither banner nor GA script render. Related:
+  `apps/web/src/lib/analytics-consent.tsx`, cookie-preferences page.
+
 ## Gotchas / Known issues
 
 - **Never generate official dates/process copy via LLM or coaching code** — only editorial seed/admin

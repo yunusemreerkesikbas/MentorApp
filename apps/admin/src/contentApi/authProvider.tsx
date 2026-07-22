@@ -40,6 +40,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         // Retry transient network errors (API not listening yet during dev boot / nest --watch
         // recompile) so the panel doesn't get stuck with a null admin. A real HTTP error (401)
         // carries error.response and is handled by the apiClient interceptor — not retried here.
+        // Backoff covers ~30s (same window as web AuthProvider) — 3×300ms was too short.
+        const NETWORK_RETRY_MAX = 8;
+        const networkRetryDelayMs = (attempt: number) =>
+            Math.min(500 * 2 ** (attempt - 1), 8_000);
         const loadMe = async () => {
             for (let attempt = 1; ; attempt++) {
                 try {
@@ -56,8 +60,8 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
                     return;
                 } catch (error) {
                     const isNetworkError = !(error as AxiosError)?.response;
-                    if (isNetworkError && active && attempt < 3) {
-                        await new Promise((r) => setTimeout(r, 300 * attempt));
+                    if (isNetworkError && active && attempt < NETWORK_RETRY_MAX) {
+                        await new Promise((r) => setTimeout(r, networkRetryDelayMs(attempt)));
                         continue;
                     }
                     // Real HTTP error (e.g. 401 → interceptor cleared token + redirected), or

@@ -213,6 +213,17 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   down API (times out → starts anyway, so FE-only work isn't blocked). Admin got the same treatment:
   `dev` port gate + `authProvider` mount `/users/me` retries network errors 3× (axios `!err.response`),
   so the boot race no longer leaves the panel stuck with a null admin. *(0037.)*
+- **Dev boot race — wait gate + backoff widened (2026-07-23)** — Cold `pnpm dev` on Windows often
+  took Nest >30s to `listen()`; `wait-for-port` timed out (`starting anyway`), Next served `/giris`
+  while API was still mapping routes → `ERR_CONNECTION_REFUSED` on `/v1/auth/google/status` and
+  3–4 rapid `/v1/auth/refresh` calls, then `clearSession()` dropped a still-valid cookie until
+  manual reload. Fixes: (1) `scripts/wait-for-port.mjs` default timeout **30s → 120s** (still
+  start-anyway for FE-only); (2) web `silentRefresh` exponential network backoff (~30s window,
+  8 attempts) + module-scoped in-flight coalesce (Strict Mode remounts); (3) admin `/users/me`
+  mount retries use the same backoff. Usage: cold `pnpm dev` — web/admin wait until :3001 accepts
+  TCP (or 120s). Gotcha: if API is intentionally down, FE still starts after 120s; session may
+  stay `loading` up to ~30s of retries before anonymous. Related: `wait-for-port.mjs`,
+  `apps/web/src/lib/auth-context.tsx`, `apps/admin/src/contentApi/authProvider.tsx`.
 
 - **Hesabımı sil — self-service KVKK (2026-07-14)** — Dilim 13'te bütünsel silme makinesi kurulmuştu
   ama yalnız admin tetikleyebiliyordu; "unutulma hakkı" veri sahibinin kendisine ait. Yeni

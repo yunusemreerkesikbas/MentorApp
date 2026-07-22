@@ -25,6 +25,8 @@ export interface PlanDto {
   priceMinor: number;
   currency: "TRY";
   trialDays: number;
+  /** Backend-owned availability; false while the real payment provider is not active. */
+  purchaseEnabled: boolean;
 }
 
 export interface SubscriptionDto {

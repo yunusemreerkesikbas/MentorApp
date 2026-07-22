@@ -34,6 +34,51 @@ describe("validateEnv", () => {
     ).toThrow(/forbidden in production/);
   });
 
+  it("allows disabled payments in production without provider credentials", () => {
+    const env = validateEnv({
+      ...REQUIRED,
+      NODE_ENV: "production",
+      DATABASE_MIGRATION_URL: "postgres://u:p@localhost:5432/db",
+      PAYMENTS_PROVIDER: "disabled",
+      AI_PROVIDER: "openai",
+      OPENAI_API_KEY: "openai-key",
+      VISION_PROVIDER: "openai",
+      STORAGE_PROVIDER: "r2",
+      R2_ACCOUNT_ID: "account",
+      R2_ACCESS_KEY_ID: "access",
+      R2_SECRET_ACCESS_KEY: "secret",
+      R2_PUBLIC_BUCKET: "public-bucket",
+      R2_PRIVATE_BUCKET: "private-bucket",
+      R2_PUBLIC_BASE_URL: "https://media.mentor.test",
+      CRON_SECRET: "c".repeat(32),
+      POSTMARK_TOKEN: "postmark-token",
+    });
+
+    expect(env.PAYMENTS_PROVIDER).toBe("disabled");
+  });
+  it("requires a direct migration database URL in production", () => {
+    expect(() =>
+      validateEnv({
+        ...REQUIRED,
+        NODE_ENV: "production",
+        PAYMENTS_PROVIDER: "disabled",
+        AI_PROVIDER: "openai",
+        OPENAI_API_KEY: "openai-key",
+        VISION_PROVIDER: "openai",
+        STORAGE_PROVIDER: "r2",
+        R2_ACCOUNT_ID: "account",
+        R2_ACCESS_KEY_ID: "access",
+        R2_SECRET_ACCESS_KEY: "secret",
+        R2_PUBLIC_BUCKET: "public-bucket",
+        R2_PRIVATE_BUCKET: "private-bucket",
+        R2_PUBLIC_BASE_URL: "https://media.mentor.test",
+        CRON_SECRET: "c".repeat(32),
+        POSTMARK_TOKEN: "postmark-token",
+      }),
+    ).toThrow(/DATABASE_MIGRATION_URL/);
+  });
+
+
   it("production lock: AI_PROVIDER=fake is forbidden in production", () => {
     expect(() =>
       validateEnv({
@@ -46,7 +91,9 @@ describe("validateEnv", () => {
         R2_ACCOUNT_ID: "account",
         R2_ACCESS_KEY_ID: "access",
         R2_SECRET_ACCESS_KEY: "secret",
-        R2_BUCKET: "bucket",
+        R2_PUBLIC_BUCKET: "public-bucket",
+        R2_PRIVATE_BUCKET: "private-bucket",
+        R2_PUBLIC_BASE_URL: "https://media.mentor.test",
         PAYMENTS_PROVIDER: "iyzico",
         IYZICO_API_KEY: "key",
         IYZICO_SECRET_KEY: "secret",
@@ -75,7 +122,9 @@ describe("validateEnv", () => {
         R2_ACCOUNT_ID: "account",
         R2_ACCESS_KEY_ID: "access",
         R2_SECRET_ACCESS_KEY: "secret",
-        R2_BUCKET: "bucket",
+        R2_PUBLIC_BUCKET: "public-bucket",
+        R2_PRIVATE_BUCKET: "private-bucket",
+        R2_PUBLIC_BASE_URL: "https://media.mentor.test",
         PAYMENTS_PROVIDER: "iyzico",
         IYZICO_API_KEY: "key",
         IYZICO_SECRET_KEY: "secret",
@@ -113,6 +162,23 @@ describe("validateEnv", () => {
         STORAGE_PROVIDER: "fake",
       }),
     ).toThrow(/STORAGE_PROVIDER=fake/);
+  });
+
+  it("R2 provider requires separate public/private buckets and a public base URL", () => {
+    expect(() =>
+      validateEnv({
+        ...REQUIRED,
+        STORAGE_PROVIDER: "r2",
+        R2_ACCOUNT_ID: "account",
+        R2_ACCESS_KEY_ID: "access",
+        R2_SECRET_ACCESS_KEY: "secret",
+        R2_PUBLIC_BUCKET: "public-bucket",
+      }),
+    ).toThrow(/R2_/);
+  });
+
+  it("defaults R2 jurisdiction to auto", () => {
+    expect(validateEnv(REQUIRED).R2_JURISDICTION).toBe("auto");
   });
 
   it("iyzico provider requires its keys", () => {

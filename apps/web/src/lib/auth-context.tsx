@@ -37,6 +37,15 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Network blips / Nest cold boot / --watch recompile — cover ~30s, not ~900ms. */
+const NETWORK_RETRY_MAX = 8;
+function networkRetryDelayMs(attempt: number): number {
+  return Math.min(500 * 2 ** (attempt - 1), 8_000);
+}
+
+/** Module-scoped so React Strict Mode remounts share one /auth/refresh flight. */
+let refreshInFlight: Promise<AuthSession> | null = null;
+
 /**
  * Access token lives ONLY in memory (XSS can't read httpOnly refresh cookie; we never
  * persist tokens to storage). On mount we attempt a silent refresh — the cookie decides.
@@ -46,7 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const accessTokenRef = useRef<string | null>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const refreshInFlightRef = useRef<Promise<AuthSession> | null>(null);
   const sessionVersionRef = useRef(0);
   // Breaks the applySession ↔ silentRefresh cycle (timer calls through the ref).
   const silentRefreshRef = useRef<() => void>(() => {});
@@ -81,15 +89,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const silentRefresh = useCallback(async () => {
     const startedAtVersion = sessionVersionRef.current;
-    // ponytail: fixed 3× short retry; add backoff/jitter only if the boot race widens.
     for (let attempt = 1; ; attempt++) {
       try {
-        refreshInFlightRef.current ??= (
+        refreshInFlight ??= (
           authControllerRefresh() as unknown as Promise<AuthSession>
         ).finally(() => {
-          refreshInFlightRef.current = null;
+          refreshInFlight = null;
         });
-        const session = await refreshInFlightRef.current;
+        const session = await refreshInFlight;
         if (sessionVersionRef.current === startedAtVersion) applySession(session);
         return;
       } catch (err) {
@@ -98,8 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // watch recompile) — retry instead of dropping a possibly-valid session.
         const isNetworkError = !(err instanceof ApiClientError);
         const stillCurrent = sessionVersionRef.current === startedAtVersion;
-        if (isNetworkError && stillCurrent && attempt < 3) {
-          await new Promise((r) => setTimeout(r, 300 * attempt));
+        if (isNetworkError && stillCurrent && attempt < NETWORK_RETRY_MAX) {
+          await new Promise((r) => setTimeout(r, networkRetryDelayMs(attempt)));
           continue;
         }
         // Stale refresh must not erase a newer login/signup.

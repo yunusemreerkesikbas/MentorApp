@@ -647,6 +647,8 @@
     "loading": "Yükleniyor…",
     "title": "Abonelik",
     "subtitle": "Premium ile AI koç ve derinlemesine analiz — deneme süreni buradan başlat.",
+    "subtitle_disabled": "Premium paketlerini inceleyebilirsin; satın alma çok yakında açılacak.",
+    "payments_coming_soon": "Paketler hazır. Ödeme açıldığında buradan devam edebilirsin.",
     "status_title": "Durum",
     "status_premium": "Premium erişim aktif",
     "status_free": "Ücretsiz planda",
@@ -668,6 +670,7 @@
     "period_suffix": "/ {months} ay · KDV dahil",
     "trial_days": "{days} gün ücretsiz deneme",
     "start_trial": "Denemeyi başlat",
+    "coming_soon": "Çok yakında",
     "back_panel": "← Panele dön"
   },
   "plan": {
@@ -1250,7 +1253,6 @@
     "details": "Ayrıntıları ve tercihini gör",
     "reject": "Reddet",
     "accept": "Kabul et",
-    "reopen": "Çerez tercihleri",
     "back": "Ana sayfaya dön",
     "page_title": "Çerez ve analitik tercihleri",
     "page_body": "GA4 yalnız kabul ettiğinde yüklenir. Bilgi makalelerinde görüntüleme, okuma tamamlama, kaynak bağlantısı ve koç çağrısı ölçülür; kullanıcı kimliği veya kişisel bilgi gönderilmez. Tercihini istediğin an değiştirebilirsin.",

@@ -647,6 +647,8 @@
     "loading": "Loading…",
     "title": "Subscription",
     "subtitle": "AI coach and in-depth analysis with Premium — start your trial here.",
+    "subtitle_disabled": "You can review Premium plans; purchasing will open soon.",
+    "payments_coming_soon": "Plans are ready. You can continue here when payments open.",
     "status_title": "Status",
     "status_premium": "Premium access active",
     "status_free": "On Free plan",
@@ -668,6 +670,7 @@
     "period_suffix": "/ {months} mo · VAT incl.",
     "trial_days": "{days}-day free trial",
     "start_trial": "Start trial",
+    "coming_soon": "Coming soon",
     "back_panel": "← Back to Dashboard"
   },
   "plan": {
@@ -1250,7 +1253,6 @@
     "details": "View details and preferences",
     "reject": "Reject",
     "accept": "Accept",
-    "reopen": "Cookie preferences",
     "back": "Back to home",
     "page_title": "Cookie and analytics preferences",
     "page_body": "GA4 loads only after you accept. In knowledge articles we measure views, read completion, source links, and Coach calls to action; no user identity or personal information is sent. You can change your choice at any time.",

@@ -290,12 +290,12 @@ export function PanelShell({ initialData }: PanelShellProps) {
       <PanelTopBar balance={economyBalance} name={data.greetingName} />
 
       <motion.div
-        className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.85fr)]"
+        className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.85fr)]"
         variants={staggerListVariants}
         initial={shouldReduceMotion ? false : "initial"}
         animate={shouldReduceMotion ? undefined : "animate"}
       >
-        <section className="space-y-5">
+        <section className="min-w-0 space-y-5">
           <motion.div variants={staggerItemVariants}>
             <DailyRhythmCard
               tasks={data.tasks}
@@ -356,7 +356,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
           </motion.div>
         </section>
 
-        <aside className="space-y-5">
+        <aside className="min-w-0 space-y-5">
           <motion.div variants={staggerItemVariants}>
             {data.countdown ? (
               <CountdownCard
@@ -414,18 +414,18 @@ function PanelQuestBanner({ quests }: { quests: QuestProgressView[] }) {
   }
 
   return (
-    <article className="rounded-[var(--radius-card)] bg-white p-4 shadow-[var(--shadow-card)] sm:p-5">
+    <article className="min-w-0 rounded-[var(--radius-card)] bg-white p-4 shadow-[var(--shadow-card)] sm:p-5">
       <button
         type="button"
         aria-label={panelT("quests_banner_open")}
-        className="flex min-h-12 w-full items-center gap-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
+        className="flex min-h-12 min-w-0 w-full items-center gap-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
         onClick={showQuests}
       >
         <span className="grid size-10 shrink-0 place-items-center rounded-full bg-black/[0.04] text-[var(--color-main)]">
           <ListChecks className="size-5" aria-hidden />
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-xs font-bold uppercase text-[var(--color-secondary)]">
+        <span className="min-w-0 flex-1 overflow-hidden">
+          <span className="block truncate text-xs font-bold uppercase text-[var(--color-secondary)]">
             {economyT("quests_daily_section")}
           </span>
           <span className="mt-1 block truncate text-base font-extrabold text-[var(--color-main)]">

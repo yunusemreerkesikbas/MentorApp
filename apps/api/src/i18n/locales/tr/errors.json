@@ -41,6 +41,7 @@
   "CONTENT_INVALID_EXAM_EVENT_TYPE": "Geçersiz takvim etkinliği türü.",
   "PAYMENT_TRIAL_ALREADY_USED": "Ücretsiz deneme hakkını daha önce kullandın.",
   "PAYMENT_ALREADY_SUBSCRIBED": "Zaten aktif bir aboneliğin var.",
+  "PAYMENT_DISABLED": "Satın alma henüz kullanıma açık değil.",
   "PAYMENT_PROVIDER_ERROR": "Ödeme sağlayıcısında bir sorun oluştu. Lütfen tekrar dene.",
   "PAYMENT_WEBHOOK_INVALID": "Geçersiz ödeme bildirimi.",
   "PAYMENT_PREMIUM_REQUIRED": "Bu özellik Premium üyelere özel.",

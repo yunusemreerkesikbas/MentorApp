@@ -228,6 +228,12 @@ http://localhost:3000/panel               # daily ritual hub
   Welcome toast once per calendar day (`sessionStorage mentor_panel_welcome_date`). Streak row uses
   calm progress flame (no orange). Related: `panel-shell.tsx`, `mood-checkin.tsx`,
   `messages/{tr,en}.json`. *(2026-07-05.)*
+- **Panel quest banner mobile overflow** — `/panel` quest row (`PanelQuestBanner`) flexed
+  icon + title + count + chevron without a `min-w-0` shrink chain; long quest titles pushed the
+  page into horizontal scroll on narrow viewports. Fix: `min-w-0` on grid/`section`/`aside`/
+  article/button, `overflow-hidden` + `truncate` on the text column. Usage: no API change —
+  reload `/panel` on ~375px. Gotcha: same pattern as community layout — flex/grid children
+  default `min-width: auto`. Related: `panel-shell.tsx`. *(2026-07-23.)*
 
 ## Gotchas / Known issues
 

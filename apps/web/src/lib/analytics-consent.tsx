@@ -12,11 +12,17 @@ interface ConsentContextValue {
   consent: Consent;
   accept: () => void;
   reject: () => void;
-  openPreferences: () => void;
 }
 
 const ConsentContext = createContext<ConsentContextValue | null>(null);
 const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
+function readStoredConsent(): Consent {
+  if (typeof window === "undefined") return null;
+  const saved = window.localStorage.getItem(ANALYTICS_CONSENT_KEY);
+  if (saved === "accepted" || saved === "rejected") return saved;
+  return null;
+}
 
 function setGaDisabled(disabled: boolean): void {
   if (!measurementId || typeof window === "undefined") return;
@@ -41,19 +47,27 @@ function clearGaCookies(): void {
 export function AnalyticsConsentProvider({ children }: { children: ReactNode }) {
   const translate = useTranslations("analyticsConsent");
   const [consent, setConsent] = useState<Consent>(null);
-  const [preferencesOpen, setPreferencesOpen] = useState(false);
+  /** False until localStorage is read — avoids flashing the banner on every load. */
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(ANALYTICS_CONSENT_KEY);
-    if (saved !== "accepted" && saved !== "rejected") return;
-    queueMicrotask(() => setConsent(saved));
+    const saved = readStoredConsent();
+    queueMicrotask(() => {
+      setConsent(saved);
+      setHydrated(true);
+      if (saved === "rejected") {
+        setGaDisabled(true);
+        clearGaCookies();
+      } else if (saved === "accepted") {
+        setGaDisabled(false);
+      }
+    });
   }, []);
 
   const accept = () => {
     window.localStorage.setItem(ANALYTICS_CONSENT_KEY, "accepted");
     setGaDisabled(false);
     setConsent("accepted");
-    setPreferencesOpen(false);
     window.dispatchEvent(new Event("mentor:analytics-consent"));
   };
 
@@ -62,7 +76,6 @@ export function AnalyticsConsentProvider({ children }: { children: ReactNode }) 
     setGaDisabled(true);
     clearGaCookies();
     setConsent("rejected");
-    setPreferencesOpen(false);
   };
 
   const initializeGa = () => {
@@ -74,9 +87,7 @@ export function AnalyticsConsentProvider({ children }: { children: ReactNode }) 
   };
 
   return (
-    <ConsentContext.Provider
-      value={{ consent, accept, reject, openPreferences: () => setPreferencesOpen(true) }}
-    >
+    <ConsentContext.Provider value={{ consent, accept, reject }}>
       {children}
       {measurementId && consent === "accepted" && (
         <Script
@@ -86,7 +97,7 @@ export function AnalyticsConsentProvider({ children }: { children: ReactNode }) 
           onLoad={initializeGa}
         />
       )}
-      {measurementId && (consent === null || preferencesOpen) && (
+      {measurementId && hydrated && consent === null && (
         <section
           role="dialog"
           aria-label={translate("title")}
@@ -100,16 +111,6 @@ export function AnalyticsConsentProvider({ children }: { children: ReactNode }) 
             <button type="button" onClick={accept} className="min-h-11 rounded-[var(--radius-card)] px-4 text-sm font-bold text-white" style={{ backgroundColor: "var(--color-btn)" }}>{translate("accept")}</button>
           </div>
         </section>
-      )}
-      {measurementId && consent !== null && !preferencesOpen && (
-        <button
-          type="button"
-          onClick={() => setPreferencesOpen(true)}
-          className="fixed bottom-3 left-3 z-[90] min-h-11 rounded-[var(--radius-card)] border bg-white px-3 text-xs font-semibold shadow-sm"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {translate("reopen")}
-        </button>
       )}
     </ConsentContext.Provider>
   );

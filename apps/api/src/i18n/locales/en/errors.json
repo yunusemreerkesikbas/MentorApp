@@ -41,6 +41,7 @@
   "CONTENT_INVALID_EXAM_EVENT_TYPE": "Invalid calendar event type.",
   "PAYMENT_TRIAL_ALREADY_USED": "You have already used your free trial.",
   "PAYMENT_ALREADY_SUBSCRIBED": "You already have an active subscription.",
+  "PAYMENT_DISABLED": "Purchases are not available yet.",
   "PAYMENT_PROVIDER_ERROR": "The payment provider had a problem. Please try again.",
   "PAYMENT_WEBHOOK_INVALID": "Invalid payment notification.",
   "PAYMENT_PREMIUM_REQUIRED": "This feature is for Premium members.",
