@@ -17,6 +17,8 @@ const envSchema = z.object({
 
   // DB — Postgres (local docker / Neon). Required: the app cannot function without it (fail-fast).
   DATABASE_URL: z.string().url(),
+  /** Direct (non-pooler) URL used only by migration tooling and Render pre-deploy. */
+  DATABASE_MIGRATION_URL: z.string().url().optional(),
 
   // Auth — own JWT (§8). Required since W0 identity (fail-fast).
   JWT_ACCESS_SECRET: z.string().min(32),
@@ -43,9 +45,8 @@ const envSchema = z.object({
   STORAGE_PROVIDER: z.enum(["fake", "r2"]).default("fake"),
   R2_PUBLIC_BASE_URL: z.string().url().optional(),
 
-  // Payments (§7) — provider behind PaymentsPort. `fake` is the dev/test default;
-  // the production lock below makes shipping with fake impossible.
-  PAYMENTS_PROVIDER: z.enum(["fake", "iyzico"]).default("fake"),
+  // Payments (§7) — disabled is the safe pre-iyzico production mode; fake stays dev/test-only.
+  PAYMENTS_PROVIDER: z.enum(["disabled", "fake", "iyzico"]).default("fake"),
   /**
    * HMAC secret for the fake provider's webhook signature (dev/test simulation). Required
    * only when PAYMENTS_PROVIDER=fake (enforced in the lock below); iyzico signs with IYZICO_SECRET_KEY.
@@ -59,7 +60,9 @@ const envSchema = z.object({
   R2_ACCOUNT_ID: z.string().optional(),
   R2_ACCESS_KEY_ID: z.string().optional(),
   R2_SECRET_ACCESS_KEY: z.string().optional(),
-  R2_BUCKET: z.string().optional(),
+  R2_PUBLIC_BUCKET: z.string().optional(),
+  R2_PRIVATE_BUCKET: z.string().optional(),
+  R2_JURISDICTION: z.enum(["auto", "eu"]).default("auto"),
   TURNSTILE_SECRET_KEY: z.string().optional(),
 
   // Email — Postmark (§8)
@@ -83,11 +86,19 @@ export type Env = z.infer<typeof envSchema>;
 /** Cross-field locks that single-field rules can't express. */
 const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
   // Production safety lock: the fake payments provider must never reach production.
+  if (env.NODE_ENV === "production" && !env.DATABASE_MIGRATION_URL) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["DATABASE_MIGRATION_URL"],
+      message: "DATABASE_MIGRATION_URL is required in production for direct pre-deploy migrations.",
+    });
+  }
+
   if (env.NODE_ENV === "production" && env.PAYMENTS_PROVIDER === "fake") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["PAYMENTS_PROVIDER"],
-      message: "PAYMENTS_PROVIDER=fake is forbidden in production — configure iyzico.",
+      message: "PAYMENTS_PROVIDER=fake is forbidden in production — use disabled or iyzico.",
     });
   }
   if (env.PAYMENTS_PROVIDER === "iyzico" && (!env.IYZICO_API_KEY || !env.IYZICO_SECRET_KEY)) {
@@ -157,11 +168,19 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
     });
   }
   if (env.STORAGE_PROVIDER === "r2") {
-    if (!env.R2_ACCOUNT_ID || !env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY || !env.R2_BUCKET) {
+    if (
+      !env.R2_ACCOUNT_ID ||
+      !env.R2_ACCESS_KEY_ID ||
+      !env.R2_SECRET_ACCESS_KEY ||
+      !env.R2_PUBLIC_BUCKET ||
+      !env.R2_PRIVATE_BUCKET ||
+      !env.R2_PUBLIC_BASE_URL
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ["R2_BUCKET"],
-        message: "R2_* vars are required when STORAGE_PROVIDER=r2.",
+        path: ["R2_PUBLIC_BUCKET"],
+        message:
+          "R2 credentials, public/private buckets, and R2_PUBLIC_BASE_URL are required when STORAGE_PROVIDER=r2.",
       });
     }
   }

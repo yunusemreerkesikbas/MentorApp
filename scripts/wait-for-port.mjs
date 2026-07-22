@@ -6,11 +6,13 @@
 // Usage: node scripts/wait-for-port.mjs <port> [host] [timeoutMs]
 // On timeout it starts ANYWAY (exit 0) so frontend-only work isn't blocked when
 // the API is intentionally down — the web client retries transient failures.
+// Default 120s: Nest cold boot on Windows (compile + seeds + route map) often
+// exceeds 30s; starting Next early caused ERR_CONNECTION_REFUSED on /auth/*.
 import net from "node:net";
 
 const port = Number(process.argv[2]);
 const host = process.argv[3] ?? "127.0.0.1";
-const timeoutMs = Number(process.argv[4] ?? 30_000);
+const timeoutMs = Number(process.argv[4] ?? 120_000);
 
 if (!Number.isInteger(port) || port <= 0) {
   console.error("wait-for-port: missing/invalid port");

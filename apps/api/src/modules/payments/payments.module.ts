@@ -7,6 +7,7 @@ import { IdentityModule } from "../identity/identity.module";
 import { EntitlementService } from "./application/entitlement.service";
 import { SubscriptionsService } from "./application/subscriptions.service";
 import { WebhookService } from "./application/webhook.service";
+import { DisabledPaymentsAdapter } from "./infrastructure/adapters/disabled-payments.adapter";
 import { FakePaymentsAdapter } from "./infrastructure/adapters/fake-payments.adapter";
 import { IyzicoPaymentsAdapter } from "./infrastructure/adapters/iyzico-payments.adapter";
 import { LoggerInvoiceAdapter } from "./infrastructure/adapters/logger-invoice.adapter";
@@ -35,16 +36,22 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
     EntitlementService,
     WebhookService,
     PremiumGuard,
+    DisabledPaymentsAdapter,
     FakePaymentsAdapter,
     IyzicoPaymentsAdapter,
     {
       provide: PAYMENTS_PORT,
-      inject: [ConfigService, FakePaymentsAdapter, IyzicoPaymentsAdapter],
+      inject: [ConfigService, DisabledPaymentsAdapter, FakePaymentsAdapter, IyzicoPaymentsAdapter],
       useFactory: (
         config: ConfigService<Env, true>,
+        disabled: DisabledPaymentsAdapter,
         fake: FakePaymentsAdapter,
         iyzico: IyzicoPaymentsAdapter,
-      ) => (config.get("PAYMENTS_PROVIDER", { infer: true }) === "iyzico" ? iyzico : fake),
+      ) => {
+        const provider = config.get("PAYMENTS_PROVIDER", { infer: true });
+        if (provider === "disabled") return disabled;
+        return provider === "iyzico" ? iyzico : fake;
+      },
     },
     { provide: INVOICE_PORT, useClass: LoggerInvoiceAdapter },
   ],

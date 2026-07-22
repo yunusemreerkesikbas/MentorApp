@@ -170,6 +170,7 @@ export function SubscriptionShell() {
   }
 
   const { plans } = loadState;
+  const purchaseEnabled = plans.some((plan) => plan.purchaseEnabled);
   const ent = view?.entitlement;
   const sub = view?.subscription;
   const hasOpenSub = Boolean(sub);
@@ -190,7 +191,7 @@ export function SubscriptionShell() {
           className="mt-1 text-base"
           style={{ color: "var(--color-secondary)" }}
         >
-          {t("subtitle")}
+          {t(purchaseEnabled ? "subtitle" : "subtitle_disabled")}
         </p>
       </motion.header>
 
@@ -253,19 +254,30 @@ export function SubscriptionShell() {
             <motion.div
               variants={reduceMotion ? undefined : staggerItemVariants}
             >
-              <label
-                className="flex min-h-[44px] items-start gap-3 rounded-[var(--radius-card)] text-sm leading-relaxed"
-                style={{ color: "var(--color-body)" }}
-              >
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => setConsent(e.target.checked)}
-                  className="mt-0.5 size-5 shrink-0 rounded accent-[var(--color-btn)]"
-                  aria-describedby="trial-consent-desc"
-                />
-                <span id="trial-consent-desc">{t("trial_consent")}</span>
-              </label>
+              {purchaseEnabled ? (
+                <label
+                  className="flex min-h-[44px] items-start gap-3 rounded-[var(--radius-card)] text-sm leading-relaxed"
+                  style={{ color: "var(--color-body)" }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                    className="mt-0.5 size-5 shrink-0 rounded accent-[var(--color-btn)]"
+                    aria-describedby="trial-consent-desc"
+                  />
+                  <span id="trial-consent-desc">{t("trial_consent")}</span>
+                </label>
+              ) : (
+                <Card>
+                  <div className="flex flex-col items-start gap-3">
+                    <Chip>{t("chip_unavailable")}</Chip>
+                    <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+                      {t("payments_coming_soon")}
+                    </p>
+                  </div>
+                </Card>
+              )}
             </motion.div>
 
             <motion.div
@@ -308,11 +320,11 @@ export function SubscriptionShell() {
                     </p>
                     <Button
                       fullWidth
-                      disabled={!consent}
+                      disabled={!plan.purchaseEnabled || !consent}
                       busy={busy}
                       onClick={() => void checkout(plan)}
                     >
-                      {t("start_trial")}
+                      {t(plan.purchaseEnabled ? "start_trial" : "coming_soon")}
                     </Button>
                   </Card>
                 </motion.div>

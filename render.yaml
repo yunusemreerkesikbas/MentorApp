@@ -1,0 +1,154 @@
+services:
+  - type: web
+    name: mentor-api
+    runtime: node
+    region: frankfurt
+    plan: starter
+    autoDeployTrigger: checksPass
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @mentor/api build
+    preDeployCommand: pnpm --filter @mentor/api db:migrate
+    startCommand: pnpm --filter @mentor/api start:prod
+    healthCheckPath: /v1/health/ready
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_MIGRATION_URL
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_OAUTH_REDIRECT_URI
+        sync: false
+      - key: AI_PROVIDER
+        value: openai
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: VISION_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: STORAGE_PROVIDER
+        value: r2
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_PUBLIC_BUCKET
+        sync: false
+      - key: R2_PRIVATE_BUCKET
+        sync: false
+      - key: R2_PUBLIC_BASE_URL
+        sync: false
+      - key: R2_JURISDICTION
+        value: eu
+      - key: PAYMENTS_PROVIDER
+        value: disabled
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+      - key: POSTMARK_TOKEN
+        sync: false
+      - key: POSTMARK_FROM
+        sync: false
+      - key: CRON_SECRET
+        generateValue: true
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+
+  - type: web
+    name: mentor-web
+    runtime: node
+    region: frankfurt
+    plan: starter
+    autoDeployTrigger: checksPass
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @mentor/web build
+    startCommand: pnpm --filter @mentor/web start
+    healthCheckPath: /tr
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false
+      - key: NEXT_PUBLIC_TURNSTILE_SITE_KEY
+        sync: false
+      - key: NEXT_PUBLIC_VAPID_PUBLIC_KEY
+        sync: false
+      - key: NEXT_PUBLIC_GA_MEASUREMENT_ID
+        sync: false
+      - key: NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+        sync: false
+      - key: NEXT_PUBLIC_SENTRY_DSN
+        sync: false
+
+  - type: web
+    name: mentor-admin
+    runtime: node
+    region: frankfurt
+    plan: starter
+    autoDeployTrigger: checksPass
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @mentor/admin build
+    startCommand: pnpm --filter @mentor/admin start
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+
+  - type: cron
+    name: mentor-process-jobs
+    runtime: node
+    region: frankfurt
+    plan: starter
+    schedule: "*/5 * * * *"
+    buildCommand: echo cron-ready
+    startCommand: curl --fail --show-error --silent --request POST "https://${API_HOST}/v1/internal/cron/process-jobs" --header "x-cron-secret:${CRON_SECRET}"
+    envVars:
+      - key: API_HOST
+        fromService:
+          type: web
+          name: mentor-api
+          property: host
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: mentor-api
+          envVarKey: CRON_SECRET
+
+  - type: cron
+    name: mentor-daily-reminders
+    runtime: node
+    region: frankfurt
+    plan: starter
+    schedule: "0 6 * * *"
+    buildCommand: echo cron-ready
+    startCommand: curl --fail --show-error --silent --request POST "https://${API_HOST}/v1/internal/cron/dispatch-daily-reminders" --header "x-cron-secret:${CRON_SECRET}"
+    envVars:
+      - key: API_HOST
+        fromService:
+          type: web
+          name: mentor-api
+          property: host
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: mentor-api
+          envVarKey: CRON_SECRET

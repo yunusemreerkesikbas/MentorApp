@@ -115,7 +115,8 @@ export class SubscriptionsService {
 
   async listPlans(): Promise<PlanDto[]> {
     const rows = await this.plansRepo.findActive();
-    return rows.map(toPlanDto);
+    const purchaseEnabled = this.config.get("PAYMENTS_PROVIDER", { infer: true }) !== "disabled";
+    return rows.map((row) => toPlanDto(row, purchaseEnabled));
   }
 
   async getView(userId: string, rolesHint?: string[]): Promise<SubscriptionView> {
@@ -139,7 +140,12 @@ export class SubscriptionsService {
     const txs = await this.eventsRepo.listForUserAdmin(userId, 50);
     return {
       subscription: view.subscription,
-      plan: plan ? toPlanDto(plan) : null,
+      plan: plan
+        ? toPlanDto(
+            plan,
+            this.config.get("PAYMENTS_PROVIDER", { infer: true }) !== "disabled",
+          )
+        : null,
       entitlement: view.entitlement,
       transactions: txs.map(toTxDto),
     };
@@ -244,6 +250,10 @@ export class SubscriptionsService {
    * a returning (expired) subscriber re-subscribes without a trial.
    */
   async checkout(user: { id: string; email: string }, planId: string): Promise<CheckoutSession> {
+    if (this.config.get("PAYMENTS_PROVIDER", { infer: true }) === "disabled") {
+      throw new DomainError(ErrorCode.PAYMENT_DISABLED, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
     const plan = await this.plansRepo.findById(planId);
     if (!plan || !plan.isActive) throw new NotFoundError();
 
@@ -517,7 +527,7 @@ export function nextPeriodEnd(now: Date, currentPeriodEnd: Date | null, months: 
   return addMonths(base, months);
 }
 
-function toPlanDto(row: PlanRow): PlanDto {
+function toPlanDto(row: PlanRow, purchaseEnabled: boolean): PlanDto {
   return {
     id: row.id,
     name: row.name,
@@ -525,6 +535,7 @@ function toPlanDto(row: PlanRow): PlanDto {
     priceMinor: row.priceMinor,
     currency: row.currency as "TRY",
     trialDays: row.trialDays,
+    purchaseEnabled,
   };
 }
 
