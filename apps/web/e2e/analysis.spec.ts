@@ -62,13 +62,19 @@ test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({ p
   await expect(page.getByText("Problemler", { exact: true })).toBeVisible();
   await expect(page.getByText("Değerlendirmeye hazır")).toBeVisible();
 
-  const plan = page.getByRole("link", { name: "Planıma ekle" });
+  const planLinks = page.getByRole("link", { name: "Planıma ekle" });
+  const plan = planLinks.first();
+  const weeklyPlan = planLinks.nth(1);
   const coach = page.getByRole("link", { name: "Koçla konuş" });
   await expect(plan).toHaveAttribute(
     "href",
     /\/plan\?add=1&subject=Matematik&title=Problemler\+konusunu\+tekrar\+et/,
   );
   await expect(coach).toHaveAttribute("href", /\/koc\/sohbet\?seed=.*Problemler/);
+  await expect(weeklyPlan).toHaveAttribute(
+    "href",
+    /\/plan\?add=1&title=Matematik\+haftal%C4%B1k\+tekrar&subject=Matematik|\/plan\?add=1&subject=Matematik&title=Matematik\+haftal%C4%B1k\+tekrar/,
+  );
 
   for (const link of [plan, coach]) {
     await link.evaluate((element) =>
@@ -103,6 +109,49 @@ test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({ p
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
   }
   expect(api.unexpected).toEqual([]);
+});
+
+test("derin analiz önerisini yeni AI çağrısı olmadan plan formuna taşır", async ({
+  page,
+}) => {
+  const api = await mockAnalysisApi(page, {
+    analysis: multipleAnalysis,
+    weekly: [readyWeekly],
+    deepAnalysis: {
+      eligible: true,
+      weekStart: readyWeekly.period.startDate,
+      cost: 25,
+      coinConfirmed: 0,
+      canAfford: false,
+      unlocked: true,
+      premium: true,
+    },
+    weeklyNarration: {
+      narration: "Bu hafta ritmini korudun.",
+      model: "fake",
+      suggestedTask: {
+        title: "Türkçe haftalık tekrar",
+        subjectRef: "turkce",
+      },
+    },
+  });
+  await page.goto("/analiz?tab=progress");
+  await page.getByRole("button", { name: "Derin analizi getir" }).click();
+
+  await expect(page.getByText("Bu hafta ritmini korudun.")).toBeVisible();
+  const suggested = page
+    .getByText("Önerilen görev")
+    .locator("..")
+    .getByRole("link", { name: "Planıma ekle" });
+  await expect(suggested).toHaveAttribute(
+    "href",
+    /\/plan\?add=1&title=T%C3%BCrk%C3%A7e\+haftal%C4%B1k\+tekrar&subject=turkce|\/plan\?add=1&subject=turkce&title=T%C3%BCrk%C3%A7e\+haftal%C4%B1k\+tekrar/,
+  );
+  expect(
+    api.requests.filter(({ method, path }) =>
+      method === "POST" && path === "/v1/coach/weekly-review",
+    ),
+  ).toHaveLength(1);
 });
 
 test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({ page }) => {

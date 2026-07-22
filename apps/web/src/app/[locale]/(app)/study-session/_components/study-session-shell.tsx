@@ -310,9 +310,13 @@ export function StudySessionShell() {
       setStreakBaseline(null);
     }
     const started = await startSession();
-    if (started && sourceParam === "coach" && !coachSessionTrackedRef.current) {
+    if (
+      started &&
+      (sourceParam === "coach" || sourceParam === "dashboard") &&
+      !coachSessionTrackedRef.current
+    ) {
       coachSessionTrackedRef.current = true;
-      trackCoachEvent("coach_session_start", {});
+      trackCoachEvent("coach_session_start", { source: sourceParam });
     }
   };
 

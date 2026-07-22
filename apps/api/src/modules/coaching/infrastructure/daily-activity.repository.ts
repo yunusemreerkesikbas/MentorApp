@@ -11,6 +11,34 @@ export type DailyActivityRow = typeof dailyActivity.$inferSelect;
  */
 @Injectable()
 export class DailyActivityRepository {
+  async getSessionRepeatStats(
+    tx: DatabaseTx,
+    fromDate: string,
+    toDate: string,
+  ): Promise<{ activeUsers7d: number; repeatUsers7d: number }> {
+    const result = await tx.execute<{
+      active_users: number;
+      repeat_users: number;
+    }>(sql`
+      SELECT
+        count(*)::int AS active_users,
+        count(*) FILTER (WHERE session_days >= 2)::int AS repeat_users
+      FROM (
+        SELECT user_id, count(*)::int AS session_days
+        FROM ${dailyActivity}
+        WHERE activity_date >= ${fromDate}
+          AND activity_date <= ${toDate}
+          AND has_session = true
+        GROUP BY user_id
+      ) session_activity
+    `);
+    const row = result.rows[0];
+    return {
+      activeUsers7d: Number(row?.active_users ?? 0),
+      repeatUsers7d: Number(row?.repeat_users ?? 0),
+    };
+  }
+
   async findByDate(
     tx: DatabaseTx,
     userId: string,

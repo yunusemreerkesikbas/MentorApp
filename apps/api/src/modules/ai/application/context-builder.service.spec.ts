@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildSystemPrompt } from "../domain/ai.constants";
 import { ContextBuilder } from "./context-builder.service";
@@ -7,6 +8,8 @@ describe("ContextBuilder (mood grounding)", () => {
   let getToday: ReturnType<typeof vi.fn>;
   let getRecentSummary: ReturnType<typeof vi.fn>;
   let getTodaySummary: ReturnType<typeof vi.fn>;
+  let getExamCalendarByFamily: ReturnType<typeof vi.fn>;
+  let listExamSubjectsByExamId: ReturnType<typeof vi.fn>;
   let builder: ContextBuilder;
 
   beforeEach(() => {
@@ -14,26 +17,33 @@ describe("ContextBuilder (mood grounding)", () => {
     getToday = vi.fn(async () => ({ mood: 2, struggleNote: "matematik" }));
     getRecentSummary = vi.fn(async () => null);
     getTodaySummary = vi.fn(async () => null);
+    getExamCalendarByFamily = vi.fn(async () => ({ exam: { id: "exam-1" } }));
+    listExamSubjectsByExamId = vi.fn(async () => [
+      { slug: "matematik", name: "Matematik" },
+      { slug: "tarih", name: "Tarih" },
+    ]);
     builder = new ContextBuilder(
       { getMe } as never,
       { getToday } as never,
       { getTodaySummary } as never,
       { getRecentSummary } as never,
+      { getExamCalendarByFamily, listExamSubjectsByExamId } as never,
     );
   });
 
-  it("includes today's coarse mood signal in the context", async () => {
+  it("includes today's coarse mood signal without forwarding its free-text note", async () => {
     const ctx = await builder.build("u1");
     expect(ctx.moodLevel).toBe(2);
-    expect(ctx.struggleNote).toBe("matematik");
+    expect(ctx).not.toHaveProperty("struggleNote");
     expect(buildSystemPrompt(ctx)).toContain("Bugünkü ruh hali");
+    expect(buildSystemPrompt(ctx)).not.toContain("matematik");
   });
 
   it("leaves mood null when there is no check-in today", async () => {
     getToday.mockResolvedValue(null);
     const ctx = await builder.build("u1");
     expect(ctx.moodLevel).toBeNull();
-    expect(ctx.struggleNote).toBeNull();
+    expect(ctx).not.toHaveProperty("struggleNote");
     expect(buildSystemPrompt(ctx)).not.toContain("Bugünkü ruh hali");
   });
 
@@ -41,20 +51,19 @@ describe("ContextBuilder (mood grounding)", () => {
     getRecentSummary.mockResolvedValue({
       count7d: 4,
       focusMinutes7d: 120,
-      subjects: ["Matematik", "Tarih"],
-      lastStruggleNote: "paragraf",
+      subjects: ["Matematik", "private@example.com", "Tarih"],
+      lastStruggleNote: "private@example.com",
     });
     const ctx = await builder.build("u1");
     expect(ctx.recentSessions).toEqual({
       count7d: 4,
       focusMinutes7d: 120,
       subjects: ["Matematik", "Tarih"],
-      lastStruggleNote: "paragraf",
     });
     const prompt = buildSystemPrompt(ctx);
     expect(prompt).toContain("Son 7 gün: 4 seans, 120 dk odak");
     expect(prompt).toContain("çalıştığı konular: Matematik, Tarih");
-    expect(prompt).toContain('son zorlandığı: "paragraf"');
+    expect(prompt).not.toContain("private@example.com");
   });
 
   it("omits the session line when there is no recent activity", async () => {
@@ -68,17 +77,16 @@ describe("ContextBuilder (mood grounding)", () => {
     getTodaySummary.mockResolvedValue({
       total: 5,
       done: 2,
-      pendingTitles: ["Matematik tekrarı", "Coğrafya özeti"],
+      pendingTitles: ["Matematik 0555 111 22 33", "Coğrafya özeti"],
     });
     const ctx = await builder.build("u1");
     expect(ctx.todayPlan).toEqual({
       total: 5,
       done: 2,
-      pendingTitles: ["Matematik tekrarı", "Coğrafya özeti"],
     });
     const prompt = buildSystemPrompt(ctx);
     expect(prompt).toContain("Bugünün planı: 2/5 tamam");
-    expect(prompt).toContain('kalan: "Matematik tekrarı", "Coğrafya özeti"');
+    expect(prompt).not.toContain("0555 111 22 33");
   });
 
   it("omits the plan line when there are no tasks today", async () => {
@@ -100,6 +108,20 @@ describe("ContextBuilder (mood grounding)", () => {
     expect(ctx.examType).toBeNull();
     expect(ctx.recentSessions?.count7d).toBe(1);
     expect(buildSystemPrompt(ctx)).toContain("Son 7 gün: 1 seans, 25 dk odak");
+  });
+
+  it("logs the unavailable source without logging the user content", async () => {
+    const warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
+    getToday.mockRejectedValue(new Error("private@example.com"));
+
+    const ctx = await builder.build("u1");
+
+    expect(ctx.moodLevel).toBeNull();
+    expect(warn).toHaveBeenCalledWith({
+      event: "coach_context_source_unavailable",
+      source: "mood",
+    });
+    expect(warn.mock.calls.flat().join(" ")).not.toContain("private@example.com");
   });
   it("grounds the prompt with authoritative mock-exam results without publisher data", async () => {
     const ctx = await builder.build("u1");

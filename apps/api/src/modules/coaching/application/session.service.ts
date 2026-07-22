@@ -60,6 +60,27 @@ export class SessionService {
   /** ponytail: per-instance cache is fine (Nest singleton); no cache lib needed. */
   private focusingNowCache: { value: number; expiresAt: number } | null = null;
 
+  async getSessionRepeatStats(now = new Date()): Promise<{
+    activeUsers7d: number;
+    repeatUsers7d: number;
+    repeatRate7d: number;
+  }> {
+    const toDate = now.toISOString().slice(0, 10);
+    const from = new Date(now);
+    from.setUTCDate(from.getUTCDate() - 6);
+    const fromDate = from.toISOString().slice(0, 10);
+    const counts = await withServiceContext(this.db, (tx) =>
+      this.activity.getSessionRepeatStats(tx, fromDate, toDate),
+    );
+    return {
+      ...counts,
+      repeatRate7d:
+        counts.activeUsers7d === 0
+          ? 0
+          : counts.repeatUsers7d / counts.activeUsers7d,
+    };
+  }
+
   /**
    * Anonymous "focusing right now" ambience count. Aggregate-only cross-user read in
    * SERVICE context (sanctioned pattern — leaderboard/follows). Returns null below
@@ -278,7 +299,13 @@ export class SessionService {
         sessionMood: input.mood,
         struggleNote: nextNote,
         ...(changed
-          ? { aiReflection: null, aiModel: null, aiReflectedAt: null, aiSuggestedTask: null }
+          ? {
+              aiReflection: null,
+              aiModel: null,
+              aiLocale: null,
+              aiReflectedAt: null,
+              aiSuggestedTask: null,
+            }
           : {}),
       });
       return toStudySessionDto(updated!, minFocusSeconds);
@@ -297,6 +324,7 @@ export class SessionService {
     reflection: string,
     model: string,
     suggestedTask: { title: string; subject: string | null } | null = null,
+    locale = "tr",
   ): Promise<StudySessionDto> {
     const minFocusSeconds = await this.getMinFocusSeconds();
     return withUserContext(this.db, { userId }, async (tx) => {
@@ -310,6 +338,7 @@ export class SessionService {
       const updated = await this.sessions.update(tx, userId, id, {
         aiReflection: reflection,
         aiModel: model,
+        aiLocale: locale,
         aiReflectedAt: new Date(),
         aiSuggestedTask: suggestedTask,
       });
@@ -323,6 +352,13 @@ export class SessionService {
     return withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.sessions.findById(tx, userId, id);
       return row ? toStudySessionDto(row, minFocusSeconds) : null;
+    });
+  }
+
+  async getAiReflectionLocale(userId: string, id: string): Promise<string | null> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const row = await this.sessions.findById(tx, userId, id);
+      return row?.aiLocale ?? null;
     });
   }
 }

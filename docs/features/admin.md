@@ -95,6 +95,14 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **Seven-day coaching continuity KPI (2026-07-22)** — `GET /v1/admin/metrics` additively returns
+  `coaching { activeUsers7d, repeatUsers7d, repeatRate7d }`. The metric uses distinct UTC dates from
+  `daily_activity.has_session` in the inclusive today-minus-six through today window; the admin home
+  shows active, repeat, and percentage cards. Aggregation remains behind coaching's public
+  `SessionService` and runs in service context; admin does not query coaching tables. Related:
+  `daily-activity.repository.ts`, `session.service.ts`, `admin-metrics.controller.ts`,
+  `MetricsCards.tsx`.
+
 - **Admin foundation (STAFF + audit log + UI shell)** — first W6 slice: `modules/admin` bounded
   context; `GET /admin/users` search + STAFF grant/revoke (idempotent) + `GET /admin/audit-log`;
   `admin_audit_log` table + `AdminAuditInterceptor` + `@Audit()`; Duralux template moved to

@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { I18nContext } from "nestjs-i18n";
 import type { CoachPlanDraftDto } from "@mentor/types";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -16,6 +17,7 @@ import { parsePlanDraft } from "../domain/plan-draft";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
+import { promptLocale } from "../domain/prompt-locale";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -66,7 +68,12 @@ export class PlanDraftService {
 
     const todayIso = new Date().toISOString().slice(0, 10); // UTC day — same day math as plan/streak
     const ctx = await this.context.build(user.id);
-    const { system, user: userMsg } = buildPlanDraftPrompt(ctx, note, todayIso);
+    const { system, user: userMsg } = buildPlanDraftPrompt(
+      ctx,
+      note,
+      todayIso,
+      promptLocale(I18nContext.current()?.lang),
+    );
 
     await this.budget.assertWithinBudget();
     const result = await this.llm.complete({ system, user: userMsg });

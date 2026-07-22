@@ -16,6 +16,7 @@ describe("MoodReflectionService", () => {
   let getEntitlement: ReturnType<typeof vi.fn>;
   let getToday: ReturnType<typeof vi.fn>;
   let setTodayAiReflection: ReturnType<typeof vi.fn>;
+  let getTodayAiLocale: ReturnType<typeof vi.fn>;
   let assertWithinBudget: ReturnType<typeof vi.fn>;
   let translate: ReturnType<typeof vi.fn>;
   let service: MoodReflectionService;
@@ -45,6 +46,7 @@ describe("MoodReflectionService", () => {
       aiReflection: null,
     }));
     setTodayAiReflection = vi.fn(async () => undefined);
+    getTodayAiLocale = vi.fn(async () => null);
     assertWithinBudget = vi.fn(async () => undefined);
     translate = vi.fn(() => SAFETY_MESSAGE);
 
@@ -54,7 +56,7 @@ describe("MoodReflectionService", () => {
       { append } as never,
       { get: configGet } as never,
       { getEntitlement } as never,
-      { getToday, setTodayAiReflection } as never,
+      { getToday, getTodayAiLocale, setTodayAiReflection } as never,
       { assertWithinBudget } as never,
       { translate } as never,
     );
@@ -85,6 +87,7 @@ describe("MoodReflectionService", () => {
   });
 
   it("returns the cached reflection without calling the LLM", async () => {
+    getTodayAiLocale.mockResolvedValue("tr");
     getToday.mockResolvedValue({
       mood: 3,
       struggleNote: null,
@@ -94,6 +97,25 @@ describe("MoodReflectionService", () => {
     expect(res).toEqual({ reflection: "Önceki yansıma.", model: "cache" });
     expect(complete).not.toHaveBeenCalled();
     expect(setTodayAiReflection).not.toHaveBeenCalled();
+  });
+
+  it("regenerates a cached reflection when its locale differs", async () => {
+    getTodayAiLocale.mockResolvedValue("en");
+    getToday.mockResolvedValue({
+      mood: 3,
+      struggleNote: null,
+      aiReflection: "Cached in English.",
+    });
+
+    await service.reflect(USER);
+
+    expect(complete).toHaveBeenCalledOnce();
+    expect(setTodayAiReflection).toHaveBeenCalledWith(
+      USER_ID,
+      "Bugün küçük bir adım at.",
+      "fake",
+      "tr",
+    );
   });
 
   it("returns localized deterministic support before cache or LLM for serious distress", async () => {
@@ -126,6 +148,7 @@ describe("MoodReflectionService", () => {
       USER_ID,
       "Bugün küçük bir adım at.",
       "fake",
+      "tr",
     );
   });
 });

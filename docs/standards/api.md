@@ -90,6 +90,13 @@
 > `POST /v1/plan-tasks/bulk` remain available for backward compatibility; the current web flow uses
 > the adaptation pair.
 
+> Daily continuity catalog addition (2026-07-22): `GET /v1/coaching/today` remains the sole daily
+> action contract and `DailyNextActionDto` is unchanged. `GET /v1/coaching/weekly-review` additively
+> returns nullable `suggestedTask { title, subject }`; `GET /v1/admin/metrics` additively returns
+> `coaching { activeUsers7d, repeatUsers7d, repeatRate7d }`. No endpoint was added. Legacy
+> `POST /v1/coach/plan-draft` and `POST /v1/coach/ghost-narration` remain for backward compatibility;
+> current web surfaces do not add new consumers.
+
 > Status: ✅ live · 🟡 partially live (some slices shipped) · ⏳ coming in MVP · ⛔ later phase. A new endpoint → update this catalog + OpenAPI + the matching feature-doc timeline.
 
 > **Health probes** (`/v1/health`, `/v1/health/ready`) use the **terminus** response shape

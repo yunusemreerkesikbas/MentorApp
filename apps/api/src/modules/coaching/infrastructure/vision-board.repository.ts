@@ -39,6 +39,7 @@ export class VisionBoardRepository {
           updatedAt: sql`now()`,
           aiNote: sql`CASE WHEN ${unchanged} THEN ${visionBoards.aiNote} ELSE NULL END`,
           aiModel: sql`CASE WHEN ${unchanged} THEN ${visionBoards.aiModel} ELSE NULL END`,
+          aiLocale: sql`CASE WHEN ${unchanged} THEN ${visionBoards.aiLocale} ELSE NULL END`,
           aiNoteAt: sql`CASE WHEN ${unchanged} THEN ${visionBoards.aiNoteAt} ELSE NULL END`,
         },
       })
@@ -52,10 +53,11 @@ export class VisionBoardRepository {
     userId: string,
     note: string,
     model: string,
+    locale: string,
   ): Promise<void> {
     await tx
       .update(visionBoards)
-      .set({ aiNote: note, aiModel: model, aiNoteAt: new Date() })
+      .set({ aiNote: note, aiModel: model, aiLocale: locale, aiNoteAt: new Date() })
       .where(eq(visionBoards.userId, userId));
   }
 

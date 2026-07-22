@@ -14,6 +14,7 @@ import { AiUsageFeature, buildMoodReflectionPrompt, estimateCostMicros } from ".
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
+import { promptLocale } from "../domain/prompt-locale";
 
 /**
  * Premium AI-adaptive reflection on today's mood check-in (W3 · §4 #5 premium-only — free tier
@@ -59,8 +60,12 @@ export class MoodReflectionService {
       return { reflection, model: "safety" };
     }
 
+    const locale = promptLocale(I18nContext.current()?.lang);
     // Idempotent cache: reuse today's reflection (no LLM call / no cost) until the mood changes.
-    if (today.aiReflection) {
+    if (
+      today.aiReflection &&
+      (await this.mood.getTodayAiLocale(user.id)) === locale
+    ) {
       return { reflection: today.aiReflection, model: "cache" };
     }
 
@@ -68,7 +73,7 @@ export class MoodReflectionService {
     const { system, user: userMsg } = buildMoodReflectionPrompt(
       ctx,
       today.mood,
-      today.struggleNote,
+      locale,
     );
 
     await this.budget.assertWithinBudget();
@@ -83,7 +88,12 @@ export class MoodReflectionService {
       costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
     });
 
-    await this.mood.setTodayAiReflection(user.id, result.text, result.model);
+    await this.mood.setTodayAiReflection(
+      user.id,
+      result.text,
+      result.model,
+      locale,
+    );
 
     return { reflection: result.text, model: result.model };
   }

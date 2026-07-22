@@ -11,7 +11,6 @@ import { useAuth } from "@/lib/auth-context";
 import { useCoachAccess } from "./coach-access-shell";
 import { trackCoachEvent } from "@/lib/analytics";
 import { CoachConversationList } from "./coach-conversation-list";
-import { CoachDailyGreeting } from "./coach-daily-greeting";
 import { CoachHubBrief } from "./coach-hub-brief";
 import { CoachMemoryCard } from "./coach-memory-card";
 import { useCoachSession } from "./coach-session-context";
@@ -100,7 +99,6 @@ export function CoachHub() {
 
         <div className="relative z-10 mt-auto flex flex-col gap-3 px-5 pb-6 pt-72">
           <CoachHubBrief onLoaded={setNextActionKind} />
-          <CoachDailyGreeting />
           <CoachMemoryCard />
 
           {access?.canChat ? (

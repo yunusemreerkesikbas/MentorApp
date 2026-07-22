@@ -528,6 +528,7 @@ export const studySessions = pgTable(
     /** Premium AI session reflection cache (one per session; cleared when feedback changes). */
     aiReflection: text("ai_reflection"),
     aiModel: text("ai_model"),
+    aiLocale: varchar("ai_locale", { length: 5 }),
     aiReflectedAt: timestamp("ai_reflected_at", { withTimezone: true }),
     /** Cached plan-task suggestion from session reflection ({title, subject}); null when none. */
     aiSuggestedTask: jsonb("ai_suggested_task"),
@@ -642,6 +643,7 @@ export const moodCheckins = pgTable(
     struggleNote: text("struggle_note"),
     aiReflection: text("ai_reflection"),
     aiModel: text("ai_model"),
+    aiLocale: varchar("ai_locale", { length: 5 }),
     aiReflectedAt: timestamp("ai_reflected_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -677,6 +679,7 @@ export const visionBoards = pgTable(
     motivation: text("motivation"),
     aiNote: text("ai_note"),
     aiModel: text("ai_model"),
+    aiLocale: varchar("ai_locale", { length: 5 }),
     aiNoteAt: timestamp("ai_note_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -712,6 +715,7 @@ export const mockExams = pgTable(
      */
     aiGhostNarration: text("ai_ghost_narration"),
     aiGhostModel: text("ai_ghost_model"),
+    aiNarrationLocale: varchar("ai_narration_locale", { length: 5 }),
     aiGhostAt: timestamp("ai_ghost_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -1746,7 +1750,7 @@ export const aiWeeklyReviews = pgTable(
   ],
 );
 
-/** W3 · Premium proactive daily coach greeting on /coach — at most one LLM call per (user, day). */
+/** W3 · Premium dashboard greeting — at most one LLM call per (user, day, locale). */
 export const aiDailyGreetings = pgTable(
   "ai_daily_greetings",
   {
@@ -1757,6 +1761,7 @@ export const aiDailyGreetings = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     greetingDate: date("greeting_date").notNull(),
+    locale: varchar("locale", { length: 5 }).notNull().default("tr"),
     greeting: text("greeting").notNull(),
     model: text("model").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -1764,9 +1769,10 @@ export const aiDailyGreetings = pgTable(
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("ai_daily_greetings_user_date_idx").on(
+    uniqueIndex("ai_daily_greetings_user_date_locale_idx").on(
       t.userId,
       t.greetingDate,
+      t.locale,
     ),
   ],
 );

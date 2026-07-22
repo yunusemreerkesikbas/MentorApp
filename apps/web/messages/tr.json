@@ -894,7 +894,8 @@
       "enter_exam": "Deneme gir",
       "start_session": "Seans başlat",
       "retry": "Tekrar dene",
-      "load_error": "Haftalık değerlendirme yüklenemedi."
+      "load_error": "Haftalık değerlendirme yüklenemedi.",
+      "add_to_plan": "Planıma ekle"
     },
     "deep": {
       "title": "Derin Analiz",
@@ -911,7 +912,8 @@
       "insufficient": "Yeterli coinin yok ({balance}/{cost}). Görev tamamlayarak kazanabilirsin.",
       "go_earn": "Görevlere git",
       "suggested_title": "Önerilen görev",
-      "action_error": "Bir şeyler ters gitti, tekrar deneyebilirsin."
+      "action_error": "Bir şeyler ters gitti, tekrar deneyebilirsin.",
+      "add_to_plan": "Planıma ekle"
     }
   },
   "session": {

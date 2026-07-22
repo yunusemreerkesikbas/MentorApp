@@ -9,23 +9,30 @@ import { aiDailyGreetings } from "../../../database/schema";
 export class DailyGreetingRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
-  async find(userId: string, greetingDate: string) {
+  async find(userId: string, greetingDate: string, locale: string) {
     return withUserContext(this.db, { userId }, async (tx) => {
       const rows = await tx
         .select()
         .from(aiDailyGreetings)
-        .where(and(eq(aiDailyGreetings.userId, userId), eq(aiDailyGreetings.greetingDate, greetingDate)))
+        .where(
+          and(
+            eq(aiDailyGreetings.userId, userId),
+            eq(aiDailyGreetings.greetingDate, greetingDate),
+            eq(aiDailyGreetings.locale, locale),
+          ),
+        )
         .limit(1);
       return rows[0];
     });
   }
 
-  /** One row per (user, day) — the day never regenerates, so plain insert (unique index backs it). */
+  /** One row per (user, day, locale); the unique index keeps each localized greeting stable. */
   async insert(data: {
     userId: string;
     greetingDate: string;
     greeting: string;
     model: string;
+    locale: string;
   }): Promise<void> {
     await withUserContext(this.db, { userId: data.userId }, async (tx) => {
       await tx.insert(aiDailyGreetings).values(data).onConflictDoNothing();

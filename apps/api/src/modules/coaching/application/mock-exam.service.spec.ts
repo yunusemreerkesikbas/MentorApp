@@ -282,6 +282,7 @@ describe("MockExamService", () => {
       "m2",
       "story",
       "fake",
+      "tr",
     );
   });
 

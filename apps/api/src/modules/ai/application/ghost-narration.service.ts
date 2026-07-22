@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { I18nContext } from "nestjs-i18n";
 import type { GhostNarrationDto } from "@mentor/types";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -11,6 +12,7 @@ import { LLM_PORT, type LlmPort } from "../domain/llm.port";
 import { AiUsageFeature, buildGhostPrompt, estimateCostMicros } from "../domain/ai.constants";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
+import { promptLocale } from "../domain/prompt-locale";
 
 /**
  * Premium AI narration of the user's "geçmiş-ben" progress (W3 · §4 #5 premium-only — free tier
@@ -46,12 +48,20 @@ export class GhostNarrationService {
       throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST);
     }
 
+    const locale = promptLocale(I18nContext.current()?.lang);
     // Idempotent cache: reuse this attempt's narration (no LLM call / no cost).
-    if (ghost.aiNarration) {
+    if (
+      ghost.aiNarration &&
+      (await this.mockExams.getLatestGhostNarrationLocale(user.id, examId)) ===
+        locale
+    ) {
       return { narration: ghost.aiNarration, model: "cache" };
     }
 
-    const { system, user: userMsg } = buildGhostPrompt(ghost);
+    const { system, user: userMsg } = buildGhostPrompt(
+      ghost,
+      locale,
+    );
     await this.budget.assertWithinBudget();
     const result = await this.llm.complete({ system, user: userMsg });
 
@@ -69,6 +79,7 @@ export class GhostNarrationService {
       result.text,
       result.model,
       examId,
+      locale,
     );
 
     return { narration: result.text, model: result.model };

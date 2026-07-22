@@ -84,7 +84,7 @@ pnpm --filter @mentor/api test -- --grep "ai"
 | `DELETE /v1/coach/memory`                            | Delete the legacy saved summary (KVKK)                                        |
 | `GET /v1/coach/access`                               | Access probe (PREMIUM/COIN/NONE)                                              |
 | `POST /v1/coach/mood-reflection`                     | Premium mood AI reflection                                                    |
-| `POST /v1/coach/daily-greeting`                      | Premium proactive daily greeting (cached per user+day)                        |
+| `POST /v1/coach/daily-greeting`                      | Premium dashboard greeting (cached per user+day+locale)                       |
 | `POST /v1/coach/plan-draft`                          | Premium 7-day plan draft PREVIEW (never persisted; user confirms via W2 bulk) |
 | `POST /v1/coach/plan-adaptation`                     | Premium safe plan adaptation preview (user-confirmed apply via coaching)      |
 | `POST /v1/coach/ghost-narration`                     | Premium ghost AI narration                                                    |
@@ -95,6 +95,19 @@ pnpm --filter @mentor/api test -- --grep "ai"
 | `GET /v1/admin/metrics/coach-feedback`               | Coach 👍/👎 satisfaction + recent 👎 replies (SUPPORT+FINANCE)                |
 
 ## Geliştirmeler (timeline)
+
+- **PII-minimal, locale-correct coach context (2026-07-22)** — Automatic `CoachContext` now carries
+  only exam type, coarse mood level, session/focus counts, taxonomy subjects, and plan progress
+  counts. Mood/session notes and user-written plan titles are excluded from automatic prompts;
+  serious-distress checks remain local for both mood and session reflections. Failed context
+  sources emit source-only structured warnings and do not drop the remaining context. Chat, daily
+  greeting, mood, session, vision note, ghost, plan draft, and plan adaptation share the active
+  TR/EN prompt-locale rule. Mood/session/vision/ghost caches persist their locale, while daily
+  greetings are keyed by `(user, UTC day, locale)`; legacy null-locale rows miss once and regenerate.
+  Migration `0058` was generated from Drizzle schema. `plan-draft` and `ghost-narration` remain
+  backward-compatible legacy endpoints and have no new web consumer. Related:
+  `context-builder.service.ts`, `prompt-locale.ts`, AI prompt services, coaching cache services,
+  `schema.ts`, `0058_curvy_stature.sql`.
 
 - **Kullanıcı onaylı adaptif plan önizlemesi (2026-07-21)** —
   `POST /v1/coach/plan-adaptation`, bugün + 6 günlük bekleyen planı coaching'in public

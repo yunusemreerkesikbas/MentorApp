@@ -148,6 +148,43 @@ describe("SessionService.start", () => {
   });
 });
 
+describe("SessionService.getSessionRepeatStats", () => {
+  it.each([
+    {
+      name: "returns zero when no user studied in the window",
+      aggregate: { activeUsers7d: 0, repeatUsers7d: 0 },
+      expectedRate: 0,
+    },
+    {
+      name: "keeps a one-day user only in the denominator",
+      aggregate: { activeUsers7d: 1, repeatUsers7d: 0 },
+      expectedRate: 0,
+    },
+    {
+      name: "counts a user active on two distinct days in numerator and denominator",
+      aggregate: { activeUsers7d: 1, repeatUsers7d: 1 },
+      expectedRate: 1,
+    },
+  ])("$name", async ({ aggregate, expectedRate }) => {
+    const getSessionRepeatStats = vi.fn(async () => aggregate);
+    const service = makeService(
+      {},
+      { activity: { getSessionRepeatStats } },
+    );
+
+    const result = await service.getSessionRepeatStats(
+      new Date("2026-07-22T15:00:00.000Z"),
+    );
+
+    expect(getSessionRepeatStats).toHaveBeenCalledWith(
+      expect.anything(),
+      "2026-07-16",
+      "2026-07-22",
+    );
+    expect(result).toEqual({ ...aggregate, repeatRate7d: expectedRate });
+  });
+});
+
 describe("SessionService.isStudyingNow", () => {
   it("asks the repo with the planned-length grace, not a blanket window", async () => {
     // Regression: a 120-min blanket window showed orphaned IN_PROGRESS rows (tab died)

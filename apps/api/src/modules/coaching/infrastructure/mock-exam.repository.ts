@@ -142,6 +142,7 @@ export class MockExamRepository {
       .set({
         aiGhostNarration: null,
         aiGhostModel: null,
+        aiNarrationLocale: null,
         aiGhostAt: null,
         updatedAt: new Date(),
       })
@@ -213,12 +214,14 @@ export class MockExamRepository {
     id: string,
     narration: string,
     model: string,
+    locale: string,
   ): Promise<void> {
     await tx
       .update(mockExams)
       .set({
         aiGhostNarration: narration,
         aiGhostModel: model,
+        aiNarrationLocale: locale,
         aiGhostAt: new Date(),
       })
       .where(eq(mockExams.id, id));

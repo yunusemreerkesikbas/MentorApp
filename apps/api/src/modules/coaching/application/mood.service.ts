@@ -47,10 +47,23 @@ export class MoodService {
    * Cache today's premium AI-adaptive reflection (written by W3 via the public service surface,
    * so the `mood_checkins` table is only ever mutated inside coaching — workstreams §2).
    */
-  async setTodayAiReflection(userId: string, reflection: string, model: string): Promise<void> {
+  async setTodayAiReflection(
+    userId: string,
+    reflection: string,
+    model: string,
+    locale: string,
+  ): Promise<void> {
     const today = todayIso();
     await withUserContext(this.db, { userId }, async (tx) => {
-      await this.moods.setAiReflection(tx, userId, today, reflection, model);
+      await this.moods.setAiReflection(tx, userId, today, reflection, model, locale);
+    });
+  }
+
+  async getTodayAiLocale(userId: string): Promise<string | null> {
+    const today = todayIso();
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const row = await this.moods.findByDate(tx, userId, today);
+      return row?.aiLocale ?? null;
     });
   }
 

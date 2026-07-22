@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, type ReactNode } from "react";
-import { FiUsers, FiUserPlus, FiCreditCard, FiDollarSign, FiGift, FiAward } from "react-icons/fi";
+import { FiUsers, FiUserPlus, FiCreditCard, FiDollarSign, FiGift, FiAward, FiRepeat } from "react-icons/fi";
 import apiClient from "@/lib/apiClient";
 import { useAuth } from "@/contentApi/authProvider";
 import { canSee } from "@/lib/roles";
@@ -53,6 +53,7 @@ export default function MetricsCards() {
     if (!m) return null;
 
     const convPct = `${Math.round(m.subscriptions.conversionRate * 100)}%`;
+    const repeatPct = `${Math.round(m.coaching.repeatRate7d * 100)}%`;
 
     return (
         <div className="mb-4">
@@ -78,6 +79,13 @@ export default function MetricsCards() {
                 <Kpi icon={<FiAward size={20} />} value={m.economy.xpIssued} label="Dağıtılan XP" />
                 <Kpi icon={<FiGift size={20} />} value={`${m.economy.invite.converted}/${m.economy.invite.invited}`} label="Davet (dönüşen/toplam)" />
                 <Kpi icon={<FiDollarSign size={20} />} value={fmtTry(m.subscriptions.refundedMinor)} label="İade (son 30g)" />
+            </div>
+
+            <h6 className="mb-2 mt-3 text-muted">Koçluk devamlılığı (7 gün)</h6>
+            <div className="row g-4">
+                <Kpi icon={<FiUsers size={20} />} value={m.coaching.activeUsers7d} label="Seans yapan kullanıcı" />
+                <Kpi icon={<FiRepeat size={20} />} value={m.coaching.repeatUsers7d} label="2+ farklı günde seans" />
+                <Kpi icon={<FiRepeat size={20} />} value={repeatPct} label="7 günlük tekrar oranı" />
             </div>
         </div>
     );

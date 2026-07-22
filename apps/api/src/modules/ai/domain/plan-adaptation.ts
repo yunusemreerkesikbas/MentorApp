@@ -3,6 +3,10 @@ import type {
   CoachPlanAdaptationSource,
 } from "@mentor/types";
 import type { PlanAdaptationSnapshotTask } from "../../coaching/domain/plan-adaptation";
+import {
+  promptLanguageInstruction,
+  type PromptLocale,
+} from "./prompt-locale";
 
 export interface PromptPlanTask extends PlanAdaptationSnapshotTask {
   ref: string;
@@ -200,6 +204,7 @@ export function buildPlanAdaptationPrompt(input: {
   } | null;
   tasks: readonly PromptPlanTask[];
   note?: string;
+  locale?: PromptLocale;
 }): { system: string; user: string } {
   const policy =
     input.source === "PLAN"
@@ -214,6 +219,7 @@ export function buildPlanAdaptationPrompt(input: {
         ? "Zor geçen tamamlanmış seans backend tarafından doğrulandı."
         : "Kullanıcı plan ekranından açıkça uyarlama istedi.";
   const system = [
+    promptLanguageInstruction(input.locale ?? "tr"),
     "Sen sınav çalışma planını sadeleştiren bir koçsun. Yalnız önizleme üret; hiçbir görevi silme veya tamamlama.",
     `Bugün ${input.todayIso}; hedef tarihler bugün dahil 7 günlük pencere içinde olmalı.`,
     policy,

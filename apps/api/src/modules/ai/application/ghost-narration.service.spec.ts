@@ -27,6 +27,7 @@ describe("GhostNarrationService", () => {
   let getEntitlement: ReturnType<typeof vi.fn>;
   let getGhostComparison: ReturnType<typeof vi.fn>;
   let setLatestGhostNarration: ReturnType<typeof vi.fn>;
+  let getLatestGhostNarrationLocale: ReturnType<typeof vi.fn>;
   let service: GhostNarrationService;
 
   beforeEach(() => {
@@ -41,13 +42,18 @@ describe("GhostNarrationService", () => {
     getEntitlement = vi.fn(async () => ({ isPremium: true }));
     getGhostComparison = vi.fn(async () => ghostFixture());
     setLatestGhostNarration = vi.fn(async () => undefined);
+    getLatestGhostNarrationLocale = vi.fn(async () => null);
 
     service = new GhostNarrationService(
       { complete } as never,
       { append } as never,
       { get: configGet } as never,
       { getEntitlement } as never,
-      { getGhostComparison, setLatestGhostNarration } as never,
+      {
+        getGhostComparison,
+        getLatestGhostNarrationLocale,
+        setLatestGhostNarration,
+      } as never,
       { assertWithinBudget: vi.fn(async () => undefined) } as never,
     );
   });
@@ -77,11 +83,21 @@ describe("GhostNarrationService", () => {
   });
 
   it("returns the cached narration without calling the LLM", async () => {
+    getLatestGhostNarrationLocale.mockResolvedValue("tr");
     getGhostComparison.mockResolvedValue(ghostFixture("Önceki anlatım."));
     const res = await service.narrate(USER);
     expect(res).toEqual({ narration: "Önceki anlatım.", model: "cache" });
     expect(complete).not.toHaveBeenCalled();
     expect(setLatestGhostNarration).not.toHaveBeenCalled();
+  });
+
+  it("regenerates a cached narration when its locale differs", async () => {
+    getLatestGhostNarrationLocale.mockResolvedValue("en");
+    getGhostComparison.mockResolvedValue(ghostFixture("Cached in English."));
+
+    await service.narrate(USER);
+
+    expect(complete).toHaveBeenCalledOnce();
   });
 
   it("generates, meters and caches a narration within the requested exam", async () => {
@@ -96,6 +112,7 @@ describe("GhostNarrationService", () => {
       "Geçmiş-ben'i geçtin, harika ivme!",
       "fake",
       examId,
+      "tr",
     );
   });
 });

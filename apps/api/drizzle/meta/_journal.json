@@ -407,6 +407,13 @@
       "when": 1784499321764,
       "tag": "0057_sturdy_korvac",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1784727576103,
+      "tag": "0058_curvy_stature",
+      "breakpoints": true
     }
   ]
 }

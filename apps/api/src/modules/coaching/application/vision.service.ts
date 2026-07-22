@@ -39,9 +39,21 @@ export class VisionService {
   }
 
   /** Cache the premium AI motivation note (public surface for W3 — coaching owns the table). */
-  async setAiNote(userId: string, note: string, model: string): Promise<void> {
+  async setAiNote(
+    userId: string,
+    note: string,
+    model: string,
+    locale: string,
+  ): Promise<void> {
     await withUserContext(this.db, { userId }, async (tx) => {
-      await this.visions.setAiNote(tx, userId, note, model);
+      await this.visions.setAiNote(tx, userId, note, model, locale);
+    });
+  }
+
+  async getAiNoteLocale(userId: string): Promise<string | null> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const row = await this.visions.findByUser(tx, userId);
+      return row?.aiLocale ?? null;
     });
   }
 }
