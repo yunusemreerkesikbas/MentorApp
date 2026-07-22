@@ -93,6 +93,11 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **KVKK silme: bildirim verisi (WP-K, 2026-07-22)** — `NotificationsErasureService` hesap silmede
+  `push_subscriptions`, `notification_preferences`, `notification_deliveries` ve `user_notifications`
+  satırlarını tek SERVICE-ctx tx'te hard delete eder; `AccountErasureService` zincirinin son adımı.
+  Gotcha: modül `@Global` olduğundan `AccountModule` import etmeden resolve olur. Related:
+  `notifications-erasure.service.ts`, `test/account-erasure.e2e-spec.ts`.
 - **Notifications + queue** — Postgres job queue (`JobQueuePort`, `FOR UPDATE SKIP LOCKED`);
   `JobRunnerService` (handler registry + retry/dead-letter); cron HTTP runner (`CRON_SECRET`-gated);
   email pipeline (`EMAIL_PORT` moved to NotificationsModule; Postmark/logger); web push

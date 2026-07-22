@@ -13,6 +13,7 @@ import { CoachAccessService } from "./application/coach-access.service";
 import { MoodReflectionService } from "./application/mood-reflection.service";
 import { DailyGreetingService } from "./application/daily-greeting.service";
 import { PlanDraftService } from "./application/plan-draft.service";
+import { PlanAdaptationService } from "./application/plan-adaptation.service";
 import { SessionReflectionService } from "./application/session-reflection.service";
 import { GhostNarrationService } from "./application/ghost-narration.service";
 import { VisionNoteService } from "./application/vision-note.service";
@@ -56,7 +57,13 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
  * W3 — AI bounded context: coach chat, RAG, photo→subject categorize (premium vision).
  */
 @Module({
-  imports: [IdentityModule, ContentModule, PaymentsModule, EconomyModule, CoachingModule],
+  imports: [
+    IdentityModule,
+    ContentModule,
+    PaymentsModule,
+    EconomyModule,
+    CoachingModule,
+  ],
   controllers: [
     AiChatController,
     AiMoodController,
@@ -73,6 +80,7 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     CoachAccessService,
     MoodReflectionService,
     DailyGreetingService,
+    PlanAdaptationService,
     PlanDraftService,
     SessionReflectionService,
     GhostNarrationService,
@@ -105,7 +113,12 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     GeminiVisionAdapter,
     {
       provide: LLM_PORT,
-      inject: [ConfigService, FakeLlmAdapter, OpenAiLlmAdapter, GeminiLlmAdapter],
+      inject: [
+        ConfigService,
+        FakeLlmAdapter,
+        OpenAiLlmAdapter,
+        GeminiLlmAdapter,
+      ],
       useFactory: (
         config: ConfigService<Env, true>,
         fake: FakeLlmAdapter,
@@ -124,7 +137,12 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     },
     {
       provide: VISION_PORT,
-      inject: [ConfigService, FakeVisionAdapter, GeminiVisionAdapter, OpenAiVisionAdapter],
+      inject: [
+        ConfigService,
+        FakeVisionAdapter,
+        GeminiVisionAdapter,
+        OpenAiVisionAdapter,
+      ],
       useFactory: (
         config: ConfigService<Env, true>,
         fake: FakeVisionAdapter,
@@ -145,5 +163,3 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
   exports: [AiCostStatsService, CoachFeedbackStatsService, AiErasureService],
 })
 export class AiModule {}
-
-

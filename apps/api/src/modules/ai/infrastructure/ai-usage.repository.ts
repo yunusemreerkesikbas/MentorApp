@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -60,7 +60,11 @@ export class AiUsageRepository {
   }
 
   /** Count one feature's calls for a user since `since` — drives per-feature daily caps. */
-  async countFeatureSince(userId: string, feature: string, since: Date): Promise<number> {
+  async countFeatureSince(
+    userId: string,
+    feature: string,
+    since: Date,
+  ): Promise<number> {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx
         .select({ n: sql<number>`count(*)::int` })
@@ -76,6 +80,27 @@ export class AiUsageRepository {
     });
   }
 
+  /** Count a shared quota spanning multiple feature labels. */
+  async countFeaturesSince(
+    userId: string,
+    features: string[],
+    since: Date,
+  ): Promise<number> {
+    if (features.length === 0) return 0;
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(aiUsage)
+        .where(
+          and(
+            eq(aiUsage.userId, userId),
+            inArray(aiUsage.feature, features),
+            gte(aiUsage.createdAt, since),
+          ),
+        );
+      return rows[0]?.n ?? 0;
+    });
+  }
   /** Aggregate cost + calls + tokens across ALL users since `since` (admin cost dashboard, SERVICE ctx). */
   async windowSince(since: Date): Promise<UsageWindow> {
     return withServiceContext(this.db, async (tx) => {
@@ -88,7 +113,14 @@ export class AiUsageRepository {
         })
         .from(aiUsage)
         .where(gte(aiUsage.createdAt, since));
-      return rows[0] ?? { costMicros: 0, calls: 0, promptTokens: 0, completionTokens: 0 };
+      return (
+        rows[0] ?? {
+          costMicros: 0,
+          calls: 0,
+          promptTokens: 0,
+          completionTokens: 0,
+        }
+      );
     });
   }
 

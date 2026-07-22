@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -11,10 +12,16 @@ import {
   Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { Paginated, PlanTaskCalendarDto, PlanTaskDto } from "@mentor/types";
+import type {
+  ApplyPlanAdaptationResultDto,
+  Paginated,
+  PlanTaskCalendarDto,
+  PlanTaskDto,
+} from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { PlanService } from "../application/plan.service";
 import {
+  ApplyPlanAdaptationDto,
   BulkCreatePlanTasksDto,
   CreatePlanTaskDto,
   ListPlanTasksQueryDto,
@@ -62,6 +69,15 @@ export class PlanTaskController {
     return this.plan.createMany(user.id, dto.tasks);
   }
 
+
+  @Post("adapt")
+  @HttpCode(HttpStatus.OK)
+  applyAdaptation(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: ApplyPlanAdaptationDto,
+  ): Promise<ApplyPlanAdaptationResultDto> {
+    return this.plan.applyAdaptation(user.id, dto);
+  }
   @Patch(":id")
   update(
     @CurrentUser() user: RequestUser,

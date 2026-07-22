@@ -29,7 +29,7 @@ function makeService(
   return new SessionService(
     fakeDb,
     { closeStaleOpenSessions: vi.fn(), ...sessionsRepo } as never,
-    (opts?.planTasks ?? { findById: vi.fn() }) as never,
+    { acquireUserLock: vi.fn(), findById: vi.fn(), ...opts?.planTasks } as never,
     (opts?.activity ?? {}) as never,
     (opts?.events ?? { emit: () => {} }) as never,
     (opts?.config ?? { get: vi.fn(async () => 300) }) as never,
@@ -527,6 +527,7 @@ describe("SessionService.finalize", () => {
       struggleNote: null,
       aiReflection: null,
     }));
+    const acquireUserLock = vi.fn(async () => undefined);
     const findByDate = vi.fn(async () => null);
     const hasCompletedOnDate = vi.fn(async () => true);
     const upsertHasSession = vi.fn(async () => undefined);
@@ -543,11 +544,21 @@ describe("SessionService.finalize", () => {
     const result = await makeService(
       { findById, update, hasCompletedOnDate },
       {
-        planTasks: { findById: planFindById, update: taskUpdate, countDone, countTotal },
+        planTasks: {
+          acquireUserLock,
+          findById: planFindById,
+          update: taskUpdate,
+          countDone,
+          countTotal,
+        },
         activity: { findByDate, upsertHasSession, upsertTasksDone },
         events: { emit },
       },
     ).finalize(USER, "s1", { status: "COMPLETED", actualFocusSeconds: 1500 });
+    expect(acquireUserLock).toHaveBeenCalledWith(expect.anything(), USER);
+    expect(acquireUserLock.mock.invocationCallOrder[0]).toBeLessThan(
+      update.mock.invocationCallOrder[0]!,
+    );
 
     expect(taskUpdate).toHaveBeenCalledWith(expect.anything(), USER, planTaskId, {
       status: "DONE",

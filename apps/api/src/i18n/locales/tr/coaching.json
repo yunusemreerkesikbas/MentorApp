@@ -26,6 +26,10 @@
       "message": "Bug\u00fcnl\u00fck bu kadar. Eme\u011fini fark et ve dinlen."
     }
   },
+  "planAdaptation": {
+    "READY": "Planına dokunmadan güvenli bir önizleme hazırladım. İstediğin değişiklikleri seçebilirsin.",
+    "NO_CHANGE": "Şu an planını değiştirmen gerekmiyor. Mevcut küçük adımlarla devam edebilirsin."
+  },
   "official": {
     "EXAM_DATE": "Resm\u00ee s\u0131nav tarihini do\u011frulanm\u0131\u015f kartta g\u00f6rebilirsin.",
     "APPLICATION": "Ba\u015fvuru bilgisi i\u00e7in yaln\u0131z do\u011frulanm\u0131\u015f Bilgi Merkezi kaynaklar\u0131n\u0131 payla\u015f\u0131yorum.",

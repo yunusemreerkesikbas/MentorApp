@@ -10,6 +10,9 @@ describe("AccountErasureService", () => {
   let cancel: ReturnType<typeof vi.fn>;
   let eraseAi: ReturnType<typeof vi.fn>;
   let eraseCoaching: ReturnType<typeof vi.fn>;
+  let eraseForum: ReturnType<typeof vi.fn>;
+  let eraseSocial: ReturnType<typeof vi.fn>;
+  let eraseNotifications: ReturnType<typeof vi.fn>;
   let deleteObject: ReturnType<typeof vi.fn>;
   let service: AccountErasureService;
 
@@ -23,6 +26,9 @@ describe("AccountErasureService", () => {
     cancel = vi.fn(async () => undefined);
     eraseAi = vi.fn(async () => undefined);
     eraseCoaching = vi.fn(async () => undefined);
+    eraseForum = vi.fn(async () => undefined);
+    eraseSocial = vi.fn(async () => undefined);
+    eraseNotifications = vi.fn(async () => undefined);
     deleteObject = vi.fn(async () => undefined);
     service = new AccountErasureService(
       { anonymizeAccount } as never,
@@ -30,6 +36,9 @@ describe("AccountErasureService", () => {
       { cancel } as never,
       { eraseUserData: eraseAi } as never,
       { eraseUserData: eraseCoaching } as never,
+      { eraseUserData: eraseForum } as never,
+      { eraseUserData: eraseSocial } as never,
+      { eraseUserData: eraseNotifications } as never,
       { deleteObject } as never,
     );
   });
@@ -40,6 +49,9 @@ describe("AccountErasureService", () => {
     expect(cancel).toHaveBeenCalledWith(USER);
     expect(eraseAi).toHaveBeenCalledWith(USER);
     expect(eraseCoaching).toHaveBeenCalledWith(USER);
+    expect(eraseForum).toHaveBeenCalledWith(USER);
+    expect(eraseSocial).toHaveBeenCalledWith(USER);
+    expect(eraseNotifications).toHaveBeenCalledWith(USER);
     expect(anonymizeAccount).toHaveBeenCalledWith(USER, "DELETED");
     expect(revokeAllForUser).toHaveBeenCalledWith(USER);
     expect(deleteObject).toHaveBeenCalledWith("avatars/u.png");

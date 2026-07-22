@@ -5,6 +5,7 @@ import {
   type OnModuleDestroy,
   type OnModuleInit,
 } from "@nestjs/common";
+import * as Sentry from "@sentry/nestjs";
 import { eq } from "drizzle-orm";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DRIZZLE } from "../../../database/database.constants";
@@ -50,6 +51,16 @@ export class JobRunnerService implements OnModuleInit, OnModuleDestroy {
   onModuleDestroy(): void {
     if (this.pollTimer) clearInterval(this.pollTimer);
     this.pollTimer = null;
+  }
+
+  /**
+   * A DEAD job is a permanently lost side-effect (verification mail, payment welcome, push) —
+   * surface it in Sentry so someone notices. Tags only name/id; the payload stays out (PII).
+   */
+  private captureDeadJob(job: JobRow, reason: string): void {
+    Sentry.captureException(new Error(`Job dead: ${job.name} — ${reason}`), {
+      tags: { jobName: job.name, jobId: job.id },
+    });
   }
 
   /** Extension point for W3/W6 — register additional job handlers at module init. */
@@ -101,6 +112,7 @@ export class JobRunnerService implements OnModuleInit, OnModuleDestroy {
       // A missing handler is a permanent failure — retrying won't register one. Mark DEAD
       // directly so the result count matches the row state (markFailed would reschedule).
       this.logger.error(`No handler for job ${job.name} (${job.id})`);
+      this.captureDeadJob(job, `No handler registered for ${job.name}`);
       await withServiceContext(this.db, async (tx) => {
         await this.jobs.markDead(tx, job.id, `No handler registered for ${job.name}`);
       });
@@ -116,15 +128,15 @@ export class JobRunnerService implements OnModuleInit, OnModuleDestroy {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.warn(`Job ${job.name} (${job.id}) failed: ${message}`);
-      let outcome: "retry" | "dead" = "retry";
+      let exhausted = false;
       await withServiceContext(this.db, async (tx) => {
         const rows = await tx.select().from(jobs).where(eq(jobs.id, job.id)).limit(1);
         const current = rows[0] ?? job;
-        const exhausted = current.attempts >= current.maxAttempts;
+        exhausted = current.attempts >= current.maxAttempts;
         await this.jobs.markFailed(tx, current, message);
-        outcome = exhausted ? "dead" : "retry";
       });
-      return outcome;
+      if (exhausted) this.captureDeadJob(job, message);
+      return exhausted ? "dead" : "retry";
     }
   }
 }

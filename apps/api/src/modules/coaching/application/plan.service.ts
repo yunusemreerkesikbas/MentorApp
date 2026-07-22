@@ -1,7 +1,13 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import type { Paginated, PlanTaskCalendarDto, PlanTaskDto } from "@mentor/types";
 import type {
+  ApplyPlanAdaptationResultDto,
+  Paginated,
+  PlanTaskCalendarDto,
+  PlanTaskDto,
+} from "@mentor/types";
+import type {
+  ApplyPlanAdaptationInput,
   CreatePlanTaskInput,
   ListPlanTasksQuery,
   PlanTaskCalendarQuery,
@@ -12,7 +18,12 @@ import type { Database } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { todayIso } from "../domain/date.util";
+import { addDays, todayIso } from "../domain/date.util";
+import {
+  buildPlanRevision,
+  PLAN_ADAPTATION_WINDOW_DAYS,
+  type PlanAdaptationSnapshot,
+} from "../domain/plan-adaptation";
 import {
   PlanTaskStatus,
   TODAY_PLAN_PENDING_MAX,
@@ -107,6 +118,7 @@ export class PlanService {
     const taskDate = input.taskDate ?? todayIso();
     this.assertTaskDateMutable(taskDate);
     return withUserContext(this.db, { userId }, async (tx) => {
+      await this.tasks.acquireUserLock(tx, userId);
       const row = await this.tasks.create(tx, {
         userId,
         taskDate,
@@ -127,6 +139,7 @@ export class PlanService {
     for (const input of withDates) this.assertTaskDateMutable(input.taskDate);
     return withUserContext(this.db, { userId }, async (tx) => {
       const rows = [];
+      await this.tasks.acquireUserLock(tx, userId);
       for (const input of withDates) {
         rows.push(
           await this.tasks.create(tx, {
@@ -142,9 +155,162 @@ export class PlanService {
     });
   }
 
+  getAdaptationSnapshot(userId: string): Promise<PlanAdaptationSnapshot> {
+    const from = todayIso();
+    const to = addDays(from, PLAN_ADAPTATION_WINDOW_DAYS - 1);
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const rows = await this.tasks.listByDateRange(tx, userId, from, to);
+      return {
+        window: { from, to },
+        planRevision: buildPlanRevision(rows),
+        tasks: rows.map(({ id, taskDate, title, subject, status, sortOrder }) => ({
+          id,
+          taskDate,
+          title,
+          subject,
+          status,
+          sortOrder,
+        })),
+      };
+    });
+  }
+
+  async applyAdaptation(
+    userId: string,
+    input: ApplyPlanAdaptationInput,
+  ): Promise<ApplyPlanAdaptationResultDto> {
+    const from = todayIso();
+    const to = addDays(from, PLAN_ADAPTATION_WINDOW_DAYS - 1);
+    return withUserContext(this.db, { userId }, async (tx) => {
+      await this.tasks.acquireUserLock(tx, userId);
+      const rows = await this.tasks.listByDateRange(tx, userId, from, to);
+      if (buildPlanRevision(rows) !== input.planRevision) {
+        throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
+      }
+
+      const byId = new Map(rows.map((row) => [row.id, row]));
+      const pendingByDate = new Map<string, number>();
+      const maxOrderByDate = new Map<string, number>();
+      const titleCounts = new Map<string, number>();
+      const titleKey = (date: string, title: string) =>
+        `${date}:${title.trim().toLocaleLowerCase("tr-TR")}`;
+      const adjustTitleCount = (key: string, delta: number) => {
+        const next = (titleCounts.get(key) ?? 0) + delta;
+        if (next <= 0) titleCounts.delete(key);
+        else titleCounts.set(key, next);
+      };
+      for (const row of rows) {
+        if (row.status === PlanTaskStatus.PENDING) {
+          pendingByDate.set(row.taskDate, (pendingByDate.get(row.taskDate) ?? 0) + 1);
+          adjustTitleCount(titleKey(row.taskDate, row.title), 1);
+        }
+        maxOrderByDate.set(
+          row.taskDate,
+          Math.max(maxOrderByDate.get(row.taskDate) ?? -1, row.sortOrder),
+        );
+      }
+
+      const movedIds = new Set<string>();
+      const moves: Array<{
+        row: (typeof rows)[number];
+        toDate: string;
+        sortOrder?: number;
+      }> = [];
+      const additions: Array<{
+        title: string;
+        subject: string | null;
+        taskDate: string;
+        sortOrder: number;
+      }> = [];
+      const nextOrder = (date: string) => {
+        const next = (maxOrderByDate.get(date) ?? -1) + 1;
+        maxOrderByDate.set(date, next);
+        return next;
+      };
+      const assertDate = (date: string) => {
+        if (date < from || date > to) {
+          throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
+        }
+      };
+
+      // Resolve and remove all move sources first so capacity checks reflect the
+      // selected adaptation's final state, regardless of change order.
+      for (const change of input.changes) {
+        if (change.kind !== "MOVE") continue;
+        const row = byId.get(change.taskId);
+        if (
+          !row ||
+          row.status !== PlanTaskStatus.PENDING ||
+          row.taskDate !== change.fromDate ||
+          change.fromDate === change.toDate ||
+          movedIds.has(row.id)
+        ) {
+          throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
+        }
+        assertDate(change.toDate);
+        movedIds.add(row.id);
+        pendingByDate.set(row.taskDate, (pendingByDate.get(row.taskDate) ?? 1) - 1);
+        adjustTitleCount(titleKey(row.taskDate, row.title), -1);
+        moves.push({ row, toDate: change.toDate });
+      }
+
+      for (const move of moves) {
+        const targetTitleKey = titleKey(move.toDate, move.row.title);
+        if (
+          (pendingByDate.get(move.toDate) ?? 0) >= 3 ||
+          (titleCounts.get(targetTitleKey) ?? 0) > 0
+        ) {
+          throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
+        }
+        pendingByDate.set(move.toDate, (pendingByDate.get(move.toDate) ?? 0) + 1);
+        adjustTitleCount(targetTitleKey, 1);
+        move.sortOrder = nextOrder(move.toDate);
+      }
+
+      for (const change of input.changes) {
+        if (change.kind !== "ADD") continue;
+        assertDate(change.taskDate);
+        const additionTitleKey = titleKey(change.taskDate, change.title);
+        if (
+          (titleCounts.get(additionTitleKey) ?? 0) > 0 ||
+          (pendingByDate.get(change.taskDate) ?? 0) >= 3
+        ) {
+          throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
+        }
+        adjustTitleCount(additionTitleKey, 1);
+        pendingByDate.set(change.taskDate, (pendingByDate.get(change.taskDate) ?? 0) + 1);
+        additions.push({
+          title: change.title,
+          subject: change.subject,
+          taskDate: change.taskDate,
+          sortOrder: nextOrder(change.taskDate),
+        });
+      }
+
+      const moved = [];
+      for (const move of moves) {
+        const row = await this.tasks.update(tx, userId, move.row.id, {
+          taskDate: move.toDate,
+          sortOrder: move.sortOrder!,
+          updatedAt: new Date(),
+        });
+        if (!row) throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
+        moved.push(toPlanTaskDto(row));
+      }
+
+      const added = [];
+      for (const addition of additions) {
+        const row = await this.tasks.create(tx, { userId, ...addition });
+        added.push(toPlanTaskDto(row));
+      }
+      return { moved, added };
+    });
+  }
+
   async update(userId: string, id: string, input: UpdatePlanTaskInput): Promise<PlanTaskDto> {
     let planCompleted: number | null = null;
     const result = await withUserContext(this.db, { userId }, async (tx) => {
+      await this.tasks.acquireUserLock(tx, userId);
       const existing = await this.tasks.findById(tx, userId, id);
       if (!existing) {
         throw new DomainError(ErrorCode.COACHING_TASK_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -175,6 +341,7 @@ export class PlanService {
 
   async remove(userId: string, id: string): Promise<void> {
     await withUserContext(this.db, { userId }, async (tx) => {
+      await this.tasks.acquireUserLock(tx, userId);
       const existing = await this.tasks.findById(tx, userId, id);
       if (!existing) {
         throw new DomainError(ErrorCode.COACHING_TASK_NOT_FOUND, HttpStatus.NOT_FOUND);

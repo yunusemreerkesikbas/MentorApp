@@ -7,7 +7,11 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { EntitlementService } from "../../payments/application/entitlement.service";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
-import { AiUsageFeature, buildPlanDraftPrompt, estimateCostMicros } from "../domain/ai.constants";
+import {
+  AiUsageFeature,
+  buildPlanDraftPrompt,
+  estimateCostMicros,
+} from "../domain/ai.constants";
 import { parsePlanDraft } from "../domain/plan-draft";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
@@ -39,15 +43,25 @@ export class PlanDraftService {
 
     const ent = await this.entitlement.getEntitlement(user.id, user.roles);
     if (!ent.isPremium) {
-      throw new DomainError(ErrorCode.PAYMENT_PREMIUM_REQUIRED, HttpStatus.FORBIDDEN);
+      throw new DomainError(
+        ErrorCode.PAYMENT_PREMIUM_REQUIRED,
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     const [dailyLimit, usedToday] = await Promise.all([
       this.config.get("ai.plan_draft.daily_limit"),
-      this.usage.countFeatureSince(user.id, AiUsageFeature.PLAN_DRAFT, new Date(Date.now() - DAY_MS)),
+      this.usage.countFeaturesSince(
+        user.id,
+        [AiUsageFeature.PLAN_DRAFT, AiUsageFeature.PLAN_ADAPTATION],
+        new Date(Date.now() - DAY_MS),
+      ),
     ]);
     if (usedToday >= dailyLimit) {
-      throw new DomainError(ErrorCode.AI_RATE_LIMITED, HttpStatus.TOO_MANY_REQUESTS);
+      throw new DomainError(
+        ErrorCode.AI_RATE_LIMITED,
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
 
     const todayIso = new Date().toISOString().slice(0, 10); // UTC day — same day math as plan/streak
@@ -64,12 +78,19 @@ export class PlanDraftService {
       feature: AiUsageFeature.PLAN_DRAFT,
       promptTokens: result.promptTokens,
       completionTokens: result.completionTokens,
-      costMicros: estimateCostMicros(result.model, result.promptTokens, result.completionTokens),
+      costMicros: estimateCostMicros(
+        result.model,
+        result.promptTokens,
+        result.completionTokens,
+      ),
     });
 
     const days = parsePlanDraft(result.text, todayIso);
     if (!days) {
-      throw new DomainError(ErrorCode.AI_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+      throw new DomainError(
+        ErrorCode.AI_PROVIDER_ERROR,
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
 
     return { days, model: result.model };

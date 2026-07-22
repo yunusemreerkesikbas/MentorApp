@@ -83,6 +83,13 @@
 > Content/admin catalog addition: `POST /v1/admin/content/articles/images/upload-url` is EDITOR+
 > and returns a presigned JPEG/PNG/WebP cover/body upload contract (5 MB client/fake-storage cap).
 
+> Adaptive planning catalog addition: `POST /v1/coach/plan-adaptation` returns a Premium,
+> non-mutating seven-day MOVE/ADD preview; `POST /v1/plan-tasks/adapt` applies the user's selected
+> changes atomically under an opaque `planRevision` guard. The AI endpoint never writes coaching
+> tables, and the coaching endpoint never invokes the model. `POST /v1/coach/plan-draft` and
+> `POST /v1/plan-tasks/bulk` remain available for backward compatibility; the current web flow uses
+> the adaptation pair.
+
 > Status: ✅ live · 🟡 partially live (some slices shipped) · ⏳ coming in MVP · ⛔ later phase. A new endpoint → update this catalog + OpenAPI + the matching feature-doc timeline.
 
 > **Health probes** (`/v1/health`, `/v1/health/ready`) use the **terminus** response shape

@@ -9,6 +9,7 @@ import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
 import { bookmarkPost, bookmarkThread, getQuestion, isForumDisabled, postAnswer } from "@/lib/forum";
+import { questionUrl } from "@/lib/forum-public";
 import { ReportButton } from "../../../_components/report-button";
 import { AttachmentGallery } from "../../../_components/attachment-gallery";
 import { MentionText } from "../../../_components/mention-text";
@@ -113,6 +114,9 @@ export function QuestionShell({ threadId }: { threadId: string }) {
   const { question, answers } = state.detail;
   const isAsker = user?.id === question.authorId;
   const canAccept = isAsker && question.status === "OPEN";
+  // Share the anonymous page only once the question is actually indexable — ForumPublicService
+  // requires at least one answer, so sharing earlier would hand out a 404 link.
+  const sharePublicUrl = answers.length > 0 ? questionUrl(question.id) : undefined;
   const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
     new Date(question.createdAt),
   );
@@ -151,6 +155,7 @@ export function QuestionShell({ threadId }: { threadId: string }) {
               pathname: "/community/question/[threadId]",
               params: { threadId: question.id },
             }}
+            publicUrl={sharePublicUrl}
           />
           <BookmarkButton bookmarked={question.myBookmarked} onToggle={onToggleQuestionBookmark} />
           <ReportButton targetType={ModerationTargetType.THREAD} targetId={question.id} />
@@ -176,6 +181,7 @@ export function QuestionShell({ threadId }: { threadId: string }) {
                 pathname: "/community/question/[threadId]",
                 params: { threadId: question.id },
               }}
+              sharePublicUrl={sharePublicUrl}
               onToggleBookmark={(adding) => onToggleAnswerBookmark(a.id, adding)}
               accept={
                 // Own answers are never acceptable (API rejects self-accept — XP farm guard).

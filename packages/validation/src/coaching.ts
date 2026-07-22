@@ -41,6 +41,33 @@ export const bulkCreatePlanTasksSchema = z.object({
 });
 export type BulkCreatePlanTasksInput = z.infer<typeof bulkCreatePlanTasksSchema>;
 
+const planAdaptationMoveSchema = z.object({
+  kind: z.literal("MOVE"),
+  taskId: z.string().uuid(),
+  title: z.string().trim().min(1).max(200),
+  subject: z.string().trim().min(1).max(80).nullable(),
+  fromDate: isoDateSchema,
+  toDate: isoDateSchema,
+});
+
+const planAdaptationAddSchema = z.object({
+  kind: z.literal("ADD"),
+  title: z.string().trim().min(1).max(200),
+  subject: z.string().trim().min(1).max(80).nullable(),
+  taskDate: isoDateSchema,
+});
+
+export const planAdaptationChangeSchema = z.discriminatedUnion("kind", [
+  planAdaptationMoveSchema,
+  planAdaptationAddSchema,
+]);
+
+export const applyPlanAdaptationSchema = z.object({
+  planRevision: z.string().regex(/^[a-f0-9]{64}$/),
+  changes: planAdaptationChangeSchema.array().min(1).max(5),
+});
+export type ApplyPlanAdaptationInput = z.infer<typeof applyPlanAdaptationSchema>;
+
 export const updatePlanTaskSchema = z
   .object({
     title: z.string().trim().min(1).max(200).optional(),

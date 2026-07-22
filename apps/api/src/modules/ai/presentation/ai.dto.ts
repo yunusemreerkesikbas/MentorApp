@@ -1,5 +1,6 @@
 import {
   aiChatSchema,
+  coachPlanAdaptationSchema,
   categorizePhotoSchema,
   planDraftSchema,
   coachFeedbackSchema,
@@ -33,17 +34,34 @@ export class PlanDraftBodyDto extends createZodDto(planDraftSchema) {
   @ApiPropertyOptional({ maxLength: 500 })
   override note?: string;
 }
+
+/** Body for POST /v1/coach/plan-adaptation. */
+export class PlanAdaptationBodyDto extends createZodDto(
+  coachPlanAdaptationSchema,
+) {
+  @ApiProperty({ enum: ["PLAN", "MOOD", "SESSION"] })
+  override source!: "PLAN" | "MOOD" | "SESSION";
+
+  @ApiPropertyOptional({ maxLength: 500 })
+  override note?: string;
+
+  @ApiPropertyOptional({ format: "uuid" })
+  override sessionId?: string;
+}
 /** Query for GET /v1/coach/messages (plain pagination — study-sessions pattern). */
-export class ListCoachMessagesQueryDto extends createZodDto(paginationQuerySchema) {}
+export class ListCoachMessagesQueryDto extends createZodDto(
+  paginationQuerySchema,
+) {}
 /** Body for PATCH /v1/coach/messages/:id/feedback. */
 export class CoachFeedbackDto extends createZodDto(coachFeedbackSchema) {}
 export class PhotoUploadUrlDto extends createZodDto(photoUploadUrlSchema) {}
 export class CategorizePhotoDto extends createZodDto(categorizePhotoSchema) {}
 export class GhostNarrationBodyDto extends createZodDto(ghostNarrationSchema) {}
 /** Request body for POST /v1/coach/session-reflection. */
-export class SessionReflectionBodyDto extends createZodDto(sessionReflectionSchema) {}
+export class SessionReflectionBodyDto extends createZodDto(
+  sessionReflectionSchema,
+) {}
 
-
-
-export class WeeklyReviewNarrationBodyDto extends createZodDto(weeklyReviewNarrationSchema) {}
-
+export class WeeklyReviewNarrationBodyDto extends createZodDto(
+  weeklyReviewNarrationSchema,
+) {}

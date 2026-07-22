@@ -39,6 +39,7 @@ export const AiUsageFeature = {
   WEEKLY_REVIEW: "weekly_review",
   DAILY_GREETING: "daily_greeting",
   PLAN_DRAFT: "plan_draft",
+  PLAN_ADAPTATION: "plan_adaptation",
 } as const;
 export type AiUsageFeature =
   (typeof AiUsageFeature)[keyof typeof AiUsageFeature];

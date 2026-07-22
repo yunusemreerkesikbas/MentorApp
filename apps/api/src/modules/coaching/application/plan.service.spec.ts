@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { DomainError } from "../../../common/errors/domain-error";
+import { addDays } from "../domain/date.util";
 import { PlanService } from "./plan.service";
 
 const USER = "u1";
@@ -26,8 +27,13 @@ const fakeDb = {
 function makePlanRepoFake(rows: TaskRow[]) {
   return {
     rows,
+    acquireUserLock: async () => undefined,
     listByDate: async (_tx: unknown, userId: string, date: string) =>
       rows.filter((r) => r.userId === userId && r.taskDate === date),
+    listByDateRange: async (_tx: unknown, userId: string, from: string, to: string) =>
+      rows
+        .filter((r) => r.userId === userId && r.taskDate >= from && r.taskDate <= to)
+        .sort((a, b) => a.taskDate.localeCompare(b.taskDate) || a.sortOrder - b.sortOrder),
     listByDatePaged: async (_tx: unknown, userId: string, date: string) => {
       const items = rows.filter((r) => r.userId === userId && r.taskDate === date);
       return { items, total: items.length };
@@ -297,5 +303,201 @@ describe("PlanService.getTodaySummary", () => {
     const summary = await service.getTodaySummary(USER);
     expect(summary?.pendingTitles).toHaveLength(5);
     expect(summary?.pendingTitles).toEqual(["Task 1", "Task 2", "Task 3", "Task 4", "Task 5"]);
+  });
+});
+
+describe("PlanService plan adaptations", () => {
+  let planRepo: ReturnType<typeof makePlanRepoFake>;
+  let service: PlanService;
+
+  beforeEach(() => {
+    planRepo = makePlanRepoFake([
+      {
+        id: "t1",
+        userId: USER,
+        taskDate: TODAY,
+        title: "Paragraf",
+        subject: "Türkçe",
+        status: "PENDING",
+        sortOrder: 0,
+        createdAt: new Date("2026-07-21T09:00:00Z"),
+        updatedAt: new Date("2026-07-21T09:00:00Z"),
+      },
+      {
+        id: "t2",
+        userId: USER,
+        taskDate: addDays(TODAY, 1),
+        title: "Matematik",
+        subject: "Matematik",
+        status: "PENDING",
+        sortOrder: 5,
+        createdAt: new Date("2026-07-21T09:00:00Z"),
+        updatedAt: new Date("2026-07-21T09:00:00Z"),
+      },
+    ]);
+    service = new PlanService(fakeDb, planRepo as never, makeActivityFake() as never, {
+      emit: () => {},
+    } as never);
+  });
+
+  it("returns a seven-day snapshot with a stable revision", async () => {
+    const snapshot = await service.getAdaptationSnapshot(USER);
+    expect(snapshot.window).toEqual({ from: TODAY, to: addDays(TODAY, 6) });
+    expect(snapshot.tasks.map((task) => task.id)).toEqual(["t1", "t2"]);
+    expect(snapshot.planRevision).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("atomically moves pending tasks and adds selected tasks", async () => {
+    const snapshot = await service.getAdaptationSnapshot(USER);
+    const result = await service.applyAdaptation(USER, {
+      planRevision: snapshot.planRevision,
+      changes: [
+        {
+          kind: "MOVE",
+          taskId: "t1",
+          title: "ignored display copy",
+          subject: null,
+          fromDate: TODAY,
+          toDate: addDays(TODAY, 1),
+        },
+        {
+          kind: "ADD",
+          title: "Tarih tekrar",
+          subject: "Tarih",
+          taskDate: addDays(TODAY, 2),
+        },
+      ],
+    });
+
+    expect(result.moved).toMatchObject([
+      { id: "t1", taskDate: addDays(TODAY, 1), sortOrder: 6, title: "Paragraf" },
+    ]);
+    expect(result.added).toMatchObject([
+      { taskDate: addDays(TODAY, 2), sortOrder: 0, title: "Tarih tekrar" },
+    ]);
+  });
+
+  it("validates target capacity from the final selected move set", async () => {
+    const targetDate = addDays(TODAY, 1);
+    const sourceDate = addDays(TODAY, 2);
+    const finalDate = addDays(TODAY, 3);
+    planRepo.rows.push(
+      {
+        id: "t3",
+        userId: USER,
+        taskDate: targetDate,
+        title: "Geometri",
+        subject: "Matematik",
+        status: "PENDING",
+        sortOrder: 6,
+        createdAt: new Date("2026-07-21T09:00:00Z"),
+        updatedAt: new Date("2026-07-21T09:00:00Z"),
+      },
+      {
+        id: "t4",
+        userId: USER,
+        taskDate: targetDate,
+        title: "Problemler",
+        subject: "Matematik",
+        status: "PENDING",
+        sortOrder: 7,
+        createdAt: new Date("2026-07-21T09:00:00Z"),
+        updatedAt: new Date("2026-07-21T09:00:00Z"),
+      },
+      {
+        id: "t5",
+        userId: USER,
+        taskDate: sourceDate,
+        title: "Vatandaşlık",
+        subject: "Vatandaşlık",
+        status: "PENDING",
+        sortOrder: 0,
+        createdAt: new Date("2026-07-21T09:00:00Z"),
+        updatedAt: new Date("2026-07-21T09:00:00Z"),
+      },
+    );
+    const snapshot = await service.getAdaptationSnapshot(USER);
+
+    const result = await service.applyAdaptation(USER, {
+      planRevision: snapshot.planRevision,
+      changes: [
+        {
+          kind: "MOVE",
+          taskId: "t5",
+          title: "Vatandaşlık",
+          subject: "Vatandaşlık",
+          fromDate: sourceDate,
+          toDate: targetDate,
+        },
+        {
+          kind: "MOVE",
+          taskId: "t2",
+          title: "Matematik",
+          subject: "Matematik",
+          fromDate: targetDate,
+          toDate: finalDate,
+        },
+      ],
+    });
+
+    expect(result.moved).toMatchObject([
+      { id: "t5", taskDate: targetDate, sortOrder: 8 },
+      { id: "t2", taskDate: finalDate, sortOrder: 0 },
+    ]);
+  });
+
+  it("rejects a move that duplicates a normalized title on the target day", async () => {
+    const targetDate = addDays(TODAY, 1);
+    planRepo.rows.push({
+      id: "t3",
+      userId: USER,
+      taskDate: TODAY,
+      title: "  matematik  ",
+      subject: "Matematik",
+      status: "PENDING",
+      sortOrder: 1,
+      createdAt: new Date("2026-07-21T09:00:00Z"),
+      updatedAt: new Date("2026-07-21T09:00:00Z"),
+    });
+    const snapshot = await service.getAdaptationSnapshot(USER);
+
+    await expect(
+      service.applyAdaptation(USER, {
+        planRevision: snapshot.planRevision,
+        changes: [
+          {
+            kind: "MOVE",
+            taskId: "t3",
+            title: "matematik",
+            subject: "Matematik",
+            fromDate: TODAY,
+            toDate: targetDate,
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: "COACHING_PLAN_CHANGED" });
+    expect(planRepo.rows.find((row) => row.id === "t3")!.taskDate).toBe(TODAY);
+  });
+
+  it("rejects a stale revision without changing the plan", async () => {
+    const snapshot = await service.getAdaptationSnapshot(USER);
+    planRepo.rows[0]!.title = "Changed elsewhere";
+
+    await expect(
+      service.applyAdaptation(USER, {
+        planRevision: snapshot.planRevision,
+        changes: [
+          {
+            kind: "MOVE",
+            taskId: "t1",
+            title: "Paragraf",
+            subject: "Türkçe",
+            fromDate: TODAY,
+            toDate: addDays(TODAY, 1),
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: "COACHING_PLAN_CHANGED" });
+    expect(planRepo.rows[0]!.taskDate).toBe(TODAY);
   });
 });

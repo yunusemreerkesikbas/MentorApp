@@ -7,7 +7,11 @@ import { ForumQaService } from "./application/forum-qa.service";
 import { ForumModerationService } from "./application/forum-moderation.service";
 import { ForumPublicService } from "./application/forum-public.service";
 import { ForumMentionService } from "./application/forum-mention.service";
+import { ForumErasureService } from "./application/forum-erasure.service";
+import { ForumErasureRepository } from "./infrastructure/forum-erasure.repository";
 import { ForumZoneRepository } from "./infrastructure/forum-zone.repository";
+import { ForumZoneSeedService } from "./infrastructure/forum-zone-seed.service";
+import { ForumMaintenanceService } from "./application/forum-maintenance.service";
 import { ForumThreadRepository } from "./infrastructure/forum-thread.repository";
 import { ForumPostRepository } from "./infrastructure/forum-post.repository";
 import { ForumAttachmentRepository } from "./infrastructure/forum-attachment.repository";
@@ -44,12 +48,16 @@ import { ForumInternalController } from "./presentation/forum-internal.controlle
     ForumPublicService,
     ForumMentionService,
     ForumZoneRepository,
+    ForumZoneSeedService,
+    ForumMaintenanceService,
     ForumThreadRepository,
     ForumPostRepository,
     ForumAttachmentRepository,
     ForumBookmarkRepository,
     ForumReportRepository,
+    ForumErasureRepository,
+    ForumErasureService,
   ],
-  exports: [ForumService, ForumThreadService, ForumQaService],
+  exports: [ForumService, ForumThreadService, ForumQaService, ForumErasureService],
 })
 export class ForumModule {}

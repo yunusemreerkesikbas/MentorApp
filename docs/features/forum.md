@@ -97,6 +97,29 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **KVKK silme: forum redaksiyonu (WP-K, 2026-07-22)** — Hesap silmede kullanıcının thread'leri
+  (title+body) ve postları (body) `"[silinmiş içerik]"` sabitiyle **yerinde redakte** edilir (satır
+  durur — başkalarının sohbeti ve kabul edilmiş cevap işareti bozulmaz); reaksiyon, bookmark, zone
+  üyeliği, rapor (reporter) ve ekler hard delete (storage objeleri best-effort, tx sonrası).
+  `ForumErasureRepository` tek SERVICE-ctx tx; `ForumErasureService` `AccountErasureService`
+  zincirinde. Gotcha: sabit i18n DEĞİL — ham DB değeri; görüntü katmanı zaten "Silinmiş Kullanıcı"
+  gösteriyor. Related: `forum-erasure.repository.ts`, `forum-erasure.service.ts`,
+  `test/account-erasure.e2e-spec.ts`.
+- **Flip blocker'ları + QA public paylaşım (WP-J, 2026-07-20)** — Forum'un `forum.enabled` flip'ini
+  bekleyen iki operasyonel boşluk kapandı, biri de büyüme dilimi:
+  (1) **Zone seed** — `ForumZoneSeedService` boot'ta `zones.seed.json`'daki iki launch odasını
+  (`genel-sohbet` CHAT + `soru-cevap` QA, OPEN) sabit slug + `onConflictDoNothing` ile idempotent
+  ekler, `createdBy: null` (kolon nullable → boot'ta staff user aranmaz). Flag'den bağımsız yazılır;
+  böylece `/topluluk` (ilk CHAT zone'una redirect eden yönlendirici) flip gününde çıkmaz sokak olmaz.
+  `nest-cli.json` assets'e `modules/forum/seed/**/*` eklendi (JSON'un dist'e kopyalanması için).
+  (2) **Orphan sweep kendi koşuyor** — `ForumMaintenanceService` 6 saatlik in-process timer
+  (JobRunner emsali, `unref`, reentrancy guard, flag guard, hata yutma). Repo'da IaC yok; artık
+  "Render Cron'a kaydetmeyi unutma" hata sınıfı ortadan kalktı, HTTP endpoint manuel override kaldı.
+  (3) **QA public paylaşım** — `SendButton` opsiyonel `publicUrl`; `question-shell` cevaplı sorularda
+  `questionUrl(id)` geçer (soru kartı + cevap öğeleri), cevapsızda in-app link kalır
+  (`ForumPublicService` ≥1 cevap şartı; erken paylaşım 404 verirdi). Dosyalar:
+  `forum-zone-seed.service.ts`, `forum-maintenance.service.ts`, `forum-zone.repository.ts`,
+  `send-button.tsx`, `question-shell.tsx`, `answer-item.tsx`.
 - **Gönüllü ayrılma + üyelik yönetimi uzlaşısı (2026-07-20)** — Üyelik durum makinesindeki son
   boşluk kapandı: `POST /v1/forum/zones/:id/leave` (self-scoped, 204) — ACTIVE üye ayrılır, PENDING
   istek sahibi isteğini geri çeker (aynı delete); üyelik yoksa no-op (idempotent, `join` emsali);
@@ -403,20 +426,30 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 - ~~**Görsel/attachment + carousel**~~ — **Yapıldı** (Faz 1 CHAT/ANNOUNCEMENT · Faz 2 QA soru+cevap + lightbox carousel + orphan-cleanup, APP-018). ~~Dosya ekleri~~ **Yapıldı** (PDF + Office, APP-027). Kalan: **video** ekleri.
 - **Nested yorumlar (yoruma yorum) + yorumlara like** — MVP düz yorum; nesting ve comment-level reaksiyon `forum_reactions`'ı `postId`'ye açmayı gerektirir.
 - ~~**Zengin emoji reaksiyon paleti (👍💪🎉😮)**~~ — **Yapıldı** (thread + yorum, `❤️👍💪🎉🙏` pozitif set, APP-025).
-- **Repost** — hâlâ kapsam dışı (ürün kararı; karşılık gelen entity yok). *Harici paylaşım (Send) yapıldı — APP-018.*
+- **Repost** — hâlâ kapsam dışı (ürün kararı; karşılık gelen entity yok). *Harici paylaşım (Send) yapıldı — APP-018; cevaplı QA sorularında artık public SEO linki paylaşılıyor (WP-J).*
 - ~~**Zone başına agregat "X mesaj" sayacı**~~ — **Yapıldı** (`ZoneView.threadCount` + `threadCountsByZone` batched aggregate; sidebar "X üye · Y mesaj", APP-026).
 - **Profil kartı sosyal alanları** — ~~takipçi sayısı~~ **Yapıldı** (takip grafı + takipçi/takip sayaç & listeleri, APP-022). Kalan: **bio + web sitesi** (`AuthUser`/`users`'da yok; şema + endpoint gerekir).
 
 ## Gotchas / Known issues
 
 - **`forum.enabled` default off** — flip per-environment to go live.
-- **Paylaşım linki (Send) uygulama-içi + üye-gerektirir** — `/topluluk/mesaj|yorum|soru/...`; CHAT postları
-  public değil, giriş yapmamış/üye olmayan kullanıcı auth'a düşer. QA'nın public SEO sayfası
-  (`/forum/soru/[id]`) var ama Send tüm postlar için uygulama-içi linki kullanıyor (QA-public link backlog).
-- **Orphan-cleanup cron manuel kayıt ister** — `POST /internal/cron/cleanup-forum-attachments`
-  (`CronSecretGuard`, `x-cron-secret`) kendi kendine çalışmaz; Render Cron'a eklenmeli (grace 24s,
-  günde bir yeterli). Kayıt edilmezse öksüz upload'lar birikir (işlevsel hata değil, storage sızıntısı).
-- **Zone olmadan B2C boş görünür** — `forum.enabled = true` olsa bile `forum_zones` tablosu boşsa `/topluluk` "Henüz bir alan yok" gösterir. Üretime çıkmadan önce admin panelinden (`/forum/new`) en az bir zone oluştur.
+- **Silinen kullanıcının içeriği redakte edilir, silinmez** — thread/post satırları
+  `"[silinmiş içerik]"` gövdesiyle durur (KVKK silme, WP-K). Kullanıcı bir zone OWNER'ıysa üyeliği
+  silinir ve zone **sahipsiz kalabilir** — MVP kabulü; ownership transferi backlog'la çözülür.
+- **Paylaşım linki: QA cevaplandıysa public, aksi halde uygulama-içi** — Send, **cevabı olan** QA
+  sorularında anonim SEO sayfasının mutlak URL'ini (`/forum/question/[id]`) paylaşır; böylece linki
+  alan kişi üye olmadan açabilir. Cevapsız soru ve tüm CHAT/yorum postları uygulama-içi linkte kalır
+  (`ForumPublicService` ≥1 silinmemiş cevap şartı arar — erken paylaşım 404 verirdi).
+- **Orphan-cleanup kendi kendine koşar** — `ForumMaintenanceService` her API instance'ında 6 saatlik
+  in-process timer'la sweep eder (JobRunner emsali; `forum.enabled` kapalıysa atlar, hata yutulur ve
+  timer yaşar). **Render Cron girdisi GEREKMEZ.** `POST /internal/cron/cleanup-forum-attachments`
+  (`CronSecretGuard`) manuel/ops override olarak durur. Çoklu instance'ta tekrarlı sweep zararsızdır
+  (idempotent + batch-bounded 500; grace 24s).
+- **Launch zone'ları boot'ta seed'lenir** — `ForumZoneSeedService` `zones.seed.json`'daki iki odayı
+  (`genel-sohbet` CHAT + `soru-cevap` QA, ikisi de OPEN) sabit slug'la idempotent ekler
+  (`onConflictDoNothing`, `createdBy: null`). `forum.enabled` kapalıyken de yazılır → flip anında
+  `/topluluk` dolu. **Not:** seed `slugify()` KULLANMAZ (o `Date.now()` eki koyar, idempotent değil).
+  Yeni oda eklemek için JSON'a stabil slug ile satır ekle veya admin panelinden (`/forum/new`) oluştur.
 - **Slug is server-derived** from title + `Date.now()` base-36 suffix (curated, low volume).
 - **Accept is one-shot/final** — no un-accept/switch (anti-farm). 409 on re-accept.
 - **`accepted_post_id` has no FK** — avoids circular threads↔posts constraint; app-enforced.

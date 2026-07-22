@@ -21,6 +21,7 @@ import { ForumEventsListener } from "./application/listeners/forum-events.listen
 import { IdentityEventsListener } from "./application/listeners/identity-events.listener";
 import { PaymentsEventsListener } from "./application/listeners/payments-events.listener";
 import { NotificationsService } from "./application/notifications.service";
+import { NotificationsErasureService } from "./application/notifications-erasure.service";
 import { SessionReturnReminderService } from "./application/session-return-reminder.service";
 import { JobRepository } from "./infrastructure/job.repository";
 import { NotificationDeliveryRepository } from "./infrastructure/notification-delivery.repository";
@@ -49,6 +50,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     SendPushHandler,
     SessionReturnReminderHandler,
     NotificationsService,
+    NotificationsErasureService,
     DailyReminderService,
     SessionReturnReminderService,
     PaymentsEventsListener,
@@ -79,6 +81,6 @@ import { NotificationsController } from "./presentation/notifications.controller
     },
     { provide: PUSH_PORT, useClass: WebPushAdapter },
   ],
-  exports: [JOB_QUEUE_PORT, EMAIL_PORT, JobRunnerService],
+  exports: [JOB_QUEUE_PORT, EMAIL_PORT, JobRunnerService, NotificationsErasureService],
 })
 export class NotificationsModule {}

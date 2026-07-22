@@ -67,6 +67,11 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **KVKK silme: sosyal graf (WP-K, 2026-07-22)** — Hesap silmede `user_follows` (iki yön) ve
+  `buddy_pairs` (her status, iki taraf) hard delete edilir — kimin kiminle çalıştığı ilişkisel PII.
+  `SocialErasureService` identity modülünde yaşar (tabloların sahibi orası); `FollowRepository` /
+  `BuddyRepository`'ye `deleteAllForUser` eklendi. Related: `social-erasure.service.ts`,
+  `test/account-erasure.e2e-spec.ts`.
 - **Community namespace and source routes in English (2026-07-19)** — App Router folders and dynamic
   hrefs now use `community`, `feed`, `saved`, `leaderboard`, `member`, `message`,
   `question`, `comment`, and `management`; localized Turkish paths remain under `/topluluk`.

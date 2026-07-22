@@ -1,9 +1,16 @@
 import { Injectable } from "@nestjs/common";
 import { PLAN_DRAFT_JSON_SENTINEL } from "../../domain/ai.constants";
-import type { LlmCompleteInput, LlmPort, LlmResult, LlmStreamEvent } from "../../domain/llm.port";
+import { PLAN_ADAPTATION_JSON_SENTINEL } from "../../domain/plan-adaptation";
+import type {
+  LlmCompleteInput,
+  LlmPort,
+  LlmResult,
+  LlmStreamEvent,
+} from "../../domain/llm.port";
 
 /** Rough token estimate (~4 chars/token) — good enough for the usage meter in dev/test. */
-const estimateTokens = (text: string): number => Math.max(1, Math.ceil(text.length / 4));
+const estimateTokens = (text: string): number =>
+  Math.max(1, Math.ceil(text.length / 4));
 
 /**
  * Deterministic fake LLM (dev/test default — mirrors the fake payments adapter). Returns a fixed
@@ -13,14 +20,54 @@ const estimateTokens = (text: string): number => Math.max(1, Math.ceil(text.leng
 @Injectable()
 export class FakeLlmAdapter implements LlmPort {
   async complete(input: LlmCompleteInput): Promise<LlmResult> {
+    if (input.system.includes(PLAN_ADAPTATION_JSON_SENTINEL)) {
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+      const later = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+      const hasTask = input.user.includes('"ref":"T1"');
+      const text = JSON.stringify({
+        changes: hasTask
+          ? [
+              { kind: "MOVE", taskRef: "T1", toDate: tomorrow },
+              {
+                kind: "ADD",
+                title: "Kısa tekrar",
+                subject: null,
+                taskDate: later,
+              },
+            ]
+          : [
+              {
+                kind: "ADD",
+                title: "Matematik: 20 soru çöz",
+                subject: "Matematik",
+                taskDate: tomorrow,
+              },
+            ],
+      });
+      return {
+        text,
+        promptTokens: estimateTokens(input.system) + estimateTokens(input.user),
+        completionTokens: estimateTokens(text),
+        model: "fake",
+      };
+    }
     // Deterministic JSON draft for the plan-draft prompt (keyed on its JSON-only sentinel) so the
     // parse + clamp + bulk-confirm path is testable without a real provider.
     if (input.system.includes(PLAN_DRAFT_JSON_SENTINEL)) {
       const today = new Date().toISOString().slice(0, 10);
-      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
       const text = JSON.stringify({
         days: [
-          { date: today, tasks: [{ title: "Matematik: 20 soru çöz", subject: "Matematik" }] },
+          {
+            date: today,
+            tasks: [{ title: "Matematik: 20 soru çöz", subject: "Matematik" }],
+          },
           {
             date: tomorrow,
             tasks: [
@@ -65,14 +112,19 @@ export class FakeLlmAdapter implements LlmPort {
     );
     return {
       text,
-      promptTokens: estimateTokens(input.system) + historyTokens + estimateTokens(input.user),
+      promptTokens:
+        estimateTokens(input.system) +
+        historyTokens +
+        estimateTokens(input.user),
       completionTokens: estimateTokens(text),
       model: "fake",
     };
   }
 
   /** Streams the deterministic reply word-by-word (small delay so the FE typing effect is visible in dev). */
-  async *completeStream(input: LlmCompleteInput): AsyncIterable<LlmStreamEvent> {
+  async *completeStream(
+    input: LlmCompleteInput,
+  ): AsyncIterable<LlmStreamEvent> {
     const result = await this.complete(input);
     const words = result.text.split(" ");
     for (let i = 0; i < words.length; i++) {
@@ -89,7 +141,10 @@ export class FakeLlmAdapter implements LlmPort {
    */
   async embed(text: string): Promise<number[]> {
     const v = new Array<number>(1536).fill(0);
-    const tokens = text.toLowerCase().split(/[^a-z0-9çğıöşü]+/i).filter(Boolean);
+    const tokens = text
+      .toLowerCase()
+      .split(/[^a-z0-9çğıöşü]+/i)
+      .filter(Boolean);
     for (const t of tokens) {
       let h = 0;
       for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0;

@@ -22,9 +22,13 @@ import {
   updatePlanTask,
 } from "@/lib/plan-tasks";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import { parsePlanAdaptationQuery } from "@/lib/plan-coach-adaptation-utils";
 import { parseAnalysisPlanPrefill, type AnalysisPlanPrefill } from "@/lib/analysis-plan-prefill";
 import { PlanAddTaskForm, type PlanAddTaskFormHandle } from "./plan-add-task-form";
-import { PlanCoachDraftAction } from "./plan-coach-draft-action";
+import {
+  PlanCoachAdaptationAction,
+  type PlanCoachAdaptationActionHandle,
+} from "./plan-coach-adaptation-action";
 import { PlanDateNav } from "./plan-date-nav";
 import { PlanDatePickerSheet, type PlanDatePickerSheetHandle } from "./plan-date-picker-sheet";
 import { PlanListView } from "./plan-list-view";
@@ -88,6 +92,17 @@ export function PlanShell() {
       }),
     [searchParams],
   );
+  const coachAdaptationRef = useRef<PlanCoachAdaptationActionHandle>(null);
+  const adaptationConsumed = useRef(false);
+  const adaptationRequest = useMemo(
+    () =>
+      parsePlanAdaptationQuery({
+        coach: searchParams.get("coach"),
+        source: searchParams.get("source"),
+        sessionId: searchParams.get("sessionId"),
+      }),
+    [searchParams],
+  );
 
   useEffect(() => {
     // Reads localStorage after mount (never on the server) so the stored view can't cause an SSR
@@ -129,6 +144,9 @@ export function PlanShell() {
       setError(readError(err));
     }
   }, [weekAnchor]);
+  const refreshAdaptedPlan = useCallback(async () => {
+    await Promise.all([loadDayTasks(), loadWeekTasks()]);
+  }, [loadDayTasks, loadWeekTasks]);
 
   useEffect(() => {
     if (viewMode === "week") return;
@@ -258,9 +276,6 @@ export function PlanShell() {
     });
   }, [date]);
 
-  function appendCoachDraft(created: PlanTaskDto[]) {
-    for (const task of created) appendTask(task);
-  }
 
   async function toggle(id: string) {
     if (readOnly) return;
@@ -386,6 +401,17 @@ export function PlanShell() {
     });
   }, [openAddSheet, prefill, readOnly, router]);
 
+  useEffect(() => {
+    if (!adaptationRequest || adaptationConsumed.current) return;
+    adaptationConsumed.current = true;
+    window.history.replaceState(
+      window.history.state,
+      "",
+      window.location.pathname,
+    );
+    coachAdaptationRef.current?.open(adaptationRequest);
+  }, [adaptationRequest]);
+
   const dayProgress = taskStats(dayLoading ? [] : tasks);
   const weekDayProgress = taskStats(
     weekLoading ? [] : (weekTasks[date] ?? []),
@@ -464,7 +490,11 @@ export function PlanShell() {
             {t("subtitle")}
           </p>
           <div className="mt-4">
-            <PlanCoachDraftAction onCreated={appendCoachDraft} />
+            <PlanCoachAdaptationAction
+              ref={coachAdaptationRef}
+              onApplied={refreshAdaptedPlan}
+              onPlanChanged={refreshAdaptedPlan}
+            />
           </div>
         </motion.header>
 
