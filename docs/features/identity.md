@@ -85,6 +85,19 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **KVKK silme tamamlama + RLS izolasyon kanıtı (WP-K, 2026-07-22)** — `DELETE /v1/account` artık
+  forum + sosyal graf + bildirim verisini de kapsıyor (önceden yalnız identity/ai/coaching):
+  forum içeriği **redakte** edilir (`"[silinmiş içerik]"` — başkalarının sohbeti bozulmasın),
+  reaksiyon/bookmark/üyelik/rapor/ek + `user_follows`/`buddy_pairs` (iki yön) +
+  push/tercih/teslimat/inbox **hard delete**; ledger + ödeme kayıtları yasal saklamayla durur.
+  Sıra: ai → coaching → forum → social → notifications (`AccountErasureService`); her modül kendi
+  tablosunu siler. Usage: kanıt `test/account-erasure.e2e-spec.ts` (test-first, 10 test, tablo tablo
+  assert + idempotent ikinci DELETE). Ayrıca `test/rls-isolation.e2e-spec.ts` RLS'i İLK KEZ gerçek
+  policy'yle test eder: kendi kendini kuran `rls_probe` (NOSUPERUSER/NOBYPASSRLS) rolüyle 4 temsili
+  tabloda cross-user 0 satır + context'siz 0 satır + INSERT reddi. Gotcha: `coach_messages` policy'si
+  (0044) `app.user_id`'yi `::uuid` cast'ler — boş string context'te sorgu filtrelemek yerine HATA
+  verir (yine de sızıntı yok); diğer policy'ler text karşılaştırır. Related: `forum-erasure.*`,
+  `social-erasure.service.ts`, `notifications-erasure.service.ts`, `account-erasure.service.ts`.
 - **Hesap silme UI sadeleştirmesi (2026-07-18)** — `/profil`deki ayrı “Tehlikeli bölge” kartı kaldırıldı; **Hesap** kartına kırmızı “Hesabımı sil” satırı eklendi. Usage: satıra dokununca mevcut paylaşılan onay dialogu geri alınamazlık, silinen veriler, abonelik iptali ve yasal olarak korunan fatura kayıtları açıklamasıyla açılır; kullanıcı onay verirse mevcut `DELETE /v1/account` çağrılır. Gotcha: silme hâlâ sunucu tarafındaki KVKK anonimleştirme akışını kullanır; yeni endpoint veya modal altyapısı yoktur. Related: `account-links-card.tsx`, `mentor-dialog.ts`, `profile.spec.ts`.
 - **Profil bio + web sitesi (APP-024)** — Kullanıcı artık kendisi hakkında kısa bir **bio** + bir **web
   sitesi** linki girip düzenleyebiliyor ("profil kartı sosyal alanları" backlog'unun son parçası). `users`

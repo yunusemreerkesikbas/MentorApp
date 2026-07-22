@@ -65,8 +65,17 @@
 - **Economy reconcile** — invite reward on transient grant failure isn't retried (cap denial is by
   design); outbox/retry = Phase 2. Refund coin reversal shipped (APP-025, refund-only +
   clamp-to-zero); churn-based reversal deliberately not implemented.
-- **Local RLS masking** — local `mentor` DB user is superuser → RLS bypassed locally; always verify
-  RLS-sensitive reads (admin drafts, etc.) run in the right context (caught for content editor).
+- **Local RLS masking** — RESOLVED as a test gap (WP-K): `test/rls-isolation.e2e-spec.ts` provisions
+  a self-contained `rls_probe` role (NOSUPERUSER/NOBYPASSRLS) and proves cross-user isolation +
+  context-less deny on 4 representative tables — the first test to ever exercise a policy (all other
+  e2e run as the superuser `mentor`, which bypasses RLS). Local dev still connects as superuser, so
+  keep verifying RLS-sensitive reads run in the right context. Known nuance: `coach_messages` (0044)
+  casts `app.user_id` to uuid — an empty-string context ERRORS instead of filtering (still a denial);
+  other policies compare as text.
+- **KVKK erasure is now full-scope (WP-K)** — `DELETE /v1/account` covers identity + ai + coaching +
+  **forum (redaction-in-place) + social graph + notifications**; ledger/payment rows retained
+  (legal). Proven table-by-table in `test/account-erasure.e2e-spec.ts`, incl. idempotent second
+  DELETE. Self-service data **export** is still missing (backlog).
 - **Forum / community (W7)** — entire surface gated by `forum.enabled` (default **off**); flip per
   environment to go live. Public SEO QA reads run in **service context** (forum tables are RLS-forced)
   hard-filtered to indexable QA (`PublicQuestionView` omits PII). Membership management is complete:

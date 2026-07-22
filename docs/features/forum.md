@@ -97,6 +97,14 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **KVKK silme: forum redaksiyonu (WP-K, 2026-07-22)** — Hesap silmede kullanıcının thread'leri
+  (title+body) ve postları (body) `"[silinmiş içerik]"` sabitiyle **yerinde redakte** edilir (satır
+  durur — başkalarının sohbeti ve kabul edilmiş cevap işareti bozulmaz); reaksiyon, bookmark, zone
+  üyeliği, rapor (reporter) ve ekler hard delete (storage objeleri best-effort, tx sonrası).
+  `ForumErasureRepository` tek SERVICE-ctx tx; `ForumErasureService` `AccountErasureService`
+  zincirinde. Gotcha: sabit i18n DEĞİL — ham DB değeri; görüntü katmanı zaten "Silinmiş Kullanıcı"
+  gösteriyor. Related: `forum-erasure.repository.ts`, `forum-erasure.service.ts`,
+  `test/account-erasure.e2e-spec.ts`.
 - **Flip blocker'ları + QA public paylaşım (WP-J, 2026-07-20)** — Forum'un `forum.enabled` flip'ini
   bekleyen iki operasyonel boşluk kapandı, biri de büyüme dilimi:
   (1) **Zone seed** — `ForumZoneSeedService` boot'ta `zones.seed.json`'daki iki launch odasını
@@ -425,6 +433,9 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 ## Gotchas / Known issues
 
 - **`forum.enabled` default off** — flip per-environment to go live.
+- **Silinen kullanıcının içeriği redakte edilir, silinmez** — thread/post satırları
+  `"[silinmiş içerik]"` gövdesiyle durur (KVKK silme, WP-K). Kullanıcı bir zone OWNER'ıysa üyeliği
+  silinir ve zone **sahipsiz kalabilir** — MVP kabulü; ownership transferi backlog'la çözülür.
 - **Paylaşım linki: QA cevaplandıysa public, aksi halde uygulama-içi** — Send, **cevabı olan** QA
   sorularında anonim SEO sayfasının mutlak URL'ini (`/forum/question/[id]`) paylaşır; böylece linki
   alan kişi üye olmadan açabilir. Cevapsız soru ve tüm CHAT/yorum postları uygulama-içi linkte kalır
