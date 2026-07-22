@@ -3,8 +3,11 @@ import { NotFoundError } from "../../../common/errors/domain-error";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import { AiErasureService } from "../../ai/application/ai-erasure.service";
 import { CoachingErasureService } from "../../coaching/application/coaching-erasure.service";
+import { ForumErasureService } from "../../forum/application/forum-erasure.service";
+import { SocialErasureService } from "../../identity/application/social-erasure.service";
 import { TokenService } from "../../identity/application/token.service";
 import { UsersService } from "../../identity/application/users.service";
+import { NotificationsErasureService } from "../../notifications/application/notifications-erasure.service";
 import { SubscriptionsService } from "../../payments/application/subscriptions.service";
 
 export interface AccountErasureResult {
@@ -38,6 +41,9 @@ export class AccountErasureService {
     private readonly subscriptions: SubscriptionsService,
     private readonly aiErasure: AiErasureService,
     private readonly coachingErasure: CoachingErasureService,
+    private readonly forumErasure: ForumErasureService,
+    private readonly socialErasure: SocialErasureService,
+    private readonly notificationsErasure: NotificationsErasureService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
 
@@ -51,6 +57,9 @@ export class AccountErasureService {
     // 2. Behavioral data, module by module (each owns its own tables).
     await this.aiErasure.eraseUserData(userId);
     await this.coachingErasure.eraseUserData(userId);
+    await this.forumErasure.eraseUserData(userId);
+    await this.socialErasure.eraseUserData(userId);
+    await this.notificationsErasure.eraseUserData(userId);
 
     // 3. Identity row (identity owns `users`) + kill every session.
     const change = await this.users.anonymizeAccount(userId, status);

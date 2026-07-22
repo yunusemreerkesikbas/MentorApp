@@ -175,6 +175,15 @@ export class BuddyRepository {
     );
   }
 
+  /** KVKK erasure: drop every pair the user is on either side of, any status. Idempotent. */
+  async deleteAllForUser(userId: string): Promise<void> {
+    await withServiceContext(this.db, (tx) =>
+      tx
+        .delete(buddyPairs)
+        .where(or(eq(buddyPairs.requesterId, userId), eq(buddyPairs.addresseeId, userId))),
+    );
+  }
+
   /** End the user's ACTIVE pairing (no-op when none). */
   async deleteActive(userId: string): Promise<void> {
     await withServiceContext(this.db, (tx) =>

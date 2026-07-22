@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, lt, sql } from "drizzle-orm";
+import { and, desc, eq, lt, or, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -30,6 +30,15 @@ export class FollowRepository {
   async follow(followerId: string, followeeId: string): Promise<void> {
     await withServiceContext(this.db, (tx) =>
       tx.insert(userFollows).values({ followerId, followeeId }).onConflictDoNothing(),
+    );
+  }
+
+  /** KVKK erasure: drop every follow edge touching the user (both directions). Idempotent. */
+  async deleteAllForUser(userId: string): Promise<void> {
+    await withServiceContext(this.db, (tx) =>
+      tx
+        .delete(userFollows)
+        .where(or(eq(userFollows.followerId, userId), eq(userFollows.followeeId, userId))),
     );
   }
 

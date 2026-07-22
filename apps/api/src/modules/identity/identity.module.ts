@@ -9,6 +9,7 @@ import { TurnstileService } from "./application/turnstile.service";
 import { UsersService } from "./application/users.service";
 import { FollowService } from "./application/follow.service";
 import { BuddyService } from "./application/buddy.service";
+import { SocialErasureService } from "./application/social-erasure.service";
 import { EmailTokenRepository } from "./infrastructure/email-token.repository";
 import { AuthAccountRepository } from "./infrastructure/auth-account.repository";
 import { RefreshTokenRepository } from "./infrastructure/refresh-token.repository";
@@ -43,6 +44,7 @@ import { FollowController } from "./presentation/follow.controller";
     UsersService,
     FollowService,
     BuddyService,
+    SocialErasureService,
     UsersRepository,
     FollowRepository,
     BuddyRepository,
@@ -50,6 +52,6 @@ import { FollowController } from "./presentation/follow.controller";
     RefreshTokenRepository,
     EmailTokenRepository,
   ],
-  exports: [UsersRepository, UsersService, FollowService, BuddyService, TokenService],
+  exports: [UsersRepository, UsersService, FollowService, BuddyService, TokenService, SocialErasureService],
 })
 export class IdentityModule {}
