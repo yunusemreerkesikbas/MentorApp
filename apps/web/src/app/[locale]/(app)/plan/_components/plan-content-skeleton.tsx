@@ -4,7 +4,7 @@ import { Card, Skeleton, SkeletonGroup, skeletonStaggerStyle } from "@mentor/ui"
 import { useTranslations } from "next-intl";
 
 const LIST_ROW_COUNT = 4;
-const TIMELINE_CARD_COUNT = 3;
+const TIMELINE_DAY_COUNT = 4;
 
 function PlanTaskRowSkeleton({ index }: { index: number }) {
   return (
@@ -38,40 +38,41 @@ export function PlanListSkeleton() {
   );
 }
 
-/** Timeline görünümü iskeleti — sol eksen + kart satırları. */
+/** Timeline — 3–4 day blocks on a vertical rail. */
 export function PlanTimelineSkeleton() {
   const t = useTranslations("plan");
 
   return (
     <Card className="relative overflow-hidden">
-      <SkeletonGroup label={t("loading")} className="relative flex min-h-[280px]">
-        <div className="relative flex w-12 shrink-0 flex-col items-center">
-          <div
-            className="absolute bottom-0 top-0 w-0.5 -translate-x-1/2"
-            style={{
-              left: "50%",
-              backgroundColor: "var(--color-progress-track)",
-            }}
-            aria-hidden
-          />
-          <Skeleton className="relative z-10 mt-1 h-11 w-11 rounded-full" />
-        </div>
-
-        <div className="min-w-0 flex-1 pl-3">
-          <Skeleton
-            className="mb-3 h-4 w-32 rounded-[var(--radius-card)]"
-            style={skeletonStaggerStyle(0)}
-          />
-          <div className="flex flex-col gap-2">
-            {Array.from({ length: TIMELINE_CARD_COUNT }, (_, index) => (
-              <Skeleton
-                key={index}
-                className="h-[72px] w-full rounded-[var(--radius-card)]"
-                style={skeletonStaggerStyle(index + 1)}
-              />
-            ))}
+      <SkeletonGroup
+        label={t("loading")}
+        className="mentor-plan-timeline-scroll relative flex flex-col gap-6"
+      >
+        <div
+          className="absolute bottom-2 left-[11px] top-2 w-0.5"
+          style={{ backgroundColor: "var(--color-progress-track)" }}
+          aria-hidden
+        />
+        {Array.from({ length: TIMELINE_DAY_COUNT }, (_, dayIndex) => (
+          <div key={dayIndex} className="relative pl-14">
+            <Skeleton
+              className="absolute top-1 h-6 w-6 -translate-x-1/2 rounded-full"
+              style={{ left: 24, ...skeletonStaggerStyle(dayIndex) }}
+            />
+            <Skeleton
+              className="mb-2 h-4 w-36 rounded-[var(--radius-card)]"
+              style={skeletonStaggerStyle(dayIndex)}
+            />
+            <div className="flex flex-col">
+              {Array.from({ length: dayIndex === 0 ? 2 : 1 }, (_, rowIndex) => (
+                <PlanTaskRowSkeleton
+                  key={rowIndex}
+                  index={dayIndex * 2 + rowIndex + 1}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        ))}
       </SkeletonGroup>
     </Card>
   );

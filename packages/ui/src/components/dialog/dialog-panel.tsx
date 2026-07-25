@@ -79,16 +79,17 @@ export function DialogPanel({ dialog, onAction }: DialogPanelProps) {
         </Chip>
       ) : null}
 
-      <div className="flex w-full gap-3">
+      <div className="flex w-full items-stretch gap-3">
         {dialog.actions.map((action) => {
           const isBusy = action.busy || dialog.busyActionId === action.id;
+          const shareRow = dialog.actions.length > 1;
           if (action.variant === "link") {
             if (action.href) {
               return (
                 <a
                   key={action.id}
                   href={action.href}
-                  className="text-sm underline-offset-4 hover:underline"
+                  className={`inline-flex items-center justify-center text-sm underline-offset-4 hover:underline ${shareRow ? "min-w-0 flex-1" : ""}`}
                   style={{
                     color: "var(--color-main)",
                     fontFamily: "var(--font-body)",
@@ -107,7 +108,7 @@ export function DialogPanel({ dialog, onAction }: DialogPanelProps) {
                 key={action.id}
                 type="button"
                 disabled={isBusy}
-                className="cursor-pointer text-sm underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                className={`cursor-pointer text-sm underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-60 ${shareRow ? "min-w-0 flex-1" : ""}`}
                 style={{
                   color: "var(--color-main)",
                   fontFamily: "var(--font-body)",
@@ -122,7 +123,8 @@ export function DialogPanel({ dialog, onAction }: DialogPanelProps) {
           return (
             <Button
               key={action.id}
-              fullWidth
+              fullWidth={!shareRow}
+              className={shareRow ? "min-w-0 flex-1 px-3 text-sm sm:px-6 sm:text-base" : undefined}
               variant={action.variant === "secondary" ? "secondary" : "primary"}
               busy={isBusy}
               onClick={() => onAction(action.id)}

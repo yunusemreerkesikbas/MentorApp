@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "next-intl";
+import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import type {
-  EconomyBalance,
   PlanTaskDto,
   PlanTaskStatus,
   QuestProgressView,
@@ -18,13 +19,9 @@ import {
   ArrowRight,
   BookOpen,
   Check,
-  Coins,
-  Flame,
-  Gem,
   HeartPulse,
   ListChecks,
   Play,
-  Snowflake,
 } from "lucide-react";
 
 import { EconomyQuestsCard } from "@/components/economy-quests-card";
@@ -32,10 +29,9 @@ import { CoachNextActionCard } from "@/components/coach-next-action-card";
 import { PuhuImage } from "@/components/puhu-image";
 import { Link } from "@/i18n/navigation";
 import {
-  fetchEconomyBalance,
   fetchQuests,
   fetchStreakRescue,
-  isEconomyDisabled,
+  notifyEconomyChanged,
   purchaseStreakRescue,
 } from "@/lib/economy";
 import {
@@ -44,14 +40,22 @@ import {
 } from "@/lib/economy-quest-utils";
 import { FormError } from "@/components/form";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
+import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { useDailyGreeting } from "@/lib/use-daily-greeting";
+import { useStreakCelebration } from "@/components/streak-celebration";
 
 import { CommunityCard } from "./community-card";
 import { CountdownPlaceholder } from "./countdown-placeholder";
 import { useMoodCheckin } from "./mood-checkin";
+import { SoftPromoShell } from "./soft-promo-shell";
 import { VisionBoardCard } from "./vision-board-card";
+import {
+  formatWeekdayShort,
+  shiftDate,
+  todayIso,
+} from "@/app/[locale]/(app)/plan/_components/plan-utils";
 
 type PanelShellProps = {
   initialData?: TodayPanelResponse;
@@ -64,27 +68,35 @@ export function PanelShell({ initialData }: PanelShellProps) {
   const economyT = useTranslations("economy");
   const countdownT = useTranslations("countdown");
   const toast = useMentorToast();
+  const { promo } = useMentorDialog();
+  const sheet = useMentorBottomSheet();
+  const { tryCelebrate, previewCelebrate, celebration } = useStreakCelebration();
+  const searchParams = useSearchParams();
+  const mockCelebrationPreviewed = useRef(false);
   const shouldReduceMotion = useReducedMotion();
   const [data, setData] = useState<TodayPanelResponse | null>(initialData ?? null);
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
-  const [economyBalance, setEconomyBalance] = useState<EconomyBalance | null>(null);
   const [streakRescue, setStreakRescue] = useState<StreakRescueView | null>(null);
   const [quests, setQuests] = useState<QuestProgressView[] | null>(null);
   const questsRef = useRef<QuestProgressView[] | null>(null);
+  const rescuePromptedForDateRef = useRef<string | null>(null);
   const WELCOME_TOAST_KEY = "mentor_panel_welcome_date";
+  const STREAK_RESCUE_PROMPT_KEY = "mentor_streak_rescue_prompt";
 
-  const refreshEconomyBalance = useCallback(async () => {
-    try {
-      setEconomyBalance(await fetchEconomyBalance());
-    } catch (err) {
-      if (!isEconomyDisabled(err)) {
-        setEconomyBalance(null);
-      }
-    }
-  }, []);
+  const openQuestsSheet = useCallback(
+    (list: QuestProgressView[]) => {
+      sheet.show({
+        title: economyT("quests_title"),
+        layout: "filter",
+        bodyScroll: false,
+        children: <EconomyQuestsCard quests={list} onDismiss={sheet.dismissNow} />,
+      });
+    },
+    [economyT, sheet],
+  );
 
-  // Best-effort: economy off / error → no rescue offer, card renders as before.
+  // Best-effort: economy off / error → no rescue modal.
   const refreshStreakRescue = useCallback(async () => {
     try {
       setStreakRescue(await fetchStreakRescue());
@@ -121,10 +133,10 @@ export function PanelShell({ initialData }: PanelShellProps) {
       setQuests(null);
     } finally {
       if (options?.refreshBalance) {
-        await refreshEconomyBalance();
+        notifyEconomyChanged();
       }
     }
-  }, [economyT, refreshEconomyBalance, t, toast]);
+  }, [economyT, t, toast]);
 
   const refreshToday = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) {
@@ -136,6 +148,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
       const next = unwrapTodayResponse(response);
       setData(next);
       if (!opts?.silent) setError(null);
+      return next;
     } catch (err) {
       if (!opts?.silent) {
         const message =
@@ -146,15 +159,23 @@ export function PanelShell({ initialData }: PanelShellProps) {
               : t("today_refresh_error");
         setError(message);
       }
+      return null;
     } finally {
       if (!opts?.silent) setLoading(false);
     }
   }, [t]);
 
-  const refreshRitualAndRewards = useCallback(async () => {
-    await refreshToday();
-    await refreshQuests({ announceRewards: true, refreshBalance: true });
-  }, [refreshQuests, refreshToday]);
+  const refreshRitualAndRewards = useCallback(
+    async (opts?: { celebrateStreakFrom?: number }) => {
+      const next = await refreshToday();
+      await refreshQuests({ announceRewards: true, refreshBalance: true });
+      await refreshStreakRescue();
+      if (opts?.celebrateStreakFrom != null && next) {
+        tryCelebrate(opts.celebrateStreakFrom, next.streak.currentStreak);
+      }
+    },
+    [refreshQuests, refreshStreakRescue, refreshToday, tryCelebrate],
+  );
 
   const handleStreakRescue = useCallback(async () => {
     try {
@@ -166,7 +187,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
         duration: 4000,
       });
       await refreshToday({ silent: true });
-      await refreshEconomyBalance();
+      notifyEconomyChanged();
     } catch (err) {
       toast.error({
         title: t("streak_rescue_error_title"),
@@ -174,7 +195,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
       });
       await refreshStreakRescue();
     }
-  }, [refreshEconomyBalance, refreshStreakRescue, refreshToday, t, toast]);
+  }, [refreshStreakRescue, refreshToday, t, toast]);
 
   const moodCheckin = useMoodCheckin({
     initial: data?.mood ?? null,
@@ -183,26 +204,33 @@ export function PanelShell({ initialData }: PanelShellProps) {
     },
   });
 
+  // Dev/QA: `?mockStreakCelebration=7` (or `1`) opens the celebration without the once-per-day gate.
+  useEffect(() => {
+    if (mockCelebrationPreviewed.current) return;
+    const raw = searchParams.get("mockStreakCelebration");
+    if (raw == null || raw === "" || raw === "0" || raw === "false") return;
+    mockCelebrationPreviewed.current = true;
+    const parsed = Number.parseInt(raw, 10);
+    const days =
+      Number.isFinite(parsed) && parsed > 0
+        ? parsed
+        : Math.max(data?.streak.currentStreak ?? 0, 1);
+    previewCelebrate(days);
+  }, [data?.streak.currentStreak, previewCelebrate, searchParams]);
+
   useEffect(() => {
     let active = true;
 
     fetchQuests()
       .then((nextQuests) => {
-        if (!active) return null;
+        if (!active) return;
         questsRef.current = nextQuests;
         setQuests(nextQuests);
-        return fetchEconomyBalance().catch(() => null);
       })
       .catch(() => {
         if (active) {
           questsRef.current = null;
           setQuests(null);
-        }
-        return fetchEconomyBalance().catch(() => null);
-      })
-      .then((balance) => {
-        if (active && balance) {
-          setEconomyBalance(balance);
         }
       });
     fetchStreakRescue()
@@ -217,6 +245,56 @@ export function PanelShell({ initialData }: PanelShellProps) {
       active = false;
     };
   }, []);
+
+  // When free monthly freezes are exhausted and a single gap is buyable, prompt once per
+  // break-day (sessionStorage) — no persistent freeze chrome on the rhythm card.
+  useEffect(() => {
+    if (!streakRescue?.eligible || !streakRescue.date) return;
+
+    const breakDate = streakRescue.date;
+    const storageKey = `${STREAK_RESCUE_PROMPT_KEY}:${breakDate}`;
+    if (rescuePromptedForDateRef.current === breakDate) return;
+    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(storageKey)) {
+      rescuePromptedForDateRef.current = breakDate;
+      return;
+    }
+
+    rescuePromptedForDateRef.current = breakDate;
+    sessionStorage.setItem(storageKey, "1");
+
+    let cancelled = false;
+    const offer = streakRescue;
+    const questList = questsRef.current;
+
+    void (async () => {
+      if (!offer.canAfford) {
+        const result = await promo({
+          title: t("streak_rescue_insufficient_title"),
+          message: t("streak_rescue_insufficient", { cost: offer.cost }),
+          primaryLabel: t("streak_rescue_insufficient_cta"),
+          linkLabel: t("streak_rescue_insufficient_ok"),
+          puhuVariant: "encouraging",
+        });
+        if (cancelled || result !== "primary" || !questList?.length) return;
+        openQuestsSheet(questList);
+        return;
+      }
+
+      const result = await promo({
+        title: t("streak_rescue_modal_title"),
+        message: `${t("streak_rescue_hint")} ${t("streak_rescue_confirm", { cost: offer.cost })}`,
+        primaryLabel: t("streak_rescue_cta"),
+        linkLabel: t("streak_rescue_later"),
+        puhuVariant: "encouraging",
+      });
+      if (cancelled || result !== "primary") return;
+      await handleStreakRescue();
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [handleStreakRescue, openQuestsSheet, promo, streakRescue, t]);
 
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -261,6 +339,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
       if (document.visibilityState !== "visible") return;
       void refreshToday({ silent: true });
       void refreshQuests();
+      void refreshStreakRescue();
     }
     function onPageShow(e: PageTransitionEvent) {
       if (e.persisted) refreshIfVisible();
@@ -271,12 +350,11 @@ export function PanelShell({ initialData }: PanelShellProps) {
       document.removeEventListener("visibilitychange", refreshIfVisible);
       window.removeEventListener("pageshow", onPageShow);
     };
-  }, [refreshToday, refreshQuests]);
+  }, [refreshToday, refreshQuests, refreshStreakRescue]);
 
   if (!data) {
     return (
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-4 sm:px-8 lg:px-10 lg:py-8">
-        <PanelTopBar balance={economyBalance} />
         <p className="text-sm text-[var(--color-secondary)]">{t("loading")}</p>
         {error ? <FormError message={error} /> : null}
       </main>
@@ -287,8 +365,6 @@ export function PanelShell({ initialData }: PanelShellProps) {
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-4 sm:px-8 lg:px-10 lg:py-8">
-      <PanelTopBar balance={economyBalance} name={data.greetingName} />
-
       <motion.div
         className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.85fr)]"
         variants={staggerListVariants}
@@ -326,27 +402,14 @@ export function PanelShell({ initialData }: PanelShellProps) {
           ) : null}
 
 
-          {quests ? (
-            <motion.div variants={staggerItemVariants}>
-              <PanelQuestBanner quests={quests} />
-            </motion.div>
-          ) : null}
-
-          <motion.div variants={staggerItemVariants}>
-            <WeeklyStreakCard
-              streakDays={data.streak.currentStreak}
-              freezeCount={data.streak.freezeTokens}
-              rescue={streakRescue}
-              onRescue={handleStreakRescue}
-            />
-          </motion.div>
-
           <motion.div variants={staggerItemVariants}>
             <TodayFocusCard
               key={data.tasks.map((task) => `${task.id}:${task.status}`).join("|")}
               initialTasks={data.tasks}
               sessionPresets={data.sessionPresets}
               doneCount={doneCount}
+              quests={quests}
+              streakDays={data.streak.currentStreak}
               onTasksChanged={refreshRitualAndRewards}
             />
           </motion.div>
@@ -386,108 +449,8 @@ export function PanelShell({ initialData }: PanelShellProps) {
 
       {loading ? <p className="sr-only">{t("loading")}</p> : null}
       {error ? <FormError message={error} /> : null}
+      {celebration}
     </main>
-  );
-}
-
-function PanelQuestBanner({ quests }: { quests: QuestProgressView[] }) {
-  const panelT = useTranslations("panel");
-  const economyT = useTranslations("economy");
-  const sheet = useMentorBottomSheet();
-  const dailyQuests = quests.filter((quest) => quest.category === "daily_ritual");
-  if (dailyQuests.length === 0) return null;
-
-  const completed = dailyQuests.filter((quest) => quest.completed).length;
-  const percent = Math.round((completed / dailyQuests.length) * 100);
-  const nextQuest =
-    dailyQuests.find((quest) => !quest.completed && quest.action) ??
-    quests.find((quest) => quest.category === "onboarding" && !quest.completed && quest.action) ??
-    null;
-
-  function showQuests() {
-    sheet.show({
-      title: economyT("quests_title"),
-      layout: "filter",
-      bodyScroll: false,
-      children: <EconomyQuestsCard quests={quests} onDismiss={sheet.dismissNow} />,
-    });
-  }
-
-  return (
-    <article className="min-w-0 rounded-[var(--radius-card)] bg-white p-4 shadow-[var(--shadow-card)] sm:p-5">
-      <button
-        type="button"
-        aria-label={panelT("quests_banner_open")}
-        className="flex min-h-12 min-w-0 w-full items-center gap-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
-        onClick={showQuests}
-      >
-        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-black/[0.04] text-[var(--color-main)]">
-          <ListChecks className="size-5" aria-hidden />
-        </span>
-        <span className="min-w-0 flex-1 overflow-hidden">
-          <span className="block truncate text-xs font-bold uppercase text-[var(--color-secondary)]">
-            {economyT("quests_daily_section")}
-          </span>
-          <span className="mt-1 block truncate text-base font-extrabold text-[var(--color-main)]">
-            {nextQuest?.title ?? panelT("quests_banner_done")}
-          </span>
-        </span>
-        <span className="shrink-0 rounded-full bg-black/[0.04] px-3 py-1 text-xs font-extrabold tabular-nums text-[var(--color-secondary)]">
-          {completed}/{dailyQuests.length}
-        </span>
-        <ArrowRight className="size-4 shrink-0 text-[var(--color-main)]" aria-hidden />
-      </button>
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--color-progress-track)]">
-        <div
-          className="h-full rounded-full bg-[var(--color-progress)] transition-[width]"
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-    </article>
-  );
-}
-
-function PanelTopBar({ balance, name }: { balance: EconomyBalance | null; name?: string }) {
-  const t = useTranslations("panel");
-  const title = name ? t(greetingKeyForHour(), { name }) : t("greeting_fallback");
-
-  return (
-    <div className="flex min-h-14 items-center justify-between gap-3 rounded-[var(--radius-card)] bg-white px-3 shadow-[var(--shadow-card)] sm:px-4">
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_55%,white)]">
-          <PuhuImage variant="happy" size={28} />
-        </span>
-        <p className="truncate text-lg font-bold text-[var(--color-main)]">{title}</p>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <EconomyPill balance={balance} />
-      </div>
-    </div>
-  );
-}
-
-function EconomyPill({ balance }: { balance: EconomyBalance | null }) {
-  const t = useTranslations("panel");
-  // Economy off (404) or not yet loaded → no pill; a "0 0" pill would leak a dormant surface.
-  if (!balance) return null;
-  const confirmed = balance.coinConfirmed;
-  const xp = balance.xp;
-
-  return (
-    <div
-      className="flex items-center gap-2 rounded-full border border-black/10 bg-white px-2.5 py-1.5 text-xs font-bold text-[var(--color-main)] shadow-[0_3px_10px_rgba(37,73,150,0.08)]"
-      aria-label={t("earned_rights_label")}
-    >
-      <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_40%,white)] px-2 py-1">
-        <Gem className="size-3.5 text-[var(--color-progress)]" aria-hidden />
-        {formatCompact(confirmed)}
-      </span>
-      <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,#FCD34D_30%,white)] px-2 py-1">
-        <Coins className="size-3.5 text-[#B7791F]" aria-hidden />
-        {formatCompact(xp)}
-      </span>
-    </div>
   );
 }
 
@@ -519,9 +482,7 @@ function DailyRhythmCard({
       <div className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_120px] sm:p-6">
         <div className="space-y-2">
           <h2 className="text-xl font-bold text-[var(--color-main)]">{t("rhythm_title")}</h2>
-          <p className="max-w-md text-base leading-7 text-[var(--color-body)]">
-            {dailyGreeting ?? t("rhythm_copy")}
-          </p>
+          <ExpandableRhythmCopy text={dailyGreeting ?? t("rhythm_copy")} />
           {hasEffort ? (
             <p className="text-sm font-semibold text-[var(--color-secondary)]">
               {t("rhythm_summary", {
@@ -536,6 +497,10 @@ function DailyRhythmCard({
         <div className="mx-auto grid size-24 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)]">
           <PuhuImage variant="winking" size={54} />
         </div>
+      </div>
+
+      <div className="border-t border-black/5 px-5 py-4 sm:px-6">
+        <StreakWeekIcons streakDays={streakDays} />
       </div>
 
       <div className="grid grid-cols-2 border-t border-black/5 sm:grid-cols-4">
@@ -555,10 +520,168 @@ function DailyRhythmCard({
         <MetricTile
           label={t("metric_streak")}
           value={t("metric_streak_value", { count: streakDays })}
-          icon={<Flame className="size-4 text-[var(--color-progress)]" />}
+          icon={<StreakFlameIcon size={18} />}
+          wellTone="streak"
         />
       </div>
     </article>
+  );
+}
+
+/** Collapses long premium AI greetings behind “Daha fazla göster” / “Daha az göster”. */
+function ExpandableRhythmCopy({ text }: { text: string }) {
+  const t = useTranslations("panel");
+  const reduceMotion = useReducedMotion();
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [needsToggle, setNeedsToggle] = useState(false);
+  const [collapsedHeight, setCollapsedHeight] = useState<number | null>(null);
+  const [fullHeight, setFullHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    setExpanded(false);
+  }, [text]);
+
+  useLayoutEffect(() => {
+    const el = textRef.current;
+    if (!el) return;
+
+    const full = el.scrollHeight;
+    const lineHeight = Number.parseFloat(getComputedStyle(el).lineHeight) || 28;
+    const collapsed = Math.round(lineHeight * 3);
+
+    setFullHeight(full);
+    setCollapsedHeight(collapsed);
+    setNeedsToggle(full > collapsed + 1);
+  }, [text]);
+
+  const targetHeight =
+    expanded
+      ? (fullHeight ?? "auto")
+      : (collapsedHeight ?? "auto");
+
+  return (
+    <div className="max-w-md space-y-1">
+      <motion.div
+        initial={false}
+        animate={{ height: needsToggle ? targetHeight : "auto" }}
+        transition={
+          reduceMotion
+            ? { duration: 0 }
+            : { duration: 0.4, ease: [0.16, 1, 0.3, 1] }
+        }
+        className="relative overflow-hidden"
+      >
+        <p
+          ref={textRef}
+          className="text-base leading-7 text-[var(--color-body)]"
+        >
+          {text}
+        </p>
+        {!expanded && needsToggle ? (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent"
+          />
+        ) : null}
+      </motion.div>
+      {needsToggle ? (
+        <button
+          type="button"
+          className="min-h-9 text-sm font-bold text-[var(--color-main)] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {expanded ? t("rhythm_show_less") : t("rhythm_show_more")}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Next-7 calendar days: **today on the left**, then tomorrow → … (forward).
+ * Future cells stay ghost; today is lit from `currentStreak` (filled if > 0, ring if 0).
+ */
+function StreakWeekIcons({ streakDays }: { streakDays: number }) {
+  const t = useTranslations("panel");
+  const locale = useLocale();
+  const today = todayIso();
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const iso = shiftDate(today, index);
+    return { iso, label: formatWeekdayShort(iso, locale) };
+  });
+
+  return (
+    <div
+      className="flex items-center justify-between gap-1"
+      role="img"
+      aria-label={t("metric_streak_value", { count: streakDays })}
+    >
+      {days.map((day, index) => {
+        const isToday = index === 0;
+        const isDone = isToday && streakDays > 0;
+        const todayRing = isToday && streakDays === 0;
+        return (
+          <div key={day.iso} className="grid min-w-0 flex-1 justify-items-center gap-1.5">
+            <StreakDayGlyph done={isDone} today={todayRing} />
+            <span
+              className={[
+                "text-[10px] font-bold uppercase tracking-wide sm:text-xs",
+                isToday
+                  ? "text-[var(--color-streak)]"
+                  : "text-[var(--color-secondary)]",
+              ].join(" ")}
+              aria-hidden
+            >
+              {day.label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Soft well tuned to `flame.png` (coral tip `#F3705A`, yellow core `#FFD15C`).
+ * Idle days keep a ghost flame (low opacity) so the week reads as one row.
+ */
+function StreakDayGlyph({ done, today }: { done: boolean; today: boolean }) {
+  const lit = done || today;
+
+  return (
+    <span
+      className={[
+        "grid size-9 place-items-center rounded-full sm:size-10",
+        done
+          ? "bg-[linear-gradient(165deg,color-mix(in_srgb,var(--color-streak-core)_55%,white)_0%,var(--color-streak-soft)_100%)] shadow-[0_2px_12px_color-mix(in_srgb,var(--color-streak)_32%,transparent)]"
+          : today
+            ? "border-[1.5px] border-[var(--color-streak)] bg-[linear-gradient(165deg,color-mix(in_srgb,var(--color-streak-core)_40%,white)_0%,var(--color-streak-soft)_100%)]"
+            : "bg-[color-mix(in_srgb,var(--color-surface-container)_70%,white)]",
+      ].join(" ")}
+      aria-hidden
+    >
+      <StreakFlameIcon size={20} ghost={!lit} />
+    </span>
+  );
+}
+
+function StreakFlameIcon({ size, ghost = false }: { size: number; ghost?: boolean }) {
+  return (
+    <Image
+      src="/img/flame.png"
+      alt=""
+      width={size}
+      height={size}
+      className={[
+        "select-none",
+        ghost
+          ? "opacity-[0.22] grayscale-[0.35]"
+          : "drop-shadow-[0_1px_2px_color-mix(in_srgb,var(--color-streak)_25%,transparent)]",
+      ].join(" ")}
+      draggable={false}
+    />
   );
 }
 
@@ -568,16 +691,23 @@ function MetricTile({
   icon,
   onClick,
   actionLabel,
+  wellTone = "progress",
 }: {
   label: string;
   value: string;
   icon: ReactNode;
   onClick?: () => void;
   actionLabel?: string;
+  wellTone?: "progress" | "streak";
 }) {
+  const wellClass =
+    wellTone === "streak"
+      ? "bg-[linear-gradient(165deg,color-mix(in_srgb,var(--color-streak-core)_45%,white)_0%,var(--color-streak-soft)_100%)] text-[var(--color-streak)]"
+      : "bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)] text-[var(--color-progress)]";
+
   const content = (
     <>
-      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)] text-[var(--color-progress)]">
+      <span className={`grid size-9 shrink-0 place-items-center rounded-full ${wellClass}`}>
         {icon}
       </span>
       <span className="min-w-0">
@@ -607,144 +737,20 @@ function MetricTile({
   );
 }
 
-function WeeklyStreakCard({
-  streakDays,
-  freezeCount,
-  rescue,
-  onRescue,
-}: {
-  streakDays: number;
-  freezeCount: number;
-  rescue: StreakRescueView | null;
-  onRescue: () => Promise<void>;
-}) {
-  const t = useTranslations("panel");
-  // Two-tap confirm: first tap arms ("emin misin?"), second tap spends. No extra dialog infra.
-  const [rescueArmed, setRescueArmed] = useState(false);
-  const [rescueBusy, setRescueBusy] = useState(false);
-  const handleRescueClick = async () => {
-    if (!rescueArmed) {
-      setRescueArmed(true);
-      return;
-    }
-    setRescueBusy(true);
-    try {
-      await onRescue();
-    } finally {
-      setRescueBusy(false);
-      setRescueArmed(false);
-    }
-  };
-  const days = [
-    t("week_mon"),
-    t("week_tue"),
-    t("week_wed"),
-    t("week_thu"),
-    t("week_fri"),
-    t("week_sat"),
-    t("week_sun"),
-  ];
-  const completedCount = Math.min(Math.max(streakDays - 1, 0), 6);
-  const todayIndex = Math.min(completedCount, 6);
-
-  return (
-    <article className="rounded-[var(--radius-card)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-[var(--color-main)]">{t("streak_title")}</h2>
-          <p className="mt-1 text-sm text-[var(--color-secondary)]">{t("streak_helper")}</p>
-        </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)] px-3 py-1.5 text-xs font-bold text-[var(--color-progress)]">
-          <Snowflake className="size-3.5" aria-hidden />
-          {t("freeze_short", { count: freezeCount })}
-        </span>
-      </div>
-
-      <div className="mt-5 grid grid-cols-7 gap-2">
-        {days.map((day, index) => {
-          const isDone = index < completedCount;
-          const isToday = index === todayIndex;
-          const showFlame = isDone || isToday;
-          return (
-            <div key={day} className="grid justify-items-center gap-2">
-              <span
-                className={[
-                  "grid size-8 place-items-center rounded-full",
-                  isDone
-                    ? "bg-[var(--color-progress)]"
-                    : isToday
-                      ? "border-2 border-[var(--color-progress)] bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)]"
-                      : "bg-[color-mix(in_srgb,var(--color-progress-track)_30%,white)]",
-                ].join(" ")}
-                aria-hidden
-              >
-                {showFlame ? (
-                  <Flame
-                    className={[
-                      "size-5",
-                      isDone
-                        ? "fill-white stroke-white"
-                        : "fill-[var(--color-progress)] stroke-[var(--color-progress)]",
-                    ].join(" ")}
-                  />
-                ) : null}
-              </span>
-              <span
-                className={[
-                  "text-xs",
-                  isToday ? "font-bold text-[var(--color-main)]" : "font-medium text-[var(--color-secondary)]",
-                ].join(" ")}
-              >
-                {day}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      {rescue?.eligible ? (
-        <div className="mt-4 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-progress-track)_35%,white)] p-4">
-          <p className="text-sm font-medium text-[var(--color-main)]">{t("streak_rescue_hint")}</p>
-          {rescue.canAfford ? (
-            <button
-              type="button"
-              onClick={() => void handleRescueClick()}
-              disabled={rescueBusy}
-              className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] bg-[var(--color-progress)] px-4 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
-            >
-              <Snowflake className="size-4" aria-hidden />
-              {rescueArmed
-                ? t("streak_rescue_confirm", { cost: rescue.cost })
-                : t("streak_rescue_cta", { cost: rescue.cost })}
-            </button>
-          ) : (
-            <p className="mt-2 text-sm text-[var(--color-secondary)]">
-              {t("streak_rescue_insufficient", { cost: rescue.cost })}
-            </p>
-          )}
-        </div>
-      ) : null}
-
-      <Link
-        href="/study-session"
-        className="mt-5 inline-flex min-h-11 items-center justify-center rounded-[var(--radius-card)] border border-black/10 bg-white px-4 text-sm font-bold text-[var(--color-main)] transition hover:bg-black/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)]"
-      >
-        {t("streak_session_cta")}
-      </Link>
-    </article>
-  );
-}
-
 function TodayFocusCard({
   initialTasks,
   sessionPresets,
   doneCount,
+  quests,
+  streakDays,
   onTasksChanged,
 }: {
   initialTasks: PlanTaskDto[];
   sessionPresets: SessionPresetDto[];
   doneCount: number;
-  onTasksChanged: () => Promise<void>;
+  quests: QuestProgressView[] | null;
+  streakDays: number;
+  onTasksChanged: (opts?: { celebrateStreakFrom?: number }) => Promise<void>;
 }) {
   const t = useTranslations("panel");
   const toast = useMentorToast();
@@ -769,8 +775,10 @@ function TodayFocusCard({
           title: t("task_done_title"),
           message: t("task_done_message"),
         });
+        await onTasksChanged({ celebrateStreakFrom: streakDays });
+      } else {
+        await onTasksChanged();
       }
-      await onTasksChanged();
     } catch (err) {
       setTasks(previousTasks);
       toast.show({
@@ -785,91 +793,165 @@ function TodayFocusCard({
   };
 
   return (
-    <article className="rounded-[var(--radius-card)] bg-white p-5 shadow-[var(--shadow-card)] sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-[var(--color-main)]">{t("today_focus_title")}</h2>
-          <p className="mt-1 text-sm text-[var(--color-secondary)]">
-            {t("today_focus_progress", { done: doneCount, total: totalCount })}
-          </p>
+    <SoftPromoShell
+      className="p-5 sm:p-6"
+      style={{
+        backgroundColor:
+          "color-mix(in srgb, var(--color-progress-track) 62%, white)",
+      }}
+    >
+      <span
+        className="pointer-events-none absolute -right-10 -top-12 size-40 rounded-full opacity-35"
+        style={{
+          background:
+            "color-mix(in srgb, var(--color-progress) 20%, transparent)",
+        }}
+        aria-hidden
+      />
+      <span
+        className="pointer-events-none absolute -bottom-14 right-8 size-28 rounded-full opacity-30"
+        style={{
+          background:
+            "color-mix(in srgb, var(--color-progress-track) 50%, transparent)",
+        }}
+        aria-hidden
+      />
+
+      <div className="relative z-[1]">
+        {quests ? <RitualQuestStrip quests={quests} /> : null}
+
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2
+              className="text-xl font-bold text-[var(--color-main)]"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
+              {t("today_focus_title")}
+            </h2>
+            <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-[var(--color-secondary)]">
+              <BookOpen className="size-4 shrink-0" aria-hidden />
+              {t("today_focus_progress", { done: doneCount, total: totalCount })}
+            </p>
+          </div>
+          <Link
+            className="text-sm font-bold text-[var(--color-main)] underline underline-offset-4"
+            href="/plan"
+          >
+            {t("plan_edit")}
+          </Link>
         </div>
-        <Link className="text-sm font-bold text-[var(--color-main)] underline underline-offset-4" href="/plan">
-          {t("plan_edit")}
+
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/70">
+          <div
+            className="h-full rounded-full bg-[var(--color-progress)] transition-[width]"
+            style={{ width: `${completion}%` }}
+          />
+        </div>
+
+        {firstTask ? (
+          <button
+            type="button"
+            className="mt-4 flex w-full items-center gap-3 rounded-[var(--radius-card)] bg-white/80 p-4 text-left shadow-[var(--shadow-card)] transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={pendingTaskId === firstTask.id}
+            onClick={() => void toggleTask(firstTask)}
+          >
+            <span
+              className={[
+                "grid size-7 shrink-0 place-items-center rounded-md border",
+                firstTask.status === "DONE"
+                  ? "border-[var(--color-progress)] bg-[var(--color-progress)] text-white"
+                  : "border-[var(--color-secondary)] bg-white",
+              ].join(" ")}
+              aria-hidden
+            >
+              {firstTask.status === "DONE" ? <Check className="size-4" /> : null}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-base font-bold text-[var(--color-main)]">
+                {firstTask.title}
+              </span>
+              {firstTask.subject ? (
+                <span className="mt-1 inline-flex rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)] px-2 py-0.5 text-xs font-bold text-[var(--color-progress)]">
+                  {firstTask.subject}
+                </span>
+              ) : null}
+            </span>
+          </button>
+        ) : null}
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {sessionPresets.slice(0, 2).map((preset) => (
+            <span
+              key={preset.id}
+              className="rounded-full bg-white/80 px-3 py-1 text-xs font-bold text-[var(--color-secondary)]"
+            >
+              {preset.focusMinutes} dk
+            </span>
+          ))}
+        </div>
+
+        <Link
+          href="/study-session"
+          className="mt-5 inline-flex min-h-12 w-full max-w-sm items-center justify-center gap-2 rounded-full bg-white px-5 text-base font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          <Play className="size-4 fill-current" aria-hidden />
+          {activePreset
+            ? t("start_focus_with_minutes", { minutes: activePreset.focusMinutes })
+            : t("today_focus_continue")}
         </Link>
       </div>
-
-      <div className="mt-4 h-2 rounded-full bg-[var(--color-progress-track)]">
-        <div
-          className="h-full rounded-full bg-[var(--color-progress)] transition-[width]"
-          style={{ width: `${completion}%` }}
-        />
-      </div>
-
-      {firstTask ? (
-        <button
-          type="button"
-          className="mt-4 flex w-full items-center gap-3 rounded-[var(--radius-card)] border border-black/10 bg-white p-4 text-left transition hover:border-[var(--color-progress)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-progress)] disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={pendingTaskId === firstTask.id}
-          onClick={() => void toggleTask(firstTask)}
-        >
-          <span
-            className={[
-              "grid size-7 shrink-0 place-items-center rounded-md border",
-              firstTask.status === "DONE" ? "border-[var(--color-progress)] bg-[var(--color-progress)] text-white" : "border-[var(--color-secondary)] bg-white",
-            ].join(" ")}
-            aria-hidden
-          >
-            {firstTask.status === "DONE" ? <Check className="size-4" /> : null}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-base font-bold text-[var(--color-main)]">{firstTask.title}</span>
-            {firstTask.subject ? (
-              <span className="mt-1 inline-flex rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)] px-2 py-0.5 text-xs font-bold text-[var(--color-progress)]">
-                {firstTask.subject}
-              </span>
-            ) : null}
-          </span>
-        </button>
-      ) : (
-        <div className="mt-4 rounded-[var(--radius-card)] border border-dashed border-black/20 p-4 text-sm text-[var(--color-secondary)]">
-          {t("today_focus_empty")}
-        </div>
-      )}
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        {sessionPresets.slice(0, 2).map((preset) => (
-          <span
-            key={preset.id}
-            className="rounded-full bg-black/5 px-3 py-1 text-xs font-bold text-[var(--color-secondary)]"
-          >
-            {preset.focusMinutes} dk
-          </span>
-        ))}
-      </div>
-
-      <Link
-        href="/study-session"
-        className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] bg-[var(--color-btn)] px-4 text-base font-bold text-white transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-progress)]"
-      >
-        <Play className="size-4 fill-current" aria-hidden />
-        {activePreset ? t("start_focus_with_minutes", { minutes: activePreset.focusMinutes }) : t("start_focus")}
-      </Link>
-    </article>
+    </SoftPromoShell>
   );
 }
 
-function formatCompact(value: number) {
-  return new Intl.NumberFormat("tr-TR", {
-    maximumFractionDigits: 1,
-    notation: "compact",
-  }).format(value);
-}
+/** Compact economy quest row inside the ritual card — opens the quests sheet. */
+function RitualQuestStrip({ quests }: { quests: QuestProgressView[] }) {
+  const t = useTranslations("panel");
+  const economyT = useTranslations("economy");
+  const sheet = useMentorBottomSheet();
+  const dailyQuests = quests.filter((quest) => quest.category === "daily_ritual");
+  if (dailyQuests.length === 0) return null;
 
-function greetingKeyForHour(): "greeting_morning" | "greeting_day" | "greeting_evening" {
-  const hour = new Date().getHours();
-  if (hour < 12) return "greeting_morning";
-  if (hour < 18) return "greeting_day";
-  return "greeting_evening";
+  const completed = dailyQuests.filter((quest) => quest.completed).length;
+  const nextQuest =
+    dailyQuests.find((quest) => !quest.completed && quest.action) ??
+    quests.find((quest) => quest.category === "onboarding" && !quest.completed && quest.action) ??
+    null;
+
+  function showQuests() {
+    sheet.show({
+      title: economyT("quests_title"),
+      layout: "filter",
+      bodyScroll: false,
+      children: <EconomyQuestsCard quests={quests} onDismiss={sheet.dismissNow} />,
+    });
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={showQuests}
+      aria-label={t("quests_banner_open")}
+      className="mb-4 flex w-full min-w-0 items-center gap-3 rounded-[var(--radius-card)] bg-white/75 px-3 py-2.5 text-left shadow-[var(--shadow-card)] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+    >
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_55%,white)] text-[var(--color-progress)]">
+        <ListChecks className="size-4" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[10px] font-bold uppercase tracking-wide text-[var(--color-secondary)]">
+          {t("ritual_quest_label")}
+        </span>
+        <span className="mt-0.5 block truncate text-sm font-bold text-[var(--color-main)]">
+          {nextQuest?.title ?? t("quests_banner_done")}
+        </span>
+        <span className="mt-0.5 block text-xs font-semibold text-[var(--color-secondary)]">
+          {t("quests_banner_progress", { completed, total: dailyQuests.length })}
+        </span>
+      </span>
+      <ArrowRight className="size-4 shrink-0 text-[var(--color-secondary)]" aria-hidden />
+    </button>
+  );
 }
 
 function unwrapTodayResponse(response: unknown): TodayPanelResponse {

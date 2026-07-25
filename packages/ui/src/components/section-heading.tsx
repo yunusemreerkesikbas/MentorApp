@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export interface SectionHeadingProps {
   children: ReactNode;
-  /** Optional trailing slot (e.g. an "add" link/button) aligned to the right. */
+  /** Optional action placed immediately beside the title (e.g. add “+”). */
   action?: ReactNode;
   /** Optional supporting line under the title (Nunito Sans 14 secondary). */
   subtitle?: ReactNode;
@@ -13,7 +13,7 @@ export interface SectionHeadingProps {
 
 /**
  * Section heading (DESIGN.md §3 — H2 Nunito Sans 20/SemiBold #111, §6 layout).
- * Presentational/server-safe: title on the left, optional action on the right.
+ * Presentational/server-safe: title + optional inline action, optional subtitle.
  */
 export function SectionHeading({
   children,
@@ -24,21 +24,21 @@ export function SectionHeading({
 }: SectionHeadingProps) {
   const Tag = as;
   return (
-    <div className={`flex items-end justify-between gap-3 ${className ?? ""}`}>
-      <div className="flex flex-col gap-1">
+    <div className={`flex flex-col gap-1 ${className ?? ""}`}>
+      <div className="flex items-center gap-1">
         <Tag
           className="text-xl leading-tight font-semibold"
           style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
         >
           {children}
         </Tag>
-        {subtitle ? (
-          <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-            {subtitle}
-          </p>
-        ) : null}
+        {action ? <div className="shrink-0">{action}</div> : null}
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {subtitle ? (
+        <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+          {subtitle}
+        </p>
+      ) : null}
     </div>
   );
 }

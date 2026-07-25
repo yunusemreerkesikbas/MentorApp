@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import type { TodayPanelResponse } from "@mentor/types";
 import { Link } from "@/i18n/navigation";
 import { trackCoachEvent } from "@/lib/analytics";
-import { buildStudySessionHrefFromPlanTask } from "@/lib/plan-study-session-link";
+import { resolveCoachNextActionHref } from "@/lib/coach-next-action-href";
 
 interface CoachNextActionCardProps {
   today: TodayPanelResponse;
@@ -19,18 +19,7 @@ export function CoachNextActionCard({
 }: CoachNextActionCardProps) {
   const t = useTranslations("coach.hub");
   const { nextAction } = today;
-  const task = nextAction.taskId
-    ? today.tasks.find((item) => item.id === nextAction.taskId)
-    : null;
-  const href =
-    nextAction.kind === "START_TASK" && task
-      ? buildStudySessionHrefFromPlanTask(task, surface)
-      : nextAction.kind === "ADD_TASK"
-        ? {
-            pathname: "/plan" as const,
-            query: { add: "1", source: surface },
-          }
-        : null;
+  const href = resolveCoachNextActionHref(today, surface);
 
   useEffect(() => {
     trackCoachEvent("coach_next_action_impression", {

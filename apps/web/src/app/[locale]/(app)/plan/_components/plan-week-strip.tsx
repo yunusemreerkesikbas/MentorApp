@@ -1,5 +1,8 @@
 "use client";
 
+import { useRef } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import Calendar from "lucide-react/dist/esm/icons/calendar.mjs";
 import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left.mjs";
 import ChevronRight from "lucide-react/dist/esm/icons/chevron-right.mjs";
 import { useLocale, useTranslations } from "next-intl";
@@ -23,6 +26,12 @@ const WEEKDAY_KEYS = [
   "week_sun",
 ] as const;
 
+const dayPillTransition = {
+  type: "tween" as const,
+  duration: 0.2,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
+
 export type PlanWeekStripProps = {
   weekStartDate: string;
   selectedDate: string;
@@ -30,9 +39,13 @@ export type PlanWeekStripProps = {
   onWeekChange: (weekStart: string) => void;
   onDateChange: (iso: string) => void;
   compact?: boolean;
+  /** Optional calendar sheet entry (Liste / Timeline). */
+  onOpenCalendar?: () => void;
+  /** Hide week progress caption (Liste / Timeline use day progress below). */
+  hideSummary?: boolean;
 };
 
-/** Shared 7-day strip + week arrows (mobile Hafta nav card). */
+/** Shared 7-day strip + week arrows. */
 export function PlanWeekStrip({
   weekStartDate,
   selectedDate,
@@ -40,10 +53,13 @@ export function PlanWeekStrip({
   onWeekChange,
   onDateChange,
   compact,
+  onOpenCalendar,
+  hideSummary,
 }: PlanWeekStripProps) {
   const t = useTranslations("plan");
   const tPanel = useTranslations("panel");
   const locale = useLocale();
+  const reduceMotion = useReducedMotion();
   const days = weekDates(weekStartDate);
   const weekEnd = days[6]!;
   const weekDone = days.reduce(
@@ -56,18 +72,41 @@ export function PlanWeekStrip({
     0,
   );
 
+  const directionRef = useRef(0);
+  const prevWeekRef = useRef(weekStartDate);
+  if (weekStartDate !== prevWeekRef.current) {
+    directionRef.current =
+      weekStartDate > prevWeekRef.current ? 1 : -1;
+    prevWeekRef.current = weekStartDate;
+  }
+  const direction = directionRef.current;
+
+  function goWeek(delta: -7 | 7) {
+    directionRef.current = delta > 0 ? 1 : -1;
+    onWeekChange(shiftDate(weekStartDate, delta));
+  }
+
+  const slide = reduceMotion
+    ? undefined
+    : {
+        initial: { opacity: 0, x: direction * 12 },
+        animate: { opacity: 1, x: 0 },
+        exit: { opacity: 0, x: direction * -12 },
+        transition: { duration: 0.18, ease: [0.22, 1, 0.36, 1] as const },
+      };
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
         <PlanWeekNavButton
           label={t("prev_week_aria")}
-          onClick={() => onWeekChange(shiftDate(weekStartDate, -7))}
+          onClick={() => goWeek(-7)}
           compact={compact}
         >
           <ChevronLeft size={compact ? 18 : 20} strokeWidth={2} aria-hidden />
         </PlanWeekNavButton>
         <p
-          className={`text-center font-bold ${compact ? "text-sm" : "text-base"}`}
+          className="min-w-0 flex-1 truncate text-center text-sm font-bold whitespace-nowrap"
           style={{
             color: "var(--color-main)",
             fontFamily: "var(--font-heading)",
@@ -75,76 +114,121 @@ export function PlanWeekStrip({
         >
           {formatWeekRangeLabel(weekStartDate, weekEnd, locale)}
         </p>
-        <PlanWeekNavButton
-          label={t("next_week_aria")}
-          onClick={() => onWeekChange(shiftDate(weekStartDate, 7))}
-          compact={compact}
-        >
-          <ChevronRight size={compact ? 18 : 20} strokeWidth={2} aria-hidden />
-        </PlanWeekNavButton>
-      </div>
-
-      <div className="grid grid-cols-7 gap-1">
-        {days.map((iso, index) => {
-          const { total, percent } = taskStats(weekTasks[iso] ?? []);
-          const selected = iso === selectedDate;
-          const dayIsToday = iso === todayIso();
-          return (
-            <button
-              key={iso}
-              type="button"
-              onClick={() => onDateChange(iso)}
-              className="flex min-h-[52px] cursor-pointer flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] px-0.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-              style={{
-                backgroundColor: selected
-                  ? "color-mix(in srgb, var(--color-progress) 15%, transparent)"
-                  : "transparent",
-                boxShadow: selected
-                  ? "inset 0 0 0 2px var(--color-progress)"
-                  : undefined,
-              }}
-              aria-pressed={selected}
+        <div className="flex shrink-0 items-center gap-0.5">
+          {onOpenCalendar ? (
+            <PlanWeekNavButton
+              label={t("calendar_aria")}
+              onClick={onOpenCalendar}
+              compact={compact}
             >
-              <span
-                className="text-[10px] font-medium uppercase"
-                style={{ color: "var(--color-secondary)" }}
-              >
-                {tPanel(WEEKDAY_KEYS[index]!)}
-              </span>
-              <span
-                className="text-sm font-bold"
-                style={{
-                  color: dayIsToday
-                    ? "var(--color-progress)"
-                    : "var(--color-main)",
-                  fontFamily: "var(--font-heading)",
-                }}
-              >
-                {new Date(`${iso}T12:00:00`).getDate()}
-              </span>
-              <span
-                className="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full"
-                style={{
-                  backgroundColor:
-                    total === 0
-                      ? "var(--color-progress-track)"
-                      : percent === 100
-                        ? "#22C55E"
-                        : "var(--color-progress)",
-                }}
-                aria-hidden
-              />
-            </button>
-          );
-        })}
+              <Calendar size={compact ? 18 : 20} strokeWidth={2} aria-hidden />
+            </PlanWeekNavButton>
+          ) : null}
+          <PlanWeekNavButton
+            label={t("next_week_aria")}
+            onClick={() => goWeek(7)}
+            compact={compact}
+          >
+            <ChevronRight size={compact ? 18 : 20} strokeWidth={2} aria-hidden />
+          </PlanWeekNavButton>
+        </div>
       </div>
 
-      <p
-        className="text-center text-xs"
-        style={{ color: "var(--color-secondary)" }}
-      >
-        {t("week_summary", { done: weekDone, total: weekTotal })}
-      </p>
+      <div className="overflow-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={weekStartDate}
+            className="grid grid-cols-7 gap-1"
+            {...(slide ?? {})}
+          >
+            {days.map((iso, index) => {
+              const { total, percent } = taskStats(weekTasks[iso] ?? []);
+              const selected = iso === selectedDate;
+              const dayIsToday = iso === todayIso();
+              return (
+                <button
+                  key={iso}
+                  type="button"
+                  onClick={() => onDateChange(iso)}
+                  className="flex min-h-11 cursor-pointer flex-col items-center gap-1 rounded-[var(--radius-card)] px-0.5 py-1 focus-visible:outline-none focus-visible:ring-2"
+                  aria-pressed={selected}
+                  aria-current={dayIsToday ? "date" : undefined}
+                >
+                  <span
+                    className="text-[10px] font-medium uppercase leading-none"
+                    style={{ color: "var(--color-secondary)" }}
+                  >
+                    {tPanel(WEEKDAY_KEYS[index]!)}
+                  </span>
+                  <span className="relative flex size-9 items-center justify-center">
+                    {selected ? (
+                      reduceMotion ? (
+                        <span
+                          className="absolute inset-0 rounded-full"
+                          style={{
+                            backgroundColor: "var(--color-accent-soft)",
+                          }}
+                          aria-hidden
+                        />
+                      ) : (
+                        <motion.span
+                          layoutId="plan-day-selected"
+                          className="absolute inset-0 rounded-full"
+                          style={{
+                            backgroundColor: "var(--color-accent-soft)",
+                          }}
+                          transition={dayPillTransition}
+                          aria-hidden
+                        />
+                      )
+                    ) : null}
+                    <span
+                      className={`relative z-10 leading-none ${
+                        dayIsToday
+                          ? "text-base font-extrabold"
+                          : "text-sm font-bold"
+                      }`}
+                      style={{
+                        color: dayIsToday
+                          ? "var(--color-progress)"
+                          : "var(--color-main)",
+                        fontFamily: "var(--font-heading)",
+                      }}
+                    >
+                      {new Date(`${iso}T12:00:00`).getDate()}
+                    </span>
+                  </span>
+                  <span
+                    className="flex h-1.5 w-1.5 shrink-0 items-center justify-center"
+                    aria-hidden
+                  >
+                    {total > 0 ? (
+                      <span
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{
+                          backgroundColor:
+                            percent === 100
+                              ? "var(--color-success)"
+                              : "var(--color-progress)",
+                        }}
+                      />
+                    ) : null}
+                  </span>
+                </button>
+              );
+            })}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {!hideSummary ? (
+        <p
+          className="text-center text-xs"
+          style={{ color: "var(--color-secondary)" }}
+        >
+          {t("week_summary", { done: weekDone, total: weekTotal })}
+        </p>
+      ) : null}
     </div>
   );
 }

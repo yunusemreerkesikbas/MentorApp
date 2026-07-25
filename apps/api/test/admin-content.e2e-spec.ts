@@ -76,6 +76,11 @@ describe("admin content editor (e2e)", () => {
   }, 90_000);
 
   afterAll(async () => {
+    // Delete every article this spec ever created (`e2e-kpss-*`, incl. the published `-html` one and
+    // any leaked by older runs on a shared local DB) — otherwise they accumulate in the KPSS feed and
+    // push the editorial seeds off page 1, breaking content.e2e's pagination assertion. Superuser
+    // bypasses RLS so no context needed.
+    await pool?.query("delete from info_articles where slug like 'e2e-kpss-%'");
     await app?.close();
     await pool?.end();
   });

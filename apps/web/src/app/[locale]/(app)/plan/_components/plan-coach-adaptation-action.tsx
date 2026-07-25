@@ -417,13 +417,12 @@ export const PlanCoachAdaptationAction = forwardRef<
   return (
     <Button
       type="button"
-      variant="secondary"
-      fullWidth
+      variant="ghost"
       busy={busy}
       onClick={() => void open({ source: "PLAN" })}
-      className="sm:w-fit"
+      className="min-h-10 px-3 py-2 text-sm"
     >
-      <Sparkles size={18} strokeWidth={2.25} aria-hidden />
+      <Sparkles size={16} strokeWidth={2.25} aria-hidden />
       {t("coach_adaptation_cta")}
     </Button>
   );

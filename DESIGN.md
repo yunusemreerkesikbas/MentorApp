@@ -59,6 +59,9 @@ Blobs carry atmosphere. Do not introduce cream/sand body backgrounds (PRODUCT an
 | `thumb-violet` | `#DDACE5` | Thumbnail placeholder (15:1162) |
 | `thumb-periwinkle` | `#D6DBFD` | Thumbnail placeholder (10:890) |
 | `star` (amber) | `#FFC700` | Rating star |
+| `streak` (flame coral) | `#F3705A` | Streak ring/label — matches `flame.png` outer tip; **not** `danger` |
+| `streak-core` (flame yellow) | `#FFD15C` | Soft highlight from `flame.png` core |
+| `streak-soft` | `#FFE8E2` | Soft wells behind streak day slots |
 | `like-inactive` | `#666666` | Heart outline, default |
 | `like-active` (pink) | `#FF2DAB` family | Wishlist when liked |
 
@@ -108,7 +111,7 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 
 - **Grid base:** 4 px. Steps: 4 · 8 · 12 · 16 · 20 · 24 · 32.
 - **Screen gutter:** 20 px mobile; **20–32 px** at `lg` (≥1024).
-- **Fixed bars:** Status Bar 44 h · Top Nav 42 h · Tab Bar 63 h · Home Indicator 34 h.
+- **Fixed bars:** Status Bar 44 h · Top Nav 64 h (avatar + greeting) · Floating tab pill ~60 h (+ small Koç overhang; content `pb` ≈ 80 + safe-area) · Home Indicator 34 h.
 - **Field / Primary button:** 335×60 · **List item:** 335×56.
 
 **Page max-width contract (desktop):**
@@ -138,7 +141,7 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 
 **Text field** (`field` 2:722): translucent surface + white border + `shadow-card`.
 
-**Tab bar** (mobile): active `#111`, inactive `#666`. Desktop sidebar: sentence-case labels (see §3).
+**Tab bar** (mobile): floating pill, icons only; active = bold `#111`. Center **Koç** elevated black FAB. Desktop sidebar: sentence-case labels; Koç is a normal item (no special CTA treatment).
 
 **Tag / chip** (`tag` 141:1736): violet @30%, chip-text `#7C6F97`.
 

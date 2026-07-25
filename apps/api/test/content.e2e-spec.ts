@@ -100,11 +100,14 @@ describe("content (e2e)", () => {
   });
 
   it("GET /v1/content/info-articles?family=KPSS returns seeded articles (public)", async () => {
-    const res = await request(app.getHttpServer()).get("/v1/content/info-articles?family=KPSS");
+    // pageSize=100: the seed's publishedAt is old (2026-06-01), so newer KPSS articles inserted by
+    // other e2e specs sharing this local DB sort ahead of it — a default page of 20 can miss it.
+    const res = await request(app.getHttpServer()).get(
+      "/v1/content/info-articles?family=KPSS&pageSize=100",
+    );
     expect(res.status).toBe(200);
     expect(res.body.total).toBeGreaterThanOrEqual(3);
-    // Assert on a known seeded article by slug — not items[0] (feed order is publishedAt-desc and
-    // other e2e files sharing this DB may insert newer KPSS articles that would sort ahead).
+    // Assert on a known seeded article by slug — not items[0] (feed order is publishedAt-desc).
     const seeded = res.body.items.find(
       (a: { slug: string }) => a.slug === "kpss-basvuru-sureci",
     );

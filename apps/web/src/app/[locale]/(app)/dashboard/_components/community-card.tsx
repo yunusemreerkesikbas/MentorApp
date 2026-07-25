@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Card } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
+import { PuhuImage } from "@/components/puhu-image";
 import { isForumDisabled, listZones } from "@/lib/forum";
+import { SoftPromoShell } from "./soft-promo-shell";
 
 /**
- * Panel entry to the community — flag-aware: probes the forum and renders nothing when
- * `forum.enabled` is off (mirrors the EconomySection probe). Best-effort; never blocks the panel.
+ * Panel entry to the community — PromoSoft surface + Puhu (DESIGN.md §8.4).
+ * Flag-aware: hidden when forum is off. Best-effort; never blocks the panel.
  */
 export function CommunityCard() {
   const t = useTranslations("community");
@@ -20,7 +21,6 @@ export function CommunityCard() {
       .then(() => active && setVisible(true))
       .catch((err: unknown) => {
         if (active && !isForumDisabled(err)) {
-          // transient error: stay hidden (the dedicated /community screen surfaces real errors)
           setVisible(false);
         }
       });
@@ -32,23 +32,52 @@ export function CommunityCard() {
   if (!visible) return null;
 
   return (
-    <Card>
-      <h2
-        className="text-lg font-semibold"
-        style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-      >
-        {t("panel_card_title")}
-      </h2>
-      <p className="mt-1 text-sm" style={{ color: "var(--color-secondary)" }}>
-        {t("panel_card_desc")}
-      </p>
-      <Link
-        href="/community"
-        className="mt-4 inline-flex min-h-[44px] items-center text-base font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
-      >
-        {t("panel_card_cta")} →
-      </Link>
-    </Card>
+    <SoftPromoShell
+      className="p-5 sm:p-6"
+      style={{
+        backgroundColor:
+          "color-mix(in srgb, var(--color-progress-track) 68%, white)",
+      }}
+    >
+      <span
+        className="pointer-events-none absolute -right-8 -top-10 size-36 rounded-full opacity-50"
+        style={{
+          background:
+            "color-mix(in srgb, var(--color-progress) 28%, transparent)",
+        }}
+        aria-hidden
+      />
+      <span
+        className="pointer-events-none absolute -bottom-12 left-1/3 size-28 rounded-full opacity-40"
+        style={{ background: "color-mix(in srgb, #9BC1FB 35%, transparent)" }}
+        aria-hidden
+      />
+
+      <div className="relative z-[1] grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <div className="min-w-0 max-w-md">
+          <h2
+            className="text-xl font-bold text-[var(--color-main)]"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            {t("panel_card_title")}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--color-body)] text-pretty">
+            {t("panel_card_desc")}
+          </p>
+          <Link
+            href="/community"
+            className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-5 text-sm font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            {t("panel_card_cta")}
+            <span aria-hidden>→</span>
+          </Link>
+        </div>
+
+        <div className="mx-auto grid place-items-center sm:mx-0 sm:justify-self-end">
+          <PuhuImage variant="happy" size={96} className="drop-shadow-sm" />
+        </div>
+      </div>
+    </SoftPromoShell>
   );
 }

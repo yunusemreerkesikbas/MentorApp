@@ -234,7 +234,7 @@ export function DialogProvider({ children }: DialogProviderProps) {
           actions.push({
             id: "link",
             label: options.linkLabel,
-            variant: "link",
+            variant: "secondary",
           });
         }
         openDialog({

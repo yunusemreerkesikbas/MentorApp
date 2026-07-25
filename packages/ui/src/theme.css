@@ -28,6 +28,12 @@
   /** Soft accent wells — alias of progress-track (DESIGN.md §2.3). */
   --color-accent-soft: #c3d9fd;
   --color-star: #ffc700;
+  /** Flame coral from `apps/web/public/img/flame.png` tip — ring/label; not danger. */
+  --color-streak: #f3705a;
+  /** Flame core yellow from the same asset. */
+  --color-streak-core: #ffd15c;
+  /** Soft wells / today ring behind streak day slots. */
+  --color-streak-soft: #ffe8e2;
   --color-like-active: #ff2dab;
   /* Semantic state tokens (DESIGN.md §2.4). danger: errors/destructive — deep, accessible
      red (≥4.5:1 on white), calm not alarming (anti-shaming tone). focus-ring: keyboard

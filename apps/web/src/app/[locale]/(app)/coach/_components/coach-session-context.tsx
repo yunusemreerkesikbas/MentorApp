@@ -51,6 +51,24 @@ const CoachSessionContext = createContext<CoachSessionContextValue | null>(
   null,
 );
 
+/**
+ * Re-provide session into portaled UI (bottom sheet children render under the root
+ * BottomSheetProvider, outside CoachSessionProvider in the React tree).
+ */
+export function CoachSessionPortal({
+  value,
+  children,
+}: {
+  value: CoachSessionContextValue;
+  children: ReactNode;
+}) {
+  return (
+    <CoachSessionContext.Provider value={value}>
+      {children}
+    </CoachSessionContext.Provider>
+  );
+}
+
 function toChatMessages(
   items: Awaited<ReturnType<typeof listCoachMessages>>["items"],
 ) {

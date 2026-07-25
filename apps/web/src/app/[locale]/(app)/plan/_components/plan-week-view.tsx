@@ -1,16 +1,13 @@
 "use client";
 
 import type { PlanTaskDto } from "@mentor/types";
-import { Card } from "@mentor/ui";
+import { Card, SectionHeading } from "@mentor/ui";
 import { useLocale, useTranslations } from "next-intl";
+import { PlanAddTaskButton } from "./plan-add-task-button";
 import { PlanWeekSkeleton } from "./plan-content-skeleton";
 import { PlanProgress } from "./plan-progress";
 import { PlanTaskRow } from "./plan-task-row";
-import {
-  formatDateLabel,
-  taskStats,
-  todayIso,
-} from "./plan-utils";
+import { formatDateLabel, taskStats } from "./plan-utils";
 
 /** Mobile Hafta — selected-day task card. Desktop uses PlanWeekDesktopLayout. */
 export function PlanWeekView({
@@ -20,7 +17,9 @@ export function PlanWeekView({
   busyId,
   readOnly,
   onToggle,
-  onMenu,
+  onEdit,
+  onDelete,
+  onAddTask,
 }: {
   selectedDate: string;
   weekTasks: Record<string, PlanTaskDto[]>;
@@ -28,13 +27,14 @@ export function PlanWeekView({
   busyId: string | null;
   readOnly?: boolean;
   onToggle: (id: string) => void;
-  onMenu: (task: PlanTaskDto) => void;
+  onEdit: (task: PlanTaskDto) => void;
+  onDelete: (task: PlanTaskDto) => void;
+  onAddTask?: () => void;
 }) {
   const t = useTranslations("plan");
   const locale = useLocale();
   const selectedTasks = loading ? [] : (weekTasks[selectedDate] ?? []);
   const progress = taskStats(selectedTasks);
-  const isToday = selectedDate === todayIso();
   const dayHeading = formatDateLabel(selectedDate, locale, t("today"), {
     alwaysFull: true,
   });
@@ -49,30 +49,15 @@ export function PlanWeekView({
 
   return (
     <Card className="lg:hidden">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2
-          className="text-base font-semibold"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          {dayHeading}
-        </h2>
-        {isToday ? (
-          <span
-            className="rounded-full px-2.5 py-0.5 text-xs font-bold"
-            style={{
-              backgroundColor:
-                "color-mix(in srgb, var(--color-progress-track) 45%, transparent)",
-              color: "var(--color-progress)",
-              fontFamily: "var(--font-body)",
-            }}
-          >
-            {t("today")}
-          </span>
-        ) : null}
-      </div>
+      <SectionHeading
+        action={
+          !readOnly && onAddTask ? (
+            <PlanAddTaskButton onClick={onAddTask} />
+          ) : undefined
+        }
+      >
+        {dayHeading}
+      </SectionHeading>
 
       {progress.total > 0 ? (
         <div className="mt-3 flex flex-col gap-1.5">
@@ -102,7 +87,8 @@ export function PlanWeekView({
               busy={busyId === task.id}
               readOnly={readOnly}
               onToggle={() => onToggle(task.id)}
-              onMenu={() => onMenu(task)}
+              onEdit={() => onEdit(task)}
+              onDelete={() => onDelete(task)}
             />
           ))}
         </div>
