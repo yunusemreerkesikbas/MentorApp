@@ -142,6 +142,66 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Plan add-task sheet skeletons (2026-07-25)** — While exam subject taxonomy loads, the
+  “Yeni görev” sheet shows a title-field skeleton + pill chip skeletons (reserved height) so the
+  modal does not jump when chips arrive. `useExamSubjectTaxonomy` caches one in-flight/result for
+  plan + session pickers. Related: `plan-add-task-form.tsx`, `subject-picker.tsx`,
+  `use-exam-subject-taxonomy.ts`.
+
+- **Plan Timeline weekly chronology (2026-07-25)** — Timeline shows the selected week’s 7 days
+  (Mon→Sun) as a vertical rail + day sections (`PlanTaskRow`, pending then done). Opens aligned to
+  **today** (scroll up → past days, down → future). Sticky rail badge = day + short month
+  (`formatMonthDayShort`); rail fill grows/shrinks with scroll. Week strip stays in sync via
+  scroll + taps. Empty days: `plan.timeline_day_empty`. Shell: `weekTasks` / `weekLoading`,
+  `contentKey` = `timeline-{weekAnchor}`. Past days read-only per `taskDate`. Related:
+  `plan-timeline-view.tsx`, `plan-shell.tsx`, `plan-content-skeleton.tsx`, messages,
+  `docs/plans/2026-07-25-plan-page-ui-redesign.md`.
+
+- **Plan task overflow dropdown + edit (2026-07-25)** — Task ⋯ opens an anchored dropdown (not
+  action-sheet): **Görevi düzenle** + **Sil**. Toggle complete stays on the checkbox only. Edit
+  reuses the add form sheet + existing `PATCH /v1/plan-tasks/:id` (`title`/`subject`) — no new
+  backend. Related: `plan-task-menu.tsx`, `plan-task-row.tsx`, `plan-shell.tsx`, messages.
+
+- **Plan page chrome redesign (2026-07-25)** — `/plan` tabs become a capsule segmented control with
+  Framer `layoutId` pill motion; Liste/Timeline date nav uses the shared week strip (today bold,
+  selected-day soft `progress` circle via `layoutId`, dots only on planned days). CTA hierarchy:
+  **Görev ekle** → `Button` `accent`, **Koçla planla** → compact `soft`. Week tasks load for all
+  views so strip dots stay accurate. Reduced-motion skips layout/slide animations. Usage: open
+  `/plan`. Related: `plan-view-switcher.tsx`, `plan-week-strip.tsx`, `plan-date-nav.tsx`,
+  `plan-shell.tsx`, `plan-coach-adaptation-action.tsx`, `packages/ui` `Button` variants,
+  `docs/plans/2026-07-25-plan-page-ui-redesign.md`.
+
+- **Streak celebration week row (2026-07-25)** — Celebration sheet week starts on the first lit
+  streak day (left) through today, then future ghosts; lights leading `min(streak, 7)` slots
+  (2-day → yesterday + today on the left). Title still shows the full count (e.g. “15 günlük seri”).
+  Helpers: `celebrationWeekIsos` / `isCelebrationDayLit` in `streak-celebration.ts`
+  (+ `streak-celebration-week.spec.ts`).
+
+- **Streak celebration popup (2026-07-24)** — Once per local calendar day, when the first counting
+  effort credits the streak (plan task → DONE **or** a valid finalized focus session), `/panel` and
+  session-done open a bottom-sheet celebration: Habitify-style **curved-triangle peak** (`clipPath`),
+  animated `public/img/fire-anime.svg` hero (static `flame.png` under reduced motion) with sparkles /
+  spring entrance, “N günlük seri”, today-forward week row (staggered), CTA **Devam edeceğim!**.
+  Gate: `localStorage` key `mentor_streak_celebrated:YYYY-MM-DD` via `claimStreakCelebrationToday`.
+  QA: `?mockStreakCelebration=7`. Calm session streak pills stay. Usage: mark a task DONE on
+  `/panel` or `/plan` (today), or finish a counting session when streak was not yet credited today.
+  Related: `streak-celebration.ts`, `streak-celebration.tsx`, `panel-shell.tsx`, `plan-shell.tsx`,
+  `session-done-state.tsx`.
+
+- **Streak week flames on DailyRhythmCard (2026-07-23)** — 7-day flame row moved from the quest
+  banner into **Bugünkü ritim** (`DailyRhythmCard`); standalone quest promo removed — daily quests
+  sit as a compact **RitualQuestStrip** inside **Bugünkü ritüel** (`TodayFocusCard`, opens quests
+  sheet). Standalone
+  **Günlük seri** card (freeze/rescue) removed from `/panel` — streak lives only in the rhythm
+  row.   Free monthly freezes still apply automatically with no panel chrome. When the free pool
+  is exhausted and a single gap is buyable, `/panel` opens a one-shot Puhu promo dialog
+  (per break-day via `sessionStorage`): afford → confirm coin rescue; insufficient →
+  “Coin’in yetmiyor” + **Görevlere bak** (quests sheet) / Tamam. Flame row is **today + next
+  6 days** (today leftmost, forward); future cells are ghost flames; today lit from
+  `currentStreak`. Labels via `formatWeekdayShort`. Flames use wells/rings from
+  `public/img/flame.png`. Usage: open `/panel`. Related: `panel-shell.tsx`, `theme.css`,
+  `DESIGN.md`.
+
 - **Daily continuity loop and weekly action (2026-07-22)** — Dashboard and coach hub now render the
   same data-only `CoachNextActionCard` from the existing `GET /v1/coaching/today` response. Dashboard
   reuses its loaded payload; coach keeps its single fetch. `START_TASK` preserves a typed
@@ -452,10 +512,9 @@ pnpm --filter @mentor/api test
   tint; `aria-selected` fallback), centered task dots, weekday column alignment, flat wrap inside
   Card (no double border). Today = soft progress pill; week band excludes selected/today. Files:
   `globals.css`, `plan-week-mini-calendar.tsx`.
-- **Plan Timeline UX** — task column scrolls after 4 cards (`PLAN_TIMELINE_SCROLL_AFTER_TASKS`);
-  sticky date badge on rail; bottom fade hint. `PlanProgress` uses `scaleX` fill animation
-  (520ms ease-out; reduced-motion safe). Files: `plan-timeline-view.tsx`, `plan-progress.tsx`,
-  `globals.css`.
+- **Plan Timeline UX** — (superseded 2026-07-25 by weekly chronology above). Earlier: single-day
+  rail + scroll-after-4-cards. `PlanProgress` still uses `scaleX` fill animation (reduced-motion
+  safe).
 - **Mock exam + analysis** — `subjects`/`exam_subjects` seed + KPSS taxonomy endpoint; `mock_exams`/
   `mock_exam_subjects`; `domain/net.ts` (KPSS penalty rule); `/analiz` UI (per-subject D/Y/Boş,
   ProgressBar trend — no chart lib). _(0022-w2.)_

@@ -1,4 +1,5 @@
 import { setRequestLocale } from "next-intl/server";
+import { Suspense } from "react";
 import { PanelShell } from "./_components/panel-shell";
 
 /**
@@ -16,5 +17,9 @@ export default async function PanelPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <PanelShell />;
+  return (
+    <Suspense>
+      <PanelShell />
+    </Suspense>
+  );
 }

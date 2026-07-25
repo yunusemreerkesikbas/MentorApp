@@ -1,6 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
-import { CoachHub } from "./_components/coach-hub";
+import { redirect } from "@/i18n/navigation";
 
+/** `/coach` → new-chat landing on `/coach/chat` (history opens from the chat header). */
 export default async function CoachPage({
   params,
 }: {
@@ -8,5 +9,5 @@ export default async function CoachPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <CoachHub />;
+  redirect({ href: "/coach/chat", locale });
 }

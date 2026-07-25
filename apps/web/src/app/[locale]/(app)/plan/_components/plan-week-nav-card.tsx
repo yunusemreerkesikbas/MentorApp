@@ -19,7 +19,7 @@ export function PlanWeekNavCard({
   onDateChange: (iso: string) => void;
 }) {
   return (
-    <Card className="lg:hidden">
+    <Card className="!p-4 lg:hidden">
       <PlanWeekStrip
         weekStartDate={weekStartDate}
         selectedDate={selectedDate}

@@ -96,6 +96,106 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **Koç desktop history rail toggle (2026-07-25)** — Desktop rail collapses to a narrow icon strip
+  (52px): `PanelLeft` (expand), `SquarePen` (new chat), `MessageSquare` (open history). Expanded
+  header keeps the top-right collapse control; width animates 288↔52 (~280ms). No floating button in
+  the chat column. Mobile drawer unchanged. Related: `coach-chat-shell.tsx`, `coach-history-panel.tsx`,
+  `messages/{tr,en}.json`.
+
+- **Koç transcript edge fades (2026-07-24)** — Soft white→transparent gradient (`h-10`) at the
+  **top** of the transcript column (bottom fade removed), matching the expandable “show more” veil.
+  Related: `coach-chat-shell.tsx`.
+
+- **Koç scroll-to-bottom control (2026-07-24)** — When the transcript is scrolled up, a centered
+  circular jump button (white/blur + card shadow + ChevronDown, Mentor tokens) appears `mb-5`
+  (20px) above the composer dock. Click smooth-scrolls to the latest message; auto-stick pauses
+  while the user reads older messages (still follows on own send). Related: `coach-chat-shell.tsx`,
+  `coach-transcript.tsx`, `messages/{tr,en}.json`.
+
+- **Koç coach bubble chrome removed (2026-07-24)** — Coach reply / typing bubbles no longer use
+  white background, border, or card shadow — text sits directly on the pastel chat backdrop. User
+  bubbles unchanged. Related: `coach-transcript.tsx`.
+
+- **Koç composer 10-line grow + bubble show more (2026-07-24)** — Composer textarea max grow raised
+  to ~10 lines (`TEXTAREA_MAX_PX` ≈ 222, 200ms height ease unchanged). Long **user** bubbles use
+  panel-style expand/collapse (`ExpandableBubbleContent`): measure + height motion + bottom fade;
+  collapsed max **10 lines on desktop (lg+)**, **20 on mobile**. Toggle copy `coach_chat.show_more` /
+  `show_less`. Coach replies always render in full (no clamp). Related: `coach-composer.tsx`,
+  `expandable-bubble-content.tsx`, `coach-transcript.tsx`, `messages/{tr,en}.json`.
+
+- **Koç history list redesign (2026-07-24)** — Flat ChatGPT-style history (desktop rail + mobile
+  drawer): no message icon/date/card chrome; row hover + active tint; ⋯ on hover (always on touch)
+  opens delete menu (confirm dialog unchanged). "Yeni sohbet" is a text+`SquarePen` row with hover,
+  not a filled primary button. Related: `coach-conversation-list.tsx`, `coach-history-panel.tsx`,
+  `messages/{tr,en}.json`.
+
+- **Koç desktop scroll + top inset (2026-07-24)** — Transcript scrolls full-width beside the history
+  rail so the scrollbar sits on the content edge; message column stays `max-w-2xl` centered. Extra
+  top padding (`lg:pt-20`). Composer/chips remain docked below in the centered column. Related:
+  `coach-chat-shell.tsx`, `coach-transcript.tsx`.
+
+- **Koç desktop history rail (2026-07-24)** — On `lg+`, conversation history is an always-open left
+  rail (`coach-history-rail`, shared `CoachHistoryPanel`); chat column stays `max-w-2xl` centered in
+  the remaining space. Pastel backdrop fills the full coach content width (not only the chat column).
+  Mobile keeps the history button + drawer (`lg:hidden`). Related: `coach-chat-shell.tsx`,
+  `coach-history-panel.tsx`, `coach-history-drawer.tsx`.
+
+- **Koç user bubble color (2026-07-24)** — User bubbles use soft `color-progress` (not near-black
+  `color-main`) so they sit calmly on the pastel chat backdrop; white text kept. Related:
+  `coach-transcript.tsx`.
+
+- **Koç mascot placement (2026-07-24)** — Removed Puhu from coach reply / typing bubbles; composer
+  leading icon is now `PuhuImage` (`default`, 28px). Feedback/source rows no longer use `pl-10`
+  avatar offset. Related: `coach-transcript.tsx`, `coach-composer.tsx`.
+
+- **Koç reply typewriter (2026-07-24)** — Coach answers type character-by-character while streaming
+  (plain text + caret; catches up if SSE is ahead). On complete → full markdown, no slide-in.
+  `prefers-reduced-motion` shows full text immediately. Related: `coach-reply-body.tsx`,
+  `coach-transcript.tsx`.
+
+- **Koç reply stream motion (2026-07-24)** — Earlier block fade/slide reveal; replaced by typewriter
+  above.
+
+- **Koç chat motion + composer grow (2026-07-24)** — Bubble/typing/follow-up enter uses shared
+  `chatBubble*` ease-out (~380ms, y+opacity) from `stagger-motion.ts`. Composer textarea auto-grows
+  upward by line (`scrollHeight`, 200ms height easing; instant under `prefers-reduced-motion`).
+  Max lines later raised to ~10 — see **Koç composer 10-line grow + bubble show more**. Related:
+  `coach-transcript.tsx`, `coach-composer.tsx`, `coach-follow-up-chips.tsx`, `stagger-motion.ts`.
+
+- **Koç chat bubbles + follow-ups (2026-07-24)** — Tighter transcript spacing; coach bubble solid
+  white + soft border/shadow (user stays `color-main`). Follow-up chips match landing scale (`h-9`,
+  12px, wrap) and dock above the composer via `coach-follow-up-chips.tsx` (not inside the scroll
+  log). Related: `coach-transcript.tsx`, `coach-chat-shell.tsx`, `coach-follow-up-chips.tsx`.
+
+- **Koç composer dock (2026-07-24)** — Active chat composer no longer uses `sticky` + tab-bar
+  bottom offset (double-counted against main’s already-cleared height). Same flex-dock as empty
+  landing. Related: `coach-composer.tsx`, `coach-chat-shell.tsx`.
+
+- **Koç chat header trim (2026-07-24)** — Active chat matches empty landing chrome: history button
+  only; removed "Sohbet" / access subtitle. Composer stays bottom. Related: `coach-chat-shell.tsx`.
+
+- **Koç chat backdrop (2026-07-24)** — DESIGN.md pastel blobs on all `/coach/chat` states (empty +
+  active), including under the mobile tab gutter (`fixed` from `top-16`; `z-0` under tab). Related:
+  `coach-chat-shell.tsx`.
+
+- **Koç landing backdrop (2026-07-24)** — First pass scoped blobs to empty landing only; superseded by
+  full chat backdrop above.
+
+- **Koç landing typography (2026-07-24)** — Empty-chat titles match the Heidi reference: two equal
+  weight display lines (`~22–24px`, `color-main`, heading font) with selective bold via
+  `t.rich` (`İyi günler, **Name**` / `Sana **nasıl yardımcı** olabilirim?`). Related:
+  `coach-empty-landing.tsx`, `messages/{tr,en}.json` (`coach.landing` greetings + `help_text`).
+
+- **Koç new-chat landing (2026-07-24)** — `/coach` redirects to `/coach/chat`. Empty state is a
+  Heidi-inspired landing (greeting + help, centered Puhu hero, starter chips above sticky composer).
+  History opens from the top-left button as a left drawer (notification-drawer pattern: Yeni sohbet +
+  conversation list). Hub overlay next-action card is replaced by a leading chip (`coach-next-action-chip`)
+  using the same href helper as the dashboard card; static chips seed the composer without auto-send.
+  Access gate still applies only on the chat route. Related: `coach/page.tsx`, `coach-chat-shell.tsx`,
+  `coach-empty-landing.tsx`, `coach-starter-chips.tsx`, `coach-history-drawer.tsx`,
+  `coach-next-action-href.ts`, `messages/{tr,en}.json`, `e2e/coach.spec.ts`. Hub-only components
+  (`coach-hub.tsx`, `coach-hub-brief.tsx`, `coach-memory-card.tsx`) removed.
+
 - **PII-minimal, locale-correct coach context (2026-07-22)** — Automatic `CoachContext` now carries
   only exam type, coarse mood level, session/focus counts, taxonomy subjects, and plan progress
   counts. Mood/session notes and user-written plan titles are excluded from automatic prompts;
@@ -502,6 +602,8 @@ excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sa
   hata/403'te (free) null döner → statik satır kalır, sayfa asla kırılmaz; StrictMode-güvenli tek
   istek. Free kullanıcı panel başına 1 adet 403 probe'u yapar (ucuz — bilinçli, access ctx panele
   taşınmadı). Backend/i18n değişmedi. Dosyalar: `use-daily-greeting.ts`, `panel-shell.tsx`.
+  Panel **Bugünkü ritim** copy collapses at 3 lines with **Daha fazla / Daha az** when the
+  premium greeting (or rare long fallback) overflows (`ExpandableRhythmCopy`).
 
 - **Prompt kalite turu — görünür çekirdek (2026-07-16)** — 4 prompt (chat+FOLLOWUP/TASK, günlük
   selam, plan taslağı, mood) gerçek gpt-4o-mini problarıyla değerlendirildi; rapor:

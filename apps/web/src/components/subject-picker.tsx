@@ -1,18 +1,38 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Chip, TextField } from "@mentor/ui";
+import {
+  Skeleton,
+  SkeletonGroup,
+  TextField,
+  skeletonStaggerStyle,
+} from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
-import { useExamSubjectTaxonomy } from "@/lib/use-exam-subject-taxonomy";
+import {
+  useExamSubjectTaxonomy,
+  type ExamSubjectTaxonomyState,
+} from "@/lib/use-exam-subject-taxonomy";
 
 export type SubjectPickerNamespace = "plan" | "session";
 export type SubjectPickerLayout = "centered" | "stacked";
+
+/** Varying pill widths ≈ typical KPSS subject chip row. */
+const CHIP_SKELETON_WIDTHS = [
+  "4.75rem",
+  "5.75rem",
+  "3.75rem",
+  "4.5rem",
+  "6.25rem",
+  "7rem",
+] as const;
 
 export interface SubjectPickerProps {
   value: string;
   onChange: (next: string) => void;
   layout: SubjectPickerLayout;
   translationNamespace: SubjectPickerNamespace;
+  /** When provided, skips the internal taxonomy fetch (shared with parent form). */
+  taxonomy?: ExamSubjectTaxonomyState;
 }
 
 function useSubjectPickerLabels(namespace: SubjectPickerNamespace) {
@@ -37,6 +57,61 @@ function useSubjectPickerLabels(namespace: SubjectPickerNamespace) {
   };
 }
 
+export function SubjectChipsSkeleton({
+  layout,
+  pickLabel,
+  loadingLabel,
+}: {
+  layout: SubjectPickerLayout;
+  pickLabel: string;
+  loadingLabel: string;
+}) {
+  const chips = (
+    <SkeletonGroup
+      label={loadingLabel}
+      className={`flex flex-wrap gap-2 ${layout === "centered" ? "justify-center" : ""}`}
+    >
+      {CHIP_SKELETON_WIDTHS.map((width, index) => (
+        <Skeleton
+          key={width}
+          className="h-9 rounded-full"
+          style={{ width, ...skeletonStaggerStyle(index) }}
+        />
+      ))}
+    </SkeletonGroup>
+  );
+
+  if (layout === "centered") {
+    return <div className="w-full min-h-[5.5rem]">{chips}</div>;
+  }
+
+  return (
+    <div className="flex min-h-[6.75rem] flex-col gap-2">
+      <Skeleton
+        className="h-4 w-12 rounded-[var(--radius-card)]"
+        style={skeletonStaggerStyle(0)}
+      />
+      <span className="sr-only">{pickLabel}</span>
+      {chips}
+    </div>
+  );
+}
+
+export function TaskTitleFieldSkeleton({ loadingLabel }: { loadingLabel: string }) {
+  return (
+    <SkeletonGroup label={loadingLabel} className="flex flex-col gap-2">
+      <Skeleton
+        className="h-4 w-20 rounded-[var(--radius-card)]"
+        style={skeletonStaggerStyle(0)}
+      />
+      <Skeleton
+        className="h-11 w-full rounded-[var(--radius-card)]"
+        style={skeletonStaggerStyle(1)}
+      />
+    </SkeletonGroup>
+  );
+}
+
 /**
  * Shared exam-subject picker — taxonomy chips when available, free text otherwise.
  * Used by plan add-task sheet and pre-session setup on /study-session.
@@ -46,15 +121,19 @@ export function SubjectPicker({
   onChange,
   layout,
   translationNamespace,
+  taxonomy: taxonomyProp,
 }: SubjectPickerProps) {
   const labels = useSubjectPickerLabels(translationNamespace);
-  const { subjects, needsExamType, loaded } = useExamSubjectTaxonomy();
+  const internal = useExamSubjectTaxonomy();
+  const { subjects, needsExamType, loaded } = taxonomyProp ?? internal;
 
   if (!loaded) {
     return (
-      <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-        {labels.loading}
-      </p>
+      <SubjectChipsSkeleton
+        layout={layout}
+        pickLabel={labels.pickLabel}
+        loadingLabel={labels.loading}
+      />
     );
   }
 
@@ -96,33 +175,28 @@ export function SubjectPicker({
     );
   }
 
-  const chipList = (
-    <>
-      {subjects.map((subject) => {
-        const selected = value === subject.name;
-        const chipClass =
-          layout === "centered"
-            ? `px-3 py-1.5 text-xs font-bold uppercase ${selected ? "ring-2 ring-[var(--color-main)] ring-offset-1" : ""}`
-            : `cursor-pointer px-3 py-1 text-xs font-bold uppercase ${selected ? "ring-2 ring-[var(--color-progress)]" : ""}`;
-        const buttonClass =
-          layout === "centered"
-            ? "cursor-pointer rounded-[var(--radius-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            : "rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2";
-
-        return (
-          <button
-            key={subject.slug}
-            type="button"
-            onClick={() => onChange(selected ? "" : subject.name)}
-            className={buttonClass}
-            aria-pressed={selected}
-          >
-            <Chip className={chipClass}>{subject.name}</Chip>
-          </button>
-        );
-      })}
-    </>
-  );
+  const chipList = subjects.map((subject) => {
+    const selected = value === subject.name;
+    return (
+      <button
+        key={subject.slug}
+        type="button"
+        onClick={() => onChange(selected ? "" : subject.name)}
+        aria-pressed={selected}
+        className="cursor-pointer rounded-full px-3.5 py-2 text-xs font-bold tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+        style={{
+          fontFamily: "var(--font-body)",
+          backgroundColor: selected ? "var(--color-accent)" : "#fff",
+          color: selected ? "#fff" : "var(--color-main)",
+          border: selected
+            ? "1px solid var(--color-accent)"
+            : "1px solid color-mix(in srgb, var(--color-main) 12%, transparent)",
+        }}
+      >
+        {subject.name}
+      </button>
+    );
+  });
 
   if (layout === "centered") {
     return (
@@ -144,7 +218,9 @@ export function SubjectPicker({
       >
         {labels.pickLabel}
       </span>
-      <div className="flex flex-wrap gap-2">{chipList}</div>
+      <div className="flex flex-wrap gap-2" role="group" aria-label={labels.pickLabel}>
+        {chipList}
+      </div>
     </div>
   );
 }

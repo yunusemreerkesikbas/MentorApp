@@ -76,3 +76,11 @@ export async function purchaseDeepAnalysis(examId: string): Promise<DeepAnalysis
 export function isEconomyDisabled(err: unknown): boolean {
   return err instanceof ApiClientError && err.body.code === "ECONOMY_DISABLED";
 }
+
+/** App chrome (nav) listens so XP/coin pills refresh after panel quests / rescue. */
+export const ECONOMY_CHANGED_EVENT = "mentor:economy-changed";
+
+export function notifyEconomyChanged(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(ECONOMY_CHANGED_EVENT));
+}

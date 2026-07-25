@@ -62,26 +62,27 @@ const pendingToday: TodayPanelResponse = {
   focusingNow: null,
 };
 
-test("Free hub erişim hydration'ını beklemeden pending görevi seansa taşır", async ({
+test("landing next-action chip pending görevi seansa taşır", async ({
   page,
 }) => {
   const api = await mockCoachApi(page, {
     today: pendingToday,
-    accessDelayMs: 1_200,
+    access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
   });
 
   await page.goto("/koc");
+  await expect(page).toHaveURL(/\/koc\/sohbet/);
+  await expect(page.getByTestId("coach-empty-landing")).toBeVisible();
 
-  const card = page.getByTestId("coach-next-action");
-  await expect(card.getByText("Bugünün tek küçük adımı")).toBeVisible();
-  const start = card.getByRole("link", { name: "Odak seansına başla" });
-  await expect(start).toHaveAttribute("href", /\/seans\?.*source=coach/);
-  await expect(start).toHaveAttribute("href", new RegExp(`taskId=${taskId}`));
-  expect(api.conversationCalls).toBe(0);
+  const chip = page.getByTestId("coach-next-action-chip");
+  await expect(chip).toHaveText("Odak seansına başla");
+  await expect(chip).toHaveAttribute("href", /\/seans\?.*source=coach/);
+  await expect(chip).toHaveAttribute("href", new RegExp(`taskId=${taskId}`));
+  expect(api.todayCalls).toBeGreaterThanOrEqual(1);
   expect(api.dailyGreetingCalls).toBe(0);
 });
 
-test("dashboard ve koç hub aynı aksiyonu gösterir; dashboard bugün verisini yalnız bir kez ister", async ({
+test("dashboard ve koç landing aynı aksiyonu gösterir; dashboard bugün verisini yalnız bir kez ister", async ({
   page,
   context,
 }) => {
@@ -99,18 +100,19 @@ test("dashboard ve koç hub aynı aksiyonu gösterir; dashboard bugün verisini 
   expect(dashboardApi.dailyGreetingCalls).toBe(1);
 
   const coachPage = await context.newPage();
-  const coachApi = await mockCoachApi(coachPage, { today: pendingToday });
-  await coachPage.goto("/koc");
+  const coachApi = await mockCoachApi(coachPage, {
+    today: pendingToday,
+    access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
+  });
+  await coachPage.goto("/koc/sohbet");
   await expect(
-    coachPage
-      .getByTestId("coach-next-action")
-      .getByText(pendingToday.nextAction.message),
-  ).toBeVisible();
+    coachPage.getByTestId("coach-next-action-chip"),
+  ).toHaveAttribute("href", /source=coach/);
   expect(coachApi.todayCalls).toBe(1);
   expect(coachApi.dailyGreetingCalls).toBe(0);
 });
 
-test("boş plan için görev ekleme aksiyonunu gösterir", async ({ page }) => {
+test("boş plan için görev ekleme chip'ini gösterir", async ({ page }) => {
   const emptyToday: TodayPanelResponse = {
     ...pendingToday,
     tasks: [],
@@ -121,18 +123,21 @@ test("boş plan için görev ekleme aksiyonunu gösterir", async ({ page }) => {
       taskId: null,
     },
   };
-  await mockCoachApi(page, { today: emptyToday });
-  await page.goto("/koc");
-  await expect(
-    page
-      .getByTestId("coach-next-action")
-      .getByRole("link", { name: "Planına görev ekle" }),
-  ).toHaveAttribute("href", /\/plan\?add=1&source=coach/);
+  await mockCoachApi(page, {
+    today: emptyToday,
+    access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
+  });
+  await page.goto("/koc/sohbet");
+  await expect(page.getByTestId("coach-next-action-chip")).toHaveAttribute(
+    "href",
+    /\/plan\?add=1&source=coach/,
+  );
+  await expect(page.getByTestId("coach-next-action-chip")).toHaveText(
+    "Planına görev ekle",
+  );
 });
 
-test("tamamlanmış günü yeni çalışma baskısı olmadan kutlar", async ({
-  page,
-}) => {
+test("tamamlanmış günde next-action chip göstermez", async ({ page }) => {
   const completedToday: TodayPanelResponse = {
     ...pendingToday,
     tasks: [{ ...pendingToday.tasks[0]!, status: "DONE" }],
@@ -143,13 +148,16 @@ test("tamamlanmış günü yeni çalışma baskısı olmadan kutlar", async ({
       taskId: null,
     },
   };
-  await mockCoachApi(page, { today: completedToday });
-  await page.goto("/koc");
-  const completedCard = page.getByTestId("coach-next-action");
+  await mockCoachApi(page, {
+    today: completedToday,
+    access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
+  });
+  await page.goto("/koc/sohbet");
+  await expect(page.getByTestId("coach-empty-landing")).toBeVisible();
+  await expect(page.getByTestId("coach-next-action-chip")).toHaveCount(0);
   await expect(
-    completedCard.getByText("Bugünkü emeğin yeterli. Şimdi dinlenebilirsin."),
+    page.getByRole("button", { name: "Bugün nasıl çalışmalıyım?" }),
   ).toBeVisible();
-  await expect(completedCard.getByRole("link")).toHaveCount(0);
 });
 
 test("chat hakkı olmayan kullanıcıyı yalnız chat rotasında gate ile karşılar", async ({
@@ -160,7 +168,8 @@ test("chat hakkı olmayan kullanıcıyı yalnız chat rotasında gate ile karş�
   await page.goto("/koc/sohbet");
 
   await expect(page.getByText("AI koç seninle", { exact: true })).toBeVisible();
-  await expect(page.getByTestId("coach-next-action")).toHaveCount(0);
+  await expect(page.getByTestId("coach-next-action-chip")).toHaveCount(0);
+  await expect(page.getByTestId("coach-empty-landing")).toHaveCount(0);
   expect(api.todayCalls).toBe(0);
 });
 
@@ -237,7 +246,8 @@ test("conversation list hatasını gerçek boş durumdan ayırır ve retry eder"
     ],
   });
 
-  await page.goto("/koc");
+  await page.goto("/koc/sohbet");
+  await page.getByTestId("coach-history-open").click();
 
   await expect(page.getByText("Sohbetlerin şu an yüklenemedi.")).toBeVisible();
   api.allowConversations();
@@ -434,14 +444,14 @@ test("eski sayfa yüklenirken sohbet değişince loading durumunu temizler", asy
   });
   await loadOlder.click();
 
-  await page.locator("header").getByRole("link", { name: "Koç" }).click();
+  await page.getByTestId("coach-history-open").click();
   await page.getByRole("link", { name: /Hızlı sohbet/ }).click();
 
   await expect(page.getByText("Hızlı sohbet hazır")).toBeVisible();
   await expect(page.getByLabel("Koçuna mesaj yaz")).toBeEnabled();
   await expect(
     page.getByRole("button", { name: "Daha eski mesajları yükle" }),
-  ).toBeEnabled();
+  ).toHaveCount(0);
 });
 test("yarışan history isteklerinde yalnız son seçilen sohbeti gösterir", async ({
   page,
@@ -490,7 +500,8 @@ test("yarışan history isteklerinde yalnız son seçilen sohbeti gösterir", as
     messageDelaysMs: { [firstConversationId]: 1_200 },
   });
 
-  await page.goto("/koc");
+  await page.goto("/koc/sohbet");
+  await page.getByTestId("coach-history-open").click();
   const firstRequest = page.waitForRequest((request) =>
     request.url().includes(`/${firstConversationId}/messages`),
   );
@@ -501,7 +512,7 @@ test("yarışan history isteklerinde yalnız son seçilen sohbeti gösterir", as
   ).toBeVisible();
   await expect(page.getByLabel("Koçuna mesaj yaz")).toBeDisabled();
 
-  await page.locator("header").getByRole("link", { name: "Koç" }).click();
+  await page.getByTestId("coach-history-open").click();
   await page.getByRole("link", { name: /İkinci sohbet/ }).click();
 
   await expect(page.getByText("Son seçilen ikinci sohbet")).toBeVisible();

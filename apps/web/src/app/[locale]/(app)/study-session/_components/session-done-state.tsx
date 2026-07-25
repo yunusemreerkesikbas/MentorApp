@@ -9,6 +9,7 @@ import { Button } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { PuhuCoachBubble } from "@/components/puhu-coach-bubble";
 import { SuggestedTaskCard } from "@/components/suggested-task-card";
+import { useStreakCelebration } from "@/components/streak-celebration";
 import { fetchCoachAccess, requestSessionReflection } from "@/lib/coach";
 import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
 import {
@@ -81,6 +82,7 @@ export function SessionDoneState({
   const panelT = useTranslations("panel");
   const economyT = useTranslations("economy");
   const toast = useMentorToast();
+  const { tryCelebrate, celebration } = useStreakCelebration();
   const [mood, setMood] = useState<number | null>(null);
   const [note, setNote] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
@@ -108,6 +110,9 @@ export function SessionDoneState({
         const streak = today.streak.currentStreak;
         setCurrentStreak(streak);
         setStreakFeedback(resolveStreakFeedback(streakBaseline, streak));
+        if (countsAsFocusSession && streakBaseline != null) {
+          tryCelebrate(streakBaseline, streak);
+        }
 
         if (questsResult) {
           const completedNow = findNewlyCompletedQuests(questBaseline ?? null, questsResult);
@@ -134,7 +139,7 @@ export function SessionDoneState({
     };
     // Mount-only closure feedback; baselines are fixed when the done screen opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- toast is stable enough for one-shot announce
-  }, [economyT, panelT, questBaseline, streakBaseline]);
+  }, [countsAsFocusSession, economyT, panelT, questBaseline, streakBaseline, tryCelebrate]);
 
   const phaseMotion = reduceMotion
     ? {}
@@ -226,6 +231,8 @@ export function SessionDoneState({
   };
 
   return (
+    <>
+      {celebration}
     <motion.div
       className="flex w-full flex-col items-center gap-6 text-center"
       {...phaseMotion}
@@ -455,5 +462,6 @@ export function SessionDoneState({
         </Link>
       </div>
     </motion.div>
+    </>
   );
 }

@@ -20,6 +20,10 @@ export const colors = {
   progressTrack: "#C3D9FD",
   accentSoft: "#C3D9FD", // alias of progressTrack
   star: "#FFC700",
+  /** Flame coral from web `public/img/flame.png` tip — ring/label; not danger. */
+  streak: "#F3705A",
+  streakCore: "#FFD15C",
+  streakSoft: "#FFE8E2",
   likeActive: "#FF2DAB",
   errorContainer: "#ffdad6",
   danger: "#B42318",

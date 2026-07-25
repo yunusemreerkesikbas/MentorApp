@@ -68,6 +68,7 @@ export function EconomySection({
   const profile = useTranslations("profile.earned");
   const sheet = useMentorBottomSheet();
   const [state, setState] = useState<EconomyState>({ status: "probing" });
+  const [inviteOpen, setInviteOpen] = useState(false);
   const economyDisabledRef = useRef(false);
 
   const applyHidden = useCallback(() => {
@@ -169,19 +170,12 @@ export function EconomySection({
 
   function showInvite() {
     if (state.status !== "ready") return;
-    sheet.show({
-      title: t("invite_title"),
-      layout: "filter",
-      children: (
-        <EconomyInviteCard
-          code={state.invite.code}
-          onRedeemed={() => void reload()}
-        />
-      ),
-    });
+    sheet.dismissNow();
+    setInviteOpen(true);
   }
 
   return (
+    <>
     <Card solid className="p-4">
       <SectionHeading>{profile("title")}</SectionHeading>
       <div className="mt-3 divide-y divide-black/10 overflow-hidden rounded-[var(--radius-card)]">
@@ -214,5 +208,13 @@ export function EconomySection({
         </ListRow>
       </div>
     </Card>
+    {inviteOpen ? (
+      <EconomyInviteCard
+        code={state.invite.code}
+        onClose={() => setInviteOpen(false)}
+        onRedeemed={() => void reload()}
+      />
+    ) : null}
+    </>
   );
 }

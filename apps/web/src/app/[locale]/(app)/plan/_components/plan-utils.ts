@@ -2,8 +2,10 @@ export type PlanViewMode = "list" | "timeline" | "week";
 
 const VIEW_STORAGE_KEY = "mentor.plan.viewMode";
 
-/** Timeline task column scrolls after this many cards (≈4 visible rows). */
-export const PLAN_TIMELINE_SCROLL_AFTER_TASKS = 4;
+/** DOM id for a day section in the weekly Timeline chronology. */
+export function planTimelineDayId(iso: string): string {
+  return `plan-timeline-day-${iso}`;
+}
 
 export function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -99,7 +101,15 @@ export function formatWeekRangeLabel(
 ): string {
   const start = new Date(`${from}T12:00:00`);
   const end = new Date(`${to}T12:00:00`);
-  const fmt = new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "tr-TR", {
+  const loc = locale === "en" ? "en-GB" : "tr-TR";
+  const sameMonth =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth();
+  if (sameMonth) {
+    const month = new Intl.DateTimeFormat(loc, { month: "long" }).format(start);
+    return `${start.getDate()} ${month} – ${end.getDate()} ${month}`;
+  }
+  const fmt = new Intl.DateTimeFormat(loc, {
     day: "numeric",
     month: "long",
     year: start.getFullYear() !== end.getFullYear() ? "numeric" : undefined,

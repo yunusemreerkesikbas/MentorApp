@@ -234,14 +234,38 @@ http://localhost:3000/panel               # daily ritual hub
   article/button, `overflow-hidden` + `truncate` on the text column. Usage: no API change —
   reload `/panel` on ~375px. Gotcha: same pattern as community layout — flex/grid children
   default `min-width: auto`. Related: `panel-shell.tsx`. *(2026-07-23.)*
+- **App chrome redesign (header + floating tab)** — Mobile top bar is now avatar (premium gem
+  or verified badge) + time-of-day greeting + `displayName`, with XP/coin pills left of the
+  notification bell. Bottom nav is a floating pill; active item uses a soft surface capsule;
+  **Koç** is centered and elevated (progress-ring FAB, bubble icon kept). Profile moved off the
+  mobile tab (avatar → `/profil`); desktop sidebar still lists Profil + Topluluk and elevates
+  Koç as a ringed CTA. `PanelTopBar` removed from `/panel` to avoid double greeting; economy
+  pills refresh via `mentor:economy-changed`. Padding: `pt-16` / `pb-[88px+safe]`. Related:
+  `app-nav.tsx`, `app-shell.ts`, `economy.ts`, `panel-shell.tsx`, `messages/{tr,en}.json`.
+  *(2026-07-23.)*
+- **Tab active polish + premium badge** — Mobile tab dropped the muddy gray capsule; active =
+  top hairline + bold `#111` (Nuton). Hover only on `@media (hover:hover)` with soft progress
+  tint. Koç FAB fills black when active. Premium avatar badge switched from `Gem` (same as coin
+  pill) to `Crown` so premium ≠ economy diamond. Related: `app-nav.tsx`. *(2026-07-23.)*
+- **Mobile tab Koç idle + motion** — Koç FAB idle = white + dark icon; active (`/koç`) = black
+  fill. Framer Motion: pill entrance, sliding active dot (`layoutId`), color morph, whileTap
+  scale; `useReducedMotion` zeros durations. Related: `app-nav.tsx`. *(2026-07-23.)*
+- **Panel PromoSoft cards (slice 1)** — `/panel` Community, quest banner, and Today's ritual
+  restyled as pastel PromoSoft surfaces (DESIGN §8.4): soft blob atmosphere, white pill CTAs,
+  Puhu on Community only. Quest = thumb-violet wash; ritual = periwinkle; community =
+  progress-track. No top slider. Usage: open `/panel`. Gotcha: forum-off still hides Community.
+  Related: `community-card.tsx`, `panel-shell.tsx`, `messages/{tr,en}.json`. *(2026-07-23.)*
+- **Streak week → Bugünkü ritim** — 7-day flame icons on `DailyRhythmCard`; standalone quest
+  promo merged into `TodayFocusCard` as `RitualQuestStrip`. Related: `panel-shell.tsx`.
+  *(2026-07-23.)*
 
 ## Gotchas / Known issues
 
 - **Secondary routes** (`/seans`, `/abonelik`, `/hedef`) — not in the tab bar; no item highlighted
   (by design). 6 tab items on mobile — dense but matches product nav; labels truncate on narrow screens.
 - **Koç remains in nav** (product choice; Figma template shows 4 items).
-- **Koç composer sticky offset** must stay aligned with `MOBILE_TAB_BAR_STICKY_BOTTOM_CLASS` when
-  tab bar height changes.
+- **Koç composer** docks in the chat shell flex column (main height already clears the tab bar);
+  do not re-apply `MOBILE_TAB_BAR_STICKY_BOTTOM_CLASS` there or it double-offsets upward.
 - **Secondary hero CTA → `/giris`** (not `/bilgi` — app bilgi hub is auth-gated). Public SEO articles
   remain at `/bilgi/[slug]`. (Note: the marketing landing at `/` was later replaced by the pre-auth
   welcome slider — 0062; a future acquisition page will be a new route, e.g. `/tanitim`.)
@@ -253,7 +277,7 @@ http://localhost:3000/panel               # daily ritual hub
   info toast). `gentle-error` variant still missing — error toast uses inline SVG. Remaining overlay
   primitives (`bottom-sheet`, `drawer`, etc.) follow same Stitch → `@mentor/ui` pattern as toast/dialog.
 - **Economy/invite UI was backlog** at this sweep — now covered in [economy.md](./economy.md).
-- **Koç nested routes** — tab nav `href="/koc"` returns to hub from `/koc/chat` (`isNavActive` matches nested paths). Panel coach shortcut → `/koc/chat?seed=…`. See [ai.md](./ai.md) hub/chat split. *(2026-06-30.)*
+- **Koç nested routes** — tab nav `href="/koc"` returns to the chat landing via `/koc` → `/koc/sohbet` redirect (`isNavActive` still matches nested paths). Panel coach shortcut → `/koc/sohbet?seed=…`. See [ai.md](./ai.md) new-chat landing. *(2026-07-24; was hub 2026-06-30.)*
 
 ## Related
 

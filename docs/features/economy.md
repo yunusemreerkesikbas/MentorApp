@@ -70,6 +70,12 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+- **Invite sheet visual restyle (2026-07-24)** — Full-screen invite overlay (not bottom sheet):
+  chip-lavender hero, close on the visual (top-right), punchy two-line headline, **ticket** invite
+  code (side notches + dashed perforation + Copy), wave into redeem form. Quests “invite” action
+  dismisses the quests sheet then opens this overlay. Related: `economy-invite-card.tsx`,
+  `economy-section.tsx`, `messages/{tr,en}.json`.
+
 - **Economy flip provası — 10/10 smoke PASS (2026-07-19)** — `economy.enabled` ilk kez uçtan uca
   canlı prova edildi (lokal dev, all-fake providers + gerçek browser): admin config bound'ları +
   audit, balance/UI açılışı, günlük+haftalık görev grant'leri (period `2026-W29`), davet →
@@ -193,12 +199,10 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   "Kilometre Taşları" tabında otomatik görünür; mobile app aynı `/v1/economy/quests` contract'ını
   native action mapping ile tüketebilir.
   *(2026-07-09.)*
-- **Quest v2.3 — panel quest banner** — görevler artık yalnızca `/profil` içinde saklı değil:
-  `/panel` günlük ritim kartının altında hafif bir "Bugünkü Ritüel" banner'ı gösterir. Banner mevcut
-  `GET /v1/economy/quests` contract'ını best-effort tüketir, economy kapalıysa sessizce gizlenir ve
-  tıklanınca aynı görev sheet'ini açar. Modal içeriği profil ve panel arasında ortak component'tir;
-  backend contract değişmedi. Plan/mood güncellemeleri quest state'ini yeniden çeker.
-  *(2026-07-09.)*
+- **Quest v2.3 — panel quest strip (updated 2026-07-23)** — daily quests surface on `/panel`
+  inside **Bugünkü ritüel** as a compact `RitualQuestStrip` (not a second promo card). Best-effort
+  `GET /v1/economy/quests`; economy off → strip hidden; tap opens the shared quests sheet.
+  Plan/mood updates re-fetch quest state. *(2026-07-09; merge 2026-07-23.)*
 - **Quest v2.4 — reward feedback + balance sync** — web artık panelde yeni tamamlanan görevleri
   önceki/sonraki quest snapshot'ından algılar; ilk yüklemede eski tamamlanmış görevler için toast
   göstermez. Plan veya mood aksiyonundan sonra `GET /v1/economy/quests` auto-grant'i tetikler,
