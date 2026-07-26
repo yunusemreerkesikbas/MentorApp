@@ -21,6 +21,12 @@ export interface PlanTaskDto {
   status: PlanTaskStatus;
   sortOrder: number;
   taskDate: string; // yyyy-mm-dd
+  /** Wall-clock "HH:MM" on `taskDate`; null = all-day item. */
+  startTime: string | null;
+  /** Wall-clock "HH:MM"; null when open-ended. Never set without `startTime`. */
+  endTime: string | null;
+  /** Free-text note shown in the calendar event preview. */
+  description: string | null;
 }
 
 export type CoachPlanAdaptationSource = "PLAN" | "MOOD" | "SESSION";

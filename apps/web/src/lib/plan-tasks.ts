@@ -80,17 +80,48 @@ export function groupPlanTasksByDate(
   return grouped;
 }
 
-/** List plan tasks in an inclusive date range — single request. */
+/** API cap — `paginationQuerySchema` rejects anything larger. */
+const MAX_PAGE_SIZE = 100;
+
+/**
+ * List plan tasks in an inclusive date range. A month grid spans up to 42 days, which can hold
+ * more than one page, so any remaining pages are fetched in parallel rather than silently
+ * truncating the calendar.
+ */
 export async function listPlanTasksForRange(
   from: string,
   to: string,
-  pageSize = 100,
 ): Promise<PlanTaskDto[]> {
-  const url = `${getPlanTaskControllerListUrl()}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&page=1&pageSize=${pageSize}`;
-  const res = (await http<Paginated<PlanTaskDto>>(
-    url,
+  const pageUrl = (page: number) =>
+    `${getPlanTaskControllerListUrl()}?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&page=${page}&pageSize=${MAX_PAGE_SIZE}`;
+
+  const first = (await http<Paginated<PlanTaskDto>>(
+    pageUrl(1),
   )) as Paginated<PlanTaskDto>;
-  return res.items;
+
+  const pageCount = Math.ceil(first.total / MAX_PAGE_SIZE);
+  if (pageCount <= 1) return first.items;
+
+  const rest = await Promise.all(
+    Array.from({ length: pageCount - 1 }, (_, i) =>
+      http<Paginated<PlanTaskDto>>(pageUrl(i + 2)) as Promise<Paginated<PlanTaskDto>>,
+    ),
+  );
+  return [...first.items, ...rest.flatMap((page) => page.items)];
+}
+
+/**
+ * Tasks for the whole 6×7 month board, keyed by ISO date. 42 days stays under the API's 62-day
+ * range cap, so this is one range query (plus extra pages when the month is busy).
+ */
+export async function listPlanTasksForMonthGrid(
+  days: string[],
+): Promise<Record<string, PlanTaskDto[]>> {
+  const from = days[0]!;
+  const to = days[days.length - 1]!;
+  const grouped = groupPlanTasksByDate(await listPlanTasksForRange(from, to));
+  for (const iso of days) grouped[iso] ??= [];
+  return grouped;
 }
 
 /** Week tasks keyed by ISO date (Monday-start week). */

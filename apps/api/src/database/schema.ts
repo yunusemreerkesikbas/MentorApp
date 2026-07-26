@@ -21,6 +21,7 @@ import {
   pgTable,
   smallint,
   text,
+  time,
   timestamp,
   uniqueIndex,
   uuid,
@@ -299,6 +300,42 @@ export const exams = pgTable(
   ],
 );
 
+/**
+ * Official public holidays — editorial reference data, same trust contract as `exam_events`
+ * (guardrail §4 #1: official information is verified content, never derived or AI-generated).
+ *
+ * Seeded per country and year rather than computed: the religious holidays follow the Hijri
+ * calendar and their exact dates — plus any bridge days — come from an official announcement.
+ */
+export const publicHolidays = pgTable(
+  "public_holidays",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    /** ISO 3166-1 alpha-2; "TR" today, org-ready for later markets. */
+    country: varchar("country", { length: 2 }).notNull().default("TR"),
+    holidayDate: date("holiday_date").notNull(),
+    name: text("name").notNull(),
+    /** FULL | HALF — HALF covers the bayram arifesi afternoon (PublicHolidayKind). */
+    kind: text("kind").notNull().default("FULL"),
+    source: text("source").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+    verifiedBy: text("verified_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("public_holidays_country_date_unique_idx").on(t.country, t.holidayDate),
+    index("public_holidays_country_date_idx").on(t.country, t.holidayDate),
+  ],
+);
+
 /** A dated editorial event for an exam (EXAM_DATE first; more types later). */
 export const examEvents = pgTable(
   "exam_events",
@@ -487,6 +524,12 @@ export const planTasks = pgTable(
     subject: text("subject"),
     /** PENDING | DONE (PlanTaskStatus). */
     status: text("status").notNull().default("PENDING"),
+    /** Wall-clock start on `task_date`; NULL = all-day item (every pre-calendar row). */
+    startTime: time("start_time"),
+    /** Wall-clock end; requires `start_time` and must be later (plan_tasks_time_range_chk). */
+    endTime: time("end_time"),
+    /** Optional free-text note shown in the calendar event preview. */
+    description: text("description"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

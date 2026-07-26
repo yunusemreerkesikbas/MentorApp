@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down.mjs";
 import { useLocale, useTranslations } from "next-intl";
-import type { ExamSubjectDto, MockExamDto } from "@mentor/types";
+import type { ExamSubjectDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import {
   Button,
-  Card,
-  SectionHeading,
   Skeleton,
   SkeletonGroup,
   skeletonStaggerStyle,
@@ -18,11 +18,17 @@ import { AnalysisHistoryDetail } from "./analysis-history-detail";
 
 const PAGE_SIZE = 5;
 
+/** Slide-up content; container height uses CSS grid (avoids height:auto jank). */
+const slideUpTransition = {
+  type: "tween" as const,
+  duration: 0.28,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
+
 interface AnalysisHistoryListProps {
   examId: string;
   refreshKey: number;
   subjects: ExamSubjectDto[];
-  onCopyLast: (exam: MockExamDto) => void;
   onChanged: () => void;
 }
 
@@ -30,14 +36,15 @@ export function AnalysisHistoryList({
   examId,
   refreshKey,
   subjects,
-  onCopyLast,
   onChanged,
 }: AnalysisHistoryListProps) {
   const t = useTranslations("analysis.history");
-  const tAnalysis = useTranslations("analysis");
   const locale = useLocale();
-  const [items, setItems] = useState<MockExamDto[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const reduceMotion = useReducedMotion();
+  const [items, setItems] = useState<
+    Awaited<ReturnType<typeof fetchMockExamsList>>["items"]
+  >([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +59,7 @@ export function AnalysisHistoryList({
     setTotal(0);
     setError(null);
     setMoreError(null);
-    setSelectedId(null);
+    setExpandedId(null);
     try {
       const response = await fetchMockExamsList(1, PAGE_SIZE, examId);
       setItems(response.items);
@@ -91,26 +98,30 @@ export function AnalysisHistoryList({
     }
   }, [examId, items.length, loadingMore, page, t, total]);
 
+  function toggleExpanded(id: string) {
+    setExpandedId((current) => (current === id ? null : id));
+  }
+
   if (loading) {
     return <HistoryListSkeleton />;
   }
 
   if (error) {
     return (
-      <Card className="flex flex-col items-start gap-3">
+      <div className="flex flex-col items-start gap-3 px-1 py-2">
         <p className="text-sm" style={{ color: "var(--color-danger)" }}>
           {error}
         </p>
         <Button type="button" variant="secondary" onClick={() => void loadFirstPage()}>
           {t("retry")}
         </Button>
-      </Card>
+      </div>
     );
   }
 
   if (items.length === 0) {
     return (
-      <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+      <p className="px-1 py-2 text-sm" style={{ color: "var(--color-secondary)" }}>
         {t("empty")}
       </p>
     );
@@ -118,26 +129,31 @@ export function AnalysisHistoryList({
 
   return (
     <>
-      <Card>
-        <SectionHeading as="h3">{t("title")}</SectionHeading>
-        <ul
-          className="mt-3 divide-y"
-          style={{
-            borderColor:
-              "color-mix(in srgb, var(--color-main) 10%, transparent)",
-          }}
-        >
-          {items.map((item) => (
+      <ul className="flex flex-col gap-0.5" data-testid="analysis-history-list">
+        {items.map((item) => {
+          const expanded = expandedId === item.id;
+          return (
             <li key={item.id}>
               <button
                 type="button"
-                onClick={() => setSelectedId(item.id)}
-                className="grid min-h-11 w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-[var(--radius-card)] px-2 py-3 text-left transition-colors duration-200 hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+                onClick={() => toggleExpanded(item.id)}
+                aria-expanded={expanded}
+                aria-controls={`analysis-history-panel-${item.id}`}
+                className={[
+                  "grid min-h-10 w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-[10px] px-2.5 py-2 text-left",
+                  "transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none",
+                  expanded
+                    ? "bg-black/[0.06]"
+                    : "hover:bg-black/[0.05]",
+                ].join(" ")}
               >
                 <span className="min-w-0">
                   <span
                     className="block truncate text-sm font-semibold"
-                    style={{ color: "var(--color-main)" }}
+                    style={{
+                      color: "var(--color-main)",
+                      fontFamily: "var(--font-heading)",
+                    }}
                   >
                     {item.publisherName || t("publisher_fallback")}
                   </span>
@@ -149,7 +165,7 @@ export function AnalysisHistoryList({
                   </span>
                 </span>
                 <span
-                  className="text-right text-base font-bold tabular-nums"
+                  className="text-right text-sm font-bold tabular-nums"
                   style={{
                     color: "var(--color-main)",
                     fontFamily: "var(--font-heading)",
@@ -157,56 +173,89 @@ export function AnalysisHistoryList({
                 >
                   {t("net", { net: item.totalNet })}
                 </span>
+                <ChevronDown
+                  className="size-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none"
+                  style={{
+                    color: "var(--color-secondary)",
+                    transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+                  }}
+                  strokeWidth={2.25}
+                  aria-hidden
+                />
               </button>
-            </li>
-          ))}
-        </ul>
 
-        {items.length < total ? (
-          <div className="mt-3 flex flex-col items-start gap-2 border-t pt-3">
-            <Button
-              type="button"
-              variant="secondary"
-              busy={loadingMore}
-              onClick={() => void loadMore()}
-            >
-              {t("load_more")}
-            </Button>
-            {moreError ? (
-              <div className="flex flex-wrap items-center gap-3" role="alert">
-                <p
-                  className="text-sm"
-                  style={{ color: "var(--color-secondary)" }}
-                >
-                  {moreError}
-                </p>
-                <button
-                  type="button"
-                  className="min-h-11 text-sm font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                  onClick={() => void loadMore()}
-                >
-                  {t("retry")}
-                </button>
+              <div
+                className="grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+                style={{
+                  gridTemplateRows: expanded ? "1fr" : "0fr",
+                }}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <AnimatePresence initial={false}>
+                    {expanded ? (
+                      <motion.div
+                        key={`panel-${item.id}`}
+                        initial={
+                          reduceMotion ? false : { y: 18, opacity: 0 }
+                        }
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={
+                          reduceMotion
+                            ? undefined
+                            : { y: 10, opacity: 0 }
+                        }
+                        transition={
+                          reduceMotion
+                            ? { duration: 0 }
+                            : slideUpTransition
+                        }
+                      >
+                        <AnalysisHistoryDetail
+                          mockExamId={item.id}
+                          subjects={subjects}
+                          variant="accordion"
+                          onClose={() => setExpandedId(null)}
+                          onChanged={onChanged}
+                        />
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
+                </div>
               </div>
-            ) : null}
-          </div>
-        ) : null}
+            </li>
+          );
+        })}
+      </ul>
 
-        <button
-          type="button"
-          onClick={() => onCopyLast(items[0]!)}
-          className="mt-4 min-h-11 text-sm font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{ color: "var(--color-main)" }}
-        >
-          {tAnalysis("copy_last")}
-        </button>
-      </Card>
-      <AnalysisHistoryDetail
-        mockExamId={selectedId}
-        subjects={subjects}
-        onClose={() => setSelectedId(null)}
-        onChanged={onChanged}
-      />
+      {items.length < total ? (
+        <div className="mt-2 flex flex-col items-start gap-2 px-1 pt-1">
+          <Button
+            type="button"
+            variant="secondary"
+            busy={loadingMore}
+            onClick={() => void loadMore()}
+          >
+            {t("load_more")}
+          </Button>
+          {moreError ? (
+            <div className="flex flex-wrap items-center gap-3" role="alert">
+              <p
+                className="text-sm"
+                style={{ color: "var(--color-secondary)" }}
+              >
+                {moreError}
+              </p>
+              <button
+                type="button"
+                className="min-h-11 text-sm font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                onClick={() => void loadMore()}
+              >
+                {t("retry")}
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </>
   );
 }
@@ -216,24 +265,22 @@ function HistoryListSkeleton() {
 
   return (
     <SkeletonGroup label={t("loading")} className="block">
-      <Card>
-        <Skeleton className="h-6 w-40 rounded-[var(--radius-card)]" />
-        <div className="mt-3 flex flex-col">
-          {Array.from({ length: PAGE_SIZE }, (_, index) => (
-            <div
-              key={index}
-              className="grid min-h-16 grid-cols-[minmax(0,1fr)_5rem] items-center gap-4 border-t px-2 py-3 first:border-t-0"
-              style={skeletonStaggerStyle(index)}
-            >
-              <div className="flex flex-col gap-2">
-                <Skeleton className="h-4 w-32 rounded-[var(--radius-card)]" />
-                <Skeleton className="h-3 w-20 rounded-[var(--radius-card)]" />
-              </div>
-              <Skeleton className="h-5 w-20 rounded-[var(--radius-card)]" />
+      <div className="flex flex-col gap-0.5">
+        {Array.from({ length: PAGE_SIZE }, (_, index) => (
+          <div
+            key={index}
+            className="grid min-h-10 grid-cols-[minmax(0,1fr)_4rem_1rem] items-center gap-2 rounded-[10px] px-2.5 py-2"
+            style={skeletonStaggerStyle(index)}
+          >
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-4 w-28 rounded-[var(--radius-card)]" />
+              <Skeleton className="h-3 w-16 rounded-[var(--radius-card)]" />
             </div>
-          ))}
-        </div>
-      </Card>
+            <Skeleton className="h-4 w-14 rounded-[var(--radius-card)]" />
+            <Skeleton className="h-4 w-4 rounded-full" />
+          </div>
+        ))}
+      </div>
     </SkeletonGroup>
   );
 }
@@ -245,4 +292,3 @@ function toErrorMessage(error: unknown): string {
       ? error.message
       : String(error);
 }
-

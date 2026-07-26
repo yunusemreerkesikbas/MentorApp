@@ -1,4 +1,10 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Locator,
+  type Page,
+  type Route,
+} from "@playwright/test";
 import type {
   AuthUser,
   CoachAccessDto,
@@ -27,6 +33,22 @@ const user: AuthUser = {
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 
+/**
+ * Returns the history surface for the current viewport and makes sure it is open.
+ *
+ * Both surfaces are always mounted (the rail is `hidden lg:flex`, the drawer is `lg:hidden`), so
+ * conversation titles and history errors match twice in the DOM — assertions MUST be scoped to the
+ * returned locator or they hit a strict-mode violation. Desktop needs no click: the rail starts
+ * expanded.
+ */
+async function openHistory(page: Page): Promise<Locator> {
+  if ((page.viewportSize()?.width ?? 0) >= 1024) {
+    return page.getByTestId("coach-history-rail");
+  }
+  await page.getByTestId("coach-history-open").click();
+  return page.getByTestId("coach-history-drawer");
+}
+
 const accessNone: CoachAccessDto = {
   canChat: false,
   mode: "NONE",
@@ -46,6 +68,9 @@ const pendingToday: TodayPanelResponse = {
       status: "PENDING",
       sortOrder: 0,
       taskDate: "2026-07-20",
+      startTime: null,
+      endTime: null,
+      description: null,
     },
   ],
   nextAction: {
@@ -247,12 +272,12 @@ test("conversation list hatasını gerçek boş durumdan ayırır ve retry eder"
   });
 
   await page.goto("/koc/sohbet");
-  await page.getByTestId("coach-history-open").click();
+  const history = await openHistory(page);
 
-  await expect(page.getByText("Sohbetlerin şu an yüklenemedi.")).toBeVisible();
+  await expect(history.getByText("Sohbetlerin şu an yüklenemedi.")).toBeVisible();
   api.allowConversations();
-  await page.getByRole("button", { name: "Tekrar dene" }).click();
-  await expect(page.getByText("Devam eden sohbet")).toBeVisible();
+  await history.getByRole("button", { name: "Tekrar dene" }).click();
+  await expect(history.getByText("Devam eden sohbet")).toBeVisible();
 });
 
 test("history hatasında composerı kilitler ve retry sonrası konuşmayı açar", async ({
@@ -444,8 +469,8 @@ test("eski sayfa yüklenirken sohbet değişince loading durumunu temizler", asy
   });
   await loadOlder.click();
 
-  await page.getByTestId("coach-history-open").click();
-  await page.getByRole("link", { name: /Hızlı sohbet/ }).click();
+  const history = await openHistory(page);
+  await history.getByRole("link", { name: /Hızlı sohbet/ }).click();
 
   await expect(page.getByText("Hızlı sohbet hazır")).toBeVisible();
   await expect(page.getByLabel("Koçuna mesaj yaz")).toBeEnabled();
@@ -501,19 +526,19 @@ test("yarışan history isteklerinde yalnız son seçilen sohbeti gösterir", as
   });
 
   await page.goto("/koc/sohbet");
-  await page.getByTestId("coach-history-open").click();
+  const history = await openHistory(page);
   const firstRequest = page.waitForRequest((request) =>
     request.url().includes(`/${firstConversationId}/messages`),
   );
-  await page.getByRole("link", { name: /Birinci sohbet/ }).click();
+  await history.getByRole("link", { name: /Birinci sohbet/ }).click();
   await firstRequest;
   await expect(
     page.getByLabel("Sohbet geçmişin yükleniyor…"),
   ).toBeVisible();
   await expect(page.getByLabel("Koçuna mesaj yaz")).toBeDisabled();
 
-  await page.getByTestId("coach-history-open").click();
-  await page.getByRole("link", { name: /İkinci sohbet/ }).click();
+  const historyAgain = await openHistory(page);
+  await historyAgain.getByRole("link", { name: /İkinci sohbet/ }).click();
 
   await expect(page.getByText("Son seçilen ikinci sohbet")).toBeVisible();
   await page.waitForTimeout(1_300);
@@ -696,22 +721,29 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
           503,
         );
       }
+      const conversationPages =
+        options.messagePagesByConversation?.[requestedConversationId];
       const items =
-        options.messagePagesByConversation?.[requestedConversationId]?.[
-          pageNumber
-        ] ??
+        conversationPages?.[pageNumber] ??
         options.messagePages?.[pageNumber] ??
         (pageNumber === 1
           ? options.messagesByConversation?.[requestedConversationId] ??
             options.messages ??
             []
           : []);
-      const total =
-        options.messageTotal ??
-        Object.values(options.messagePages ?? {}).reduce(
-          (sum, pageItems) => sum + pageItems.length,
-          options.messages?.length ?? 0,
-        );
+      // Per-conversation suites must report THAT conversation's total: a shared `messageTotal`
+      // makes a 1-message chat look paginated, so "load older" never goes away when switching.
+      const total = conversationPages
+        ? Object.values(conversationPages).reduce(
+            (sum, pageItems) => sum + pageItems.length,
+            0,
+          )
+        : options.messagesByConversation?.[requestedConversationId]?.length ??
+          options.messageTotal ??
+          Object.values(options.messagePages ?? {}).reduce(
+            (sum, pageItems) => sum + pageItems.length,
+            options.messages?.length ?? 0,
+          );
       return json(route, {
         items,
         total,

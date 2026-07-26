@@ -12,6 +12,24 @@ export interface ExamSummaryDto {
   isCurrent: boolean;
 }
 
+export type PublicHolidayKind = "FULL" | "HALF";
+
+/**
+ * An official public holiday. Carries the same trust metadata as every other editorial fact —
+ * the client displays it verbatim and never derives holidays on its own (guardrail §4 #1).
+ */
+export interface PublicHolidayDto {
+  /** yyyy-mm-dd */
+  date: string;
+  name: string;
+  /** HALF = bayram arifesi (afternoon only). */
+  kind: PublicHolidayKind;
+  source: string;
+  sourceUrl: string;
+  verifiedAt: string;
+  verifiedBy: string;
+}
+
 export interface ExamEventDto {
   type: string;
   eventAt: string;

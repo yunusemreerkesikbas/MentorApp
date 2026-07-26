@@ -142,6 +142,11 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Plan Timeline tab enter (2026-07-25)** — Liste→Timeline no longer flashes week-start then
+  jumps to today: spacer + `scrollTop` pin run in one `useLayoutEffect` before paint; content
+  stays hidden under an embedded skeleton until ready; shell motion for timeline is opacity-only
+  (no `y` slide). Related: `plan-timeline-view.tsx`, `plan-shell.tsx`, `plan-content-skeleton.tsx`.
+
 - **Plan add-task sheet skeletons (2026-07-25)** — While exam subject taxonomy loads, the
   “Yeni görev” sheet shows a title-field skeleton + pill chip skeletons (reserved height) so the
   modal does not jump when chips arrive. `useExamSubjectTaxonomy` caches one in-flight/result for
@@ -156,6 +161,41 @@ pnpm --filter @mentor/api test
   `contentKey` = `timeline-{weekAnchor}`. Past days read-only per `taskDate`. Related:
   `plan-timeline-view.tsx`, `plan-shell.tsx`, `plan-content-skeleton.tsx`, messages,
   `docs/plans/2026-07-25-plan-page-ui-redesign.md`.
+
+- **Analiz history edit in bottom sheet (2026-07-26)** — Accordion stays read-only; **Düzenle** opens
+  `AnalysisHistoryEditSheet` via Mentor bottom sheet (full D/Y/B form). Save refreshes detail + list.
+  Related: `analysis-history-edit-sheet.tsx`, `analysis-history-detail.tsx`.
+
+- **Analiz history detail redesign (2026-07-26)** — Accordion panel: white well, compact subject
+  table (Ders / D / Y / B / Net), neutral **Koçla konuş**, pill **Düzenle** / **Sil**. Related:
+  `analysis-history-detail.tsx`.
+
+- **Analiz history accordion polish (2026-07-26)** — Row chevron + height/opacity expand animation
+  (`prefers-reduced-motion` respected). **Son denemeyi kopyala** moved from the history rail to the
+  Gir form header (`SectionHeading` action) — fetches latest mock exam on click. Related:
+  `analysis-history-list.tsx`, `analysis-tab-entry.tsx`, `analysis-history-detail.tsx`.
+
+- **Analiz history accordion (2026-07-26)** — Geçmiş denemeler rail/drawer opens detail **inline**
+  under the clicked row (`aria-expanded` / single-open). Overlay “Deneme detayı” stack removed for
+  this surface; edit/delete/coach stay in the accordion panel. Related:
+  `analysis-history-list.tsx`, `analysis-history-detail.tsx` (`variant="accordion"`).
+
+- **Analiz metric banner polish (2026-07-26)** — **Son net** KPI card: uppercase label, large net,
+  minimal inline delta (`↗ +6.00`), `ghost.headline` caption, filled sparkline from last ≤6
+  attempts. Banner CTA removed (entry via **Gir**). Duplicate “Son denemeler” table removed — same
+  data lives in the history rail. Related: `analysis-summary-band.tsx`, `analysis-sparkline.tsx`,
+  e2e + `messages/{tr,en}.json`.
+
+- **Analiz UI chrome redesign (2026-07-25)** — `/analiz` drops the page title/subtitle; **Son net**
+  becomes a metric banner (large value, delta chip, sparkline, CTA). **Geçmiş denemeler** moves to a
+  page-level left history rail on all tabs (Koç-style: collapsible desktop rail + mobile drawer).
+  Gir/Gelişim/Yanlışlarım uses the shared Plan-style pill segment (`SegmentPillControl`). Shared
+  chrome: `apps/web/src/components/segment-pill-control.tsx`,
+  `apps/web/src/components/history-side-panel/*`. Usage: open `/analiz` — history stays visible while
+  switching tabs; mobile opens history via the top-left control. Gotcha: history list mounts in the
+  rail (and again in the drawer when opened on mobile). Related: `analysis-shell.tsx`,
+  `analysis-summary-band.tsx`, `analysis-history-list.tsx`, `analysis-segment-control.tsx`,
+  `plan-calendar-header.tsx`, `messages/{tr,en}.json`.
 
 - **Plan task overflow dropdown + edit (2026-07-25)** — Task ⋯ opens an anchored dropdown (not
   action-sheet): **Görevi düzenle** + **Sil**. Toggle complete stays on the checkbox only. Edit
@@ -735,3 +775,33 @@ pnpm --filter @mentor/api test
   pencere + lazy stale-cleanup sınırlar. İlgili: `study-session.repository.ts` (`countFocusingNow`),
   `session.service.ts` (`getFocusingNowCount`), `today.service.ts`, `seans-shell.tsx`,
   `session-done-state.tsx`, `apps/web/src/lib/session-share.ts`.
+
+- **Plan → Takvim: saatli etkinlikler (2026-07-25)** — Plan sayfasındaki **Hafta** sekmesi
+  **Takvim** oldu (`PlanViewMode.week` → `calendar`; `readStoredViewMode` eski localStorage
+  değerini sessizce migrate eder). Takvim içinde **Gün · Hafta · Ay** ölçeği
+  (`mentor.plan.calendarScale`), ay/hafta/gün başlığı + ‹ › adımlama ve "Bugün".
+  **Ayrı etkinlik tablosu yok:** `plan_tasks`'a üç nullable kolon eklendi — `start_time`,
+  `end_time`, `description` (migration `0059` + `plan_tasks_time_range_chk`). **Kural:
+  `start_time IS NULL` = tüm gün** — takvim öncesi her satır otomatik olarak tüm-gün, davranış
+  değişmedi. `end_time` tek başına olamaz ve `> start_time` olmalı; aynı kural zod
+  (`refinePlanTaskTimes`, hem create hem update) ve DB CHECK'te ikizlenir. Update'te saatler
+  **çift olarak** patch'lenir (temizleme = ikisi de null) — böylece kayıt okumadan doğrulanır.
+  Gün içi sıralama `start_time asc nulls first` (Postgres ASC varsayılanı NULLS LAST, açıkça
+  yazıldı) → tüm-gün üstte, saatliler kronolojik. Etkinlik **rengi `subject`'ten deterministik
+  türetilir** (`planEventColor`) — renk kolonu/picker yok, aynı ders her yerde aynı renk; ders adı
+  hep yazılı olduğu için renk tek sinyal değil. Palet yeni hex tanımlamaz, mevcut `@mentor/ui`
+  accent token'larıdır (DESIGN.md §2.3; `thumb-*` token'ları theme.css'te yok, o yüzden 5 swatch).
+  **Gotcha: hash FNV-1a olmak zorunda** — klasik `hash * 31 + c` foldu `31 ≡ 1 (mod 5)` olduğu için
+  `sum(charCodes) % 5`'e çöküyor ve Matematik/Türkçe/Tarih/Genel Yetenek'i tek renge yığıyordu;
+  spec bu beşliyi ayrı swatch'ta tutuyor. Popup için yeni modal
+  altyapısı yok: `filterSheet` zaten `lg`'de ortalanmış dialog, mobilde bottom sheet. Saat girişi
+  native `<input type="time">`. Hover/focus önizlemesi salt-okunur (tıklama zaten düzenlemeyi
+  açıyor) — yüzey başına tek popover. Gotcha: **ay ızgarası 42 gün** → `listPlanTasksForRange`
+  artık `total > 100` olduğunda kalan sayfaları paralel çeker (API `pageSize` üst sınırı 100,
+  sessizce kesiliyordu). Mobilde 7 kolonlu saat ızgarası kullanılamaz olduğu için `week` ölçeği
+  seçili günün ajandası olarak render edilir ve sekme "Ajanda" yazar. Saf geometri
+  `apps/web/src/lib/plan-calendar-layout.ts`'de (çakışma kolonlama O(n²), bir günün görev sayısı
+  için yeterli) + `web-plan-calendar-layout.spec.ts`. İlgili: `plan-calendar-view.tsx`,
+  `plan-calendar-header.tsx`, `plan-time-grid.tsx`, `plan-month-grid.tsx`, `plan-event-chip.tsx`,
+  `plan-event-preview.tsx`, `plan-add-task-form.tsx`, `plan-shell.tsx`, `plan-utils.ts`,
+  `lib/plan-event-colors.ts`, `lib/plan-tasks.ts`, `coaching.mappers.ts` (`time` → "HH:MM").

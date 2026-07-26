@@ -407,15 +407,6 @@ html.mentor-sheet-open {
   width: 3px;
 }
 
-.mentor-plan-week-mini-calendar .mentor-plan-week-mini-today {
-  display: block;
-  margin-bottom: 0;
-  margin-top: 0.875rem;
-  min-height: 2.75rem;
-  padding-block: 0.5rem;
-  width: 100%;
-}
-
 .mentor-plan-day-picker .rdp-day.mentor-plan-week-range:not(.rdp-outside):not(.rdp-selected) .rdp-day_button {
   background: color-mix(in srgb, var(--color-progress) 10%, transparent);
 }
@@ -445,11 +436,13 @@ html.mentor-sheet-open {
 
 /* Plan timeline — capped height; day-by-day snap scroll */
 .mentor-plan-timeline-scroll {
+  /* Shared X for rail line + day circles (center of marker) */
+  --plan-timeline-rail-x: 24px;
   max-height: min(32rem, 58vh);
   overflow-y: auto;
   overscroll-behavior-y: contain;
   /* Extra right inset keeps day stats clear of the floating + chip */
-  padding: 0.75rem 2.5rem 1rem 0.75rem;
+  padding: 0.75rem 2.5rem 1rem 0.5rem;
   scroll-behavior: smooth;
   scroll-snap-type: y mandatory;
   scrollbar-gutter: stable;
@@ -460,28 +453,91 @@ html.mentor-sheet-open {
   outline-offset: 2px;
 }
 
+.mentor-plan-timeline-rail {
+  position: absolute;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  left: 0;
+  width: calc(var(--plan-timeline-rail-x) * 2);
+  pointer-events: none;
+}
+
+.mentor-plan-timeline-rail-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--plan-timeline-rail-x);
+  width: 2px;
+  transform: translateX(-50%);
+}
+
+/* Day dots — center on rail with transform (no Framer on these). */
+.mentor-plan-timeline-dot {
+  left: var(--plan-timeline-rail-x);
+  transform: translateX(-50%);
+}
+
+/*
+ * Active date badge — center with negative margin so Framer `layoutId`
+ * transform does not fight translateX(-50%) and shift the circle off the rail.
+ */
+.mentor-plan-timeline-badge {
+  left: var(--plan-timeline-rail-x);
+  margin-left: -1.375rem; /* half of 2.75rem (h-11/w-11) */
+  transition: box-shadow 280ms ease;
+}
+
 .mentor-plan-timeline-day {
   scroll-snap-align: start;
   scroll-snap-stop: always;
   padding-bottom: 1.75rem;
-  transition:
-    opacity 220ms ease,
-    transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  padding-left: 3.5rem;
+  transition: opacity 220ms ease;
 }
 
 .mentor-plan-timeline-day[data-active="true"] {
   opacity: 1;
-  transform: translateY(0);
 }
 
 .mentor-plan-timeline-day:not([data-active="true"]) {
   opacity: 0.78;
 }
 
-.mentor-plan-timeline-badge {
-  transition:
-    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 280ms ease;
+/* Mobile: tighter type; rail far enough left for badge half-width (~18px) + border */
+@media (max-width: 1023px) {
+  .mentor-plan-timeline-scroll {
+    --plan-timeline-rail-x: 22px;
+    max-height: min(28rem, 52vh);
+    padding: 0.35rem 1.75rem 0.65rem 0.35rem;
+  }
+
+  .mentor-plan-timeline-day {
+    padding-bottom: 1rem;
+    padding-left: 2.75rem;
+  }
+
+  .mentor-plan-timeline-day .mentor-plan-timeline-day-title {
+    font-size: 0.8125rem;
+    line-height: 1.25;
+  }
+
+  .mentor-plan-timeline-day .mentor-plan-timeline-day-meta {
+    font-size: 0.6875rem;
+  }
+
+  .mentor-plan-timeline-day .mentor-plan-timeline-day-empty {
+    font-size: 0.75rem;
+  }
+
+  .mentor-plan-timeline-badge {
+    height: 2.25rem;
+    width: 2.25rem;
+    margin-left: -1.125rem; /* half of 2.25rem */
+  }
+
+  .mentor-plan-timeline-badge span {
+    font-size: 0.5625rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

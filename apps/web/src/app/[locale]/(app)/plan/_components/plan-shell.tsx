@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
+import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left.mjs";
 import { useTranslations } from "next-intl";
 import type { PlanTaskDto, PlanTaskStatus, TodayPanelResponse } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
@@ -16,9 +17,11 @@ import {
   createPlanTask,
   deletePlanTask,
   listPlanTasksForDate,
+  listPlanTasksForMonthGrid,
   listPlanTasksForWeek,
   updatePlanTask,
 } from "@/lib/plan-tasks";
+import { monthGridDays } from "@/lib/plan-calendar-layout";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { parsePlanAdaptationQuery } from "@/lib/plan-coach-adaptation-utils";
 import { parseAnalysisPlanPrefill, type AnalysisPlanPrefill } from "@/lib/analysis-plan-prefill";
@@ -27,20 +30,26 @@ import {
   PlanCoachAdaptationAction,
   type PlanCoachAdaptationActionHandle,
 } from "./plan-coach-adaptation-action";
+import { PlanCalendarView } from "./plan-calendar-view";
 import { PlanDateNav } from "./plan-date-nav";
 import { PlanDatePickerSheet, type PlanDatePickerSheetHandle } from "./plan-date-picker-sheet";
+import { PlanEventDetails } from "./plan-event-details";
 import { PlanListView } from "./plan-list-view";
 import { PlanTimelineView } from "./plan-timeline-view";
 import { PlanViewSwitcher } from "./plan-view-switcher";
-import { PlanWeekDesktopLayout } from "./plan-week-desktop-layout";
-import { PlanWeekNavCard } from "./plan-week-nav-card";
-import { PlanWeekView } from "./plan-week-view";
+import { PlanWeekNavButton } from "./plan-week-nav-button";
 import {
+  monthStart,
+  persistCalendarScale,
   persistViewMode,
+  readStoredCalendarScale,
   readStoredViewMode,
+  shiftDate,
+  shiftMonth,
   taskStats,
   todayIso,
   isPastDate,
+  type PlanCalendarScale,
   type PlanViewMode,
   weekStart,
   weekDates,
@@ -68,19 +77,26 @@ export function PlanShell() {
   const tCommon = useTranslations("common");
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { filterSheet } = useMentorBottomSheet();
+  const {
+    filterSheet,
+    show: showSheet,
+    dismissNow: dismissSheetNow,
+  } = useMentorBottomSheet();
   const { confirm } = useMentorDialog();
   const { error: showErrorToast } = useMentorToast();
   const { tryCelebrate, celebration } = useStreakCelebration();
   const streakBaselineRef = useRef<number | null>(null);
 
   const [viewMode, setViewMode] = useState<PlanViewMode>("list");
+  const [calendarScale, setCalendarScale] = useState<PlanCalendarScale>("week");
   const [date, setDate] = useState(todayIso);
   const [weekAnchor, setWeekAnchor] = useState(() => weekStart(todayIso()));
   const [tasks, setTasks] = useState<PlanTaskDto[]>([]);
   const [weekTasks, setWeekTasks] = useState<Record<string, PlanTaskDto[]>>({});
+  const [monthTasks, setMonthTasks] = useState<Record<string, PlanTaskDto[]>>({});
   const [loadedDate, setLoadedDate] = useState<string | null>(null);
   const [loadedWeek, setLoadedWeek] = useState<string | null>(null);
+  const [loadedMonth, setLoadedMonth] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const addFormRef = useRef<PlanAddTaskFormHandle>(null);
@@ -111,6 +127,7 @@ export function PlanShell() {
     // hydration mismatch — a deliberate external-sync effect, not derived state.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setViewMode(readStoredViewMode());
+    setCalendarScale(readStoredCalendarScale());
   }, []);
 
   useEffect(() => {
@@ -128,8 +145,16 @@ export function PlanShell() {
     };
   }, []);
 
+  const monthAnchor = monthStart(date);
+  /**
+   * The whole Takvim view reads from the month range, not just Ay: the 6×7 grid always contains
+   * the selected date's full week, and the mobile agenda scrolls across the month. One request
+   * feeds the strip, the hour grids, the month board and the agenda.
+   */
+  const showMonth = viewMode === "calendar";
   const dayLoading = loadedDate !== date;
   const weekLoading = loadedWeek !== weekAnchor;
+  const monthLoading = loadedMonth !== monthAnchor;
   const readOnly = isPastDate(date);
 
   const loadDayTasks = useCallback(async (isMounted: () => boolean = () => true) => {
@@ -161,12 +186,30 @@ export function PlanShell() {
       setError(readError(err));
     }
   }, [weekAnchor]);
+  const loadMonthTasks = useCallback(async (isMounted: () => boolean = () => true) => {
+    const anchor = new Date(`${monthAnchor}T12:00:00`);
+    try {
+      const data = await listPlanTasksForMonthGrid(
+        monthGridDays(anchor.getFullYear(), anchor.getMonth()),
+      );
+      if (!isMounted()) return;
+      setMonthTasks(data);
+      setLoadedMonth(monthAnchor);
+      setError(null);
+    } catch (err) {
+      if (!isMounted()) return;
+      setMonthTasks({});
+      setLoadedMonth(monthAnchor);
+      setError(readError(err));
+    }
+  }, [monthAnchor]);
+
   const refreshAdaptedPlan = useCallback(async () => {
     await Promise.all([loadDayTasks(), loadWeekTasks()]);
   }, [loadDayTasks, loadWeekTasks]);
 
   useEffect(() => {
-    if (viewMode === "week") return;
+    if (viewMode === "calendar") return;
     let active = true;
     // Loader state updates happen only after the awaited request; active guards unmounts.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -175,6 +218,17 @@ export function PlanShell() {
       active = false;
     };
   }, [date, viewMode, loadDayTasks]);
+
+  // Ay ölçeği 42 günlük bir grid — haftalık yükleme yetmez.
+  useEffect(() => {
+    if (!showMonth) return;
+    let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadMonthTasks(() => active);
+    return () => {
+      active = false;
+    };
+  }, [showMonth, loadMonthTasks]);
 
   // Week strip (all views) needs the current week’s tasks for day dots.
   useEffect(() => {
@@ -191,7 +245,8 @@ export function PlanShell() {
     function refreshIfVisible() {
       if (document.visibilityState !== "visible") return;
       void loadWeekTasks();
-      if (viewMode !== "week") void loadDayTasks();
+      if (viewMode !== "calendar") void loadDayTasks();
+      if (showMonth) void loadMonthTasks();
     }
     function onPageShow(e: PageTransitionEvent) {
       if (e.persisted) refreshIfVisible();
@@ -202,23 +257,24 @@ export function PlanShell() {
       document.removeEventListener("visibilitychange", refreshIfVisible);
       window.removeEventListener("pageshow", onPageShow);
     };
-  }, [viewMode, loadDayTasks, loadWeekTasks]);
+  }, [viewMode, showMonth, loadDayTasks, loadWeekTasks, loadMonthTasks]);
 
   const activeTasks = useMemo(() => {
-    if (viewMode === "week" || viewMode === "timeline") {
-      return weekTasks[date] ?? [];
-    }
+    if (viewMode === "calendar") return monthTasks[date] ?? [];
+    if (viewMode === "timeline") return weekTasks[date] ?? [];
     return tasks;
-  }, [viewMode, weekTasks, date, tasks]);
+  }, [monthTasks, viewMode, weekTasks, date, tasks]);
 
   function findTask(id: string): PlanTaskDto | undefined {
     const fromActive = activeTasks.find((x) => x.id === id);
     if (fromActive) return fromActive;
     const fromDay = tasks.find((x) => x.id === id);
     if (fromDay) return fromDay;
-    for (const list of Object.values(weekTasks)) {
-      const hit = list.find((x) => x.id === id);
-      if (hit) return hit;
+    for (const map of [weekTasks, monthTasks]) {
+      for (const list of Object.values(map)) {
+        const hit = list.find((x) => x.id === id);
+        if (hit) return hit;
+      }
     }
     return undefined;
   }
@@ -267,37 +323,41 @@ export function PlanShell() {
     setWeekAnchor(weekStart(date));
   }
 
+  /** Apply `fn` to every day bucket of a date→tasks map (week and month share the shape). */
+  function mapDayBuckets(
+    map: Record<string, PlanTaskDto[]>,
+    fn: (list: PlanTaskDto[]) => PlanTaskDto[],
+  ): Record<string, PlanTaskDto[]> {
+    const next = { ...map };
+    for (const key of Object.keys(next)) next[key] = fn(next[key]!);
+    return next;
+  }
+
   function patchTaskLists(updated: PlanTaskDto) {
-    setTasks((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
-    setWeekTasks((prev) => {
-      const next = { ...prev };
-      for (const key of Object.keys(next)) {
-        next[key] = next[key]!.map((x) => (x.id === updated.id ? updated : x));
-      }
-      return next;
-    });
+    const patch = (list: PlanTaskDto[]) =>
+      list.map((x) => (x.id === updated.id ? updated : x));
+    setTasks(patch);
+    setWeekTasks((prev) => mapDayBuckets(prev, patch));
+    setMonthTasks((prev) => mapDayBuckets(prev, patch));
   }
 
   function removeTaskFromLists(id: string) {
-    setTasks((prev) => prev.filter((x) => x.id !== id));
-    setWeekTasks((prev) => {
-      const next = { ...prev };
-      for (const key of Object.keys(next)) {
-        next[key] = next[key]!.filter((x) => x.id !== id);
-      }
-      return next;
-    });
+    const drop = (list: PlanTaskDto[]) => list.filter((x) => x.id !== id);
+    setTasks(drop);
+    setWeekTasks((prev) => mapDayBuckets(prev, drop));
+    setMonthTasks((prev) => mapDayBuckets(prev, drop));
   }
 
   const appendTask = useCallback((created: PlanTaskDto) => {
     if (created.taskDate === date) {
       setTasks((prev) => [...prev, created]);
     }
-    setWeekTasks((prev) => {
+    const add = (prev: Record<string, PlanTaskDto[]>) => {
       const day = created.taskDate;
-      const list = prev[day] ?? [];
-      return { ...prev, [day]: [...list, created] };
-    });
+      return { ...prev, [day]: [...(prev[day] ?? []), created] };
+    };
+    setWeekTasks(add);
+    setMonthTasks(add);
   }, [date]);
 
 
@@ -307,19 +367,13 @@ export function PlanShell() {
     const nextStatus: PlanTaskStatus = task.status === "DONE" ? "PENDING" : "DONE";
     const previousTasks = tasks;
     const previousWeek = weekTasks;
+    const previousMonth = monthTasks;
     setError(null);
-    setTasks((prev) =>
-      prev.map((x) => (x.id === id ? { ...x, status: nextStatus } : x)),
-    );
-    setWeekTasks((prev) => {
-      const next = { ...prev };
-      for (const key of Object.keys(next)) {
-        next[key] = next[key]!.map((x) =>
-          x.id === id ? { ...x, status: nextStatus } : x,
-        );
-      }
-      return next;
-    });
+    const flip = (list: PlanTaskDto[]) =>
+      list.map((x) => (x.id === id ? { ...x, status: nextStatus } : x));
+    setTasks(flip);
+    setWeekTasks((prev) => mapDayBuckets(prev, flip));
+    setMonthTasks((prev) => mapDayBuckets(prev, flip));
     setBusyId(id);
     try {
       const updated = await updatePlanTask(id, { status: nextStatus });
@@ -337,6 +391,7 @@ export function PlanShell() {
     } catch (err) {
       setTasks(previousTasks);
       setWeekTasks(previousWeek);
+      setMonthTasks(previousMonth);
       reportActionError(err);
     } finally {
       setBusyId(null);
@@ -350,12 +405,14 @@ export function PlanShell() {
     setError(null);
     const previousTasks = tasks;
     const previousWeek = weekTasks;
+    const previousMonth = monthTasks;
     removeTaskFromLists(id);
     try {
       await deletePlanTask(id);
     } catch (err) {
       setTasks(previousTasks);
       setWeekTasks(previousWeek);
+      setMonthTasks(previousMonth);
       reportActionError(err);
     } finally {
       setBusyId(null);
@@ -373,14 +430,22 @@ export function PlanShell() {
             ref={addFormRef}
             initialTitle={task.title}
             initialSubject={task.subject ?? ""}
+            initialStartTime={task.startTime}
+            initialEndTime={task.endTime}
+            initialDescription={task.description}
           />
         ),
         onApply: async () => {
           if (!addFormRef.current?.validate()) throw new Error("validation");
-          const { title, subject } = addFormRef.current.getValues();
+          const { title, subject, startTime, endTime, description } =
+            addFormRef.current.getValues();
           const updated = await updatePlanTask(task.id, {
             title: title.trim(),
             subject: subject.trim() ? subject.trim() : null,
+            // Times are always sent as a pair — that's the contract updatePlanTaskSchema enforces.
+            startTime,
+            endTime,
+            description,
           });
           patchTaskLists(updated);
           setError(null);
@@ -401,31 +466,71 @@ export function PlanShell() {
     if (ok) await remove(task.id);
   }
 
-  const openAddSheet = useCallback(async (taskPrefill?: AnalysisPlanPrefill | null) => {
-    if (readOnly) return;
+  /** Tapping a calendar event opens its details; Düzenle / Sil hand off to the existing flows. */
+  function openEventSheet(task: PlanTaskDto) {
+    showSheet({
+      title: t("event_details_title"),
+      children: (
+        <PlanEventDetails
+          task={task}
+          readOnly={isPastDate(task.taskDate)}
+          onEdit={() => {
+            dismissSheetNow();
+            void openEditSheet(task);
+          }}
+          onDelete={() => {
+            dismissSheetNow();
+            void confirmDeleteTask(task);
+          }}
+        />
+      ),
+    });
+  }
+
+  /**
+   * Calendar slot/day clicks pin the new item to that day (and hour); other entry points use the
+   * currently selected date. There is only ONE form — `origin` picks the wording, because on a
+   * calendar the same row reads as an "event" and in a list as a "task".
+   */
+  type PlanAddPrefill = Partial<AnalysisPlanPrefill> & {
+    taskDate?: string;
+    startTime?: string;
+    origin?: "calendar";
+  };
+
+  const openAddSheet = useCallback(async (taskPrefill?: PlanAddPrefill | null) => {
+    const targetDate = taskPrefill?.taskDate ?? date;
+    if (isPastDate(targetDate)) return;
     await filterSheet({
-      title: t("add_sheet_title"),
+      title:
+        taskPrefill?.origin === "calendar"
+          ? t("new_event_title")
+          : t("add_sheet_title"),
       applyLabel: t("add_task"),
       children: (
         <PlanAddTaskForm
           ref={addFormRef}
           initialTitle={taskPrefill?.title}
           initialSubject={taskPrefill?.subject}
+          initialStartTime={taskPrefill?.startTime ?? null}
         />
       ),
       onApply: async () => {
         if (!addFormRef.current?.validate()) throw new Error("validation");
-        const { title, subject } = addFormRef.current.getValues();
+        const { title, subject, startTime, endTime, description } =
+          addFormRef.current.getValues();
         const created = await createPlanTask({
           title: title.trim(),
-          taskDate: date,
+          taskDate: targetDate,
           ...(subject.trim() ? { subject: subject.trim() } : {}),
+          ...(startTime ? { startTime, endTime } : {}),
+          ...(description ? { description } : {}),
         });
         appendTask(created);
         setError(null);
       },
     });
-  }, [appendTask, date, filterSheet, readOnly, t]);
+  }, [appendTask, date, filterSheet, t]);
 
   useEffect(() => {
     if (!prefill || prefillConsumed.current || readOnly) return;
@@ -451,13 +556,19 @@ export function PlanShell() {
     weekLoading ? [] : (weekTasks[date] ?? []),
   );
   const dateProgress =
-    viewMode === "week" || viewMode === "timeline"
+    viewMode === "calendar" || viewMode === "timeline"
       ? weekDayProgress
       : dayProgress;
 
+  /**
+   * Remount key for the enter animation. Takvim deliberately keys on the SCALE ONLY: the mobile
+   * agenda drives `date` from its own scroll position, so keying on the date (or the week/month
+   * anchor it derives) would remount mid-scroll and throw the reader back where they started.
+   * Date changes inside the calendar are plain re-renders.
+   */
   const contentKey =
-    viewMode === "week"
-      ? `week-${weekAnchor}-${date}`
+    viewMode === "calendar"
+      ? `calendar-${calendarScale}`
       : viewMode === "timeline"
         ? `timeline-${weekAnchor}`
         : `${viewMode}-${date}`;
@@ -476,8 +587,34 @@ export function PlanShell() {
     setWeekAnchor(weekStart(iso));
   }
 
-  const mainMaxWidth =
-    viewMode === "week" ? "lg:max-w-6xl" : "lg:max-w-3xl";
+  function handleCalendarScaleChange(scale: PlanCalendarScale) {
+    setCalendarScale(scale);
+    persistCalendarScale(scale);
+  }
+
+  /** ‹ › steps one period at the active scale. */
+  function handleCalendarStep(direction: -1 | 1) {
+    if (calendarScale === "week") {
+      handleWeekChange(shiftDate(weekAnchor, direction * 7));
+      return;
+    }
+    handleWeekDateChange(
+      calendarScale === "day"
+        ? shiftDate(date, direction)
+        : shiftMonth(date, direction),
+    );
+  }
+
+  /**
+   * Takvim runs full-bleed inside the app shell (everything but the sidebar). On desktop it is
+   * also viewport-height with a `min-h-0` flex chain down to the hour grid, so the page itself
+   * never scrolls — anything that appears above (the past-day notice) just shrinks the grid
+   * instead of pushing the layout past the fold. Mobile keeps normal document scrolling.
+   */
+  const calendarFullScreen = viewMode === "calendar";
+  const mainWidth = calendarFullScreen
+    ? "w-full px-2 py-4 lg:flex lg:h-dvh lg:flex-col lg:px-6 lg:py-4"
+    : "mx-auto w-full max-w-2xl px-5 py-6 lg:max-w-3xl lg:px-8 lg:py-10";
 
   const headerMotion = reduceMotion
     ? {}
@@ -500,11 +637,22 @@ export function PlanShell() {
 
   return (
     <>
-      <main
-        className={`mx-auto w-full max-w-2xl px-5 py-6 lg:px-8 lg:py-10 ${mainMaxWidth}`}
-      >
-        <motion.header className="mb-5" {...headerMotion}>
+      <main className={mainWidth}>
+        <motion.header
+          className={`flex shrink-0 items-center gap-2 ${calendarFullScreen ? "mb-3" : "mb-5"}`}
+          {...headerMotion}
+        >
           <h1 className="sr-only">{t("title")}</h1>
+          {/* Page-level exit from the full-screen calendar — it stands outside the calendar
+              surface so it doesn't read as part of the month toolbar. */}
+          {viewMode === "calendar" ? (
+            <PlanWeekNavButton
+              label={t("calendar_back")}
+              onClick={() => handleViewChange("list")}
+            >
+              <ArrowLeft size={20} strokeWidth={2} aria-hidden />
+            </PlanWeekNavButton>
+          ) : null}
           <PlanCoachAdaptationAction
             ref={coachAdaptationRef}
             onApplied={refreshAdaptedPlan}
@@ -512,40 +660,44 @@ export function PlanShell() {
           />
         </motion.header>
 
-        <motion.div className="flex flex-col gap-5 pb-8" {...gridMotion}>
-          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-            <PlanViewSwitcher value={viewMode} onChange={handleViewChange} />
-          </motion.div>
+        <motion.div
+          className={`flex flex-col ${
+            calendarFullScreen
+              ? "gap-3 pb-4 lg:min-h-0 lg:flex-1 lg:pb-0"
+              : "gap-5 pb-8"
+          }`}
+          {...gridMotion}
+        >
+          {/* Takvim is full-screen; the header back arrow replaces the switcher. */}
+          {viewMode !== "calendar" ? (
+            <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+              <PlanViewSwitcher value={viewMode} onChange={handleViewChange} />
+            </motion.div>
+          ) : null}
 
           <FormError message={error} />
 
-          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-            {viewMode !== "week" ? (
+          {/* Takvim carries its own date strip inside the calendar card. */}
+          {viewMode !== "calendar" ? (
+            <motion.div
+              className="shrink-0"
+              variants={reduceMotion ? undefined : staggerItemVariants}
+            >
               <PlanDateNav
                 date={date}
                 weekStartDate={weekAnchor}
                 weekTasks={weekTasks}
-                progress={
-                  dateProgress.total > 0 ? dateProgress : undefined
-                }
+                progress={dateProgress.total > 0 ? dateProgress : undefined}
                 onDateChange={handleWeekDateChange}
                 onWeekChange={handleWeekChange}
                 onOpenCalendar={() => void openCalendarSheet()}
               />
-            ) : (
-              <PlanWeekNavCard
-                weekStartDate={weekAnchor}
-                selectedDate={date}
-                weekTasks={weekTasks}
-                onWeekChange={handleWeekChange}
-                onDateChange={handleWeekDateChange}
-              />
-            )}
-          </motion.div>
+            </motion.div>
+          ) : null}
 
           {readOnly ? (
             <motion.p
-              className="rounded-[var(--radius-card)] px-3 py-2.5 text-sm"
+              className="w-fit max-w-full shrink-0 rounded-[var(--radius-card)] px-3 py-2 text-sm"
               style={{
                 backgroundColor:
                   "color-mix(in srgb, var(--color-progress-track) 35%, transparent)",
@@ -560,12 +712,24 @@ export function PlanShell() {
 
           <motion.div
             key={contentKey}
-            initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+            className={
+              calendarFullScreen ? "lg:flex lg:min-h-0 lg:flex-1 lg:flex-col" : undefined
+            }
+            initial={
+              reduceMotion
+                ? false
+                : viewMode === "timeline"
+                  ? { opacity: 0 }
+                  : { opacity: 0, y: 6 }
+            }
             animate={{ opacity: 1, y: 0 }}
             transition={
               reduceMotion
                 ? undefined
-                : { duration: 0.22, ease: "easeOut" as const }
+                : {
+                    duration: viewMode === "timeline" ? 0.18 : 0.22,
+                    ease: "easeOut" as const,
+                  }
             }
           >
             {viewMode === "list" ? (
@@ -594,34 +758,25 @@ export function PlanShell() {
                 onAddTask={() => void openAddSheet()}
               />
             ) : null}
-            {viewMode === "week" ? (
-              <>
-                <PlanWeekDesktopLayout
-                  selectedDate={date}
-                  weekStartDate={weekAnchor}
-                  weekTasks={weekTasks}
-                  loading={weekLoading}
-                  busyId={busyId}
-                  readOnly={readOnly}
-                  onDateChange={handleWeekDateChange}
-                  onWeekChange={handleWeekChange}
-                  onToggle={(id) => void toggle(id)}
-                  onEdit={(task) => void openEditSheet(task)}
-                  onDelete={(task) => void confirmDeleteTask(task)}
-                  onAddTask={() => void openAddSheet()}
-                />
-                <PlanWeekView
-                  selectedDate={date}
-                  weekTasks={weekTasks}
-                  loading={weekLoading}
-                  busyId={busyId}
-                  readOnly={readOnly}
-                  onToggle={(id) => void toggle(id)}
-                  onEdit={(task) => void openEditSheet(task)}
-                  onDelete={(task) => void confirmDeleteTask(task)}
-                  onAddTask={() => void openAddSheet()}
-                />
-              </>
+            {viewMode === "calendar" ? (
+              <PlanCalendarView
+                scale={calendarScale}
+                selectedDate={date}
+                weekStartDate={weekAnchor}
+                tasksByDate={monthTasks}
+                loading={monthLoading}
+                busyId={busyId}
+                readOnly={readOnly}
+                onScaleChange={handleCalendarScaleChange}
+                onStep={handleCalendarStep}
+                onToday={() => handleWeekDateChange(todayIso())}
+                onDateChange={handleWeekDateChange}
+                onToggle={(id) => void toggle(id)}
+                onEdit={(task) => void openEditSheet(task)}
+                onDelete={(task) => void confirmDeleteTask(task)}
+                onOpenEvent={openEventSheet}
+                onAddTask={(addPrefill) => void openAddSheet(addPrefill)}
+              />
             ) : null}
           </motion.div>
         </motion.div>

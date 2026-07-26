@@ -1,6 +1,33 @@
 /** Content module request/query schemas — shared FE+BE. */
 import { z } from "zod";
+import { isoDateSchema } from "./coaching.js";
 import { paginationQuerySchema } from "./pagination.js";
+
+export const PUBLIC_HOLIDAY_KINDS = ["FULL", "HALF"] as const;
+
+/**
+ * Inclusive date range for the holiday lookup. Capped at the same 62 days as the plan-task
+ * calendar so one month grid (42 days) fits in a single request and nothing unbounded escapes.
+ */
+export const listPublicHolidaysQuerySchema = z
+  .object({
+    from: isoDateSchema,
+    to: isoDateSchema,
+    /** ISO 3166-1 alpha-2; defaults to Turkey. */
+    country: z.string().trim().length(2).toUpperCase().default("TR"),
+  })
+  .superRefine((data, ctx) => {
+    if (data.from > data.to) {
+      ctx.addIssue({ code: "custom", message: "invalid_range", path: ["to"] });
+      return;
+    }
+    const fromMs = new Date(`${data.from}T12:00:00`).getTime();
+    const toMs = new Date(`${data.to}T12:00:00`).getTime();
+    if (Math.floor((toMs - fromMs) / 86_400_000) + 1 > 62) {
+      ctx.addIssue({ code: "custom", message: "range_too_large", path: ["to"] });
+    }
+  });
+export type ListPublicHolidaysQuery = z.infer<typeof listPublicHolidaysQuerySchema>;
 
 export const listExamsQuerySchema = paginationQuerySchema;
 export type ListExamsQuery = z.infer<typeof listExamsQuerySchema>;

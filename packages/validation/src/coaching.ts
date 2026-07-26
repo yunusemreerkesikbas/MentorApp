@@ -26,13 +26,44 @@ export const FINAL_STUDY_SESSION_STATUSES = ["COMPLETED", "ABANDONED"] as const;
 
 /* --------------------------------- plan tasks --------------------------------- */
 
-export const createPlanTaskSchema = z.object({
-  /** Defaults to the server's "today" when omitted. */
-  taskDate: isoDateSchema.optional(),
-  title: z.string().trim().min(1).max(200),
-  subject: z.string().trim().min(1).max(80).nullish(),
-  sortOrder: z.coerce.number().int().min(0).max(10_000).optional(),
-});
+/** Wall-clock time of day, "HH:MM" (24h). */
+export const hhmmSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+
+/** Max description length — a calendar note, not an essay. */
+export const PLAN_TASK_DESCRIPTION_MAX = 2000;
+
+/**
+ * `startTime` null/absent = all-day item. `endTime` requires a `startTime` and must be later —
+ * mirrors the `plan_tasks_time_range_chk` DB constraint (both sides, never one).
+ */
+function refinePlanTaskTimes(
+  value: { startTime?: string | null; endTime?: string | null },
+  ctx: z.RefinementCtx,
+): void {
+  const { startTime, endTime } = value;
+  if (endTime === undefined || endTime === null) return;
+  if (startTime === undefined || startTime === null) {
+    ctx.addIssue({ code: "custom", message: "end_without_start", path: ["endTime"] });
+    return;
+  }
+  if (endTime <= startTime) {
+    ctx.addIssue({ code: "custom", message: "end_before_start", path: ["endTime"] });
+  }
+}
+
+export const createPlanTaskSchema = z
+  .object({
+    /** Defaults to the server's "today" when omitted. */
+    taskDate: isoDateSchema.optional(),
+    title: z.string().trim().min(1).max(200),
+    subject: z.string().trim().min(1).max(80).nullish(),
+    /** Null/absent = all-day. */
+    startTime: hhmmSchema.nullish(),
+    endTime: hhmmSchema.nullish(),
+    description: z.string().trim().max(PLAN_TASK_DESCRIPTION_MAX).nullish(),
+    sortOrder: z.coerce.number().int().min(0).max(10_000).optional(),
+  })
+  .superRefine(refinePlanTaskTimes);
 export type CreatePlanTaskInput = z.infer<typeof createPlanTaskSchema>;
 
 /** POST /v1/plan-tasks/bulk — user-confirmed batch add (e.g. accepted coach draft). */
@@ -68,13 +99,22 @@ export const applyPlanAdaptationSchema = z.object({
 });
 export type ApplyPlanAdaptationInput = z.infer<typeof applyPlanAdaptationSchema>;
 
+/**
+ * Times are patched as a PAIR: sending `endTime` without `startTime` in the same payload is
+ * rejected (clearing = send both as null). Keeps the check payload-local instead of needing a
+ * read-modify-validate round-trip against the stored row.
+ */
 export const updatePlanTaskSchema = z
   .object({
     title: z.string().trim().min(1).max(200).optional(),
     subject: z.string().trim().min(1).max(80).nullish(),
     status: z.enum(PLAN_TASK_STATUSES).optional(),
+    startTime: hhmmSchema.nullish(),
+    endTime: hhmmSchema.nullish(),
+    description: z.string().trim().max(PLAN_TASK_DESCRIPTION_MAX).nullish(),
     sortOrder: z.coerce.number().int().min(0).max(10_000).optional(),
   })
+  .superRefine(refinePlanTaskTimes)
   .refine((v) => Object.keys(v).length > 0, { message: "empty" });
 export type UpdatePlanTaskInput = z.infer<typeof updatePlanTaskSchema>;
 

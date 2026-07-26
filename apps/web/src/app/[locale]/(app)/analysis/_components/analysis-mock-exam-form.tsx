@@ -45,7 +45,7 @@ export function AnalysisMockExamForm({
   );
 
   return (
-    <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-4">
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <TextField
           label={t("publisher_label")}

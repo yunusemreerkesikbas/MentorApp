@@ -1,6 +1,9 @@
-export type PlanViewMode = "list" | "timeline" | "week";
+export type PlanViewMode = "list" | "timeline" | "calendar";
+/** Zoom level inside the Takvim view. */
+export type PlanCalendarScale = "day" | "week" | "month";
 
 const VIEW_STORAGE_KEY = "mentor.plan.viewMode";
+const SCALE_STORAGE_KEY = "mentor.plan.calendarScale";
 
 /** DOM id for a day section in the weekly Timeline chronology. */
 export function planTimelineDayId(iso: string): string {
@@ -120,12 +123,58 @@ export function formatWeekRangeLabel(
 export function readStoredViewMode(): PlanViewMode {
   if (typeof window === "undefined") return "list";
   const raw = window.localStorage.getItem(VIEW_STORAGE_KEY);
-  if (raw === "list" || raw === "timeline" || raw === "week") return raw;
+  // "week" is the pre-calendar name of this view — migrate silently so returning users
+  // don't land back on Liste.
+  if (raw === "week") return "calendar";
+  if (raw === "list" || raw === "timeline" || raw === "calendar") return raw;
   return "list";
 }
 
 export function persistViewMode(mode: PlanViewMode): void {
   window.localStorage.setItem(VIEW_STORAGE_KEY, mode);
+}
+
+export function readStoredCalendarScale(): PlanCalendarScale {
+  if (typeof window === "undefined") return "week";
+  const raw = window.localStorage.getItem(SCALE_STORAGE_KEY);
+  if (raw === "day" || raw === "week" || raw === "month") return raw;
+  return "week";
+}
+
+export function persistCalendarScale(scale: PlanCalendarScale): void {
+  window.localStorage.setItem(SCALE_STORAGE_KEY, scale);
+}
+
+/** Same month, day 1 — the anchor the month grid and its arrows work from. */
+export function monthStart(iso: string): string {
+  return `${iso.slice(0, 7)}-01`;
+}
+
+/** Shift by whole months, clamping the day (31 Mart → 28/29 Şubat). */
+export function shiftMonth(iso: string, months: number): string {
+  const d = new Date(`${iso}T12:00:00`);
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + months);
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(day, lastDay));
+  return d.toISOString().slice(0, 10);
+}
+
+export function formatMonthTitle(iso: string, locale: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(
+    locale === "en" ? "en-GB" : "tr-TR",
+    { month: "long", year: "numeric" },
+  );
+}
+
+/** "13:00 – 14:30", or just "13:00" when open-ended. Null start = all-day (caller decides copy). */
+export function formatTimeRange(
+  startTime: string | null,
+  endTime: string | null,
+): string | null {
+  if (!startTime) return null;
+  return endTime ? `${startTime} – ${endTime}` : startTime;
 }
 
 export function taskStats(tasks: { status: string }[]): {

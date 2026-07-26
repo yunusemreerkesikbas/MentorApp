@@ -3,23 +3,13 @@
 import { DayPicker } from "react-day-picker";
 import { enGB, tr } from "react-day-picker/locale";
 import { useEffect, useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left.mjs";
 import ChevronRight from "lucide-react/dist/esm/icons/chevron-right.mjs";
 import "react-day-picker/style.css";
-import type { PlanTaskDto } from "@mentor/types";
-import { Card, ProgressBar } from "@mentor/ui";
+import { Card } from "@mentor/ui";
 import { listPlanTaskCalendarDates } from "@/lib/plan-tasks";
-import { PlanWeekNavButton } from "./plan-week-nav-button";
-import {
-  formatWeekRangeLabel,
-  monthIsoBounds,
-  shiftDate,
-  taskStats,
-  todayIso,
-  weekCompletionStats,
-  weekDates,
-} from "./plan-utils";
+import { monthIsoBounds, todayIso, weekDates } from "./plan-utils";
 
 function isoToLocalDate(iso: string): Date {
   return new Date(`${iso}T12:00:00`);
@@ -62,7 +52,6 @@ export function PlanWeekMiniCalendar({
   weekStartDate: string;
   onDateChange: (iso: string) => void;
 }) {
-  const t = useTranslations("plan");
   const locale = useLocale();
   const [month, setMonth] = useState(() => isoToLocalDate(selectedDate));
   const [plannedDates, setPlannedDates] = useState<Set<string>>(new Set());
@@ -75,6 +64,16 @@ export function PlanWeekMiniCalendar({
   );
   const monthYear = month.getFullYear();
   const monthIndex = month.getMonth();
+
+  // The toolbar owns "Bugün" and the ‹ › stepping, so the picker has to follow the date it is
+  // told about — otherwise jumping to today leaves the mini calendar on the month it was browsing.
+  // Adjusted during render (React's "changing state when a prop changes" pattern) rather than in
+  // an effect: browsing months locally must still win until `selectedDate` leaves the shown month.
+  const [shownForDate, setShownForDate] = useState(selectedDate);
+  if (selectedDate.slice(0, 7) !== shownForDate.slice(0, 7)) {
+    setShownForDate(selectedDate);
+    setMonth(isoToLocalDate(`${selectedDate.slice(0, 7)}-01`));
+  }
 
   useEffect(() => {
     let active = true;
@@ -120,126 +119,6 @@ export function PlanWeekMiniCalendar({
           }}
           components={{ Chevron: PlanPickerChevron }}
         />
-      </div>
-      <button
-        type="button"
-        onClick={() => {
-          const today = todayIso();
-          onDateChange(today);
-          setMonth(isoToLocalDate(today));
-        }}
-        className="mentor-plan-day-picker-today mentor-plan-week-mini-today w-full"
-      >
-        {t("go_today")}
-      </button>
-    </Card>
-  );
-}
-
-const WEEKDAY_KEYS = [
-  "week_mon",
-  "week_tue",
-  "week_wed",
-  "week_thu",
-  "week_fri",
-  "week_sat",
-  "week_sun",
-] as const;
-
-export function PlanWeekSummaryList({
-  weekStartDate,
-  selectedDate,
-  weekTasks,
-  onDateChange,
-  onWeekChange,
-}: {
-  weekStartDate: string;
-  selectedDate: string;
-  weekTasks: Record<string, PlanTaskDto[]>;
-  onDateChange: (iso: string) => void;
-  onWeekChange: (weekStart: string) => void;
-}) {
-  const t = useTranslations("plan");
-  const tPanel = useTranslations("panel");
-  const locale = useLocale();
-  const days = weekDates(weekStartDate);
-  const weekEnd = days[6]!;
-  const weekProgress = weekCompletionStats(weekTasks, weekStartDate);
-
-  return (
-    <Card className="p-4">
-      <div className="mb-3 flex items-center gap-1">
-        <PlanWeekNavButton
-          label={t("prev_week_aria")}
-          compact
-          onClick={() => onWeekChange(shiftDate(weekStartDate, -7))}
-        >
-          <ChevronLeft size={18} strokeWidth={2} aria-hidden />
-        </PlanWeekNavButton>
-        <h3
-          className="min-w-0 flex-1 px-1 text-center text-sm font-bold leading-snug"
-          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-        >
-          {formatWeekRangeLabel(weekStartDate, weekEnd, locale)}
-        </h3>
-        <PlanWeekNavButton
-          label={t("next_week_aria")}
-          compact
-          onClick={() => onWeekChange(shiftDate(weekStartDate, 7))}
-        >
-          <ChevronRight size={18} strokeWidth={2} aria-hidden />
-        </PlanWeekNavButton>
-      </div>
-      <ul className="flex flex-col gap-0.5">
-        {days.map((iso, index) => {
-          const stats = taskStats(weekTasks[iso] ?? []);
-          const selected = iso === selectedDate;
-          return (
-            <li key={iso}>
-              <button
-                type="button"
-                onClick={() => onDateChange(iso)}
-                className="flex w-full cursor-pointer items-center justify-between rounded-[var(--radius-card)] px-2 py-2 text-left text-sm transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2"
-                style={{
-                  backgroundColor: selected
-                    ? "color-mix(in srgb, var(--color-progress) 12%, transparent)"
-                    : undefined,
-                }}
-                aria-pressed={selected}
-              >
-                <span style={{ color: "var(--color-main)" }}>
-                  {tPanel(WEEKDAY_KEYS[index]!)}{" "}
-                  {new Date(`${iso}T12:00:00`).getDate()}
-                </span>
-                <span className="shrink-0 tabular-nums" style={{ color: "var(--color-secondary)" }}>
-                  {stats.total === 0
-                    ? t("week_day_empty")
-                    : stats.percent === 100
-                      ? t("week_day_done", {
-                          done: stats.done,
-                          total: stats.total,
-                        })
-                      : t("week_day_partial", {
-                          done: stats.done,
-                          total: stats.total,
-                        })}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-
-      <div className="mt-3 flex flex-col gap-2 border-t border-white/30 pt-3">
-        <p className="text-center text-xs" style={{ color: "var(--color-secondary)" }}>
-          {t("week_summary", {
-            done: weekProgress.done,
-            total: weekProgress.total,
-          })}
-        </p>
-        {weekProgress.total > 0 ? (
-          <ProgressBar value={weekProgress.percent} />
-        ) : null}
       </div>
     </Card>
   );

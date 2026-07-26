@@ -1,27 +1,26 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import type { ExamSubjectDto, ExamSummaryDto } from "@mentor/types";
+import type { ExamSubjectDto, ExamSummaryDto, MockExamDto } from "@mentor/types";
+import { ApiClientError } from "@mentor/api-client";
 import { Card, SectionHeading } from "@mentor/ui";
+import { fetchMockExamsList } from "@/lib/mock-exams";
 import type { SubjectScores } from "./analysis-types";
-import { AnalysisHistoryList } from "./analysis-history-list";
 import { AnalysisMockExamForm } from "./analysis-mock-exam-form";
 
 interface AnalysisTabEntryProps {
-  examId: string;
   exam: ExamSummaryDto | null;
   subjects: ExamSubjectDto[];
   scores: Record<string, SubjectScores>;
   submitting: boolean;
-  historyRefreshKey: number;
   publisherName: string;
   takenAtDate: string;
   onPublisherChange: (value: string) => void;
   onTakenAtChange: (value: string) => void;
   onScoreChange: (slug: string, field: keyof SubjectScores, value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
-  onCopyLast: (exam: import("@mentor/types").MockExamDto) => void;
-  onHistoryChanged: () => void;
+  onCopyLast: (exam: MockExamDto) => void;
 }
 
 function NoExamSeed() {
@@ -45,12 +44,10 @@ function NoExamSeed() {
 }
 
 export function AnalysisTabEntry({
-  examId,
   exam,
   subjects,
   scores,
   submitting,
-  historyRefreshKey,
   publisherName,
   takenAtDate,
   onPublisherChange,
@@ -58,17 +55,72 @@ export function AnalysisTabEntry({
   onScoreChange,
   onSubmit,
   onCopyLast,
-  onHistoryChanged,
 }: AnalysisTabEntryProps) {
   const t = useTranslations("analysis");
+  const [copying, setCopying] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
+
+  async function handleCopyLast() {
+    if (!exam?.id || copying) return;
+    setCopying(true);
+    setCopyError(null);
+    try {
+      const response = await fetchMockExamsList(1, 1, exam.id);
+      const latest = response.items[0];
+      if (!latest) {
+        setCopyError(t("copy_last_empty"));
+        return;
+      }
+      onCopyLast(latest);
+    } catch (error) {
+      setCopyError(
+        error instanceof ApiClientError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : String(error),
+      );
+    } finally {
+      setCopying(false);
+    }
+  }
+
+  const canCopy = Boolean(exam && subjects.length > 0);
 
   return (
-    <div className="flex flex-col gap-6">
-      <Card id="analysis-form">
-        <SectionHeading subtitle={exam?.name}>{t("result_entry_title")}</SectionHeading>
-        {!exam || subjects.length === 0 ? (
-          <NoExamSeed />
-        ) : (
+    <Card id="analysis-form">
+      <SectionHeading
+        subtitle={exam?.name}
+        action={
+          canCopy ? (
+            <button
+              type="button"
+              onClick={() => void handleCopyLast()}
+              disabled={copying}
+              className="min-h-11 text-sm font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60"
+              style={{ color: "var(--color-main)" }}
+              data-testid="analysis-copy-last"
+            >
+              {copying ? t("copy_last_busy") : t("copy_last")}
+            </button>
+          ) : undefined
+        }
+      >
+        {t("result_entry_title")}
+      </SectionHeading>
+      {copyError ? (
+        <p
+          className="mt-2 text-sm"
+          style={{ color: "var(--color-danger)" }}
+          role="alert"
+        >
+          {copyError}
+        </p>
+      ) : null}
+      {!exam || subjects.length === 0 ? (
+        <NoExamSeed />
+      ) : (
+        <div className="mt-4">
           <AnalysisMockExamForm
             subjects={subjects}
             scores={scores}
@@ -80,17 +132,8 @@ export function AnalysisTabEntry({
             onScoreChange={onScoreChange}
             onSubmit={onSubmit}
           />
-        )}
-      </Card>
-      {examId ? (
-        <AnalysisHistoryList
-          examId={examId}
-          refreshKey={historyRefreshKey}
-          subjects={subjects}
-          onCopyLast={onCopyLast}
-          onChanged={onHistoryChanged}
-        />
-      ) : null}
-    </div>
+        </div>
+      )}
+    </Card>
   );
 }

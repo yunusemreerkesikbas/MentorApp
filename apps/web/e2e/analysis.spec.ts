@@ -24,7 +24,9 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({ page 
     weekly: [insufficientWeekly],
   });
   await page.goto("/analiz");
-  await expect(page.getByText("Henüz deneme yok — ilk sonucunu girelim.")).toBeVisible();
+  await expect(
+    page.getByText("Henüz deneme yok — Gir sekmesinden ilk sonucunu girebilirsin."),
+  ).toBeVisible();
 
   await page.getByRole("tab", { name: "Gelişim" }).click();
   await expect(page.getByText("Biraz daha veri gerekli")).toBeVisible();
@@ -35,7 +37,10 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({ page 
   const firstPage = await page.context().newPage();
   const firstApi = await mockAnalysisApi(firstPage, { analysis: firstAnalysis });
   await firstPage.goto("/analiz?tab=progress");
-  await expect(firstPage.getByText("Son net: 42.00")).toBeVisible();
+  await expect(
+    firstPage.getByTestId("analysis-latest-net"),
+  ).toHaveAttribute("aria-label", "Son net: 42.00");
+  await expect(firstPage.getByTestId("analysis-latest-net")).toHaveText("42.00");
   await expect(firstPage.getByText(/Geçen denemeye göre/)).toHaveCount(0);
   await expect(firstPage.getByText("Matematik", { exact: true }).first()).toBeVisible();
   await expect(firstPage.locator("details")).not.toHaveAttribute("open", "");
@@ -57,8 +62,8 @@ test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({ p
   });
   await page.goto("/analiz?tab=progress");
 
-  await expect(page.getByText("Son net: 48.00")).toBeVisible();
-  await expect(page.getByText("Geçen denemeye göre +6.00")).toBeVisible();
+  await expect(page.getByTestId("analysis-latest-net")).toHaveText("48.00");
+  await expect(page.getByTestId("analysis-net-delta")).toContainText("+6.00");
   await expect(page.getByText("Problemler", { exact: true })).toBeVisible();
   await expect(page.getByText("Değerlendirmeye hazır")).toBeVisible();
 
@@ -218,8 +223,11 @@ test("İngilizce statik analiz metinlerini gösterir", async ({ page }) => {
 
   await page.goto("/en/analysis");
 
-  await expect(page.getByRole("heading", { name: "Mock Exam Analysis" })).toBeVisible();
+  await expect(page.getByRole("main", { name: "Mock Exam Analysis" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Progress" })).toBeVisible();
+  await expect(
+    page.getByText("No exams yet — enter your first result in the Enter tab."),
+  ).toBeVisible();
   await expectNoHorizontalOverflow(page);
   expect(api.unexpected).toEqual([]);
 });

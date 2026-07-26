@@ -26,7 +26,15 @@ export function toPlanTaskDto(row: PlanTaskRow): PlanTaskDto {
     status: row.status as PlanTaskStatus,
     sortOrder: row.sortOrder,
     taskDate: row.taskDate,
+    startTime: toHhmm(row.startTime),
+    endTime: toHhmm(row.endTime),
+    description: row.description,
   };
+}
+
+/** Postgres `time` comes back as "HH:MM:SS"; the API contract is "HH:MM". */
+function toHhmm(value: string | null | undefined): string | null {
+  return value ? value.slice(0, 5) : null;
 }
 
 export function toStudySessionDto(

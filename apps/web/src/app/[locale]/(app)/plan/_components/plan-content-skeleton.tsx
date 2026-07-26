@@ -39,43 +39,49 @@ export function PlanListSkeleton() {
 }
 
 /** Timeline — 3–4 day blocks on a vertical rail. */
-export function PlanTimelineSkeleton() {
+export function PlanTimelineSkeleton({
+  embedded = false,
+}: {
+  /** When true, omit outer Card (overlay inside an existing timeline card). */
+  embedded?: boolean;
+}) {
   const t = useTranslations("plan");
 
-  return (
-    <Card className="relative overflow-hidden">
-      <SkeletonGroup
-        label={t("loading")}
-        className="mentor-plan-timeline-scroll relative flex flex-col gap-6"
-      >
-        <div
-          className="absolute bottom-2 left-[11px] top-2 w-0.5"
-          style={{ backgroundColor: "var(--color-progress-track)" }}
-          aria-hidden
-        />
-        {Array.from({ length: TIMELINE_DAY_COUNT }, (_, dayIndex) => (
-          <div key={dayIndex} className="relative pl-14">
-            <Skeleton
-              className="absolute top-1 h-6 w-6 -translate-x-1/2 rounded-full"
-              style={{ left: 24, ...skeletonStaggerStyle(dayIndex) }}
-            />
-            <Skeleton
-              className="mb-2 h-4 w-36 rounded-[var(--radius-card)]"
-              style={skeletonStaggerStyle(dayIndex)}
-            />
-            <div className="flex flex-col">
-              {Array.from({ length: dayIndex === 0 ? 2 : 1 }, (_, rowIndex) => (
-                <PlanTaskRowSkeleton
-                  key={rowIndex}
-                  index={dayIndex * 2 + rowIndex + 1}
-                />
-              ))}
-            </div>
+  const body = (
+    <SkeletonGroup
+      label={t("loading")}
+      className="mentor-plan-timeline-scroll relative flex flex-col gap-6"
+    >
+      <div
+        className="absolute bottom-2 left-[11px] top-2 w-0.5"
+        style={{ backgroundColor: "var(--color-progress-track)" }}
+        aria-hidden
+      />
+      {Array.from({ length: TIMELINE_DAY_COUNT }, (_, dayIndex) => (
+        <div key={dayIndex} className="relative pl-14">
+          <Skeleton
+            className="absolute top-1 h-6 w-6 -translate-x-1/2 rounded-full"
+            style={{ left: 24, ...skeletonStaggerStyle(dayIndex) }}
+          />
+          <Skeleton
+            className="mb-2 h-4 w-36 rounded-[var(--radius-card)]"
+            style={skeletonStaggerStyle(dayIndex)}
+          />
+          <div className="flex flex-col">
+            {Array.from({ length: dayIndex === 0 ? 2 : 1 }, (_, rowIndex) => (
+              <PlanTaskRowSkeleton
+                key={rowIndex}
+                index={dayIndex * 2 + rowIndex + 1}
+              />
+            ))}
           </div>
-        ))}
-      </SkeletonGroup>
-    </Card>
+        </div>
+      ))}
+    </SkeletonGroup>
   );
+
+  if (embedded) return body;
+  return <Card className="relative overflow-hidden">{body}</Card>;
 }
 
 /** Mobile Hafta — nav card + task card skeletons. */
@@ -104,17 +110,36 @@ export function PlanWeekSkeleton() {
   );
 }
 
-/** Desktop Hafta skeleton — simplified two-column blocks. */
-export function PlanWeekDesktopSkeleton() {
+/** Takvim skeleton — left rail (desktop) + toolbar and calendar surface. */
+export function PlanCalendarSkeleton() {
   const t = useTranslations("plan");
 
   return (
-    <div className="hidden lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-6">
-      <SkeletonGroup label={t("loading")} className="flex flex-col gap-4">
+    <div className="lg:grid lg:grid-cols-[minmax(280px,320px)_minmax(0,1fr)] lg:gap-6">
+      <SkeletonGroup
+        label={t("loading")}
+        className="hidden lg:flex lg:flex-col lg:gap-4"
+      >
         <Skeleton className="h-[320px] rounded-[var(--radius-card)]" />
         <Skeleton className="h-[280px] rounded-[var(--radius-card)]" />
       </SkeletonGroup>
-      <Skeleton className="min-h-[400px] rounded-[var(--radius-card)]" />
+      <Card>
+        <SkeletonGroup label={t("loading")} className="flex flex-col gap-4">
+          <div className="flex items-center justify-between gap-3">
+            <Skeleton className="h-5 w-40 rounded-[var(--radius-card)]" />
+            <Skeleton className="h-9 w-44 rounded-full" />
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: 21 }, (_, index) => (
+              <Skeleton
+                key={index}
+                className="h-16 rounded-[var(--radius-card)]"
+                style={skeletonStaggerStyle(index % 7)}
+              />
+            ))}
+          </div>
+        </SkeletonGroup>
+      </Card>
     </div>
   );
 }

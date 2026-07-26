@@ -414,6 +414,13 @@
       "when": 1784727576103,
       "tag": "0058_curvy_stature",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1784982504882,
+      "tag": "0059_burly_starfox",
+      "breakpoints": true
     }
   ]
 }

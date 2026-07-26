@@ -1,5 +1,11 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
-import type { AuthUser, ExamCalendarDto, InfoArticleDto } from "@mentor/types";
+import type {
+  AuthUser,
+  ExamCalendarDto,
+  InfoArticleDto,
+  SubscriptionView,
+  TodayPanelResponse,
+} from "@mentor/types";
 
 const user: AuthUser = {
   id: "22222222-2222-4222-8222-222222222222",
@@ -186,6 +192,36 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   expect(hubApi.unexpected).toEqual([]);
 });
 
+const subscription: SubscriptionView = {
+  subscription: null,
+  entitlement: {
+    tier: "PREMIUM",
+    isPremium: true,
+    validUntil: "2026-08-21T00:00:00.000Z",
+    reason: "ACTIVE",
+  },
+};
+
+const today: TodayPanelResponse = {
+  greetingName: "Bilgi Test",
+  motivationalLine: "Bugün tek bir adım yeter.",
+  countdown: null,
+  streak: { currentStreak: 0, longestStreak: 0, freezeTokens: 2 },
+  tasks: [],
+  nextAction: {
+    kind: "ADD_TASK",
+    title: "Bugünün tek küçük adımı",
+    message: "Bugün için küçük bir görev ekleyebilirsin.",
+    taskId: null,
+  },
+  sessionPresets: [
+    { id: "25_5", label: "25 / 5 dk", focusMinutes: 25, breakMinutes: 5 },
+  ],
+  mood: null,
+  focusGoal: { goalMinutes: null, focusMinutesToday: 0 },
+  focusingNow: null,
+};
+
 function event(type: string, eventAt: string) {
   return {
     type,
@@ -277,6 +313,18 @@ async function mockKnowledgeApi(
     }
     if (method === "GET" && path.startsWith("/v1/coach/conversations?")) {
       return json(route, { items: [], total: 0, page: 1, pageSize: 20 });
+    }
+    // The app shell nav reads the coin pill + premium state on every authenticated route,
+    // including /bilgi — not "unexpected", just not this suite's subject.
+    if (method === "GET" && path.startsWith("/v1/economy/")) {
+      return json(route, { code: "ECONOMY_DISABLED", message: "Kapalı" }, 404);
+    }
+    if (method === "GET" && path === "/v1/subscription") {
+      return json(route, subscription);
+    }
+    // Only reached by the "Koçla konuş" hand-off, which lands on the coach chat route.
+    if (method === "GET" && path === "/v1/coaching/today") {
+      return json(route, today);
     }
 
     unexpected.push(`${method} ${path}`);
