@@ -46,7 +46,7 @@ export function DialogViewport({
         className={`absolute inset-0 bg-[#111111]/40 backdrop-blur-sm ${dialog.exiting ? "opacity-0" : "animate-dialog-backdrop-enter motion-reduce:animate-none"} motion-reduce:transition-none transition-opacity duration-200`}
         onClick={onBackdropClick}
       />
-      <div className="relative z-[70] flex w-full max-w-[335px] justify-center lg:max-w-[480px]">
+      <div className="relative z-[70] flex w-full max-w-[360px] justify-center lg:max-w-[480px]">
         <DialogPanel dialog={dialog} onAction={onAction} />
       </div>
     </div>,

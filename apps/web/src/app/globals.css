@@ -19,6 +19,16 @@ body {
   font-family: var(--font-body);
 }
 
+/* Weekly recap celebration palette — scoped to the full-screen Wrapped story (DESIGN.md §8.4). */
+.weekly-recap-theme {
+  --recap-coral: #ff5b49;
+  --recap-purple: #400073;
+  --recap-lavender: #afb1ff;
+  --recap-mint: #16d0a6;
+  --recap-ink: #000000;
+  font-family: var(--font-body);
+}
+
 @keyframes toast-enter {
   from {
     opacity: 0;

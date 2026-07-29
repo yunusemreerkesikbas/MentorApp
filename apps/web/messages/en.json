@@ -152,9 +152,9 @@
     "metric_streak_value": "{count, plural, one {# day} other {# days}}",
     "metric_mood_empty": "Pick",
     "metric_mood_action": "Select or update your mood",
-    "mood_1": "Hard",
+    "mood_1": "Draining",
     "mood_2": "Low",
-    "mood_3": "Calm",
+    "mood_3": "Balanced",
     "mood_4": "Good",
     "mood_5": "Great",
     "streak_title": "Daily streak",
@@ -427,11 +427,11 @@
     "subtitle": "A quick check-in — no judgment.",
     "ask_later": "Ask me later",
     "checkin_cta": "Check in",
-    "wheel_hint": "Drag to spin the wheel; tap the centered mascot or confirm below.",
+    "wheel_hint": "Drag to spin the wheel.",
     "change_cta": "Change",
-    "option_1": "Hard",
+    "option_1": "Draining",
     "option_2": "Low",
-    "option_3": "Calm",
+    "option_3": "Balanced",
     "option_4": "Good",
     "option_5": "Great",
     "struggle_label": "What challenged you most today? (optional)",
@@ -753,6 +753,15 @@
     "event_status": "Status",
     "event_status_done": "Completed",
     "event_status_pending": "Pending",
+    "calendar_legend_aria": "Highlight by subject",
+    "calendar_legend_clear": "Clear highlight",
+    "legend_progress": "{done} / {total} completed",
+    "legend_days": "across {count, plural, one {# day} other {# days}}",
+    "legend_hour_short": "h",
+    "legend_minute_short": "min",
+    "legend_next_label": "Next",
+    "legend_next_short": "next {date}",
+    "legend_next_none": "Nothing left this month.",
     "calendar_back": "Back",
     "calendar_scale_day": "Day",
     "calendar_scale_week": "Week",
@@ -923,6 +932,190 @@
     "photo_signals_window": "Photo signals linked only to your last four attempts.",
     "photo_topic_signals_window": "Topic signals linked to your latest 12 attempts in the active exam.",
     "photo_signals_empty_action": "You can add your first wrong-answer photo above.",
+    "recap": {
+      "loading": "Preparing your weekly story…",
+      "load_error": "Your weekly story could not be loaded.",
+      "exam_unavailable": "No active exam period was found. You can try again shortly.",
+      "exit": "Exit story",
+      "progress": "Story screen {current} of {total}",
+      "previous": "Back",
+      "next": "Next",
+      "finish": "Finish",
+      "needs_exam": {
+        "title": "First, choose your exam path",
+        "message": "Select your exam type in your profile so the weekly story uses the right period.",
+        "cta": "Choose exam type"
+      },
+      "error": {
+        "title": "I could not open the story just now",
+        "retry": "Try again"
+      },
+      "empty": {
+        "title": "Quiet weeks are part of the journey too",
+        "add_task": "Add task",
+        "start_session": "Start session"
+      },
+      "cover": {
+        "eyebrow": "Your Weekly Story",
+        "title": "The meaningful traces from last week",
+        "period": "{startDate} – {endDate}"
+      },
+      "controls": {
+        "play": "Play story",
+        "pause": "Pause story",
+        "replay": "Replay story",
+        "sound_on": "Turn sound on",
+        "sound_off": "Turn sound off",
+        "silent": "This slide is silent",
+        "close_note": "Close Puhu note"
+      },
+      "welcome": {
+        "title": "Last week has your fingerprints on it.",
+        "next": "Now let’s bring them on stage."
+      },
+      "week_map": {
+        "title": "The calendar noticed you.",
+        "active_days": "days on stage",
+        "power_day": "{day} · power day · {minutes} min"
+      },
+      "focus": {
+        "title": "Your focus took the stage.",
+        "minutes": "minutes of real focus",
+        "support": "{sessions} sessions. The longest was {longest} minutes. Clear.",
+        "teaser_title": "Your focus story is waiting for its first session.",
+        "teaser_message": "Your next real focus session will bring this screen to life in your own rhythm."
+      },
+      "weekly_run": {
+        "title": "{count} days in a row. Not an accident.",
+        "active_days_title": "You showed up on {count} different calendar days."
+      },
+      "weekly_best": {
+        "eyebrow": "Best of your week",
+        "title": "The lead role is already taken.",
+        "focus_subject": "It became your subject star with {minutes} minutes of real focus.",
+        "plan_subject": "It stood out in your plan with {count} completed tasks.",
+        "fallback": "One real small step",
+        "fallback_message": "The strongest trace from this week lives here."
+      },
+      "rhythm": {
+        "eyebrow": "Your rhythm",
+        "title": "Your effort spread across the week",
+        "focus_minutes": "minutes of real focus",
+        "sessions": "sessions",
+        "completed_tasks": "completed tasks",
+        "mock_exams": "mock exams",
+        "minutes": "minutes",
+        "active_days": "active days",
+        "run": "Longest run: {count} days",
+        "day_active": "{day} active",
+        "day_inactive": "{day} rest day"
+      },
+      "subject": {
+        "label": "Your subject map",
+        "fallback": "This week's study route",
+        "focus_leader": "Your focus leader with {minutes} minutes",
+        "plan_leader": "Led your plan with {count} completed tasks",
+        "minutes": "{count} min"
+      },
+      "performance": {
+        "eyebrow": "Mock-exam stage",
+        "title": "Your mock exam entered the stage.",
+        "net": "average net",
+        "bridge_title": "A mock exam was not in this week’s cast.",
+        "bridge_message": "Your next mock exam will unlock this scene."
+      },
+      "spark": {
+        "label": "This week's spark",
+        "title": "A small but real trace"
+      },
+      "bests": {
+        "label": "Best of your week",
+        "title": "What stood out in your week",
+        "minutes": "{count} minutes",
+        "tasks": "{count} tasks",
+        "exams": "{count} mock exams",
+        "comparison_ACTIVE_DAYS": "+{count} active days",
+        "comparison_FOCUS_MINUTES": "+{count} minutes",
+        "comparison_COMPLETED_TASKS": "+{count} tasks",
+        "comparison_LONGEST_SESSION": "+{count} minutes"
+      },
+      "weekly_title": {
+        "label": "Weekly codename",
+        "fallback": "Nova Traveler"
+      },
+      "partial_unlocks": {
+        "title": "What is next in your story?",
+        "kicker": "Scenes you can unlock next week",
+        "count": "{count, plural, one {# new scene} other {# new scenes}}"
+      },
+      "partial_final": {
+        "title": "The first trace is here. More to come."
+      },
+      "closing": {
+        "eyebrow": "A note from Puhu",
+        "ai_eyebrow": "Your AI Puhu note",
+        "title": "Take this with you"
+      },
+      "final": {
+        "eyebrow": "Into the new week",
+        "title": "You did this.",
+        "plan_cta": "Open suggestion in my plan",
+        "share": "Share my effort",
+        "plan_short": "Plan",
+        "share_short": "Share",
+        "puhu_note": "Puhu note"
+      },
+      "puhu_sheet": {
+        "title": "A note from Puhu",
+        "ai_title": "Your AI Puhu note",
+        "loading": "Puhu is personalizing your note…"
+      },
+      "share": {
+        "title": "My Weekly Story",
+        "sessions": "{count} sessions",
+        "minutes": "{count} minutes",
+        "active_days": "{count} active days",
+        "tasks": "{count} completed tasks",
+        "weekly_title": "My title: {label}",
+        "top_subject": "{name}: {minutes} minutes",
+        "preparing_short": "Preparing…",
+        "downloaded": "Your share card was downloaded",
+        "file_name": "my-weekly-story.png",
+        "error": "Sharing could not be completed"
+      },
+      "share_card": {
+        "title": "A portrait of your week",
+        "weekly_title_label": "Your energy this week",
+        "weekly_title_fallback": "Nova Traveler",
+        "focus": "time spent in focus",
+        "active_days": "days you kept your rhythm",
+        "sessions": "sessions you made time for",
+        "completed_tasks": "tasks you called done",
+        "longest_session": "focus in one sitting",
+        "longest_run": "your longest rhythm",
+        "top_subject": "You spent the most time with",
+        "minutes": "{count} min",
+        "days": "{count} days",
+        "count": "{count}",
+        "subject": "{name} · {minutes} min",
+        "signature": "Mentor × Puhu"
+      },
+      "unlock": {
+        "cta": "Unlock the AI Puhu note for {cost} coins",
+        "confirm": "Are you sure? {cost} coins will be spent",
+        "insufficient": "The AI note costs {cost} coins ({balance}/{cost}). View quests",
+        "error": "The AI Puhu note could not be unlocked"
+      },
+      "teaser": {
+        "title": "Your Weekly Recap",
+        "message": "Unwrap last week's highlights.",
+        "period": "{startDate} – {endDate}",
+        "status_READY": "Your story is ready",
+        "status_PARTIAL": "Your small traces are here",
+        "status_EMPTY": "A new beginning",
+        "status_UNKNOWN": "Look back at last week"
+      }
+    },
     "weekly": {
       "title": "Your last week",
       "loading": "Loading your weekly review…",

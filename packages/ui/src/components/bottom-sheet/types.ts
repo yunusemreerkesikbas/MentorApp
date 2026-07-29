@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type * as React from "react";
 
 export type BottomSheetLayout = "action" | "filter";
 
@@ -24,7 +24,7 @@ export interface BottomSheetShowOptions {
   cancelLabel?: string;
   applyLabel?: string;
   closeLabel: string;
-  children?: ReactNode;
+  children?: React.ReactNode;
   bodyScroll?: boolean;
   dismissOnBackdrop?: boolean;
   dismissOnEscape?: boolean;
@@ -42,7 +42,7 @@ export interface BottomSheetFilterOptions {
   title: string;
   applyLabel: string;
   closeLabel: string;
-  children: ReactNode;
+  children: React.ReactNode;
   onApply?: () => void | Promise<void>;
 }
 

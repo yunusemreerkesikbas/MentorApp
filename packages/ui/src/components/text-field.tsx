@@ -1,10 +1,11 @@
 "use client";
 
-import { useId, useState, type InputHTMLAttributes } from "react";
+import type * as React from "react";
+import { useId, useState } from "react";
 import Eye from "lucide-react/dist/esm/icons/eye.mjs";
 import EyeOff from "lucide-react/dist/esm/icons/eye-off.mjs";
 
-export interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
+export interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   /** Field-level error: sets `aria-invalid`, danger border, and a described message below. */
   error?: string | null;
@@ -36,10 +37,16 @@ export function TextField({
   const effectiveType = isPassword && revealed ? "text" : type;
 
   return (
-    <label htmlFor={inputId} className={`flex flex-col gap-1 ${className ?? ""}`}>
+    <label
+      htmlFor={inputId}
+      className={`flex flex-col gap-1 ${className ?? ""}`}
+    >
       <span
         className="text-xs font-semibold"
-        style={{ color: "var(--color-secondary)", fontFamily: "var(--font-heading)" }}
+        style={{
+          color: "var(--color-secondary)",
+          fontFamily: "var(--font-heading)",
+        }}
       >
         {label}
       </span>

@@ -85,6 +85,7 @@ const pendingToday: TodayPanelResponse = {
   mood: null,
   focusGoal: { goalMinutes: null, focusMinutesToday: 0 },
   focusingNow: null,
+  weeklyRecapPeriod: null,
 };
 
 test("landing next-action chip pending görevi seansa taşır", async ({
@@ -130,11 +131,64 @@ test("dashboard ve koç landing aynı aksiyonu gösterir; dashboard bugün veris
     access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
   });
   await coachPage.goto("/koc/sohbet");
-  await expect(
-    coachPage.getByTestId("coach-next-action-chip"),
-  ).toHaveAttribute("href", /source=coach/);
+  await expect(coachPage.getByTestId("coach-next-action-chip")).toHaveAttribute(
+    "href",
+    /source=coach/,
+  );
   expect(coachApi.todayCalls).toBe(1);
   expect(coachApi.dailyGreetingCalls).toBe(0);
+});
+
+test("dashboard recap teaser'ını aynı cihazda haftada bir gösterir", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "mentor_mood_prompt_deferred_date",
+      new Date().toISOString().slice(0, 10),
+    );
+  });
+  const period = {
+    examId: "exam-recap-1",
+    startDate: "2026-07-13",
+    endDate: "2026-07-19",
+    timeZone: "Europe/Istanbul" as const,
+    status: "READY" as const,
+  };
+  const api = await mockCoachApi(page, {
+    today: { ...pendingToday, weeklyRecapPeriod: period },
+  });
+  await page.goto("/panel");
+
+  const teaser = page.getByTestId("weekly-recap-teaser-dashboard");
+  await expect(teaser).toBeVisible();
+  const todayCallsBeforeOpen = api.todayCalls;
+  const open = teaser.getByRole("link", { name: "Hikâyeyi aç" });
+  await open.evaluate((element) =>
+    element.addEventListener("click", (event) => event.preventDefault(), {
+      once: true,
+    }),
+  );
+  await open.click();
+  await expect(teaser).toHaveCount(0);
+  expect(api.todayCalls).toBe(todayCallsBeforeOpen);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (startDate) =>
+          window.localStorage.getItem(
+            `mentor.weekly-recap.opened.v2:${startDate}`,
+          ),
+        period.startDate,
+      ),
+    )
+    .toBe("1");
+
+  await page.reload();
+  await expect(page.getByTestId("weekly-recap-teaser-dashboard")).toHaveCount(
+    0,
+  );
+  expect(api.todayCalls).toBeGreaterThan(todayCallsBeforeOpen);
 });
 
 test("boş plan için görev ekleme chip'ini gösterir", async ({ page }) => {
@@ -274,7 +328,9 @@ test("conversation list hatasını gerçek boş durumdan ayırır ve retry eder"
   await page.goto("/koc/sohbet");
   const history = await openHistory(page);
 
-  await expect(history.getByText("Sohbetlerin şu an yüklenemedi.")).toBeVisible();
+  await expect(
+    history.getByText("Sohbetlerin şu an yüklenemedi."),
+  ).toBeVisible();
   api.allowConversations();
   await history.getByRole("button", { name: "Tekrar dene" }).click();
   await expect(history.getByText("Devam eden sohbet")).toBeVisible();
@@ -309,7 +365,9 @@ test("history hatasında composerı kilitler ve retry sonrası konuşmayı açar
 
   await page.goto("/koc/sohbet?c=" + conversationId);
 
-  await expect(page.getByText("Sohbet geçmişi şu an yüklenemedi.")).toBeVisible();
+  await expect(
+    page.getByText("Sohbet geçmişi şu an yüklenemedi."),
+  ).toBeVisible();
   await expect(page.getByLabel("Koçuna mesaj yaz")).toBeDisabled();
   await page.getByRole("button", { name: "Tekrar dene" }).click();
   await expect(page.getByText("Tekrar buradayım.")).toBeVisible();
@@ -359,7 +417,9 @@ test("eski mesajları sırayla başa ekler ve görünür konumu korur", async ({
 
   await expect(page.getByText("En eski soru", { exact: true })).toHaveCount(1);
   await expect(page.getByText("En eski yanıt", { exact: true })).toHaveCount(1);
-  await expect(page.getByText("Yakın geçmiş 0", { exact: false })).toHaveCount(1);
+  await expect(page.getByText("Yakın geçmiş 0", { exact: false })).toHaveCount(
+    1,
+  );
   const transcript = await page
     .getByRole("log", { name: "Koç sohbeti" })
     .textContent();
@@ -532,9 +592,7 @@ test("yarışan history isteklerinde yalnız son seçilen sohbeti gösterir", as
   );
   await history.getByRole("link", { name: /Birinci sohbet/ }).click();
   await firstRequest;
-  await expect(
-    page.getByLabel("Sohbet geçmişin yükleniyor…"),
-  ).toBeVisible();
+  await expect(page.getByLabel("Sohbet geçmişin yükleniyor…")).toBeVisible();
   await expect(page.getByLabel("Koçuna mesaj yaz")).toBeDisabled();
 
   const historyAgain = await openHistory(page);
@@ -571,17 +629,20 @@ test("stream hatasında optimistic exchangei geri alır ve metni inputa döndür
   ).toHaveCount(0);
 });
 function makeRecentMessages(): CoachMessageDto[] {
-  return Array.from({ length: 30 }, (_, index): CoachMessageDto => ({
-    id: `20000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
-    role: index % 2 === 0 ? "COACH" : "USER",
-    content:
-      index === 29
-        ? "Yakın geçmiş ankrajı " + "uzun içerik ".repeat(8)
-        : `Yakın geçmiş ${index} ` + "uzun içerik ".repeat(8),
-    sources: [],
-    feedback: null,
-    createdAt: `2026-07-20T10:${String(29 - index).padStart(2, "0")}:00.000Z`,
-  }));
+  return Array.from(
+    { length: 30 },
+    (_, index): CoachMessageDto => ({
+      id: `20000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+      role: index % 2 === 0 ? "COACH" : "USER",
+      content:
+        index === 29
+          ? "Yakın geçmiş ankrajı " + "uzun içerik ".repeat(8)
+          : `Yakın geçmiş ${index} ` + "uzun içerik ".repeat(8),
+      sources: [],
+      feedback: null,
+      createdAt: `2026-07-20T10:${String(29 - index).padStart(2, "0")}:00.000Z`,
+    }),
+  );
 }
 interface MockCoachOptions {
   today: TodayPanelResponse;
@@ -593,7 +654,10 @@ interface MockCoachOptions {
   messageFailures?: number;
   olderMessageFailures?: number;
   messagePages?: Record<number, CoachMessageDto[]>;
-  messagePagesByConversation?: Record<string, Record<number, CoachMessageDto[]>>;
+  messagePagesByConversation?: Record<
+    string,
+    Record<number, CoachMessageDto[]>
+  >;
   messagePageDelaysMs?: Record<string, Record<number, number>>;
   messageTotal?: number;
   messagesByConversation?: Record<string, CoachMessageDto[]>;
@@ -660,7 +724,10 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
     }
     if (method === "POST" && path === "/v1/coach/daily-greeting") {
       dailyGreetingCalls += 1;
-      return json(route, { greeting: "Bugün tek küçük adım yeter.", model: "fake" });
+      return json(route, {
+        greeting: "Bugün tek küçük adım yeter.",
+        model: "fake",
+      });
     }
     if (method === "GET" && path === "/v1/coaching/vision") {
       return json(route, null);
@@ -727,9 +794,9 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
         conversationPages?.[pageNumber] ??
         options.messagePages?.[pageNumber] ??
         (pageNumber === 1
-          ? options.messagesByConversation?.[requestedConversationId] ??
+          ? (options.messagesByConversation?.[requestedConversationId] ??
             options.messages ??
-            []
+            [])
           : []);
       // Per-conversation suites must report THAT conversation's total: a shared `messageTotal`
       // makes a 1-message chat look paginated, so "load older" never goes away when switching.
@@ -738,12 +805,12 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
             (sum, pageItems) => sum + pageItems.length,
             0,
           )
-        : options.messagesByConversation?.[requestedConversationId]?.length ??
+        : (options.messagesByConversation?.[requestedConversationId]?.length ??
           options.messageTotal ??
           Object.values(options.messagePages ?? {}).reduce(
             (sum, pageItems) => sum + pageItems.length,
             options.messages?.length ?? 0,
-          );
+          ));
       return json(route, {
         items,
         total,

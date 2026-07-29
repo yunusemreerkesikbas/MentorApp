@@ -10,6 +10,10 @@
   appends a dated entry to the matching feature doc's "Geliştirmeler (timeline)" section.
 - [ ] No out-of-scope work added "by the way" (phase discipline §10) → backlog.
 
+**Verification scope:** During iterative development, reviewers expect the smallest relevant tests and
+file/package-level checks—not a full monorepo pipeline after every change. Full CI is required only when the
+branch is presented as PR/merge/release-ready, or earlier when risk/cross-cutting impact justifies it.
+
 ## Reviewer checklist
 **Correctness**
 - [ ] Logic does what's claimed; edge cases (empty/null/bounds) handled; error paths clear.

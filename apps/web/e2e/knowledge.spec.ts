@@ -133,7 +133,9 @@ test("makaleyi Koç composerına taşır ama otomatik göndermez", async ({
   );
   const api = await mockKnowledgeApi(page);
   await page.goto(`/bilgi/${article.slug}`);
-  const jsonLd = await page.locator('script[type="application/ld+json"]').allTextContents();
+  const jsonLd = await page
+    .locator('script[type="application/ld+json"]')
+    .allTextContents();
   expect(jsonLd.join(" ")).toContain("Article");
   expect(jsonLd.join(" ")).toContain("BreadcrumbList");
   expect(jsonLd.join(" ")).toContain("https://www.osym.gov.tr");
@@ -220,6 +222,7 @@ const today: TodayPanelResponse = {
   mood: null,
   focusGoal: { goalMinutes: null, focusMinutesToday: 0 },
   focusingNow: null,
+  weeklyRecapPeriod: null,
 };
 
 function event(type: string, eventAt: string) {

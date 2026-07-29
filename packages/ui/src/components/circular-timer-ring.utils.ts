@@ -5,7 +5,11 @@ export const DEFAULT_TIMER_MAX = 120;
 export const DEFAULT_TIMER_STEP = 5;
 
 /** Angle in degrees from 12 o'clock, clockwise (0–360). */
-export function angleFromPointer(clientX: number, clientY: number, rect: DOMRect): number {
+export function angleFromPointer(
+  clientX: number,
+  clientY: number,
+  rect: DOMRect,
+): number {
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
   const x = clientX - cx;

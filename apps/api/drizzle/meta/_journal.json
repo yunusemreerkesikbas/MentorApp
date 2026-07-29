@@ -421,6 +421,13 @@
       "when": 1784982504882,
       "tag": "0059_burly_starfox",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1785057361924,
+      "tag": "0060_complete_wonder_man",
+      "breakpoints": true
     }
   ]
 }

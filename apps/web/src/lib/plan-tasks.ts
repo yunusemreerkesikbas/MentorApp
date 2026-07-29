@@ -3,6 +3,7 @@ import type {
   Paginated,
   PlanTaskCalendarDto,
   PlanTaskDto,
+  PublicHolidayDto,
 } from "@mentor/types";
 import {
   getPlanTaskControllerListUrl,
@@ -108,6 +109,21 @@ export async function listPlanTasksForRange(
     ),
   );
   return [...first.items, ...rest.flatMap((page) => page.items)];
+}
+
+/**
+ * Verified public holidays for a range, keyed by ISO date. Editorial reference data — the client
+ * never derives holidays itself (guardrail §4 #1), and a missing range just renders none.
+ */
+export async function listPublicHolidaysByDate(
+  from: string,
+  to: string,
+): Promise<Record<string, PublicHolidayDto>> {
+  const url = `/v1/content/holidays?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+  const items = (await http<PublicHolidayDto[]>(url)) as PublicHolidayDto[];
+  const byDate: Record<string, PublicHolidayDto> = {};
+  for (const holiday of items) byDate[holiday.date] = holiday;
+  return byDate;
 }
 
 /**

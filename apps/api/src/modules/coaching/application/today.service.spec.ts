@@ -9,6 +9,8 @@ const i18nFake = { translate: (key: string) => key } as never;
 function build(overrides: {
   examType?: string | null;
   calendar?: unknown;
+  recapCalendar?: unknown;
+  recapStatus?: "EMPTY" | "PARTIAL" | "READY";
   currentStreak?: number;
   mood?: unknown;
   dailyFocusGoalMinutes?: number | null;
@@ -19,7 +21,7 @@ function build(overrides: {
   const users = {
     getMe: vi.fn(async () => ({
       displayName: "Elif",
-      examType: overrides.examType ?? "KPSS",
+      examType: overrides.examType === undefined ? "KPSS" : overrides.examType,
       dailyFocusGoalMinutes: overrides.dailyFocusGoalMinutes ?? null,
     })),
   };
@@ -51,17 +53,32 @@ function build(overrides: {
     getFocusingNowCount: vi.fn(async () => overrides.focusingNow ?? null),
   };
   const content = {
-    getExamCalendar: vi.fn(async () =>
-      overrides.calendar === undefined
-        ? {
-            examType: "KPSS",
-            examName: "KPSS Lisans 2026",
-            examDate: addDays(todayIso(), 30),
-            source: "ÖSYM",
-            sourceUrl: "https://www.osym.gov.tr",
-          }
-        : overrides.calendar,
+    getExamCalendar: vi.fn(
+      async (examType: string | null, asOf?: string) => {
+        if (!examType) return null;
+        const defaultCalendar = {
+          examId: "exam-1",
+          examType: "KPSS",
+          examName: "KPSS Lisans 2026",
+          examDate: addDays(todayIso(), 30),
+          source: "ÖSYM",
+          sourceUrl: "https://www.osym.gov.tr",
+        };
+        if (asOf) {
+          return overrides.recapCalendar === undefined
+            ? defaultCalendar
+            : overrides.recapCalendar;
+        }
+        return overrides.calendar === undefined
+          ? defaultCalendar
+          : overrides.calendar;
+      },
     ),
+  };
+  const weeklyReview = {
+    getReview: vi.fn(async () => ({
+      recap: { status: overrides.recapStatus ?? "READY" },
+    })),
   };
   const service = new TodayService(
     users as never,
@@ -71,8 +88,18 @@ function build(overrides: {
     sessions as never,
     content as never,
     i18nFake,
+    weeklyReview as never,
   );
-  return { service, users, plan, streak, mood, sessions, content };
+  return {
+    service,
+    users,
+    plan,
+    streak,
+    mood,
+    sessions,
+    content,
+    weeklyReview,
+  };
 }
 
 describe("TodayService — composite panel payload", () => {
@@ -93,6 +120,24 @@ describe("TodayService — composite panel payload", () => {
     expect(result.tasks).toHaveLength(1);
     expect(result.sessionPresets.map((p) => p.id)).toEqual(["25_5", "50_10"]);
     expect(result.mood).toBeNull();
+    expect(result.weeklyRecapPeriod).toMatchObject({
+      examId: "exam-1",
+      timeZone: "Europe/Istanbul",
+      status: "READY",
+    });
+    expect(result.weeklyRecapPeriod?.startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("surfaces EMPTY so the panel can suppress a misleading teaser", async () => {
+    const result = await build({ recapStatus: "EMPTY" }).service.getToday(USER);
+
+    expect(result.weeklyRecapPeriod?.status).toBe("EMPTY");
+  });
+
+  it("omits the weekly recap period when the profile has no exam type", async () => {
+    const result = await build({ examType: null }).service.getToday(USER);
+
+    expect(result.weeklyRecapPeriod).toBeNull();
   });
 
   it("uses the START motivational line when the streak is zero", async () => {
@@ -105,6 +150,32 @@ describe("TodayService — composite panel payload", () => {
     const { service } = build({ calendar: null });
     const result = await service.getToday(USER);
     expect(result.countdown).toBeNull();
+  });
+
+  it("keeps the weekly recap available after the countdown exam date has passed", async () => {
+    const { service, weeklyReview } = build({
+      calendar: null,
+      recapCalendar: {
+        examId: "recent-exam",
+        examType: "KPSS",
+        examName: "KPSS Ortaöğretim 2026",
+        examDate: addDays(todayIso(), -1),
+        source: "ÖSYM",
+        sourceUrl: "https://www.osym.gov.tr",
+      },
+    });
+
+    const result = await service.getToday(USER);
+
+    expect(result.countdown).toBeNull();
+    expect(result.weeklyRecapPeriod).toMatchObject({
+      examId: "recent-exam",
+      status: "READY",
+    });
+    expect(weeklyReview.getReview).toHaveBeenCalledWith(
+      USER,
+      "recent-exam",
+    );
   });
 
   it("surfaces the focus goal with today's focus minutes when a goal is set", async () => {

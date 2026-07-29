@@ -32,7 +32,8 @@ export const ConfigValueType = {
   NUMBER: "number",
   STRING: "string",
 } as const;
-export type ConfigValueType = (typeof ConfigValueType)[keyof typeof ConfigValueType];
+export type ConfigValueType =
+  (typeof ConfigValueType)[keyof typeof ConfigValueType];
 
 export interface ConfigEntryDef {
   category: string;
@@ -54,7 +55,11 @@ const flag = (def: boolean, description: string): ConfigEntryDef => ({
   description,
 });
 
-const economyCount = (def: number, max: number, description: string): ConfigEntryDef => ({
+const economyCount = (
+  def: number,
+  max: number,
+  description: string,
+): ConfigEntryDef => ({
   category: ConfigCategory.ECONOMY,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(0).max(max),
@@ -64,7 +69,11 @@ const economyCount = (def: number, max: number, description: string): ConfigEntr
 });
 
 /** Like economyCount but min 1 — quest targets of 0 would auto-complete. */
-const economyTarget = (def: number, max: number, description: string): ConfigEntryDef => ({
+const economyTarget = (
+  def: number,
+  max: number,
+  description: string,
+): ConfigEntryDef => ({
   category: ConfigCategory.ECONOMY,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(1).max(max),
@@ -73,7 +82,11 @@ const economyTarget = (def: number, max: number, description: string): ConfigEnt
   description,
 });
 
-const aiCount = (def: number, max: number, description: string): ConfigEntryDef => ({
+const aiCount = (
+  def: number,
+  max: number,
+  description: string,
+): ConfigEntryDef => ({
   category: ConfigCategory.AI,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(0).max(max),
@@ -82,7 +95,11 @@ const aiCount = (def: number, max: number, description: string): ConfigEntryDef 
   description,
 });
 
-const identityCount = (def: number, max: number, description: string): ConfigEntryDef => ({
+const identityCount = (
+  def: number,
+  max: number,
+  description: string,
+): ConfigEntryDef => ({
   category: ConfigCategory.IDENTITY,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(0).max(max),
@@ -91,7 +108,11 @@ const identityCount = (def: number, max: number, description: string): ConfigEnt
   description,
 });
 
-const notificationCount = (def: number, max: number, description: string): ConfigEntryDef => ({
+const notificationCount = (
+  def: number,
+  max: number,
+  description: string,
+): ConfigEntryDef => ({
   category: ConfigCategory.NOTIFICATIONS,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(1).max(max),
@@ -100,7 +121,12 @@ const notificationCount = (def: number, max: number, description: string): Confi
   description,
 });
 
-const coachingCount = (def: number, min: number, max: number, description: string): ConfigEntryDef => ({
+const coachingCount = (
+  def: number,
+  min: number,
+  max: number,
+  description: string,
+): ConfigEntryDef => ({
   category: ConfigCategory.COACHING,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(min).max(max),
@@ -110,14 +136,26 @@ const coachingCount = (def: number, min: number, max: number, description: strin
 });
 
 export const CONFIG_CATALOG = {
-  "ai.enabled": flag(true, "Global AI kill-switch (§4/§8) — turn off all AI features."),
-  "economy.enabled": flag(false, "Gate for the light-economy module (user-facing balance/earning)."),
-  "forum.enabled": flag(false, "Gate for the forum/community module (zones, threads, moderation)."),
+  "ai.enabled": flag(
+    true,
+    "Global AI kill-switch (§4/§8) — turn off all AI features.",
+  ),
+  "economy.enabled": flag(
+    false,
+    "Gate for the light-economy module (user-facing balance/earning).",
+  ),
+  "forum.enabled": flag(
+    false,
+    "Gate for the forum/community module (zones, threads, moderation).",
+  ),
   "identity.google_oauth.enabled": flag(
     false,
     "Gate for Google sign-in on the public auth screens. Requires GOOGLE_OAUTH_* env vars.",
   ),
-  "signup.enabled": flag(true, "Registration kill-switch — disable new sign-ups."),
+  "signup.enabled": flag(
+    true,
+    "Registration kill-switch — disable new sign-ups.",
+  ),
   "identity.verification_email.resend_limit": identityCount(
     1,
     100,
@@ -138,17 +176,61 @@ export const CONFIG_CATALOG = {
     3600,
     "How often API instances poll the jobs table for pending notification/email jobs.",
   ),
-  "economy.coin.daily_cap": economyCount(50, 100000, "Max coin a user can earn per day (abuse shield)."),
-  "economy.coin.weekly_cap": economyCount(200, 1000000, "Max coin a user can earn per week (abuse shield)."),
-  "economy.coin.min_xp_for_coin": economyCount(0, 1000000, "Min XP required before a user can earn coin (anti-Sybil)."),
-  "economy.invite.reward_coin": economyCount(20, 100000, "Coin granted to the inviter when an invited user converts."),
-  "economy.quest.onboarding_reward_coin": economyCount(10, 100000, "Coin granted per completed onboarding quest."),
-  "economy.quest.daily_ritual_reward_xp": economyCount(5, 100000, "XP granted per completed daily ritual quest."),
-  "economy.quest.streak_milestone_reward_xp": economyCount(25, 100000, "XP granted per completed streak milestone quest."),
-  "economy.quest.effort_milestone_reward_xp": economyCount(25, 100000, "XP granted per completed effort milestone quest."),
-  "economy.quest.weekly_ritual_reward_xp": economyCount(20, 100000, "XP granted per completed weekly ritual quest."),
-  "economy.quest.weekly_focus_sessions_target": economyTarget(5, 100, "Completed focus sessions required for the weekly focus quest."),
-  "economy.quest.weekly_plan_tasks_target": economyTarget(10, 500, "Done plan tasks required for the weekly plan quest."),
+  "economy.coin.daily_cap": economyCount(
+    50,
+    100000,
+    "Max coin a user can earn per day (abuse shield).",
+  ),
+  "economy.coin.weekly_cap": economyCount(
+    200,
+    1000000,
+    "Max coin a user can earn per week (abuse shield).",
+  ),
+  "economy.coin.min_xp_for_coin": economyCount(
+    0,
+    1000000,
+    "Min XP required before a user can earn coin (anti-Sybil).",
+  ),
+  "economy.invite.reward_coin": economyCount(
+    20,
+    100000,
+    "Coin granted to the inviter when an invited user converts.",
+  ),
+  "economy.quest.onboarding_reward_coin": economyCount(
+    10,
+    100000,
+    "Coin granted per completed onboarding quest.",
+  ),
+  "economy.quest.daily_ritual_reward_xp": economyCount(
+    5,
+    100000,
+    "XP granted per completed daily ritual quest.",
+  ),
+  "economy.quest.streak_milestone_reward_xp": economyCount(
+    25,
+    100000,
+    "XP granted per completed streak milestone quest.",
+  ),
+  "economy.quest.effort_milestone_reward_xp": economyCount(
+    25,
+    100000,
+    "XP granted per completed effort milestone quest.",
+  ),
+  "economy.quest.weekly_ritual_reward_xp": economyCount(
+    20,
+    100000,
+    "XP granted per completed weekly ritual quest.",
+  ),
+  "economy.quest.weekly_focus_sessions_target": economyTarget(
+    5,
+    100,
+    "Completed focus sessions required for the weekly focus quest.",
+  ),
+  "economy.quest.weekly_plan_tasks_target": economyTarget(
+    10,
+    500,
+    "Done plan tasks required for the weekly plan quest.",
+  ),
   "economy.quest.disabled_ids": {
     category: ConfigCategory.ECONOMY,
     type: ConfigValueType.STRING,
@@ -158,13 +240,41 @@ export const CONFIG_CATALOG = {
     description:
       "Comma-separated quest ids to disable (kill-switch): hidden from all views, never granted. Deploy-free rollback for a misbehaving quest.",
   },
-  "economy.coin.ai_chat_cost": economyCount(5, 100000, "Coin debited per AI coach chat message (free earned-right path)."),
-  "economy.coin.streak_freeze_cost": economyCount(20, 100000, "Coin debited to rescue a broken streak by freezing the single missed day it broke on."),
-  "economy.coin.deep_analysis_cost": economyCount(25, 100000, "Coin debited to unlock one week's deep-analysis AI narration (premium users are included free)."),
-  "forum.xp.accepted_answer": economyCount(25, 1000, "XP granted to a user when their forum answer is accepted (slice 3)."),
-  "forum.xp.thread_posted": economyCount(2, 1000, "XP granted for posting a forum thread/message (feeds the effort leaderboard; capped per day)."),
-  "forum.xp.thread_posted_daily_cap": economyCount(10, 1000, "Max posts per day that earn XP (anti-farm shield for the leaderboard)."),
-  "ai.chat.daily_limit": aiCount(30, 100000, "Max AI coach chat messages a premium user may send per day (cost cap §7)."),
+  "economy.coin.ai_chat_cost": economyCount(
+    5,
+    100000,
+    "Coin debited per AI coach chat message (free earned-right path).",
+  ),
+  "economy.coin.streak_freeze_cost": economyCount(
+    20,
+    100000,
+    "Coin debited to rescue a broken streak by freezing the single missed day it broke on.",
+  ),
+  "economy.coin.deep_analysis_cost": economyCount(
+    25,
+    100000,
+    "Coin debited to unlock one week's deep-analysis AI narration (premium users are included free).",
+  ),
+  "forum.xp.accepted_answer": economyCount(
+    25,
+    1000,
+    "XP granted to a user when their forum answer is accepted (slice 3).",
+  ),
+  "forum.xp.thread_posted": economyCount(
+    2,
+    1000,
+    "XP granted for posting a forum thread/message (feeds the effort leaderboard; capped per day).",
+  ),
+  "forum.xp.thread_posted_daily_cap": economyCount(
+    10,
+    1000,
+    "Max posts per day that earn XP (anti-farm shield for the leaderboard).",
+  ),
+  "ai.chat.daily_limit": aiCount(
+    30,
+    100000,
+    "Max AI coach chat messages a premium user may send per day (cost cap §7).",
+  ),
   "ai.plan_draft.daily_limit": aiCount(
     5,
     100000,
@@ -190,6 +300,85 @@ export const CONFIG_CATALOG = {
     60,
     3600,
     "Min actual focus seconds for a session to count toward streak, XP quests, and effort milestones.",
+  ),
+  "coaching.weekly_recap.ready_mock_exam_count": coachingCount(
+    1,
+    1,
+    20,
+    "Mock exams in the completed week required to make the weekly recap ready.",
+  ),
+  "coaching.weekly_recap.ready_session_count": coachingCount(
+    2,
+    1,
+    50,
+    "Qualifying focus sessions in the completed week required to make the weekly recap ready.",
+  ),
+  "coaching.weekly_recap.ready_plan_task_count": coachingCount(
+    3,
+    1,
+    100,
+    "Completed plan tasks in the completed week required to make the weekly recap ready.",
+  ),
+  "coaching.weekly_recap.comparison_min_focus_minutes_delta": coachingCount(
+    15,
+    1,
+    600,
+    "Minimum positive focus-minute change required for a weekly recap comparison highlight.",
+  ),
+  "coaching.weekly_recap.comparison_min_longest_session_minutes_delta":
+    coachingCount(
+      5,
+      1,
+      180,
+      "Minimum positive longest-session change required for a weekly recap comparison highlight.",
+    ),
+  "coaching.weekly_recap.comparison_min_active_days_delta": coachingCount(
+    1,
+    1,
+    7,
+    "Minimum positive active-day change required for a weekly recap comparison highlight.",
+  ),
+  "coaching.weekly_recap.comparison_min_plan_tasks_delta": coachingCount(
+    1,
+    1,
+    100,
+    "Minimum positive completed-task change required for a weekly recap comparison highlight.",
+  ),
+  "coaching.weekly_recap.title_rhythm_run_days": coachingCount(
+    4,
+    1,
+    7,
+    "Consecutive active days required for the weekly Time Bender title.",
+  ),
+  "coaching.weekly_recap.title_deep_focus_minutes": coachingCount(
+    50,
+    1,
+    240,
+    "Longest qualifying focus session required for the weekly Nebula Diver title.",
+  ),
+  "coaching.weekly_recap.title_plan_task_count": coachingCount(
+    3,
+    1,
+    100,
+    "Completed plan tasks required for the weekly Route Architect title.",
+  ),
+  "coaching.weekly_recap.title_focused_subject_count": coachingCount(
+    3,
+    1,
+    30,
+    "Taxonomy-verified focused subjects required for the weekly Dimension Explorer title.",
+  ),
+  "coaching.weekly_recap.title_mock_exam_count": coachingCount(
+    1,
+    1,
+    20,
+    "Mock exams required for the weekly Phoenix Pilot title.",
+  ),
+  "coaching.weekly_recap.title_balanced_channel_count": coachingCount(
+    2,
+    2,
+    3,
+    "Evidence channels required for the weekly Cosmic Maestro title.",
   ),
 } as const satisfies Record<string, ConfigEntryDef>;
 

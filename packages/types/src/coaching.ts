@@ -316,6 +316,16 @@ export interface TodayPanelResponse {
    * null when below the server-side visibility threshold.
    */
   focusingNow: number | null;
+  /** Last completed Europe/Istanbul Monday-Sunday period; null without an exam type. */
+  weeklyRecapPeriod: {
+    /** Backend-resolved exam context for this completed period. */
+    examId: string;
+    startDate: string;
+    endDate: string;
+    timeZone: "Europe/Istanbul";
+    /** Server-computed evidence status; dashboard suppresses EMPTY without another request. */
+    status: WeeklyRecapStatus;
+  } | null;
 }
 
 /**
@@ -334,7 +344,80 @@ export interface VisionDto {
 
 /** Completed-week rule-based review (Europe/Istanbul, active exam scoped). */
 export type WeeklyReviewStatus = "READY" | "INSUFFICIENT";
+export type WeeklyRecapStatus = "EMPTY" | "PARTIAL" | "READY";
 export type WeeklyEnergySignal = "LOW" | "MIXED" | "STEADY";
+export type WeeklyFocusTimeBandId =
+  | "MORNING"
+  | "AFTERNOON"
+  | "EVENING"
+  | "NIGHT";
+export type WeeklyRecapTitleId =
+  | "BALANCE_MASTER"
+  | "RHYTHM_GUARDIAN"
+  | "FOCUS_DIVER"
+  | "PLAN_ARCHITECT"
+  | "SUBJECT_EXPLORER"
+  | "MOCK_BRAVE"
+  | "FOCUS_TRAVELER";
+export type WeeklyRecapComparisonMetric =
+  | "ACTIVE_DAYS"
+  | "FOCUS_MINUTES"
+  | "COMPLETED_TASKS"
+  | "LONGEST_SESSION";
+export type WeeklyRecapNextStorySignalKind =
+  | "FOCUS_SESSION"
+  | "PLAN_TASK"
+  | "MOCK_EXAM";
+export interface WeeklyRecapNextStorySignalDto {
+  kind: WeeklyRecapNextStorySignalKind;
+  /** Backend-localized, non-shaming curiosity heading. */
+  title: string;
+  /** Backend-localized explanation of what can appear in a future recap. */
+  message: string;
+}
+export interface WeeklyRecapTitleDto {
+  id: WeeklyRecapTitleId;
+  /** Backend-localized adventure title. */
+  label: string;
+  /** Backend-localized evidence explanation. */
+  message: string;
+}
+export type WeeklyRecapHighlightDto =
+  | {
+      kind: "POSITIVE_COMPARISON";
+      metric: WeeklyRecapComparisonMetric;
+      current: number;
+      previous: number;
+      delta: number;
+      message: string;
+    }
+  | { kind: "LONGEST_SESSION"; minutes: number; message: string }
+  | {
+      kind: "TOP_FOCUS_SUBJECT";
+      subjectRef: string;
+      subjectName: string;
+      focusMinutes: number;
+      message: string;
+    }
+  | {
+      kind: "TOP_PLAN_SUBJECT";
+      subjectRef: string;
+      subjectName: string;
+      completedTaskCount: number;
+      message: string;
+    }
+  | {
+      kind: "PEAK_FOCUS_DAY";
+      date: string;
+      focusMinutes: number;
+      message: string;
+    }
+  | {
+      kind: "COMPLETED_TASKS";
+      completedTaskCount: number;
+      message: string;
+    }
+  | { kind: "MOCK_EXAMS"; mockExamCount: number; message: string };
 export type WeeklyFocusSource =
   | "REPEATED_PHOTO_SIGNAL"
   | "WEEKLY_DECLINE"
@@ -344,15 +427,70 @@ export type WeeklyFocusSource =
 export interface WeeklyReviewDto {
   period: { startDate: string; endDate: string; timeZone: "Europe/Istanbul" };
   status: WeeklyReviewStatus;
-  evidence: { mockExamCount: number; completedSessionCount: number };
+  recap: {
+    status: WeeklyRecapStatus;
+    activeDays: number;
+    /** Deterministic, ephemeral title for READY recaps; never persisted as inventory. */
+    weeklyTitle: WeeklyRecapTitleDto | null;
+    /** Backward-compatible first future story signal for PARTIAL recaps; null otherwise. */
+    nextStorySignal: WeeklyRecapNextStorySignalDto | null;
+    /** Every server-selected future story signal for PARTIAL recaps, in display order. */
+    nextStorySignals: WeeklyRecapNextStorySignalDto[];
+    /** Backend-localized deterministic Puhu closing line. */
+    closingMessage: string;
+  };
+  evidence: {
+    mockExamCount: number;
+    /** Retained for backward compatibility; equals qualifyingSessionCount. */
+    completedSessionCount: number;
+    qualifyingSessionCount: number;
+    completedPlanTaskCount: number;
+  };
   rhythm: {
     completedSessionCount: number;
     focusMinutes: number;
     activeDays: number;
+    longestSessionMinutes: number;
+    longestActiveRun: number;
+    /** Strongest Istanbul time band among qualifying sessions. */
+    focusTimeBand: {
+      id: WeeklyFocusTimeBandId;
+      label: string;
+      focusMinutes: number;
+      qualifyingSessionCount: number;
+      message: string;
+    } | null;
+    /** Strongest qualifying-focus day, independent of highlight selection. */
+    peakFocusDay: {
+      date: string;
+      focusMinutes: number;
+      message: string;
+    } | null;
+    days: Array<{ date: string; active: boolean }>;
+    /** Only content-taxonomy matched aggregate session subjects. */
+    subjectBreakdown: Array<{
+      subjectRef: string;
+      subjectName: string;
+      focusMinutes: number;
+      qualifyingSessionCount: number;
+    }>;
     moodCheckinCount: number;
     energySignal: WeeklyEnergySignal | null;
     message: string;
   };
+  plan: {
+    completedTaskCount: number;
+    /** Only content-taxonomy matched aggregate subjects; never task titles. */
+    subjectBreakdown: Array<{
+      subjectRef: string;
+      subjectName: string;
+      completedTaskCount: number;
+    }>;
+    /** Backend-localized aggregate summary. */
+    message: string;
+  };
+  /** Server-selected, localized best-of-week facts in display order (max 2). */
+  highlights: WeeklyRecapHighlightDto[];
   performance: {
     mockExamCount: number;
     averageNet: string;

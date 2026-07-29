@@ -1,11 +1,11 @@
-import type { ReactNode } from "react";
+import type * as React from "react";
 
 export interface SectionHeadingProps {
-  children: ReactNode;
+  children: React.ReactNode;
   /** Optional action placed immediately beside the title (e.g. add “+”). */
-  action?: ReactNode;
+  action?: React.ReactNode;
   /** Optional supporting line under the title (Nunito Sans 14 secondary). */
-  subtitle?: ReactNode;
+  subtitle?: React.ReactNode;
   /** Heading level — keeps the document outline correct per screen. Default h2. */
   as?: "h2" | "h3";
   className?: string;
@@ -28,7 +28,10 @@ export function SectionHeading({
       <div className="flex items-center gap-1">
         <Tag
           className="text-xl leading-tight font-semibold"
-          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+          style={{
+            color: "var(--color-main)",
+            fontFamily: "var(--font-heading)",
+          }}
         >
           {children}
         </Tag>

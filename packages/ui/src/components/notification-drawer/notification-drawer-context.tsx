@@ -19,12 +19,15 @@ import type {
   NotificationTab,
 } from "./types.js";
 
-const NotificationDrawerContext = createContext<NotificationDrawerContextValue | null>(null);
+const NotificationDrawerContext =
+  createContext<NotificationDrawerContextValue | null>(null);
 
 export function useNotificationDrawer(): NotificationDrawerContextValue {
   const ctx = useContext(NotificationDrawerContext);
   if (!ctx)
-    throw new Error("useNotificationDrawer must be used inside NotificationDrawerProvider");
+    throw new Error(
+      "useNotificationDrawer must be used inside NotificationDrawerProvider",
+    );
   return ctx;
 }
 
@@ -73,13 +76,19 @@ export function NotificationDrawerProvider({
   const markAllRead = useCallback(() => {
     const now = new Date().toISOString();
     setItems((prev) => prev.map((n) => ({ ...n, readAt: n.readAt ?? now })));
-    onMarkAllRead?.().catch(() => { setItems(itemsProp); });
+    onMarkAllRead?.().catch(() => {
+      setItems(itemsProp);
+    });
   }, [onMarkAllRead, itemsProp]);
 
   const markUnread = useCallback(
     (id: string) => {
-      setItems((prev) => prev.map((n) => n.id === id ? { ...n, readAt: null } : n));
-      onMarkUnread?.(id).catch(() => { setItems(itemsProp); });
+      setItems((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, readAt: null } : n)),
+      );
+      onMarkUnread?.(id).catch(() => {
+        setItems(itemsProp);
+      });
     },
     [onMarkUnread, itemsProp],
   );
@@ -87,7 +96,9 @@ export function NotificationDrawerProvider({
   const deleteItem = useCallback(
     (id: string) => {
       setItems((prev) => prev.filter((n) => n.id !== id));
-      onDelete?.(id).catch(() => { setItems(itemsProp); });
+      onDelete?.(id).catch(() => {
+        setItems(itemsProp);
+      });
     },
     [onDelete, itemsProp],
   );
@@ -102,8 +113,35 @@ export function NotificationDrawerProvider({
   );
 
   const value = useMemo<NotificationDrawerContextValue>(
-    () => ({ isOpen, open, close, toggle, items, unreadCount, activeTab, setActiveTab, markRead, markUnread, markAllRead, deleteItem, clickItem }),
-    [isOpen, open, close, toggle, items, unreadCount, activeTab, markRead, markUnread, markAllRead, deleteItem, clickItem],
+    () => ({
+      isOpen,
+      open,
+      close,
+      toggle,
+      items,
+      unreadCount,
+      activeTab,
+      setActiveTab,
+      markRead,
+      markUnread,
+      markAllRead,
+      deleteItem,
+      clickItem,
+    }),
+    [
+      isOpen,
+      open,
+      close,
+      toggle,
+      items,
+      unreadCount,
+      activeTab,
+      markRead,
+      markUnread,
+      markAllRead,
+      deleteItem,
+      clickItem,
+    ],
   );
 
   const panelProps: NotificationDrawerPanelProps = {

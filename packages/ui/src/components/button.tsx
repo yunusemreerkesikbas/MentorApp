@@ -1,10 +1,10 @@
 "use client";
 
-import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
+import type * as React from "react";
 import LoaderCircle from "lucide-react/dist/esm/icons/loader-circle.mjs";
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  children: ReactNode;
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children: React.ReactNode;
   /** Shows an inline spinner and disables the button (label stays — keep it localized at the call site). */
   busy?: boolean;
   /** Stretch to the container width (Nuton primary button is full-width 335px on mobile). */
@@ -21,12 +21,20 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 /** Inline loading spinner (thin-line, DESIGN.md §7); respects reduced motion via CSS. */
 function Spinner() {
-  return <LoaderCircle size={18} strokeWidth={2.5} className="animate-spin motion-reduce:animate-none" aria-hidden />;
+  return (
+    <LoaderCircle
+      size={18}
+      strokeWidth={2.5}
+      className="animate-spin motion-reduce:animate-none"
+      aria-hidden
+    />
+  );
 }
 
-function variantStyles(
-  variant: NonNullable<ButtonProps["variant"]>,
-): { className: string; style: CSSProperties } {
+function variantStyles(variant: NonNullable<ButtonProps["variant"]>): {
+  className: string;
+  style: React.CSSProperties;
+} {
   switch (variant) {
     case "secondary":
       return {

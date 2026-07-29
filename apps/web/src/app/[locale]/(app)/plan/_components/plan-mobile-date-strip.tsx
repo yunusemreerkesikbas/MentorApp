@@ -1,11 +1,12 @@
 "use client";
 
-import type { PlanTaskDto } from "@mentor/types";
+import type { PlanTaskDto, PublicHolidayDto } from "@mentor/types";
 import { motion, useReducedMotion } from "framer-motion";
 import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { monthGridDays } from "@/lib/plan-calendar-layout";
 import { planEventColor } from "@/lib/plan-event-colors";
+import { spotlightDelay } from "./plan-event-chip";
 import { isPastDate, monthStart, todayIso, weekDates } from "./plan-utils";
 
 const WEEKDAY_KEYS = [
@@ -55,6 +56,8 @@ export function PlanMobileDateStrip({
   selectedDate,
   weekStartDate,
   tasksByDate,
+  holidaysByDate,
+  highlightSubject,
   expanded,
   onDateChange,
   onOpenTask,
@@ -64,6 +67,9 @@ export function PlanMobileDateStrip({
   selectedDate: string;
   weekStartDate: string;
   tasksByDate: Record<string, PlanTaskDto[]>;
+  holidaysByDate: Record<string, PublicHolidayDto>;
+  /** Legend selection — everything else fades back. Null = no highlight. */
+  highlightSubject: string | null;
   /** True while Ay is the active scale. */
   expanded: boolean;
   onDateChange: (iso: string) => void;
@@ -94,6 +100,8 @@ export function PlanMobileDateStrip({
   const base = expanded ? 1 : 0;
   const progress = dragProgress ?? base;
   const dragging = dragProgress !== null;
+  /** Ramp-up counter for the stage light — see PlanMonthGrid for the same reading-order sweep. */
+  let litIndex = 0;
 
   function onPointerDown(event: React.PointerEvent<HTMLElement>) {
     dragStartY.current = event.clientY;
@@ -152,6 +160,7 @@ export function PlanMobileDateStrip({
             const isSelected = iso === selectedDate;
             const isToday = iso === today;
             const outside = iso.slice(0, 7) !== monthAnchor.slice(0, 7);
+            const holiday = holidaysByDate[iso];
 
             return (
               <div
@@ -196,7 +205,9 @@ export function PlanMobileDateStrip({
                         ? "#fff"
                         : isToday
                           ? "var(--color-progress)"
-                          : "var(--color-main)",
+                          : holiday
+                            ? "var(--color-chip-text)"
+                            : "var(--color-main)",
                     }}
                   >
                     {Number(iso.slice(8))}
@@ -204,18 +215,36 @@ export function PlanMobileDateStrip({
                 </button>
 
                 <div className="flex w-full min-w-0 flex-col gap-px">
+                  {/* Non-interactive editorial fact; sits above the user's own chips. */}
+                  {holiday ? (
+                    <span
+                      className="block truncate px-0.5 text-[8px] leading-[1.35] opacity-75"
+                      style={{ color: "var(--color-chip-text)" }}
+                    >
+                      {holiday.name}
+                    </span>
+                  ) : null}
                   {shown.map((task) => {
                     const color = planEventColor(task.subject);
+                    const matches = task.subject?.trim() === highlightSubject;
+                    const lit = highlightSubject !== null && matches;
+                    const faded = highlightSubject !== null && !matches;
                     return (
                       <button
                         key={task.id}
                         type="button"
                         onClick={() => onOpenTask(task)}
-                        className="w-full cursor-pointer truncate rounded-[3px] border-l-2 px-0.5 text-left text-[8px] leading-[1.35] focus-visible:outline-none focus-visible:ring-2"
+                        className="w-full cursor-pointer truncate rounded-[3px] border-l-2 px-0.5 text-left text-[8px] leading-[1.35] transition-[opacity,filter,box-shadow] duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:outline-none focus-visible:ring-2 motion-reduce:duration-150"
                         style={{
                           backgroundColor: color.bg,
                           borderLeftColor: color.bar,
                           color: "var(--color-main)",
+                          opacity: faded ? 0.32 : 1,
+                          filter: faded ? "saturate(0.35)" : undefined,
+                          boxShadow: lit ? `0 0 0 1px ${color.bar}` : undefined,
+                          transitionDelay: lit
+                            ? `${spotlightDelay(litIndex++)}ms`
+                            : undefined,
                           textDecoration:
                             task.status === "DONE" ? "line-through" : undefined,
                         }}

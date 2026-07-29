@@ -11,13 +11,13 @@ import {
   type PointerEvent,
 } from "react";
 import { animate, motion, useReducedMotion, type AnimationPlaybackControls } from "framer-motion";
+import Image from "next/image";
 import { Button } from "@mentor/ui";
-import { PuhuImage, type PuhuVariant } from "@/components/puhu-image";
 
 export type MoodWheelOption = {
   value: number;
-  variant: PuhuVariant;
-  sphere: string;
+  /** Public path under `/img/…` (generic 3D mood emoji). */
+  src: string;
 };
 
 export interface MoodWheelPickerProps {
@@ -27,18 +27,12 @@ export interface MoodWheelPickerProps {
   onSelect: (value: number) => void;
   confirmLabel: string;
   hintLabel: string;
+  /** Soft dismiss — rendered under the primary CTA (optional). */
+  laterLabel?: string;
+  onLater?: () => void;
   disabled?: boolean;
   ariaLabel: string;
 }
-
-/** Sphere backdrops — DESIGN.md tokens only. */
-export const MOOD_WHEEL_SPHERES: Record<number, string> = {
-  1: "radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--color-progress-track) 90%, white) 0%, var(--color-progress-track) 55%, var(--color-progress) 100%)",
-  2: "radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--color-chip) 40%, white) 0%, color-mix(in srgb, var(--color-chip) 60%, white) 55%, var(--color-chip) 100%)",
-  3: "radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--color-progress-track) 75%, white) 0%, color-mix(in srgb, var(--color-accent) 40%, white) 55%, var(--color-accent) 100%)",
-  4: "radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--color-star) 50%, white) 0%, color-mix(in srgb, var(--color-star) 75%, white) 50%, var(--color-star) 100%)",
-  5: "radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--color-like-active) 35%, white) 0%, color-mix(in srgb, var(--color-like-active) 58%, white) 52%, var(--color-like-active) 100%)",
-};
 
 /**
  * Semicircle wheel — hub below stage; 3 active moods + 2 ghost hints at flanks.
@@ -49,14 +43,14 @@ const WHEEL = {
   dragPx: 72,
   /** Ignore micro-movement before treating pointer as a drag (desktop clicks). */
   dragThresholdPx: 8,
-  centerSize: 112,
-  sideSize: 78,
-  ghostSize: 52,
-  stageHeight: 204,
+  centerSize: 128,
+  sideSize: 90,
+  ghostSize: 60,
+  stageHeight: 220,
   /** Center mood sits ~48% down the stage (not pinned to top). */
   centerSlotRatio: 0.48,
-  radiusMin: 110,
-  radiusMax: 138,
+  radiusMin: 118,
+  radiusMax: 148,
   radiusRatio: 0.44,
 } as const;
 
@@ -118,7 +112,6 @@ function getSemicirclePosition(
 type ItemMetrics = {
   size: number;
   opacity: number;
-  puhuSize: number;
   shadow: string;
   isCenter: boolean;
   isGhost: boolean;
@@ -134,7 +127,6 @@ function resolveItemMetrics(relativeIndex: number): ItemMetrics | null {
     return {
       size: lerp(WHEEL.sideSize, WHEEL.ghostSize, t),
       opacity: lerp(0.8, 0.22, t),
-      puhuSize: Math.round(lerp(52, 38, t)),
       shadow: "none",
       isCenter: false,
       isGhost: true,
@@ -148,12 +140,27 @@ function resolveItemMetrics(relativeIndex: number): ItemMetrics | null {
   return {
     size: lerp(WHEEL.centerSize, WHEEL.sideSize, t),
     opacity: lerp(1, 0.8, t),
-    puhuSize: Math.round(lerp(68, 52, t)),
     shadow: isCenter ? SHADOW_CENTER : SHADOW_SIDE,
     isCenter,
     isGhost: false,
     interactive: true,
   };
+}
+
+function MoodFace({ src, priority = false }: { src: string; priority?: boolean }) {
+  return (
+    <span className="relative block size-full overflow-hidden rounded-full">
+      <Image
+        src={src}
+        alt=""
+        fill
+        sizes="128px"
+        priority={priority}
+        aria-hidden
+        className="object-cover"
+      />
+    </span>
+  );
 }
 
 /**
@@ -166,6 +173,8 @@ export function MoodWheelPicker({
   onSelect,
   confirmLabel,
   hintLabel,
+  laterLabel,
+  onLater,
   disabled = false,
   ariaLabel,
 }: MoodWheelPickerProps) {
@@ -198,9 +207,8 @@ export function MoodWheelPicker({
   const geo = getWheelGeometry(stageWidth);
   const activeIndex = clampSelection(Math.round(selection), maxIndex);
   const activeOption = options[activeIndex] ?? options[0];
-  const dialShift = -selection * (geo.radius * 0.11);
   const centerSlot = getSemicirclePosition(0, centerX, geo);
-  const pointerY = centerSlot.y + WHEEL.centerSize / 2 + 4;
+  const pointerY = centerSlot.y + WHEEL.centerSize / 2 + 12;
 
   const springSnap = useCallback(
     (target: number, velocity = 0) => {
@@ -382,7 +390,7 @@ export function MoodWheelPicker({
           onPointerUp={finishDrag}
           onPointerCancel={finishDrag}
           className={[
-            "relative mx-auto h-[204px] w-full touch-none select-none outline-none",
+            "relative mx-auto h-[220px] w-full touch-none select-none outline-none",
             disabled ? "pointer-events-none opacity-60" : "cursor-grab active:cursor-grabbing",
           ].join(" ")}
         >
@@ -434,73 +442,25 @@ export function MoodWheelPicker({
                       className="size-full cursor-pointer rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-focus-ring)]"
                     >
                       <span
-                        className="relative flex size-full items-center justify-center rounded-full"
-                        style={{
-                          background: option.sphere,
-                          boxShadow: metrics.shadow,
-                        }}
+                        className="relative block size-full rounded-full"
                       >
-                        <PuhuImage
-                          variant={option.variant}
-                          size={metrics.puhuSize}
-                        />
+                        <MoodFace src={option.src} priority={metrics.isCenter} />
                       </span>
                     </button>
                   ) : (
                     <span
                       aria-hidden
-                      className="relative flex size-full items-center justify-center rounded-full"
-                      style={{
-                        background: option.sphere,
-                        filter: "saturate(0.65)",
-                      }}
+                      className="relative block size-full rounded-full"
+                      style={{ filter: "saturate(0.65)" }}
                     >
-                      <PuhuImage
-                        variant={option.variant}
-                        size={metrics.puhuSize}
-                      />
+                      <MoodFace src={option.src} />
                     </span>
                   )}
                 </motion.div>
               );
             })}
 
-          {/* Tick dial — ticks only, width tracks arc spread */}
-          <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-[20] mx-auto h-8 w-[94%]"
-            aria-hidden
-          >
-            <svg viewBox="0 0 260 32" className="h-full w-full overflow-visible">
-              <motion.g
-                animate={{ x: dialShift }}
-                transition={motionTransition}
-              >
-                {Array.from({ length: 19 }, (_, tick) => {
-                  const t = tick / 18;
-                  const angle = Math.PI + t * Math.PI;
-                  const cx = 130 + 122 * Math.cos(angle);
-                  const cy = 26 + 122 * Math.sin(angle);
-                  const tall = tick % 4 === 0;
-                  const len = tall ? 7 : 4;
-                  const nx = Math.cos(angle + Math.PI / 2);
-                  const ny = Math.sin(angle + Math.PI / 2);
-                  return (
-                    <line
-                      key={tick}
-                      x1={cx}
-                      y1={cy}
-                      x2={cx + nx * len}
-                      y2={cy + ny * len}
-                      stroke="color-mix(in srgb, var(--color-main) 12%, transparent)"
-                      strokeWidth="1"
-                    />
-                  );
-                })}
-              </motion.g>
-            </svg>
-          </div>
-
-          {/* Pink pointer */}
+          {/* Selection needle — under center face (not like-active pink) */}
           <div
             className="pointer-events-none absolute z-[25] w-0.5 rounded-full"
             style={{
@@ -508,7 +468,7 @@ export function MoodWheelPicker({
               top: pointerY,
               height: 22,
               transform: "translateX(-50%)",
-              backgroundColor: "var(--color-like-active)",
+              backgroundColor: "var(--color-main)",
             }}
             aria-hidden
           />
@@ -540,9 +500,25 @@ export function MoodWheelPicker({
         {hintLabel}
       </p>
 
-      <Button fullWidth busy={disabled} onClick={() => onSelect(activeOption.value)}>
-        {confirmLabel}
-      </Button>
+      <div className="flex w-full flex-col items-center gap-2.5">
+        <Button fullWidth busy={disabled} onClick={() => onSelect(activeOption.value)}>
+          {confirmLabel}
+        </Button>
+        {laterLabel && onLater ? (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onLater}
+            className="min-h-11 cursor-pointer px-3 text-sm underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+            style={{
+              color: "var(--color-secondary)",
+              fontFamily: "var(--font-body)",
+            }}
+          >
+            {laterLabel}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

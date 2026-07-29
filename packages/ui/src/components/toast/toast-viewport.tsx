@@ -1,14 +1,15 @@
 "use client";
 
+import type * as React from "react";
 import { createPortal } from "react-dom";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { ToastItem } from "./toast-item.js";
 import type { ToastRecord } from "./types.js";
 
 export interface ToastViewportProps {
   toasts: ToastRecord[];
   onDismiss: (id: string) => void;
-  renderLeading?: (variant: ToastRecord["variant"]) => ReactNode;
+  renderLeading?: (variant: ToastRecord["variant"]) => React.ReactNode;
 }
 
 /**

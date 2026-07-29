@@ -31,6 +31,10 @@ export const routing = defineRouting({
     "/coach": { tr: "/koc", en: "/coach" },
     "/coach/chat": { tr: "/koc/sohbet", en: "/coach/chat" },
     "/analysis": { tr: "/analiz", en: "/analysis" },
+    "/analysis/recap": {
+      tr: "/analiz/haftanin-hikayesi",
+      en: "/analysis/weekly-story",
+    },
     "/knowledge": { tr: "/bilgi", en: "/knowledge" },
     "/knowledge/[slug]": {
       tr: "/bilgi/[slug]",

@@ -1,7 +1,8 @@
 "use client";
 
+import type * as React from "react";
 import { createPortal } from "react-dom";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import X from "lucide-react/dist/esm/icons/x.mjs";
 import type { NotificationCategory, UserNotificationDto } from "@mentor/types";
 import { NotificationDrawerItem } from "./notification-drawer-item.js";
@@ -19,14 +20,17 @@ export interface NotificationDrawerPanelProps {
   onMarkAllRead(): void;
   onDelete(id: string): void;
   onClickItem(notification: UserNotificationDto): void;
-  renderIcon?: (category: NotificationCategory) => ReactNode;
-  emptyState?: ReactNode;
+  renderIcon?: (category: NotificationCategory) => React.ReactNode;
+  emptyState?: React.ReactNode;
   labels: NotificationDrawerLabels;
 }
 
 const CLOSE_ANIMATION_MS = 220;
 
-const TABS: { id: NotificationTab; labelKey: keyof NotificationDrawerLabels }[] = [
+const TABS: {
+  id: NotificationTab;
+  labelKey: keyof NotificationDrawerLabels;
+}[] = [
   { id: "ALL", labelKey: "tabAll" },
   { id: "COACH", labelKey: "tabCoach" },
   { id: "PLAN", labelKey: "tabPlan" },
@@ -109,11 +113,19 @@ export function NotificationDrawerPanel({
       <div
         aria-hidden
         className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[6px] lg:hidden"
-        style={{ animation: closing ? "none" : "drawer-backdrop-enter 200ms ease-out forwards" }}
+        style={{
+          animation: closing
+            ? "none"
+            : "drawer-backdrop-enter 200ms ease-out forwards",
+        }}
         onClick={handleClose}
       />
       {/* ── Desktop: transparent click-away overlay ── */}
-      <div aria-hidden className="fixed inset-0 z-40 hidden lg:block" onClick={handleClose} />
+      <div
+        aria-hidden
+        className="fixed inset-0 z-40 hidden lg:block"
+        onClick={handleClose}
+      />
 
       {/* ── Panel ── */}
       <div
@@ -138,11 +150,17 @@ export function NotificationDrawerPanel({
         {/* Header */}
         <div
           className="flex shrink-0 items-center justify-between border-b px-4 py-4 lg:rounded-t-[var(--radius-card)]"
-          style={{ borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)" }}
+          style={{
+            borderColor:
+              "color-mix(in srgb, var(--color-main) 8%, transparent)",
+          }}
         >
           <h2
             className="text-base font-bold leading-tight"
-            style={{ fontFamily: "var(--font-heading)", color: "var(--color-main)" }}
+            style={{
+              fontFamily: "var(--font-heading)",
+              color: "var(--color-main)",
+            }}
           >
             {labels.title}
             {unreadCount > 0 && (
@@ -161,7 +179,10 @@ export function NotificationDrawerPanel({
                 type="button"
                 onClick={onMarkAllRead}
                 className="text-xs font-bold transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-1"
-                style={{ color: "var(--color-progress)", fontFamily: "var(--font-body)" }}
+                style={{
+                  color: "var(--color-progress)",
+                  fontFamily: "var(--font-body)",
+                }}
               >
                 {labels.markAllRead}
               </button>
@@ -183,7 +204,10 @@ export function NotificationDrawerPanel({
           role="tablist"
           aria-label={labels.title}
           className="flex shrink-0 border-b px-4"
-          style={{ borderColor: "color-mix(in srgb, var(--color-main) 10%, transparent)" }}
+          style={{
+            borderColor:
+              "color-mix(in srgb, var(--color-main) 10%, transparent)",
+          }}
         >
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
@@ -194,7 +218,9 @@ export function NotificationDrawerPanel({
                 className="relative mr-5 py-3 text-[11px] font-bold uppercase tracking-widest transition-colors last:mr-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-1"
                 style={{
                   fontFamily: "var(--font-heading)",
-                  color: isActive ? "var(--color-main)" : "var(--color-secondary)",
+                  color: isActive
+                    ? "var(--color-main)"
+                    : "var(--color-secondary)",
                 }}
                 aria-selected={isActive}
                 role="tab"
@@ -218,39 +244,42 @@ export function NotificationDrawerPanel({
           style={{ scrollbarWidth: "none" }}
           role="tabpanel"
         >
-          {visibleItems.length === 0 ? (
-            emptyState ?? (
-              <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-                <p
-                  className="mb-1 text-base font-bold"
-                  style={{ fontFamily: "var(--font-heading)", color: "var(--color-main)" }}
-                >
-                  {labels.emptyTitle}
-                </p>
-                <p
-                  className="text-sm"
-                  style={{ fontFamily: "var(--font-body)", color: "var(--color-secondary)" }}
-                >
-                  {labels.emptyBody}
-                </p>
-              </div>
-            )
-          ) : (
-            visibleItems.map((n) => (
-              <NotificationDrawerItem
-                key={n.id}
-                notification={n}
-                onMarkRead={onMarkRead}
-                onMarkUnread={onMarkUnread}
-                onDelete={onDelete}
-                onClickItem={onClickItem}
-                renderIcon={renderIcon}
-                labels={labels}
-              />
-            ))
-          )}
+          {visibleItems.length === 0
+            ? (emptyState ?? (
+                <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+                  <p
+                    className="mb-1 text-base font-bold"
+                    style={{
+                      fontFamily: "var(--font-heading)",
+                      color: "var(--color-main)",
+                    }}
+                  >
+                    {labels.emptyTitle}
+                  </p>
+                  <p
+                    className="text-sm"
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      color: "var(--color-secondary)",
+                    }}
+                  >
+                    {labels.emptyBody}
+                  </p>
+                </div>
+              ))
+            : visibleItems.map((n) => (
+                <NotificationDrawerItem
+                  key={n.id}
+                  notification={n}
+                  onMarkRead={onMarkRead}
+                  onMarkUnread={onMarkUnread}
+                  onDelete={onDelete}
+                  onClickItem={onClickItem}
+                  renderIcon={renderIcon}
+                  labels={labels}
+                />
+              ))}
         </div>
-
       </div>
     </>
   );

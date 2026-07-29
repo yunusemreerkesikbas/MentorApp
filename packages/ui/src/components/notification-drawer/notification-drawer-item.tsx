@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import type * as React from "react";
+import { useRef, useState } from "react";
 import Bell from "lucide-react/dist/esm/icons/bell.mjs";
 import Check from "lucide-react/dist/esm/icons/check.mjs";
 import EyeOff from "lucide-react/dist/esm/icons/eye-off.mjs";
@@ -14,18 +15,24 @@ export interface NotificationDrawerItemProps {
   onMarkUnread: (id: string) => void;
   onDelete: (id: string) => void;
   onClickItem: (notification: UserNotificationDto) => void;
-  renderIcon?: (category: NotificationCategory) => ReactNode;
+  renderIcon?: (category: NotificationCategory) => React.ReactNode;
   labels: Pick<
     NotificationDrawerLabels,
-    "timeJustNow" | "timeHoursAgo" | "timeYesterday" | "timeDaysAgo" | "markRead" | "markUnread" | "deleteItem"
+    | "timeJustNow"
+    | "timeHoursAgo"
+    | "timeYesterday"
+    | "timeDaysAgo"
+    | "markRead"
+    | "markUnread"
+    | "deleteItem"
   >;
 }
 
-const SNAP_LEFT = -60;        // reveals delete button
-const SNAP_RIGHT = 52;        // reveals mark button
-const THRESHOLD = 40;         // minimum swipe to snap open
-const AUTO_LEFT = -110;       // full swipe left  → delete immediately
-const AUTO_RIGHT = 100;       // full swipe right → mark read/unread immediately
+const SNAP_LEFT = -60; // reveals delete button
+const SNAP_RIGHT = 52; // reveals mark button
+const THRESHOLD = 40; // minimum swipe to snap open
+const AUTO_LEFT = -110; // full swipe left  → delete immediately
+const AUTO_RIGHT = 100; // full swipe right → mark read/unread immediately
 
 function relativeTime(
   iso: string,
@@ -58,7 +65,8 @@ export function NotificationDrawerItem({
   }
 
   function handleTouchMove(e: React.TouchEvent) {
-    const delta = (e.touches[0]?.clientX ?? touchStartX.current) - touchStartX.current;
+    const delta =
+      (e.touches[0]?.clientX ?? touchStartX.current) - touchStartX.current;
     setOffsetX(Math.max(AUTO_LEFT, Math.min(AUTO_RIGHT, delta)));
   }
 
@@ -93,7 +101,10 @@ export function NotificationDrawerItem({
   const revealingRight = offsetX < 0;
 
   return (
-    <div className="relative overflow-hidden border-b" style={{ borderColor: "var(--color-surface-high, #ebe7e7)" }}>
+    <div
+      className="relative overflow-hidden border-b"
+      style={{ borderColor: "var(--color-surface-high, #ebe7e7)" }}
+    >
       {/* ── Left action (swipe right → mark read/unread) ── */}
       <div
         aria-hidden
@@ -110,9 +121,11 @@ export function NotificationDrawerItem({
             transition: "transform 180ms cubic-bezier(0.34,1.56,0.64,1)",
           }}
         >
-          {isUnread
-            ? <Check size={18} color="#fff" strokeWidth={2.5} />
-            : <EyeOff size={18} color="#fff" strokeWidth={2.5} />}
+          {isUnread ? (
+            <Check size={18} color="#fff" strokeWidth={2.5} />
+          ) : (
+            <EyeOff size={18} color="#fff" strokeWidth={2.5} />
+          )}
         </span>
       </div>
 
@@ -143,9 +156,10 @@ export function NotificationDrawerItem({
           backgroundColor: isUnread ? "#ffffff" : "transparent",
           transform: `translateX(${offsetX}px)`,
           willChange: "transform",
-          transition: offsetX === 0 || offsetX === SNAP_LEFT || offsetX === SNAP_RIGHT
-            ? "transform 240ms cubic-bezier(0.34,1.56,0.64,1)"
-            : "none",
+          transition:
+            offsetX === 0 || offsetX === SNAP_LEFT || offsetX === SNAP_RIGHT
+              ? "transform 240ms cubic-bezier(0.34,1.56,0.64,1)"
+              : "none",
           touchAction: "pan-y",
         }}
         // Touch (mobile swipe)
@@ -154,7 +168,10 @@ export function NotificationDrawerItem({
         onTouchEnd={handleTouchEnd}
         // Tap to collapse if swiped open, otherwise navigate
         onClick={() => {
-          if (offsetX !== 0) { setOffsetX(0); return; }
+          if (offsetX !== 0) {
+            setOffsetX(0);
+            return;
+          }
           onClickItem(notification);
         }}
         // Swipe action buttons (tapped when revealed)
@@ -166,7 +183,10 @@ export function NotificationDrawerItem({
             type="button"
             aria-label={isUnread ? labels.markRead : labels.markUnread}
             className="absolute inset-y-0 left-0 w-[52px]"
-            onClick={(e) => { e.stopPropagation(); handleMarkToggle(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMarkToggle();
+            }}
           />
         )}
         {offsetX === SNAP_LEFT && (
@@ -174,7 +194,10 @@ export function NotificationDrawerItem({
             type="button"
             aria-label={labels.deleteItem}
             className="absolute inset-y-0 right-0 w-[60px]"
-            onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete();
+            }}
           />
         )}
 
@@ -201,7 +224,9 @@ export function NotificationDrawerItem({
           ) : (
             <Bell
               size={20}
-              color={isUnread ? "var(--color-chip-text)" : "var(--color-secondary)"}
+              color={
+                isUnread ? "var(--color-chip-text)" : "var(--color-secondary)"
+              }
               strokeWidth={2}
               aria-hidden
             />
@@ -216,21 +241,29 @@ export function NotificationDrawerItem({
               style={{
                 fontFamily: "var(--font-body)",
                 fontWeight: isUnread ? 700 : 400,
-                color: isUnread ? "var(--color-main)" : "var(--color-secondary)",
+                color: isUnread
+                  ? "var(--color-main)"
+                  : "var(--color-secondary)",
               }}
             >
               {notification.title}
             </p>
             <span
               className="shrink-0 text-[11px] leading-none"
-              style={{ fontFamily: "var(--font-body)", color: "var(--color-secondary)" }}
+              style={{
+                fontFamily: "var(--font-body)",
+                color: "var(--color-secondary)",
+              }}
             >
               {relativeTime(notification.createdAt, labels)}
             </span>
           </div>
           <p
             className="line-clamp-2 text-sm leading-snug"
-            style={{ fontFamily: "var(--font-body)", color: "var(--color-secondary)" }}
+            style={{
+              fontFamily: "var(--font-body)",
+              color: "var(--color-secondary)",
+            }}
           >
             {notification.body}
           </p>
@@ -241,16 +274,26 @@ export function NotificationDrawerItem({
           <button
             type="button"
             aria-label={isUnread ? labels.markRead : labels.markUnread}
-            onClick={(e) => { e.stopPropagation(); handleMarkToggle(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMarkToggle();
+            }}
             className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-black/8 focus-visible:outline-none focus-visible:ring-2"
             style={{ color: "var(--color-progress)" }}
           >
-            {isUnread ? <Check size={15} strokeWidth={2.5} /> : <EyeOff size={15} strokeWidth={2} />}
+            {isUnread ? (
+              <Check size={15} strokeWidth={2.5} />
+            ) : (
+              <EyeOff size={15} strokeWidth={2} />
+            )}
           </button>
           <button
             type="button"
             aria-label={labels.deleteItem}
-            onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete();
+            }}
             className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2"
             style={{ color: "#ef4444" }}
           >

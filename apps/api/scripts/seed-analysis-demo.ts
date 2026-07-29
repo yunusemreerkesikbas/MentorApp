@@ -13,6 +13,10 @@ import {
   type NetRule,
   type SubjectScoreInput,
 } from "../src/modules/coaching/domain/net";
+import {
+  buildWeeklyRecapDemoSchedule,
+  type WeeklyRecapDemoSchedule,
+} from "./weekly-recap-demo.schedule";
 
 const SUBJECTS = [
   "turkce",
@@ -144,13 +148,6 @@ function stableUuid(seed: string): string {
   ].join("-");
 }
 
-function takenAt(daysAgo: number): Date {
-  const date = new Date();
-  date.setUTCHours(10, 0, 0, 0);
-  date.setUTCDate(date.getUTCDate() - daysAgo);
-  return date;
-}
-
 async function main(): Promise<void> {
   if ((process.env.NODE_ENV ?? "").toLowerCase() === "production") {
     throw new Error("Refusing to seed analysis demo data in production.");
@@ -216,7 +213,7 @@ async function main(): Promise<void> {
       );
     }
 
-    const offsets = [49, 42, 35, 28, 21, 14, 7, 0];
+    const recapSchedule = buildWeeklyRecapDemoSchedule();
     const examIds: string[] = [];
 
     for (let attemptIndex = 0; attemptIndex < ATTEMPTS.length; attemptIndex++) {
@@ -260,7 +257,7 @@ async function main(): Promise<void> {
           mockExamId,
           user.id,
           exam.id,
-          takenAt(offsets[attemptIndex]!),
+          recapSchedule.attemptDates[attemptIndex]!,
           totalNet,
           PUBLISHERS[attemptIndex]!,
         ],
@@ -324,10 +321,23 @@ async function main(): Promise<void> {
       );
     }
 
-    const counts = await verifySeed(client, user.id, examIds);
+    const weeklyRecapIds = await seedWeeklyRecapDemo(
+      client,
+      user.id,
+      recapSchedule,
+    );
+    const counts = await verifySeed(
+      client,
+      user.id,
+      examIds,
+      weeklyRecapIds.sessionIds,
+      weeklyRecapIds.taskIds,
+    );
     await client.query("COMMIT");
     console.log(
-      `Analysis demo seeded for ${exam.name}: ${counts.exams} exams, ${counts.photos} photo signals.`,
+      `Analysis demo seeded for ${exam.name}: ${counts.exams} exams, ` +
+        `${counts.photos} photo signals, ${counts.sessions} recap sessions, ` +
+        `${counts.tasks} recap tasks.`,
     );
   } catch (error) {
     await client.query("ROLLBACK");
@@ -338,11 +348,86 @@ async function main(): Promise<void> {
   }
 }
 
+async function seedWeeklyRecapDemo(
+  client: PoolClient,
+  userId: string,
+  schedule: WeeklyRecapDemoSchedule,
+): Promise<{ sessionIds: string[]; taskIds: string[] }> {
+  const sessions = [
+    ...schedule.currentSessions,
+    ...schedule.previousSessions,
+  ];
+  const sessionIds: string[] = [];
+  for (const session of sessions) {
+    const sessionId = stableUuid(
+      `${userId}:analysis-demo:weekly-session:${session.key}`,
+    );
+    sessionIds.push(sessionId);
+    await client.query(
+      `insert into study_sessions
+         (id, user_id, started_at, ended_at, preset, planned_focus_minutes,
+          actual_focus_seconds, subject, status)
+       values ($1, $2, $3, $4, 'custom', $5, $6, $7, 'COMPLETED')
+       on conflict (id) do update set
+         started_at = excluded.started_at,
+         ended_at = excluded.ended_at,
+         preset = excluded.preset,
+         planned_focus_minutes = excluded.planned_focus_minutes,
+         actual_focus_seconds = excluded.actual_focus_seconds,
+         subject = excluded.subject,
+         status = excluded.status,
+         updated_at = now()`,
+      [
+        sessionId,
+        userId,
+        session.startedAt,
+        session.endedAt,
+        session.focusMinutes,
+        session.focusMinutes * 60,
+        session.subject,
+      ],
+    );
+  }
+
+  const tasks = [...schedule.currentTasks, ...schedule.previousTasks];
+  const taskIds: string[] = [];
+  for (const task of tasks) {
+    const taskId = stableUuid(
+      `${userId}:analysis-demo:weekly-task:${task.key}`,
+    );
+    taskIds.push(taskId);
+    await client.query(
+      `insert into plan_tasks
+         (id, user_id, task_date, title, subject, status, sort_order)
+       values ($1, $2, $3, $4, $5, 'DONE', $6)
+       on conflict (id) do update set
+         task_date = excluded.task_date,
+         title = excluded.title,
+         subject = excluded.subject,
+         status = excluded.status,
+         sort_order = excluded.sort_order,
+         updated_at = now()`,
+      [
+        taskId,
+        userId,
+        task.taskDate,
+        task.title,
+        task.subject,
+        task.sortOrder,
+      ],
+    );
+  }
+
+  return { sessionIds, taskIds };
+}
+
 async function verifySeed(
   client: PoolClient,
   userId: string,
   examIds: string[],
-): Promise<{ exams: number; photos: number }> {
+  sessionIds: string[],
+  taskIds: string[],
+): Promise<{ exams: number; photos: number; sessions: number; tasks: number }> {
   const exams = await client.query<{ count: number }>(
     "select count(*)::int as count from mock_exams where user_id = $1 and id = any($2::uuid[])",
     [userId, examIds],
@@ -353,13 +438,30 @@ async function verifySeed(
       where user_id = $1 and storage_key like 'analysis-demo/%'`,
     [userId],
   );
+  const sessions = await client.query<{ count: number }>(
+    "select count(*)::int as count from study_sessions where user_id = $1 and id = any($2::uuid[])",
+    [userId, sessionIds],
+  );
+  const tasks = await client.query<{ count: number }>(
+    "select count(*)::int as count from plan_tasks where user_id = $1 and id = any($2::uuid[])",
+    [userId, taskIds],
+  );
   const result = {
     exams: exams.rows[0]?.count ?? 0,
     photos: photos.rows[0]?.count ?? 0,
+    sessions: sessions.rows[0]?.count ?? 0,
+    tasks: tasks.rows[0]?.count ?? 0,
   };
-  if (result.exams !== 8 || result.photos !== 6) {
+  if (
+    result.exams !== 8 ||
+    result.photos !== 6 ||
+    result.sessions !== 9 ||
+    result.tasks !== 6
+  ) {
     throw new Error(
-      `Seed verification failed: ${result.exams} exams, ${result.photos} photos`,
+      `Seed verification failed: ${result.exams} exams, ` +
+        `${result.photos} photos, ${result.sessions} sessions, ` +
+        `${result.tasks} tasks`,
     );
   }
   return result;

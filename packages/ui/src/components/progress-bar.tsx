@@ -20,7 +20,10 @@ export function ProgressBar({ value, className }: ProgressBarProps) {
     >
       <div
         className="h-full rounded-[3px] transition-[width]"
-        style={{ width: `${clamped}%`, backgroundColor: "var(--color-progress)" }}
+        style={{
+          width: `${clamped}%`,
+          backgroundColor: "var(--color-progress)",
+        }}
       />
     </div>
   );

@@ -12,7 +12,10 @@ export function BackgroundBlobs({ drift = true }: { drift?: boolean } = {}) {
   const driftClass = drift ? "mentor-blob-drift" : undefined;
 
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div
+      aria-hidden
+      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+    >
       <div
         className={`absolute -top-24 -left-24 h-96 w-96 rounded-full opacity-40 blur-[150px] ${driftClass ?? ""}`}
         style={{ backgroundColor: "#FF2DAB", animationDelay: "0s" }}

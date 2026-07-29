@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type * as React from "react";
 
 export type DialogLayout = "standard" | "promo";
 
@@ -16,10 +16,10 @@ export interface DialogAction {
 export interface DialogShowOptions {
   title: string;
   message?: string;
-  content?: ReactNode;
+  content?: React.ReactNode;
   layout?: DialogLayout;
-  hero?: ReactNode;
-  leading?: ReactNode;
+  hero?: React.ReactNode;
+  leading?: React.ReactNode;
   badge?: string;
   actions: DialogAction[];
   dismissOnBackdrop?: boolean;
@@ -40,7 +40,7 @@ export interface DialogConfirmOptions {
   confirmLabel: string;
   cancelLabel: string;
   closeLabel: string;
-  leading?: ReactNode;
+  leading?: React.ReactNode;
 }
 
 export interface DialogInfoOptions {
@@ -57,7 +57,7 @@ export interface DialogPromoOptions {
   primaryLabel: string;
   linkLabel?: string;
   closeLabel: string;
-  hero?: ReactNode;
+  hero?: React.ReactNode;
 }
 
 export type DialogPromoResult = "primary" | "link" | "dismiss";

@@ -142,6 +142,20 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Mood check-in modal cleanup (2026-07-29)** — Dropped subtitle; shortened wheel hint to one
+  sentence; removed tick-dial arc + pink needle (faces + label carry selection); primary + “Daha sonra”
+  stacked inside the picker (dialog `actions` empty). Related: `mood-wheel-picker.tsx`,
+  `mood-checkin.tsx`, `messages/{tr,en}.json`.
+
+- **Mood wheel touch scale (2026-07-29)** — Center face 128px / stage 220px; dialog mobile
+  `max-w` 335→360. Needle kept under center in `color-main`. Related: `mood-wheel-picker.tsx`,
+  `dialog-panel.tsx`, `dialog-viewport.tsx`.
+
+- **Mood wheel generic 3D emoji assets (2026-07-29)** — Check-in wheel uses `/img/{draining,low,balanced,good}.jpg`
+  instead of Puhu. Labels: Yorucu / Durgun / Dengeli / İyi / Harika (EN: Draining / Low / Balanced / Good / Great).
+  Mood 5 temporarily reuses `good.jpg` until `great` arrives. Related: `mood-assets.ts`,
+  `mood-wheel-picker.tsx`, `mood-checkin.tsx`, `messages/{tr,en}.json`.
+
 - **Plan Timeline tab enter (2026-07-25)** — Liste→Timeline no longer flashes week-start then
   jumps to today: spacer + `scrollTop` pin run in one `useLayoutEffect` before paint; content
   stays hidden under an embedded skeleton until ready; shell motion for timeline is opacity-only
@@ -233,7 +247,7 @@ pnpm --filter @mentor/api test
   sit as a compact **RitualQuestStrip** inside **Bugünkü ritüel** (`TodayFocusCard`, opens quests
   sheet). Standalone
   **Günlük seri** card (freeze/rescue) removed from `/panel` — streak lives only in the rhythm
-  row.   Free monthly freezes still apply automatically with no panel chrome. When the free pool
+  row. Free monthly freezes still apply automatically with no panel chrome. When the free pool
   is exhausted and a single gap is buyable, `/panel` opens a one-shot Puhu promo dialog
   (per break-day via `sessionStorage`): afford → confirm coin rescue; insufficient →
   “Coin’in yetmiyor” + **Görevlere bak** (quests sheet) / Tamam. Flame row is **today + next
@@ -805,3 +819,168 @@ pnpm --filter @mentor/api test
   `plan-calendar-header.tsx`, `plan-time-grid.tsx`, `plan-month-grid.tsx`, `plan-event-chip.tsx`,
   `plan-event-preview.tsx`, `plan-add-task-form.tsx`, `plan-shell.tsx`, `plan-utils.ts`,
   `lib/plan-event-colors.ts`, `lib/plan-tasks.ts`, `coaching.mappers.ts` (`time` → "HH:MM").
+
+- **Haftanın Hikâyesi kanıt modeli (2026-07-26)** — Tamamlanan son Europe/Istanbul
+  Pazartesi–Pazar dönemi, mevcut `GET /v1/coaching/weekly-review` üzerinden additif
+  `EMPTY | PARTIAL | READY` recap sözleşmesiyle sunulur. `READY`, merkezi config'teki deneme,
+  nitelikli seans (`coaching.session.min_focus_seconds`) veya tamamlanmış plan görevi
+  eşiklerinden herhangi biriyle oluşur; mood tek başına hikâyeyi açmaz. `activeDays`, deneme +
+  nitelikli seans + `DONE` görev günlerinin İstanbul takvimindeki birleşimidir. Plan dağılımı
+  yalnız content taksonomisinde slug/ad olarak doğrulanan derslerin aggregate sayaçlarını taşır;
+  görev başlığı API recap kanıtına girmez. Kullanım: `/analiz` Gelişim teaser'ından veya haftada
+  bir `/panel` teaser'ından hikâyeyi aç. Gotcha: `WeeklyReviewStatus` geriye uyumlu kaldı fakat
+  `READY` semantiği görev eşiğini de kapsıyor; yeni tablo, snapshot veya migration yok.
+  İlgili dosyalar: `weekly-review.{ts,service.ts,repository.ts}`, `today.service.ts`,
+  `packages/types/src/coaching.ts`, `config.catalog.ts`.
+
+- **Panelde EMPTY recap teaser'ını gizleme (2026-07-26)** — `GET /v1/coaching/today`
+  içindeki `weeklyRecapPeriod` artık backend'in hesapladığı `status` alanını da taşır. Panel,
+  yeni bir istemci isteği oluşturmadan yalnız `PARTIAL | READY` dönemleri haftalık teaser olarak
+  gösterir; `EMPTY` dönemler Analiz sayfasındaki sakin boş durum üzerinden erişilebilir kalır.
+  Böylece “hikâye hazır” teaser'ından kanıtsız ekrana geçiş engellenir. Yerel demo kullanım:
+  `pnpm --filter @mentor/api seed:analysis-demo -- --email=<adres>`. İlgili dosyalar:
+  `today.service.ts`, `content.port.ts`, `weekly-recap.ts`, `panel-shell.tsx`,
+  `packages/types/src/coaching.ts`.
+
+- **Mentor Wrapped haftalık metrikleri ve unvanı (2026-07-27)** — Mevcut
+  `GET /v1/coaching/weekly-review` sözleşmesi; yedi günlük aktivite dizisi, hafta içindeki en uzun
+  aktif seri, en uzun nitelikli seans, taksonomi-doğrulanmış odak dersleri, en fazla iki
+  backend-seçimli highlight ve haftalık macera unvanıyla additif genişletildi. Önceki haftadan
+  yalnız olumlu kişisel gelişim sinyali gösterilir; düşüş, sıralama ve diğer kullanıcılarla
+  karşılaştırma yapılmaz. Unvanlar kalıcı badge değildir ve her okumada kaynak veriden yeniden
+  hesaplanır. Demo kullanım: `pnpm --filter @mentor/api seed:analysis-demo --
+--email=<adres>` tamamlanan iki haftaya stabil/idempotent seans ve görev kayıtları ekler;
+  unrelated kullanıcı kayıtlarını silmez. Gotcha: seans ve görevler ayrı aggregate edilir,
+  yalnız nitelikli seanslar odak metriklerine girer. İlgili dosyalar:
+  `weekly-review.{ts,service.ts,repository.ts}`, `weekly-recap-demo.schedule.ts`,
+  `seed-analysis-demo.ts`, `packages/types/src/coaching.ts`, `config.catalog.ts`.
+
+- **Panel recap dönemini countdown'dan ayırma (2026-07-27)** — `GET /v1/coaching/today`,
+  sınav tarihi geçip sakin countdown `null` olduktan sonra da tamamlanan haftanın başlangıç
+  tarihine göre ilgili sınavı çözüp `weeklyRecapPeriod` üretir. Böylece READY/PARTIAL teaser,
+  sınavın ertesi günü panelden kaybolmaz. Dönem nesnesi backend'in çözdüğü `examId` değerini de
+  taşır; panel recap bağlantısı bunu doğrudan kullanır ve güncel takvimi yeniden çözmeye çalışmaz.
+  İstemcide yeni istek veya waterfall oluşmaz. Gotcha: countdown hâlâ geçmiş resmi tarihi
+  göstermez, yalnız recap sınav çözümlemesi tarihsel `asOf` kullanır. İlgili dosyalar:
+  `today.service.ts`, `content.port.ts`, `panel-shell.tsx`,
+  `content-service.adapter.ts`, `content.service.ts`.
+
+- **Mentor Wrapped poster görsel dili (2026-07-27)** — Haftanın Hikâyesi'nin READY ve PARTIAL
+  desteleri, Spotify Wrapped 2025 Community referansındaki tek-fikirli poster kompozisyonuna
+  uyarlandı: yüksek kontrastlı büyük tipografi, sıralı beyaz etiketler, optik halka/dama/nokta
+  desenleri, dairesel performans sahnesi ve haftalık unvan için Puhu rozet posteri. Mevcut
+  veri seçimi, 6–8 ekran kompozisyonu, swipe/klavye navigasyonu ve reduced-motion davranışı
+  değişmedi. Soyut halka, dama, nokta, çizgi ve yay katmanları Figma node'larından PNG olarak
+  export edilip `public/visuals/weekly-recap-*` adıyla kalıcılaştırıldı; React/CSS ile yeniden
+  çizilen desenler kaldırıldı. Spotify logosu ve sanatçı/albüm görselleri ürüne taşınmadı; Mentor
+  DESIGN token'ları ve mevcut Puhu varlıkları kullanıldı. Yükleme skeleton'ı aynı poster iskeletini
+  korur. İlgili dosyalar: `weekly-recap-shell.tsx`, `weekly-recap-content-skeleton.tsx`,
+  `lib/weekly-recap.ts`, `lib/weekly-recap.spec.ts`, `public/visuals/weekly-recap-*`.
+
+- **Haftanın Hikâyesi Instagram story deneyimi (2026-07-28)** — READY recap, 2023 Wrapped
+  Community'nin sekiz adet 1080×1920 frame kompozisyonuna uyan sabit bir hikâyeye dönüştürüldü:
+  karşılama, hafta haritası, odak dakikası, haftalık seri, haftanın eni, deneme sinyali,
+  haftalık karakter ve kapanış. Mobil kullanım tam viewport'tur; süre bazlı progress, otomatik
+  oynatma, basılı-tutunca duraklatma, sağ/sol tap alanları, swipe ve üst play/sound/close
+  kontrolleri vardır. Desktop aynı 9:16 sahneyi ortalar, dış oklar ve klavyeyi korur. Deneme veya
+  odak verisi yoksa sıfır metriği yerine özelliği sakin biçimde açıklayan merak köprüsü gösterilir.
+  Finalde paylaşım, plan ön-doldurma ve mevcut premium/coin kapısını koruyan Puhu notu dock/sheet'i
+  bulunur. Ses manifesti Mixkit'ten seçilen beş yerel parçayı hikâye ritmine göre dağıtır:
+  `Pop Track 03` karşılama, `Gimme that Groove!` aktif gün/seri, `Digital Clouds` odak/deneme,
+  `Funkee Monkeee` haftanın eni/karakter ve `Discover` kapanış sahnelerinde kullanılır. Aynı
+  parçanın tekrarlandığı sahnelerde farklı cue noktaları seçilir; hikâye her açılışta muted
+  başlar, ses tercihi slaytlar arasında korunur ve audio hatası hikâyeyi durdurmaz. Kaynaklar
+  `public/audio/mixkit-*.mp3` altında tutulur. Gotcha: reduced-motion hikâyeyi paused açar; EMPTY autoplay
+  kullanmaz, PARTIAL dört ekran kalır. Dekorlar React/CSS çizimi değil, kalıcı Figma exportlarıdır.
+  Metin anlatımı slayt süresine bağlı iki vuruşa ayrılır: önce başlık/ana metrik, ardından destek
+  cümlesi görünür; final aksiyon dock'u ikinci vuruşla açılır. Figma dekorları kendi export
+  katmanları korunarak yalnız transform/opacity ile düşük yoğunluklu, sürekli hareket eder;
+  reduced-motion bu hareketi crossfade'e indirger.
+  Hafta haritası slaytı `public/video/puhu-fire.mp4` videosunu story zaman çizelgesine bağlar:
+  başlık ateşin zirvesi olan 2,2. saniyede çıkar, aktif gün sayısı görünür. Video; play/pause,
+  uzun basma ve sekme görünürlüğüyle birlikte durur/devam eder, yüklenemezse mevcut Puhu görseline
+  düşer.
+  Final slayt, tek bir 9:16 paylaşım posteri önizlemesine dönüşür. Paylaş aksiyonu yeni export
+  bağımlılığı olmadan Canvas ile 1080×1920 PNG üretir; mobilde dosyalı Web Share, desteklenmeyen
+  ortamlarda indirme + metin panosu fallback'i kullanılır. Poster yalnız efor aggregate'larını,
+  haftalık unvanı ve backend'in doğruladığı en çok çalışılan ders adı/süresini içerir; net, mood,
+  görev başlığı, subject ref ve AI notu dışarı çıkmaz.
+  Poster önizlemesi story güvenli alanında büyütüldü; yeşil ders şeridi kaldırılarak ana metrik,
+  yardımcı istatistikler ve haftanın dersi tek bir editoryal tipografi akışına alındı. Aynı
+  hiyerarşi indirilen/paylaşılan Canvas görselinde de korunur.
+  Final story dock'u mobil alt navigasyon diliyle hizalanarak tam kapsül forma geçirildi; dış
+  border yumuşatıldı, üç aksiyon eşit genişlikte yuvarlak dokunma alanları olarak korundu ve
+  hover davranışı ölçek yerine düşük yoğunluklu arka plan değişimiyle sınırlandı.
+  PNG export dekorları başlık, metrik, ders ve imza için tanımlı güvenli bölgelerin dışına
+  sabitlendi; alt Figma grafiğinin ders/imza üstüne taşması engellendi ve geometri testi eklendi.
+  Panel ve Analiz'deki recap teaser'ı, referans Wrapped kütüphane banner'ı gibi tek parça
+  tıklanabilir mercan postere dönüştürüldü. Gerçek Figma exportları üst sahnede dekor olarak
+  kullanılır; görünür CTA, rozet ve tarih yerine “Senin Haftalık Özetin / Geçen haftanın öne
+  çıkanlarını keşfet.” kopyası gösterilir. Durum ve dönem ekran okuyucu açıklamasında korunur;
+  tıklama mevcut `/analysis/recap` akışını ve dashboard haftada-bir davranışını değiştirmez.
+  Teaser, feature-scoped `.weekly-recap-theme` sınıfını doğrudan taşır; böylece mercan token
+  story dışındaki panel/analiz yüzeylerinde de çözülür. Dekor assetlerinin hover transformları
+  kaldırılmıştır; banner etkileşim sırasında görsel olarak sabit kalır.
+  PARTIAL hikâye artık kanıta göre 5–7 ekran arasında adaptiftir: karşılama ve hafta haritasından
+  sonra varsa odak ve iki gün veya daha uzun ritim ekranları eklenir; haftanın kıvılcımı, “Hikâyende sırada
+  ne var?” ve ayrı kapanış her zaman korunur. Eksik odak seansı, tamamlanmış görev ve deneme
+  kanallarının tamamı backend'in sıralayıp yerelleştirdiği `recap.nextStorySignals[]` kartlarıyla tek
+  ekranda gösterilir. Kartlar bu iterasyonda bilgilendiricidir; story oynatımı sırasında görev veya
+  kayıt oluşturmaz. Eski istemciler için nullable `nextStorySignal` dizinin ilk öğesini taşımaya
+  devam eder. READY sekiz ekran, EMPTY ise aksiyon odaklı decksiz durum olarak kalır; eski/eksik
+  yanıtlarda tekil sinyal veya recap kapanış metni güvenli fallback'tir.
+  Açılabilir sahneler ekranındaki genel siyah kart listesi, Wrapped poster diliyle yeniden
+  tasarlandı: büyük başlık ve sahne sayısı, mercan zemin üzerinde lavanta/mint/siyah tam renk
+  bantları, dev sıra numaraları, keskin çerçeveler ve reduced-motion uyumlu dönüşümlü giriş
+  hareketleri kullanılır. Yuvarlatılmış kart ve gölge bu veri posterinden; Puhu maskotu ise
+  PARTIAL veri posteri ile kapanış slaydından kaldırıldı.
+  İlgili: `weekly-recap-{shell,story}.tsx`, `use-weekly-recap-{playback,audio}.ts`,
+  `lib/weekly-recap{,-share-card}.ts`, `weekly-review.{ts,service.ts}`,
+  `packages/types/src/coaching.ts`, `messages/{tr,en}.json`,
+  `public/visuals/weekly-recap-2023/`.
+
+- **Mentor Wrapped V1.3 veri hikâyeleri ve editoryal dil (2026-07-29)** — Nitelikli seanslar
+  Europe/Istanbul başlangıç saatine göre sabah/öğleden sonra/akşam/gece bantlarında toplanır;
+  en çok odak süresi taşıyan bant backend-localized `rhythm.focusTimeBand` olarak döner.
+  Nitelikli odağın en yüksek olduğu erken tarih eşitlik kazancıyla seçilir ve iki-highlight
+  kotasından bağımsız `rhythm.peakFocusDay` olur. Hafta haritası güç gününü, odak slaytı baskın
+  çalışma zamanını kanıt vuruşunda gösterir; kanıt yoksa mevcut görünüm korunur. Story TR/EN
+  kopyası genel “büyüdü/ritim” tekrarlarından reveal–proof–punchline diline geçirildi; sekiz
+  READY ve adaptif PARTIAL kompozisyonu değişmedi. Migration veya yeni endpoint yoktur.
+  İlgili: `weekly-review.ts`, `weekly-review.{repository,service}.ts`,
+  `packages/types/src/coaching.ts`, `weekly-recap-{story,lib}.ts`, `messages/{tr,en}.json`.
+
+- **Haftalık karakter evreni refactor'u (2026-07-29)** — READY recap'in yedi deterministik
+  karakteri kısa, iki kelimelik fantastik/futuristik bir sete geçirildi: Kozmik Maestro,
+  Zaman Bükücü, Nebula Dalgıcı, Rota Mimarı, Boyut Kaşifi, Anka Pilotu ve güvenli fallback
+  Nova Yolcusu. Seçim eşikleri, baskın oran kuralı ve stabil `WeeklyRecapTitleId` değerleri
+  değişmedi; yalnız backend-localized TR/EN etiketler ile kanıt cümleleri yenilendi. Web,
+  paylaşım kartı ve eksik eski yanıtlardaki fallback yeni isimleri gösterir. Gotcha: bu
+  karakterler kalıcı badge değildir ve her tamamlanan hafta için yeniden hesaplanır.
+  İlgili: `i18n/locales/{tr,en}/coaching.json`, `messages/{tr,en}.json`,
+  `weekly-review-prompt.ts`, `weekly-recap.spec.ts`.
+
+- **Anka Pilotu tam ekran karakter reveal'i (2026-07-29)** — READY hikâyede backend'in stabil
+  `MOCK_BRAVE` karakteri seçildiğinde 7. slayt `public/video/anka-pilotu.mp4` videosunu 9:16
+  story yüzeyine tam taşır. Video mevcut play/pause, basılı tutma ve sekme görünürlüğüyle
+  senkron ilerler; kendi sesi kapalıdır ve slaydın müzik kanalı korunur. İlk 4 saniye yalnız
+  dönüşüm, 4–6 saniye karakter adı, 6. saniyeden sonra kanıt cümlesi gösterilir. Medya
+  yüklenemezse mevcut dekorlu metin görünümüne düşer. Karakter-video eşleşmesi slide
+  descriptor'ında tutulduğu için yeni karakter videoları aynı manifest üzerinden eklenebilir.
+  Yedi haftalık karakterin tamamı ortak reveal kimliği olarak
+  `mixkit-shot-light-energy-flowing-2589.wav` efektini slaydın başından kullanır; karaktere
+  özel videolar bu ortak ses kararını değiştirmez.
+  İlgili: `weekly-recap.ts`, `weekly-recap-story.tsx`, `weekly-recap.spec.ts`,
+  `public/video/anka-pilotu.mp4`, `public/audio/mixkit-shot-light-energy-flowing-2589.wav`.
+
+- **Yedi karakter için video reveal ve poster fallback (2026-07-29)** — Haftalık kod adı
+  slaydının video manifesti yedi stabil `WeeklyRecapTitleId` değerinin tamamını kapsayacak
+  şekilde genişletildi. Her kod adı `public/video/character/` altındaki kendi 9:16 videosunu
+  oynatır; eşleşen `public/img/character/` görseli video yüklenirken tarayıcı posteri olarak
+  kullanılır. Aynı görsel final ön izlemesi ve indirilen 1080×1920 paylaşım kartının üst
+  karakter alanında kullanılır; alt mercan bölüm güvenli haftalık metrikleri taşır. Karakter
+  görseli bulunamazsa Puhu fallback'i gösterilir. Story yalnız seçilen karakterin videosunu
+  yükler; başka karakter medyaları için başlangıç waterfall'u oluşturmaz. Video hatasında
+  mevcut dekorlu fallback korunur. İlgili: `weekly-recap.ts`,
+  `weekly-recap-story.tsx`, `weekly-recap-share-card.ts`, `weekly-recap.spec.ts`,
+  `public/{video,img}/character/`.

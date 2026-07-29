@@ -152,11 +152,11 @@
     "metric_streak_value": "{count} gün",
     "metric_mood_empty": "Seç",
     "metric_mood_action": "Ruh halini seç veya güncelle",
-    "mood_1": "Zor",
+    "mood_1": "Yorucu",
     "mood_2": "Durgun",
-    "mood_3": "Sakin",
+    "mood_3": "Dengeli",
     "mood_4": "İyi",
-    "mood_5": "Çok iyi",
+    "mood_5": "Harika",
     "streak_title": "Günlük seri",
     "streak_helper": "Bir günü kaçırsan dünyanın sonu değil.",
     "streak_session_cta": "Odak seansına git",
@@ -427,13 +427,13 @@
     "subtitle": "Kısa bir check-in — yargılamıyoruz.",
     "ask_later": "Daha sonra sor",
     "checkin_cta": "Check-in yap",
-    "wheel_hint": "Çarkıfeleği çevirmek için sürükle; ortadaki Puhu'ya dokunarak da seçebilirsin.",
+    "wheel_hint": "Çarkıfeleği çevirmek için sürükle.",
     "change_cta": "Değiştir",
-    "option_1": "Zor",
+    "option_1": "Yorucu",
     "option_2": "Durgun",
-    "option_3": "Sakin",
+    "option_3": "Dengeli",
     "option_4": "İyi",
-    "option_5": "Çok iyi",
+    "option_5": "Harika",
     "struggle_label": "Bugün seni en çok ne zorladı? (isteğe bağlı)",
     "struggle_placeholder": "Örn. matematik problemleri, odaklanma…",
     "coach_thinking": "Koçun düşünüyor…",
@@ -753,6 +753,15 @@
     "event_status": "Durum",
     "event_status_done": "Tamamlandı",
     "event_status_pending": "Bekliyor",
+    "calendar_legend_aria": "Derslere göre vurgula",
+    "calendar_legend_clear": "Vurguyu kaldır",
+    "legend_progress": "{done} / {total} tamamlandı",
+    "legend_days": "{count, plural, one {# gün} other {# güne}} yayılmış",
+    "legend_hour_short": "sa",
+    "legend_minute_short": "dk",
+    "legend_next_label": "Sıradaki",
+    "legend_next_short": "sıradaki {date}",
+    "legend_next_none": "Bu ay için kalan görev yok.",
     "calendar_back": "Geri",
     "calendar_scale_day": "Gün",
     "calendar_scale_week": "Hafta",
@@ -922,6 +931,190 @@
       "delete_confirm_no": "Vazgeç",
       "delete_success_title": "Deneme silindi",
       "delete_success_message": "Analizin kalan denemelerine göre yenilendi."
+    },
+    "recap": {
+      "loading": "Haftanın hikâyesi hazırlanıyor…",
+      "load_error": "Haftanın hikâyesi yüklenemedi.",
+      "exam_unavailable": "Aktif sınav dönemi bulunamadı. Biraz sonra yeniden deneyebilirsin.",
+      "exit": "Hikâyeden çık",
+      "progress": "{current}/{total}. hikâye ekranı",
+      "previous": "Geri",
+      "next": "İleri",
+      "finish": "Tamamla",
+      "needs_exam": {
+        "title": "Önce sınav yolunu seçelim",
+        "message": "Haftanın hikâyesini doğru dönemle eşleştirmek için profilinden sınav türünü seç.",
+        "cta": "Sınav türünü seç"
+      },
+      "error": {
+        "title": "Hikâyeyi şimdilik açamadım",
+        "retry": "Tekrar dene"
+      },
+      "empty": {
+        "title": "Sessiz haftalar da yolculuğun parçası",
+        "add_task": "Görev ekle",
+        "start_session": "Seans başlat"
+      },
+      "cover": {
+        "eyebrow": "Haftanın Hikâyesi",
+        "title": "Geçen haftadan kalan güzel izler",
+        "period": "{startDate} – {endDate}"
+      },
+      "controls": {
+        "play": "Hikâyeyi oynat",
+        "pause": "Hikâyeyi duraklat",
+        "replay": "Hikâyeyi yeniden oynat",
+        "sound_on": "Sesi aç",
+        "sound_off": "Sesi kapat",
+        "silent": "Bu slayt sessiz",
+        "close_note": "Puhu notunu kapat"
+      },
+      "welcome": {
+        "title": "Geçen hafta senden iz bıraktı.",
+        "next": "Şimdi o izleri sahneye alalım."
+      },
+      "week_map": {
+        "title": "Takvim seni fark etti.",
+        "active_days": "gün sahnedeydin",
+        "power_day": "{day} · güç günü · {minutes} dk"
+      },
+      "focus": {
+        "title": "Odağın sahneyi aldı.",
+        "minutes": "dakika gerçek odak",
+        "support": "{sessions} seans. En uzunu {longest} dakika. Net.",
+        "teaser_title": "Odak hikâyen ilk seansını bekliyor.",
+        "teaser_message": "Bir sonraki gerçek odak seansın bu ekranı kendi ritminle canlandıracak."
+      },
+      "weekly_run": {
+        "title": "{count} gün üst üste. Tesadüf değil.",
+        "active_days_title": "Takvimde {count} farklı gün sen vardın."
+      },
+      "weekly_best": {
+        "eyebrow": "Haftanın enleri",
+        "title": "Başrol çoktan belli.",
+        "focus_subject": "{minutes} dakika gerçek odakla haftanın ders yıldızı oldu.",
+        "plan_subject": "{count} tamamlanan görevle planında öne çıktı.",
+        "fallback": "Gerçek bir küçük adım",
+        "fallback_message": "Bu haftanın en güçlü izi burada."
+      },
+      "rhythm": {
+        "eyebrow": "Ritmin",
+        "title": "Emeğin zamana yayıldı",
+        "focus_minutes": "dakika gerçek odak",
+        "sessions": "seans",
+        "completed_tasks": "tamamlanan görev",
+        "mock_exams": "deneme",
+        "minutes": "dakika",
+        "active_days": "aktif gün",
+        "run": "{count} günlük en uzun seri",
+        "day_active": "{day} aktif",
+        "day_inactive": "{day} dinlenme günü"
+      },
+      "subject": {
+        "label": "Ders haritan",
+        "fallback": "Haftanın çalışma rotası",
+        "focus_leader": "{minutes} dakika ile haftanın odak lideri",
+        "plan_leader": "{count} tamamlanan görevle planında öne çıktı",
+        "minutes": "{count} dk"
+      },
+      "performance": {
+        "eyebrow": "Deneme sahnesi",
+        "title": "Deneme sahneye çıktı.",
+        "net": "ortalama net",
+        "bridge_title": "Deneme bu haftaki kadroda yoktu.",
+        "bridge_message": "Bir sonraki denemen bu sahneyi açacak."
+      },
+      "spark": {
+        "label": "Haftanın kıvılcımı",
+        "title": "Küçük ama gerçek bir iz"
+      },
+      "bests": {
+        "label": "Haftanın enleri",
+        "title": "Bu hafta sende öne çıkanlar",
+        "minutes": "{count} dakika",
+        "tasks": "{count} görev",
+        "exams": "{count} deneme",
+        "comparison_ACTIVE_DAYS": "+{count} aktif gün",
+        "comparison_FOCUS_MINUTES": "+{count} dakika",
+        "comparison_COMPLETED_TASKS": "+{count} görev",
+        "comparison_LONGEST_SESSION": "+{count} dakika"
+      },
+      "weekly_title": {
+        "label": "Haftanın kod adı",
+        "fallback": "Nova Yolcusu"
+      },
+      "partial_unlocks": {
+        "title": "Hikâyende sırada ne var?",
+        "kicker": "Gelecek hafta açılabilecek sahneler",
+        "count": "{count} yeni sahne"
+      },
+      "partial_final": {
+        "title": "İlk iz geldi. Devamı var."
+      },
+      "closing": {
+        "eyebrow": "Puhu’dan bir not",
+        "ai_eyebrow": "AI Puhu notun",
+        "title": "Bunu yanında götür"
+      },
+      "final": {
+        "eyebrow": "Yeni haftaya",
+        "title": "Bunu sen yaptın.",
+        "plan_cta": "Öneriyi planımda aç",
+        "share": "Emeğimi paylaş",
+        "plan_short": "Plan",
+        "share_short": "Paylaş",
+        "puhu_note": "Puhu notu"
+      },
+      "puhu_sheet": {
+        "title": "Puhu’dan bir not",
+        "ai_title": "AI Puhu notun",
+        "loading": "Puhu notunu kişiselleştiriyor…"
+      },
+      "share": {
+        "title": "Haftanın Hikâyesi",
+        "sessions": "{count} seans",
+        "minutes": "{count} dakika",
+        "active_days": "{count} aktif gün",
+        "tasks": "{count} tamamlanan görev",
+        "weekly_title": "Unvanım: {label}",
+        "top_subject": "{name}: {minutes} dakika",
+        "preparing_short": "Hazırlanıyor…",
+        "downloaded": "Paylaşım kartın indirildi",
+        "file_name": "haftanin-hikayesi.png",
+        "error": "Paylaşım tamamlanamadı"
+      },
+      "share_card": {
+        "title": "Bir haftanın portresi",
+        "weekly_title_label": "Bu haftaki enerjin",
+        "weekly_title_fallback": "Nova Yolcusu",
+        "focus": "odakta geçen zaman",
+        "active_days": "ritmini taşıdığın gün",
+        "sessions": "kendine ayırdığın seans",
+        "completed_tasks": "bitti dediğin görev",
+        "longest_session": "tek solukta odak",
+        "longest_run": "ritminin en uzun hâli",
+        "top_subject": "Bu hafta en çok",
+        "minutes": "{count} dk",
+        "days": "{count} gün",
+        "count": "{count}",
+        "subject": "{name} · {minutes} dk",
+        "signature": "Mentor × Puhu"
+      },
+      "unlock": {
+        "cta": "{cost} coin ile AI Puhu notunu aç",
+        "confirm": "Emin misin? {cost} coin harcanacak",
+        "insufficient": "AI notu için {cost} coin gerekiyor ({balance}/{cost}). Görevlere bak",
+        "error": "AI Puhu notu açılamadı"
+      },
+      "teaser": {
+        "title": "Senin Haftalık Özetin",
+        "message": "Geçen haftanın öne çıkanlarını keşfet.",
+        "period": "{startDate} – {endDate}",
+        "status_READY": "Hikâyen hazır",
+        "status_PARTIAL": "Küçük izlerin var",
+        "status_EMPTY": "Yeni bir başlangıç",
+        "status_UNKNOWN": "Geçen haftana bak"
+      }
     },
     "weekly": {
       "title": "Geçen haftan",

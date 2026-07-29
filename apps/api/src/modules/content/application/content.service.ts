@@ -205,6 +205,7 @@ function toAdminExamEventView(row: ExamEventRow): AdminExamEventView {
 
 /** Resolved calendar row used by the coaching ContentPort adapter. */
 export interface ResolvedExamCalendar {
+  examId: string;
   examType: string;
   examName: string;
   examDate: string;
@@ -433,12 +434,13 @@ export class ContentService {
   /** Authoritative countdown source: family = users.examType (KPSS | YKS | LGS). */
   async getExamCalendarByFamily(
     family: string | null | undefined,
+    asOf?: string,
   ): Promise<ExamCalendarDto | null> {
     if (!family) return null;
     this.assertValidFamily(family);
 
     const rows = await this.exams.listFamilyCandidates(this.db, family);
-    const selected = selectExamForCountdown(toExamCandidates(rows));
+    const selected = selectExamForCountdown(toExamCandidates(rows), asOf);
     if (!selected) return null;
 
     const exam = rows.find((r) => r.exam.id === selected.examId)?.exam;
@@ -451,9 +453,10 @@ export class ContentService {
   /** Coaching ContentPort seam — compact shape for countdown. */
   async getExamCalendarForCoaching(
     family: string | null | undefined,
+    asOf?: string,
   ): Promise<ResolvedExamCalendar | null> {
-    const dto = await this.getExamCalendarByFamily(family);
-    if (!dto || dto.daysRemaining === null || !dto.examDateLabel) return null;
+    const dto = await this.getExamCalendarByFamily(family, asOf);
+    if (!dto) return null;
 
     const examDateEvent = dto.events.find(
       (e) => e.type === ExamEventType.EXAM_DATE,
@@ -462,6 +465,7 @@ export class ContentService {
 
     const examDate = examDateEvent.eventAt.slice(0, 10);
     return {
+      examId: dto.exam.id,
       examType: dto.exam.family,
       examName: dto.exam.name,
       examDate,
@@ -527,7 +531,7 @@ export class ContentService {
     verifiedBy: string;
   }): Promise<void> {
     if (!PUBLIC_HOLIDAY_KINDS.includes(data.kind as (typeof PUBLIC_HOLIDAY_KINDS)[number])) {
-      throw new DomainError(ErrorCode.VALIDATION_FAILED, HttpStatus.BAD_REQUEST, {
+      throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST, {
         kind: data.kind,
       });
     }

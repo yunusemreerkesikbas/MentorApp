@@ -9,8 +9,12 @@ import {
   user,
 } from "./analysis.fixture";
 
-test("sınav türü olmayan kullanıcıyı onboarding akışına gönderir", async ({ page }) => {
-  const api = await mockAnalysisApi(page, { authUser: { ...user, examType: null } });
+test("sınav türü olmayan kullanıcıyı onboarding akışına gönderir", async ({
+  page,
+}) => {
+  const api = await mockAnalysisApi(page, {
+    authUser: { ...user, examType: null },
+  });
 
   await page.goto("/analiz");
 
@@ -18,31 +22,49 @@ test("sınav türü olmayan kullanıcıyı onboarding akışına gönderir", asy
   expect(api.unexpected).toEqual([]);
 });
 
-test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({ page }) => {
+test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
+  page,
+}) => {
+  await page.addInitScript((startDate) => {
+    window.localStorage.setItem(
+      `mentor.weekly-recap.opened.v2:${startDate}`,
+      "1",
+    );
+  }, insufficientWeekly.period.startDate);
   const api = await mockAnalysisApi(page, {
     analysis: emptyAnalysis,
     weekly: [insufficientWeekly],
   });
   await page.goto("/analiz");
   await expect(
-    page.getByText("Henüz deneme yok — Gir sekmesinden ilk sonucunu girebilirsin."),
+    page.getByText(
+      "Henüz deneme yok — Gir sekmesinden ilk sonucunu girebilirsin.",
+    ),
   ).toBeVisible();
 
   await page.getByRole("tab", { name: "Gelişim" }).click();
-  await expect(page.getByText("Biraz daha veri gerekli")).toBeVisible();
+  await expect(page.getByText("Haftanın Hikâyesi hazır")).toBeVisible();
+  await expect(page.getByText("Yeni bir başlangıç")).toBeVisible();
   expect(api.weeklyCalls).toBe(1);
   expect(api.photoAccessCalls).toBe(0);
   expect(api.unexpected).toEqual([]);
 
   const firstPage = await page.context().newPage();
-  const firstApi = await mockAnalysisApi(firstPage, { analysis: firstAnalysis });
+  const firstApi = await mockAnalysisApi(firstPage, {
+    analysis: firstAnalysis,
+  });
   await firstPage.goto("/analiz?tab=progress");
-  await expect(
-    firstPage.getByTestId("analysis-latest-net"),
-  ).toHaveAttribute("aria-label", "Son net: 42.00");
-  await expect(firstPage.getByTestId("analysis-latest-net")).toHaveText("42.00");
+  await expect(firstPage.getByTestId("analysis-latest-net")).toHaveAttribute(
+    "aria-label",
+    "Son net: 42.00",
+  );
+  await expect(firstPage.getByTestId("analysis-latest-net")).toHaveText(
+    "42.00",
+  );
   await expect(firstPage.getByText(/Geçen denemeye göre/)).toHaveCount(0);
-  await expect(firstPage.getByText("Matematik", { exact: true }).first()).toBeVisible();
+  await expect(
+    firstPage.getByText("Matematik", { exact: true }).first(),
+  ).toBeVisible();
   await expect(firstPage.locator("details")).not.toHaveAttribute("open", "");
   expect(firstApi.unexpected).toEqual([]);
 
@@ -55,7 +77,9 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({ page 
   expect(noFocusApi.unexpected).toEqual([]);
 });
 
-test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({ page }) => {
+test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({
+  page,
+}) => {
   const api = await mockAnalysisApi(page, {
     analysis: multipleAnalysis,
     weekly: [readyWeekly],
@@ -65,32 +89,32 @@ test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({ p
   await expect(page.getByTestId("analysis-latest-net")).toHaveText("48.00");
   await expect(page.getByTestId("analysis-net-delta")).toContainText("+6.00");
   await expect(page.getByText("Problemler", { exact: true })).toBeVisible();
-  await expect(page.getByText("Değerlendirmeye hazır")).toBeVisible();
+  await expect(page.getByText("Haftanın Hikâyesi hazır")).toBeVisible();
 
   const planLinks = page.getByRole("link", { name: "Planıma ekle" });
   const plan = planLinks.first();
-  const weeklyPlan = planLinks.nth(1);
   const coach = page.getByRole("link", { name: "Koçla konuş" });
   await expect(plan).toHaveAttribute(
     "href",
     /\/plan\?add=1&subject=Matematik&title=Problemler\+konusunu\+tekrar\+et/,
   );
-  await expect(coach).toHaveAttribute("href", /\/koc\/sohbet\?seed=.*Problemler/);
-  await expect(weeklyPlan).toHaveAttribute(
+  await expect(coach).toHaveAttribute(
     "href",
-    /\/plan\?add=1&title=Matematik\+haftal%C4%B1k\+tekrar&subject=Matematik|\/plan\?add=1&subject=Matematik&title=Matematik\+haftal%C4%B1k\+tekrar/,
+    /\/koc\/sohbet\?seed=.*Problemler/,
   );
-
   for (const link of [plan, coach]) {
     await link.evaluate((element) =>
-      element.addEventListener("click", (event) => event.preventDefault(), { once: true }),
+      element.addEventListener("click", (event) => event.preventDefault(), {
+        once: true,
+      }),
     );
     await link.click();
   }
   expect(
     api.requests.filter(
       ({ method, path }) =>
-        method === "POST" && (/^\/v1\/plan-tasks/.test(path) || path === "/v1/coach/chat"),
+        method === "POST" &&
+        (/^\/v1\/plan-tasks/.test(path) || path === "/v1/coach/chat"),
     ),
   ).toEqual([]);
 
@@ -116,7 +140,7 @@ test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({ p
   expect(api.unexpected).toEqual([]);
 });
 
-test("derin analiz önerisini yeni AI çağrısı olmadan plan formuna taşır", async ({
+test("AI Puhu notunu arka planda hazırlar ve öneriyi yalnız plan formuna taşır", async ({
   page,
 }) => {
   const api = await mockAnalysisApi(page, {
@@ -141,37 +165,46 @@ test("derin analiz önerisini yeni AI çağrısı olmadan plan formuna taşır",
     },
   });
   await page.goto("/analiz?tab=progress");
-  await page.getByRole("button", { name: "Derin analizi getir" }).click();
+  await page.getByRole("link", { name: "Hikâyeyi aç" }).click();
+  await expect(page).toHaveURL(/\/analiz\/haftanin-hikayesi/);
+
+  for (let step = 0; step < 3; step += 1) {
+    await page.getByRole("button", { name: "İleri" }).click();
+  }
 
   await expect(page.getByText("Bu hafta ritmini korudun.")).toBeVisible();
-  const suggested = page
-    .getByText("Önerilen görev")
-    .locator("..")
-    .getByRole("link", { name: "Planıma ekle" });
+  await page.getByRole("button", { name: "İleri" }).click();
+  const suggested = page.getByRole("link", { name: "Öneriyi planımda aç" });
   await expect(suggested).toHaveAttribute(
     "href",
     /\/plan\?add=1&title=T%C3%BCrk%C3%A7e\+haftal%C4%B1k\+tekrar&subject=turkce|\/plan\?add=1&subject=turkce&title=T%C3%BCrk%C3%A7e\+haftal%C4%B1k\+tekrar/,
   );
   expect(
-    api.requests.filter(({ method, path }) =>
-      method === "POST" && path === "/v1/coach/weekly-review",
+    api.requests.filter(
+      ({ method, path }) =>
+        method === "POST" && path === "/v1/coach/weekly-review",
     ),
   ).toHaveLength(1);
 });
 
-test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({ page }) => {
+test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({
+  page,
+}) => {
   const api = await mockAnalysisApi(page, {
     analysis: multipleAnalysis,
     weekly: [readyWeekly],
   });
   await page.goto("/analiz?tab=progress");
-  await expect(page.getByText("Değerlendirmeye hazır")).toBeVisible();
+  await expect(page.getByText("Haftanın Hikâyesi hazır")).toBeVisible();
 
   await waitForRscRequestsToSettle(page);
 
   const navigations: string[] = [];
   page.on("request", (request) => {
-    if (request.resourceType() === "document" || request.url().includes("_rsc")) {
+    if (
+      request.resourceType() === "document" ||
+      request.url().includes("_rsc")
+    ) {
       navigations.push(request.url());
     }
   });
@@ -197,23 +230,29 @@ test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({ page }
   expect(api.unexpected).toEqual([]);
   expect(
     api.requests.some(({ path }) =>
-      ["/v1/coach/access", "/v1/coach/ghost-narration", "/v1/coach/weekly-review"].some(
-        (forbidden) => path.startsWith(forbidden),
-      ),
+      [
+        "/v1/coach/access",
+        "/v1/coach/ghost-narration",
+        "/v1/coach/weekly-review",
+      ].some((forbidden) => path.startsWith(forbidden)),
     ),
   ).toBe(false);
 });
 
-test("haftalık değerlendirme hatasından tekrar deneyerek döner", async ({ page }) => {
+test("haftalık değerlendirme hatasından tekrar deneyerek döner", async ({
+  page,
+}) => {
   const api = await mockAnalysisApi(page, {
     analysis: firstAnalysis,
     weekly: ["error", readyWeekly],
   });
   await page.goto("/analiz?tab=progress");
 
-  await expect(page.getByText("Haftalık değerlendirme yüklenemedi.")).toBeVisible();
+  await expect(
+    page.getByText("Haftalık değerlendirme yüklenemedi."),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Tekrar dene" }).click();
-  await expect(page.getByText("Değerlendirmeye hazır")).toBeVisible();
+  await expect(page.getByText("Haftanın Hikâyesi hazır")).toBeVisible();
   expect(api.weeklyCalls).toBe(2);
   expect(api.unexpected).toEqual([]);
 });
@@ -223,7 +262,9 @@ test("İngilizce statik analiz metinlerini gösterir", async ({ page }) => {
 
   await page.goto("/en/analysis");
 
-  await expect(page.getByRole("main", { name: "Mock Exam Analysis" })).toBeVisible();
+  await expect(
+    page.getByRole("main", { name: "Mock Exam Analysis" }),
+  ).toBeVisible();
   await expect(page.getByRole("tab", { name: "Progress" })).toBeVisible();
   await expect(
     page.getByText("No exams yet — enter your first result in the Enter tab."),
@@ -231,7 +272,6 @@ test("İngilizce statik analiz metinlerini gösterir", async ({ page }) => {
   await expectNoHorizontalOverflow(page);
   expect(api.unexpected).toEqual([]);
 });
-
 
 async function waitForRscRequestsToSettle(page: Page): Promise<void> {
   await new Promise<void>((resolve) => {

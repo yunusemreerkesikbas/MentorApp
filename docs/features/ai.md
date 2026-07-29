@@ -231,7 +231,7 @@ pnpm --filter @mentor/api test -- --grep "ai"
 - **Vision adapter Responses API'ye taşındı (WP-H, 2026-07-20)** — `openai-vision.adapter.ts` de
   `POST /v1/responses` kullanıyor; APP-028'de ertelenen tek yarım thread kapandı. Değişimler:
   `system` → `instructions`; görsel typed `input_image` content part'ı (`{type:"input_image",
-  image_url: dataUrl}` — eski `{type:"image_url",image_url:{url}}` değil); JSON çıktısı
+image_url: dataUrl}` — eski `{type:"image_url",image_url:{url}}` değil); JSON çıktısı
   `text:{format:{type:"json_object"}}` (eski `response_format` değil); `max_tokens` →
   `max_output_tokens`; yanıt `collectOutputText(output)` ile yürünür + `status incomplete|failed`
   guard. LLM adapter'ının `providerErrorLog` + `collectOutputText` helper'ları artık iki tüketicili
@@ -723,3 +723,42 @@ excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sa
 - **Bilgi makalesinden kesin kaynak aktarımı (2026-07-18)** — Bilgi → Koç CTA'sı ilk mesajda
   `contextArticleSlug` taşır. Backend yalnız yayımlanmış ve kullanıcının sınav ailesiyle eşleşen
   makaleyi kaynak yapar; ilk yanıt embedding backfill'ine bağlı değildir.
+
+- **Haftanın Hikâyesi aggregate plan anlatımı (2026-07-26)** — Haftalık AI prompt'u v3'e
+  yükseldi ve kural tabanlı recap'in taksonomi-doğrulanmış ders/görev sayaçlarını yorumlayabiliyor.
+  LLM kanıtı PII-minimal kalır: ham görev başlığı, struggle note ve mood notu gönderilmez.
+  Cache fingerprint'i görev `id/status/taskDate/updatedAt` değerlerini içerdiği için aynı haftadaki
+  görev değişikliği mevcut `ai_weekly_reviews` kaydını güvenle yeniler. Kullanım: Premium veya
+  deep-analysis ledger unlock'ı olan READY kullanıcı hikâyeyi beklemeden açar; anlatım arka planda
+  gelir, hata/gecikmede deterministik Puhu notu kalır. Gotcha: PARTIAL/EMPTY hiçbir AI çağrısı veya
+  satış CTA'sı üretmez; endpoint/cache/coin idempotency sözleşmeleri değişmedi. İlgili dosyalar:
+  `weekly-review-prompt.ts`, `weekly-review-narration.service.ts`,
+  `weekly-review-narration.service.spec.ts`.
+
+- **Mentor Wrapped AI yorumu v4 (2026-07-27)** — Tek cached haftalık anlatım çağrısı artık
+  backend'in seçtiği haftalık unvanı ve en fazla iki aggregate highlight'ı sıcak bir kapanışa
+  bağlar; model unvan, metrik veya başarı sırası seçmez. Prompt hâlâ ham görev başlığı, struggle
+  note, mood notu ve diğer serbest kullanıcı metinlerini almaz. Mevcut ve önceki haftadaki ilgili
+  seans/görev değişiklikleri fingerprint'i yeniler. Premium/coin gate, deep-analysis ledger
+  unlock'ı ve deterministik hata fallback'i değişmedi. Kullanım: READY hikâye hemen açılır,
+  anlatım arka planda tek kez hazırlanır. İlgili dosyalar: `weekly-review-prompt.ts`,
+  `weekly-review-narration.service.ts`, `weekly-review-narration.service.spec.ts`.
+
+- **Mentor Wrapped AI anlatımı v5 (2026-07-29)** — Haftalık koç prompt'u tüm
+  `WeeklyReviewDto` nesnesini göndermek yerine yalnız backend'in seçtiği unvan, highlight'lar,
+  aggregate ritim/plan/performans, odak zamanı, güç günü ve deterministik sonraki adımdan oluşan
+  küçük bir evidence nesnesi kullanır. Üç kısa cümle sırasıyla reveal, proof ve forward-motion
+  vuruşlarını üretir; unvan türü yalnız hafif editoryal metafor çerçevesi seçer. Model hâlâ metrik,
+  unvan veya görev seçmez; raw task title, mood/struggle note, gün dizisi ve geniş review payload'ı
+  prompt'a girmez. Prompt `v5` olduğu için eski cache fingerprint'leri doğal olarak yenilenir;
+  endpoint, Premium/coin gate ve cache tablosu değişmedi. İlgili: `weekly-review-prompt.ts`,
+  `weekly-review-narration.service.spec.ts`.
+
+- **Mentor Wrapped karakter anlatımı v6 (2026-07-29)** — Deterministik haftalık karakter
+  adları Mentor'un yeni fantastik/futuristik iki kelimelik evrenine geçirildi. AI karakter
+  seçmeye veya yeniden adlandırmaya devam etmez; backend'in verdiği yeni localized ad ve
+  aggregate kanıtı üç vuruşlu anlatıya bağlar. Prompt sürümü `v6` olduğu için eski karakter
+  adlarını içeren cached anlatımlar yeni fingerprint ile üretilir. Endpoint, Premium/coin gate,
+  PII-minimal evidence şekli ve fallback davranışı değişmedi. İlgili:
+  `weekly-review-prompt.ts`, `weekly-review-narration.service.spec.ts`,
+  `i18n/locales/{tr,en}/coaching.json`.

@@ -1,6 +1,6 @@
 "use client";
 
-import type { PlanTaskDto } from "@mentor/types";
+import type { PlanTaskDto, PublicHolidayDto } from "@mentor/types";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { layoutDayEvents } from "@/lib/plan-calendar-layout";
@@ -23,6 +23,7 @@ export function PlanMobileAgenda({
   days,
   selectedDate,
   tasksByDate,
+  holidaysByDate,
   onDateChange,
   onOpenTask,
 }: {
@@ -30,6 +31,7 @@ export function PlanMobileAgenda({
   days: string[];
   selectedDate: string;
   tasksByDate: Record<string, PlanTaskDto[]>;
+  holidaysByDate: Record<string, PublicHolidayDto>;
   onDateChange: (iso: string) => void;
   onOpenTask: (task: PlanTaskDto) => void;
 }) {
@@ -161,6 +163,14 @@ export function PlanMobileAgenda({
                   ? t("today")
                   : date.toLocaleDateString(loc, { weekday: "long" })}
               </span>
+              {holidaysByDate[iso] ? (
+                <span
+                  className="min-w-0 truncate text-sm opacity-75"
+                  style={{ color: "var(--color-chip-text)" }}
+                >
+                  {holidaysByDate[iso]!.name}
+                </span>
+              ) : null}
             </header>
 
             {count === 0 ? (

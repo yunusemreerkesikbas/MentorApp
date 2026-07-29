@@ -1,9 +1,9 @@
 "use client";
 
-import type { PlanTaskDto } from "@mentor/types";
+import type { PlanTaskDto, PublicHolidayDto } from "@mentor/types";
 import { Card } from "@mentor/ui";
 import Plus from "lucide-react/dist/esm/icons/plus.mjs";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { monthGridDays } from "@/lib/plan-calendar-layout";
 import { PlanCalendarHeader } from "./plan-calendar-header";
@@ -13,6 +13,7 @@ import { PlanEventPreview, usePlanEventPreview } from "./plan-event-preview";
 import { PlanMobileAgenda } from "./plan-mobile-agenda";
 import { PlanMobileDateStrip } from "./plan-mobile-date-strip";
 import { PlanMonthGrid } from "./plan-month-grid";
+import { PlanSubjectLegend } from "./plan-subject-legend";
 import { PlanTimeGrid } from "./plan-time-grid";
 import { PlanWeekMiniCalendar } from "./plan-week-mini-calendar";
 import {
@@ -33,6 +34,7 @@ export function PlanCalendarView({
   selectedDate,
   weekStartDate,
   tasksByDate,
+  holidaysByDate,
   loading,
   busyId,
   readOnly,
@@ -51,6 +53,8 @@ export function PlanCalendarView({
   weekStartDate: string;
   /** Whatever range the shell has loaded for the current scale. */
   tasksByDate: Record<string, PlanTaskDto[]>;
+  /** Verified public holidays for the same range — display only, never editable. */
+  holidaysByDate: Record<string, PublicHolidayDto>;
   loading: boolean;
   busyId: string | null;
   readOnly?: boolean;
@@ -73,11 +77,29 @@ export function PlanCalendarView({
   const t = useTranslations("plan");
   const locale = useLocale();
   const { preview, onHover } = usePlanEventPreview();
+  const [pickedSubject, setPickedSubject] = useState<string | null>(null);
   const monthAnchor = monthStart(selectedDate);
   const monthDays = useMemo(() => {
     const d = new Date(`${monthAnchor}T12:00:00`);
     return monthGridDays(d.getFullYear(), d.getMonth());
   }, [monthAnchor]);
+
+  /**
+   * The legend only exists on Ay, and a subject can vanish when the user steps to a month where
+   * they never studied it. Deriving the effective highlight (instead of storing it) means the
+   * board can never end up permanently faded against a subject that isn't on it.
+   */
+  const monthKey = monthAnchor.slice(0, 7);
+  const highlightSubject = useMemo(() => {
+    if (scale !== "month" || !pickedSubject) return null;
+    for (const [iso, tasks] of Object.entries(tasksByDate)) {
+      if (iso.slice(0, 7) !== monthKey) continue;
+      if (tasks.some((task) => task.subject?.trim() === pickedSubject)) {
+        return pickedSubject;
+      }
+    }
+    return null;
+  }, [scale, pickedSubject, tasksByDate, monthKey]);
 
   if (loading) return <PlanCalendarSkeleton />;
 
@@ -113,6 +135,7 @@ export function PlanCalendarView({
   const gridProps = {
     selectedDate,
     weekTasks: tasksByDate,
+    holidaysByDate,
     onDateChange,
     onOpenTask: onOpenEvent,
     onCreateAt: (iso: string, startTime: string) =>
@@ -124,6 +147,8 @@ export function PlanCalendarView({
     monthAnchor,
     selectedDate,
     tasksByDate,
+    holidaysByDate,
+    highlightSubject,
     onDateChange,
     onOpenTask: onOpenEvent,
     onCreateAt: (iso: string) => addOnCalendar({ taskDate: iso }),
@@ -157,6 +182,8 @@ export function PlanCalendarView({
             weekStartDate={weekStartDate}
             selectedDate={selectedDate}
             tasksByDate={tasksByDate}
+            holidaysByDate={holidaysByDate}
+            highlightSubject={highlightSubject}
             expanded={scale === "month"}
             onDateChange={onDateChange}
             onOpenTask={onOpenEvent}
@@ -165,9 +192,19 @@ export function PlanCalendarView({
           />
 
           {scale === "month" ? (
-            <div className="hidden lg:block lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
-              <PlanMonthGrid {...monthProps} />
-            </div>
+            <>
+              <div className="hidden lg:block lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+                <PlanMonthGrid {...monthProps} />
+              </div>
+              {/* Decodes the colors AND doubles as the highlight control — mobile's board is the
+                  expanded strip above, so one legend serves both. */}
+              <PlanSubjectLegend
+                monthKey={monthKey}
+                tasksByDate={tasksByDate}
+                activeSubject={highlightSubject}
+                onSelect={setPickedSubject}
+              />
+            </>
           ) : scale === "day" ? (
             <PlanTimeGrid {...gridProps} days={[selectedDate]} readOnlyAll={readOnly} />
           ) : (
@@ -180,6 +217,7 @@ export function PlanCalendarView({
                 days={monthDays}
                 selectedDate={selectedDate}
                 tasksByDate={tasksByDate}
+                holidaysByDate={holidaysByDate}
                 onDateChange={onDateChange}
                 onOpenTask={onOpenEvent}
               />

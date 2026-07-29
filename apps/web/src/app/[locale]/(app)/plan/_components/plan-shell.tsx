@@ -5,7 +5,12 @@ import { useSearchParams } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left.mjs";
 import { useTranslations } from "next-intl";
-import type { PlanTaskDto, PlanTaskStatus, TodayPanelResponse } from "@mentor/types";
+import type {
+  PlanTaskDto,
+  PlanTaskStatus,
+  PublicHolidayDto,
+  TodayPanelResponse,
+} from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
 import { useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
@@ -19,6 +24,7 @@ import {
   listPlanTasksForDate,
   listPlanTasksForMonthGrid,
   listPlanTasksForWeek,
+  listPublicHolidaysByDate,
   updatePlanTask,
 } from "@/lib/plan-tasks";
 import { monthGridDays } from "@/lib/plan-calendar-layout";
@@ -94,6 +100,7 @@ export function PlanShell() {
   const [tasks, setTasks] = useState<PlanTaskDto[]>([]);
   const [weekTasks, setWeekTasks] = useState<Record<string, PlanTaskDto[]>>({});
   const [monthTasks, setMonthTasks] = useState<Record<string, PlanTaskDto[]>>({});
+  const [holidays, setHolidays] = useState<Record<string, PublicHolidayDto>>({});
   const [loadedDate, setLoadedDate] = useState<string | null>(null);
   const [loadedWeek, setLoadedWeek] = useState<string | null>(null);
   const [loadedMonth, setLoadedMonth] = useState<string | null>(null);
@@ -203,6 +210,27 @@ export function PlanShell() {
       setError(readError(err));
     }
   }, [monthAnchor]);
+
+  /**
+   * Verified holidays for the visible month grid. Best-effort: the calendar is fully usable
+   * without them, so a failure stays silent rather than surfacing a page-level error.
+   */
+  useEffect(() => {
+    if (viewMode !== "calendar") return;
+    let active = true;
+    const anchor = new Date(`${monthAnchor}T12:00:00`);
+    const days = monthGridDays(anchor.getFullYear(), anchor.getMonth());
+    void listPublicHolidaysByDate(days[0]!, days[days.length - 1]!)
+      .then((data) => {
+        if (active) setHolidays(data);
+      })
+      .catch(() => {
+        if (active) setHolidays({});
+      });
+    return () => {
+      active = false;
+    };
+  }, [viewMode, monthAnchor]);
 
   const refreshAdaptedPlan = useCallback(async () => {
     await Promise.all([loadDayTasks(), loadWeekTasks()]);
@@ -470,6 +498,11 @@ export function PlanShell() {
   function openEventSheet(task: PlanTaskDto) {
     showSheet({
       title: t("event_details_title"),
+      // The panel only renders `children` under the "filter" layout; the default "action" layout
+      // draws an action list + cancel button and drops the body entirely. No `applyLabel` here —
+      // Düzenle / Sil live inside the body.
+      layout: "filter",
+      bodyScroll: true,
       children: (
         <PlanEventDetails
           task={task}
@@ -764,6 +797,7 @@ export function PlanShell() {
                 selectedDate={date}
                 weekStartDate={weekAnchor}
                 tasksByDate={monthTasks}
+                holidaysByDate={holidays}
                 loading={monthLoading}
                 busyId={busyId}
                 readOnly={readOnly}

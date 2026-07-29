@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  useCallback,
-  useId,
-  useRef,
-  type KeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import type * as React from "react";
+import { useCallback, useId, useRef } from "react";
 import {
   angleFromMinutes,
   angleFromPointer,
@@ -70,7 +65,8 @@ export function CircularTimerRing({
       : (minutes - min) / (max - min);
 
   const dashOffset = circumference * (1 - Math.min(1, Math.max(0, progress)));
-  const displayAngle = mode === "countdown" ? progress * 360 : angleFromMinutes(minutes, min, max);
+  const displayAngle =
+    mode === "countdown" ? progress * 360 : angleFromMinutes(minutes, min, max);
   const handleRad = ((displayAngle - 90) * Math.PI) / 180;
   const handleX = cx + radius * Math.cos(handleRad);
   const handleY = cy + radius * Math.sin(handleRad);
@@ -87,19 +83,19 @@ export function CircularTimerRing({
     [interactive, min, max, step, onMinutesChange],
   );
 
-  const onPointerDown = (e: ReactPointerEvent) => {
+  const onPointerDown = (e: React.PointerEvent) => {
     if (!interactive) return;
     draggingRef.current = true;
     e.currentTarget.setPointerCapture(e.pointerId);
     applyPointer(e.clientX, e.clientY);
   };
 
-  const onPointerMove = (e: ReactPointerEvent) => {
+  const onPointerMove = (e: React.PointerEvent) => {
     if (!draggingRef.current) return;
     applyPointer(e.clientX, e.clientY);
   };
 
-  const onPointerUp = (e: ReactPointerEvent) => {
+  const onPointerUp = (e: React.PointerEvent) => {
     draggingRef.current = false;
     e.currentTarget.releasePointerCapture(e.pointerId);
   };
@@ -109,7 +105,7 @@ export function CircularTimerRing({
     onMinutesChange(clampMinutes(minutes + delta, min, max, step));
   };
 
-  const onKeyDown = (e: KeyboardEvent) => {
+  const onKeyDown = (e: React.KeyboardEvent) => {
     if (!interactive || !onMinutesChange) return;
     switch (e.key) {
       case "ArrowUp":
@@ -163,8 +159,16 @@ export function CircularTimerRing({
         <svg width={size} height={size} aria-hidden="true" className="block">
           <defs>
             <radialGradient id={`${labelId}-fill`} cx="50%" cy="38%" r="65%">
-              <stop offset="0%" stopColor="var(--color-progress-track)" stopOpacity={0.55} />
-              <stop offset="100%" stopColor="var(--color-progress)" stopOpacity={0.14} />
+              <stop
+                offset="0%"
+                stopColor="var(--color-progress-track)"
+                stopOpacity={0.55}
+              />
+              <stop
+                offset="100%"
+                stopColor="var(--color-progress)"
+                stopOpacity={0.14}
+              />
             </radialGradient>
           </defs>
           <circle
@@ -172,7 +176,9 @@ export function CircularTimerRing({
             cy={cy}
             r={radius - RING_STROKE / 2}
             fill={`url(#${labelId}-fill)`}
-            className={mode === "countdown" ? "mentor-timer-breathe" : undefined}
+            className={
+              mode === "countdown" ? "mentor-timer-breathe" : undefined
+            }
           />
           <circle
             cx={cx}
@@ -229,13 +235,19 @@ export function CircularTimerRing({
           <span
             id={labelId}
             className="text-5xl font-bold tabular-nums sm:text-6xl"
-            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+            style={{
+              color: "var(--color-main)",
+              fontFamily: "var(--font-heading)",
+            }}
           >
             {centerPrimary}
           </span>
           <span
             className="text-sm font-semibold uppercase tracking-wide"
-            style={{ color: "var(--color-secondary)", fontFamily: "var(--font-heading)" }}
+            style={{
+              color: "var(--color-secondary)",
+              fontFamily: "var(--font-heading)",
+            }}
           >
             {centerSecondary}
           </span>
@@ -248,7 +260,10 @@ export function CircularTimerRing({
             type="button"
             aria-label={`${step} dakika azalt`}
             className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full border border-white bg-white/70 text-xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            style={{ color: "var(--color-main)", boxShadow: "var(--shadow-card)" }}
+            style={{
+              color: "var(--color-main)",
+              boxShadow: "var(--shadow-card)",
+            }}
             onClick={() => nudge(-step)}
           >
             −
@@ -257,7 +272,10 @@ export function CircularTimerRing({
             type="button"
             aria-label={`${step} dakika artır`}
             className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full border border-white bg-white/70 text-xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            style={{ color: "var(--color-main)", boxShadow: "var(--shadow-card)" }}
+            style={{
+              color: "var(--color-main)",
+              boxShadow: "var(--shadow-card)",
+            }}
             onClick={() => nudge(step)}
           >
             +

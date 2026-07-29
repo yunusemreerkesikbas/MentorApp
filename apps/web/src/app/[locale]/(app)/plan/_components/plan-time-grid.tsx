@@ -1,6 +1,6 @@
 "use client";
 
-import type { PlanTaskDto } from "@mentor/types";
+import type { PlanTaskDto, PublicHolidayDto } from "@mentor/types";
 import { useEffect, useMemo, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
@@ -30,6 +30,7 @@ export function PlanTimeGrid({
   days,
   selectedDate,
   weekTasks,
+  holidaysByDate,
   readOnlyAll,
   onDateChange,
   onOpenTask,
@@ -39,6 +40,7 @@ export function PlanTimeGrid({
   days: string[];
   selectedDate: string;
   weekTasks: Record<string, PlanTaskDto[]>;
+  holidaysByDate: Record<string, PublicHolidayDto>;
   /** Whole surface is read-only (past week) — slot clicks are disabled. */
   readOnlyAll?: boolean;
   onDateChange: (iso: string) => void;
@@ -58,7 +60,8 @@ export function PlanTimeGrid({
     [days, weekTasks],
   );
 
-  const hasAllDay = layouts.some((day) => day.allDay.length > 0);
+  const hasHoliday = days.some((iso) => holidaysByDate[iso]);
+  const hasAllDay = hasHoliday || layouts.some((day) => day.allDay.length > 0);
 
   const firstMinute = useMemo(
     () =>
@@ -142,19 +145,37 @@ export function PlanTimeGrid({
           >
             {t("all_day")}
           </span>
-          {layouts.map((day) => (
-            <div key={day.iso} className="flex min-w-0 flex-col gap-1">
-              {day.allDay.map((task) => (
-                <PlanEventChip
-                  key={task.id}
-                  task={task}
-                  variant="month"
-                  onOpen={onOpenTask}
-                  onHover={onHover}
-                />
-              ))}
-            </div>
-          ))}
+          {layouts.map((day) => {
+            const holiday = holidaysByDate[day.iso];
+            return (
+              <div key={day.iso} className="flex min-w-0 flex-col gap-1">
+                {/* Flat band, no leading bar and no click — reads as a fact about the day
+                    rather than something the user put there. */}
+                {holiday ? (
+                  <span
+                    className="block truncate rounded-[6px] px-1.5 py-[3px] text-[11px] leading-tight opacity-75"
+                    style={{
+                      backgroundColor:
+                        "color-mix(in srgb, var(--color-chip-text) 10%, transparent)",
+                      color: "var(--color-chip-text)",
+                    }}
+                    title={holiday.name}
+                  >
+                    {holiday.name}
+                  </span>
+                ) : null}
+                {day.allDay.map((task) => (
+                  <PlanEventChip
+                    key={task.id}
+                    task={task}
+                    variant="month"
+                    onOpen={onOpenTask}
+                    onHover={onHover}
+                  />
+                ))}
+              </div>
+            );
+          })}
         </div>
       ) : null}
 

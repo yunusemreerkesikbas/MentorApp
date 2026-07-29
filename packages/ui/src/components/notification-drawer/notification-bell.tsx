@@ -14,13 +14,18 @@ export interface NotificationBellProps {
  * Bell trigger button — place inside a `relative`-positioned container so the
  * desktop popover anchors correctly. Reads state from NotificationDrawerProvider.
  */
-export function NotificationBell({ label = "Notifications", unreadLabel = "unread" }: NotificationBellProps) {
+export function NotificationBell({
+  label = "Notifications",
+  unreadLabel = "unread",
+}: NotificationBellProps) {
   const { toggle, unreadCount } = useNotificationDrawer();
 
   return (
     <button
       type="button"
-      aria-label={unreadCount > 0 ? `${label} (${unreadCount} ${unreadLabel})` : label}
+      aria-label={
+        unreadCount > 0 ? `${label} (${unreadCount} ${unreadLabel})` : label
+      }
       aria-haspopup="dialog"
       onClick={toggle}
       className="relative flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-black/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 active:scale-95"

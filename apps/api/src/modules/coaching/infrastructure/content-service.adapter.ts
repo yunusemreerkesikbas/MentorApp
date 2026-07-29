@@ -19,8 +19,9 @@ export class ContentServiceAdapter implements ContentPort {
 
   async getExamCalendar(
     examType: string | null | undefined,
+    asOf?: string,
   ): Promise<ExamCalendar | null> {
-    return this.content.getExamCalendarForCoaching(examType);
+    return this.content.getExamCalendarForCoaching(examType, asOf);
   }
 
   async getNetRule(

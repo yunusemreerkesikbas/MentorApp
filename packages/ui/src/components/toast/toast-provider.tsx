@@ -1,5 +1,6 @@
 "use client";
 
+import type * as React from "react";
 import {
   createContext,
   useCallback,
@@ -7,7 +8,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { ToastViewport } from "./toast-viewport.js";
 import {
@@ -29,14 +29,16 @@ function createToastId(): string {
 }
 
 export interface ToastProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
   /** Injected by apps/web to map variants → Puhu / error icon. */
-  renderLeading?: (variant: ToastRecord["variant"]) => ReactNode;
+  renderLeading?: (variant: ToastRecord["variant"]) => React.ReactNode;
 }
 
 export function ToastProvider({ children, renderLeading }: ToastProviderProps) {
   const [toasts, setToasts] = useState<ToastRecord[]>([]);
-  const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
   const exitTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
   );

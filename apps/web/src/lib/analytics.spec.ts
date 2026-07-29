@@ -5,6 +5,7 @@ import {
   ANALYTICS_CONSENT_KEY,
   trackArticleEvent,
   trackCoachEvent,
+  trackWeeklyRecapEvent,
 } from "./analytics";
 
 const params = {
@@ -125,5 +126,44 @@ describe("coach analytics", () => {
       ["event", "coach_session_start", { source: "dashboard" }],
     ]);
     expect(JSON.stringify(dataLayer)).not.toMatch(/taskId|title|subject|user/i);
+  });
+});
+
+describe("weekly recap analytics", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("queues only safe enum fields after consent", () => {
+    const dataLayer: unknown[] = [];
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: vi.fn((key: string) =>
+          key === ANALYTICS_CONSENT_KEY ? "accepted" : null,
+        ),
+      },
+      dataLayer,
+    });
+
+    trackWeeklyRecapEvent("weekly_recap_slide_view", {
+      surface: "recap",
+      recap_status: "READY",
+      slide_kind: "weekly_best",
+    });
+
+    expect(dataLayer).toEqual([
+      [
+        "event",
+        "weekly_recap_slide_view",
+        {
+          surface: "recap",
+          recap_status: "READY",
+          slide_kind: "weekly_best",
+        },
+      ],
+    ]);
+    expect(JSON.stringify(dataLayer)).not.toMatch(
+      /user|examId|subject|title|mood|net/i,
+    );
   });
 });
