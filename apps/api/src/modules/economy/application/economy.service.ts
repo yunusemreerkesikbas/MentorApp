@@ -1,5 +1,6 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { Currency, LedgerStatus } from "@mentor/types";
+import { Currency, LedgerStatus, type EconomyBalance } from "@mentor/types";
+import { deriveLevel } from "@mentor/core";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
@@ -125,8 +126,10 @@ export class EconomyService {
     }
   }
 
-  getSelfBalance(userId: string): Promise<Balance> {
-    return this.repo.balanceSelf(userId);
+  /** Self balance + the XP tier derived from the shared curve (admin reads stay on raw sums). */
+  async getSelfBalance(userId: string): Promise<EconomyBalance> {
+    const balance = await this.repo.balanceSelf(userId);
+    return { ...balance, level: deriveLevel(balance.xp) };
   }
   getAdminBalance(userId: string): Promise<Balance> {
     return this.repo.balanceService(userId);

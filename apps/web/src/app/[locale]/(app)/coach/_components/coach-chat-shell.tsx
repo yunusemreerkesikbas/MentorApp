@@ -150,9 +150,13 @@ export function CoachChatShell() {
     messages.length === 0 &&
     !busy;
 
-  useEffect(() => {
+  // Entering the empty landing clears the scroll-away state — adjust during render, not in an
+  // effect (an effect repaints the jump-to-bottom pill for one frame before hiding it).
+  const [landingWasEmpty, setLandingWasEmpty] = useState(isEmptyLanding);
+  if (landingWasEmpty !== isEmptyLanding) {
+    setLandingWasEmpty(isEmptyLanding);
     if (isEmptyLanding) setAwayFromBottom(false);
-  }, [isEmptyLanding]);
+  }
 
   async function send(text: string) {
     const trimmed = text.trim();

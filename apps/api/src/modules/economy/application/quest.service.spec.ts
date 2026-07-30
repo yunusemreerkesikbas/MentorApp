@@ -15,6 +15,7 @@ function service(options: {
   date?: string;
   weekKey?: string;
   disabledIds?: string;
+  weeklyAllowanceRewardCoin?: number;
   signals?: {
     hasDonePlanTask?: boolean;
     hasCompletedFocusSession?: boolean;
@@ -45,8 +46,11 @@ function service(options: {
       if (key === "economy.quest.streak_milestone_reward_xp") return 25;
       if (key === "economy.quest.effort_milestone_reward_xp") return 25;
       if (key === "economy.quest.weekly_ritual_reward_xp") return 20;
+      if (key === "economy.quest.weekly_allowance_reward_coin")
+        return options.weeklyAllowanceRewardCoin ?? 15;
       if (key === "economy.quest.weekly_focus_sessions_target") return 5;
       if (key === "economy.quest.weekly_plan_tasks_target") return 10;
+      if (key === "economy.quest.weekly_allowance_active_days_target") return 5;
       if (key === "economy.quest.disabled_ids") return options.disabledIds ?? "";
       return 0;
     }),
@@ -189,7 +193,7 @@ describe("QuestService", () => {
   it("returns daily ritual and onboarding quests with their reward metadata", async () => {
     const quests = await service().service.getUserProgress("user-1");
 
-    expect(quests).toHaveLength(23);
+    expect(quests).toHaveLength(24);
     expect(quests[0]).toMatchObject({
       id: "daily.plan-task-done",
       category: "daily_ritual",
@@ -560,5 +564,71 @@ describe("QuestService — weekly quests (v3)", () => {
     expect(views.find((q) => q.id === "weekly.focus-sessions")).toBeUndefined();
     expect(views.find((q) => q.id === "daily.plan-task-done")).toBeUndefined();
     expect(subject.rows).toHaveLength(0);
+  });
+});
+
+describe("QuestService — weekly.effort-allowance (recurring coin faucet)", () => {
+  it("pays the weekly allowance amount, NOT the onboarding coin amount", async () => {
+    const subject = service({ signals: { weeklyActiveDays: 5 } });
+
+    await subject.service.evaluateAndGrant("user-1");
+
+    // Regression guard: without a coinReward() resolver every COIN quest silently paid 10.
+    expect(subject.economy.grantInServiceTx).toHaveBeenCalledWith(
+      "user-1",
+      Currency.COIN,
+      15,
+      expect.objectContaining({ reason: "quest.weekly.effort-allowance", refType: "quest" }),
+      {},
+    );
+  });
+
+  it("does not grant below the active-day target and renders the resolved title", async () => {
+    const subject = service({ signals: { weeklyActiveDays: 4 } });
+
+    const views = await subject.service.getUserProgress("user-1");
+
+    expect(
+      subject.economy.grantInServiceTx.mock.calls.filter(
+        (call) => (call[3] as { reason: string }).reason === "quest.weekly.effort-allowance",
+      ),
+    ).toHaveLength(0);
+    expect(views.find((q) => q.id === "weekly.effort-allowance")).toMatchObject({
+      title: "Bu hafta 5 gün aktif ol",
+      progressCurrent: 4,
+      progressTarget: 5,
+      rewardUnit: "COIN",
+      rewardAmount: 15,
+      periodKey: "2026-W28",
+      completed: false,
+    });
+  });
+
+  it("grants once per ISO week and re-arms the next week", async () => {
+    const rows: ProgressRow[] = [];
+    const week28 = service({ rows, signals: { weeklyActiveDays: 5 } });
+    await week28.service.evaluateAndGrant("user-1");
+    await week28.service.evaluateAndGrant("user-1");
+    expect(
+      rows.filter((r) => r.questId === "weekly.effort-allowance"),
+    ).toHaveLength(1);
+
+    const week29 = service({ rows, weekKey: "2026-W29", signals: { weeklyActiveDays: 5 } });
+    await week29.service.evaluateAndGrant("user-1");
+    expect(rows).toContainEqual(
+      expect.objectContaining({ questId: "weekly.effort-allowance", periodKey: "2026-W29" }),
+    );
+  });
+
+  it("is killable without a deploy via disabled_ids", async () => {
+    const subject = service({
+      disabledIds: "weekly.effort-allowance",
+      signals: { weeklyActiveDays: 7 },
+    });
+
+    const views = await subject.service.getUserProgress("user-1");
+
+    expect(views.find((q) => q.id === "weekly.effort-allowance")).toBeUndefined();
+    expect(subject.rows.find((r) => r.questId === "weekly.effort-allowance")).toBeUndefined();
   });
 });

@@ -434,13 +434,17 @@ export function weeklyRecapOpenedKey(startDate: string): string {
   return `mentor.weekly-recap.opened.v2:${startDate}`;
 }
 
-export function shouldShowWeeklyRecapTeaser(
+export type WeeklyRecapTeaserState = "hidden" | "new" | "replay";
+
+export function getWeeklyRecapTeaserState(
   storage: Pick<RecapStorage, "getItem">,
   startDate: string,
   status: WeeklyReviewDto["recap"]["status"] = "READY",
-): boolean {
-  if (status === "EMPTY") return false;
-  return storage.getItem(weeklyRecapOpenedKey(startDate)) !== "1";
+): WeeklyRecapTeaserState {
+  if (status === "EMPTY") return "hidden";
+  return storage.getItem(weeklyRecapOpenedKey(startDate)) === "1"
+    ? "replay"
+    : "new";
 }
 
 export function markWeeklyRecapOpened(

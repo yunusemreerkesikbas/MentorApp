@@ -17,7 +17,6 @@ import { UsersService } from "../../identity/application/users.service";
 import { FollowService } from "../../identity/application/follow.service";
 import { BuddyService } from "../../identity/application/buddy.service";
 import { deriveBadges } from "../domain/badges";
-import { deriveLevel } from "../domain/level";
 import { previousWindowStart, resolveMovement, windowStart } from "../domain/leaderboard-window";
 
 const LEADERBOARD_SIZE = 10;
@@ -78,7 +77,7 @@ export class CommunityService {
       economyEnabled: true,
       badges,
       xp: balance.xp,
-      level: deriveLevel(balance.xp),
+      level: balance.level,
       leaderboard,
     };
   }
@@ -125,7 +124,7 @@ export class CommunityService {
       streak: currentStreak,
       badges,
       xp: balance?.xp ?? null,
-      level: balance ? deriveLevel(balance.xp) : null,
+      level: balance?.level ?? null,
       followerCount,
       followingCount,
       isFollowing,

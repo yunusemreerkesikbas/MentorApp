@@ -3,6 +3,7 @@ import { Currency, LedgerStatus } from "@mentor/types";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { DomainError } from "../../../common/errors/domain-error";
 import { EconomyService } from "./economy.service";
+import { CORRECTION_REASONS, EconomyLedger } from "../domain/economy.constants";
 import type { NewLedgerEntry } from "../infrastructure/ledger.repository";
 
 interface Row extends NewLedgerEntry {
@@ -42,8 +43,8 @@ function makeRepoFake() {
     },
     balanceService: async (userId: string) => balance(userId),
     balanceSelf: async (userId: string) => balance(userId),
-    // Mirrors the real repo: organic earnings only — admin rows (createdBy set) and
-    // ai.chat.refund rows never consume cap headroom.
+    // Mirrors the real repo: organic earnings only — admin rows (createdBy set) and every
+    // compensating refund never consume cap headroom. Same reason list as the SQL predicate.
     coinEarnedSince: async (userId: string) => {
       trace.push("capRead");
       return sum(
@@ -52,7 +53,7 @@ function makeRepoFake() {
           r.unit === Currency.COIN &&
           r.amount > 0 &&
           r.createdBy == null &&
-          r.reason !== "ai.chat.refund",
+          !(CORRECTION_REASONS as readonly string[]).includes(r.reason),
       );
     },
     coinChatSpendsSince: async (userId: string, reason?: string) =>
@@ -141,6 +142,18 @@ describe("EconomyService", () => {
     // Daily cap is 50; the full 50 must still be grantable organically.
     const bal = await svc.grant("u1", Currency.COIN, 50, { reason: "quest.onboarding.email-verified" });
     expect(bal.coinConfirmed).toBe(40 + 999 + 50);
+  });
+
+  it("streak-freeze refund does not consume the organic earning cap either", async () => {
+    const svc = service();
+    // A failed freeze apply refunds the debit — a correction, not earning.
+    await svc.grant("u1", Currency.COIN, 20, {
+      reason: EconomyLedger.STREAK_FREEZE_REFUND_REASON,
+      enforceLimits: false,
+    });
+    // Daily cap is 50; the refund must leave the full organic headroom intact.
+    const bal = await svc.grant("u1", Currency.COIN, 50, { reason: "quest.weekly.effort-allowance" });
+    expect(bal.coinConfirmed).toBe(20 + 50);
   });
 
   it("is idempotent on refType/refId", async () => {

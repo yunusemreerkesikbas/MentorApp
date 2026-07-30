@@ -106,7 +106,11 @@ export function PlanTimelineView({
   /** False until scroll is pinned to today — avoids Liste→Timeline jump. */
   const [viewportReady, setViewportReady] = useState(false);
 
-  activeIsoRef.current = activeIso;
+  // Mirror of `activeIso` for scroll handlers. Written after commit — refs must not be touched
+  // during render; handlers only run post-commit, so they never read a stale value.
+  useEffect(() => {
+    activeIsoRef.current = activeIso;
+  }, [activeIso]);
 
   const dayOffsetTop = useCallback((iso: string) => {
     const el = document.getElementById(planTimelineDayId(iso));
@@ -194,7 +198,6 @@ export function PlanTimelineView({
 
     const needsPin = alignedWeekRef.current !== weekStartDate;
     if (needsPin) {
-      setViewportReady(false);
       const today = todayIso();
       const target = days.includes(today) ? today : selectedDate;
       const dayEl = document.getElementById(planTimelineDayId(target));
@@ -218,13 +221,14 @@ export function PlanTimelineView({
       }
 
       syncFromScroll();
-      setViewportReady(true);
       requestAnimationFrame(() => {
         ignoreScrollSyncRef.current = false;
       });
-    } else if (!viewportReady) {
-      setViewportReady(true);
     }
+
+    // Reveal only after the scroll is pinned — the flip happens in the layout pass, before paint,
+    // so the timeline never renders unpinned (the Liste→Timeline jump this guards against).
+    setViewportReady(true);
 
     const ro = new ResizeObserver(() => {
       applySpacer();

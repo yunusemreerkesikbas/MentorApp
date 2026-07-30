@@ -25,6 +25,7 @@ body {
   --recap-purple: #400073;
   --recap-lavender: #afb1ff;
   --recap-mint: #16d0a6;
+  --recap-sky: #e3ecef;
   --recap-ink: #000000;
   font-family: var(--font-body);
 }
@@ -98,48 +99,92 @@ body {
 
 /* Notification drawer — mobile slide-in/out, desktop popover fade */
 @keyframes drawer-backdrop-enter {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes drawer-slide-in {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 @keyframes drawer-slide-out {
-  from { transform: translateX(0); }
-  to   { transform: translateX(100%); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }
 
 @keyframes drawer-slide-in-left {
-  from { transform: translateX(-100%); }
-  to   { transform: translateX(0); }
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 @keyframes drawer-slide-out-left {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-100%); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
 }
 
 @keyframes popover-enter {
-  from { opacity: 0; transform: scale(0.97) translateY(-4px); }
-  to   { opacity: 1; transform: scale(1)    translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 @keyframes popover-exit {
-  from { opacity: 1; transform: scale(1)    translateY(0); }
-  to   { opacity: 0; transform: scale(0.97) translateY(-4px); }
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.97) translateY(-4px);
+  }
 }
 
-.animate-drawer-in  { animation: drawer-slide-in  280ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.animate-drawer-out { animation: drawer-slide-out  220ms cubic-bezier(0.4, 0, 1, 1)   forwards; }
-.animate-drawer-left-in  { animation: drawer-slide-in-left  280ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.animate-drawer-left-out { animation: drawer-slide-out-left  220ms cubic-bezier(0.4, 0, 1, 1)   forwards; }
+.animate-drawer-in {
+  animation: drawer-slide-in 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-drawer-out {
+  animation: drawer-slide-out 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.animate-drawer-left-in {
+  animation: drawer-slide-in-left 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-drawer-left-out {
+  animation: drawer-slide-out-left 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
 
 @media (min-width: 1024px) {
-  .lg\:animate-popover-in  { animation: popover-enter 200ms ease-out forwards; }
-  .lg\:animate-popover-out { animation: popover-exit  160ms ease-in  forwards; }
+  .lg\:animate-popover-in {
+    animation: popover-enter 200ms ease-out forwards;
+  }
+  .lg\:animate-popover-out {
+    animation: popover-exit 160ms ease-in forwards;
+  }
 }
 
 html.mentor-drawer-open {
@@ -151,7 +196,8 @@ html.mentor-sheet-open {
 }
 
 .mentor-scrollarea {
-  scrollbar-color: color-mix(in srgb, var(--color-secondary) 70%, transparent) transparent;
+  scrollbar-color: color-mix(in srgb, var(--color-secondary) 70%, transparent)
+    transparent;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
 }
@@ -310,8 +356,10 @@ html.mentor-sheet-open {
   transition: background-color 150ms ease;
 }
 
-.mentor-plan-day-picker .rdp-button_next:hover:not(:disabled):not([aria-disabled="true"]),
-.mentor-plan-day-picker .rdp-button_previous:hover:not(:disabled):not([aria-disabled="true"]) {
+.mentor-plan-day-picker
+  .rdp-button_next:hover:not(:disabled):not([aria-disabled="true"]),
+.mentor-plan-day-picker
+  .rdp-button_previous:hover:not(:disabled):not([aria-disabled="true"]) {
   background: color-mix(in srgb, var(--color-main) 4%, transparent);
 }
 
@@ -354,7 +402,9 @@ html.mentor-sheet-open {
 }
 
 .mentor-plan-day-picker .rdp-day.rdp-selected.rdp-today .rdp-day_button,
-.mentor-plan-day-picker .rdp-day.rdp-selected.mentor-plan-day-today .rdp-day_button {
+.mentor-plan-day-picker
+  .rdp-day.rdp-selected.mentor-plan-day-today
+  .rdp-day_button {
   color: #ffffff;
 }
 
@@ -371,7 +421,9 @@ html.mentor-sheet-open {
   width: 4px;
 }
 
-.mentor-plan-day-picker .rdp-day.rdp-selected.mentor-plan-day .rdp-day_button::after {
+.mentor-plan-day-picker
+  .rdp-day.rdp-selected.mentor-plan-day
+  .rdp-day_button::after {
   background-color: #ffffff;
 }
 
@@ -411,17 +463,23 @@ html.mentor-sheet-open {
   padding-block: 0.25rem;
 }
 
-.mentor-plan-week-mini-calendar .rdp-day.mentor-plan-day .rdp-day_button::after {
+.mentor-plan-week-mini-calendar
+  .rdp-day.mentor-plan-day
+  .rdp-day_button::after {
   bottom: 3px;
   height: 3px;
   width: 3px;
 }
 
-.mentor-plan-day-picker .rdp-day.mentor-plan-week-range:not(.rdp-outside):not(.rdp-selected) .rdp-day_button {
+.mentor-plan-day-picker
+  .rdp-day.mentor-plan-week-range:not(.rdp-outside):not(.rdp-selected)
+  .rdp-day_button {
   background: color-mix(in srgb, var(--color-progress) 10%, transparent);
 }
 
-.mentor-plan-day-picker .rdp-day.mentor-plan-day-today:not(.rdp-selected):not(.rdp-outside) .rdp-day_button {
+.mentor-plan-day-picker
+  .rdp-day.mentor-plan-day-today:not(.rdp-selected):not(.rdp-outside)
+  .rdp-day_button {
   background: color-mix(in srgb, var(--color-progress-track) 50%, transparent);
   color: var(--color-progress);
   font-weight: 700;
@@ -580,6 +638,12 @@ html.mentor-sheet-open {
   filter: drop-shadow(0 2px 2px rgba(37, 73, 150, 0.06));
 }
 
+/* Desktop coach FAB — bubble sits above Puhu on the right */
+.mentor-coach-bubble--end::after {
+  left: auto;
+  right: 20px;
+}
+
 @keyframes mentor-puhu-bounce {
   0%,
   100% {
@@ -631,12 +695,24 @@ html.mentor-sheet-open {
   margin-block: 1.5rem 0.75rem;
 }
 
-.mentor-article-body h2 { font-size: 1.25rem; }
-.mentor-article-body h3 { font-size: 1.125rem; }
-.mentor-article-body p { margin-bottom: 0.75rem; }
-.mentor-article-body :is(ul, ol) { margin: 0 0 0.75rem 1.25rem; }
-.mentor-article-body ul { list-style: disc; }
-.mentor-article-body ol { list-style: decimal; }
+.mentor-article-body h2 {
+  font-size: 1.25rem;
+}
+.mentor-article-body h3 {
+  font-size: 1.125rem;
+}
+.mentor-article-body p {
+  margin-bottom: 0.75rem;
+}
+.mentor-article-body :is(ul, ol) {
+  margin: 0 0 0.75rem 1.25rem;
+}
+.mentor-article-body ul {
+  list-style: disc;
+}
+.mentor-article-body ol {
+  list-style: decimal;
+}
 .mentor-article-body blockquote {
   border-left: 4px solid var(--color-chip);
   color: var(--color-secondary);
@@ -644,10 +720,28 @@ html.mentor-sheet-open {
   margin-block: 1rem;
   padding-left: 1rem;
 }
-.mentor-article-body a { color: var(--color-accent); text-decoration: underline; }
-.mentor-article-body img { border-radius: var(--radius-card); height: auto; margin-block: 1rem; max-width: 100%; }
-.mentor-article-body table { border-collapse: collapse; display: block; margin-block: 1rem; overflow-x: auto; width: 100%; }
-.mentor-article-body :is(th, td) { border: 1px solid color-mix(in srgb, var(--color-secondary) 25%, transparent); padding: 0.625rem; text-align: left; }
+.mentor-article-body a {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+.mentor-article-body img {
+  border-radius: var(--radius-card);
+  height: auto;
+  margin-block: 1rem;
+  max-width: 100%;
+}
+.mentor-article-body table {
+  border-collapse: collapse;
+  display: block;
+  margin-block: 1rem;
+  overflow-x: auto;
+  width: 100%;
+}
+.mentor-article-body :is(th, td) {
+  border: 1px solid color-mix(in srgb, var(--color-secondary) 25%, transparent);
+  padding: 0.625rem;
+  text-align: left;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .forum-like-pop {

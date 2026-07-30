@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import X from "lucide-react/dist/esm/icons/x.mjs";
 import { useTranslations } from "next-intl";
+import { useIsMounted } from "@/lib/use-is-mounted";
 import { CoachHistoryPanel } from "./coach-history-panel";
 import {
   CoachSessionPortal,
@@ -25,12 +26,8 @@ export function CoachHistoryDrawer({ open, onClose }: CoachHistoryDrawerProps) {
   const session = useCoachSession();
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [closing, setClosing] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (open) {

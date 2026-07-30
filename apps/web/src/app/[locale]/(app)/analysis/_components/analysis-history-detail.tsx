@@ -52,10 +52,17 @@ export function AnalysisHistoryDetail({
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    let active = true;
+  // Switching rows clears the previous exam before the new fetch resolves — adjusted during render
+  // so the stale detail is never painted for a frame (an effect reset would flash it).
+  const [loadedId, setLoadedId] = useState(mockExamId);
+  if (loadedId !== mockExamId) {
+    setLoadedId(mockExamId);
     setDetail(null);
     setError(null);
+  }
+
+  useEffect(() => {
+    let active = true;
     fetchMockExamById(mockExamId)
       .then((dto) => {
         if (active) setDetail(dto);

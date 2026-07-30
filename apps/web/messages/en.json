@@ -109,6 +109,9 @@
     "home": "Home",
     "plan": "Plan",
     "coach": "Coach",
+    "coach_fab_aria": "Ask your coach",
+    "coach_fab_nudge": "I'm here when you're stuck.",
+    "coach_fab_dismiss": "Dismiss",
     "analysis": "Analysis",
     "knowledge": "Knowledge",
     "profile": "Profile",
@@ -1085,7 +1088,7 @@
       },
       "share_card": {
         "title": "A portrait of your week",
-        "weekly_title_label": "Your energy this week",
+        "weekly_title_label": "Weekly codename",
         "weekly_title_fallback": "Nova Traveler",
         "focus": "time spent in focus",
         "active_days": "days you kept your rhythm",
@@ -1109,6 +1112,8 @@
       "teaser": {
         "title": "Your Weekly Recap",
         "message": "Unwrap last week's highlights.",
+        "replay_title": "Replay Your Weekly Story",
+        "replay_message": "Your codename and weekly highlights are here.",
         "period": "{startDate} – {endDate}",
         "status_READY": "Your story is ready",
         "status_PARTIAL": "Your small traces are here",

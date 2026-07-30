@@ -77,6 +77,16 @@ function unwrapTodayResponse(response: unknown): TodayPanelResponse {
 /**
  * Plan page — three toggleable views (Liste / Timeline / Hafta) with shared CRUD.
  */
+/** Apply `fn` to every day bucket of a date→tasks map (week and month share the shape). */
+function mapDayBuckets(
+  map: Record<string, PlanTaskDto[]>,
+  fn: (list: PlanTaskDto[]) => PlanTaskDto[],
+): Record<string, PlanTaskDto[]> {
+  const next = { ...map };
+  for (const key of Object.keys(next)) next[key] = fn(next[key]!);
+  return next;
+}
+
 export function PlanShell() {
   const reduceMotion = useReducedMotion();
   const t = useTranslations("plan");
@@ -351,23 +361,15 @@ export function PlanShell() {
     setWeekAnchor(weekStart(date));
   }
 
-  /** Apply `fn` to every day bucket of a date→tasks map (week and month share the shape). */
-  function mapDayBuckets(
-    map: Record<string, PlanTaskDto[]>,
-    fn: (list: PlanTaskDto[]) => PlanTaskDto[],
-  ): Record<string, PlanTaskDto[]> {
-    const next = { ...map };
-    for (const key of Object.keys(next)) next[key] = fn(next[key]!);
-    return next;
-  }
-
-  function patchTaskLists(updated: PlanTaskDto) {
+  // Stable identity: only setState updaters are captured, so memoized callbacks that patch a task
+  // (e.g. `openEditSheet`) can depend on it without re-creating every render.
+  const patchTaskLists = useCallback((updated: PlanTaskDto) => {
     const patch = (list: PlanTaskDto[]) =>
       list.map((x) => (x.id === updated.id ? updated : x));
     setTasks(patch);
     setWeekTasks((prev) => mapDayBuckets(prev, patch));
     setMonthTasks((prev) => mapDayBuckets(prev, patch));
-  }
+  }, []);
 
   function removeTaskFromLists(id: string) {
     const drop = (list: PlanTaskDto[]) => list.filter((x) => x.id !== id);
@@ -480,7 +482,7 @@ export function PlanShell() {
         },
       });
     },
-    [busyId, filterSheet, t],
+    [busyId, filterSheet, patchTaskLists, t],
   );
 
   async function confirmDeleteTask(task: PlanTaskDto) {

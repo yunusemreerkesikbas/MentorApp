@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Calendar from "lucide-react/dist/esm/icons/calendar.mjs";
 import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left.mjs";
@@ -72,17 +72,17 @@ export function PlanWeekStrip({
     0,
   );
 
-  const directionRef = useRef(0);
-  const prevWeekRef = useRef(weekStartDate);
-  if (weekStartDate !== prevWeekRef.current) {
-    directionRef.current =
-      weekStartDate > prevWeekRef.current ? 1 : -1;
-    prevWeekRef.current = weekStartDate;
+  // Slide direction from the week that was rendered last. State (not refs) — refs must not be
+  // read or written during render; this is React's "adjusting state when props change" pattern
+  // and it covers arbitrary jumps, not just the prev/next buttons.
+  const [renderedWeek, setRenderedWeek] = useState(weekStartDate);
+  const [direction, setDirection] = useState(0);
+  if (weekStartDate !== renderedWeek) {
+    setDirection(weekStartDate > renderedWeek ? 1 : -1);
+    setRenderedWeek(weekStartDate);
   }
-  const direction = directionRef.current;
 
   function goWeek(delta: -7 | 7) {
-    directionRef.current = delta > 0 ? 1 : -1;
     onWeekChange(shiftDate(weekStartDate, delta));
   }
 

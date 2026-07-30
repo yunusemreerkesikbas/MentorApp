@@ -58,7 +58,10 @@ import { useMentorToast } from "@/lib/mentor-toast";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { useDailyGreeting } from "@/lib/use-daily-greeting";
 import { useStreakCelebration } from "@/components/streak-celebration";
-import { shouldShowWeeklyRecapTeaser } from "@/lib/weekly-recap";
+import {
+  getWeeklyRecapTeaserState,
+  type WeeklyRecapTeaserState,
+} from "@/lib/weekly-recap";
 
 import { CommunityCard } from "./community-card";
 import { CountdownPlaceholder } from "./countdown-placeholder";
@@ -76,7 +79,7 @@ type PanelShellProps = {
 };
 
 const completedStatuses: PlanTaskStatus[] = ["DONE"];
-const getWeeklyRecapServerSnapshot = () => false;
+const getWeeklyRecapServerSnapshot = (): WeeklyRecapTeaserState => "hidden";
 
 function subscribeWeeklyRecapStorage(onStoreChange: () => void) {
   window.addEventListener("storage", onStoreChange);
@@ -104,31 +107,36 @@ export function PanelShell({ initialData }: PanelShellProps) {
     null,
   );
   const [quests, setQuests] = useState<QuestProgressView[] | null>(null);
-  const [dismissedWeeklyRecap, setDismissedWeeklyRecap] = useState<
-    string | null
-  >(null);
+  const [openedWeeklyRecap, setOpenedWeeklyRecap] = useState<string | null>(
+    null,
+  );
   const questsRef = useRef<QuestProgressView[] | null>(null);
   const rescuePromptedForDateRef = useRef<string | null>(null);
   const WELCOME_TOAST_KEY = "mentor_panel_welcome_date";
   const STREAK_RESCUE_PROMPT_KEY = "mentor_streak_rescue_prompt";
   const weeklyRecapStartDate = data?.weeklyRecapPeriod?.startDate ?? null;
-  const weeklyRecapAvailable = useSyncExternalStore(
+  const weeklyRecapStatus = data?.weeklyRecapPeriod?.status ?? null;
+  const storedWeeklyRecapState = useSyncExternalStore(
     subscribeWeeklyRecapStorage,
     useCallback(
       () =>
-        weeklyRecapStartDate != null &&
-        data?.weeklyRecapPeriod != null &&
-        shouldShowWeeklyRecapTeaser(
-          window.localStorage,
-          weeklyRecapStartDate,
-          data.weeklyRecapPeriod.status,
-        ),
-      [data?.weeklyRecapPeriod, weeklyRecapStartDate],
+        weeklyRecapStartDate != null && weeklyRecapStatus != null
+          ? getWeeklyRecapTeaserState(
+              window.localStorage,
+              weeklyRecapStartDate,
+              weeklyRecapStatus,
+            )
+          : "hidden",
+      [weeklyRecapStartDate, weeklyRecapStatus],
     ),
     getWeeklyRecapServerSnapshot,
   );
-  const showWeeklyRecap =
-    weeklyRecapAvailable && dismissedWeeklyRecap !== weeklyRecapStartDate;
+  const weeklyRecapState =
+    openedWeeklyRecap === weeklyRecapStartDate &&
+    storedWeeklyRecapState === "new"
+      ? "replay"
+      : storedWeeklyRecapState;
+  const showWeeklyRecap = weeklyRecapState !== "hidden";
 
   const openQuestsSheet = useCallback(
     (list: QuestProgressView[]) => {
@@ -479,8 +487,9 @@ export function PanelShell({ initialData }: PanelShellProps) {
                 examId={data.weeklyRecapPeriod.examId}
                 examType={data.countdown?.examType}
                 compact
+                viewState={weeklyRecapState === "replay" ? "replay" : "new"}
                 onOpen={() =>
-                  setDismissedWeeklyRecap(
+                  setOpenedWeeklyRecap(
                     data.weeklyRecapPeriod?.startDate ?? null,
                   )
                 }
@@ -641,9 +650,12 @@ function ExpandableRhythmCopy({ text }: { text: string }) {
   const [collapsedHeight, setCollapsedHeight] = useState<number | null>(null);
   const [fullHeight, setFullHeight] = useState<number | null>(null);
 
-  useEffect(() => {
+  // Collapse when the greeting text changes — adjust during render, not in an effect.
+  const [renderedText, setRenderedText] = useState(text);
+  if (renderedText !== text) {
+    setRenderedText(text);
     setExpanded(false);
-  }, [text]);
+  }
 
   useLayoutEffect(() => {
     const el = textRef.current;

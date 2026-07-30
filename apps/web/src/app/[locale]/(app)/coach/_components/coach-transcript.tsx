@@ -93,7 +93,11 @@ export function CoachTranscript({
   const stickToBottomRef = useRef(true);
   const awayRef = useRef(false);
   const onAwayRef = useRef(onAwayFromBottomChange);
-  onAwayRef.current = onAwayFromBottomChange;
+  // Latest-callback ref: written after commit, not during render (refs are off-limits in render).
+  // Scroll handlers only fire after the commit, so they never see a stale callback.
+  useEffect(() => {
+    onAwayRef.current = onAwayFromBottomChange;
+  });
   const newestMessageId = messages.at(-1)?.id;
   const newestRole = messages.at(-1)?.role;
 

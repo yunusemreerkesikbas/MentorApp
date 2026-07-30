@@ -33,6 +33,12 @@ export interface QuestDef {
   type: QuestType;
   /** May contain a `{target}` placeholder, resolved at view time from `targetConfigKey`. */
   title: string;
+  /**
+   * Ledger label, when stripping `{target}` from `title` would leave broken grammar
+   * ("Bu hafta {target} gün aktif ol" → "Bu hafta gün aktif ol"). Ledger rows outlive config, so
+   * the target is never resolved there — see `ledger-entry-view.ts`.
+   */
+  ledgerTitle?: string;
   badgeLabel: string;
   action: QuestAction;
   rewardUnit: QuestRewardUnit;
@@ -132,6 +138,29 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     action: "mood-checkin",
     rewardUnit: "XP",
     priority: 30,
+  },
+  {
+    /**
+     * The ONLY recurring coin faucet — without it the economy is a one-shot trial (onboarding
+     * coin is lifetime-capped at ~30 for a free user) and the "earned AI right" ends in a silent
+     * wall. Roadmap §3 says "no coin for mere activity"; its stated reason (§2/§3) is that coin in
+     * SOCIAL zones inflates the economy and corrupts the environment. An active day (≥1 completed
+     * focus session OR ≥1 done plan task) is private, verified effort — not social, not farmable
+     * without actually studying 5 separate days. Reward + target are config-tunable and the quest
+     * is killable via `economy.quest.disabled_ids`.
+     */
+    id: "weekly.effort-allowance",
+    category: "weekly_ritual",
+    period: "weekly",
+    type: QuestType.WEEKLY_RITUAL,
+    title: "Bu hafta {target} gün aktif ol",
+    ledgerTitle: "Haftalık aktif gün hedefi",
+    badgeLabel: "Ritim",
+    action: "panel",
+    rewardUnit: "COIN",
+    priority: 35,
+    targetConfigKey: "economy.quest.weekly_allowance_active_days_target",
+    progressSource: "weekly_active_days",
   },
   {
     id: "weekly.focus-sessions",

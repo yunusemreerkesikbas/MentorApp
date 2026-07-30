@@ -54,7 +54,7 @@ interface WeeklyRecapStoryProps {
 
 const STORY_COLORS: Record<WeeklyRecapSlideKind, string> = {
   welcome: "var(--recap-coral)",
-  week_map: "var(--recap-purple)",
+  week_map: "var(--recap-sky)",
   focus: "var(--recap-coral)",
   weekly_run: "var(--recap-lavender)",
   weekly_best: "var(--recap-lavender)",
@@ -289,7 +289,7 @@ export function WeeklyRecapStory({
                 }
                 reducedMotion={reducedMotion}
               />
-            ) : (
+            ) : currentSlide.kind === "week_map" ? null : (
               <StoryDecor
                 kind={currentSlide.kind}
                 reducedMotion={reducedMotion}
@@ -511,12 +511,29 @@ function StoryContent({
                 exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -80 }}
                 transition={{ duration: reducedMotion ? 0.12 : 0.52 }}
               >
-                <PuhuImage
-                  variant="proud"
-                  size={210}
-                  priority
-                  className="drop-shadow-2xl"
-                />
+                <motion.div
+                  animate={
+                    reducedMotion
+                      ? undefined
+                      : { y: [0, -7, 0], rotate: [0, -0.8, 0] }
+                  }
+                  transition={
+                    reducedMotion
+                      ? undefined
+                      : {
+                          duration: 3.8,
+                          repeat: Number.POSITIVE_INFINITY,
+                          ease: "easeInOut",
+                        }
+                  }
+                >
+                  <PuhuImage
+                    variant="host"
+                    size={260}
+                    priority
+                    className="drop-shadow-2xl"
+                  />
+                </motion.div>
                 <h1 className="mt-7 max-w-sm text-balance text-center text-4xl font-black leading-[0.98] tracking-[-0.04em] text-black">
                   {t("welcome.title")}
                 </h1>
@@ -938,7 +955,7 @@ function WeeklyRecapShareCardPreview({
           className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10"
           aria-hidden
         />
-        <div className="absolute inset-x-5 bottom-4 text-white">
+        <div className="absolute inset-x-5 bottom-7 text-white">
           <p className="text-xs font-extrabold leading-4 text-white/70">
             {t("share_card.weekly_title_label")}
           </p>
@@ -1016,80 +1033,86 @@ function WeekMapStory({
   const peakDay = getWeeklyRecapPeakDayStory(review, locale);
 
   return (
-    <div className="pointer-events-none relative z-10 flex h-full w-full flex-col items-center px-6 pb-8 pt-24">
-      <div className="grid min-h-28 w-full place-items-center">
-        <AnimatePresence mode="wait">
-          {activeDaysVisible ? (
-            <motion.div
-              key="active-days"
-              className="flex flex-col items-center"
-              initial={
-                reducedMotion
-                  ? { opacity: 0 }
-                  : { opacity: 0, y: 30, scale: 0.86 }
-              }
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: reducedMotion ? 0.12 : 0.48 }}
-            >
-              <p className="text-7xl font-black leading-none tabular-nums text-white">
-                {review.recap.activeDays}
-              </p>
-              <p className="mt-1 text-xl font-black text-white">
-                {t("week_map.active_days")}
-              </p>
-            </motion.div>
-          ) : (
-            <motion.h2
-              key="headline"
-              className="max-w-sm text-balance text-center text-4xl font-black leading-[0.98] tracking-[-0.04em] text-white"
-              initial={
-                reducedMotion
-                  ? { opacity: 0 }
-                  : { opacity: 0, y: 22, scale: 0.96 }
-              }
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={
-                reducedMotion
-                  ? { opacity: 0 }
-                  : { opacity: 0, y: -52, scale: 0.92 }
-              }
-              transition={{ duration: reducedMotion ? 0.12 : 0.48 }}
-            >
-              {t("week_map.title")}
-            </motion.h2>
-          )}
-        </AnimatePresence>
+    <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        <WeeklyRecapFireVideo elapsedMs={elapsedMs} playing={mediaPlaying} />
+      </div>
+      <div
+        className="absolute inset-x-0 top-0 z-[1] h-72 bg-gradient-to-b from-black/75 via-black/30 to-transparent"
+        aria-hidden
+      />
+      <div
+        className="absolute inset-x-0 bottom-0 z-[1] h-56 bg-gradient-to-t from-black/75 via-black/30 to-transparent"
+        aria-hidden
+      />
+      <div className="absolute inset-0 z-[2]">
+        <StoryDecor kind="week_map" reducedMotion={reducedMotion} />
       </div>
 
-      <motion.div
-        className="relative mt-3 h-[56%] min-h-[320px] w-[72%] max-w-[300px] overflow-hidden rounded-[var(--radius-card)] border-4 border-white/85 bg-white/90 shadow-2xl"
-        animate={
-          activeDaysVisible && !reducedMotion
-            ? { scale: 1.025, y: -4 }
-            : { scale: 1, y: 0 }
-        }
-        transition={{ duration: reducedMotion ? 0.12 : 0.48 }}
-      >
-        <WeeklyRecapFireVideo elapsedMs={elapsedMs} playing={mediaPlaying} />
-      </motion.div>
-      {activeDaysVisible && peakDay ? (
-        <motion.div
-          className="mt-4 text-center text-white"
-          initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: reducedMotion ? 0.12 : 0.42 }}
-        >
-          <p className="text-sm font-black uppercase tracking-[0.14em] text-white/70">
-            {t("week_map.power_day", {
-              day: peakDay.dayLabel,
-              minutes: peakDay.focusMinutes,
-            })}
-          </p>
-          <p className="mt-1 text-sm font-bold text-white/85">
-            {peakDay.message}
-          </p>
-        </motion.div>
-      ) : null}
+      <div className="relative z-10 flex h-full w-full flex-col items-center px-6 pb-12 pt-24">
+        <div className="grid min-h-28 w-full place-items-center">
+          <AnimatePresence mode="wait">
+            {activeDaysVisible ? (
+              <motion.div
+                key="active-days"
+                className="flex flex-col items-center"
+                initial={
+                  reducedMotion
+                    ? { opacity: 0 }
+                    : { opacity: 0, y: 30, scale: 0.86 }
+                }
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: reducedMotion ? 0.12 : 0.48 }}
+              >
+                <p className="text-7xl font-black leading-none tabular-nums text-white">
+                  {review.recap.activeDays}
+                </p>
+                <p className="mt-1 text-xl font-black text-white">
+                  {t("week_map.active_days")}
+                </p>
+              </motion.div>
+            ) : (
+              <motion.h2
+                key="headline"
+                className="max-w-sm text-balance text-center text-4xl font-black leading-[0.98] tracking-[-0.04em] text-white"
+                initial={
+                  reducedMotion
+                    ? { opacity: 0 }
+                    : { opacity: 0, y: 22, scale: 0.96 }
+                }
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={
+                  reducedMotion
+                    ? { opacity: 0 }
+                    : { opacity: 0, y: -52, scale: 0.92 }
+                }
+                transition={{ duration: reducedMotion ? 0.12 : 0.48 }}
+              >
+                {t("week_map.title")}
+              </motion.h2>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {activeDaysVisible && peakDay ? (
+          <motion.div
+            className="mt-auto max-w-sm text-center text-white"
+            initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: reducedMotion ? 0.12 : 0.42 }}
+          >
+            <p className="text-sm font-black uppercase tracking-[0.14em] text-white/75">
+              {t("week_map.power_day", {
+                day: peakDay.dayLabel,
+                minutes: peakDay.focusMinutes,
+              })}
+            </p>
+            <p className="mt-1 text-sm font-bold text-white/90">
+              {peakDay.message}
+            </p>
+          </motion.div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -1128,7 +1151,7 @@ function WeeklyRecapFireVideo({
 
   if (failed) {
     return (
-      <div className="grid size-full place-items-center bg-white">
+      <div className="grid size-full place-items-center bg-[var(--recap-sky)]">
         <PuhuImage variant="proud" size={180} priority />
       </div>
     );
@@ -1143,7 +1166,7 @@ function WeeklyRecapFireVideo({
       preload="auto"
       aria-hidden
       onError={() => setFailed(true)}
-      className="size-full object-cover object-top"
+      className="size-full object-cover object-center"
     />
   );
 }
@@ -1389,31 +1412,14 @@ function StoryDecor({
       return (
         <>
           <DecorAsset
-            src="silverWiggle"
-            className="-left-[38%] -top-[25%] h-[64%] w-[90%] rotate-[32deg]"
-            reducedMotion={reducedMotion}
-          />
-          <DecorAsset
-            src="redPixel"
-            className="-right-[10%] -top-[2%] w-[42%] aspect-square"
-            delay={0.08}
-            reducedMotion={reducedMotion}
-          />
-          <DecorAsset
-            src="lavenderPixel"
-            className="-left-[24%] top-[14%] h-[26%] w-[68%] rotate-180"
-            delay={0.12}
-            reducedMotion={reducedMotion}
-          />
-          <DecorAsset
             src="greenShape"
-            className="-bottom-[14%] -left-[22%] w-[62%] aspect-square"
+            className="-bottom-[12%] -left-[18%] w-[44%] aspect-square"
             delay={0.18}
             reducedMotion={reducedMotion}
           />
           <DecorAsset
             src="floral"
-            className="-bottom-[14%] -right-[28%] w-[58%] aspect-square"
+            className="-bottom-[12%] -right-[18%] w-[42%] aspect-square"
             delay={0.24}
             reducedMotion={reducedMotion}
           />

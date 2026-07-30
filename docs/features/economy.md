@@ -18,6 +18,9 @@ non-monetary, capped. Never in chat UI (§4 #3). The ledger never stores a singl
   **Balance = sum of rows, never a single number.** No UPDATE/DELETE RLS policy ⇒ immutable.
 - **Capped earning:** rolling 24h/7d coin caps + minimum XP threshold for coin earning (anti-Sybil).
   Config from the central registry: `economy.coin.{daily_cap, weekly_cap, min_xp_for_coin}`.
+- **Coin faucet = onboarding (one-shot) + invite conversion + `weekly.effort-allowance`** (the only
+  RECURRING one: 5/7 active days → 15 coin ≈ 3 AI messages/week). Without the weekly one the free
+  tier's "earned AI right" is a lifetime ~30-coin trial that ends in a silent wall.
 - **Idempotent grants:** unique `(ref_type, ref_id)` where `ref_id` not null.
 - **Spending:** `EconomyService.spend()` — atomic confirmed-coin debit, idempotent on ref.
   `INSUFFICIENT_COIN` (422). Free daily coin allowance for AI chat (separate from premium rate-limit).
@@ -57,7 +60,7 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 | Endpoint                                  | Purpose                                                  |
 | ----------------------------------------- | -------------------------------------------------------- |
-| `GET /v1/economy/balance`                 | Self balance + ledger                                    |
+| `GET /v1/economy/balance`                 | Self balance + XP `level` (tier/nextAt)                  |
 | `GET /v1/economy/ledger`                  | Self ledger history                                      |
 | `GET /v1/economy/quests`                  | Quest catalog + progress (auto-grants)                   |
 | `GET /v1/economy/invite`                  | Get/generate invite code                                 |
@@ -70,6 +73,40 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+- **Yenilenebilir coin musluğu + XP seviyesi + cap muhasebesi düzeltmesi (2026-07-30)** — Ekonominin
+  tasarım kırığı kapandı. **Teşhis:** coin musluğu tek seferlikti — 4 onboarding görevi (4×10) +
+  davet dönüşümü; gerçekçi free bakiye **ömür boyu 30 coin = 6 AI mesajı** (dördüncü onboarding
+  coin'i `first-subscription`, yani coin'in gereksizleştiği an geliyor). Kanıt: `daily_cap` 50 /
+  `weekly_cap` 200, ömür boyu kazanılabilir toplamın 5 katı — tavanlar hiç devreye girmiyordu.
+  "Kazanılan AI hakkı" bir döngü değil, sessiz duvarla biten tek seferlik trial'dı.
+  **(1) `weekly.effort-allowance`** — ilk ve tek TEKRARLI coin musluğu: ISO-haftada
+  `economy.quest.weekly_allowance_active_days_target` (5/7) aktif gün →
+  `economy.quest.weekly_allowance_reward_coin` (15 = 3 sohbet mesajı). Aktif gün sinyali
+  (`weeklyActiveDays`, ≥1 tamamlanmış seans VEYA ≥1 biten plan görevi) coaching'de zaten vardı;
+  yeni kod yolu yok — quest engine zaten COIN grant ediyor, cap'li, idempotent, `disabled_ids` ile
+  kapatılabilir. 7/7 gerektiren `weekly.streak-full-week`'in aksine hafta ortasında tamamlanır.
+  **Guardrail sapması (bilinçli):** roadmap §3 "salt aktiviteye coin verilmez" diyor; kuralın
+  roadmap'te yazılı gerekçesi (§2/§3) coin'in **sosyal** alanda ortamı bozması ve farming. Aktif gün
+  özel + doğrulanmış emektir, sosyal değildir ve 5 ayrı gün çalışmadan farm edilemez → kuralın
+  niyetine sadık kalınıp lafzı gevşetildi. **(2) `coinReward()` resolver'ı** — `xpReward()`'ın
+  simetriği. Öncesinde `rewardUnit: "COIN"` olan HER görev koşulsuz `onboardingRewardCoin` (10)
+  alıyordu; yeni haftalık görev bu olmadan sessizce yanlış tutar öderdi. **(3) F3 cap muhasebesi:**
+  `coinEarnedSince` yalnız `ai.chat.refund`'ı dışlıyordu → `streak.freeze.refund` organik kazanç
+  sayılıp cap headroom yiyordu (başarısız freeze apply'da kullanıcı hem iade alıp hem günlük cap'i
+  doluyordu). Artık ortak `CORRECTION_REASONS` listesi (SQL predikatı ve spec fake'i aynı listeden
+  besleniyor). **(4) Seviye eğrisi paylaşılan invariant'a:** `deriveLevel` + `TIER_THRESHOLDS`
+  `apps/api/.../community/domain/level.ts`'ten `@mentor/core`'a taşındı (`STREAK_MILESTONES`
+  emsali); `GET /v1/economy/balance` artık `level` döndürüyor ve `/profil` bakiye sheet'i tier adı +
+  ilerleme çubuğu gösteriyor (i18n `community.level_*` yeniden kullanıldı, yeni anahtar yok).
+  Community `deriveLevel`'ı kendi çağırmayı bırakıp `balance.level` kullanıyor. **(5) F4:** nav
+  pill'lerinde coin↔XP ikonları terstİ (`Gem`/`Coins`), düzeltildi. **(6) `QuestDef.ledgerTitle`
+  (provada çıktı):** ledger `{target}`'ı bilerek siler (satırlar config'ten uzun yaşar) — mevcut
+  başlıklarda sorunsuz ("Bu hafta {target} odak seansı tamamla" → "…odak seansı tamamla") ama yeni
+  başlık "Bu hafta gün aktif ol" gibi bozuk bir cümle bırakıyordu. Opsiyonel `ledgerTitle` alanı
+  eklendi → "Haftalık aktif gün hedefi". Dosyalar: `quest.catalog.ts`, `ledger-entry-view.ts`,
+  `quest.service.ts`, `config.catalog.ts`, `economy.constants.ts`, `ledger.repository.ts`,
+  `economy.service.ts`, `economy.controller.ts`, `packages/core/src/index.ts`,
+  `packages/types/src/economy.ts`, `community.service.ts`, `economy-balance-card.tsx`, `app-nav.tsx`.
 - **Invite sheet visual restyle (2026-07-24)** — Full-screen invite overlay (not bottom sheet):
   chip-lavender hero, close on the visual (top-right), punchy two-line headline, **ticket** invite
   code (side notches + dashed perforation + Copy), wave into redeem form. Quests “invite” action
@@ -220,10 +257,26 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Gotchas / Known issues
 
+- **`economy.coin.min_xp_for_coin` must stay 0** unless the onboarding order is reworked first.
+  Raising it looks tempting now that a recurring faucet exists, but it BREAKS
+  `onboarding.profile-setup`: a brand-new user has 0 XP, so their very first coin grant would be
+  denied with `ECONOMY_LIMIT_EXCEEDED`. The anti-Sybil lever is the weekly quest's active-day
+  requirement, not this threshold.
+- **`weekly.effort-allowance` is the only recurring coin faucet.** It deliberately breaks the
+  roadmap's literal "no coin for mere activity" rule while honoring its stated reason (coin in
+  SOCIAL zones). If you disable it, the economy silently reverts to a one-shot trial (~30 lifetime
+  coin per free user) — kill it via `economy.quest.disabled_ids`, and know what you're turning off.
+- **Every COIN quest needs a `coinReward()` branch.** The resolver defaults to the onboarding
+  amount; a new non-onboarding COIN quest without its own branch pays the wrong amount silently.
+- **A `{target}` in a quest title is STRIPPED in the ledger, never resolved** (rows outlive config —
+  a row granted at target 5 must not later claim 3). Check the stripped form reads as a sentence;
+  when it doesn't ("Bu hafta {target} gün aktif ol" → "Bu hafta gün aktif ol"), set an explicit
+  `QuestDef.ledgerTitle`. Only the view path (`quest.service.toViews`) resolves `{target}`.
 - **Caps are rolling windows** (now−24h / now−7d), not calendar — simple, TZ-free.
-- **Cap accounting counts ORGANIC earnings only** — admin adjustments (`created_by` set) and
-  `ai.chat.refund` rows are corrections, excluded from `coinEarnedSince` so they never squeeze the
-  user's daily/weekly headroom.
+- **Cap accounting counts ORGANIC earnings only** — admin adjustments (`created_by` set) and every
+  reason in `CORRECTION_REASONS` (`ai.chat.refund`, `streak.freeze.refund`) are corrections,
+  excluded from `coinEarnedSince` so they never squeeze the user's daily/weekly headroom.
+  **Add every new compensating-refund reason to that list** or it will silently eat cap headroom.
 - **Admin adjust bypasses caps** (`enforceLimits:false`) — it's a correction; organic earning passes
   caps.
 - **Invite: forward-only** — reward fires only on conversion AFTER redeem. Premium-at-redeem rejected.

@@ -54,15 +54,15 @@ export function useExamSubjectTaxonomy(): ExamSubjectTaxonomyState {
   useEffect(() => {
     let active = true;
 
+    // One path for all three cases (cached / in-flight / cold). A cache hit resolves immediately,
+    // so state lands asynchronously — a synchronous set here would cascade an extra render.
+    let run: Promise<TaxonomyCache>;
     if (taxonomyCache) {
-      setSubjects(taxonomyCache.subjects);
-      setNeedsExamType(taxonomyCache.needsExamType);
-      setLoaded(true);
-      return;
-    }
-
-    const run = taxonomyInflight ?? loadTaxonomy();
-    if (!taxonomyInflight) {
+      run = Promise.resolve(taxonomyCache);
+    } else if (taxonomyInflight) {
+      run = taxonomyInflight;
+    } else {
+      run = loadTaxonomy();
       taxonomyInflight = run.finally(() => {
         taxonomyInflight = null;
       });
