@@ -1,6 +1,11 @@
 import { Body, Controller, Get, HttpStatus, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { DeepAnalysisView, EconomyLedgerEntryView, StreakRescueView } from "@mentor/types";
+import type {
+  DeepAnalysisView,
+  EconomyBalance,
+  EconomyLedgerEntryView,
+  StreakRescueView,
+} from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -10,7 +15,6 @@ import { EconomyService } from "../application/economy.service";
 import { InviteService } from "../application/invite.service";
 import { QuestService, type QuestProgressView } from "../application/quest.service";
 import { StreakRescueService } from "../application/streak-rescue.service";
-import type { Balance } from "../infrastructure/ledger.repository";
 import { DeepAnalysisDto, EconomyLedgerQueryDto, RedeemInviteDto } from "./economy.dto";
 import { toLedgerEntryView } from "./ledger-entry-view";
 
@@ -38,7 +42,7 @@ export class EconomyController {
   }
 
   @Get("balance")
-  async balance(@CurrentUser() user: RequestUser): Promise<Balance> {
+  async balance(@CurrentUser() user: RequestUser): Promise<EconomyBalance> {
     await this.assertEnabled();
     return this.economy.getSelfBalance(user.id);
   }

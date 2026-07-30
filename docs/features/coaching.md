@@ -142,6 +142,13 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Desktop coach FAB (2026-07-30)** — Desktop (`lg+`) removes Koç from the sidebar and
+  shows a fixed bottom-right Puhu bubble (`DesktopCoachFab`) linking to `/coach`. Optional
+  dismissible nudge uses `sessionStorage` for the session. Hidden on `/coach*` routes.
+  Mobile keeps the elevated center tab FAB; no floating bubble. Related:
+  `desktop-coach-fab.tsx`, `app-nav.tsx`, `globals.css` (`.mentor-coach-bubble--end`),
+  `messages/{tr,en}.json`, `DESIGN.md` §6.
+
 - **Mood check-in modal cleanup (2026-07-29)** — Dropped subtitle; shortened wheel hint to one
   sentence; removed tick-dial arc + pink needle (faces + label carry selection); primary + “Daha sonra”
   stacked inside the picker (dialog `actions` empty). Related: `mood-wheel-picker.tsx`,
@@ -981,6 +988,38 @@ pnpm --filter @mentor/api test
   karakter alanında kullanılır; alt mercan bölüm güvenli haftalık metrikleri taşır. Karakter
   görseli bulunamazsa Puhu fallback'i gösterilir. Story yalnız seçilen karakterin videosunu
   yükler; başka karakter medyaları için başlangıç waterfall'u oluşturmaz. Video hatasında
-  mevcut dekorlu fallback korunur. İlgili: `weekly-recap.ts`,
+  mevcut dekorlu fallback korunur. Paylaşım kartındaki kod adı etiketi story ile
+  aynılaştırıldı; karakter adı görsel birleşiminden uzaklaştırıldı ve alt metrik alanında
+  kırpılma artefaktı oluşturan dekorlar kaldırıldı. İlgili: `weekly-recap.ts`,
   `weekly-recap-story.tsx`, `weekly-recap-share-card.ts`, `weekly-recap.spec.ts`,
   `public/{video,img}/character/`.
+
+- **Panel recap banner'ında hafta boyu tekrar izleme (2026-07-30)** — Paneldeki haftalık
+  hikâye banner'ı ilk açılıştan sonra kaldırılmak yerine backend'in verdiği tamamlanmış dönem
+  değişene kadar görünür kalır. Cihazdaki dönem anahtarı açılmamış banner'ı `new`, açılmış
+  banner'ı `replay` durumuna taşır; replay durumunda “Haftanın Hikâyesini Tekrar İzle”
+  metni gösterilir. Sonraki tamamlanmış haftanın `startDate` değeri yeni anahtar ürettiği için
+  banner otomatik olarak yeniden yeni durumuna geçer. `EMPTY` dönemler panelde gösterilmez;
+  client hafta sınırı hesaplamaz ve yeni API isteği oluşturmaz.
+  İlgili: `panel-shell.tsx`, `weekly-recap-teaser.tsx`, `weekly-recap.ts`,
+  `weekly-recap.spec.ts`, `messages/{tr,en}.json`.
+
+- **Hafta haritasında full-screen video sahnesi (2026-07-30)** — İkinci recap slaydındaki
+  Puhu ateş videosu küçük beyaz kart ve mor ara sahneden çıkarılarak doğal açık fonuyla 9:16
+  story yüzeyinin tamamına yayıldı. Koyu üst/alt scrim yalnız progress, aktif gün ve güç günü
+  metinlerinin okunabilirliğini destekler. Beş parçalı Wrapped dekor seti sadeleştirilerek
+  yalnız küçültülmüş iki alt köşe vurgusu bırakıldı; progress, kontroller, ateş ve güç günü
+  metniyle yarışan üst/orta assetler kaldırıldı. Aktif gün başlığı üst boşlukta, güç günü kanıtı
+  altta gösterilir. Video zamanlaması, autoplay/pause senkronu ve `2.2s` aktif-gün reveal
+  noktası değişmedi. Video hatasında yeni feature-scoped `--recap-sky` zemini üzerinde Puhu
+  fallback'i gösterilir.
+  İlgili: `weekly-recap-story.tsx`, `weekly-recap.ts`, `weekly-recap.spec.ts`.
+
+- **Karşılama slaytında Sunucu Puhu (2026-07-30)** — İlk recap slaydındaki kupalı başarı
+  maskotu, haftalık unvanı önceden çağrıştırmayan şeffaf `puhu-host.png` ile değiştirildi.
+  Yeni `host` varyantı `PuhuImage` kataloğuna eklendi; karşılama ekranında hafif süzülme ve
+  dönüş hareketi kullanır. Mevcut dört saniyelik metin değişimi korunur; reduced-motion
+  kullanıcılarında maskot hareket etmez. `proud` varyantı kilometre taşı ve fallback
+  yüzeylerinde kullanılmaya devam eder.
+  İlgili: `puhu-image.tsx`, `weekly-recap-story.tsx`,
+  `public/mascot/puhu/{puhu-host.png,README.md}`.

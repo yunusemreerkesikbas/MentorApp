@@ -1,5 +1,4 @@
 import type { WeeklyRecapShareCardModel } from "./weekly-recap";
-import { WEEKLY_RECAP_FIGMA_ASSETS } from "./weekly-recap";
 
 export const WEEKLY_RECAP_SHARE_CARD_DIMENSIONS = {
   width: 1080,
@@ -12,19 +11,6 @@ interface WeeklyRecapShareCardRect {
   width: number;
   height: number;
 }
-
-const WEEKLY_RECAP_SHARE_CARD_DECORATIONS = {
-  greenShape: { x: -290, y: 1640, width: 280, height: 280 },
-  lavenderShape: { x: 1010, y: 1640, width: 260, height: 300 },
-} as const satisfies Record<string, WeeklyRecapShareCardRect>;
-
-const WEEKLY_RECAP_SHARE_CARD_TEXT_SAFE_REGIONS = [
-  { x: 80, y: 760, width: 920, height: 240 },
-  { x: 80, y: 1040, width: 920, height: 300 },
-  { x: 80, y: 1380, width: 920, height: 220 },
-  { x: 80, y: 1640, width: 920, height: 170 },
-  { x: 80, y: 1830, width: 920, height: 70 },
-] as const satisfies readonly WeeklyRecapShareCardRect[];
 
 export interface WeeklyRecapShareCardRowCopy {
   focus: string;
@@ -53,14 +39,6 @@ export interface WeeklyRecapShareCardRow {
 }
 
 const PUHU_PROUD_SRC = "/mascot/puhu/puhu-proud.png";
-
-export function hasWeeklyRecapShareCardDecorationOverlap(): boolean {
-  return Object.values(WEEKLY_RECAP_SHARE_CARD_DECORATIONS).some((decoration) =>
-    WEEKLY_RECAP_SHARE_CARD_TEXT_SAFE_REGIONS.some((region) =>
-      doRectanglesOverlap(decoration, region),
-    ),
-  );
-}
 
 export function buildWeeklyRecapShareCardRows(
   model: WeeklyRecapShareCardModel,
@@ -130,13 +108,11 @@ export async function renderWeeklyRecapShareCard(
   }
 
   await document.fonts?.ready;
-  const [character, puhu, greenShape, lavenderShape] = await Promise.all([
+  const [character, puhu] = await Promise.all([
     model.characterImageSrc
       ? loadCanvasImage(model.characterImageSrc)
       : Promise.resolve(null),
     loadCanvasImage(PUHU_PROUD_SRC),
-    loadCanvasImage(WEEKLY_RECAP_FIGMA_ASSETS.greenShape),
-    loadCanvasImage(WEEKLY_RECAP_FIGMA_ASSETS.lavenderShape),
   ]);
 
   context.fillStyle = "#090611";
@@ -173,14 +149,14 @@ export async function renderWeeklyRecapShareCard(
   context.textBaseline = "top";
   context.fillStyle = "rgba(255, 255, 255, 0.72)";
   context.font = '800 28px "Nunito Sans", sans-serif';
-  context.fillText(copy.weeklyTitleLabel, 90, 570, 760);
+  context.fillText(copy.weeklyTitleLabel, 90, 545, 760);
   context.fillStyle = "#ffffff";
   context.font = '900 82px "Nunito Sans", sans-serif';
   drawFittedCanvasText(
     context,
     model.weeklyTitle ?? copy.weeklyTitleFallback,
     90,
-    615,
+    590,
     900,
     82,
     48,
@@ -188,17 +164,6 @@ export async function renderWeeklyRecapShareCard(
 
   context.fillStyle = "#ff5b49";
   context.fillRect(0, 760, 1080, 1160);
-
-  drawCanvasImage(
-    context,
-    greenShape,
-    WEEKLY_RECAP_SHARE_CARD_DECORATIONS.greenShape,
-  );
-  drawCanvasImage(
-    context,
-    lavenderShape,
-    WEEKLY_RECAP_SHARE_CARD_DECORATIONS.lavenderShape,
-  );
 
   context.fillStyle = "#000000";
   context.font = '900 60px "Nunito Sans", sans-serif';
@@ -307,18 +272,6 @@ function drawCanvasImageCover(
     rect.y,
     rect.width,
     rect.height,
-  );
-}
-
-function doRectanglesOverlap(
-  first: WeeklyRecapShareCardRect,
-  second: WeeklyRecapShareCardRect,
-): boolean {
-  return (
-    first.x < second.x + second.width &&
-    first.x + first.width > second.x &&
-    first.y < second.y + second.height &&
-    first.y + first.height > second.y
   );
 }
 

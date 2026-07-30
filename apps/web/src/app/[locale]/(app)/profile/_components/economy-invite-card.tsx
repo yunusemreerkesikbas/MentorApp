@@ -11,6 +11,7 @@ import Gift from "lucide-react/dist/esm/icons/gift.mjs";
 import X from "lucide-react/dist/esm/icons/x.mjs";
 import { FormError } from "@/components/form";
 import { redeemInviteCode } from "@/lib/economy";
+import { useIsMounted } from "@/lib/use-is-mounted";
 
 interface EconomyInviteCardProps {
   code: string;
@@ -75,12 +76,8 @@ export function EconomyInviteCard({
   const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
   const [redeemError, setRedeemError] = useState<string | null>(null);
   const [redeemSuccess, setRedeemSuccess] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const copyResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     return () => {

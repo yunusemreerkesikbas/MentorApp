@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import X from "lucide-react/dist/esm/icons/x.mjs";
 import { useTranslations } from "next-intl";
+import { useIsMounted } from "@/lib/use-is-mounted";
 import { HISTORY_DRAWER_CLOSE_MS } from "./constants";
 import { HistorySidePanel } from "./history-side-panel";
 
@@ -32,12 +33,8 @@ export function HistorySideDrawer({
   const tClose = useTranslations("common.bottom_sheet");
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const [closing, setClosing] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (open) {

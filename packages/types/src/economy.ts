@@ -1,10 +1,14 @@
 /** Economy module contracts (W6) — shared by api (producer) and web/mobile (consumers). */
 
+import type { CommunityLevelView } from "./community.js";
+
 /** GET /v1/economy/balance — sum of ledger rows (never a single stored number). */
 export interface EconomyBalance {
   xp: number;
   coinConfirmed: number;
   coinPending: number;
+  /** XP tier derived from the shared curve (@mentor/core) — gives the bare XP number meaning. */
+  level: CommunityLevelView;
 }
 
 /** GET /v1/economy/ledger — append-only economy history, ready to render. */

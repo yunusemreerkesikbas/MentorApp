@@ -111,7 +111,7 @@ export class QuestService {
         q.rewardUnit === "XP"
           ? { unit: Currency.XP, amount: xpReward(q, cfg) }
           : q.rewardUnit === "COIN"
-            ? { unit: Currency.COIN, amount: cfg.onboardingRewardCoin }
+            ? { unit: Currency.COIN, amount: coinReward(q, cfg) }
             : null;
       try {
         await this.quests.withServiceTx(async (tx) => {
@@ -170,7 +170,7 @@ export class QuestService {
       const periodKey = this.periodKey(q, signals);
       const row = byKey.get(progressKey(q.id, periodKey));
       const rewardAmount =
-        q.rewardUnit === "XP" ? xpReward(q, cfg) : q.rewardUnit === "COIN" ? cfg.onboardingRewardCoin : 0;
+        q.rewardUnit === "XP" ? xpReward(q, cfg) : q.rewardUnit === "COIN" ? coinReward(q, cfg) : 0;
       const hasTarget = q.progressTarget != null || q.targetConfigKey != null;
       const target = hasTarget ? questTarget(q, cfg.targets) : undefined;
       return {
@@ -206,8 +206,10 @@ export class QuestService {
       streakMilestoneRewardXp,
       effortMilestoneRewardXp,
       weeklyRitualRewardXp,
+      weeklyAllowanceRewardCoin,
       weeklyFocusTarget,
       weeklyPlanTarget,
+      weeklyAllowanceTarget,
       disabledCsv,
     ] = await Promise.all([
       this.config.get("economy.quest.onboarding_reward_coin"),
@@ -215,8 +217,10 @@ export class QuestService {
       this.config.get("economy.quest.streak_milestone_reward_xp"),
       this.config.get("economy.quest.effort_milestone_reward_xp"),
       this.config.get("economy.quest.weekly_ritual_reward_xp"),
+      this.config.get("economy.quest.weekly_allowance_reward_coin"),
       this.config.get("economy.quest.weekly_focus_sessions_target"),
       this.config.get("economy.quest.weekly_plan_tasks_target"),
+      this.config.get("economy.quest.weekly_allowance_active_days_target"),
       this.config.get("economy.quest.disabled_ids"),
     ]);
     return {
@@ -225,9 +229,11 @@ export class QuestService {
       streakMilestoneRewardXp,
       effortMilestoneRewardXp,
       weeklyRitualRewardXp,
+      weeklyAllowanceRewardCoin,
       targets: new Map([
         ["economy.quest.weekly_focus_sessions_target", weeklyFocusTarget],
         ["economy.quest.weekly_plan_tasks_target", weeklyPlanTarget],
+        ["economy.quest.weekly_allowance_active_days_target", weeklyAllowanceTarget],
       ]),
       disabledIds: new Set(
         disabledCsv
@@ -255,6 +261,8 @@ interface QuestConfig {
   streakMilestoneRewardXp: number;
   effortMilestoneRewardXp: number;
   weeklyRitualRewardXp: number;
+  /** The recurring coin faucet's payout (weekly effort allowance). */
+  weeklyAllowanceRewardCoin: number;
   /** targetConfigKey → resolved value (admin-tunable weekly targets). */
   targets: Map<string, number>;
   disabledIds: Set<string>;
@@ -293,4 +301,11 @@ function xpReward(q: QuestDef, cfg: QuestConfig): number {
   if (q.type === QuestType.WEEKLY_RITUAL) return cfg.weeklyRitualRewardXp;
   if (q.type !== QuestType.MILESTONE) return cfg.dailyRewardXp;
   return q.progressSource === "streak" ? cfg.streakMilestoneRewardXp : cfg.effortMilestoneRewardXp;
+}
+
+/** Symmetric to `xpReward` — without it every COIN quest would silently pay the onboarding amount. */
+function coinReward(q: QuestDef, cfg: QuestConfig): number {
+  return q.type === QuestType.WEEKLY_RITUAL
+    ? cfg.weeklyAllowanceRewardCoin
+    : cfg.onboardingRewardCoin;
 }

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { deriveLevel } from "./level";
+// ponytail: the curve now lives in @mentor/core (shared with economy); the spec stays here because
+// packages/core has no test runner and adding vitest there to relocate one file isn't worth it.
+import { deriveLevel } from "@mentor/core";
 
 describe("deriveLevel", () => {
   it("starts at tier 1 with the next threshold ahead", () => {

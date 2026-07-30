@@ -4,6 +4,7 @@ export type PuhuVariant =
   | "default"
   | "encouraging"
   | "happy"
+  | "host"
   | "premium"
   | "proud"
   | "surprised"
@@ -22,6 +23,7 @@ const FILE_BY_VARIANT: Record<PuhuVariant, string> = {
   default: "puhu-default.png",
   encouraging: "puhu-encouraging.png",
   happy: "puhu-happy.png",
+  host: "puhu-host.png",
   premium: "puhu-premium.png",
   proud: "puhu-proud.png",
   surprised: "puhu-surprised.png",

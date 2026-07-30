@@ -109,6 +109,9 @@
     "home": "Anasayfa",
     "plan": "Plan",
     "coach": "Koç",
+    "coach_fab_aria": "Koçuna sor",
+    "coach_fab_nudge": "Takıldığın yerde buradayım.",
+    "coach_fab_dismiss": "Kapat",
     "analysis": "Analiz",
     "knowledge": "Bilgi",
     "profile": "Profil",
@@ -1085,7 +1088,7 @@
       },
       "share_card": {
         "title": "Bir haftanın portresi",
-        "weekly_title_label": "Bu haftaki enerjin",
+        "weekly_title_label": "Haftanın kod adı",
         "weekly_title_fallback": "Nova Yolcusu",
         "focus": "odakta geçen zaman",
         "active_days": "ritmini taşıdığın gün",
@@ -1109,6 +1112,8 @@
       "teaser": {
         "title": "Senin Haftalık Özetin",
         "message": "Geçen haftanın öne çıkanlarını keşfet.",
+        "replay_title": "Haftanın Hikâyesini Tekrar İzle",
+        "replay_message": "Kod adın ve haftanın enleri burada.",
         "period": "{startDate} – {endDate}",
         "status_READY": "Hikâyen hazır",
         "status_PARTIAL": "Küçük izlerin var",

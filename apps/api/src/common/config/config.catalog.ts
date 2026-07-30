@@ -221,6 +221,16 @@ export const CONFIG_CATALOG = {
     100000,
     "XP granted per completed weekly ritual quest.",
   ),
+  "economy.quest.weekly_allowance_reward_coin": economyCount(
+    15,
+    100000,
+    "Coin granted for the weekly effort allowance quest — the only RECURRING coin faucet (free tier's earned AI right). 15 = 3 chat messages at the default ai_chat_cost.",
+  ),
+  "economy.quest.weekly_allowance_active_days_target": economyTarget(
+    5,
+    7,
+    "Active days in the ISO week required for the weekly effort allowance quest (coin faucet).",
+  ),
   "economy.quest.weekly_focus_sessions_target": economyTarget(
     5,
     100,

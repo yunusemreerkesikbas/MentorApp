@@ -148,7 +148,7 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 
 **Text field** (`field` 2:722): translucent surface + white border + `shadow-card`.
 
-**Tab bar** (mobile): floating pill, icons only; active = bold `#111`. Center **Koç** elevated black FAB. Desktop sidebar: sentence-case labels; Koç is a normal item (no special CTA treatment).
+**Tab bar** (mobile): floating pill, icons only; active = bold `#111`. Center **Koç** elevated black FAB. Desktop sidebar: sentence-case labels; Koç is a floating bottom-right Puhu coach FAB (not in the sidebar).
 
 **Tag / chip** (`tag` 141:1736): violet @30%, chip-text `#7C6F97`.
 
@@ -290,7 +290,8 @@ deliberate presence cue, disabled under reduced motion.
 - Course/product cards → plan items, deneme entries, knowledge articles.  
 - Ongoing + progress → today’s session / streak / plan progress.  
 - Comment → AI coach / community (Phase 2).  
-- Nav → Anasayfa · Plan · Koç · Analiz · Bilgi · Topluluk · Profil.  
+- Nav → Anasayfa · Plan · Koç · Analiz · Bilgi · Topluluk · Profil.
+  (Desktop: Koç via floating Puhu FAB, not sidebar; mobile: elevated center tab.)
 - Guardrails: calm countdown, no result-ranking shame, encouraging Turkish tone (PRODUCT.md).
 
 ---

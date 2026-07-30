@@ -20,6 +20,7 @@ interface WeeklyRecapTeaserProps {
   examId?: string;
   examType?: string;
   compact?: boolean;
+  viewState?: "new" | "replay";
   onOpen?: () => void;
 }
 
@@ -30,6 +31,7 @@ export function WeeklyRecapTeaser({
   examId,
   examType,
   compact = false,
+  viewState = "new",
   onOpen,
 }: WeeklyRecapTeaserProps) {
   const t = useTranslations("analysis.recap");
@@ -52,6 +54,10 @@ export function WeeklyRecapTeaser({
     startDate: formatDate(period.startDate, locale),
     endDate: formatDate(period.endDate, locale),
   });
+  const title =
+    viewState === "replay" ? t("teaser.replay_title") : t("teaser.title");
+  const message =
+    viewState === "replay" ? t("teaser.replay_message") : t("teaser.message");
 
   return (
     <article
@@ -68,7 +74,7 @@ export function WeeklyRecapTeaser({
         className={`weekly-recap-theme relative block overflow-hidden bg-[var(--recap-coral)] text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)] ${
           compact ? "min-h-44" : "min-h-48 sm:min-h-52"
         }`}
-        aria-label={`${t("teaser.title")}. ${t("teaser.message")}`}
+        aria-label={`${title}. ${message}`}
       >
         <Image
           src={WEEKLY_RECAP_FIGMA_ASSETS.greenShape}
@@ -100,14 +106,16 @@ export function WeeklyRecapTeaser({
 
         <div
           className={`relative z-10 flex h-full flex-col justify-end ${
-            compact ? "min-h-44 p-5 pt-24" : "min-h-48 p-5 pt-28 sm:min-h-52 sm:p-6 sm:pt-32"
+            compact
+              ? "min-h-44 p-5 pt-24"
+              : "min-h-48 p-5 pt-28 sm:min-h-52 sm:p-6 sm:pt-32"
           }`}
         >
           <h2 className="max-w-xl text-balance text-2xl font-black leading-none tracking-[-0.035em] sm:text-[28px]">
-            {t("teaser.title")}
+            {title}
           </h2>
           <p className="mt-2 max-w-lg text-pretty text-sm font-semibold leading-5 text-black/75">
-            {t("teaser.message")}
+            {message}
           </p>
           <span className="sr-only">
             {t(`teaser.status_${status}`)}. {periodLabel}

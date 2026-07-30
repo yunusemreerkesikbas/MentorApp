@@ -20,6 +20,7 @@ import { NotificationBell } from "@mentor/ui";
 import { subscriptionsControllerGetMine } from "@mentor/api-client";
 
 import { LanguageToggle } from "@/components/language-toggle";
+import { DesktopCoachFab } from "@/components/desktop-coach-fab";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { resolveAvatarUrl } from "@/lib/avatar";
@@ -35,14 +36,15 @@ const TAB_EASE = [0.22, 1, 0.36, 1] as const;
 /**
  * App navigation (DESIGN.md §6 Tab bar + §8 adaptation):
  *  - mobile: avatar header + floating pill tab (Koç elevated center, icons only)
- *  - ≥1024px (lg): left sidebar with sentence-case labels (Koç not specially emphasized)
+ *  - ≥1024px (lg): left sidebar with sentence-case labels; Koç is desktop floating
+ *    Puhu FAB (bottom-right), not a sidebar item
  * Profile is avatar-only on mobile; sidebar keeps Profil + Topluluk.
  */
 
 const NAV_ITEMS = [
   { href: "/dashboard", labelKey: "home", icon: House },
   { href: "/plan", labelKey: "plan", icon: Calendar },
-  { href: "/coach", labelKey: "coach", icon: MessageCircle },
+  { href: "/coach", labelKey: "coach", icon: MessageCircle, sidebarExclude: true },
   { href: "/analysis", labelKey: "analysis", icon: ChartColumn },
   { href: "/knowledge", labelKey: "knowledge", icon: BookOpen },
   { href: "/community", labelKey: "community", icon: Users, sidebarOnly: true },
@@ -50,6 +52,9 @@ const NAV_ITEMS = [
 ] as const;
 
 const TAB_ITEMS = NAV_ITEMS.filter((i) => !("sidebarOnly" in i && i.sidebarOnly));
+const SIDEBAR_ITEMS = NAV_ITEMS.filter(
+  (i) => !("sidebarExclude" in i && i.sidebarExclude),
+);
 
 export function AppNav() {
   const pathname = usePathname();
@@ -127,7 +132,7 @@ export function AppNav() {
         ) : null}
 
         <div className="mt-2 flex flex-col gap-1">
-          {NAV_ITEMS.map((item) => (
+          {SIDEBAR_ITEMS.map((item) => (
             <NavLink
               key={item.href}
               item={item}
@@ -172,6 +177,8 @@ export function AppNav() {
       >
         <MobileTabBar pathname={pathname} />
       </nav>
+
+      {!pathname.startsWith("/coach") ? <DesktopCoachFab /> : null}
     </>
   );
 }
@@ -428,12 +435,13 @@ function EconomyPills({ balance }: { balance: EconomyBalance | null }) {
       className="flex items-center gap-1.5"
       aria-label={t("earned_rights_label")}
     >
+      {/* Coins → the spendable currency; Gem → XP reputation. Don't swap these back. */}
       <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_40%,white)] px-2 py-1 text-[11px] font-bold tabular-nums text-[var(--color-main)]">
-        <Gem className="size-3.5 text-[var(--color-progress)]" aria-hidden />
+        <Coins className="size-3.5 text-[var(--color-progress)]" aria-hidden />
         {formatCompact(balance.coinConfirmed)}
       </span>
       <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,#FCD34D_30%,white)] px-2 py-1 text-[11px] font-bold tabular-nums text-[var(--color-main)]">
-        <Coins className="size-3.5 text-[#B7791F]" aria-hidden />
+        <Gem className="size-3.5 text-[#B7791F]" aria-hidden />
         {formatCompact(balance.xp)}
       </span>
     </div>
@@ -445,7 +453,7 @@ function NavLink({
   label,
   active,
 }: {
-  item: (typeof NAV_ITEMS)[number];
+  item: (typeof SIDEBAR_ITEMS)[number];
   label: string;
   active: boolean;
 }) {

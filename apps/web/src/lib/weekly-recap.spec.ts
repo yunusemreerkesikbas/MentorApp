@@ -14,6 +14,7 @@ import {
   getWeeklyRecapPeakDayStory,
   getWeeklyRecapWeekMapPhase,
   getPerformanceStoryMode,
+  getWeeklyRecapTeaserState,
   getWeeklyRecapTextBeat,
   getWeeklyBestStorySource,
   WEEKLY_RECAP_AUDIO_ASSETS,
@@ -24,15 +25,11 @@ import {
   navigateWeeklyRecapPlayback,
   replayWeeklyRecap,
   shouldNavigateAfterWeeklyRecapPress,
-  shouldShowWeeklyRecapTeaser,
   shouldWeeklyRecapAdvance,
   weeklyRecapExitHref,
   weeklyRecapOpenedKey,
 } from "./weekly-recap";
-import {
-  buildWeeklyRecapShareCardRows,
-  hasWeeklyRecapShareCardDecorationOverlap,
-} from "./weekly-recap-share-card";
+import { buildWeeklyRecapShareCardRows } from "./weekly-recap-share-card";
 
 function review(
   status: WeeklyReviewDto["recap"]["status"],
@@ -676,24 +673,27 @@ describe("weekly recap local storage", () => {
     );
   });
 
-  it("shows once and records opening on the current device", () => {
+  it("keeps the current week visible and switches it to replay after opening", () => {
     const getItem = vi.fn(() => null);
     const setItem = vi.fn();
     const storage = { getItem, setItem };
 
-    expect(shouldShowWeeklyRecapTeaser(storage, "2026-07-13")).toBe(true);
+    expect(getWeeklyRecapTeaserState(storage, "2026-07-13")).toBe("new");
     markWeeklyRecapOpened(storage, "2026-07-13");
     expect(setItem).toHaveBeenCalledWith(
       "mentor.weekly-recap.opened.v2:2026-07-13",
       "1",
     );
+
+    getItem.mockReturnValue("1");
+    expect(getWeeklyRecapTeaserState(storage, "2026-07-13")).toBe("replay");
   });
 
   it("never shows the dashboard teaser for an EMPTY completed week", () => {
     const storage = { getItem: vi.fn(() => null) };
 
-    expect(shouldShowWeeklyRecapTeaser(storage, "2026-07-13", "EMPTY")).toBe(
-      false,
+    expect(getWeeklyRecapTeaserState(storage, "2026-07-13", "EMPTY")).toBe(
+      "hidden",
     );
   });
 });
@@ -822,10 +822,6 @@ describe("weekly recap privacy and return source", () => {
         value: "Matematik · 50 dk",
       },
     ]);
-  });
-
-  it("keeps exported poster decorations outside text-safe regions", () => {
-    expect(hasWeeklyRecapShareCardDecorationOverlap()).toBe(false);
   });
 
   it("returns to the surface that opened the story", () => {

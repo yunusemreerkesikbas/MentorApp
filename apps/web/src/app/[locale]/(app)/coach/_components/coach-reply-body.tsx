@@ -35,22 +35,24 @@ function useTypewriter(
   active: boolean,
   reduceMotion: boolean | null,
 ): string {
-  const [shown, setShown] = useState(() =>
-    !active || reduceMotion ? target : "",
-  );
-  const shownLenRef = useRef(shown.length);
+  const inert = !active || reduceMotion;
+  // Track the revealed LENGTH, not the string: the render always slices the live `target`, so a
+  // stale reveal is impossible and the effect never has to push text into state synchronously.
+  const [shownLen, setShownLen] = useState(() => (inert ? target.length : 0));
+  const shownLenRef = useRef(shownLen);
 
   useEffect(() => {
     if (reduceMotion || !active) {
+      // Render returns the whole target while inert; the ref only stays consistent for a later
+      // switch back to typing.
       shownLenRef.current = target.length;
-      setShown(target);
       return;
     }
 
-    // Regenerate / rewind — restart the typewriter.
+    // Regenerate / rewind — restart the typewriter. `slice` clamps on its own, so resetting the
+    // ref is enough; the first frame publishes the new length.
     if (target.length < shownLenRef.current) {
       shownLenRef.current = 0;
-      setShown("");
     }
 
     let frame = 0;
@@ -66,7 +68,7 @@ function useTypewriter(
       // If SSE is ahead, catch up in larger steps so we never feel stuck.
       const step = behind > 48 ? Math.ceil(behind / 6) : Math.min(base, behind);
       shownLenRef.current += step;
-      setShown(target.slice(0, shownLenRef.current));
+      setShownLen(shownLenRef.current);
 
       if (shownLenRef.current < target.length) {
         frame = requestAnimationFrame(tick);
@@ -77,7 +79,7 @@ function useTypewriter(
     return () => cancelAnimationFrame(frame);
   }, [target, active, reduceMotion]);
 
-  return reduceMotion || !active ? target : shown;
+  return inert ? target : target.slice(0, shownLen);
 }
 
 /**

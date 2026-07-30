@@ -4,9 +4,13 @@ import { QUEST_CATALOG } from "../domain/quest.catalog";
 import type { LedgerRow } from "../infrastructure/ledger.repository";
 
 // Ledger rows outlive config: strip the `{target}` placeholder instead of resolving it
-// ("Bu hafta {target} odak seansı tamamla" → "Bu hafta odak seansı tamamla").
+// ("Bu hafta {target} odak seansı tamamla" → "Bu hafta odak seansı tamamla"). Quests whose
+// stripped title reads broken supply an explicit `ledgerTitle`.
 const questTitles = new Map(
-  QUEST_CATALOG.map((quest) => [`quest.${quest.id}`, quest.title.replace(/\{target\}\s?/, "")]),
+  QUEST_CATALOG.map((quest) => [
+    `quest.${quest.id}`,
+    quest.ledgerTitle ?? quest.title.replace(/\{target\}\s?/, ""),
+  ]),
 );
 
 export function toLedgerEntryView(row: LedgerRow): EconomyLedgerEntryView {

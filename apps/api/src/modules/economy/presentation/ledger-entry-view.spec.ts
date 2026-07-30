@@ -26,6 +26,18 @@ describe("toLedgerEntryView", () => {
     });
   });
 
+  it("strips {target} from a weekly title, and prefers an explicit ledgerTitle when set", () => {
+    // Stripping reads fine here…
+    expect(toLedgerEntryView(row("quest.weekly.focus-sessions"))).toMatchObject({
+      description: "Bu hafta odak seansı tamamla",
+    });
+    // …but "Bu hafta {target} gün aktif ol" would strip to broken grammar → explicit label.
+    expect(toLedgerEntryView(row("quest.weekly.effort-allowance", Currency.COIN))).toMatchObject({
+      title: "Görev ödülü",
+      description: "Haftalık aktif gün hedefi",
+    });
+  });
+
   it("maps AI chat spends without leaking the raw reason", () => {
     expect(toLedgerEntryView(row("ai.chat.spend", Currency.COIN))).toMatchObject({
       title: "Koç sohbet hakkı kullanıldı",

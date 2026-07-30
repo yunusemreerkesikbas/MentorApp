@@ -65,9 +65,13 @@ export function ExpandableBubbleContent({
   const [collapsedHeight, setCollapsedHeight] = useState<number | null>(null);
   const [fullHeight, setFullHeight] = useState<number | null>(null);
 
-  useEffect(() => {
+  // Collapse when the bubble switches content. Adjusting state during render (React's documented
+  // "changing state when props change" pattern) — an effect here cascades an extra render.
+  const [renderedKey, setRenderedKey] = useState(contentKey);
+  if (renderedKey !== contentKey) {
+    setRenderedKey(contentKey);
     setExpanded(false);
-  }, [contentKey]);
+  }
 
   const measure = useCallback(() => {
     const el = contentRef.current;
