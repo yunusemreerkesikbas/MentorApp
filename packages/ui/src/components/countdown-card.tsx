@@ -14,7 +14,12 @@ export interface CountdownCardProps {
   /** Verified source attribution (guardrail #1), e.g. { label: "ÖSYM", url }. */
   source?: { label: string; url?: string };
   /** Pre-localized labels (i18n lives in the app; ui is presentational). */
-  labels: { remaining: string; dayUnit: string; today: string; sourcePrefix: string };
+  labels: {
+    remaining: string;
+    dayUnit: string;
+    today: string;
+    sourcePrefix: string;
+  };
   className?: string;
 }
 
@@ -24,7 +29,10 @@ function CalendarGlyph() {
     <span
       aria-hidden
       className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-card)]"
-      style={{ backgroundColor: "color-mix(in srgb, var(--color-progress) 18%, transparent)" }}
+      style={{
+        backgroundColor:
+          "color-mix(in srgb, var(--color-progress) 18%, transparent)",
+      }}
     >
       <Calendar size={24} color="var(--color-progress)" strokeWidth={2} />
     </span>
@@ -58,7 +66,10 @@ export function CountdownCard({
         ) : (
           <span>
             {daysRemaining}{" "}
-            <span className="text-base font-bold" style={{ color: "var(--color-secondary)" }}>
+            <span
+              className="text-base font-bold"
+              style={{ color: "var(--color-secondary)" }}
+            >
               {labels.dayUnit}
             </span>
           </span>

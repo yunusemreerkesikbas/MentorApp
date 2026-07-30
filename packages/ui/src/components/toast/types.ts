@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type * as React from "react";
 
 export type ToastVariant = "success" | "error" | "info" | "coach";
 
@@ -9,19 +9,21 @@ export interface ToastShowOptions {
   /** Auto-dismiss duration in ms. Default 5000. 0 = manual dismiss only. */
   duration?: number;
   /** Overrides variant default leading content (e.g. Puhu mascot from web). */
-  leading?: ReactNode;
+  leading?: React.ReactNode;
   /** Localized dismiss button label for screen readers. */
   dismissLabel: string;
   /** Optional id for dedupe/replace. */
   id?: string;
 }
 
-export interface ToastRecord extends Required<Pick<ToastShowOptions, "title" | "dismissLabel">> {
+export interface ToastRecord extends Required<
+  Pick<ToastShowOptions, "title" | "dismissLabel">
+> {
   id: string;
   message?: string;
   variant: ToastVariant;
   duration: number;
-  leading?: ReactNode;
+  leading?: React.ReactNode;
   /** Set when exit animation starts. */
   exiting?: boolean;
   createdAt: number;

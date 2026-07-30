@@ -1,19 +1,20 @@
 "use client";
 
 import type { PlanTaskDto } from "@mentor/types";
-import { Card, SectionHeading } from "@mentor/ui";
+import { SectionHeading } from "@mentor/ui";
 import { useLocale, useTranslations } from "next-intl";
 import { PlanAddTaskButton } from "./plan-add-task-button";
-import { PlanWeekSkeleton } from "./plan-content-skeleton";
 import { PlanProgress } from "./plan-progress";
 import { PlanTaskRow } from "./plan-task-row";
 import { formatDateLabel, taskStats } from "./plan-utils";
 
-/** Mobile Hafta — selected-day task card. Desktop uses PlanWeekDesktopLayout. */
-export function PlanWeekView({
+/**
+ * Selected day's tasks as checkable todos — the Takvim left rail on desktop and the "Ajanda"
+ * scale on mobile. Renders bare (no Card): the caller owns the surface it sits on.
+ */
+export function PlanDayTodoList({
   selectedDate,
-  weekTasks,
-  loading,
+  tasksByDate,
   busyId,
   readOnly,
   onToggle,
@@ -22,8 +23,7 @@ export function PlanWeekView({
   onAddTask,
 }: {
   selectedDate: string;
-  weekTasks: Record<string, PlanTaskDto[]>;
-  loading: boolean;
+  tasksByDate: Record<string, PlanTaskDto[]>;
   busyId: string | null;
   readOnly?: boolean;
   onToggle: (id: string) => void;
@@ -33,22 +33,14 @@ export function PlanWeekView({
 }) {
   const t = useTranslations("plan");
   const locale = useLocale();
-  const selectedTasks = loading ? [] : (weekTasks[selectedDate] ?? []);
-  const progress = taskStats(selectedTasks);
+  const tasks = tasksByDate[selectedDate] ?? [];
+  const progress = taskStats(tasks);
   const dayHeading = formatDateLabel(selectedDate, locale, t("today"), {
     alwaysFull: true,
   });
 
-  if (loading) {
-    return (
-      <div className="lg:hidden">
-        <PlanWeekSkeleton />
-      </div>
-    );
-  }
-
   return (
-    <Card className="lg:hidden">
+    <div className="flex min-w-0 flex-col">
       <SectionHeading
         action={
           !readOnly && onAddTask ? (
@@ -61,11 +53,14 @@ export function PlanWeekView({
 
       {progress.total > 0 ? (
         <div className="mt-3 flex flex-col gap-1.5">
-          <div className="flex items-center justify-between text-sm font-semibold">
+          <div className="flex items-center justify-between gap-3 text-sm font-semibold">
             <span style={{ color: "var(--color-main)" }}>
               {t("progress", { done: progress.done, total: progress.total })}
             </span>
-            <span style={{ color: "var(--color-secondary)" }}>
+            <span
+              className="shrink-0 tabular-nums"
+              style={{ color: "var(--color-secondary)" }}
+            >
               {t("progress_percent", { percent: progress.percent })}
             </span>
           </div>
@@ -73,13 +68,13 @@ export function PlanWeekView({
         </div>
       ) : null}
 
-      {selectedTasks.length === 0 ? (
+      {tasks.length === 0 ? (
         <p className="mt-4 text-sm" style={{ color: "var(--color-secondary)" }}>
           {t("empty_desc")}
         </p>
       ) : (
         <div className="mt-3 flex flex-col">
-          {selectedTasks.map((task) => (
+          {tasks.map((task) => (
             <PlanTaskRow
               key={task.id}
               task={task}
@@ -93,6 +88,6 @@ export function PlanWeekView({
           ))}
         </div>
       )}
-    </Card>
+    </div>
   );
 }

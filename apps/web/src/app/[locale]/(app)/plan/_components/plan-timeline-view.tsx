@@ -89,6 +89,7 @@ export function PlanTimelineView({
   const selectedPast = isPastDate(selectedDate);
 
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const ignoreScrollSyncRef = useRef(false);
   const ignoreClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -102,6 +103,8 @@ export function PlanTimelineView({
   const [activeIso, setActiveIso] = useState(selectedDate);
   const [fillRatio, setFillRatio] = useState(0);
   const [endSpacerPx, setEndSpacerPx] = useState(0);
+  /** False until scroll is pinned to today — avoids Liste→Timeline jump. */
+  const [viewportReady, setViewportReady] = useState(false);
 
   activeIsoRef.current = activeIso;
 
@@ -173,45 +176,64 @@ export function PlanTimelineView({
     }
   }, [days, onDateChange]);
 
+  // Pin spacer + scroll to today in one layout pass (before paint) so tab switches don't jump.
   useLayoutEffect(() => {
     if (loading) return;
     const scroller = scrollerRef.current;
-    if (!scroller) return;
+    const spacerEl = spacerRef.current;
+    if (!scroller || !spacerEl) return;
 
-    const updateSpacer = () => {
+    const applySpacer = () => {
       const next = Math.max(0, scroller.clientHeight - END_SPACER_RESERVE_PX);
+      spacerEl.style.height = `${next}px`;
       setEndSpacerPx((prev) => (prev === next ? prev : next));
+      return next;
     };
 
-    updateSpacer();
-    const ro = new ResizeObserver(updateSpacer);
-    ro.observe(scroller);
-    return () => ro.disconnect();
-  }, [loading, weekStartDate]);
+    applySpacer();
 
-  useLayoutEffect(() => {
-    if (loading || endSpacerPx <= 0) return;
-    if (alignedWeekRef.current === weekStartDate) return;
+    const needsPin = alignedWeekRef.current !== weekStartDate;
+    if (needsPin) {
+      setViewportReady(false);
+      const today = todayIso();
+      const target = days.includes(today) ? today : selectedDate;
+      const dayEl = document.getElementById(planTimelineDayId(target));
 
-    const today = todayIso();
-    const target = days.includes(today) ? today : selectedDate;
+      ignoreScrollSyncRef.current = true;
+      scroller.style.scrollBehavior = "auto";
+      if (dayEl) {
+        scroller.scrollTop = dayEl.offsetTop;
+      }
 
-    alignedWeekRef.current = weekStartDate;
-    pendingAlignRef.current = target;
-    lastEmittedDateRef.current = target;
-    activeIsoRef.current = target;
-    setActiveIso(target);
-    scrollToDay(target, "auto");
+      alignedWeekRef.current = weekStartDate;
+      lastEmittedDateRef.current = target;
+      activeIsoRef.current = target;
+      setActiveIso(target);
 
-    if (target !== selectedDate) {
-      onDateChange?.(target);
-    } else {
-      pendingAlignRef.current = null;
+      if (target !== selectedDate) {
+        pendingAlignRef.current = target;
+        onDateChange?.(target);
+      } else {
+        pendingAlignRef.current = null;
+      }
+
+      syncFromScroll();
+      setViewportReady(true);
+      requestAnimationFrame(() => {
+        ignoreScrollSyncRef.current = false;
+      });
+    } else if (!viewportReady) {
+      setViewportReady(true);
     }
 
-    requestAnimationFrame(() => syncFromScroll());
+    const ro = new ResizeObserver(() => {
+      applySpacer();
+      syncFromScroll();
+    });
+    ro.observe(scroller);
+    return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- week-entry pin only
-  }, [weekStartDate, loading, endSpacerPx]);
+  }, [loading, weekStartDate]);
 
   useEffect(() => {
     if (loading) return;
@@ -289,32 +311,45 @@ export function PlanTimelineView({
   }
 
   return (
-    <Card className="relative overflow-hidden !pt-[60px]">
+    <Card className="relative overflow-hidden !px-4 !pb-4 !pt-[60px] max-lg:!px-3 max-lg:!pb-3 max-lg:!pt-10">
       {!selectedPast && onAddTask ? (
-        <div className="absolute right-3 top-3 z-30">
+        <div className="absolute right-2 top-2 z-30 max-lg:right-1.5 max-lg:top-1.5">
           <PlanAddTaskButton onClick={onAddTask} />
+        </div>
+      ) : null}
+
+      {!viewportReady ? (
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 top-[60px] z-20 px-1 max-lg:top-10"
+          style={{
+            backgroundColor:
+              "color-mix(in srgb, var(--color-surface) 94%, transparent)",
+          }}
+        >
+          <PlanTimelineSkeleton embedded />
         </div>
       ) : null}
 
       <div
         ref={scrollerRef}
-        className="mentor-plan-timeline-scroll"
-        tabIndex={0}
+        className={`mentor-plan-timeline-scroll transition-opacity duration-200 ease-out motion-reduce:transition-none ${
+          viewportReady ? "opacity-100" : "opacity-0"
+        }`}
+        tabIndex={viewportReady ? 0 : -1}
         aria-label={t("timeline_scroll_aria")}
+        aria-hidden={!viewportReady}
       >
         <div className="relative">
-          <div
-            ref={railRef}
-            className="pointer-events-none absolute bottom-2 left-0 top-2 w-12"
-            aria-hidden
-          >
+          <div ref={railRef} className="mentor-plan-timeline-rail" aria-hidden>
             <div
-              className="absolute bottom-0 left-1/2 top-0 w-0.5 -translate-x-1/2"
+              className="mentor-plan-timeline-rail-line"
               style={{ backgroundColor: "var(--color-progress-track)" }}
             />
             <div
-              className="absolute left-1/2 top-0 w-0.5 -translate-x-1/2"
+              className="mentor-plan-timeline-rail-line"
               style={{
+                top: 0,
+                bottom: "auto",
                 backgroundColor: "var(--color-progress)",
                 height: `${Math.round(fillRatio * 1000) / 10}%`,
                 transition: reduceMotion
@@ -346,7 +381,7 @@ export function PlanTimelineView({
                 <section
                   key={iso}
                   id={planTimelineDayId(iso)}
-                  className="mentor-plan-timeline-day relative pl-14"
+                  className="mentor-plan-timeline-day relative"
                   data-active={isActive ? "true" : undefined}
                   aria-labelledby={`${planTimelineDayId(iso)}-label`}
                 >
@@ -355,11 +390,8 @@ export function PlanTimelineView({
                       layoutId={
                         reduceMotion ? undefined : "plan-timeline-day-badge"
                       }
-                      className="mentor-plan-timeline-badge pointer-events-none absolute top-0 z-20 flex h-11 w-11 -translate-x-1/2 flex-col items-center justify-center rounded-full border-2 border-white text-center shadow-[var(--shadow-card)]"
-                      style={{
-                        left: 24,
-                        backgroundColor: "var(--color-progress)",
-                      }}
+                      className="mentor-plan-timeline-badge pointer-events-none absolute top-0 z-20 flex h-11 w-11 flex-col items-center justify-center rounded-full border-2 border-white text-center shadow-[var(--shadow-card)] max-lg:h-9 max-lg:w-9"
+                      style={{ backgroundColor: "var(--color-progress)" }}
                       transition={
                         reduceMotion
                           ? { duration: 0 }
@@ -368,7 +400,7 @@ export function PlanTimelineView({
                       aria-hidden
                     >
                       <span
-                        className="text-[11px] font-bold leading-none text-white"
+                        className="text-[11px] font-bold leading-none text-white max-lg:text-[10px]"
                         style={{ fontFamily: "var(--font-heading)" }}
                       >
                         {badge.day}
@@ -379,9 +411,8 @@ export function PlanTimelineView({
                   ) : (
                     <button
                       type="button"
-                      className="pointer-events-auto absolute top-3.5 z-10 flex h-3.5 w-3.5 -translate-x-1/2 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2"
+                      className="mentor-plan-timeline-dot pointer-events-auto absolute top-3 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 max-lg:top-2.5 max-lg:h-3 max-lg:w-3"
                       style={{
-                        left: 24,
                         backgroundColor: isToday
                           ? "var(--color-progress)"
                           : "var(--color-surface)",
@@ -400,11 +431,11 @@ export function PlanTimelineView({
                   )}
 
                   <header
-                    className={`mb-2 flex items-center justify-between gap-2 ${isActive ? "min-h-11" : "min-h-8 pt-1"}`}
+                    className={`mb-2 flex items-center justify-between gap-2 max-lg:mb-1.5 ${isActive ? "min-h-11 max-lg:min-h-9" : "min-h-8 pt-1 max-lg:min-h-7"}`}
                   >
                     <h3
                       id={`${planTimelineDayId(iso)}-label`}
-                      className="text-sm font-bold"
+                      className="mentor-plan-timeline-day-title text-sm font-bold"
                       style={{
                         color: isActive
                           ? "var(--color-main)"
@@ -420,7 +451,7 @@ export function PlanTimelineView({
                     </h3>
                     {stats.total > 0 ? (
                       <span
-                        className="shrink-0 text-xs tabular-nums"
+                        className="mentor-plan-timeline-day-meta shrink-0 text-xs tabular-nums"
                         style={{ color: "var(--color-secondary)" }}
                       >
                         {stats.done}/{stats.total}
@@ -430,7 +461,7 @@ export function PlanTimelineView({
 
                   {ordered.length === 0 ? (
                     <p
-                      className="py-1 text-sm"
+                      className="mentor-plan-timeline-day-empty py-1 text-sm"
                       style={{ color: "var(--color-secondary)" }}
                     >
                       {t("timeline_day_empty")}
@@ -457,6 +488,7 @@ export function PlanTimelineView({
           </div>
 
           <div
+            ref={spacerRef}
             aria-hidden
             className="pointer-events-none"
             style={{ height: endSpacerPx }}

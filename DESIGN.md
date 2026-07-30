@@ -13,6 +13,13 @@ Nuton’s language remains the base: **monochrome-forward** — near-black text 
 
 **Evolve (2026-07-12):** We keep Nuton hex/type/radius. We add surface hierarchy, hover elevation, a documented visual language (Puhu + `visuals/`), rich motion with reduced-motion guardrails, and empty/loading rules. Premium feel comes from craft and companionship — not EdTech purple, cream paper backgrounds, or hero-metric grids.
 
+**Weekly recap celebration palette (2026-07-28):** The full-screen “Haftanın Hikâyesi” is an
+intentional celebration exception with feature-scoped tokens: coral `#FF5B49`, deep purple
+`#400073`, lavender `#AFB1FF`, mint `#16D0A6`, and ink `#000000`. These saturated colors and the
+committed Figma exports under `public/visuals/weekly-recap-2023/` must not leak into ordinary app
+surfaces. Static typography remains Nunito Sans; decorative shapes are exported assets, not
+recreated CSS/React artwork.
+
 Base canvas: **375 px** wide. Content column **335 px** → **20 px** side gutters. Desktop: gutters **20–32 px**; page max-widths below.
 
 ---
@@ -234,6 +241,32 @@ Flat files under `public/visuals/`, WebP preferred, e.g. `plan-empty.webp`, `ana
 
 Shared helpers: `apps/web/src/lib/stagger-motion.ts`. Overlay enter/exit lives in web `globals.css`.
 
+### 9.1 Motion personality (2026-07-26)
+
+Mentor is a **learning app**, not a productivity tool. Effort deserves to be felt, so motion is not
+uniformly restrained — it is loud where progress happens and quiet where work happens.
+
+> **"Calm" in this document is never a motion rule.** It appears only in the anxiety guardrails
+> (§2.4 countdown not alarm-red, §11 error copy) and describes *tone toward an exam student*, not
+> animation budget. Do not cite it to argue against an animation.
+
+| Layer | Surfaces | Expression |
+|---|---|---|
+| **Celebration** | Streak milestone (`streak-celebration.tsx`), quest / XP reward (`economy-quests-card.tsx`), session done (`session-done-state.tsx`), coin earn, weekly recap, Puhu reactions | Expressive and playful: scale pops, travel, staggered reveals, confetti-class one-shots, mascot motion. Owns the `Moment` row (≤600 ms) |
+| **Progress** | Progress bars, streak ring, level/XP fills, quest check-off | Animate the fill; a completed fill may pop once |
+| **Measured** | Forms, lists, calendar shell, settings, tables, navigation | Micro/Chrome only — these are work surfaces; motion states change, it does not perform |
+
+**Rules (in addition to §9):**
+- Celebration is **event-driven and one-shot**. Never loop it, never gate content behind it.
+- One celebration at a time — do not stack a streak toast onto a quest reward.
+- Expressiveness comes from scale, travel, stagger and colour. The **no elastic/bounce easing** rule
+  in §9 still stands; revisit it as its own decision if a moment truly needs overshoot.
+- `prefers-reduced-motion: reduce` still wins everywhere, celebration included: keep the reward
+  (copy, colour, badge), drop the movement.
+
+Existing exception: `.mentor-puhu-bounce` (globals.css) loops a 2 s idle bob for the mascot — a
+deliberate presence cue, disabled under reduced motion.
+
 ---
 
 ## 10. Empty & loading
@@ -267,6 +300,7 @@ Shared helpers: `apps/web/src/lib/stagger-motion.ts`. Overlay enter/exit lives i
 - [x] Turkish glyph coverage — Nunito Sans `latin-ext`.
 - [x] Desktop breakpoints — `lg` sidebar switch.
 - [x] Surface hierarchy + hover shadow + visual/motion language (2026-07-12 evolve).
+- [x] Motion personality — celebration vs measured surfaces (§9.1, 2026-07-26).
 - [ ] Map remaining Nuton library screens ↔ Mentor screens (Figma pass).
 - [ ] Puhu P0: `thinking` (AI loading), `gentle-error` (soft error toast).
 - [ ] P0 visuals (designer upload): `plan-empty.webp`, `analiz-empty.webp`.

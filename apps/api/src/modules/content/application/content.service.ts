@@ -9,14 +9,16 @@ import type {
   InfoArticleDto,
   InfoArticleSummaryDto,
   Paginated,
+  PublicHolidayDto,
 } from "@mentor/types";
 import type {
   AdminListArticlesQuery,
   AdminListExamsQuery,
   ListInfoArticlesQuery,
+  ListPublicHolidaysQuery,
   PaginationQuery,
 } from "@mentor/validation";
-import { infoArticleSlugParamSchema } from "@mentor/validation";
+import { infoArticleSlugParamSchema, PUBLIC_HOLIDAY_KINDS } from "@mentor/validation";
 import { ExamType } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
@@ -51,6 +53,7 @@ import {
   InfoArticleRepository,
   type InfoArticleRow,
 } from "../infrastructure/info-article.repository";
+import { PublicHolidayRepository } from "../infrastructure/public-holiday.repository";
 import { SubjectRepository } from "../infrastructure/subject.repository";
 import {
   TopicRepository,
@@ -67,6 +70,7 @@ import {
   toInfoArticleDto,
   toPaginatedExams,
   toPaginatedInfoArticles,
+  toPublicHolidayDto,
 } from "./content.mappers";
 import {
   ArticleBodyError,
@@ -201,6 +205,7 @@ function toAdminExamEventView(row: ExamEventRow): AdminExamEventView {
 
 /** Resolved calendar row used by the coaching ContentPort adapter. */
 export interface ResolvedExamCalendar {
+  examId: string;
   examType: string;
   examName: string;
   examDate: string;
@@ -221,6 +226,7 @@ export class ContentService {
     private readonly articles: InfoArticleRepository,
     private readonly subjects: SubjectRepository,
     private readonly topics: TopicRepository,
+    private readonly holidays: PublicHolidayRepository,
     private readonly eventEmitter: EventEmitter2,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
@@ -428,12 +434,13 @@ export class ContentService {
   /** Authoritative countdown source: family = users.examType (KPSS | YKS | LGS). */
   async getExamCalendarByFamily(
     family: string | null | undefined,
+    asOf?: string,
   ): Promise<ExamCalendarDto | null> {
     if (!family) return null;
     this.assertValidFamily(family);
 
     const rows = await this.exams.listFamilyCandidates(this.db, family);
-    const selected = selectExamForCountdown(toExamCandidates(rows));
+    const selected = selectExamForCountdown(toExamCandidates(rows), asOf);
     if (!selected) return null;
 
     const exam = rows.find((r) => r.exam.id === selected.examId)?.exam;
@@ -446,9 +453,10 @@ export class ContentService {
   /** Coaching ContentPort seam — compact shape for countdown. */
   async getExamCalendarForCoaching(
     family: string | null | undefined,
+    asOf?: string,
   ): Promise<ResolvedExamCalendar | null> {
-    const dto = await this.getExamCalendarByFamily(family);
-    if (!dto || dto.daysRemaining === null || !dto.examDateLabel) return null;
+    const dto = await this.getExamCalendarByFamily(family, asOf);
+    if (!dto) return null;
 
     const examDateEvent = dto.events.find(
       (e) => e.type === ExamEventType.EXAM_DATE,
@@ -457,6 +465,7 @@ export class ContentService {
 
     const examDate = examDateEvent.eventAt.slice(0, 10);
     return {
+      examId: dto.exam.id,
       examType: dto.exam.family,
       examName: dto.exam.name,
       examDate,
@@ -493,6 +502,49 @@ export class ContentService {
         netRule: data.netRule,
         isCurrent: data.isCurrent ?? false,
         orgId: data.orgId ?? null,
+      });
+    });
+  }
+
+  /** Public read of the verified holiday calendar for an inclusive, caller-capped range. */
+  listPublicHolidays(query: ListPublicHolidaysQuery): Promise<PublicHolidayDto[]> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await this.holidays.listInRange(
+        tx,
+        query.country,
+        query.from,
+        query.to,
+      );
+      return rows.map(toPublicHolidayDto);
+    });
+  }
+
+  /** Seed / admin write path — the only way official holiday dates enter the system. */
+  async upsertPublicHoliday(data: {
+    country: string;
+    date: string;
+    name: string;
+    kind: string;
+    source: string;
+    sourceUrl: string;
+    verifiedAt: string;
+    verifiedBy: string;
+  }): Promise<void> {
+    if (!PUBLIC_HOLIDAY_KINDS.includes(data.kind as (typeof PUBLIC_HOLIDAY_KINDS)[number])) {
+      throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST, {
+        kind: data.kind,
+      });
+    }
+    await withServiceContext(this.db, async (tx) => {
+      await this.holidays.upsertByCountryAndDate(tx, {
+        country: data.country,
+        holidayDate: data.date,
+        name: data.name,
+        kind: data.kind,
+        source: data.source,
+        sourceUrl: data.sourceUrl,
+        verifiedAt: new Date(data.verifiedAt),
+        verifiedBy: data.verifiedBy,
       });
     });
   }

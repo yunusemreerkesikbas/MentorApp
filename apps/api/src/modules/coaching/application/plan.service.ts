@@ -124,6 +124,9 @@ export class PlanService {
         taskDate,
         title: input.title,
         subject: input.subject ?? null,
+        startTime: input.startTime ?? null,
+        endTime: input.endTime ?? null,
+        description: input.description ?? null,
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
       });
       return toPlanTaskDto(row);
@@ -147,6 +150,9 @@ export class PlanService {
             taskDate: input.taskDate,
             title: input.title,
             subject: input.subject ?? null,
+            startTime: input.startTime ?? null,
+            endTime: input.endTime ?? null,
+            description: input.description ?? null,
             ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
           }),
         );
@@ -320,6 +326,9 @@ export class PlanService {
         ...(input.title !== undefined && { title: input.title }),
         ...(input.subject !== undefined && { subject: input.subject }),
         ...(input.status !== undefined && { status: input.status }),
+        ...(input.startTime !== undefined && { startTime: input.startTime }),
+        ...(input.endTime !== undefined && { endTime: input.endTime }),
+        ...(input.description !== undefined && { description: input.description }),
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
       });
       // Status change can flip the day's done-count → keep daily_activity in sync (same tx).

@@ -23,7 +23,7 @@ export function DialogPanel({ dialog, onAction }: DialogPanelProps) {
       aria-modal="true"
       aria-labelledby={titleId}
       data-mentor-dialog-panel
-      className={`relative w-full max-w-[335px] border border-white bg-white/92 p-6 shadow-[var(--shadow-card)] backdrop-blur-md lg:max-w-[480px] ${isPromo ? "flex flex-col items-center text-center" : "flex flex-col"} ${dialog.exiting ? "opacity-0 motion-reduce:opacity-0" : "animate-dialog-enter motion-reduce:animate-none"} rounded-[var(--radius-card)] motion-reduce:transition-none transition-opacity duration-200`}
+      className={`relative w-full max-w-[360px] border border-white bg-white/92 p-6 shadow-[var(--shadow-card)] backdrop-blur-md lg:max-w-[480px] ${isPromo ? "flex flex-col items-center text-center" : "flex flex-col"} ${dialog.exiting ? "opacity-0 motion-reduce:opacity-0" : "animate-dialog-enter motion-reduce:animate-none"} rounded-[var(--radius-card)] motion-reduce:transition-none transition-opacity duration-200`}
       onClick={(e) => e.stopPropagation()}
     >
       {dialog.hero ? (
@@ -71,10 +71,16 @@ export function DialogPanel({ dialog, onAction }: DialogPanelProps) {
         <div className={isPromo ? "mb-4" : "mb-6"} />
       )}
 
-      {dialog.content ? <div className={isPromo ? "mb-4 w-full" : "mb-6 w-full"}>{dialog.content}</div> : null}
+      {dialog.content ? (
+        <div className={isPromo ? "w-full" : "mb-6 w-full"}>
+          {dialog.content}
+        </div>
+      ) : null}
 
       {dialog.badge ? (
-        <Chip className={`mb-6 text-xs normal-case ${isPromo ? "" : "self-start"}`}>
+        <Chip
+          className={`mb-6 text-xs normal-case ${isPromo ? "" : "self-start"}`}
+        >
           {dialog.badge}
         </Chip>
       ) : null}
@@ -124,7 +130,11 @@ export function DialogPanel({ dialog, onAction }: DialogPanelProps) {
             <Button
               key={action.id}
               fullWidth={!shareRow}
-              className={shareRow ? "min-w-0 flex-1 px-3 text-sm sm:px-6 sm:text-base" : undefined}
+              className={
+                shareRow
+                  ? "min-w-0 flex-1 px-3 text-sm sm:px-6 sm:text-base"
+                  : undefined
+              }
               variant={action.variant === "secondary" ? "secondary" : "primary"}
               busy={isBusy}
               onClick={() => onAction(action.id)}

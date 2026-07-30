@@ -4,6 +4,7 @@ import {
   examSlugParamSchema,
   infoArticleSlugParamSchema,
   listInfoArticlesQuerySchema,
+  listPublicHolidaysQuerySchema,
   paginationQuerySchema,
 } from "@mentor/validation";
 
@@ -16,3 +17,7 @@ export class ExamSlugParamDto extends createZodDto(examSlugParamSchema) {}
 export class ListInfoArticlesQueryDto extends createZodDto(listInfoArticlesQuerySchema) {}
 
 export class InfoArticleSlugParamDto extends createZodDto(infoArticleSlugParamSchema) {}
+
+export class ListPublicHolidaysQueryDto extends createZodDto(
+  listPublicHolidaysQuerySchema,
+) {}

@@ -2,80 +2,59 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import Pencil from "lucide-react/dist/esm/icons/pencil.mjs";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles.mjs";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2.mjs";
 import X from "lucide-react/dist/esm/icons/x.mjs";
 import type { ExamSubjectDto, MockExamDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, Card } from "@mentor/ui";
+import { Skeleton } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { Link } from "@/i18n/navigation";
 import { buildCoachMockExamHref } from "@/lib/coach";
+import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
-import {
-  deleteMockExam,
-  fetchMockExamById,
-  updateMockExam,
-} from "@/lib/mock-exams";
-import { AnalysisMockExamForm } from "./analysis-mock-exam-form";
-import {
-  formatTrendDate,
-  scoresFromMockExam,
-  type SubjectScores,
-} from "./analysis-types";
+import { deleteMockExam, fetchMockExamById } from "@/lib/mock-exams";
+import { AnalysisHistoryEditSheet } from "./analysis-history-edit-sheet";
+import { formatTrendDate } from "./analysis-types";
 
-const FOCUSABLE_SELECTOR = [
-  "a[href]",
-  "button:not([disabled])",
-  "input:not([disabled])",
-  "select:not([disabled])",
-  "textarea:not([disabled])",
-  '[tabindex]:not([tabindex="-1"])',
-].join(",");
+const pillBtnClass =
+  "inline-flex min-h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full border bg-white px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none";
 
 interface AnalysisHistoryDetailProps {
-  mockExamId: string | null;
+  mockExamId: string;
   subjects: ExamSubjectDto[];
   onClose: () => void;
   onChanged: () => void;
+  /** Inline expand under a history row (rail/drawer). */
+  variant?: "accordion" | "drawer";
 }
 
+/**
+ * Mock-exam detail — accordion (default) under the history row, or legacy drawer.
+ * Edit opens in a bottom sheet so the narrow rail stays read-only.
+ */
 export function AnalysisHistoryDetail({
   mockExamId,
   subjects,
   onClose,
   onChanged,
+  variant = "accordion",
 }: AnalysisHistoryDetailProps) {
   const t = useTranslations("analysis.history");
   const tAnalysis = useTranslations("analysis");
   const locale = useLocale();
   const dialog = useMentorDialog();
   const toast = useMentorToast();
-  const panelRef = useRef<HTMLDivElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const sheet = useMentorBottomSheet();
   const [detail, setDetail] = useState<MockExamDto | null>(null);
-  const [mode, setMode] = useState<"view" | "edit">("view");
-  const [scores, setScores] = useState<Record<string, SubjectScores>>({});
-  const [publisherName, setPublisherName] = useState("");
-  const [takenAtDate, setTakenAtDate] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const open = mockExamId != null;
-  const mutating = saving || deleting;
 
   useEffect(() => {
-    if (!mockExamId) {
-      // Reset drawer-local state after the parent clears the selected record.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDetail(null);
-      setMode("view");
-      setError(null);
-      return;
-    }
     let active = true;
     setDetail(null);
-    setMode("view");
     setError(null);
     fetchMockExamById(mockExamId)
       .then((dto) => {
@@ -89,113 +68,29 @@ export function AnalysisHistoryDetail({
     };
   }, [mockExamId]);
 
-  useEffect(() => {
-    if (!open) return;
-
-    previousFocusRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    document.documentElement.classList.add("mentor-drawer-open");
-    const frame = requestAnimationFrame(() => closeButtonRef.current?.focus());
-
-    return () => {
-      cancelAnimationFrame(frame);
-      document.documentElement.classList.remove("mentor-drawer-open");
-      const previousFocus = previousFocusRef.current;
-      previousFocusRef.current = null;
-      if (previousFocus?.isConnected) previousFocus.focus();
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        if (!mutating) onClose();
-        return;
-      }
-      if (event.key !== "Tab") return;
-
-      const focusable = Array.from(
-        panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR) ??
-          [],
-      ).filter((element) => element.getClientRects().length > 0);
-
-      if (focusable.length === 0) {
-        event.preventDefault();
-        return;
-      }
-
-      const first = focusable[0]!;
-      const last = focusable[focusable.length - 1]!;
-      const activeElement = document.activeElement;
-
-      if (event.shiftKey && (activeElement === first || !panelRef.current?.contains(activeElement))) {
-        event.preventDefault();
-        last.focus();
-      } else if (
-        !event.shiftKey &&
-        (activeElement === last || !panelRef.current?.contains(activeElement))
-      ) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [mutating, onClose, open]);
-
   function startEditing() {
     if (!detail) return;
-    setScores(scoresFromMockExam(subjects, detail.subjects));
-    setPublisherName(detail.publisherName ?? "");
-    setTakenAtDate(detail.takenAt.slice(0, 10));
-    setError(null);
-    setMode("edit");
-  }
-
-  function updateScore(
-    slug: string,
-    field: keyof SubjectScores,
-    value: string,
-  ) {
-    setScores((current) => ({
-      ...current,
-      [slug]: { ...current[slug]!, [field]: value },
-    }));
-  }
-
-  async function handleUpdate(event: React.FormEvent) {
-    event.preventDefault();
-    if (!detail || saving || !takenAtDate) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const updated = await updateMockExam(detail.id, {
-        takenAt: new Date(takenAtDate + "T12:00:00").toISOString(),
-        publisherName: publisherName.trim() || null,
-        subjects: subjects.map((subject) => ({
-          subjectRef: subject.slug,
-          correct: Number(scores[subject.slug]?.correct || 0),
-          wrong: Number(scores[subject.slug]?.wrong || 0),
-          blank: Number(scores[subject.slug]?.blank || 0),
-        })),
-      });
-      setDetail(updated);
-      setMode("view");
-      onChanged();
-      toast.success({
-        title: t("update_success_title"),
-        message: t("update_success_message"),
-      });
-    } catch (updateError) {
-      setError(toErrorMessage(updateError));
-    } finally {
-      setSaving(false);
-    }
+    sheet.show({
+      title: t("edit_title"),
+      layout: "filter",
+      bodyScroll: true,
+      children: (
+        <AnalysisHistoryEditSheet
+          detail={detail}
+          subjects={subjects}
+          onCancel={() => sheet.dismissNow()}
+          onSaved={(updated) => {
+            setDetail(updated);
+            sheet.dismissNow();
+            onChanged();
+            toast.success({
+              title: t("update_success_title"),
+              message: t("update_success_message"),
+            });
+          }}
+        />
+      ),
+    });
   }
 
   async function handleDelete() {
@@ -228,7 +123,285 @@ export function AnalysisHistoryDetail({
     }
   }
 
-  if (!open) return null;
+  const body = (
+    <div className="flex flex-col gap-3" aria-busy={deleting || undefined}>
+      <FormError message={error} />
+      {detail ? (
+        <>
+          {/* Accordion row already shows publisher, date, and net — skip duplicate chrome. */}
+          {variant !== "accordion" ? (
+            <div>
+              <p
+                className="text-lg font-bold tabular-nums"
+                style={{
+                  color: "var(--color-main)",
+                  fontFamily: "var(--font-heading)",
+                }}
+              >
+                {detail.totalNet}
+              </p>
+              <p
+                className="text-xs"
+                style={{ color: "var(--color-secondary)" }}
+              >
+                {detail.publisherName ? detail.publisherName + " · " : ""}
+                {detail.examName}
+              </p>
+              <p
+                className="text-xs"
+                style={{ color: "var(--color-secondary)" }}
+              >
+                {formatTrendDate(detail.takenAt, locale)}
+              </p>
+            </div>
+          ) : null}
+
+          <div className="overflow-x-auto mentor-scrollarea">
+            <table className="w-full min-w-[14rem] border-collapse text-left text-xs">
+              <caption className="sr-only">{t("subjects_table_caption")}</caption>
+              <thead>
+                <tr
+                  style={{
+                    borderBottom:
+                      "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
+                  }}
+                >
+                  <th
+                    className="py-1.5 pr-2 font-semibold"
+                    style={{ color: "var(--color-secondary)" }}
+                  >
+                    {t("col_subject")}
+                  </th>
+                  <th
+                    className="px-1 py-1.5 text-center font-semibold tabular-nums"
+                    style={{ color: "var(--color-secondary)" }}
+                  >
+                    {t("col_correct")}
+                  </th>
+                  <th
+                    className="px-1 py-1.5 text-center font-semibold tabular-nums"
+                    style={{ color: "var(--color-secondary)" }}
+                  >
+                    {t("col_wrong")}
+                  </th>
+                  <th
+                    className="px-1 py-1.5 text-center font-semibold tabular-nums"
+                    style={{ color: "var(--color-secondary)" }}
+                  >
+                    {t("col_blank")}
+                  </th>
+                  <th
+                    className="py-1.5 pl-2 text-right font-semibold tabular-nums"
+                    style={{ color: "var(--color-secondary)" }}
+                  >
+                    {t("col_net")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {detail.subjects.map((subject) => (
+                  <tr
+                    key={subject.subjectRef}
+                    style={{
+                      borderBottom:
+                        "1px solid color-mix(in srgb, var(--color-main) 6%, transparent)",
+                    }}
+                  >
+                    <td
+                      className="max-w-[6.5rem] truncate py-1.5 pr-2 font-medium"
+                      style={{ color: "var(--color-body)" }}
+                      title={subject.subjectName}
+                    >
+                      {subject.subjectName}
+                    </td>
+                    <td
+                      className="px-1 py-1.5 text-center tabular-nums"
+                      style={{ color: "var(--color-secondary)" }}
+                    >
+                      {subject.correct}
+                    </td>
+                    <td
+                      className="px-1 py-1.5 text-center tabular-nums"
+                      style={{ color: "var(--color-secondary)" }}
+                    >
+                      {subject.wrong}
+                    </td>
+                    <td
+                      className="px-1 py-1.5 text-center tabular-nums"
+                      style={{ color: "var(--color-secondary)" }}
+                    >
+                      {subject.blank}
+                    </td>
+                    <td
+                      className="py-1.5 pl-2 text-right font-semibold tabular-nums"
+                      style={{
+                        color: "var(--color-main)",
+                        fontFamily: "var(--font-heading)",
+                      }}
+                    >
+                      {subject.net}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {!deleting ? (
+            <Link
+              href={buildCoachMockExamHref(
+                t("coach_seed", {
+                  date: formatTrendDate(detail.takenAt, locale),
+                  exam: detail.examName,
+                }),
+                detail.id,
+              )}
+              className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] border bg-transparent px-3 py-2 text-sm font-bold transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+              style={{
+                color: "var(--color-main)",
+                borderColor:
+                  "color-mix(in srgb, var(--color-main) 15%, transparent)",
+                fontFamily: "var(--font-body)",
+              }}
+            >
+              <Sparkles size={16} strokeWidth={2.25} aria-hidden />
+              {tAnalysis("coach_cta")}
+            </Link>
+          ) : null}
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={startEditing}
+              disabled={deleting}
+              className={pillBtnClass}
+              style={{
+                color: "var(--color-main)",
+                borderColor:
+                  "color-mix(in srgb, var(--color-main) 18%, transparent)",
+                fontFamily: "var(--font-heading)",
+              }}
+            >
+              <Pencil size={14} strokeWidth={2.25} aria-hidden />
+              {t("edit")}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              disabled={deleting}
+              aria-busy={deleting || undefined}
+              className={pillBtnClass}
+              style={{
+                color: "var(--color-danger)",
+                borderColor:
+                  "color-mix(in srgb, var(--color-danger) 35%, transparent)",
+                fontFamily: "var(--font-heading)",
+              }}
+            >
+              <Trash2 size={14} strokeWidth={2.25} aria-hidden />
+              {t("delete")}
+            </button>
+          </div>
+        </>
+      ) : !error ? (
+        <div
+          className={`flex flex-col gap-2.5 ${variant === "accordion" ? "min-h-[10rem]" : "min-h-[13rem]"}`}
+          aria-busy
+          aria-label={t("loading_detail")}
+        >
+          {variant !== "accordion" ? (
+            <>
+              <Skeleton className="h-7 w-20 rounded-[var(--radius-card)]" />
+              <Skeleton className="h-3 w-36 rounded-[var(--radius-card)]" />
+              <Skeleton className="h-3 w-24 rounded-[var(--radius-card)]" />
+            </>
+          ) : null}
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 5 }, (_, index) => (
+              <Skeleton
+                key={index}
+                className="h-4 w-full rounded-[var(--radius-card)]"
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+
+  if (variant === "accordion") {
+    return (
+      <div
+        id={`analysis-history-panel-${mockExamId}`}
+        role="region"
+        aria-label={t("detail_title")}
+        className="mt-0.5 rounded-[10px] px-2.5 py-3"
+        style={{
+          backgroundColor: "var(--color-surface)",
+          border:
+            "1px solid color-mix(in srgb, var(--color-main) 8%, transparent)",
+          boxShadow: "var(--shadow-card)",
+        }}
+        data-testid="analysis-history-accordion"
+      >
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <HistoryDetailDrawer
+      title={t("detail_title")}
+      closeLabel={t("close")}
+      mutating={deleting}
+      onClose={onClose}
+    >
+      {body}
+    </HistoryDetailDrawer>
+  );
+}
+
+function HistoryDetailDrawer({
+  title,
+  closeLabel,
+  mutating,
+  onClose,
+  children,
+}: {
+  title: string;
+  closeLabel: string;
+  mutating: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    document.documentElement.classList.add("mentor-drawer-open");
+    const frame = requestAnimationFrame(() => closeButtonRef.current?.focus());
+
+    return () => {
+      cancelAnimationFrame(frame);
+      document.documentElement.classList.remove("mentor-drawer-open");
+      const previousFocus = previousFocusRef.current;
+      previousFocusRef.current = null;
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !mutating) onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [mutating, onClose]);
 
   return (
     <>
@@ -251,7 +424,6 @@ export function AnalysisHistoryDetail({
         role="dialog"
         aria-modal="true"
         aria-labelledby="analysis-history-title"
-        aria-busy={mutating || undefined}
       >
         <div
           className="flex items-center justify-between border-b px-5 py-3"
@@ -268,128 +440,21 @@ export function AnalysisHistoryDetail({
               fontFamily: "var(--font-heading)",
             }}
           >
-            {mode === "edit" ? t("edit_title") : t("detail_title")}
+            {title}
           </h2>
           <button
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
             disabled={mutating}
-            aria-label={t("close")}
+            aria-label={closeLabel}
             className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             style={{ color: "var(--color-secondary)" }}
           >
             <X className="h-5 w-5" aria-hidden />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          <FormError message={error} />
-          {detail ? (
-            mode === "edit" ? (
-              <AnalysisMockExamForm
-                subjects={subjects}
-                scores={scores}
-                submitting={saving}
-                publisherName={publisherName}
-                takenAtDate={takenAtDate}
-                onPublisherChange={setPublisherName}
-                onTakenAtChange={setTakenAtDate}
-                onScoreChange={updateScore}
-                onSubmit={(event) => void handleUpdate(event)}
-                submitLabel={t("save_edit")}
-                onCancel={() => {
-                  setMode("view");
-                  setError(null);
-                }}
-              />
-            ) : (
-              <Card className="flex flex-col gap-4">
-                <div>
-                  <p
-                    className="text-xl font-bold tabular-nums"
-                    style={{
-                      color: "var(--color-main)",
-                      fontFamily: "var(--font-heading)",
-                    }}
-                  >
-                    {detail.totalNet}
-                  </p>
-                  <p
-                    className="text-sm"
-                    style={{ color: "var(--color-secondary)" }}
-                  >
-                    {detail.publisherName
-                      ? detail.publisherName + " · "
-                      : ""}
-                    {detail.examName} · {formatTrendDate(detail.takenAt, locale)}
-                  </p>
-                </div>
-                <ul className="flex flex-col gap-2">
-                  {detail.subjects.map((subject) => (
-                    <li
-                      key={subject.subjectRef}
-                      className="flex items-center justify-between gap-2 text-sm"
-                    >
-                      <span style={{ color: "var(--color-body)" }}>
-                        {subject.subjectName}
-                      </span>
-                      <span
-                        className="tabular-nums"
-                        style={{ color: "var(--color-secondary)" }}
-                      >
-                        D{subject.correct} Y{subject.wrong} B{subject.blank} ·{" "}
-                        {subject.net}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                {!mutating ? (
-                  <Link
-                    href={buildCoachMockExamHref(
-                      t("coach_seed", {
-                        date: formatTrendDate(detail.takenAt, locale),
-                        exam: detail.examName,
-                      }),
-                      detail.id,
-                    )}
-                    className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-                    style={{
-                      backgroundColor: "var(--color-btn)",
-                      color: "white",
-                      boxShadow: "var(--shadow-card)",
-                      fontFamily: "var(--font-body)",
-                    }}
-                  >
-                    {tAnalysis("coach_cta")}
-                  </Link>
-                ) : null}
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    fullWidth
-                    onClick={startEditing}
-                  >
-                    {t("edit")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    fullWidth
-                    busy={deleting}
-                    onClick={() => void handleDelete()}
-                  >
-                    {t("delete")}
-                  </Button>
-                </div>
-              </Card>
-            )
-          ) : !error ? (
-            <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-              …
-            </p>
-          ) : null}
-        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
       </div>
     </>
   );
@@ -402,4 +467,3 @@ function toErrorMessage(error: unknown): string {
       ? error.message
       : String(error);
 }
-

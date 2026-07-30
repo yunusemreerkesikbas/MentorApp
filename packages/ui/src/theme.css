@@ -27,6 +27,7 @@
   --color-progress-track: #c3d9fd;
   /** Soft accent wells — alias of progress-track (DESIGN.md §2.3). */
   --color-accent-soft: #c3d9fd;
+  --color-thumb-violet: #ddace5;
   --color-star: #ffc700;
   /** Flame coral from `apps/web/public/img/flame.png` tip — ring/label; not danger. */
   --color-streak: #f3705a;

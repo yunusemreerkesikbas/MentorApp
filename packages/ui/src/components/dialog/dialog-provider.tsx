@@ -1,5 +1,6 @@
 "use client";
 
+import type * as React from "react";
 import {
   createContext,
   useCallback,
@@ -7,7 +8,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { DialogViewport } from "./dialog-viewport.js";
 import {
@@ -36,7 +36,7 @@ type PendingResolver =
   | { kind: "promo"; resolve: (value: DialogPromoResult) => void };
 
 export interface DialogProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 export function DialogProvider({ children }: DialogProviderProps) {
@@ -47,14 +47,17 @@ export function DialogProvider({ children }: DialogProviderProps) {
 
   dialogRef.current = dialog;
 
-  const resolvePending = useCallback((value: boolean | void | DialogPromoResult) => {
-    const pending = pendingRef.current;
-    if (!pending) return;
-    pendingRef.current = null;
-    if (pending.kind === "boolean") pending.resolve(value as boolean);
-    else if (pending.kind === "void") pending.resolve();
-    else pending.resolve(value as DialogPromoResult);
-  }, []);
+  const resolvePending = useCallback(
+    (value: boolean | void | DialogPromoResult) => {
+      const pending = pendingRef.current;
+      if (!pending) return;
+      pendingRef.current = null;
+      if (pending.kind === "boolean") pending.resolve(value as boolean);
+      else if (pending.kind === "void") pending.resolve();
+      else pending.resolve(value as DialogPromoResult);
+    },
+    [],
+  );
 
   const abortPending = useCallback(() => {
     const pending = pendingRef.current;

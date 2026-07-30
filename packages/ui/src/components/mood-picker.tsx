@@ -24,7 +24,12 @@ export interface MoodPickerProps {
  * Pure UI: emits a 1..5 integer; no AI, no free-text, no client-side scoring.
  * Rendered as a radiogroup for keyboard + screen-reader support.
  */
-export function MoodPicker({ value, onChange, ariaLabel = "Bugün nasılsın?", className }: MoodPickerProps) {
+export function MoodPicker({
+  value,
+  onChange,
+  ariaLabel = "Bugün nasılsın?",
+  className,
+}: MoodPickerProps) {
   return (
     <div
       role="radiogroup"

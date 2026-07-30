@@ -1,9 +1,9 @@
 "use client";
 
-import type { HTMLAttributes, ReactNode } from "react";
+import type * as React from "react";
 
-export interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  children: ReactNode;
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode;
   /** Solid white instead of the default translucent surface. */
   solid?: boolean;
 }

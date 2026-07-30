@@ -1,5 +1,7 @@
 "use client";
 
+type SparklineTone = "up" | "down" | "neutral";
+
 interface SparklinePoint {
   id: string;
   totalNet: string;
@@ -10,18 +12,34 @@ interface AnalysisSparklineProps {
   label: string;
   width?: number;
   height?: number;
+  className?: string;
+  /** Trend tone — colors line + area fill (DESIGN tokens). */
+  tone?: SparklineTone;
+  /** Soft area fill under the line (reference KPI cards). */
+  withFill?: boolean;
 }
+
+const TONE_STROKE: Record<SparklineTone, string> = {
+  up: "var(--color-success)",
+  down: "var(--color-danger)",
+  neutral: "var(--color-progress)",
+};
 
 export function AnalysisSparkline({
   points,
   label,
   width = 280,
   height = 72,
+  className = "h-[72px] w-full max-w-full",
+  tone = "neutral",
+  withFill = false,
 }: AnalysisSparklineProps) {
   const padX = 8;
   const padY = 10;
   const innerW = width - padX * 2;
   const innerH = height - padY * 2;
+  const stroke = TONE_STROKE[tone];
+  const gradientId = `analysis-spark-fill-${tone}`;
 
   if (points.length === 0) return null;
 
@@ -43,6 +61,17 @@ export function AnalysisSparkline({
     coords.length > 1
       ? coords.map((coordinate) => coordinate.x + "," + coordinate.y).join(" ")
       : null;
+
+  const areaPath =
+    withFill && coords.length > 1
+      ? [
+          `M ${coords[0]!.x} ${padY + innerH}`,
+          ...coords.map((c) => `L ${c.x} ${c.y}`),
+          `L ${coords[coords.length - 1]!.x} ${padY + innerH}`,
+          "Z",
+        ].join(" ")
+      : null;
+
   const accessibleLabel = `${label}: ${points
     .map((point) => point.totalNet)
     .join(" → ")}`;
@@ -50,14 +79,25 @@ export function AnalysisSparkline({
   return (
     <svg
       viewBox={["0", "0", width, height].join(" ")}
-      className="h-[72px] w-full max-w-full"
+      className={className}
       role="img"
       aria-label={accessibleLabel}
     >
+      {withFill ? (
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={stroke} stopOpacity="0.28" />
+            <stop offset="100%" stopColor={stroke} stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+      ) : null}
+      {areaPath ? (
+        <path d={areaPath} fill={`url(#${gradientId})`} />
+      ) : null}
       {polyline ? (
         <polyline
           fill="none"
-          stroke="var(--color-progress)"
+          stroke={stroke}
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -70,10 +110,9 @@ export function AnalysisSparkline({
           cx={coordinate.x}
           cy={coordinate.y}
           r={points.length === 1 ? 5 : 3.5}
-          fill="var(--color-progress)"
+          fill={stroke}
         />
       ))}
     </svg>
   );
 }
-

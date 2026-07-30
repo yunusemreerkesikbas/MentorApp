@@ -1,61 +1,137 @@
 "use client";
 
+import ArrowDownRight from "lucide-react/dist/esm/icons/arrow-down-right.mjs";
+import ArrowUpRight from "lucide-react/dist/esm/icons/arrow-up-right.mjs";
 import { useTranslations } from "next-intl";
 import type { CoachingAnalysisDto } from "@mentor/types";
-import { Button, Card, Chip } from "@mentor/ui";
+import { Card } from "@mentor/ui";
+import { AnalysisSparkline } from "./analysis-sparkline";
+import { trendForSparkline } from "./analysis-types";
+
+/** Sparkline window — last N attempts (newest-first from API, then reversed for L→R). */
+const SPARKLINE_WINDOW = 6;
 
 interface AnalysisSummaryBandProps {
   analysis: CoachingAnalysisDto | null;
-  onNewEntry: () => void;
 }
 
-export function AnalysisSummaryBand({
-  analysis,
-  onNewEntry,
-}: AnalysisSummaryBandProps) {
+type TrendTone = "up" | "down" | "neutral";
+
+function toneFromDelta(delta: string | null | undefined): TrendTone {
+  if (delta == null) return "neutral";
+  const value = Number(delta);
+  if (!Number.isFinite(value) || value === 0) return "neutral";
+  return value > 0 ? "up" : "down";
+}
+
+/**
+ * KPI-style metric banner — large net, minimal inline delta, sparkline from recent attempts.
+ */
+export function AnalysisSummaryBand({ analysis }: AnalysisSummaryBandProps) {
   const t = useTranslations("analysis.summary");
+  const tTrend = useTranslations("analysis");
 
   const latest = analysis?.trend[0] ?? null;
   const ghost = analysis?.ghost ?? null;
+  const sparkPoints = analysis
+    ? trendForSparkline(analysis.trend.slice(0, SPARKLINE_WINDOW))
+    : [];
+  const tone = toneFromDelta(ghost?.previousDelta);
+  const toneColor =
+    tone === "up"
+      ? "var(--color-success)"
+      : tone === "down"
+        ? "var(--color-danger)"
+        : "var(--color-secondary)";
 
   if (!latest) {
     return (
-      <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <Card data-testid="analysis-metric-banner">
         <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
           {t("empty")}
         </p>
-        <Button type="button" onClick={onNewEntry} className="shrink-0">
-          {t("new_entry")}
-        </Button>
       </Card>
     );
   }
 
   return (
-    <Card className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex min-w-0 flex-col gap-2">
-        <p
-          className="text-lg font-bold tabular-nums"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          {t("last_net", { net: latest.totalNet })}
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
-          {ghost ? (
-            <Chip>{t("delta", { delta: ghost.previousDelta })}</Chip>
-          ) : null}
+    <Card className="overflow-hidden" data-testid="analysis-metric-banner">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <span
+            className="text-xs font-semibold tracking-wide uppercase"
+            style={{
+              color: "var(--color-secondary)",
+              fontFamily: "var(--font-body)",
+            }}
+          >
+            {t("label")}
+          </span>
+
+          <div className="flex flex-wrap items-baseline gap-2.5">
+            <p
+              className="text-3xl font-bold tabular-nums leading-none sm:text-4xl"
+              style={{
+                color: "var(--color-main)",
+                fontFamily: "var(--font-heading)",
+              }}
+              data-testid="analysis-latest-net"
+              aria-label={t("last_net", { net: latest.totalNet })}
+            >
+              {latest.totalNet}
+            </p>
+
+            {ghost ? (
+              <span
+                className="inline-flex items-center gap-0.5 text-sm font-semibold tabular-nums"
+                style={{ color: toneColor, fontFamily: "var(--font-heading)" }}
+                data-testid="analysis-net-delta"
+                aria-label={t("delta", { delta: ghost.previousDelta })}
+              >
+                {tone === "up" ? (
+                  <ArrowUpRight
+                    className="size-3.5 shrink-0"
+                    strokeWidth={2.5}
+                    aria-hidden
+                  />
+                ) : null}
+                {tone === "down" ? (
+                  <ArrowDownRight
+                    className="size-3.5 shrink-0"
+                    strokeWidth={2.5}
+                    aria-hidden
+                  />
+                ) : null}
+                {ghost.previousDelta}
+              </span>
+            ) : null}
+          </div>
+
+          {ghost?.headline ? (
+            <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+              {ghost.headline}
+            </p>
+          ) : (
+            <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+              {t("caption")}
+            </p>
+          )}
         </div>
+
+        {sparkPoints.length > 0 ? (
+          <div className="min-w-0 w-full sm:max-w-[240px] lg:max-w-[280px] sm:shrink-0">
+            <AnalysisSparkline
+              points={sparkPoints}
+              label={tTrend("trend_title")}
+              width={240}
+              height={64}
+              className="h-16 w-full max-w-full"
+              tone={tone}
+              withFill
+            />
+          </div>
+        ) : null}
       </div>
-      <Button
-        type="button"
-        onClick={onNewEntry}
-        className="w-full shrink-0 sm:w-auto"
-      >
-        {t("new_entry")}
-      </Button>
     </Card>
   );
 }

@@ -4,6 +4,10 @@ import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { CoachingAnalysisDto, WeeklyReviewDto } from "@mentor/types";
 import { Button, Card, SectionHeading } from "@mentor/ui";
+import {
+  WeeklyRecapTeaser,
+  WeeklyRecapTeaserSkeleton,
+} from "@/components/weekly-recap-teaser";
 import { AnalysisGhostTeaser } from "./analysis-ghost-teaser";
 import { AnalysisHeroBackdrop } from "./analysis-hero-backdrop";
 import { AnalysisNextFocusCard } from "./analysis-next-focus-card";
@@ -16,11 +20,6 @@ import {
   type TrendWindow,
 } from "./analysis-types";
 import { GhostCard } from "./ghost-card";
-import { AnalysisDeepAnalysisCard } from "./analysis-deep-analysis-card";
-import {
-  AnalysisWeeklyReviewCard,
-  AnalysisWeeklyReviewSkeleton,
-} from "./analysis-weekly-review-card";
 
 type DevelopmentExtrasState =
   | { status: "idle"; examId: string | null }
@@ -280,12 +279,12 @@ function WeeklyReviewSlot({
 
   if (extras.status === "ready") {
     return (
-      <>
-        <AnalysisWeeklyReviewCard review={extras.data} />
-        {extras.data.status === "READY" ? (
-          <AnalysisDeepAnalysisCard key={extras.examId} examId={extras.examId} />
-        ) : null}
-      </>
+      <WeeklyRecapTeaser
+        period={extras.data.period}
+        status={extras.data.recap.status}
+        source="analysis"
+        examId={extras.examId}
+      />
     );
   }
 
@@ -307,5 +306,5 @@ function WeeklyReviewSlot({
     );
   }
 
-  return <AnalysisWeeklyReviewSkeleton />;
+  return <WeeklyRecapTeaserSkeleton />;
 }

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type * as React from "react";
 import { Card } from "./card.js";
 
 export interface DataCardSource {
@@ -14,15 +14,15 @@ export interface DataCardProps {
   /** Small label above the value (Nunito Sans 12 secondary, uppercased). */
   label?: string;
   /** Headline value — the authoritative fact (Nunito Sans, large). */
-  value: ReactNode;
+  value: React.ReactNode;
   /** Supporting line under the value (Nunito Sans 14 secondary). */
-  caption?: ReactNode;
+  caption?: React.ReactNode;
   /** Leading visual (icon/emoji), sized by the caller. */
-  icon?: ReactNode;
+  icon?: React.ReactNode;
   /** Trust attribution rendered as a subtle footer (guardrail #1 — verified source). */
   source?: DataCardSource;
   /** Extra content (e.g. a progress bar) rendered below the value block. */
-  children?: ReactNode;
+  children?: React.ReactNode;
   className?: string;
 }
 
@@ -48,14 +48,20 @@ export function DataCard({
           {label ? (
             <span
               className="text-xs font-semibold tracking-wide uppercase"
-              style={{ color: "var(--color-secondary)", fontFamily: "var(--font-heading)" }}
+              style={{
+                color: "var(--color-secondary)",
+                fontFamily: "var(--font-heading)",
+              }}
             >
               {label}
             </span>
           ) : null}
           <div
             className="text-3xl leading-tight font-bold"
-            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+            style={{
+              color: "var(--color-main)",
+              fontFamily: "var(--font-heading)",
+            }}
           >
             {value}
           </div>
@@ -66,7 +72,10 @@ export function DataCard({
           ) : null}
           {children}
           {source ? (
-            <p className="mt-2 text-xs" style={{ color: "var(--color-secondary)" }}>
+            <p
+              className="mt-2 text-xs"
+              style={{ color: "var(--color-secondary)" }}
+            >
               {source.prefix ? `${source.prefix} ` : null}
               {source.url ? (
                 <a

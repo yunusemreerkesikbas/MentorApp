@@ -54,6 +54,16 @@
 - [ ] No stray `TODO/FIXME` without a tracked reference.
 - [ ] Docs updated (service catalog/OpenAPI if the API changed) + **feature-doc timeline entry added**.
 
+### Iterative verification policy
+
+- During implementation, validate each change with the **smallest relevant scope**: affected unit/integration
+  tests and targeted lint/type/diff checks for touched files or packages.
+- Do **not** run the full monorepo test/lint/typecheck/build pipeline after every development step.
+- Widen the scope for shared-contract or high-risk changes, when targeted checks expose broader impact, or when
+  explicitly requested.
+- Before claiming PR/merge/release readiness, run the required full CI pipeline and report any pre-existing
+  failures separately. Targeted green checks never imply repository-wide green status.
+
 ## 7. Other contracts (quick reference)
 - **Errors:** typed; mapped to `ApiError` at the boundary; never swallowed. **Never surface raw SQL/DB/internal
   errors or stack traces to the user** → return a generic localized message + `code`, and log full detail server-side.

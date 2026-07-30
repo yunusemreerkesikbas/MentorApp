@@ -1,9 +1,9 @@
 "use client";
 
-import type { CSSProperties, HTMLAttributes } from "react";
+import type * as React from "react";
 import { MENTOR_SKELETON_SHIMMER_CLASS } from "./skeleton-classes.js";
 
-export type SkeletonProps = HTMLAttributes<HTMLDivElement>;
+export type SkeletonProps = React.HTMLAttributes<HTMLDivElement>;
 
 /**
  * Shimmer placeholder — animation only (`mentor-skeleton-shimmer`).
@@ -21,6 +21,9 @@ export function Skeleton({ className, style, ...rest }: SkeletonProps) {
 }
 
 /** Stagger delay helper for row-by-row shimmer offset (ms). */
-export function skeletonStaggerStyle(index: number, stepMs = 60): CSSProperties {
+export function skeletonStaggerStyle(
+  index: number,
+  stepMs = 60,
+): React.CSSProperties {
   return { animationDelay: `${index * stepMs}ms` };
 }

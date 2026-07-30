@@ -14,6 +14,10 @@ interface TaskRow {
   subject: string | null;
   status: string;
   sortOrder: number;
+  /** Absent on most fixtures — an all-day task, which is what every pre-calendar row is. */
+  startTime?: string | null;
+  endTime?: string | null;
+  description?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,6 +69,9 @@ function makePlanRepoFake(rows: TaskRow[]) {
         subject: data.subject ?? null,
         status: data.status ?? "PENDING",
         sortOrder: data.sortOrder ?? 0,
+        startTime: data.startTime ?? null,
+        endTime: data.endTime ?? null,
+        description: data.description ?? null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -141,6 +148,33 @@ describe("PlanService — task toggle keeps daily_activity in sync", () => {
     expect(activity.days.get(TODAY)?.tasksDone).toBe(2);
     await service.remove(USER, a.id);
     expect(activity.days.get(TODAY)?.tasksDone).toBe(1);
+  });
+
+  it("keeps a task all-day when no time is given", async () => {
+    const created = await service.create(USER, { title: "Tekrar" });
+    expect(created).toMatchObject({ startTime: null, endTime: null, description: null });
+  });
+
+  it("persists calendar times and description, and can clear them back to all-day", async () => {
+    const created = await service.create(USER, {
+      title: "Matematik tekrar",
+      startTime: "13:00",
+      endTime: "14:30",
+      description: "Problemler + hız",
+    });
+    expect(created).toMatchObject({
+      startTime: "13:00",
+      endTime: "14:30",
+      description: "Problemler + hız",
+    });
+
+    const cleared = await service.update(USER, created.id, {
+      startTime: null,
+      endTime: null,
+    });
+    expect(cleared).toMatchObject({ startTime: null, endTime: null });
+    // Clearing the times must not wipe the note.
+    expect(cleared.description).toBe("Problemler + hız");
   });
 
   it("updating a missing task throws COACHING_TASK_NOT_FOUND", async () => {

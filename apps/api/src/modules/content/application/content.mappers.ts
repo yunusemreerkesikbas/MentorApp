@@ -6,8 +6,11 @@ import type {
   InfoArticleDto,
   InfoArticleSummaryDto,
   Paginated,
+  PublicHolidayDto,
+  PublicHolidayKind,
 } from "@mentor/types";
 import type { ExamEventRow, ExamRow } from "../infrastructure/exam.repository";
+import type { PublicHolidayRow } from "../infrastructure/public-holiday.repository";
 import type { InfoArticleRow } from "../infrastructure/info-article.repository";
 import {
   daysBetween,
@@ -32,6 +35,18 @@ export function toExamEventDto(row: ExamEventRow): ExamEventDto {
   return {
     type: row.type,
     eventAt: row.eventAt.toISOString(),
+    source: row.source,
+    sourceUrl: row.sourceUrl,
+    verifiedAt: row.verifiedAt.toISOString(),
+    verifiedBy: row.verifiedBy,
+  };
+}
+
+export function toPublicHolidayDto(row: PublicHolidayRow): PublicHolidayDto {
+  return {
+    date: row.holidayDate,
+    name: row.name,
+    kind: row.kind as PublicHolidayKind,
     source: row.source,
     sourceUrl: row.sourceUrl,
     verifiedAt: row.verifiedAt.toISOString(),

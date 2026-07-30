@@ -55,18 +55,18 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## API
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /v1/economy/balance` | Self balance + ledger |
-| `GET /v1/economy/ledger` | Self ledger history |
-| `GET /v1/economy/quests` | Quest catalog + progress (auto-grants) |
-| `GET /v1/economy/invite` | Get/generate invite code |
-| `POST /v1/economy/invite/redeem` | Redeem invite code |
-| `GET /v1/economy/streak-rescue` | Streak-rescue offer (eligible? cost? affordable?) |
-| `POST /v1/economy/streak-rescue` | Buy the freeze for the break day (coin sink, idempotent) |
-| `GET /v1/economy/deep-analysis?examId=` | Deep-analysis unlock state (eligible? cost? unlocked?) |
-| `POST /v1/economy/deep-analysis` | Unlock this week's deep analysis (coin sink, idempotent) |
-| `POST /v1/admin/users/:id/economy/adjust` | Admin manual adjust (audited) |
+| Endpoint                                  | Purpose                                                  |
+| ----------------------------------------- | -------------------------------------------------------- |
+| `GET /v1/economy/balance`                 | Self balance + ledger                                    |
+| `GET /v1/economy/ledger`                  | Self ledger history                                      |
+| `GET /v1/economy/quests`                  | Quest catalog + progress (auto-grants)                   |
+| `GET /v1/economy/invite`                  | Get/generate invite code                                 |
+| `POST /v1/economy/invite/redeem`          | Redeem invite code                                       |
+| `GET /v1/economy/streak-rescue`           | Streak-rescue offer (eligible? cost? affordable?)        |
+| `POST /v1/economy/streak-rescue`          | Buy the freeze for the break day (coin sink, idempotent) |
+| `GET /v1/economy/deep-analysis?examId=`   | Deep-analysis unlock state (eligible? cost? unlocked?)   |
+| `POST /v1/economy/deep-analysis`          | Unlock this week's deep analysis (coin sink, idempotent) |
+| `POST /v1/admin/users/:id/economy/adjust` | Admin manual adjust (audited)                            |
 
 ## Geliştirmeler (timeline)
 
@@ -96,10 +96,11 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   sonuç `weekly_review_cache`'te). Eligibility harcamadan ÖNCE (review READY şartı) →
   `DEEP_ANALYSIS_NOT_ELIGIBLE` 422. Narration gate: `!premium` → `economy.enabled` VE
   `DeepAnalysisService.isUnlocked` şartı, yoksa eskisi gibi `PAYMENT_PREMIUM_REQUIRED`. Web:
-  `/analysis` gelişim tab'inde READY weekly review altında kart — premium doğrudan getirir, free
-  iki-dokunuş onaylı unlock (streak-rescue UX emsali), yetersiz coin → görev hub'ına link, flag
-  kapalıysa gizli. AI chat bölgesinde DEĞİL (§4 #3). Dosyalar: `deep-analysis.service.ts`,
-  `economy.controller.ts`, `weekly-review-narration.service.ts`, `analysis-deep-analysis-card.tsx`.
+  `/analysis/recap` READY hikâyesinin yalnız final ekranında açma CTA'sı — premium/unlocked
+  kullanıcıya anlatım arka planda gelir, free kullanıcıda iki-dokunuş onayı (streak-rescue UX
+  emsali), yetersiz coin → görev hub'ına link, flag kapalıysa gizli. PARTIAL/EMPTY satış yüzeyi
+  üretmez. AI chat bölgesinde DEĞİL (§4 #3). Dosyalar: `deep-analysis.service.ts`,
+  `economy.controller.ts`, `weekly-review-narration.service.ts`, `weekly-recap-shell.tsx`.
 - **Quest v3 — haftalık ritüel görevleri + kill-switch (APP-025 WP-B, 2026-07-19)** — Üç haftalık
   görev (ISO-hafta dönemli, `period_key` = `2026-W29`): `weekly.focus-sessions` (hedef config, 5),
   `weekly.plan-tasks` (hedef config, 10), `weekly.streak-full-week` (7/7 aktif gün — doğası gereği
@@ -143,24 +144,24 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 - **Seans → XP ödül döngüsü (2026-07-10)** — roadmap §262: tamamlanan seans artık XP'yi anında
   tetikler (lazy `/profil` beklemesi yok). `coaching.session-completed` event'i →
   `SessionCompletedListener` → `QuestService.evaluateAndGrant` (günlük `daily.focus-session-completed`
-  + `milestone.focus_sessions.*`; idempotent, capped). Yeni ödül kalemi yok. Done ekranı mount'ta
-  `GET /v1/economy/quests` okuyup son ~120sn'de tamamlanan `study-session` quest'lerinin XP toplamını
-  sade pill ile gösterir; `economy.enabled=false` → sessiz. Dosyalar: `coaching.events.ts`,
-  `session.service.ts`, `session-completed.listener.ts`, `economy.module.ts`, `session-done-state.tsx`,
-  `messages/{tr,en}.json`.
+  - `milestone.focus_sessions.*`; idempotent, capped). Yeni ödül kalemi yok. Done ekranı mount'ta
+    `GET /v1/economy/quests` okuyup son ~120sn'de tamamlanan `study-session` quest'lerinin XP toplamını
+    sade pill ile gösterir; `economy.enabled=false` → sessiz. Dosyalar: `coaching.events.ts`,
+    `session.service.ts`, `session-completed.listener.ts`, `economy.module.ts`, `session-done-state.tsx`,
+    `messages/{tr,en}.json`.
 - **Slice 1 — Ledger substrate + admin adjust** — `ledger_entries`, `EconomyService.grant()`
   (append-only, capped), self balance/ledger API, admin manual adjust (audited, bypasses caps).
-  *(0021.)*
+  _(0021.)_
 - **Slice 2a — Invite → conversion → coin** — `invites` + `invite_redemptions`, stable code per user,
   conversion listener on `payments.subscription.activated`, inviter coin reward (idempotent, capped).
-  F1 fix: cap-check + append in one tx (TOCTOU race closed). *(0022.)*
+  F1 fix: cap-check + append in one tx (TOCTOU race closed). _(0022.)_
 - **Onboarding quests** — 4 auto-grant quests (profile-setup, email-verified, first-subscription,
   invite-redeemed), `user_quest_progress`, lazy-eval triggers (GET + event hooks), admin quest view.
-  *(0027.)*
+  _(0027.)_
 - **Coin → AI chat spend** — `EconomyService.spend()`, `GET /coach/access`, free daily coin allowance,
-  LLM-failure compensating refund. *(0045.)*
+  LLM-failure compensating refund. _(0045.)_
 - **Web profil economy UI** — earn hub on `/profil` (balance, quests, invite share + redeem).
-  Hidden when `economy.enabled=false`. *(0046.)*
+  Hidden when `economy.enabled=false`. _(0046.)_
 - **Profil görev sheet iyileştirmesi** — `GET /v1/economy/quests` artık görev başına `rewardCoin`
   döndürür; `/profil` görev sheet'i tamamlanma özetini, Framer Motion animasyonlu yarım daire
   progress gauge'ini, backend'den gelen Coin ödülünü ve abonelik/davet aksiyonlarını gösterir.
@@ -168,7 +169,7 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   aksiyon olur. E-posta doğrulama satırı `POST /v1/users/me/verification-email` ile doğrulama mailini
   yeniden gönderir. Kart-içinde-kart görünümü kaldırıldı; ödül hâlâ otomatik işlenir, manuel claim yok.
   İlgili dosyalar: `QuestService`, `@mentor/types` economy contract, `economy-quests-card.tsx`.
-  *(2026-07-05.)*
+  _(2026-07-05.)_
 - **Quest v2 — günlük ritüel görevleri** — `GET /v1/economy/quests` artık onboarding görevlerine ek
   olarak günlük tekrar eden üç ritüel görevi döndürür: bugünün planından bir görev tamamla, bir odak
   seansı bitir, mood check-in yap. Contract `category`, `period`, `periodKey`, `rewardUnit`,
@@ -180,7 +181,7 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   tablolarını okumaz; `DailyQuestSignalService` üzerinden boolean sinyal alır. Web modalı iki bölüme
   ayrıldı: "Bugünkü Ritüel" + "Başlangıç"; görev listesi kendi içinde scroll eder ve navigasyon
   aksiyonları sheet'i kapatır.
-  üstte tek "sıradaki küçük adım" CTA'sı bulunur. *(2026-07-06.)*
+  üstte tek "sıradaki küçük adım" CTA'sı bulunur. _(2026-07-06.)_
 - **Quest v2.1 — streak milestone görevleri** — `GET /v1/economy/quests` streak eşikleri için
   tek-seferlik "Kilometre Taşları" görevlerini de döndürür (`7/14/30/100/365 gün`). Contract'a
   `category=milestone`, `action=panel`, `progressCurrent` ve `progressTarget` eklendi. Milestone
@@ -190,7 +191,7 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   Tamamlanan milestone progress'i streak resetlense bile hedefte gösterilir; streak eşikleri
   `@mentor/core` içindeki ortak invariant'tan okunur. Milestone satırlarında metnin yanında
   ince bir progress çizgisi gösterilir.
-  *(2026-07-08.)*
+  _(2026-07-08.)_
 - **Quest v2.2 — effort milestone görevleri** — `GET /v1/economy/quests` artık streak dışı toplam
   emek kilometre taşlarını da döndürür: `10/25/50/100` odak seansı ve `25/50/100/250` tamamlanan
   plan görevi. Hepsi `category=milestone`, `period=once`, XP ödüllü ve
@@ -198,24 +199,24 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   toplam sayaçları `DailyQuestSignalService` public boundary'sinden alır. Web görev modalında mevcut
   "Kilometre Taşları" tabında otomatik görünür; mobile app aynı `/v1/economy/quests` contract'ını
   native action mapping ile tüketebilir.
-  *(2026-07-09.)*
+  _(2026-07-09.)_
 - **Quest v2.3 — panel quest strip (updated 2026-07-23)** — daily quests surface on `/panel`
   inside **Bugünkü ritüel** as a compact `RitualQuestStrip` (not a second promo card). Best-effort
   `GET /v1/economy/quests`; economy off → strip hidden; tap opens the shared quests sheet.
-  Plan/mood updates re-fetch quest state. *(2026-07-09; merge 2026-07-23.)*
+  Plan/mood updates re-fetch quest state. _(2026-07-09; merge 2026-07-23.)_
 - **Quest v2.4 — reward feedback + balance sync** — web artık panelde yeni tamamlanan görevleri
   önceki/sonraki quest snapshot'ından algılar; ilk yüklemede eski tamamlanmış görevler için toast
   göstermez. Plan veya mood aksiyonundan sonra `GET /v1/economy/quests` auto-grant'i tetikler,
   yeni ödül varsa kısa XP/Coin toast'ı gösterir ve ardından `GET /v1/economy/balance` ile üstteki
   bakiye pill'ini yeniler. Profil economy hub da stale balance riskini kapatmak için quest auto-grant
   okumasından sonra balance okur. Backend contract değişmedi.
-  *(2026-07-09.)*
+  _(2026-07-09.)_
 - **Quest v2.5 — reward ledger history UI** — `GET /v1/economy/ledger` artık ledger satırlarını
   kullanıcı-dostu `title`/`description` alanlarıyla döndürür; teknik `reason` debug için korunur ama
   web UI'da gösterilmez. Profilde bakiye sheet'i açılınca son 20 hareket lazy yüklenir, XP/Coin
   tutarı ve kısa tarih ile gösterilir. Yeni endpoint yok; mobile ileride aynı view contract'ını
   tüketebilir.
-  *(2026-07-09.)*
+  _(2026-07-09.)_
 
 ## Gotchas / Known issues
 

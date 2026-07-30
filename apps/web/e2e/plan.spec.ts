@@ -32,6 +32,9 @@ const task: PlanTaskDto = {
   status: "PENDING",
   sortOrder: 0,
   taskDate: "2026-07-21",
+  startTime: null,
+  endTime: null,
+  description: null,
 };
 
 const readyPreview: CoachPlanAdaptationDto = {
@@ -141,10 +144,140 @@ test("stale preview seçimlerini korur ve ikinci çağrıyı yalnız manuel yeni
   await expect.poll(() => api.previewCalls).toBe(2);
 });
 
+/** Today in the browser's local calendar — the calendar view's "past is read-only" rule uses it. */
+const todayIso = new Date().toISOString().slice(0, 10);
+
+const timedTask: PlanTaskDto = {
+  id: "55555555-5555-4555-8555-555555555555",
+  title: "Matematik tekrar",
+  subject: "Matematik",
+  status: "PENDING",
+  sortOrder: 0,
+  taskDate: todayIso,
+  startTime: "13:00",
+  endTime: "14:30",
+  description: "Problemler + hız",
+};
+
+test.describe("Takvim", () => {
+  test("Ay ızgarasında saatli etkinliği gösterir ve aylar arasında gezinir", async ({
+    page,
+  }) => {
+    await mockPlanApi(page, {
+      preview: readyPreview,
+      tasks: [timedTask],
+      calendar: { scale: "month" },
+    });
+    await page.goto("/plan");
+
+    const monthTitle = page.getByRole("heading", { level: 2 }).first();
+    const shownMonth = await monthTitle.textContent();
+
+    // Chips only render on the desktop board; the 375px grid falls back to dots.
+    // A month cell is one line: start time + title (the subject rides on the color).
+    const isDesktop = (page.viewportSize()?.width ?? 0) >= 1024;
+    if (isDesktop) {
+      const chip = page.getByRole("button", { name: /Matematik tekrar/ }).first();
+      await expect(chip).toHaveText("13:00 Matematik tekrar");
+    }
+
+    // exact: the mini calendar's own nav is "Sonraki aya git".
+    await page.getByRole("button", { name: "Sonraki ay", exact: true }).click();
+    await expect(monthTitle).not.toHaveText(shownMonth ?? "");
+
+    await page.getByRole("button", { name: "Önceki ay", exact: true }).click();
+    await expect(monthTitle).toHaveText(shownMonth ?? "");
+  });
+
+  test("Hafta ölçeği masaüstünde saat ızgarası, mobilde ajanda gösterir", async ({
+    page,
+  }) => {
+    await mockPlanApi(page, {
+      preview: readyPreview,
+      tasks: [timedTask],
+      calendar: { scale: "week" },
+    });
+    await page.goto("/plan");
+
+    const isDesktop = (page.viewportSize()?.width ?? 0) >= 1024;
+    await expect(
+      page.getByRole("tab", { name: isDesktop ? "Hafta" : "Ajanda" }),
+    ).toHaveAttribute("aria-selected", "true");
+
+    if (isDesktop) {
+      // Seven-column hour grid: the event is a positioned block with its full range.
+      await expect(
+        page.getByRole("button", { name: /Matematik tekrar/ }).first(),
+      ).toContainText("13:00 – 14:30");
+    } else {
+      // Agenda: the event is a task row with its completion checkbox.
+      await expect(
+        page.getByRole("checkbox", { name: "Matematik tekrar" }),
+      ).toBeVisible();
+    }
+  });
+
+  test("Gün ızgarasında boş saate tıklayınca saatli etkinlik oluşturur", async ({
+    page,
+  }) => {
+    const api = await mockPlanApi(page, {
+      preview: readyPreview,
+      tasks: [],
+      calendar: { scale: "day" },
+    });
+    await page.goto("/plan");
+
+    await page.getByRole("button", { name: "09:00 için plan ekle" }).click();
+    await expect(page.getByText("Yeni etkinlik")).toBeVisible();
+
+    // The slot click turns "all day" off and seeds the start time.
+    await expect(page.getByRole("checkbox", { name: "Tüm gün" })).not.toBeChecked();
+    await expect(page.getByLabel("Başlangıç")).toHaveValue("09:00");
+
+    await page.getByLabel("Yeni görev").fill("Deneme çöz");
+    await page.getByLabel("Bitiş").fill("10:30");
+    await page.getByLabel("Açıklama").fill("Sayısal bölüm");
+    await page.getByRole("button", { name: "Görev ekle" }).click();
+
+    await expect.poll(() => api.createBodies.length).toBe(1);
+    expect(api.createBodies[0]).toMatchObject({
+      title: "Deneme çöz",
+      taskDate: todayIso,
+      startTime: "09:00",
+      endTime: "10:30",
+      description: "Sayısal bölüm",
+    });
+  });
+
+  test("bitiş saati başlangıçtan önceyse kaydetmez", async ({ page }) => {
+    const api = await mockPlanApi(page, {
+      preview: readyPreview,
+      tasks: [],
+      calendar: { scale: "day" },
+    });
+    await page.goto("/plan");
+
+    await page.getByRole("button", { name: "09:00 için plan ekle" }).click();
+    await page.getByLabel("Yeni görev").fill("Geçersiz aralık");
+    // Setting the start after the end is auto-corrected, so push the END backwards instead.
+    await page.getByLabel("Bitiş").fill("08:00");
+    await page.getByRole("button", { name: "Görev ekle" }).click();
+
+    await expect(
+      page.getByText("Bitiş saati başlangıçtan sonra olmalı."),
+    ).toBeVisible();
+    expect(api.createBodies).toHaveLength(0);
+  });
+});
+
 interface MockPlanOptions {
   preview: CoachPlanAdaptationDto;
   premium?: boolean;
   staleApplyOnce?: boolean;
+  /** Overrides the default single-task list. */
+  tasks?: PlanTaskDto[];
+  /** Seeds the persisted Takvim view + scale before the app boots. */
+  calendar?: { scale: "day" | "week" | "month" };
 }
 
 async function mockPlanApi(page: Page, options: MockPlanOptions) {
@@ -152,6 +285,8 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
   let staleApply = options.staleApplyOnce ?? false;
   const previewBodies: unknown[] = [];
   const applyBodies: unknown[] = [];
+  const createBodies: Record<string, unknown>[] = [];
+  const tasks = options.tasks ?? [task];
   const subscription: SubscriptionView = {
     subscription: null,
     entitlement: {
@@ -162,10 +297,14 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
     },
   };
 
-  await page.addInitScript(() => {
+  await page.addInitScript((scale: string | null) => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
     window.localStorage.removeItem("mentor.plan.view");
-  });
+    if (scale) {
+      window.localStorage.setItem("mentor.plan.viewMode", "calendar");
+      window.localStorage.setItem("mentor.plan.calendarScale", scale);
+    }
+  }, options.calendar?.scale ?? null);
   await page.route("http://localhost:3001/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -193,10 +332,33 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
       return json(route, subscription);
     }
     if (method === "GET" && path === "/v1/plan-tasks/calendar") {
-      return json(route, { dates: [task.taskDate] });
+      return json(route, { dates: tasks.map((x) => x.taskDate) });
+    }
+    if (method === "POST" && path === "/v1/plan-tasks") {
+      const body = request.postDataJSON() as Record<string, unknown>;
+      createBodies.push(body);
+      return json(
+        route,
+        {
+          id: "66666666-6666-4666-8666-666666666666",
+          subject: null,
+          status: "PENDING",
+          sortOrder: 0,
+          startTime: null,
+          endTime: null,
+          description: null,
+          ...body,
+        },
+        201,
+      );
     }
     if (method === "GET" && path === "/v1/plan-tasks") {
-      return json(route, { items: [task], total: 1, page: 1, pageSize: 50 });
+      return json(route, {
+        items: tasks,
+        total: tasks.length,
+        page: 1,
+        pageSize: 50,
+      });
     }
     if (method === "POST" && path === "/v1/coach/plan-adaptation") {
       previewCalls += 1;
@@ -250,6 +412,7 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
     },
     previewBodies,
     applyBodies,
+    createBodies,
   };
 }
 

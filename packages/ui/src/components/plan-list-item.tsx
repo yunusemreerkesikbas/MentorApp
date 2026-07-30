@@ -20,7 +20,13 @@ export interface PlanListItemProps {
  * leading checkbox control + title + optional subject Chip. The whole row is the toggle
  * (≥56px tall → comfortable 44px+ touch target). State is owned by the parent (no logic here).
  */
-export function PlanListItem({ title, done = false, subject, onToggle, className }: PlanListItemProps) {
+export function PlanListItem({
+  title,
+  done = false,
+  subject,
+  onToggle,
+  className,
+}: PlanListItemProps) {
   const interactive = typeof onToggle === "function";
 
   return (
@@ -37,11 +43,15 @@ export function PlanListItem({ title, done = false, subject, onToggle, className
         aria-hidden
         className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] border-2 transition-colors motion-reduce:transition-none"
         style={{
-          borderColor: done ? "var(--color-progress)" : "var(--color-secondary)",
+          borderColor: done
+            ? "var(--color-progress)"
+            : "var(--color-secondary)",
           backgroundColor: done ? "var(--color-progress)" : "transparent",
         }}
       >
-        {done ? <Check size={14} color="#fff" strokeWidth={3} aria-hidden /> : null}
+        {done ? (
+          <Check size={14} color="#fff" strokeWidth={3} aria-hidden />
+        ) : null}
       </span>
 
       <span

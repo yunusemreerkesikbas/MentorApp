@@ -6,6 +6,16 @@ import { planTasks } from "../../../database/schema";
 export type PlanTaskRow = typeof planTasks.$inferSelect;
 export type NewPlanTask = typeof planTasks.$inferInsert;
 
+/**
+ * Display order within one day: all-day items first, then timed items chronologically, then the
+ * user's manual order. Postgres defaults ASC to NULLS LAST, so `nulls first` is explicit.
+ */
+const withinDayOrder = [
+  sql`${planTasks.startTime} asc nulls first`,
+  asc(planTasks.sortOrder),
+  asc(planTasks.createdAt),
+];
+
 /** Transaction-scoped lock shared by every plan writer, including KVKK erasure. */
 export async function acquireUserPlanLock(tx: DatabaseTx, userId: string): Promise<void> {
   await tx.execute(
@@ -31,7 +41,7 @@ export class PlanTaskRepository {
       .select()
       .from(planTasks)
       .where(and(eq(planTasks.userId, userId), eq(planTasks.taskDate, date)))
-      .orderBy(asc(planTasks.sortOrder), asc(planTasks.createdAt));
+      .orderBy(...withinDayOrder);
   }
 
   /** Bounded internal read used by the seven-day coach adaptation snapshot. */
@@ -51,7 +61,7 @@ export class PlanTaskRepository {
           lte(planTasks.taskDate, to),
         ),
       )
-      .orderBy(asc(planTasks.taskDate), asc(planTasks.sortOrder), asc(planTasks.createdAt));
+      .orderBy(asc(planTasks.taskDate), ...withinDayOrder);
   }
 
   /** Paginated list for a date (kept paginated to honor the "no unbounded list" standard). */
@@ -68,7 +78,7 @@ export class PlanTaskRepository {
         .select()
         .from(planTasks)
         .where(where)
-        .orderBy(asc(planTasks.sortOrder), asc(planTasks.createdAt))
+        .orderBy(...withinDayOrder)
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       tx.select({ count: sql<number>`count(*)::int` }).from(planTasks).where(where),
@@ -95,11 +105,7 @@ export class PlanTaskRepository {
         .select()
         .from(planTasks)
         .where(where)
-        .orderBy(
-          asc(planTasks.taskDate),
-          asc(planTasks.sortOrder),
-          asc(planTasks.createdAt),
-        )
+        .orderBy(asc(planTasks.taskDate), ...withinDayOrder)
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       tx.select({ count: sql<number>`count(*)::int` }).from(planTasks).where(where),

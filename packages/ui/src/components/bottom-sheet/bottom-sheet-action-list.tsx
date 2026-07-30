@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType } from "react";
+import type * as React from "react";
 import CheckCircle2 from "lucide-react/dist/esm/icons/check-circle-2.mjs";
 import ChevronRight from "lucide-react/dist/esm/icons/chevron-right.mjs";
 import Clock from "lucide-react/dist/esm/icons/clock.mjs";
@@ -10,7 +10,7 @@ import type { BottomSheetAction, BottomSheetActionIcon } from "./types.js";
 
 const ICONS: Record<
   BottomSheetActionIcon,
-  ComponentType<{ size?: number; strokeWidth?: number; color?: string }>
+  React.ComponentType<{ size?: number; strokeWidth?: number; color?: string }>
 > = {
   "check-circle": CheckCircle2,
   clock: Clock,
@@ -32,8 +32,7 @@ export function BottomSheetActionList({
       {actions.map((action) => {
         const Icon = action.icon ? ICONS[action.icon] : null;
         const destructive = action.destructive === true;
-        const showChevron =
-          action.showChevron ?? (destructive ? false : true);
+        const showChevron = action.showChevron ?? (destructive ? false : true);
         const labelColor = destructive
           ? "var(--color-danger)"
           : "var(--color-body)";
@@ -54,7 +53,12 @@ export function BottomSheetActionList({
             >
               <span className="flex min-w-0 flex-1 items-center gap-4">
                 {Icon ? (
-                  <Icon size={20} strokeWidth={2} color={iconColor} aria-hidden />
+                  <Icon
+                    size={20}
+                    strokeWidth={2}
+                    color={iconColor}
+                    aria-hidden
+                  />
                 ) : (
                   <span className="w-5 shrink-0" aria-hidden />
                 )}

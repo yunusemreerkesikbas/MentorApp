@@ -15,6 +15,8 @@ import { MoodService } from "./mood.service";
 import { PlanService } from "./plan.service";
 import { SessionService } from "./session.service";
 import { StreakService } from "./streak.service";
+import { WeeklyReviewService } from "./weekly-review.service";
+import { weeklyReviewWindows } from "../domain/weekly-review";
 
 /**
  * Composite "daily hub" payload for the Panel — assembled server-side so the client does ONE
@@ -36,26 +38,54 @@ export class TodayService {
     private readonly sessions: SessionService,
     @Inject(CONTENT_PORT) private readonly content: ContentPort,
     private readonly i18n: I18nService,
+    private readonly weeklyReview: WeeklyReviewService,
   ) {}
 
   async getToday(userId: string): Promise<TodayPanelResponse> {
     const today = todayIso();
     // Identity owns the profile (display name + exam type) — read via its service, not a coaching query.
     const profile = await this.users.getMe(userId);
+    const recapWindow = profile.examType ? weeklyReviewWindows() : null;
+    const calendarPromise = this.content.getExamCalendar(profile.examType);
+    const recapCalendarPromise =
+      recapWindow == null
+        ? Promise.resolve(null)
+        : this.content.getExamCalendar(
+            profile.examType,
+            recapWindow.startDate,
+          );
+    const recapStatusPromise = recapCalendarPromise.then((calendar) =>
+      calendar == null
+        ? null
+        : this.weeklyReview
+            .getReview(userId, calendar.examId)
+            .then((review) => review.recap.status),
+    );
 
-    const [countdown, streak, tasks, mood, focusMinutesToday, focusingNow] =
-      await Promise.all([
-        this.buildCountdown(profile.examType, today),
-        this.streak.getSummary(userId),
-        this.plan.listForDate(userId, today),
-        this.mood.getToday(userId),
-        this.sessions.getTodayFocusMinutes(userId),
-        // Ambience only — a failed aggregate must never take the daily hub down (logged fallback).
-        this.sessions.getFocusingNowCount().catch((err: unknown) => {
-          this.logger.warn(`focusingNow unavailable: ${String(err)}`);
-          return null;
-        }),
-      ]);
+    const [
+      calendar,
+      recapCalendar,
+      recapStatus,
+      streak,
+      tasks,
+      mood,
+      focusMinutesToday,
+      focusingNow,
+    ] = await Promise.all([
+      calendarPromise,
+      recapCalendarPromise,
+      recapStatusPromise,
+      this.streak.getSummary(userId),
+      this.plan.listForDate(userId, today),
+      this.mood.getToday(userId),
+      this.sessions.getTodayFocusMinutes(userId),
+      // Ambience only — a failed aggregate must never take the daily hub down (logged fallback).
+      this.sessions.getFocusingNowCount().catch((err: unknown) => {
+        this.logger.warn(`focusingNow unavailable: ${String(err)}`);
+        return null;
+      }),
+    ]);
+    const countdown = this.buildCountdown(calendar, today);
 
     return {
       greetingName: profile.displayName,
@@ -71,6 +101,16 @@ export class TodayService {
         focusMinutesToday,
       },
       focusingNow,
+      weeklyRecapPeriod:
+        recapWindow == null || recapCalendar == null || recapStatus == null
+          ? null
+          : {
+              examId: recapCalendar.examId,
+              startDate: recapWindow.startDate,
+              endDate: recapWindow.endDate,
+              timeZone: "Europe/Istanbul",
+              status: recapStatus,
+            },
     };
   }
 
@@ -105,11 +145,10 @@ export class TodayService {
   }
 
   /** Build the calm countdown from the verified content calendar, or `null` (no silent fallback). */
-  private async buildCountdown(
-    examType: string | null,
+  private buildCountdown(
+    calendar: Awaited<ReturnType<ContentPort["getExamCalendar"]>>,
     today: string,
-  ): Promise<CountdownDto | null> {
-    const calendar = await this.content.getExamCalendar(examType);
+  ): CountdownDto | null {
     if (!calendar) return null;
     return {
       examType: calendar.examType,

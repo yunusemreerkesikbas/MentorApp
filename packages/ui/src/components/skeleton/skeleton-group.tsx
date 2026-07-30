@@ -1,10 +1,10 @@
 "use client";
 
-import type { HTMLAttributes, ReactNode } from "react";
+import type * as React from "react";
 import { MENTOR_SKELETON_ENTER_CLASS } from "./skeleton-classes.js";
 
-export interface SkeletonGroupProps extends HTMLAttributes<HTMLDivElement> {
-  children: ReactNode;
+export interface SkeletonGroupProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode;
   /** Screen-reader label while content loads. */
   label: string;
   /** Fade/slide-in on mount (`mentor-skeleton-enter` in theme.css). Default true. */

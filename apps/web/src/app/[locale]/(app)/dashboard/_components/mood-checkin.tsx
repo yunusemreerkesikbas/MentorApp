@@ -13,30 +13,14 @@ import {
   ApiClientError,
   coachingControllerUpsertMood,
 } from "@mentor/api-client";
-import type { PuhuVariant } from "@/components/puhu-image";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
+import { MOOD_WHEEL_OPTIONS } from "./mood-assets";
 import {
   deferMoodPromptForToday,
   shouldAutoPromptMood,
 } from "./mood-prompt-storage";
-import {
-  MOOD_WHEEL_SPHERES,
-  MoodWheelPicker,
-} from "./mood-wheel-picker";
-
-const MOOD_OPTIONS: Array<{ value: number; variant: PuhuVariant }> = [
-  { value: 1, variant: "surprised" },
-  { value: 2, variant: "default" },
-  { value: 3, variant: "encouraging" },
-  { value: 4, variant: "happy" },
-  { value: 5, variant: "proud" },
-];
-
-const MOOD_WHEEL_OPTIONS = MOOD_OPTIONS.map((option) => ({
-  ...option,
-  sphere: MOOD_WHEEL_SPHERES[option.value],
-}));
+import { MoodWheelPicker } from "./mood-wheel-picker";
 
 /**
  * soft — auto-prompt at most once per calendar day when today's mood is unset;
@@ -174,7 +158,6 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
 
       dialog.show({
         title: t("title"),
-        message: t("subtitle"),
         layout: "promo",
         dismissOnBackdrop: !isMandatory,
         dismissOnEscape: !isMandatory,
@@ -195,22 +178,20 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
             onSelect={(value) => void pickMood(value)}
             confirmLabel={t("checkin_cta")}
             hintLabel={t("wheel_hint")}
+            laterLabel={isMandatory ? undefined : t("ask_later")}
+            onLater={
+              isMandatory
+                ? undefined
+                : () => {
+                    deferMoodPromptForToday();
+                    dialog.dismiss();
+                  }
+            }
             disabled={busy}
             ariaLabel={t("title")}
           />
         ),
-        actions: isMandatory
-          ? []
-          : [
-              {
-                id: "later",
-                label: t("ask_later"),
-                variant: "link",
-                onClick: () => {
-                  deferMoodPromptForToday();
-                },
-              },
-            ],
+        actions: [],
       });
     },
     [busy, dialog, mood, pickMood, t],

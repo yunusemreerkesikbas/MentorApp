@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type * as React from "react";
 import X from "lucide-react/dist/esm/icons/x.mjs";
 import type { ToastRecord } from "./types.js";
 
@@ -9,7 +9,7 @@ export interface ToastItemProps {
   stackIndex: number;
   onDismiss: (id: string) => void;
   /** Optional default leading when toast.leading is unset (web bridge supplies Puhu/icons). */
-  renderLeading?: (variant: ToastRecord["variant"]) => ReactNode;
+  renderLeading?: (variant: ToastRecord["variant"]) => React.ReactNode;
 }
 
 /** Older stack entries fade slightly (Stitch stacked toast spec). */
@@ -43,12 +43,17 @@ export function ToastItem({
     >
       <div className="flex items-start p-3">
         {leading ? (
-          <div className="mt-1 flex shrink-0 items-center justify-center">{leading}</div>
+          <div className="mt-1 flex shrink-0 items-center justify-center">
+            {leading}
+          </div>
         ) : null}
         <div className={`min-w-0 flex-1 ${leading ? "ml-3" : ""}`}>
           <h4
             className="text-sm font-bold leading-snug"
-            style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
+            style={{
+              color: "var(--color-main)",
+              fontFamily: "var(--font-body)",
+            }}
           >
             {toast.title}
           </h4>

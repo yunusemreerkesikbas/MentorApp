@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -13,7 +21,11 @@ import type {
   StreakRescueView,
   TodayPanelResponse,
 } from "@mentor/types";
-import { ApiClientError, coachingControllerGetToday, planTaskControllerUpdate } from "@mentor/api-client";
+import {
+  ApiClientError,
+  coachingControllerGetToday,
+  planTaskControllerUpdate,
+} from "@mentor/api-client";
 import { CountdownCard } from "@mentor/ui";
 import {
   ArrowRight,
@@ -27,6 +39,7 @@ import {
 import { EconomyQuestsCard } from "@/components/economy-quests-card";
 import { CoachNextActionCard } from "@/components/coach-next-action-card";
 import { PuhuImage } from "@/components/puhu-image";
+import { WeeklyRecapTeaser } from "@/components/weekly-recap-teaser";
 import { Link } from "@/i18n/navigation";
 import {
   fetchQuests,
@@ -45,6 +58,7 @@ import { useMentorToast } from "@/lib/mentor-toast";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { useDailyGreeting } from "@/lib/use-daily-greeting";
 import { useStreakCelebration } from "@/components/streak-celebration";
+import { shouldShowWeeklyRecapTeaser } from "@/lib/weekly-recap";
 
 import { CommunityCard } from "./community-card";
 import { CountdownPlaceholder } from "./countdown-placeholder";
@@ -62,6 +76,12 @@ type PanelShellProps = {
 };
 
 const completedStatuses: PlanTaskStatus[] = ["DONE"];
+const getWeeklyRecapServerSnapshot = () => false;
+
+function subscribeWeeklyRecapStorage(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  return () => window.removeEventListener("storage", onStoreChange);
+}
 
 export function PanelShell({ initialData }: PanelShellProps) {
   const t = useTranslations("panel");
@@ -70,19 +90,45 @@ export function PanelShell({ initialData }: PanelShellProps) {
   const toast = useMentorToast();
   const { promo } = useMentorDialog();
   const sheet = useMentorBottomSheet();
-  const { tryCelebrate, previewCelebrate, celebration } = useStreakCelebration();
+  const { tryCelebrate, previewCelebrate, celebration } =
+    useStreakCelebration();
   const searchParams = useSearchParams();
   const mockCelebrationPreviewed = useRef(false);
   const shouldReduceMotion = useReducedMotion();
-  const [data, setData] = useState<TodayPanelResponse | null>(initialData ?? null);
+  const [data, setData] = useState<TodayPanelResponse | null>(
+    initialData ?? null,
+  );
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
-  const [streakRescue, setStreakRescue] = useState<StreakRescueView | null>(null);
+  const [streakRescue, setStreakRescue] = useState<StreakRescueView | null>(
+    null,
+  );
   const [quests, setQuests] = useState<QuestProgressView[] | null>(null);
+  const [dismissedWeeklyRecap, setDismissedWeeklyRecap] = useState<
+    string | null
+  >(null);
   const questsRef = useRef<QuestProgressView[] | null>(null);
   const rescuePromptedForDateRef = useRef<string | null>(null);
   const WELCOME_TOAST_KEY = "mentor_panel_welcome_date";
   const STREAK_RESCUE_PROMPT_KEY = "mentor_streak_rescue_prompt";
+  const weeklyRecapStartDate = data?.weeklyRecapPeriod?.startDate ?? null;
+  const weeklyRecapAvailable = useSyncExternalStore(
+    subscribeWeeklyRecapStorage,
+    useCallback(
+      () =>
+        weeklyRecapStartDate != null &&
+        data?.weeklyRecapPeriod != null &&
+        shouldShowWeeklyRecapTeaser(
+          window.localStorage,
+          weeklyRecapStartDate,
+          data.weeklyRecapPeriod.status,
+        ),
+      [data?.weeklyRecapPeriod, weeklyRecapStartDate],
+    ),
+    getWeeklyRecapServerSnapshot,
+  );
+  const showWeeklyRecap =
+    weeklyRecapAvailable && dismissedWeeklyRecap !== weeklyRecapStartDate;
 
   const openQuestsSheet = useCallback(
     (list: QuestProgressView[]) => {
@@ -90,7 +136,9 @@ export function PanelShell({ initialData }: PanelShellProps) {
         title: economyT("quests_title"),
         layout: "filter",
         bodyScroll: false,
-        children: <EconomyQuestsCard quests={list} onDismiss={sheet.dismissNow} />,
+        children: (
+          <EconomyQuestsCard quests={list} onDismiss={sheet.dismissNow} />
+        ),
       });
     },
     [economyT, sheet],
@@ -105,65 +153,74 @@ export function PanelShell({ initialData }: PanelShellProps) {
     }
   }, []);
 
-  const refreshQuests = useCallback(async (options?: { announceRewards?: boolean; refreshBalance?: boolean }) => {
-    try {
-      const nextQuests = await fetchQuests();
-      const completedNow = options?.announceRewards
-        ? findNewlyCompletedQuests(questsRef.current, nextQuests)
-        : [];
-      questsRef.current = nextQuests;
-      setQuests(nextQuests);
+  const refreshQuests = useCallback(
+    async (options?: {
+      announceRewards?: boolean;
+      refreshBalance?: boolean;
+    }) => {
+      try {
+        const nextQuests = await fetchQuests();
+        const completedNow = options?.announceRewards
+          ? findNewlyCompletedQuests(questsRef.current, nextQuests)
+          : [];
+        questsRef.current = nextQuests;
+        setQuests(nextQuests);
 
-      if (completedNow.length > 0) {
-        const rewardSummary = formatRewardSummary(completedNow, economyT);
-        if (!rewardSummary) return;
-        toast.success({
-          title:
-            completedNow.length === 1
-              ? t("quest_reward_single_title")
-              : t("quest_reward_multi_title"),
-          message: t("quest_reward_message", {
-            reward: rewardSummary,
-          }),
-          duration: 3000,
-        });
+        if (completedNow.length > 0) {
+          const rewardSummary = formatRewardSummary(completedNow, economyT);
+          if (!rewardSummary) return;
+          toast.success({
+            title:
+              completedNow.length === 1
+                ? t("quest_reward_single_title")
+                : t("quest_reward_multi_title"),
+            message: t("quest_reward_message", {
+              reward: rewardSummary,
+            }),
+            duration: 3000,
+          });
+        }
+      } catch {
+        questsRef.current = null;
+        setQuests(null);
+      } finally {
+        if (options?.refreshBalance) {
+          notifyEconomyChanged();
+        }
       }
-    } catch {
-      questsRef.current = null;
-      setQuests(null);
-    } finally {
-      if (options?.refreshBalance) {
-        notifyEconomyChanged();
-      }
-    }
-  }, [economyT, t, toast]);
+    },
+    [economyT, t, toast],
+  );
 
-  const refreshToday = useCallback(async (opts?: { silent?: boolean }) => {
-    if (!opts?.silent) {
-      setLoading(true);
-      setError(null);
-    }
-    try {
-      const response = await coachingControllerGetToday();
-      const next = unwrapTodayResponse(response);
-      setData(next);
-      if (!opts?.silent) setError(null);
-      return next;
-    } catch (err) {
+  const refreshToday = useCallback(
+    async (opts?: { silent?: boolean }) => {
       if (!opts?.silent) {
-        const message =
-          err instanceof ApiClientError
-            ? err.message
-            : err instanceof Error
-              ? err.message
-              : t("today_refresh_error");
-        setError(message);
+        setLoading(true);
+        setError(null);
       }
-      return null;
-    } finally {
-      if (!opts?.silent) setLoading(false);
-    }
-  }, [t]);
+      try {
+        const response = await coachingControllerGetToday();
+        const next = unwrapTodayResponse(response);
+        setData(next);
+        if (!opts?.silent) setError(null);
+        return next;
+      } catch (err) {
+        if (!opts?.silent) {
+          const message =
+            err instanceof ApiClientError
+              ? err.message
+              : err instanceof Error
+                ? err.message
+                : t("today_refresh_error");
+          setError(message);
+        }
+        return null;
+      } finally {
+        if (!opts?.silent) setLoading(false);
+      }
+    },
+    [t],
+  );
 
   const refreshRitualAndRewards = useCallback(
     async (opts?: { celebrateStreakFrom?: number }) => {
@@ -191,7 +248,10 @@ export function PanelShell({ initialData }: PanelShellProps) {
     } catch (err) {
       toast.error({
         title: t("streak_rescue_error_title"),
-        message: err instanceof ApiClientError ? err.message : t("streak_rescue_error_message"),
+        message:
+          err instanceof ApiClientError
+            ? err.message
+            : t("streak_rescue_error_message"),
       });
       await refreshStreakRescue();
     }
@@ -254,7 +314,10 @@ export function PanelShell({ initialData }: PanelShellProps) {
     const breakDate = streakRescue.date;
     const storageKey = `${STREAK_RESCUE_PROMPT_KEY}:${breakDate}`;
     if (rescuePromptedForDateRef.current === breakDate) return;
-    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(storageKey)) {
+    if (
+      typeof sessionStorage !== "undefined" &&
+      sessionStorage.getItem(storageKey)
+    ) {
       rescuePromptedForDateRef.current = breakDate;
       return;
     }
@@ -320,7 +383,11 @@ export function PanelShell({ initialData }: PanelShellProps) {
       .catch((err: unknown) => {
         if (!active) return;
         const message =
-          err instanceof ApiClientError ? err.message : err instanceof Error ? err.message : t("today_refresh_error");
+          err instanceof ApiClientError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : t("today_refresh_error");
         setError(message);
       })
       .finally(() => {
@@ -361,7 +428,9 @@ export function PanelShell({ initialData }: PanelShellProps) {
     );
   }
 
-  const doneCount = data.tasks.filter((task) => completedStatuses.includes(task.status)).length;
+  const doneCount = data.tasks.filter((task) =>
+    completedStatuses.includes(task.status),
+  ).length;
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-4 sm:px-8 lg:px-10 lg:py-8">
@@ -401,10 +470,29 @@ export function PanelShell({ initialData }: PanelShellProps) {
             </motion.div>
           ) : null}
 
+          {showWeeklyRecap && data.weeklyRecapPeriod ? (
+            <motion.div variants={staggerItemVariants}>
+              <WeeklyRecapTeaser
+                period={data.weeklyRecapPeriod}
+                status={data.weeklyRecapPeriod.status}
+                source="dashboard"
+                examId={data.weeklyRecapPeriod.examId}
+                examType={data.countdown?.examType}
+                compact
+                onOpen={() =>
+                  setDismissedWeeklyRecap(
+                    data.weeklyRecapPeriod?.startDate ?? null,
+                  )
+                }
+              />
+            </motion.div>
+          ) : null}
 
           <motion.div variants={staggerItemVariants}>
             <TodayFocusCard
-              key={data.tasks.map((task) => `${task.id}:${task.status}`).join("|")}
+              key={data.tasks
+                .map((task) => `${task.id}:${task.status}`)
+                .join("|")}
               initialTasks={data.tasks}
               sessionPresets={data.sessionPresets}
               doneCount={doneCount}
@@ -426,7 +514,10 @@ export function PanelShell({ initialData }: PanelShellProps) {
                 daysRemaining={data.countdown.daysRemaining}
                 examName={data.countdown.examName}
                 examDateLabel={data.countdown.examDateLabel}
-                source={{ label: data.countdown.source, url: data.countdown.sourceUrl }}
+                source={{
+                  label: data.countdown.source,
+                  url: data.countdown.sourceUrl,
+                }}
                 labels={{
                   remaining: countdownT("title"),
                   dayUnit: countdownT("day_unit"),
@@ -473,7 +564,9 @@ function DailyRhythmCard({
   // Premium: the coach's daily greeting (cached per user+day) replaces the static line;
   // free / error keeps the calm fallback copy.
   const dailyGreeting = useDailyGreeting();
-  const doneCount = tasks.filter((task) => completedStatuses.includes(task.status)).length;
+  const doneCount = tasks.filter((task) =>
+    completedStatuses.includes(task.status),
+  ).length;
   const hasEffort = doneCount > 0 || streakDays > 0;
   const displayMood = moodValue ?? mood?.mood ?? null;
 
@@ -481,7 +574,9 @@ function DailyRhythmCard({
     <article className="overflow-hidden rounded-[var(--radius-card)] bg-white shadow-[var(--shadow-card)]">
       <div className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_120px] sm:p-6">
         <div className="space-y-2">
-          <h2 className="text-xl font-bold text-[var(--color-main)]">{t("rhythm_title")}</h2>
+          <h2 className="text-xl font-bold text-[var(--color-main)]">
+            {t("rhythm_title")}
+          </h2>
           <ExpandableRhythmCopy text={dailyGreeting ?? t("rhythm_copy")} />
           {hasEffort ? (
             <p className="text-sm font-semibold text-[var(--color-secondary)]">
@@ -504,7 +599,11 @@ function DailyRhythmCard({
       </div>
 
       <div className="grid grid-cols-2 border-t border-black/5 sm:grid-cols-4">
-        <MetricTile label={t("metric_plan")} value={`${doneCount}/${tasks.length}`} icon={<BookOpen className="size-4" />} />
+        <MetricTile
+          label={t("metric_plan")}
+          value={`${doneCount}/${tasks.length}`}
+          icon={<BookOpen className="size-4" />}
+        />
         <MetricTile
           label={t("metric_focus")}
           value={t("metric_focus_value", { minutes: focusMinutes })}
@@ -512,7 +611,11 @@ function DailyRhythmCard({
         />
         <MetricTile
           label={t("metric_mood")}
-          value={displayMood != null ? t(`mood_${displayMood}`) : t("metric_mood_empty")}
+          value={
+            displayMood != null
+              ? t(`mood_${displayMood}`)
+              : t("metric_mood_empty")
+          }
           icon={<HeartPulse className="size-4" />}
           onClick={onMoodClick}
           actionLabel={t("metric_mood_action")}
@@ -555,10 +658,9 @@ function ExpandableRhythmCopy({ text }: { text: string }) {
     setNeedsToggle(full > collapsed + 1);
   }, [text]);
 
-  const targetHeight =
-    expanded
-      ? (fullHeight ?? "auto")
-      : (collapsedHeight ?? "auto");
+  const targetHeight = expanded
+    ? (fullHeight ?? "auto")
+    : (collapsedHeight ?? "auto");
 
   return (
     <div className="max-w-md space-y-1">
@@ -623,7 +725,10 @@ function StreakWeekIcons({ streakDays }: { streakDays: number }) {
         const isDone = isToday && streakDays > 0;
         const todayRing = isToday && streakDays === 0;
         return (
-          <div key={day.iso} className="grid min-w-0 flex-1 justify-items-center gap-1.5">
+          <div
+            key={day.iso}
+            className="grid min-w-0 flex-1 justify-items-center gap-1.5"
+          >
             <StreakDayGlyph done={isDone} today={todayRing} />
             <span
               className={[
@@ -667,7 +772,13 @@ function StreakDayGlyph({ done, today }: { done: boolean; today: boolean }) {
   );
 }
 
-function StreakFlameIcon({ size, ghost = false }: { size: number; ghost?: boolean }) {
+function StreakFlameIcon({
+  size,
+  ghost = false,
+}: {
+  size: number;
+  ghost?: boolean;
+}) {
   return (
     <Image
       src="/img/flame.png"
@@ -707,11 +818,15 @@ function MetricTile({
 
   const content = (
     <>
-      <span className={`grid size-9 shrink-0 place-items-center rounded-full ${wellClass}`}>
+      <span
+        className={`grid size-9 shrink-0 place-items-center rounded-full ${wellClass}`}
+      >
         {icon}
       </span>
       <span className="min-w-0">
-        <span className="block text-xs font-bold text-[var(--color-secondary)]">{label}</span>
+        <span className="block text-xs font-bold text-[var(--color-secondary)]">
+          {label}
+        </span>
         <span className="block truncate text-base font-bold">{value}</span>
       </span>
     </>
@@ -758,14 +873,20 @@ function TodayFocusCard({
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const totalCount = tasks.length;
   const firstTask = tasks[0] ?? null;
-  const completion = totalCount === 0 ? 0 : Math.round((doneCount / totalCount) * 100);
+  const completion =
+    totalCount === 0 ? 0 : Math.round((doneCount / totalCount) * 100);
   const activePreset = sessionPresets[0];
 
   const toggleTask = async (task: PlanTaskDto) => {
-    const nextStatus: PlanTaskStatus = task.status === "DONE" ? "PENDING" : "DONE";
+    const nextStatus: PlanTaskStatus =
+      task.status === "DONE" ? "PENDING" : "DONE";
     const previousTasks = tasks;
     setPendingTaskId(task.id);
-    setTasks((current) => current.map((item) => (item.id === task.id ? { ...item, status: nextStatus } : item)));
+    setTasks((current) =>
+      current.map((item) =>
+        item.id === task.id ? { ...item, status: nextStatus } : item,
+      ),
+    );
 
     try {
       await planTaskControllerUpdate(task.id, { status: nextStatus });
@@ -785,7 +906,11 @@ function TodayFocusCard({
         variant: "error",
         title: t("task_update_error_title"),
         message:
-          err instanceof ApiClientError ? err.message : err instanceof Error ? err.message : t("task_update_error_message"),
+          err instanceof ApiClientError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : t("task_update_error_message"),
       });
     } finally {
       setPendingTaskId(null);
@@ -830,7 +955,10 @@ function TodayFocusCard({
             </h2>
             <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-[var(--color-secondary)]">
               <BookOpen className="size-4 shrink-0" aria-hidden />
-              {t("today_focus_progress", { done: doneCount, total: totalCount })}
+              {t("today_focus_progress", {
+                done: doneCount,
+                total: totalCount,
+              })}
             </p>
           </div>
           <Link
@@ -864,7 +992,9 @@ function TodayFocusCard({
               ].join(" ")}
               aria-hidden
             >
-              {firstTask.status === "DONE" ? <Check className="size-4" /> : null}
+              {firstTask.status === "DONE" ? (
+                <Check className="size-4" />
+              ) : null}
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-base font-bold text-[var(--color-main)]">
@@ -897,7 +1027,9 @@ function TodayFocusCard({
         >
           <Play className="size-4 fill-current" aria-hidden />
           {activePreset
-            ? t("start_focus_with_minutes", { minutes: activePreset.focusMinutes })
+            ? t("start_focus_with_minutes", {
+                minutes: activePreset.focusMinutes,
+              })
             : t("today_focus_continue")}
         </Link>
       </div>
@@ -910,13 +1042,18 @@ function RitualQuestStrip({ quests }: { quests: QuestProgressView[] }) {
   const t = useTranslations("panel");
   const economyT = useTranslations("economy");
   const sheet = useMentorBottomSheet();
-  const dailyQuests = quests.filter((quest) => quest.category === "daily_ritual");
+  const dailyQuests = quests.filter(
+    (quest) => quest.category === "daily_ritual",
+  );
   if (dailyQuests.length === 0) return null;
 
   const completed = dailyQuests.filter((quest) => quest.completed).length;
   const nextQuest =
     dailyQuests.find((quest) => !quest.completed && quest.action) ??
-    quests.find((quest) => quest.category === "onboarding" && !quest.completed && quest.action) ??
+    quests.find(
+      (quest) =>
+        quest.category === "onboarding" && !quest.completed && quest.action,
+    ) ??
     null;
 
   function showQuests() {
@@ -924,7 +1061,9 @@ function RitualQuestStrip({ quests }: { quests: QuestProgressView[] }) {
       title: economyT("quests_title"),
       layout: "filter",
       bodyScroll: false,
-      children: <EconomyQuestsCard quests={quests} onDismiss={sheet.dismissNow} />,
+      children: (
+        <EconomyQuestsCard quests={quests} onDismiss={sheet.dismissNow} />
+      ),
     });
   }
 
@@ -946,14 +1085,21 @@ function RitualQuestStrip({ quests }: { quests: QuestProgressView[] }) {
           {nextQuest?.title ?? t("quests_banner_done")}
         </span>
         <span className="mt-0.5 block text-xs font-semibold text-[var(--color-secondary)]">
-          {t("quests_banner_progress", { completed, total: dailyQuests.length })}
+          {t("quests_banner_progress", {
+            completed,
+            total: dailyQuests.length,
+          })}
         </span>
       </span>
-      <ArrowRight className="size-4 shrink-0 text-[var(--color-secondary)]" aria-hidden />
+      <ArrowRight
+        className="size-4 shrink-0 text-[var(--color-secondary)]"
+        aria-hidden
+      />
     </button>
   );
 }
 
 function unwrapTodayResponse(response: unknown): TodayPanelResponse {
-  return ((response as { data?: TodayPanelResponse }).data ?? response) as TodayPanelResponse;
+  return ((response as { data?: TodayPanelResponse }).data ??
+    response) as TodayPanelResponse;
 }

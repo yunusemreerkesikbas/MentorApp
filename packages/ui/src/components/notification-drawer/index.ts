@@ -1,4 +1,7 @@
-export { NotificationDrawerProvider, useNotificationDrawer } from "./notification-drawer-context.js";
+export {
+  NotificationDrawerProvider,
+  useNotificationDrawer,
+} from "./notification-drawer-context.js";
 export { NotificationBell } from "./notification-bell.js";
 export { NotificationDrawerPanel } from "./notification-drawer-panel.js";
 export { NotificationDrawerItem } from "./notification-drawer-item.js";

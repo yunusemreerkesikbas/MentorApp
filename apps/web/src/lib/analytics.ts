@@ -2,7 +2,9 @@ import type {
   CoachAccessMode,
   CoachPlanAdaptationSource,
   DailyNextActionKind,
+  WeeklyRecapStatus,
 } from "@mentor/types";
+import type { WeeklyRecapSlideKind } from "./weekly-recap";
 
 export const ANALYTICS_CONSENT_KEY = "mentor.analytics-consent.v1";
 
@@ -42,6 +44,32 @@ export interface CoachAnalyticsParams {
 }
 export type CoachAnalyticsEvent = keyof CoachAnalyticsParams;
 
+type WeeklyRecapAnalyticsStatus = WeeklyRecapStatus | "UNKNOWN";
+type WeeklyRecapEntrySurface = "analysis" | "dashboard";
+
+interface WeeklyRecapBaseParams {
+  surface: WeeklyRecapEntrySurface | "recap";
+  recap_status: WeeklyRecapAnalyticsStatus;
+}
+
+export interface WeeklyRecapAnalyticsParams {
+  weekly_recap_teaser_impression: WeeklyRecapBaseParams & {
+    surface: WeeklyRecapEntrySurface;
+  };
+  weekly_recap_open: WeeklyRecapBaseParams & {
+    surface: WeeklyRecapEntrySurface;
+  };
+  weekly_recap_slide_view: WeeklyRecapBaseParams & {
+    surface: "recap";
+    slide_kind: WeeklyRecapSlideKind;
+  };
+  weekly_recap_complete: WeeklyRecapBaseParams & { surface: "recap" };
+  weekly_recap_plan_click: WeeklyRecapBaseParams & { surface: "recap" };
+  weekly_recap_ai_unlock: WeeklyRecapBaseParams & { surface: "recap" };
+  weekly_recap_share: WeeklyRecapBaseParams & { surface: "recap" };
+}
+export type WeeklyRecapAnalyticsEvent = keyof WeeklyRecapAnalyticsParams;
+
 declare global {
   interface Window {
     dataLayer?: unknown[];
@@ -69,6 +97,14 @@ export function trackArticleEvent(
 export function trackCoachEvent<Event extends CoachAnalyticsEvent>(
   event: Event,
   params: CoachAnalyticsParams[Event],
+): void {
+  trackEvent(event, params);
+}
+
+/** Consent-gated recap events. Types prohibit content, identifiers and numeric performance data. */
+export function trackWeeklyRecapEvent<Event extends WeeklyRecapAnalyticsEvent>(
+  event: Event,
+  params: WeeklyRecapAnalyticsParams[Event],
 ): void {
   trackEvent(event, params);
 }

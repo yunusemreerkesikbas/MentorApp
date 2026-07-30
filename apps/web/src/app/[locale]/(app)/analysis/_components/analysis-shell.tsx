@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import ClipboardList from "lucide-react/dist/esm/icons/clipboard-list.mjs";
+import PanelLeft from "lucide-react/dist/esm/icons/panel-left.mjs";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type {
@@ -23,9 +25,14 @@ import {
 import { Button, Card } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
+import {
+  HistorySideDrawer,
+  HistorySideRail,
+} from "@/components/history-side-panel";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { fetchPhotoAccess } from "@/lib/mock-exams";
 import { AnalysisContentSkeleton } from "./analysis-content-skeleton";
+import { AnalysisHistoryList } from "./analysis-history-list";
 import { AnalysisSegmentControl } from "./analysis-segment-control";
 import { AnalysisSummaryBand } from "./analysis-summary-band";
 import { AnalysisTabProgress } from "./analysis-tab-progress";
@@ -41,6 +48,9 @@ import {
   type AnalysisTab,
   type SubjectScores,
 } from "./analysis-types";
+
+const railIconBtn =
+  "inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] transition-colors hover:bg-black/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
 
 type ReadyData = {
   exam: ExamSummaryDto | null;
@@ -102,7 +112,10 @@ export function AnalysisShell() {
   const [photoAccessState, setPhotoAccessState] = useState<
     ExamAsyncState<PhotoAccessDto>
   >({ status: "idle", examId: null });
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [railOpen, setRailOpen] = useState(true);
   const entryScrollRequested = useRef(false);
+  const tHistory = useTranslations("analysis.history");
 
   const setTab = useCallback(
     (next: AnalysisTab) => {
@@ -427,99 +440,160 @@ export function AnalysisShell() {
     );
   }
 
-  return (
-    <main className="mx-auto w-full max-w-5xl px-5 py-8 lg:px-8 lg:py-10">
-      <header className="mb-6">
-        <h1
-          className="text-3xl font-bold text-balance"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          {t("title")}
-        </h1>
-        <p
-          className="mt-1 text-base"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {t("subtitle")}
-        </p>
-      </header>
-
-      <FormError message={error} />
-
-      {loadState.status === "needs_exam_type" ? (
+  if (loadState.status === "needs_exam_type") {
+    return (
+      <main
+        className="mx-auto w-full max-w-5xl px-5 py-8 lg:px-8 lg:py-10"
+        aria-label={t("title")}
+      >
+        <FormError message={error} />
         <ExamTypeGate />
-      ) : (
-        <div className="flex flex-col gap-6">
-          <AnalysisSummaryBand analysis={analysis} onNewEntry={openEntryForm} />
+      </main>
+    );
+  }
 
-          <AnalysisSegmentControl value={tab} onChange={setTab} />
+  const historyListProps =
+    exam?.id != null
+      ? {
+          examId: exam.id,
+          refreshKey: historyRefreshKey,
+          subjects,
+          onChanged: handleHistoryChanged,
+        }
+      : null;
 
-          <div
-            role="tabpanel"
-            id="analysis-panel-entry"
-            aria-labelledby="analysis-tab-entry"
-            hidden={tab !== "entry"}
+  return (
+    <main
+      className="flex w-full min-h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] lg:min-h-[calc(100dvh-4rem)]"
+      aria-label={t("title")}
+    >
+      <HistorySideRail
+        title={tHistory("title")}
+        railOpen={railOpen}
+        onRailOpenChange={setRailOpen}
+        expandLabel={tHistory("open")}
+        collapseLabel={tHistory("collapse")}
+        testId="analysis-history-rail"
+        collapsedActions={
+          <button
+            type="button"
+            onClick={() => setRailOpen(true)}
+            className={railIconBtn}
+            aria-label={tHistory("title")}
+            data-testid="analysis-history-rail-list"
           >
-            {tab === "entry" ? (
-              <AnalysisTabEntry
-                examId={exam?.id ?? ""}
-                exam={exam}
-                subjects={subjects}
-                scores={scores}
-                submitting={submitting}
-                historyRefreshKey={historyRefreshKey}
-                publisherName={publisherName}
-                takenAtDate={takenAtDate}
-                onPublisherChange={setPublisherName}
-                onTakenAtChange={setTakenAtDate}
-                onScoreChange={updateScore}
-                onSubmit={(event) => void submit(event)}
-                onCopyLast={handleCopyLast}
-                onHistoryChanged={handleHistoryChanged}
-              />
-            ) : null}
-          </div>
+            <ClipboardList
+              className="size-5"
+              style={{ color: "var(--color-main)" }}
+              strokeWidth={2.25}
+              aria-hidden
+            />
+          </button>
+        }
+      >
+        {historyListProps ? (
+          <AnalysisHistoryList {...historyListProps} />
+        ) : null}
+      </HistorySideRail>
 
-          <div
-            role="tabpanel"
-            id="analysis-panel-progress"
-            aria-labelledby="analysis-tab-progress"
-            hidden={tab !== "progress"}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center gap-2 px-5 pt-4 pb-1 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setHistoryOpen(true)}
+            className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+            aria-label={tHistory("open")}
+            data-testid="analysis-history-open"
           >
-            {tab === "progress" ? (
-              <AnalysisTabProgress
-                analysis={analysis}
-                extras={developmentExtras}
-                onRetryExtras={() => {
-                  if (exam) void loadDevelopmentExtras(exam.id);
-                }}
-              />
-            ) : null}
-          </div>
+            <PanelLeft
+              className="size-5"
+              style={{ color: "var(--color-main)" }}
+              strokeWidth={2.25}
+              aria-hidden
+            />
+          </button>
+        </div>
 
-          <div
-            role="tabpanel"
-            id="analysis-panel-mistakes"
-            aria-labelledby="analysis-tab-mistakes"
-            hidden={tab !== "mistakes"}
-          >
-            {tab === "mistakes" ? (
-              <AnalysisTabMistakes
-                activeMockExamId={activeMockExamId}
-                photoAccessState={photoAccessState}
-                analysis={analysis}
-                onCategorized={handlePhotoCategorized}
-                onRetryAccess={() => {
-                  if (exam) void loadPhotoAccess(exam.id);
-                }}
-              />
-            ) : null}
+        <div className="mx-auto w-full max-w-5xl flex-1 px-5 py-4 lg:px-8 lg:py-8">
+          <FormError message={error} />
+
+          <div className="flex flex-col gap-6">
+            <AnalysisSummaryBand analysis={analysis} />
+
+            <AnalysisSegmentControl value={tab} onChange={setTab} />
+
+            <div
+              role="tabpanel"
+              id="analysis-panel-entry"
+              aria-labelledby="analysis-tab-entry"
+              hidden={tab !== "entry"}
+            >
+              {tab === "entry" ? (
+                <AnalysisTabEntry
+                  exam={exam}
+                  subjects={subjects}
+                  scores={scores}
+                  submitting={submitting}
+                  publisherName={publisherName}
+                  takenAtDate={takenAtDate}
+                  onPublisherChange={setPublisherName}
+                  onTakenAtChange={setTakenAtDate}
+                  onScoreChange={updateScore}
+                  onSubmit={(event) => void submit(event)}
+                  onCopyLast={handleCopyLast}
+                />
+              ) : null}
+            </div>
+
+            <div
+              role="tabpanel"
+              id="analysis-panel-progress"
+              aria-labelledby="analysis-tab-progress"
+              hidden={tab !== "progress"}
+            >
+              {tab === "progress" ? (
+                <AnalysisTabProgress
+                  analysis={analysis}
+                  extras={developmentExtras}
+                  onRetryExtras={() => {
+                    if (exam) void loadDevelopmentExtras(exam.id);
+                  }}
+                />
+              ) : null}
+            </div>
+
+            <div
+              role="tabpanel"
+              id="analysis-panel-mistakes"
+              aria-labelledby="analysis-tab-mistakes"
+              hidden={tab !== "mistakes"}
+            >
+              {tab === "mistakes" ? (
+                <AnalysisTabMistakes
+                  activeMockExamId={activeMockExamId}
+                  photoAccessState={photoAccessState}
+                  analysis={analysis}
+                  onCategorized={handlePhotoCategorized}
+                  onRetryAccess={() => {
+                    if (exam) void loadPhotoAccess(exam.id);
+                  }}
+                />
+              ) : null}
+            </div>
           </div>
         </div>
-      )}
+      </div>
+
+      <HistorySideDrawer
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        title={tHistory("title")}
+        testId="analysis-history-drawer"
+      >
+        {historyListProps ? (
+          <AnalysisHistoryList {...historyListProps} />
+        ) : null}
+      </HistorySideDrawer>
     </main>
   );
 }

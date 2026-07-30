@@ -149,6 +149,10 @@ function buildService(overrides?: {
     transaction: async <T>(cb: (tx: unknown) => Promise<T>): Promise<T> =>
       cb({ execute: async () => undefined }),
   } as never;
+  const holidays = {
+    listInRange: vi.fn(async () => []),
+    upsertByCountryAndDate: vi.fn(),
+  };
   const service = new ContentService(
     db,
     exams as never,
@@ -156,6 +160,7 @@ function buildService(overrides?: {
     articles as never,
     subjects as never,
     topics as never,
+    holidays as never,
     eventEmitter as never,
     storage as never,
   );
@@ -193,11 +198,27 @@ describe("ContentService — exam calendar resolution", () => {
     const resolved = await service.getExamCalendarForCoaching("KPSS");
 
     expect(resolved).toEqual({
+      examId: "exam-lisans",
       examType: "KPSS",
       examName: "KPSS Lisans 2026",
       examDate: "2026-07-12",
       source: "ÖSYM",
       sourceUrl: "https://www.osym.gov.tr",
+    });
+  });
+
+  it("resolves the review exam as of the completed week after its date has passed", async () => {
+    vi.setSystemTime(new Date("2026-07-27T09:00:00.000Z"));
+    const { service } = buildService();
+
+    const resolved = await service.getExamCalendarForCoaching(
+      "KPSS",
+      "2026-07-13",
+    );
+
+    expect(resolved).toMatchObject({
+      examId: "exam-onlisans",
+      examDate: "2026-07-19",
     });
   });
 

@@ -1,5 +1,6 @@
 "use client";
 
+import type * as React from "react";
 import {
   createContext,
   useCallback,
@@ -7,7 +8,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { BottomSheetViewport } from "./bottom-sheet-viewport.js";
 import {
@@ -36,7 +36,7 @@ type PendingResolver =
   | { kind: "filter"; resolve: (value: "apply" | "cancel") => void };
 
 export interface BottomSheetProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 export function BottomSheetProvider({ children }: BottomSheetProviderProps) {
@@ -172,7 +172,9 @@ export function BottomSheetProvider({ children }: BottomSheetProviderProps) {
   }, [dismiss]);
 
   const actionSheet = useCallback(
-    (options: BottomSheetActionSheetOptions): Promise<BottomSheetActionResult> => {
+    (
+      options: BottomSheetActionSheetOptions,
+    ): Promise<BottomSheetActionResult> => {
       abortPending();
       return new Promise((resolve) => {
         pendingRef.current = { kind: "action", resolve };

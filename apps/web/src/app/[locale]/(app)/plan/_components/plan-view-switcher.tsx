@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { PlanViewMode } from "./plan-utils";
 
-const MODES: PlanViewMode[] = ["list", "timeline", "week"];
+const MODES: PlanViewMode[] = ["list", "timeline", "calendar"];
 
 const pillTransition = {
   type: "tween" as const,

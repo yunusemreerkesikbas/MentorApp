@@ -1,8 +1,9 @@
 "use client";
 
-import { useId, type TextareaHTMLAttributes } from "react";
+import type * as React from "react";
+import { useId } from "react";
 
-export interface TextAreaFieldProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextAreaFieldProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string;
   error?: string | null;
   /** Optional hint below the field (e.g. character count). */
@@ -24,13 +25,20 @@ export function TextAreaField({
   const inputId = id ?? reactId;
   const errorId = `${inputId}-error`;
   const hintId = hint ? `${inputId}-hint` : undefined;
-  const describedBy = [error ? errorId : null, hintId].filter(Boolean).join(" ") || undefined;
+  const describedBy =
+    [error ? errorId : null, hintId].filter(Boolean).join(" ") || undefined;
 
   return (
-    <label htmlFor={inputId} className={`flex flex-col gap-1 ${className ?? ""}`}>
+    <label
+      htmlFor={inputId}
+      className={`flex flex-col gap-1 ${className ?? ""}`}
+    >
       <span
         className="text-xs font-semibold"
-        style={{ color: "var(--color-secondary)", fontFamily: "var(--font-heading)" }}
+        style={{
+          color: "var(--color-secondary)",
+          fontFamily: "var(--font-heading)",
+        }}
       >
         {label}
       </span>
@@ -60,7 +68,10 @@ export function TextAreaField({
         <span
           id={hintId}
           className="text-xs"
-          style={{ color: "var(--color-secondary)", fontFamily: "var(--font-body)" }}
+          style={{
+            color: "var(--color-secondary)",
+            fontFamily: "var(--font-body)",
+          }}
         >
           {hint}
         </span>

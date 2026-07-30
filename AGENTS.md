@@ -86,6 +86,15 @@ pnpm --filter @mentor/api db:generate # generate Drizzle migration
 Packages: `@mentor/{types,validation,core,api-client,ui,config}`. Path alias `@mentor/*`.
 Structure detail: [`docs/core/file-structure.md`](./docs/core/file-structure.md).
 
+### Iterative verification scope (binding)
+
+- After each scoped development step, **do not run workspace-wide full test, lint, typecheck, or build by
+  default**. Run the smallest relevant test suites plus targeted checks for the touched files/packages.
+- Expand verification only when a targeted failure indicates wider impact, the change affects a high-risk or
+  cross-cutting surface (auth, payments, migrations, shared contracts), the user explicitly requests it, or the
+  branch is being declared PR/merge/release-ready.
+- Full CI remains mandatory before merge/release. Never claim the whole workspace is green from targeted checks.
+
 ## 7. Conventions
 
 - **Language:** code/identifiers in English; user-facing text in Turkish (Turkish product);

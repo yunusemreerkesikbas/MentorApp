@@ -97,6 +97,38 @@
 > `POST /v1/coach/plan-draft` and `POST /v1/coach/ghost-narration` remain for backward compatibility;
 > current web surfaces do not add new consumers.
 
+> Weekly recap catalog addition (2026-07-26): no endpoint was added. `GET /v1/coaching/today`
+> additively returns backend-computed nullable `weeklyRecapPeriod` including `status`, so clients
+> can suppress `EMPTY` teasers without a second request; `GET /v1/coaching/weekly-review`
+> additively returns `recap`, qualifying-session/completed-task evidence and taxonomy-verified
+> aggregate `plan` data. Existing `status` and cached `POST /v1/coach/weekly-review` contracts
+> remain available; `READY` now also includes the configured completed-plan-task threshold.
+
+> Mentor Wrapped catalog addition (2026-07-27): no endpoint or migration was added.
+> `GET /v1/coaching/weekly-review` additively returns `recap.weeklyTitle`,
+> `rhythm.{longestSessionMinutes,longestActiveRun,days,subjectBreakdown}` and discriminated
+> `highlights[]`. All selection, tie-breaking and localization happen in the API; clients only
+> compose screens from these facts. Weekly titles are ephemeral recap labels, not badge inventory.
+> The cached `POST /v1/coach/weekly-review` now uses prompt v4 and remains gate-compatible.
+> `GET /v1/coaching/today.weeklyRecapPeriod` is resolved independently from the live countdown:
+> after an official exam date passes, `countdown` may be `null` while the completed-week recap
+> period remains available. The object also carries the backend-resolved `examId`; dashboard links
+> must reuse it instead of resolving the current countdown calendar again.
+
+> PARTIAL story unlock addition (2026-07-29): `GET /v1/coaching/weekly-review` additively returns
+> `recap.nextStorySignals[]`, containing every missing `FOCUS_SESSION`, `PLAN_TASK`, and `MOCK_EXAM`
+> channel in backend-selected display order with localized `title` and `message`. `READY` and `EMPTY`
+> return an empty array. Nullable `recap.nextStorySignal` remains backward-compatible and mirrors the
+> first item. Clients render the supplied copy and must not reproduce the selection policy.
+
+> Mentor Wrapped V1.3 addition (2026-07-29): no endpoint or migration was added.
+> `GET /v1/coaching/weekly-review` additively returns nullable
+> `rhythm.focusTimeBand { id, label, focusMinutes, qualifyingSessionCount, message }` and
+> `rhythm.peakFocusDay { date, focusMinutes, message }`. Both use qualifying sessions and
+> Europe/Istanbul; the peak day is independent of the two-highlight cap. The cached
+> `POST /v1/coach/weekly-review` keeps its response/gate contract but uses prompt v6 with an
+> explicit aggregate evidence object instead of serializing the full review DTO.
+
 > Status: ✅ live · 🟡 partially live (some slices shipped) · ⏳ coming in MVP · ⛔ later phase. A new endpoint → update this catalog + OpenAPI + the matching feature-doc timeline.
 
 > **Health probes** (`/v1/health`, `/v1/health/ready`) use the **terminus** response shape
@@ -104,5 +136,8 @@
 > outside the API contract. The global filter passes them through unchanged.
 
 - `GET /v1/coaching/today` also carries `focusGoal { goalMinutes, focusMinutesToday }` and `focusingNow` (anonymous aggregate count, null under the server-side visibility threshold) — APP-022.
-- `GET /v1/coaching/weekly-review?examId={uuid}` — completed-week rule summary (JWT, Free).
-- `POST /v1/coach/weekly-review` — cached Premium narration + deterministic suggested task (JWT).
+- `GET /v1/coaching/weekly-review?examId={uuid}` — completed-week rule summary + recap status,
+  effort/rhythm aggregates, taxonomy-verified focus and plan breakdowns, backend-selected
+  highlights, nullable weekly title, focus-time band and peak-focus day (JWT, Free).
+- `POST /v1/coach/weekly-review` — cached Premium/coin-unlocked narration + deterministic
+  suggested task (JWT).

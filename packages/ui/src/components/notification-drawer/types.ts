@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type * as React from "react";
 import type { NotificationCategory, UserNotificationDto } from "@mentor/types";
 
 export type NotificationTab = "ALL" | NotificationCategory;
@@ -40,7 +40,7 @@ export interface NotificationDrawerContextValue {
 }
 
 export interface NotificationDrawerProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
   items: UserNotificationDto[];
   unreadCount: number;
   onMarkRead?: (id: string) => Promise<void>;
@@ -49,9 +49,9 @@ export interface NotificationDrawerProviderProps {
   onDelete?: (id: string) => Promise<void>;
   /** Called when a notification row is tapped — navigate to linkUrl or a category fallback. */
   onNotificationClick?: (notification: UserNotificationDto) => void;
-  /** Renders the icon for a notification item (category → ReactNode). */
-  renderIcon?: (category: NotificationCategory) => ReactNode;
+  /** Renders the icon for a notification item (category → React.ReactNode). */
+  renderIcon?: (category: NotificationCategory) => React.ReactNode;
   /** Custom empty state (defaults to built-in text empty state). */
-  emptyState?: ReactNode;
+  emptyState?: React.ReactNode;
   labels: NotificationDrawerLabels;
 }

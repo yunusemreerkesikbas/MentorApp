@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "Türkiye resmî tatilleri — AGENTS.md §4 #1: resmî bilgi sisteme YALNIZ buradan (veya W6 admin'den) girer, asla hesaplanmaz/üretilmez.",
+    "Aşağıdakiler 2429 sayılı Ulusal Bayram ve Genel Tatiller Hakkında Kanun ile SABİT tarihli olanlardır; yıldan bağımsız doğrulanabilir.",
+    "EKSİK — editöryal doldurmalı: Ramazan Bayramı ve Kurban Bayramı (arife dahil) hicri takvime bağlı ve Resmî Gazete ilanıyla kesinleşir; köprü/idari tatiller de aynı şekilde.",
+    "Bunları eklerken date/name/kind alanlarını doldurup ilgili yılın Resmî Gazete kararını sourceUrl'e yazın ve verifiedAt/verifiedBy'ı gerçek kontrol anıyla güncelleyin.",
+    "Kayıt yoksa takvim o günü sade gösterir — yanlış tarih göstermektense boş bırakmak doğrudur."
+  ],
+  "country": "TR",
+  "source": "2429 sayılı Ulusal Bayram ve Genel Tatiller Hakkında Kanun",
+  "sourceUrl": "https://www.mevzuat.gov.tr/mevzuatmetin/1.5.2429.pdf",
+  "verifiedBy": "editorial",
+  "holidays": [
+    { "date": "2026-01-01", "name": "Yılbaşı", "kind": "FULL" },
+    { "date": "2026-04-23", "name": "Ulusal Egemenlik ve Çocuk Bayramı", "kind": "FULL" },
+    { "date": "2026-05-01", "name": "Emek ve Dayanışma Günü", "kind": "FULL" },
+    { "date": "2026-05-19", "name": "Atatürk'ü Anma, Gençlik ve Spor Bayramı", "kind": "FULL" },
+    { "date": "2026-07-15", "name": "Demokrasi ve Millî Birlik Günü", "kind": "FULL" },
+    { "date": "2026-08-30", "name": "Zafer Bayramı", "kind": "FULL" },
+    { "date": "2026-10-28", "name": "Cumhuriyet Bayramı Arifesi", "kind": "HALF" },
+    { "date": "2026-10-29", "name": "Cumhuriyet Bayramı", "kind": "FULL" },
+    { "date": "2027-01-01", "name": "Yılbaşı", "kind": "FULL" },
+    { "date": "2027-04-23", "name": "Ulusal Egemenlik ve Çocuk Bayramı", "kind": "FULL" },
+    { "date": "2027-05-01", "name": "Emek ve Dayanışma Günü", "kind": "FULL" },
+    { "date": "2027-05-19", "name": "Atatürk'ü Anma, Gençlik ve Spor Bayramı", "kind": "FULL" },
+    { "date": "2027-07-15", "name": "Demokrasi ve Millî Birlik Günü", "kind": "FULL" },
+    { "date": "2027-08-30", "name": "Zafer Bayramı", "kind": "FULL" },
+    { "date": "2027-10-28", "name": "Cumhuriyet Bayramı Arifesi", "kind": "HALF" },
+    { "date": "2027-10-29", "name": "Cumhuriyet Bayramı", "kind": "FULL" }
+  ]
+}

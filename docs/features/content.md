@@ -172,3 +172,23 @@ pnpm --filter @mentor/api-client generate
 - **Upcoming exam rollover for analysis taxonomy (2026-07-14)** — Calendar selection now filters expired dates before preferring `isCurrent`, so a stale marker cannot hide the next verified exam. KPSS associate-degree and secondary-education exams reuse the seeded six-subject taxonomy; startup upserts the links idempotently. Usage: restart the API after pulling seed changes, then refresh `/analiz`. Gotcha: official dates remain editorial seed data; this change does not invent or rewrite them. Related files: `calendar.util.ts`, `calendar.util.spec.ts`, `subjects.seed.json`.
 
 - **KPSS topic taxonomy (2026-07-15)** — Content now owns parent-subject-scoped `topics` and exam links in `exam_topics`. The same 24 topics are seeded idempotently for all three 2026 KPSS exams; official scopes come from the 2026 KPSS Undergraduate Guide Table 1, while Turkish/Math are editorial refinements. Usage: apply `0050_whole_sentinel.sql` and restart the API. Gotcha: there is no admin topic editor; a seed with an unknown parent subject is rejected. Related: `schema.ts`, `topic.repository.ts`, `subjects.seed.json`.
+
+- **Resmî tatiller takvimde (2026-07-26)** — `public_holidays` tablosu (migration `0060`): `country`
+  (ISO-3166-1 alpha-2, varsayılan `TR`), `holiday_date`, `name`, `kind` (`FULL` | `HALF` — bayram
+  arifesi), + `source/sourceUrl/verifiedAt/verifiedBy`. **`exam_events` ile birebir aynı güven
+  sözleşmesi** ve aynı RLS deseni (public read, SERVICE/ADMIN write). `GET /v1/content/holidays?
+  from&to&country` — plan-task takvimindeki 62 günlük aralık sınırının aynısı, böylece 42 günlük ay
+  grid'i tek istekle geliyor. **Neden hesaplanmıyor:** sabit tarihli 7 tatil kanunla belli ama
+  Ramazan/Kurban Bayramı hicri takvime bağlı ve Resmî Gazete ilanıyla (köprü tatiller dahil)
+  kesinleşiyor — hesaplamak resmî bilgi üretmek olurdu (guardrail §4 #1). Veri yalnız
+  `seed/holidays.seed.json` (idempotent upsert, `HolidaySeedService`) ya da W6 admin üzerinden
+  girer. **Gotcha: seed'de şu an yalnız sabit tarihliler var; bayramları editöryal doldurmalı** —
+  kayıt yoksa takvim o günü sade gösterir, yanlış tarih göstermektense boş bırakmak doğrudur.
+  Frontend tarafı salt görsel (planlamayı, ilerlemeyi, streak'i etkilemez): ay hücresinde gün
+  numarası `--color-streak` + çok hafif zemin + tıklanamaz etiket satırı, Gün/Hafta'da tüm-gün
+  bandında sol çubuksuz düz şerit (görev chip'lerinden ayrışsın diye), mobil ajandada bölüm
+  başlığının yanında. İlgili: `public-holiday.repository.ts`, `public-holiday.controller.ts`,
+  `content.service.ts` (`listPublicHolidays` / `upsertPublicHoliday`), `content.mappers.ts`,
+  `packages/validation/src/content.ts`, `apps/web/src/lib/plan-tasks.ts`
+  (`listPublicHolidaysByDate`), `plan-month-grid.tsx`, `plan-time-grid.tsx`,
+  `plan-mobile-agenda.tsx`, `plan-mobile-date-strip.tsx`.

@@ -14,6 +14,8 @@ export const CONTENT_PORT = Symbol("CONTENT_PORT");
 
 /** Verified exam-calendar data for a given exam type (ready to render). */
 export interface ExamCalendar {
+  /** Stable current exam id; used to scope coaching aggregates without a second family lookup. */
+  examId: string;
   examType: string;
   examName: string;
   /** Authoritative exam date, yyyy-mm-dd. */
@@ -56,9 +58,12 @@ export interface ContentPort {
    * Resolve the verified exam calendar for an exam type, or `null` when no exam type is set
    * or the calendar has no authoritative date yet. Coaching must NOT fall back to any other
    * source (no silent fallback — plan §6 #5).
+   * `asOf` lets completed-period features resolve the exam that was active in that period
+   * without changing today's countdown semantics.
    */
   getExamCalendar(
     examType: string | null | undefined,
+    asOf?: string,
   ): Promise<ExamCalendar | null>;
 
   /** Net-scoring rule for an exam type (reserved for W2-b; not used in this slice). */
