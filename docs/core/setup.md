@@ -65,6 +65,31 @@ curl -X POST http://localhost:3001/v1/internal/cron/cleanup-forum-attachments \
   -H "x-cron-secret: $CRON_SECRET"
 ```
 
+## Forum Discovery V2 smoke test (staging pre-flip)
+
+Production bayrağı bu akışta açılmaz. Staging kontrolü migration/seed → sorgu planı → staging flag →
+ürün smoke → SEO/PII → kullanıcının görsel onayı sırasıyla yapılır; hata halinde yalnız
+`forum.enabled=false` ile geri alınır, migration geri çevrilmez.
+
+1. Forward-only migration'ları uygula; seed sonrası CHAT ve QA launch odalarının mevcut olduğunu doğrula.
+2. 10 bin geçici thread + thread-tag ilişkisini transaction sonunda geri alan sorgu smoke'unu çalıştır:
+
+   ```bash
+   docker cp apps/api/scripts/explain-forum-discovery.sql mentor-postgres:/tmp/explain-forum-discovery.sql
+   docker exec mentor-postgres psql -U mentor -d mentor_test -f /tmp/explain-forum-discovery.sql
+   ```
+
+   Staging'de aynı dosyayı staging bağlantısıyla çalıştır. Recent/trending/top/tag planlarında
+   `Sort Method: external` veya temp spill olmamalı; seçici etiket yolu
+   `forum_thread_tags_tag_thread_idx` (bitmap kabul) kullanmalı. Cursor tekrarsızlığı forum E2E'de
+   ayrıca kanıtlanır.
+3. Yalnız staging'de `forum.enabled=true` yap.
+4. İki STUDENT + bir EDITOR ile hub, üç feed sekmesi, composer, helpful self/idempotency, edit
+   süresi/etkileşim kilidi ve aramalı featured seçimini smoke et.
+5. Cevaplı public QA SEO sayfasını ve `/forum/search` yanıtında e-posta/PII olmadığını kontrol et.
+6. 375/768/1024/1440 px görsel onayı kullanıcı tarafından verildikten sonra ayrı production kontrol
+   noktası aç; onay öncesi production flag kapalı kalır.
+
 ## Economy smoke test (pre-flip)
 
 10 adımlık uçtan uca prova: `economy.enabled` açılmadan önce staging'de (veya lokalde) koşulur.

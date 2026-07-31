@@ -70,6 +70,11 @@ export interface ForumThreadSummaryRow {
   lastActivityAt: Date;
 }
 
+export interface ForumFeaturedThreadRow extends ForumThreadSummaryRow {
+  featuredUntil: Date;
+  featuredBy: string | null;
+}
+
 @Injectable()
 export class ForumDiscoveryRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
@@ -685,10 +690,24 @@ export class ForumDiscoveryRepository {
     });
   }
 
-  async getFeaturedThread(): Promise<typeof forumThreads.$inferSelect | null> {
+  async getFeaturedThread(): Promise<ForumFeaturedThreadRow | null> {
     return withServiceContext(this.db, async (tx) => {
       const [row] = await tx
-        .select()
+        .select({
+          id: forumThreads.id,
+          zoneSlug: forumZones.slug,
+          zoneTitle: forumZones.title,
+          zoneType: forumZones.type,
+          title: forumThreads.title,
+          body: forumThreads.body,
+          commentCount: sql<number>`(
+            select count(*) from ${forumPosts} fp
+            where fp.thread_id = ${forumThreads.id} and fp.deleted_at is null
+          )::int`,
+          lastActivityAt: forumThreads.lastActivityAt,
+          featuredUntil: forumThreads.featuredUntil,
+          featuredBy: forumThreads.featuredBy,
+        })
         .from(forumThreads)
         .innerJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
         .where(
@@ -700,7 +719,7 @@ export class ForumDiscoveryRepository {
         )
         .orderBy(desc(forumThreads.featuredUntil))
         .limit(1);
-      return row?.forum_threads ?? null;
+      return row?.featuredUntil ? { ...row, featuredUntil: row.featuredUntil } : null;
     });
   }
 

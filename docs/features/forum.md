@@ -105,6 +105,18 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Discovery V2 staging hazırlığı (2026-07-31)** — Featured admin sözleşmesine additive
+  `ForumFeaturedAdminView.thread` özeti eklendi; admin UUID alanı yerine mevcut PII-safe
+  `/forum/search` endpoint'ini kullanan min-2 karakter/250 ms gecikmeli tartışma seçicisi kullanır.
+  Discovery kabulü cold-start, continue+new tamamlama, üç sıralama/filtre/cursor, pasif etiket,
+  helpful idempotency/self-vote, edit süresi/etkileşim kilidi, staff yetkisi ve PII-safe arama olarak
+  ayrıldı. Yorum, reaksiyon, helpful ve kabul sonrası `last_activity_at` doğrulandı; kabul güncellemesi
+  activity alanını aynı thread transaction'ında ilerletir. RLS probe artık `forum_tags`,
+  `forum_thread_tags`, `forum_helpful_votes` context/oy izolasyonu ve ADMIN/SERVICE yazımını da kapsar.
+  `explain-forum-discovery.sql` rollback içinde 10 bin thread + 10 bin thread-tag ile recent,
+  trending, top ve seçici etiket yolunu ölçer. Gotcha: `0061` değişmedi; production flag görsel/staging
+  onayından önce açılmaz. İlgili: `forum-discovery.*`, `forum-thread.repository.ts`, admin `forum/page.tsx`,
+  `test/{forum,rls-isolation}.e2e-spec.ts`, `scripts/explain-forum-discovery.sql`.
 - **Enerjik kampüs UI durum dili (2026-07-31)** — Forum davranışı ve API sözleşmeleri değişmeden
   web yüzeylerindeki seçili/aktif durumlar ortak bir semantik renge bağlandı: CHAT/kapsam/birincil
   aksiyon Mentor mavisi, QA mercan, helpful/accepted yeşil. Answer listesi tekrarlı `Card` bileşenlerinden

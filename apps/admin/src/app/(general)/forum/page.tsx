@@ -1,18 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import Swal from "sweetalert2";
-import type { ForumTagView, Paginated, ZoneView } from "@mentor/types";
+import type {
+    ForumFeaturedAdminView,
+    ForumSearchView,
+    ForumTagView,
+    ForumThreadSummary,
+    Paginated,
+    ZoneView,
+} from "@mentor/types";
 import PageHeader from "@/components/shared/pageHeader/PageHeader";
 import apiClient from "@/lib/apiClient";
 import { JOIN_POLICY_LABELS, ZONE_TYPE_LABELS } from "./ZoneForm";
-
-interface FeaturedThreadAdminView {
-    threadId: string;
-    featuredUntil: string | null;
-    featuredBy: string | null;
-}
 
 interface TagDraft {
     slug: string;
@@ -33,7 +34,7 @@ const EMPTY_TAG: TagDraft = {
 export default function ForumManagementPage() {
     const [zones, setZones] = useState<ZoneView[]>([]);
     const [tags, setTags] = useState<ForumTagView[]>([]);
-    const [featured, setFeatured] = useState<FeaturedThreadAdminView | null>(null);
+    const [featured, setFeatured] = useState<ForumFeaturedAdminView | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
@@ -43,7 +44,7 @@ export default function ForumManagementPage() {
         const [zoneResult, tagResult, featuredResult] = await Promise.allSettled([
             apiClient.get<Paginated<ZoneView>>("/forum/zones?pageSize=100"),
             apiClient.get<ForumTagView[]>("/admin/forum/tags"),
-            apiClient.get<FeaturedThreadAdminView | null>("/admin/forum/featured-thread"),
+            apiClient.get<ForumFeaturedAdminView | null>("/admin/forum/featured-thread"),
         ]);
         if (zoneResult.status === "fulfilled") setZones(zoneResult.value.data.items);
         if (tagResult.status === "fulfilled") setTags(tagResult.value.data);
@@ -93,21 +94,64 @@ function FeaturedEditor({
     value,
     onChanged,
 }: {
-    value: FeaturedThreadAdminView | null;
+    value: ForumFeaturedAdminView | null;
     onChanged: () => Promise<void>;
 }) {
-    const [threadId, setThreadId] = useState(value?.threadId ?? "");
+    const [selectedThread, setSelectedThread] = useState<ForumThreadSummary | null>(value?.thread ?? null);
+    const [query, setQuery] = useState("");
+    const [searchResults, setSearchResults] = useState<ForumThreadSummary[]>([]);
+    const [searchState, setSearchState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+    const [searchAttempt, setSearchAttempt] = useState(0);
+    const latestRequest = useRef(0);
     const [featuredUntil, setFeaturedUntil] = useState(
         value?.featuredUntil ? toLocalDateTime(value.featuredUntil) : defaultFeaturedDate(),
     );
     const [busy, setBusy] = useState(false);
 
+    useEffect(() => {
+        setSelectedThread(value?.thread ?? null);
+        setFeaturedUntil(
+            value?.featuredUntil ? toLocalDateTime(value.featuredUntil) : defaultFeaturedDate(),
+        );
+    }, [value]);
+
+    useEffect(() => {
+        const normalizedQuery = query.trim();
+        if (normalizedQuery.length < 2) {
+            latestRequest.current += 1;
+            setSearchResults([]);
+            setSearchState("idle");
+            return;
+        }
+
+        const requestId = latestRequest.current + 1;
+        latestRequest.current = requestId;
+        const timer = window.setTimeout(async () => {
+            setSearchState("loading");
+            try {
+                const response = await apiClient.get<ForumSearchView>("/forum/search", {
+                    params: { q: normalizedQuery },
+                });
+                if (latestRequest.current !== requestId) return;
+                setSearchResults(response.data.threads);
+                setSearchState("ready");
+            } catch {
+                if (latestRequest.current !== requestId) return;
+                setSearchResults([]);
+                setSearchState("error");
+            }
+        }, 250);
+
+        return () => window.clearTimeout(timer);
+    }, [query, searchAttempt]);
+
     const save = async (event: FormEvent) => {
         event.preventDefault();
+        if (!selectedThread) return;
         setBusy(true);
         try {
             await apiClient.put("/admin/forum/featured-thread", {
-                threadId: threadId.trim(),
+                threadId: selectedThread?.id,
                 featuredUntil: new Date(featuredUntil).toISOString(),
             });
             await Swal.fire({
@@ -137,7 +181,10 @@ function FeaturedEditor({
         setBusy(true);
         try {
             await apiClient.delete("/admin/forum/featured-thread");
-            setThreadId("");
+            setSelectedThread(null);
+            setQuery("");
+            setSearchResults([]);
+            setSearchState("idle");
             setFeaturedUntil(defaultFeaturedDate());
             await onChanged();
         } catch (error) {
@@ -159,19 +206,91 @@ function FeaturedEditor({
                 {value && <span className="badge bg-soft-success text-success">Aktif</span>}
             </div>
             <form className="card-body" onSubmit={save}>
-                <div className="row g-3 align-items-end">
+                <div className="row g-3 align-items-start">
                     <div className="col-lg-7">
-                        <label className="form-label" htmlFor="featured-thread-id">
-                            Thread ID
-                        </label>
-                        <input
-                            id="featured-thread-id"
-                            className="form-control"
-                            value={threadId}
-                            onChange={(event) => setThreadId(event.target.value)}
-                            placeholder="UUID"
-                            required
-                        />
+                        {selectedThread ? (
+                            <div className="form-label">Seçilen tartışma</div>
+                        ) : (
+                            <label className="form-label" htmlFor="featured-thread-search">
+                                Tartışma ara
+                            </label>
+                        )}
+                        {selectedThread ? (
+                            <div className="border rounded p-3 d-flex align-items-start justify-content-between gap-3">
+                                <ThreadSummary thread={selectedThread} />
+                                <button
+                                    type="button"
+                                    className="btn btn-sm btn-light flex-shrink-0"
+                                    disabled={busy}
+                                    onClick={() => {
+                                        setSelectedThread(null);
+                                        setQuery("");
+                                    }}
+                                >
+                                    Değiştir
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="position-relative">
+                                <input
+                                    id="featured-thread-search"
+                                    type="search"
+                                    className="form-control"
+                                    value={query}
+                                    onChange={(event) => setQuery(event.target.value)}
+                                    placeholder="Başlık veya içerikte ara"
+                                    autoComplete="off"
+                                    aria-describedby="featured-thread-search-help featured-thread-search-status"
+                                />
+                                <div id="featured-thread-search-help" className="form-text">
+                                    Arama en az iki karakterle başlar.
+                                </div>
+                                <div id="featured-thread-search-status" className="mt-2" aria-live="polite">
+                                    {searchState === "loading" && (
+                                        <div className="d-flex align-items-center gap-2 py-2 text-muted fs-12">
+                                            <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+                                            Tartışmalar aranıyor…
+                                        </div>
+                                    )}
+                                    {searchState === "error" && (
+                                        <div className="alert alert-warning d-flex align-items-center justify-content-between gap-2 mb-0 py-2">
+                                            <span>Arama sonuçları alınamadı.</span>
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm btn-outline-dark"
+                                                onClick={() => setSearchAttempt((current) => current + 1)}
+                                            >
+                                                Yeniden dene
+                                            </button>
+                                        </div>
+                                    )}
+                                    {searchState === "ready" && searchResults.length === 0 && (
+                                        <div className="border rounded py-3 px-3 text-muted fs-12">
+                                            Bu aramayla eşleşen tartışma bulunamadı.
+                                        </div>
+                                    )}
+                                    {searchState === "ready" && searchResults.length > 0 && (
+                                        <div className="list-group shadow-sm">
+                                            {searchResults.map((thread) => (
+                                                <button
+                                                    key={thread.id}
+                                                    type="button"
+                                                    className="list-group-item list-group-item-action text-start"
+                                                    onClick={() => {
+                                                        setSelectedThread(thread);
+                                                        setQuery("");
+                                                        setSearchResults([]);
+                                                        setSearchState("idle");
+                                                    }}
+                                                >
+                                                    <ThreadSummary thread={thread} />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <div className="col-lg-3">
                         <label className="form-label" htmlFor="featured-until">
@@ -187,8 +306,8 @@ function FeaturedEditor({
                             required
                         />
                     </div>
-                    <div className="col-lg-2 d-grid gap-2">
-                        <button type="submit" className="btn btn-primary" disabled={busy}>
+                    <div className="col-lg-2 d-grid gap-2 pt-lg-4">
+                        <button type="submit" className="btn btn-primary" disabled={busy || !selectedThread}>
                             {busy ? "Kaydediliyor…" : "Kaydet"}
                         </button>
                     </div>
@@ -205,6 +324,23 @@ function FeaturedEditor({
                 )}
             </form>
         </section>
+    );
+}
+
+function ThreadSummary({ thread }: { thread: ForumThreadSummary }) {
+    return (
+        <div className="min-w-0">
+            <div className="fw-semibold text-dark text-truncate">
+                {thread.title?.trim() || thread.bodyExcerpt}
+            </div>
+            <div className="d-flex flex-wrap align-items-center gap-2 mt-1 fs-12 text-muted">
+                <span>{thread.zoneTitle}</span>
+                <span aria-hidden="true">•</span>
+                <span>{ZONE_TYPE_LABELS[thread.zoneType] ?? thread.zoneType}</span>
+                <span aria-hidden="true">•</span>
+                <span>Son hareket {new Date(thread.lastActivityAt).toLocaleString("tr-TR")}</span>
+            </div>
+        </div>
     );
 }
 

@@ -268,9 +268,15 @@ export class ForumThreadRepository {
    */
   async setQaAccepted(threadId: string, postId: string): Promise<boolean> {
     return withServiceContext(this.db, async (tx) => {
+      const acceptedAt = new Date();
       const rows = await tx
         .update(forumThreads)
-        .set({ acceptedPostId: postId, status: "ANSWERED", updatedAt: new Date() })
+        .set({
+          acceptedPostId: postId,
+          status: "ANSWERED",
+          lastActivityAt: acceptedAt,
+          updatedAt: acceptedAt,
+        })
         .where(and(eq(forumThreads.id, threadId), isNull(forumThreads.acceptedPostId)))
         .returning({ id: forumThreads.id });
       return rows.length > 0;

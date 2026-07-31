@@ -346,6 +346,14 @@ export interface ForumThreadSummary {
   lastActivityAt: string;
 }
 
+/** Active manual featured selection returned to the internal forum editor. */
+export interface ForumFeaturedAdminView {
+  threadId: string;
+  featuredUntil: string;
+  featuredBy: string | null;
+  thread: ForumThreadSummary;
+}
+
 export interface ForumFeedContext {
   activeThreads: ForumThreadSummary[];
   suggestedThreads: ForumThreadSummary[];
