@@ -4,6 +4,7 @@ import { IdentityModule } from "../identity/identity.module";
 import { PaymentsModule } from "../payments/payments.module";
 import { DeepAnalysisService } from "./application/deep-analysis.service";
 import { EconomyService } from "./application/economy.service";
+import { EconomyStatsService } from "./application/economy-stats.service";
 import { ForumEventsListener } from "./application/forum-events.listener";
 import { ThreadPostedListener } from "./application/thread-posted.listener";
 import { InviteService } from "./application/invite.service";
@@ -28,6 +29,7 @@ import { EconomyController } from "./presentation/economy.controller";
   controllers: [EconomyController],
   providers: [
     EconomyService,
+    EconomyStatsService,
     LedgerRepository,
     InviteService,
     InviteRepository,
@@ -42,6 +44,12 @@ import { EconomyController } from "./presentation/economy.controller";
     ForumEventsListener,
     ThreadPostedListener,
   ],
-  exports: [EconomyService, InviteService, QuestService, DeepAnalysisService],
+  exports: [
+    EconomyService,
+    EconomyStatsService,
+    InviteService,
+    QuestService,
+    DeepAnalysisService,
+  ],
 })
 export class EconomyModule {}

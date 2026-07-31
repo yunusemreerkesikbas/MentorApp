@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { useEffect, type ReactNode } from "react";
 import { AppNav } from "@/components/app-nav";
 import { MOBILE_TAB_BAR_PADDING_CLASS } from "@/lib/app-shell";
@@ -16,7 +16,10 @@ import { hasCompletedOnboarding } from "@/lib/post-auth-destination";
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { status, user } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const t = useTranslations("panel");
+  const isCommunityWorkspace =
+    pathname === "/community" || pathname.startsWith("/community/");
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/login");
@@ -42,9 +45,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         className="min-h-screen"
         style={{ backgroundColor: "var(--color-bg)" }}
       >
-        <AppNav />
+        {isCommunityWorkspace ? null : <AppNav />}
         <div
-          className={`min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0 lg:pl-60`}
+          className={
+            isCommunityWorkspace
+              ? "min-h-screen"
+              : `min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0 lg:pl-60`
+          }
         >
           {children}
         </div>

@@ -31,7 +31,6 @@ export function ProfileShell() {
   const reduceMotion = useReducedMotion();
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [economyRefreshKey, setEconomyRefreshKey] = useState(0);
-  const [economyVisible, setEconomyVisible] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -87,24 +86,6 @@ export function ProfileShell() {
 
   return (
     <main className="mx-auto w-full max-w-6xl overflow-x-hidden px-5 py-6 lg:px-8 lg:py-10">
-      <header className="mb-8 hidden lg:block">
-        <h1
-          className="text-2xl font-bold lg:text-3xl"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          {t("title")}
-        </h1>
-        <p
-          className="mt-1 text-base"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {economyVisible ? t("subtitle_with_economy") : t("subtitle_basic")}
-        </p>
-      </header>
-
       <motion.div className="grid min-w-0 gap-5 lg:gap-6 xl:grid-cols-[minmax(0,1fr)_360px]" {...motionProps}>
         <section className="flex min-w-0 flex-col gap-5 lg:gap-6">
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
@@ -135,10 +116,7 @@ export function ProfileShell() {
           ) : null}
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-            <EconomySection
-              refreshKey={economyRefreshKey}
-              onVisibilityChange={setEconomyVisible}
-            />
+            <EconomySection refreshKey={economyRefreshKey} />
           </motion.div>
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>

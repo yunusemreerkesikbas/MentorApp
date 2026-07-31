@@ -6,6 +6,7 @@ import { EconomyModule } from "../economy/economy.module";
 import { IdentityModule } from "../identity/identity.module";
 import { PaymentsModule } from "../payments/payments.module";
 import { CoachingModule } from "../coaching/coaching.module";
+import { ForumModule } from "../forum/forum.module";
 import { AdminAuditService } from "./application/admin-audit.service";
 import { AdminUsersService } from "./application/admin-users.service";
 import { AdminAuditRepository } from "./infrastructure/admin-audit.repository";
@@ -18,6 +19,7 @@ import { AdminExamCalendarController } from "./presentation/admin-exam-calendar.
 import { AdminMetricsController } from "./presentation/admin-metrics.controller";
 import { AdminSubscriptionController } from "./presentation/admin-subscription.controller";
 import { AdminUsersController } from "./presentation/admin-users.controller";
+import { AdminForumController } from "./presentation/admin-forum.controller";
 
 /**
  * W6 — Admin (team-only, §9). First slice: STAFF role assignment + audit-log foundation.
@@ -36,6 +38,7 @@ import { AdminUsersController } from "./presentation/admin-users.controller";
     AiModule,
     AccountModule,
     CoachingModule,
+    ForumModule,
   ],
   controllers: [
     AdminUsersController,
@@ -45,6 +48,7 @@ import { AdminUsersController } from "./presentation/admin-users.controller";
     AdminExamCalendarController,
     AdminSubscriptionController,
     AdminMetricsController,
+    AdminForumController,
   ],
   providers: [
     AdminUsersService,

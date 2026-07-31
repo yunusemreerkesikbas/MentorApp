@@ -189,6 +189,18 @@ export interface ThreadView {
   attachments: Attachment[];
   /** Whether the viewer has bookmarked this thread. */
   myBookmarked: boolean;
+  /** Curated discovery tags (max 3). Additive for legacy thread consumers. */
+  tags?: ForumTagView[];
+  /** Positive helpful vote count (QA only). */
+  helpfulVoteCount?: number;
+  /** Whether the viewer has given their one helpful vote. */
+  myHelpfulVote?: boolean;
+  /** The latest thread/reply/reaction activity used by discovery sorting. */
+  lastActivityAt?: string;
+  /** Last owner edit time; null when the original content is unchanged. */
+  editedAt?: string | null;
+  /** Viewer-specific content actions. */
+  capabilities?: ForumCapabilities;
   createdAt: string;
 }
 
@@ -212,6 +224,10 @@ export interface AnswerView {
   attachments: Attachment[];
   /** Whether the viewer has bookmarked this answer. */
   myBookmarked: boolean;
+  helpfulVoteCount?: number;
+  myHelpfulVote?: boolean;
+  editedAt?: string | null;
+  capabilities?: ForumCapabilities;
   createdAt: string;
 }
 
@@ -245,7 +261,121 @@ export interface CommentView {
   attachments: Attachment[];
   /** Whether the viewer has bookmarked this comment. */
   myBookmarked: boolean;
+  helpfulVoteCount?: number;
+  myHelpfulVote?: boolean;
+  editedAt?: string | null;
+  capabilities?: ForumCapabilities;
   createdAt: string;
+}
+
+/** Viewer-specific edit/delete/moderation actions returned by thread and post read models. */
+export interface ForumCapabilities {
+  canEdit: boolean;
+  canDelete: boolean;
+  canModerate: boolean;
+  editDeadline: string | null;
+}
+
+export interface ForumTagView {
+  id: string;
+  slug: string;
+  /** Locale-resolved public label. */
+  name: string;
+  /** Admin surfaces need both labels without another round-trip. */
+  nameTr?: string;
+  nameEn?: string;
+  examType: string | null;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const ForumFeedScope = {
+  RELEVANT: "relevant",
+  FOLLOWING: "following",
+} as const;
+export type ForumFeedScope = (typeof ForumFeedScope)[keyof typeof ForumFeedScope];
+
+export const ForumFeedSort = {
+  TRENDING: "trending",
+  RECENT: "recent",
+  TOP: "top",
+} as const;
+export type ForumFeedSort = (typeof ForumFeedSort)[keyof typeof ForumFeedSort];
+
+export interface ForumPublicPerson {
+  id: string;
+  displayName: string;
+  username: string;
+  avatarUrl: string | null;
+}
+
+export interface ForumFeedItem {
+  id: string;
+  zone: Pick<ZoneView, "id" | "title" | "slug" | "type">;
+  author: ForumPublicPerson;
+  title: string | null;
+  body: string;
+  status: ThreadStatus;
+  acceptedPostId: string | null;
+  isPinned: boolean;
+  tags: ForumTagView[];
+  reactionCounts: Record<string, number>;
+  myReactions: string[];
+  helpfulVoteCount: number;
+  myHelpfulVote: boolean;
+  commentCount: number;
+  attachments: Attachment[];
+  myBookmarked: boolean;
+  capabilities: ForumCapabilities;
+  createdAt: string;
+  lastActivityAt: string;
+  editedAt: string | null;
+  /** Server-computed ranking signal. Never recomputed by clients. */
+  score: number;
+}
+
+export interface ForumThreadSummary {
+  id: string;
+  zoneSlug: string;
+  zoneTitle: string;
+  zoneType: ZoneType;
+  title: string | null;
+  bodyExcerpt: string;
+  commentCount: number;
+  lastActivityAt: string;
+}
+
+export interface ForumFeedContext {
+  activeThreads: ForumThreadSummary[];
+  suggestedThreads: ForumThreadSummary[];
+}
+
+export interface ForumFeed {
+  items: ForumFeedItem[];
+  nextCursor: string | null;
+  context: ForumFeedContext;
+}
+
+export interface ForumHubView {
+  featured: ForumFeedItem | null;
+  continueDiscussions: ForumFeedItem[];
+  trendingTags: Array<ForumTagView & { threadCount: number }>;
+  supporters: ForumPublicPerson[];
+  recommendedZones: ZoneView[];
+}
+
+export interface ForumSearchView {
+  threads: ForumThreadSummary[];
+  tags: ForumTagView[];
+  people: ForumPublicPerson[];
+}
+
+export interface ForumZoneFeedView {
+  zone: ZoneView;
+  feed: ThreadFeed;
+  contributors: ForumPublicPerson[];
+  pinnedThreads: ForumThreadSummary[];
 }
 
 /**

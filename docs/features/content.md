@@ -76,6 +76,18 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **Sınav listesi sayfalaması deterministik (APP-031, 2026-07-31)** — `ExamRepository.listPaged`
+  `ORDER BY (family, name)` ile sıralıyordu; **aynı adlı sınavlarda tiebreaker yoktu**, dolayısıyla
+  Postgres eşitleri keyfi sırada döndürüyordu. Sonuç: sayfalar arasında gezen bir admin bir satırı
+  iki kez görebilir, başka birini hiç görmeyebilirdi. `asc(exams.slug)` (unique) eklendi.
+  Bulunuş hikâyesi: `admin-exam-calendar` e2e'si iki ayrı turda "flake" sanılarak geçilmişti; gerçek
+  sebep buydu — spec her koşuda aynı adla (`"KPSS 2026 Lisans"`) sınav yaratıp silmiyordu, lokal
+  paylaşımlı DB'de 38 satır birikince yeni satırın ilk sayfaya düşmesi kumara dönüyordu. Spec artık
+  `e2e-exam-%` satırlarını **hem `beforeAll` hem `afterAll`'da** süpürüyor (yalnız afterAll olsaydı
+  kirli DB'de bir kez daha düşerdi) ve liste iddiası `pageSize=100` ile eşzamanlı kirlenmeye dayanıklı
+  — `e98b382`'deki KPSS makale sızıntısı düzeltmesiyle aynı desen. Dosyalar: `exam.repository.ts`,
+  `admin-exam-calendar.e2e-spec.ts`.
+
 - **Localized knowledge routes and English source names (2026-07-19)** — The internal source route and
   components moved from `bilgi`/`Bilgi*` to `knowledge`/`Knowledge*`; Turkish public URLs remain
   `/bilgi/[slug]` and English URLs are `/en/knowledge/[slug]`. Article canonical and breadcrumb

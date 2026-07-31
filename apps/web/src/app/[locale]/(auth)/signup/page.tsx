@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 import { SectionHeading } from "@mentor/ui";
 import { coachingControllerUpsertVision } from "@mentor/api-client";
 import { Field, FormError, SubmitButton } from "@/components/form";
+import { LegalLink } from "@/components/legal-link";
 import { useAuth } from "@/lib/auth-context";
 import { postAuthDestination } from "@/lib/post-auth-destination";
 import { AuthNavLink } from "../_components/auth-nav-link";
@@ -117,7 +118,12 @@ export default function SignupPage() {
           required
           className="mt-1 h-5 w-5 shrink-0"
         />
-        <span>{translate("kvkk")}</span>
+        {/* The checkbox asserts the notice was READ — so it has to be reachable from right here. */}
+        <span>
+          {translate.rich("kvkk", {
+            link: (chunks) => <LegalLink slug="kvkk-aydinlatma">{chunks}</LegalLink>,
+          })}
+        </span>
       </label>
       <FormError message={error} />
       <SubmitButton busy={busy}>{translate("submit")}</SubmitButton>

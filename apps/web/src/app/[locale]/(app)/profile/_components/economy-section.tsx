@@ -39,8 +39,6 @@ type EconomyState =
 interface EconomySectionProps {
   /** Bump after exam type save so quests/balance refetch (profile-setup quest). */
   refreshKey?: number;
-  /** Fired when the earn hub becomes visible or is permanently hidden (flag off). */
-  onVisibilityChange?: (visible: boolean) => void;
 }
 
 async function fetchEconomyHub(): Promise<{
@@ -60,10 +58,7 @@ async function fetchEconomyHub(): Promise<{
  * Profile earn hub — hidden when economy.enabled is off (404 ECONOMY_DISABLED).
  * Coin amounts stay off /coach chat (§4 #3).
  */
-export function EconomySection({
-  refreshKey = 0,
-  onVisibilityChange,
-}: EconomySectionProps) {
+export function EconomySection({ refreshKey = 0 }: EconomySectionProps) {
   const t = useTranslations("economy");
   const profile = useTranslations("profile.earned");
   const sheet = useMentorBottomSheet();
@@ -74,15 +69,13 @@ export function EconomySection({
   const applyHidden = useCallback(() => {
     economyDisabledRef.current = true;
     setState({ status: "hidden" });
-    onVisibilityChange?.(false);
-  }, [onVisibilityChange]);
+  }, []);
 
   const reload = useCallback(async () => {
     if (economyDisabledRef.current) return;
     try {
       const data = await fetchEconomyHub();
       setState({ status: "ready", ...data });
-      onVisibilityChange?.(true);
     } catch (err) {
       if (isEconomyDisabled(err)) {
         applyHidden();
@@ -97,9 +90,8 @@ export function EconomySection({
               ? err.message
               : String(err),
       });
-      onVisibilityChange?.(false);
     }
-  }, [applyHidden, onVisibilityChange]);
+  }, [applyHidden]);
 
   useEffect(() => {
     if (economyDisabledRef.current) return;
@@ -109,7 +101,6 @@ export function EconomySection({
       .then((data) => {
         if (!active) return;
         setState({ status: "ready", ...data });
-        onVisibilityChange?.(true);
       })
       .catch((err: unknown) => {
         if (!active) return;
@@ -126,22 +117,18 @@ export function EconomySection({
                 ? err.message
                 : String(err),
         });
-        onVisibilityChange?.(false);
       });
 
     return () => {
       active = false;
     };
-  }, [refreshKey, applyHidden, onVisibilityChange]);
+  }, [refreshKey, applyHidden]);
 
   if (state.status === "hidden" || state.status === "probing") return null;
 
   if (state.status === "error") {
     return <FormError message={state.message} />;
   }
-
-  const dailyQuests = state.quests.filter((quest) => quest.category === "daily_ritual");
-  const completedDailyQuests = dailyQuests.filter((quest) => quest.completed).length;
 
   function showBalance() {
     if (state.status !== "ready") return;
@@ -182,27 +169,18 @@ export function EconomySection({
         <ListRow
           icon={<Coins size={22} aria-hidden />}
           onClick={showBalance}
-          description={profile("balance_summary", {
-            xp: state.balance.xp,
-            coin: state.balance.coinConfirmed,
-          })}
         >
           {t("balance_title")}
         </ListRow>
         <ListRow
           icon={<ListChecks size={22} aria-hidden />}
           onClick={showQuests}
-          description={profile("quests_ritual_summary", {
-            done: completedDailyQuests,
-            total: dailyQuests.length,
-          })}
         >
           {t("quests_title")}
         </ListRow>
         <ListRow
           icon={<Gift size={22} aria-hidden />}
           onClick={showInvite}
-          description={state.invite.code}
         >
           {t("invite_title")}
         </ListRow>

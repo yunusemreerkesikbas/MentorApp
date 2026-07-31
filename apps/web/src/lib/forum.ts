@@ -3,6 +3,13 @@ import type {
   CommentDetail,
   CommentView,
   ForumActivityFeed,
+  ForumFeed,
+  ForumFeedScope,
+  ForumFeedSort,
+  ForumHubView,
+  ForumSearchView,
+  ForumTagView,
+  ForumZoneFeedView,
   MentionSuggestion,
   ModerationTargetType,
   Paginated,
@@ -63,6 +70,7 @@ export async function postThread(
   body: string,
   title?: string,
   attachments?: AttachmentInput[],
+  tagIds?: string[],
 ): Promise<ThreadView> {
   return (await http<ThreadView>(`/v1/forum/zones/${zoneId}/threads`, {
     method: "POST",
@@ -70,8 +78,81 @@ export async function postThread(
       body,
       ...(title ? { title } : {}),
       ...(attachments?.length ? { attachments } : {}),
+      ...(tagIds?.length ? { tagIds } : {}),
     }),
   })) as ThreadView;
+}
+
+export async function getForumHub(): Promise<ForumHubView> {
+  return (await http<ForumHubView>("/v1/forum/hub")) as ForumHubView;
+}
+
+export async function getForumFeed(input: {
+  scope: ForumFeedScope;
+  sort: ForumFeedSort;
+  tag?: string;
+  zoneType?: string;
+  cursor?: string;
+  limit?: number;
+}): Promise<ForumFeed> {
+  const qs = new URLSearchParams({
+    scope: input.scope,
+    sort: input.sort,
+    limit: String(input.limit ?? 20),
+  });
+  if (input.tag) qs.set("tag", input.tag);
+  if (input.zoneType) qs.set("zoneType", input.zoneType);
+  if (input.cursor) qs.set("cursor", input.cursor);
+  return (await http<ForumFeed>(`/v1/forum/feed?${qs.toString()}`)) as ForumFeed;
+}
+
+export async function searchForum(q: string): Promise<ForumSearchView> {
+  const qs = new URLSearchParams({ q });
+  return (await http<ForumSearchView>(`/v1/forum/search?${qs.toString()}`)) as ForumSearchView;
+}
+
+export async function listForumTags(): Promise<ForumTagView[]> {
+  return (await http<ForumTagView[]>("/v1/forum/tags")) as ForumTagView[];
+}
+
+export async function getZoneFeed(
+  slug: string,
+  sort: ThreadSort = "recent",
+  before?: string,
+): Promise<ForumZoneFeedView> {
+  const qs = new URLSearchParams({ sort, limit: "30" });
+  if (before) qs.set("before", before);
+  return (await http<ForumZoneFeedView>(
+    `/v1/forum/zones/${encodeURIComponent(slug)}/feed?${qs.toString()}`,
+  )) as ForumZoneFeedView;
+}
+
+export async function setHelpfulVote(
+  targetType: ModerationTargetType,
+  targetId: string,
+  selected: boolean,
+): Promise<void> {
+  const segment = targetType === "THREAD" ? "threads" : "posts";
+  await http(`/v1/forum/${segment}/${targetId}/helpful-vote`, {
+    method: selected ? "PUT" : "DELETE",
+  });
+}
+
+export async function updateForumThread(
+  threadId: string,
+  patch: { body?: string; title?: string | null; tagIds?: string[] },
+): Promise<void> {
+  await http(`/v1/forum/threads/${threadId}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function updateForumPost(postId: string, body: string): Promise<void> {
+  await http(`/v1/forum/posts/${postId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ body }),
+  });
 }
 
 export async function reactThread(threadId: string, emoji: string): Promise<void> {

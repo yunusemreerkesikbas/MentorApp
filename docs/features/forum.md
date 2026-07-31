@@ -92,11 +92,49 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `POST /v1/forum/reports/:id/resolve` | Hide/dismiss report |
 | `POST /v1/forum/threads/:threadId/restore` | Restore hidden thread |
 | `GET /v1/forum/search?q=` | Full-text search (QA only) |
+| `GET /v1/forum/hub` | Discovery hub: featured, continue/new blend, trend tags, supporters, room suggestions |
+| `GET /v1/forum/feed?scope=&sort=&tag=&zoneType=&cursor=` | Global relevant/following feed with server ranking and opaque cursor |
+| `GET /v1/forum/tags` | Locale-resolved active curated tags |
+| `GET /v1/forum/zones/:slug/feed` | Zone metadata + first feed page + contributors + pinned threads in one request |
+| `PATCH /v1/forum/threads/:id` · `PATCH /v1/forum/posts/:id` | Owner-only, time/interaction-locked editing |
+| `PUT/DELETE /v1/forum/threads\|posts/:id/helpful-vote` | Positive-only QA helpful vote |
+| `GET/POST/PATCH /v1/admin/forum/tags` | EDITOR curated tag management (audited) |
+| `GET/PUT/DELETE /v1/admin/forum/featured-thread` | Time-bounded manual featured selection (audited) |
 | `GET /v1/forum/public/questions/:id` | Public QA (SSR, @Public) |
 | `GET /v1/forum/public/questions?limit=` | Public QA refs (sitemap) |
 
 ## Geliştirmeler (timeline)
 
+- **Enerjik kampüs UI durum dili (2026-07-31)** — Forum davranışı ve API sözleşmeleri değişmeden
+  web yüzeylerindeki seçili/aktif durumlar ortak bir semantik renge bağlandı: CHAT/kapsam/birincil
+  aksiyon Mentor mavisi, QA mercan, helpful/accepted yeşil. Answer listesi tekrarlı `Card` bileşenlerinden
+  düz divider satırlarına indirildi; accepted cevap yalnız anlamlı yeşil yüzeyle ayrışır. Tekrarlı
+  açıklama satırları semantik ikonlara dönüştürüldü ve hover sırasında kontrol büyütme kaldırıldı.
+  Ayrıntı:
+  [`community.md`](./community.md) ve energetic-campus tasarım kaydı.
+- **Discovery V2 web görsel parity (2026-07-31)** — Backend sözleşmeleri değiştirilmeden hub, feed,
+  global composer, oda ve detay ekranları beş ürün referansına göre yeniden düzenlendi. Topluluk kendi
+  tam ekran shell’ini, arama header’ını ve gruplu oda menüsünü kullanır; feed kartlarındaki bookmark,
+  paylaş, capability menüsü, reaksiyon/helpful vote ve attachment davranışı korunur. QA composer’ı
+  cevap listesinin üstüne alınarak `içerik → tartışma ekle → cevaplar` sırası kuruldu. Route-scope
+  görsel değerler `community-parity.css` içindedir; diğer Mentor ekranlarını etkilemez. Kullanım ve
+  dosya haritası için [`community.md`](./community.md) kaydına bakın.
+- **Topluluk / Forum Discovery V2 (2026-07-31)** — Çalışan Zone/üyelik/thread/post/moderasyon
+  altyapısı korunarak keşif katmanı eklendi. Migration `0061`: kürasyonlu `forum_tags`,
+  max-3 `forum_thread_tags`, pozitif-only `forum_helpful_votes`, `last_activity_at`, edit ve
+  süreli featured alanları; RLS, indeksler, last-activity trigger'ları ve başlangıç TR/EN etiketleri.
+  `ForumDiscoveryService/Repository` hub, relevant/following global feed, trending/recent/top
+  sıralaması, v1 opaque cursor, public-safe arama, oda birleşik ilk yüklemesi ve admin featured/tag
+  akışını N+1'siz üretir. Skor/edit pencereleri config registry'dedir; frontend skor hesaplamaz.
+  Edit yalnız içerik sahibine 30 dk içinde ve etkileşim yokken açıktır; bookmark kilitlemez,
+  moderatör metni değiştiremez. QA helpful vote kendi içeriğine verilemez ve idempotenttir.
+  Eski endpoint'ler additive korunur; `forum.enabled=false` 404 davranışı değişmez.
+  Kullanım: önce migration/API, sonra staging query smoke, en son web/admin flag rollout.
+  Gotcha: migration forward-only; geri alma flag ile. Yüksek hacim kontrolü
+  `apps/api/scripts/explain-forum-discovery.sql` (10k geçici satır, transaction rollback) ile
+  discovery activity indeksini doğrular. İlgili: `forum-discovery.*`, `forum.dto.ts`,
+  `0061_lovely_retro_girl.sql`, `packages/{types,validation}/src/forum.ts`,
+  `test/forum.e2e-spec.ts`.
 - **KVKK silme: forum redaksiyonu (WP-K, 2026-07-22)** — Hesap silmede kullanıcının thread'leri
   (title+body) ve postları (body) `"[silinmiş içerik]"` sabitiyle **yerinde redakte** edilir (satır
   durur — başkalarının sohbeti ve kabul edilmiş cevap işareti bozulmaz); reaksiyon, bookmark, zone

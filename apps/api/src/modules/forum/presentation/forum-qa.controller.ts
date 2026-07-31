@@ -1,8 +1,15 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { AnswerView, Paginated, QuestionDetail, ThreadView } from "@mentor/types";
+import type {
+  AnswerView,
+  ForumSearchView,
+  Paginated,
+  QuestionDetail,
+  ThreadView,
+} from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
+import { ForumDiscoveryService } from "../application/forum-discovery.service";
 import { ForumQaService } from "../application/forum-qa.service";
 import { CreateAnswerDto, SearchQueryDto } from "./forum.dto";
 
@@ -15,14 +22,19 @@ import { CreateAnswerDto, SearchQueryDto } from "./forum.dto";
 @ApiBearerAuth()
 @Controller("forum")
 export class ForumQaController {
-  constructor(private readonly qa: ForumQaService) {}
+  constructor(
+    private readonly qa: ForumQaService,
+    private readonly discovery: ForumDiscoveryService,
+  ) {}
 
   @Get("search")
   search(
     @CurrentUser() user: RequestUser,
     @Query() q: SearchQueryDto,
-  ): Promise<Paginated<ThreadView>> {
-    return this.qa.search(user.id, q);
+  ): Promise<Paginated<ThreadView> & ForumSearchView> {
+    return Promise.all([this.qa.search(user.id, q), this.discovery.search(user.id, q.q)]).then(
+      ([legacy, discovery]) => ({ ...legacy, ...discovery }),
+    );
   }
 
   @Get("threads/:threadId")

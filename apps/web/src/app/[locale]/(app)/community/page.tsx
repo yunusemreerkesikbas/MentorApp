@@ -1,5 +1,5 @@
 import { setRequestLocale } from "next-intl/server";
-import { GeneralFeed } from "./_components/general-feed";
+import { HubShell } from "./_components/hub-shell";
 
 export default async function CommunityPage({
   params,
@@ -8,5 +8,5 @@ export default async function CommunityPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <GeneralFeed />;
+  return <HubShell />;
 }

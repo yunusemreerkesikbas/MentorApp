@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable, Optional } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { I18nContext } from "nestjs-i18n";
 import {
   type CommentDetail,
   type CommentView,
@@ -53,6 +54,11 @@ import {
 import { ForumPostRepository, type PostWithAuthor } from "../infrastructure/forum-post.repository";
 import { ForumAttachmentRepository } from "../infrastructure/forum-attachment.repository";
 import { ForumBookmarkRepository } from "../infrastructure/forum-bookmark.repository";
+import {
+  ForumDiscoveryRepository,
+  type ForumTagRow,
+} from "../infrastructure/forum-discovery.repository";
+import { uniqueForumTagIds } from "../domain/forum-discovery.policy";
 import { postRowToCommentView, threadRowToView } from "./forum.mappers";
 
 /** Minimal authenticated principal the controller passes in (id + platform roles). */
@@ -79,6 +85,7 @@ export class ForumThreadService {
     private readonly mentions: ForumMentionService,
     private readonly users: UsersService,
     private readonly follow: FollowService,
+    @Optional() private readonly discovery?: ForumDiscoveryRepository,
   ) {}
 
   /** Presigned upload URL for a post attachment — image or file (APP-027). Client PUTs, then sends `key`. */
@@ -160,7 +167,19 @@ export class ForumThreadService {
     // Resolve/validate BEFORE inserting the thread so a bad attachment fails without leaving a post.
     // QA questions carry images too (Phase 2) — same path as chat/announcement.
     const toAttach = await resolveForumAttachments(this.storage, actor.id, dto.attachments);
-    const row = await this.threads.createThread({ zoneId, authorId: actor.id, body: dto.body, title });
+    const tagIds = uniqueForumTagIds(dto.tagIds ?? []);
+    if (tagIds.length > 0) {
+      if (!this.discovery || (await this.discovery.activeTagCount(tagIds)) !== tagIds.length) {
+        throw new DomainError(ErrorCode.FORUM_TAG_INVALID, HttpStatus.BAD_REQUEST);
+      }
+    }
+    const row = await this.threads.createThread({
+      zoneId,
+      authorId: actor.id,
+      body: dto.body,
+      title,
+      ...(tagIds.length > 0 && { tagIds }),
+    });
     const attached = await this.attachments.insertMany(
       ModerationTargetType.THREAD,
       row.id,
@@ -481,25 +500,36 @@ export class ForumThreadService {
   async getThreadDetail(viewerId: string, threadId: string): Promise<ThreadDetail> {
     await this.assertEnabled();
     const thread = await this.requireThread(threadId, viewerId);
-    const [counts, mine, commentCounts, topLevel, attachMap, bookmarked] = await Promise.all([
+    const [counts, mine, commentCounts, topLevel, attachMap, bookmarked, tags] = await Promise.all([
       this.threads.reactionCountsByThread([threadId]),
       this.threads.myReactionsByThread([threadId], viewerId),
       this.threads.commentCountsByThread([threadId]),
       this.posts.listTopLevel(threadId, viewerId),
       this.attachments.listForTargets(ModerationTargetType.THREAD, [threadId]),
       this.bookmarks.myBookmarkedTargets(ModerationTargetType.THREAD, [threadId], viewerId),
+      this.discovery?.tagsByThread([threadId], I18nContext.current()?.lang ?? "tr") ??
+        Promise.resolve(new Map<string, ForumTagRow[]>()),
     ]);
+    const view = threadRowToView(
+      thread,
+      counts.get(threadId) ?? {},
+      mine.get(threadId) ?? [],
+      this.storage,
+      commentCounts.get(threadId) ?? 0,
+      [],
+      attachMap.get(threadId) ?? [],
+      bookmarked.has(threadId),
+    );
+    const lang = (I18nContext.current()?.lang ?? "tr").toLowerCase().startsWith("en") ? "en" : "tr";
+    view.tags = (tags.get(threadId) ?? []).map((tag) => ({
+      id: tag.id,
+      slug: tag.slug,
+      name: lang === "en" ? tag.nameEn : tag.nameTr,
+      examType: tag.examType,
+      isActive: tag.isActive,
+    }));
     return {
-      thread: threadRowToView(
-        thread,
-        counts.get(threadId) ?? {},
-        mine.get(threadId) ?? [],
-        this.storage,
-        commentCounts.get(threadId) ?? 0,
-        [],
-        attachMap.get(threadId) ?? [],
-        bookmarked.has(threadId),
-      ),
+      thread: view,
       comments: await this.decorateComments(topLevel, viewerId),
     };
   }

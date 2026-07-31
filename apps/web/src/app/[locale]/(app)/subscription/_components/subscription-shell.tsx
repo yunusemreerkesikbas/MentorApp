@@ -14,6 +14,7 @@ import {
 import { Button, Card, Chip, SectionHeading } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
+import { LegalLink } from "@/components/legal-link";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 
@@ -34,6 +35,7 @@ type LoadState =
 export function SubscriptionShell() {
   const reduceMotion = useReducedMotion();
   const t = useTranslations("subscription");
+  const tLegal = useTranslations("legal");
   const locale = useLocale();
   const { confirm, info } = useMentorDialog();
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
@@ -266,7 +268,21 @@ export function SubscriptionShell() {
                     className="mt-0.5 size-5 shrink-0 rounded accent-[var(--color-btn)]"
                     aria-describedby="trial-consent-desc"
                   />
-                  <span id="trial-consent-desc">{t("trial_consent")}</span>
+                  <span id="trial-consent-desc">
+                    {t("trial_consent")}
+                    {/* Distance-selling rules want the contract + pre-sale form reachable BEFORE
+                        the charge, not buried in a footer. */}
+                    <span className="mt-2 block" style={{ color: "var(--color-secondary)" }}>
+                      {tLegal("consent_prefix")}{" "}
+                      <LegalLink slug="mesafeli-satis-sozlesmesi">
+                        {tLegal("consent_distance_sales")}
+                      </LegalLink>
+                      {" · "}
+                      <LegalLink slug="on-bilgilendirme-formu">
+                        {tLegal("consent_pre_info")}
+                      </LegalLink>
+                    </span>
+                  </span>
                 </label>
               ) : (
                 <Card>

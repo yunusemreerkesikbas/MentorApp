@@ -160,7 +160,7 @@ export function ThreadItem({
             className="group/cmt flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             style={{ color: "var(--color-main)" }}
           >
-            <span className="inline-flex transition-transform duration-150 group-hover/cmt:scale-110 motion-reduce:transition-none">
+            <span className="inline-flex">
               <CommentIcon />
             </span>
           </Link>

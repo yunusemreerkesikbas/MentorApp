@@ -78,6 +78,9 @@ describe("admin exam-calendar editor (e2e)", () => {
     process.env.DATABASE_URL =
       process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
     pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    // Also sweep BEFORE the run, not just after: on a DB already polluted by older runs the
+    // afterAll sweep would only help the NEXT run, leaving this one to fail once.
+    await pool.query("delete from exams where slug like 'e2e-exam-%'");
 
     const { AppModule } = await import("../src/app.module");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -98,6 +101,11 @@ describe("admin exam-calendar editor (e2e)", () => {
   }, 90_000);
 
   afterAll(async () => {
+    // Delete every exam this spec ever created (`e2e-exam-*`, incl. any leaked by older runs on a
+    // shared local DB). They all share the name "KPSS 2026 Lisans", so once enough accumulate they
+    // fill the name-ordered first page and the "it is listed" assertion below starts missing the
+    // row it just created. Events/subjects cascade. Superuser bypasses RLS — no context needed.
+    await pool?.query("delete from exams where slug like 'e2e-exam-%'");
     await app?.close();
     await pool?.end();
   });
@@ -136,8 +144,10 @@ describe("admin exam-calendar editor (e2e)", () => {
     expect(create.body.exam.slug).toBe(SLUG);
     expect(create.body.exam.isCurrent).toBe(true);
 
+    // pageSize=100: the list is ordered by (family, name, slug) and other specs sharing this local
+    // DB may add KPSS exams concurrently — a default page of 20 can miss the row just created.
     const list = await request(app.getHttpServer())
-      .get("/v1/admin/content/exams?family=KPSS")
+      .get("/v1/admin/content/exams?family=KPSS&pageSize=100")
       .set(asEditor());
     expect(list.body.items.some((e: { slug: string }) => e.slug === SLUG)).toBe(true);
 

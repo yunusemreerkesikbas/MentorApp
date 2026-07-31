@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
-import type { AuthUser, AvatarUploadUrlDto } from "@mentor/types";
+import type { AuthUser, AvatarUploadUrlDto, ForumPublicPerson } from "@mentor/types";
 import type { AvatarUploadUrlInput, UpdateMeInput } from "@mentor/validation";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -52,6 +52,23 @@ export class UsersService {
     const me = await this.usersRepo.findByIdService(viewerId);
     if (!me) return [];
     return this.usersRepo.suggestCohortPeers(me.examType, excludeIds, limit);
+  }
+
+  /** Forum discovery cohort input without exposing the identity row to another module. */
+  async getDiscoveryProfile(userId: string): Promise<{ examType: string | null }> {
+    const user = await this.usersRepo.findByIdService(userId);
+    return { examType: user?.examType ?? null };
+  }
+
+  /** Public-safe forum search port. Email and all other PII stay inside identity. */
+  async searchPublicUsers(q: string, limit = 5): Promise<ForumPublicPerson[]> {
+    const rows = await this.usersRepo.searchPublicUsers(q, limit);
+    return rows.map((row) => ({
+      id: row.id,
+      displayName: row.displayName,
+      username: row.username,
+      avatarUrl: row.avatarStorageKey ? this.storage.getPublicUrl(row.avatarStorageKey) : null,
+    }));
   }
 
   /** Admin metrics dashboard (W6) — read-only user-base aggregate. */

@@ -5,6 +5,7 @@ import {
   ANALYTICS_CONSENT_KEY,
   trackArticleEvent,
   trackCoachEvent,
+  trackCommunityEvent,
   trackWeeklyRecapEvent,
 } from "./analytics";
 
@@ -46,6 +47,48 @@ describe("article analytics", () => {
     trackArticleEvent("article_source_click", params);
 
     expect(dataLayer).toEqual([["event", "article_source_click", params]]);
+  });
+});
+
+describe("community analytics", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("queues only structural forum metadata after consent", () => {
+    const dataLayer: unknown[] = [];
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: vi.fn((key: string) =>
+          key === ANALYTICS_CONSENT_KEY ? "accepted" : null,
+        ),
+      },
+      dataLayer,
+    });
+
+    trackCommunityEvent("forum_thread_created", {
+      mode: "question",
+      zone_type: "QA",
+      tag_count: 2,
+    });
+    trackCommunityEvent("forum_feed_tab_selected", {
+      sort: "trending",
+      scope: "relevant",
+    });
+
+    expect(dataLayer).toEqual([
+      [
+        "event",
+        "forum_thread_created",
+        { mode: "question", zone_type: "QA", tag_count: 2 },
+      ],
+      [
+        "event",
+        "forum_feed_tab_selected",
+        { sort: "trending", scope: "relevant" },
+      ],
+    ]);
+    expect(JSON.stringify(dataLayer)).not.toMatch(/user|threadId|title|body|content/i);
   });
 });
 

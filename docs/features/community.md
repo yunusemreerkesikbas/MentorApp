@@ -67,6 +67,45 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Enerjik kampüs görsel katmanı (2026-07-31)** — İlk parity turundaki sakin/editoryal görünüm,
+  öğrenci topluluğunun sosyal enerjisini daha iyi taşıyan içerik-temelli bir dile geliştirildi. Mentor
+  mavisi (`--color-progress`) seçili navigasyon ve birincil aksiyonları; mercan soru/yanıt çağrılarını;
+  yeşil destek, helpful ve
+  accepted durumlarını temsil eder. Hub’daki jenerik pastel ikon dekoru kaldırıldı: featured yüzeyi
+  artık gerçek oda, başlık, gövde özeti, yazar ve topluluk avatarlarından oluşur. Recent ve alt keşif
+  alanlarında tekrarlı floating-card deseni yerine tek yüzey + divider ritmi kullanılır; Emek Panosu
+  küçük metric kartları yerine tek ilerleme cümlesidir. Sidebar oda türü sinyalleri ve aktif durumları,
+  feed/composer/detail helpful durumları aynı sözlüğe bağlandı. AI-slop guardrail: gradient, glass,
+  fake badge, rainbow kart, ornamental blob ve dekoratif page-load motion yok. İkinci damıtma turunda
+  başlığı tekrar eden yardımcı metinler kaldırılıp bölüm başlıkları semantik ikonlarla güçlendirildi;
+  hover büyütmeleri kaldırılarak yalnız renk/yüzey geri bildirimi bırakıldı. Boş, hata, izin ve
+  doğrulama durumlarının yönlendirici metinleri korundu. İlgili tasarım kaydı:
+  [`plans/2026-07-31-community-energetic-campus-design.md`](../plans/2026-07-31-community-energetic-campus-design.md).
+- **Referans-parity Topluluk çalışma alanı (2026-07-31)** — Topluluk rotaları, Mentor’ın global
+  sidebar ve mobil tab bar’ından ayrılan tam ekran bir çalışma alanına taşındı. Hub; editoryal
+  featured panel, yatay “Devam ettiklerin” satırları, Emek Panosu özeti ve üç kolonlu etiket/
+  destekçi/oda bandıyla referans 4’e; global akış sabit 248px oda navigasyonu, 304px bağlamsal rail,
+  sekmeli toolbar ve zengin kartlarla referans 1’e yaklaştırıldı. Oda görünümü breadcrumb + düz kanal
+  timeline + katkı verenler rail’iyle referans 5’i; thread/QA detayları içerik → composer → cevaplar
+  sırasıyla referans 3’ü izler. Composer referans 2 geometrisinde native `dialog` kullanır; yalnız
+  mevcut `Paylaşım/Soru` yetenekleri gösterilir. Görsel sistem route-scope CSS’tir; forum izinleri,
+  i18n, API ve 44px/focus davranışı değişmez. Upcoming Event ve gerçek zamanlı kanal davranışı
+  eklenmedi. Görsel kabul kullanıcı tarafından manuel yapılır; Playwright eklenmedi. İlgili:
+  `community/layout.tsx`, `community-parity.css`, `community-header.tsx`, `hub-shell.tsx`,
+  `feed/_components/*`, `zone-shell.tsx`, `message-shell.tsx`, `question-shell.tsx`.
+- **Discovery V2 hub ve tek Topluluk ürünü (2026-07-31)** — `/topluluk` artık ilk CHAT odasına
+  yönlenmez; featured tartışma, son 30 günlük etkileşimlerden “Devam ettiklerin” + ilgili yeni
+  tamamlama, kişisel Emek Panosu özeti, trend etiketler, sırasız “Bu hafta destek olanlar” ve
+  katılınmamış oda önerileri sunar. Sol menü `Ana sayfa / Akış / Kaydedilenler / Sıralama` ardından
+  CHAT/ANNOUNCEMENT/QA odalarını taşır. `/topluluk/akis` relevant/following kapsamı, üç server-side
+  sıralama, etiket/oda filtresi, PII-safe arama, zengin kartlar, global `Paylaşım/Soru` composer ve
+  bağlamsal rail kullanır. Oda ilk yükü tek `/zones/:slug/feed` çağrısıdır; detaylar
+  `Topluluk > Oda > Başlık` breadcrumb, katılımcı rail ve QA helpful oylarını gösterir.
+  Mobil overlay native `dialog` focus trap ve 44px hedefler kullanır; copy TR/EN mirrored.
+  Upcoming Event, presence/typing/websocket ve forum metnini LLM'e gönderme özellikle eklenmedi.
+  Analitik yalnız onay sonrası kimliksiz yapısal enum/count alanları gönderir. İlgili:
+  `community/_components/hub-shell.tsx`, `feed/_components/{feed-shell,discovery-feed-card,
+  global-composer}.tsx`, `lib/{forum,analytics}.ts`, `messages/{tr,en}.json`.
 - **KVKK silme: sosyal graf (WP-K, 2026-07-22)** — Hesap silmede `user_follows` (iki yön) ve
   `buddy_pairs` (her status, iki taraf) hard delete edilir — kimin kiminle çalıştığı ilişkisel PII.
   `SocialErasureService` identity modülünde yaşar (tabloların sahibi orası); `FollowRepository` /

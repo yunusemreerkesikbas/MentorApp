@@ -70,8 +70,29 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 | `GET /v1/economy/deep-analysis?examId=`   | Deep-analysis unlock state (eligible? cost? unlocked?)   |
 | `POST /v1/economy/deep-analysis`          | Unlock this week's deep analysis (coin sink, idempotent) |
 | `POST /v1/admin/users/:id/economy/adjust` | Admin manual adjust (audited)                            |
+| `GET /v1/admin/metrics/economy`           | Faucet/sink breakdown + float + faucet reach (calibration) |
 
 ## Geliştirmeler (timeline)
+
+- **Ekonomi gözlemlenebilirliği — musluk/sink dökümü (APP-031, 2026-07-31)** — APP-030'da tekrarlı
+  coin musluğunu taktık ama sayacını takmamıştık: admin yalnızca iki toplam sayı görüyordu
+  (`coinIssued`/`xpIssued`), kaynak bazında hiçbir kırılım yoktu. Roadmap §729 kazanç oranlarının
+  "canlı veriden kalibre" edileceğini söylüyor — ölçüm olmadan o kalibrasyon tahmindir.
+  **`GET /v1/admin/metrics/economy`** (`AdminEconomyStatsDto`) geldi: d1/d7/d30 rolling pencereleri,
+  reason bazında COIN + XP dökümü, **outstanding float** (kullanıcılarda duran harcanmamış coin =
+  yükümlülük; şişiyorsa musluk cömert, sıfıra dayanıyorsa duvar var), **faucetReach** (son 7 günde
+  haftalık musluğu kazanan / XP kazanan tekil kullanıcı) ve **corrections** (admin adjust satırları).
+  **Organik/düzeltme ayrımı bu işin can damarı:** `byReasonSince` yalnız `created_by IS NULL`
+  satırlarını sayar — bir destek düzeltmesi kalibre edilmeye çalışılan organik oranı şişirmesin
+  (`coinEarnedSince`'in cap muhasebesindeki ayrımıyla aynı mantık). Şema değişikliği yok; ledger
+  zaten append-only, veri oradaydı, okunmuyordu. Pencereler **rolling** (takvim değil) — cap'ler ve
+  AI maliyet pencereleriyle tutarlı, TZ-free; bu yüzden erişim metriği "bu ISO hafta" değil "son 7
+  gün", böylece economy coaching'in `isoWeekStart` util'ine uzanmıyor (workstreams §3).
+  Admin dashboard'a dördüncü blok olarak `EconomyCards` eklendi (`AiCostCards` kalıbı; reason→TR
+  etiket eşlemesi admin app içinde — `ledger-entry-view.ts` son kullanıcı dilidir, operatörünki ayrı).
+  Flag'den bağımsız (admin aracı). Dosyalar: `ledger.repository.ts`, `economy-stats.service.ts`,
+  `economy.module.ts`, `admin-metrics.controller.ts`, `packages/types/src/economy.ts`,
+  `apps/admin/src/app/EconomyCards.tsx`, `apps/admin/src/lib/types.ts`.
 
 - **Yenilenebilir coin musluğu + XP seviyesi + cap muhasebesi düzeltmesi (2026-07-30)** — Ekonominin
   tasarım kırığı kapandı. **Teşhis:** coin musluğu tek seferlikti — 4 onboarding görevi (4×10) +
@@ -272,6 +293,10 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   a row granted at target 5 must not later claim 3). Check the stripped form reads as a sentence;
   when it doesn't ("Bu hafta {target} gün aktif ol" → "Bu hafta gün aktif ol"), set an explicit
   `QuestDef.ledgerTitle`. Only the view path (`quest.service.toViews`) resolves `{target}`.
+- **Admin metrics exclude admin adjustments from the organic breakdown** (`created_by IS NOT NULL`
+  → reported under `corrections`, never in `coinByReason`). A support correction must not inflate
+  the earning rates it is used to calibrate. `windows.*` however are TOTAL flow and DO include
+  corrections — the two numbers are meant to differ.
 - **Caps are rolling windows** (now−24h / now−7d), not calendar — simple, TZ-free.
 - **Cap accounting counts ORGANIC earnings only** — admin adjustments (`created_by` set) and every
   reason in `CORRECTION_REASONS` (`ai.chat.refund`, `streak.freeze.refund`) are corrections,

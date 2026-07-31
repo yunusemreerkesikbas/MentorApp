@@ -1,6 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, gte, isNull, lt, notInArray, sql } from "drizzle-orm";
-import { Currency, LedgerStatus } from "@mentor/types";
+import { and, desc, eq, gte, isNotNull, isNull, lt, notInArray, sql } from "drizzle-orm";
+import {
+  Currency,
+  LedgerStatus,
+  type EconomyFlowDto,
+  type EconomyReasonFlowDto,
+} from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
@@ -216,6 +221,149 @@ export class LedgerRepository {
         .from(ledgerEntries)
         .where(and(...conds));
       return rows[0]?.total ?? 0;
+    });
+  }
+
+  /**
+   * Admin metrics (W6) — total ledger flow in a rolling window. Credited/debited are both returned
+   * as POSITIVE magnitudes so the UI never has to reason about sign. CONFIRMED only (pending coin
+   * hasn't moved yet). SERVICE context: cross-tenant aggregate.
+   */
+  async flowSince(since: Date): Promise<EconomyFlowDto> {
+    return withServiceContext(this.db, async (tx) => {
+      const [row] = await tx
+        .select({
+          coinCredited: sql<number>`coalesce(sum(${ledgerEntries.amount}) filter (where ${ledgerEntries.unit} = ${Currency.COIN} and ${ledgerEntries.amount} > 0), 0)::int`,
+          coinDebited: sql<number>`coalesce(-sum(${ledgerEntries.amount}) filter (where ${ledgerEntries.unit} = ${Currency.COIN} and ${ledgerEntries.amount} < 0), 0)::int`,
+          xpCredited: sql<number>`coalesce(sum(${ledgerEntries.amount}) filter (where ${ledgerEntries.unit} = ${Currency.XP} and ${ledgerEntries.amount} > 0), 0)::int`,
+          rows: sql<number>`count(*)::int`,
+        })
+        .from(ledgerEntries)
+        .where(
+          and(eq(ledgerEntries.status, LedgerStatus.CONFIRMED), gte(ledgerEntries.createdAt, since)),
+        );
+      return row ?? { coinCredited: 0, coinDebited: 0, xpCredited: 0, rows: 0 };
+    });
+  }
+
+  /**
+   * Per-reason flow for one unit — the faucet/sink breakdown. ORGANIC only: admin adjustments
+   * (`created_by` set) are corrections and would distort the earning rates this exists to calibrate,
+   * so they are excluded here and reported separately by `correctionsSince`. Biggest movement first.
+   */
+  byReasonSince(unit: Currency, since: Date): Promise<EconomyReasonFlowDto[]> {
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select({
+          reason: ledgerEntries.reason,
+          credited: sql<number>`coalesce(sum(${ledgerEntries.amount}) filter (where ${ledgerEntries.amount} > 0), 0)::int`,
+          debited: sql<number>`coalesce(-sum(${ledgerEntries.amount}) filter (where ${ledgerEntries.amount} < 0), 0)::int`,
+          users: sql<number>`count(distinct ${ledgerEntries.userId})::int`,
+        })
+        .from(ledgerEntries)
+        .where(
+          and(
+            eq(ledgerEntries.unit, unit),
+            eq(ledgerEntries.status, LedgerStatus.CONFIRMED),
+            gte(ledgerEntries.createdAt, since),
+            isNull(ledgerEntries.createdBy),
+          ),
+        )
+        .groupBy(ledgerEntries.reason)
+        .orderBy(desc(sql`coalesce(sum(abs(${ledgerEntries.amount})), 0)`)),
+    );
+  }
+
+  /** Admin COIN adjustments in the window — the counterpart `byReasonSince` deliberately omits. */
+  async correctionsSince(
+    since: Date,
+  ): Promise<{ credited: number; debited: number; rows: number }> {
+    return withServiceContext(this.db, async (tx) => {
+      const [row] = await tx
+        .select({
+          credited: sql<number>`coalesce(sum(${ledgerEntries.amount}) filter (where ${ledgerEntries.amount} > 0), 0)::int`,
+          debited: sql<number>`coalesce(-sum(${ledgerEntries.amount}) filter (where ${ledgerEntries.amount} < 0), 0)::int`,
+          rows: sql<number>`count(*)::int`,
+        })
+        .from(ledgerEntries)
+        .where(
+          and(
+            eq(ledgerEntries.unit, Currency.COIN),
+            eq(ledgerEntries.status, LedgerStatus.CONFIRMED),
+            gte(ledgerEntries.createdAt, since),
+            isNotNull(ledgerEntries.createdBy),
+          ),
+        );
+      return row ?? { credited: 0, debited: 0, rows: 0 };
+    });
+  }
+
+  /**
+   * Unspent confirmed coin across all users — the outstanding liability. A ballooning float means
+   * the faucet outruns the sinks; a float pinned near zero means users hit a wall. Users with a
+   * zero/negative balance aren't holders.
+   */
+  async outstandingFloat(): Promise<{ coinConfirmed: number; holders: number }> {
+    return withServiceContext(this.db, async (tx) => {
+      const perUser = tx
+        .select({
+          uid: ledgerEntries.userId,
+          bal: sql<number>`sum(${ledgerEntries.amount})`.as("bal"),
+        })
+        .from(ledgerEntries)
+        .where(
+          and(
+            eq(ledgerEntries.unit, Currency.COIN),
+            eq(ledgerEntries.status, LedgerStatus.CONFIRMED),
+          ),
+        )
+        .groupBy(ledgerEntries.userId)
+        .having(sql`sum(${ledgerEntries.amount}) > 0`)
+        .as("per_user");
+      const [row] = await tx
+        .select({
+          coinConfirmed: sql<number>`coalesce(sum(${perUser.bal}), 0)::int`,
+          holders: sql<number>`count(*)::int`,
+        })
+        .from(perUser);
+      return row ?? { coinConfirmed: 0, holders: 0 };
+    });
+  }
+
+  /** Distinct users who EARNED a given reason in the window (recurring-faucet reach). */
+  async distinctEarnersSince(reason: string, since: Date): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const [row] = await tx
+        .select({ total: sql<number>`count(distinct ${ledgerEntries.userId})::int` })
+        .from(ledgerEntries)
+        .where(
+          and(
+            eq(ledgerEntries.reason, reason),
+            gte(ledgerEntries.createdAt, since),
+            sql`${ledgerEntries.amount} > 0`,
+          ),
+        );
+      return row?.total ?? 0;
+    });
+  }
+
+  /**
+   * Distinct users who earned ANY XP in the window — the faucet-reach denominator. Global (every
+   * cohort), unlike `xpParticipantCountSince` which is scoped to one exam type.
+   */
+  async distinctXpActiveSince(since: Date): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const [row] = await tx
+        .select({ total: sql<number>`count(distinct ${ledgerEntries.userId})::int` })
+        .from(ledgerEntries)
+        .where(
+          and(
+            eq(ledgerEntries.unit, Currency.XP),
+            gte(ledgerEntries.createdAt, since),
+            sql`${ledgerEntries.amount} > 0`,
+          ),
+        );
+      return row?.total ?? 0;
     });
   }
 

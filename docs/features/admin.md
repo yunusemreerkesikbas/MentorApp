@@ -91,9 +91,16 @@ targetId, before, after })` for rich diffs.
 | `GET/POST /admin/content/exams` · `POST …/:slug/events` · `DELETE …/:slug/events/:type` | Exam-calendar editor (ADMIN/EDITOR) |
 | `GET /admin/users/:id/subscription` · `POST …/refund` · `POST …/cancel` | Subscription view / refund / cancel (FINANCE) |
 | `GET /admin/metrics` | KPI snapshot (read-only, no audit) |
+| `GET /admin/metrics/economy` | Coin/XP faucet + sink breakdown, float, faucet reach (read-only) |
 | `GET /admin/config` · `PATCH /admin/config/:key` | Config/flag editor (SUPER_ADMIN) |
 
 ## Geliştirmeler (timeline)
+
+- **Economy metrics card (APP-031, 2026-07-31)** — `GET /v1/admin/metrics/economy` + a fourth
+  dashboard block (`EconomyCards`, `AiCostCards` kalıbı). Ledger'ı okuyup coin'in nereden girip
+  nereye çıktığını reason bazında, harcanmamış float'ı ve haftalık musluğun erişimini gösterir —
+  kazanç oranlarının canlı veriden kalibre edilebilmesi için (roadmap §729). Admin adjust satırları
+  organik dökümden ayrı tutulur. Detay + gotcha: [economy](./economy.md).
 
 - **Seven-day coaching continuity KPI (2026-07-22)** — `GET /v1/admin/metrics` additively returns
   `coaching { activeUsers7d, repeatUsers7d, repeatRate7d }`. The metric uses distinct UTC dates from

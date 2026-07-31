@@ -25,6 +25,7 @@ export const ConfigCategory = {
   COACHING: "coaching",
   IDENTITY: "identity",
   NOTIFICATIONS: "notifications",
+  FORUM: "forum",
 } as const;
 
 export const ConfigValueType = {
@@ -128,6 +129,15 @@ const coachingCount = (
   description: string,
 ): ConfigEntryDef => ({
   category: ConfigCategory.COACHING,
+  type: ConfigValueType.NUMBER,
+  schema: z.number().int().min(min).max(max),
+  default: def,
+  sensitive: false,
+  description,
+});
+
+const forumCount = (def: number, min: number, max: number, description: string): ConfigEntryDef => ({
+  category: ConfigCategory.FORUM,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(min).max(max),
   default: def,
@@ -279,6 +289,60 @@ export const CONFIG_CATALOG = {
     10,
     1000,
     "Max posts per day that earn XP (anti-farm shield for the leaderboard).",
+  ),
+  "forum.discovery.trending_window_hours": forumCount(
+    72,
+    1,
+    720,
+    "Rolling activity window used by the trending discovery feed.",
+  ),
+  "forum.discovery.top_window_days": forumCount(
+    30,
+    1,
+    365,
+    "Rolling activity window used by the top discovery feed.",
+  ),
+  "forum.discovery.edit_window_minutes": forumCount(
+    30,
+    1,
+    1440,
+    "Owner edit window before an untouched forum thread or post becomes immutable.",
+  ),
+  "forum.discovery.featured_default_days": forumCount(
+    7,
+    1,
+    90,
+    "Default lifetime for a manually featured thread.",
+  ),
+  "forum.discovery.score.participant_weight": forumCount(
+    3,
+    0,
+    100,
+    "Trending/top score weight for each unique participant.",
+  ),
+  "forum.discovery.score.reaction_weight": forumCount(
+    1,
+    0,
+    100,
+    "Trending/top score weight for each positive reaction.",
+  ),
+  "forum.discovery.score.bookmark_weight": forumCount(
+    2,
+    0,
+    100,
+    "Trending/top score weight for each bookmark.",
+  ),
+  "forum.discovery.score.helpful_weight": forumCount(
+    2,
+    0,
+    100,
+    "Trending/top score weight for each helpful vote.",
+  ),
+  "forum.discovery.score.accepted_answer_bonus": forumCount(
+    5,
+    0,
+    100,
+    "Trending/top score bonus for a question with an accepted answer.",
   ),
   "ai.chat.daily_limit": aiCount(
     30,

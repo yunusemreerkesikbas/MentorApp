@@ -1,6 +1,11 @@
 import { Controller, Get } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { UserRole, type AdminAiCostDto, type AdminCoachFeedbackDto } from "@mentor/types";
+import {
+  UserRole,
+  type AdminAiCostDto,
+  type AdminCoachFeedbackDto,
+  type AdminEconomyStatsDto,
+} from "@mentor/types";
 import { Roles } from "../../../common/auth/roles.decorator";
 import { UsersService, type UserStats } from "../../identity/application/users.service";
 import {
@@ -8,6 +13,7 @@ import {
   type SubscriptionStats,
 } from "../../payments/application/subscriptions.service";
 import { EconomyService } from "../../economy/application/economy.service";
+import { EconomyStatsService } from "../../economy/application/economy-stats.service";
 import { InviteService } from "../../economy/application/invite.service";
 import { AiCostStatsService } from "../../ai/application/ai-cost-stats.service";
 import { CoachFeedbackStatsService } from "../../ai/application/coach-feedback-stats.service";
@@ -39,6 +45,7 @@ export class AdminMetricsController {
     private readonly users: UsersService,
     private readonly subscriptions: SubscriptionsService,
     private readonly economy: EconomyService,
+    private readonly economyStatsService: EconomyStatsService,
     private readonly invites: InviteService,
     private readonly aiCost: AiCostStatsService,
     private readonly coachFeedback: CoachFeedbackStatsService,
@@ -67,6 +74,15 @@ export class AdminMetricsController {
   @Get("ai")
   aiCostStats(): Promise<AdminAiCostDto> {
     return this.aiCost.getCostStats();
+  }
+
+  /**
+   * Economy visibility (§3): coin/XP faucet + sink breakdown, outstanding float, faucet reach —
+   * the measurements the earning rates are calibrated from (roadmap §729). Flag-independent.
+   */
+  @Get("economy")
+  economyStats(): Promise<AdminEconomyStatsDto> {
+    return this.economyStatsService.getStats();
   }
 
   /** Coach reply satisfaction: 👍/👎 rate + recent 👎 replies with their question (admin-only text). */
