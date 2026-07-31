@@ -1,7 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
 import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -96,33 +94,5 @@ export function ArticleMarkdown({
   );
 }
 
-/** Minimal public chrome for SEO article pages (no auth shell). */
-export function PublicArticleChrome({ children }: { children: ReactNode }) {
-  const translate = useTranslations("article");
-  return (
-    <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg)" }}>
-      <header
-        className="border-b px-5 py-4 lg:px-8"
-        style={{ borderColor: "color-mix(in srgb, var(--color-secondary) 20%, transparent)" }}
-      >
-        <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <Link
-            href="/"
-            className="text-lg font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-          >
-            Mentor
-          </Link>
-          <Link
-            href="/login"
-            className="inline-flex min-h-[44px] items-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            style={{ color: "var(--color-accent)", fontFamily: "var(--font-heading)" }}
-          >
-            {translate("login")}
-          </Link>
-        </div>
-      </header>
-      {children}
-    </div>
-  );
-}
+// The public chrome that used to live here moved to `@/components/public-chrome` — legal pages
+// need it too and shouldn't reach into this route's `_components`.

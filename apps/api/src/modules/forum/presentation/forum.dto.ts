@@ -1,5 +1,7 @@
 import {
   approveMemberSchema,
+  adminForumTagCreateSchema,
+  adminForumTagUpdateSchema,
   assignOwnerSchema,
   attachmentUploadUrlSchema,
   bookmarkQuerySchema,
@@ -8,12 +10,17 @@ import {
   createThreadSchema,
   createZoneSchema,
   feedQuerySchema,
+  forumFeedQuerySchema,
+  forumSearchQuerySchema,
   memberSearchQuerySchema,
   pinThreadSchema,
   reactionSchema,
   reportsQuerySchema,
   resolveReportSchema,
   searchQuerySchema,
+  setFeaturedThreadSchema,
+  updateForumPostSchema,
+  updateForumThreadSchema,
   zoneListQuerySchema,
   zoneMembersQuerySchema,
 } from "@mentor/validation";
@@ -36,3 +43,10 @@ export class SearchQueryDto extends createZodDto(searchQuerySchema) {}
 export class CreateReportDto extends createZodDto(createReportSchema) {}
 export class ReportsQueryDto extends createZodDto(reportsQuerySchema) {}
 export class ResolveReportDto extends createZodDto(resolveReportSchema) {}
+export class ForumFeedQueryDto extends createZodDto(forumFeedQuerySchema) {}
+export class ForumSearchQueryDto extends createZodDto(forumSearchQuerySchema) {}
+export class UpdateForumThreadDto extends createZodDto(updateForumThreadSchema) {}
+export class UpdateForumPostDto extends createZodDto(updateForumPostSchema) {}
+export class AdminForumTagCreateDto extends createZodDto(adminForumTagCreateSchema) {}
+export class AdminForumTagUpdateDto extends createZodDto(adminForumTagUpdateSchema) {}
+export class SetFeaturedThreadDto extends createZodDto(setFeaturedThreadSchema) {}

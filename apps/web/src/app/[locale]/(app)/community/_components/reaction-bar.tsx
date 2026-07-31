@@ -99,7 +99,7 @@ export function ReactionBar({
               autoFocus={i === 0}
               aria-label={emoji}
               onClick={() => toggle(emoji)}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[18px] transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[18px] transition-colors hover:bg-[#f1f3f6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
               style={{
                 background: active.has(emoji)
                   ? "color-mix(in srgb, var(--color-chip) 22%, white)"

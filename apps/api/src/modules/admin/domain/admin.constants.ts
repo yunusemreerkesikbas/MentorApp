@@ -22,6 +22,10 @@ export const AuditAction = {
   CONTENT_EXAM_EVENT_DELETE: "content.exam-event.delete",
   SUBSCRIPTION_REFUND: "subscription.refund",
   SUBSCRIPTION_CANCEL: "subscription.cancel",
+  FORUM_TAG_CREATE: "forum.tag.create",
+  FORUM_TAG_UPDATE: "forum.tag.update",
+  FORUM_FEATURED_SET: "forum.featured.set",
+  FORUM_FEATURED_CLEAR: "forum.featured.clear",
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 
@@ -33,5 +37,7 @@ export const AuditTargetType = {
   EXAM: "exam",
   EXAM_EVENT: "exam-event",
   SUBSCRIPTION: "subscription",
+  FORUM_TAG: "forum-tag",
+  FORUM_THREAD: "forum-thread",
 } as const;
 export type AuditTargetType = (typeof AuditTargetType)[keyof typeof AuditTargetType];

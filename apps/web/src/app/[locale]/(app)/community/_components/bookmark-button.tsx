@@ -29,7 +29,7 @@ export function BookmarkButton({
     >
       <span
         key={bookmarked ? "on" : "off"}
-        className="inline-flex transition-transform duration-150 group-hover/bm:scale-110 group-active/bm:scale-90 motion-reduce:transition-none"
+        className="inline-flex transition-transform duration-150 group-active/bm:scale-90 motion-reduce:transition-none"
       >
         <BookmarkIcon filled={bookmarked} />
       </span>

@@ -29,7 +29,9 @@ export class ExamRepository {
         .select()
         .from(exams)
         .where(where)
-        .orderBy(asc(exams.family), asc(exams.name))
+        // `slug` (unique) breaks name ties — without it same-named exams come back in arbitrary
+        // order, so a paged reader can see one row twice and miss another entirely.
+        .orderBy(asc(exams.family), asc(exams.name), asc(exams.slug))
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       db.select({ count: sql<number>`count(*)::int` }).from(exams).where(where),

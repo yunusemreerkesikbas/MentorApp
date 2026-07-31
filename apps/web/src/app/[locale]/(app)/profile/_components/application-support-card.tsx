@@ -60,9 +60,9 @@ export function ApplicationSupportCard() {
     <Card solid className="p-4">
       <SectionHeading>{t("title")}</SectionHeading>
       <div className="mt-3 divide-y divide-black/10 overflow-hidden rounded-[var(--radius-card)]">
-        <div className="flex min-h-[60px] w-full min-w-0 items-center justify-between gap-2 bg-white px-3 py-2">
+        <div className="flex min-h-14 w-full min-w-0 items-center justify-between gap-2 bg-white px-3 py-1.5">
           <span className="flex min-w-0 items-center gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]">
+            <span className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]">
               <Languages size={20} aria-hidden />
             </span>
             <span className="truncate text-base font-bold text-[var(--color-main)]">

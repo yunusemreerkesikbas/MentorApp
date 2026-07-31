@@ -7,6 +7,7 @@ import CalendarDays from "lucide-react/dist/esm/icons/calendar-days.mjs";
 import GraduationCap from "lucide-react/dist/esm/icons/graduation-cap.mjs";
 import LogOut from "lucide-react/dist/esm/icons/log-out.mjs";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2.mjs";
+import Scale from "lucide-react/dist/esm/icons/scale.mjs";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useState, type ComponentProps, type ReactElement } from "react";
 import type { AuthUser, ExamType } from "@mentor/types";
@@ -39,12 +40,13 @@ export function ListRow({
   showChevron?: boolean;
   trailing?: ReactElement;
 }) {
+  // Nuton list item ~56px (DESIGN.md §4); keep ≥44px touch via min-h-11.
   const className =
-    "flex min-h-[60px] w-full min-w-0 items-center justify-between gap-3 bg-white px-3 py-2 text-left transition-colors hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
+    "flex min-h-14 w-full min-w-0 items-center justify-between gap-3 bg-white px-3 py-1.5 text-left transition-colors hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
   const style = { color: danger ? "var(--color-danger)" : "var(--color-main)" };
   const label = (
     <span className="flex min-w-0 items-center gap-3">
-      <span className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]" style={style}>
+      <span className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]" style={style}>
         {icon}
       </span>
       <span className="min-w-0">
@@ -118,13 +120,13 @@ export function AccountLinksCard({
   const t = useTranslations("profile");
   const tAccount = useTranslations("profile.account");
   const tExam = useTranslations("profile.exam_settings");
+  const tLegal = useTranslations("legal");
   const locale = useLocale();
   const { logout } = useAuth();
   const router = useRouter();
   const { actionSheet } = useMentorBottomSheet();
   const toast = useMentorToast();
   const { confirm } = useMentorDialog();
-  const [savingExam, setSavingExam] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const joined = new Intl.DateTimeFormat(locale, {
@@ -145,7 +147,6 @@ export function AccountLinksCard({
     });
     if (result === "cancel" || result === user.examType) return;
 
-    setSavingExam(true);
     try {
       const updated = (await usersControllerUpdateMe({
         examType: result as ExamType,
@@ -162,8 +163,6 @@ export function AccountLinksCard({
         message: err instanceof ApiClientError ? err.body.message : tExam("save_error"),
         duration: 3000,
       });
-    } finally {
-      setSavingExam(false);
     }
   }
 
@@ -203,7 +202,6 @@ export function AccountLinksCard({
         <ListRow
           icon={<GraduationCap size={22} aria-hidden />}
           onClick={() => void openExamSheet()}
-          description={savingExam ? tExam("saved") : (user.examType ?? t("exam_empty"))}
         >
           {t("exam_label")}
         </ListRow>
@@ -216,6 +214,13 @@ export function AccountLinksCard({
         </ListRow>
         <ListRow href="/subscription" icon={<CreditCard size={20} aria-hidden />}>
           {tAccount("subscription")}
+        </ListRow>
+        {/* The app has no footer (bottom nav owns that space), so this is the in-app way in. */}
+        <ListRow
+          href={{ pathname: "/legal/[slug]", params: { slug: "kullanim-kosullari" } }}
+          icon={<Scale size={20} aria-hidden />}
+        >
+          {tLegal("profile_section")}
         </ListRow>
         <ListRow
           icon={<LogOut size={20} aria-hidden />}

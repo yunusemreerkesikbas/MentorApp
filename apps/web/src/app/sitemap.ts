@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { getPathname } from "@/i18n/navigation";
 import { fetchPublicQuestionRefs, questionUrl, siteUrl } from "@/lib/forum-public";
 import { fetchInfoArticlesByFamily, infoArticleUrl } from "@/lib/content-api";
+import { publishedLegalDocs } from "@/lib/legal";
 
 /** Sitemap: landing + indexable QA questions (TR canonical URLs). Best-effort if the API is down. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -11,6 +12,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 1,
     },
+    // Only FINAL documents — a DRAFT is noindex, so advertising it would contradict the page.
+    ...publishedLegalDocs().map((doc) => ({
+      url: `${siteUrl()}${getPathname({ locale: "tr", href: { pathname: "/legal/[slug]" as const, params: { slug: doc.slug } } })}`,
+      lastModified: new Date(doc.updatedAt),
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+    })),
   ];
   try {
     const [questions, ...articlePages] = await Promise.allSettled([

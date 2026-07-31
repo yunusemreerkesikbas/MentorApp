@@ -53,6 +53,8 @@ export function threadRowToView(
     commenterNames,
     attachments: attachmentsToView(attachments, storage),
     myBookmarked,
+    lastActivityAt: (t.lastActivityAt ?? t.createdAt).toISOString(),
+    editedAt: t.editedAt?.toISOString() ?? null,
     createdAt: t.createdAt.toISOString(),
   };
 }
@@ -81,6 +83,7 @@ export function postRowToCommentView(
     replyCount,
     attachments: attachmentsToView(attachments, storage),
     myBookmarked,
+    editedAt: p.editedAt?.toISOString() ?? null,
     createdAt: p.createdAt.toISOString(),
   };
 }
@@ -103,6 +106,7 @@ export function postRowToAnswerView(
     isAccepted: p.isAccepted,
     attachments: attachmentsToView(attachments, storage),
     myBookmarked,
+    editedAt: p.editedAt?.toISOString() ?? null,
     createdAt: p.createdAt.toISOString(),
   };
 }

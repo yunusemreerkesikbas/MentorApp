@@ -2,16 +2,21 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { type ThreadView, type ZoneMemberStatus, type ZoneView } from "@mentor/types";
+import {
+  type ForumPublicPerson,
+  type ForumThreadSummary,
+  type ThreadView,
+  type ZoneMemberStatus,
+  type ZoneView,
+} from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { ZONE_TYPE_ICONS } from "../../_components/zone-icons";
 import {
   bookmarkThread,
   deleteThread,
-  getZone,
+  getZoneFeed,
   isForumDisabled,
   listThreads,
   pinThread,
@@ -27,6 +32,7 @@ import { QuestionListItem } from "./question-list-item";
 import { ThreadComposer } from "./thread-composer";
 import { ThreadItem } from "./thread-item";
 import { ZoneShellSkeleton } from "./zone-shell-skeleton";
+import { AuthorAvatar } from "../../_components/author-avatar";
 
 interface Ready {
   zone: ZoneView;
@@ -34,6 +40,8 @@ interface Ready {
   nextCursor: string | null;
   loadingMore: boolean;
   sort: ThreadSort;
+  contributors: ForumPublicPerson[];
+  pinnedThreads: ForumThreadSummary[];
 }
 type State =
   | { status: "loading" }
@@ -49,16 +57,17 @@ export function ZoneShell({ slug }: { slug: string }) {
     let active = true;
     (async () => {
       try {
-        const zone = await getZone(slug);
-        const feed = await listThreads(zone.id);
+        const result = await getZoneFeed(slug);
         if (active) {
           setState({
             status: "ready",
-            zone,
-            threads: feed.items,
-            nextCursor: feed.nextCursor,
+            zone: result.zone,
+            threads: result.feed.items,
+            nextCursor: result.feed.nextCursor,
             loadingMore: false,
             sort: "recent",
+            contributors: result.contributors,
+            pinnedThreads: result.pinnedThreads,
           });
         }
       } catch (err) {
@@ -219,41 +228,39 @@ export function ZoneShell({ slug }: { slug: string }) {
     );
   }
 
-  const { zone, threads, nextCursor, loadingMore, sort } = state;
+  const { zone, threads, nextCursor, loadingMore, sort, contributors, pinnedThreads } = state;
   const isMember = zone.myStatus === "ACTIVE";
   const isQa = zone.type === "QA";
+  const zoneTone =
+    zone.type === "QA"
+      ? "bg-[#fff0ed] text-[#c94f3d]"
+      : zone.type === "ANNOUNCEMENT"
+        ? "bg-[#eaf7f0] text-[#2f8f63]"
+        : "bg-[var(--community-blue-soft)] text-[var(--community-blue-ink)]";
 
   return (
-    <main className="mx-auto min-w-0 max-w-2xl px-4 py-6 lg:px-8 lg:py-8">
-      {/* Back link — hidden on lg+ since zone sidebar is visible */}
-      <Link href="/community" className="mb-4 flex items-center gap-1 text-sm lg:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]" style={{ color: "var(--color-secondary)" }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
-        {t("back")}
-      </Link>
+    <main className="mx-auto min-w-0 max-w-[1180px] px-4 py-5 sm:px-7 lg:px-8 lg:py-6">
+      <nav aria-label={t("breadcrumb_label")} className="mb-5 flex min-h-11 items-center gap-2 border-b border-[#eceef2] pb-4 text-[13px] text-[#7b808a]">
+        <Link href="/community" className="font-semibold text-[#373c47] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">{t("title")}</Link>
+        <span aria-hidden>›</span>
+        <span aria-current="page" className="truncate">{zone.title}</span>
+      </nav>
 
-      <header className="mb-6 flex items-start justify-between gap-3">
+      <header className="mb-5 flex items-start justify-between gap-3 border-b border-[#eceef2] pb-5">
         <div className="flex min-w-0 items-center gap-3">
           <span
-            className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-2xl"
-            style={{ background: "color-mix(in srgb, var(--color-chip) 18%, white)" }}
+            className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[10px] text-xl ${zoneTone}`}
           >
             {zone.emoji ?? ZONE_TYPE_ICONS[zone.type]}
           </span>
           <div className="min-w-0">
-            {/* Eyebrow category — plain uppercase label, not a button (Trending Topics layout) */}
-            <p
-              className="text-[10px] font-semibold uppercase"
-              style={{ color: "var(--color-secondary)", letterSpacing: "0.08em" }}
-            >
+            <p className="text-[12px] font-bold text-[#6c727e]">
               {t(`type_${zone.type.toLowerCase()}` as `type_${string}`)}
             </p>
-            <h1
-              className="text-xl font-bold leading-tight sm:text-2xl"
-              style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-            >
+            <h1 className="text-xl font-extrabold leading-tight tracking-[-0.025em] text-[#171a22] sm:text-2xl">
               {zone.title}
             </h1>
-            <p className="mt-0.5 text-xs" style={{ color: "var(--color-secondary)" }}>
+            <p className="mt-0.5 text-xs text-[#7b808a]">
               {t("members", { count: zone.memberCount })}
             </p>
           </div>
@@ -287,6 +294,8 @@ export function ZoneShell({ slug }: { slug: string }) {
         </div>
       </header>
 
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_304px]">
+        <div className="min-w-0">
         {isQa ? (
           <>
             {/* Composer (members only). */}
@@ -327,7 +336,7 @@ export function ZoneShell({ slug }: { slug: string }) {
                     onClick={() => onChangeSort(s)}
                     className="rounded-full px-3 py-1 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                     style={{
-                      background: active ? "var(--color-main)" : "transparent",
+                      background: active ? "var(--color-btn)" : "transparent",
                       color: active ? "#fff" : "var(--color-secondary)",
                     }}
                   >
@@ -338,7 +347,7 @@ export function ZoneShell({ slug }: { slug: string }) {
             </div>
           )}
           {/* Flat feed — no card chrome, just border-b dividers directly on the page (Figma 1:262/1:270/1:281). */}
-          <div className="divide-y divide-[rgba(0,0,0,0.08)] border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+          <div className="divide-y divide-[#eceef2] border-b border-[#eceef2] bg-white">
             {/* Composer (members only). ANNOUNCEMENT posts may 403 for non-mods → ThreadComposer surfaces it. */}
             {isMember ? (
               <ThreadComposer
@@ -377,11 +386,70 @@ export function ZoneShell({ slug }: { slug: string }) {
 
       {nextCursor ? (
         <div className="mt-5 flex justify-center">
-          <Button variant="secondary" busy={loadingMore} onClick={() => void onLoadMore()}>
-            {t("load_more")}
-          </Button>
+          <button
+            type="button"
+            disabled={loadingMore}
+            onClick={() => void onLoadMore()}
+            className="min-h-11 rounded-xl border bg-white px-5 font-bold disabled:opacity-50"
+          >
+            {loadingMore ? t("loading") : t("load_more")}
+          </button>
         </div>
       ) : null}
+        </div>
+        {(contributors.length > 0 || pinnedThreads.length > 0) && (
+          <aside className="hidden space-y-7 border-l border-[#e7e9ee] pl-5 xl:block" aria-label={t("zone_context_title")}>
+            {contributors.length > 0 && (
+              <section>
+                <h2 className="text-[13px] font-extrabold text-[#4c535f]">{t("zone_contributors")}</h2>
+                <div className="mt-3 grid gap-1">
+                  {contributors.map((person) => (
+                    <Link
+                      key={person.id}
+                      href={{
+                        pathname: "/community/member/[username]",
+                        params: { username: person.username },
+                      }}
+                      className="flex min-h-11 items-center gap-3 rounded-[9px] px-2 py-2 text-sm font-bold text-[#343945] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                    >
+                      <AuthorAvatar name={person.displayName} src={person.avatarUrl} size={32} />
+                      <span className="truncate">{person.displayName}</span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+            {pinnedThreads.length > 0 && (
+              <section>
+                <h2 className="text-[13px] font-extrabold text-[#4c535f]">{t("pinned_posts")}</h2>
+                <div className="mt-3 grid gap-3">
+                  {pinnedThreads.map((thread) => {
+                    const href =
+                      thread.zoneType === "QA"
+                        ? ({
+                            pathname: "/community/question/[threadId]",
+                            params: { threadId: thread.id },
+                          } as const)
+                        : ({
+                            pathname: "/community/message/[threadId]",
+                            params: { threadId: thread.id },
+                          } as const);
+                    return (
+                      <Link
+                        key={thread.id}
+                        href={href}
+                        className="block min-h-[72px] rounded-[12px] border border-[#e7e9ee] bg-white p-3 text-sm font-bold text-[#343945] shadow-[0_1px_5px_rgb(18_24_39_/_3%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                      >
+                        <span className="line-clamp-2">{thread.title ?? thread.bodyExcerpt}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </aside>
+        )}
+      </div>
     </main>
   );
 }

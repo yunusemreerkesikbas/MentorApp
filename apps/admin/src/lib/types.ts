@@ -193,6 +193,32 @@ export interface AdminAiCost {
     generatedAt: string;
 }
 
+// GET /admin/metrics/economy — coin/XP faucet + sink visibility, so earning rates get calibrated
+// from live data (roadmap §729). Credited/debited are POSITIVE magnitudes on both sides.
+export interface EconomyFlow {
+    coinCredited: number;
+    coinDebited: number;
+    xpCredited: number;
+    rows: number;
+}
+
+export interface EconomyReasonFlow {
+    reason: string;
+    credited: number;
+    debited: number;
+    users: number;
+}
+
+export interface AdminEconomyStats {
+    windows: { d1: EconomyFlow; d7: EconomyFlow; d30: EconomyFlow };
+    coinByReason: EconomyReasonFlow[];
+    xpByReason: EconomyReasonFlow[];
+    corrections: { credited: number; debited: number; rows: number };
+    float: { coinConfirmed: number; holders: number };
+    faucetReach: { earners7d: number; activeUsers7d: number };
+    generatedAt: string;
+}
+
 // GET /admin/metrics/coach-feedback — coach reply satisfaction (Dilim 6 👍/👎 → admin report).
 export interface AdminCoachFeedback {
     up: number;

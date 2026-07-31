@@ -2,13 +2,23 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { ModerationTargetType, type QuestionDetail } from "@mentor/types";
+import Users from "lucide-react/dist/esm/icons/users.mjs";
+import { ModerationTargetType, type QuestionDetail, type ZoneView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, Card, Chip } from "@mentor/ui";
+import { Chip } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
-import { bookmarkPost, bookmarkThread, getQuestion, isForumDisabled, postAnswer } from "@/lib/forum";
+import { trackCommunityEvent } from "@/lib/analytics";
+import {
+  bookmarkPost,
+  bookmarkThread,
+  getQuestion,
+  isForumDisabled,
+  listZones,
+  postAnswer,
+  setHelpfulVote,
+} from "@/lib/forum";
 import { questionUrl } from "@/lib/forum-public";
 import { ReportButton } from "../../../_components/report-button";
 import { AttachmentGallery } from "../../../_components/attachment-gallery";
@@ -26,7 +36,7 @@ type State =
   | { status: "loading" }
   | { status: "disabled" }
   | { status: "error"; message: string }
-  | { status: "ready"; detail: QuestionDetail };
+  | { status: "ready"; detail: QuestionDetail; zone: ZoneView | null };
 
 export function QuestionShell({ threadId }: { threadId: string }) {
   const t = useTranslations("community");
@@ -36,8 +46,9 @@ export function QuestionShell({ threadId }: { threadId: string }) {
 
   const load = useCallback(async () => {
     try {
-      const detail = await getQuestion(threadId);
-      setState({ status: "ready", detail });
+      const [detail, zones] = await Promise.all([getQuestion(threadId), listZones()]);
+      const zone = zones.items.find((entry) => entry.id === detail.question.zoneId) ?? null;
+      setState({ status: "ready", detail, zone });
     } catch (err) {
       if (isForumDisabled(err)) return setState({ status: "disabled" });
       setState({
@@ -80,12 +91,64 @@ export function QuestionShell({ threadId }: { threadId: string }) {
     bookmarkPost(postId, adding).catch(() => setState(patch(!adding)));
   }, []);
 
+  const onToggleHelpful = useCallback(
+    (targetType: "THREAD" | "POST", targetId: string, adding: boolean) => {
+      setState((current) => {
+        if (current.status !== "ready") return current;
+        if (targetType === "THREAD") {
+          const question = current.detail.question;
+          return {
+            ...current,
+            detail: {
+              ...current.detail,
+              question: {
+                ...question,
+                myHelpfulVote: adding,
+                helpfulVoteCount: Math.max(
+                  0,
+                  (question.helpfulVoteCount ?? 0) + (adding ? 1 : -1),
+                ),
+              },
+            },
+          };
+        }
+        return {
+          ...current,
+          detail: {
+            ...current.detail,
+            answers: current.detail.answers.map((answer) =>
+              answer.id === targetId
+                ? {
+                    ...answer,
+                    myHelpfulVote: adding,
+                    helpfulVoteCount: Math.max(
+                      0,
+                      (answer.helpfulVoteCount ?? 0) + (adding ? 1 : -1),
+                    ),
+                  }
+                : answer,
+            ),
+          },
+        };
+      });
+      setHelpfulVote(targetType, targetId, adding).catch(() => void load());
+    },
+    [load],
+  );
+
   useEffect(() => {
     let active = true;
     void (async () => {
       try {
-        const detail = await getQuestion(threadId);
-        if (active) setState({ status: "ready", detail });
+        const [detail, zones] = await Promise.all([getQuestion(threadId), listZones()]);
+        if (active) {
+          const zone = zones.items.find((entry) => entry.id === detail.question.zoneId) ?? null;
+          setState({ status: "ready", detail, zone });
+          trackCommunityEvent("forum_thread_view", {
+            zone_type: "QA",
+            answered: detail.question.status === "ANSWERED",
+          });
+        }
       } catch (err) {
         if (!active) return;
         if (isForumDisabled(err)) setState({ status: "disabled" });
@@ -112,40 +175,57 @@ export function QuestionShell({ threadId }: { threadId: string }) {
   }
 
   const { question, answers } = state.detail;
+  const { zone } = state;
   const isAsker = user?.id === question.authorId;
   const canAccept = isAsker && question.status === "OPEN";
   // Share the anonymous page only once the question is actually indexable — ForumPublicService
   // requires at least one answer, so sharing earlier would hand out a 404 link.
   const sharePublicUrl = answers.length > 0 ? questionUrl(question.id) : undefined;
+  const participantNames = Array.from(
+    new Set([question.authorName, ...answers.map((answer) => answer.authorName)]),
+  ).slice(0, 8);
   const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
     new Date(question.createdAt),
   );
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-5 py-8 lg:px-8 lg:py-10">
-      <Link
-        href="/community"
-        className="flex items-center gap-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        style={{ color: "var(--color-secondary)" }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
-        {t("back")}
-      </Link>
+    <main className="mx-auto w-full max-w-[1180px] px-4 py-5 sm:px-7 lg:px-8 lg:py-6">
+      <nav aria-label={t("breadcrumb_label")} className="flex min-h-11 flex-wrap items-center gap-2 border-b border-[#e7e9ee] pb-4 text-[13px] text-[#7b808a]">
+        <Link href="/community" className="font-semibold text-[#373c47] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
+          {t("title")}
+        </Link>
+        <span aria-hidden="true">›</span>
+        {zone ? (
+          <Link
+            href={{ pathname: "/community/[slug]", params: { slug: zone.slug } }}
+            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          >
+            {zone.title}
+          </Link>
+        ) : (
+          <span>{t("type_qa")}</span>
+        )}
+        <span aria-hidden="true">›</span>
+        <span aria-current="page" className="max-w-[24rem] truncate text-[#222630]">
+          {question.title}
+        </span>
+      </nav>
 
-      <Card className="mt-3">
+      <div className="mt-5 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_304px]">
+      <div className="min-w-0">
+      <div className="rounded-[14px] border border-[#e5e7ec] bg-white p-5 shadow-[0_2px_8px_rgb(18_24_39_/_3%)] sm:p-7">
         <div className="flex items-start justify-between gap-3">
           <h1
-            className="text-xl font-bold"
-            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+            className="text-[24px] font-extrabold leading-[1.2] tracking-[-0.03em] text-[#171a22] sm:text-[28px]"
           >
             {question.title ?? question.body.slice(0, 80)}
           </h1>
           {question.status === "ANSWERED" ? <Chip>{t("answered")}</Chip> : null}
         </div>
-        <p className="mt-1 text-xs" style={{ color: "var(--color-secondary)" }}>
+        <p className="mt-2 text-xs text-[#858a94]">
           {when}
         </p>
-        <p className="mt-3 whitespace-pre-wrap text-base" style={{ color: "var(--color-main)" }}>
+        <p className="mt-5 whitespace-pre-wrap text-[15px] leading-7 text-[#343945]">
           <MentionText text={question.body} />
         </p>
         <AttachmentGallery attachments={question.attachments} />
@@ -158,21 +238,39 @@ export function QuestionShell({ threadId }: { threadId: string }) {
             publicUrl={sharePublicUrl}
           />
           <BookmarkButton bookmarked={question.myBookmarked} onToggle={onToggleQuestionBookmark} />
+          <button
+            type="button"
+            aria-pressed={question.myHelpfulVote ?? false}
+            onClick={() => onToggleHelpful("THREAD", question.id, !(question.myHelpfulVote ?? false))}
+            className={`min-h-11 rounded-full px-3 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${question.myHelpfulVote ? "bg-[#eaf7f0] text-[#287954]" : "hover:bg-[#f3f4f6]"}`}
+          >
+            +1 {t("helpful")} · {question.helpfulVoteCount ?? 0}
+          </button>
           <ReportButton targetType={ModerationTargetType.THREAD} targetId={question.id} />
         </div>
-      </Card>
+        {question.tags?.length ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {question.tags.slice(0, 3).map((tag) => (
+              <span key={tag.id} className="rounded-full bg-[#fff0ed] px-2.5 py-1 text-xs font-semibold text-[#b84938]">
+                #{tag.name}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
-      <h2
-        className="mt-8 mb-4 text-lg font-semibold"
-        style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-      >
-        {t("answers_title")}
+      <h2 className="mb-3 mt-8 text-[20px] font-extrabold tracking-[-0.025em] text-[#1b1f28]">
+        {t("comment_total", { count: answers.length })}
       </h2>
 
+      <div className="rounded-[13px] border border-[#e3e6ea] bg-white p-4 sm:p-5">
+        <AnswerComposer threadId={threadId} zoneId={question.zoneId} onPosted={() => void load()} />
+      </div>
+
       {answers.length === 0 ? (
-        <p style={{ color: "var(--color-secondary)" }}>{t("answers_empty")}</p>
+        <p className="mt-5 py-6 text-sm text-[#7b808a]">{t("answers_empty")}</p>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="mt-5 flex flex-col gap-4 border-t border-[#eceef2] pt-5">
           {answers.map((a) => (
             <AnswerItem
               key={a.id}
@@ -183,6 +281,7 @@ export function QuestionShell({ threadId }: { threadId: string }) {
               }}
               sharePublicUrl={sharePublicUrl}
               onToggleBookmark={(adding) => onToggleAnswerBookmark(a.id, adding)}
+              onToggleHelpful={(adding) => onToggleHelpful("POST", a.id, adding)}
               accept={
                 // Own answers are never acceptable (API rejects self-accept — XP farm guard).
                 canAccept && !a.isAccepted && a.authorId !== user?.id ? (
@@ -195,8 +294,17 @@ export function QuestionShell({ threadId }: { threadId: string }) {
         </div>
       )}
 
-      <div className="mt-6">
-        <AnswerComposer threadId={threadId} zoneId={question.zoneId} onPosted={() => void load()} />
+      </div>
+      <aside className="hidden border-l border-[#e7e9ee] pl-5 xl:block" aria-label={t("detail_context_title")}>
+        <h2 className="flex items-center gap-2 text-[13px] font-extrabold text-[#4c535f]"><Users size={16} className="text-[var(--community-blue-ink)]" aria-hidden />{t("detail_participants")}</h2>
+        <div className="mt-3 grid gap-1">
+          {participantNames.map((name) => (
+            <span key={name} className="min-h-11 rounded-[9px] px-3 py-3 text-sm font-semibold text-[#343945] hover:bg-white">
+              {name}
+            </span>
+          ))}
+        </div>
+      </aside>
       </div>
     </main>
   );
@@ -227,6 +335,7 @@ function AnswerComposer({
     try {
       const attachments = await picker.uploadAll();
       await postAnswer(threadId, body, attachments);
+      trackCommunityEvent("forum_reply_created", { target: "thread", zone_type: "QA" });
       setValue("");
       picker.reset();
       onPosted();
@@ -250,8 +359,7 @@ function AnswerComposer({
           placeholder={t("answer_placeholder")}
           rows={3}
           maxLength={4000}
-          className="w-full resize-y rounded-[var(--radius-card)] border border-white bg-white/70 p-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
+          className="min-h-[120px] w-full resize-y rounded-[10px] border border-[#e1e4e8] bg-[#fbfcfd] p-4 text-[15px] leading-6 text-[#343945] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           {...mention.inputProps}
         />
         <MentionSuggestions mention={mention} />
@@ -259,9 +367,14 @@ function AnswerComposer({
       <ForumImagePicker picker={picker} disabled={busy} />
       <FormError message={picker.error} />
       <div className="flex justify-end">
-        <Button busy={busy} onClick={() => void send()}>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void send()}
+          className="min-h-11 rounded-[10px] bg-[var(--community-blue)] px-5 text-sm font-bold text-[#111318] hover:bg-[var(--community-blue-hover)] hover:text-white disabled:opacity-50"
+        >
           {busy ? t("answer_submitting") : t("answer_submit")}
-        </Button>
+        </button>
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ DONE  W4 payments → [features/payments.md](../features/payments.md)
 PARTIAL W1 content → [features/content.md](../features/content.md) · W2 coaching → [features/coaching.md](../features/coaching.md)
 DONE  W5 notifications → [features/notifications.md](../features/notifications.md)
 PARTIAL W6 admin → [features/admin.md](../features/admin.md) + [features/economy.md](../features/economy.md)
+ACTIVE W7 forum/community → [features/forum.md](../features/forum.md) + [features/community.md](../features/community.md)
 NEXT  batch B: W3 ai → [features/ai.md](../features/ai.md) · W6 remaining slices
 ```
 `identity` is the prerequisite for everything (auth guards, RequestContext.userId, RLS policies,
@@ -30,6 +31,7 @@ users/orgs tables). Do it solo; parallelism starts after.
 | **W4 — Payments** | iyzico subscription/trial, idempotent webhook, entitlement service | `modules/payments/**` · `web: abonelik screens` |
 | **W5 — Notifications + Queue** | JobQueuePort cron adapter/runner, web push, email (Postmark), scheduled jobs | `modules/notifications/**` · queue adapter |
 | **W6 — Admin** | admin module (content editor, users, refund, metrics, flags, audit) + **light economy** (earned AI right: invite/quest, coin ledger) · **STAFF role assignment endpoint + audit** (entitlement mechanism already live in W4 — until then assignment is manual SQL, see devnote 0015) | `modules/admin/**`, `modules/economy/**` · `apps/admin/**` |
+| **W7 — Forum / Community** | Topluluk hub, discovery feed/search, curated tags, positive helpful votes, forum edit policy, public-safe social discovery | `modules/forum/**` · `web: (app)/community/**` · forum contracts in `packages/{types,validation}`. `community` remains an aggregation consumer; W7 does not take ownership of its tables. Admin exception: only `apps/admin/(general)/forum/**` and matching audited forum controller, coordinated with W6. |
 
 **Cross-track dependencies (consume via contracts, don't block):**
 - W3 needs W1 (RAG source) + W2 (behavior data) + W4 (entitlement) → starts against **ports/stubs**, wires real impls when merged.
@@ -65,3 +67,5 @@ Same worktree → conflicts are rare but these files are shared. Rules:
 1. **W0 identity** (solo, blocking)
 2. Parallel batch A: **W1 content** + **W2 coaching** + **W4 payments** + **W5 notifications** (mutually independent)
 3. Parallel batch B: **W3 ai** (needs W1/W2/W4 contracts) + **W6 admin** (needs W0 roles; stubs others)
+4. Phase-2 pull-forward: **W7 forum/community** after W0; consumes identity public services and
+   community effort summary, never their tables. Forum-admin files are the narrow W6 coordination point.

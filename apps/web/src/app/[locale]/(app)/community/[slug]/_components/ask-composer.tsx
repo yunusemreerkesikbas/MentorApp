@@ -41,7 +41,7 @@ export function AskComposer({ zoneId }: { zoneId: string }) {
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-white bg-white/50 p-6">
+    <div className="flex flex-col gap-3 rounded-[14px] border border-[#e2e5ea] bg-white p-5">
       <TextField
         label={t("ask_title_placeholder")}
         value={title}
@@ -59,7 +59,7 @@ export function AskComposer({ zoneId }: { zoneId: string }) {
           placeholder={t("ask_body_placeholder")}
           rows={4}
           maxLength={4000}
-          className="w-full resize-y rounded-[var(--radius-card)] border border-white bg-white/70 p-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="w-full resize-y rounded-[10px] border border-[#dfe3e8] bg-[#fbfcfd] p-3 text-base outline-none placeholder:text-[#656c78] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
           {...mention.inputProps}
         />

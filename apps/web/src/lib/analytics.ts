@@ -44,6 +44,31 @@ export interface CoachAnalyticsParams {
 }
 export type CoachAnalyticsEvent = keyof CoachAnalyticsParams;
 
+type CommunityZoneType = "CHAT" | "QA" | "ANNOUNCEMENT";
+
+export interface CommunityAnalyticsParams {
+  community_hub_view: { surface: "community" };
+  forum_composer_open: { mode: "share" | "question" };
+  forum_thread_created: {
+    mode: "share" | "question";
+    zone_type: CommunityZoneType;
+    tag_count: number;
+  };
+  forum_reply_created: {
+    target: "thread" | "post";
+    zone_type: CommunityZoneType;
+  };
+  forum_thread_view: {
+    zone_type: CommunityZoneType;
+    answered: boolean;
+  };
+  forum_feed_tab_selected: {
+    sort: "trending" | "recent" | "top";
+    scope: "relevant" | "following";
+  };
+}
+export type CommunityAnalyticsEvent = keyof CommunityAnalyticsParams;
+
 type WeeklyRecapAnalyticsStatus = WeeklyRecapStatus | "UNKNOWN";
 type WeeklyRecapEntrySurface = "analysis" | "dashboard";
 
@@ -97,6 +122,14 @@ export function trackArticleEvent(
 export function trackCoachEvent<Event extends CoachAnalyticsEvent>(
   event: Event,
   params: CoachAnalyticsParams[Event],
+): void {
+  trackEvent(event, params);
+}
+
+/** Consent-gated community events. Payload types exclude content and user identifiers. */
+export function trackCommunityEvent<Event extends CommunityAnalyticsEvent>(
+  event: Event,
+  params: CommunityAnalyticsParams[Event],
 ): void {
   trackEvent(event, params);
 }

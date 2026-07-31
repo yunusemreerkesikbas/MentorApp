@@ -67,6 +67,7 @@ export const attachmentInputSchema = z.object({
 export type AttachmentInput = z.infer<typeof attachmentInputSchema>;
 
 const attachmentsField = z.array(attachmentInputSchema).max(FORUM_MAX_ATTACHMENTS).optional();
+const forumTagIdsField = z.array(z.string().uuid()).max(3).optional();
 
 /**
  * Post a thread. CHAT/ANNOUNCEMENT use body only; a QA question also carries a `title` (the
@@ -77,6 +78,7 @@ export const createThreadSchema = z.object({
   body: z.string().trim().min(1).max(4000),
   title: z.string().trim().min(5).max(200).optional(),
   attachments: attachmentsField,
+  tagIds: forumTagIdsField,
 });
 export type CreateThread = z.infer<typeof createThreadSchema>;
 
@@ -119,6 +121,69 @@ export const feedQuerySchema = z.object({
   sort: z.enum(["recent", "popular"]).default("recent"),
 });
 export type FeedQuery = z.infer<typeof feedQuerySchema>;
+
+/** Cross-zone discovery feed. Cursor contents are decoded and validated by the forum domain. */
+export const forumFeedQuerySchema = z.object({
+  scope: z.enum(["relevant", "following"]).default("relevant"),
+  sort: z.enum(["trending", "recent", "top"]).default("trending"),
+  tag: z.string().trim().min(1).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
+  zoneType: z.nativeEnum(ZoneType).optional(),
+  cursor: z.string().trim().min(1).max(1000).optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+export type ForumFeedQuery = z.infer<typeof forumFeedQuerySchema>;
+
+/** Global discovery search returns at most five threads, tags, and public-safe people per group. */
+export const forumSearchQuerySchema = z.object({
+  q: z.string().trim().min(2).max(120),
+});
+export type ForumSearchQuery = z.infer<typeof forumSearchQuerySchema>;
+
+export const updateForumThreadSchema = z
+  .object({
+    body: z.string().trim().min(1).max(4000).optional(),
+    title: z.string().trim().min(5).max(200).nullable().optional(),
+    tagIds: forumTagIdsField,
+  })
+  .refine(
+    (value) =>
+      value.body !== undefined || value.title !== undefined || value.tagIds !== undefined,
+    { message: "At least one field is required" },
+  );
+export type UpdateForumThread = z.infer<typeof updateForumThreadSchema>;
+
+export const updateForumPostSchema = z.object({
+  body: z.string().trim().min(1).max(4000),
+});
+export type UpdateForumPost = z.infer<typeof updateForumPostSchema>;
+
+const forumTagSlugSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(2)
+  .max(80)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+
+export const adminForumTagCreateSchema = z.object({
+  slug: forumTagSlugSchema,
+  nameTr: z.string().trim().min(2).max(80),
+  nameEn: z.string().trim().min(2).max(80),
+  examType: z.string().trim().max(32).nullable().optional(),
+  isActive: z.boolean().default(true),
+});
+export type AdminForumTagCreate = z.infer<typeof adminForumTagCreateSchema>;
+
+export const adminForumTagUpdateSchema = adminForumTagCreateSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, { message: "At least one field is required" });
+export type AdminForumTagUpdate = z.infer<typeof adminForumTagUpdateSchema>;
+
+export const setFeaturedThreadSchema = z.object({
+  threadId: z.string().uuid(),
+  featuredUntil: z.string().datetime().optional(),
+});
+export type SetFeaturedThread = z.infer<typeof setFeaturedThreadSchema>;
 
 /** Saved feed query — `before` = ISO createdAt of the last saved item (loads older). */
 export const bookmarkQuerySchema = z.object({

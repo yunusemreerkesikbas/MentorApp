@@ -1399,6 +1399,33 @@ export const forumZoneMembers = pgTable(
   ],
 );
 
+/** Curated discovery tags. Public reads are active-only; staff mutations are audited. */
+export const forumTags = pgTable(
+  "forum_tags",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    slug: text("slug").notNull(),
+    nameTr: text("name_tr").notNull(),
+    nameEn: text("name_en").notNull(),
+    examType: text("exam_type"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdBy: uuid("created_by").references(() => users.id),
+    updatedBy: uuid("updated_by").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_tags_slug_idx").on(t.slug),
+    index("forum_tags_active_exam_idx").on(t.isActive, t.examType),
+  ],
+);
+
 /* Slice 2 — flat feed item (CHAT message / ANNOUNCEMENT broadcast). No `kind`: behaviour is
  * derived from the parent zone's type. Replies/QA answers (forum_posts) arrive in Slice 3.
  * Soft-delete (deleted_at) keeps the row for moderation audit; feed reads filter it out. */
@@ -1422,6 +1449,15 @@ export const forumThreads = pgTable(
     /** Accepted answer's forum_posts.id (QA). No FK: avoids circular threads↔posts FK — app-enforced. */
     acceptedPostId: uuid("accepted_post_id"),
     isPinned: boolean("is_pinned").notNull().default(false),
+    /** Discovery ordering anchor, updated transactionally when the thread receives activity. */
+    lastActivityAt: timestamp("last_activity_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** Null until the author changes title/body/tags. */
+    editedAt: timestamp("edited_at", { withTimezone: true }),
+    /** Time-bounded editorial curation. Null means not manually featured. */
+    featuredUntil: timestamp("featured_until", { withTimezone: true }),
+    featuredBy: uuid("featured_by").references(() => users.id),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     deletedBy: uuid("deleted_by").references(() => users.id),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -1433,9 +1469,36 @@ export const forumThreads = pgTable(
   },
   (t) => [
     index("forum_threads_zone_created_idx").on(t.zoneId, t.createdAt),
+    index("forum_threads_discovery_activity_idx").on(t.lastActivityAt, t.id),
+    index("forum_threads_featured_idx")
+      .on(t.featuredUntil)
+      .where(sql`${t.featuredUntil} is not null`),
     index("forum_threads_zone_pinned_idx")
       .on(t.zoneId)
       .where(sql`${t.isPinned}`),
+  ],
+);
+
+/** At most three active curated tags per thread (limit enforced in the service transaction). */
+export const forumThreadTags = pgTable(
+  "forum_thread_tags",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    threadId: uuid("thread_id")
+      .notNull()
+      .references(() => forumThreads.id, { onDelete: "cascade" }),
+    tagId: uuid("tag_id")
+      .notNull()
+      .references(() => forumTags.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_thread_tags_unique_idx").on(t.threadId, t.tagId),
+    index("forum_thread_tags_tag_thread_idx").on(t.tagId, t.threadId),
   ],
 );
 
@@ -1460,6 +1523,8 @@ export const forumPosts = pgTable(
       .references(() => users.id),
     body: text("body").notNull(),
     isAccepted: boolean("is_accepted").notNull().default(false),
+    /** Null until the author changes the post body. */
+    editedAt: timestamp("edited_at", { withTimezone: true }),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     deletedBy: uuid("deleted_by").references(() => users.id),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -1472,6 +1537,30 @@ export const forumPosts = pgTable(
   (t) => [
     index("forum_posts_thread_created_idx").on(t.threadId, t.createdAt),
     index("forum_posts_parent_idx").on(t.parentPostId),
+  ],
+);
+
+/** One positive helpful vote per user/target. QA uses THREAD for questions and POST for answers. */
+export const forumHelpfulVotes = pgTable(
+  "forum_helpful_votes",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    /** THREAD | POST */
+    targetType: text("target_type").notNull(),
+    targetId: uuid("target_id").notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    value: smallint("value").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_helpful_votes_unique_idx").on(t.targetType, t.targetId, t.userId),
+    index("forum_helpful_votes_target_idx").on(t.targetType, t.targetId),
   ],
 );
 

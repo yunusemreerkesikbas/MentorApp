@@ -7,6 +7,8 @@ import { withServiceContext, withUserContext } from "../../../database/rls";
 import {
   forumPosts,
   forumReactions,
+  forumTags,
+  forumThreadTags,
   forumThreads,
   forumZoneMembers,
   forumZones,
@@ -44,8 +46,19 @@ export class ForumThreadRepository {
     authorId: string;
     body: string;
     title?: string | null;
+    tagIds?: string[];
   }): Promise<ThreadRow> {
     return withServiceContext(this.db, async (tx) => {
+      const tagIds = [...new Set(input.tagIds ?? [])];
+      if (tagIds.length > 0) {
+        const [row] = await tx
+          .select({ count: sql<number>`count(*)::int` })
+          .from(forumTags)
+          .where(and(inArray(forumTags.id, tagIds), eq(forumTags.isActive, true)));
+        if (Number(row?.count ?? 0) !== tagIds.length) {
+          throw new Error("FORUM_TAG_INVALID");
+        }
+      }
       const rows = await tx
         .insert(forumThreads)
         .values({
@@ -55,7 +68,13 @@ export class ForumThreadRepository {
           title: input.title ?? null,
         })
         .returning();
-      return rows[0]!;
+      const thread = rows[0]!;
+      if (tagIds.length > 0) {
+        await tx
+          .insert(forumThreadTags)
+          .values(tagIds.map((tagId) => ({ threadId: thread.id, tagId })));
+      }
+      return thread;
     });
   }
 

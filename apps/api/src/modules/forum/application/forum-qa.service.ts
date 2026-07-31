@@ -1,5 +1,6 @@
-import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable, Optional } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { I18nContext } from "nestjs-i18n";
 import {
   type AnswerView,
   ModerationTargetType,
@@ -26,6 +27,10 @@ import { ForumThreadRepository, type ThreadWithAuthor } from "../infrastructure/
 import { ForumPostRepository } from "../infrastructure/forum-post.repository";
 import { ForumAttachmentRepository } from "../infrastructure/forum-attachment.repository";
 import { ForumBookmarkRepository } from "../infrastructure/forum-bookmark.repository";
+import {
+  ForumDiscoveryRepository,
+  type ForumTagRow,
+} from "../infrastructure/forum-discovery.repository";
 import { resolveForumAttachments } from "./attachment.resolve";
 import { ForumMentionService } from "./forum-mention.service";
 import type { ThreadActor } from "./forum-thread.service";
@@ -48,6 +53,7 @@ export class ForumQaService {
     private readonly events: EventEmitter2,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     private readonly mentions: ForumMentionService,
+    @Optional() private readonly discovery?: ForumDiscoveryRepository,
   ) {}
 
   private async assertEnabled(): Promise<void> {
@@ -142,26 +148,55 @@ export class ForumQaService {
     ]);
     // Batched attachment + bookmark lookups (no N+1): the question thread + all answer posts.
     const answerIds = answers.map((a) => a.id);
-    const [threadAttach, answerAttach, threadBm, answerBm] = await Promise.all([
+    const [threadAttach, answerAttach, threadBm, answerBm, tags, threadHelpful, answerHelpful, myThreadHelpful, myAnswerHelpful] = await Promise.all([
       this.attachments.listForTargets(ModerationTargetType.THREAD, [threadId]),
       this.attachments.listForTargets(ModerationTargetType.POST, answerIds),
       this.bookmarks.myBookmarkedTargets(ModerationTargetType.THREAD, [threadId], viewerId),
       this.bookmarks.myBookmarkedTargets(ModerationTargetType.POST, answerIds, viewerId),
+      this.discovery?.tagsByThread([threadId], I18nContext.current()?.lang ?? "tr") ??
+        Promise.resolve(new Map<string, ForumTagRow[]>()),
+      this.discovery?.helpfulCounts(ModerationTargetType.THREAD, [threadId]) ??
+        Promise.resolve(new Map()),
+      this.discovery?.helpfulCounts(ModerationTargetType.POST, answerIds) ??
+        Promise.resolve(new Map()),
+      this.discovery?.myHelpfulTargets(ModerationTargetType.THREAD, [threadId], viewerId) ??
+        Promise.resolve(new Set()),
+      this.discovery?.myHelpfulTargets(ModerationTargetType.POST, answerIds, viewerId) ??
+        Promise.resolve(new Set()),
     ]);
+    const lang = (I18nContext.current()?.lang ?? "tr").toLowerCase().startsWith("en") ? "en" : "tr";
+    const question = threadRowToView(
+      thread,
+      counts.get(threadId) ?? {},
+      mine.get(threadId) ?? [],
+      this.storage,
+      answers.length,
+      [],
+      threadAttach.get(threadId) ?? [],
+      threadBm.has(threadId),
+    );
+    question.tags = (tags.get(threadId) ?? []).map((tag) => ({
+      id: tag.id,
+      slug: tag.slug,
+      name: lang === "en" ? tag.nameEn : tag.nameTr,
+      examType: tag.examType,
+      isActive: tag.isActive,
+    }));
+    question.helpfulVoteCount = threadHelpful.get(threadId) ?? 0;
+    question.myHelpfulVote = myThreadHelpful.has(threadId);
     return {
-      question: threadRowToView(
-        thread,
-        counts.get(threadId) ?? {},
-        mine.get(threadId) ?? [],
-        this.storage,
-        answers.length,
-        [],
-        threadAttach.get(threadId) ?? [],
-        threadBm.has(threadId),
-      ),
-      answers: answers.map((a) =>
-        postRowToAnswerView(a, this.storage, answerAttach.get(a.id) ?? [], answerBm.has(a.id)),
-      ),
+      question,
+      answers: answers.map((a) => {
+        const answer = postRowToAnswerView(
+          a,
+          this.storage,
+          answerAttach.get(a.id) ?? [],
+          answerBm.has(a.id),
+        );
+        answer.helpfulVoteCount = answerHelpful.get(a.id) ?? 0;
+        answer.myHelpfulVote = myAnswerHelpful.has(a.id);
+        return answer;
+      }),
     };
   }
 

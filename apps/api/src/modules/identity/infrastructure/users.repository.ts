@@ -16,6 +16,13 @@ export interface CohortPeer {
   avatarStorageKey: string | null;
 }
 
+export interface PublicUserSearchRow {
+  id: string;
+  displayName: string;
+  username: string;
+  avatarStorageKey: string | null;
+}
+
 /**
  * All access goes through RLS contexts (double belt):
  *  - service-scoped for pre-auth flows (login/signup — no user identity yet),
@@ -81,6 +88,34 @@ export class UsersRepository {
         .where(and(...conds))
         .orderBy(desc(users.createdAt))
         .limit(limit);
+    });
+  }
+
+  /** Public-safe identity search consumed by forum discovery; never selects email or other PII. */
+  async searchPublicUsers(q: string, limit: number): Promise<PublicUserSearchRow[]> {
+    return withServiceContext(this.db, async (tx) => {
+      const needle = `%${q.toLocaleLowerCase("tr-TR")}%`;
+      const rows = await tx
+        .select({
+          id: users.id,
+          displayName: users.displayName,
+          username: users.username,
+          avatarStorageKey: users.avatarStorageKey,
+        })
+        .from(users)
+        .where(
+          and(
+            eq(users.status, "ACTIVE"),
+            isNotNull(users.username),
+            sql`(
+              lower(${users.displayName}) like ${needle}
+              or lower(${users.username}) like ${needle}
+            )`,
+          ),
+        )
+        .orderBy(desc(users.createdAt))
+        .limit(limit);
+      return rows as PublicUserSearchRow[];
     });
   }
 

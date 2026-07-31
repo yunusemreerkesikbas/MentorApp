@@ -1164,4 +1164,103 @@ describe("forum zones (e2e)", () => {
     expect(handles2).not.toContain(bHandle);
     expect(handles2).toContain(cHandle);
   });
+
+  it("Discovery V2: tag, hub/feed, helpful lock, featured authz and PII-safe search", async () => {
+    await setForumEnabled(true);
+    const helper = await signup("discovery-helper");
+    const asHelper = () => ({ Authorization: `Bearer ${helper.accessToken}` });
+    const ownerHandle = `dvo${String(RUN).slice(-10)}`;
+    const helperHandle = `dvh${String(RUN).slice(-10)}`;
+    await request(app.getHttpServer())
+      .patch("/v1/users/me")
+      .set(asUser())
+      .send({ username: ownerHandle })
+      .expect(200);
+    await request(app.getHttpServer())
+      .patch("/v1/users/me")
+      .set(asHelper())
+      .send({ username: helperHandle })
+      .expect(200);
+
+    // Scoped staff surface: plain members cannot curate tags.
+    await request(app.getHttpServer())
+      .post("/v1/admin/forum/tags")
+      .set(asUser())
+      .send({ slug: "yetkisiz", nameTr: "Yetkisiz", nameEn: "Unauthorized" })
+      .expect(403);
+    const tag = await request(app.getHttpServer())
+      .post("/v1/admin/forum/tags")
+      .set(asAdmin())
+      .send({
+        slug: `motivasyon-${RUN}`,
+        nameTr: `Motivasyon ${RUN}`,
+        nameEn: `Motivation ${RUN}`,
+        isActive: true,
+      })
+      .expect(201);
+
+    const zoneId = await createZone(ZoneType.QA, "Discovery QA");
+    for (const auth of [asUser(), asHelper()]) {
+      await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(auth).expect(201);
+    }
+    const question = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({
+        title: "Deneme düzenimi nasıl sürdürebilirim?",
+        body: "İki haftadır düzen kurmaya çalışıyorum; küçük ve sürdürülebilir öneriler arıyorum.",
+        tagIds: [tag.body.id],
+      })
+      .expect(201);
+    const threadId = question.body.id as string;
+
+    const feed = await request(app.getHttpServer())
+      .get(`/v1/forum/feed?scope=relevant&sort=trending&tag=${tag.body.slug}`)
+      .set(asUser())
+      .expect(200);
+    expect(feed.body.items.map((item: { id: string }) => item.id)).toContain(threadId);
+    expect(feed.body.items[0].capabilities).toEqual(
+      expect.objectContaining({ canEdit: true, canDelete: true }),
+    );
+
+    const hub = await request(app.getHttpServer()).get("/v1/forum/hub").set(asUser()).expect(200);
+    expect(hub.body.featured ?? hub.body.continueDiscussions[0]).toBeTruthy();
+
+    // Helpful is positive-only, idempotent and cannot be cast on one's own content.
+    await request(app.getHttpServer())
+      .put(`/v1/forum/threads/${threadId}/helpful-vote`)
+      .set(asUser())
+      .expect(400);
+    await request(app.getHttpServer())
+      .put(`/v1/forum/threads/${threadId}/helpful-vote`)
+      .set(asHelper())
+      .expect(200);
+    await request(app.getHttpServer())
+      .put(`/v1/forum/threads/${threadId}/helpful-vote`)
+      .set(asHelper())
+      .expect(200);
+
+    // An interaction locks owner editing; bookmark alone is intentionally not part of this lock.
+    await request(app.getHttpServer())
+      .patch(`/v1/forum/threads/${threadId}`)
+      .set(asUser())
+      .send({ body: "Bu metin artık etkileşim nedeniyle değişmemeli." })
+      .expect(409);
+
+    const featured = await request(app.getHttpServer())
+      .put("/v1/admin/forum/featured-thread")
+      .set(asAdmin())
+      .send({ threadId })
+      .expect(200);
+    expect(featured.body.threadId).toBe(threadId);
+
+    const search = await request(app.getHttpServer())
+      .get(`/v1/forum/search?q=${encodeURIComponent(ownerHandle)}`)
+      .set(asHelper())
+      .expect(200);
+    expect(JSON.stringify(search.body)).not.toMatch(/@test\.local|email/i);
+    expect(search.body.people).toEqual(
+      expect.arrayContaining([expect.objectContaining({ username: ownerHandle })]),
+    );
+  });
 });

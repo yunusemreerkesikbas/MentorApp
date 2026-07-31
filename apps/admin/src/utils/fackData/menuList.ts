@@ -48,7 +48,7 @@ export const menuList: MenuItem[] = [
         path: "/forum",
         icon: "feather-message-circle",
         dropdownMenu: false,
-        roles: ["SUPER_ADMIN", "ADMIN"],
+        roles: ["SUPER_ADMIN", "ADMIN", "EDITOR"],
     },
     {
         id: 2,

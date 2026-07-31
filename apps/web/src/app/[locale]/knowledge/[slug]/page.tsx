@@ -6,7 +6,8 @@ import { fetchInfoArticleBySlug, infoArticleUrl } from "@/lib/content-api";
 import { siteUrl } from "@/lib/forum-public";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { ArticleContent } from "./_components/article-content";
-import { PublicArticleChrome } from "./_components/article-markdown";
+import { PublicChrome } from "@/components/public-chrome";
+import { PublicFooter } from "@/components/public-footer";
 
 export const revalidate = 3600;
 
@@ -122,7 +123,7 @@ export default async function PublicArticlePage({ params }: PageProps) {
   };
 
   return (
-    <PublicArticleChrome>
+    <PublicChrome loginLabel={translate("login")}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(articleJsonLd) }}
@@ -137,6 +138,7 @@ export default async function PublicArticlePage({ params }: PageProps) {
         publishedLabel={publishedLabel}
         updatedLabel={updatedLabel}
       />
-    </PublicArticleChrome>
+      <PublicFooter />
+    </PublicChrome>
   );
 }

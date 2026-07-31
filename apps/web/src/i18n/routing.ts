@@ -21,6 +21,9 @@ export const routing = defineRouting({
       tr: "/cerez-tercihleri",
       en: "/cookie-preferences",
     },
+    // One dynamic route for all legal documents; the slug itself is not localized (same choice as
+    // `/knowledge/[slug]`). Slugs live in `@/lib/legal`.
+    "/legal/[slug]": { tr: "/yasal/[slug]", en: "/legal/[slug]" },
     "/dashboard": { tr: "/panel", en: "/dashboard" },
     "/plan": "/plan",
     "/study-session": { tr: "/seans", en: "/study-session" },

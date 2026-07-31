@@ -294,6 +294,20 @@ deliberate presence cue, disabled under reduced motion.
   (Desktop: Koç via floating Puhu FAB, not sidebar; mobile: elevated center tab.)
 - Guardrails: calm countdown, no result-ranking shame, encouraging Turkish tone (PRODUCT.md).
 
+### 12.1 Topluluk Discovery V2 record (2026-07-31)
+
+- Tek kullanıcı ürünü **Topluluk**; forum/community teknik sınırı navigasyonda görünmez.
+- Hub düzeni: featured discussion + devam/yeni karışımı; ardından Emek Panosu, trend etiketler,
+  sırasız destek verenler ve oda önerileri. Upcoming Event yoktur.
+- Global feed referansı kart yoğunluğu, sekmeler ve bağlamsal rail için kullanılır; oda içi CHAT
+  mevcut düz kanal ritmini korur. Slack/Discord referansından yalnız grup başlıkları, breadcrumb ve
+  katkı verenler deseni alınır; presence/typing/realtime kanal davranışı alınmaz.
+- Kartlar açık yüzey, `main/body-text/secondary-text`, `chip`, `btn`, 10px radius ve Nunito Sans
+  tokenlarını kullanır. Referans görsellerin font/renk sistemi kopyalanmaz; negatif oy yoktur.
+- Mobilde sol oda drawer'ı ve native modal focus trap; desktopta global feed/oda/detay için
+  bağlamsal rail. Etkileşim hedefleri en az 44px, focus ring görünür, motion yalnız ölçülü
+  Micro/Chrome katmanındadır ve reduced-motion kurallarına uyar.
+
 ---
 
 ## 13. Open Items / asset backlog

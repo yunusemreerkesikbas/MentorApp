@@ -3,16 +3,19 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { type CommentView, type ThreadDetail, type ThreadView } from "@mentor/types";
+import Users from "lucide-react/dist/esm/icons/users.mjs";
+import { type CommentView, type ThreadDetail, type ThreadView, type ZoneView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { toggleReaction } from "@/lib/forum-reactions";
+import { trackCommunityEvent } from "@/lib/analytics";
 import {
   bookmarkPost,
   bookmarkThread,
   getThreadDetail,
   isForumDisabled,
+  listZones,
   postComment,
   reactPost,
   reactThread,
@@ -28,7 +31,7 @@ type State =
   | { status: "loading" }
   | { status: "disabled" }
   | { status: "error"; message: string }
-  | { status: "ready"; thread: ThreadView; comments: CommentView[] };
+  | { status: "ready"; thread: ThreadView; comments: CommentView[]; zone: ZoneView | null };
 
 /** Message detail (APP-017) — the thread + its top-level comments + a comment composer. */
 export function MessageShell({ threadId }: { threadId: string }) {
@@ -36,15 +39,22 @@ export function MessageShell({ threadId }: { threadId: string }) {
   const highlightId = useSearchParams().get("highlight");
   const [state, setState] = useState<State>({ status: "loading" });
 
-  const apply = useCallback((detail: ThreadDetail) => {
-    setState({ status: "ready", thread: detail.thread, comments: detail.comments });
+  const apply = useCallback((detail: ThreadDetail, zone: ZoneView | null) => {
+    setState({ status: "ready", thread: detail.thread, comments: detail.comments, zone });
   }, []);
 
   useEffect(() => {
     let active = true;
-    getThreadDetail(threadId)
-      .then((detail) => {
-        if (active) apply(detail);
+    Promise.all([getThreadDetail(threadId), listZones()])
+      .then(([detail, zones]) => {
+        if (active) {
+          const zone = zones.items.find((entry) => entry.id === detail.thread.zoneId) ?? null;
+          apply(detail, zone);
+          trackCommunityEvent("forum_thread_view", {
+            zone_type: zone?.type ?? "CHAT",
+            answered: false,
+          });
+        }
       })
       .catch((err: unknown) => {
         if (!active) return;
@@ -109,6 +119,8 @@ export function MessageShell({ threadId }: { threadId: string }) {
   const onComment = useCallback(
     async (body: string, attachments: AttachmentInput[]) => {
       const created = await postComment(threadId, body, attachments);
+      const zoneType = state.status === "ready" ? state.zone?.type ?? "CHAT" : "CHAT";
+      trackCommunityEvent("forum_reply_created", { target: "thread", zone_type: zoneType });
       setState((s) =>
         s.status === "ready"
           ? {
@@ -119,7 +131,7 @@ export function MessageShell({ threadId }: { threadId: string }) {
           : s,
       );
     },
-    [threadId],
+    [threadId, state],
   );
 
   if (state.status === "loading") return <Centered>{t("loading")}</Centered>;
@@ -132,21 +144,39 @@ export function MessageShell({ threadId }: { threadId: string }) {
     );
   }
 
-  const { thread, comments } = state;
+  const { thread, comments, zone } = state;
+  const participantNames = Array.from(
+    new Set([thread.authorName, ...thread.commenterNames, ...comments.map((comment) => comment.authorName)]),
+  ).slice(0, 8);
 
   return (
-    <main className="mx-auto min-w-0 max-w-2xl px-4 py-6 lg:px-8 lg:py-8">
-      <Link
-        href={`/community`}
-        className="mb-3 flex items-center gap-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        style={{ color: "var(--color-secondary)" }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
-        {t("sidebar_title")}
-      </Link>
+    <main className="mx-auto min-w-0 max-w-[1180px] px-4 py-5 sm:px-7 lg:px-8 lg:py-6">
+      <nav aria-label={t("breadcrumb_label")} className="mb-5 flex min-h-11 flex-wrap items-center gap-2 border-b border-[#e7e9ee] pb-4 text-[13px] text-[#7b808a]">
+        <Link href="/community" className="font-semibold text-[#373c47] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
+          {t("title")}
+        </Link>
+        <span aria-hidden="true">›</span>
+        {zone ? (
+          <Link
+            href={{ pathname: "/community/[slug]", params: { slug: zone.slug } }}
+            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          >
+            {zone.title}
+          </Link>
+        ) : (
+          <span>{t("type_chat")}</span>
+        )}
+        <span aria-hidden="true">›</span>
+        <span aria-current="page" className="max-w-[24rem] truncate text-[#222630]">
+          {thread.title ?? thread.body.slice(0, 52)}
+        </span>
+      </nav>
+
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_304px]">
+      <div className="min-w-0">
 
       {/* Main thread */}
-      <div className="border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+      <div className="overflow-hidden rounded-[14px] border border-[#e5e7ec] bg-white shadow-[0_2px_8px_rgb(18_24_39_/_3%)]">
         <ThreadItem
           thread={thread}
           onToggleReaction={onToggleThreadReaction}
@@ -154,8 +184,10 @@ export function MessageShell({ threadId }: { threadId: string }) {
         />
       </div>
 
-      {/* Composer — always directly under the post, before any comments */}
-      <div className="border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+      <h2 className="mb-3 mt-8 text-[20px] font-extrabold tracking-[-0.025em] text-[#1b1f28]">
+        {t("comment_total", { count: comments.length })}
+      </h2>
+      <div className="rounded-[13px] border border-[#e3e6ea] bg-white">
         <ThreadComposer
           placeholder={t("comment_placeholder")}
           submitLabel={t("comment_submit")}
@@ -167,13 +199,7 @@ export function MessageShell({ threadId }: { threadId: string }) {
       {/* Comments (nothing shown when empty — the composer above is the call to action) */}
       {comments.length > 0 && (
         <>
-          <h2
-            className="mb-1 mt-6 px-3 text-[11px] font-semibold uppercase tracking-wide"
-            style={{ color: "var(--color-secondary)" }}
-          >
-            {t("comments_title")}
-          </h2>
-          <div className="divide-y divide-[rgba(0,0,0,0.06)]">
+          <div className="mt-5 divide-y divide-[#eceef2] border-t border-[#eceef2]">
             {comments.map((c) => (
               <CommentRow
                 key={c.id}
@@ -186,6 +212,18 @@ export function MessageShell({ threadId }: { threadId: string }) {
           </div>
         </>
       )}
+      </div>
+      <aside className="hidden border-l border-[#e7e9ee] pl-5 xl:block" aria-label={t("detail_context_title")}>
+        <h2 className="flex items-center gap-2 text-[13px] font-extrabold text-[#4c535f]"><Users size={16} className="text-[var(--community-blue-ink)]" aria-hidden />{t("detail_participants")}</h2>
+        <div className="mt-3 grid gap-1">
+          {participantNames.map((name) => (
+            <span key={name} className="min-h-11 rounded-[9px] px-3 py-3 text-sm font-semibold text-[#343945] hover:bg-white">
+              {name}
+            </span>
+          ))}
+        </div>
+      </aside>
+      </div>
     </main>
   );
 }

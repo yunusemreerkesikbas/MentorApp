@@ -84,6 +84,43 @@ export interface QuestProgressView {
   completedAt: string | null;
 }
 
+/** One rolling window's total ledger flow. Coin credited/debited are both POSITIVE magnitudes. */
+export interface EconomyFlowDto {
+  coinCredited: number;
+  coinDebited: number;
+  xpCredited: number;
+  rows: number;
+}
+
+/** Flow attributed to one ledger `reason` — the faucet/sink breakdown. */
+export interface EconomyReasonFlowDto {
+  reason: string;
+  credited: number;
+  debited: number;
+  /** Distinct users this reason touched in the window. */
+  users: number;
+}
+
+/**
+ * GET /v1/admin/metrics/economy — coin/XP faucet + sink visibility, so earning rates can be
+ * calibrated from live data (roadmap §729) instead of guessed. All windows roll from now.
+ */
+export interface AdminEconomyStatsDto {
+  /** Rolling windows: last 24h / 7d / 30d. */
+  windows: { d1: EconomyFlowDto; d7: EconomyFlowDto; d30: EconomyFlowDto };
+  /** Per-reason COIN breakdown over 30d, biggest flow first. ORGANIC only (admin rows excluded). */
+  coinByReason: EconomyReasonFlowDto[];
+  /** Per-reason XP breakdown over 30d — the leaderboard-integrity signal. */
+  xpByReason: EconomyReasonFlowDto[];
+  /** Admin manual adjustments over 30d, kept out of the organic rates they would distort. */
+  corrections: { credited: number; debited: number; rows: number };
+  /** Unspent confirmed coin held across all users — the outstanding liability. */
+  float: { coinConfirmed: number; holders: number };
+  /** Recurring-faucet reach: who actually earns the weekly allowance, over the denominator. */
+  faucetReach: { earners7d: number; activeUsers7d: number };
+  generatedAt: string;
+}
+
 /** GET /v1/economy/invite — stable invite code for the user. */
 export interface InviteCodeView {
   code: string;

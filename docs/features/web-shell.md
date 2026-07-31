@@ -63,6 +63,37 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **Yasal sayfa altyapısı (APP-032, 2026-07-31)** — Web'in **hiç yasal sayfası yoktu** ve bu iki
+  somut kusur üretiyordu: kayıt formu *"KVKK aydınlatma metnini okudum"* dedirtip **var olmayan ve
+  linklenmemiş** bir metne rıza topluyordu; abonelik onayı otomatik tahsilatı anlatıp mesafeli satış
+  sözleşmesine link vermiyordu. Linkleyecek bir footer bile yoktu.
+  **Kurulan:** 6 belge (`kvkk-aydinlatma` · `gizlilik-politikasi` · `kullanim-kosullari` ·
+  `mesafeli-satis-sozlesmesi` · `on-bilgilendirme-formu` · `iade-ve-cayma-hakki`) tek bir registry'de
+  (`lib/legal.ts`), tek dinamik route (`/yasal/[slug]` · `/legal/[slug]`), mevcut `ArticleMarkdown`
+  ile render, `PublicChrome` + yeni `PublicFooter`.
+  **Metinler kasten yazılmadı** — gövdeler yalnız bölüm başlıkları; hukuki metin hukukçu/mali
+  müşavir çıktısıdır. Doldurulacak yerler `{{…}}` ile işaretli.
+  **Taslak koruması (asıl mühendislik):** `status: DRAFT` → görünür TASLAK bandi + `robots noindex`
+  + sitemap dışı; `FINAL` → ikisi de otomatik kalkar. `assertPublishable` bir belge `FINAL` olup
+  gövdesinde `{{` bırakılmışsa **build'i düşürür** — ve bu bir test değil bilinçli olarak build-time
+  kontrolüdür: `apps/web`'de test runner yok (`lib/*.spec.ts` dosyaları hiç koşmuyor), atlanamayan
+  bir kapı gerekiyordu. Prova edildi: geçici `FINAL` + yer tutucu → prerender hatası.
+  **Rıza yüzeyleri:** kayıt KVKK metni artık `t.rich` ile gerçek linke dönüşüyor; abonelik onayının
+  altında mesafeli satış + ön bilgilendirme linkleri. İkisi de `<label>` içinde olduğundan
+  `LegalLink` tıklamayı durdurur — yoksa sözleşmeyi okumak onay kutusunu toggle ederdi.
+  **EN:** sayfalar var ama `noindex` + "bağlayıcı metin Türkçesidir" notu taşıyor.
+  Yan etki: `PublicArticleChrome` → `@/components/public-chrome` taşındı (legal sayfaları başka
+  route'un `_components`'ine uzanmasın). Dosyalar: `lib/legal.ts`, `legal/[slug]/page.tsx`,
+  `legal-notices.tsx`, `public-chrome.tsx`, `public-footer.tsx`, `legal-link.tsx`, `routing.ts`,
+  `sitemap.ts`, `signup/page.tsx`, `subscription-shell.tsx`, `account-links-card.tsx`.
+
+- **Profile hub density pass (2026-07-31)** — Removed desktop “Profil” title/subtitle.
+  Modal-backed list rows (earn + exam) no longer show grey subtitles (values live in
+  sheets). `ListRow` tightened to ~56px Nuton height; TR/EN stays on profile for mobile
+  (sidebar toggle is desktop-only). Notification toggle descriptions and “Katılım” date
+  kept. Related: `profile-shell.tsx`, `account-links-card.tsx`, `economy-section.tsx`,
+  `application-support-card.tsx`.
+
 - **Welcome slide 1 full-bleed hero (2026-07-19)** — Pre-auth `/` first slide uses
   `/img/welcome-hero.png` full-screen (`object-cover`); slogan only in art; UI keeps skip,
   pagination, and CTA over a soft white bottom fade. Slides 2–3 keep compact Puhu + copy.
@@ -283,6 +314,22 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Gotchas / Known issues
 
+- **Yasal belgeler `DRAFT` — canlıya çıkmadan önce metin şart.** 6 belgenin gövdesi bölüm
+  başlığından ibaret; hukukçu metni gelmeden `status`'ü `FINAL` yapmayın. Yapılırsa build düşer
+  (`assertPublishable`), ki kasıt bu. `FINAL` olan belge otomatik indekslenir ve sitemap'e girer.
+- **Lokalde `pnpm typecheck`'i `next build`'den SONRA koşturmayın.** Web tsconfig'i
+  `.next/types/**/*.ts`'i `include` ediyor; bu klasör yalnız build sonrası oluşur ve içindeki
+  üretilmiş `validator.ts` ikinci bir `@types/react` çözümü sürükler → hiç dokunulmamış dosyalarda
+  (`subject-picker.tsx` vb.) hayalet `Property 'value' does not exist` hataları. CI bunu hiç görmez
+  (sıra `lint → typecheck → build`, checkout temiz). Lokalde takılırsanız:
+  `rm -rf apps/web/.next/types` ya da typecheck'i build'den önce koşturun.
+- **`apps/web`'de test runner yok.** `src/lib/*.spec.ts` dosyaları (weekly-recap, analytics,
+  plan-calendar-layout…) **hiç koşmuyor** — pakette vitest bağımlılığı ve `test` script'i yok.
+  Web tarafına gerçek bir invariant koyacaksanız build-time kontrolü tercih edin (yasal registry
+  böyle yapıyor) ya da önce vitest'i kurun. _(Backlog: bu orphan spec'leri ya çalıştır ya sil.)_
+- **Public footer yüzey bazlı mount edilir**, ortak locale layout'una değil — authenticated app'te
+  alt navigasyon var, footer onunla çakışır. Yeni bir public sayfa eklerken `PublicFooter`'ı
+  elle koymak gerekir.
 - **Secondary routes** (`/seans`, `/abonelik`, `/hedef`) — not in the tab bar; no item highlighted
   (by design). 6 tab items on mobile — dense but matches product nav; labels truncate on narrow screens.
 - **Koç remains in nav** (product choice; Figma template shows 4 items).
