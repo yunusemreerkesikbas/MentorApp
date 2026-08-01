@@ -21,6 +21,8 @@ export function PlanDayTodoList({
   onEdit,
   onDelete,
   onAddTask,
+  completionPromptTaskId,
+  onDismissCompletionPrompt,
 }: {
   selectedDate: string;
   tasksByDate: Record<string, PlanTaskDto[]>;
@@ -30,6 +32,8 @@ export function PlanDayTodoList({
   onEdit: (task: PlanTaskDto) => void;
   onDelete: (task: PlanTaskDto) => void;
   onAddTask?: () => void;
+  completionPromptTaskId?: string | null;
+  onDismissCompletionPrompt?: () => void;
 }) {
   const t = useTranslations("plan");
   const locale = useLocale();
@@ -84,6 +88,8 @@ export function PlanDayTodoList({
               onToggle={() => onToggle(task.id)}
               onEdit={() => onEdit(task)}
               onDelete={() => onDelete(task)}
+              showCompletionPrompt={completionPromptTaskId === task.id}
+              onDismissCompletionPrompt={onDismissCompletionPrompt}
             />
           ))}
         </div>

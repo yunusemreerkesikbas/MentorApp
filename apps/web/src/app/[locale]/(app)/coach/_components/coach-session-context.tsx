@@ -90,6 +90,7 @@ function toChatMessages(
     feedback: m.feedback,
     suggestedTask: m.suggestedTask,
     officialCountdown: m.officialCountdown,
+    personalization: m.personalization,
   }));
 }
 

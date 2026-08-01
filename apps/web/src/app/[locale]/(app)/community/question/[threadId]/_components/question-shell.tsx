@@ -1,15 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import Users from "lucide-react/dist/esm/icons/users.mjs";
-import { ModerationTargetType, type QuestionDetail, type ZoneView } from "@mentor/types";
+import {
+  ModerationTargetType,
+  type ForumCoachIntent,
+  type QuestionDetail,
+  type ZoneView,
+} from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Chip } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
-import { trackCommunityEvent } from "@/lib/analytics";
+import { trackCoachEvent, trackCommunityEvent } from "@/lib/analytics";
+import {
+  communityReturnPlaceholderKey,
+  parseCommunityReturnContext,
+} from "@/lib/community-coach-bridge";
 import {
   bookmarkPost,
   bookmarkThread,
@@ -42,6 +52,11 @@ type State =
 export function QuestionShell({ threadId }: { threadId: string }) {
   const t = useTranslations("community");
   const locale = useLocale();
+  const searchParams = useSearchParams();
+  const returnContext = parseCommunityReturnContext({
+    composer: searchParams.get("composer"),
+    intent: searchParams.get("intent"),
+  });
   const { user } = useAuth();
   const [state, setState] = useState<State>({ status: "loading" });
 
@@ -267,7 +282,12 @@ export function QuestionShell({ threadId }: { threadId: string }) {
       </h2>
 
       <div className="rounded-[13px] border border-[#e3e6ea] bg-white p-4 sm:p-5">
-        <AnswerComposer threadId={threadId} zoneId={question.zoneId} onPosted={() => void load()} />
+        <AnswerComposer
+          threadId={threadId}
+          zoneId={question.zoneId}
+          returnIntent={returnContext?.intent ?? null}
+          onPosted={() => void load()}
+        />
       </div>
 
       {answers.length === 0 ? (
@@ -318,10 +338,12 @@ function AnswerComposer({
   threadId,
   zoneId,
   onPosted,
+  returnIntent,
 }: {
   threadId: string;
   zoneId: string;
   onPosted: () => void;
+  returnIntent: ForumCoachIntent | null;
 }) {
   const t = useTranslations("community");
   const [value, setValue] = useState("");
@@ -329,6 +351,19 @@ function AnswerComposer({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mention = useMentionAutocomplete(zoneId, textareaRef, setValue);
   const picker = useForumImagePicker();
+
+  useEffect(() => {
+    if (!returnIntent) return;
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.focus({ preventScroll: true });
+    textarea.scrollIntoView({
+      block: "center",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  }, [returnIntent]);
 
   const send = async () => {
     const body = value.trim();
@@ -339,6 +374,12 @@ function AnswerComposer({
       const attachments = await picker.uploadAll();
       await postAnswer(threadId, body, attachments);
       trackCommunityEvent("forum_reply_created", { target: "thread", zone_type: "QA" });
+      if (returnIntent) {
+        trackCoachEvent("coach_community_return_reply_created", {
+          intent: returnIntent,
+          zone_type: "QA",
+        });
+      }
       setValue("");
       picker.reset();
       onPosted();
@@ -359,7 +400,11 @@ function AnswerComposer({
           onSelect={mention.sync}
           onBlur={mention.close}
           onKeyDown={(e) => void mention.onKeyDown(e)}
-          placeholder={t("answer_placeholder")}
+          placeholder={
+            returnIntent
+              ? t(communityReturnPlaceholderKey(returnIntent))
+              : t("answer_placeholder")
+          }
           rows={3}
           maxLength={4000}
           className="min-h-[120px] w-full resize-y rounded-[10px] border border-[#e1e4e8] bg-[#fbfcfd] p-4 text-[15px] leading-6 text-[#343945] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"

@@ -757,6 +757,17 @@ html.mentor-sheet-open {
   stroke: #fff;
   stroke-width: 0.5;
   transition: fill 0.15s ease;
+  /* Keeps borders hairline-thin when the viewBox zooms onto a single province, instead of
+     ballooning by the magnification factor. */
+  vector-effect: non-scaling-stroke;
+}
+/* Neighbouring provinces stay visible as context while one is opened, but recede. */
+.mentor-tr-map path[data-dimmed] {
+  cursor: default;
+  opacity: 0.35;
+}
+.mentor-tr-map .mentor-tr-map-pin {
+  cursor: pointer;
 }
 .mentor-tr-map path:hover {
   fill: color-mix(in srgb, var(--color-main) 40%, white);

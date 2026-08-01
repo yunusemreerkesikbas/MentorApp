@@ -4,6 +4,7 @@ import { alias } from "drizzle-orm/pg-core";
 import {
   CoachMessageRole,
   type CoachMessageDto,
+  type CoachPersonalizationDto,
   type CountdownDto,
   type Paginated,
   type CoachConversationOriginDto,
@@ -41,6 +42,8 @@ type CoachMessageRow = typeof coachMessages.$inferSelect;
 function toDto(row: CoachMessageRow): CoachMessageDto {
   const task = (row.suggestedTask as SuggestedTask | null) ?? null;
   const countdown = (row.officialCountdown as CountdownDto | null) ?? null;
+  const personalization =
+    (row.personalizationContext as CoachPersonalizationDto | null) ?? null;
   return {
     id: row.id,
     role: row.role as CoachMessageRole,
@@ -49,6 +52,7 @@ function toDto(row: CoachMessageRow): CoachMessageDto {
     feedback: row.feedback ?? null,
     ...(task ? { suggestedTask: task } : {}),
     ...(countdown ? { officialCountdown: countdown } : {}),
+    ...(personalization ? { personalization } : {}),
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -73,6 +77,7 @@ export class CoachMessageRepository {
       sources: SourceChip[];
       suggestedTask?: SuggestedTask;
       officialCountdown?: CountdownDto;
+      personalization?: CoachPersonalizationDto;
     },
   ): Promise<string> {
     return withUserContext(this.db, { userId }, async (tx) => {
@@ -112,6 +117,7 @@ export class CoachMessageRepository {
           model: coach.model,
           suggestedTask: coach.suggestedTask ?? null,
           officialCountdown: coach.officialCountdown ?? null,
+          personalizationContext: coach.personalization ?? null,
         },
       ]);
       const updated = await tx
@@ -144,6 +150,7 @@ export class CoachMessageRepository {
       sources: SourceChip[];
       suggestedTask?: SuggestedTask;
       officialCountdown?: CountdownDto;
+      personalization?: CoachPersonalizationDto;
     },
   ): Promise<boolean> {
     return withUserContext(this.db, { userId }, async (tx) => {
@@ -156,6 +163,7 @@ export class CoachMessageRepository {
           suggestedTask: coach.suggestedTask ?? null,
           feedback: null,
           officialCountdown: coach.officialCountdown ?? null,
+          personalizationContext: coach.personalization ?? null,
         })
         .where(
           and(

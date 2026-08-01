@@ -1,10 +1,16 @@
-import type { ForumCoachIntent } from "@mentor/types";
+import type {
+  ForumCoachIntent,
+  PlanTaskDto,
+  PlanTaskOriginDto,
+  PlanTaskStatus,
+} from "@mentor/types";
 
 export const COACH_RETURN_TO_STORAGE_KEY = "mentor.coach-return-to.v1";
 
 export interface CommunityCoachAttribution {
   intent: ForumCoachIntent;
   zoneType: "CHAT" | "QA";
+  conversationId: string;
 }
 
 export type CoachReturnHref =
@@ -79,6 +85,7 @@ export function parseCommunityCoachAttribution(params: {
   source: string | null;
   intent: string | null;
   zoneType: string | null;
+  conversationId: string | null;
 }): CommunityCoachAttribution | null {
   if (params.source !== "community_coach") return null;
   if (
@@ -90,5 +97,108 @@ export function parseCommunityCoachAttribution(params: {
     return null;
   }
   if (params.zoneType !== "CHAT" && params.zoneType !== "QA") return null;
-  return { intent: params.intent, zoneType: params.zoneType };
+  if (!params.conversationId || !UUID_PATTERN.test(params.conversationId)) return null;
+  return {
+    intent: params.intent,
+    zoneType: params.zoneType,
+    conversationId: params.conversationId,
+  };
+}
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export interface CommunityReturnContext {
+  intent: ForumCoachIntent;
+}
+
+/** Validate the structural return marker; no task, conversation or content travels to the composer. */
+export function parseCommunityReturnContext(params: {
+  composer: string | null;
+  intent: string | null;
+}): CommunityReturnContext | null {
+  if (params.composer !== "community-return") return null;
+  if (
+    params.intent !== "PLAN" &&
+    params.intent !== "NEXT_STEP" &&
+    params.intent !== "STUDY_METHOD" &&
+    params.intent !== "STRATEGY"
+  ) {
+    return null;
+  }
+  return { intent: params.intent };
+}
+
+const COMMUNITY_RETURN_PLACEHOLDER_KEYS = {
+  PLAN: "community_return_placeholder_plan",
+  NEXT_STEP: "community_return_placeholder_next_step",
+  STUDY_METHOD: "community_return_placeholder_study_method",
+  STRATEGY: "community_return_placeholder_strategy",
+} as const;
+
+export function communityReturnPlaceholderKey(intent: ForumCoachIntent) {
+  return COMMUNITY_RETURN_PLACEHOLDER_KEYS[intent];
+}
+
+export function communityTaskSourceLabelKey(status: PlanTaskStatus) {
+  return status === "DONE"
+    ? ("community_task_source_done" as const)
+    : ("community_task_source_pending" as const);
+}
+
+/** Locale-safe destination for a community-origin task; no reply text is carried in the URL. */
+export function communityTaskReturnHref(origin: PlanTaskOriginDto) {
+  return {
+    pathname:
+      origin.zoneType === "QA"
+        ? ("/community/question/[threadId]" as const)
+        : ("/community/message/[threadId]" as const),
+    params: { threadId: origin.threadId },
+    query: { composer: "community-return", intent: origin.intent },
+  };
+}
+
+/** Pending tasks link back to context; only completed tasks activate the empty share composer. */
+export function communityTaskSourceHref(
+  origin: PlanTaskOriginDto,
+  status: PlanTaskStatus,
+) {
+  if (status === "DONE") return communityTaskReturnHref(origin);
+  return {
+    pathname:
+      origin.zoneType === "QA"
+        ? ("/community/question/[threadId]" as const)
+        : ("/community/message/[threadId]" as const),
+    params: { threadId: origin.threadId },
+  };
+}
+
+export function communityCoachPlanHref(
+  task: { title: string; subject: string | null },
+  context: CommunityCoachAttribution,
+) {
+  return {
+    pathname: "/plan" as const,
+    query: {
+      add: "1",
+      title: task.title,
+      ...(task.subject ? { subject: task.subject } : {}),
+      source: "community_coach",
+      communityIntent: context.intent,
+      communityZoneType: context.zoneType,
+      communityConversationId: context.conversationId,
+    },
+  };
+}
+
+/** Completion prompt is ephemeral: only the successful transition triggers it, never list hydration. */
+export function shouldShowCommunityCompletionPrompt(
+  previousStatus: PlanTaskStatus,
+  updated: Pick<PlanTaskDto, "status" | "origin">,
+): updated is Pick<PlanTaskDto, "status"> & { origin: PlanTaskOriginDto } {
+  return (
+    previousStatus === "PENDING" &&
+    updated.status === "DONE" &&
+    updated.origin?.type === "COMMUNITY_COACH"
+  );
 }

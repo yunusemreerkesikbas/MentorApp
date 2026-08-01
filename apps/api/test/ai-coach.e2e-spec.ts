@@ -275,6 +275,51 @@ describe("ai coach chat (e2e)", () => {
     expect(history.body.communitySource.intent).toBe("PLAN");
     expect(JSON.stringify(history.body)).not.toContain("FORUM_SECRET_BODY_MUST_NOT_LEAK");
 
+    const usageBeforeTask = await aiUsageCount(premiumId);
+    const coinsBeforeTask = await coinBalance(premiumId);
+    const createdTask = await request(app.getHttpServer())
+      .post(`/v1/coach/conversations/${sent.body.conversationId}/plan-tasks`)
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({
+        title: "Bugün 20 soru",
+        subject: "Türkçe",
+        // Untrusted provenance is ignored; the response must use the server-resolved source.
+        threadId: "00000000-0000-4000-8000-0000000000ff",
+        intent: "STRATEGY",
+        zoneType: "QA",
+      });
+    expect(createdTask.status).toBe(201);
+    expect(createdTask.body.origin).toEqual({
+      type: "COMMUNITY_COACH",
+      conversationId: sent.body.conversationId,
+      threadId,
+      intent: "PLAN",
+      zoneType: "CHAT",
+    });
+    expect(await aiUsageCount(premiumId)).toBe(usageBeforeTask);
+    expect(await coinBalance(premiumId)).toBe(coinsBeforeTask);
+
+    const updatedTask = await request(app.getHttpServer())
+      .patch(`/v1/plan-tasks/${createdTask.body.id}`)
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({ title: "Bugün 25 soru", status: "DONE" });
+    expect(updatedTask.status).toBe(200);
+    expect(updatedTask.body.origin).toEqual(createdTask.body.origin);
+
+    await request(app.getHttpServer())
+      .post(`/v1/coach/conversations/${sent.body.conversationId}/plan-tasks`)
+      .set({ Authorization: `Bearer ${freeToken}` })
+      .send({ title: "Başkasının konuşması" })
+      .expect(404);
+
+    await setConfig("forum.coach_bridge.enabled", false);
+    await request(app.getHttpServer())
+      .post(`/v1/coach/conversations/${sent.body.conversationId}/plan-tasks`)
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({ title: "Bayrak kapalı" })
+      .expect(404);
+    await setConfig("forum.coach_bridge.enabled", true);
+
     await request(app.getHttpServer())
       .get(`/v1/coach/conversations/${sent.body.conversationId}/messages`)
       .set({ Authorization: `Bearer ${freeToken}` })
@@ -295,6 +340,11 @@ describe("ai coach chat (e2e)", () => {
     expect(unavailable.status).toBe(200);
     expect(unavailable.body.origin.refId).toBe(threadId);
     expect(unavailable.body.communitySource).toBeNull();
+    await request(app.getHttpServer())
+      .post(`/v1/coach/conversations/${sent.body.conversationId}/plan-tasks`)
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({ title: "Silinmiş kaynaktan görev" })
+      .expect(404);
   });
 
   it("free user with coin spends on chat (201, balance drops)", async () => {

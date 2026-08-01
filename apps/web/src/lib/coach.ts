@@ -8,10 +8,11 @@ import type {
   CoachPlanAdaptationDto,
   DailyGreetingDto,
   Paginated,
+  PlanTaskDto,
   SessionReflectionDto,
   WeeklyReviewNarrationDto,
 } from "@mentor/types";
-import type { CoachPlanAdaptationInput } from "@mentor/validation";
+import type { CoachPlanAdaptationInput, CreatePlanTaskInput } from "@mentor/validation";
 import { http, httpRaw, throwApiClientError } from "@mentor/api-client";
 
 /**
@@ -206,6 +207,23 @@ export async function listCoachMessages(
   return (await http<CoachConversationMessagesDto>(
     `/v1/coach/conversations/${conversationId}/messages?page=${page}&pageSize=${pageSize}`,
   )) as CoachConversationMessagesDto;
+}
+
+/**
+ * User-confirmed plan task from a community-origin coach conversation. The server resolves all
+ * provenance from the owned conversation; the browser sends only the normal task fields.
+ */
+export async function createCommunityCoachPlanTask(
+  conversationId: string,
+  input: CreatePlanTaskInput,
+): Promise<PlanTaskDto> {
+  return (await http<PlanTaskDto>(
+    `/v1/coach/conversations/${conversationId}/plan-tasks`,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  )) as PlanTaskDto;
 }
 
 /** Delete one thread (its messages cascade). Any legacy saved summary is kept. */

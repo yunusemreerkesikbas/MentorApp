@@ -96,6 +96,33 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **Kişiselleştirme kanıtını yanıt içine taşıma (2026-08-01)** — Sıfır seans/sıfır görev
+  özetleri artık kişisel kanıt sayılmaz ve LLM bağlamına yazılmaz. Model, ilgili sinyali yapısal
+  marker ile seçer; API bu marker'ı doğrulanmış ve kullanıcıya görünür doğal bir ilk cümleye
+  dönüştürür. Marker eksikse yalnız mevcut gerçek sinyallerden güvenli fallback seçilir. Veri
+  yokken numaralı/genel yöntem menüsü tek netleştirici soruya çevrilir ve doğrulama bitene kadar
+  stream tamponlanır. Web'deki `Neye göre?` disclosure'ı yalnız yanıtta gerçekten kullanılan
+  sinyalleri gösterir; kullanılmayan sınav/bağlam veya `0 seans · 0 dk` gösterilmez. İlgili:
+  `personalization-marker.ts`, `ai.constants.ts`, `chat.service.ts`,
+  `coach-personalization-context.tsx`, `CoachPersonalizationDto.usedSignals`.
+- **Kanıtı görünür kişisel koçluk (2026-08-01)** — Tüm normal AI Koç sohbetleri artık
+  uygulanabilir PII-minimal bağlam varsa en az bir somut sinyali cevapta kullanır, tek öneri seçer
+  ve neden uygun olduğunu açıklar; yalnız sınav türü olup çalışma verisi yoksa kişiselleştirmiş gibi
+  davranmak yerine tek teşhis sorusu sorar. Her COACH mesajı üretim anındaki sınav, ruh hâli,
+  son 7 gün seans/odak/ders ve bugünkü plan özetini `personalization_context` alanında saklar.
+  Web, cevap altında yalnız kullanılan sinyallere ait `Neye göre?` disclosure'ı gösterir; geçmiş ve regenerate
+  aynı sözleşmeyi korur. Bu davranış Topluluk köprüsüyle sınırlı değildir; topluluk konuşmalarında
+  ayrıca mevcut yapısal kaynak kartı korunur. Migration: `0067_fixed_johnny_blaze.sql`. İlgili:
+  `ai.constants.ts`, `chat.service.ts`, `coach-message.repository.ts`,
+  `coach-personalization-context.tsx`, `messages/{tr,en}.json`.
+- **Topluluk koç konuşmasından güvenli plan görevi (2026-08-01)** —
+  `POST /v1/coach/conversations/:conversationId/plan-tasks`, kullanıcının onayladığı normal plan
+  görevi alanlarını kabul eder; konuşma sahipliğini, `COMMUNITY_THREAD` origin'ini, forum
+  görünürlüğünü/CHAT-QA uygunluğunu ve mevcut bridge flag'ini sunucuda yeniden doğrular. Thread,
+  intent ve zone istemciden alınmaz; AI çağrısı, kota veya coin tüketimi yoktur. AI modülü yalnız
+  Forum'un public bridge servisini ve Coaching'in public `PlanService` arayüzünü kullanır; tablo
+  erişimi/FK ve ters Forum→AI bağımlılığı oluşmaz. İlgili:
+  `community-coach-plan-task.service.ts`, `ai-chat.controller.ts`, `ai.module.ts`.
 - **Topluluk kaynaklı koç konuşması pilotu (2026-07-31)** — Yeni koç sohbeti
   `contextCommunityThreadId` alabilir; backend uygunluğu Forum’un public servisiyle yeniden doğrular
   ve LLM’e yalnız `intent`, CHAT/QA türü, kürasyonlu etiket ve kullanıcının kendi mesajını geçirir.

@@ -23,6 +23,9 @@ interface SeedUniversity {
   kind: string;
   foundedYear?: number | null;
   websiteUrl?: string | null;
+  /** Strings, not numbers — they map straight onto a Postgres `numeric` column. */
+  latitude?: string | null;
+  longitude?: string | null;
 }
 
 interface UniversitySeedFile {
@@ -124,6 +127,8 @@ export class GeoSeedService implements OnModuleInit {
         kind: uni.kind,
         foundedYear: uni.foundedYear ?? null,
         websiteUrl: uni.websiteUrl ?? null,
+        latitude: uni.latitude ?? null,
+        longitude: uni.longitude ?? null,
         source: data.source,
         sourceUrl: data.sourceUrl,
         verifiedAt,

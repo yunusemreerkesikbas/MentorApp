@@ -34,6 +34,69 @@ export interface UniversityDto {
   /** Null when the source didn't state it — never guessed. */
   foundedYear: number | null;
   websiteUrl: string | null;
+  /**
+   * Main-campus coordinates. Null when geocoding could not confirm a position inside the province
+   * the guide lists — such a university still appears in the city's list, it just gets no map pin.
+   * A missing pin is a gap; a pin in the wrong city is a lie.
+   */
+  latitude: number | null;
+  longitude: number | null;
+  /** Programs on offer, so the map card can say something without a second request. */
+  programCount: number;
+}
+
+export const PROGRAM_LEVELS = ["LISANS", "ONLISANS"] as const;
+export type ProgramLevel = (typeof PROGRAM_LEVELS)[number];
+
+/** One year's placement result. Null means no placement that year — never zero. */
+export interface ProgramScoreDto {
+  year: number;
+  minScore: number | null;
+  successRank: number | null;
+}
+
+export interface ProgramDto {
+  /** 9-digit ÖSYM program code — the identifier printed on official documents. */
+  code: string;
+  faculty: string;
+  name: string;
+  level: ProgramLevel;
+  durationYears: number;
+  /** SAY | EA | SÖZ | DİL | TYT */
+  scoreType: string;
+  /** Seats offered in `guideYear` — this year's number, NOT the year the scores belong to. */
+  quota: number;
+  guideYear: number;
+  /**
+   * Newest year first. An array rather than a single `minScore` so the UI can put years side by
+   * side once the next guide lands, instead of overwriting history.
+   */
+  scores: ProgramScoreDto[];
+}
+
+export interface UniversityProgramsDto {
+  university: UniversityDto;
+  programs: ProgramDto[];
+  source: GeoSourceDto | null;
+}
+
+/** A program hit carries its university and city — search results are shown out of context. */
+export interface ProgramSearchHitDto {
+  code: string;
+  name: string;
+  faculty: string;
+  level: ProgramLevel;
+  universityId: string;
+  universityName: string;
+  cityCode: string;
+  cityName: string;
+}
+
+/** One search box over three different things; each list is capped independently. */
+export interface GeoSearchResultDto {
+  cities: Array<Pick<CityDto, "code" | "name" | "slug" | "region">>;
+  universities: UniversityDto[];
+  programs: ProgramSearchHitDto[];
 }
 
 export interface CityDto {

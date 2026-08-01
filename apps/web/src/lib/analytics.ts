@@ -49,6 +49,18 @@ export interface CoachAnalyticsParams {
     zone_type: "CHAT" | "QA";
     intent: ForumCoachIntent;
   };
+  coach_community_task_completed: {
+    zone_type: "CHAT" | "QA";
+    intent: ForumCoachIntent;
+  };
+  coach_community_completion_return_click: {
+    zone_type: "CHAT" | "QA";
+    intent: ForumCoachIntent;
+  };
+  coach_community_return_reply_created: {
+    zone_type: "CHAT" | "QA";
+    intent: ForumCoachIntent;
+  };
   coach_plan_adaptation_request: { source: CoachPlanAdaptationSource };
   coach_plan_adaptation_apply: {
     source: CoachPlanAdaptationSource;

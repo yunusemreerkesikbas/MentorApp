@@ -23,6 +23,7 @@ import type {
   CoachMemoryDto,
   CoachConversationMessagesDto,
   Paginated,
+  PlanTaskDto,
 } from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
 import {
@@ -41,8 +42,10 @@ import {
   ListCoachMessagesQueryDto,
   PlanAdaptationBodyDto,
   PlanDraftBodyDto,
+  CommunityCoachPlanTaskDto,
 } from "./ai.dto";
 import { PlanDraftService } from "../application/plan-draft.service";
+import { CommunityCoachPlanTaskService } from "../application/community-coach-plan-task.service";
 
 /**
  * AI coach chat (W3). Premium = flat + rate-limit; free = earned coin spend (economy.enabled).
@@ -57,6 +60,7 @@ export class AiChatController {
     private readonly access: CoachAccessService,
     private readonly planDraft: PlanDraftService,
     private readonly planAdaptation: PlanAdaptationService,
+    private readonly communityPlanTasks: CommunityCoachPlanTaskService,
   ) {}
 
   @Get("access")
@@ -78,6 +82,16 @@ export class AiChatController {
       dto.contextArticleSlug,
       dto.contextCommunityThreadId,
     );
+  }
+
+  /** Create a user-confirmed task from an owned community-origin coach conversation. */
+  @Post("conversations/:id/plan-tasks")
+  createCommunityPlanTask(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: CommunityCoachPlanTaskDto,
+  ): Promise<PlanTaskDto> {
+    return this.communityPlanTasks.create(user.id, id, dto);
   }
 
   /**

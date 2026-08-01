@@ -6,11 +6,30 @@
  * All values are server-computed and ready to display: the countdown days come from the
  * verified content calendar (guardrail §4 #1), the streak from daily activity, and every
  * user-facing line is backend-localized (no AI on these surfaces — §4 #5).
- */
+*/
+
+import type { ForumCoachIntent } from "./forum.js";
 
 export type PlanTaskStatus = "PENDING" | "DONE";
 export type StudySessionStatus = "IN_PROGRESS" | "COMPLETED" | "ABANDONED";
 export type SessionPresetId = "25_5" | "50_10" | "custom";
+
+export const PlanTaskOriginType = {
+  COMMUNITY_COACH: "COMMUNITY_COACH",
+} as const;
+export type PlanTaskOriginType =
+  (typeof PlanTaskOriginType)[keyof typeof PlanTaskOriginType];
+
+/** Structural provenance for a user-confirmed task created from a community-origin coach chat. */
+export interface CommunityCoachPlanTaskOriginDto {
+  type: typeof PlanTaskOriginType.COMMUNITY_COACH;
+  conversationId: string;
+  threadId: string;
+  intent: ForumCoachIntent;
+  zoneType: "CHAT" | "QA";
+}
+
+export type PlanTaskOriginDto = CommunityCoachPlanTaskOriginDto;
 
 /** Projection of a `plan_tasks` row. */
 export interface PlanTaskDto {
@@ -27,6 +46,8 @@ export interface PlanTaskDto {
   endTime: string | null;
   /** Free-text note shown in the calendar event preview. */
   description: string | null;
+  /** Nullable additive provenance; legacy and manually-created tasks have no origin. */
+  origin: PlanTaskOriginDto | null;
 }
 
 export type CoachPlanAdaptationSource = "PLAN" | "MOOD" | "SESSION";

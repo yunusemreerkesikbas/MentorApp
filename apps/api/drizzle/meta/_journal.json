@@ -449,6 +449,34 @@
       "when": 1785529113096,
       "tag": "0063_absurd_black_bolt",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1785577980360,
+      "tag": "0064_fresh_dorian_gray",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1785580069489,
+      "tag": "0065_clumsy_white_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1785582923199,
+      "tag": "0066_great_dreadnoughts",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1785594951354,
+      "tag": "0067_fixed_johnny_blaze",
+      "breakpoints": true
     }
   ]
 }

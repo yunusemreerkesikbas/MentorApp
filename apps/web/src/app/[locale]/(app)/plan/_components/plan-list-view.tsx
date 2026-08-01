@@ -16,6 +16,8 @@ export function PlanListView({
   onEdit,
   onDelete,
   onAddTask,
+  completionPromptTaskId,
+  onDismissCompletionPrompt,
 }: {
   tasks: PlanTaskDto[];
   loading: boolean;
@@ -25,6 +27,8 @@ export function PlanListView({
   onEdit: (task: PlanTaskDto) => void;
   onDelete: (task: PlanTaskDto) => void;
   onAddTask?: () => void;
+  completionPromptTaskId?: string | null;
+  onDismissCompletionPrompt?: () => void;
 }) {
   const t = useTranslations("plan");
   const visible = loading ? [] : tasks;
@@ -58,6 +62,8 @@ export function PlanListView({
               onToggle={() => onToggle(task.id)}
               onEdit={() => onEdit(task)}
               onDelete={() => onDelete(task)}
+              showCompletionPrompt={completionPromptTaskId === task.id}
+              onDismissCompletionPrompt={onDismissCompletionPrompt}
             />
           ))}
         </div>

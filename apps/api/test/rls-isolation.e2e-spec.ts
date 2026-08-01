@@ -98,7 +98,15 @@ describe("RLS isolation (e2e)", () => {
         [id],
       );
       await admin.query(
-        "insert into plan_tasks (user_id, task_date, title) values ($1, current_date, 'rls probe')",
+        `insert into plan_tasks
+           (user_id, task_date, title, origin_type, origin_ref_id, origin_meta)
+         values
+           ($1, current_date, 'rls probe', 'COMMUNITY_COACH', gen_random_uuid(),
+            jsonb_build_object(
+              'threadId', gen_random_uuid()::text,
+              'intent', 'PLAN',
+              'zoneType', 'CHAT'
+            ))`,
         [id],
       );
       const conv = await admin.query(
@@ -177,6 +185,24 @@ describe("RLS isolation (e2e)", () => {
 
   it.each(TABLES)("as user A, own %s rows ARE visible (policy not over-tight)", async (table) => {
     expect(await probeCount({ userId: idA }, table, idA)).toBeGreaterThan(0);
+  });
+
+  it("keeps community task provenance inside the owning user's plan-task policy", async () => {
+    const own = await asProbe({ userId: idA }, (c) =>
+      c.query(
+        "select origin_type, origin_meta from plan_tasks where user_id = $1",
+        [idA],
+      ),
+    );
+    expect(own.rows[0]).toMatchObject({
+      origin_type: "COMMUNITY_COACH",
+      origin_meta: { intent: "PLAN", zoneType: "CHAT" },
+    });
+
+    const foreign = await asProbe({ userId: idA }, (c) =>
+      c.query("select origin_type from plan_tasks where user_id = $1", [idB]),
+    );
+    expect(foreign.rows).toHaveLength(0);
   });
 
   // Policy nuance found by this probe: most policies compare as text

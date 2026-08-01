@@ -2,7 +2,10 @@
 
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import type { CommunityCoachAttribution } from "@/lib/community-coach-bridge";
+import {
+  communityCoachPlanHref,
+  type CommunityCoachAttribution,
+} from "@/lib/community-coach-bridge";
 
 export type SuggestedTaskCardTask = {
   title: string;
@@ -25,21 +28,16 @@ export function SuggestedTaskCard({
   communityContext?: CommunityCoachAttribution;
 }) {
   const translate = useTranslations("coach_chat");
-  const href = {
-    pathname: "/plan",
-    query: {
-      add: "1",
-      title: task.title,
-      ...(task.subject ? { subject: task.subject } : {}),
-      ...(communityContext
-        ? {
-            source: "community_coach",
-            communityIntent: communityContext.intent,
-            communityZoneType: communityContext.zoneType,
-          }
-        : {}),
-    },
-  } as const;
+  const href = communityContext
+    ? communityCoachPlanHref(task, communityContext)
+    : ({
+        pathname: "/plan",
+        query: {
+          add: "1",
+          title: task.title,
+          ...(task.subject ? { subject: task.subject } : {}),
+        },
+      } as const);
   return (
     <div className={className ?? "flex justify-start"}>
       <div

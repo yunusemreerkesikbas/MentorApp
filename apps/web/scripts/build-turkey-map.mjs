@@ -47,7 +47,14 @@ const NAME_ALIASES = {
  */
 const CENTROID_OVERRIDES = {};
 
-const TR_MAP = { ç: "c", ğ: "g", ı: "i", İ: "i", ö: "o", ş: "s", ü: "u", â: "a", î: "i", û: "u" };
+// Uppercase forms matter as much as lowercase: an unmapped "Ç" survives to `toLowerCase()` as "ç",
+// which the ASCII filter then deletes outright — "Çanakkale" would silently slug to "anakkale" and
+// five provinces would vanish from the map. The unmatched-features assert below catches exactly this.
+const TR_MAP = {
+  ç: "c", Ç: "c", ğ: "g", Ğ: "g", ı: "i", I: "i", İ: "i",
+  ö: "o", Ö: "o", ş: "s", Ş: "s", ü: "u", Ü: "u",
+  â: "a", Â: "a", î: "i", Î: "i", û: "u", Û: "u",
+};
 
 /**
  * Turkish-aware slug. `toLowerCase()` alone is not enough: "İ" lowercases to a dotted "i̇" (i + U+0307)
@@ -99,11 +106,14 @@ function main() {
     // by roughly 60%. Cheaper and simpler than pulling in a topology-simplification pass.
     const d = path(feature).replace(/\d+\.\d+/g, (n) => Number(n).toFixed(1));
     const [cx, cy] = CENTROID_OVERRIDES[code] ?? path.centroid(feature);
+    const [[x0, y0], [x1, y1]] = path.bounds(feature);
 
     provinces[code] = {
       d,
       cx: Number(cx.toFixed(1)),
       cy: Number(cy.toFixed(1)),
+      // Needed to zoom the viewBox onto one province when the user drills in.
+      bbox: [x0, y0, x1, y1].map((n) => Number(n.toFixed(1))),
     };
   }
 
@@ -128,10 +138,42 @@ function main() {
     );
   }
 
+  // The app places university pins from lat/lng, but shipping d3-geo to the browser just to
+  // project points would undo the whole point of this script. Instead we emit the three numbers
+  // that define the projection and re-implement the four lines of Mercator forward maths at
+  // runtime. The assert below is what makes that safe: it checks our formula against d3's own
+  // output, so a drift in either direction fails the build rather than silently misplacing pins.
+  const [translateX, translateY] = projection.translate();
+  const scale = projection.scale();
+
+  const project = ([lng, lat]) => {
+    const lambda = (lng * Math.PI) / 180;
+    const phi = (lat * Math.PI) / 180;
+    return [
+      scale * lambda + translateX,
+      translateY - scale * Math.log(Math.tan(Math.PI / 4 + phi / 2)),
+    ];
+  };
+
+  for (const sample of [
+    [32.85, 39.93], // Ankara
+    [28.98, 41.01], // İstanbul
+    [27.14, 38.42], // İzmir
+    [44.03, 39.75], // Iğdır — eastern edge
+    [27.0, 36.8], // south-western coast
+  ]) {
+    const [ex, ey] = projection(sample);
+    const [ax, ay] = project(sample);
+    assert(
+      Math.abs(ex - ax) < 1e-6 && Math.abs(ey - ay) < 1e-6,
+      `Runtime Mercator formula drifted from d3 at ${sample}: d3=(${ex}, ${ey}) ours=(${ax}, ${ay})`,
+    );
+  }
+
   const body = codes
     .map((code) => {
       const p = provinces[code];
-      return `  "${code}": { d: "${p.d}", cx: ${p.cx}, cy: ${p.cy} },`;
+      return `  "${code}": { d: "${p.d}", cx: ${p.cx}, cy: ${p.cy}, bbox: [${p.bbox.join(", ")}] },`;
     })
     .join("\n");
 
@@ -144,12 +186,21 @@ function main() {
 export interface ProvinceShape {
   /** SVG path data in the ${WIDTH}x${HEIGHT} viewBox. */
   d: string;
-  /** Projected centroid — where the university badge sits. */
+  /** Projected centroid — where the province badge sits. */
   cx: number;
   cy: number;
+  /** [x0, y0, x1, y1] — the viewBox to zoom to when this province is opened. */
+  bbox: [number, number, number, number];
 }
 
 export const MAP_VIEWBOX = "0 0 ${WIDTH} ${HEIGHT}";
+
+/** Mercator parameters this file was generated with; consumed by \`projectLngLat\`. */
+export const MAP_PROJECTION = {
+  scale: ${scale},
+  translateX: ${translateX},
+  translateY: ${translateY},
+} as const;
 
 /** Keyed by plate code "01".."81", matching \`cities.code\` in the API. */
 export const PROVINCES: Record<string, ProvinceShape> = {

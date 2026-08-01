@@ -3,9 +3,14 @@ import type {
   CityDto,
   GeoRegion,
   GeoResponseDto,
+  GeoSearchResultDto,
+  ProgramDto,
+  ProgramLevel,
   UniversityDto,
   UniversityKind,
+  UniversityProgramsDto,
 } from "@mentor/types";
+import { NotFoundError } from "../../../common/errors/domain-error";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -13,7 +18,26 @@ import {
   GeoRepository,
   type NewCity,
   type NewUniversity,
+  type ProgramWithScoreRow,
+  type UniversityRow,
 } from "../infrastructure/geo.repository";
+
+/** Per-list cap on search results — a search box, not a paginated report. */
+const SEARCH_LIMIT = { cities: 5, universities: 8, programs: 20 } as const;
+
+/**
+ * Same folding the SQL does, applied to the incoming query so both sides of the comparison
+ * agree. Ordinary `toLowerCase()` is wrong here: "İ" gains a combining dot in JS.
+ */
+const TR_MAP: Record<string, string> = {
+  ç: "c", Ç: "c", ğ: "g", Ğ: "g", ı: "i", I: "i", İ: "i",
+  ö: "o", Ö: "o", ş: "s", Ş: "s", ü: "u", Ü: "u",
+  â: "a", Â: "a", î: "i", Î: "i", û: "u", Û: "u",
+};
+
+function foldTurkish(value: string): string {
+  return [...value].map((ch) => TR_MAP[ch] ?? ch).join("").toLowerCase();
+}
 
 /**
  * Geo reference data (provinces + universities) behind the panel's goal map.
@@ -37,23 +61,18 @@ export class GeoService {
    * is exactly the experience this avoids.
    */
   async getGeo(): Promise<GeoResponseDto> {
-    const [cityRows, universityRows, sourceRow] = await Promise.all([
-      this.geo.listCities(this.db),
-      this.geo.listUniversities(this.db),
-      this.geo.findUniversitySource(this.db),
-    ]);
+    const [cityRows, universityRows, sourceRow, programCounts] =
+      await Promise.all([
+        this.geo.listCities(this.db),
+        this.geo.listUniversities(this.db),
+        this.geo.findUniversitySource(this.db),
+        this.geo.countProgramsByUniversity(this.db),
+      ]);
 
     const byCity = new Map<string, UniversityDto[]>();
     for (const row of universityRows) {
       const list = byCity.get(row.cityCode) ?? [];
-      list.push({
-        id: row.id,
-        name: row.name,
-        slug: row.slug,
-        kind: row.kind as UniversityKind,
-        foundedYear: row.foundedYear,
-        websiteUrl: row.websiteUrl,
-      });
+      list.push(this.toUniversityDto(row, programCounts.get(row.id) ?? 0));
       byCity.set(row.cityCode, list);
     }
 
@@ -87,6 +106,127 @@ export class GeoService {
     cityCode: string,
   ): Promise<boolean> {
     return this.geo.existsInCity(this.db, universityId, cityCode);
+  }
+
+  /**
+   * Everything one university offers, fetched when a pin or list row is opened.
+   *
+   * The join returns one row per (program, year); they are folded back into a program with a
+   * `scores` array here rather than issuing a second query per program.
+   */
+  async getUniversityPrograms(
+    universityId: string,
+  ): Promise<UniversityProgramsDto> {
+    const [university, source] = await Promise.all([
+      this.geo.findUniversityById(this.db, universityId),
+      this.geo.findUniversitySource(this.db),
+    ]);
+    if (!university) throw new NotFoundError({ resource: "university" });
+
+    const rows = await this.geo.listProgramsByUniversity(this.db, universityId);
+
+    const byCode = new Map<string, ProgramDto>();
+    for (const row of rows) {
+      let program = byCode.get(row.code);
+      if (!program) {
+        program = this.toProgramDto(row);
+        byCode.set(row.code, program);
+      }
+      if (row.scoreYear != null) {
+        program.scores.push({
+          year: row.scoreYear,
+          minScore: row.minScore == null ? null : Number(row.minScore),
+          successRank: row.successRank,
+        });
+      }
+    }
+
+    const programs = [...byCode.values()];
+    return {
+      university: this.toUniversityDto(university, programs.length),
+      programs,
+      source: source
+        ? {
+            source: source.source,
+            sourceUrl: source.sourceUrl,
+            verifiedAt: source.verifiedAt.toISOString(),
+          }
+        : null,
+    };
+  }
+
+  /**
+   * One box, three result kinds. Kept as three capped queries instead of a UNION: the lists are
+   * rendered separately anyway, and a shared ranking across cities/universities/programs would
+   * have to invent a relevance scale none of them share.
+   */
+  async search(query: string): Promise<GeoSearchResultDto> {
+    const needle = foldTurkish(query.trim());
+    if (needle.length < 2) {
+      return { cities: [], universities: [], programs: [] };
+    }
+
+    const [cityRows, universityRows, programRows] = await Promise.all([
+      this.geo.searchCities(this.db, needle, SEARCH_LIMIT.cities),
+      this.geo.searchUniversities(this.db, needle, SEARCH_LIMIT.universities),
+      this.geo.searchPrograms(this.db, needle, SEARCH_LIMIT.programs),
+    ]);
+
+    const counts = universityRows.length
+      ? await this.geo.countProgramsByUniversity(this.db)
+      : new Map<string, number>();
+
+    return {
+      cities: cityRows.map((c) => ({
+        code: c.code,
+        name: c.name,
+        slug: c.slug,
+        region: c.region as GeoRegion,
+      })),
+      universities: universityRows.map((u) =>
+        this.toUniversityDto(u, counts.get(u.id) ?? 0),
+      ),
+      programs: programRows.map((p) => ({
+        code: p.code,
+        name: p.name,
+        faculty: p.faculty,
+        level: p.level as ProgramLevel,
+        universityId: p.universityId,
+        universityName: p.universityName,
+        cityCode: p.cityCode,
+        cityName: p.cityName,
+      })),
+    };
+  }
+
+  private toUniversityDto(row: UniversityRow, programCount: number): UniversityDto {
+    return {
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+      kind: row.kind as UniversityKind,
+      foundedYear: row.foundedYear,
+      websiteUrl: row.websiteUrl,
+      // Drizzle returns `numeric` as a string to protect precision; the map needs numbers, and
+      // six decimal places of latitude sit well inside what a double represents exactly.
+      latitude: row.latitude == null ? null : Number(row.latitude),
+      longitude: row.longitude == null ? null : Number(row.longitude),
+      programCount,
+    };
+  }
+
+  private toProgramDto(row: ProgramWithScoreRow): ProgramDto {
+    return {
+      code: row.code,
+      faculty: row.faculty,
+      name: row.name,
+      level: row.level as ProgramLevel,
+      durationYears: row.durationYears,
+      scoreType: row.scoreType,
+      quota: row.quota,
+      guideYear: row.guideYear,
+      scores: [],
+    };
   }
 
   /** Seed entry point — one batched statement per table inside a single SERVICE-context tx. */

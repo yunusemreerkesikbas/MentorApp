@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import type { Env } from "../../config/env.validation";
 import { CoachingModule } from "../coaching/coaching.module";
 import { ForumModule } from "../forum/forum.module";
+import { CommunityCoachPlanTaskService } from "./application/community-coach-plan-task.service";
 import { ContentModule } from "../content/content.module";
 import { EconomyModule } from "../economy/economy.module";
 import { IdentityModule } from "../identity/identity.module";
@@ -79,6 +80,7 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
   ],
   providers: [
     ChatService,
+    CommunityCoachPlanTaskService,
     CoachAccessService,
     MoodReflectionService,
     DailyGreetingService,

@@ -227,6 +227,7 @@ export function CoachChatShell() {
         sources,
         suggestedTask,
         officialCountdown,
+        personalization,
         followUps: nextFollowUps,
         conversationId,
         model,
@@ -256,6 +257,7 @@ export function CoachChatShell() {
           sources,
           suggestedTask,
           officialCountdown,
+          personalization,
         });
       } else {
         updateMessage(coachMessageId, {
@@ -263,6 +265,7 @@ export function CoachChatShell() {
           sources,
           suggestedTask,
           officialCountdown,
+          personalization,
         });
       }
       setFollowUps(nextFollowUps ?? []);
@@ -343,6 +346,7 @@ export function CoachChatShell() {
       sources: undefined,
       suggestedTask: undefined,
       officialCountdown: undefined,
+      personalization: undefined,
       feedback: null,
     });
     let received = "";
@@ -352,6 +356,7 @@ export function CoachChatShell() {
         sources,
         suggestedTask,
         officialCountdown,
+        personalization,
         followUps: nextFollowUps,
         model,
       } = await streamRegenerate(activeConversationId, (delta) => {
@@ -363,6 +368,7 @@ export function CoachChatShell() {
         sources,
         suggestedTask,
         officialCountdown,
+        personalization,
         feedback: null,
       });
       setFollowUps(nextFollowUps ?? []);
@@ -375,6 +381,7 @@ export function CoachChatShell() {
         sources: lastCoach.sources,
         suggestedTask: lastCoach.suggestedTask,
         officialCountdown: lastCoach.officialCountdown,
+        personalization: lastCoach.personalization,
         feedback: lastCoach.feedback ?? null,
       });
       setChatError(
@@ -563,6 +570,7 @@ export function CoachChatShell() {
             streamingMessageId={streamingMessageId}
             conversationOrigin={conversationOrigin}
             communitySource={communitySource}
+            activeConversationId={activeConversationId}
             historyStatus={historyStatus}
             historyError={historyError}
             hasOlderMessages={hasOlderMessages}

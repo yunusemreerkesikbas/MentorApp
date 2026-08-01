@@ -105,6 +105,22 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Yerel koç köprüsü örnek verisi (2026-08-01)** — `seed:forum`, kürasyonlu
+  `coach_intent` etiketlerini idempotent günceller ve uygun CHAT/QA thread'lerine bağlar. QA seed'i
+  her örnek soruyu en az bir kez üretir; çalışma yöntemi ve sınav stratejisi soruları köprüyü gösterirken
+  salt bilgi/soru çözümü başlıkları bilinçli olarak göstermez. Yerel seed ayrıca
+  `forum.coach_bridge.enabled=true` override'ını yazar; çalışan API config önbelleği nedeniyle seed
+  sonrasında API yeniden başlatılmalıdır. Kullanım: `pnpm --filter @mentor/api seed:forum`.
+  İlgili: `apps/api/scripts/seed-forum.ts`, `apps/api/src/forum-seed-script.spec.ts`.
+- **Koç görevinden tartışmaya dönüş (2026-08-01)** — Topluluk kökenli bir plan görevi
+  tamamlandıktan sonra CHAT yorumuna veya QA yanıtına güvenli bir dönüş bağlantısı oluşur.
+  `composer=community-return&intent=…` yalnız kürasyonlu intent taşır; composer boş açılır,
+  görünür alana kayar ve odaklanır. Intent yalnız placeholder'ı değiştirir; AI metin hazırlamaz,
+  otomatik üyelik veya otomatik paylaşım yapılmaz. Başarılı kullanıcı gönderimi yalnız yapısal
+  `intent/zone_type` analytics olayı üretir. Silinmiş, gizlenmiş veya artık köprüye uygun olmayan
+  kaynak plan ekranında yerelleştirilmiş erişilemiyor durumuna geçer. İlgili:
+  `message-shell.tsx`, `question-shell.tsx`, `thread-composer.tsx`,
+  `community-coach-bridge.ts`, `messages/{tr,en}.json`.
 - **Topluluk → AI Koç köprüsü pilotu (2026-07-31)** — CHAT/QA detayları, aktif bir
   `coach_intent` etiketinden deterministik olarak `PLAN > STUDY_METHOD > STRATEGY > NEXT_STEP`
   seçer ve `GET /v1/forum/threads/:id/coach-bridge` üzerinden yalnız oda/tür, kürasyonlu etiket,

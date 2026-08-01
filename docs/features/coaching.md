@@ -142,6 +142,15 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Topluluk → Koç → Plan → Topluluk dönüş döngüsü (2026-08-01)** — `plan_tasks`, forward-only
+  `0065` ile nullable `origin_type/ref_id/meta` alanlarını aldı. `COMMUNITY_COACH` görevleri
+  conversation, thread, intent ve CHAT/QA türünü yapısal olarak saklar; modüller arası FK yoktur.
+  Normal/legacy görevler `origin=null` döner; düzenleme, tarih taşıma ve durum değişimi origin'i
+  korur. Web'de görev oluşturulduğu andan itibaren topluluk kaynak işareti görünür; yalnız başarılı
+  `PENDING→DONE` API yanıtı reload'da tekrarlanmayan, kapatılabilir paylaşım şeridini açar. Kaynak
+  açılmadan önce bridge uygunluğu yeniden kontrol edilir. İlgili: `plan.service.ts`,
+  `coaching.mappers.ts`, `plan-shell.tsx`, `plan-task-row.tsx`,
+  `0065_clumsy_white_tiger.sql`, `packages/types/src/coaching.ts`.
 - **Desktop coach FAB (2026-07-30)** — Desktop (`lg+`) removes Koç from the sidebar and
   shows a fixed bottom-right Puhu bubble (`DesktopCoachFab`) linking to `/coach`. Optional
   dismissible nudge uses `sessionStorage` for the session. Hidden on `/coach*` routes.
@@ -1057,3 +1066,40 @@ pnpm --filter @mentor/api test
   İlgili: `turkey-map.tsx`, `paths.generated.ts`, `build-turkey-map.mjs`, `vision-board-shell.tsx`,
   `puhu-image.tsx`, `vision.service.ts`, `vision-board.repository.ts`, `coaching.mappers.ts`,
   `packages/validation/src/coaching.ts`, `e2e/vision-board.spec.ts`.
+
+- **Harita iki seviyeli: ülke → il → üniversite (2026-08-01)** — Ülke görünümünde il başına rozet
+  (üniversite sayısı); ile tıklanınca viewBox o ilin `bbox`'ına iner ve **üniversite başına pin**
+  çizilir, pine tıklanınca üniversite kartı açılır. Tek seviyede pin çizilmiyor çünkü ülke
+  ölçeğinde bir il ~60px: pinler üst üste biner ve dokunulamaz.
+  **Projeksiyon runtime'da d3 olmadan yapılır:** build script Mercator'un üç parametresini
+  (`MAP_PROJECTION`) yayar, `projection.ts` dört satırlık ileri dönüşümü uygular. Güvenli olmasının
+  sebebi build script'indeki assert: aynı noktaları hem d3 ile hem elle projeksiyonlayıp
+  karşılaştırır, sapma olursa build düşer — sessizce yanlış yere pin koymaz.
+  **Gotcha 1:** Zoom'da `vector-effect: non-scaling-stroke` şart, yoksa il sınırları büyütme
+  oranında kalınlaşır. Pin/rozet boyutları `unit = viewBoxWidth / 1000` ile ölçeklenir.
+  **Gotcha 2:** Pinler `aria-hidden` SVG içinde, yani klavye yolu değil — üniversiteye erişimin
+  erişilebilir yolu şehir kartındaki liste butonlarıdır. İkisi de aynı `UniversityCard`'ı açar.
+  İlgili: `turkey-map.tsx`, `projection.ts`, `build-turkey-map.mjs`, `globals.css`.
+
+- **Harita keşif ekranı: kümeleme, zoom, hover kartı (2026-08-01)** — Form kompakt kaldı; şehir
+  alanı düz alfabetik `<select>` (bölge `optgroup`'ları kaldırıldı — kullanıcıyı önce ilin hangi
+  bölgede olduğunu bilmeye zorluyordu) + "Haritadan seç" düğmesi. Düğme `MapExplorer`'ı tam ekran
+  açar: sol sidebar (arama / şehir üniversiteleri / üniversite + bölüm detayı) ve full-width harita.
+  **Kümeleme (`clustering.ts`):** İstanbul'da 58 üniversite var; ülke ölçeğinde ayrı pin olarak
+  çizmek okunamaz bir leke ve dokunulamaz hedef üretir. Grid tabanlı — O(n), deterministik,
+  yakınsama iterasyonu yok; birkaç yüz noktada mesafe tabanlı kümelemeden ayırt edilemez ama
+  yeniden render'da farklı sonuç üretemez. Hücre boyu viewport genişliğinin oranı olduğu için
+  zoom'da kümeler kendiliğinden dağılır.
+  **Zoom/pan (`use-map-viewport.ts`):** yalnız `viewBox` değişir — CSS transform yok, canvas yok,
+  harita kütüphanesi yok. Path'ler statik string kalır ve hit-testing native kalır: tıklama her
+  zoom seviyesinde tarayıcının söylediği `<path>`'e düşer.
+  **Hover kartı** takvimdeki `PlanEventPreview` kalıbının aynısı: anchor rect'ten `fixed`
+  konumlama, viewport kenarında yön değiştirme, `pointer-events-none` (yoksa kendini doğuran
+  hover'ı çalar).
+  **Gotcha 1:** Arama sonuçları ait oldukları sorguyla birlikte saklanır ve yalnız ikisi eşleşince
+  gösterilir. Yalnız payload saklanınca "konya" → "ka" silmesinde debounce süresince eski sonuçlar
+  yeni sorgunun cevabıymış gibi duruyordu.
+  **Gotcha 2:** Pan yalnız zoom'luyken açık; ülke görünümünde jesti yutmak ile tıklamayı bozardı.
+  **Gotcha 3:** SVG hâlâ `aria-hidden`; klavye yolu `<select>` ve sidebar listesidir.
+  İlgili: `city-picker.tsx`, `map-explorer.tsx`, `map-canvas.tsx`, `clustering.ts`,
+  `use-map-viewport.ts`, `university-hover-card.tsx`, `e2e/vision-board.spec.ts`.

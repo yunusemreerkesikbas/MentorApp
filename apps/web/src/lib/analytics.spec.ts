@@ -174,6 +174,18 @@ describe("coach analytics", () => {
       zone_type: "CHAT",
       intent: "STRATEGY",
     });
+    trackCoachEvent("coach_community_task_completed", {
+      zone_type: "QA",
+      intent: "PLAN",
+    });
+    trackCoachEvent("coach_community_completion_return_click", {
+      zone_type: "CHAT",
+      intent: "NEXT_STEP",
+    });
+    trackCoachEvent("coach_community_return_reply_created", {
+      zone_type: "QA",
+      intent: "STUDY_METHOD",
+    });
 
     expect(dataLayer).toEqual([
       [
@@ -213,8 +225,25 @@ describe("coach analytics", () => {
         "coach_community_return_click",
         { zone_type: "CHAT", intent: "STRATEGY" },
       ],
+      [
+        "event",
+        "coach_community_task_completed",
+        { zone_type: "QA", intent: "PLAN" },
+      ],
+      [
+        "event",
+        "coach_community_completion_return_click",
+        { zone_type: "CHAT", intent: "NEXT_STEP" },
+      ],
+      [
+        "event",
+        "coach_community_return_reply_created",
+        { zone_type: "QA", intent: "STUDY_METHOD" },
+      ],
     ]);
-    expect(JSON.stringify(dataLayer)).not.toMatch(/taskId|title|subject|user/i);
+    expect(JSON.stringify(dataLayer)).not.toMatch(
+      /taskId|threadId|conversationId|title|subject|body|content|user/i,
+    );
   });
 });
 

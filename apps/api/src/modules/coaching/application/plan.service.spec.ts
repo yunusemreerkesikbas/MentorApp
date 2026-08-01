@@ -18,6 +18,13 @@ interface TaskRow {
   startTime?: string | null;
   endTime?: string | null;
   description?: string | null;
+  originType?: string | null;
+  originRefId?: string | null;
+  originMeta?: {
+    threadId: string;
+    intent: "PLAN" | "NEXT_STEP" | "STUDY_METHOD" | "STRATEGY";
+    zoneType: "CHAT" | "QA";
+  } | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -72,6 +79,9 @@ function makePlanRepoFake(rows: TaskRow[]) {
         startTime: data.startTime ?? null,
         endTime: data.endTime ?? null,
         description: data.description ?? null,
+        originType: data.originType ?? null,
+        originRefId: data.originRefId ?? null,
+        originMeta: data.originMeta ?? null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -152,7 +162,40 @@ describe("PlanService — task toggle keeps daily_activity in sync", () => {
 
   it("keeps a task all-day when no time is given", async () => {
     const created = await service.create(USER, { title: "Tekrar" });
-    expect(created).toMatchObject({ startTime: null, endTime: null, description: null });
+    expect(created).toMatchObject({
+      startTime: null,
+      endTime: null,
+      description: null,
+      origin: null,
+    });
+  });
+
+  it("creates a community-coach task with structural origin and keeps it on update", async () => {
+    const created = await service.createFromCommunityCoach(
+      USER,
+      { title: "Bugün 20 paragraf sorusu", subject: "Türkçe" },
+      {
+        conversationId: "11111111-1111-4111-8111-111111111111",
+        threadId: "22222222-2222-4222-8222-222222222222",
+        intent: "NEXT_STEP",
+        zoneType: "CHAT",
+      },
+    );
+
+    expect(created.origin).toEqual({
+      type: "COMMUNITY_COACH",
+      conversationId: "11111111-1111-4111-8111-111111111111",
+      threadId: "22222222-2222-4222-8222-222222222222",
+      intent: "NEXT_STEP",
+      zoneType: "CHAT",
+    });
+
+    const completed = await service.update(USER, created.id, {
+      title: "Bugün 25 paragraf sorusu",
+      status: "DONE",
+    });
+    expect(completed.title).toBe("Bugün 25 paragraf sorusu");
+    expect(completed.origin).toEqual(created.origin);
   });
 
   it("persists calendar times and description, and can clear them back to all-day", async () => {
@@ -354,6 +397,13 @@ describe("PlanService plan adaptations", () => {
         subject: "Türkçe",
         status: "PENDING",
         sortOrder: 0,
+        originType: "COMMUNITY_COACH",
+        originRefId: "11111111-1111-4111-8111-111111111111",
+        originMeta: {
+          threadId: "22222222-2222-4222-8222-222222222222",
+          intent: "PLAN",
+          zoneType: "CHAT",
+        },
         createdAt: new Date("2026-07-21T09:00:00Z"),
         updatedAt: new Date("2026-07-21T09:00:00Z"),
       },
@@ -404,10 +454,27 @@ describe("PlanService plan adaptations", () => {
     });
 
     expect(result.moved).toMatchObject([
-      { id: "t1", taskDate: addDays(TODAY, 1), sortOrder: 6, title: "Paragraf" },
+      {
+        id: "t1",
+        taskDate: addDays(TODAY, 1),
+        sortOrder: 6,
+        title: "Paragraf",
+        origin: {
+          type: "COMMUNITY_COACH",
+          conversationId: "11111111-1111-4111-8111-111111111111",
+          threadId: "22222222-2222-4222-8222-222222222222",
+          intent: "PLAN",
+          zoneType: "CHAT",
+        },
+      },
     ]);
     expect(result.added).toMatchObject([
-      { taskDate: addDays(TODAY, 2), sortOrder: 0, title: "Tarih tekrar" },
+      {
+        taskDate: addDays(TODAY, 2),
+        sortOrder: 0,
+        title: "Tarih tekrar",
+        origin: null,
+      },
     ]);
   });
 

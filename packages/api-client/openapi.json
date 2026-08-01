@@ -644,6 +644,44 @@
         ]
       }
     },
+    "/v1/coach/conversations/{id}/plan-tasks": {
+      "post": {
+        "operationId": "AiChatController_createCommunityPlanTask",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommunityCoachPlanTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/coach/chat/stream": {
       "post": {
         "operationId": "AiChatController_replyStream",
@@ -1305,6 +1343,43 @@
       "get": {
         "operationId": "GeoController_getGeo",
         "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/geo/search": {
+      "get": {
+        "operationId": "GeoController_search",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/universities/{id}/programs": {
+      "get": {
+        "operationId": "GeoController_getUniversityPrograms",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -3714,6 +3789,34 @@
         ]
       }
     },
+    "/v1/forum/threads/{threadId}/coach-bridge": {
+      "get": {
+        "operationId": "ForumDiscoveryController_coachBridgeView",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
     "/v1/forum/zones/{slug}/feed": {
       "get": {
         "operationId": "ForumDiscoveryController_zoneFeed",
@@ -5481,6 +5584,10 @@
         "required": [
           "message"
         ]
+      },
+      "CommunityCoachPlanTaskDto": {
+        "type": "object",
+        "properties": {}
       },
       "PlanDraftBodyDto": {
         "type": "object",

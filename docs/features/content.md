@@ -226,3 +226,70 @@ pnpm --filter @mentor/api-client generate
   yoksa her boot `vision_boards.target_university_id` referansları kopardı.
   İlgili: `schema.ts`, `geo.repository.ts`, `geo.service.ts`, `geo-seed.service.ts`,
   `geo.controller.ts`, `seed/{cities,universities}.seed.json`, `packages/types/src/geo.ts`.
+
+- **Üniversite verisi ÖSYM kılavuzundan içe aktarıldı (2026-08-01)** — `source/2026-osym-{lisans,onlisans}.xls`
+  (BIFF8, ~25k program satırı) → `scripts/build-university-seed.mjs` → **206 üniversite**
+  (128 devlet, 78 vakıf), 81 ilin hepsinde en az bir tane. Kılavuzlar düz tablo değil **hiyerarşik
+  rapor**: üniversite / fakülte / program satırları iç içe, ayırt edici tek şey ilk sütun (program
+  kodu doluysa program satırı). Parser bu yüzden stateful.
+  **Şehir çözümü** ÖSYM'nin kendi kuralını izler: şehir yalnız üniversite adı onu zaten içermiyorsa
+  parantezde verilir (`ABDULLAH GÜL ÜNİVERSİTESİ (KAYSERİ)` ama `ADIYAMAN ÜNİVERSİTESİ`). Önce
+  parantez, sonra ad içindeki **kelime** eşleşmesi denenir (alt-dize değil — "KARS" ⊄ "KARŞIYAKA").
+  Çözülemeyen isim asla uydurulmaz, script listeleyip `CITY_OVERRIDES`'a eklenmesini ister.
+  **Gotcha 1:** `İÇİŞLERİ BAKANLIĞI VE MİLLİ SAVUNMA BAKANLIĞI ADINA … EĞİTİM ALACAKLAR` satırı
+  üniversite tipi ekini taşır ama **üniversite değildir** — Sağlık Bilimleri Üniversitesi (zaten
+  ayrı kayıtlı) altındaki kontenjan kategorisidir. `NOT_A_UNIVERSITY` ile dışlanır; dışlanmasaydı
+  haritada sahte bir pin çıkardı. Program içe aktarımı geldiğinde bu satırlar SBÜ'ye bağlanmalı.
+  **Gotcha 2:** `xlsx` **devDependency**'dir, runtime'a girmez; içe aktarım yılda bir elle
+  çalıştırılır (`pnpm --filter @mentor/api seed:universities`).
+
+- **Üniversite koordinatları (2026-08-01)** — `universities.latitude/longitude` (migration `0064`,
+  `numeric(9,6)`, nullable). `scripts/geocode-universities.mjs` OSM Nominatim'den bir kez çeker,
+  sonuç seed'e yazılır ve commit'lenir — **runtime'da geocode yok**. Şu an **190/206**.
+  Her sonuç kabul edilmeden önce, döndüğü ilin ÖSYM'nin bildirdiği ille aynı olduğu doğrulanır;
+  uyuşmazsa yazılmaz. Eksik koordinat = pin yok, ama üniversite şehir listesinde durur —
+  *eksik pin bir boşluktur, yanlış şehirdeki pin yalandır*.
+  **Gotcha:** Nominatim toplu kullanımda bir süre sonra HTTP 200 + boş dizi dönmeye başlıyor
+  (hata kodu değil), daha önce başarıyla çözdüğü sorgulara bile. Kalan 16 isim bu yüzden düştü;
+  script devam ettirilebilir olduğundan `seed:geocode` tekrar çalıştırıldığında yalnız onları
+  dener. Yazma her isabette değil 20'de bir yapılır — her satırda yazmak `nest --watch` dosya
+  izleyicisiyle Windows'ta kilit çakışması yaratıyordu.
+  İlgili: `build-university-seed.mjs`, `geocode-universities.mjs`, `geo-seed.service.spec.ts`
+  (koordinatların Türkiye sınırları içinde olduğunu doğrular).
+
+- **Program katmanı: 21.493 bölüm + yıl bazlı taban puan (2026-08-01)** — `programs` (PK = 9 haneli
+  ÖSYM program kodu; universityId FK, faculty, name, level `LISANS|ONLISANS`, durationYears,
+  scoreType `SAY|EA|SÖZ|DİL|TYT`, quota, guideYear) + `program_scores`
+  ((programCode, scoreYear) benzersiz; minScore, successRank). Migration `0066`, RLS
+  public_read + service_write.
+  **Aynı kılavuz satırında iki farklı yıl var** ve bu en kolay yapılan hata: `GENEL KONT.` yıl
+  etiketi taşımaz, cari kılavuzun (2026) kontenjanıdır; `2025-YKS BAŞARI SIRASI/EN KÜÇÜK PUANI`
+  ise geçen yılın sonucudur. Kontenjan `programs`'ta, puanlar `program_scores`'ta durur — ikisini
+  tek "2025 kaydı" saymak kontenjanı yanlış yıla yazardı.
+  **`program_scores` neden ayrı tablo:** ürün 2026 gelince iki yılı yan yana göstermek istiyor.
+  `programs.min_score` tek kolon olsaydı her yıl üzerine yazılır, desteklemesi gereken
+  karşılaştırma tam da bu yüzden imkânsız olurdu.
+  **Seed YOK, boot'ta çalışmaz:** `pnpm --filter @mentor/api seed:programs` ile elle içe aktarılır
+  (`scripts/import-programs.mjs`, `UNNEST` ile 4000'lik batch'ler, tek transaction,
+  `SET LOCAL app.role='SERVICE'`). Gerekçe: ~8MB JSON'u her API açılışında parse edip 21.5k satır
+  upsert etmek, yılda bir değişen veri için anlamsız. Kaynak `.xls`'ler repoda, süreç tekrarlanabilir.
+  **Gotcha 1:** Slugify `scripts/lib/turkish.mjs`'te **ortak** — üniversite importer'ı yazar, program
+  importer'ı okur. İki kopya olsaydı ufak bir sapma tüm programların üniversitesini sessizce
+  bulamamasına yol açardı.
+  **Gotcha 2:** `%13` programın taban puanı yok (kılavuz `----` yazar). Null = "yerleşme olmadı",
+  sıfır değil; bu programlar listede kalır çünkü hâlâ açık.
+  İlgili: `import-programs.mjs`, `lib/turkish.mjs`, `geo.repository.ts`, `geo.service.ts`.
+
+- **Geo arama: üniversite + şehir + bölüm (2026-08-01)** — `GET /v1/content/geo/search?q=`
+  (min 2 karakter) üç listeyi ayrı ayrı sınırlı döner. `GET /v1/content/universities/:id/programs`
+  bir üniversitenin tüm bölümlerini yıl dizisiyle verir (pin/liste tıklamasında lazy).
+  `UniversityDto`'ya `programCount` eklendi ki harita kartı ikinci istek atmadan bir şey söyleyebilsin.
+  **Türkçe katlama:** kullanıcı "bilgisayar muhendisligi" diye diakritiksiz yazıyor; düz `ILIKE`
+  bunu yakalamaz. SQL tarafında `lower(translate(name,'çÇğĞıIİöÖşŞüÜâÂîÎûÛ','ccggiiioossuuaaiiuu'))`,
+  JS tarafında aynı eşleme uygulanır. **`translate` `lower`'dan ÖNCE gelir** — Postgres'te
+  `lower('İ')` bileşik nokta üretir ve eşleme boşa düşer.
+  **Index yok, pg_trgm yok:** 21.5k satırda seq scan ölçüldü, **2.5 ms**. Bu doğru olmaktan çıkarsa
+  tekrar bakılır.
+  **Gotcha:** `createZodDto` Swagger metadata taşımadığı için orval query parametrelerini üretmiyor
+  (`listExams`, `listArticles` de aynı). Arama bu yüzden düz `fetch` ile çağrılır.
+  İlgili: `geo.controller.ts`, `geo.service.spec.ts`, `packages/validation/src/content.ts`.

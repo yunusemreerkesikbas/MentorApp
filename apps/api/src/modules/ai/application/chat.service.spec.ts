@@ -25,6 +25,14 @@ const MOCK_EXAM = {
     },
   ],
 };
+const EMPTY_PERSONALIZATION = {
+  mode: "NEEDS_INPUT",
+  examType: null,
+  moodLevel: null,
+  recentSessions: null,
+  todayPlan: null,
+  usedSignals: [],
+};
 
 describe("ChatService coin refund", () => {
   let service: ChatService;
@@ -577,11 +585,13 @@ describe("ChatService coin refund", () => {
       USER.id,
       expect.objectContaining({ kind: "new" }),
       "Merhaba",
-      {
-      content: "Yanıt",
-      model: "fake",
-      sources: [],
-    });
+      expect.objectContaining({
+        content: "Yanıt",
+        model: "fake",
+        sources: [],
+        personalization: EMPTY_PERSONALIZATION,
+      }),
+    );
   });
 
   it("persists nothing when the LLM call fails", async () => {
@@ -613,14 +623,14 @@ describe("ChatService coin refund", () => {
       events.push(ev);
 
     expect(events).toEqual([
-      { delta: "Merha" },
-      { delta: "ba!" },
+      { delta: "Merhaba!" },
       {
         done: {
           reply: "Merhaba!",
           model: "fake",
           conversationId: CONV_ID,
           sources: [],
+          personalization: EMPTY_PERSONALIZATION,
         },
       },
     ]);
@@ -639,7 +649,7 @@ describe("ChatService coin refund", () => {
         events.push(ev);
     }).rejects.toThrow("stream down");
 
-    expect(events).toEqual([{ delta: "Merha" }]);
+    expect(events).toEqual([]);
     expect(grant).toHaveBeenCalledWith(
       USER.id,
       Currency.COIN,
@@ -668,12 +678,13 @@ describe("ChatService coin refund", () => {
       USER.id,
       expect.objectContaining({ kind: "new" }),
       "Bana görev öner",
-      {
+      expect.objectContaining({
         content: "Harika!",
         model: "fake",
         sources: [],
         suggestedTask: { title: "Tarih: 10 soru", subject: "Tarih" },
-      },
+        personalization: EMPTY_PERSONALIZATION,
+      }),
     );
   });
 
@@ -734,6 +745,7 @@ describe("ChatService coin refund", () => {
         model: "fake",
         conversationId: CONV_ID,
         sources: [],
+        personalization: EMPTY_PERSONALIZATION,
         suggestedTask: { title: "Mat: 20 soru", subject: "Matematik" },
       },
     });
@@ -804,6 +816,99 @@ describe("ChatService coin refund", () => {
     await expect(
       service.listConversationMessages(USER.id, CONV_ID, 1, 30),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("returns and persists the personal context snapshot used for the reply", async () => {
+    contextBuild.mockResolvedValue({
+      examType: "KPSS",
+      moodLevel: 3,
+      recentSessions: {
+        count7d: 3,
+        focusMinutes7d: 140,
+        subjects: ["Türkçe"],
+      },
+      todayPlan: { total: 4, done: 1 },
+    });
+    llmComplete.mockResolvedValue({
+      text: "<<PERSONALIZATION:RECENT_SESSIONS>>\nBugün tek bir Türkçe bloğu seç; kısa ritminle daha kolay sürdürebilirsin.",
+      promptTokens: 5,
+      completionTokens: 8,
+      model: "fake",
+    });
+
+    const result = await service.reply(USER, "Bugün nasıl çalışmalıyım?", MSG_ID);
+
+    expect(result.personalization).toEqual({
+      mode: "GROUNDED",
+      examType: "KPSS",
+      moodLevel: 3,
+      recentSessions: {
+        count7d: 3,
+        focusMinutes7d: 140,
+        subjects: ["Türkçe"],
+      },
+      todayPlan: { total: 4, done: 1 },
+      usedSignals: ["RECENT_SESSIONS"],
+    });
+    expect(result.reply).toBe(
+      "Son 7 günde 3 seansla 140 dakika odaklanmışsın. Bugün tek bir Türkçe bloğu seç; kısa ritminle daha kolay sürdürebilirsin.",
+    );
+    expect(persistExchange).toHaveBeenCalledWith(
+      USER.id,
+      expect.any(Object),
+      "Bugün nasıl çalışmalıyım?",
+      expect.objectContaining({ personalization: result.personalization }),
+    );
+  });
+
+  it("keeps a split personalization marker out of the stream and persists visible evidence", async () => {
+    contextBuild.mockResolvedValue({
+      examType: "KPSS",
+      moodLevel: null,
+      recentSessions: {
+        count7d: 3,
+        focusMinutes7d: 140,
+        subjects: ["Türkçe"],
+      },
+      todayPlan: null,
+    });
+    llmCompleteStream.mockImplementation(async function* () {
+      yield { delta: "<<PERSONAL" };
+      yield { delta: "IZATION:RECENT_SESSIONS>>\nBugün tek blok dene." };
+      yield {
+        final: {
+          text: "<<PERSONALIZATION:RECENT_SESSIONS>>\nBugün tek blok dene.",
+          promptTokens: 1,
+          completionTokens: 1,
+          model: "fake",
+        },
+      };
+    });
+
+    const events: unknown[] = [];
+    for await (const event of service.replyStream(USER, "Nasıl çalışmalıyım?", MSG_ID)) {
+      events.push(event);
+    }
+
+    const streamed = events
+      .filter((event): event is { delta: string } => "delta" in (event as object))
+      .map((event) => event.delta)
+      .join("");
+    expect(streamed).toBe(
+      "Son 7 günde 3 seansla 140 dakika odaklanmışsın. Bugün tek blok dene.",
+    );
+    expect(events.at(-1)).toMatchObject({
+      done: {
+        reply: streamed,
+        personalization: { usedSignals: ["RECENT_SESSIONS"] },
+      },
+    });
+    expect(persistExchange).toHaveBeenCalledWith(
+      USER.id,
+      expect.any(Object),
+      "Nasıl çalışmalıyım?",
+      expect.objectContaining({ content: streamed }),
+    );
   });
 
   it("returns structural origin and an accessible community source with conversation messages", async () => {

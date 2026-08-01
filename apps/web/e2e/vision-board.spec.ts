@@ -1,7 +1,12 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
-import type { AuthUser, GeoResponseDto } from "@mentor/types";
+import type {
+  AuthUser,
+  GeoResponseDto,
+  GeoSearchResultDto,
+  UniversityProgramsDto,
+} from "@mentor/types";
 
-/** YKS, so university badges and the card's university list are in play. */
+/** YKS, so university counts and the map explorer are in play. */
 const user: AuthUser = {
   id: "44444444-4444-4444-8444-444444444444",
   email: "hedef@test.local",
@@ -19,6 +24,29 @@ const user: AuthUser = {
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 
+const SELCUK = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "Selçuk Üniversitesi",
+  slug: "selcuk-universitesi",
+  kind: "STATE" as const,
+  foundedYear: null,
+  websiteUrl: null,
+  latitude: 38.024207,
+  longitude: 32.505705,
+  programCount: 2,
+};
+
+/** 16 of the 206 real universities have no confirmed fix; they must list but never pin. */
+const NO_COORDS = {
+  ...SELCUK,
+  id: "22222222-2222-4222-8222-222222222222",
+  name: "Koordinatsız Üniversitesi",
+  slug: "koordinatsiz",
+  latitude: null,
+  longitude: null,
+  programCount: 0,
+};
+
 const geo: GeoResponseDto = {
   cities: [
     {
@@ -26,16 +54,7 @@ const geo: GeoResponseDto = {
       name: "Konya",
       slug: "konya",
       region: "IC_ANADOLU",
-      universities: [
-        {
-          id: "11111111-1111-4111-8111-111111111111",
-          name: "Selçuk Üniversitesi",
-          slug: "selcuk-universitesi",
-          kind: "STATE",
-          foundedYear: 1975,
-          websiteUrl: null,
-        },
-      ],
+      universities: [SELCUK, NO_COORDS],
     },
     {
       code: "06",
@@ -46,25 +65,77 @@ const geo: GeoResponseDto = {
     },
   ],
   universitySource: {
-    source: "YÖK",
-    sourceUrl: "https://www.yok.gov.tr",
-    verifiedAt: "2026-07-01T00:00:00.000Z",
+    source: "ÖSYM 2026 Kılavuzu",
+    sourceUrl: "https://www.osym.gov.tr",
+    verifiedAt: "2026-08-01T00:00:00.000Z",
   },
 };
 
-test("haritadan seçilen şehir ve kariyer alanı kaydedilir", async ({ page }) => {
+const programs: UniversityProgramsDto = {
+  university: SELCUK,
+  source: geo.universitySource,
+  programs: [
+    {
+      code: "108911205",
+      faculty: "TEKNOLOJİ FAKÜLTESİ",
+      name: "Bilgisayar Mühendisliği",
+      level: "LISANS",
+      durationYears: 4,
+      scoreType: "SAY",
+      quota: 69,
+      guideYear: 2026,
+      scores: [{ year: 2025, minScore: 411.79234, successRank: 85150 }],
+    },
+    {
+      code: "108911206",
+      faculty: "TEKNOLOJİ FAKÜLTESİ",
+      name: "Yeni Program",
+      level: "LISANS",
+      durationYears: 4,
+      scoreType: "SAY",
+      quota: 30,
+      guideYear: 2026,
+      // ~13% of the guide has no cutoff; the row must still render.
+      scores: [],
+    },
+  ],
+};
+
+const searchResult: GeoSearchResultDto = {
+  cities: [{ code: "42", name: "Konya", slug: "konya", region: "IC_ANADOLU" }],
+  universities: [],
+  programs: [
+    {
+      code: "108911205",
+      name: "Bilgisayar Mühendisliği",
+      faculty: "TEKNOLOJİ FAKÜLTESİ",
+      level: "LISANS",
+      universityId: SELCUK.id,
+      universityName: SELCUK.name,
+      cityCode: "42",
+      cityName: "Konya",
+    },
+  ],
+};
+
+/**
+ * There is no city `<select>` any more — the map and the search panel are the two ways in, and
+ * search is the one a keyboard can drive. Going through it here keeps the tests honest about the
+ * accessible path actually working.
+ */
+async function selectKonya(page: Page) {
+  await page.getByLabel("Üniversite, şehir veya bölüm ara…").fill("konya");
+  await page.getByRole("button", { name: "Konya", exact: true }).click();
+}
+
+test("şehir ve Puhu'nun alanı seçilip kaydedilir", async ({ page }) => {
   const api = await mockVisionApi(page);
   await page.goto("/hedef");
 
+  await selectKonya(page);
   await page
-    .getByLabel("Hedef şehir (isteğe bağlı)")
-    .selectOption({ label: "Konya" });
-
-  // Selecting a province fills the card — including the university list, because this user is YKS.
-  await expect(page.getByText("Selçuk Üniversitesi")).toBeVisible();
-  await expect(page.getByText("1 üniversite")).toBeVisible();
-
-  await page.getByRole("radio", { name: "Yazılım & Bilişim" }).click();
+    .getByLabel("Puhu'nun alanı")
+    .selectOption({ label: "Yazılım & Bilişim" });
   await page
     .getByRole("textbox", { name: "Hedefin" })
     .fill("Bilgisayar mühendisi olmak");
@@ -78,19 +149,65 @@ test("haritadan seçilen şehir ve kariyer alanı kaydedilir", async ({ page }) 
   });
 });
 
-test("üniversitesi olmayan şehirde kart boş liste yerine açıklama gösterir", async ({
+test("şehir seçilince üniversiteleri, üniversiteye girince bölümleri gösterir", async ({
   page,
 }) => {
   await mockVisionApi(page);
   await page.goto("/hedef");
 
-  await page
-    .getByLabel("Hedef şehir (isteğe bağlı)")
-    .selectOption({ label: "Ankara" });
+  await selectKonya(page);
 
-  await expect(
-    page.getByText("Bu şehirde kayıtlı üniversite yok."),
-  ).toBeVisible();
+  // The browse panel sits in the same sidebar as the form — no overlay to open.
+  await expect(page.getByText("Konya · 1 üniversite")).toBeVisible();
+  await page.getByRole("button", { name: SELCUK.name }).click();
+
+  await expect(page.getByText("TEKNOLOJİ FAKÜLTESİ")).toBeVisible();
+  // Quota is this year's, the cutoff is last year's — the row must not blur the two.
+  await expect(page.getByText("SAY · 2026 kontenjan 69 · 2025 taban 411.79")).toBeVisible();
+  // A program that never took a placement still appears, marked as such.
+  await expect(page.getByText("SAY · 2026 kontenjan 30 · Yerleşme yok")).toBeVisible();
+});
+
+test("üniversite hedef olarak seçilip kaydedilir", async ({ page }) => {
+  const api = await mockVisionApi(page);
+  await page.goto("/hedef");
+
+  await page.getByRole("textbox", { name: "Hedefin" }).fill("Mühendis olmak");
+  await selectKonya(page);
+
+  await page.getByRole("button", { name: SELCUK.name }).click();
+  await page.getByRole("button", { name: "Hedefim bu üniversite" }).click();
+
+  await page.getByRole("button", { name: "Kaydet" }).click();
+  await expect.poll(() => api.saved.length).toBe(1);
+  expect(api.saved[0]).toMatchObject({
+    targetCityCode: "42",
+    targetUniversityId: SELCUK.id,
+  });
+});
+
+test("üniversite pinleri ülke görünümünde, zoom gerekmeden çizilir", async ({
+  page,
+}) => {
+  await mockVisionApi(page);
+  await page.goto("/hedef");
+
+  // No zoom, no city selected: the pins are on the map from first paint. One per university that
+  // has a confirmed position — the coordinate-less one is listed but deliberately not pinned.
+  const pins = page.locator(".mentor-tr-map-pin");
+  await expect(pins).toHaveCount(1);
+
+  await selectKonya(page);
+  await expect(page.getByRole("button", { name: NO_COORDS.name })).toBeVisible();
+  await expect(pins).toHaveCount(1);
+});
+
+test("arama üniversite, şehir ve bölümde çalışır", async ({ page }) => {
+  await mockVisionApi(page);
+  await page.goto("/hedef");
+
+  await page.getByLabel("Üniversite, şehir veya bölüm ara…").fill("bilgisayar");
+  await expect(page.getByText("Selçuk Üniversitesi · Konya")).toBeVisible();
 });
 
 async function mockVisionApi(page: Page) {
@@ -103,7 +220,8 @@ async function mockVisionApi(page: Page) {
 
   await page.route("http://localhost:3001/v1/**", async (route) => {
     const request = route.request();
-    const path = new URL(request.url()).pathname;
+    const url = new URL(request.url());
+    const path = url.pathname;
     const method = request.method();
 
     if (method === "OPTIONS") return json(route, null, 204);
@@ -112,6 +230,12 @@ async function mockVisionApi(page: Page) {
     }
     if (method === "GET" && path === "/v1/users/me") return json(route, user);
     if (method === "GET" && path === "/v1/content/geo") return json(route, geo);
+    if (method === "GET" && path === "/v1/content/geo/search") {
+      return json(route, searchResult);
+    }
+    if (method === "GET" && path.endsWith("/programs")) {
+      return json(route, programs);
+    }
     // The shell renders inside the app chrome, whose notification drawer reads `.items` off this
     // response. A bare 204 here throws and takes the whole page down before the form ever mounts.
     if (method === "GET" && path === "/v1/notifications") {
@@ -136,8 +260,8 @@ async function mockVisionApi(page: Page) {
         careerGroup: "YAZILIM",
         motivation: null,
         aiNote: null,
-        createdAt: "2026-07-31T00:00:00.000Z",
-        updatedAt: "2026-07-31T00:00:00.000Z",
+        createdAt: "2026-08-01T00:00:00.000Z",
+        updatedAt: "2026-08-01T00:00:00.000Z",
       });
     }
     if (method === "POST" && path === "/v1/notifications/stream-token") {

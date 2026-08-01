@@ -35,6 +35,8 @@ export interface AiChatDto {
   contextArticleSlug?: string;
 }
 
+export interface CommunityCoachPlanTaskDto { [key: string]: unknown }
+
 export interface PlanDraftBodyDto {
   /** @maxLength 500 */
   note?: string;
@@ -1045,6 +1047,41 @@ export const aiChatControllerReply = async (aiChatDto: AiChatDto, options?: Requ
 
 
 
+export type aiChatControllerCreateCommunityPlanTaskResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type aiChatControllerCreateCommunityPlanTaskResponseSuccess = (aiChatControllerCreateCommunityPlanTaskResponse201) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerCreateCommunityPlanTaskResponse = (aiChatControllerCreateCommunityPlanTaskResponseSuccess)
+
+export const getAiChatControllerCreateCommunityPlanTaskUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coach/conversations/${id}/plan-tasks`
+}
+
+export const aiChatControllerCreateCommunityPlanTask = async (id: string,
+    communityCoachPlanTaskDto: CommunityCoachPlanTaskDto, options?: RequestInit): Promise<aiChatControllerCreateCommunityPlanTaskResponse> => {
+  
+  return http<aiChatControllerCreateCommunityPlanTaskResponse>(getAiChatControllerCreateCommunityPlanTaskUrl(id),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      communityCoachPlanTaskDto,)
+  }
+);}
+
+
+
 export type aiChatControllerReplyStreamResponse201 = {
   data: void
   status: 201
@@ -1871,6 +1908,72 @@ export const getGeoControllerGetGeoUrl = () => {
 export const geoControllerGetGeo = async ( options?: RequestInit): Promise<geoControllerGetGeoResponse> => {
   
   return http<geoControllerGetGeoResponse>(getGeoControllerGetGeoUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type geoControllerSearchResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type geoControllerSearchResponseSuccess = (geoControllerSearchResponse200) & {
+  headers: Headers;
+};
+;
+
+export type geoControllerSearchResponse = (geoControllerSearchResponseSuccess)
+
+export const getGeoControllerSearchUrl = () => {
+
+
+  
+
+  return `/v1/content/geo/search`
+}
+
+export const geoControllerSearch = async ( options?: RequestInit): Promise<geoControllerSearchResponse> => {
+  
+  return http<geoControllerSearchResponse>(getGeoControllerSearchUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type geoControllerGetUniversityProgramsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type geoControllerGetUniversityProgramsResponseSuccess = (geoControllerGetUniversityProgramsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type geoControllerGetUniversityProgramsResponse = (geoControllerGetUniversityProgramsResponseSuccess)
+
+export const getGeoControllerGetUniversityProgramsUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/content/universities/${id}/programs`
+}
+
+export const geoControllerGetUniversityPrograms = async (id: string, options?: RequestInit): Promise<geoControllerGetUniversityProgramsResponse> => {
+  
+  return http<geoControllerGetUniversityProgramsResponse>(getGeoControllerGetUniversityProgramsUrl(id),
   {      
     ...options,
     method: 'GET'
@@ -4924,6 +5027,39 @@ export const getForumDiscoveryControllerTagsUrl = () => {
 export const forumDiscoveryControllerTags = async ( options?: RequestInit): Promise<forumDiscoveryControllerTagsResponse> => {
   
   return http<forumDiscoveryControllerTagsResponse>(getForumDiscoveryControllerTagsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type forumDiscoveryControllerCoachBridgeViewResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumDiscoveryControllerCoachBridgeViewResponseSuccess = (forumDiscoveryControllerCoachBridgeViewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumDiscoveryControllerCoachBridgeViewResponse = (forumDiscoveryControllerCoachBridgeViewResponseSuccess)
+
+export const getForumDiscoveryControllerCoachBridgeViewUrl = (threadId: string,) => {
+
+
+  
+
+  return `/v1/forum/threads/${threadId}/coach-bridge`
+}
+
+export const forumDiscoveryControllerCoachBridgeView = async (threadId: string, options?: RequestInit): Promise<forumDiscoveryControllerCoachBridgeViewResponse> => {
+  
+  return http<forumDiscoveryControllerCoachBridgeViewResponse>(getForumDiscoveryControllerCoachBridgeViewUrl(threadId),
   {      
     ...options,
     method: 'GET'

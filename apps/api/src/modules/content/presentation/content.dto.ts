@@ -2,6 +2,7 @@ import { createZodDto } from "../../../common/validation/zod-dto";
 import {
   examFamilyParamSchema,
   examSlugParamSchema,
+  geoSearchQuerySchema,
   infoArticleSlugParamSchema,
   listInfoArticlesQuerySchema,
   listPublicHolidaysQuerySchema,
@@ -21,3 +22,5 @@ export class InfoArticleSlugParamDto extends createZodDto(infoArticleSlugParamSc
 export class ListPublicHolidaysQueryDto extends createZodDto(
   listPublicHolidaysQuerySchema,
 ) {}
+
+export class GeoSearchQueryDto extends createZodDto(geoSearchQuerySchema) {}

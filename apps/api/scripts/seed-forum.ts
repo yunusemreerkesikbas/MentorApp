@@ -29,6 +29,14 @@ const ZONES = [
   { slug: "kpss-soru-cevap", type: "QA", emoji: "❓", title: "Soru & Cevap", description: "Takıldığın soruyu sor, cevabını al." },
 ];
 
+const COACH_TAGS = [
+  { slug: "planlama", coachIntent: "PLAN", nameTr: "Planlama", nameEn: "Planning" },
+  { slug: "calisma-ipuclari", coachIntent: "STUDY_METHOD", nameTr: "Çalışma İpuçları", nameEn: "Study Tips" },
+  { slug: "sinav-stratejisi", coachIntent: "STRATEGY", nameTr: "Sınav Stratejisi", nameEn: "Exam Strategy" },
+  { slug: "motivasyon", coachIntent: "NEXT_STEP", nameTr: "Motivasyon", nameEn: "Motivation" },
+  { slug: "soru-cozumu", coachIntent: null, nameTr: "Soru Çözümü", nameEn: "Problem Solving" },
+] as const;
+
 const CHAT_MESSAGES = [
   "Bugün 4 saat matematik çalıştım, sonunda çıkarımlı bölünebilme mantığını oturttum 💪",
   "Arkadaşlar coğrafya bölge haritalarını nasıl ezberliyorsunuz? Aklımda kalmıyor bir türlü.",
@@ -61,14 +69,14 @@ const ANNOUNCEMENTS = [
 ];
 
 const QUESTIONS = [
-  { title: "Bölünebilme kurallarında 11'e bölünebilme nasıl uygulanır?", body: "11'e bölünebilme kuralını tam anlayamadım. Basamakları toplarken artı eksi mantığı nasıl işliyor, örnekle açıklayabilir misiniz?" },
-  { title: "Paragrafta ana düşünce ile yardımcı düşünceyi nasıl ayırt ederim?", body: "Sürekli yardımcı düşünceyi ana düşünce sanıyorum. Sizin kullandığınız pratik bir yöntem var mı?" },
-  { title: "Osmanlı'da Tanzimat Fermanı'nın en önemli sonucu nedir?", body: "Sınavda sık çıkıyor ama hangi maddesinin daha kritik olduğunu çıkaramıyorum." },
-  { title: "Vatandaşlıkta yasama dokunulmazlığı ile yasama sorumsuzluğu farkı?", body: "İkisi sürekli karışıyor. Kısa ve net bir ayrım kurabilir misiniz?" },
-  { title: "Geometride benzerlikte alan oranı neden karesi alınıyor?", body: "Kenar oranı k ise alan oranı neden k^2 oluyor, mantığını anlamak istiyorum." },
-  { title: "Coğrafyada Türkiye'nin matematik konumu neleri etkiler?", body: "Matematik konum ve özel konum ayrımını netleştiren bir örnek verebilir misiniz?" },
-  { title: "Deneme sınavında zaman yönetimi için öneriniz nedir?", body: "Matematiğe çok takılıp Türkçeye vakit kalmıyor. Nasıl bir sıra izlemeliyim?" },
-  { title: "Sözel mantık sorularında hız nasıl kazanılır?", body: "Tablo mu kuruyorsunuz, şema mı? En verimli yöntem hangisi?" },
+  { title: "Bölünebilme kurallarında 11'e bölünebilme nasıl uygulanır?", body: "11'e bölünebilme kuralını tam anlayamadım. Basamakları toplarken artı eksi mantığı nasıl işliyor, örnekle açıklayabilir misiniz?", tagSlug: "soru-cozumu" },
+  { title: "Paragrafta ana düşünce ile yardımcı düşünceyi nasıl ayırt ederim?", body: "Sürekli yardımcı düşünceyi ana düşünce sanıyorum. Sizin kullandığınız pratik bir yöntem var mı?", tagSlug: "calisma-ipuclari" },
+  { title: "Osmanlı'da Tanzimat Fermanı'nın en önemli sonucu nedir?", body: "Sınavda sık çıkıyor ama hangi maddesinin daha kritik olduğunu çıkaramıyorum.", tagSlug: "soru-cozumu" },
+  { title: "Vatandaşlıkta yasama dokunulmazlığı ile yasama sorumsuzluğu farkı?", body: "İkisi sürekli karışıyor. Kısa ve net bir ayrım kurabilir misiniz?", tagSlug: "soru-cozumu" },
+  { title: "Geometride benzerlikte alan oranı neden karesi alınıyor?", body: "Kenar oranı k ise alan oranı neden k^2 oluyor, mantığını anlamak istiyorum.", tagSlug: "soru-cozumu" },
+  { title: "Coğrafyada Türkiye'nin matematik konumu neleri etkiler?", body: "Matematik konum ve özel konum ayrımını netleştiren bir örnek verebilir misiniz?", tagSlug: "soru-cozumu" },
+  { title: "Deneme sınavında zaman yönetimi için öneriniz nedir?", body: "Matematiğe çok takılıp Türkçeye vakit kalmıyor. Nasıl bir sıra izlemeliyim?", tagSlug: "sinav-stratejisi" },
+  { title: "Sözel mantık sorularında hız nasıl kazanılır?", body: "Tablo mu kuruyorsunuz, şema mı? En verimli yöntem hangisi?", tagSlug: "calisma-ipuclari" },
 ];
 
 const COMMENTS = [
@@ -89,6 +97,16 @@ const COMMENTS = [
 const rand = (n: number) => Math.floor(Math.random() * n);
 const pick = <T,>(arr: T[]): T => arr[rand(arr.length)]!;
 const chance = (p: number) => Math.random() < p;
+const coachTagForChat = (body: string): string | null => {
+  const normalized = slugName(body);
+  if (normalized.includes("plan") || normalized.includes("hedef")) return "planlama";
+  if (normalized.includes("motivasyon") || normalized.includes("motive")) return "motivasyon";
+  if (normalized.includes("deneme") || normalized.includes("sure")) return "sinav-stratejisi";
+  if (normalized.includes("tekrar") || normalized.includes("ezber") || normalized.includes("calis") || normalized.includes("soru")) {
+    return "calisma-ipuclari";
+  }
+  return null;
+};
 /** Monday 00:00 UTC of the current week — matches CommunityService's leaderboard window. */
 const startOfWeekUtc = (now: Date): Date => {
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -201,6 +219,21 @@ async function main() {
       zoneId[z.slug] = res.rows[0]!.id;
     }
 
+    const tagId: Record<string, string> = {};
+    for (const tag of COACH_TAGS) {
+      const res = await c.query<{ id: string }>(
+        `insert into forum_tags (slug, name_tr, name_en, exam_type, coach_intent, is_active)
+         values ($1,$2,$3,'KPSS',$4,true)
+         on conflict (slug) do update set
+           name_tr = excluded.name_tr, name_en = excluded.name_en,
+           exam_type = excluded.exam_type, coach_intent = excluded.coach_intent,
+           is_active = true
+         returning id`,
+        [tag.slug, tag.nameTr, tag.nameEn, tag.coachIntent],
+      );
+      tagId[tag.slug] = res.rows[0]!.id;
+    }
+
     // 4) Membership: every active user in every zone (so any login sees the feed)
     const everyone = (await c.query<{ id: string }>("select id from users where status='ACTIVE'")).rows.map((r) => r.id);
     for (const z of ZONES) {
@@ -264,17 +297,29 @@ async function main() {
         await addPostLikes(commentId, 5);
       }
     };
+    const addThreadTag = async (threadId: string, tagSlug: string | null) => {
+      if (!tagSlug || !tagId[tagSlug]) return;
+      await c.query(
+        `insert into forum_thread_tags (thread_id, tag_id)
+         values ($1,$2) on conflict do nothing`,
+        [threadId, tagId[tagSlug]],
+      );
+    };
 
     const seedFeed = async (slug: string, bodies: string[], count: number, opts: { authorPool?: string[]; likeMax: number; commentMax: number }) => {
       for (let i = 0; i < count; i++) {
         const at = someTimeAgo(20);
         const author = pick(opts.authorPool ?? seedUserIds);
+        const body = pick(bodies);
         const res = await c.query<{ id: string }>(
           `insert into forum_threads (zone_id, author_id, body, status, created_at, updated_at)
            values ($1,$2,$3,'OPEN',$4,$4) returning id`,
-          [zoneId[slug], author, pick(bodies), at.toISOString()],
+          [zoneId[slug], author, body, at.toISOString()],
         );
         stats.threads++;
+        if (slug !== "kpss-duyurular") {
+          await addThreadTag(res.rows[0]!.id, coachTagForChat(body));
+        }
         await addComments(res.rows[0]!.id, at, opts.commentMax);
         await addLikes(res.rows[0]!.id, opts.likeMax);
       }
@@ -288,7 +333,8 @@ async function main() {
 
     // 6) QA questions (title + body) with a few answers ------------------------
     for (let i = 0; i < 14; i++) {
-      const q = pick(QUESTIONS);
+      // Guarantee every curated example once; remaining rows add natural repetition/volume.
+      const q = i < QUESTIONS.length ? QUESTIONS[i]! : pick(QUESTIONS);
       const at = someTimeAgo(20);
       const res = await c.query<{ id: string }>(
         `insert into forum_threads (zone_id, author_id, title, body, status, created_at, updated_at)
@@ -296,6 +342,7 @@ async function main() {
         [zoneId["kpss-soru-cevap"], pick(seedUserIds), q.title, q.body, at.toISOString()],
       );
       stats.threads++;
+      await addThreadTag(res.rows[0]!.id, q.tagSlug);
       if (chance(0.8)) await addComments(res.rows[0]!.id, at, 4); // answers reuse forum_posts
       await addLikes(res.rows[0]!.id, 5);
     }
@@ -327,10 +374,15 @@ async function main() {
        values ('economy.enabled', 'true'::jsonb, now())
        on conflict (key) do update set value = 'true'::jsonb, updated_at = now()`,
     );
+    await c.query(
+      `insert into config_overrides (key, value, updated_at)
+       values ('forum.coach_bridge.enabled', 'true'::jsonb, now())
+       on conflict (key) do update set value = 'true'::jsonb, updated_at = now()`,
+    );
 
     await c.query("COMMIT");
     console.log("Forum seed complete:", JSON.stringify(stats, null, 2));
-    console.log("economy.enabled override set → RESTART the api (or toggle in admin) for it to apply.");
+    console.log("economy.enabled + forum.coach_bridge.enabled overrides set → RESTART the api (or toggle in admin) for them to apply.");
   } catch (err) {
     await c.query("ROLLBACK");
     throw err;
