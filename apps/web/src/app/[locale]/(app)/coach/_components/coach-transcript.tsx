@@ -8,11 +8,14 @@ import Copy from "lucide-react/dist/esm/icons/copy.mjs";
 import Check from "lucide-react/dist/esm/icons/check.mjs";
 import CalendarDays from "lucide-react/dist/esm/icons/calendar-days.mjs";
 import { Button, DataCard, Skeleton, SkeletonGroup } from "@mentor/ui";
-import type {
-  CoachConversationOriginDto,
-  CoachPersonalizationDto,
-  CountdownDto,
-  ForumCoachBridgeView,
+import {
+  CoachActionStatus,
+  type CoachActionStatus as CoachActionStatusValue,
+  type CoachActionDto,
+  type CoachConversationOriginDto,
+  type CoachPersonalizationDto,
+  type CountdownDto,
+  type ForumCoachBridgeView,
 } from "@mentor/types";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw.mjs";
 import { Link } from "@/i18n/navigation";
@@ -29,6 +32,7 @@ import { CoachReplyBody } from "./coach-reply-body";
 import { ExpandableBubbleContent } from "./expandable-bubble-content";
 import { CommunitySourceCard } from "./community-source-card";
 import { CoachPersonalizationContext } from "./coach-personalization-context";
+import { CoachActionCard } from "./coach-action-card";
 
 /** px from bottom — closer than this counts as “at bottom”. */
 const NEAR_BOTTOM_PX = 80;
@@ -44,6 +48,8 @@ export interface ChatMessage {
   suggestedTask?: { title: string; subject: string | null };
   /** PII-minimal context snapshot available when this reply was generated. */
   personalization?: CoachPersonalizationDto;
+  action?: CoachActionDto;
+  actionStatus?: CoachActionStatusValue;
   /** 👍 = 1, 👎 = -1, null = none (COACH rows only; undefined on optimistic/streaming rows). */
   feedback?: number | null;
 }
@@ -58,6 +64,7 @@ export function CoachTranscript({
   emptyContent,
   onFeedback,
   onRegenerate,
+  onActionStatusChange,
   streamingMessageId = null,
   conversationOrigin,
   communitySource,
@@ -82,6 +89,7 @@ export function CoachTranscript({
   onFeedback?: (id: string, value: 1 | -1 | null) => void;
   /** Regenerate the LAST coach reply (spends like a normal message). Undefined hides the control. */
   onRegenerate?: () => void;
+  onActionStatusChange?: (id: string, status: CoachActionStatusValue) => void;
   /** Id of the coach row currently receiving SSE deltas (null when idle). */
   streamingMessageId?: string | null;
   conversationOrigin: CoachConversationOriginDto | null;
@@ -284,7 +292,7 @@ export function CoachTranscript({
             {m.officialCountdown ? (
               <OfficialCountdownCard countdown={m.officialCountdown} />
             ) : null}
-            {m.suggestedTask ? (
+            {m.suggestedTask && !m.action ? (
               <SuggestedTaskCard
                 task={m.suggestedTask}
                 className="flex justify-start"
@@ -302,6 +310,16 @@ export function CoachTranscript({
                 }
               />
             ) : null}
+            {m.action && m.actionStatus && onActionStatusChange ? (
+              <div className="flex justify-start">
+                <CoachActionCard
+                  messageId={m.id}
+                  action={m.action}
+                  status={m.actionStatus}
+                  onStatusChange={(status) => onActionStatusChange(m.id, status)}
+                />
+              </div>
+            ) : null}
             {m.sources ? <SourceChips sources={m.sources} /> : null}
             {onFeedback && streamingMessageId !== m.id ? (
               <FeedbackRow
@@ -309,7 +327,12 @@ export function CoachTranscript({
                 onRate={(v) => onFeedback(m.id, v)}
                 text={m.text}
                 onRegenerate={
-                  m.id === lastCoachId && !busy ? onRegenerate : undefined
+                  m.id === lastCoachId &&
+                  !busy &&
+                  m.actionStatus !== CoachActionStatus.ACCEPTED &&
+                  m.actionStatus !== CoachActionStatus.COMPLETED
+                    ? onRegenerate
+                    : undefined
                 }
               />
             ) : null}

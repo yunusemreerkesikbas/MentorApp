@@ -16,6 +16,7 @@ export type SessionPresetId = "25_5" | "50_10" | "custom";
 
 export const PlanTaskOriginType = {
   COMMUNITY_COACH: "COMMUNITY_COACH",
+  AI_COACH: "AI_COACH",
 } as const;
 export type PlanTaskOriginType =
   (typeof PlanTaskOriginType)[keyof typeof PlanTaskOriginType];
@@ -29,7 +30,15 @@ export interface CommunityCoachPlanTaskOriginDto {
   zoneType: "CHAT" | "QA";
 }
 
-export type PlanTaskOriginDto = CommunityCoachPlanTaskOriginDto;
+/** User-confirmed task proposed by a persisted AI mentor message. */
+export interface AiCoachPlanTaskOriginDto {
+  type: typeof PlanTaskOriginType.AI_COACH;
+  coachMessageId: string;
+}
+
+export type PlanTaskOriginDto =
+  | CommunityCoachPlanTaskOriginDto
+  | AiCoachPlanTaskOriginDto;
 
 /** Projection of a `plan_tasks` row. */
 export interface PlanTaskDto {

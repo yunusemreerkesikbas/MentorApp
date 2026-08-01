@@ -11,6 +11,7 @@ import { TodayService } from "./application/today.service";
 import { VisionService } from "./application/vision.service";
 import { WeeklyReviewService } from "./application/weekly-review.service";
 import { CoachingErasureService } from "./application/coaching-erasure.service";
+import { CoachEvidenceService } from "./application/coach-evidence.service";
 import { CONTENT_PORT } from "./domain/content.port";
 import { CoachingQueryAdapter } from "./infrastructure/coaching-query.adapter";
 import { ContentServiceAdapter } from "./infrastructure/content-service.adapter";
@@ -52,6 +53,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     VisionService,
     WeeklyReviewService,
     CoachingErasureService,
+    CoachEvidenceService,
     CoachingErasureRepository,
     PlanTaskRepository,
     StudySessionRepository,
@@ -71,6 +73,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
   exports: [
     COACHING_QUERY_PORT,
     CoachingErasureService,
+    CoachEvidenceService,
     DailyQuestSignalService,
     MockExamService,
     MoodService,

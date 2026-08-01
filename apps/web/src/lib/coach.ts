@@ -11,8 +11,17 @@ import type {
   PlanTaskDto,
   SessionReflectionDto,
   WeeklyReviewNarrationDto,
+  CoachProfileDto,
+  CoachMemoryFactDto,
+  CoachActionResultDto,
 } from "@mentor/types";
-import type { CoachPlanAdaptationInput, CreatePlanTaskInput } from "@mentor/validation";
+import type {
+  CoachPlanAdaptationInput,
+  CreatePlanTaskInput,
+  CoachProfilePatchInput,
+  CoachMemoryFactPatchInput,
+  CoachActionDecisionInput,
+} from "@mentor/validation";
 import { http, httpRaw, throwApiClientError } from "@mentor/api-client";
 
 /**
@@ -256,6 +265,56 @@ export async function fetchCoachMemory(): Promise<CoachMemoryDto | null> {
 /** Delete the legacy saved summary (user-controlled, KVKK). */
 export async function clearCoachMemory(): Promise<void> {
   await http<void>("/v1/coach/memory", { method: "DELETE" });
+}
+
+export async function fetchCoachProfile(): Promise<CoachProfileDto> {
+  return (await http<CoachProfileDto>("/v1/coach/profile")) as CoachProfileDto;
+}
+
+export async function patchCoachProfile(
+  input: CoachProfilePatchInput,
+): Promise<CoachProfileDto> {
+  return (await http<CoachProfileDto>("/v1/coach/profile", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  })) as CoachProfileDto;
+}
+
+export async function listCoachMemories(
+  page = 1,
+  pageSize = 20,
+): Promise<Paginated<CoachMemoryFactDto>> {
+  return (await http<Paginated<CoachMemoryFactDto>>(
+    `/v1/coach/memories?page=${page}&pageSize=${pageSize}`,
+  )) as Paginated<CoachMemoryFactDto>;
+}
+
+export async function updateCoachMemory(
+  id: string,
+  input: CoachMemoryFactPatchInput,
+): Promise<CoachMemoryFactDto> {
+  return (await http<CoachMemoryFactDto>(`/v1/coach/memories/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  })) as CoachMemoryFactDto;
+}
+
+export async function forgetCoachMemory(id: string): Promise<void> {
+  await http<void>(`/v1/coach/memories/${id}`, { method: "DELETE" });
+}
+
+export async function clearCoachMemories(): Promise<void> {
+  await http<void>("/v1/coach/memories", { method: "DELETE" });
+}
+
+export async function decideCoachAction(
+  messageId: string,
+  input: CoachActionDecisionInput,
+): Promise<CoachActionResultDto> {
+  return (await http<CoachActionResultDto>(
+    `/v1/coach/messages/${messageId}/action`,
+    { method: "POST", body: JSON.stringify(input) },
+  )) as CoachActionResultDto;
 }
 
 /** Premium proactive daily greeting on the /coach hub; 403 for free — caller should stay silent. */

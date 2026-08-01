@@ -22,7 +22,9 @@ function buildBody(model: string, input: LlmCompleteInput): Record<string, unkno
     instructions: input.system,
     input: [...(input.history ?? []), { role: "user", content: input.user }],
     max_output_tokens: AI_MAX_OUTPUT_TOKENS,
-    temperature: AI_TEMPERATURE,
+    // GPT-5 reasoning models reject non-default sampling parameters. Keep the
+    // established temperature for non-reasoning chat models only.
+    ...(!model.startsWith("gpt-5") ? { temperature: AI_TEMPERATURE } : {}),
   };
 }
 

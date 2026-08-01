@@ -10,6 +10,9 @@ import {
   photoUploadUrlSchema,
   sessionReflectionSchema,
   weeklyReviewNarrationSchema,
+  coachProfilePatchSchema,
+  coachMemoryFactPatchSchema,
+  coachActionDecisionSchema,
 } from "@mentor/validation";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { createZodDto } from "../../../common/validation/zod-dto";
@@ -60,6 +63,45 @@ export class ListCoachMessagesQueryDto extends createZodDto(
 ) {}
 /** Body for PATCH /v1/coach/messages/:id/feedback. */
 export class CoachFeedbackDto extends createZodDto(coachFeedbackSchema) {}
+export class CoachProfilePatchDto extends createZodDto(
+  coachProfilePatchSchema,
+) {
+  @ApiPropertyOptional({
+    enum: ["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "SKIPPED"],
+  })
+  override calibrationStatus?:
+    | "NOT_STARTED"
+    | "IN_PROGRESS"
+    | "COMPLETED"
+    | "SKIPPED";
+
+  @ApiPropertyOptional({ enum: ["PENDING", "GRANTED", "DECLINED"] })
+  override memoryConsent?: "PENDING" | "GRANTED" | "DECLINED";
+
+  @ApiPropertyOptional({
+    enum: ["EMOTIONAL", "BALANCED", "ACTION"],
+    nullable: true,
+  })
+  override supportPreference?: "EMOTIONAL" | "BALANCED" | "ACTION" | null;
+
+  @ApiPropertyOptional({
+    enum: ["GENTLE", "BALANCED", "DIRECT"],
+    nullable: true,
+  })
+  override directnessPreference?: "GENTLE" | "BALANCED" | "DIRECT" | null;
+}
+export class CoachMemoryFactPatchDto extends createZodDto(
+  coachMemoryFactPatchSchema,
+) {
+  @ApiProperty({ minLength: 1, maxLength: 80 })
+  override value!: string;
+}
+export class CoachActionDecisionDto extends createZodDto(
+  coachActionDecisionSchema,
+) {
+  @ApiProperty({ enum: ["ACCEPT", "CANCEL"] })
+  override decision!: "ACCEPT" | "CANCEL";
+}
 export class PhotoUploadUrlDto extends createZodDto(photoUploadUrlSchema) {}
 export class CategorizePhotoDto extends createZodDto(categorizePhotoSchema) {}
 export class GhostNarrationBodyDto extends createZodDto(ghostNarrationSchema) {}

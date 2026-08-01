@@ -49,6 +49,7 @@
   "PAYMENT_REFUND_EXCEEDS_CHARGE": "İade tutarı, kalan iade edilebilir tutarı aşıyor.",
   "AI_DISABLED": "AI özelliği şu anda kullanılamıyor.",
   "AI_PROVIDER_ERROR": "AI sağlayıcısına ulaşılamadı. Lütfen daha sonra tekrar dene.",
+  "AI_COACH_CONTEXT_STALE": "Bu yanıtın dayandığı kaynak artık mevcut değil. Güncel bağlamla yeni bir mesaj gönder.",
   "AI_RATE_LIMITED": "Günlük AI mesaj limitine ulaştın. Lütfen yarın tekrar dene.",
   "AI_PLAN_ADAPTATION_NOT_APPLICABLE": "Bu sinyal artık plan uyarlaması için uygun değil. Plan ekranından yeniden hazırlayabilirsin.",
   "AI_BUDGET_EXCEEDED": "AI özellikleri şu anda geçici olarak kullanılamıyor. Lütfen daha sonra tekrar dene.",

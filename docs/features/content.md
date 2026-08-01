@@ -293,3 +293,13 @@ pnpm --filter @mentor/api-client generate
   **Gotcha:** `createZodDto` Swagger metadata taşımadığı için orval query parametrelerini üretmiyor
   (`listExams`, `listArticles` de aynı). Arama bu yüzden düz `fetch` ile çağrılır.
   İlgili: `geo.controller.ts`, `geo.service.spec.ts`, `packages/validation/src/content.ts`.
+
+- **Geo arama: üniversite hit'ine şehir bağlamı (2026-08-01)** — `GeoSearchResultDto.universities`
+  artık `UniversitySearchHitDto` (`UniversityDto` + `cityCode` + `cityName`). Program hit'leriyle
+  aynı gerekçe: arama sonuçları bağlam dışı; web/mobile şehir için tam geo grafiği tersine
+  aramamalı. Repo `searchUniversities` city join'i yapar. Nested `CityDto.universities` hâlâ
+  düz `UniversityDto` (parent şehir verir).
+  **Usage:** FE/mobile `hit.cityCode` / `hit.cityName` kullanır; `locateUniversity(cities, id)`
+  yalnızca program hit'inden pin için tam kampüs DTO'su lazımsa kalır.
+  İlgili: `packages/types/src/geo.ts`, `geo.repository.ts`, `geo.service.ts`,
+  `apps/web/.../turkey-map/map-browser.tsx`.

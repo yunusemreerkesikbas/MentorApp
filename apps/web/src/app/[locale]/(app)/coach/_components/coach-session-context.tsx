@@ -91,6 +91,8 @@ function toChatMessages(
     suggestedTask: m.suggestedTask,
     officialCountdown: m.officialCountdown,
     personalization: m.personalization,
+    action: m.action,
+    actionStatus: m.actionStatus,
   }));
 }
 

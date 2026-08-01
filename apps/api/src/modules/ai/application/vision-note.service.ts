@@ -1,5 +1,5 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
-import { I18nContext } from "nestjs-i18n";
+import { I18nContext, I18nService } from "nestjs-i18n";
 import type { VisionNoteDto } from "@mentor/types";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -32,6 +32,7 @@ export class VisionNoteService {
     private readonly entitlement: EntitlementService,
     private readonly vision: VisionService,
     private readonly budget: AiBudgetGuard,
+    private readonly i18n: I18nService,
   ) {}
 
   async note(user: RequestUser): Promise<VisionNoteDto> {
@@ -58,12 +59,21 @@ export class VisionNoteService {
       return { note: board.aiNote, model: "cache" };
     }
 
-    const ctx = await this.context.build(user.id);
+    const [ctx, names] = await Promise.all([
+      this.context.build(user.id),
+      this.vision.resolveTargetNames(board),
+    ]);
     const { system, user: userMsg } = buildVisionNotePrompt(
       ctx,
-      board.goalTitle,
-      board.targetCity,
-      board.motivation,
+      {
+        goalTitle: board.goalTitle,
+        cityName: names.cityName,
+        universityName: names.universityName,
+        careerLabel: board.careerGroup
+          ? this.careerLabel(board.careerGroup)
+          : null,
+        motivation: board.motivation,
+      },
       locale,
     );
 
@@ -82,5 +92,16 @@ export class VisionNoteService {
     await this.vision.setAiNote(user.id, result.text, result.model, locale);
 
     return { note: result.text, model: result.model };
+  }
+
+  /**
+   * Career enum → localized label, reusing the table `coach-evidence` already reads. The prompt
+   * should say "Yazılım ve Bilişim", not "YAZILIM".
+   */
+  private careerLabel(group: string): string {
+    return this.i18n.translate(
+      `coaching.coachEvidence.values.careerGroup.${group}`,
+      { lang: I18nContext.current()?.lang },
+    ) as unknown as string;
   }
 }

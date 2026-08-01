@@ -66,7 +66,7 @@ export class OpenAiVisionAdapter implements VisionPort {
           ],
           text: { format: { type: "json_object" } },
           // Same bounds as the Gemini vision adapter (§7 cost cap).
-          temperature: 0.1,
+          ...(!model.startsWith("gpt-5") ? { temperature: 0.1 } : {}),
           max_output_tokens: 128,
         }),
       });

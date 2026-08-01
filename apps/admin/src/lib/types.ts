@@ -226,6 +226,13 @@ export interface AdminCoachFeedback {
     rated: number;
     satisfactionRate: number | null;
     downrated: { id: string; userId: string; question: string | null; reply: string; createdAt: string }[];
+    breakdowns: Record<"strategyVersion" | "intent" | "tone" | "actionStatus", {
+        value: string;
+        up: number;
+        down: number;
+        rated: number;
+        satisfactionRate: number | null;
+    }[]>;
     generatedAt: string;
 }
 

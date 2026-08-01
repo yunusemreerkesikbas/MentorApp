@@ -29,13 +29,20 @@ Forum doesn't know its listeners → a new reaction = a new listener, without to
 Internally NestJS `EventEmitter`; moves to a queue if modules split out (same code).
 
 ## AI coach architecture
-- **Context injection, not training.** Single model; personalization = injecting the user's structured
-  summary into the prompt on every reply.
+- **Context injection, not training.** A deterministic `CoachTurnPlanner` selects intent, tone,
+  at most three verified facts and at most one backend action; the selected model only writes the
+  visible mentor response.
 - **Flow:** raw event → Postgres (RLS) → rule-engine summary/metrics (cheap) → **Context Builder**
   (PII-minimal structured summary) → LLM (no-training) [+ pgvector RAG knowledge center].
-- **Cross-thread memory is disabled.** Existing `coach_memory` rows and GET/DELETE surfaces remain
-  only for backward compatibility and the user's deletion right; summaries are not generated or
-  injected into prompts.
+- **Cross-thread memory is explicit and structured.** `coach_profiles` stores consent and tone
+  preferences; `coach_memory_facts` stores only allowlisted normalized facts. Chat-derived facts
+  reference their source message and cascade with it. Legacy `coach_memory` remains inactive and
+  exists only for backward compatibility/deletion.
+- **Module seam:** AI never queries coaching tables. `CoachEvidenceService` exposes aggregate,
+  PII-minimal evidence; approved mutations call Coaching public services. Task-completion events
+  close the action feedback loop without a cross-module table write.
+- **Provider portability:** the persona and decision layer are provider-neutral behind `LlmPort`.
+  Every selected model/provider must pass the same streaming, marker-hygiene, safety and persona evals.
 - **Cost (§7):** hybrid (rule engine handles daily touch ~0) + model tiering + cache + rate-limit.
   Free = no LLM; premium = fair-use.
 

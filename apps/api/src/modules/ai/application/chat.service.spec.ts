@@ -56,6 +56,7 @@ describe("ChatService coin refund", () => {
   let budgetAssert: ReturnType<typeof vi.fn>;
   let resolveForCoach: ReturnType<typeof vi.fn>;
   let tryGetBridge: ReturnType<typeof vi.fn>;
+  let getRequestContext: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     llmComplete = vi.fn();
@@ -90,12 +91,15 @@ describe("ChatService coin refund", () => {
       tagName: "Planlama",
     }));
     tryGetBridge = vi.fn(async () => null);
+    getRequestContext = vi.fn(async () => null);
     const config = {
       get: vi.fn(async (key: string) => {
         if (key === FeatureFlag.AI_ENABLED) return true;
         if (key === FeatureFlag.ECONOMY_ENABLED) return true;
         if (key === "economy.coin.ai_chat_cost") return 5;
         if (key === "ai.chat.free_coin_daily_limit") return 5;
+        if (key === "ai.coach.history_max_messages") return 10;
+        if (key === "ai.coach.history_max_characters") return 6_000;
         return 0;
       }),
     };
@@ -136,6 +140,7 @@ describe("ChatService coin refund", () => {
         updateCoachReply,
         listPagedByConversation,
         setFeedback: vi.fn(),
+        getRequestContext,
       } as never,
       {
         isOwned,
@@ -1061,6 +1066,33 @@ describe("ChatService coin refund", () => {
       createdAt: "t2",
     },
   ];
+
+  it("blocks regenerate after an action was accepted", async () => {
+    lastN.mockResolvedValue([
+      TAIL[0],
+      { ...TAIL[1], actionStatus: "ACCEPTED" },
+    ]);
+    const consume = async () => {
+      for await (const event of service.regenerateStream(USER, CONV_ID)) void event;
+    };
+    await expect(consume()).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(budgetAssert).not.toHaveBeenCalled();
+    expect(llmCompleteStream).not.toHaveBeenCalled();
+  });
+
+  it("fails with stale context before spend when a referenced mock exam disappeared", async () => {
+    lastN.mockResolvedValue(TAIL);
+    getRequestContext.mockResolvedValue({ mockExamId: MOCK_EXAM_ID });
+    getMockExam.mockRejectedValue(new Error("missing"));
+    const consume = async () => {
+      for await (const event of service.regenerateStream(USER, CONV_ID)) void event;
+    };
+    await expect(consume()).rejects.toMatchObject({
+      code: "AI_COACH_CONTEXT_STALE",
+    });
+    expect(budgetAssert).not.toHaveBeenCalled();
+    expect(spend).not.toHaveBeenCalled();
+  });
 
   it("regenerate overwrites the coach row in place — no new exchange, no memory trigger", async () => {
     lastN.mockResolvedValue(TAIL);

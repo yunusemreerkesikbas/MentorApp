@@ -30,7 +30,11 @@ import {
   TODAY_PLAN_PENDING_MAX,
   type TodayPlanSummary,
 } from "../domain/coaching.constants";
-import { CoachingEventTopic, DailyPlanCompleted } from "../domain/coaching.events";
+import {
+  CoachingEventTopic,
+  DailyPlanCompleted,
+  PlanTaskCompleted,
+} from "../domain/coaching.events";
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
 import { PlanTaskRepository } from "../infrastructure/plan-task.repository";
 import { toPlanTaskDto } from "./coaching.mappers";
@@ -134,6 +138,12 @@ export class PlanService {
     });
   }
 
+  getAiCoachOutcomeSummary(userId: string) {
+    return withUserContext(this.db, { userId }, (tx) =>
+      this.tasks.aiCoachOutcomeSummary(tx, userId),
+    );
+  }
+
   /**
    * AI-owned entry point for a user-confirmed task from a community-origin conversation.
    * The AI module validates conversation ownership and forum visibility before calling this method.
@@ -163,6 +173,33 @@ export class PlanService {
           intent: origin.intent,
           zoneType: origin.zoneType,
         },
+      });
+      return toPlanTaskDto(row);
+    });
+  }
+
+  /** W3 public seam: persist one explicitly user-approved AI mentor task, idempotent per message. */
+  async createFromAiCoach(
+    userId: string,
+    input: CreatePlanTaskInput,
+    coachMessageId: string,
+  ): Promise<PlanTaskDto> {
+    const taskDate = input.taskDate ?? todayIso();
+    this.assertTaskDateMutable(taskDate);
+    return withUserContext(this.db, { userId }, async (tx) => {
+      await this.tasks.acquireUserLock(tx, userId);
+      const row = await this.tasks.createFromAiCoach(tx, {
+        userId,
+        taskDate,
+        title: input.title,
+        subject: input.subject ?? null,
+        startTime: input.startTime ?? null,
+        endTime: input.endTime ?? null,
+        description: input.description ?? null,
+        ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
+        originType: "AI_COACH",
+        originRefId: coachMessageId,
+        originMeta: { coachMessageId },
       });
       return toPlanTaskDto(row);
     });
@@ -350,6 +387,7 @@ export class PlanService {
 
   async update(userId: string, id: string, input: UpdatePlanTaskInput): Promise<PlanTaskDto> {
     let planCompleted: number | null = null;
+    let completedTaskId: string | null = null;
     const result = await withUserContext(this.db, { userId }, async (tx) => {
       await this.tasks.acquireUserLock(tx, userId);
       const existing = await this.tasks.findById(tx, userId, id);
@@ -374,11 +412,20 @@ export class PlanService {
           const total = await this.tasks.countTotal(tx, userId, existing.taskDate);
           if (total > 0 && doneCount === total) planCompleted = total;
         }
+        if (input.status === "DONE" && existing.status !== "DONE") {
+          completedTaskId = existing.id;
+        }
       }
       return toPlanTaskDto(updated!);
     });
     if (planCompleted !== null) {
       this.events.emit(CoachingEventTopic.PLAN_COMPLETED, new DailyPlanCompleted(userId, planCompleted));
+    }
+    if (completedTaskId) {
+      this.events.emit(
+        CoachingEventTopic.PLAN_TASK_COMPLETED,
+        new PlanTaskCompleted(userId, completedTaskId),
+      );
     }
     return result;
   }

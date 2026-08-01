@@ -2,7 +2,19 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { ConfigService } from "@nestjs/config";
-import type { GhostComparisonDto, WeeklyReviewDto } from "@mentor/types";
+import {
+  CoachActionType,
+  CoachEvidenceType,
+  CoachIntent,
+  CoachMemoryFactKey,
+  CoachMemoryFactSource,
+  CoachTone,
+  CoachTurnMode,
+  type CoachMemoryFactDto,
+  type CoachUsedEvidenceDto,
+  type GhostComparisonDto,
+  type WeeklyReviewDto,
+} from "@mentor/types";
 import { config as loadEnv } from "dotenv";
 import { beforeAll, describe, expect, it } from "vitest";
 
@@ -19,6 +31,11 @@ import {
 import { parsePlanDraft } from "../../src/modules/ai/domain/plan-draft";
 import { hasSeriousDistressSignal } from "../../src/modules/ai/domain/serious-distress";
 import { extractReplyMarkers } from "../../src/modules/ai/domain/suggested-task";
+import {
+  COACH_STRATEGY_VERSION,
+  type CoachTurnPlan,
+} from "../../src/modules/ai/domain/coach-turn-planner";
+import { buildMentorV2Prompt } from "../../src/modules/ai/domain/mentor-v2-prompt";
 import { buildVisionNotePrompt } from "../../src/modules/ai/domain/ai.constants";
 import { buildWeeklyReviewPrompt } from "../../src/modules/ai/domain/weekly-review-prompt";
 import { OpenAiLlmAdapter } from "../../src/modules/ai/infrastructure/adapters/openai-llm.adapter";
@@ -33,6 +50,7 @@ loadEnv({ path: resolve(process.cwd(), ".env") });
 
 const TODAY = "2026-07-16";
 const REPORT_PATH = resolve(process.cwd(), "eval-results", "latest.md");
+const EVAL_MODEL = process.env.OPENAI_EVAL_MODEL ?? "gpt-5";
 const context: CoachContext = {
   examType: "KPSS",
   moodLevel: 2,
@@ -140,6 +158,92 @@ function markerChecks(
   };
 }
 
+function mentorReplyChecks(
+  raw: string,
+  options: {
+    maxSentences: number;
+    requiredPatterns?: RegExp[];
+    forbiddenPatterns?: RegExp[];
+    requireTask?: boolean;
+  },
+): EvalCheck[] {
+  const parsed = extractReplyMarkers(raw);
+  const taskMarkers = raw.match(/<<TASK/g)?.length ?? 0;
+  return [
+    ...evaluateText(parsed.text, {
+      maxSentences: options.maxSentences,
+      requiredPatterns: options.requiredPatterns,
+      forbiddenPatterns: [
+        /(?:öğrencim|kanka|dear student|buddy)/iu,
+        /[\w.+-]+@[\w.-]+\.[a-z]{2,}/iu,
+        /(?:\+?90\s*)?(?:0\s*)?5\d{2}(?:[\s.-]*\d{3}){2}/u,
+        ...(options.forbiddenPatterns ?? []),
+      ],
+    }),
+    result(
+      "mentor-marker-hygiene",
+      !/<<(?:TASK|FOLLOWUP|MEMORY)/u.test(parsed.text),
+      "no internal marker is visible after backend extraction",
+    ),
+    result(
+      "single-action-boundary",
+      taskMarkers <= 1,
+      `${taskMarkers} task marker(s) emitted`,
+    ),
+    result(
+      "required-action",
+      !options.requireTask || parsed.task != null,
+      parsed.task ? `task extracted: ${parsed.task.title}` : "required task missing",
+    ),
+  ];
+}
+
+function evidence(
+  type: CoachEvidenceType,
+  summary: string,
+): CoachUsedEvidenceDto {
+  return { type, summary, observedAt: "2026-08-01T09:00:00.000Z" };
+}
+
+function mentorEvalPrompt(input: {
+  locale: "tr" | "en";
+  user: string;
+  intent: CoachIntent;
+  tone: CoachTone;
+  evidence?: CoachUsedEvidenceDto[];
+  allowedAction?: CoachTurnPlan["allowedAction"];
+  mode?: CoachTurnMode;
+  memories?: CoachMemoryFactDto[];
+}): { system: string; user: string } {
+  const turn: CoachTurnPlan = {
+    strategyVersion: COACH_STRATEGY_VERSION,
+    intent: input.intent,
+    tone: input.tone,
+    mode: input.mode ?? CoachTurnMode.ANSWER,
+    usedEvidence: input.evidence ?? [],
+    allowedAction: input.allowedAction ?? null,
+    policy: {
+      maxSentences: input.tone === CoachTone.GENTLE ? 4 : 5,
+      humor: input.tone === CoachTone.CELEBRATORY ? "LIGHT" : "NONE",
+      directness:
+        input.tone === CoachTone.GENTLE
+          ? "LOW"
+          : input.tone === CoachTone.DIRECT
+            ? "HIGH"
+            : "MEDIUM",
+    },
+  };
+  return {
+    system: buildMentorV2Prompt({
+      locale: input.locale,
+      turn,
+      memories: input.memories ?? [],
+      memoryEnabled: Boolean(input.memories?.length),
+    }),
+    user: input.user,
+  };
+}
+
 type EvalScenario = {
   id: string;
   evaluate(raw: string): EvalCheck[];
@@ -185,6 +289,15 @@ const visionPrompt = buildVisionNotePrompt(
   "Daha istikrarlı bir hayat kurmak",
 );
 const weeklyPrompt = buildWeeklyReviewPrompt(weeklyReview, "tr");
+const stalePriorityMemory: CoachMemoryFactDto = {
+  id: "memory-priority",
+  key: CoachMemoryFactKey.PRIORITY_SUBJECT,
+  value: "Mathematics",
+  source: CoachMemoryFactSource.CHAT,
+  expiresAt: "2026-08-08T00:00:00.000Z",
+  createdAt: "2026-07-31T00:00:00.000Z",
+  updatedAt: "2026-07-31T00:00:00.000Z",
+};
 const scenarios: EvalScenario[] = [
   {
     id: "chat-official-info-refusal",
@@ -327,6 +440,148 @@ const scenarios: EvalScenario[] = [
         requiredPatterns: [/(?:Türkçe|paragraf)/iu],
       }),
   },
+  {
+    id: "mentor-v2-cold-start-tr",
+    prompt: mentorEvalPrompt({
+      locale: "tr",
+      user: "Yeni geldim ve nereden başlayacağımı bilmiyorum.",
+      intent: CoachIntent.GENERAL,
+      tone: CoachTone.WARM,
+      mode: CoachTurnMode.CLARIFY,
+    }),
+    evaluate: (raw) =>
+      mentorReplyChecks(raw, {
+        maxSentences: 3,
+        requiredPatterns: [/\?/u],
+        forbiddenPatterns: [/(?:seni tanıyorum|her zamanki|yine yaptın)/iu],
+      }),
+  },
+  {
+    id: "mentor-v2-regular-rhythm-tr",
+    prompt: mentorEvalPrompt({
+      locale: "tr",
+      user: "Bu hafta nasıl gidiyorum, bugün neye odaklanayım?",
+      intent: CoachIntent.FOCUS,
+      tone: CoachTone.WARM,
+      evidence: [
+        evidence(
+          CoachEvidenceType.RECENT_RHYTHM,
+          "Son 7 günde 4 seans ve 160 dakika odak tamamlandı.",
+        ),
+      ],
+    }),
+    evaluate: (raw) =>
+      mentorReplyChecks(raw, {
+        maxSentences: 5,
+        requiredPatterns: [/(?:4 seans|160 dakika)/iu],
+      }),
+  },
+  {
+    id: "mentor-v2-return-after-break-tr",
+    prompt: mentorEvalPrompt({
+      locale: "tr",
+      user: "Bir haftadır koptum ve yeniden başlayamıyorum.",
+      intent: CoachIntent.PROCRASTINATION,
+      tone: CoachTone.DIRECT,
+      evidence: [
+        evidence(
+          CoachEvidenceType.STREAK,
+          "Son aktif çalışma 8 gün önceydi; mevcut seri 0 gün.",
+        ),
+      ],
+      allowedAction: CoachActionType.CREATE_PLAN_TASK,
+    }),
+    evaluate: (raw) =>
+      mentorReplyChecks(raw, {
+        maxSentences: 5,
+        requiredPatterns: [/(?:8 gün|bir hafta)/iu],
+        requireTask: true,
+      }),
+  },
+  {
+    id: "mentor-v2-anxiety-tr",
+    prompt: mentorEvalPrompt({
+      locale: "tr",
+      user: "Yetişmeyecek diye çok kaygılanıyorum.",
+      intent: CoachIntent.ANXIETY,
+      tone: CoachTone.GENTLE,
+      evidence: [
+        evidence(CoachEvidenceType.MOOD, "Bugünkü enerji seviyesi 2/5."),
+        evidence(
+          CoachEvidenceType.TODAY_PLAN,
+          "Bugünkü 3 görevin 1'i tamamlandı.",
+        ),
+      ],
+    }),
+    evaluate: (raw) =>
+      mentorReplyChecks(raw, {
+        maxSentences: 4,
+        requiredPatterns: [/(?:2\/5|3 görevin|1'i)/iu],
+        forbiddenPatterns: [/(?:abartıyorsun|tembelsin|bahane)/iu],
+      }),
+  },
+  {
+    id: "mentor-v2-plan-overload-tr",
+    prompt: mentorEvalPrompt({
+      locale: "tr",
+      user: "Bugünkü plan çok ağır geldi; böyle devam edemem.",
+      intent: CoachIntent.PLAN,
+      tone: CoachTone.WARM,
+      evidence: [
+        evidence(
+          CoachEvidenceType.TODAY_PLAN,
+          "Bugünkü 8 görevin 7'si hâlâ bekliyor.",
+        ),
+      ],
+      allowedAction: CoachActionType.OPEN_PLAN_ADAPTATION,
+    }),
+    evaluate: (raw) =>
+      mentorReplyChecks(raw, {
+        maxSentences: 5,
+        requiredPatterns: [/(?:8 görev|7'si)/iu],
+        forbiddenPatterns: [/(?:hepsini bitir|zorundasın)/iu],
+      }),
+  },
+  {
+    id: "mentor-v2-measured-success-tr",
+    prompt: mentorEvalPrompt({
+      locale: "tr",
+      user: "Bu hafta düzenimi korudum, nasıl görünüyor?",
+      intent: CoachIntent.PROGRESS,
+      tone: CoachTone.CELEBRATORY,
+      evidence: [
+        evidence(CoachEvidenceType.STREAK, "Mevcut çalışma serisi 5 gün."),
+        evidence(
+          CoachEvidenceType.ACTION_OUTCOME,
+          "Koçun önerdiği son görev kabul edildi ve tamamlandı.",
+        ),
+      ],
+    }),
+    evaluate: (raw) =>
+      mentorReplyChecks(raw, {
+        maxSentences: 5,
+        requiredPatterns: [/(?:5 gün|tamamlad)/iu],
+        forbiddenPatterns: [/(?:mükemmelsin|efsanesin|garanti)/iu],
+      }),
+  },
+  {
+    id: "mentor-v2-current-message-beats-stale-memory-en",
+    prompt: mentorEvalPrompt({
+      locale: "en",
+      user: "My priority is now History, not Mathematics. Help me choose one next step.",
+      intent: CoachIntent.PLAN,
+      tone: CoachTone.WARM,
+      memories: [stalePriorityMemory],
+      allowedAction: CoachActionType.CREATE_PLAN_TASK,
+    }),
+    evaluate: (raw) =>
+      mentorReplyChecks(raw, {
+        maxSentences: 5,
+        requiredPatterns: [/History/iu],
+        forbiddenPatterns: [/(?:prioriti[sz]e|focus on) Mathematics/iu],
+        requireTask: true,
+      }),
+  },
 ];
 
 let llm: OpenAiLlmAdapter;
@@ -341,7 +596,7 @@ beforeAll(() => {
   llm = new OpenAiLlmAdapter(
     new ConfigService<Env, true>({
       OPENAI_API_KEY: apiKey,
-      OPENAI_MODEL: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+      OPENAI_MODEL: EVAL_MODEL,
       OPENAI_EMBED_MODEL:
         process.env.OPENAI_EMBED_MODEL ?? "text-embedding-3-small",
     }),
@@ -349,7 +604,7 @@ beforeAll(() => {
 });
 
 describe("OpenAI prompt quality eval", () => {
-  it("passes objective checks for nine synthetic scenarios and writes the review report", async () => {
+  it("passes objective checks for sixteen synthetic scenarios and writes the review report", async () => {
     const reports: EvalCaseReport[] = [];
 
     for (const scenario of scenarios) {
@@ -387,7 +642,7 @@ describe("OpenAI prompt quality eval", () => {
       } catch {
         reports.push({
           id: scenario.id,
-          model: process.env.OPENAI_MODEL ?? "unknown",
+          model: EVAL_MODEL,
           rawOutput: "[provider call failed]",
           promptTokens: 0,
           completionTokens: 0,
@@ -406,7 +661,7 @@ describe("OpenAI prompt quality eval", () => {
         .filter((check) => check.severity === "hard" && !check.passed)
         .map((check) => `${report.id}: ${check.name} — ${check.detail}`),
     );
-    expect(reports).toHaveLength(9);
+    expect(reports).toHaveLength(16);
     expect(failures, `Review ${REPORT_PATH}`).toEqual([]);
   }, 360_000);
 });

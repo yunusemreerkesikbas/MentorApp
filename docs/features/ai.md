@@ -2,7 +2,7 @@
 
 > AI coach: context injection (not training), LLM + pgvector RAG, photo→subject categorize, mood
 > reflection, ghost narration, vision board note. Module: `modules/ai`. Workstream: W3.
-> Roadmap: MVP; multi-turn, streaming, and topic-level vision are live; automatic cross-thread memory is retired.
+> Roadmap: MVP; multi-turn, streaming, topic-level vision and consent-based structured mentor memory are live.
 
 ## Overview
 
@@ -13,15 +13,16 @@ motivation notes. Cost is controlled by premium gating + coin spending + rate-li
 
 ## Architecture (key decisions)
 
-- **Context injection, not training:** single model; personalization = injecting the user's structured
-  summary into the prompt on every reply. `ContextBuilder` builds `CoachContext` from identity +
-  coaching signals — PII-free and without an exact countdown or cross-thread memory (§4 #6).
+- **Context injection, not training:** `CoachEvidenceService` builds aggregate PII-minimal evidence;
+  `CoachTurnPlanner` deterministically selects intent, tone, relevant evidence and at most one action.
+  Only selected evidence, bounded active-thread history and consented structured facts enter the prompt.
 - **§4 #1 (hardest guardrail):** a deterministic intent resolver intercepts official dates/process/
   placement before budget, rate-limit, or spend checks. Dates render as persisted verified data cards;
   other official intents return only Knowledge Center sources. Completion is never called for this path.
   The system prompt remains a second-line refusal guard for non-deterministic chat.
-- **LlmPort** (domain port): `FakeLlmAdapter` (dev default, deterministic) + `OpenAiLlmAdapter`
-  (real, fetch-based, no new dependency). Selected by `AI_PROVIDER` env.
+- **LlmPort** (domain port): Fake/OpenAI/Gemini adapters. `AI_PROVIDER` selects the provider and
+  `OPENAI_MODEL` selects its OpenAI model; production remains on the current default until the
+  candidate model passes the Mentor V2 eval and rollout gates.
 - **VisionPort** (module-local): `FakeVisionAdapter` + `GeminiVisionAdapter` + `OpenAiVisionAdapter` — photo→subject/topic classify only
   (§4 #2 — never solves).
 - **StoragePort** (shared): `FakeStorageAdapter` + `R2StorageAdapter` — signed upload URL flow.
@@ -80,6 +81,11 @@ pnpm --filter @mentor/api test -- --grep "ai"
 | `GET /v1/coach/conversations/:id/messages`           | One thread's paginated history                                                |
 | `DELETE /v1/coach/conversations/:id`                 | Delete one thread (messages cascade)                                          |
 | `PATCH /v1/coach/messages/:id/feedback`              | Rate a coach reply (👍 1 / 👎 -1 / null)                                      |
+| `GET/PATCH /v1/coach/profile`                        | Read/update calibration, memory consent and communication preferences          |
+| `GET /v1/coach/memories`                             | Paginated allowlisted structured cross-thread facts                            |
+| `PATCH/DELETE /v1/coach/memories/:id`                | Correct or forget one structured fact                                           |
+| `DELETE /v1/coach/memories`                          | Clear all structured facts                                                      |
+| `POST /v1/coach/messages/:id/action`                 | Explicitly accept/cancel one backend-allowlisted coach action                   |
 | `GET /v1/coach/memory`                               | Read a legacy saved summary (not generated or injected into prompts)          |
 | `DELETE /v1/coach/memory`                            | Delete the legacy saved summary (KVKK)                                        |
 | `GET /v1/coach/access`                               | Access probe (PREMIUM/COIN/NONE)                                              |
@@ -95,6 +101,32 @@ pnpm --filter @mentor/api test -- --grep "ai"
 | `GET /v1/admin/metrics/coach-feedback`               | Coach 👍/👎 satisfaction + recent 👎 replies (SUPPORT+FINANCE)                |
 
 ## Geliştirmeler (timeline)
+
+- **Kişiselleştirilmiş Mentor V2 (2026-08-02)** — Koç kimliği “mentor-yol arkadaşı” olarak TR/EN
+  ayrı ve sürümlü prompt'a taşındı. Saf `CoachTurnPlanner`; niyet, `GENTLE/WARM/DIRECT/CELEBRATORY`
+  tonu, en fazla üç doğrulanmış kanıt ve tek aksiyon belirler. Resmî bilgi ve ciddi sıkıntı yolları
+  LLM/kota/bütçeden önce deterministiktir. Aktif thread geçmişi config'li sayı + karakter bütçesiyle
+  sınırlanır; TASK/FOLLOWUP/MEMORY marker'ları sıra bağımsız çıkarılır ve stream'e sızmaz. Üretim
+  snapshot'ı `strategyVersion/intent/tone/usedEvidence` olarak mesajda kalır; web “Neye göre?” ile
+  gösterir. `ai.coach_personalization_v2.rollout_percent=0` eski akışa anında döner; STAFF daima V2.
+  İlgili: `coach-turn-planner.ts`, `mentor-v2-prompt.ts`, `chat.service.ts`, `0068`–`0070`.
+
+- **Şeffaf hafıza, tanışma ve kullanıcı kontrollü aksiyonlar (2026-08-02)** — `coach_profiles` ve
+  `coach_memory_facts` yalnız kullanıcı RLS'iyle eklendi. İlk tanışma LLM/kota tüketmez; hafıza ayrı
+  açık onay ister. Model yalnız güncel kullanıcı mesajından allowlist aday üretir; backend birebir
+  alıntı, hassas veri/PII, taksonomi ve TTL kontrolünden sonra yalnız normalize değeri saklar. Kaynak
+  alıntı saklanmaz/loglanmaz; chat silinince CHAT fact cascade olur, kullanıcı düzeltmesi `USER_EDIT`
+  olarak ayrılır. Web “Koçun bildikleri” ekranı düzenleme/unutma/durdurma/tümünü silme sunar.
+  Aksiyonlar yalnız backend enum/payload'ıdır; görev oluşturma, plan uyarlama, seans başlatma ve
+  güvenli yüzeye gitme ancak onaydan sonra çalışır. ACCEPTED/COMPLETED yanıt regenerate edilemez.
+  TTL temizliği: `POST /v1/internal/cron/cleanup-coach-memory` (`CRON_SECRET`).
+
+- **GPT-5 hazırlığı ve Mentor V2 eval (2026-08-02)** — Production varsayılanı değiştirilmeden
+  GPT-5'in doğrulanmış $1.25/M input ve $10/M output fiyatı maliyet tablosuna eklendi; GPT-5
+  reasoning isteklerinde uyumsuz özel temperature gönderilmez. Opt-in gerçek-model eval'i
+  `OPENAI_EVAL_MODEL` (varsayılan `gpt-5`) ile 16 sentetik TR/EN vaka çalıştırır: cold start,
+  düzenli ritim, kopuş, kaygı, plan yükü, ölçülü başarı ve stale hafıza çelişkisi dahil. Kullanım:
+  `pnpm --filter @mentor/api test:eval:openai`; sonuç production aktivasyonundan önce incelenir.
 
 - **Kişiselleştirme kanıtını yanıt içine taşıma (2026-08-01)** — Sıfır seans/sıfır görev
   özetleri artık kişisel kanıt sayılmaz ve LLM bağlamına yazılmaz. Model, ilgili sinyali yapısal
@@ -373,7 +405,9 @@ image_url: dataUrl}` — eski `{type:"image_url",image_url:{url}}` değil); JSON
   hafızalı. Yeni `coach_messages` tablosu (kullanıcı başına **tek rolling sohbet**, thread yok;
   migration `0044_silent_solo` + RLS self-or-service) user+coach mesajlarını persist eder (COACH
   satırında `sources` jsonb + `model`). `ChatService` her yanıttan önce son
-  `CHAT_HISTORY_MAX_MESSAGES`(10) mesajı `LlmPort.complete({ history })`'ye enjekte eder (defensive
+  merkezî config'teki `ai.coach.history_max_messages` (varsayılan 10) ve
+  `ai.coach.history_max_characters` (varsayılan 6.000) sınırları içinde mesajları
+  `LlmPort.complete({ history })`'ye enjekte eder (defensive
   — history yüklenemezse sohbet yine çalışır); persist yalnız **başarılı** yanıttan sonra (LLM
   hatası satır bırakmaz). Yeni endpoint'ler: `GET /v1/coach/messages` (paginated, auth-only) +
   `DELETE /v1/coach/messages` ("Yeni sohbet"). FE: `CoachSessionProvider` artık API'den hydrate olur
@@ -706,20 +740,21 @@ excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sa
 - **Bütçe cap'i ~30s cache'li ve per-instance** — MTD harcama her istekte değil ~30s'de bir
   hesaplanır, yani cap aşımı sonrası en fazla ~1 cache penceresi + çok-instance sayısı kadar
   overspend olabilir (kesin hard-stop değil, yaklaşık). Cap **takvim ayı** (UTC) — ayın 1'inde sıfırlanır.
-- **KVKK — ÇÖZÜLDÜ (2026-07-14):** `admin anonymize` artık **bütünsel silme** yapıyor —
-  `AiErasureService` koç thread'lerini (mesajlar + `suggested_task` cascade), `coach_memory`'yi ve
-  `ai_weekly_reviews`'ı siler; coaching kendi serbest metnini scrub eder (bkz. coaching.md).
+- **KVKK — ÇÖZÜLDÜ (2026-08-02):** `admin anonymize` artık **bütünsel silme** yapıyor —
+  `AiErasureService` koç thread'lerini, yapılandırılmış hafıza gerçeklerini, mentor profil/onayını,
+  legacy `coach_memory`'yi ve AI cache'lerini siler; coaching kendi serbest metnini scrub eder.
   **`ai_usage` KALIR** (token/maliyet meta, PII yok — §7 maliyet muhasebesi). Kullanıcı ayrıca kendi
   profilini `DELETE /v1/coach/memory`, tek bir thread'i `DELETE /v1/coach/conversations/:id` ile siler.
   **Kapsam dışı:** forum içeriği (kamuya açık topluluk içeriği; yazar "Silinmiş Kullanıcı" görünür).
 - **Legacy memory is inactive** — new chats do not enqueue or regenerate `coach_memory`, and saved
   summaries are not injected into any prompt. `GET/DELETE /v1/coach/memory` and existing rows remain
   solely for backward compatibility and the user's deletion right; queued legacy jobs validate then no-op.
-- **Multi-turn penceresi sabittir** (`CHAT_HISTORY_MAX_MESSAGES=10`, `ai.constants.ts`) — runtime
-  config değil; tuning ihtiyacı doğarsa config catalog'a taşınır. Pencere **aktif thread'e** dairdir.
-- **Thread context only** — the rolling prompt window is scoped to the active thread (`lastN`). A new
-  thread does not receive messages or summaries from older threads. Deleting a thread still does not
-  delete a pre-existing legacy summary; `DELETE /v1/coach/memory` remains separate.
+- **Multi-turn penceresi config'lidir** — `ai.coach.history_max_messages` varsayılan 10 mesaj,
+  `ai.coach.history_max_characters` varsayılan 6.000 karakterdir; tüm geçmişi prompt'a sürüklemez.
+  Pencere aktif thread'e aittir.
+- **Cross-thread yalnız yapılandırılmış hafıza** — yeni thread eski mesajları veya legacy özeti almaz;
+  yalnız açık onaylı, allowlist key/value gerçekleri alır. Hafıza durdurulunca yeni fact öğrenilmez ve
+  mevcut fact'ler prompt'a girmez; kullanıcı isterse ayrıca tümünü siler.
 - **Provider değişimi = 1 kez reembed** — sorgu embedding'i ile makale embedding'i aynı modelden
   olmalı; `AI_PROVIDER` değişince `POST /v1/admin/ai/reembed` (SUPER_ADMIN) çalıştırılmazsa RAG
   retrieval anlamsızlaşır (hata vermez, alakasız/boş kaynak döner). Maliyeti sentlerle ölçülür.
@@ -798,3 +833,22 @@ excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sa
   PII-minimal evidence şekli ve fallback davranışı değişmedi. İlgili:
   `weekly-review-prompt.ts`, `weekly-review-narration.service.spec.ts`,
   `i18n/locales/{tr,en}/coaching.json`.
+
+- **AI motivasyon notu hedefi yeniden tanıyor (2026-08-02)** — Harita geldiğinde arayüz yalnız
+  `targetCityCode` yazmaya başladı; eski serbest metin `target_city` artık hep `null` kalıyordu. Ama
+  `vision-note.service` hâlâ o alanı okuyordu, dolayısıyla **premium AI notu kullanıcının şehrini
+  bilmiyordu**. "Neden?" alanı da formdan kaldırılınca not pratikte yalnız `goalTitle`'dan üretilir
+  hale gelmişti — premium bir özellik sessizce zayıflamıştı.
+  Düzeltme: `VisionService.resolveTargetNames` panonun okuma kuralını uygular (kod varsa kodun adı,
+  yoksa eski metin) ve `GeoService.resolveNames` ile şehir/üniversite adını çözer. **Yalnız cache
+  miss'te çağrılır** — her okumada iki sorgu, kimsenin bakmadığı bir string için harcanırdı.
+  Aynı yerde not zenginleşti: hedef üniversite ve kariyer alanı da prompta giriyor. Üniversite varsa
+  şehir ayrı satır olarak tekrarlanmıyor, parantez içinde geçiyor (üniversite şehrini zaten ima eder).
+  Kariyer grubu ham enum değil, `coach-evidence`'ın da okuduğu `coaching.coachEvidence.values.careerGroup`
+  tablosundan yerelleştirilmiş etiket olarak gidiyor.
+  `buildVisionNotePrompt` beş pozisyonel argümandan `VisionNoteGoal` nesnesine geçti.
+  **Gotcha:** bu regresyonu tip sistemi yakalayamazdı — `targetCity` hâlâ geçerli bir alan, sadece
+  artık hiç dolmuyor. `vision-note.service.spec` bunu üç testle kilitliyor (kodla verilen şehir
+  promptta çıkıyor mu, üniversite şehri bastırıyor mu, kariyer etiketi çevriliyor mu).
+  İlgili: `vision-note.service.ts`, `vision.service.ts`, `geo.service.ts`, `geo.repository.ts`,
+  `ai.constants.ts`, `prompt-locale.spec.ts`.

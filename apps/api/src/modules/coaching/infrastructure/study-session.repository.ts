@@ -36,6 +36,19 @@ export interface RecentSummaryRow {
   recentRows: { subject: string | null; struggleNote: string | null }[];
 }
 
+export interface CoachRhythmRow {
+  sessions7d: number;
+  focusSeconds7d: number;
+  activeDays7d: number;
+  averageFocusSeconds7d: number;
+  sessions28d: number;
+  focusSeconds28d: number;
+  activeDays28d: number;
+  averageFocusSeconds28d: number;
+  dominantTimeBand: "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT" | null;
+  lastActiveAt: Date | null;
+}
+
 /** Data access for `study_sessions` (RLS-scoped `tx` from the service). */
 @Injectable()
 export class StudySessionRepository {
@@ -187,6 +200,87 @@ export class StudySessionRepository {
       count7d: aggRows[0]?.count ?? 0,
       focusSeconds7d: aggRows[0]?.focusSeconds ?? 0,
       recentRows,
+    };
+  }
+
+  async findOpenByPlanTask(
+    tx: DatabaseTx,
+    userId: string,
+    planTaskId: string,
+  ): Promise<StudySessionRow | undefined> {
+    const [row] = await tx
+      .select()
+      .from(studySessions)
+      .where(
+        and(
+          eq(studySessions.userId, userId),
+          eq(studySessions.planTaskId, planTaskId),
+          eq(studySessions.status, StudySessionStatus.IN_PROGRESS),
+          isNull(studySessions.endedAt),
+        ),
+      )
+      .orderBy(desc(studySessions.startedAt))
+      .limit(1);
+    return row;
+  }
+
+  /** Aggregate-only 7/28-day mentor evidence; never selects notes or task titles. */
+  async coachRhythm(
+    tx: DatabaseTx,
+    userId: string,
+    since7d: Date,
+    since28d: Date,
+  ): Promise<CoachRhythmRow> {
+    const completed = and(
+      eq(studySessions.userId, userId),
+      eq(studySessions.status, StudySessionStatus.COMPLETED),
+      isNotNull(studySessions.endedAt),
+      gte(studySessions.startedAt, since28d),
+    );
+    const band = sql<"MORNING" | "AFTERNOON" | "EVENING" | "NIGHT">`case
+      when extract(hour from ${studySessions.startedAt} at time zone 'Europe/Istanbul') between 5 and 11 then 'MORNING'
+      when extract(hour from ${studySessions.startedAt} at time zone 'Europe/Istanbul') between 12 and 16 then 'AFTERNOON'
+      when extract(hour from ${studySessions.startedAt} at time zone 'Europe/Istanbul') between 17 and 21 then 'EVENING'
+      else 'NIGHT'
+    end`;
+    const [aggregateRows, bandRows] = await Promise.all([
+      tx
+        .select({
+          sessions7d: sql<number>`count(*) filter (where ${studySessions.startedAt} >= ${since7d})::int`,
+          focusSeconds7d: sql<number>`coalesce(sum(${studySessions.actualFocusSeconds}) filter (where ${studySessions.startedAt} >= ${since7d}), 0)::int`,
+          activeDays7d: sql<number>`count(distinct (${studySessions.startedAt} at time zone 'Europe/Istanbul')::date) filter (where ${studySessions.startedAt} >= ${since7d})::int`,
+          averageFocusSeconds7d: sql<number>`coalesce(round(avg(${studySessions.actualFocusSeconds}) filter (where ${studySessions.startedAt} >= ${since7d})), 0)::int`,
+          sessions28d: sql<number>`count(*)::int`,
+          focusSeconds28d: sql<number>`coalesce(sum(${studySessions.actualFocusSeconds}), 0)::int`,
+          activeDays28d: sql<number>`count(distinct (${studySessions.startedAt} at time zone 'Europe/Istanbul')::date)::int`,
+          averageFocusSeconds28d: sql<number>`coalesce(round(avg(${studySessions.actualFocusSeconds})), 0)::int`,
+          lastActiveAt: sql<Date | null>`max(${studySessions.startedAt})`,
+        })
+        .from(studySessions)
+        .where(completed),
+      tx
+        .select({
+          band,
+          focusSeconds: sql<number>`sum(${studySessions.actualFocusSeconds})::int`,
+        })
+        .from(studySessions)
+        .where(completed)
+        .groupBy(band)
+        .orderBy(desc(sql`sum(${studySessions.actualFocusSeconds})`))
+        .limit(1),
+    ]);
+    const row = aggregateRows[0];
+    return {
+      sessions7d: row?.sessions7d ?? 0,
+      focusSeconds7d: row?.focusSeconds7d ?? 0,
+      activeDays7d: row?.activeDays7d ?? 0,
+      averageFocusSeconds7d: row?.averageFocusSeconds7d ?? 0,
+      sessions28d: row?.sessions28d ?? 0,
+      focusSeconds28d: row?.focusSeconds28d ?? 0,
+      activeDays28d: row?.activeDays28d ?? 0,
+      averageFocusSeconds28d: row?.averageFocusSeconds28d ?? 0,
+      dominantTimeBand: bandRows[0]?.band ?? null,
+      lastActiveAt: row?.lastActiveAt ?? null,
     };
   }
 

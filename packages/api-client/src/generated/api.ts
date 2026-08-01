@@ -44,6 +44,83 @@ export interface PlanDraftBodyDto {
 
 export interface CoachFeedbackDto { [key: string]: unknown }
 
+export type CoachProfilePatchDtoCalibrationStatus = typeof CoachProfilePatchDtoCalibrationStatus[keyof typeof CoachProfilePatchDtoCalibrationStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CoachProfilePatchDtoCalibrationStatus = {
+  NOT_STARTED: 'NOT_STARTED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+  SKIPPED: 'SKIPPED',
+} as const;
+
+export type CoachProfilePatchDtoMemoryConsent = typeof CoachProfilePatchDtoMemoryConsent[keyof typeof CoachProfilePatchDtoMemoryConsent];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CoachProfilePatchDtoMemoryConsent = {
+  PENDING: 'PENDING',
+  GRANTED: 'GRANTED',
+  DECLINED: 'DECLINED',
+} as const;
+
+/**
+ * @nullable
+ */
+export type CoachProfilePatchDtoSupportPreference = typeof CoachProfilePatchDtoSupportPreference[keyof typeof CoachProfilePatchDtoSupportPreference] | null;
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CoachProfilePatchDtoSupportPreference = {
+  EMOTIONAL: 'EMOTIONAL',
+  BALANCED: 'BALANCED',
+  ACTION: 'ACTION',
+} as const;
+
+/**
+ * @nullable
+ */
+export type CoachProfilePatchDtoDirectnessPreference = typeof CoachProfilePatchDtoDirectnessPreference[keyof typeof CoachProfilePatchDtoDirectnessPreference] | null;
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CoachProfilePatchDtoDirectnessPreference = {
+  GENTLE: 'GENTLE',
+  BALANCED: 'BALANCED',
+  DIRECT: 'DIRECT',
+} as const;
+
+export interface CoachProfilePatchDto {
+  calibrationStatus?: CoachProfilePatchDtoCalibrationStatus;
+  memoryConsent?: CoachProfilePatchDtoMemoryConsent;
+  /** @nullable */
+  supportPreference?: CoachProfilePatchDtoSupportPreference;
+  /** @nullable */
+  directnessPreference?: CoachProfilePatchDtoDirectnessPreference;
+}
+
+export interface CoachMemoryFactPatchDto {
+  /**
+   * @minLength 1
+   * @maxLength 80
+   */
+  value: string;
+}
+
+export type CoachActionDecisionDtoDecision = typeof CoachActionDecisionDtoDecision[keyof typeof CoachActionDecisionDtoDecision];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CoachActionDecisionDtoDecision = {
+  ACCEPT: 'ACCEPT',
+  CANCEL: 'CANCEL',
+} as const;
+
+export interface CoachActionDecisionDto {
+  decision: CoachActionDecisionDtoDecision;
+}
+
 export interface SessionReflectionBodyDto { [key: string]: unknown }
 
 export interface WeeklyReviewNarrationBodyDto { [key: string]: unknown }
@@ -1351,6 +1428,242 @@ export const aiChatControllerSetFeedback = async (id: string,
 
 
 
+export type aiChatControllerGetProfileResponse200 = {
+  data: void
+  status: 200
+}
+
+export type aiChatControllerGetProfileResponseSuccess = (aiChatControllerGetProfileResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerGetProfileResponse = (aiChatControllerGetProfileResponseSuccess)
+
+export const getAiChatControllerGetProfileUrl = () => {
+
+
+
+
+  return `/v1/coach/profile`
+}
+
+export const aiChatControllerGetProfile = async ( options?: RequestInit): Promise<aiChatControllerGetProfileResponse> => {
+
+  return http<aiChatControllerGetProfileResponse>(getAiChatControllerGetProfileUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type aiChatControllerPatchProfileResponse200 = {
+  data: void
+  status: 200
+}
+
+export type aiChatControllerPatchProfileResponseSuccess = (aiChatControllerPatchProfileResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerPatchProfileResponse = (aiChatControllerPatchProfileResponseSuccess)
+
+export const getAiChatControllerPatchProfileUrl = () => {
+
+
+
+
+  return `/v1/coach/profile`
+}
+
+export const aiChatControllerPatchProfile = async (coachProfilePatchDto: CoachProfilePatchDto, options?: RequestInit): Promise<aiChatControllerPatchProfileResponse> => {
+
+  return http<aiChatControllerPatchProfileResponse>(getAiChatControllerPatchProfileUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      coachProfilePatchDto,)
+  }
+);}
+
+
+
+export type aiChatControllerListMemoriesResponse200 = {
+  data: void
+  status: 200
+}
+
+export type aiChatControllerListMemoriesResponseSuccess = (aiChatControllerListMemoriesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerListMemoriesResponse = (aiChatControllerListMemoriesResponseSuccess)
+
+export const getAiChatControllerListMemoriesUrl = () => {
+
+
+
+
+  return `/v1/coach/memories`
+}
+
+export const aiChatControllerListMemories = async ( options?: RequestInit): Promise<aiChatControllerListMemoriesResponse> => {
+
+  return http<aiChatControllerListMemoriesResponse>(getAiChatControllerListMemoriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type aiChatControllerClearMemoryFactsResponse204 = {
+  data: void
+  status: 204
+}
+
+export type aiChatControllerClearMemoryFactsResponseSuccess = (aiChatControllerClearMemoryFactsResponse204) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerClearMemoryFactsResponse = (aiChatControllerClearMemoryFactsResponseSuccess)
+
+export const getAiChatControllerClearMemoryFactsUrl = () => {
+
+
+
+
+  return `/v1/coach/memories`
+}
+
+export const aiChatControllerClearMemoryFacts = async ( options?: RequestInit): Promise<aiChatControllerClearMemoryFactsResponse> => {
+
+  return http<aiChatControllerClearMemoryFactsResponse>(getAiChatControllerClearMemoryFactsUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export type aiChatControllerPatchMemoryResponse200 = {
+  data: void
+  status: 200
+}
+
+export type aiChatControllerPatchMemoryResponseSuccess = (aiChatControllerPatchMemoryResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerPatchMemoryResponse = (aiChatControllerPatchMemoryResponseSuccess)
+
+export const getAiChatControllerPatchMemoryUrl = (id: string,) => {
+
+
+
+
+  return `/v1/coach/memories/${id}`
+}
+
+export const aiChatControllerPatchMemory = async (id: string,
+    coachMemoryFactPatchDto: CoachMemoryFactPatchDto, options?: RequestInit): Promise<aiChatControllerPatchMemoryResponse> => {
+
+  return http<aiChatControllerPatchMemoryResponse>(getAiChatControllerPatchMemoryUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      coachMemoryFactPatchDto,)
+  }
+);}
+
+
+
+export type aiChatControllerDeleteMemoryFactResponse204 = {
+  data: void
+  status: 204
+}
+
+export type aiChatControllerDeleteMemoryFactResponseSuccess = (aiChatControllerDeleteMemoryFactResponse204) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerDeleteMemoryFactResponse = (aiChatControllerDeleteMemoryFactResponseSuccess)
+
+export const getAiChatControllerDeleteMemoryFactUrl = (id: string,) => {
+
+
+
+
+  return `/v1/coach/memories/${id}`
+}
+
+export const aiChatControllerDeleteMemoryFact = async (id: string, options?: RequestInit): Promise<aiChatControllerDeleteMemoryFactResponse> => {
+
+  return http<aiChatControllerDeleteMemoryFactResponse>(getAiChatControllerDeleteMemoryFactUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export type aiChatControllerDecideActionResponse201 = {
+  data: void
+  status: 201
+}
+
+export type aiChatControllerDecideActionResponseSuccess = (aiChatControllerDecideActionResponse201) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerDecideActionResponse = (aiChatControllerDecideActionResponseSuccess)
+
+export const getAiChatControllerDecideActionUrl = (messageId: string,) => {
+
+
+
+
+  return `/v1/coach/messages/${messageId}/action`
+}
+
+export const aiChatControllerDecideAction = async (messageId: string,
+    coachActionDecisionDto: CoachActionDecisionDto, options?: RequestInit): Promise<aiChatControllerDecideActionResponse> => {
+
+  return http<aiChatControllerDecideActionResponse>(getAiChatControllerDecideActionUrl(messageId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      coachActionDecisionDto,)
+  }
+);}
+
+
+
 export type aiChatControllerGetMemoryResponse200 = {
   data: void
   status: 200
@@ -1748,6 +2061,39 @@ export const adminEmbeddingControllerReembed = async ( options?: RequestInit): P
     method: 'POST'
     
     
+  }
+);}
+
+
+
+export type aiInternalControllerCleanupCoachMemoryResponse201 = {
+  data: void
+  status: 201
+}
+
+export type aiInternalControllerCleanupCoachMemoryResponseSuccess = (aiInternalControllerCleanupCoachMemoryResponse201) & {
+  headers: Headers;
+};
+;
+
+export type aiInternalControllerCleanupCoachMemoryResponse = (aiInternalControllerCleanupCoachMemoryResponseSuccess)
+
+export const getAiInternalControllerCleanupCoachMemoryUrl = () => {
+
+
+
+
+  return `/v1/internal/cron/cleanup-coach-memory`
+}
+
+export const aiInternalControllerCleanupCoachMemory = async ( options?: RequestInit): Promise<aiInternalControllerCleanupCoachMemoryResponse> => {
+
+  return http<aiInternalControllerCleanupCoachMemoryResponse>(getAiInternalControllerCleanupCoachMemoryUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
   }
 );}
 

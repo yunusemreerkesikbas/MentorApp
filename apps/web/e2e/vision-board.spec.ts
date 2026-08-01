@@ -119,13 +119,40 @@ const searchResult: GeoSearchResultDto = {
 };
 
 /**
+ * Mobile: browse + form live in a left drawer. Desktop: persistent rail + top form.
+ * Both Playwright projects run this file — open the drawer only below the `lg` breakpoint.
+ */
+async function openBrowsePanel(page: Page) {
+  if ((page.viewportSize()?.width ?? 0) >= 1024) return;
+  const drawer = page.getByTestId("vision-browse-drawer");
+  if (await drawer.isVisible().catch(() => false)) return;
+  await page.getByTestId("vision-browse-open").click();
+  await expect(drawer).toBeVisible();
+}
+
+/** Scope to the drawer on mobile so assertions do not hit a hidden desktop surface. */
+function browseRoot(page: Page) {
+  if ((page.viewportSize()?.width ?? 0) >= 1024) return page;
+  return page.getByTestId("vision-browse-drawer");
+}
+
+/**
  * There is no city `<select>` any more — the map and the search panel are the two ways in, and
  * search is the one a keyboard can drive. Going through it here keeps the tests honest about the
  * accessible path actually working.
  */
 async function selectKonya(page: Page) {
-  await page.getByLabel("Üniversite, şehir veya bölüm ara…").fill("konya");
-  await page.getByRole("button", { name: "Konya", exact: true }).click();
+  await openBrowsePanel(page);
+  const root = browseRoot(page);
+  await root.getByLabel("Üniversite, şehir veya bölüm ara…").fill("konya");
+  await root.getByRole("button", { name: "Konya", exact: true }).click();
+}
+
+async function chooseCareer(page: Page, label: string) {
+  await openBrowsePanel(page);
+  const root = browseRoot(page);
+  await root.getByLabel("Puhu'nun alanı").click();
+  await page.getByRole("option", { name: label }).click();
 }
 
 test("şehir ve Puhu'nun alanı seçilip kaydedilir", async ({ page }) => {
@@ -133,13 +160,10 @@ test("şehir ve Puhu'nun alanı seçilip kaydedilir", async ({ page }) => {
   await page.goto("/hedef");
 
   await selectKonya(page);
-  await page
-    .getByLabel("Puhu'nun alanı")
-    .selectOption({ label: "Yazılım & Bilişim" });
-  await page
-    .getByRole("textbox", { name: "Hedefin" })
-    .fill("Bilgisayar mühendisi olmak");
-  await page.getByRole("button", { name: "Kaydet" }).click();
+  await chooseCareer(page, "Yazılım & Bilişim");
+  const root = browseRoot(page);
+  await root.getByRole("textbox", { name: "Hedefin" }).fill("Bilgisayar mühendisi olmak");
+  await root.getByRole("button", { name: "Kaydet" }).click();
 
   await expect.poll(() => api.saved.length).toBe(1);
   expect(api.saved[0]).toMatchObject({
@@ -156,29 +180,31 @@ test("şehir seçilince üniversiteleri, üniversiteye girince bölümleri göst
   await page.goto("/hedef");
 
   await selectKonya(page);
+  const root = browseRoot(page);
 
-  // The browse panel sits in the same sidebar as the form — no overlay to open.
-  await expect(page.getByText("Konya · 1 üniversite")).toBeVisible();
-  await page.getByRole("button", { name: SELCUK.name }).click();
+  await expect(root.getByText("Konya · 1 üniversite")).toBeVisible();
+  await root.getByRole("button", { name: SELCUK.name }).click();
 
-  await expect(page.getByText("TEKNOLOJİ FAKÜLTESİ")).toBeVisible();
+  await expect(root.getByText("TEKNOLOJİ FAKÜLTESİ")).toBeVisible();
   // Quota is this year's, the cutoff is last year's — the row must not blur the two.
-  await expect(page.getByText("SAY · 2026 kontenjan 69 · 2025 taban 411.79")).toBeVisible();
+  await expect(root.getByText("SAY · 2026 kontenjan 69 · 2025 taban 411.79")).toBeVisible();
   // A program that never took a placement still appears, marked as such.
-  await expect(page.getByText("SAY · 2026 kontenjan 30 · Yerleşme yok")).toBeVisible();
+  await expect(root.getByText("SAY · 2026 kontenjan 30 · Yerleşme yok")).toBeVisible();
 });
 
 test("üniversite hedef olarak seçilip kaydedilir", async ({ page }) => {
   const api = await mockVisionApi(page);
   await page.goto("/hedef");
 
-  await page.getByRole("textbox", { name: "Hedefin" }).fill("Mühendis olmak");
+  await openBrowsePanel(page);
+  const root = browseRoot(page);
+  await root.getByRole("textbox", { name: "Hedefin" }).fill("Mühendis olmak");
   await selectKonya(page);
 
-  await page.getByRole("button", { name: SELCUK.name }).click();
-  await page.getByRole("button", { name: "Hedefim bu üniversite" }).click();
+  await browseRoot(page).getByRole("button", { name: SELCUK.name }).click();
+  await browseRoot(page).getByRole("button", { name: "Hedefim bu üniversite" }).click();
 
-  await page.getByRole("button", { name: "Kaydet" }).click();
+  await browseRoot(page).getByRole("button", { name: "Kaydet" }).click();
   await expect.poll(() => api.saved.length).toBe(1);
   expect(api.saved[0]).toMatchObject({
     targetCityCode: "42",
@@ -198,7 +224,7 @@ test("üniversite pinleri ülke görünümünde, zoom gerekmeden çizilir", asyn
   await expect(pins).toHaveCount(1);
 
   await selectKonya(page);
-  await expect(page.getByRole("button", { name: NO_COORDS.name })).toBeVisible();
+  await expect(browseRoot(page).getByRole("button", { name: NO_COORDS.name })).toBeVisible();
   await expect(pins).toHaveCount(1);
 });
 
@@ -206,8 +232,10 @@ test("arama üniversite, şehir ve bölümde çalışır", async ({ page }) => {
   await mockVisionApi(page);
   await page.goto("/hedef");
 
-  await page.getByLabel("Üniversite, şehir veya bölüm ara…").fill("bilgisayar");
-  await expect(page.getByText("Selçuk Üniversitesi · Konya")).toBeVisible();
+  await openBrowsePanel(page);
+  const root = browseRoot(page);
+  await root.getByLabel("Üniversite, şehir veya bölüm ara…").fill("bilgisayar");
+  await expect(root.getByText("Selçuk Üniversitesi · Konya")).toBeVisible();
 });
 
 async function mockVisionApi(page: Page) {

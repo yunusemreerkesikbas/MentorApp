@@ -33,6 +33,10 @@ export interface UseSessionTimerOptions {
   planTaskId?: string | null;
   /** Optional plan task title — only persisted so the chip survives a reload. */
   planTaskTitle?: string | null;
+  /** Session already created by an explicitly accepted coach action. */
+  existingSessionId?: string | null;
+  /** Enter focus immediately for the accepted coach action. */
+  autoStartExisting?: boolean;
 }
 
 export interface UseSessionTimerResult {
@@ -77,6 +81,8 @@ export function useSessionTimer(
     subject = null,
     planTaskId = null,
     planTaskTitle = null,
+    existingSessionId = null,
+    autoStartExisting = false,
   } = options;
   const tCommon = useTranslations("common");
   const { error: showErrorToast } = useMentorToast();
@@ -158,72 +164,84 @@ export function useSessionTimer(
   const restoredRef = useRef(false);
   useEffect(() => {
     if (restoredRef.current) return;
-    restoredRef.current = true;
-    const record = readActiveSession();
-    if (!record) return;
-    const resolution = resolveResume(record, Date.now());
-    if (resolution.kind === "discard" || resolution.kind === "done") {
-      clearActiveSession();
-      return;
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- restore external storage once
-    setFocusMinutesState(record.focusMinutes);
-    focusMinutesRef.current = record.focusMinutes;
-    setBreakMinutesState(record.breakMinutes);
-    breakMinutesRef.current = record.breakMinutes;
-    selectedPresetRef.current = record.preset;
-    if (resolution.kind === "finalize-expired") {
-      setBusy(true);
-      finalizeStudySession(record.sessionId, {
-        status: "COMPLETED",
-        actualFocusSeconds: resolution.creditSeconds,
-      })
-        .then((finalized) => {
-          // Clear only once the credit is safely persisted (or provably gone, below) —
-          // a transient failure keeps the record so the next mount retries.
-          clearActiveSession();
-          setSession(finalized);
-          sessionRef.current = finalized;
-          focusElapsedRef.current = resolution.creditSeconds;
-          setFocusElapsed(resolution.creditSeconds);
-          setPhase("done");
+    const hydrationId = window.setTimeout(() => {
+      if (restoredRef.current) return;
+      restoredRef.current = true;
+      const record = readActiveSession();
+      if (!record) {
+        if (!existingSessionId || !autoStartExisting) return;
+        const stub = { id: existingSessionId } as StudySessionDto;
+        setSession(stub);
+        sessionRef.current = stub;
+        focusElapsedRef.current = 0;
+        setFocusElapsed(0);
+        beginPhase("focus", presetSeconds(focusMinutesRef.current));
+        return;
+      }
+      const resolution = resolveResume(record, Date.now());
+      if (resolution.kind === "discard" || resolution.kind === "done") {
+        clearActiveSession();
+        return;
+      }
+      setFocusMinutesState(record.focusMinutes);
+      focusMinutesRef.current = record.focusMinutes;
+      setBreakMinutesState(record.breakMinutes);
+      breakMinutesRef.current = record.breakMinutes;
+      selectedPresetRef.current = record.preset;
+      if (resolution.kind === "finalize-expired") {
+        setBusy(true);
+        finalizeStudySession(record.sessionId, {
+          status: "COMPLETED",
+          actualFocusSeconds: resolution.creditSeconds,
         })
-        .catch((err: unknown) => {
-          // Already closed elsewhere (stale-cleanup / another device) — stay idle.
-          if (
-            err instanceof ApiClientError &&
-            (err.status === 409 || err.status === 404)
-          ) {
+          .then((finalized) => {
+            // Clear only once the credit is safely persisted (or provably gone, below) —
+            // a transient failure keeps the record so the next mount retries.
             clearActiveSession();
-            return;
-          }
-          showSessionError(err);
-        })
-        .finally(() => setBusy(false));
-      return;
-    }
-    const stub = { id: record.sessionId } as StudySessionDto;
-    setSession(stub);
-    sessionRef.current = stub;
-    advanceRef.current = false;
-    phaseEndsAtRef.current = record.phaseEndsAt;
-    if (record.isPaused && record.pausedAt !== null) {
-      pausedAtRef.current = record.pausedAt;
-      setIsPaused(true);
-    }
-    setSecondsLeft(resolution.secondsLeft);
-    if (resolution.kind === "resume-focus") {
-      const elapsed =
-        presetSeconds(record.focusMinutes) - resolution.secondsLeft;
-      focusElapsedRef.current = elapsed;
-      setFocusElapsed(elapsed);
-      setPhase("focus");
-    } else {
-      focusElapsedRef.current = record.focusElapsed;
-      setFocusElapsed(record.focusElapsed);
-      setPhase("break");
-    }
-  }, [showSessionError]);
+            setSession(finalized);
+            sessionRef.current = finalized;
+            focusElapsedRef.current = resolution.creditSeconds;
+            setFocusElapsed(resolution.creditSeconds);
+            setPhase("done");
+          })
+          .catch((err: unknown) => {
+            // Already closed elsewhere (stale-cleanup / another device) — stay idle.
+            if (
+              err instanceof ApiClientError &&
+              (err.status === 409 || err.status === 404)
+            ) {
+              clearActiveSession();
+              return;
+            }
+            showSessionError(err);
+          })
+          .finally(() => setBusy(false));
+        return;
+      }
+      const stub = { id: record.sessionId } as StudySessionDto;
+      setSession(stub);
+      sessionRef.current = stub;
+      advanceRef.current = false;
+      phaseEndsAtRef.current = record.phaseEndsAt;
+      if (record.isPaused && record.pausedAt !== null) {
+        pausedAtRef.current = record.pausedAt;
+        setIsPaused(true);
+      }
+      setSecondsLeft(resolution.secondsLeft);
+      if (resolution.kind === "resume-focus") {
+        const elapsed =
+          presetSeconds(record.focusMinutes) - resolution.secondsLeft;
+        focusElapsedRef.current = elapsed;
+        setFocusElapsed(elapsed);
+        setPhase("focus");
+      } else {
+        focusElapsedRef.current = record.focusElapsed;
+        setFocusElapsed(record.focusElapsed);
+        setPhase("break");
+      }
+    }, 0);
+    return () => window.clearTimeout(hydrationId);
+  }, [autoStartExisting, beginPhase, existingSessionId, showSessionError]);
 
   // Persist the running session on every tick / pause / phase change so a
   // reload (or navigating away) can resume it.

@@ -3,6 +3,11 @@ import type {
   CoachPlanAdaptationSource,
   DailyNextActionKind,
   WeeklyRecapStatus,
+  CoachIntent,
+  CoachTone,
+  CoachEvidenceType,
+  CoachActionType,
+  CoachActionStatus,
 } from "@mentor/types";
 import type { ForumCoachIntent } from "@mentor/types";
 import type { WeeklyRecapSlideKind } from "./weekly-recap";
@@ -66,6 +71,23 @@ export interface CoachAnalyticsParams {
     source: CoachPlanAdaptationSource;
     move_count: number;
     add_count: number;
+  };
+  coach_v2_reply: {
+    intent: CoachIntent;
+    tone: CoachTone;
+    evidence_types: CoachEvidenceType[];
+  };
+  coach_v2_feedback: {
+    intent: CoachIntent;
+    tone: CoachTone;
+    feedback: "UP" | "DOWN" | "CLEARED";
+  };
+  coach_v2_action: {
+    action_type: CoachActionType;
+    status: CoachActionStatus | "IMPRESSION";
+  };
+  coach_v2_memory_management: {
+    operation: "ENABLE" | "PAUSE" | "EDIT" | "FORGET" | "CLEAR_ALL";
   };
 }
 export type CoachAnalyticsEvent = keyof CoachAnalyticsParams;

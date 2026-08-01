@@ -18,12 +18,10 @@ export const AI_TEMPERATURE = 0.7;
 /** LLM request timeout (ms) — never let a hung provider hang the HTTP request. */
 export const AI_REQUEST_TIMEOUT_MS = 30_000;
 
-/** Multi-turn: how many persisted messages (user+coach rows) are replayed into the prompt.
- * ponytail: constant, not config — move to the config catalog if tuning is ever needed. */
-export const CHAT_HISTORY_MAX_MESSAGES = 10;
-
 /** AI memory-refresh job name (own constant — runner matches by string). */
 export const AI_MEMORY_JOB = "ai.refresh-memory";
+/** Idempotent TTL cleanup for structured Mentor V2 memory facts. */
+export const AI_MEMORY_CLEANUP_JOB = "ai.cleanup-coach-memory";
 
 /** Thread titles are derived from the first user message — no LLM call, no cost. */
 export const CONVERSATION_TITLE_MAX = 60;
@@ -479,13 +477,26 @@ export function buildGhostPrompt(
  * brief, grounded ONLY on the user's own goal + PII-free context (§4 #1 no official info; §4 #6
  * no behavioral data / no personal data requests).
  */
+/**
+ * The goal as the note needs it: names, not ids. Grew from positional arguments once the board
+ * gained a target university and a career field — five positionals was already one too many.
+ */
+export interface VisionNoteGoal {
+  goalTitle: string;
+  /** Resolved name, never a plate code. */
+  cityName: string | null;
+  universityName: string | null;
+  /** Localized career-field label (e.g. "Yazılım ve Bilişim"), not the raw enum. */
+  careerLabel: string | null;
+  motivation: string | null;
+}
+
 export function buildVisionNotePrompt(
   ctx: CoachContext,
-  goalTitle: string,
-  targetCity: string | null,
-  motivation: string | null,
+  goal: VisionNoteGoal,
   locale: PromptLocale = "tr",
 ): { system: string; user: string } {
+  const { goalTitle, cityName, universityName, careerLabel, motivation } = goal;
   const system = [
     promptLanguageInstruction(locale),
     "Sen Mentor uygulamasının sınav hazırlık koçusun. Öğrencinin hedefini hatırlatan KISA — EN FAZLA",
@@ -499,9 +510,15 @@ export function buildVisionNotePrompt(
     "3) Ödeme/abonelik/coin veya teknik konulara girme.",
   ].join("\n");
 
-  const cityLine = targetCity ? ` Hedef şehir: ${targetCity}.` : "";
+  // The university already implies its city, so naming both reads as padding.
+  const placeLine = universityName
+    ? ` Hedef üniversite: ${universityName}${cityName ? ` (${cityName})` : ""}.`
+    : cityName
+      ? ` Hedef şehir: ${cityName}.`
+      : "";
+  const fieldLine = careerLabel ? ` Hedef alan: ${careerLabel}.` : "";
   const whyLine = motivation ? ` Nedeni: "${motivation}".` : "";
-  const user = `Öğrencinin hedefi: "${goalTitle}".${cityLine}${whyLine}`;
+  const user = `Öğrencinin hedefi: "${goalTitle}".${placeLine}${fieldLine}${whyLine}`;
 
   return { system, user };
 }
@@ -515,6 +532,9 @@ export const MODEL_PRICING_MICROS_PER_TOKEN: Record<
   { input: number; output: number }
 > = {
   "gpt-4o-mini": { input: 0.15, output: 0.6 },
+  // OpenAI standard pricing, USD per 1M tokens: $1.25 input / $10 output.
+  "gpt-5": { input: 1.25, output: 10 },
+  "gpt-5-2025-08-07": { input: 1.25, output: 10 },
   fake: { input: 0, output: 0 },
   "fake-vision": { input: 0, output: 0 },
   "gemini-2.0-flash": { input: 0.1, output: 0.4 },

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { CoachConversationList } from "./coach-conversation-list";
 import { useCoachSession } from "./coach-session-context";
+import { CoachMemoryDialog } from "./coach-memory-dialog";
 
 /**
  * Shared history body — used by the mobile drawer and the desktop rail.
@@ -86,6 +87,7 @@ export function CoachHistoryPanel({
           />
           {tHub("new_chat")}
         </button>
+        <CoachMemoryDialog />
         <CoachConversationList
           variant="sheet"
           onSelectConversation={onAfterNavigate}

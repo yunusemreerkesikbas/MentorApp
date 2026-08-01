@@ -661,11 +661,14 @@ export const planTasks = pgTable(
     /** Structural cross-module provenance; no FK to AI/forum tables. */
     originType: text("origin_type"),
     originRefId: uuid("origin_ref_id"),
-    originMeta: jsonb("origin_meta").$type<{
-      threadId: string;
-      intent: "PLAN" | "NEXT_STEP" | "STUDY_METHOD" | "STRATEGY";
-      zoneType: "CHAT" | "QA";
-    }>(),
+    originMeta: jsonb("origin_meta").$type<
+      | {
+          threadId: string;
+          intent: "PLAN" | "NEXT_STEP" | "STUDY_METHOD" | "STRATEGY";
+          zoneType: "CHAT" | "QA";
+        }
+      | { coachMessageId: string }
+    >(),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -676,12 +679,15 @@ export const planTasks = pgTable(
   },
   (t) => [
     index("plan_tasks_user_date_idx").on(t.userId, t.taskDate),
+    uniqueIndex("plan_tasks_ai_coach_origin_idx")
+      .on(t.originRefId)
+      .where(sql`${t.originType} = 'AI_COACH'`),
     check(
       "plan_tasks_origin_consistency_chk",
       sql`(
         (${t.originType} is null and ${t.originRefId} is null and ${t.originMeta} is null)
         or
-        (${t.originType} = 'COMMUNITY_COACH' and ${t.originRefId} is not null and ${t.originMeta} is not null)
+        (${t.originType} in ('COMMUNITY_COACH', 'AI_COACH') and ${t.originRefId} is not null and ${t.originMeta} is not null)
       )`,
     ),
   ],
@@ -1440,6 +1446,44 @@ export const coachConversations = pgTable(
   ],
 );
 
+/* --- Transparent mentor preferences. This private profile is user-only; it is never exposed to
+ * teacher/coach/org/support surfaces. `organization_id` is future tenancy metadata, not an access
+ * grant. The memory consent gate controls both learning and prompt injection. */
+export const coachProfiles = pgTable(
+  "coach_profiles",
+  {
+    userId: uuid("user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    organizationId: uuid("organization_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    calibrationStatus: text("calibration_status")
+      .notNull()
+      .default("NOT_STARTED"),
+    memoryConsent: text("memory_consent").notNull().default("PENDING"),
+    supportPreference: text("support_preference"),
+    directnessPreference: text("directness_preference"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    check(
+      "coach_profiles_values_chk",
+      sql`(
+        ${t.calibrationStatus} in ('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'SKIPPED')
+        and ${t.memoryConsent} in ('PENDING', 'GRANTED', 'DECLINED')
+        and (${t.supportPreference} is null or ${t.supportPreference} in ('EMOTIONAL', 'BALANCED', 'ACTION'))
+        and (${t.directnessPreference} is null or ${t.directnessPreference} in ('GENTLE', 'BALANCED', 'DIRECT'))
+      )`,
+    ),
+  ],
+);
+
 /* --- AI coach chat history (W3, Faz 2 multi-turn): one row per message, scoped to a conversation
  * (thread). §4 #6: content is the user's own words / the coach reply (user-authored + generated — no
  * third-party PII). KVKK: behavioral free-text — included in the erasure follow-up (ai.md Gotchas).
@@ -1472,6 +1516,16 @@ export const coachMessages = pgTable(
     suggestedTask: jsonb("suggested_task"),
     /** PII-minimal context snapshot available when a COACH reply was generated. */
     personalizationContext: jsonb("personalization_context"),
+    /** Explicit source selected by the user for this turn; revalidated on regenerate. */
+    requestContext: jsonb("request_context").$type<{
+      mockExamId?: string;
+      articleSlug?: string;
+    }>(),
+    /** Backend-validated, single proposed action on a COACH row. */
+    action: jsonb("action"),
+    actionStatus: text("action_status"),
+    /** Result reference such as the created AI_COACH plan task. */
+    actionResultRefId: uuid("action_result_ref_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1481,6 +1535,62 @@ export const coachMessages = pgTable(
     index("coach_messages_conversation_created_idx").on(
       t.conversationId,
       t.createdAt,
+    ),
+    check(
+      "coach_messages_action_consistency_chk",
+      sql`(
+        (${t.action} is null and ${t.actionStatus} is null and ${t.actionResultRefId} is null)
+        or
+        (${t.action} is not null and ${t.actionStatus} in ('PROPOSED', 'ACCEPTED', 'COMPLETED', 'CANCELLED'))
+      )`,
+    ),
+  ],
+);
+
+/* --- Allowlisted cross-thread memory facts. The model may propose a fact, but the backend stores
+ * only normalized key/value data. CHAT facts point at the exact USER message and cascade with it;
+ * USER_EDIT facts detach from the original conversation lifecycle. */
+export const coachMemoryFacts = pgTable(
+  "coach_memory_facts",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    organizationId: uuid("organization_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    key: text("key").notNull(),
+    value: text("value").notNull(),
+    source: text("source").notNull(),
+    sourceMessageId: uuid("source_message_id").references(
+      () => coachMessages.id,
+      { onDelete: "cascade" },
+    ),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("coach_memory_facts_user_updated_idx").on(t.userId, t.updatedAt),
+    uniqueIndex("coach_memory_facts_user_key_idx").on(t.userId, t.key),
+    check(
+      "coach_memory_facts_source_consistency_chk",
+      sql`(
+        (${t.source} = 'CHAT' and ${t.sourceMessageId} is not null)
+        or
+        (${t.source} = 'USER_EDIT' and ${t.sourceMessageId} is null)
+      )`,
+    ),
+    check(
+      "coach_memory_facts_key_chk",
+      sql`${t.key} in ('STUDY_TIME', 'RESPONSE_PREFERENCE', 'CHALLENGE_CATEGORY', 'PRIORITY_SUBJECT')`,
     ),
   ],
 );

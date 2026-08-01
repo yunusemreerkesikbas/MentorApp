@@ -1,6 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { CoachConversationRepository } from "../infrastructure/coach-conversation.repository";
 import { CoachMemoryRepository } from "../infrastructure/coach-memory.repository";
+import { CoachMemoryFactRepository } from "../infrastructure/coach-memory-fact.repository";
+import { CoachProfileRepository } from "../infrastructure/coach-profile.repository";
 import { DailyGreetingRepository } from "../infrastructure/daily-greeting.repository";
 import { WeeklyReviewCacheRepository } from "../infrastructure/weekly-review-cache.repository";
 
@@ -8,9 +10,9 @@ import { WeeklyReviewCacheRepository } from "../infrastructure/weekly-review-cac
  * KVKK erasure for the AI module (W3). Admin calls this via the user anonymize flow — the AI module
  * owns its own tables (workstreams §2), so admin never writes them directly.
  *
- * Erased: coach threads (messages + suggested tasks cascade), the distilled memory profile, the
- * cached weekly-review narrations, and the cached daily greetings — all of it is the user's own
- * words or AI text about them.
+ * Erased: coach threads (messages + chat-sourced facts cascade), user-edited structured memory,
+ * mentor profile/consent, the legacy distilled memory, cached weekly-review narrations, and cached
+ * daily greetings — all of it is the user's own words, preferences, or AI text about them.
  * KEPT: `ai_usage` (token/cost meta only, no PII — needed for cost accounting §7).
  * Idempotent: re-running on an already-erased user is a no-op.
  */
@@ -21,12 +23,16 @@ export class AiErasureService {
   constructor(
     private readonly conversations: CoachConversationRepository,
     private readonly memory: CoachMemoryRepository,
+    private readonly memoryFacts: CoachMemoryFactRepository,
+    private readonly profiles: CoachProfileRepository,
     private readonly weeklyReviews: WeeklyReviewCacheRepository,
     private readonly dailyGreetings: DailyGreetingRepository,
   ) {}
 
   async eraseUserData(userId: string): Promise<void> {
     await this.conversations.deleteAllForUser(userId);
+    await this.memoryFacts.clear(userId);
+    await this.profiles.deleteAllForUser(userId);
     await this.memory.deleteAllForUser(userId);
     await this.weeklyReviews.deleteAllForUser(userId);
     await this.dailyGreetings.deleteAllForUser(userId);

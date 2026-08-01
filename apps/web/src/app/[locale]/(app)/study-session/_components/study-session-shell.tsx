@@ -170,6 +170,8 @@ export function StudySessionShell() {
   const subjectParam = searchParams.get("subject");
   const taskTitleParam = searchParams.get("taskTitle");
   const taskIdParam = searchParams.get("taskId");
+  const sessionIdParam = searchParams.get("sessionId");
+  const autoStartExisting = searchParams.get("autostart") === "1";
   const sourceParam = searchParams.get("source");
   const coachSessionTrackedRef = useRef(false);
   // Resume context (subject / plan-task chips) survives a reload alongside the timer.
@@ -209,6 +211,8 @@ export function StudySessionShell() {
     subject,
     planTaskId: planTaskContext.taskId,
     planTaskTitle: planTaskContext.taskTitle,
+    existingSessionId: sessionIdParam,
+    autoStartExisting,
   });
 
   // Fetched on mount and re-fetched whenever the timer returns to idle, so the

@@ -12,6 +12,11 @@ const UNIVERSITY = {
   websiteUrl: null,
   latitude: "38.024207",
   longitude: "32.505705",
+  source: "ÖSYM",
+  sourceUrl: "https://www.osym.gov.tr",
+  verifiedAt: new Date("2026-08-01T00:00:00.000Z"),
+  createdAt: new Date("2026-08-01T00:00:00.000Z"),
+  updatedAt: new Date("2026-08-01T00:00:00.000Z"),
 };
 
 function row(over: Partial<ProgramWithScoreRow>): ProgramWithScoreRow {
@@ -113,5 +118,28 @@ describe("GeoService.search", () => {
     const result = await service(fake).search("k");
     expect(result).toEqual({ cities: [], universities: [], programs: [] });
     expect(fake.needles).toEqual([]);
+  });
+
+  it("attaches city context to university search hits", async () => {
+    const fake = makeGeoFake();
+    fake.searchUniversities = async () => [
+      { ...UNIVERSITY, cityName: "Konya" },
+    ];
+
+    const result = await service(fake).search("selcuk");
+
+    // Search hits are out of context — clients (especially mobile) must not reverse-lookup
+    // cityCode from the full geo graph. Program hits already carried this; universities now match.
+    expect(result.universities).toEqual([
+      expect.objectContaining({
+        id: UNIVERSITY.id,
+        name: UNIVERSITY.name,
+        cityCode: "42",
+        cityName: "Konya",
+        programCount: 0,
+        latitude: 38.024207,
+        longitude: 32.505705,
+      }),
+    ]);
   });
 });

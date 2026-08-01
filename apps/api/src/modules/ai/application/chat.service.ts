@@ -9,6 +9,14 @@ import {
   type CountdownDto,
   type CoachConversationOriginDto,
   type CoachPersonalizationDto,
+  CoachActionStatus,
+  CoachActionType,
+  CoachPersonalizationMode,
+  CoachTurnMode,
+  CoachIntent,
+  type CoachActionDto,
+  type CoachProfileDto,
+  type CoachMemoryFactDto,
 } from "@mentor/types";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -18,6 +26,8 @@ import { FeatureFlag } from "../../../common/config/config.catalog";
 import { ContentService } from "../../content/application/content.service";
 import { ExamEventType } from "../../content/domain/content.constants";
 import { MockExamService } from "../../coaching/application/mock-exam.service";
+import { CoachEvidenceService } from "../../coaching/application/coach-evidence.service";
+import type { CoachEvidenceSnapshot } from "../../coaching/domain/coach-evidence";
 import { EconomyService } from "../../economy/application/economy.service";
 import { EconomyLedger } from "../../economy/domain/economy.constants";
 import { EntitlementService } from "../../payments/application/entitlement.service";
@@ -31,7 +41,6 @@ import {
   buildConversationTitle,
   buildCoachPersonalization,
   buildSystemPrompt,
-  CHAT_HISTORY_MAX_MESSAGES,
   estimateCostMicros,
   RAG_MAX_DISTANCE,
   RAG_TOP_K,
@@ -39,6 +48,7 @@ import {
 import {
   createTaskMarkerFilter,
   extractReplyMarkers,
+  type MemoryCandidate,
 } from "../domain/suggested-task";
 import { classifyOfficialIntent } from "../domain/official-intent";
 import {
@@ -47,15 +57,28 @@ import {
   enforceNeedsInputReply,
 } from "../domain/personalization-marker";
 import { promptLocale, type PromptLocale } from "../domain/prompt-locale";
+import { hasSeriousDistressSignal } from "../domain/serious-distress";
+import {
+  boundChatHistory,
+  buildMentorV2Prompt,
+  isMentorV2Enabled,
+} from "../domain/mentor-v2-prompt";
+import {
+  CoachTurnPlanner,
+  type CoachTurnPlan,
+} from "../domain/coach-turn-planner";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import {
   CoachMessageRepository,
   type CoachConversationTarget,
+  type PersistedCoachExchange,
+  type CoachRequestContext,
 } from "../infrastructure/coach-message.repository";
 import { CoachMemoryRepository } from "../infrastructure/coach-memory.repository";
 import { CoachConversationRepository } from "../infrastructure/coach-conversation.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
+import { CoachProfileService } from "./coach-profile.service";
 import {
   ForumCoachBridgeService,
   type ForumCoachContext,
@@ -63,6 +86,12 @@ import {
 
 export type CoachReplyResult = CoachChatReplyDto;
 type OfficialContent = Omit<CoachReplyResult, "conversationId">;
+type MentorV2Context = {
+  profile: CoachProfileDto;
+  snapshot: CoachEvidenceSnapshot;
+  memories: CoachMemoryFactDto[];
+  turn: CoachTurnPlan;
+};
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -89,7 +118,55 @@ export class ChatService {
     private readonly mockExams: MockExamService,
     private readonly i18n: I18nService,
     @Optional() private readonly forumCoachBridge?: ForumCoachBridgeService,
+    @Optional() private readonly evidence?: CoachEvidenceService,
+    @Optional() private readonly profiles?: CoachProfileService,
+    @Optional() private readonly turnPlanner?: CoachTurnPlanner,
   ) {}
+
+  /** Keeps legacy repository test doubles/rolling deployments readable during the additive change. */
+  private persistedIds(value: PersistedCoachExchange): {
+    conversationId: string;
+    userMessageId?: string;
+    coachMessageId?: string;
+  } {
+    if (typeof (value as unknown) === "string") {
+      return { conversationId: value as unknown as string };
+    }
+    return value;
+  }
+
+  private async mentorV2Context(
+    user: RequestUser,
+    message: string,
+  ): Promise<MentorV2Context | null> {
+    if (!this.evidence || !this.profiles || !this.turnPlanner) return null;
+    const configured = await this.config.get(
+      "ai.coach_personalization_v2.rollout_percent",
+    );
+    const rolloutPercent = typeof configured === "number" ? configured : 0;
+    if (!isMentorV2Enabled(user.id, user.roles, rolloutPercent)) return null;
+
+    const [snapshot, profile] = await Promise.all([
+      this.evidence.build(user.id),
+      this.profiles.getProfile(user.id),
+    ]);
+    const memories =
+      profile.memoryConsent === "GRANTED"
+        ? await this.profiles.getPromptMemories(user.id)
+        : [];
+    return {
+      snapshot,
+      profile,
+      memories,
+      turn: this.turnPlanner.plan({
+        message,
+        profile,
+        moodLevel: snapshot.moodLevel,
+        availableEvidence: snapshot.evidence,
+        pendingAiCoachPlanTaskId: snapshot.pendingAiCoachPlanTaskId,
+      }),
+    };
+  }
 
   private async resolveCommunityContext(
     userId: string,
@@ -236,20 +313,169 @@ export class ChatService {
       conversationId,
       community,
     );
-    const threadId = await this.messages.persistExchange(
-      userId,
-      target,
-      message,
-      {
+    const coach = {
         content: official.reply,
         model: official.model,
         sources: official.sources,
         ...(official.officialCountdown
           ? { officialCountdown: official.officialCountdown }
           : {}),
-      },
+      };
+    const persistedRaw = contextArticleSlug
+      ? await this.messages.persistExchange(userId, target, message, coach, {
+          articleSlug: contextArticleSlug,
+        })
+      : await this.messages.persistExchange(userId, target, message, coach);
+    const persisted = this.persistedIds(persistedRaw);
+    return {
+      ...official,
+      conversationId: persisted.conversationId,
+      ...(persisted.coachMessageId
+        ? { coachMessageId: persisted.coachMessageId }
+        : {}),
+    };
+  }
+
+  private v2Personalization(context: MentorV2Context): CoachPersonalizationDto {
+    return {
+      mode:
+        context.turn.usedEvidence.length > 0
+          ? CoachPersonalizationMode.GROUNDED
+          : CoachPersonalizationMode.NEEDS_INPUT,
+      examType: context.snapshot.examType,
+      moodLevel: context.snapshot.moodLevel,
+      recentSessions: null,
+      todayPlan: null,
+      usedSignals: [],
+      strategyVersion: context.turn.strategyVersion,
+      intent: context.turn.intent,
+      tone: context.turn.tone,
+      usedEvidence: context.turn.usedEvidence,
+    };
+  }
+
+  private async buildAction(
+    context: MentorV2Context | null,
+    task?: { title: string; subject: string | null },
+  ): Promise<CoachActionDto | undefined> {
+    if (!context) return undefined;
+    if (
+      context.turn.allowedAction === CoachActionType.OPEN_PLAN_ADAPTATION
+    ) {
+      return {
+        type: CoachActionType.OPEN_PLAN_ADAPTATION,
+        label: this.i18n.translate("coaching.mentorV2.openPlanAdaptation", {
+          lang: I18nContext.current()?.lang,
+        }) as unknown as string,
+        payload: { source: "PLAN" },
+      };
+    }
+    if (
+      context.turn.allowedAction === CoachActionType.START_PLAN_SESSION &&
+      context.snapshot.pendingAiCoachPlanTaskId
+    ) {
+      return {
+        type: CoachActionType.START_PLAN_SESSION,
+        label: this.i18n.translate("coaching.mentorV2.startSession", {
+          lang: I18nContext.current()?.lang,
+        }) as unknown as string,
+        payload: {
+          planTaskId: context.snapshot.pendingAiCoachPlanTaskId,
+        },
+      };
+    }
+    if (
+      context.turn.allowedAction === CoachActionType.CREATE_PLAN_TASK &&
+      task
+    ) {
+      let subject: string | null = null;
+      if (task.subject && context.snapshot.examType) {
+        try {
+          const calendar = await this.content.getExamCalendarByFamily(
+            context.snapshot.examType,
+          );
+          const taxonomy = calendar
+            ? await this.content.listExamSubjectsByExamId(calendar.exam.id)
+            : [];
+          const normalized = task.subject.trim().toLocaleLowerCase("tr-TR");
+          subject =
+            taxonomy.find(
+              (item) =>
+                item.slug.toLocaleLowerCase("tr-TR") === normalized ||
+                item.name.toLocaleLowerCase("tr-TR") === normalized,
+            )?.name ?? null;
+        } catch (error) {
+          this.logger.warn({
+            event: "coach_action_taxonomy_unavailable",
+            error: error instanceof Error ? error.name : "unknown",
+          });
+        }
+      }
+      return {
+        type: CoachActionType.CREATE_PLAN_TASK,
+        label: this.i18n.translate("coaching.mentorV2.createTask", {
+          lang: I18nContext.current()?.lang,
+        }) as unknown as string,
+        payload: { ...task, subject },
+      };
+    }
+    if (context.turn.allowedAction !== CoachActionType.NAVIGATE) return undefined;
+    if (context.turn.intent === CoachIntent.PERFORMANCE) {
+      return {
+        type: CoachActionType.NAVIGATE,
+        label: this.i18n.translate("coaching.mentorV2.openAnalysis", {
+          lang: I18nContext.current()?.lang,
+        }) as unknown as string,
+        payload: { destination: "ANALYSIS" },
+      };
+    }
+    if (context.turn.intent === CoachIntent.GOAL) {
+      return {
+        type: CoachActionType.NAVIGATE,
+        label: this.i18n.translate("coaching.mentorV2.openGoal", {
+          lang: I18nContext.current()?.lang,
+        }) as unknown as string,
+        payload: { destination: "GOAL" },
+      };
+    }
+    if (context.turn.intent === CoachIntent.CHECK_IN) {
+      return {
+        type: CoachActionType.NAVIGATE,
+        label: this.i18n.translate("coaching.mentorV2.openMood", {
+          lang: I18nContext.current()?.lang,
+        }) as unknown as string,
+        payload: { destination: "MOOD" },
+      };
+    }
+    return undefined;
+  }
+
+  private async completeLocalExchange(
+    userId: string,
+    target: CoachConversationTarget,
+    message: string,
+    reply: string,
+    model: string,
+    personalization?: CoachPersonalizationDto,
+  ): Promise<CoachReplyResult> {
+    const persisted = this.persistedIds(
+      await this.messages.persistExchange(userId, target, message, {
+        content: reply,
+        model,
+        sources: [],
+        ...(personalization ? { personalization } : {}),
+      }),
     );
-    return { ...official, conversationId: threadId };
+    return {
+      reply,
+      model,
+      sources: [],
+      conversationId: persisted.conversationId,
+      ...(persisted.coachMessageId
+        ? { coachMessageId: persisted.coachMessageId }
+        : {}),
+      ...(personalization ? { personalization } : {}),
+    };
   }
 
   async reply(
@@ -276,6 +502,46 @@ export class ChatService {
       community,
     );
     if (official) return official;
+    const mentorV2 = await this.mentorV2Context(user, message);
+    if (
+      hasSeriousDistressSignal(message) ||
+      mentorV2?.turn.mode === CoachTurnMode.SAFETY
+    ) {
+      const target = await this.resolveConversationTarget(
+        user.id,
+        message,
+        conversationId,
+        community,
+      );
+      return this.completeLocalExchange(
+        user.id,
+        target,
+        message,
+        this.i18n.translate("coaching.mood.SERIOUS_DISTRESS", {
+          lang: I18nContext.current()?.lang,
+        }) as unknown as string,
+        "verified-safety",
+        mentorV2 ? this.v2Personalization(mentorV2) : undefined,
+      );
+    }
+    if (mentorV2?.turn.mode === CoachTurnMode.CALIBRATE) {
+      const target = await this.resolveConversationTarget(
+        user.id,
+        message,
+        conversationId,
+        community,
+      );
+      return this.completeLocalExchange(
+        user.id,
+        target,
+        message,
+        this.i18n.translate("coaching.mentorV2.calibration", {
+          lang: I18nContext.current()?.lang,
+        }) as unknown as string,
+        "mentor-calibration",
+        this.v2Personalization(mentorV2),
+      );
+    }
     await this.budget.assertWithinBudget();
 
     const ent = await this.entitlement.getEntitlement(user.id, user.roles);
@@ -309,6 +575,11 @@ export class ChatService {
         mockExam,
         contextArticleSlug,
         community,
+        mentorV2,
+        {
+          ...(contextMockExamId ? { mockExamId: contextMockExamId } : {}),
+          ...(contextArticleSlug ? { articleSlug: contextArticleSlug } : {}),
+        },
       );
     } catch (err) {
       if (!ent.isPremium && shouldRefundOnFailure && coinCost > 0) {
@@ -394,9 +665,17 @@ export class ChatService {
     mockExam?: MockExamDto,
     opts?: { excludeTailExchange?: boolean; contextArticleSlug?: string },
     community?: ForumCoachContext,
+    mentorV2?: MentorV2Context | null,
   ) {
-    const ctx = await this.context.build(userId);
-    const personalization = buildCoachPersonalization(ctx);
+    const legacyContext = mentorV2 ? null : await this.context.build(userId);
+    const personalization = mentorV2
+      ? this.v2Personalization(mentorV2)
+      : buildCoachPersonalization(legacyContext!);
+    const examType = mentorV2?.snapshot.examType ?? legacyContext?.examType ?? null;
+    const [historyMax, historyMaxCharacters] = await Promise.all([
+      this.config.get("ai.coach.history_max_messages"),
+      this.config.get("ai.coach.history_max_characters"),
+    ]);
 
     // Multi-turn: replay the last N messages OF THIS THREAD (the user's own words + earlier coach
     // replies — no third-party PII, §4 #6). Defensive: a history failure never blocks the chat.
@@ -404,18 +683,22 @@ export class ChatService {
     // replaced, and the user message is re-sent as the live prompt.
     const history: LlmHistoryMessage[] = conversationId
       ? await this.messages
-          .lastN(userId, conversationId, CHAT_HISTORY_MAX_MESSAGES)
+          .lastN(userId, conversationId, historyMax)
           .then((rows) =>
             opts?.excludeTailExchange ? rows.slice(0, -2) : rows,
           )
           .then((rows) =>
-            rows.map((m) => ({
-              role:
-                m.role === "USER"
-                  ? ("user" as const)
-                  : ("assistant" as const),
-              content: m.content,
-            })),
+            boundChatHistory(
+              rows.map((m) => ({
+                role:
+                  m.role === "USER"
+                    ? ("user" as const)
+                    : ("assistant" as const),
+                content: m.content,
+              })),
+              historyMax,
+              historyMaxCharacters,
+            ),
           )
           .catch((err) => {
             this.logger.warn("Chat history load skipped: " + String(err));
@@ -428,12 +711,12 @@ export class ChatService {
       sourceUrl: string;
       snippet: string;
     }[] = [];
-    if (ctx.examType) {
+    if (examType) {
       try {
         if (opts?.contextArticleSlug) {
           const exact = await this.content.getInfoArticleSource(
             opts.contextArticleSlug,
-            ctx.examType,
+            examType,
           );
           if (exact) retrieved = [exact];
         }
@@ -443,13 +726,23 @@ export class ChatService {
     }
 
     const locale = promptLocale(I18nContext.current()?.lang);
-    const system = buildSystemPrompt(
-      ctx,
-      retrieved,
-      mockExam,
-      locale,
-      community,
-    );
+    const system = mentorV2
+      ? buildMentorV2Prompt({
+          locale,
+          turn: mentorV2.turn,
+          memories: mentorV2.memories,
+          memoryEnabled: mentorV2.profile.memoryConsent === "GRANTED",
+          sources: retrieved,
+          mockExam,
+          community,
+        })
+      : buildSystemPrompt(
+          legacyContext!,
+          retrieved,
+          mockExam,
+          locale,
+          community,
+        );
 
     return {
       llmInput: { system, user: message, history },
@@ -460,6 +753,7 @@ export class ChatService {
       })),
       personalization,
       locale,
+      mentorV2: mentorV2 ?? null,
     };
   }
 
@@ -477,7 +771,17 @@ export class ChatService {
     sources: { title: string; slug: string; url: string }[],
     personalization: CoachPersonalizationDto,
     suggestedTask?: { title: string; subject: string | null },
-  ): Promise<string> {
+    options?: {
+      action?: CoachActionDto;
+      requestContext?: CoachRequestContext;
+      memoryCandidate?: MemoryCandidate;
+      learnMemory?: boolean;
+    },
+  ): Promise<{
+    conversationId: string;
+    userMessageId?: string;
+    coachMessageId?: string;
+  }> {
     await this.usage.append({
       userId,
       model: result.model,
@@ -491,13 +795,40 @@ export class ChatService {
       ),
     });
 
-    return this.messages.persistExchange(userId, target, message, {
+    const coach = {
       content: result.text,
       model: result.model,
       sources,
       personalization,
       suggestedTask,
-    });
+      ...(options?.action ? { action: options.action } : {}),
+    };
+    const persistedRaw = options?.requestContext && Object.keys(options.requestContext).length > 0
+      ? await this.messages.persistExchange(
+          userId,
+          target,
+          message,
+          coach,
+          options.requestContext,
+        )
+      : await this.messages.persistExchange(userId, target, message, coach);
+    const persisted = this.persistedIds(persistedRaw);
+    if (options?.learnMemory && this.profiles && persisted.userMessageId) {
+      try {
+        await this.profiles.learnFromChat(
+          userId,
+          persisted.userMessageId,
+          message,
+          options.memoryCandidate,
+        );
+      } catch (error) {
+        this.logger.warn({
+          event: "coach_memory_learning_failed",
+          error: error instanceof Error ? error.name : "unknown",
+        });
+      }
+    }
+    return persisted;
   }
   private async completeChat(
     userId: string,
@@ -506,6 +837,8 @@ export class ChatService {
     mockExam?: MockExamDto,
     contextArticleSlug?: string,
     community?: ForumCoachContext,
+    mentorV2?: MentorV2Context | null,
+    requestContext?: CoachRequestContext,
   ): Promise<CoachReplyResult> {
     const { llmInput, sources, personalization, locale } = await this.prepareChat(
       userId,
@@ -514,22 +847,24 @@ export class ChatService {
       mockExam,
       { contextArticleSlug },
       community,
+      mentorV2,
     );
     const result = await this.llm.complete(llmInput);
     // Order-agnostic: models sometimes reverse the FOLLOWUP/TASK order — never leak a marker.
     const markers = extractReplyMarkers(result.text);
-    const personalized = applyCoachPersonalizationMarker(
-      markers.text,
-      personalization,
-      locale,
-    );
-    const reply = enforceNeedsInputReply(
-      personalized.text,
-      personalized.personalization.mode,
-      locale,
-    );
-    const { task, followUps } = markers;
-    const conversationId = await this.recordSuccess(
+    const personalized = mentorV2
+      ? { text: markers.text.trim(), personalization }
+      : applyCoachPersonalizationMarker(markers.text, personalization, locale);
+    const reply = mentorV2
+      ? personalized.text
+      : enforceNeedsInputReply(
+          personalized.text,
+          personalized.personalization.mode,
+          locale,
+        );
+    const { task, followUps, memoryCandidate } = markers;
+    const action = await this.buildAction(mentorV2 ?? null, task ?? undefined);
+    const persisted = await this.recordSuccess(
       userId,
       target,
       message,
@@ -537,14 +872,28 @@ export class ChatService {
       sources,
       personalized.personalization,
       task ?? undefined,
+      {
+        ...(action ? { action } : {}),
+        ...(requestContext && Object.keys(requestContext).length > 0
+          ? { requestContext }
+          : {}),
+        ...(memoryCandidate ? { memoryCandidate } : {}),
+        learnMemory: Boolean(mentorV2),
+      },
     );
     return {
       reply,
       model: result.model,
-      conversationId,
+      conversationId: persisted.conversationId,
+      ...(persisted.coachMessageId
+        ? { coachMessageId: persisted.coachMessageId }
+        : {}),
       sources,
       personalization: personalized.personalization,
       ...(task ? { suggestedTask: task } : {}),
+      ...(action
+        ? { action, actionStatus: CoachActionStatus.PROPOSED }
+        : {}),
       ...(followUps.length > 0 ? { followUps } : {}),
     };
   }
@@ -582,6 +931,53 @@ export class ChatService {
       return;
     }
 
+    const mentorV2 = await this.mentorV2Context(user, message);
+    if (
+      hasSeriousDistressSignal(message) ||
+      mentorV2?.turn.mode === CoachTurnMode.SAFETY
+    ) {
+      const target = await this.resolveConversationTarget(
+        user.id,
+        message,
+        conversationId,
+        community,
+      );
+      yield {
+        done: await this.completeLocalExchange(
+          user.id,
+          target,
+          message,
+          this.i18n.translate("coaching.mood.SERIOUS_DISTRESS", {
+            lang: I18nContext.current()?.lang,
+          }) as unknown as string,
+          "verified-safety",
+          mentorV2 ? this.v2Personalization(mentorV2) : undefined,
+        ),
+      };
+      return;
+    }
+    if (mentorV2?.turn.mode === CoachTurnMode.CALIBRATE) {
+      const target = await this.resolveConversationTarget(
+        user.id,
+        message,
+        conversationId,
+        community,
+      );
+      yield {
+        done: await this.completeLocalExchange(
+          user.id,
+          target,
+          message,
+          this.i18n.translate("coaching.mentorV2.calibration", {
+            lang: I18nContext.current()?.lang,
+          }) as unknown as string,
+          "mentor-calibration",
+          this.v2Personalization(mentorV2),
+        ),
+      };
+      return;
+    }
+
     const ent = await this.entitlement.getEntitlement(user.id, user.roles);
     await this.budget.assertWithinBudget();
     const spendRefId = clientMessageId ?? randomUUID();
@@ -614,22 +1010,31 @@ export class ChatService {
         mockExam,
         { contextArticleSlug },
         community,
+        mentorV2,
       );
-      const final = yield* this.streamLlm(llmInput, personalization, locale);
-      const markers = extractReplyMarkers(final.text);
-      const personalized = applyCoachPersonalizationMarker(
-        markers.text,
+      const final = yield* this.streamLlm(
+        llmInput,
         personalization,
         locale,
+        Boolean(mentorV2),
       );
-      const reply = enforceNeedsInputReply(
-        personalized.text,
-        personalized.personalization.mode,
-        locale,
-      );
-      const { task, followUps } = markers;
-      if (personalization.mode === "NEEDS_INPUT") yield { delta: reply };
-      const threadId = await this.recordSuccess(
+      const markers = extractReplyMarkers(final.text);
+      const personalized = mentorV2
+        ? { text: markers.text.trim(), personalization }
+        : applyCoachPersonalizationMarker(markers.text, personalization, locale);
+      const reply = mentorV2
+        ? personalized.text
+        : enforceNeedsInputReply(
+            personalized.text,
+            personalized.personalization.mode,
+            locale,
+          );
+      const { task, followUps, memoryCandidate } = markers;
+      const action = await this.buildAction(mentorV2, task ?? undefined);
+      if (!mentorV2 && personalization.mode === "NEEDS_INPUT") {
+        yield { delta: reply };
+      }
+      const persisted = await this.recordSuccess(
         user.id,
         target,
         message,
@@ -637,15 +1042,30 @@ export class ChatService {
         sources,
         personalized.personalization,
         task ?? undefined,
+        {
+          ...(action ? { action } : {}),
+          requestContext: {
+            ...(contextMockExamId ? { mockExamId: contextMockExamId } : {}),
+            ...(contextArticleSlug ? { articleSlug: contextArticleSlug } : {}),
+          },
+          ...(memoryCandidate ? { memoryCandidate } : {}),
+          learnMemory: Boolean(mentorV2),
+        },
       );
       yield {
         done: {
           reply,
           model: final.model,
-          conversationId: threadId,
+          conversationId: persisted.conversationId,
+          ...(persisted.coachMessageId
+            ? { coachMessageId: persisted.coachMessageId }
+            : {}),
           sources,
           personalization: personalized.personalization,
           ...(task ? { suggestedTask: task } : {}),
+          ...(action
+            ? { action, actionStatus: CoachActionStatus.PROPOSED }
+            : {}),
           ...(followUps.length > 0 ? { followUps } : {}),
         },
       };
@@ -696,10 +1116,50 @@ export class ChatService {
     if (!userMsg || !coachMsg) {
       throw new DomainError(ErrorCode.VALIDATION_ERROR, HttpStatus.BAD_REQUEST);
     }
+    if (
+      coachMsg.actionStatus === CoachActionStatus.ACCEPTED ||
+      coachMsg.actionStatus === CoachActionStatus.COMPLETED
+    ) {
+      throw new DomainError(ErrorCode.CONFLICT, HttpStatus.CONFLICT);
+    }
+
+    const requestContext = this.messages.getRequestContext
+      ? await this.messages.getRequestContext(user.id, userMsg.id)
+      : null;
+    let regeneratedMockExam: MockExamDto | undefined;
+    if (requestContext?.mockExamId) {
+      try {
+        regeneratedMockExam = await this.mockExams.getById(
+          user.id,
+          requestContext.mockExamId,
+        );
+      } catch {
+        throw new DomainError(
+          ErrorCode.AI_COACH_CONTEXT_STALE,
+          HttpStatus.CONFLICT,
+        );
+      }
+    }
+    if (requestContext?.articleSlug) {
+      const current = await this.context.build(user.id);
+      const exact = current.examType
+        ? await this.content.getInfoArticleSource(
+            requestContext.articleSlug,
+            current.examType,
+          )
+        : null;
+      if (!exact) {
+        throw new DomainError(
+          ErrorCode.AI_COACH_CONTEXT_STALE,
+          HttpStatus.CONFLICT,
+        );
+      }
+    }
 
     const official = await this.resolveOfficialContent(
       user.id,
       userMsg.content,
+      requestContext?.articleSlug,
     );
     if (official) {
       const updated = await this.messages.updateCoachReply(
@@ -717,7 +1177,64 @@ export class ChatService {
       if (!updated) {
         throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
       }
-      yield { done: { ...official, conversationId } };
+      yield {
+        done: { ...official, conversationId, coachMessageId: coachMsg.id },
+      };
+      return;
+    }
+
+    const mentorV2 = await this.mentorV2Context(user, userMsg.content);
+    if (
+      hasSeriousDistressSignal(userMsg.content) ||
+      mentorV2?.turn.mode === CoachTurnMode.SAFETY
+    ) {
+      const reply = this.i18n.translate("coaching.mood.SERIOUS_DISTRESS", {
+        lang: I18nContext.current()?.lang,
+      }) as unknown as string;
+      const personalization = mentorV2
+        ? this.v2Personalization(mentorV2)
+        : undefined;
+      const updated = await this.messages.updateCoachReply(user.id, coachMsg.id, {
+        content: reply,
+        model: "verified-safety",
+        sources: [],
+        ...(personalization ? { personalization } : {}),
+      });
+      if (!updated) throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+      yield {
+        done: {
+          reply,
+          model: "verified-safety",
+          conversationId,
+          coachMessageId: coachMsg.id,
+          sources: [],
+          ...(personalization ? { personalization } : {}),
+        },
+      };
+      return;
+    }
+    if (mentorV2?.turn.mode === CoachTurnMode.CALIBRATE) {
+      const reply = this.i18n.translate("coaching.mentorV2.calibration", {
+        lang: I18nContext.current()?.lang,
+      }) as unknown as string;
+      const personalization = this.v2Personalization(mentorV2);
+      const updated = await this.messages.updateCoachReply(user.id, coachMsg.id, {
+        content: reply,
+        model: "mentor-calibration",
+        sources: [],
+        personalization,
+      });
+      if (!updated) throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+      yield {
+        done: {
+          reply,
+          model: "mentor-calibration",
+          conversationId,
+          coachMessageId: coachMsg.id,
+          sources: [],
+          personalization,
+        },
+      };
       return;
     }
 
@@ -741,24 +1258,38 @@ export class ChatService {
         user.id,
         conversationId,
         userMsg.content,
-        undefined,
-        { excludeTailExchange: true },
+        regeneratedMockExam,
+        {
+          excludeTailExchange: true,
+          ...(requestContext?.articleSlug
+            ? { contextArticleSlug: requestContext.articleSlug }
+            : {}),
+        },
         community,
+        mentorV2,
       );
-      const final = yield* this.streamLlm(llmInput, personalization, locale);
-      const markers = extractReplyMarkers(final.text);
-      const personalized = applyCoachPersonalizationMarker(
-        markers.text,
+      const final = yield* this.streamLlm(
+        llmInput,
         personalization,
         locale,
+        Boolean(mentorV2),
       );
-      const reply = enforceNeedsInputReply(
-        personalized.text,
-        personalized.personalization.mode,
-        locale,
-      );
+      const markers = extractReplyMarkers(final.text);
+      const personalized = mentorV2
+        ? { text: markers.text.trim(), personalization }
+        : applyCoachPersonalizationMarker(markers.text, personalization, locale);
+      const reply = mentorV2
+        ? personalized.text
+        : enforceNeedsInputReply(
+            personalized.text,
+            personalized.personalization.mode,
+            locale,
+          );
       const { task, followUps } = markers;
-      if (personalization.mode === "NEEDS_INPUT") yield { delta: reply };
+      const action = await this.buildAction(mentorV2, task ?? undefined);
+      if (!mentorV2 && personalization.mode === "NEEDS_INPUT") {
+        yield { delta: reply };
+      }
 
       await this.usage.append({
         userId: user.id,
@@ -781,6 +1312,7 @@ export class ChatService {
           sources,
           personalization: personalized.personalization,
           suggestedTask: task ?? undefined,
+          ...(action ? { action } : {}),
         },
       );
       if (!updated) {
@@ -792,9 +1324,13 @@ export class ChatService {
           reply,
           model: final.model,
           conversationId,
+          coachMessageId: coachMsg.id,
           sources,
           personalization: personalized.personalization,
           ...(task ? { suggestedTask: task } : {}),
+          ...(action
+            ? { action, actionStatus: CoachActionStatus.PROPOSED }
+            : {}),
           ...(followUps.length > 0 ? { followUps } : {}),
         },
       };
@@ -817,7 +1353,7 @@ export class ChatService {
     system: string;
     user: string;
     history: LlmHistoryMessage[];
-  }, personalization: CoachPersonalizationDto, locale: PromptLocale): AsyncGenerator<
+  }, personalization: CoachPersonalizationDto, locale: PromptLocale, mentorV2 = false): AsyncGenerator<
     CoachChatStreamEvent,
     {
       text: string;
@@ -827,11 +1363,11 @@ export class ChatService {
     }
   > {
     // The task/follow-up markers must never leak into deltas — the filter holds anything marker-like.
-    const personalizationFilter = createPersonalizationMarkerFilter(
-      personalization,
-      locale,
-    );
-    const bufferUntilValidated = personalization.mode === "NEEDS_INPUT";
+    const personalizationFilter = mentorV2
+      ? null
+      : createPersonalizationMarkerFilter(personalization, locale);
+    const bufferUntilValidated =
+      !mentorV2 && personalization.mode === "NEEDS_INPUT";
     const markerFilter = createTaskMarkerFilter();
     let final: {
       text: string;
@@ -841,7 +1377,9 @@ export class ChatService {
     } | null = null;
     for await (const ev of this.llm.completeStream(llmInput)) {
       if (ev.delta) {
-        const personalized = personalizationFilter.push(ev.delta);
+        const personalized = personalizationFilter
+          ? personalizationFilter.push(ev.delta)
+          : ev.delta;
         const safe = personalized ? markerFilter.push(personalized) : "";
         if (safe && !bufferUntilValidated) yield { delta: safe };
       }
@@ -853,7 +1391,7 @@ export class ChatService {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
-    const personalizationHeld = personalizationFilter.flush();
+    const personalizationHeld = personalizationFilter?.flush() ?? "";
     if (personalizationHeld) {
       const safe = markerFilter.push(personalizationHeld);
       if (safe && !bufferUntilValidated) yield { delta: safe };

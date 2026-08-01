@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ModerationTargetType, ReportReason } from "@mentor/types";
+import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 import { createReport } from "@/lib/forum";
 
 const REASONS: { value: ReportReason; key: string }[] = [
@@ -37,11 +38,6 @@ export function ThreadMenu({
   const [view, setView] = useState<"menu" | "report" | "done">("menu");
   const [busy, setBusy] = useState(false);
 
-  const close = () => {
-    setOpen(false);
-    setView("menu");
-  };
-
   const submitReport = async (reason: ReportReason) => {
     setBusy(true);
     try {
@@ -55,108 +51,84 @@ export function ThreadMenu({
   };
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        aria-label={t("report")}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => {
-          setOpen((o) => !o);
-          setView("menu");
-        }}
-        className="flex h-6 w-6 items-center justify-center rounded-full transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        style={{ color: "var(--color-secondary)" }}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <circle cx="5" cy="12" r="1.6" />
-          <circle cx="12" cy="12" r="1.6" />
-          <circle cx="19" cy="12" r="1.6" />
-        </svg>
-      </button>
-
-      {open && (
-        <>
-          {/* Click-away backdrop */}
-          <div className="fixed inset-0 z-40" onClick={close} aria-hidden="true" />
-          <div
-            role="menu"
-            className="absolute right-0 z-50 mt-1 w-48 overflow-hidden rounded-xl bg-white py-1"
-            style={{ border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0px 8px 24px rgba(37,73,150,0.12)" }}
-          >
-            {view === "menu" && (
-              <>
-                {canModerate && (
-                  <MenuItem
-                    onClick={() => {
-                      onPin?.(!isPinned);
-                      close();
-                    }}
-                  >
-                    {isPinned ? t("unpin") : t("pin")}
-                  </MenuItem>
-                )}
-                <MenuItem onClick={() => setView("report")}>{t("report")}</MenuItem>
-                {canModerate && (
-                  <MenuItem
-                    danger
-                    onClick={() => {
-                      onDelete?.();
-                      close();
-                    }}
-                  >
-                    {t("delete")}
-                  </MenuItem>
-                )}
-              </>
-            )}
-
-            {view === "report" && (
-              <>
-                <p className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--color-secondary)" }}>
-                  {t("report_reason")}
-                </p>
-                {REASONS.map((r) => (
-                  <MenuItem key={r.value} disabled={busy} onClick={() => void submitReport(r.value)}>
-                    {t(r.key as `report_${string}`)}
-                  </MenuItem>
-                ))}
-              </>
-            )}
-
-            {view === "done" && (
-              <p className="px-3 py-2.5 text-sm" style={{ color: "var(--color-secondary)" }}>
-                {t("report_done")}
-              </p>
-            )}
-          </div>
-        </>
+    <PopoverMenu
+      align="right"
+      menuClassName="w-48"
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setView("menu");
+      }}
+      trigger={({ open: isOpen, setOpen: setMenuOpen, menuId }) => (
+        <button
+          type="button"
+          aria-label={t("report")}
+          aria-haspopup="menu"
+          aria-expanded={isOpen}
+          aria-controls={isOpen ? menuId : undefined}
+          onClick={() => {
+            setMenuOpen(!isOpen);
+            setView("menu");
+          }}
+          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+          style={{ color: "var(--color-secondary)" }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="5" cy="12" r="1.6" />
+            <circle cx="12" cy="12" r="1.6" />
+            <circle cx="19" cy="12" r="1.6" />
+          </svg>
+        </button>
       )}
-    </div>
-  );
-}
-
-function MenuItem({
-  children,
-  onClick,
-  danger,
-  disabled,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  danger?: boolean;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      role="menuitem"
-      disabled={disabled}
-      onClick={onClick}
-      className="block w-full px-3 py-2 text-left text-sm transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:bg-black/[0.04] disabled:opacity-50"
-      style={{ color: danger ? "var(--color-danger)" : "var(--color-main)" }}
     >
-      {children}
-    </button>
+      {view === "menu" ? (
+        <>
+          {canModerate ? (
+            <PopoverMenuItem
+              onClick={() => {
+                onPin?.(!isPinned);
+              }}
+            >
+              {isPinned ? t("unpin") : t("pin")}
+            </PopoverMenuItem>
+          ) : null}
+          <PopoverMenuItem closeOnClick={false} onClick={() => setView("report")}>
+            {t("report")}
+          </PopoverMenuItem>
+          {canModerate ? (
+            <PopoverMenuItem danger onClick={() => onDelete?.()}>
+              {t("delete")}
+            </PopoverMenuItem>
+          ) : null}
+        </>
+      ) : null}
+
+      {view === "report" ? (
+        <>
+          <p
+            className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide"
+            style={{ color: "var(--color-secondary)" }}
+          >
+            {t("report_reason")}
+          </p>
+          {REASONS.map((r) => (
+            <PopoverMenuItem
+              key={r.value}
+              disabled={busy}
+              closeOnClick={false}
+              onClick={() => void submitReport(r.value)}
+            >
+              {t(r.key as `report_${string}`)}
+            </PopoverMenuItem>
+          ))}
+        </>
+      ) : null}
+
+      {view === "done" ? (
+        <p className="px-3 py-2.5 text-sm" style={{ color: "var(--color-secondary)" }}>
+          {t("report_done")}
+        </p>
+      ) : null}
+    </PopoverMenu>
   );
 }

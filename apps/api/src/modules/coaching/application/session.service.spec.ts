@@ -148,6 +148,84 @@ describe("SessionService.start", () => {
   });
 });
 
+describe("SessionService.startFromAiCoach", () => {
+  const planTaskId = "00000000-0000-4000-8000-000000000010";
+
+  it("returns the existing open session after taking the user lock", async () => {
+    const acquireUserLock = vi.fn(async () => undefined);
+    const existing = {
+      id: "session-existing",
+      preset: "25_5",
+      status: "IN_PROGRESS",
+      subject: "Matematik",
+      planTaskId,
+      startedAt: new Date("2026-08-01T10:00:00.000Z"),
+      endedAt: null,
+      actualFocusSeconds: 0,
+      plannedFocusMinutes: null,
+      sessionMood: null,
+      struggleNote: null,
+      aiReflection: null,
+    };
+    const findOpenByPlanTask = vi.fn(async () => existing);
+    const findById = vi.fn();
+    const create = vi.fn();
+
+    const result = await makeService(
+      { findOpenByPlanTask, create },
+      { planTasks: { acquireUserLock, findById } },
+    ).startFromAiCoach(USER, planTaskId);
+
+    expect(acquireUserLock).toHaveBeenCalledWith(expect.anything(), USER);
+    expect(findOpenByPlanTask).toHaveBeenCalledWith(
+      expect.anything(),
+      USER,
+      planTaskId,
+    );
+    expect(findById).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+    expect(result.id).toBe(existing.id);
+  });
+
+  it("creates one default session for an owned plan task", async () => {
+    const acquireUserLock = vi.fn(async () => undefined);
+    const findOpenByPlanTask = vi.fn(async () => undefined);
+    const findById = vi.fn(async () => ({
+      id: planTaskId,
+      subject: "Türkçe",
+    }));
+    const create = vi.fn(async (_tx, data) => ({
+      id: "session-created",
+      preset: data.preset,
+      status: "IN_PROGRESS",
+      subject: data.subject,
+      planTaskId: data.planTaskId,
+      startedAt: data.startedAt,
+      endedAt: null,
+      actualFocusSeconds: 0,
+      plannedFocusMinutes: data.plannedFocusMinutes,
+      sessionMood: null,
+      struggleNote: null,
+      aiReflection: null,
+    }));
+
+    const result = await makeService(
+      { findOpenByPlanTask, create },
+      { planTasks: { acquireUserLock, findById } },
+    ).startFromAiCoach(USER, planTaskId);
+
+    expect(create).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        preset: "25_5",
+        subject: "Türkçe",
+        planTaskId,
+      }),
+    );
+    expect(result.id).toBe("session-created");
+  });
+});
+
 describe("SessionService.getSessionRepeatStats", () => {
   it.each([
     {

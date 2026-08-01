@@ -11,6 +11,7 @@ import { mapMood } from "../domain/mood";
 import { CoachingEventTopic, MoodLow } from "../domain/coaching.events";
 import { MoodCheckinRepository, type MoodCheckinRow } from "../infrastructure/mood-checkin.repository";
 import { toMoodCheckinDto } from "./coaching.mappers";
+import type { CoachMoodTrend } from "../domain/coach-evidence";
 
 /**
  * Mood check-in (rule-based, NO AI — guardrail §4 #5). One per day (upsert). The encouraging
@@ -73,6 +74,23 @@ export class MoodService {
       const row = await this.moods.findByDate(tx, userId, today);
       return row ? this.toDto(row) : null;
     });
+  }
+
+  async getCoachMoodEvidence(userId: string): Promise<{
+    today: number | null;
+    trend: CoachMoodTrend;
+    observedAt: Date;
+  }> {
+    const rows = await withUserContext(this.db, { userId }, (tx) =>
+      this.moods.listRecentLevels(tx, userId, 5),
+    );
+    const today = rows.find((row) => row.checkinDate === todayIso())?.mood ?? null;
+    if (rows.length < 2) {
+      return { today, trend: "UNKNOWN", observedAt: new Date() };
+    }
+    const delta = rows[0]!.mood - rows[rows.length - 1]!.mood;
+    const trend: CoachMoodTrend = delta > 0 ? "UP" : delta < 0 ? "DOWN" : "STABLE";
+    return { today, trend, observedAt: new Date(`${rows[0]!.checkinDate}T12:00:00Z`) };
   }
 
   async list(userId: string, query: ListMoodCheckinsQuery): Promise<Paginated<MoodCheckinDto>> {

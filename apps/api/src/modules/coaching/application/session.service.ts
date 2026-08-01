@@ -29,11 +29,13 @@ import {
   DailyPlanCompleted,
   FirstSessionOfDay,
   StudySessionCompleted,
+  PlanTaskCompleted,
 } from "../domain/coaching.events";
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
 import { PlanTaskRepository } from "../infrastructure/plan-task.repository";
 import { StudySessionRepository } from "../infrastructure/study-session.repository";
 import { toStudySessionDto } from "./coaching.mappers";
+import type { CoachRhythmEvidence } from "../domain/coach-evidence";
 
 /**
  * Study (Pomodoro) sessions: start → complete/abandon. Finalizing a session recomputes
@@ -148,6 +150,34 @@ export class SessionService {
     });
   }
 
+  /** Aggregate-only mentor context. No struggle note or per-session title leaves coaching. */
+  async getCoachRhythm(
+    userId: string,
+    now = new Date(),
+  ): Promise<CoachRhythmEvidence> {
+    const since7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const since28d = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+    const [todayFocusMinutes, rhythm] = await Promise.all([
+      this.getTodayFocusMinutes(userId),
+      withUserContext(this.db, { userId }, (tx) =>
+        this.sessions.coachRhythm(tx, userId, since7d, since28d),
+      ),
+    ]);
+    return {
+      todayFocusMinutes,
+      sessions7d: rhythm.sessions7d,
+      focusMinutes7d: Math.round(rhythm.focusSeconds7d / 60),
+      activeDays7d: rhythm.activeDays7d,
+      averageSessionMinutes7d: Math.round(rhythm.averageFocusSeconds7d / 60),
+      sessions28d: rhythm.sessions28d,
+      focusMinutes28d: Math.round(rhythm.focusSeconds28d / 60),
+      activeDays28d: rhythm.activeDays28d,
+      averageSessionMinutes28d: Math.round(rhythm.averageFocusSeconds28d / 60),
+      dominantTimeBand: rhythm.dominantTimeBand,
+      lastActiveAt: rhythm.lastActiveAt?.toISOString() ?? null,
+    };
+  }
+
   /** Paginated finalized-session history (most recent first) for the "Son seanslar" surface. */
   async list(
     userId: string,
@@ -201,6 +231,44 @@ export class SessionService {
     });
   }
 
+  /** W3 seam: idempotently starts (or returns) the open session for an approved plan action. */
+  async startFromAiCoach(
+    userId: string,
+    planTaskId: string,
+  ): Promise<StudySessionDto> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
+    return withUserContext(this.db, { userId }, async (tx) => {
+      await this.planTasks.acquireUserLock(tx, userId);
+      await this.sessions.closeStaleOpenSessions(
+        tx,
+        userId,
+        STALE_SESSION_GRACE_MINUTES,
+      );
+      const existing = await this.sessions.findOpenByPlanTask(
+        tx,
+        userId,
+        planTaskId,
+      );
+      if (existing) return toStudySessionDto(existing, minFocusSeconds);
+      const task = await this.planTasks.findById(tx, userId, planTaskId);
+      if (!task) {
+        throw new DomainError(
+          ErrorCode.COACHING_TASK_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      const created = await this.sessions.create(tx, {
+        userId,
+        startedAt: new Date(),
+        preset: "25_5",
+        plannedFocusMinutes: null,
+        subject: task.subject,
+        planTaskId,
+      });
+      return toStudySessionDto(created, minFocusSeconds);
+    });
+  }
+
   async finalize(
     userId: string,
     id: string,
@@ -209,6 +277,7 @@ export class SessionService {
     const minFocusSeconds = await this.getMinFocusSeconds();
     let firstSessionToday = false;
     let planCompleted: number | null = null;
+    let completedPlanTaskId: string | null = null;
     const result = await withUserContext(this.db, { userId }, async (tx) => {
       const existing = await this.sessions.findById(tx, userId, id);
       if (!existing) {
@@ -246,6 +315,7 @@ export class SessionService {
           const doneCount = await this.planTasks.countDone(tx, userId, task.taskDate);
           await this.activity.upsertTasksDone(tx, userId, task.taskDate, doneCount);
           planTaskAutoCompleted = true;
+          completedPlanTaskId = task.id;
           if (task.taskDate === todayIso()) {
             const total = await this.planTasks.countTotal(tx, userId, task.taskDate);
             if (total > 0 && doneCount === total) planCompleted = total;
@@ -262,6 +332,12 @@ export class SessionService {
       this.events.emit(
         CoachingEventTopic.PLAN_COMPLETED,
         new DailyPlanCompleted(userId, planCompleted),
+      );
+    }
+    if (completedPlanTaskId) {
+      this.events.emit(
+        CoachingEventTopic.PLAN_TASK_COMPLETED,
+        new PlanTaskCompleted(userId, completedPlanTaskId),
       );
     }
     // XP / quest rewards only for sessions that meet the min-focus threshold (roadmap §261).

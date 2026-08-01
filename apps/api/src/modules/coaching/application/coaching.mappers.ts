@@ -38,9 +38,22 @@ export function toPlanTaskDto(row: PlanTaskRow): PlanTaskDto {
 function toPlanTaskOriginDto(row: PlanTaskRow): PlanTaskOriginDto | null {
   const meta = row.originMeta;
   if (
+    row.originType === "AI_COACH" &&
+    row.originRefId &&
+    meta &&
+    "coachMessageId" in meta &&
+    meta.coachMessageId === row.originRefId
+  ) {
+    return {
+      type: "AI_COACH",
+      coachMessageId: row.originRefId,
+    };
+  }
+  if (
     row.originType !== "COMMUNITY_COACH" ||
     !row.originRefId ||
     !meta ||
+    !("threadId" in meta) ||
     (meta.zoneType !== "CHAT" && meta.zoneType !== "QA") ||
     (meta.intent !== "PLAN" &&
       meta.intent !== "NEXT_STEP" &&

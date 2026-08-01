@@ -73,6 +73,20 @@ export class MoodCheckinRepository {
     return rows[0];
   }
 
+  /** Bounded, note-free mood samples for deterministic mentor trend selection. */
+  listRecentLevels(
+    tx: DatabaseTx,
+    userId: string,
+    limit: number,
+  ): Promise<Array<{ mood: number; checkinDate: string }>> {
+    return tx
+      .select({ mood: moodCheckins.mood, checkinDate: moodCheckins.checkinDate })
+      .from(moodCheckins)
+      .where(eq(moodCheckins.userId, userId))
+      .orderBy(desc(moodCheckins.checkinDate))
+      .limit(limit);
+  }
+
   /** Paginated mood trend (most recent first). */
   async listPaged(
     tx: DatabaseTx,
