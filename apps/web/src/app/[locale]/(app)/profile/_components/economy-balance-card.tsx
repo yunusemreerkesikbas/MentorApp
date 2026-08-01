@@ -5,7 +5,9 @@ import { useLocale, useTranslations } from "next-intl";
 import type { EconomyBalance, EconomyLedgerEntryView } from "@mentor/types";
 import { Button, Card, SectionHeading } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import { fetchEconomyLedger } from "@/lib/economy";
+import { coachReturnHref } from "@/lib/community-coach-bridge";
 
 interface EconomyBalanceCardProps {
   balance: EconomyBalance;
@@ -21,6 +23,7 @@ type LedgerState =
  */
 export function EconomyBalanceCard({ balance }: EconomyBalanceCardProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const locale = useLocale();
   const translate = useTranslations("economy");
   // Tier names already exist for the community profile — reuse, don't duplicate the copy.
@@ -113,7 +116,12 @@ export function EconomyBalanceCard({ balance }: EconomyBalanceCardProps) {
         </div>
       </div>
       <div className="mt-4">
-        <Button type="button" onClick={() => router.push("/coach")}>
+        <Button
+          type="button"
+          onClick={() =>
+            router.push(coachReturnHref(searchParams.get("returnTo")))
+          }
+        >
           {translate("go_coach")}
         </Button>
       </div>

@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { VisionService } from "./vision.service";
 
 const USER = "u1";
+const KONYA = "42";
+const ANKARA = "06";
+const SELCUK = "11111111-1111-4111-8111-111111111111";
+const HACETTEPE = "22222222-2222-4222-8222-222222222222";
 
 const fakeDb = {
   transaction: async <T>(cb: (tx: unknown) => Promise<T>): Promise<T> =>
@@ -10,44 +14,47 @@ const fakeDb = {
 
 interface FakeRow {
   goalTitle: string;
+  targetCityCode: string | null;
   targetCity: string | null;
+  targetUniversityId: string | null;
+  careerGroup: string | null;
   motivation: string | null;
   aiNote: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
-/** Mirrors the repository's "invalidate AI note only on an actual content change" semantics. */
+type FakeInput = Omit<FakeRow, "aiNote" | "createdAt" | "updatedAt">;
+
+/**
+ * Mirrors the repository's "invalidate AI note only on an actual content change" semantics.
+ * Every goal-defining field is compared here, exactly as the real `unchanged` SQL predicate does —
+ * if the two ever drift, a stale motivation note survives a goal change in production.
+ */
 function makeVisionsFake() {
   let row: FakeRow | undefined;
+  const GOAL_FIELDS = [
+    "goalTitle",
+    "targetCityCode",
+    "targetCity",
+    "targetUniversityId",
+    "careerGroup",
+    "motivation",
+  ] as const;
+
   return {
     get row() {
       return row;
     },
-    upsert: async (
-      _tx: unknown,
-      _userId: string,
-      input: { goalTitle: string; targetCity: string | null; motivation: string | null },
-    ) => {
+    upsert: async (_tx: unknown, _userId: string, input: FakeInput) => {
       if (row) {
-        const changed =
-          row.goalTitle !== input.goalTitle ||
-          row.targetCity !== input.targetCity ||
-          row.motivation !== input.motivation;
-        row.goalTitle = input.goalTitle;
-        row.targetCity = input.targetCity;
-        row.motivation = input.motivation;
+        const current = row;
+        const changed = GOAL_FIELDS.some((f) => current[f] !== input[f]);
+        Object.assign(row, input);
         if (changed) row.aiNote = null;
         return row;
       }
-      row = {
-        goalTitle: input.goalTitle,
-        targetCity: input.targetCity,
-        motivation: input.motivation,
-        aiNote: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      row = { ...input, aiNote: null, createdAt: new Date(), updatedAt: new Date() };
       return row;
     },
     setAiNote: async (_tx: unknown, _userId: string, note: string) => {
@@ -57,13 +64,28 @@ function makeVisionsFake() {
   };
 }
 
+/** Only the listed (university, city) pairs exist — everything else is a mismatch. */
+function makeGeoFake(pairs: ReadonlyArray<readonly [string, string]>) {
+  return {
+    universityExistsInCity: async (universityId: string, cityCode: string) =>
+      pairs.some(([u, c]) => u === universityId && c === cityCode),
+  };
+}
+
 describe("VisionService", () => {
   let visions: ReturnType<typeof makeVisionsFake>;
   let service: VisionService;
 
   beforeEach(() => {
     visions = makeVisionsFake();
-    service = new VisionService(fakeDb, visions as never);
+    service = new VisionService(
+      fakeDb,
+      visions as never,
+      makeGeoFake([
+        [SELCUK, KONYA],
+        [HACETTEPE, ANKARA],
+      ]) as never,
+    );
   });
 
   it("getMine returns null when no board is set yet", async () => {
@@ -94,5 +116,70 @@ describe("VisionService", () => {
     await service.setAiNote(USER, "Devam et!", "fake");
     await service.upsert(USER, { goalTitle: "Tıp", targetCity: "İzmir", motivation: null });
     expect((await service.getMine(USER))?.aiNote).toBeNull();
+  });
+
+  it("stores a university once it really sits in the selected city", async () => {
+    const dto = await service.upsert(USER, {
+      goalTitle: "Bilgisayar mühendisi olmak",
+      targetCityCode: KONYA,
+      targetUniversityId: SELCUK,
+      careerGroup: "YAZILIM",
+    });
+    expect(dto.targetCityCode).toBe(KONYA);
+    expect(dto.targetUniversityId).toBe(SELCUK);
+    expect(dto.careerGroup).toBe("YAZILIM");
+  });
+
+  it("rejects a university that does not belong to the selected city", async () => {
+    await expect(
+      service.upsert(USER, {
+        goalTitle: "Bilgisayar mühendisi olmak",
+        targetCityCode: ANKARA,
+        targetUniversityId: SELCUK,
+      }),
+    ).rejects.toMatchObject({ details: { reason: "university_city_mismatch" } });
+    expect(visions.row).toBeUndefined();
+  });
+
+  it("invalidates the cached AI note when the target city changes", async () => {
+    await service.upsert(USER, { goalTitle: "Tıp", targetCityCode: KONYA });
+    await service.setAiNote(USER, "Konya seni bekliyor!", "fake");
+    await service.upsert(USER, { goalTitle: "Tıp", targetCityCode: ANKARA });
+    expect((await service.getMine(USER))?.aiNote).toBeNull();
+  });
+
+  it("invalidates the cached AI note when the career group changes", async () => {
+    await service.upsert(USER, { goalTitle: "Üniversite", careerGroup: "SAGLIK" });
+    await service.setAiNote(USER, "Beyaz önlük yolda!", "fake");
+    await service.upsert(USER, { goalTitle: "Üniversite", careerGroup: "YAZILIM" });
+    expect((await service.getMine(USER))?.aiNote).toBeNull();
+  });
+
+  it("invalidates the cached AI note when the target university changes", async () => {
+    await service.upsert(USER, {
+      goalTitle: "Mühendislik",
+      targetCityCode: KONYA,
+      targetUniversityId: SELCUK,
+    });
+    await service.setAiNote(USER, "Selçuk yolda!", "fake");
+    await service.upsert(USER, {
+      goalTitle: "Mühendislik",
+      targetCityCode: ANKARA,
+      targetUniversityId: HACETTEPE,
+    });
+    expect((await service.getMine(USER))?.aiNote).toBeNull();
+  });
+
+  it("keeps the cached AI note when a map-based goal is re-saved unchanged", async () => {
+    const goal = {
+      goalTitle: "Mühendislik",
+      targetCityCode: KONYA,
+      targetUniversityId: SELCUK,
+      careerGroup: "YAZILIM" as const,
+    };
+    await service.upsert(USER, goal);
+    await service.setAiNote(USER, "Selçuk yolda!", "fake");
+    await service.upsert(USER, goal);
+    expect((await service.getMine(USER))?.aiNote).toBe("Selçuk yolda!");
   });
 });

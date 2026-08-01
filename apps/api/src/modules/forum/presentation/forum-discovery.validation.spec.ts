@@ -74,13 +74,31 @@ describe("forum discovery request contracts", () => {
         slug: "  Calisma-Ipuclari ",
         nameTr: " Çalışma İpuçları ",
         nameEn: " Study Tips ",
+        coachIntent: "STUDY_METHOD",
       }),
     ).toEqual({
       slug: "calisma-ipuclari",
       nameTr: "Çalışma İpuçları",
       nameEn: "Study Tips",
+      coachIntent: "STUDY_METHOD",
       isActive: true,
     });
+    expect(
+      adminForumTagCreateSchema.safeParse({
+        slug: "kaynak-onerisi",
+        nameTr: "Kaynak Önerisi",
+        nameEn: "Resource Suggestion",
+        coachIntent: null,
+      }).success,
+    ).toBe(true);
+    expect(
+      adminForumTagCreateSchema.safeParse({
+        slug: "yanlis-intent",
+        nameTr: "Yanlış",
+        nameEn: "Invalid",
+        coachIntent: "SUMMARIZE_THREAD",
+      }).success,
+    ).toBe(false);
     expect(
       setFeaturedThreadSchema.safeParse({
         threadId: "11111111-1111-4111-8111-111111111111",

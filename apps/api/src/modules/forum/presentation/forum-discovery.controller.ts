@@ -1,9 +1,27 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Put, Query } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Put,
+  Query,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { ForumFeed, ForumHubView, ForumTagView, ForumZoneFeedView } from "@mentor/types";
+import type {
+  ForumCoachBridgeView,
+  ForumFeed,
+  ForumHubView,
+  ForumTagView,
+  ForumZoneFeedView,
+} from "@mentor/types";
 import { ModerationTargetType } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { ForumDiscoveryService } from "../application/forum-discovery.service";
+import { ForumCoachBridgeService } from "../application/forum-coach-bridge.service";
 import {
   FeedQueryDto,
   ForumFeedQueryDto,
@@ -15,7 +33,10 @@ import {
 @ApiBearerAuth()
 @Controller("forum")
 export class ForumDiscoveryController {
-  constructor(private readonly discovery: ForumDiscoveryService) {}
+  constructor(
+    private readonly discovery: ForumDiscoveryService,
+    private readonly coachBridge: ForumCoachBridgeService,
+  ) {}
 
   @Get("hub")
   hub(@CurrentUser() user: RequestUser): Promise<ForumHubView> {
@@ -33,6 +54,14 @@ export class ForumDiscoveryController {
   @Get("tags")
   tags(@CurrentUser() user: RequestUser): Promise<ForumTagView[]> {
     return this.discovery.listTags(user.id);
+  }
+
+  @Get("threads/:threadId/coach-bridge")
+  coachBridgeView(
+    @CurrentUser() user: RequestUser,
+    @Param("threadId", ParseUUIDPipe) threadId: string,
+  ): Promise<ForumCoachBridgeView> {
+    return this.coachBridge.getBridge(user.id, threadId);
   }
 
   @Get("zones/:slug/feed")

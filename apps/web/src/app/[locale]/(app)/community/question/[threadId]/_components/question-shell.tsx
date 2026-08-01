@@ -31,6 +31,7 @@ import { useMentionAutocomplete } from "../../../_components/use-mention-autocom
 import { MentionSuggestions } from "../../../_components/mention-suggestions";
 import { AcceptButton } from "./accept-button";
 import { AnswerItem } from "./answer-item";
+import { CommunityCoachBridge } from "../../../_components/community-coach-bridge";
 
 type State =
   | { status: "loading" }
@@ -258,6 +259,8 @@ export function QuestionShell({ threadId }: { threadId: string }) {
           </div>
         ) : null}
       </div>
+
+      <CommunityCoachBridge bridge={question.coachBridge} />
 
       <h2 className="mb-3 mt-8 text-[20px] font-extrabold tracking-[-0.025em] text-[#1b1f28]">
         {t("comment_total", { count: answers.length })}

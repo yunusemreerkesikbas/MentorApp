@@ -5,6 +5,7 @@ import Link from "next/link";
 import Swal from "sweetalert2";
 import type {
     ForumFeaturedAdminView,
+    ForumCoachIntent,
     ForumSearchView,
     ForumTagView,
     ForumThreadSummary,
@@ -21,6 +22,7 @@ interface TagDraft {
     nameEn: string;
     examType: string;
     isActive: boolean;
+    coachIntent: ForumCoachIntent | null;
 }
 
 const EMPTY_TAG: TagDraft = {
@@ -29,6 +31,14 @@ const EMPTY_TAG: TagDraft = {
     nameEn: "",
     examType: "",
     isActive: true,
+    coachIntent: null,
+};
+
+const COACH_INTENT_LABELS: Record<ForumCoachIntent, string> = {
+    PLAN: "Planıma uyarla",
+    NEXT_STEP: "Bir adım çıkar",
+    STUDY_METHOD: "Yöntem bul",
+    STRATEGY: "Strateji netleştir",
 };
 
 export default function ForumManagementPage() {
@@ -364,6 +374,7 @@ function TagManager({
                 nameEn: draft.nameEn.trim(),
                 examType: draft.examType.trim() || null,
                 isActive: draft.isActive,
+                coachIntent: draft.coachIntent,
             });
             setDraft(EMPTY_TAG);
             await onChanged();
@@ -430,7 +441,7 @@ function TagManager({
                             required
                         />
                     </div>
-                    <div className="col-md-3">
+                    <div className="col-md-2">
                         <label className="form-label">Sınav tipi (opsiyonel)</label>
                         <input
                             className="form-control"
@@ -439,6 +450,22 @@ function TagManager({
                             placeholder="KPSS"
                             maxLength={32}
                         />
+                    </div>
+                    <div className="col-md-2">
+                        <label className="form-label">Koç niyeti</label>
+                        <select
+                            className="form-select"
+                            value={draft.coachIntent ?? ""}
+                            onChange={(event) => setDraft((current) => ({
+                                ...current,
+                                coachIntent: (event.target.value || null) as ForumCoachIntent | null,
+                            }))}
+                        >
+                            <option value="">Köprü yok</option>
+                            {Object.entries(COACH_INTENT_LABELS).map(([value, label]) => (
+                                <option key={value} value={value}>{label}</option>
+                            ))}
+                        </select>
                     </div>
                     <div className="col-md-2">
                         <div className="form-check form-switch mb-2">
@@ -465,12 +492,13 @@ function TagManager({
                             <th>Türkçe</th>
                             <th>İngilizce</th>
                             <th>Sınav</th>
+                            <th>Koç niyeti</th>
                             <th>Durum</th>
                         </tr>
                     </thead>
                     <tbody>
                         {tags.length === 0 && (
-                            <tr><td colSpan={5} className="text-center py-4 text-muted">Henüz etiket yok.</td></tr>
+                            <tr><td colSpan={6} className="text-center py-4 text-muted">Henüz etiket yok.</td></tr>
                         )}
                         {tags.map((tag) => (
                             <tr key={tag.id}>
@@ -490,6 +518,22 @@ function TagManager({
                                     />
                                 </td>
                                 <td>{tag.examType ?? <span className="text-muted">Genel</span>}</td>
+                                <td style={{ minWidth: 190 }}>
+                                    <select
+                                        className="form-select form-select-sm"
+                                        value={tag.coachIntent ?? ""}
+                                        disabled={busyId === tag.id}
+                                        aria-label={`${tag.name} koç niyeti`}
+                                        onChange={(event) => void update(tag, {
+                                            coachIntent: (event.target.value || null) as ForumCoachIntent | null,
+                                        })}
+                                    >
+                                        <option value="">Köprü yok</option>
+                                        {Object.entries(COACH_INTENT_LABELS).map(([value, label]) => (
+                                            <option key={value} value={value}>{label}</option>
+                                        ))}
+                                    </select>
+                                </td>
                                 <td>
                                     <div className="form-check form-switch">
                                         <input

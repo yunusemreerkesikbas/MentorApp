@@ -8,7 +8,11 @@ import Copy from "lucide-react/dist/esm/icons/copy.mjs";
 import Check from "lucide-react/dist/esm/icons/check.mjs";
 import CalendarDays from "lucide-react/dist/esm/icons/calendar-days.mjs";
 import { Button, DataCard, Skeleton, SkeletonGroup } from "@mentor/ui";
-import type { CountdownDto } from "@mentor/types";
+import type {
+  CoachConversationOriginDto,
+  CountdownDto,
+  ForumCoachBridgeView,
+} from "@mentor/types";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw.mjs";
 import { Link } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
@@ -22,6 +26,7 @@ import {
 } from "@/lib/stagger-motion";
 import { CoachReplyBody } from "./coach-reply-body";
 import { ExpandableBubbleContent } from "./expandable-bubble-content";
+import { CommunitySourceCard } from "./community-source-card";
 
 /** px from bottom — closer than this counts as “at bottom”. */
 const NEAR_BOTTOM_PX = 80;
@@ -50,6 +55,8 @@ export function CoachTranscript({
   onFeedback,
   onRegenerate,
   streamingMessageId = null,
+  conversationOrigin,
+  communitySource,
   historyStatus,
   historyError,
   hasOlderMessages,
@@ -72,6 +79,8 @@ export function CoachTranscript({
   onRegenerate?: () => void;
   /** Id of the coach row currently receiving SSE deltas (null when idle). */
   streamingMessageId?: string | null;
+  conversationOrigin: CoachConversationOriginDto | null;
+  communitySource: ForumCoachBridgeView | null;
   historyStatus: "idle" | "loading" | "ready" | "error";
   historyError: string | null;
   hasOlderMessages: boolean;
@@ -243,6 +252,7 @@ export function CoachTranscript({
           </Button>
         </div>
       ) : null}
+      <CommunitySourceCard origin={conversationOrigin} source={communitySource} />
       {isEmpty ? (emptyContent ?? null) : null}
 
       {messages.map((m) =>
@@ -266,6 +276,16 @@ export function CoachTranscript({
               <SuggestedTaskCard
                 task={m.suggestedTask}
                 className="flex justify-start"
+                communityContext={
+                  conversationOrigin?.type === "COMMUNITY_THREAD" &&
+                  (communitySource?.zone.type === "CHAT" ||
+                    communitySource?.zone.type === "QA")
+                    ? {
+                        intent: conversationOrigin.meta.intent,
+                        zoneType: communitySource.zone.type,
+                      }
+                    : undefined
+                }
               />
             ) : null}
             {m.sources ? <SourceChips sources={m.sources} /> : null}

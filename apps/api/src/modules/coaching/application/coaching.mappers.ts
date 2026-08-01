@@ -1,5 +1,6 @@
 /** Row → API DTO projections (single place so every endpoint returns the same shape). */
 import type {
+  CareerGroup,
   MoodCheckinDto,
   MockExamDto,
   MockExamSubjectDto,
@@ -90,7 +91,10 @@ export function toMoodCheckinDto(
 export function toVisionDto(row: VisionBoardRow): VisionDto {
   return {
     goalTitle: row.goalTitle,
+    targetCityCode: row.targetCityCode,
     targetCity: row.targetCity,
+    targetUniversityId: row.targetUniversityId,
+    careerGroup: row.careerGroup as CareerGroup | null,
     motivation: row.motivation,
     aiNote: row.aiNote,
     createdAt: row.createdAt.toISOString(),

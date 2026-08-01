@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node ../../scripts/wait-for-port.mjs 3001 && next dev --port 3000",
     "build": "next build",
+    "build:map": "node scripts/build-turkey-map.mjs",
     "start": "next start --port 3000",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
+    "d3-geo": "^3.1.1",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

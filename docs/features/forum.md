@@ -105,6 +105,15 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Topluluk → AI Koç köprüsü pilotu (2026-07-31)** — CHAT/QA detayları, aktif bir
+  `coach_intent` etiketinden deterministik olarak `PLAN > STUDY_METHOD > STRATEGY > NEXT_STEP`
+  seçer ve `GET /v1/forum/threads/:id/coach-bridge` üzerinden yalnız oda/tür, kürasyonlu etiket,
+  intent ve nullable başlık döndürür. Thread gövdesi, yazar ve yorumlar köprü sözleşmesine girmez.
+  `forum.coach_bridge.enabled` varsayılan olarak kapalıdır; admin etiket formu nullable intent yönetir.
+  Migration `0063` forward-only’dir. Silinmiş thread/arşivlenmiş oda uygulama politikasıyla da 404
+  olur; bu kontrol ayrıcalıklı test DB rolünün RLS’i atlayabildiği durumda özellikle gereklidir.
+  İlgili: `forum-coach-bridge.service.ts`, `forum-discovery.controller.ts`, `forum/page.tsx`,
+  `0063_absurd_black_bolt.sql`, `packages/{types,validation}/src/forum.ts`.
 - **Discovery V2 staging hazırlığı (2026-07-31)** — Featured admin sözleşmesine additive
   `ForumFeaturedAdminView.thread` özeti eklendi; admin UUID alanı yerine mevcut PII-safe
   `/forum/search` endpoint'ini kullanan min-2 karakter/250 ms gecikmeli tartışma seçicisi kullanır.

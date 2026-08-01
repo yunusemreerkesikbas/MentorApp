@@ -9,6 +9,7 @@ import { ForumPublicService } from "./application/forum-public.service";
 import { ForumMentionService } from "./application/forum-mention.service";
 import { ForumErasureService } from "./application/forum-erasure.service";
 import { ForumDiscoveryService } from "./application/forum-discovery.service";
+import { ForumCoachBridgeService } from "./application/forum-coach-bridge.service";
 import { ForumDiscoveryRepository } from "./infrastructure/forum-discovery.repository";
 import { ForumErasureRepository } from "./infrastructure/forum-erasure.repository";
 import { ForumZoneRepository } from "./infrastructure/forum-zone.repository";
@@ -62,6 +63,7 @@ import { ForumDiscoveryController } from "./presentation/forum-discovery.control
     ForumErasureRepository,
     ForumErasureService,
     ForumDiscoveryService,
+    ForumCoachBridgeService,
     ForumDiscoveryRepository,
   ],
   exports: [
@@ -70,6 +72,7 @@ import { ForumDiscoveryController } from "./presentation/forum-discovery.control
     ForumQaService,
     ForumErasureService,
     ForumDiscoveryService,
+    ForumCoachBridgeService,
   ],
 })
 export class ForumModule {}

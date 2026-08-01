@@ -4,11 +4,13 @@ import BookOpen from "lucide-react/dist/esm/icons/book-open.mjs";
 import Check from "lucide-react/dist/esm/icons/check.mjs";
 import Heart from "lucide-react/dist/esm/icons/heart.mjs";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import type { CoachAccessDto } from "@mentor/types";
 import { Button, Card, Chip, SectionHeading } from "@mentor/ui";
 import { PuhuCoachBubble } from "@/components/puhu-coach-bubble";
+import { safeInternalReturnTo } from "@/lib/community-coach-bridge";
 
 interface CoachAccessGateProps {
   access: CoachAccessDto;
@@ -23,6 +25,8 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
   const t = useTranslations("coach.gate");
   const tCoach = useTranslations("coach");
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const reduceMotion = useReducedMotion();
 
   const cardMotion = reduceMotion
@@ -61,6 +65,8 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
     : isInsufficientCoin
       ? t("bubble_insufficient")
       : t("bubble_default");
+  const query = searchParams.toString();
+  const returnTo = safeInternalReturnTo(`${pathname}${query ? `?${query}` : ""}`);
 
   return (
     <main className="mx-auto flex max-w-2xl flex-col gap-6 px-5 py-10">
@@ -139,11 +145,11 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
           </ul>
 
           {isInsufficientCoin ? (
-            <Button onClick={() => router.push("/profile")}>
+            <Button onClick={() => router.push({ pathname: "/profile", query: { returnTo } })}>
               {t("go_profile")}
             </Button>
           ) : access.reason === "PAYMENT_PREMIUM_REQUIRED" ? (
-            <Button onClick={() => router.push("/subscription")}>
+            <Button onClick={() => router.push({ pathname: "/subscription", query: { returnTo } })}>
               {t("upgrade")}
             </Button>
           ) : null}

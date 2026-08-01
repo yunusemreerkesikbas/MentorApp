@@ -80,7 +80,7 @@ describe("RLS isolation (e2e)", () => {
     probeUrl.password = "rls_probe";
     probe = new Pool({ connectionString: probeUrl.toString() });
 
-    // Seed two users + one row each in the four representative tables (superuser bypasses RLS).
+    // Seed two users + one row each in representative private tables (superuser bypasses RLS).
     const mkUser = async (label: string) => {
       const res = await admin.query(
         `insert into users (email, password_hash, display_name, kvkk_accepted_at)
@@ -102,7 +102,12 @@ describe("RLS isolation (e2e)", () => {
         [id],
       );
       const conv = await admin.query(
-        "insert into coach_conversations (user_id, title) values ($1, 'rls probe') returning id",
+        `insert into coach_conversations
+           (user_id, title, origin_type, origin_ref_id, origin_meta)
+         values
+           ($1, 'rls probe', 'COMMUNITY_THREAD', gen_random_uuid(),
+            '{"intent":"PLAN","tagSlug":"planlama"}'::jsonb)
+         returning id`,
         [id],
       );
       await admin.query(
@@ -158,7 +163,13 @@ describe("RLS isolation (e2e)", () => {
     await admin?.end();
   });
 
-  const TABLES = ["mood_checkins", "plan_tasks", "coach_messages", "ledger_entries"];
+  const TABLES = [
+    "mood_checkins",
+    "plan_tasks",
+    "coach_conversations",
+    "coach_messages",
+    "ledger_entries",
+  ];
 
   it.each(TABLES)("as user A, B's %s rows are invisible", async (table) => {
     expect(await probeCount({ userId: idA }, table, idB)).toBe(0);

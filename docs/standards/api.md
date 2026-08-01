@@ -90,6 +90,14 @@
 > `POST /v1/plan-tasks/bulk` remain available for backward compatibility; the current web flow uses
 > the adaptation pair.
 
+> Community → coach bridge catalog addition (2026-07-31):
+> `GET /v1/forum/threads/:id/coach-bridge` returns only public-safe structural eligibility;
+> `POST /v1/coach/chat{,/stream}` additively accepts `contextCommunityThreadId`, mutually exclusive
+> with `conversationId`; `GET /v1/coach/conversations/:id/messages` additively returns nullable
+> `origin` and `communitySource`. Admin forum tag create/update additively accepts nullable
+> `coachIntent`. The feature is gated by `forum.coach_bridge.enabled` and sends no forum content or
+> identity data to the model.
+
 > Daily continuity catalog addition (2026-07-22): `GET /v1/coaching/today` remains the sole daily
 > action contract and `DailyNextActionDto` is unchanged. `GET /v1/coaching/weekly-review` additively
 > returns nullable `suggestedTask { title, subject }`; `GET /v1/admin/metrics` additively returns

@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import type { CommunityCoachAttribution } from "@/lib/community-coach-bridge";
 
 export type SuggestedTaskCardTask = {
   title: string;
@@ -15,10 +16,13 @@ export type SuggestedTaskCardTask = {
 export function SuggestedTaskCard({
   task,
   className,
+  communityContext,
 }: {
   task: SuggestedTaskCardTask;
   /** Optional wrapper class (e.g. coach transcript left padding). */
   className?: string;
+  /** Structural attribution only; no thread id or content enters analytics. */
+  communityContext?: CommunityCoachAttribution;
 }) {
   const translate = useTranslations("coach_chat");
   const href = {
@@ -27,6 +31,13 @@ export function SuggestedTaskCard({
       add: "1",
       title: task.title,
       ...(task.subject ? { subject: task.subject } : {}),
+      ...(communityContext
+        ? {
+            source: "community_coach",
+            communityIntent: communityContext.intent,
+            communityZoneType: communityContext.zoneType,
+          }
+        : {}),
     },
   } as const;
   return (

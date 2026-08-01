@@ -492,7 +492,13 @@
     "zone_context_title": "Oda bilgileri",
     "zone_contributors": "Katkı verenler",
     "detail_context_title": "Tartışma bilgileri",
-    "detail_participants": "Katılımcılar"
+    "detail_participants": "Katılımcılar",
+    "coach_bridge": {
+      "PLAN": "Bunu planıma uyarla",
+      "NEXT_STEP": "Kendim için bir adım çıkar",
+      "STUDY_METHOD": "Bana uygun yöntemi bul",
+      "STRATEGY": "Stratejimi netleştir"
+    }
   },
   "today_plan": {
     "title": "Bugünün planı",
@@ -1462,7 +1468,10 @@
     "typing": "Koç yazıyor",
     "show_more": "Daha fazla göster",
     "show_less": "Daha az göster",
-    "scroll_to_bottom": "Sohbetin sonuna in"
+    "scroll_to_bottom": "Sohbetin sonuna in",
+    "community_source": "Topluluktan",
+    "return_to_discussion": "Tartışmaya dön",
+    "source_unavailable": "Bu tartışmaya artık erişilemiyor"
   },
   "countdown": {
     "title": "Sınava kalan",
@@ -1646,6 +1655,7 @@
       "title": "Hazırsın!",
       "subtitle": "Panelinde geri sayım ve bugünün planı seni bekliyor.",
       "countdown_teaser": "Sınav geri sayımın panelde — kaynak gösterilmiş resmî takvimden.",
+      "map_cta": "Hedefini haritada işaretle →",
       "go_panel": "Panele git"
     }
   },
@@ -1664,6 +1674,39 @@
     "goal_placeholder": "Örn. Öğretmen olmak, Marmara Hukuk…",
     "city_label": "Hedef şehir (isteğe bağlı)",
     "city_placeholder": "Örn. İstanbul",
+    "map": {
+      "city_label": "Hedef şehir (isteğe bağlı)",
+      "city_placeholder": "Şehir seç",
+      "card_empty": "Haritadan bir şehir seç.",
+      "no_universities": "Bu şehirde kayıtlı üniversite yok.",
+      "university_count": "{count} üniversite",
+      "attribution": "Harita verisi © OpenStreetMap katkıcıları (ODbL)",
+      "region": {
+        "MARMARA": "Marmara",
+        "EGE": "Ege",
+        "AKDENIZ": "Akdeniz",
+        "IC_ANADOLU": "İç Anadolu",
+        "KARADENIZ": "Karadeniz",
+        "DOGU_ANADOLU": "Doğu Anadolu",
+        "GUNEYDOGU_ANADOLU": "Güneydoğu Anadolu"
+      }
+    },
+    "career": {
+      "label": "Hedef alanın (isteğe bağlı)",
+      "none": "Henüz karar vermedim",
+      "group": {
+        "SAGLIK": "Sağlık",
+        "MUHENDISLIK": "Mühendislik",
+        "YAZILIM": "Yazılım & Bilişim",
+        "HUKUK_KAMU": "Hukuk & Kamu",
+        "EGITIM": "Eğitim",
+        "ISLETME": "İşletme & Ekonomi",
+        "SOSYAL_ILETISIM": "Sosyal & İletişim",
+        "SANAT_TASARIM": "Sanat & Tasarım",
+        "FEN": "Fen & Doğa",
+        "MIMARLIK": "Mimarlık"
+      }
+    },
     "motivation_label": "Neden? (isteğe bağlı)",
     "motivation_placeholder": "Seni motive eden sebep…",
     "save": "Kaydet",

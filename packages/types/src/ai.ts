@@ -22,6 +22,22 @@ export interface CoachAccessDto {
   dailyMessagesRemaining?: number;
 }
 
+export const CoachConversationOriginType = {
+  COMMUNITY_THREAD: "COMMUNITY_THREAD",
+} as const;
+export type CoachConversationOriginType =
+  (typeof CoachConversationOriginType)[keyof typeof CoachConversationOriginType];
+
+/** Structural provenance only; community content and identities are deliberately excluded. */
+export interface CoachConversationOriginDto {
+  type: CoachConversationOriginType;
+  refId: string;
+  meta: {
+    intent: import("./forum.js").ForumCoachIntent;
+    tagSlug: string;
+  };
+}
+
 /** GET /v1/coach/conversations item — one chat thread. */
 export interface CoachConversationDto {
   id: string;
@@ -29,6 +45,18 @@ export interface CoachConversationDto {
   title: string;
   lastMessageAt: string;
   messageCount: number;
+  origin: CoachConversationOriginDto | null;
+}
+
+/** Additive conversation envelope returned by the paginated message endpoint. */
+export interface CoachConversationMessagesDto {
+  items: CoachMessageDto[];
+  page: number;
+  pageSize: number;
+  total: number;
+  origin: CoachConversationOriginDto | null;
+  /** Null means there is no origin or its community source is no longer accessible. */
+  communitySource: import("./forum.js").ForumCoachBridgeView | null;
 }
 
 /** POST /v1/coach/chat response (no coin fields in the chat zone §4 #3). */

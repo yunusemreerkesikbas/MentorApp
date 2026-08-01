@@ -1301,6 +1301,20 @@
         ]
       }
     },
+    "/v1/content/geo": {
+      "get": {
+        "operationId": "GeoController_getGeo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
     "/v1/content/info-articles": {
       "get": {
         "operationId": "InfoArticleController_listArticles",
@@ -1328,6 +1342,20 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/holidays": {
+      "get": {
+        "operationId": "PublicHolidayController_list",
+        "parameters": [],
         "responses": {
           "200": {
             "description": ""
@@ -2244,6 +2272,1584 @@
         ]
       }
     },
+    "/v1/forum/zones": {
+      "get": {
+        "operationId": "ForumController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "post": {
+        "operationId": "ForumController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateZoneDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/zones/{slug}": {
+      "get": {
+        "operationId": "ForumController_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/zones/{id}/owner": {
+      "post": {
+        "operationId": "ForumController_assignOwner",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignOwnerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/zones/{id}/join": {
+      "post": {
+        "operationId": "ForumController_join",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/zones/{id}/leave": {
+      "post": {
+        "operationId": "ForumController_leave",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/zones/{id}/members": {
+      "get": {
+        "operationId": "ForumController_members",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/zones/{id}/members/search": {
+      "get": {
+        "operationId": "ForumController_searchMembers",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/zones/{id}/members/{userId}": {
+      "delete": {
+        "operationId": "ForumController_removeMember",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/zones/{id}/members/{userId}/approve": {
+      "post": {
+        "operationId": "ForumController_approve",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/attachments/upload-url": {
+      "post": {
+        "operationId": "ForumThreadController_attachmentUploadUrl",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachmentUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/zones/{id}/threads": {
+      "post": {
+        "operationId": "ForumThreadController_post",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateThreadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "get": {
+        "operationId": "ForumThreadController_feed",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/feed/following": {
+      "get": {
+        "operationId": "ForumThreadController_followingFeed",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/follow-suggestions": {
+      "get": {
+        "operationId": "ForumThreadController_followSuggestions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/threads/{threadId}/detail": {
+      "get": {
+        "operationId": "ForumThreadController_detail",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/threads/{threadId}/comments": {
+      "post": {
+        "operationId": "ForumThreadController_comment",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnswerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/posts/{postId}": {
+      "get": {
+        "operationId": "ForumThreadController_commentDetail",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "patch": {
+        "operationId": "ForumDiscoveryController_updatePost",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateForumPostDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/posts/{postId}/replies": {
+      "post": {
+        "operationId": "ForumThreadController_reply",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnswerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/posts/{postId}/reactions": {
+      "put": {
+        "operationId": "ForumThreadController_reactPost",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "delete": {
+        "operationId": "ForumThreadController_unreactPost",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/threads/{threadId}/pin": {
+      "post": {
+        "operationId": "ForumThreadController_pin",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PinThreadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/threads/{threadId}": {
+      "delete": {
+        "operationId": "ForumThreadController_remove",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "get": {
+        "operationId": "ForumQaController_question",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "patch": {
+        "operationId": "ForumDiscoveryController_updateThread",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateForumThreadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/threads/{threadId}/reactions": {
+      "put": {
+        "operationId": "ForumThreadController_react",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "delete": {
+        "operationId": "ForumThreadController_unreact",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/bookmarks": {
+      "get": {
+        "operationId": "ForumThreadController_bookmarks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/users/{username}/activity": {
+      "get": {
+        "operationId": "ForumThreadController_userActivity",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/threads/{threadId}/bookmark": {
+      "put": {
+        "operationId": "ForumThreadController_bookmarkThread",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "delete": {
+        "operationId": "ForumThreadController_unbookmarkThread",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/posts/{postId}/bookmark": {
+      "put": {
+        "operationId": "ForumThreadController_bookmarkPost",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "delete": {
+        "operationId": "ForumThreadController_unbookmarkPost",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/search": {
+      "get": {
+        "operationId": "ForumQaController_search",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/threads/{threadId}/answers": {
+      "post": {
+        "operationId": "ForumQaController_answer",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnswerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/threads/{threadId}/accept/{postId}": {
+      "post": {
+        "operationId": "ForumQaController_accept",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/answers/{postId}": {
+      "delete": {
+        "operationId": "ForumQaController_removeAnswer",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/reports": {
+      "post": {
+        "operationId": "ForumModerationController_report",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "get": {
+        "operationId": "ForumModerationController_allReports",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/zones/{id}/reports": {
+      "get": {
+        "operationId": "ForumModerationController_zoneReports",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/reports/{id}/resolve": {
+      "post": {
+        "operationId": "ForumModerationController_resolve",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/threads/{threadId}/restore": {
+      "post": {
+        "operationId": "ForumModerationController_restoreThread",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/answers/{postId}/restore": {
+      "post": {
+        "operationId": "ForumModerationController_restoreAnswer",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/public/questions": {
+      "get": {
+        "operationId": "ForumPublicController_questions",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/public/questions/{id}": {
+      "get": {
+        "operationId": "ForumPublicController_question",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/internal/cron/cleanup-forum-attachments": {
+      "post": {
+        "operationId": "ForumInternalController_cleanupAttachments",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "internal"
+        ]
+      }
+    },
+    "/v1/forum/hub": {
+      "get": {
+        "operationId": "ForumDiscoveryController_hub",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/feed": {
+      "get": {
+        "operationId": "ForumDiscoveryController_feed",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/tags": {
+      "get": {
+        "operationId": "ForumDiscoveryController_tags",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/zones/{slug}/feed": {
+      "get": {
+        "operationId": "ForumDiscoveryController_zoneFeed",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/threads/{threadId}/helpful-vote": {
+      "put": {
+        "operationId": "ForumDiscoveryController_helpfulThread",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "delete": {
+        "operationId": "ForumDiscoveryController_unhelpfulThread",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/posts/{postId}/helpful-vote": {
+      "put": {
+        "operationId": "ForumDiscoveryController_helpfulPost",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "delete": {
+        "operationId": "ForumDiscoveryController_unhelpfulPost",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
     "/v1/admin/users": {
       "get": {
         "operationId": "AdminUsersController_searchUsers",
@@ -3090,12 +4696,178 @@
         ]
       }
     },
+    "/v1/admin/metrics/economy": {
+      "get": {
+        "operationId": "AdminMetricsController_economyStats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/admin/metrics/coach-feedback": {
       "get": {
         "operationId": "AdminMetricsController_coachFeedbackStats",
         "parameters": [],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/forum/tags": {
+      "get": {
+        "operationId": "AdminForumController_tags",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "AdminForumController_createTag",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminForumTagCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/forum/tags/{tagId}": {
+      "patch": {
+        "operationId": "AdminForumController_updateTag",
+        "parameters": [
+          {
+            "name": "tagId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminForumTagUpdateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/forum/featured-thread": {
+      "get": {
+        "operationId": "AdminForumController_featuredThread",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "AdminForumController_setFeaturedThread",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetFeaturedThreadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminForumController_clearFeaturedThread",
+        "parameters": [],
+        "responses": {
+          "204": {
             "description": ""
           }
         },
@@ -3363,1319 +5135,6 @@
         ],
         "tags": [
           "buddy"
-        ]
-      }
-    },
-    "/v1/forum/zones": {
-      "get": {
-        "operationId": "ForumController_list",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      },
-      "post": {
-        "operationId": "ForumController_create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateZoneDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/zones/{slug}": {
-      "get": {
-        "operationId": "ForumController_get",
-        "parameters": [
-          {
-            "name": "slug",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/zones/{id}/owner": {
-      "post": {
-        "operationId": "ForumController_assignOwner",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssignOwnerDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/zones/{id}/join": {
-      "post": {
-        "operationId": "ForumController_join",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/zones/{id}/leave": {
-      "post": {
-        "operationId": "ForumController_leave",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/zones/{id}/members": {
-      "get": {
-        "operationId": "ForumController_members",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/zones/{id}/members/search": {
-      "get": {
-        "operationId": "ForumController_searchMembers",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/zones/{id}/members/{userId}": {
-      "delete": {
-        "operationId": "ForumController_removeMember",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "userId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/zones/{id}/members/{userId}/approve": {
-      "post": {
-        "operationId": "ForumController_approve",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "userId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ApproveMemberDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/attachments/upload-url": {
-      "post": {
-        "operationId": "ForumThreadController_attachmentUploadUrl",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AttachmentUploadUrlDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/zones/{id}/threads": {
-      "post": {
-        "operationId": "ForumThreadController_post",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateThreadDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      },
-      "get": {
-        "operationId": "ForumThreadController_feed",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/feed/following": {
-      "get": {
-        "operationId": "ForumThreadController_followingFeed",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/follow-suggestions": {
-      "get": {
-        "operationId": "ForumThreadController_followSuggestions",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/threads/{threadId}/detail": {
-      "get": {
-        "operationId": "ForumThreadController_detail",
-        "parameters": [
-          {
-            "name": "threadId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/threads/{threadId}/comments": {
-      "post": {
-        "operationId": "ForumThreadController_comment",
-        "parameters": [
-          {
-            "name": "threadId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAnswerDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/posts/{postId}": {
-      "get": {
-        "operationId": "ForumThreadController_commentDetail",
-        "parameters": [
-          {
-            "name": "postId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/posts/{postId}/replies": {
-      "post": {
-        "operationId": "ForumThreadController_reply",
-        "parameters": [
-          {
-            "name": "postId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAnswerDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/posts/{postId}/reactions": {
-      "put": {
-        "operationId": "ForumThreadController_reactPost",
-        "parameters": [
-          {
-            "name": "postId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReactionDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      },
-      "delete": {
-        "operationId": "ForumThreadController_unreactPost",
-        "parameters": [
-          {
-            "name": "postId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReactionDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/threads/{threadId}/pin": {
-      "post": {
-        "operationId": "ForumThreadController_pin",
-        "parameters": [
-          {
-            "name": "threadId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PinThreadDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/threads/{threadId}": {
-      "delete": {
-        "operationId": "ForumThreadController_remove",
-        "parameters": [
-          {
-            "name": "threadId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      },
-      "get": {
-        "operationId": "ForumQaController_question",
-        "parameters": [
-          {
-            "name": "threadId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/threads/{threadId}/reactions": {
-      "put": {
-        "operationId": "ForumThreadController_react",
-        "parameters": [
-          {
-            "name": "threadId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReactionDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      },
-      "delete": {
-        "operationId": "ForumThreadController_unreact",
-        "parameters": [
-          {
-            "name": "threadId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReactionDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/bookmarks": {
-      "get": {
-        "operationId": "ForumThreadController_bookmarks",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/users/{username}/activity": {
-      "get": {
-        "operationId": "ForumThreadController_userActivity",
-        "parameters": [
-          {
-            "name": "username",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/threads/{threadId}/bookmark": {
-      "put": {
-        "operationId": "ForumThreadController_bookmarkThread",
-        "parameters": [
-          {
-            "name": "threadId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      },
-      "delete": {
-        "operationId": "ForumThreadController_unbookmarkThread",
-        "parameters": [
-          {
-            "name": "threadId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/posts/{postId}/bookmark": {
-      "put": {
-        "operationId": "ForumThreadController_bookmarkPost",
-        "parameters": [
-          {
-            "name": "postId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      },
-      "delete": {
-        "operationId": "ForumThreadController_unbookmarkPost",
-        "parameters": [
-          {
-            "name": "postId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/search": {
-      "get": {
-        "operationId": "ForumQaController_search",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/threads/{threadId}/answers": {
-      "post": {
-        "operationId": "ForumQaController_answer",
-        "parameters": [
-          {
-            "name": "threadId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAnswerDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/threads/{threadId}/accept/{postId}": {
-      "post": {
-        "operationId": "ForumQaController_accept",
-        "parameters": [
-          {
-            "name": "threadId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "postId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/answers/{postId}": {
-      "delete": {
-        "operationId": "ForumQaController_removeAnswer",
-        "parameters": [
-          {
-            "name": "postId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/reports": {
-      "post": {
-        "operationId": "ForumModerationController_report",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateReportDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      },
-      "get": {
-        "operationId": "ForumModerationController_allReports",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/zones/{id}/reports": {
-      "get": {
-        "operationId": "ForumModerationController_zoneReports",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/reports/{id}/resolve": {
-      "post": {
-        "operationId": "ForumModerationController_resolve",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResolveReportDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/threads/{threadId}/restore": {
-      "post": {
-        "operationId": "ForumModerationController_restoreThread",
-        "parameters": [
-          {
-            "name": "threadId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/answers/{postId}/restore": {
-      "post": {
-        "operationId": "ForumModerationController_restoreAnswer",
-        "parameters": [
-          {
-            "name": "postId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/public/questions": {
-      "get": {
-        "operationId": "ForumPublicController_questions",
-        "parameters": [
-          {
-            "name": "limit",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/forum/public/questions/{id}": {
-      "get": {
-        "operationId": "ForumPublicController_question",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "forum"
-        ]
-      }
-    },
-    "/v1/internal/cron/cleanup-forum-attachments": {
-      "post": {
-        "operationId": "ForumInternalController_cleanupAttachments",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "internal"
         ]
       }
     },
@@ -5108,38 +5567,6 @@
         "type": "object",
         "properties": {}
       },
-      "UpdateUserStatusDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "UpdateConfigDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "AdjustEconomyDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "ArticleImageUploadDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "UpsertArticleDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "UpsertExamDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "UpsertExamEventDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "RefundSubscriptionDto": {
-        "type": "object",
-        "properties": {}
-      },
       "CreateZoneDto": {
         "type": "object",
         "properties": {}
@@ -5177,6 +5604,58 @@
         "properties": {}
       },
       "ResolveReportDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateForumThreadDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateForumPostDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateUserStatusDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateConfigDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AdjustEconomyDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ArticleImageUploadDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpsertArticleDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpsertExamDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpsertExamEventDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RefundSubscriptionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AdminForumTagCreateDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AdminForumTagUpdateDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SetFeaturedThreadDto": {
         "type": "object",
         "properties": {}
       },

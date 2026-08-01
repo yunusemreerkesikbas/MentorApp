@@ -4,6 +4,7 @@ import type {
   DailyNextActionKind,
   WeeklyRecapStatus,
 } from "@mentor/types";
+import type { ForumCoachIntent } from "@mentor/types";
 import type { WeeklyRecapSlideKind } from "./weekly-recap";
 
 export const ANALYTICS_CONSENT_KEY = "mentor.analytics-consent.v1";
@@ -35,6 +36,19 @@ export interface CoachAnalyticsParams {
     next_action_kind: DailyNextActionKind;
   };
   coach_session_start: { source: "dashboard" | "coach" };
+  coach_community_message_sent: {
+    zone_type: "CHAT" | "QA";
+    intent: ForumCoachIntent;
+    access_mode: CoachAccessMode;
+  };
+  coach_community_task_added: {
+    zone_type: "CHAT" | "QA";
+    intent: ForumCoachIntent;
+  };
+  coach_community_return_click: {
+    zone_type: "CHAT" | "QA";
+    intent: ForumCoachIntent;
+  };
   coach_plan_adaptation_request: { source: CoachPlanAdaptationSource };
   coach_plan_adaptation_apply: {
     source: CoachPlanAdaptationSource;
@@ -65,6 +79,14 @@ export interface CommunityAnalyticsParams {
   forum_feed_tab_selected: {
     sort: "trending" | "recent" | "top";
     scope: "relevant" | "following";
+  };
+  forum_coach_bridge_impression: {
+    zone_type: "CHAT" | "QA";
+    intent: ForumCoachIntent;
+  };
+  forum_coach_bridge_click: {
+    zone_type: "CHAT" | "QA";
+    intent: ForumCoachIntent;
   };
 }
 export type CommunityAnalyticsEvent = keyof CommunityAnalyticsParams;

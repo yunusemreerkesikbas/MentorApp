@@ -5,6 +5,7 @@ import {
   evaluateForumEditPolicy,
   mergeHubDiscussionIds,
   normalizeForumTagSlug,
+  selectForumCoachIntent,
   uniqueForumTagIds,
 } from "./forum-discovery.policy";
 
@@ -106,5 +107,25 @@ describe("forum discovery policy", () => {
         ["thread-a", "thread-c", "thread-d", "thread-e"],
       ),
     ).toEqual(["thread-b", "thread-a", "thread-c", "thread-d"]);
+  });
+
+  it("selects the highest-priority active coach intent deterministically", () => {
+    expect(
+      selectForumCoachIntent([
+        { slug: "motivasyon", coachIntent: "NEXT_STEP", isActive: true },
+        { slug: "sinav-stratejisi", coachIntent: "STRATEGY", isActive: true },
+        { slug: "calisma-ipuclari", coachIntent: "STUDY_METHOD", isActive: true },
+        { slug: "planlama", coachIntent: "PLAN", isActive: true },
+      ]),
+    ).toEqual({ slug: "planlama", intent: "PLAN" });
+  });
+
+  it("ignores inactive and unconfigured tags", () => {
+    expect(
+      selectForumCoachIntent([
+        { slug: "planlama", coachIntent: "PLAN", isActive: false },
+        { slug: "kaynak-onerisi", coachIntent: null, isActive: true },
+      ]),
+    ).toBeNull();
   });
 });

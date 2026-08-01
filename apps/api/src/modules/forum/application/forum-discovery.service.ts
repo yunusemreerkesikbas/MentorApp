@@ -581,6 +581,7 @@ export class ForumDiscoveryService {
       ...(admin && { nameTr: tag.nameTr, nameEn: tag.nameEn }),
       examType: tag.examType,
       isActive: tag.isActive,
+      ...(admin && { coachIntent: tag.coachIntent }),
       ...(admin && {
         createdAt: tag.createdAt.toISOString(),
         updatedAt: tag.updatedAt.toISOString(),

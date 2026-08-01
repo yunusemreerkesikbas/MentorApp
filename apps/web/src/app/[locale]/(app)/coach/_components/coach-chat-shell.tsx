@@ -11,6 +11,8 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { CoachAccessMode } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { useRouter } from "@/i18n/navigation";
+import { getForumCoachBridge } from "@/lib/forum";
+import { trackCoachEvent } from "@/lib/analytics";
 import {
   CoachStreamError,
   removeCoachContextFromUrl,
@@ -81,6 +83,8 @@ export function CoachChatShell() {
   const {
     messages,
     activeConversationId,
+    conversationOrigin,
+    communitySource,
     historyStatus,
     historyError,
     hasOlderMessages,
@@ -94,6 +98,7 @@ export function CoachChatShell() {
     loadOlderMessages,
     startNewChat,
     adoptConversation,
+    setCommunityContext,
     refreshConversations,
   } = useCoachSession();
   const [input, setInput] = useState("");
@@ -121,10 +126,12 @@ export function CoachChatShell() {
   const seedAppliedRef = useRef(false);
   const appliedContextMockExamIdRef = useRef<string | null>(null);
   const appliedContextArticleSlugRef = useRef<string | null>(null);
+  const appliedContextCommunityThreadIdRef = useRef<string | null>(null);
 
   const seed = searchParams.get("seed");
   const contextMockExamId = searchParams.get("contextMockExamId");
   const contextArticleSlug = searchParams.get("contextArticleSlug");
+  const contextCommunityThreadId = searchParams.get("contextCommunityThreadId");
   // `?c=<id>` opens an existing thread; no param means a fresh chat.
   const routeConversationId = searchParams.get("c");
   const appliedRouteRef = useRef<string | null | undefined>(undefined);
@@ -143,6 +150,29 @@ export function CoachChatShell() {
     setInput(seed);
     composerRef.current?.focus();
   }, [seed]);
+
+  useEffect(() => {
+    if (routeConversationId || !contextCommunityThreadId) return;
+    let active = true;
+    getForumCoachBridge(contextCommunityThreadId)
+      .then((source) => {
+        if (!active) return;
+        setCommunityContext(
+          {
+            type: "COMMUNITY_THREAD",
+            refId: source.threadId,
+            meta: { intent: source.intent, tagSlug: source.tag.slug },
+          },
+          source,
+        );
+      })
+      .catch(() => {
+        if (active) setCommunityContext(null, null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [contextCommunityThreadId, routeConversationId, setCommunityContext]);
 
   const isEmptyLanding =
     historyStatus !== "loading" &&
@@ -174,6 +204,12 @@ export function CoachChatShell() {
       contextArticleSlug,
       appliedContextArticleSlugRef.current,
     );
+    const pendingContextCommunityThreadId = wasNewChat
+      ? resolvePendingCoachContext(
+          contextCommunityThreadId,
+          appliedContextCommunityThreadIdRef.current,
+        )
+      : undefined;
     const clientMessageId = newId();
     const userMessage: ChatMessage = {
       id: clientMessageId,
@@ -209,6 +245,7 @@ export function CoachChatShell() {
         activeConversationId ?? undefined,
         pendingContextMockExamId,
         pendingContextArticleSlug,
+        pendingContextCommunityThreadId,
       );
       // Finalize with the authoritative reply + source chips (covers zero-delta fallbacks too).
       if (received === "") {
@@ -230,12 +267,32 @@ export function CoachChatShell() {
       }
       setFollowUps(nextFollowUps ?? []);
 
-      if (pendingContextMockExamId || pendingContextArticleSlug) {
+      if (
+        pendingContextMockExamId ||
+        pendingContextArticleSlug ||
+        pendingContextCommunityThreadId
+      ) {
         if (pendingContextMockExamId) {
           appliedContextMockExamIdRef.current = pendingContextMockExamId;
         }
         if (pendingContextArticleSlug) {
           appliedContextArticleSlugRef.current = pendingContextArticleSlug;
+        }
+        if (pendingContextCommunityThreadId) {
+          appliedContextCommunityThreadIdRef.current = pendingContextCommunityThreadId;
+          const analyticsSource =
+            communitySource ??
+            (await getForumCoachBridge(pendingContextCommunityThreadId).catch(() => null));
+          if (
+            analyticsSource?.zone.type === "CHAT" ||
+            analyticsSource?.zone.type === "QA"
+          ) {
+            trackCoachEvent("coach_community_message_sent", {
+              zone_type: analyticsSource.zone.type,
+              intent: analyticsSource.intent,
+              access_mode: access.mode,
+            });
+          }
         }
         window.history.replaceState(
           window.history.state,
@@ -504,6 +561,8 @@ export function CoachChatShell() {
               activeConversationId ? () => void regenerate() : undefined
             }
             streamingMessageId={streamingMessageId}
+            conversationOrigin={conversationOrigin}
+            communitySource={communitySource}
             historyStatus={historyStatus}
             historyError={historyError}
             hasOlderMessages={hasOlderMessages}

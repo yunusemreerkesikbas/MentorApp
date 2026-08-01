@@ -1,17 +1,30 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import type { MouseEvent } from "react";
 import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
 import { Card, SectionHeading } from "@mentor/ui";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { staggerItemVariants } from "@/lib/stagger-motion";
+import {
+  COACH_RETURN_TO_STORAGE_KEY,
+  coachReturnHref,
+} from "@/lib/community-coach-bridge";
 
 /** Checkout return page — fake/iyzico redirect target. */
 export function CheckoutResultContent() {
   const reduceMotion = useReducedMotion();
+  const router = useRouter();
   const translate = useTranslations("checkout");
   const ok = useSearchParams().get("status") === "success";
+
+  function returnToCoach(event: MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    const stored = window.sessionStorage.getItem(COACH_RETURN_TO_STORAGE_KEY);
+    window.sessionStorage.removeItem(COACH_RETURN_TO_STORAGE_KEY);
+    router.push(coachReturnHref(stored));
+  }
 
   const headerMotion = reduceMotion
     ? {}
@@ -83,6 +96,7 @@ export function CheckoutResultContent() {
           <>
             <Link
               href="/coach"
+              onClick={returnToCoach}
               className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
               style={{
                 backgroundColor: "var(--color-btn)",

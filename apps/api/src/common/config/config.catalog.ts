@@ -158,6 +158,10 @@ export const CONFIG_CATALOG = {
     false,
     "Gate for the forum/community module (zones, threads, moderation).",
   ),
+  "forum.coach_bridge.enabled": flag(
+    false,
+    "Gate for the public-safe community thread to personal AI coach pilot.",
+  ),
   "identity.google_oauth.enabled": flag(
     false,
     "Gate for Google sign-in on the public auth screens. Requires GOOGLE_OAUTH_* env vars.",
@@ -463,6 +467,7 @@ export const FeatureFlag = {
   AI_ENABLED: "ai.enabled",
   ECONOMY_ENABLED: "economy.enabled",
   FORUM_ENABLED: "forum.enabled",
+  FORUM_COACH_BRIDGE_ENABLED: "forum.coach_bridge.enabled",
   GOOGLE_OAUTH_ENABLED: "identity.google_oauth.enabled",
   SIGNUP_ENABLED: "signup.enabled",
 } as const satisfies Record<string, ConfigKey>;

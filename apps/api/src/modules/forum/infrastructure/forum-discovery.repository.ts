@@ -662,6 +662,7 @@ export class ForumDiscoveryRepository {
       nameEn?: string;
       examType?: string | null;
       isActive?: boolean;
+      coachIntent?: "PLAN" | "NEXT_STEP" | "STUDY_METHOD" | "STRATEGY" | null;
     },
   ): Promise<ForumTagRow> {
     return withServiceContext(this.db, async (tx) => {
@@ -682,6 +683,7 @@ export class ForumDiscoveryRepository {
           nameEn: input.nameEn!,
           examType: input.examType ?? null,
           isActive: input.isActive ?? true,
+          coachIntent: input.coachIntent ?? null,
           createdBy: actorId,
           updatedBy: actorId,
         })

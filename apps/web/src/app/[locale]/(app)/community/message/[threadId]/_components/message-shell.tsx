@@ -26,6 +26,7 @@ import type { AttachmentInput } from "@mentor/validation";
 import { CommentRow } from "../../../_components/comment-row";
 import { ThreadComposer } from "../../../[slug]/_components/thread-composer";
 import { ThreadItem } from "../../../[slug]/_components/thread-item";
+import { CommunityCoachBridge } from "../../../_components/community-coach-bridge";
 
 type State =
   | { status: "loading" }
@@ -183,6 +184,8 @@ export function MessageShell({ threadId }: { threadId: string }) {
           onToggleBookmark={onToggleThreadBookmark}
         />
       </div>
+
+      <CommunityCoachBridge bridge={thread.coachBridge} />
 
       <h2 className="mb-3 mt-8 text-[20px] font-extrabold tracking-[-0.025em] text-[#1b1f28]">
         {t("comment_total", { count: comments.length })}

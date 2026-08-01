@@ -75,6 +75,14 @@ describe("community analytics", () => {
       sort: "trending",
       scope: "relevant",
     });
+    trackCommunityEvent("forum_coach_bridge_click", {
+      zone_type: "QA",
+      intent: "STUDY_METHOD",
+    });
+    trackCommunityEvent("forum_coach_bridge_impression", {
+      zone_type: "CHAT",
+      intent: "NEXT_STEP",
+    });
 
     expect(dataLayer).toEqual([
       [
@@ -86,6 +94,16 @@ describe("community analytics", () => {
         "event",
         "forum_feed_tab_selected",
         { sort: "trending", scope: "relevant" },
+      ],
+      [
+        "event",
+        "forum_coach_bridge_click",
+        { zone_type: "QA", intent: "STUDY_METHOD" },
+      ],
+      [
+        "event",
+        "forum_coach_bridge_impression",
+        { zone_type: "CHAT", intent: "NEXT_STEP" },
       ],
     ]);
     expect(JSON.stringify(dataLayer)).not.toMatch(/user|threadId|title|body|content/i);
@@ -143,6 +161,19 @@ describe("coach analytics", () => {
       next_action_kind: "DAY_COMPLETE",
     });
     trackCoachEvent("coach_session_start", { source: "dashboard" });
+    trackCoachEvent("coach_community_message_sent", {
+      zone_type: "CHAT",
+      intent: "PLAN",
+      access_mode: "COIN",
+    });
+    trackCoachEvent("coach_community_task_added", {
+      zone_type: "QA",
+      intent: "STUDY_METHOD",
+    });
+    trackCoachEvent("coach_community_return_click", {
+      zone_type: "CHAT",
+      intent: "STRATEGY",
+    });
 
     expect(dataLayer).toEqual([
       [
@@ -167,6 +198,21 @@ describe("coach analytics", () => {
         { surface: "dashboard", next_action_kind: "DAY_COMPLETE" },
       ],
       ["event", "coach_session_start", { source: "dashboard" }],
+      [
+        "event",
+        "coach_community_message_sent",
+        { zone_type: "CHAT", intent: "PLAN", access_mode: "COIN" },
+      ],
+      [
+        "event",
+        "coach_community_task_added",
+        { zone_type: "QA", intent: "STUDY_METHOD" },
+      ],
+      [
+        "event",
+        "coach_community_return_click",
+        { zone_type: "CHAT", intent: "STRATEGY" },
+      ],
     ]);
     expect(JSON.stringify(dataLayer)).not.toMatch(/taskId|title|subject|user/i);
   });

@@ -204,3 +204,25 @@ pnpm --filter @mentor/api-client generate
   `packages/validation/src/content.ts`, `apps/web/src/lib/plan-tasks.ts`
   (`listPublicHolidaysByDate`), `plan-month-grid.tsx`, `plan-time-grid.tsx`,
   `plan-mobile-agenda.tsx`, `plan-mobile-date-strip.tsx`.
+
+- **Coğrafi referans verisi: iller + üniversiteler (2026-07-31)** — `cities` (81 il, PK = plaka
+  kodu `01`–`81`, + `slug`, `region`) ve `universities` (`city_code` FK, `kind`
+  `STATE|FOUNDATION|FOUNDATION_VOCATIONAL`, `founded_year`, `website_url`, +
+  `source/sourceUrl/verifiedAt`) tabloları, migration `0062`. RLS `subjects` deseninin aynısı:
+  public read + SERVICE/ADMIN write; `org_id` yok çünkü bunlar global referans veri.
+  **`GET /v1/content/geo`** tek yanıtta her şeyi döner (`@Public()`, `Cache-Control: public,
+  max-age=86400`; il-başına detay endpoint'i yok — harita hover'da ağ isteği atmasın diye).
+  Güven üst-verisi yanıt kökünde **bir kez** taşınır (`universitySource`), 208 satırda tekrar
+  edilmez. `GeoService` bilinçli olarak `ContentService`'ten ayrı: o dosya zaten 1000+ satır.
+  **Neden program/bölüm tablosu YOK:** roadmap §1 "B katmanı" (taban puan/kontenjan/yerleştirme
+  simülasyonu) kararı — yıllık import yükü + doğruluk sorumluluğu. `universities`'e FK'lı bir
+  `programs` tablosu ileride eklenebilir, kapı kapalı değil.
+  **Gotcha 1:** `universities.seed.json` şu an **boş** — YÖK/ÖSYM listesi editöryal olarak
+  doldurulana kadar her il sıfır üniversite bildirir; harita iller üzerinden tam çalışır. Satır
+  eklendiği anda `source/sourceUrl/verifiedAt` zorunlu olur (yoksa boot'ta hata).
+  **Gotcha 2:** Seed **batch** upsert kullanır (tablo başına tek statement), diğer seed
+  servislerindeki satır-satır `await` deseninden bilinçli sapma — 289 kayıt × her boot = Neon'a
+  289 gidiş-dönüş demekti. Üniversite upsert'i `slug` üzerinden yapılır ki `id` sabit kalsın,
+  yoksa her boot `vision_boards.target_university_id` referansları kopardı.
+  İlgili: `schema.ts`, `geo.repository.ts`, `geo.service.ts`, `geo-seed.service.ts`,
+  `geo.controller.ts`, `seed/{cities,universities}.seed.json`, `packages/types/src/geo.ts`.

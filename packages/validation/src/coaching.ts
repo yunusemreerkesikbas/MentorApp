@@ -3,6 +3,7 @@
  * Field copy is NOT here: user-facing messages are localized by the backend.
  */
 import { z } from "zod";
+import { CAREER_GROUPS } from "@mentor/types";
 // NOTE: import from the leaf module, NOT "./index.js" — a barrel import here creates an
 // index↔coaching cycle that crashes sync ESM-from-CJS loading (ts-node / node dist).
 import { paginationQuerySchema } from "./pagination.js";
@@ -265,11 +266,31 @@ export type ListMoodCheckinsQuery = z.infer<typeof listMoodCheckinsQuerySchema>;
 /* -------------------------------- vision board -------------------------------- */
 
 /** One text-based goal anchor per user ("hayal/hedef panosu"); upsert (idempotent per user). */
-export const upsertVisionSchema = z.object({
-  goalTitle: z.string().trim().min(1).max(120),
-  targetCity: z.string().trim().min(1).max(80).nullish(),
-  motivation: z.string().trim().min(1).max(500).nullish(),
-});
+/**
+ * Province plate code, zero-padded: 01–81. Rejects "00" and anything above 81, so a malformed
+ * client value fails here instead of becoming a dangling FK at insert time.
+ */
+export const cityCodeSchema = z.string().regex(/^(0[1-9]|[1-7]\d|8[01])$/);
+
+/**
+ * `targetCityCode` is the normalized map selection; `targetCity` stays as the free-text fallback
+ * for goals the province list can't express. A university is only meaningful alongside its city,
+ * so the pair is enforced here — and the service additionally verifies the university really
+ * belongs to that city (this schema can't know, and the client is not trusted).
+ */
+export const upsertVisionSchema = z
+  .object({
+    goalTitle: z.string().trim().min(1).max(120),
+    targetCityCode: cityCodeSchema.nullish(),
+    targetCity: z.string().trim().min(1).max(80).nullish(),
+    targetUniversityId: z.string().uuid().nullish(),
+    careerGroup: z.enum(CAREER_GROUPS).nullish(),
+    motivation: z.string().trim().min(1).max(500).nullish(),
+  })
+  .refine((v) => !v.targetUniversityId || Boolean(v.targetCityCode), {
+    message: "university_requires_city",
+    path: ["targetCityCode"],
+  });
 export type UpsertVisionInput = z.infer<typeof upsertVisionSchema>;
 
 /* -------------------------------- mock exams -------------------------------- */

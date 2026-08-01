@@ -1,0 +1,7 @@
+{
+  "note": "AWAITING EDITORIAL IMPORT. Populate from the YÖK/ÖSYM university listing — never from a model's memory (guardrail §4 #1). Drop the raw source under seed/_source/, transcribe it here, then set `source`, `sourceUrl` and `verifiedAt` to what was actually checked and when. Until then the file stays empty: the map works fine on cities alone, every city just reports zero universities.",
+  "source": "",
+  "sourceUrl": "",
+  "verifiedAt": null,
+  "universities": []
+}

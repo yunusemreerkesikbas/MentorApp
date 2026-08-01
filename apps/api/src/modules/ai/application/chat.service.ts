@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { I18nContext, I18nService } from "nestjs-i18n";
 import {
   Currency,
@@ -7,6 +7,7 @@ import {
   type CoachChatStreamEvent,
   type MockExamDto,
   type CountdownDto,
+  type CoachConversationOriginDto,
 } from "@mentor/types";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -48,6 +49,10 @@ import {
 import { CoachMemoryRepository } from "../infrastructure/coach-memory.repository";
 import { CoachConversationRepository } from "../infrastructure/coach-conversation.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
+import {
+  ForumCoachBridgeService,
+  type ForumCoachContext,
+} from "../../forum/application/forum-coach-bridge.service";
 
 export type CoachReplyResult = CoachChatReplyDto;
 type OfficialContent = Omit<CoachReplyResult, "conversationId">;
@@ -76,16 +81,44 @@ export class ChatService {
     private readonly budget: AiBudgetGuard,
     private readonly mockExams: MockExamService,
     private readonly i18n: I18nService,
+    @Optional() private readonly forumCoachBridge?: ForumCoachBridgeService,
   ) {}
+
+  private async resolveCommunityContext(
+    userId: string,
+    threadId?: string,
+  ): Promise<ForumCoachContext | undefined> {
+    if (!threadId) return undefined;
+    if (!this.forumCoachBridge) {
+      throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    return this.forumCoachBridge.resolveForCoach(
+      userId,
+      threadId,
+      I18nContext.current()?.lang ?? "tr",
+    );
+  }
 
   /** Validate an existing thread, or describe the new thread to create after a successful reply. */
   private async resolveConversationTarget(
     userId: string,
     message: string,
     conversationId?: string,
+    community?: ForumCoachContext,
   ): Promise<CoachConversationTarget> {
     if (!conversationId) {
-      return { kind: "new", title: buildConversationTitle(message) };
+      const origin: CoachConversationOriginDto | undefined = community
+        ? {
+            type: "COMMUNITY_THREAD",
+            refId: community.threadId,
+            meta: { intent: community.intent, tagSlug: community.tagSlug },
+          }
+        : undefined;
+      return {
+        kind: "new",
+        title: buildConversationTitle(message),
+        ...(origin ? { origin } : {}),
+      };
     }
     if (!(await this.conversations.isOwned(userId, conversationId))) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -181,6 +214,7 @@ export class ChatService {
     message: string,
     conversationId?: string,
     contextArticleSlug?: string,
+    community?: ForumCoachContext,
   ): Promise<CoachReplyResult | null> {
     const official = await this.resolveOfficialContent(
       userId,
@@ -193,6 +227,7 @@ export class ChatService {
       userId,
       message,
       conversationId,
+      community,
     );
     const threadId = await this.messages.persistExchange(
       userId,
@@ -217,15 +252,21 @@ export class ChatService {
     conversationId?: string,
     contextMockExamId?: string,
     contextArticleSlug?: string,
+    contextCommunityThreadId?: string,
   ): Promise<CoachReplyResult> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
+    const community = await this.resolveCommunityContext(
+      user.id,
+      contextCommunityThreadId,
+    );
     const official = await this.completeOfficialExchange(
       user.id,
       message,
       conversationId,
       contextArticleSlug,
+      community,
     );
     if (official) return official;
     await this.budget.assertWithinBudget();
@@ -252,6 +293,7 @@ export class ChatService {
         user.id,
         message,
         conversationId,
+        community,
       );
       return await this.completeChat(
         user.id,
@@ -259,6 +301,7 @@ export class ChatService {
         message,
         mockExam,
         contextArticleSlug,
+        community,
       );
     } catch (err) {
       if (!ent.isPremium && shouldRefundOnFailure && coinCost > 0) {
@@ -343,6 +386,7 @@ export class ChatService {
     message: string,
     mockExam?: MockExamDto,
     opts?: { excludeTailExchange?: boolean; contextArticleSlug?: string },
+    community?: ForumCoachContext,
   ) {
     const ctx = await this.context.build(userId);
 
@@ -395,6 +439,7 @@ export class ChatService {
       retrieved,
       mockExam,
       promptLocale(I18nContext.current()?.lang),
+      community,
     );
 
     return {
@@ -447,6 +492,7 @@ export class ChatService {
     message: string,
     mockExam?: MockExamDto,
     contextArticleSlug?: string,
+    community?: ForumCoachContext,
   ): Promise<CoachReplyResult> {
     const { llmInput, sources } = await this.prepareChat(
       userId,
@@ -454,6 +500,7 @@ export class ChatService {
       message,
       mockExam,
       { contextArticleSlug },
+      community,
     );
     const result = await this.llm.complete(llmInput);
     // Order-agnostic: models sometimes reverse the FOLLOWUP/TASK order — never leak a marker.
@@ -488,15 +535,21 @@ export class ChatService {
     conversationId?: string,
     contextMockExamId?: string,
     contextArticleSlug?: string,
+    contextCommunityThreadId?: string,
   ): AsyncGenerator<CoachChatStreamEvent> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
+    const community = await this.resolveCommunityContext(
+      user.id,
+      contextCommunityThreadId,
+    );
     const official = await this.completeOfficialExchange(
       user.id,
       message,
       conversationId,
       contextArticleSlug,
+      community,
     );
     if (official) {
       yield { done: official };
@@ -526,6 +579,7 @@ export class ChatService {
         user.id,
         message,
         conversationId,
+        community,
       );
       const { llmInput, sources } = await this.prepareChat(
         user.id,
@@ -533,6 +587,7 @@ export class ChatService {
         message,
         mockExam,
         { contextArticleSlug },
+        community,
       );
       const final = yield* this.streamLlm(llmInput);
       const { text: reply, task, followUps } = extractReplyMarkers(final.text);
@@ -585,6 +640,14 @@ export class ChatService {
     if (!(await this.conversations.isOwned(user.id, conversationId))) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
+    const origin = await this.conversations.getOrigin(user.id, conversationId);
+    const community =
+      origin?.type === "COMMUNITY_THREAD"
+        ? await this.resolveCommunityContext(user.id, origin.refId).catch((err) => {
+            this.logger.warn(`Community origin unavailable during regenerate: ${String(err)}`);
+            return undefined;
+          })
+        : undefined;
     // Locate the final exchange by role rather than by position; legacy rows can share timestamps
     // and therefore have a UUID-based tie order.
     const tail = await this.messages.lastN(user.id, conversationId, 2);
@@ -640,6 +703,7 @@ export class ChatService {
         userMsg.content,
         undefined,
         { excludeTailExchange: true },
+        community,
       );
       const final = yield* this.streamLlm(llmInput);
       const { text: reply, task, followUps } = extractReplyMarkers(final.text);
@@ -755,16 +819,23 @@ export class ChatService {
     if (!(await this.conversations.isOwned(userId, conversationId))) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    const result = await this.messages.listPagedByConversation(
-      userId,
-      conversationId,
-      page,
-      pageSize,
-    );
+    const [result, origin] = await Promise.all([
+      this.messages.listPagedByConversation(userId, conversationId, page, pageSize),
+      this.conversations.getOrigin(userId, conversationId),
+    ]);
     if (result.total === 0) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    return result;
+    const communitySource =
+      origin?.type === "COMMUNITY_THREAD" && this.forumCoachBridge
+        ? await this.forumCoachBridge
+            .tryGetBridge(userId, origin.refId, I18nContext.current()?.lang ?? "tr")
+            .catch((err) => {
+              this.logger.warn(`Community source card unavailable: ${String(err)}`);
+              return null;
+            })
+        : null;
+    return { ...result, origin, communitySource };
   }
 
   /** DELETE /v1/coach/conversations/:id — drop one thread (messages cascade). Memory profile is kept. */

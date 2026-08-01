@@ -492,7 +492,13 @@
     "zone_context_title": "Room context",
     "zone_contributors": "Contributors",
     "detail_context_title": "Discussion context",
-    "detail_participants": "Participants"
+    "detail_participants": "Participants",
+    "coach_bridge": {
+      "PLAN": "Adapt this to my plan",
+      "NEXT_STEP": "Find one step for me",
+      "STUDY_METHOD": "Find a method for me",
+      "STRATEGY": "Clarify my strategy"
+    }
   },
   "today_plan": {
     "title": "Today's plan",
@@ -1462,7 +1468,10 @@
     "typing": "Coach is typing",
     "show_more": "Show more",
     "show_less": "Show less",
-    "scroll_to_bottom": "Jump to latest messages"
+    "scroll_to_bottom": "Jump to latest messages",
+    "community_source": "From community",
+    "return_to_discussion": "Return to discussion",
+    "source_unavailable": "This discussion is no longer available"
   },
   "countdown": {
     "title": "Time to exam",
@@ -1646,6 +1655,7 @@
       "title": "You're ready!",
       "subtitle": "Your countdown and today's plan are waiting on the dashboard.",
       "countdown_teaser": "Your exam countdown is on the dashboard — from the verified official calendar.",
+      "map_cta": "Mark your goal on the map →",
       "go_panel": "Go to dashboard"
     }
   },
@@ -1664,6 +1674,39 @@
     "goal_placeholder": "e.g. Become a teacher, Law at Marmara…",
     "city_label": "Target city (optional)",
     "city_placeholder": "e.g. Istanbul",
+    "map": {
+      "city_label": "Target city (optional)",
+      "city_placeholder": "Select a city",
+      "card_empty": "Pick a city on the map.",
+      "no_universities": "No universities listed for this city.",
+      "university_count": "{count} universities",
+      "attribution": "Map data © OpenStreetMap contributors (ODbL)",
+      "region": {
+        "MARMARA": "Marmara",
+        "EGE": "Aegean",
+        "AKDENIZ": "Mediterranean",
+        "IC_ANADOLU": "Central Anatolia",
+        "KARADENIZ": "Black Sea",
+        "DOGU_ANADOLU": "Eastern Anatolia",
+        "GUNEYDOGU_ANADOLU": "Southeastern Anatolia"
+      }
+    },
+    "career": {
+      "label": "Target field (optional)",
+      "none": "Not decided yet",
+      "group": {
+        "SAGLIK": "Health",
+        "MUHENDISLIK": "Engineering",
+        "YAZILIM": "Software & IT",
+        "HUKUK_KAMU": "Law & Public Service",
+        "EGITIM": "Education",
+        "ISLETME": "Business & Economics",
+        "SOSYAL_ILETISIM": "Social & Media",
+        "SANAT_TASARIM": "Art & Design",
+        "FEN": "Science & Nature",
+        "MIMARLIK": "Architecture"
+      }
+    },
     "motivation_label": "Why? (optional)",
     "motivation_placeholder": "The reason that drives you…",
     "save": "Save",

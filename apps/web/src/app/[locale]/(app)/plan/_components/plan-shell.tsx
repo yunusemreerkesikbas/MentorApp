@@ -31,6 +31,11 @@ import { monthGridDays } from "@/lib/plan-calendar-layout";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { parsePlanAdaptationQuery } from "@/lib/plan-coach-adaptation-utils";
 import { parseAnalysisPlanPrefill, type AnalysisPlanPrefill } from "@/lib/analysis-plan-prefill";
+import {
+  parseCommunityCoachAttribution,
+  type CommunityCoachAttribution,
+} from "@/lib/community-coach-bridge";
+import { trackCoachEvent } from "@/lib/analytics";
 import { PlanAddTaskForm, type PlanAddTaskFormHandle } from "./plan-add-task-form";
 import {
   PlanCoachAdaptationAction,
@@ -124,6 +129,15 @@ export function PlanShell() {
         add: searchParams.get("add"),
         subject: searchParams.get("subject"),
         title: searchParams.get("title"),
+      }),
+    [searchParams],
+  );
+  const communityCoachAttribution = useMemo(
+    () =>
+      parseCommunityCoachAttribution({
+        source: searchParams.get("source"),
+        intent: searchParams.get("communityIntent"),
+        zoneType: searchParams.get("communityZoneType"),
       }),
     [searchParams],
   );
@@ -533,7 +547,10 @@ export function PlanShell() {
     origin?: "calendar";
   };
 
-  const openAddSheet = useCallback(async (taskPrefill?: PlanAddPrefill | null) => {
+  const openAddSheet = useCallback(async (
+    taskPrefill?: PlanAddPrefill | null,
+    communityAttribution?: CommunityCoachAttribution | null,
+  ) => {
     const targetDate = taskPrefill?.taskDate ?? date;
     if (isPastDate(targetDate)) return;
     await filterSheet({
@@ -562,6 +579,12 @@ export function PlanShell() {
           ...(description ? { description } : {}),
         });
         appendTask(created);
+        if (communityAttribution) {
+          trackCoachEvent("coach_community_task_added", {
+            intent: communityAttribution.intent,
+            zone_type: communityAttribution.zoneType,
+          });
+        }
         setError(null);
       },
     });
@@ -570,10 +593,10 @@ export function PlanShell() {
   useEffect(() => {
     if (!prefill || prefillConsumed.current || readOnly) return;
     prefillConsumed.current = true;
-    void openAddSheet(prefill).finally(() => {
+    void openAddSheet(prefill, communityCoachAttribution).finally(() => {
       router.replace("/plan");
     });
-  }, [openAddSheet, prefill, readOnly, router]);
+  }, [communityCoachAttribution, openAddSheet, prefill, readOnly, router]);
 
   useEffect(() => {
     if (!adaptationRequest || adaptationConsumed.current) return;

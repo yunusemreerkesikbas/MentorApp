@@ -1,5 +1,8 @@
 import { Module } from "@nestjs/common";
 import { ContentService } from "./application/content.service";
+import { GeoService } from "./application/geo.service";
+import { GeoRepository } from "./infrastructure/geo.repository";
+import { GeoSeedService } from "./infrastructure/geo-seed.service";
 import { ExamEventRepository } from "./infrastructure/exam-event.repository";
 import { ExamRepository } from "./infrastructure/exam.repository";
 import { ContentSeedService } from "./infrastructure/content-seed.service";
@@ -11,6 +14,7 @@ import { PublicHolidayRepository } from "./infrastructure/public-holiday.reposit
 import { SubjectRepository } from "./infrastructure/subject.repository";
 import { TopicRepository } from "./infrastructure/topic.repository";
 import { ContentController } from "./presentation/content.controller";
+import { GeoController } from "./presentation/geo.controller";
 import { InfoArticleController } from "./presentation/info-article.controller";
 import { PublicHolidayController } from "./presentation/public-holiday.controller";
 
@@ -19,9 +23,17 @@ import { PublicHolidayController } from "./presentation/public-holiday.controlle
  * Reference data with public read; writes via SERVICE context (seed / future W6 admin).
  */
 @Module({
-  controllers: [ContentController, InfoArticleController, PublicHolidayController],
+  controllers: [
+    ContentController,
+    GeoController,
+    InfoArticleController,
+    PublicHolidayController,
+  ],
   providers: [
     ContentService,
+    GeoService,
+    GeoRepository,
+    GeoSeedService,
     ExamRepository,
     ExamEventRepository,
     InfoArticleRepository,
@@ -33,6 +45,6 @@ import { PublicHolidayController } from "./presentation/public-holiday.controlle
     ArticleSeedService,
     HolidaySeedService,
   ],
-  exports: [ContentService],
+  exports: [ContentService, GeoService],
 })
 export class ContentModule {}

@@ -1,6 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, desc, eq, exists, sql } from "drizzle-orm";
-import type { CoachConversationDto, Paginated } from "@mentor/types";
+import type {
+  CoachConversationDto,
+  CoachConversationOriginDto,
+  Paginated,
+} from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
@@ -28,6 +32,30 @@ export class CoachConversationRepository {
         )
         .limit(1);
       return rows.length > 0;
+    });
+  }
+
+  /** Structural provenance for one owned conversation; null for legacy/non-bridge chats. */
+  async getOrigin(
+    userId: string,
+    conversationId: string,
+  ): Promise<CoachConversationOriginDto | null> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const [row] = await tx
+        .select({
+          originType: coachConversations.originType,
+          originRefId: coachConversations.originRefId,
+          originMeta: coachConversations.originMeta,
+        })
+        .from(coachConversations)
+        .where(
+          and(
+            eq(coachConversations.id, conversationId),
+            eq(coachConversations.userId, userId),
+          ),
+        )
+        .limit(1);
+      return this.toOrigin(row);
     });
   }
 
@@ -63,6 +91,9 @@ export class CoachConversationRepository {
             title: coachConversations.title,
             lastMessageAt: coachConversations.lastMessageAt,
             messageCount,
+            originType: coachConversations.originType,
+            originRefId: coachConversations.originRefId,
+            originMeta: coachConversations.originMeta,
           })
           .from(coachConversations)
           .where(visible)
@@ -83,12 +114,33 @@ export class CoachConversationRepository {
           title: row.title,
           lastMessageAt: row.lastMessageAt.toISOString(),
           messageCount: row.messageCount,
+          origin: this.toOrigin(row),
         })),
         page,
         pageSize,
         total: totals[0]?.n ?? 0,
       };
     });
+  }
+
+  private toOrigin(row: {
+    originType: string | null;
+    originRefId: string | null;
+    originMeta: { intent: "PLAN" | "NEXT_STEP" | "STUDY_METHOD" | "STRATEGY"; tagSlug: string } | null;
+  } | undefined): CoachConversationOriginDto | null {
+    if (
+      !row ||
+      row.originType !== "COMMUNITY_THREAD" ||
+      !row.originRefId ||
+      !row.originMeta
+    ) {
+      return null;
+    }
+    return {
+      type: "COMMUNITY_THREAD",
+      refId: row.originRefId,
+      meta: row.originMeta,
+    };
   }
 
   /** KVKK erasure: drop ALL of a user's threads (their messages cascade). Idempotent. SERVICE ctx. */

@@ -21,7 +21,7 @@ import type {
   CoachPlanDraftDto,
   CoachConversationDto,
   CoachMemoryDto,
-  CoachMessageDto,
+  CoachConversationMessagesDto,
   Paginated,
 } from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -76,6 +76,7 @@ export class AiChatController {
       dto.conversationId,
       dto.contextMockExamId,
       dto.contextArticleSlug,
+      dto.contextCommunityThreadId,
     );
   }
 
@@ -97,6 +98,7 @@ export class AiChatController {
       dto.conversationId,
       dto.contextMockExamId,
       dto.contextArticleSlug,
+      dto.contextCommunityThreadId,
     );
     // Pre-stream gating: let the first pull throw before SSE headers are committed.
     const first = await stream.next();
@@ -232,7 +234,7 @@ export class AiChatController {
     @CurrentUser() user: RequestUser,
     @Param("id", ParseUUIDPipe) id: string,
     @Query() query: ListCoachMessagesQueryDto,
-  ): Promise<Paginated<CoachMessageDto>> {
+  ): Promise<CoachConversationMessagesDto> {
     return this.chat.listConversationMessages(
       user.id,
       id,

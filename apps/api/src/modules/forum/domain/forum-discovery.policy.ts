@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { type ForumCoachIntent } from "@mentor/types";
 
 export const FORUM_MAX_TAGS = 3;
 
@@ -85,4 +86,33 @@ export function mergeHubDiscussionIds(
   limit = 4,
 ): string[] {
   return [...new Set([...interactedThreadIds, ...relevantThreadIds])].slice(0, limit);
+}
+
+const COACH_INTENT_PRIORITY: Record<ForumCoachIntent, number> = {
+  PLAN: 0,
+  STUDY_METHOD: 1,
+  STRATEGY: 2,
+  NEXT_STEP: 3,
+};
+
+/** Selects one curated bridge tag without depending on input or database ordering. */
+export function selectForumCoachIntent(
+  tags: Array<{
+    slug: string;
+    coachIntent: ForumCoachIntent | null;
+    isActive: boolean;
+  }>,
+): { slug: string; intent: ForumCoachIntent } | null {
+  const eligible = tags
+    .filter(
+      (tag): tag is typeof tag & { coachIntent: ForumCoachIntent } =>
+        tag.isActive && tag.coachIntent !== null,
+    )
+    .sort(
+      (left, right) =>
+        COACH_INTENT_PRIORITY[left.coachIntent] - COACH_INTENT_PRIORITY[right.coachIntent] ||
+        left.slug.localeCompare(right.slug),
+    );
+  const selected = eligible[0];
+  return selected ? { slug: selected.slug, intent: selected.coachIntent } : null;
 }

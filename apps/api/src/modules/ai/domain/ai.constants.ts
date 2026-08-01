@@ -1,5 +1,9 @@
 /** AI coach domain constants (W3): system prompt (§4 guardrails) + cost model + request limits. */
-import type { GhostComparisonDto, MockExamDto } from "@mentor/types";
+import type {
+  ForumCoachIntent,
+  GhostComparisonDto,
+  MockExamDto,
+} from "@mentor/types";
 import {
   promptLanguageInstruction,
   type PromptLocale,
@@ -78,6 +82,14 @@ export interface CoachSource {
   snippet: string;
 }
 
+/** Curated structural metadata only; forum text and identities can never fit this shape. */
+export interface CommunityCoachPromptContext {
+  intent: ForumCoachIntent;
+  zoneType: "CHAT" | "QA";
+  tagSlug: string;
+  tagName: string;
+}
+
 /** 1..5 mood → short Turkish label for grounding/reflection prompts (mirrors coaching MoodLevel). */
 const MOOD_LABEL: Record<number, string> = {
   1: "çok düşük",
@@ -154,6 +166,7 @@ export function buildSystemPrompt(
   sources: CoachSource[] = [],
   mockExam?: MockExamDto,
   locale: PromptLocale = "tr",
+  community?: CommunityCoachPromptContext,
 ): string {
   const lines = [
     ctx.examType ? `Sınav türü: ${ctx.examType}` : "Sınav türü: belirtilmemiş",
@@ -167,6 +180,14 @@ export function buildSystemPrompt(
   if (planLine) lines.push(planLine);
   const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
   if (sessionsLine) lines.push(sessionsLine);
+  if (community) {
+    lines.push(
+      "Topluluk köprüsü (yalnız yapısal/kürasyonlu bağlam):",
+      `Niyet: ${community.intent}; oda türü: ${community.zoneType}; etiket: ${community.tagSlug} (${community.tagName}).`,
+      "Tartışma içeriği sana verilmedi. Tartışmada ne söylendiğini tahmin etme; tartışmaya veya diğer kullanıcılara görüş atfetme.",
+      "Yalnız öğrencinin bu sohbette kendi yazdığı mesajdan hareketle kişisel çalışma koçluğu yap ve en fazla bir uygulanabilir adım öner.",
+    );
+  }
   if (mockExam) {
     const takenAt = mockExam.takenAt
       .slice(0, 10)

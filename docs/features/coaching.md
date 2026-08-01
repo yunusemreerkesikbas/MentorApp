@@ -1023,3 +1023,37 @@ pnpm --filter @mentor/api test
   yüzeylerinde kullanılmaya devam eder.
   İlgili: `puhu-image.tsx`, `weekly-recap-story.tsx`,
   `public/mascot/puhu/{puhu-host.png,README.md}`.
+
+- **Hedef haritası: il/üniversite seçimi + kariyer maskotu (2026-07-31)** — `/hedef` ekranındaki
+  serbest metin şehir alanı yerini normalize seçime bıraktı. `vision_boards`'a üç kolon:
+  `target_city_code` (FK → `cities`), `target_university_id` (FK → `universities`), `career_group`.
+  **`target_city` (text) silinmedi** — eski kayıtlar ve il listesinin ifade edemediği hedefler
+  (yurt dışı, "listede yok") için duruyor; okuma kuralı: kod varsa kod, yoksa metin. İki FK de
+  `ON DELETE SET NULL` — referans satırı düşerse kullanıcının hedefi silinmemeli.
+  **Kritik:** `vision-board.repository.ts` içindeki `unchanged` predicate'i premium AI motivasyon
+  notunun ne zaman geçersizleşeceğini belirler; **üç yeni alan da oraya eklendi**. Eklenmeseydi
+  kullanıcı Konya→Ankara yaptığında eski şehre ait not ekranda kalırdı. `vision.service.spec.ts`
+  bunu üç ayrı testle kilitler.
+  Üniversite↔il tutarlılığı **serviste** doğrulanır (`GeoService.universityExistsInCity`): zod
+  çifti zorunlu kılar ama üniversitenin gerçekten o ilde olduğunu bilemez, client'a güvenilmez.
+  **Harita:** `TurkeyMap` build-time üretilmiş statik SVG path'leri kullanır
+  (`scripts/build-turkey-map.mjs` → `paths.generated.ts`); runtime'da d3 / harita kütüphanesi /
+  WebGL **yok**. Erişilebilirlik sözleşmesi native `<select>` üzerindedir, SVG `aria-hidden` —
+  81 path'i tab sırasına sokmak ekranı iyileştirmez. Bu karar bedava bir yan fayda getirdi:
+  `PROVINCES` boşken sayfa tam çalışır, sadece çizim görünmez. Üniversite rozetleri ve kartın
+  üniversite listesi yalnız `examType === "YKS"` iken görünür.
+  **Gotcha 1:** Rozet `<g>`'sinde `pointerEvents="none"` **şart** — yoksa rozet tıklamayı yutar
+  ve altındaki il seçilmez (sessiz bug).
+  **Gotcha 2:** `apps/web/data/tr-provinces.geo.json` repoda **yok**; OSM türevi (ODbL) dosya
+  eklenip `pnpm --filter @mentor/web build:map` çalıştırılmalı. Script 81 il, bozuk path ve
+  viewBox dışına düşen centroid için assert eder — içbükey iller (Muğla, Antalya, Hatay) için
+  `CENTROID_OVERRIDES` gerekebilir. ODbL atıfı `TurkeyMap` içinde, yalnız harita çizildiğinde.
+  **Gotcha 3:** Kariyer görselleri (`public/mascot/puhu/career/*.png`) henüz yok; `puhu-image.tsx`
+  içindeki `CAREER_ART_AVAILABLE=false` bayrağı bu yüzden kapalı — next/image eksik dosyada hata
+  verir, bayrak açıkken alan seçmek kırık görsel gösterirdi. On PNG eklenince `true` yapılacak.
+  Kariyer grubu on sabit değerdir, DB tablosu yok; "Henüz karar vermedim" açık bir seçenektir
+  (radio semantiğinde seçim temizlenemez, gizli jest de keşfedilebilir değil).
+  Onboarding **değişmedi** — harita panelde yaşıyor; `complete-step.tsx`'e keşif CTA'sı eklendi.
+  İlgili: `turkey-map.tsx`, `paths.generated.ts`, `build-turkey-map.mjs`, `vision-board-shell.tsx`,
+  `puhu-image.tsx`, `vision.service.ts`, `vision-board.repository.ts`, `coaching.mappers.ts`,
+  `packages/validation/src/coaching.ts`, `e2e/vision-board.spec.ts`.

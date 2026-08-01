@@ -60,6 +60,7 @@ import {
 } from "../infrastructure/forum-discovery.repository";
 import { uniqueForumTagIds } from "../domain/forum-discovery.policy";
 import { postRowToCommentView, threadRowToView } from "./forum.mappers";
+import { ForumCoachBridgeService } from "./forum-coach-bridge.service";
 
 /** Minimal authenticated principal the controller passes in (id + platform roles). */
 export interface ThreadActor {
@@ -86,6 +87,7 @@ export class ForumThreadService {
     private readonly users: UsersService,
     private readonly follow: FollowService,
     @Optional() private readonly discovery?: ForumDiscoveryRepository,
+    @Optional() private readonly coachBridge?: ForumCoachBridgeService,
   ) {}
 
   /** Presigned upload URL for a post attachment — image or file (APP-027). Client PUTs, then sends `key`. */
@@ -500,7 +502,7 @@ export class ForumThreadService {
   async getThreadDetail(viewerId: string, threadId: string): Promise<ThreadDetail> {
     await this.assertEnabled();
     const thread = await this.requireThread(threadId, viewerId);
-    const [counts, mine, commentCounts, topLevel, attachMap, bookmarked, tags] = await Promise.all([
+    const [counts, mine, commentCounts, topLevel, attachMap, bookmarked, tags, coachBridge] = await Promise.all([
       this.threads.reactionCountsByThread([threadId]),
       this.threads.myReactionsByThread([threadId], viewerId),
       this.threads.commentCountsByThread([threadId]),
@@ -509,6 +511,8 @@ export class ForumThreadService {
       this.bookmarks.myBookmarkedTargets(ModerationTargetType.THREAD, [threadId], viewerId),
       this.discovery?.tagsByThread([threadId], I18nContext.current()?.lang ?? "tr") ??
         Promise.resolve(new Map<string, ForumTagRow[]>()),
+      this.coachBridge?.tryGetBridge(viewerId, threadId, I18nContext.current()?.lang ?? "tr") ??
+        Promise.resolve(null),
     ]);
     const view = threadRowToView(
       thread,
@@ -528,6 +532,7 @@ export class ForumThreadService {
       examType: tag.examType,
       isActive: tag.isActive,
     }));
+    view.coachBridge = coachBridge;
     return {
       thread: view,
       comments: await this.decorateComments(topLevel, viewerId),

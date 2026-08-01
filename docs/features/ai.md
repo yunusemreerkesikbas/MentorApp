@@ -96,6 +96,15 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **Topluluk kaynaklı koç konuşması pilotu (2026-07-31)** — Yeni koç sohbeti
+  `contextCommunityThreadId` alabilir; backend uygunluğu Forum’un public servisiyle yeniden doğrular
+  ve LLM’e yalnız `intent`, CHAT/QA türü, kürasyonlu etiket ve kullanıcının kendi mesajını geçirir.
+  Forum metni/kimliği prompt’a veya analytics’e taşınmaz. Başarılı exchange transaction’ında
+  conversation’a yapısal `COMMUNITY_THREAD` origin yazılır; geçmiş/regenerate bunu korur. Web taslağı
+  otomatik göndermeden açar, kalıcı kaynak kartı ve güvenli `returnTo` sunar; önerilen görev ancak
+  plan formunda kullanıcı kaydından sonra ölçülür. Kaynak silinirse konuşma çalışır, kart erişilemez
+  duruma geçer. İlgili: `chat.service.ts`, `coach-{conversation,message}.repository.ts`,
+  `coach-chat-shell.tsx`, `community-source-card.tsx`, `community-coach-bridge.ts`.
 - **Koç desktop history rail toggle (2026-07-25)** — Desktop rail collapses to a narrow icon strip
   (52px): `PanelLeft` (expand), `SquarePen` (new chat), `MessageSquare` (open history). Expanded
   header keeps the top-right collapse control; width animates 288↔52 (~280ms). No floating button in

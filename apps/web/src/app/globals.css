@@ -748,3 +748,38 @@ html.mentor-sheet-open {
     animation: none;
   }
 }
+
+/* Goal map (TurkeyMap). Province colour is pure CSS — React state drives only the detail card,
+   so moving the mouse across the map never re-renders 81 paths. */
+.mentor-tr-map path {
+  cursor: pointer;
+  fill: var(--color-chip);
+  stroke: #fff;
+  stroke-width: 0.5;
+  transition: fill 0.15s ease;
+}
+.mentor-tr-map path:hover {
+  fill: color-mix(in srgb, var(--color-main) 40%, white);
+}
+.mentor-tr-map path[data-selected] {
+  fill: var(--color-main);
+}
+.mentor-tr-map path:focus-visible {
+  outline: none;
+  stroke: var(--color-main);
+  stroke-width: 2;
+}
+.mentor-tr-map .mentor-tr-map-label {
+  fill: var(--color-main);
+  font-size: 11px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mentor-tr-map path {
+    transition: none;
+  }
+}

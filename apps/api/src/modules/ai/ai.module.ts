@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Env } from "../../config/env.validation";
 import { CoachingModule } from "../coaching/coaching.module";
+import { ForumModule } from "../forum/forum.module";
 import { ContentModule } from "../content/content.module";
 import { EconomyModule } from "../economy/economy.module";
 import { IdentityModule } from "../identity/identity.module";
@@ -63,6 +64,7 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     PaymentsModule,
     EconomyModule,
     CoachingModule,
+    ForumModule,
   ],
   controllers: [
     AiChatController,

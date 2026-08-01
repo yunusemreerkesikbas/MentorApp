@@ -35,6 +35,7 @@ import { resolveForumAttachments } from "./attachment.resolve";
 import { ForumMentionService } from "./forum-mention.service";
 import type { ThreadActor } from "./forum-thread.service";
 import { postRowToAnswerView, threadRowToView } from "./forum.mappers";
+import { ForumCoachBridgeService } from "./forum-coach-bridge.service";
 
 /**
  * QA behaviour (slice 3): answer / accept / question-detail / search for QA zones. Questions are
@@ -54,6 +55,7 @@ export class ForumQaService {
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     private readonly mentions: ForumMentionService,
     @Optional() private readonly discovery?: ForumDiscoveryRepository,
+    @Optional() private readonly coachBridge?: ForumCoachBridgeService,
   ) {}
 
   private async assertEnabled(): Promise<void> {
@@ -148,7 +150,7 @@ export class ForumQaService {
     ]);
     // Batched attachment + bookmark lookups (no N+1): the question thread + all answer posts.
     const answerIds = answers.map((a) => a.id);
-    const [threadAttach, answerAttach, threadBm, answerBm, tags, threadHelpful, answerHelpful, myThreadHelpful, myAnswerHelpful] = await Promise.all([
+    const [threadAttach, answerAttach, threadBm, answerBm, tags, threadHelpful, answerHelpful, myThreadHelpful, myAnswerHelpful, coachBridge] = await Promise.all([
       this.attachments.listForTargets(ModerationTargetType.THREAD, [threadId]),
       this.attachments.listForTargets(ModerationTargetType.POST, answerIds),
       this.bookmarks.myBookmarkedTargets(ModerationTargetType.THREAD, [threadId], viewerId),
@@ -163,6 +165,8 @@ export class ForumQaService {
         Promise.resolve(new Set()),
       this.discovery?.myHelpfulTargets(ModerationTargetType.POST, answerIds, viewerId) ??
         Promise.resolve(new Set()),
+      this.coachBridge?.tryGetBridge(viewerId, threadId, I18nContext.current()?.lang ?? "tr") ??
+        Promise.resolve(null),
     ]);
     const lang = (I18nContext.current()?.lang ?? "tr").toLowerCase().startsWith("en") ? "en" : "tr";
     const question = threadRowToView(
@@ -184,6 +188,7 @@ export class ForumQaService {
     }));
     question.helpfulVoteCount = threadHelpful.get(threadId) ?? 0;
     question.myHelpfulVote = myThreadHelpful.has(threadId);
+    question.coachBridge = coachBridge;
     return {
       question,
       answers: answers.map((a) => {

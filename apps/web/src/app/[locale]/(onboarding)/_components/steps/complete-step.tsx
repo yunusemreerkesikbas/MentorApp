@@ -26,6 +26,16 @@ export function CompleteStep({
     router.push("/dashboard");
   }
 
+  /**
+   * The goal map lives on the panel, not in onboarding — it would put ~60KB and an 81-way decision
+   * in front of a user who hasn't seen the product yet. This is its discovery path: without it the
+   * map is a feature nobody stumbles into.
+   */
+  function handleGoMap() {
+    onFinish();
+    router.push("/vision-board");
+  }
+
   return (
     <OnboardingStepLayout
       step={3}
@@ -49,6 +59,14 @@ export function CompleteStep({
       <p className="text-sm leading-relaxed" style={{ color: "var(--color-secondary)" }}>
         {t("countdown_teaser")}
       </p>
+      <button
+        type="button"
+        onClick={handleGoMap}
+        className="w-fit cursor-pointer text-sm font-semibold underline transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+        style={{ color: "var(--color-main)" }}
+      >
+        {t("map_cta")}
+      </button>
     </OnboardingStepLayout>
   );
 }

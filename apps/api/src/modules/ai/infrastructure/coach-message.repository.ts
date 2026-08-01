@@ -6,6 +6,7 @@ import {
   type CoachMessageDto,
   type CountdownDto,
   type Paginated,
+  type CoachConversationOriginDto,
 } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
@@ -17,7 +18,7 @@ type SuggestedTask = { title: string; subject: string | null };
 
 export type CoachConversationTarget =
   | { kind: "existing"; conversationId: string }
-  | { kind: "new"; title: string };
+  | { kind: "new"; title: string; origin?: CoachConversationOriginDto };
 
 /** Cross-user feedback aggregate (admin report). */
 export interface FeedbackCounts {
@@ -81,7 +82,13 @@ export class CoachMessageRepository {
           : (
               await tx
                 .insert(coachConversations)
-                .values({ userId, title: target.title })
+                .values({
+                  userId,
+                  title: target.title,
+                  originType: target.origin?.type ?? null,
+                  originRefId: target.origin?.refId ?? null,
+                  originMeta: target.origin?.meta ?? null,
+                })
                 .returning({ id: coachConversations.id })
             )[0]!.id;
 

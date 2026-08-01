@@ -3,8 +3,8 @@ import type {
   CoachChatReplyDto,
   CoachChatStreamEvent,
   CoachConversationDto,
+  CoachConversationMessagesDto,
   CoachMemoryDto,
-  CoachMessageDto,
   CoachPlanAdaptationDto,
   DailyGreetingDto,
   Paginated,
@@ -47,6 +47,7 @@ export function removeCoachContextFromUrl(href: string): string {
   const url = new URL(href);
   url.searchParams.delete("contextMockExamId");
   url.searchParams.delete("contextArticleSlug");
+  url.searchParams.delete("contextCommunityThreadId");
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
@@ -70,6 +71,7 @@ export async function sendCoachMessage(
   conversationId?: string,
   contextMockExamId?: string,
   contextArticleSlug?: string,
+  contextCommunityThreadId?: string,
 ): Promise<CoachReply> {
   return (await http<CoachReply>("/v1/coach/chat", {
     method: "POST",
@@ -79,6 +81,7 @@ export async function sendCoachMessage(
       ...(conversationId ? { conversationId } : {}),
       ...(contextMockExamId ? { contextMockExamId } : {}),
       ...(contextArticleSlug ? { contextArticleSlug } : {}),
+      ...(contextCommunityThreadId ? { contextCommunityThreadId } : {}),
     }),
   })) as CoachReply;
 }
@@ -103,6 +106,7 @@ export async function streamCoachMessage(
   conversationId?: string,
   contextMockExamId?: string,
   contextArticleSlug?: string,
+  contextCommunityThreadId?: string,
 ): Promise<CoachReply> {
   const res = await httpRaw("/v1/coach/chat/stream", {
     method: "POST",
@@ -112,6 +116,7 @@ export async function streamCoachMessage(
       ...(conversationId ? { conversationId } : {}),
       ...(contextMockExamId ? { contextMockExamId } : {}),
       ...(contextArticleSlug ? { contextArticleSlug } : {}),
+      ...(contextCommunityThreadId ? { contextCommunityThreadId } : {}),
     }),
   });
   if (!res.ok) await throwApiClientError(res);
@@ -122,6 +127,7 @@ export async function streamCoachMessage(
       conversationId,
       contextMockExamId,
       contextArticleSlug,
+      contextCommunityThreadId,
     );
   }
   return readCoachSseStream(res.body, onDelta);
@@ -196,10 +202,10 @@ export async function listCoachMessages(
   conversationId: string,
   page = 1,
   pageSize = 30,
-): Promise<Paginated<CoachMessageDto>> {
-  return (await http<Paginated<CoachMessageDto>>(
+): Promise<CoachConversationMessagesDto> {
+  return (await http<CoachConversationMessagesDto>(
     `/v1/coach/conversations/${conversationId}/messages?page=${page}&pageSize=${pageSize}`,
-  )) as Paginated<CoachMessageDto>;
+  )) as CoachConversationMessagesDto;
 }
 
 /** Delete one thread (its messages cascade). Any legacy saved summary is kept. */
