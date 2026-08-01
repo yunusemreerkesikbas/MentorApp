@@ -9,7 +9,11 @@ import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { toggleReaction } from "@/lib/forum-reactions";
-import { trackCommunityEvent } from "@/lib/analytics";
+import { trackCoachEvent, trackCommunityEvent } from "@/lib/analytics";
+import {
+  communityReturnPlaceholderKey,
+  parseCommunityReturnContext,
+} from "@/lib/community-coach-bridge";
 import {
   bookmarkPost,
   bookmarkThread,
@@ -26,6 +30,7 @@ import type { AttachmentInput } from "@mentor/validation";
 import { CommentRow } from "../../../_components/comment-row";
 import { ThreadComposer } from "../../../[slug]/_components/thread-composer";
 import { ThreadItem } from "../../../[slug]/_components/thread-item";
+import { CommunityCoachBridge } from "../../../_components/community-coach-bridge";
 
 type State =
   | { status: "loading" }
@@ -36,7 +41,12 @@ type State =
 /** Message detail (APP-017) — the thread + its top-level comments + a comment composer. */
 export function MessageShell({ threadId }: { threadId: string }) {
   const t = useTranslations("community");
-  const highlightId = useSearchParams().get("highlight");
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+  const returnContext = parseCommunityReturnContext({
+    composer: searchParams.get("composer"),
+    intent: searchParams.get("intent"),
+  });
   const [state, setState] = useState<State>({ status: "loading" });
 
   const apply = useCallback((detail: ThreadDetail, zone: ZoneView | null) => {
@@ -121,6 +131,12 @@ export function MessageShell({ threadId }: { threadId: string }) {
       const created = await postComment(threadId, body, attachments);
       const zoneType = state.status === "ready" ? state.zone?.type ?? "CHAT" : "CHAT";
       trackCommunityEvent("forum_reply_created", { target: "thread", zone_type: zoneType });
+      if (returnContext) {
+        trackCoachEvent("coach_community_return_reply_created", {
+          intent: returnContext.intent,
+          zone_type: "CHAT",
+        });
+      }
       setState((s) =>
         s.status === "ready"
           ? {
@@ -131,7 +147,7 @@ export function MessageShell({ threadId }: { threadId: string }) {
           : s,
       );
     },
-    [threadId, state],
+    [threadId, state, returnContext],
   );
 
   if (state.status === "loading") return <Centered>{t("loading")}</Centered>;
@@ -184,15 +200,22 @@ export function MessageShell({ threadId }: { threadId: string }) {
         />
       </div>
 
+      <CommunityCoachBridge bridge={thread.coachBridge} />
+
       <h2 className="mb-3 mt-8 text-[20px] font-extrabold tracking-[-0.025em] text-[#1b1f28]">
         {t("comment_total", { count: comments.length })}
       </h2>
       <div className="rounded-[13px] border border-[#e3e6ea] bg-white">
         <ThreadComposer
-          placeholder={t("comment_placeholder")}
+          placeholder={
+            returnContext
+              ? t(communityReturnPlaceholderKey(returnContext.intent))
+              : t("comment_placeholder")
+          }
           submitLabel={t("comment_submit")}
           onSubmit={onComment}
           zoneId={thread.zoneId}
+          focusOnMount={Boolean(returnContext)}
         />
       </div>
 

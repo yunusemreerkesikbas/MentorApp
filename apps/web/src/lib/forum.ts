@@ -4,6 +4,7 @@ import type {
   CommentView,
   ForumActivityFeed,
   ForumFeed,
+  ForumCoachBridgeView,
   ForumFeedScope,
   ForumFeedSort,
   ForumHubView,
@@ -176,6 +177,12 @@ export async function getQuestion(threadId: string): Promise<QuestionDetail> {
 /** CHAT/ANNOUNCEMENT thread + its comments (oldest-first). */
 export async function getThreadDetail(threadId: string): Promise<ThreadDetail> {
   return (await http<ThreadDetail>(`/v1/forum/threads/${threadId}/detail`)) as ThreadDetail;
+}
+
+export async function getForumCoachBridge(threadId: string): Promise<ForumCoachBridgeView> {
+  return (await http<ForumCoachBridgeView>(
+    `/v1/forum/threads/${threadId}/coach-bridge`,
+  )) as ForumCoachBridgeView;
 }
 
 /** Post a top-level comment on a CHAT/ANNOUNCEMENT thread. */

@@ -11,7 +11,11 @@ import {
   type ReactNode,
 } from "react";
 import { ApiClientError } from "@mentor/api-client";
-import type { CoachConversationDto } from "@mentor/types";
+import type {
+  CoachConversationDto,
+  CoachConversationOriginDto,
+  ForumCoachBridgeView,
+} from "@mentor/types";
 import {
   deleteCoachConversation,
   listCoachConversations,
@@ -28,6 +32,8 @@ interface CoachSessionContextValue {
   messages: ChatMessage[];
   conversations: CoachConversationDto[];
   activeConversationId: string | null;
+  conversationOrigin: CoachConversationOriginDto | null;
+  communitySource: ForumCoachBridgeView | null;
   conversationStatus: LoadStatus;
   conversationError: string | null;
   historyStatus: LoadStatus;
@@ -43,6 +49,10 @@ interface CoachSessionContextValue {
   loadOlderMessages: () => Promise<void>;
   startNewChat: () => void;
   adoptConversation: (id: string) => void;
+  setCommunityContext: (
+    origin: CoachConversationOriginDto | null,
+    source: ForumCoachBridgeView | null,
+  ) => void;
   refreshConversations: () => Promise<void>;
   deleteConversation: (id: string) => Promise<void>;
 }
@@ -80,6 +90,7 @@ function toChatMessages(
     feedback: m.feedback,
     suggestedTask: m.suggestedTask,
     officialCountdown: m.officialCountdown,
+    personalization: m.personalization,
   }));
 }
 
@@ -101,6 +112,10 @@ export function CoachSessionProvider({
   const [activeConversationId, setActiveConversationId] = useState<
     string | null
   >(null);
+  const [conversationOrigin, setConversationOrigin] =
+    useState<CoachConversationOriginDto | null>(null);
+  const [communitySource, setCommunitySource] =
+    useState<ForumCoachBridgeView | null>(null);
   const [conversationStatus, setConversationStatus] =
     useState<LoadStatus>("idle");
   const [conversationError, setConversationError] = useState<string | null>(
@@ -162,6 +177,8 @@ export function CoachSessionProvider({
     async (id: string) => {
       const requestId = ++historyRequestRef.current;
       setActiveConversationId(id);
+      setConversationOrigin(null);
+      setCommunitySource(null);
       setMessagesState([]);
       setHistoryStatus("loading");
       setHistoryError(null);
@@ -173,6 +190,8 @@ export function CoachSessionProvider({
         const result = await listCoachMessages(id, 1, HISTORY_PAGE_SIZE);
         if (requestId !== historyRequestRef.current) return;
         setMessagesState(toChatMessages(result.items));
+        setConversationOrigin(result.origin);
+        setCommunitySource(result.communitySource);
         setHistoryPage(1);
         setHistoryTotal(result.total);
         setHistoryStatus("ready");
@@ -263,6 +282,8 @@ export function CoachSessionProvider({
     historyRequestRef.current += 1;
     setMessagesState([]);
     setActiveConversationId(null);
+    setConversationOrigin(null);
+    setCommunitySource(null);
     setHistoryStatus("idle");
     setHistoryError(null);
     setHistoryPage(0);
@@ -275,6 +296,14 @@ export function CoachSessionProvider({
     setActiveConversationId(id);
     setHistoryStatus("ready");
   }, []);
+
+  const setCommunityContext = useCallback(
+    (origin: CoachConversationOriginDto | null, source: ForumCoachBridgeView | null) => {
+      setConversationOrigin(origin);
+      setCommunitySource(source);
+    },
+    [],
+  );
 
   const deleteConversation = useCallback(
     async (id: string) => {
@@ -292,6 +321,8 @@ export function CoachSessionProvider({
       messages,
       conversations,
       activeConversationId,
+      conversationOrigin,
+      communitySource,
       conversationStatus,
       conversationError,
       historyStatus,
@@ -307,6 +338,7 @@ export function CoachSessionProvider({
       loadOlderMessages,
       startNewChat,
       adoptConversation,
+      setCommunityContext,
       refreshConversations,
       deleteConversation,
     }),
@@ -314,6 +346,8 @@ export function CoachSessionProvider({
       messages,
       conversations,
       activeConversationId,
+      conversationOrigin,
+      communitySource,
       conversationStatus,
       conversationError,
       historyStatus,
@@ -330,6 +364,7 @@ export function CoachSessionProvider({
       loadOlderMessages,
       startNewChat,
       adoptConversation,
+      setCommunityContext,
       refreshConversations,
       deleteConversation,
     ],

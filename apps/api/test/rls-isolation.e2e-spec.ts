@@ -8,8 +8,9 @@ const RUN = Date.now();
  *
  * Every other e2e connects as the `mentor` superuser, which BYPASSES row-level security — so until
  * this spec, no test had ever exercised a policy. Here a NOSUPERUSER/NOBYPASSRLS role (`rls_probe`)
- * proves the mechanism on four representative tables: with `app.user_id = A` you cannot read B's
- * rows (but can read your own), and with no context at all you read nothing and cannot insert.
+ * proves the mechanism on user-owned tables plus the Discovery V2 tag, thread-tag and helpful-vote
+ * tables: with `app.user_id = A` you cannot read B's private rows (but can read your own), and with
+ * no context at all you read nothing and cannot insert.
  * `FORCE ROW LEVEL SECURITY` makes the policies apply even to the table owner — only true
  * superusers skip them, which is exactly why the probe role must not be one.
  *
@@ -22,6 +23,10 @@ describe("RLS isolation (e2e)", () => {
   let probe: Pool; // NOSUPERUSER NOBYPASSRLS — the connection the policies actually filter
   let idA = "";
   let idB = "";
+  let forumThreadA = "";
+  let forumThreadB = "";
+  let activeTagId = "";
+  let inactiveTagId = "";
 
   /** Run `fn` on a probe connection inside a tx with the given GUCs (tx-local via set_config). */
   const asProbe = async <T>(
@@ -75,7 +80,7 @@ describe("RLS isolation (e2e)", () => {
     probeUrl.password = "rls_probe";
     probe = new Pool({ connectionString: probeUrl.toString() });
 
-    // Seed two users + one row each in the four representative tables (superuser bypasses RLS).
+    // Seed two users + one row each in representative private tables (superuser bypasses RLS).
     const mkUser = async (label: string) => {
       const res = await admin.query(
         `insert into users (email, password_hash, display_name, kvkk_accepted_at)
@@ -93,11 +98,24 @@ describe("RLS isolation (e2e)", () => {
         [id],
       );
       await admin.query(
-        "insert into plan_tasks (user_id, task_date, title) values ($1, current_date, 'rls probe')",
+        `insert into plan_tasks
+           (user_id, task_date, title, origin_type, origin_ref_id, origin_meta)
+         values
+           ($1, current_date, 'rls probe', 'COMMUNITY_COACH', gen_random_uuid(),
+            jsonb_build_object(
+              'threadId', gen_random_uuid()::text,
+              'intent', 'PLAN',
+              'zoneType', 'CHAT'
+            ))`,
         [id],
       );
       const conv = await admin.query(
-        "insert into coach_conversations (user_id, title) values ($1, 'rls probe') returning id",
+        `insert into coach_conversations
+           (user_id, title, origin_type, origin_ref_id, origin_meta)
+         values
+           ($1, 'rls probe', 'COMMUNITY_THREAD', gen_random_uuid(),
+            '{"intent":"PLAN","tagSlug":"planlama"}'::jsonb)
+         returning id`,
         [id],
       );
       await admin.query(
@@ -109,6 +127,43 @@ describe("RLS isolation (e2e)", () => {
         [id],
       );
     }
+
+    const zone = await admin.query(
+      `insert into forum_zones (type, title, slug, created_by)
+       values ('QA', 'RLS Discovery', $1, $2) returning id`,
+      [`rls-discovery-${RUN}`, idA],
+    );
+    const mkThread = async (authorId: string, label: string) => {
+      const result = await admin.query(
+        `insert into forum_threads (zone_id, author_id, title, body)
+         values ($1, $2, $3, 'rls discovery body') returning id`,
+        [zone.rows[0].id, authorId, `RLS ${label}`],
+      );
+      return result.rows[0].id as string;
+    };
+    forumThreadA = await mkThread(idA, "A");
+    forumThreadB = await mkThread(idB, "B");
+
+    const tags = await admin.query(
+      `insert into forum_tags (slug, name_tr, name_en, is_active, created_by)
+       values
+         ($1, 'RLS Aktif', 'RLS Active', true, $3),
+         ($2, 'RLS Pasif', 'RLS Inactive', false, $3)
+       returning id, is_active`,
+      [`rls-active-${RUN}`, `rls-inactive-${RUN}`, idA],
+    );
+    activeTagId = tags.rows.find((row) => row.is_active === true).id as string;
+    inactiveTagId = tags.rows.find((row) => row.is_active === false).id as string;
+    await admin.query(
+      `insert into forum_thread_tags (thread_id, tag_id)
+       values ($1, $2), ($3, $4)`,
+      [forumThreadA, activeTagId, forumThreadB, inactiveTagId],
+    );
+    await admin.query(
+      `insert into forum_helpful_votes (target_type, target_id, user_id)
+       values ('THREAD', $1, $2), ('THREAD', $3, $4)`,
+      [forumThreadB, idA, forumThreadA, idB],
+    );
   }, 30000);
 
   afterAll(async () => {
@@ -116,7 +171,13 @@ describe("RLS isolation (e2e)", () => {
     await admin?.end();
   });
 
-  const TABLES = ["mood_checkins", "plan_tasks", "coach_messages", "ledger_entries"];
+  const TABLES = [
+    "mood_checkins",
+    "plan_tasks",
+    "coach_conversations",
+    "coach_messages",
+    "ledger_entries",
+  ];
 
   it.each(TABLES)("as user A, B's %s rows are invisible", async (table) => {
     expect(await probeCount({ userId: idA }, table, idB)).toBe(0);
@@ -124,6 +185,24 @@ describe("RLS isolation (e2e)", () => {
 
   it.each(TABLES)("as user A, own %s rows ARE visible (policy not over-tight)", async (table) => {
     expect(await probeCount({ userId: idA }, table, idA)).toBeGreaterThan(0);
+  });
+
+  it("keeps community task provenance inside the owning user's plan-task policy", async () => {
+    const own = await asProbe({ userId: idA }, (c) =>
+      c.query(
+        "select origin_type, origin_meta from plan_tasks where user_id = $1",
+        [idA],
+      ),
+    );
+    expect(own.rows[0]).toMatchObject({
+      origin_type: "COMMUNITY_COACH",
+      origin_meta: { intent: "PLAN", zoneType: "CHAT" },
+    });
+
+    const foreign = await asProbe({ userId: idA }, (c) =>
+      c.query("select origin_type from plan_tasks where user_id = $1", [idB]),
+    );
+    expect(foreign.rows).toHaveLength(0);
   });
 
   // Policy nuance found by this probe: most policies compare as text
@@ -153,5 +232,134 @@ describe("RLS isolation (e2e)", () => {
       [idB],
     );
     expect(res.rows[0].n).toBeGreaterThan(0);
+  });
+
+  it("forum_tags exposes only active tags to authenticated users and none without context", async () => {
+    const authenticated = await asProbe({ userId: idA }, (c) =>
+      c.query(
+        "select id from forum_tags where id = any($1::uuid[]) order by id",
+        [[activeTagId, inactiveTagId]],
+      ),
+    );
+    expect(authenticated.rows.map((row) => row.id)).toEqual([activeTagId]);
+
+    const contextless = await asProbe({}, (c) =>
+      c.query("select count(*)::int as n from forum_tags where id = any($1::uuid[])", [
+        [activeTagId, inactiveTagId],
+      ]),
+    );
+    expect(contextless.rows[0].n).toBe(0);
+  });
+
+  it.each(["ADMIN", "SERVICE"])("%s can read inactive forum tags and write curated tags", async (role) => {
+    const visible = await asProbe({ role }, (c) =>
+      c.query("select count(*)::int as n from forum_tags where id = any($1::uuid[])", [
+        [activeTagId, inactiveTagId],
+      ]),
+    );
+    expect(visible.rows[0].n).toBe(2);
+
+    const inserted = await asProbe({ role }, (c) =>
+      c.query(
+        `insert into forum_tags (slug, name_tr, name_en)
+         values ($1, 'RLS Yazım', 'RLS Write') returning id`,
+        [`rls-write-${role.toLowerCase()}-${RUN}`],
+      ),
+    );
+    expect(inserted.rowCount).toBe(1);
+  });
+
+  it("ordinary users cannot write forum_tags", async () => {
+    await expect(
+      asProbe({ userId: idA }, (c) =>
+        c.query(
+          `insert into forum_tags (slug, name_tr, name_en)
+           values ($1, 'Yetkisiz', 'Unauthorized')`,
+          [`rls-denied-${RUN}`],
+        ),
+      ),
+    ).rejects.toThrow(/row-level security/);
+  });
+
+  it("forum_thread_tags requires context for reads and staff context for writes", async () => {
+    const authenticated = await asProbe({ userId: idA }, (c) =>
+      c.query("select count(*)::int as n from forum_thread_tags where thread_id = any($1::uuid[])", [
+        [forumThreadA, forumThreadB],
+      ]),
+    );
+    expect(authenticated.rows[0].n).toBe(2);
+
+    const contextless = await asProbe({}, (c) =>
+      c.query("select count(*)::int as n from forum_thread_tags where thread_id = any($1::uuid[])", [
+        [forumThreadA, forumThreadB],
+      ]),
+    );
+    expect(contextless.rows[0].n).toBe(0);
+
+    await expect(
+      asProbe({ userId: idA }, (c) =>
+        c.query("insert into forum_thread_tags (thread_id, tag_id) values ($1, $2)", [
+          forumThreadB,
+          activeTagId,
+        ]),
+      ),
+    ).rejects.toThrow(/row-level security/);
+  });
+
+  it.each(["ADMIN", "SERVICE"])("%s can write forum_thread_tags", async (role) => {
+    const inserted = await asProbe({ role }, (c) =>
+      c.query("insert into forum_thread_tags (thread_id, tag_id) values ($1, $2) returning id", [
+        forumThreadB,
+        activeTagId,
+      ]),
+    );
+    expect(inserted.rowCount).toBe(1);
+  });
+
+  it("forum_helpful_votes isolates each user's votes and leaks nothing without context", async () => {
+    const own = await asProbe({ userId: idA }, (c) =>
+      c.query(
+        "select user_id from forum_helpful_votes where user_id = any($1::uuid[]) order by user_id",
+        [[idA, idB]],
+      ),
+    );
+    expect(own.rows.map((row) => row.user_id)).toEqual([idA]);
+
+    const contextless = await asProbe({}, (c) =>
+      c.query(
+        "select count(*)::int as n from forum_helpful_votes where user_id = any($1::uuid[])",
+        [[idA, idB]],
+      ),
+    );
+    expect(contextless.rows[0].n).toBe(0);
+  });
+
+  it.each(["ADMIN", "SERVICE"])("%s can read and write forum_helpful_votes", async (role) => {
+    const visible = await asProbe({ role }, (c) =>
+      c.query(
+        "select count(*)::int as n from forum_helpful_votes where user_id = any($1::uuid[])",
+        [[idA, idB]],
+      ),
+    );
+    expect(visible.rows[0].n).toBe(2);
+
+    const inserted = await asProbe({ role }, (c) =>
+      c.query(
+        "insert into forum_helpful_votes (target_type, target_id, user_id) values ('POST', gen_random_uuid(), $1) returning id",
+        [idA],
+      ),
+    );
+    expect(inserted.rowCount).toBe(1);
+  });
+
+  it("ordinary users cannot write forum_helpful_votes directly", async () => {
+    await expect(
+      asProbe({ userId: idA }, (c) =>
+        c.query(
+          "insert into forum_helpful_votes (target_type, target_id, user_id) values ('POST', gen_random_uuid(), $1)",
+          [idA],
+        ),
+      ),
+    ).rejects.toThrow(/row-level security/);
   });
 });

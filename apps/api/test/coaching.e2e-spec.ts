@@ -66,6 +66,7 @@ describe("coaching (e2e)", () => {
       .set(authA())
       .send({ title: "Tarih tekrar", subject: "Tarih" });
     expect(create.status).toBe(201);
+    expect(create.body.origin).toBeNull();
     expect(create.body.status).toBe("PENDING");
     taskId = create.body.id;
 

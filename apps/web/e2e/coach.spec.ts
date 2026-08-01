@@ -71,6 +71,7 @@ const pendingToday: TodayPanelResponse = {
       startTime: null,
       endTime: null,
       description: null,
+      origin: null,
     },
   ],
   nextAction: {
@@ -261,6 +262,7 @@ test("persisted resmî countdown kartını history yüklemesinden sonra yeniden 
       title: "KPSS sınav tarihi",
       lastMessageAt: "2026-07-20T09:01:00.000Z",
       messageCount: 2,
+      origin: null,
     },
   ];
   const messages: CoachMessageDto[] = [
@@ -321,6 +323,7 @@ test("conversation list hatasını gerçek boş durumdan ayırır ve retry eder"
         title: "Devam eden sohbet",
         lastMessageAt: "2026-07-20T09:01:00.000Z",
         messageCount: 2,
+        origin: null,
       },
     ],
   });
@@ -482,12 +485,14 @@ test("eski sayfa yüklenirken sohbet değişince loading durumunu temizler", asy
         title: "Sayfalı sohbet",
         lastMessageAt: "2026-07-20T09:00:00.000Z",
         messageCount: 31,
+        origin: null,
       },
       {
         id: secondConversationId,
         title: "Hızlı sohbet",
         lastMessageAt: "2026-07-20T08:00:00.000Z",
         messageCount: 1,
+        origin: null,
       },
     ],
     messagePagesByConversation: {
@@ -552,12 +557,14 @@ test("yarışan history isteklerinde yalnız son seçilen sohbeti gösterir", as
         title: "Birinci sohbet",
         lastMessageAt: "2026-07-20T09:00:00.000Z",
         messageCount: 1,
+        origin: null,
       },
       {
         id: secondConversationId,
         title: "İkinci sohbet",
         lastMessageAt: "2026-07-20T08:00:00.000Z",
         messageCount: 1,
+        origin: null,
       },
     ],
     messagesByConversation: {

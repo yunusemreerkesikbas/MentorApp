@@ -96,6 +96,13 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **Featured tartışma arama seçicisi (2026-07-31)** — Topluluk yönetimindeki ham Thread ID/UUID
+  alanı kaldırıldı. EDITOR en az iki karakter yazar; mevcut `/v1/forum/search` çağrısı 250 ms gecikmeyle
+  çalışır ve başlık, oda, tür, son aktivite gösterir. Loading, boş, hata/yeniden dene, seçim, değiştirme
+  ve manuel seçimi kaldırma durumları tamamlandı. UUID yalnız seçilen `ForumThreadSummary.id` olarak
+  dahili gönderilir; yedi günlük varsayılan süre ve server-side audit aynen korunur. Admin featured
+  GET/PUT yanıtı additive `ForumFeaturedAdminView.thread` taşır. İlgili: admin `forum/page.tsx`,
+  `admin-forum.controller.ts`, `packages/types/src/forum.ts`.
 - **Economy metrics card (APP-031, 2026-07-31)** — `GET /v1/admin/metrics/economy` + a fourth
   dashboard block (`EconomyCards`, `AiCostCards` kalıbı). Ledger'ı okuyup coin'in nereden girip
   nereye çıktığını reason bazında, harcanmamış float'ı ve haftalık musluğun erişimini gösterir —

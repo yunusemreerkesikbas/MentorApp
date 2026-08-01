@@ -35,6 +35,11 @@ users/orgs tables). Do it solo; parallelism starts after.
 
 **Cross-track dependencies (consume via contracts, don't block):**
 - W3 needs W1 (RAG source) + W2 (behavior data) + W4 (entitlement) → starts against **ports/stubs**, wires real impls when merged.
+- W3 community-coach pilot imports W7's exported `ForumCoachBridgeService`; Forum never imports AI.
+  Only curated structural context crosses the boundary, and neither module reads the other's tables.
+- W3 owns `POST /coach/conversations/:id/plan-tasks`: it validates conversation + W7 bridge, then
+  calls W2's public `PlanService`. W2 alone writes nullable `plan_tasks` origin metadata; no AI/forum
+  FK or cross-module table access is permitted. Migration `0065` is the coordinated shared-schema touch.
 - W6 admin edits W1 content + views W4 payments → consumes their **public services**; stub until available.
 - W5 is consumed by all via `JobQueuePort` (already defined) — others enqueue, only W5 implements the runner.
 

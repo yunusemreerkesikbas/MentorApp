@@ -7,7 +7,10 @@ export type VisionBoardRow = typeof visionBoards.$inferSelect;
 
 export interface VisionInput {
   goalTitle: string;
+  targetCityCode: string | null;
   targetCity: string | null;
+  targetUniversityId: string | null;
+  careerGroup: string | null;
   motivation: string | null;
 }
 
@@ -16,25 +19,35 @@ export interface VisionInput {
 export class VisionBoardRepository {
   /**
    * Upsert the user's single vision board. The cached premium AI note is invalidated ONLY when the
-   * goal/city/motivation actually changes — re-saving identical content (or a panel reload) keeps the
-   * existing note, so it never triggers a fresh LLM call (cost control, §7). `IS NOT DISTINCT FROM`
-   * is NULL-safe for the optional fields.
+   * goal actually changes — re-saving identical content (or a panel reload) keeps the existing note,
+   * so it never triggers a fresh LLM call (cost control, §7). `IS NOT DISTINCT FROM` is NULL-safe
+   * for the optional fields.
+   *
+   * EVERY goal-defining field belongs in `unchanged`. The map added three of them: leaving any out
+   * means a user who switches province, university or career field keeps a motivation note written
+   * for the old goal, with nothing to signal it is stale.
    */
   async upsert(tx: DatabaseTx, userId: string, input: VisionInput): Promise<VisionBoardRow> {
-    const unchanged = sql`${visionBoards.goalTitle} = ${input.goalTitle} AND ${visionBoards.targetCity} IS NOT DISTINCT FROM ${input.targetCity} AND ${visionBoards.motivation} IS NOT DISTINCT FROM ${input.motivation}`;
+    const unchanged = sql`${visionBoards.goalTitle} = ${input.goalTitle} AND ${visionBoards.targetCityCode} IS NOT DISTINCT FROM ${input.targetCityCode} AND ${visionBoards.targetCity} IS NOT DISTINCT FROM ${input.targetCity} AND ${visionBoards.targetUniversityId} IS NOT DISTINCT FROM ${input.targetUniversityId} AND ${visionBoards.careerGroup} IS NOT DISTINCT FROM ${input.careerGroup} AND ${visionBoards.motivation} IS NOT DISTINCT FROM ${input.motivation}`;
     const rows = await tx
       .insert(visionBoards)
       .values({
         userId,
         goalTitle: input.goalTitle,
+        targetCityCode: input.targetCityCode,
         targetCity: input.targetCity,
+        targetUniversityId: input.targetUniversityId,
+        careerGroup: input.careerGroup,
         motivation: input.motivation,
       })
       .onConflictDoUpdate({
         target: [visionBoards.userId],
         set: {
           goalTitle: input.goalTitle,
+          targetCityCode: input.targetCityCode,
           targetCity: input.targetCity,
+          targetUniversityId: input.targetUniversityId,
+          careerGroup: input.careerGroup,
           motivation: input.motivation,
           updatedAt: sql`now()`,
           aiNote: sql`CASE WHEN ${unchanged} THEN ${visionBoards.aiNote} ELSE NULL END`,

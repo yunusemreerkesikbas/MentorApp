@@ -21,7 +21,7 @@ describe("ForumZoneSeedService", () => {
     for (const slug of slugs) expect(slug).toMatch(/^[a-z-]+$/);
 
     const types = seedZone.mock.calls.map((call) => (call[0] as { type: string }).type);
-    expect(types).toEqual(["CHAT", "QA"]); // /topluluk redirects into the first CHAT zone
+    expect(types).toEqual(["CHAT", "QA"]); // The hub can recommend both launch room formats.
   });
 
   it("is idempotent: a second boot inserts nothing (unique slug conflict)", async () => {

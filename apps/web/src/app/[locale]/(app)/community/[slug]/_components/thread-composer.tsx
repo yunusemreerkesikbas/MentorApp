@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { AttachmentInput } from "@mentor/validation";
 import { ApiClientError } from "@mentor/api-client";
@@ -18,12 +18,15 @@ export function ThreadComposer({
   submitLabel,
   onSubmit,
   zoneId,
+  focusOnMount = false,
 }: {
   placeholder: string;
   submitLabel: string;
   onSubmit: (body: string, attachments: AttachmentInput[]) => Promise<void>;
   /** Enables @mention autocomplete over the zone's members; omitted → plain textarea. */
   zoneId?: string;
+  /** Community completion return: focus and reveal the empty composer after it mounts. */
+  focusOnMount?: boolean;
 }) {
   const t = useTranslations("community");
   const [value, setValue] = useState("");
@@ -32,6 +35,19 @@ export function ThreadComposer({
   const mention = useMentionAutocomplete(zoneId, textareaRef, setValue);
   const { items, error, setError, addFiles, removeAt, uploadAll, reset, fileRef, atLimit } =
     useForumImagePicker();
+
+  useEffect(() => {
+    if (!focusOnMount) return;
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.focus({ preventScroll: true });
+    textarea.scrollIntoView({
+      block: "center",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  }, [focusOnMount]);
 
   const send = async () => {
     const body = value.trim();

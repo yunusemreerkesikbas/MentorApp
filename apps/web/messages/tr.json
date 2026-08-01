@@ -294,6 +294,10 @@
     "answers_title": "Cevaplar",
     "answers_empty": "Henüz cevap yok. İlk cevabı sen yaz.",
     "answer_placeholder": "Cevabını yaz…",
+    "community_return_placeholder_plan": "Planın nasıl gitti? Deneyimini kendi sözlerinle paylaş…",
+    "community_return_placeholder_next_step": "Attığın küçük adım nasıl gitti? Deneyimini kendi sözlerinle paylaş…",
+    "community_return_placeholder_study_method": "Denediğin yöntem nasıl çalıştı? Deneyimini kendi sözlerinle paylaş…",
+    "community_return_placeholder_strategy": "Stratejinde neyi değiştirdin? Deneyimini kendi sözlerinle paylaş…",
     "answer_submit": "Cevapla",
     "answer_submitting": "Gönderiliyor…",
     "accepted": "Kabul edildi",
@@ -492,7 +496,13 @@
     "zone_context_title": "Oda bilgileri",
     "zone_contributors": "Katkı verenler",
     "detail_context_title": "Tartışma bilgileri",
-    "detail_participants": "Katılımcılar"
+    "detail_participants": "Katılımcılar",
+    "coach_bridge": {
+      "PLAN": "Bunu planıma uyarla",
+      "NEXT_STEP": "Kendim için bir adım çıkar",
+      "STUDY_METHOD": "Bana uygun yöntemi bul",
+      "STRATEGY": "Stratejimi netleştir"
+    }
   },
   "today_plan": {
     "title": "Bugünün planı",
@@ -555,8 +565,8 @@
       "greeting_fallback": "Merhaba",
       "prompt_line": "Bugün sana nasıl yardımcı olabilirim?",
       "new_chat": "Yeni sohbet",
-      "next_action_start": "Odak seans\u0131na ba\u015fla",
-      "next_action_add": "Plan\u0131na g\u00f6rev ekle"
+      "next_action_start": "Odak seansına başla",
+      "next_action_add": "Planına görev ekle"
     },
     "landing": {
       "header_label": "Yeni sohbet",
@@ -573,7 +583,7 @@
     },
     "memory": {
       "title": "Koçun seni nasıl tanıyor",
-      "legacy_notice": "Bu, art\u0131k ko\u00e7 yan\u0131tlar\u0131nda kullan\u0131lmayan kaydedilmi\u015f \u00f6zetindir.",
+      "legacy_notice": "Bu, artık koç yanıtlarında kullanılmayan kaydedilmiş özetindir.",
       "reset": "Sıfırla"
     },
     "conversations": {
@@ -789,6 +799,13 @@
     "timeline_scroll_aria": "Haftalık plan zaman çizelgesi",
     "pending_empty": "Bugün için bekleyen görev yok.",
     "start_session": "Seans başlat",
+    "community_task_source_pending": "Topluluktan geldi",
+    "community_task_source_done": "Deneyimini paylaş",
+    "community_task_source_checking": "Kaynak kontrol ediliyor",
+    "community_task_source_unavailable": "Kaynak erişilemiyor",
+    "community_completion_message": "Bir adımı tamamladın. Nasıl gittiğini toplulukla paylaşmak ister misin?",
+    "community_completion_cta": "Deneyimimi paylaş",
+    "community_completion_dismiss": "Paylaşım önerisini kapat",
     "go_today": "Bugün",
     "calendar_aria": "Tarih seç",
     "prev_week_aria": "Önceki hafta",
@@ -1360,7 +1377,7 @@
     "last_verified": "Son doğrulama: {date}",
     "calendar_download": "Takvime ekle",
     "calendar_name": "Mentor Bilgi Merkezi",
-    "last_verified_prefix": "Son do\u011frulama",
+    "last_verified_prefix": "Son doğrulama",
     "calendar_pending_chip": "Takvim bekleniyor",
     "calendar_pending_desc": "Sınav takvimi henüz yayımlanmadı. Duyurulduğunda burada görünecek.",
     "articles_title": "Makaleler",
@@ -1383,9 +1400,9 @@
       "application_start": "Başvuru başlangıcı",
       "application_end": "Başvuru sonu",
       "exam_date": "Sınav günü",
-      "next_step_today": "S\u0131radaki ad\u0131m \u00b7 bug\u00fcn",
-      "next_step_tomorrow": "S\u0131radaki ad\u0131m \u00b7 yar\u0131n",
-      "next_step_days": "S\u0131radaki ad\u0131m \u00b7 {days} g\u00fcn sonra",
+      "next_step_today": "Sıradaki adım · bugün",
+      "next_step_tomorrow": "Sıradaki adım · yarın",
+      "next_step_days": "Sıradaki adım · {days} gün sonra",
       "result_date": "Sonuç tarihi"
     }
   },
@@ -1457,12 +1474,27 @@
     "suggestion_2": "Sınav kaygımı nasıl yönetirim?",
     "suggestion_3": "Bana çalışma planı öner",
     "source_label": "Kaynak:",
-    "official_card_label": "S\u0131nava kalan",
-    "official_card_days": "{count} g\u00fcn",
+    "official_card_label": "Sınava kalan",
+    "official_card_days": "{count} gün",
     "typing": "Koç yazıyor",
     "show_more": "Daha fazla göster",
     "show_less": "Daha az göster",
-    "scroll_to_bottom": "Sohbetin sonuna in"
+    "scroll_to_bottom": "Sohbetin sonuna in",
+    "community_source": "Topluluktan",
+    "return_to_discussion": "Tartışmaya dön",
+    "source_unavailable": "Bu tartışmaya artık erişilemiyor",
+    "personalization": {
+      "grounded_label": "Senin verilerinle",
+      "used_context_label": "Bu yanıtta kullanılan bağlam",
+      "limited_label": "Kişisel bağlam sınırlı",
+      "why": "Neye göre?",
+      "today_plan": "Bugünkü plan: {done}/{total} tamamlandı",
+      "recent_sessions": "Son 7 gün: {count7d} seans · {focusMinutes7d} dk odak",
+      "subjects": "Son çalışılan dersler: {subjects}",
+      "mood": "Bugünkü ruh hâli: {level}/5",
+      "exam": "Hazırlandığın sınav: {exam}",
+      "needs_input": "Koçun sana uygun bir öneri seçebilmesi için önce tek bir netleştirici soru soracak."
+    }
   },
   "countdown": {
     "title": "Sınava kalan",
@@ -1646,6 +1678,7 @@
       "title": "Hazırsın!",
       "subtitle": "Panelinde geri sayım ve bugünün planı seni bekliyor.",
       "countdown_teaser": "Sınav geri sayımın panelde — kaynak gösterilmiş resmî takvimden.",
+      "map_cta": "Hedefini haritada işaretle →",
       "go_panel": "Panele git"
     }
   },
@@ -1664,8 +1697,64 @@
     "goal_placeholder": "Örn. Öğretmen olmak, Marmara Hukuk…",
     "city_label": "Hedef şehir (isteğe bağlı)",
     "city_placeholder": "Örn. İstanbul",
-    "motivation_label": "Neden? (isteğe bağlı)",
-    "motivation_placeholder": "Seni motive eden sebep…",
+    "map": {
+      "card_empty": "Haritadan bir şehir seç.",
+      "no_universities": "Bu şehirde kayıtlı üniversite yok.",
+      "university_count": "{count} üniversite",
+      "attribution": "Harita verisi © OpenStreetMap katkıcıları (ODbL)",
+      "back_to_city": "← Geri",
+      "search_placeholder": "Üniversite, şehir veya bölüm ara…",
+      "searching": "Aranıyor…",
+      "search_empty": "Sonuç bulunamadı.",
+      "group_cities": "Şehirler",
+      "group_universities": "Üniversiteler",
+      "group_programs": "Bölümler",
+      "program_count": "{count} program",
+      "loading_programs": "Bölümler yükleniyor…",
+      "open_hint": "Ayrıntı için tıkla",
+      "quota": "{year} kontenjan {count}",
+      "min_score": "{year} taban {score}",
+      "no_placement": "Yerleşme yok",
+      "program_source": "Kaynak: {source} · {year}",
+      "zoom_in": "Yakınlaştır",
+      "zoom_out": "Uzaklaştır",
+      "zoom_reset": "Tüm haritayı göster",
+      "kind_label": "Tür",
+      "founded_label": "Kuruluş",
+      "kind": {
+        "STATE": "Devlet üniversitesi",
+        "FOUNDATION": "Vakıf üniversitesi",
+        "FOUNDATION_VOCATIONAL": "Vakıf meslek yüksekokulu"
+      },
+      "region": {
+        "MARMARA": "Marmara",
+        "EGE": "Ege",
+        "AKDENIZ": "Akdeniz",
+        "IC_ANADOLU": "İç Anadolu",
+        "KARADENIZ": "Karadeniz",
+        "DOGU_ANADOLU": "Doğu Anadolu",
+        "GUNEYDOGU_ANADOLU": "Güneydoğu Anadolu"
+      },
+      "set_target": "Hedefim bu üniversite",
+      "target_selected": "Hedefin ✓",
+      "clear_target": "Üniversite hedefini kaldır"
+    },
+    "career": {
+      "label": "Puhu'nun alanı",
+      "none": "Henüz karar vermedim",
+      "group": {
+        "SAGLIK": "Sağlık",
+        "MUHENDISLIK": "Mühendislik",
+        "YAZILIM": "Yazılım & Bilişim",
+        "HUKUK_KAMU": "Hukuk & Kamu",
+        "EGITIM": "Eğitim",
+        "ISLETME": "İşletme & Ekonomi",
+        "SOSYAL_ILETISIM": "Sosyal & İletişim",
+        "SANAT_TASARIM": "Sanat & Tasarım",
+        "FEN": "Fen & Doğa",
+        "MIMARLIK": "Mimarlık"
+      }
+    },
     "save": "Kaydet",
     "saving": "Kaydediliyor…",
     "saved": "Kaydedildi",

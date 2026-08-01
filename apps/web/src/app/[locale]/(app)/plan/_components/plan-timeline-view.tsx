@@ -70,6 +70,8 @@ export function PlanTimelineView({
   onEdit,
   onDelete,
   onAddTask,
+  completionPromptTaskId,
+  onDismissCompletionPrompt,
 }: {
   weekStartDate: string;
   weekTasks: Record<string, PlanTaskDto[]>;
@@ -81,6 +83,8 @@ export function PlanTimelineView({
   onEdit: (task: PlanTaskDto) => void;
   onDelete: (task: PlanTaskDto) => void;
   onAddTask?: () => void;
+  completionPromptTaskId?: string | null;
+  onDismissCompletionPrompt?: () => void;
 }) {
   const t = useTranslations("plan");
   const locale = useLocale();
@@ -482,6 +486,8 @@ export function PlanTimelineView({
                           onToggle={() => onToggle(task.id)}
                           onEdit={() => onEdit(task)}
                           onDelete={() => onDelete(task)}
+                          showCompletionPrompt={completionPromptTaskId === task.id}
+                          onDismissCompletionPrompt={onDismissCompletionPrompt}
                         />
                       ))}
                     </div>

@@ -7,6 +7,7 @@ import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left.mjs";
 import { useTranslations } from "next-intl";
 import type {
   PlanTaskDto,
+  PlanTaskOriginDto,
   PlanTaskStatus,
   PublicHolidayDto,
   TodayPanelResponse,
@@ -27,10 +28,17 @@ import {
   listPublicHolidaysByDate,
   updatePlanTask,
 } from "@/lib/plan-tasks";
+import { createCommunityCoachPlanTask } from "@/lib/coach";
 import { monthGridDays } from "@/lib/plan-calendar-layout";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { parsePlanAdaptationQuery } from "@/lib/plan-coach-adaptation-utils";
 import { parseAnalysisPlanPrefill, type AnalysisPlanPrefill } from "@/lib/analysis-plan-prefill";
+import {
+  parseCommunityCoachAttribution,
+  shouldShowCommunityCompletionPrompt,
+  type CommunityCoachAttribution,
+} from "@/lib/community-coach-bridge";
+import { trackCoachEvent } from "@/lib/analytics";
 import { PlanAddTaskForm, type PlanAddTaskFormHandle } from "./plan-add-task-form";
 import {
   PlanCoachAdaptationAction,
@@ -116,6 +124,10 @@ export function PlanShell() {
   const [loadedMonth, setLoadedMonth] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [completionPrompt, setCompletionPrompt] = useState<{
+    taskId: string;
+    origin: PlanTaskOriginDto;
+  } | null>(null);
   const addFormRef = useRef<PlanAddTaskFormHandle>(null);
   const prefillConsumed = useRef(false);
   const prefill = useMemo(
@@ -124,6 +136,16 @@ export function PlanShell() {
         add: searchParams.get("add"),
         subject: searchParams.get("subject"),
         title: searchParams.get("title"),
+      }),
+    [searchParams],
+  );
+  const communityCoachAttribution = useMemo(
+    () =>
+      parseCommunityCoachAttribution({
+        source: searchParams.get("source"),
+        intent: searchParams.get("communityIntent"),
+        zoneType: searchParams.get("communityZoneType"),
+        conversationId: searchParams.get("communityConversationId"),
       }),
     [searchParams],
   );
@@ -408,6 +430,15 @@ export function PlanShell() {
     try {
       const updated = await updatePlanTask(id, { status: nextStatus });
       patchTaskLists(updated);
+      if (shouldShowCommunityCompletionPrompt(task.status, updated)) {
+        setCompletionPrompt({ taskId: updated.id, origin: updated.origin });
+        trackCoachEvent("coach_community_task_completed", {
+          intent: updated.origin.intent,
+          zone_type: updated.origin.zoneType,
+        });
+      } else if (completionPrompt?.taskId === updated.id) {
+        setCompletionPrompt(null);
+      }
       if (nextStatus === "DONE" && updated.taskDate === todayIso()) {
         try {
           const previous = streakBaselineRef.current ?? 0;
@@ -533,7 +564,10 @@ export function PlanShell() {
     origin?: "calendar";
   };
 
-  const openAddSheet = useCallback(async (taskPrefill?: PlanAddPrefill | null) => {
+  const openAddSheet = useCallback(async (
+    taskPrefill?: PlanAddPrefill | null,
+    communityAttribution?: CommunityCoachAttribution | null,
+  ) => {
     const targetDate = taskPrefill?.taskDate ?? date;
     if (isPastDate(targetDate)) return;
     await filterSheet({
@@ -554,14 +588,26 @@ export function PlanShell() {
         if (!addFormRef.current?.validate()) throw new Error("validation");
         const { title, subject, startTime, endTime, description } =
           addFormRef.current.getValues();
-        const created = await createPlanTask({
+        const input = {
           title: title.trim(),
           taskDate: targetDate,
           ...(subject.trim() ? { subject: subject.trim() } : {}),
           ...(startTime ? { startTime, endTime } : {}),
           ...(description ? { description } : {}),
-        });
+        };
+        const created = communityAttribution
+          ? await createCommunityCoachPlanTask(
+              communityAttribution.conversationId,
+              input,
+            )
+          : await createPlanTask(input);
         appendTask(created);
+        if (communityAttribution) {
+          trackCoachEvent("coach_community_task_added", {
+            intent: communityAttribution.intent,
+            zone_type: communityAttribution.zoneType,
+          });
+        }
         setError(null);
       },
     });
@@ -570,10 +616,10 @@ export function PlanShell() {
   useEffect(() => {
     if (!prefill || prefillConsumed.current || readOnly) return;
     prefillConsumed.current = true;
-    void openAddSheet(prefill).finally(() => {
+    void openAddSheet(prefill, communityCoachAttribution).finally(() => {
       router.replace("/plan");
     });
-  }, [openAddSheet, prefill, readOnly, router]);
+  }, [communityCoachAttribution, openAddSheet, prefill, readOnly, router]);
 
   useEffect(() => {
     if (!adaptationRequest || adaptationConsumed.current) return;
@@ -777,6 +823,8 @@ export function PlanShell() {
                 onEdit={(task) => void openEditSheet(task)}
                 onDelete={(task) => void confirmDeleteTask(task)}
                 onAddTask={() => void openAddSheet()}
+                completionPromptTaskId={completionPrompt?.taskId ?? null}
+                onDismissCompletionPrompt={() => setCompletionPrompt(null)}
               />
             ) : null}
             {viewMode === "timeline" ? (
@@ -791,6 +839,8 @@ export function PlanShell() {
                 onEdit={(task) => void openEditSheet(task)}
                 onDelete={(task) => void confirmDeleteTask(task)}
                 onAddTask={() => void openAddSheet()}
+                completionPromptTaskId={completionPrompt?.taskId ?? null}
+                onDismissCompletionPrompt={() => setCompletionPrompt(null)}
               />
             ) : null}
             {viewMode === "calendar" ? (
@@ -812,6 +862,8 @@ export function PlanShell() {
                 onDelete={(task) => void confirmDeleteTask(task)}
                 onOpenEvent={openEventSheet}
                 onAddTask={(addPrefill) => void openAddSheet(addPrefill)}
+                completionPromptTaskId={completionPrompt?.taskId ?? null}
+                onDismissCompletionPrompt={() => setCompletionPrompt(null)}
               />
             ) : null}
           </motion.div>

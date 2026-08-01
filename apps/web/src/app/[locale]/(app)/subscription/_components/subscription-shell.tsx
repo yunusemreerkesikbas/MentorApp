@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations, useLocale } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import type { PlanDto, SubscriptionView } from "@mentor/types";
 import {
   ApiClientError,
@@ -17,6 +18,10 @@ import { FormError } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import {
+  COACH_RETURN_TO_STORAGE_KEY,
+  safeInternalReturnTo,
+} from "@/lib/community-coach-bridge";
 
 /** VAT-inclusive display (server sends minor units; this is pure display shaping). */
 function formatPrice(minor: number, locale: string): string {
@@ -37,12 +42,22 @@ export function SubscriptionShell() {
   const t = useTranslations("subscription");
   const tLegal = useTranslations("legal");
   const locale = useLocale();
+  const searchParams = useSearchParams();
   const { confirm, info } = useMentorDialog();
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [view, setView] = useState<SubscriptionView | null>(null);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const requestedReturn = searchParams.get("returnTo");
+    if (!requestedReturn) return;
+    window.sessionStorage.setItem(
+      COACH_RETURN_TO_STORAGE_KEY,
+      safeInternalReturnTo(requestedReturn),
+    );
+  }, [searchParams]);
 
   useEffect(() => {
     let active = true;

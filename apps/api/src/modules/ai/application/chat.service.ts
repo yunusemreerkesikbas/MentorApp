@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { I18nContext, I18nService } from "nestjs-i18n";
 import {
   Currency,
@@ -7,6 +7,8 @@ import {
   type CoachChatStreamEvent,
   type MockExamDto,
   type CountdownDto,
+  type CoachConversationOriginDto,
+  type CoachPersonalizationDto,
 } from "@mentor/types";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -27,6 +29,7 @@ import {
 import {
   AiUsageFeature,
   buildConversationTitle,
+  buildCoachPersonalization,
   buildSystemPrompt,
   CHAT_HISTORY_MAX_MESSAGES,
   estimateCostMicros,
@@ -38,7 +41,12 @@ import {
   extractReplyMarkers,
 } from "../domain/suggested-task";
 import { classifyOfficialIntent } from "../domain/official-intent";
-import { promptLocale } from "../domain/prompt-locale";
+import {
+  applyCoachPersonalizationMarker,
+  createPersonalizationMarkerFilter,
+  enforceNeedsInputReply,
+} from "../domain/personalization-marker";
+import { promptLocale, type PromptLocale } from "../domain/prompt-locale";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import {
@@ -48,6 +56,10 @@ import {
 import { CoachMemoryRepository } from "../infrastructure/coach-memory.repository";
 import { CoachConversationRepository } from "../infrastructure/coach-conversation.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
+import {
+  ForumCoachBridgeService,
+  type ForumCoachContext,
+} from "../../forum/application/forum-coach-bridge.service";
 
 export type CoachReplyResult = CoachChatReplyDto;
 type OfficialContent = Omit<CoachReplyResult, "conversationId">;
@@ -76,16 +88,44 @@ export class ChatService {
     private readonly budget: AiBudgetGuard,
     private readonly mockExams: MockExamService,
     private readonly i18n: I18nService,
+    @Optional() private readonly forumCoachBridge?: ForumCoachBridgeService,
   ) {}
+
+  private async resolveCommunityContext(
+    userId: string,
+    threadId?: string,
+  ): Promise<ForumCoachContext | undefined> {
+    if (!threadId) return undefined;
+    if (!this.forumCoachBridge) {
+      throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    return this.forumCoachBridge.resolveForCoach(
+      userId,
+      threadId,
+      I18nContext.current()?.lang ?? "tr",
+    );
+  }
 
   /** Validate an existing thread, or describe the new thread to create after a successful reply. */
   private async resolveConversationTarget(
     userId: string,
     message: string,
     conversationId?: string,
+    community?: ForumCoachContext,
   ): Promise<CoachConversationTarget> {
     if (!conversationId) {
-      return { kind: "new", title: buildConversationTitle(message) };
+      const origin: CoachConversationOriginDto | undefined = community
+        ? {
+            type: "COMMUNITY_THREAD",
+            refId: community.threadId,
+            meta: { intent: community.intent, tagSlug: community.tagSlug },
+          }
+        : undefined;
+      return {
+        kind: "new",
+        title: buildConversationTitle(message),
+        ...(origin ? { origin } : {}),
+      };
     }
     if (!(await this.conversations.isOwned(userId, conversationId))) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -181,6 +221,7 @@ export class ChatService {
     message: string,
     conversationId?: string,
     contextArticleSlug?: string,
+    community?: ForumCoachContext,
   ): Promise<CoachReplyResult | null> {
     const official = await this.resolveOfficialContent(
       userId,
@@ -193,6 +234,7 @@ export class ChatService {
       userId,
       message,
       conversationId,
+      community,
     );
     const threadId = await this.messages.persistExchange(
       userId,
@@ -217,15 +259,21 @@ export class ChatService {
     conversationId?: string,
     contextMockExamId?: string,
     contextArticleSlug?: string,
+    contextCommunityThreadId?: string,
   ): Promise<CoachReplyResult> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
+    const community = await this.resolveCommunityContext(
+      user.id,
+      contextCommunityThreadId,
+    );
     const official = await this.completeOfficialExchange(
       user.id,
       message,
       conversationId,
       contextArticleSlug,
+      community,
     );
     if (official) return official;
     await this.budget.assertWithinBudget();
@@ -252,6 +300,7 @@ export class ChatService {
         user.id,
         message,
         conversationId,
+        community,
       );
       return await this.completeChat(
         user.id,
@@ -259,6 +308,7 @@ export class ChatService {
         message,
         mockExam,
         contextArticleSlug,
+        community,
       );
     } catch (err) {
       if (!ent.isPremium && shouldRefundOnFailure && coinCost > 0) {
@@ -343,8 +393,10 @@ export class ChatService {
     message: string,
     mockExam?: MockExamDto,
     opts?: { excludeTailExchange?: boolean; contextArticleSlug?: string },
+    community?: ForumCoachContext,
   ) {
     const ctx = await this.context.build(userId);
+    const personalization = buildCoachPersonalization(ctx);
 
     // Multi-turn: replay the last N messages OF THIS THREAD (the user's own words + earlier coach
     // replies — no third-party PII, §4 #6). Defensive: a history failure never blocks the chat.
@@ -390,11 +442,13 @@ export class ChatService {
       }
     }
 
+    const locale = promptLocale(I18nContext.current()?.lang);
     const system = buildSystemPrompt(
       ctx,
       retrieved,
       mockExam,
-      promptLocale(I18nContext.current()?.lang),
+      locale,
+      community,
     );
 
     return {
@@ -404,6 +458,8 @@ export class ChatService {
         slug: s.slug,
         url: s.sourceUrl,
       })),
+      personalization,
+      locale,
     };
   }
 
@@ -419,6 +475,7 @@ export class ChatService {
       model: string;
     },
     sources: { title: string; slug: string; url: string }[],
+    personalization: CoachPersonalizationDto,
     suggestedTask?: { title: string; subject: string | null },
   ): Promise<string> {
     await this.usage.append({
@@ -438,6 +495,7 @@ export class ChatService {
       content: result.text,
       model: result.model,
       sources,
+      personalization,
       suggestedTask,
     });
   }
@@ -447,23 +505,37 @@ export class ChatService {
     message: string,
     mockExam?: MockExamDto,
     contextArticleSlug?: string,
+    community?: ForumCoachContext,
   ): Promise<CoachReplyResult> {
-    const { llmInput, sources } = await this.prepareChat(
+    const { llmInput, sources, personalization, locale } = await this.prepareChat(
       userId,
       target.kind === "existing" ? target.conversationId : undefined,
       message,
       mockExam,
       { contextArticleSlug },
+      community,
     );
     const result = await this.llm.complete(llmInput);
     // Order-agnostic: models sometimes reverse the FOLLOWUP/TASK order — never leak a marker.
-    const { text: reply, task, followUps } = extractReplyMarkers(result.text);
+    const markers = extractReplyMarkers(result.text);
+    const personalized = applyCoachPersonalizationMarker(
+      markers.text,
+      personalization,
+      locale,
+    );
+    const reply = enforceNeedsInputReply(
+      personalized.text,
+      personalized.personalization.mode,
+      locale,
+    );
+    const { task, followUps } = markers;
     const conversationId = await this.recordSuccess(
       userId,
       target,
       message,
       { ...result, text: reply },
       sources,
+      personalized.personalization,
       task ?? undefined,
     );
     return {
@@ -471,6 +543,7 @@ export class ChatService {
       model: result.model,
       conversationId,
       sources,
+      personalization: personalized.personalization,
       ...(task ? { suggestedTask: task } : {}),
       ...(followUps.length > 0 ? { followUps } : {}),
     };
@@ -488,15 +561,21 @@ export class ChatService {
     conversationId?: string,
     contextMockExamId?: string,
     contextArticleSlug?: string,
+    contextCommunityThreadId?: string,
   ): AsyncGenerator<CoachChatStreamEvent> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
+    const community = await this.resolveCommunityContext(
+      user.id,
+      contextCommunityThreadId,
+    );
     const official = await this.completeOfficialExchange(
       user.id,
       message,
       conversationId,
       contextArticleSlug,
+      community,
     );
     if (official) {
       yield { done: official };
@@ -526,22 +605,37 @@ export class ChatService {
         user.id,
         message,
         conversationId,
+        community,
       );
-      const { llmInput, sources } = await this.prepareChat(
+      const { llmInput, sources, personalization, locale } = await this.prepareChat(
         user.id,
         target.kind === "existing" ? target.conversationId : undefined,
         message,
         mockExam,
         { contextArticleSlug },
+        community,
       );
-      const final = yield* this.streamLlm(llmInput);
-      const { text: reply, task, followUps } = extractReplyMarkers(final.text);
+      const final = yield* this.streamLlm(llmInput, personalization, locale);
+      const markers = extractReplyMarkers(final.text);
+      const personalized = applyCoachPersonalizationMarker(
+        markers.text,
+        personalization,
+        locale,
+      );
+      const reply = enforceNeedsInputReply(
+        personalized.text,
+        personalized.personalization.mode,
+        locale,
+      );
+      const { task, followUps } = markers;
+      if (personalization.mode === "NEEDS_INPUT") yield { delta: reply };
       const threadId = await this.recordSuccess(
         user.id,
         target,
         message,
         { ...final, text: reply },
         sources,
+        personalized.personalization,
         task ?? undefined,
       );
       yield {
@@ -550,6 +644,7 @@ export class ChatService {
           model: final.model,
           conversationId: threadId,
           sources,
+          personalization: personalized.personalization,
           ...(task ? { suggestedTask: task } : {}),
           ...(followUps.length > 0 ? { followUps } : {}),
         },
@@ -585,6 +680,14 @@ export class ChatService {
     if (!(await this.conversations.isOwned(user.id, conversationId))) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
+    const origin = await this.conversations.getOrigin(user.id, conversationId);
+    const community =
+      origin?.type === "COMMUNITY_THREAD"
+        ? await this.resolveCommunityContext(user.id, origin.refId).catch((err) => {
+            this.logger.warn(`Community origin unavailable during regenerate: ${String(err)}`);
+            return undefined;
+          })
+        : undefined;
     // Locate the final exchange by role rather than by position; legacy rows can share timestamps
     // and therefore have a UUID-based tie order.
     const tail = await this.messages.lastN(user.id, conversationId, 2);
@@ -634,15 +737,28 @@ export class ChatService {
     }
 
     try {
-      const { llmInput, sources } = await this.prepareChat(
+      const { llmInput, sources, personalization, locale } = await this.prepareChat(
         user.id,
         conversationId,
         userMsg.content,
         undefined,
         { excludeTailExchange: true },
+        community,
       );
-      const final = yield* this.streamLlm(llmInput);
-      const { text: reply, task, followUps } = extractReplyMarkers(final.text);
+      const final = yield* this.streamLlm(llmInput, personalization, locale);
+      const markers = extractReplyMarkers(final.text);
+      const personalized = applyCoachPersonalizationMarker(
+        markers.text,
+        personalization,
+        locale,
+      );
+      const reply = enforceNeedsInputReply(
+        personalized.text,
+        personalized.personalization.mode,
+        locale,
+      );
+      const { task, followUps } = markers;
+      if (personalization.mode === "NEEDS_INPUT") yield { delta: reply };
 
       await this.usage.append({
         userId: user.id,
@@ -663,6 +779,7 @@ export class ChatService {
           content: reply,
           model: final.model,
           sources,
+          personalization: personalized.personalization,
           suggestedTask: task ?? undefined,
         },
       );
@@ -676,6 +793,7 @@ export class ChatService {
           model: final.model,
           conversationId,
           sources,
+          personalization: personalized.personalization,
           ...(task ? { suggestedTask: task } : {}),
           ...(followUps.length > 0 ? { followUps } : {}),
         },
@@ -699,7 +817,7 @@ export class ChatService {
     system: string;
     user: string;
     history: LlmHistoryMessage[];
-  }): AsyncGenerator<
+  }, personalization: CoachPersonalizationDto, locale: PromptLocale): AsyncGenerator<
     CoachChatStreamEvent,
     {
       text: string;
@@ -709,6 +827,11 @@ export class ChatService {
     }
   > {
     // The task/follow-up markers must never leak into deltas — the filter holds anything marker-like.
+    const personalizationFilter = createPersonalizationMarkerFilter(
+      personalization,
+      locale,
+    );
+    const bufferUntilValidated = personalization.mode === "NEEDS_INPUT";
     const markerFilter = createTaskMarkerFilter();
     let final: {
       text: string;
@@ -718,8 +841,9 @@ export class ChatService {
     } | null = null;
     for await (const ev of this.llm.completeStream(llmInput)) {
       if (ev.delta) {
-        const safe = markerFilter.push(ev.delta);
-        if (safe) yield { delta: safe };
+        const personalized = personalizationFilter.push(ev.delta);
+        const safe = personalized ? markerFilter.push(personalized) : "";
+        if (safe && !bufferUntilValidated) yield { delta: safe };
       }
       if (ev.final) final = ev.final;
     }
@@ -729,8 +853,13 @@ export class ChatService {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
+    const personalizationHeld = personalizationFilter.flush();
+    if (personalizationHeld) {
+      const safe = markerFilter.push(personalizationHeld);
+      if (safe && !bufferUntilValidated) yield { delta: safe };
+    }
     const held = markerFilter.flush();
-    if (held) yield { delta: held };
+    if (held && !bufferUntilValidated) yield { delta: held };
     return final;
   }
 
@@ -755,16 +884,23 @@ export class ChatService {
     if (!(await this.conversations.isOwned(userId, conversationId))) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    const result = await this.messages.listPagedByConversation(
-      userId,
-      conversationId,
-      page,
-      pageSize,
-    );
+    const [result, origin] = await Promise.all([
+      this.messages.listPagedByConversation(userId, conversationId, page, pageSize),
+      this.conversations.getOrigin(userId, conversationId),
+    ]);
     if (result.total === 0) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    return result;
+    const communitySource =
+      origin?.type === "COMMUNITY_THREAD" && this.forumCoachBridge
+        ? await this.forumCoachBridge
+            .tryGetBridge(userId, origin.refId, I18nContext.current()?.lang ?? "tr")
+            .catch((err) => {
+              this.logger.warn(`Community source card unavailable: ${String(err)}`);
+              return null;
+            })
+        : null;
+    return { ...result, origin, communitySource };
   }
 
   /** DELETE /v1/coach/conversations/:id — drop one thread (messages cascade). Memory profile is kept. */

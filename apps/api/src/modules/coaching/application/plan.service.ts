@@ -3,6 +3,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import type {
   ApplyPlanAdaptationResultDto,
   Paginated,
+  CommunityCoachPlanTaskOriginDto,
   PlanTaskCalendarDto,
   PlanTaskDto,
 } from "@mentor/types";
@@ -128,6 +129,40 @@ export class PlanService {
         endTime: input.endTime ?? null,
         description: input.description ?? null,
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
+      });
+      return toPlanTaskDto(row);
+    });
+  }
+
+  /**
+   * AI-owned entry point for a user-confirmed task from a community-origin conversation.
+   * The AI module validates conversation ownership and forum visibility before calling this method.
+   */
+  async createFromCommunityCoach(
+    userId: string,
+    input: CreatePlanTaskInput,
+    origin: Omit<CommunityCoachPlanTaskOriginDto, "type">,
+  ): Promise<PlanTaskDto> {
+    const taskDate = input.taskDate ?? todayIso();
+    this.assertTaskDateMutable(taskDate);
+    return withUserContext(this.db, { userId }, async (tx) => {
+      await this.tasks.acquireUserLock(tx, userId);
+      const row = await this.tasks.create(tx, {
+        userId,
+        taskDate,
+        title: input.title,
+        subject: input.subject ?? null,
+        startTime: input.startTime ?? null,
+        endTime: input.endTime ?? null,
+        description: input.description ?? null,
+        ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
+        originType: "COMMUNITY_COACH",
+        originRefId: origin.conversationId,
+        originMeta: {
+          threadId: origin.threadId,
+          intent: origin.intent,
+          zoneType: origin.zoneType,
+        },
       });
       return toPlanTaskDto(row);
     });

@@ -1,9 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
 import type { VisionDto } from "@mentor/types";
 import type { UpsertVisionInput } from "@mentor/validation";
+import { ValidationFailedError } from "../../../common/errors/domain-error";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
+import { GeoService } from "../../content/application/geo.service";
 import { VisionBoardRepository } from "../infrastructure/vision-board.repository";
 import { toVisionDto } from "./coaching.mappers";
 
@@ -17,6 +19,7 @@ export class VisionService {
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly visions: VisionBoardRepository,
+    private readonly geo: GeoService,
   ) {}
 
   async getMine(userId: string): Promise<VisionDto | null> {
@@ -27,9 +30,29 @@ export class VisionService {
   }
 
   async upsert(userId: string, input: UpsertVisionInput): Promise<VisionDto> {
+    const targetCityCode = input.targetCityCode ?? null;
+    const targetUniversityId = input.targetUniversityId ?? null;
+
+    // The schema already rejects a university without a city. What it cannot know is whether the
+    // university actually sits in that city — the client picks both from the map, but a crafted
+    // request could pair any university with any province, and the map would then draw the goal
+    // in the wrong place forever.
+    if (targetUniversityId && targetCityCode) {
+      const belongs = await this.geo.universityExistsInCity(
+        targetUniversityId,
+        targetCityCode,
+      );
+      if (!belongs) {
+        throw new ValidationFailedError({ reason: "university_city_mismatch" });
+      }
+    }
+
     const normalized = {
       goalTitle: input.goalTitle.trim(),
+      targetCityCode,
       targetCity: input.targetCity?.trim() ? input.targetCity.trim() : null,
+      targetUniversityId,
+      careerGroup: input.careerGroup ?? null,
       motivation: input.motivation?.trim() ? input.motivation.trim() : null,
     };
     return withUserContext(this.db, { userId }, async (tx) => {

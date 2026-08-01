@@ -55,6 +55,15 @@ export type InfoArticleSlugParam = z.infer<typeof infoArticleSlugParamSchema>;
 /* --------------------- admin content editor (W6) --------------------- */
 
 const EXAM_FAMILIES = ["KPSS", "YKS", "LGS"] as const;
+
+/**
+ * Geo search query. Bounded on both ends: under two characters every result list would be
+ * meaningless, and the upper bound keeps a pathological string out of the LIKE pattern.
+ */
+export const geoSearchQuerySchema = z.object({
+  q: z.string().trim().min(2).max(80),
+});
+export type GeoSearchQuery = z.infer<typeof geoSearchQuerySchema>;
 const ARTICLE_CATEGORIES = ["EXAM_PROCESS", "APPLICATION", "GENERAL"] as const;
 export const ARTICLE_BODY_FORMATS = ["MARKDOWN", "HTML"] as const;
 const EXAM_VARIANTS = ["LISANS", "ONLISANS", "ORTAOGRETIM"] as const;

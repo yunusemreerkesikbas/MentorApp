@@ -35,6 +35,7 @@ const task: PlanTaskDto = {
   startTime: null,
   endTime: null,
   description: null,
+  origin: null,
 };
 
 const readyPreview: CoachPlanAdaptationDto = {
@@ -157,6 +158,7 @@ const timedTask: PlanTaskDto = {
   startTime: "13:00",
   endTime: "14:30",
   description: "Problemler + hız",
+  origin: null,
 };
 
 test.describe("Takvim", () => {

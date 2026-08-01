@@ -26,6 +26,40 @@ describe("ai coach chat (e2e)", () => {
   let brokeId = "";
   let rlToken = "";
 
+  const seedCommunityBridgeThread = async (): Promise<string> => {
+    const client = await pool.connect();
+    try {
+      await client.query("begin");
+      await client.query("select set_config('app.role','SERVICE',true)");
+      const zone = await client.query<{ id: string }>(
+        `insert into forum_zones (type, title, slug, visibility, created_by)
+         values ('CHAT', 'Koç Köprüsü', $1, 'PUBLIC', $2) returning id`,
+        [`ai-coach-bridge-${RUN}`, premiumId],
+      );
+      const tag = await client.query<{ id: string }>(
+        `insert into forum_tags (slug, name_tr, name_en, coach_intent, created_by)
+         values ($1, 'Planlama', 'Planning', 'PLAN', $2) returning id`,
+        [`ai-planlama-${RUN}`, premiumId],
+      );
+      const thread = await client.query<{ id: string }>(
+        `insert into forum_threads (zone_id, author_id, body)
+         values ($1, $2, 'FORUM_SECRET_BODY_MUST_NOT_LEAK') returning id`,
+        [zone.rows[0]!.id, premiumId],
+      );
+      await client.query(
+        "insert into forum_thread_tags (thread_id, tag_id) values ($1, $2)",
+        [thread.rows[0]!.id, tag.rows[0]!.id],
+      );
+      await client.query("commit");
+      return thread.rows[0]!.id;
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+  };
+
   const signup = async (label: string) => {
     const email = `ai-${label}-${RUN}@test.local`;
     const res = await request(app.getHttpServer())
@@ -135,6 +169,10 @@ describe("ai coach chat (e2e)", () => {
   }, 90_000);
 
   afterAll(async () => {
+    if (app && adminToken) {
+      await setConfig("forum.coach_bridge.enabled", false);
+      await setConfig("forum.enabled", false);
+    }
     await app?.close();
     await pool?.end();
   });
@@ -202,6 +240,111 @@ describe("ai coach chat (e2e)", () => {
     expect(
       history.body.items.map((message: { role: string }) => message.role),
     ).toEqual(["COACH", "USER"]);
+  });
+
+  it("community bridge persists structural origin and reloads a public-safe source", async () => {
+    await setConfig("forum.enabled", true);
+    await setConfig("forum.coach_bridge.enabled", true);
+    const threadId = await seedCommunityBridgeThread();
+
+    const bridge = await request(app.getHttpServer())
+      .get(`/v1/forum/threads/${threadId}/coach-bridge`)
+      .set({ Authorization: `Bearer ${premiumToken}` });
+    expect(bridge.status).toBe(200);
+    expect(bridge.body.intent).toBe("PLAN");
+    expect(JSON.stringify(bridge.body)).not.toMatch(/FORUM_SECRET|author|body|comment|profile/i);
+
+    const sent = await request(app.getHttpServer())
+      .post("/v1/coach/chat")
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({
+        message: "Planımı uygulanabilir hâle getirelim.",
+        contextCommunityThreadId: threadId,
+      });
+    expect(sent.status).toBe(201);
+
+    const history = await request(app.getHttpServer())
+      .get(`/v1/coach/conversations/${sent.body.conversationId}/messages`)
+      .set({ Authorization: `Bearer ${premiumToken}` });
+    expect(history.status).toBe(200);
+    expect(history.body.origin).toEqual({
+      type: "COMMUNITY_THREAD",
+      refId: threadId,
+      meta: { intent: "PLAN", tagSlug: `ai-planlama-${RUN}` },
+    });
+    expect(history.body.communitySource.intent).toBe("PLAN");
+    expect(JSON.stringify(history.body)).not.toContain("FORUM_SECRET_BODY_MUST_NOT_LEAK");
+
+    const usageBeforeTask = await aiUsageCount(premiumId);
+    const coinsBeforeTask = await coinBalance(premiumId);
+    const createdTask = await request(app.getHttpServer())
+      .post(`/v1/coach/conversations/${sent.body.conversationId}/plan-tasks`)
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({
+        title: "Bugün 20 soru",
+        subject: "Türkçe",
+        // Untrusted provenance is ignored; the response must use the server-resolved source.
+        threadId: "00000000-0000-4000-8000-0000000000ff",
+        intent: "STRATEGY",
+        zoneType: "QA",
+      });
+    expect(createdTask.status).toBe(201);
+    expect(createdTask.body.origin).toEqual({
+      type: "COMMUNITY_COACH",
+      conversationId: sent.body.conversationId,
+      threadId,
+      intent: "PLAN",
+      zoneType: "CHAT",
+    });
+    expect(await aiUsageCount(premiumId)).toBe(usageBeforeTask);
+    expect(await coinBalance(premiumId)).toBe(coinsBeforeTask);
+
+    const updatedTask = await request(app.getHttpServer())
+      .patch(`/v1/plan-tasks/${createdTask.body.id}`)
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({ title: "Bugün 25 soru", status: "DONE" });
+    expect(updatedTask.status).toBe(200);
+    expect(updatedTask.body.origin).toEqual(createdTask.body.origin);
+
+    await request(app.getHttpServer())
+      .post(`/v1/coach/conversations/${sent.body.conversationId}/plan-tasks`)
+      .set({ Authorization: `Bearer ${freeToken}` })
+      .send({ title: "Başkasının konuşması" })
+      .expect(404);
+
+    await setConfig("forum.coach_bridge.enabled", false);
+    await request(app.getHttpServer())
+      .post(`/v1/coach/conversations/${sent.body.conversationId}/plan-tasks`)
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({ title: "Bayrak kapalı" })
+      .expect(404);
+    await setConfig("forum.coach_bridge.enabled", true);
+
+    await request(app.getHttpServer())
+      .get(`/v1/coach/conversations/${sent.body.conversationId}/messages`)
+      .set({ Authorization: `Bearer ${freeToken}` })
+      .expect(404);
+
+    const client = await pool.connect();
+    try {
+      await client.query("begin");
+      await client.query("select set_config('app.role','SERVICE',true)");
+      await client.query("update forum_threads set deleted_at=now() where id=$1", [threadId]);
+      await client.query("commit");
+    } finally {
+      client.release();
+    }
+    const unavailable = await request(app.getHttpServer())
+      .get(`/v1/coach/conversations/${sent.body.conversationId}/messages`)
+      .set({ Authorization: `Bearer ${premiumToken}` });
+    expect(unavailable.status).toBe(200);
+    expect(unavailable.body.origin.refId).toBe(threadId);
+    expect(unavailable.body.communitySource).toBeNull();
+    await request(app.getHttpServer())
+      .post(`/v1/coach/conversations/${sent.body.conversationId}/plan-tasks`)
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({ title: "Silinmiş kaynaktan görev" })
+      .expect(404);
   });
 
   it("free user with coin spends on chat (201, balance drops)", async () => {

@@ -12,6 +12,16 @@ export const ZoneType = {
 } as const;
 export type ZoneType = (typeof ZoneType)[keyof typeof ZoneType];
 
+/** Curated bridge from a community topic to one personal coaching intent. */
+export const ForumCoachIntent = {
+  PLAN: "PLAN",
+  NEXT_STEP: "NEXT_STEP",
+  STUDY_METHOD: "STUDY_METHOD",
+  STRATEGY: "STRATEGY",
+} as const;
+export type ForumCoachIntent =
+  (typeof ForumCoachIntent)[keyof typeof ForumCoachIntent];
+
 /** PUBLIC only in MVP; PRIVATE (invite/closed/mahalle) reserved for Phase 2. */
 export const ZoneVisibility = {
   PUBLIC: "PUBLIC",
@@ -191,6 +201,8 @@ export interface ThreadView {
   myBookmarked: boolean;
   /** Curated discovery tags (max 3). Additive for legacy thread consumers. */
   tags?: ForumTagView[];
+  /** Eligible community-to-coach pilot context; null when the thread is not eligible. */
+  coachBridge?: ForumCoachBridgeView | null;
   /** Positive helpful vote count (QA only). */
   helpfulVoteCount?: number;
   /** Whether the viewer has given their one helpful vote. */
@@ -286,8 +298,20 @@ export interface ForumTagView {
   nameEn?: string;
   examType: string | null;
   isActive: boolean;
+  /** Admin-curated coach bridge intent; null keeps this tag outside the pilot. */
+  coachIntent?: ForumCoachIntent | null;
   createdAt?: string;
   updatedAt?: string;
+}
+
+/** Public-safe community context; never contains thread body, authors, comments, or profile data. */
+export interface ForumCoachBridgeView {
+  threadId: string;
+  intent: ForumCoachIntent;
+  tag: Pick<ForumTagView, "slug" | "name">;
+  zone: Pick<ZoneView, "slug" | "title" | "type">;
+  /** Nullable because CHAT posts may not have a headline. */
+  threadTitle: string | null;
 }
 
 export const ForumFeedScope = {
@@ -344,6 +368,14 @@ export interface ForumThreadSummary {
   bodyExcerpt: string;
   commentCount: number;
   lastActivityAt: string;
+}
+
+/** Active manual featured selection returned to the internal forum editor. */
+export interface ForumFeaturedAdminView {
+  threadId: string;
+  featuredUntil: string;
+  featuredBy: string | null;
+  thread: ForumThreadSummary;
 }
 
 export interface ForumFeedContext {

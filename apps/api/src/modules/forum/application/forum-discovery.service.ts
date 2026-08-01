@@ -3,6 +3,7 @@ import { I18nContext } from "nestjs-i18n";
 import {
   type ForumFeed,
   type ForumFeedItem,
+  type ForumFeaturedAdminView,
   type ForumHubView,
   type ForumPublicPerson,
   type ForumSearchView,
@@ -421,18 +422,22 @@ export class ForumDiscoveryService {
     return this.toTagView(row, "tr", true);
   }
 
-  async getAdminFeatured() {
+  async getAdminFeatured(): Promise<ForumFeaturedAdminView | null> {
     const row = await this.repo.getFeaturedThread();
     return row
       ? {
           threadId: row.id,
-          featuredUntil: row.featuredUntil?.toISOString() ?? null,
+          featuredUntil: row.featuredUntil.toISOString(),
           featuredBy: row.featuredBy,
+          thread: this.toSummary(row),
         }
       : null;
   }
 
-  async setAdminFeatured(actorId: string, input: SetFeaturedThread) {
+  async setAdminFeatured(
+    actorId: string,
+    input: SetFeaturedThread,
+  ): Promise<ForumFeaturedAdminView> {
     const settings = await this.settings();
     const thread = await this.threads.findByIdIncludingDeleted(input.threadId);
     if (!thread || thread.deletedAt) {
@@ -445,7 +450,11 @@ export class ForumDiscoveryService {
       throw new DomainError(ErrorCode.FORUM_FEATURED_INVALID, HttpStatus.CONFLICT);
     }
     await this.repo.setFeaturedThread(thread.id, actorId, until);
-    return { threadId: thread.id, featuredUntil: until.toISOString(), featuredBy: actorId };
+    const featured = await this.getAdminFeatured();
+    if (!featured || featured.threadId !== thread.id) {
+      throw new DomainError(ErrorCode.FORUM_FEATURED_INVALID, HttpStatus.CONFLICT);
+    }
+    return featured;
   }
 
   clearAdminFeatured(): Promise<void> {
@@ -572,6 +581,7 @@ export class ForumDiscoveryService {
       ...(admin && { nameTr: tag.nameTr, nameEn: tag.nameEn }),
       examType: tag.examType,
       isActive: tag.isActive,
+      ...(admin && { coachIntent: tag.coachIntent }),
       ...(admin && {
         createdAt: tag.createdAt.toISOString(),
         updatedAt: tag.updatedAt.toISOString(),

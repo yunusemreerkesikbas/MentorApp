@@ -11,8 +11,13 @@ const repo = {
   activeTagCount: vi.fn(),
   replaceThreadTags: vi.fn(),
   updateThread: vi.fn(),
+  getFeaturedThread: vi.fn(),
+  setFeaturedThread: vi.fn(),
 };
-const threads = { findById: vi.fn() };
+const threads = {
+  findById: vi.fn(),
+  findByIdIncludingDeleted: vi.fn(),
+};
 const posts = { findById: vi.fn() };
 const zones = { findById: vi.fn(), findMembershipsByZone: vi.fn() };
 const attachments = {};
@@ -57,6 +62,74 @@ describe("ForumDiscoveryService mutations", () => {
     await expect(service().listTags("viewer", "tr")).rejects.toMatchObject({
       code: ErrorCode.FORUM_DISABLED,
       httpStatus: HttpStatus.NOT_FOUND,
+    });
+  });
+
+  it("returns the selected thread summary with the admin featured state", async () => {
+    repo.getFeaturedThread.mockResolvedValue({
+      id: "11111111-1111-4111-8111-111111111111",
+      zoneSlug: "genel-sohbet",
+      zoneTitle: "Genel Sohbet",
+      zoneType: "CHAT",
+      title: "Deneme haftasında motivasyonu nasıl koruyorsun?",
+      body: "Birbirimize iyi gelen küçük yöntemleri paylaşalım.",
+      commentCount: 7,
+      lastActivityAt: new Date("2026-07-31T12:00:00.000Z"),
+      featuredUntil: new Date("2026-08-07T12:00:00.000Z"),
+      featuredBy: "22222222-2222-4222-8222-222222222222",
+    });
+
+    await expect(service().getAdminFeatured()).resolves.toEqual({
+      threadId: "11111111-1111-4111-8111-111111111111",
+      featuredUntil: "2026-08-07T12:00:00.000Z",
+      featuredBy: "22222222-2222-4222-8222-222222222222",
+      thread: {
+        id: "11111111-1111-4111-8111-111111111111",
+        zoneSlug: "genel-sohbet",
+        zoneTitle: "Genel Sohbet",
+        zoneType: "CHAT",
+        title: "Deneme haftasında motivasyonu nasıl koruyorsun?",
+        bodyExcerpt: "Birbirimize iyi gelen küçük yöntemleri paylaşalım.",
+        commentCount: 7,
+        lastActivityAt: "2026-07-31T12:00:00.000Z",
+      },
+    });
+  });
+
+  it("returns the selected thread summary after an editor features it", async () => {
+    const threadId = "11111111-1111-4111-8111-111111111111";
+    const actorId = "22222222-2222-4222-8222-222222222222";
+    threads.findByIdIncludingDeleted.mockResolvedValue({
+      id: threadId,
+      deletedAt: null,
+    });
+    repo.getFeaturedThread.mockResolvedValue({
+      id: threadId,
+      zoneSlug: "soru-cevap",
+      zoneTitle: "Soru Cevap",
+      zoneType: "QA",
+      title: "Paragraf rutinini nasıl kurdun?",
+      body: "Her gün sürdürebildiğin yöntemi paylaş.",
+      commentCount: 4,
+      lastActivityAt: new Date("2026-07-31T13:00:00.000Z"),
+      featuredUntil: new Date("2099-08-07T12:00:00.000Z"),
+      featuredBy: actorId,
+    });
+
+    await expect(
+      service().setAdminFeatured(actorId, {
+        threadId,
+        featuredUntil: "2099-08-07T12:00:00.000Z",
+      }),
+    ).resolves.toMatchObject({
+      threadId,
+      featuredBy: actorId,
+      thread: {
+        id: threadId,
+        zoneTitle: "Soru Cevap",
+        zoneType: "QA",
+        title: "Paragraf rutinini nasıl kurdun?",
+      },
     });
   });
 

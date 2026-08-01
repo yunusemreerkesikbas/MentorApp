@@ -1165,102 +1165,350 @@ describe("forum zones (e2e)", () => {
     expect(handles2).toContain(cHandle);
   });
 
-  it("Discovery V2: tag, hub/feed, helpful lock, featured authz and PII-safe search", async () => {
-    await setForumEnabled(true);
-    const helper = await signup("discovery-helper");
-    const asHelper = () => ({ Authorization: `Bearer ${helper.accessToken}` });
-    const ownerHandle = `dvo${String(RUN).slice(-10)}`;
-    const helperHandle = `dvh${String(RUN).slice(-10)}`;
-    await request(app.getHttpServer())
-      .patch("/v1/users/me")
-      .set(asUser())
-      .send({ username: ownerHandle })
-      .expect(200);
-    await request(app.getHttpServer())
-      .patch("/v1/users/me")
-      .set(asHelper())
-      .send({ username: helperHandle })
-      .expect(200);
-
-    // Scoped staff surface: plain members cannot curate tags.
-    await request(app.getHttpServer())
-      .post("/v1/admin/forum/tags")
-      .set(asUser())
-      .send({ slug: "yetkisiz", nameTr: "Yetkisiz", nameEn: "Unauthorized" })
-      .expect(403);
-    const tag = await request(app.getHttpServer())
+  const createDiscoveryTag = async (label: string, isActive = true) => {
+    const slug = `${label}-${RUN}`;
+    const response = await request(app.getHttpServer())
       .post("/v1/admin/forum/tags")
       .set(asAdmin())
       .send({
-        slug: `motivasyon-${RUN}`,
-        nameTr: `Motivasyon ${RUN}`,
-        nameEn: `Motivation ${RUN}`,
-        isActive: true,
+        slug,
+        nameTr: `${label} ${RUN}`,
+        nameEn: `${label} ${RUN}`,
+        isActive,
       })
       .expect(201);
+    return { id: response.body.id as string, slug };
+  };
 
-    const zoneId = await createZone(ZoneType.QA, "Discovery QA");
-    for (const auth of [asUser(), asHelper()]) {
+  const activityAt = async (threadId: string): Promise<Date> => {
+    const result = await pool.query(
+      "select last_activity_at from forum_threads where id = $1",
+      [threadId],
+    );
+    return new Date(result.rows[0].last_activity_at as string);
+  };
+
+  const expectActivityAdvance = async (
+    threadId: string,
+    action: () => Promise<unknown>,
+  ): Promise<void> => {
+    await pool.query(
+      "update forum_threads set last_activity_at = '2000-01-01T00:00:00.000Z' where id = $1",
+      [threadId],
+    );
+    const before = await activityAt(threadId);
+    await action();
+    const after = await activityAt(threadId);
+    expect(after.getTime()).toBeGreaterThan(before.getTime());
+  };
+
+  it("Discovery V2 cold-start hub returns useful content for a new student", async () => {
+    await setForumEnabled(true);
+    const newcomer = await signup("discovery-cold-start");
+    const response = await request(app.getHttpServer())
+      .get("/v1/forum/hub")
+      .set({ Authorization: `Bearer ${newcomer.accessToken}` })
+      .expect(200);
+
+    expect(
+      response.body.featured ||
+        response.body.continueDiscussions.length > 0 ||
+        response.body.recommendedZones.length > 0,
+    ).toBeTruthy();
+  });
+
+  it("Discovery V2 hub keeps recent interactions first and fills the remaining slots without duplicates", async () => {
+    await setForumEnabled(true);
+    const viewer = await signup("discovery-continue-viewer");
+    const author = await signup("discovery-continue-author");
+    const asViewer = { Authorization: `Bearer ${viewer.accessToken}` };
+    const asAuthor = { Authorization: `Bearer ${author.accessToken}` };
+    const zoneId = await createZone(ZoneType.CHAT, "Discovery Devam Akışı");
+    for (const auth of [asViewer, asAuthor]) {
+      await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(auth).expect(201);
+    }
+    const threadIds: string[] = [];
+    for (let index = 0; index < 4; index += 1) {
+      const created = await request(app.getHttpServer())
+        .post(`/v1/forum/zones/${zoneId}/threads`)
+        .set(asAuthor)
+        .send({ body: `Devam akışı tartışması ${index + 1}` })
+        .expect(201);
+      threadIds.push(created.body.id as string);
+    }
+    await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${threadIds[0]}/comments`)
+      .set(asViewer)
+      .send({ body: "Bu tartışmaya daha sonra devam edeceğim." })
+      .expect(201);
+
+    const hub = await request(app.getHttpServer()).get("/v1/forum/hub").set(asViewer).expect(200);
+    const ids = (hub.body.continueDiscussions as Array<{ id: string }>).map((item) => item.id);
+    expect(ids[0]).toBe(threadIds[0]);
+    expect(ids).toHaveLength(4);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("Discovery V2 feed covers all sorts, filters and duplicate-free opaque cursors", async () => {
+    await setForumEnabled(true);
+    const tag = await createDiscoveryTag("discovery-feed");
+    const zoneId = await createZone(ZoneType.QA, "Discovery Feed QA");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser()).expect(201);
+    const threadIds: string[] = [];
+    for (let index = 0; index < 4; index += 1) {
+      const created = await request(app.getHttpServer())
+        .post(`/v1/forum/zones/${zoneId}/threads`)
+        .set(asUser())
+        .send({
+          title: `Discovery sıralama sorusu ${index + 1}`,
+          body: `Sıralama, filtre ve cursor kabul içeriği ${index + 1}.`,
+          tagIds: [tag.id],
+        })
+        .expect(201);
+      threadIds.push(created.body.id as string);
+    }
+
+    for (const sort of ["trending", "recent", "top"] as const) {
+      const response = await request(app.getHttpServer())
+        .get(`/v1/forum/feed?scope=relevant&sort=${sort}&tag=${tag.slug}&zoneType=QA`)
+        .set(asUser())
+        .expect(200);
+      expect(response.body.items).toHaveLength(4);
+      expect(
+        response.body.items.every(
+          (item: { zone: { type: string }; tags: Array<{ slug: string }> }) =>
+            item.zone.type === ZoneType.QA && item.tags.some((itemTag) => itemTag.slug === tag.slug),
+        ),
+      ).toBe(true);
+    }
+
+    const firstPage = await request(app.getHttpServer())
+      .get(`/v1/forum/feed?scope=relevant&sort=recent&tag=${tag.slug}&limit=2`)
+      .set(asUser())
+      .expect(200);
+    expect(firstPage.body.nextCursor).toEqual(expect.any(String));
+    const secondPage = await request(app.getHttpServer())
+      .get(
+        `/v1/forum/feed?scope=relevant&sort=recent&tag=${tag.slug}&limit=2&cursor=${encodeURIComponent(firstPage.body.nextCursor)}`,
+      )
+      .set(asUser())
+      .expect(200);
+    const firstIds = firstPage.body.items.map((item: { id: string }) => item.id);
+    const secondIds = secondPage.body.items.map((item: { id: string }) => item.id);
+    expect(firstIds.filter((id: string) => secondIds.includes(id))).toEqual([]);
+    expect(new Set([...firstIds, ...secondIds])).toEqual(new Set(threadIds));
+  });
+
+  it("Discovery V2 rejects inactive tags", async () => {
+    await setForumEnabled(true);
+    const tag = await createDiscoveryTag("discovery-inactive", false);
+    const zoneId = await createZone(ZoneType.QA, "Discovery Pasif Etiket");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser()).expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({
+        title: "Pasif etiket kullanılabilir mi?",
+        body: "Bu gönderinin pasif etiket nedeniyle reddedilmesi gerekir.",
+        tagIds: [tag.id],
+      })
+      .expect(400);
+  });
+
+  it("Discovery V2 helpful voting is self-safe and idempotent, then locks editing", async () => {
+    await setForumEnabled(true);
+    const helper = await signup("discovery-helpful");
+    const asHelper = { Authorization: `Bearer ${helper.accessToken}` };
+    const zoneId = await createZone(ZoneType.QA, "Discovery Helpful QA");
+    for (const auth of [asUser(), asHelper]) {
       await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(auth).expect(201);
     }
     const question = await request(app.getHttpServer())
       .post(`/v1/forum/zones/${zoneId}/threads`)
       .set(asUser())
-      .send({
-        title: "Deneme düzenimi nasıl sürdürebilirim?",
-        body: "İki haftadır düzen kurmaya çalışıyorum; küçük ve sürdürülebilir öneriler arıyorum.",
-        tagIds: [tag.body.id],
-      })
+      .send({ title: "Faydalı oy güvenli mi?", body: "Tekrarlı ve öz oy davranışını doğruluyoruz." })
       .expect(201);
     const threadId = question.body.id as string;
 
-    const feed = await request(app.getHttpServer())
-      .get(`/v1/forum/feed?scope=relevant&sort=trending&tag=${tag.body.slug}`)
+    await request(app.getHttpServer())
+      .patch(`/v1/forum/threads/${threadId}`)
       .set(asUser())
+      .send({ body: "Etkileşimden önce düzenleme çalışır." })
       .expect(200);
-    expect(feed.body.items.map((item: { id: string }) => item.id)).toContain(threadId);
-    expect(feed.body.items[0].capabilities).toEqual(
-      expect.objectContaining({ canEdit: true, canDelete: true }),
-    );
-
-    const hub = await request(app.getHttpServer()).get("/v1/forum/hub").set(asUser()).expect(200);
-    expect(hub.body.featured ?? hub.body.continueDiscussions[0]).toBeTruthy();
-
-    // Helpful is positive-only, idempotent and cannot be cast on one's own content.
     await request(app.getHttpServer())
       .put(`/v1/forum/threads/${threadId}/helpful-vote`)
       .set(asUser())
       .expect(400);
     await request(app.getHttpServer())
       .put(`/v1/forum/threads/${threadId}/helpful-vote`)
-      .set(asHelper())
+      .set(asHelper)
       .expect(200);
     await request(app.getHttpServer())
       .put(`/v1/forum/threads/${threadId}/helpful-vote`)
-      .set(asHelper())
+      .set(asHelper)
       .expect(200);
-
-    // An interaction locks owner editing; bookmark alone is intentionally not part of this lock.
+    const count = await pool.query(
+      "select count(*)::int as n from forum_helpful_votes where target_type = 'THREAD' and target_id = $1 and user_id = $2",
+      [threadId, helper.user.id],
+    );
+    expect(count.rows[0].n).toBe(1);
     await request(app.getHttpServer())
       .patch(`/v1/forum/threads/${threadId}`)
       .set(asUser())
-      .send({ body: "Bu metin artık etkileşim nedeniyle değişmemeli." })
+      .send({ body: "Etkileşimden sonra düzenleme kilitlenir." })
       .expect(409);
+
+    const expired = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ title: "Süresi dolan düzenleme", body: "Bu kayıt doğrudan eski tarihe alınacak." })
+      .expect(201);
+    await pool.query(
+      "update forum_threads set created_at = now() - interval '31 minutes' where id = $1",
+      [expired.body.id],
+    );
+    await request(app.getHttpServer())
+      .patch(`/v1/forum/threads/${expired.body.id}`)
+      .set(asUser())
+      .send({ body: "Süre dolduktan sonra değişmemeli." })
+      .expect(409);
+  });
+
+  it("Discovery V2 advances last_activity_at after comments, reactions, helpful votes and acceptance", async () => {
+    await setForumEnabled(true);
+    const helper = await signup("discovery-activity");
+    const asHelper = { Authorization: `Bearer ${helper.accessToken}` };
+    const chatZoneId = await createZone(ZoneType.CHAT, "Discovery Aktivite Sohbet");
+    const qaZoneId = await createZone(ZoneType.QA, "Discovery Aktivite QA");
+    for (const zoneId of [chatZoneId, qaZoneId]) {
+      for (const auth of [asUser(), asHelper]) {
+        await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(auth).expect(201);
+      }
+    }
+
+    const commentThread = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${chatZoneId}/threads`)
+      .set(asUser())
+      .send({ body: "Yorum aktivitesi" })
+      .expect(201);
+    await expectActivityAdvance(commentThread.body.id, () =>
+      request(app.getHttpServer())
+        .post(`/v1/forum/threads/${commentThread.body.id}/comments`)
+        .set(asHelper)
+        .send({ body: "Son aktiviteyi ilerleten yorum." })
+        .expect(201),
+    );
+
+    const reactionThread = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${chatZoneId}/threads`)
+      .set(asUser())
+      .send({ body: "Reaksiyon aktivitesi" })
+      .expect(201);
+    await expectActivityAdvance(reactionThread.body.id, () =>
+      request(app.getHttpServer())
+        .put(`/v1/forum/threads/${reactionThread.body.id}/reactions`)
+        .set(asHelper)
+        .send({ emoji: FORUM_LIKE_EMOJI })
+        .expect(200),
+    );
+
+    const helpfulThread = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${qaZoneId}/threads`)
+      .set(asUser())
+      .send({ title: "Helpful aktivitesi", body: "Faydalı oy son aktiviteyi ilerletmeli." })
+      .expect(201);
+    await expectActivityAdvance(helpfulThread.body.id, () =>
+      request(app.getHttpServer())
+        .put(`/v1/forum/threads/${helpfulThread.body.id}/helpful-vote`)
+        .set(asHelper)
+        .expect(200),
+    );
+
+    const acceptedThread = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${qaZoneId}/threads`)
+      .set(asUser())
+      .send({ title: "Kabul aktivitesi", body: "Kabul durumu son aktiviteyi ilerletmeli." })
+      .expect(201);
+    const answer = await request(app.getHttpServer())
+      .post(`/v1/forum/threads/${acceptedThread.body.id}/answers`)
+      .set(asHelper)
+      .send({ body: "Kabul edilecek cevap." })
+      .expect(201);
+    await expectActivityAdvance(acceptedThread.body.id, () =>
+      request(app.getHttpServer())
+        .post(`/v1/forum/threads/${acceptedThread.body.id}/accept/${answer.body.id}`)
+        .set(asUser())
+        .expect(201),
+    );
+  });
+
+  it("Discovery V2 restricts curation to staff and returns the selected thread summary", async () => {
+    await setForumEnabled(true);
+    const zoneId = await createZone(ZoneType.QA, "Discovery Featured QA");
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser()).expect(201);
+    const question = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ title: "Öne çıkarılacak tartışma", body: "Admin yanıtı güvenli özeti taşımalı." })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post("/v1/admin/forum/tags")
+      .set(asUser())
+      .send({ slug: `yetkisiz-${RUN}`, nameTr: "Yetkisiz", nameEn: "Unauthorized" })
+      .expect(403);
+    await request(app.getHttpServer())
+      .put("/v1/admin/forum/featured-thread")
+      .set(asUser())
+      .send({ threadId: question.body.id })
+      .expect(403);
 
     const featured = await request(app.getHttpServer())
       .put("/v1/admin/forum/featured-thread")
       .set(asAdmin())
-      .send({ threadId })
+      .send({ threadId: question.body.id })
       .expect(200);
-    expect(featured.body.threadId).toBe(threadId);
+    expect(featured.body).toEqual(
+      expect.objectContaining({
+        threadId: question.body.id,
+        thread: expect.objectContaining({
+          id: question.body.id,
+          title: "Öne çıkarılacak tartışma",
+          zoneType: ZoneType.QA,
+        }),
+      }),
+    );
+    const current = await request(app.getHttpServer())
+      .get("/v1/admin/forum/featured-thread")
+      .set(asAdmin())
+      .expect(200);
+    expect(current.body.thread.id).toBe(question.body.id);
+    await request(app.getHttpServer())
+      .delete("/v1/admin/forum/featured-thread")
+      .set(asAdmin())
+      .expect(204);
+  });
+
+  it("Discovery V2 search returns public identity fields without PII", async () => {
+    await setForumEnabled(true);
+    const searcher = await signup("discovery-searcher");
+    const ownerHandle = `dvo${String(RUN).slice(-10)}`;
+    await request(app.getHttpServer())
+      .patch("/v1/users/me")
+      .set(asUser())
+      .send({ username: ownerHandle })
+      .expect(200);
 
     const search = await request(app.getHttpServer())
       .get(`/v1/forum/search?q=${encodeURIComponent(ownerHandle)}`)
-      .set(asHelper())
+      .set({ Authorization: `Bearer ${searcher.accessToken}` })
       .expect(200);
     expect(JSON.stringify(search.body)).not.toMatch(/@test\.local|email/i);
-    expect(search.body.people).toEqual(
-      expect.arrayContaining([expect.objectContaining({ username: ownerHandle })]),
+    const person = search.body.people.find(
+      (item: { username: string | null }) => item.username === ownerHandle,
     );
+    expect(person).toBeTruthy();
+    expect(Object.keys(person).sort()).toEqual(["avatarUrl", "displayName", "id", "username"]);
   });
 });

@@ -22,6 +22,22 @@ export interface CoachAccessDto {
   dailyMessagesRemaining?: number;
 }
 
+export const CoachConversationOriginType = {
+  COMMUNITY_THREAD: "COMMUNITY_THREAD",
+} as const;
+export type CoachConversationOriginType =
+  (typeof CoachConversationOriginType)[keyof typeof CoachConversationOriginType];
+
+/** Structural provenance only; community content and identities are deliberately excluded. */
+export interface CoachConversationOriginDto {
+  type: CoachConversationOriginType;
+  refId: string;
+  meta: {
+    intent: import("./forum.js").ForumCoachIntent;
+    tagSlug: string;
+  };
+}
+
 /** GET /v1/coach/conversations item — one chat thread. */
 export interface CoachConversationDto {
   id: string;
@@ -29,6 +45,48 @@ export interface CoachConversationDto {
   title: string;
   lastMessageAt: string;
   messageCount: number;
+  origin: CoachConversationOriginDto | null;
+}
+
+/** Additive conversation envelope returned by the paginated message endpoint. */
+export interface CoachConversationMessagesDto {
+  items: CoachMessageDto[];
+  page: number;
+  pageSize: number;
+  total: number;
+  origin: CoachConversationOriginDto | null;
+  /** Null means there is no origin or its community source is no longer accessible. */
+  communitySource: import("./forum.js").ForumCoachBridgeView | null;
+}
+
+export const CoachPersonalizationMode = {
+  GROUNDED: "GROUNDED",
+  NEEDS_INPUT: "NEEDS_INPUT",
+} as const;
+export type CoachPersonalizationMode =
+  (typeof CoachPersonalizationMode)[keyof typeof CoachPersonalizationMode];
+
+export const CoachPersonalizationSignal = {
+  RECENT_SESSIONS: "RECENT_SESSIONS",
+  TODAY_PLAN: "TODAY_PLAN",
+  MOOD: "MOOD",
+} as const;
+export type CoachPersonalizationSignal =
+  (typeof CoachPersonalizationSignal)[keyof typeof CoachPersonalizationSignal];
+
+/** PII-minimal snapshot that was available while one coach reply was generated. */
+export interface CoachPersonalizationDto {
+  mode: CoachPersonalizationMode;
+  examType: string | null;
+  moodLevel: number | null;
+  recentSessions: {
+    count7d: number;
+    focusMinutes7d: number;
+    subjects: string[];
+  } | null;
+  todayPlan: { total: number; done: number } | null;
+  /** Signals actually surfaced in the visible reply, not merely available to the model. */
+  usedSignals?: CoachPersonalizationSignal[];
 }
 
 /** POST /v1/coach/chat response (no coin fields in the chat zone §4 #3). */
@@ -44,6 +102,8 @@ export interface CoachChatReplyDto {
   suggestedTask?: { title: string; subject: string | null };
   /** Ephemeral follow-up question chips (max 3) — never persisted; only on the live reply. */
   followUps?: string[];
+  /** Context snapshot available to the coach for this reply; persisted for transparent reloads. */
+  personalization?: CoachPersonalizationDto;
 }
 
 /**
@@ -77,6 +137,8 @@ export interface CoachMessageDto {
   createdAt: string;
   /** Persisted authoritative exam-date card for deterministic replies. */
   officialCountdown?: import("./coaching.js").CountdownDto;
+  /** Context snapshot available when this COACH row was generated. */
+  personalization?: CoachPersonalizationDto;
 }
 
 /** GET /v1/coach/memory — legacy saved summary; automatic generation is disabled. */

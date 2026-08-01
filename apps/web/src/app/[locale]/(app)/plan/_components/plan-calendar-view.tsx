@@ -47,6 +47,8 @@ export function PlanCalendarView({
   onDelete,
   onOpenEvent,
   onAddTask,
+  completionPromptTaskId,
+  onDismissCompletionPrompt,
 }: {
   scale: PlanCalendarScale;
   selectedDate: string;
@@ -73,6 +75,8 @@ export function PlanCalendarView({
     startTime?: string;
     origin?: "calendar";
   }) => void;
+  completionPromptTaskId?: string | null;
+  onDismissCompletionPrompt?: () => void;
 }) {
   const t = useTranslations("plan");
   const locale = useLocale();
@@ -128,6 +132,8 @@ export function PlanCalendarView({
     onEdit,
     onDelete,
     onAddTask: () => addOnCalendar({ taskDate: selectedDate }),
+    completionPromptTaskId,
+    onDismissCompletionPrompt,
   };
 
   // Clicking any calendar event opens the details sheet — on desktop the hover preview already

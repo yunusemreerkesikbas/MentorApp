@@ -100,7 +100,15 @@ export class FakeLlmAdapter implements LlmPort {
     const followUpMarker = /nasıl/i.test(input.user)
       ? '\n<<FOLLOWUP["Hangi konudan başlamalıyım?","Bana kısa bir çalışma planı önerir misin?"]>>'
       : "";
+    const personalizationMarker = input.system.includes("Son 7 gün:")
+      ? "<<PERSONALIZATION:RECENT_SESSIONS>>\n"
+      : input.system.includes("Bugünün planı:")
+        ? "<<PERSONALIZATION:TODAY_PLAN>>\n"
+        : input.system.includes("Bugünkü ruh hali:")
+          ? "<<PERSONALIZATION:MOOD>>\n"
+          : "<<PERSONALIZATION:NONE>>\n";
     const text =
+      personalizationMarker +
       "Bugün küçük ve net bir hedefle başla: 25 dakikalık odak + 5 dakika mola. " +
       "Resmî tarih/süreç bilgileri için Bilgi Merkezi'ne bakmayı unutma." +
       historyLine +

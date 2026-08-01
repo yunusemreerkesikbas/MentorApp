@@ -1,9 +1,11 @@
 /** Row → API DTO projections (single place so every endpoint returns the same shape). */
 import type {
+  CareerGroup,
   MoodCheckinDto,
   MockExamDto,
   MockExamSubjectDto,
   PlanTaskDto,
+  PlanTaskOriginDto,
   PlanTaskStatus,
   SessionPresetId,
   StudySessionDto,
@@ -29,6 +31,30 @@ export function toPlanTaskDto(row: PlanTaskRow): PlanTaskDto {
     startTime: toHhmm(row.startTime),
     endTime: toHhmm(row.endTime),
     description: row.description,
+    origin: toPlanTaskOriginDto(row),
+  };
+}
+
+function toPlanTaskOriginDto(row: PlanTaskRow): PlanTaskOriginDto | null {
+  const meta = row.originMeta;
+  if (
+    row.originType !== "COMMUNITY_COACH" ||
+    !row.originRefId ||
+    !meta ||
+    (meta.zoneType !== "CHAT" && meta.zoneType !== "QA") ||
+    (meta.intent !== "PLAN" &&
+      meta.intent !== "NEXT_STEP" &&
+      meta.intent !== "STUDY_METHOD" &&
+      meta.intent !== "STRATEGY")
+  ) {
+    return null;
+  }
+  return {
+    type: "COMMUNITY_COACH",
+    conversationId: row.originRefId,
+    threadId: meta.threadId,
+    intent: meta.intent,
+    zoneType: meta.zoneType,
   };
 }
 
@@ -90,7 +116,10 @@ export function toMoodCheckinDto(
 export function toVisionDto(row: VisionBoardRow): VisionDto {
   return {
     goalTitle: row.goalTitle,
+    targetCityCode: row.targetCityCode,
     targetCity: row.targetCity,
+    targetUniversityId: row.targetUniversityId,
+    careerGroup: row.careerGroup as CareerGroup | null,
     motivation: row.motivation,
     aiNote: row.aiNote,
     createdAt: row.createdAt.toISOString(),

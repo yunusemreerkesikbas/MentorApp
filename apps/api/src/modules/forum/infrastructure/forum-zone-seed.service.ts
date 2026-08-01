@@ -18,10 +18,10 @@ interface SeedFile {
 }
 
 /**
- * Seeds the launch zones on startup (idempotent upserts on the unique slug), so the community tab
- * is never an empty dead end on flip day — `/topluluk` redirects into the first CHAT zone, which
- * needs at least one zone to exist. Runs regardless of `forum.enabled`: the rows stay invisible
- * while the flag is off, and the flip is instant. Mirrors the content seed services.
+ * Seeds the launch zones on startup (idempotent upserts on the unique slug), so the community hub
+ * can recommend useful rooms on flip day instead of becoming an empty dead end. Runs regardless
+ * of `forum.enabled`: the rows stay invisible while the flag is off, and the flip is instant.
+ * Mirrors the content seed services.
  */
 @Injectable()
 export class ForumZoneSeedService implements OnModuleInit {

@@ -12,7 +12,7 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { type ForumTagView, UserRole } from "@mentor/types";
+import { type ForumFeaturedAdminView, type ForumTagView, UserRole } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { Roles } from "../../../common/auth/roles.decorator";
 import { ForumDiscoveryService } from "../../forum/application/forum-discovery.service";
@@ -76,7 +76,7 @@ export class AdminForumController {
   }
 
   @Get("featured-thread")
-  featuredThread() {
+  featuredThread(): Promise<ForumFeaturedAdminView | null> {
     return this.forum.getAdminFeatured();
   }
 
@@ -86,7 +86,7 @@ export class AdminForumController {
     @CurrentUser() actor: RequestUser,
     @Body() body: SetFeaturedThreadDto,
     @Req() req: AuditableRequest,
-  ) {
+  ): Promise<ForumFeaturedAdminView> {
     const before = await this.forum.getAdminFeatured();
     const after = await this.forum.setAdminFeatured(actor.id, body);
     setAuditContext(req, {

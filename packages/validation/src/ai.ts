@@ -2,23 +2,35 @@
 import { z } from "zod";
 
 /** Premium AI coach chat — a single user message (single-turn, stateless). */
-export const aiChatSchema = z.object({
-  message: z.string().trim().min(1).max(2000),
-  /** Idempotency key for coin spend (free path) — prevents double-debit on retry. */
-  clientMessageId: z.string().uuid().optional(),
-  /** Existing thread to continue; omit to start a new conversation. */
-  conversationId: z.string().uuid().optional(),
-  /** Owned mock exam whose authoritative result summary should ground this message. */
-  contextMockExamId: z.string().uuid().optional(),
-  /** Published Knowledge article selected by the user as the source for this message. */
-  contextArticleSlug: z
-    .string()
-    .trim()
-    .min(1)
-    .max(128)
-    .regex(/^[a-z0-9-]+$/)
-    .optional(),
-});
+export const aiChatSchema = z
+  .object({
+    message: z.string().trim().min(1).max(2000),
+    /** Idempotency key for coin spend (free path) — prevents double-debit on retry. */
+    clientMessageId: z.string().uuid().optional(),
+    /** Existing thread to continue; omit to start a new conversation. */
+    conversationId: z.string().uuid().optional(),
+    /** Owned mock exam whose authoritative result summary should ground this message. */
+    contextMockExamId: z.string().uuid().optional(),
+    /** Published Knowledge article selected by the user as the source for this message. */
+    contextArticleSlug: z
+      .string()
+      .trim()
+      .min(1)
+      .max(128)
+      .regex(/^[a-z0-9-]+$/)
+      .optional(),
+    /** Eligible CHAT/QA source used only when creating a new coach conversation. */
+    contextCommunityThreadId: z.string().uuid().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.conversationId && value.contextCommunityThreadId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["contextCommunityThreadId"],
+        message: "contextCommunityThreadId cannot be used with conversationId",
+      });
+    }
+  });
 export type AiChatInput = z.infer<typeof aiChatSchema>;
 
 /** POST /v1/coach/plan-draft — optional free-text wish for the weekly draft. */

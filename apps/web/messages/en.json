@@ -294,6 +294,10 @@
     "answers_title": "Answers",
     "answers_empty": "No answers yet. Be the first to answer.",
     "answer_placeholder": "Write your answer…",
+    "community_return_placeholder_plan": "How did your plan go? Share the experience in your own words…",
+    "community_return_placeholder_next_step": "How did your small step go? Share the experience in your own words…",
+    "community_return_placeholder_study_method": "How did the method you tried work? Share the experience in your own words…",
+    "community_return_placeholder_strategy": "What did you change in your strategy? Share the experience in your own words…",
     "answer_submit": "Answer",
     "answer_submitting": "Sending…",
     "accepted": "Accepted",
@@ -492,7 +496,13 @@
     "zone_context_title": "Room context",
     "zone_contributors": "Contributors",
     "detail_context_title": "Discussion context",
-    "detail_participants": "Participants"
+    "detail_participants": "Participants",
+    "coach_bridge": {
+      "PLAN": "Adapt this to my plan",
+      "NEXT_STEP": "Find one step for me",
+      "STUDY_METHOD": "Find a method for me",
+      "STRATEGY": "Clarify my strategy"
+    }
   },
   "today_plan": {
     "title": "Today's plan",
@@ -789,6 +799,13 @@
     "timeline_scroll_aria": "Weekly plan timeline",
     "pending_empty": "No pending tasks for today.",
     "start_session": "Start session",
+    "community_task_source_pending": "From the community",
+    "community_task_source_done": "Share your experience",
+    "community_task_source_checking": "Checking source",
+    "community_task_source_unavailable": "Source unavailable",
+    "community_completion_message": "You completed a step. Would you like to share how it went with the community?",
+    "community_completion_cta": "Share my experience",
+    "community_completion_dismiss": "Dismiss sharing suggestion",
     "go_today": "Today",
     "calendar_aria": "Pick date",
     "prev_week_aria": "Previous week",
@@ -1383,9 +1400,9 @@
       "application_start": "Application opens",
       "application_end": "Application closes",
       "exam_date": "Exam day",
-      "next_step_today": "Next step \u00b7 today",
-      "next_step_tomorrow": "Next step \u00b7 tomorrow",
-      "next_step_days": "Next step \u00b7 in {days} days",
+      "next_step_today": "Next step · today",
+      "next_step_tomorrow": "Next step · tomorrow",
+      "next_step_days": "Next step · in {days} days",
       "result_date": "Results date"
     }
   },
@@ -1462,7 +1479,22 @@
     "typing": "Coach is typing",
     "show_more": "Show more",
     "show_less": "Show less",
-    "scroll_to_bottom": "Jump to latest messages"
+    "scroll_to_bottom": "Jump to latest messages",
+    "community_source": "From community",
+    "return_to_discussion": "Return to discussion",
+    "source_unavailable": "This discussion is no longer available",
+    "personalization": {
+      "grounded_label": "Using your data",
+      "used_context_label": "Context used in this answer",
+      "limited_label": "Personal context is limited",
+      "why": "Based on what?",
+      "today_plan": "Today's plan: {done}/{total} completed",
+      "recent_sessions": "Last 7 days: {count7d} sessions · {focusMinutes7d} min focused",
+      "subjects": "Recently studied: {subjects}",
+      "mood": "Today's mood: {level}/5",
+      "exam": "Exam you're preparing for: {exam}",
+      "needs_input": "Your coach will ask one clarifying question before choosing an approach that fits you."
+    }
   },
   "countdown": {
     "title": "Time to exam",
@@ -1646,6 +1678,7 @@
       "title": "You're ready!",
       "subtitle": "Your countdown and today's plan are waiting on the dashboard.",
       "countdown_teaser": "Your exam countdown is on the dashboard — from the verified official calendar.",
+      "map_cta": "Mark your goal on the map →",
       "go_panel": "Go to dashboard"
     }
   },
@@ -1664,8 +1697,64 @@
     "goal_placeholder": "e.g. Become a teacher, Law at Marmara…",
     "city_label": "Target city (optional)",
     "city_placeholder": "e.g. Istanbul",
-    "motivation_label": "Why? (optional)",
-    "motivation_placeholder": "The reason that drives you…",
+    "map": {
+      "card_empty": "Pick a city on the map.",
+      "no_universities": "No universities listed for this city.",
+      "university_count": "{count} universities",
+      "attribution": "Map data © OpenStreetMap contributors (ODbL)",
+      "back_to_city": "← Back",
+      "search_placeholder": "Search a university, city or program…",
+      "searching": "Searching…",
+      "search_empty": "No results.",
+      "group_cities": "Cities",
+      "group_universities": "Universities",
+      "group_programs": "Programs",
+      "program_count": "{count} programs",
+      "loading_programs": "Loading programs…",
+      "open_hint": "Click for details",
+      "quota": "{year} quota {count}",
+      "min_score": "{year} cutoff {score}",
+      "no_placement": "No placement",
+      "program_source": "Source: {source} · {year}",
+      "zoom_in": "Zoom in",
+      "zoom_out": "Zoom out",
+      "zoom_reset": "Show whole map",
+      "kind_label": "Type",
+      "founded_label": "Founded",
+      "kind": {
+        "STATE": "State university",
+        "FOUNDATION": "Foundation university",
+        "FOUNDATION_VOCATIONAL": "Foundation vocational school"
+      },
+      "region": {
+        "MARMARA": "Marmara",
+        "EGE": "Aegean",
+        "AKDENIZ": "Mediterranean",
+        "IC_ANADOLU": "Central Anatolia",
+        "KARADENIZ": "Black Sea",
+        "DOGU_ANADOLU": "Eastern Anatolia",
+        "GUNEYDOGU_ANADOLU": "Southeastern Anatolia"
+      },
+      "set_target": "Set as my target",
+      "target_selected": "Your target ✓",
+      "clear_target": "Clear university target"
+    },
+    "career": {
+      "label": "Puhu's field",
+      "none": "Not decided yet",
+      "group": {
+        "SAGLIK": "Health",
+        "MUHENDISLIK": "Engineering",
+        "YAZILIM": "Software & IT",
+        "HUKUK_KAMU": "Law & Public Service",
+        "EGITIM": "Education",
+        "ISLETME": "Business & Economics",
+        "SOSYAL_ILETISIM": "Social & Media",
+        "SANAT_TASARIM": "Art & Design",
+        "FEN": "Science & Nature",
+        "MIMARLIK": "Architecture"
+      }
+    },
     "save": "Save",
     "saving": "Saving…",
     "saved": "Saved",

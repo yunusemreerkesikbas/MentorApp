@@ -6,6 +6,7 @@ import {
   FORUM_ATTACHMENT_MIMES,
   FORUM_MAX_ATTACHMENTS,
   FORUM_REACTION_EMOJIS,
+  ForumCoachIntent,
   ModerationTargetType,
   ReportReason,
   ReportStatus,
@@ -171,6 +172,7 @@ export const adminForumTagCreateSchema = z.object({
   nameEn: z.string().trim().min(2).max(80),
   examType: z.string().trim().max(32).nullable().optional(),
   isActive: z.boolean().default(true),
+  coachIntent: z.nativeEnum(ForumCoachIntent).nullable().optional(),
 });
 export type AdminForumTagCreate = z.infer<typeof adminForumTagCreateSchema>;
 

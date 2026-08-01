@@ -1,5 +1,11 @@
 /** AI coach domain constants (W3): system prompt (§4 guardrails) + cost model + request limits. */
-import type { GhostComparisonDto, MockExamDto } from "@mentor/types";
+import {
+  CoachPersonalizationMode,
+  type CoachPersonalizationDto,
+  type ForumCoachIntent,
+  type GhostComparisonDto,
+  type MockExamDto,
+} from "@mentor/types";
 import {
   promptLanguageInstruction,
   type PromptLocale,
@@ -71,11 +77,42 @@ export interface CoachContext {
   todayPlan: { total: number; done: number } | null;
 }
 
+export function buildCoachPersonalization(
+  ctx: CoachContext,
+): CoachPersonalizationDto {
+  const moodLevel = ctx.moodLevel ?? null;
+  const recentSessions =
+    ctx.recentSessions &&
+    (ctx.recentSessions.count7d > 0 || ctx.recentSessions.focusMinutes7d > 0)
+      ? ctx.recentSessions
+      : null;
+  const todayPlan = ctx.todayPlan && ctx.todayPlan.total > 0 ? ctx.todayPlan : null;
+  const grounded = moodLevel !== null || recentSessions !== null || todayPlan !== null;
+  return {
+    mode: grounded
+      ? CoachPersonalizationMode.GROUNDED
+      : CoachPersonalizationMode.NEEDS_INPUT,
+    examType: ctx.examType,
+    moodLevel,
+    recentSessions,
+    todayPlan,
+    usedSignals: [],
+  };
+}
+
 /** A retrieved, verified article used to ground the answer (RAG, §1). */
 export interface CoachSource {
   title: string;
   sourceUrl: string;
   snippet: string;
+}
+
+/** Curated structural metadata only; forum text and identities can never fit this shape. */
+export interface CommunityCoachPromptContext {
+  intent: ForumCoachIntent;
+  zoneType: "CHAT" | "QA";
+  tagSlug: string;
+  tagName: string;
 }
 
 /** 1..5 mood → short Turkish label for grounding/reflection prompts (mirrors coaching MoodLevel). */
@@ -154,7 +191,9 @@ export function buildSystemPrompt(
   sources: CoachSource[] = [],
   mockExam?: MockExamDto,
   locale: PromptLocale = "tr",
+  community?: CommunityCoachPromptContext,
 ): string {
+  const personalization = buildCoachPersonalization(ctx);
   const lines = [
     ctx.examType ? `Sınav türü: ${ctx.examType}` : "Sınav türü: belirtilmemiş",
   ];
@@ -163,10 +202,29 @@ export function buildSystemPrompt(
       `Bugünkü ruh hali: ${MOOD_LABEL[ctx.moodLevel] ?? "orta"} (${ctx.moodLevel}/5)`,
     );
   }
-  const planLine = formatTodayPlanLine(ctx.todayPlan);
+  const planLine = formatTodayPlanLine(personalization.todayPlan);
   if (planLine) lines.push(planLine);
-  const sessionsLine = formatRecentSessionsLine(ctx.recentSessions);
+  const sessionsLine = formatRecentSessionsLine(personalization.recentSessions);
   if (sessionsLine) lines.push(sessionsLine);
+  if (personalization.mode === CoachPersonalizationMode.GROUNDED) {
+    lines.push(
+      "Kişiselleştirme talimatı: Kullanıcının isteği çalışma koçluğuyla ilgiliyse en az bir somut BAĞLAM sinyalini doğal bir cümlede kullan; tek uygulanabilir öneri seç ve neden bu öğrenciye uygun olduğunu açıkla. Genel yöntem menüsü sıralama.",
+      "Yanıt protokolü: yanıtın ilk satırında seçtiğin TEK sinyali yalnızca şu marker'lardan biriyle yaz: <<PERSONALIZATION:RECENT_SESSIONS>>, <<PERSONALIZATION:TODAY_PLAN>> veya <<PERSONALIZATION:MOOD>>. Seçtiğin sinyal BAĞLAM'da gerçekten bulunmalı. Bağlam soruyla ilgili değilse <<PERSONALIZATION:NONE>> yaz. Marker'dan sonraki görünür metinde sayısal sinyali tekrar etme; sistem marker'ı doğal bir kanıt cümlesine dönüştürecek.",
+    );
+  } else {
+    lines.push(
+      "Kişiselleştirme talimatı: Uygulanabilir çalışma bağlamı yok. kişiselleştirilmiş gibi davranma; genel öneri listesi vermeden önce ihtiyacı ayıran tek kısa teşhis sorusu sor.",
+      "Yanıt protokolü: Yanıtın ilk satırına <<PERSONALIZATION:NONE>> yaz. Bu marker kullanıcıya gösterilmeyecek.",
+    );
+  }
+  if (community) {
+    lines.push(
+      "Topluluk köprüsü (yalnız yapısal/kürasyonlu bağlam):",
+      `Niyet: ${community.intent}; oda türü: ${community.zoneType}; etiket: ${community.tagSlug} (${community.tagName}).`,
+      "Tartışma içeriği sana verilmedi. Tartışmada ne söylendiğini tahmin etme; tartışmaya veya diğer kullanıcılara görüş atfetme.",
+      "Yalnız öğrencinin bu sohbette kendi yazdığı mesajdan hareketle kişisel çalışma koçluğu yap ve en fazla bir uygulanabilir adım öner.",
+    );
+  }
   if (mockExam) {
     const takenAt = mockExam.takenAt
       .slice(0, 10)

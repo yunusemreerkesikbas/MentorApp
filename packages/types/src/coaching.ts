@@ -6,11 +6,30 @@
  * All values are server-computed and ready to display: the countdown days come from the
  * verified content calendar (guardrail §4 #1), the streak from daily activity, and every
  * user-facing line is backend-localized (no AI on these surfaces — §4 #5).
- */
+*/
+
+import type { ForumCoachIntent } from "./forum.js";
 
 export type PlanTaskStatus = "PENDING" | "DONE";
 export type StudySessionStatus = "IN_PROGRESS" | "COMPLETED" | "ABANDONED";
 export type SessionPresetId = "25_5" | "50_10" | "custom";
+
+export const PlanTaskOriginType = {
+  COMMUNITY_COACH: "COMMUNITY_COACH",
+} as const;
+export type PlanTaskOriginType =
+  (typeof PlanTaskOriginType)[keyof typeof PlanTaskOriginType];
+
+/** Structural provenance for a user-confirmed task created from a community-origin coach chat. */
+export interface CommunityCoachPlanTaskOriginDto {
+  type: typeof PlanTaskOriginType.COMMUNITY_COACH;
+  conversationId: string;
+  threadId: string;
+  intent: ForumCoachIntent;
+  zoneType: "CHAT" | "QA";
+}
+
+export type PlanTaskOriginDto = CommunityCoachPlanTaskOriginDto;
 
 /** Projection of a `plan_tasks` row. */
 export interface PlanTaskDto {
@@ -27,6 +46,8 @@ export interface PlanTaskDto {
   endTime: string | null;
   /** Free-text note shown in the calendar event preview. */
   description: string | null;
+  /** Nullable additive provenance; legacy and manually-created tasks have no origin. */
+  origin: PlanTaskOriginDto | null;
 }
 
 export type CoachPlanAdaptationSource = "PLAN" | "MOOD" | "SESSION";
@@ -329,13 +350,43 @@ export interface TodayPanelResponse {
 }
 
 /**
- * Vision/goal board ("hayal/hedef panosu") — one text-based goal anchor per user. `null` when the
- * user hasn't set a goal yet. `aiNote` is the cached premium AI motivation line (premium-only;
- * null for free / not yet generated).
+ * Career field the user is aiming for — drives the mascot variant on the goal screen. Ten broad
+ * fields, NOT individual professions: there are thousands of job titles and one illustration per
+ * title is not a thing anyone can draw. A fixed union, never a DB table — these values do not
+ * change at runtime, so a reference table + seed + repository would be pure ceremony.
+ * Labels live in the web i18n messages, like the exam options.
+ */
+export const CAREER_GROUPS = [
+  "SAGLIK",
+  "MUHENDISLIK",
+  "YAZILIM",
+  "HUKUK_KAMU",
+  "EGITIM",
+  "ISLETME",
+  "SOSYAL_ILETISIM",
+  "SANAT_TASARIM",
+  "FEN",
+  "MIMARLIK",
+] as const;
+export type CareerGroup = (typeof CAREER_GROUPS)[number];
+
+/**
+ * Vision/goal board ("hayal/hedef panosu") — one goal anchor per user. `null` when the user hasn't
+ * set a goal yet. `aiNote` is the cached premium AI motivation line (premium-only; null for free /
+ * not yet generated).
+ *
+ * City is stored twice on purpose: `targetCityCode` is the normalized map selection, `targetCity`
+ * the legacy/free-text fallback for rows written before the map existed and for goals the province
+ * list can't express (abroad, "not listed"). Read rule: prefer the code, fall back to the text.
  */
 export interface VisionDto {
   goalTitle: string;
+  /** Plate code "01".."81" — set when the user picked a province on the map. */
+  targetCityCode: string | null;
   targetCity: string | null;
+  /** Always accompanied by `targetCityCode`; the server rejects a mismatched pair. */
+  targetUniversityId: string | null;
+  careerGroup: CareerGroup | null;
   motivation: string | null;
   aiNote: string | null;
   createdAt: string;

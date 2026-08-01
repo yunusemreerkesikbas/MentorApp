@@ -13,6 +13,7 @@ import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
+  check,
   date,
   index,
   integer,
@@ -410,6 +411,133 @@ export const infoArticles = pgTable(
   ],
 );
 
+/**
+ * Turkish provinces — global geo reference for the goal map. Keyed by plate code ("01".."81"):
+ * it is stable, already zero-padded, and every Turkish user recognises it, so no surrogate id.
+ * No trust metadata: province names and plate codes are not the kind of fact that goes stale.
+ */
+export const cities = pgTable("cities", {
+  code: varchar("code", { length: 2 }).primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  /** GeoRegion — one of the seven geographic regions; groups the accessible province list. */
+  region: text("region").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Universities per province — editorial reference data imported once a year from the YÖK/ÖSYM
+ * listing, never scraped at runtime. Trust metadata is mandatory (§1): the UI shows a
+ * "source + last verified" badge.
+ *
+ * Deliberately stops here (roadmap §1 "B layer"): no programs/departments, no base scores,
+ * no quotas. Adding those means an annual import obligation and accuracy liability the product
+ * decided against — a `programs` table can hang off this one later if that decision changes.
+ */
+export const universities = pgTable(
+  "universities",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    cityCode: varchar("city_code", { length: 2 })
+      .notNull()
+      .references(() => cities.code, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    /** UniversityKind — STATE | FOUNDATION | FOUNDATION_VOCATIONAL. */
+    kind: text("kind").notNull(),
+    /** Null when the source didn't state it — never inferred. */
+    foundedYear: integer("founded_year"),
+    websiteUrl: text("website_url"),
+    /**
+     * Main-campus coordinates, geocoded once from OpenStreetMap and stored — never looked up at
+     * runtime. Nullable on purpose: a university without a fix is listed but gets no map pin,
+     * rather than being dropped or pinned somewhere invented.
+     */
+    latitude: numeric("latitude", { precision: 9, scale: 6 }),
+    longitude: numeric("longitude", { precision: 9, scale: 6 }),
+    source: text("source").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("universities_slug_unique_idx").on(t.slug),
+    index("universities_city_idx").on(t.cityCode),
+  ],
+);
+
+/**
+ * Higher-education programs from the ÖSYM guide — what you can actually study where.
+ *
+ * Keyed by the 9-digit ÖSYM program code: it is unique across both guides, stable year to year,
+ * and printed on every official document, so there is no reason to mint a surrogate id.
+ *
+ * `quota` and `guideYear` describe THIS year's offering. Last year's cutoff lives in
+ * `program_scores` — the same guide row carries both, and conflating them would report a 2026
+ * quota as if it were 2025 data.
+ */
+export const programs = pgTable(
+  "programs",
+  {
+    code: varchar("code", { length: 9 }).primaryKey(),
+    universityId: uuid("university_id")
+      .notNull()
+      .references(() => universities.id, { onDelete: "cascade" }),
+    /** Denormalized faculty/school name straight from the guide — no faculty table earns its keep. */
+    faculty: text("faculty").notNull(),
+    /** Verbatim, including the (İngilizce) / (Burslu) / (KKTC Uyruklu) suffixes that make it distinct. */
+    name: text("name").notNull(),
+    /** LISANS | ONLISANS */
+    level: text("level").notNull(),
+    durationYears: smallint("duration_years").notNull(),
+    /** SAY | EA | SÖZ | DİL (lisans) · TYT (önlisans) */
+    scoreType: text("score_type").notNull(),
+    /** Seats offered in `guideYear`. Always stated in the guide. */
+    quota: integer("quota").notNull(),
+    guideYear: smallint("guide_year").notNull(),
+    source: text("source").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("programs_university_idx").on(t.universityId),
+    index("programs_level_idx").on(t.level),
+  ],
+);
+
+/**
+ * Placement results per program per year — one row per (program, year).
+ *
+ * A separate table on purpose: the product wants to show 2026 next to 2025 once it lands, and a
+ * bare `min_score` column on `programs` would have to be overwritten each year, destroying exactly
+ * the comparison it is meant to support.
+ *
+ * Both figures are nullable: ~13% of programs have no cutoff (new programs, unfilled quotas, the
+ * KKTC rows), where the guide prints "----" rather than a number. Null means "not placed", never zero.
+ */
+export const programScores = pgTable(
+  "program_scores",
+  {
+    programCode: varchar("program_code", { length: 9 })
+      .notNull()
+      .references(() => programs.code, { onDelete: "cascade" }),
+    scoreYear: smallint("score_year").notNull(),
+    minScore: numeric("min_score", { precision: 9, scale: 5 }),
+    successRank: integer("success_rank"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("program_scores_program_year_idx").on(t.programCode, t.scoreYear),
+  ],
+);
+
 /** Global subject taxonomy (e.g. Tarih, Matematik). */
 export const subjects = pgTable(
   "subjects",
@@ -530,6 +658,14 @@ export const planTasks = pgTable(
     endTime: time("end_time"),
     /** Optional free-text note shown in the calendar event preview. */
     description: text("description"),
+    /** Structural cross-module provenance; no FK to AI/forum tables. */
+    originType: text("origin_type"),
+    originRefId: uuid("origin_ref_id"),
+    originMeta: jsonb("origin_meta").$type<{
+      threadId: string;
+      intent: "PLAN" | "NEXT_STEP" | "STUDY_METHOD" | "STRATEGY";
+      zoneType: "CHAT" | "QA";
+    }>(),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -538,7 +674,17 @@ export const planTasks = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("plan_tasks_user_date_idx").on(t.userId, t.taskDate)],
+  (t) => [
+    index("plan_tasks_user_date_idx").on(t.userId, t.taskDate),
+    check(
+      "plan_tasks_origin_consistency_chk",
+      sql`(
+        (${t.originType} is null and ${t.originRefId} is null and ${t.originMeta} is null)
+        or
+        (${t.originType} = 'COMMUNITY_COACH' and ${t.originRefId} is not null and ${t.originMeta} is not null)
+      )`,
+    ),
+  ],
 );
 
 /** A Pomodoro/focus session (start → complete/abandon). */
@@ -718,7 +864,23 @@ export const visionBoards = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     goalTitle: text("goal_title").notNull(),
+    /**
+     * Normalized map selection. `target_city` (below) stays as the free-text fallback for rows
+     * written before the map existed and for goals the province list can't express (abroad,
+     * "not listed"). Read rule: prefer the code, fall back to the text.
+     * ON DELETE SET NULL on both FKs — dropping a reference row must never delete a user's goal.
+     */
+    targetCityCode: varchar("target_city_code", { length: 2 }).references(
+      () => cities.code,
+      { onDelete: "set null" },
+    ),
     targetCity: text("target_city"),
+    targetUniversityId: uuid("target_university_id").references(
+      () => universities.id,
+      { onDelete: "set null" },
+    ),
+    /** CareerGroup — one of ten broad fields; drives the mascot variant. */
+    careerGroup: text("career_group"),
     motivation: text("motivation"),
     aiNote: text("ai_note"),
     aiModel: text("ai_model"),
@@ -1256,6 +1418,15 @@ export const coachConversations = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
+    /** Structural provenance only; never stores forum content or third-party identity data. */
+    originType: text("origin_type"),
+    /** Cross-module reference by value; intentionally no forum FK. */
+    originRefId: uuid("origin_ref_id"),
+    /** { intent, tagSlug }; no thread title/body/comment/profile data. */
+    originMeta: jsonb("origin_meta").$type<{
+      intent: "PLAN" | "NEXT_STEP" | "STUDY_METHOD" | "STRATEGY";
+      tagSlug: string;
+    }>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1299,6 +1470,8 @@ export const coachMessages = pgTable(
     feedback: smallint("feedback"),
     /** Persisted coach plan-task suggestion ({title, subject}) on a COACH row; null otherwise. */
     suggestedTask: jsonb("suggested_task"),
+    /** PII-minimal context snapshot available when a COACH reply was generated. */
+    personalizationContext: jsonb("personalization_context"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1410,6 +1583,10 @@ export const forumTags = pgTable(
     nameTr: text("name_tr").notNull(),
     nameEn: text("name_en").notNull(),
     examType: text("exam_type"),
+    /** ForumCoachIntent; null keeps the tag outside the community→coach pilot. */
+    coachIntent: text("coach_intent").$type<
+      "PLAN" | "NEXT_STEP" | "STUDY_METHOD" | "STRATEGY"
+    >(),
     isActive: boolean("is_active").notNull().default(true),
     createdBy: uuid("created_by").references(() => users.id),
     updatedBy: uuid("updated_by").references(() => users.id),
