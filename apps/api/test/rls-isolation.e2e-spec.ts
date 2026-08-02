@@ -118,9 +118,19 @@ describe("RLS isolation (e2e)", () => {
          returning id`,
         [id],
       );
-      await admin.query(
-        "insert into coach_messages (user_id, conversation_id, role, content) values ($1, $2, 'USER', 'rls probe')",
+      const message = await admin.query(
+        "insert into coach_messages (user_id, conversation_id, role, content) values ($1, $2, 'USER', 'rls probe') returning id",
         [id, conv.rows[0].id],
+      );
+      await admin.query(
+        "insert into coach_profiles (user_id, calibration_status, memory_consent) values ($1, 'COMPLETED', 'GRANTED')",
+        [id],
+      );
+      await admin.query(
+        `insert into coach_memory_facts
+           (user_id, key, value, source, source_message_id)
+         values ($1, 'STUDY_TIME', 'EVENING', 'CHAT', $2)`,
+        [id, message.rows[0].id],
       );
       await admin.query(
         "insert into ledger_entries (user_id, unit, amount, reason) values ($1, 'XP', 1, 'quest.rls-probe')",
@@ -176,6 +186,8 @@ describe("RLS isolation (e2e)", () => {
     "plan_tasks",
     "coach_conversations",
     "coach_messages",
+    "coach_profiles",
+    "coach_memory_facts",
     "ledger_entries",
   ];
 

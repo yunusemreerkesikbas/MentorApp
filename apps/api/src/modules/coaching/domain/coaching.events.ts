@@ -9,6 +9,7 @@ export const CoachingEventTopic = {
   FIRST_SESSION:     "coaching.first-session",
   SESSION_COMPLETED: "coaching.session-completed",
   PLAN_COMPLETED:    "coaching.plan-completed",
+  PLAN_TASK_COMPLETED: "coaching.plan-task-completed",
 } as const;
 
 export class StreakBroken {
@@ -37,4 +38,11 @@ export class StudySessionCompleted {
 
 export class DailyPlanCompleted {
   constructor(readonly userId: string, readonly tasksCount: number) {}
+}
+
+export class PlanTaskCompleted {
+  constructor(
+    readonly userId: string,
+    readonly taskId: string,
+  ) {}
 }

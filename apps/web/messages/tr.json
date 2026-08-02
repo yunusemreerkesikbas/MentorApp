@@ -1494,6 +1494,76 @@
       "mood": "Bugünkü ruh hâli: {level}/5",
       "exam": "Hazırlandığın sınav: {exam}",
       "needs_input": "Koçun sana uygun bir öneri seçebilmesi için önce tek bir netleştirici soru soracak."
+    },
+    "actions": {
+      "approve": "Onayla",
+      "dismiss": "Şimdi değil",
+      "accepted": "Aksiyon onaylandı.",
+      "completed": "Bu adımı tamamladın.",
+      "error": "Aksiyon şu anda uygulanamadı. Tekrar deneyebilirsin."
+    },
+    "calibration": {
+      "intro": "Sana nasıl eşlik etmemi istersin? Bu üç tercih sohbetlerimizin ritmini belirler.",
+      "support_question": "Zorlandığında nasıl destek olayım?",
+      "support_emotional": "Önce sakinleştir",
+      "support_balanced": "Dengele",
+      "support_action": "Aksiyona geçir",
+      "directness_question": "Ne kadar doğrudan olayım?",
+      "directness_gentle": "Yumuşak",
+      "directness_balanced": "Dengeli",
+      "directness_direct": "Net",
+      "memory_question": "Bu tercihleri yeni sohbetlerde de hatırlayayım mı?",
+      "memory_hint": "Yalnız izinli çalışma tercihleri saklanır. Mesajların veya özel notların hafızaya kopyalanmaz; dilediğinde görebilir, düzeltebilir veya silebilirsin.",
+      "memory_yes": "Evet, hatırla",
+      "memory_no": "Hayır",
+      "save": "Tercihlerimi kaydet",
+      "skip": "Şimdilik atla",
+      "error": "Tercihlerin şu anda kaydedilemedi. Lütfen tekrar dene."
+    },
+    "memory": {
+      "trigger": "Koçun bildikleri",
+      "title": "Koçun bildikleri",
+      "description": "Sohbetler arasında kullanmama izin verdiğin yapılandırılmış çalışma tercihleri. Ham mesajların burada saklanmaz.",
+      "close": "Kapat",
+      "loading": "Koç hafızası yükleniyor",
+      "remembering": "Sohbetler arası hatırlama",
+      "on": "Yeni açık tercihleri öğrenebilir ve bunları sonraki sohbetlerde kullanabilir.",
+      "off": "Yeni bilgi öğrenmez ve mevcut bilgileri cevaplarda kullanmaz.",
+      "pause": "Hatırlamayı durdur",
+      "resume": "Hatırlamayı aç",
+      "empty": "Koçun henüz kaydettiği bir çalışma tercihi yok.",
+      "edit": "Düzelt",
+      "forget": "Unut",
+      "save": "Kaydet",
+      "clear_all": "Tümünü temizle",
+      "clear_confirm": "Evet, tümünü sil",
+      "error": "Koç hafızası şu anda güncellenemedi.",
+      "keys": {
+        "STUDY_TIME": "Tercih edilen çalışma zamanı",
+        "RESPONSE_PREFERENCE": "Cevap tercihi",
+        "CHALLENGE_CATEGORY": "Şu anki zorluk alanı",
+        "PRIORITY_SUBJECT": "Öncelikli ders"
+      },
+      "values": {
+        "STUDY_TIME": {
+          "MORNING": "Sabah",
+          "AFTERNOON": "Öğleden sonra",
+          "EVENING": "Akşam",
+          "LATE_NIGHT": "Gece"
+        },
+        "RESPONSE_PREFERENCE": {
+          "SHORT": "Kısa ve öz",
+          "BALANCED": "Dengeli",
+          "DETAILED": "Ayrıntılı"
+        },
+        "CHALLENGE_CATEGORY": {
+          "FOCUS": "Odaklanma",
+          "PROCRASTINATION": "Erteleme",
+          "ANXIETY": "Kaygı",
+          "CONSISTENCY": "Düzenli devam etme",
+          "PLANNING": "Planlama"
+        }
+      }
     }
   },
   "countdown": {
@@ -1693,6 +1763,7 @@
     "premium_nudge": "Premium koç, hedefine özel bir not bırakır →",
     "page_title": "Hedef Panosu",
     "page_subtitle": "Hedefini, şehrini ve nedenini yaz; koçun ve panelin seni buna göre motive etsin.",
+    "browse_open": "Hedef ve aramayı aç",
     "goal_label": "Hedefin",
     "goal_placeholder": "Örn. Öğretmen olmak, Marmara Hukuk…",
     "city_label": "Hedef şehir (isteğe bağlı)",
@@ -1702,8 +1773,11 @@
       "no_universities": "Bu şehirde kayıtlı üniversite yok.",
       "university_count": "{count} üniversite",
       "attribution": "Harita verisi © OpenStreetMap katkıcıları (ODbL)",
-      "back_to_city": "← Geri",
+      "osym_source": "Üniversite ve program bilgileri ÖSYM'den alınır ve buradan doğrulanır. Ayrıntı için <link>ÖSYM YKS kılavuzuna</link> bakabilirsin.",
+      "back_to_city": "Şehir listesine dön",
       "search_placeholder": "Üniversite, şehir veya bölüm ara…",
+      "filter_programs_placeholder": "Bu üniversitede bölüm ara…",
+      "filter_programs_empty": "Bu filtreye uyan bölüm yok.",
       "searching": "Aranıyor…",
       "search_empty": "Sonuç bulunamadı.",
       "group_cities": "Şehirler",
@@ -1712,6 +1786,7 @@
       "program_count": "{count} program",
       "loading_programs": "Bölümler yükleniyor…",
       "open_hint": "Ayrıntı için tıkla",
+      "open_university_aria": "{name} ayrıntılarını aç",
       "quota": "{year} kontenjan {count}",
       "min_score": "{year} taban {score}",
       "no_placement": "Yerleşme yok",

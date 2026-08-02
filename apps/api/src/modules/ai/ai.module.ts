@@ -29,6 +29,11 @@ import { ArticleEmbeddingListener } from "./application/article-embedding.listen
 import { AiJobRegistrar } from "./application/ai-job.registrar";
 import { EmbedArticleHandler } from "./application/handlers/embed-article.handler";
 import { RefreshMemoryHandler } from "./application/handlers/refresh-memory.handler";
+import { CleanupCoachMemoryHandler } from "./application/handlers/cleanup-coach-memory.handler";
+import { CoachProfileService } from "./application/coach-profile.service";
+import { CoachActionService } from "./application/coach-action.service";
+import { CoachActionLifecycleListener } from "./application/coach-action-lifecycle.listener";
+import { CoachTurnPlanner } from "./domain/coach-turn-planner";
 import { AiCostStatsService } from "./application/ai-cost-stats.service";
 import { AiBudgetGuard } from "./application/ai-budget.guard";
 import { AiErasureService } from "./application/ai-erasure.service";
@@ -37,6 +42,8 @@ import { AiUsageRepository } from "./infrastructure/ai-usage.repository";
 import { CoachMessageRepository } from "./infrastructure/coach-message.repository";
 import { CoachConversationRepository } from "./infrastructure/coach-conversation.repository";
 import { CoachMemoryRepository } from "./infrastructure/coach-memory.repository";
+import { CoachProfileRepository } from "./infrastructure/coach-profile.repository";
+import { CoachMemoryFactRepository } from "./infrastructure/coach-memory-fact.repository";
 import { WeeklyReviewCacheRepository } from "./infrastructure/weekly-review-cache.repository";
 import { DailyGreetingRepository } from "./infrastructure/daily-greeting.repository";
 import { FakeLlmAdapter } from "./infrastructure/adapters/fake-llm.adapter";
@@ -54,6 +61,8 @@ import { AiWeeklyReviewController } from "./presentation/ai-weekly-review.contro
 import { AiMockExamPhotoController } from "./presentation/ai-mock-exam-photo.controller";
 import { AiPhotoController } from "./presentation/ai-photo.controller";
 import { AdminEmbeddingController } from "./presentation/admin-embedding.controller";
+import { AiInternalController } from "./presentation/ai-internal.controller";
+import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
 
 /**
  * W3 — AI bounded context: coach chat, RAG, photo→subject categorize (premium vision).
@@ -77,6 +86,7 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     AiPhotoController,
     AiMockExamPhotoController,
     AdminEmbeddingController,
+    AiInternalController,
   ],
   providers: [
     ChatService,
@@ -102,6 +112,12 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     CoachMessageRepository,
     CoachConversationRepository,
     CoachMemoryRepository,
+    CoachProfileRepository,
+    CoachMemoryFactRepository,
+    CoachProfileService,
+    CoachActionService,
+    CoachActionLifecycleListener,
+    CoachTurnPlanner,
     WeeklyReviewCacheRepository,
     DailyGreetingRepository,
     EmbeddingService,
@@ -109,6 +125,8 @@ import { AdminEmbeddingController } from "./presentation/admin-embedding.control
     AiJobRegistrar,
     EmbedArticleHandler,
     RefreshMemoryHandler,
+    CleanupCoachMemoryHandler,
+    CronSecretGuard,
     FakeLlmAdapter,
     OpenAiLlmAdapter,
     GeminiLlmAdapter,

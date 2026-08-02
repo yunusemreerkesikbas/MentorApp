@@ -37,7 +37,10 @@ domain logic + persistence and exposes setters the AI module calls.
 - **Repositories take the RLS-scoped `tx`** (opened by the service via `withUserContext`) so
   multi-table writes (task/session ↔ `daily_activity`) are atomic. Don't open a second tx inside a repo.
 - **AI seam (workstreams §2):** AI never writes coaching tables — it calls `MoodService.
-setTodayAiReflection`, `MockExamService.setLatestGhostNarration`, `VisionService.setAiNote`.
+setTodayAiReflection`, `MockExamService.setLatestGhostNarration`, `VisionService.setAiNote` and the
+explicitly approved `PlanService.createFromAiCoach` / `SessionService.startFromAiCoach` public seams.
+`CoachEvidenceService` is the only Mentor V2 read boundary and returns aggregates without raw task,
+mood/session note, identity or forum text.
 
 ## Tutorials / Guides
 
@@ -141,6 +144,64 @@ pnpm --filter @mentor/api test
 | `GET/POST /v1/coaching/vision`                                   | Vision board (idempotent upsert, single row per user)                         |
 
 ## Geliştirmeler (timeline)
+
+- **Kişiselleştirilmiş Mentor V2 — coaching kanıtı ve aksiyon döngüsü (2026-08-02)** — Public
+  `CoachEvidenceService`; bugünkü plan/odak, 7–28 günlük ritim, streak, kaba mood yönü, deneme odağı,
+  normalize hedef ve AI görev sonuçlarını taksonomi-doğrulanmış, PII-minimal özetlere çevirir. Ham
+  görev başlığı ve serbest notlar sınırı geçmez. Kullanıcının onayladığı görev `AI_COACH` origin'i ve
+  koç mesajı referansıyla idempotent oluşturulur; bekleyen AI görevi için seans yine W2 üzerinden
+  başlar. Nitelikli seans görevi tamamlayınca `PlanTaskCompleted` event'i AI aksiyonunu `COMPLETED`
+  yapar. Süreli zorluk/öncelik hafızası kullanıcı tarafından düzenlense de yeni TTL alır; dolmuş
+  öğeler bakım işini beklerken bile prompt ve yönetim listesinden çıkar. Kanıt metinleri enum ve
+  boş durumları backend'de lokalize eder; eksik hedefi `0` gibi göstermemelidir. Migration:
+  `0068`–`0070`. Kullanım: koçtaki aksiyonu onayla; görev normal plan/seans
+  yaşam döngüsüne girer. Gotcha: onaysız hiçbir plan/seans yazımı yoktur. İlgili:
+  `coach-evidence.service.ts`, `plan.service.ts`, `session.service.ts`, `coaching.events.ts`.
+
+- **Vision board map polish + motion (2026-08-01)** — Harita paleti chip-morundan gri
+  tonlara alındı; seçili il accent mavi, hover bir ton koyu gri (seçili hover biraz
+  koyulaşır). Pin'ler klasik kırmızı location marker (`--map-pin`) ve daha büyük
+  (`PIN_SCALE` 0.95). Şehir seçiminde Framer Motion ile `viewBox` zoom-in (~480ms,
+  ease-out); wheel/pan anlık kalır. Sidebar/form stagger enter; back yalnızca mobilde
+  ikon (`ArrowLeft`). Aynı ile tekrar tıklayınca unselect + zoom-out; zoom'dayken
+  komşu ile tıklanabilir (pan yalnız 6px eşiği sonrası — erken `setPointerCapture`
+  click'i yutuyordu). **Gotcha:** `.mentor-tr-map path` ili stillerini pin
+  `<path>`'lerine de uyguluyordu — gri fill kırmızıyı eziyordu; seçici
+  `.mentor-tr-map > path` olmalı. Hover kartı pin→card geçişinde 140ms grace +
+  kart üzerinde `pointer-events` ile kapanıyor. Sol panel viewport yüksekliğine
+  kilitli (`h-[100dvh-header]` + `overflow-y-auto`); uzun program listesi
+  haritayı uzatmıyor.   Program satırları chip-mor arka plansız; dropdown gibi
+  `hover:bg-black/4`, ad + sakin meta (puan türü · kontenjan · taban). Tek arama
+  alanı: üniversite açıkken yerel bölüm filtresi (ikinci bar yok); geri yalnız
+  `ArrowLeft` ikon.   Hover kart tıklanınca pin ile aynı sidebar detayı açılır;
+  üniversite adının altında şehir (harita üzeri il etiketi değil). Sidebar
+  arama satırı hover → haritada `data-preview` il highlight; tıklayınca şehir
+  active + pin spotlight hover card + kampüs paneli.   Üniversite arama hit'inde
+  `cityCode`/`cityName` API'den gelir (`UniversitySearchHitDto`) — FE geo grafiğini
+  tersine aramaz (mobil hazırlığı). Geo arama aktifken harita pin'leri sonuçlara
+  göre filtrelenir: şehir hit → o ildeki tüm kampüsler; üniversite/bölüm hit →
+  yalnızca ilgili kampüsler; arama bitince tüm pin'ler geri gelir.   YKS haritasında
+  sağ altta ÖSYM kaynak notu + YKS kılavuz linki (OSM attribution solda kalır).
+  Pin tıklanınca hover card spotlight/`active` kalır (arama focus ile aynı).
+  Mobil pin ölçeği `1.35` (desktop `0.95`); zoom’da `unit^0.35` ile büyür
+  (eskiden `unit^1` → ekranda sabit / yakınlaşınca cılız kalıyordu).
+  Pin konumu her zaman gerçek koordinat — spiderfy/offset yok (kaymış pin yanlış şehir
+  gibi okunuyordu).
+  **Mobil layout:** harita birincil; hedef formu + `MapBrowser` sol
+  `HistorySideDrawer` içinde (kapalı başlar, PanelLeft / pin / şehir seçince açılır).
+  Form `headerActions`'ta (scroll dışında) — `MenuSelect` overflow ile kırpılmasın diye.
+  Desktop `lg+` rail + üst form aynı. Related:
+  `globals.css` (`.mentor-tr-map`), `use-map-viewport.ts`, `map-canvas.tsx`,
+  `university-hover-card.tsx`, `map-browser.tsx`, `search-pin-filter.ts`,
+  `vision-board-shell.tsx`, [content.md](./content.md) (geo search).
+
+- **Vision board form + shared PopoverMenu (2026-08-01)** — Hedef formunda native
+  `<select>` yerine Plan görev menüsüyle aynı floating panel (`PopoverMenu` /
+  `MenuSelect`): yumuşak kart gölgesi, radius token, selected state. Hedef input
+  max ~18rem (artık flex ile tüm satırı kaplamıyor); Kaydet alanı input yüksekliğine
+  hizalı (`min-h-11`) ve `busy` spinner kullanıyor. `PlanTaskMenu` ve `ThreadMenu`
+  aynı shared panele geçti. Related: `popover-menu.tsx`, `menu-select.tsx`,
+  `vision-board-shell.tsx`, `plan-task-menu.tsx`, `thread-menu.tsx`.
 
 - **Topluluk → Koç → Plan → Topluluk dönüş döngüsü (2026-08-01)** — `plan_tasks`, forward-only
   `0065` ile nullable `origin_type/ref_id/meta` alanlarını aldı. `COMMUNITY_COACH` görevleri

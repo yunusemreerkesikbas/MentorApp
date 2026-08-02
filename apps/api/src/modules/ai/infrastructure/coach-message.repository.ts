@@ -1,8 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import {
+  CoachActionStatus,
   CoachMessageRole,
+  type CoachActionDto,
   type CoachMessageDto,
   type CoachPersonalizationDto,
   type CountdownDto,
@@ -16,6 +18,15 @@ import { coachConversations, coachMessages } from "../../../database/schema";
 
 type SourceChip = { title: string; slug: string; url: string };
 type SuggestedTask = { title: string; subject: string | null };
+export type CoachRequestContext = {
+  mockExamId?: string;
+  articleSlug?: string;
+};
+export interface PersistedCoachExchange {
+  conversationId: string;
+  userMessageId: string;
+  coachMessageId: string;
+}
 
 export type CoachConversationTarget =
   | { kind: "existing"; conversationId: string }
@@ -26,6 +37,9 @@ export interface FeedbackCounts {
   up: number;
   down: number;
   rated: number;
+}
+export interface FeedbackBreakdownItem extends FeedbackCounts {
+  value: string;
 }
 
 /** A 👎-rated coach reply with the question that prompted it (admin report). */
@@ -44,6 +58,7 @@ function toDto(row: CoachMessageRow): CoachMessageDto {
   const countdown = (row.officialCountdown as CountdownDto | null) ?? null;
   const personalization =
     (row.personalizationContext as CoachPersonalizationDto | null) ?? null;
+  const action = (row.action as CoachActionDto | null) ?? null;
   return {
     id: row.id,
     role: row.role as CoachMessageRole,
@@ -53,6 +68,10 @@ function toDto(row: CoachMessageRow): CoachMessageDto {
     ...(task ? { suggestedTask: task } : {}),
     ...(countdown ? { officialCountdown: countdown } : {}),
     ...(personalization ? { personalization } : {}),
+    ...(action ? { action } : {}),
+    ...(action && row.actionStatus
+      ? { actionStatus: row.actionStatus as CoachActionStatus }
+      : {}),
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -78,8 +97,10 @@ export class CoachMessageRepository {
       suggestedTask?: SuggestedTask;
       officialCountdown?: CountdownDto;
       personalization?: CoachPersonalizationDto;
+      action?: CoachActionDto;
     },
-  ): Promise<string> {
+    requestContext?: CoachRequestContext,
+  ): Promise<PersistedCoachExchange> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const conversationId =
         target.kind === "existing"
@@ -99,13 +120,14 @@ export class CoachMessageRepository {
 
       const userCreatedAt = new Date();
       const coachCreatedAt = new Date(userCreatedAt.getTime() + 1);
-      await tx.insert(coachMessages).values([
+      const inserted = await tx.insert(coachMessages).values([
         {
           userId,
           conversationId,
           role: CoachMessageRole.USER,
           content: userContent,
           createdAt: userCreatedAt,
+          requestContext: requestContext ?? null,
         },
         {
           userId,
@@ -118,8 +140,10 @@ export class CoachMessageRepository {
           suggestedTask: coach.suggestedTask ?? null,
           officialCountdown: coach.officialCountdown ?? null,
           personalizationContext: coach.personalization ?? null,
+          action: coach.action ?? null,
+          actionStatus: coach.action ? CoachActionStatus.PROPOSED : null,
         },
-      ]);
+      ]).returning({ id: coachMessages.id, role: coachMessages.role });
       const updated = await tx
         .update(coachConversations)
         .set({ lastMessageAt: coachCreatedAt })
@@ -133,7 +157,16 @@ export class CoachMessageRepository {
       if (updated.length === 0) {
         throw new Error("Coach conversation disappeared during persistence");
       }
-      return conversationId;
+      const userMessageId = inserted.find(
+        (row) => row.role === CoachMessageRole.USER,
+      )?.id;
+      const coachMessageId = inserted.find(
+        (row) => row.role === CoachMessageRole.COACH,
+      )?.id;
+      if (!userMessageId || !coachMessageId) {
+        throw new Error("Coach exchange message ids were not returned");
+      }
+      return { conversationId, userMessageId, coachMessageId };
     });
   }
 
@@ -151,6 +184,7 @@ export class CoachMessageRepository {
       suggestedTask?: SuggestedTask;
       officialCountdown?: CountdownDto;
       personalization?: CoachPersonalizationDto;
+      action?: CoachActionDto;
     },
   ): Promise<boolean> {
     return withUserContext(this.db, { userId }, async (tx) => {
@@ -164,6 +198,9 @@ export class CoachMessageRepository {
           feedback: null,
           officialCountdown: coach.officialCountdown ?? null,
           personalizationContext: coach.personalization ?? null,
+          action: coach.action ?? null,
+          actionStatus: coach.action ? CoachActionStatus.PROPOSED : null,
+          actionResultRefId: null,
         })
         .where(
           and(
@@ -174,6 +211,125 @@ export class CoachMessageRepository {
         )
         .returning({ id: coachMessages.id });
       return updated.length > 0;
+    });
+  }
+
+  async getOwnedCoachAction(
+    userId: string,
+    messageId: string,
+  ): Promise<{
+    action: CoachActionDto;
+    status: CoachActionStatus;
+    resultRefId: string | null;
+  } | null> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const [row] = await tx
+        .select({
+          action: coachMessages.action,
+          status: coachMessages.actionStatus,
+          resultRefId: coachMessages.actionResultRefId,
+        })
+        .from(coachMessages)
+        .where(
+          and(
+            eq(coachMessages.id, messageId),
+            eq(coachMessages.userId, userId),
+            eq(coachMessages.role, CoachMessageRole.COACH),
+          ),
+        )
+        .limit(1);
+      if (!row?.action || !row.status) return null;
+      return {
+        action: row.action as CoachActionDto,
+        status: row.status as CoachActionStatus,
+        resultRefId: row.resultRefId ?? null,
+      };
+    });
+  }
+
+  async transitionAction(
+    userId: string,
+    messageId: string,
+    from: CoachActionStatus,
+    to: CoachActionStatus,
+    resultRefId?: string | null,
+  ): Promise<boolean> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const rows = await tx
+        .update(coachMessages)
+        .set({
+          actionStatus: to,
+          ...(resultRefId !== undefined ? { actionResultRefId: resultRefId } : {}),
+        })
+        .where(
+          and(
+            eq(coachMessages.id, messageId),
+            eq(coachMessages.userId, userId),
+            eq(coachMessages.role, CoachMessageRole.COACH),
+            eq(coachMessages.actionStatus, from),
+          ),
+        )
+        .returning({ id: coachMessages.id });
+      return rows.length > 0;
+    });
+  }
+
+  async setActionResult(
+    userId: string,
+    messageId: string,
+    resultRefId: string,
+  ): Promise<boolean> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const rows = await tx
+        .update(coachMessages)
+        .set({ actionResultRefId: resultRefId })
+        .where(
+          and(
+            eq(coachMessages.id, messageId),
+            eq(coachMessages.userId, userId),
+            eq(coachMessages.actionStatus, CoachActionStatus.ACCEPTED),
+          ),
+        )
+        .returning({ id: coachMessages.id });
+      return rows.length > 0;
+    });
+  }
+
+  async completeActionForResult(
+    userId: string,
+    resultRefId: string,
+  ): Promise<void> {
+    await withUserContext(this.db, { userId }, async (tx) => {
+      await tx
+        .update(coachMessages)
+        .set({ actionStatus: CoachActionStatus.COMPLETED })
+        .where(
+          and(
+            eq(coachMessages.userId, userId),
+            eq(coachMessages.actionStatus, CoachActionStatus.ACCEPTED),
+            eq(coachMessages.actionResultRefId, resultRefId),
+          ),
+        );
+    });
+  }
+
+  async getRequestContext(
+    userId: string,
+    messageId: string,
+  ): Promise<CoachRequestContext | null> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const [row] = await tx
+        .select({ requestContext: coachMessages.requestContext })
+        .from(coachMessages)
+        .where(
+          and(
+            eq(coachMessages.id, messageId),
+            eq(coachMessages.userId, userId),
+            eq(coachMessages.role, CoachMessageRole.USER),
+          ),
+        )
+        .limit(1);
+      return (row?.requestContext as CoachRequestContext | null) ?? null;
     });
   }
 
@@ -258,6 +414,41 @@ export class CoachMessageRepository {
         .from(coachMessages)
         .where(eq(coachMessages.role, CoachMessageRole.COACH));
       return rows[0] ?? { up: 0, down: 0, rated: 0 };
+    });
+  }
+
+  async feedbackBreakdowns(): Promise<
+    Record<
+      "strategyVersion" | "intent" | "tone" | "actionStatus",
+      FeedbackBreakdownItem[]
+    >
+  > {
+    return withServiceContext(this.db, async (tx) => {
+      const load = async (value: SQL<string>): Promise<FeedbackBreakdownItem[]> =>
+        tx
+          .select({
+            value,
+            up: sql<number>`count(*) filter (where ${coachMessages.feedback} = 1)::int`,
+            down: sql<number>`count(*) filter (where ${coachMessages.feedback} = -1)::int`,
+            rated: sql<number>`count(*)::int`,
+          })
+          .from(coachMessages)
+          .where(
+            and(
+              eq(coachMessages.role, CoachMessageRole.COACH),
+              isNotNull(coachMessages.feedback),
+            ),
+          )
+          .groupBy(value)
+          .orderBy(sql`count(*) desc`);
+
+      const [strategyVersion, intent, tone, actionStatus] = await Promise.all([
+        load(sql<string>`coalesce(${coachMessages.personalizationContext}->>'strategyVersion', 'legacy')`),
+        load(sql<string>`coalesce(${coachMessages.personalizationContext}->>'intent', 'UNKNOWN')`),
+        load(sql<string>`coalesce(${coachMessages.personalizationContext}->>'tone', 'UNKNOWN')`),
+        load(sql<string>`coalesce(${coachMessages.actionStatus}, 'NONE')`),
+      ]);
+      return { strategyVersion, intent, tone, actionStatus };
     });
   }
 

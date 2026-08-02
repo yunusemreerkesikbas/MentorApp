@@ -60,6 +60,11 @@ export interface ProgramSearchRow {
   cityName: string;
 }
 
+/** University search row with city context for out-of-band search hits. */
+export type UniversitySearchRow = UniversityRow & {
+  cityName: string;
+};
+
 /**
  * Data access for the `cities` / `universities` geo reference tables.
  *
@@ -114,6 +119,18 @@ export class GeoRepository {
 
   async listCities(db: Database | DatabaseTx): Promise<CityRow[]> {
     return db.select().from(cities).orderBy(asc(cities.code));
+  }
+
+  async findCityByCode(
+    db: Database | DatabaseTx,
+    code: string,
+  ): Promise<CityRow | undefined> {
+    const rows = await db
+      .select()
+      .from(cities)
+      .where(eq(cities.code, code))
+      .limit(1);
+    return rows[0];
   }
 
   async listUniversities(db: Database | DatabaseTx): Promise<UniversityRow[]> {
@@ -183,10 +200,29 @@ export class GeoRepository {
     db: Database | DatabaseTx,
     needle: string,
     limit: number,
-  ): Promise<UniversityRow[]> {
+  ): Promise<UniversitySearchRow[]> {
+    // Join city so search hits carry province context — clients must not reverse-lookup the
+    // full geo graph (mobile will not always have it loaded).
     return db
-      .select()
+      .select({
+        id: universities.id,
+        cityCode: universities.cityCode,
+        name: universities.name,
+        slug: universities.slug,
+        kind: universities.kind,
+        foundedYear: universities.foundedYear,
+        websiteUrl: universities.websiteUrl,
+        latitude: universities.latitude,
+        longitude: universities.longitude,
+        source: universities.source,
+        sourceUrl: universities.sourceUrl,
+        verifiedAt: universities.verifiedAt,
+        createdAt: universities.createdAt,
+        updatedAt: universities.updatedAt,
+        cityName: cities.name,
+      })
       .from(universities)
+      .innerJoin(cities, eq(cities.code, universities.cityCode))
       .where(sql`${foldTurkish(universities.name)} LIKE ${`%${needle}%`}`)
       .orderBy(asc(universities.name))
       .limit(limit);

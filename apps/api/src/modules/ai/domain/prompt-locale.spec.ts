@@ -45,7 +45,17 @@ describe("AI prompt locale", () => {
         },
         "en",
       ),
-      buildVisionNotePrompt(context, "Become a teacher", null, null, "en"),
+      buildVisionNotePrompt(
+        context,
+        {
+          goalTitle: "Become a teacher",
+          cityName: null,
+          universityName: null,
+          careerLabel: null,
+          motivation: null,
+        },
+        "en",
+      ),
       buildPlanAdaptationPrompt({
         source: "PLAN",
         todayIso: "2026-07-22",

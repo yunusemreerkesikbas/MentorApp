@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
 import { planTasks } from "../../../database/schema";
 
@@ -221,5 +221,79 @@ export class PlanTaskRepository {
       .from(planTasks)
       .where(and(eq(planTasks.userId, userId), eq(planTasks.status, "DONE")));
     return rows[0]?.count ?? 0;
+  }
+
+  async createFromAiCoach(
+    tx: DatabaseTx,
+    data: NewPlanTask & { originRefId: string },
+  ): Promise<PlanTaskRow> {
+    const [created] = await tx
+      .insert(planTasks)
+      .values(data)
+      .onConflictDoNothing()
+      .returning();
+    if (created) return created;
+    const [existing] = await tx
+      .select()
+      .from(planTasks)
+      .where(
+        and(
+          eq(planTasks.userId, data.userId),
+          eq(planTasks.originType, "AI_COACH"),
+          eq(planTasks.originRefId, data.originRefId),
+        ),
+      )
+      .limit(1);
+    if (!existing) throw new Error("AI coach task idempotency conflict");
+    return existing;
+  }
+
+  /** Outcome-only AI task evidence. Titles and descriptions are intentionally not selected. */
+  async aiCoachOutcomeSummary(
+    tx: DatabaseTx,
+    userId: string,
+  ): Promise<{
+    accepted: number;
+    completed: number;
+    lastStatus: "PENDING" | "DONE" | null;
+    observedAt: Date | null;
+    pendingTaskId: string | null;
+  }> {
+    const where = and(
+      eq(planTasks.userId, userId),
+      eq(planTasks.originType, "AI_COACH"),
+    );
+    const [aggregate, latest, pending] = await Promise.all([
+      tx
+        .select({
+          accepted: sql<number>`count(*)::int`,
+          completed: sql<number>`count(*) filter (where ${planTasks.status} = 'DONE')::int`,
+        })
+        .from(planTasks)
+        .where(where),
+      tx
+        .select({ status: planTasks.status, updatedAt: planTasks.updatedAt })
+        .from(planTasks)
+        .where(where)
+        .orderBy(desc(planTasks.updatedAt), desc(planTasks.id))
+        .limit(1),
+      tx
+        .select({ id: planTasks.id })
+        .from(planTasks)
+        .where(and(where, eq(planTasks.status, "PENDING")))
+        .orderBy(desc(planTasks.updatedAt), desc(planTasks.id))
+        .limit(1),
+    ]);
+    const last = latest[0];
+    return {
+      accepted: aggregate[0]?.accepted ?? 0,
+      completed: aggregate[0]?.completed ?? 0,
+      lastStatus:
+        last?.status === "DONE" || last?.status === "PENDING"
+          ? last.status
+          : null,
+      observedAt: last?.updatedAt ?? null,
+      pendingTaskId: pending[0]?.id ?? null,
+    };
   }
 }

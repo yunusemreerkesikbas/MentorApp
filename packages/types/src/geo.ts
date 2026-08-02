@@ -80,6 +80,15 @@ export interface UniversityProgramsDto {
   source: GeoSourceDto | null;
 }
 
+/**
+ * A university hit carries its city — search results are shown out of context (web + mobile).
+ * Nested `CityDto.universities` stay as plain `UniversityDto` (parent supplies the city).
+ */
+export interface UniversitySearchHitDto extends UniversityDto {
+  cityCode: string;
+  cityName: string;
+}
+
 /** A program hit carries its university and city — search results are shown out of context. */
 export interface ProgramSearchHitDto {
   code: string;
@@ -95,7 +104,7 @@ export interface ProgramSearchHitDto {
 /** One search box over three different things; each list is capped independently. */
 export interface GeoSearchResultDto {
   cities: Array<Pick<CityDto, "code" | "name" | "slug" | "region">>;
-  universities: UniversityDto[];
+  universities: UniversitySearchHitDto[];
   programs: ProgramSearchHitDto[];
 }
 

@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { CoachAccessMode } from "@mentor/types";
+import type { CoachActionStatus } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { useRouter } from "@/i18n/navigation";
 import { getForumCoachBridge } from "@/lib/forum";
@@ -230,7 +231,10 @@ export function CoachChatShell() {
         personalization,
         followUps: nextFollowUps,
         conversationId,
+        coachMessageId: persistedCoachMessageId,
         model,
+        action,
+        actionStatus,
       } = await streamCoachMessage(
         trimmed,
         clientMessageId,
@@ -251,24 +255,42 @@ export function CoachChatShell() {
       // Finalize with the authoritative reply + source chips (covers zero-delta fallbacks too).
       if (received === "") {
         appendMessage({
-          id: coachMessageId,
+          id: persistedCoachMessageId ?? coachMessageId,
           role: "coach",
           text: reply,
           sources,
           suggestedTask,
           officialCountdown,
           personalization,
+          action,
+          actionStatus,
         });
       } else {
         updateMessage(coachMessageId, {
+          id: persistedCoachMessageId ?? coachMessageId,
           text: reply,
           sources,
           suggestedTask,
           officialCountdown,
           personalization,
+          action,
+          actionStatus,
         });
       }
       setFollowUps(nextFollowUps ?? []);
+      if (
+        personalization?.strategyVersion &&
+        personalization.intent &&
+        personalization.tone
+      ) {
+        trackCoachEvent("coach_v2_reply", {
+          intent: personalization.intent,
+          tone: personalization.tone,
+          evidence_types: (personalization.usedEvidence ?? []).map(
+            (evidence) => evidence.type,
+          ),
+        });
+      }
 
       if (
         pendingContextMockExamId ||
@@ -347,6 +369,8 @@ export function CoachChatShell() {
       suggestedTask: undefined,
       officialCountdown: undefined,
       personalization: undefined,
+      action: undefined,
+      actionStatus: undefined,
       feedback: null,
     });
     let received = "";
@@ -359,6 +383,8 @@ export function CoachChatShell() {
         personalization,
         followUps: nextFollowUps,
         model,
+        action,
+        actionStatus,
       } = await streamRegenerate(activeConversationId, (delta) => {
         received += delta;
         updateMessage(lastCoach.id, { text: received });
@@ -369,6 +395,8 @@ export function CoachChatShell() {
         suggestedTask,
         officialCountdown,
         personalization,
+        action,
+        actionStatus,
         feedback: null,
       });
       setFollowUps(nextFollowUps ?? []);
@@ -382,6 +410,8 @@ export function CoachChatShell() {
         suggestedTask: lastCoach.suggestedTask,
         officialCountdown: lastCoach.officialCountdown,
         personalization: lastCoach.personalization,
+        action: lastCoach.action,
+        actionStatus: lastCoach.actionStatus,
         feedback: lastCoach.feedback ?? null,
       });
       setChatError(
@@ -400,11 +430,24 @@ export function CoachChatShell() {
   }
 
   function rateMessage(id: string, value: 1 | -1 | null) {
-    const previous = messages.find((m) => m.id === id)?.feedback ?? null;
+    const message = messages.find((m) => m.id === id);
+    const previous = message?.feedback ?? null;
     updateMessage(id, { feedback: value }); // optimistic
+    if (message?.personalization?.intent && message.personalization.tone) {
+      trackCoachEvent("coach_v2_feedback", {
+        intent: message.personalization.intent,
+        tone: message.personalization.tone,
+        feedback: value === 1 ? "UP" : value === -1 ? "DOWN" : "CLEARED",
+      });
+    }
     void setCoachMessageFeedback(id, value).catch(() => {
       updateMessage(id, { feedback: previous }); // revert on failure
     });
+  }
+
+  function updateActionStatus(id: string, status: CoachActionStatus) {
+    updateMessage(id, { actionStatus: status });
+    void refreshConversations();
   }
 
   const historyBlocked =
@@ -567,6 +610,7 @@ export function CoachChatShell() {
             onRegenerate={
               activeConversationId ? () => void regenerate() : undefined
             }
+            onActionStatusChange={updateActionStatus}
             streamingMessageId={streamingMessageId}
             conversationOrigin={conversationOrigin}
             communitySource={communitySource}

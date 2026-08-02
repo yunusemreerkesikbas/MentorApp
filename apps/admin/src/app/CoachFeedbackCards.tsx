@@ -64,6 +64,29 @@ export default function CoachFeedbackCards() {
                 <Kpi icon={<FiMessageSquare size={20} />} value={fmtInt(f.rated)} label="Toplam oylanan" />
             </div>
 
+            <div className="card stretch stretch-full mb-3">
+                <div className="card-header"><h6 className="mb-0">Mentor V2 kırılımları</h6></div>
+                <div className="card-body">
+                    <div className="row g-3">
+                        {(["strategyVersion", "intent", "tone", "actionStatus"] as const).map((dimension) => (
+                            <div key={dimension} className="col-xl-3 col-md-6">
+                                <div className="fs-12 text-uppercase text-muted mb-2">{dimension}</div>
+                                {f.breakdowns[dimension].length === 0 ? (
+                                    <div className="text-muted fs-12">Kayıt yok</div>
+                                ) : f.breakdowns[dimension].map((item) => (
+                                    <div key={item.value} className="d-flex justify-content-between gap-2 fs-12 py-1 border-bottom">
+                                        <span className="text-dark text-truncate">{item.value}</span>
+                                        <span className="text-muted text-nowrap">
+                                            {item.satisfactionRate === null ? "—" : `${Math.round(item.satisfactionRate * 100)}%`} · {item.rated}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
             <div className="card stretch stretch-full">
                 <div className="card-header"><h6 className="mb-0"><FiThumbsDown className="me-2" />Son 👎 yanıtlar</h6></div>
                 <div className="card-body p-0">

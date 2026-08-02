@@ -74,6 +74,57 @@ export const CoachPersonalizationSignal = {
 export type CoachPersonalizationSignal =
   (typeof CoachPersonalizationSignal)[keyof typeof CoachPersonalizationSignal];
 
+export const CoachIntent = {
+  CHECK_IN: "CHECK_IN",
+  PLAN: "PLAN",
+  FOCUS: "FOCUS",
+  PROCRASTINATION: "PROCRASTINATION",
+  ANXIETY: "ANXIETY",
+  PERFORMANCE: "PERFORMANCE",
+  GOAL: "GOAL",
+  PROGRESS: "PROGRESS",
+  GENERAL: "GENERAL",
+} as const;
+export type CoachIntent = (typeof CoachIntent)[keyof typeof CoachIntent];
+
+export const CoachTone = {
+  GENTLE: "GENTLE",
+  WARM: "WARM",
+  DIRECT: "DIRECT",
+  CELEBRATORY: "CELEBRATORY",
+} as const;
+export type CoachTone = (typeof CoachTone)[keyof typeof CoachTone];
+
+export const CoachTurnMode = {
+  ANSWER: "ANSWER",
+  CLARIFY: "CLARIFY",
+  CALIBRATE: "CALIBRATE",
+  SAFETY: "SAFETY",
+} as const;
+export type CoachTurnMode =
+  (typeof CoachTurnMode)[keyof typeof CoachTurnMode];
+
+export const CoachEvidenceType = {
+  TODAY_FOCUS: "TODAY_FOCUS",
+  TODAY_PLAN: "TODAY_PLAN",
+  RECENT_RHYTHM: "RECENT_RHYTHM",
+  LONG_TERM_RHYTHM: "LONG_TERM_RHYTHM",
+  STREAK: "STREAK",
+  MOOD: "MOOD",
+  MOCK_PERFORMANCE: "MOCK_PERFORMANCE",
+  GOAL: "GOAL",
+  ACTION_OUTCOME: "ACTION_OUTCOME",
+} as const;
+export type CoachEvidenceType =
+  (typeof CoachEvidenceType)[keyof typeof CoachEvidenceType];
+
+/** Backend-localized evidence shown by the transparent “Neye göre?” surface. */
+export interface CoachUsedEvidenceDto {
+  type: CoachEvidenceType;
+  summary: string;
+  observedAt: string;
+}
+
 /** PII-minimal snapshot that was available while one coach reply was generated. */
 export interface CoachPersonalizationDto {
   mode: CoachPersonalizationMode;
@@ -87,6 +138,60 @@ export interface CoachPersonalizationDto {
   todayPlan: { total: number; done: number } | null;
   /** Signals actually surfaced in the visible reply, not merely available to the model. */
   usedSignals?: CoachPersonalizationSignal[];
+  /** Additive Mentor V2 trace; absent on legacy replies. */
+  strategyVersion?: string;
+  intent?: CoachIntent;
+  tone?: CoachTone;
+  usedEvidence?: CoachUsedEvidenceDto[];
+}
+
+export const CoachActionType = {
+  CREATE_PLAN_TASK: "CREATE_PLAN_TASK",
+  OPEN_PLAN_ADAPTATION: "OPEN_PLAN_ADAPTATION",
+  START_PLAN_SESSION: "START_PLAN_SESSION",
+  NAVIGATE: "NAVIGATE",
+} as const;
+export type CoachActionType =
+  (typeof CoachActionType)[keyof typeof CoachActionType];
+
+export const CoachActionStatus = {
+  PROPOSED: "PROPOSED",
+  ACCEPTED: "ACCEPTED",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED",
+} as const;
+export type CoachActionStatus =
+  (typeof CoachActionStatus)[keyof typeof CoachActionStatus];
+
+export type CoachActionDto =
+  | {
+      type: typeof CoachActionType.CREATE_PLAN_TASK;
+      label: string;
+      payload: { title: string; subject: string | null; taskDate?: string };
+    }
+  | {
+      type: typeof CoachActionType.OPEN_PLAN_ADAPTATION;
+      label: string;
+      payload: {
+        source: "PLAN" | "MOOD" | "SESSION";
+        sessionId?: string;
+      };
+    }
+  | {
+      type: typeof CoachActionType.START_PLAN_SESSION;
+      label: string;
+      payload: { planTaskId: string };
+    }
+  | {
+      type: typeof CoachActionType.NAVIGATE;
+      label: string;
+      payload: { destination: "ANALYSIS" | "MOOD" | "GOAL" };
+    };
+
+export interface CoachActionResultDto {
+  action: CoachActionDto;
+  status: CoachActionStatus;
+  resultRefId: string | null;
 }
 
 /** POST /v1/coach/chat response (no coin fields in the chat zone §4 #3). */
@@ -95,6 +200,8 @@ export interface CoachChatReplyDto {
   model: string;
   /** Thread this exchange belongs to — new when the request omitted `conversationId`. */
   conversationId: string;
+  /** Persisted COACH row identity; enables feedback/action without re-fetching history. */
+  coachMessageId?: string;
   sources: { title: string; slug: string; url: string }[];
   /** Authoritative exam-date card; critical facts are never repeated in reply text. */
   officialCountdown?: import("./coaching.js").CountdownDto;
@@ -104,6 +211,8 @@ export interface CoachChatReplyDto {
   followUps?: string[];
   /** Context snapshot available to the coach for this reply; persisted for transparent reloads. */
   personalization?: CoachPersonalizationDto;
+  action?: CoachActionDto;
+  actionStatus?: CoachActionStatus;
 }
 
 /**
@@ -139,6 +248,76 @@ export interface CoachMessageDto {
   officialCountdown?: import("./coaching.js").CountdownDto;
   /** Context snapshot available when this COACH row was generated. */
   personalization?: CoachPersonalizationDto;
+  action?: CoachActionDto;
+  actionStatus?: CoachActionStatus;
+}
+
+export const CoachCalibrationStatus = {
+  NOT_STARTED: "NOT_STARTED",
+  IN_PROGRESS: "IN_PROGRESS",
+  COMPLETED: "COMPLETED",
+  SKIPPED: "SKIPPED",
+} as const;
+export type CoachCalibrationStatus =
+  (typeof CoachCalibrationStatus)[keyof typeof CoachCalibrationStatus];
+
+export const CoachMemoryConsent = {
+  PENDING: "PENDING",
+  GRANTED: "GRANTED",
+  DECLINED: "DECLINED",
+} as const;
+export type CoachMemoryConsent =
+  (typeof CoachMemoryConsent)[keyof typeof CoachMemoryConsent];
+
+export const CoachSupportPreference = {
+  EMOTIONAL: "EMOTIONAL",
+  BALANCED: "BALANCED",
+  ACTION: "ACTION",
+} as const;
+export type CoachSupportPreference =
+  (typeof CoachSupportPreference)[keyof typeof CoachSupportPreference];
+
+export const CoachDirectnessPreference = {
+  GENTLE: "GENTLE",
+  BALANCED: "BALANCED",
+  DIRECT: "DIRECT",
+} as const;
+export type CoachDirectnessPreference =
+  (typeof CoachDirectnessPreference)[keyof typeof CoachDirectnessPreference];
+
+export interface CoachProfileDto {
+  calibrationStatus: CoachCalibrationStatus;
+  memoryConsent: CoachMemoryConsent;
+  supportPreference: CoachSupportPreference | null;
+  directnessPreference: CoachDirectnessPreference | null;
+  updatedAt: string;
+}
+
+export const CoachMemoryFactKey = {
+  STUDY_TIME: "STUDY_TIME",
+  RESPONSE_PREFERENCE: "RESPONSE_PREFERENCE",
+  CHALLENGE_CATEGORY: "CHALLENGE_CATEGORY",
+  PRIORITY_SUBJECT: "PRIORITY_SUBJECT",
+} as const;
+export type CoachMemoryFactKey =
+  (typeof CoachMemoryFactKey)[keyof typeof CoachMemoryFactKey];
+
+export const CoachMemoryFactSource = {
+  CHAT: "CHAT",
+  USER_EDIT: "USER_EDIT",
+} as const;
+export type CoachMemoryFactSource =
+  (typeof CoachMemoryFactSource)[keyof typeof CoachMemoryFactSource];
+
+export interface CoachMemoryFactDto {
+  id: string;
+  key: CoachMemoryFactKey;
+  /** Structured normalized value; never a stored quote or free-form confession. */
+  value: string;
+  source: CoachMemoryFactSource;
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** GET /v1/coach/memory — legacy saved summary; automatic generation is disabled. */
@@ -173,6 +352,16 @@ export interface AdminCoachFeedbackDto {
     reply: string;
     createdAt: string;
   }[];
+  breakdowns: Record<
+    "strategyVersion" | "intent" | "tone" | "actionStatus",
+    {
+      value: string;
+      up: number;
+      down: number;
+      rated: number;
+      satisfactionRate: number | null;
+    }[]
+  >;
   generatedAt: string;
 }
 

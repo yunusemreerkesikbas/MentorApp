@@ -12,22 +12,62 @@ export interface SuggestedTask {
 
 const MARKER_START = "<<TASK";
 /** Marker at the END of the reply (the prompt demands it there). */
-const MARKER_END_RE = /\s*<<TASK(\{[\s\S]*?\})>>\s*$/;
+const MARKER_END_RE = /\s*<<TASK(\{(?:(?!>>)[\s\S])*?\})>>\s*$/;
 /** Any complete marker, anywhere (defensive cleanup for a misbehaving model). */
 const MARKER_ANY_RE = /<<TASK\{[\s\S]*?\}>>/g;
 
 const FOLLOWUP_START = "<<FOLLOWUP";
 /** Follow-up marker at the END (after TASK is stripped — order contract: FOLLOWUP then TASK). */
-const FOLLOWUP_END_RE = /\s*<<FOLLOWUP(\[[\s\S]*?\])>>\s*$/;
+const FOLLOWUP_END_RE = /\s*<<FOLLOWUP(\[(?:(?!>>)[\s\S])*?\])>>\s*$/;
 const FOLLOWUP_ANY_RE = /<<FOLLOWUP\[[\s\S]*?\]>>/g;
 
+const MEMORY_START = "<<MEMORY";
+const MEMORY_END_RE = /\s*<<MEMORY(\{(?:(?!>>)[\s\S])*?\})>>\s*$/;
+const MEMORY_ANY_RE = /<<MEMORY\{[\s\S]*?\}>>/g;
+
 /** Every in-band marker prefix the streaming filter must hold back. */
-const MARKER_STARTS = [MARKER_START, FOLLOWUP_START];
+const MARKER_STARTS = [MARKER_START, FOLLOWUP_START, MEMORY_START];
 
 const TITLE_MAX = 200;
 const SUBJECT_MAX = 80;
 const FOLLOWUP_MAX_ITEMS = 3;
 const FOLLOWUP_ITEM_MAX = 120;
+const MEMORY_VALUE_MAX = 80;
+const MEMORY_QUOTE_MAX = 240;
+
+export interface MemoryCandidate {
+  key: string;
+  value: string;
+  sourceQuote: string;
+}
+
+export function extractMemoryCandidate(text: string): {
+  text: string;
+  memoryCandidate: MemoryCandidate | null;
+} {
+  const match = MEMORY_END_RE.exec(text);
+  if (!match) return { text, memoryCandidate: null };
+  const clean = text.slice(0, match.index).trimEnd();
+  try {
+    const parsed = JSON.parse(match[1]!) as Record<string, unknown>;
+    const key = typeof parsed.key === "string" ? parsed.key.trim() : "";
+    const value =
+      typeof parsed.value === "string"
+        ? parsed.value.trim().slice(0, MEMORY_VALUE_MAX)
+        : "";
+    const sourceQuote =
+      typeof parsed.sourceQuote === "string"
+        ? parsed.sourceQuote.trim().slice(0, MEMORY_QUOTE_MAX)
+        : "";
+    return {
+      text: clean,
+      memoryCandidate:
+        key && value && sourceQuote ? { key, value, sourceQuote } : null,
+    };
+  } catch {
+    return { text: clean, memoryCandidate: null };
+  }
+}
 
 /**
  * Parse + strip the trailing task marker. Invalid/broken JSON is silently ignored — the marker is
@@ -91,10 +131,12 @@ export function extractReplyMarkers(text: string): {
   text: string;
   task: SuggestedTask | null;
   followUps: string[];
+  memoryCandidate?: MemoryCandidate;
 } {
   let current = text;
   let task: SuggestedTask | null = null;
   let followUps: string[] = [];
+  let memoryCandidate: MemoryCandidate | null = null;
 
   for (;;) {
     const taskPass = extractSuggestedTask(current);
@@ -109,16 +151,30 @@ export function extractReplyMarkers(text: string): {
       if (followUps.length === 0) followUps = followUpPass.followUps;
       continue;
     }
+    const memoryPass = extractMemoryCandidate(current);
+    if (memoryPass.text !== current || memoryPass.memoryCandidate) {
+      current = memoryPass.text;
+      memoryCandidate = memoryCandidate ?? memoryPass.memoryCandidate;
+      continue;
+    }
     // Last-resort hygiene: a MALFORMED marker (e.g. `<<FOLLOWUP[...]]` missing its `>>`, seen
     // live) matches no end-anchored regex — never show marker debris to the user. Complete
     // markers anywhere are removed; from a dangling marker start onward the text is cut.
     if (firstMarkerIndex(current) !== -1) {
-      current = current.replace(MARKER_ANY_RE, "").replace(FOLLOWUP_ANY_RE, "");
+      current = current
+        .replace(MARKER_ANY_RE, "")
+        .replace(FOLLOWUP_ANY_RE, "")
+        .replace(MEMORY_ANY_RE, "");
       const dangling = firstMarkerIndex(current);
       if (dangling !== -1) current = current.slice(0, dangling);
       current = current.trimEnd();
     }
-    return { text: current, task, followUps };
+    return {
+      text: current,
+      task,
+      followUps,
+      ...(memoryCandidate ? { memoryCandidate } : {}),
+    };
   }
 }
 
@@ -179,7 +235,10 @@ export function createTaskMarkerFilter(): {
     },
 
     flush(): string {
-      let out = pending.replace(MARKER_ANY_RE, "").replace(FOLLOWUP_ANY_RE, "");
+      let out = pending
+        .replace(MARKER_ANY_RE, "")
+        .replace(FOLLOWUP_ANY_RE, "")
+        .replace(MEMORY_ANY_RE, "");
       // Truncated marker (stream cut mid-JSON) — drop from the marker start onward.
       const idx = firstMarkerIndex(out);
       if (idx !== -1) out = out.slice(0, idx);

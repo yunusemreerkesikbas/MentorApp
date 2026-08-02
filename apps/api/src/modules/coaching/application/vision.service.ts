@@ -29,6 +29,28 @@ export class VisionService {
     });
   }
 
+  /**
+   * The goal with its reference ids turned into names — what a prompt needs to name the target
+   * instead of quoting a uuid.
+   *
+   * City follows the board's read rule: the map selection wins, and the legacy free-text field is
+   * the fallback for goals written before the map existed (or ones the province list cannot
+   * express). Missing that fallback is exactly how the AI note lost the city: the new UI only ever
+   * writes `targetCityCode`, so anything reading `targetCity` alone now sees null.
+   *
+   * Called only on a cache miss — resolving names on every cached read would be two queries spent
+   * on a string nobody looks at.
+   */
+  async resolveTargetNames(
+    board: VisionDto,
+  ): Promise<{ cityName: string | null; universityName: string | null }> {
+    const { cityName, universityName } = await this.geo.resolveNames(
+      board.targetCityCode,
+      board.targetUniversityId,
+    );
+    return { cityName: cityName ?? board.targetCity, universityName };
+  }
+
   async upsert(userId: string, input: UpsertVisionInput): Promise<VisionDto> {
     const targetCityCode = input.targetCityCode ?? null;
     const targetUniversityId = input.targetUniversityId ?? null;

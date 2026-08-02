@@ -1,7 +1,7 @@
 import type {
   ForumCoachIntent,
   PlanTaskDto,
-  PlanTaskOriginDto,
+  CommunityCoachPlanTaskOriginDto,
   PlanTaskStatus,
 } from "@mentor/types";
 
@@ -147,7 +147,7 @@ export function communityTaskSourceLabelKey(status: PlanTaskStatus) {
 }
 
 /** Locale-safe destination for a community-origin task; no reply text is carried in the URL. */
-export function communityTaskReturnHref(origin: PlanTaskOriginDto) {
+export function communityTaskReturnHref(origin: CommunityCoachPlanTaskOriginDto) {
   return {
     pathname:
       origin.zoneType === "QA"
@@ -160,7 +160,7 @@ export function communityTaskReturnHref(origin: PlanTaskOriginDto) {
 
 /** Pending tasks link back to context; only completed tasks activate the empty share composer. */
 export function communityTaskSourceHref(
-  origin: PlanTaskOriginDto,
+  origin: CommunityCoachPlanTaskOriginDto,
   status: PlanTaskStatus,
 ) {
   if (status === "DONE") return communityTaskReturnHref(origin);
@@ -195,7 +195,9 @@ export function communityCoachPlanHref(
 export function shouldShowCommunityCompletionPrompt(
   previousStatus: PlanTaskStatus,
   updated: Pick<PlanTaskDto, "status" | "origin">,
-): updated is Pick<PlanTaskDto, "status"> & { origin: PlanTaskOriginDto } {
+): updated is Pick<PlanTaskDto, "status"> & {
+  origin: CommunityCoachPlanTaskOriginDto;
+} {
   return (
     previousStatus === "PENDING" &&
     updated.status === "DONE" &&

@@ -965,6 +965,190 @@
         ]
       }
     },
+    "/v1/coach/profile": {
+      "get": {
+        "operationId": "AiChatController_getProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      },
+      "patch": {
+        "operationId": "AiChatController_patchProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoachProfilePatchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/memories": {
+      "get": {
+        "operationId": "AiChatController_listMemories",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      },
+      "delete": {
+        "operationId": "AiChatController_clearMemoryFacts",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/memories/{id}": {
+      "patch": {
+        "operationId": "AiChatController_patchMemory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoachMemoryFactPatchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      },
+      "delete": {
+        "operationId": "AiChatController_deleteMemoryFact",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/v1/coach/messages/{messageId}/action": {
+      "post": {
+        "operationId": "AiChatController_decideAction",
+        "parameters": [
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoachActionDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/coach/memory": {
       "get": {
         "operationId": "AiChatController_getMemory",
@@ -1253,6 +1437,20 @@
         ],
         "tags": [
           "ai"
+        ]
+      }
+    },
+    "/v1/internal/cron/cleanup-coach-memory": {
+      "post": {
+        "operationId": "AiInternalController_cleanupCoachMemory",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "internal"
         ]
       }
     },
@@ -5601,6 +5799,74 @@
       "CoachFeedbackDto": {
         "type": "object",
         "properties": {}
+      },
+      "CoachProfilePatchDto": {
+        "type": "object",
+        "properties": {
+          "calibrationStatus": {
+            "type": "string",
+            "enum": [
+              "NOT_STARTED",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "SKIPPED"
+            ]
+          },
+          "memoryConsent": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "GRANTED",
+              "DECLINED"
+            ]
+          },
+          "supportPreference": {
+            "type": "string",
+            "enum": [
+              "EMOTIONAL",
+              "BALANCED",
+              "ACTION"
+            ],
+            "nullable": true
+          },
+          "directnessPreference": {
+            "type": "string",
+            "enum": [
+              "GENTLE",
+              "BALANCED",
+              "DIRECT"
+            ],
+            "nullable": true
+          }
+        }
+      },
+      "CoachMemoryFactPatchDto": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "value"
+        ]
+      },
+      "CoachActionDecisionDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "ACCEPT",
+              "CANCEL"
+            ]
+          }
+        },
+        "required": [
+          "decision"
+        ]
       },
       "SessionReflectionBodyDto": {
         "type": "object",

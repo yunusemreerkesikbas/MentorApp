@@ -750,34 +750,67 @@ html.mentor-sheet-open {
 }
 
 /* Goal map (TurkeyMap). Province colour is pure CSS — React state drives only the detail card,
-   so moving the mouse across the map never re-renders 81 paths. */
-.mentor-tr-map path {
+   so moving the mouse across the map never re-renders 81 paths.
+   Palette: cool gray provinces (not chip violet); selected = accent; pins = classic location red. */
+.mentor-tr-map {
+  --map-province: color-mix(in srgb, var(--color-secondary) 16%, white);
+  --map-province-hover: color-mix(in srgb, var(--color-secondary) 32%, white);
+  --map-province-selected: var(--color-accent);
+  --map-province-selected-hover: color-mix(in srgb, var(--color-accent) 88%, var(--color-main));
+  /* Classic location-marker red — map-scoped; not the product danger token. */
+  --map-pin: #e53935;
+  --map-pin-active: #c62828;
+}
+/* Direct children only — pin paths live under `.mentor-tr-map-pin` and must keep their red fill. */
+.mentor-tr-map > path {
   cursor: pointer;
-  fill: var(--color-chip);
+  fill: var(--map-province);
   stroke: #fff;
   stroke-width: 0.5;
-  transition: fill 0.15s ease;
+  transition: fill 0.18s ease;
   /* Keeps borders hairline-thin when the viewBox zooms onto a single province, instead of
      ballooning by the magnification factor. */
   vector-effect: non-scaling-stroke;
 }
 /* Neighbouring provinces stay visible as context while one is opened, but recede. */
-.mentor-tr-map path[data-dimmed] {
+.mentor-tr-map > path[data-dimmed] {
   cursor: default;
   opacity: 0.35;
 }
 .mentor-tr-map .mentor-tr-map-pin {
   cursor: pointer;
 }
-.mentor-tr-map path:hover {
-  fill: color-mix(in srgb, var(--color-main) 40%, white);
+.mentor-tr-map .mentor-tr-map-pin path {
+  fill: var(--map-pin);
+  stroke: #fff;
+  stroke-width: 1.4;
+  transition: none;
+  vector-effect: non-scaling-stroke;
 }
-.mentor-tr-map path[data-selected] {
-  fill: var(--color-main);
+.mentor-tr-map .mentor-tr-map-pin[data-active] path {
+  fill: var(--map-pin-active);
 }
-.mentor-tr-map path:focus-visible {
+.mentor-tr-map .mentor-tr-map-pin circle {
+  fill: #fff;
+  pointer-events: none;
+}
+.mentor-tr-map > path:hover {
+  fill: var(--map-province-hover);
+}
+/* Sidebar search hover mirrors province :hover without a pointer on the SVG. */
+.mentor-tr-map > path[data-preview]:not([data-selected]) {
+  fill: var(--map-province-hover);
+}
+.mentor-tr-map > path[data-selected] {
+  fill: var(--map-province-selected);
+}
+.mentor-tr-map > path[data-selected]:hover,
+.mentor-tr-map > path[data-selected][data-preview] {
+  fill: var(--map-province-selected-hover);
+}
+.mentor-tr-map > path:focus-visible {
   outline: none;
-  stroke: var(--color-main);
+  stroke: var(--color-accent);
   stroke-width: 2;
 }
 .mentor-tr-map .mentor-tr-map-label {
@@ -790,7 +823,7 @@ html.mentor-sheet-open {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mentor-tr-map path {
+  .mentor-tr-map > path {
     transition: none;
   }
 }

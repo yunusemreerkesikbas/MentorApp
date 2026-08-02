@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "plan_tasks_ai_coach_origin_idx" ON "plan_tasks" USING btree ("origin_ref_id") WHERE "plan_tasks"."origin_type" = 'AI_COACH';

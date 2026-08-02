@@ -24,6 +24,9 @@ import type {
   CoachConversationMessagesDto,
   Paginated,
   PlanTaskDto,
+  CoachProfileDto,
+  CoachMemoryFactDto,
+  CoachActionResultDto,
 } from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
 import {
@@ -43,9 +46,14 @@ import {
   PlanAdaptationBodyDto,
   PlanDraftBodyDto,
   CommunityCoachPlanTaskDto,
+  CoachProfilePatchDto,
+  CoachMemoryFactPatchDto,
+  CoachActionDecisionDto,
 } from "./ai.dto";
 import { PlanDraftService } from "../application/plan-draft.service";
 import { CommunityCoachPlanTaskService } from "../application/community-coach-plan-task.service";
+import { CoachProfileService } from "../application/coach-profile.service";
+import { CoachActionService } from "../application/coach-action.service";
 
 /**
  * AI coach chat (W3). Premium = flat + rate-limit; free = earned coin spend (economy.enabled).
@@ -61,6 +69,8 @@ export class AiChatController {
     private readonly planDraft: PlanDraftService,
     private readonly planAdaptation: PlanAdaptationService,
     private readonly communityPlanTasks: CommunityCoachPlanTaskService,
+    private readonly profile: CoachProfileService,
+    private readonly actions: CoachActionService,
   ) {}
 
   @Get("access")
@@ -276,6 +286,60 @@ export class AiChatController {
     @Body() dto: CoachFeedbackDto,
   ): Promise<void> {
     return this.chat.setMessageFeedback(user.id, id, dto.feedback);
+  }
+
+  @Get("profile")
+  getProfile(@CurrentUser() user: RequestUser): Promise<CoachProfileDto> {
+    return this.profile.getProfile(user.id);
+  }
+
+  @Patch("profile")
+  patchProfile(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: CoachProfilePatchDto,
+  ): Promise<CoachProfileDto> {
+    return this.profile.patchProfile(user.id, dto);
+  }
+
+  @Get("memories")
+  listMemories(
+    @CurrentUser() user: RequestUser,
+    @Query() query: ListCoachMessagesQueryDto,
+  ): Promise<Paginated<CoachMemoryFactDto>> {
+    return this.profile.listMemories(user.id, query.page, query.pageSize);
+  }
+
+  @Patch("memories/:id")
+  patchMemory(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: CoachMemoryFactPatchDto,
+  ): Promise<CoachMemoryFactDto> {
+    return this.profile.updateMemory(user.id, id, dto);
+  }
+
+  @Delete("memories/:id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteMemoryFact(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<void> {
+    return this.profile.deleteMemory(user.id, id);
+  }
+
+  @Delete("memories")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  clearMemoryFacts(@CurrentUser() user: RequestUser): Promise<void> {
+    return this.profile.clearMemories(user.id);
+  }
+
+  @Post("messages/:messageId/action")
+  decideAction(
+    @CurrentUser() user: RequestUser,
+    @Param("messageId", ParseUUIDPipe) messageId: string,
+    @Body() dto: CoachActionDecisionDto,
+  ): Promise<CoachActionResultDto> {
+    return this.actions.decide(user.id, messageId, dto.decision);
   }
 
   /** The coach's distilled PII-free profile of the user (null until built). */

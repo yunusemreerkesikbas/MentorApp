@@ -51,6 +51,36 @@ export class StreakService {
     });
   }
 
+  /** Read-only live evidence for the AI boundary; derives without persisting or emitting events. */
+  getCoachEvidence(userId: string): Promise<{
+    currentStreak: number;
+    lastActiveDate: string | null;
+  }> {
+    const today = todayIso();
+    const since = addDays(today, -STREAK_LOOKBACK_DAYS);
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const activeDatesList = await this.activity.listActiveDatesSince(
+        tx,
+        userId,
+        since,
+      );
+      const purchased = new Set(
+        await this.freezes.listDatesSince(tx, userId, since),
+      );
+      const { currentStreak } = deriveStreak(
+        today,
+        new Set(activeDatesList),
+        FREEZE_TOKENS_PER_MONTH,
+        purchased,
+      );
+      const lastActiveDate = activeDatesList.reduce<string | null>(
+        (latest, date) => (!latest || date > latest ? date : latest),
+        null,
+      );
+      return { currentStreak, lastActiveDate };
+    });
+  }
+
   async getSummary(userId: string): Promise<StreakSummaryDto> {
     const today = todayIso();
     const since = addDays(today, -STREAK_LOOKBACK_DAYS);

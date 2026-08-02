@@ -96,6 +96,19 @@ const aiCount = (
   description,
 });
 
+const aiPositiveCount = (
+  def: number,
+  max: number,
+  description: string,
+): ConfigEntryDef => ({
+  category: ConfigCategory.AI,
+  type: ConfigValueType.NUMBER,
+  schema: z.number().int().min(1).max(max),
+  default: def,
+  sensitive: true,
+  description,
+});
+
 const identityCount = (
   def: number,
   max: number,
@@ -362,6 +375,26 @@ export const CONFIG_CATALOG = {
     5,
     100000,
     "Max AI coach chat messages a free user may send per day via coin (abuse shield; premium limit is separate).",
+  ),
+  "ai.coach_personalization_v2.rollout_percent": aiCount(
+    0,
+    100,
+    "Stable user-hash rollout percentage for Personalized Mentor V2; 0 instantly restores the legacy chat strategy.",
+  ),
+  "ai.coach.history_max_messages": aiPositiveCount(
+    10,
+    40,
+    "Maximum persisted messages from the active coach thread replayed into a prompt.",
+  ),
+  "ai.coach.history_max_characters": aiPositiveCount(
+    6_000,
+    40_000,
+    "Maximum combined characters from active-thread history replayed into a coach prompt.",
+  ),
+  "ai.coach.memory.transient_ttl_days": aiPositiveCount(
+    30,
+    365,
+    "Expiry window for transient challenge and priority-subject mentor memories.",
   ),
   "ai.photo.monthly_limit": aiCount(
     30,

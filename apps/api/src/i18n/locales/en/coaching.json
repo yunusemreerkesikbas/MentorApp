@@ -11,6 +11,61 @@
     "START": "Take one small step today — that's enough. I'm here with you.",
     "GOING": "Your consistency is going great. Let's keep it up today — I'm with you."
   },
+  "coachEvidence": {
+    "todayPlan": "You completed {done}/{total} tasks in today's plan ({completionRate} percent). Subject distribution: {subjects}.",
+    "todayPlanNoSubjects": "You completed {done}/{total} tasks in today's plan ({completionRate} percent); there is no taxonomy-verified subject distribution yet.",
+    "todayFocus": "You focused for {minutes} minutes today; your daily goal is {goal} minutes.",
+    "todayFocusNoGoal": "You focused for {minutes} minutes today; you have not set a daily focus goal yet.",
+    "recentRhythm": "Over 7 days: {sessions} sessions, {minutes} minutes and {activeDays} active days; average session {averageMinutes} minutes, strongest time band {timeBand}.",
+    "recentRhythmNoTimeBand": "Over 7 days: {sessions} sessions, {minutes} minutes and {activeDays} active days; average session {averageMinutes} minutes, with no dominant time band yet.",
+    "longTermRhythm": "Over 28 days: {sessions} sessions, {minutes} minutes and {activeDays} active days; average session {averageMinutes} minutes.",
+    "streak": "Your current streak is {current} days; your latest active day was {lastActiveDate}.",
+    "mood": "Today's coarse energy signal is {level}/5; short-term direction {trend}.",
+    "mockPerformance": "Across {count} mock exams, your latest net is {latestNet}; direction {trend}, backend focus {focusSubject}.",
+    "mockPerformanceNoFocus": "Across {count} mock exams, your latest net is {latestNet}; direction {trend}, with no verified focus subject yet.",
+    "goal": "Your normalized goal field is {careerGroup}.",
+    "actionOutcome": "You accepted {accepted} coach tasks and completed {completed}; latest status {lastStatus}.",
+    "values": {
+      "trend": {
+        "UP": "upward",
+        "DOWN": "downward",
+        "STABLE": "steady",
+        "FIRST": "first measurement",
+        "UNKNOWN": "not clear yet"
+      },
+      "timeBand": {
+        "MORNING": "morning",
+        "AFTERNOON": "afternoon",
+        "EVENING": "evening"
+      },
+      "taskStatus": {
+        "PENDING": "pending",
+        "DONE": "completed",
+        "UNKNOWN": "none yet"
+      },
+      "careerGroup": {
+        "SAGLIK": "Health",
+        "MUHENDISLIK": "Engineering",
+        "YAZILIM": "Software and IT",
+        "HUKUK_KAMU": "Law and Public Service",
+        "EGITIM": "Education",
+        "ISLETME": "Business and Management",
+        "SOSYAL_ILETISIM": "Social Sciences and Communication",
+        "SANAT_TASARIM": "Arts and Design",
+        "FEN": "Natural Sciences",
+        "MIMARLIK": "Architecture"
+      }
+    }
+  },
+  "mentorV2": {
+    "calibration": "To support you in a way that genuinely fits, let me clarify one thing first: when things get hard, do you want calm support, a balanced approach, or direct action? You can skip this step.",
+    "createTask": "Add to plan",
+    "openPlanAdaptation": "Lighten the plan together",
+    "startSession": "Start the suggested task session",
+    "openAnalysis": "Open analysis",
+    "openGoal": "Open my goal",
+    "openMood": "Open mood"
+  },
   "nextAction": {
     "START_TASK": {
       "title": "Start with {taskTitle}",

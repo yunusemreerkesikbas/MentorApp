@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
 import { PuhuImage } from "@/components/puhu-image";
 import { useAuth } from "@/lib/auth-context";
+import { CoachCalibrationCard } from "./coach-calibration-card";
 
 function greetingKeyForHour():
   | "greeting_morning"
@@ -70,12 +71,15 @@ export function CoachEmptyLanding() {
       </div>
 
       <div className="relative flex min-h-0 w-full flex-1 items-center justify-center py-2">
-        <PuhuImage
-          variant="encouraging"
-          size={120}
-          priority
-          className="max-h-full w-auto drop-shadow-[var(--shadow-card)]"
-        />
+        <div className="flex w-full flex-col items-center">
+          <CoachCalibrationCard />
+          <PuhuImage
+            variant="encouraging"
+            size={120}
+            priority
+            className="max-h-full w-auto drop-shadow-[var(--shadow-card)]"
+          />
+        </div>
       </div>
     </motion.div>
   );

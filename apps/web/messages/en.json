@@ -1494,6 +1494,76 @@
       "mood": "Today's mood: {level}/5",
       "exam": "Exam you're preparing for: {exam}",
       "needs_input": "Your coach will ask one clarifying question before choosing an approach that fits you."
+    },
+    "actions": {
+      "approve": "Approve",
+      "dismiss": "Not now",
+      "accepted": "Action approved.",
+      "completed": "You completed this step.",
+      "error": "The action could not be applied right now. You can try again."
+    },
+    "calibration": {
+      "intro": "How would you like me to support you? These three preferences shape the rhythm of our conversations.",
+      "support_question": "How should I help when things get hard?",
+      "support_emotional": "Calm me first",
+      "support_balanced": "Keep it balanced",
+      "support_action": "Move me to action",
+      "directness_question": "How direct should I be?",
+      "directness_gentle": "Gentle",
+      "directness_balanced": "Balanced",
+      "directness_direct": "Direct",
+      "memory_question": "May I remember these preferences in new conversations?",
+      "memory_hint": "Only allowed study preferences are stored. Messages and private notes are not copied into memory; you can view, correct, or delete anything at any time.",
+      "memory_yes": "Yes, remember",
+      "memory_no": "No",
+      "save": "Save my preferences",
+      "skip": "Skip for now",
+      "error": "Your preferences could not be saved right now. Please try again."
+    },
+    "memory": {
+      "trigger": "What your coach knows",
+      "title": "What your coach knows",
+      "description": "Structured study preferences you allowed me to use across conversations. Your raw messages are not stored here.",
+      "close": "Close",
+      "loading": "Loading coach memory",
+      "remembering": "Cross-chat memory",
+      "on": "Can learn new explicit preferences and use them in later conversations.",
+      "off": "Does not learn new facts or use existing ones in answers.",
+      "pause": "Pause remembering",
+      "resume": "Turn remembering on",
+      "empty": "Your coach has not saved a study preference yet.",
+      "edit": "Edit",
+      "forget": "Forget",
+      "save": "Save",
+      "clear_all": "Clear all",
+      "clear_confirm": "Yes, delete everything",
+      "error": "Coach memory could not be updated right now.",
+      "keys": {
+        "STUDY_TIME": "Preferred study time",
+        "RESPONSE_PREFERENCE": "Response preference",
+        "CHALLENGE_CATEGORY": "Current challenge",
+        "PRIORITY_SUBJECT": "Priority subject"
+      },
+      "values": {
+        "STUDY_TIME": {
+          "MORNING": "Morning",
+          "AFTERNOON": "Afternoon",
+          "EVENING": "Evening",
+          "LATE_NIGHT": "Late night"
+        },
+        "RESPONSE_PREFERENCE": {
+          "SHORT": "Short and concise",
+          "BALANCED": "Balanced",
+          "DETAILED": "Detailed"
+        },
+        "CHALLENGE_CATEGORY": {
+          "FOCUS": "Focus",
+          "PROCRASTINATION": "Procrastination",
+          "ANXIETY": "Anxiety",
+          "CONSISTENCY": "Consistency",
+          "PLANNING": "Planning"
+        }
+      }
     }
   },
   "countdown": {
@@ -1693,6 +1763,7 @@
     "premium_nudge": "The Premium coach leaves a note tailored to your goal →",
     "page_title": "Goal Board",
     "page_subtitle": "Write your goal, city, and reason; your coach and dashboard will motivate you around it.",
+    "browse_open": "Open goal and search",
     "goal_label": "Your goal",
     "goal_placeholder": "e.g. Become a teacher, Law at Marmara…",
     "city_label": "Target city (optional)",
@@ -1702,8 +1773,11 @@
       "no_universities": "No universities listed for this city.",
       "university_count": "{count} universities",
       "attribution": "Map data © OpenStreetMap contributors (ODbL)",
-      "back_to_city": "← Back",
+      "osym_source": "University and program data comes from ÖSYM and is verified against it. See the <link>ÖSYM YKS guide</link> for full details.",
+      "back_to_city": "Back to city list",
       "search_placeholder": "Search a university, city or program…",
+      "filter_programs_placeholder": "Filter programs at this university…",
+      "filter_programs_empty": "No programs match this filter.",
       "searching": "Searching…",
       "search_empty": "No results.",
       "group_cities": "Cities",
@@ -1712,6 +1786,7 @@
       "program_count": "{count} programs",
       "loading_programs": "Loading programs…",
       "open_hint": "Click for details",
+      "open_university_aria": "Open details for {name}",
       "quota": "{year} quota {count}",
       "min_score": "{year} cutoff {score}",
       "no_placement": "No placement",

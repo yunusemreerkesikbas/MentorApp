@@ -11,6 +11,61 @@
     "START": "Bugün küçük bir adım at — yeterli. Yanındayım.",
     "GOING": "İstikrarın harika gidiyor. Bugün de devam edelim, yanındayım."
   },
+  "coachEvidence": {
+    "todayPlan": "Bugünkü planında {done}/{total} görev tamamlandı (yüzde {completionRate}). Ders dağılımı: {subjects}.",
+    "todayPlanNoSubjects": "Bugünkü planında {done}/{total} görev tamamlandı (yüzde {completionRate}); taksonomide doğrulanmış ders dağılımı bulunmuyor.",
+    "todayFocus": "Bugün {minutes} dakika odaklandın; günlük hedefin {goal} dakika.",
+    "todayFocusNoGoal": "Bugün {minutes} dakika odaklandın; henüz günlük odak hedefi belirlemedin.",
+    "recentRhythm": "Son 7 günde {sessions} seans, {minutes} dakika ve {activeDays} aktif gün var; ortalama seans {averageMinutes} dakika, baskın zaman bandı {timeBand}.",
+    "recentRhythmNoTimeBand": "Son 7 günde {sessions} seans, {minutes} dakika ve {activeDays} aktif gün var; ortalama seans {averageMinutes} dakika, henüz baskın bir zaman bandı yok.",
+    "longTermRhythm": "Son 28 günde {sessions} seans, {minutes} dakika ve {activeDays} aktif gün var; ortalama seans {averageMinutes} dakika.",
+    "streak": "Güncel serin {current} gün; son aktif günün {lastActiveDate}.",
+    "mood": "Bugünkü kaba enerji sinyalin {level}/5; kısa dönem yönü {trend}.",
+    "mockPerformance": "{count} deneme kaydında son netin {latestNet}; yön {trend}, backend odağı {focusSubject}.",
+    "mockPerformanceNoFocus": "{count} deneme kaydında son netin {latestNet}; yön {trend}, henüz doğrulanmış bir odak dersi yok.",
+    "goal": "Normalize hedef alanın {careerGroup}.",
+    "actionOutcome": "Koç önerilerinden {accepted} görevi kabul ettin, {completed} tanesini tamamladın; son durum {lastStatus}.",
+    "values": {
+      "trend": {
+        "UP": "yükseliş",
+        "DOWN": "düşüş",
+        "STABLE": "dengeli",
+        "FIRST": "ilk ölçüm",
+        "UNKNOWN": "henüz belirsiz"
+      },
+      "timeBand": {
+        "MORNING": "sabah",
+        "AFTERNOON": "öğleden sonra",
+        "EVENING": "akşam"
+      },
+      "taskStatus": {
+        "PENDING": "bekliyor",
+        "DONE": "tamamlandı",
+        "UNKNOWN": "henüz yok"
+      },
+      "careerGroup": {
+        "SAGLIK": "Sağlık",
+        "MUHENDISLIK": "Mühendislik",
+        "YAZILIM": "Yazılım ve Bilişim",
+        "HUKUK_KAMU": "Hukuk ve Kamu",
+        "EGITIM": "Eğitim",
+        "ISLETME": "İşletme ve Yönetim",
+        "SOSYAL_ILETISIM": "Sosyal Bilimler ve İletişim",
+        "SANAT_TASARIM": "Sanat ve Tasarım",
+        "FEN": "Fen Bilimleri",
+        "MIMARLIK": "Mimarlık"
+      }
+    }
+  },
+  "mentorV2": {
+    "calibration": "Sana gerçekten uygun eşlik edebilmem için önce şunu netleştirelim: zorlandığında daha çok sakin destek mi, dengeli bir yaklaşım mı, yoksa doğrudan aksiyon mu istersin? İstersen bu adımı atlayabilirsin.",
+    "createTask": "Plana ekle",
+    "openPlanAdaptation": "Planı birlikte hafiflet",
+    "startSession": "Önerilen görevin seansını başlat",
+    "openAnalysis": "Analize git",
+    "openGoal": "Hedefime git",
+    "openMood": "Ruh halime git"
+  },
   "nextAction": {
     "START_TASK": {
       "title": "{taskTitle} ile ba\u015fla",

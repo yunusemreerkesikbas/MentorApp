@@ -33,6 +33,39 @@ export const aiChatSchema = z
   });
 export type AiChatInput = z.infer<typeof aiChatSchema>;
 
+export const coachProfilePatchSchema = z
+  .object({
+    calibrationStatus: z
+      .enum(["NOT_STARTED", "IN_PROGRESS", "COMPLETED", "SKIPPED"])
+      .optional(),
+    memoryConsent: z.enum(["PENDING", "GRANTED", "DECLINED"]).optional(),
+    supportPreference: z
+      .enum(["EMOTIONAL", "BALANCED", "ACTION"])
+      .nullable()
+      .optional(),
+    directnessPreference: z
+      .enum(["GENTLE", "BALANCED", "DIRECT"])
+      .nullable()
+      .optional(),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, { message: "empty" });
+export type CoachProfilePatchInput = z.infer<typeof coachProfilePatchSchema>;
+
+export const coachMemoryFactPatchSchema = z
+  .object({ value: z.string().trim().min(1).max(80) })
+  .strict();
+export type CoachMemoryFactPatchInput = z.infer<
+  typeof coachMemoryFactPatchSchema
+>;
+
+export const coachActionDecisionSchema = z
+  .object({ decision: z.enum(["ACCEPT", "CANCEL"]) })
+  .strict();
+export type CoachActionDecisionInput = z.infer<
+  typeof coachActionDecisionSchema
+>;
+
 /** POST /v1/coach/plan-draft — optional free-text wish for the weekly draft. */
 export const planDraftSchema = z.object({
   note: z.string().trim().max(500).optional(),

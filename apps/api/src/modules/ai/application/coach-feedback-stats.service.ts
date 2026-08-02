@@ -15,9 +15,10 @@ export class CoachFeedbackStatsService {
   constructor(private readonly messages: CoachMessageRepository) {}
 
   async getFeedbackStats(): Promise<AdminCoachFeedbackDto> {
-    const [counts, downrated] = await Promise.all([
+    const [counts, downrated, rawBreakdowns] = await Promise.all([
       this.messages.feedbackCounts(),
       this.messages.listDownrated(DOWNRATED_LIMIT),
+      this.messages.feedbackBreakdowns(),
     ]);
 
     const denom = counts.up + counts.down;
@@ -29,6 +30,16 @@ export class CoachFeedbackStatsService {
       rated: counts.rated,
       satisfactionRate,
       downrated,
+      breakdowns: Object.fromEntries(
+        Object.entries(rawBreakdowns).map(([key, items]) => [
+          key,
+          items.map((item) => ({
+            ...item,
+            satisfactionRate:
+              item.rated > 0 ? item.up / (item.up + item.down) : null,
+          })),
+        ]),
+      ) as AdminCoachFeedbackDto["breakdowns"],
       generatedAt: new Date().toISOString(),
     };
   }

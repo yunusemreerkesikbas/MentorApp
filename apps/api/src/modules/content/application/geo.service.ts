@@ -9,6 +9,7 @@ import type {
   UniversityDto,
   UniversityKind,
   UniversityProgramsDto,
+  UniversitySearchHitDto,
 } from "@mentor/types";
 import { NotFoundError } from "../../../common/errors/domain-error";
 import { DRIZZLE } from "../../../database/database.constants";
@@ -20,6 +21,7 @@ import {
   type NewUniversity,
   type ProgramWithScoreRow,
   type UniversityRow,
+  type UniversitySearchRow,
 } from "../infrastructure/geo.repository";
 
 /** Per-list cap on search results — a search box, not a paginated report. */
@@ -93,6 +95,24 @@ export class GeoService {
             verifiedAt: sourceRow.verifiedAt.toISOString(),
           }
         : null,
+    };
+  }
+
+  /**
+   * Reference ids → display names, for callers that hold a stored goal and need to say something
+   * about it (the AI motivation note). Both lookups are independent, so they go out together.
+   */
+  async resolveNames(
+    cityCode: string | null,
+    universityId: string | null,
+  ): Promise<{ cityName: string | null; universityName: string | null }> {
+    const [city, university] = await Promise.all([
+      cityCode ? this.geo.findCityByCode(this.db, cityCode) : undefined,
+      universityId ? this.geo.findUniversityById(this.db, universityId) : undefined,
+    ]);
+    return {
+      cityName: city?.name ?? null,
+      universityName: university?.name ?? null,
     };
   }
 
@@ -184,7 +204,7 @@ export class GeoService {
         region: c.region as GeoRegion,
       })),
       universities: universityRows.map((u) =>
-        this.toUniversityDto(u, counts.get(u.id) ?? 0),
+        this.toUniversitySearchHit(u, counts.get(u.id) ?? 0),
       ),
       programs: programRows.map((p) => ({
         code: p.code,
@@ -196,6 +216,17 @@ export class GeoService {
         cityCode: p.cityCode,
         cityName: p.cityName,
       })),
+    };
+  }
+
+  private toUniversitySearchHit(
+    row: UniversitySearchRow,
+    programCount: number,
+  ): UniversitySearchHitDto {
+    return {
+      ...this.toUniversityDto(row, programCount),
+      cityCode: row.cityCode,
+      cityName: row.cityName,
     };
   }
 

@@ -7,7 +7,17 @@ describe("CoachFeedbackStatsService", () => {
     const listDownrated = vi.fn(async () => [
       { id: "m1", userId: "u1", question: "Nasıl?", reply: "Belirsiz yanıt", createdAt: "t" },
     ]);
-    const service = new CoachFeedbackStatsService({ feedbackCounts, listDownrated } as never);
+    const feedbackBreakdowns = vi.fn(async () => ({
+      strategyVersion: [{ value: "mentor-v2.1", up: 3, down: 1, rated: 4 }],
+      intent: [],
+      tone: [],
+      actionStatus: [],
+    }));
+    const service = new CoachFeedbackStatsService({
+      feedbackCounts,
+      listDownrated,
+      feedbackBreakdowns,
+    } as never);
 
     const stats = await service.getFeedbackStats();
 
@@ -15,6 +25,10 @@ describe("CoachFeedbackStatsService", () => {
     expect(stats.rated).toBe(4);
     expect(stats.downrated[0]?.question).toBe("Nasıl?");
     expect(listDownrated).toHaveBeenCalledWith(20);
+    expect(stats.breakdowns.strategyVersion[0]).toMatchObject({
+      value: "mentor-v2.1",
+      satisfactionRate: 0.75,
+    });
     expect(typeof stats.generatedAt).toBe("string");
   });
 
@@ -22,6 +36,12 @@ describe("CoachFeedbackStatsService", () => {
     const service = new CoachFeedbackStatsService({
       feedbackCounts: vi.fn(async () => ({ up: 0, down: 0, rated: 0 })),
       listDownrated: vi.fn(async () => []),
+      feedbackBreakdowns: vi.fn(async () => ({
+        strategyVersion: [],
+        intent: [],
+        tone: [],
+        actionStatus: [],
+      })),
     } as never);
 
     const stats = await service.getFeedbackStats();

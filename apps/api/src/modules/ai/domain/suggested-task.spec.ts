@@ -126,6 +126,21 @@ describe("extractFollowUps", () => {
 });
 
 describe("extractReplyMarkers", () => {
+  it("extracts and strips a structured memory candidate in any marker order", () => {
+    const memory =
+      '<<MEMORY{"key":"STUDY_TIME","value":"EVENING","sourceQuote":"Akşamları daha iyi çalışıyorum"}>>';
+    const out = extractReplyMarkers(
+      `Bunu ritmine ekleyebiliriz. ${MARKER}\n${memory}\n<<FOLLOWUP["Nasıl başlayayım?"]>>`,
+    );
+    expect(out.text).toBe("Bunu ritmine ekleyebiliriz.");
+    expect(out.memoryCandidate).toEqual({
+      key: "STUDY_TIME",
+      value: "EVENING",
+      sourceQuote: "Akşamları daha iyi çalışıyorum",
+    });
+    expect(out.text).not.toContain("<<MEMORY");
+  });
+
   it("extracts both markers in the contract order (FOLLOWUP then TASK)", () => {
     const out = extractReplyMarkers(`Yanıt. <<FOLLOWUP["Soru?"]>>\n${MARKER}`);
     expect(out.text).toBe("Yanıt.");
@@ -157,5 +172,14 @@ describe("extractReplyMarkers", () => {
     const only = extractReplyMarkers(`Yanıt. ${MARKER}`);
     expect(only.task).not.toBeNull();
     expect(only.followUps).toEqual([]);
+  });
+
+  it("holds a split memory marker out of streaming deltas", () => {
+    const filter = createTaskMarkerFilter();
+    const visible =
+      filter.push("Yanıt. <<MEM") +
+      filter.push('ORY{"key":"STUDY_TIME","value":"EVENING","sourceQuote":"x"}>>') +
+      filter.flush();
+    expect(visible).toBe("Yanıt. ");
   });
 });

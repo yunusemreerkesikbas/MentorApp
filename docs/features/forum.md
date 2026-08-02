@@ -105,6 +105,11 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **ThreadMenu → shared PopoverMenu (2026-08-01)** — Topluluk ⋯ menüsü
+  `PopoverMenu` / `PopoverMenuItem` kullanıyor (Plan / Vision ile aynı panel).
+  Rapor alt-akışı `closeOnClick={false}` ile panel içinde kalıyor. Related:
+  `thread-menu.tsx`, `popover-menu.tsx`.
+
 - **Yerel koç köprüsü örnek verisi (2026-08-01)** — `seed:forum`, kürasyonlu
   `coach_intent` etiketlerini idempotent günceller ve uygun CHAT/QA thread'lerine bağlar. QA seed'i
   her örnek soruyu en az bir kez üretir; çalışma yöntemi ve sınav stratejisi soruları köprüyü gösterirken

@@ -16,8 +16,9 @@ export function CoachPersonalizationContext({
 }) {
   const t = useTranslations("coach_chat.personalization");
   const usedSignals = new Set(personalization.usedSignals ?? []);
+  const usedEvidence = personalization.usedEvidence ?? [];
 
-  if (usedSignals.size === 0) return null;
+  if (usedSignals.size === 0 && usedEvidence.length === 0) return null;
 
   return (
     <details className="group w-full max-w-2xl text-sm text-[var(--color-secondary-text)]">
@@ -37,6 +38,11 @@ export function CoachPersonalizationContext({
       </summary>
 
       <div className="mt-1 grid gap-2 rounded-[var(--radius-card)] bg-[var(--color-surface-container)] p-3">
+        {usedEvidence.map((evidence) => (
+          <ContextLine key={`${evidence.type}:${evidence.observedAt}`} icon={BadgeCheck}>
+            {evidence.summary}
+          </ContextLine>
+        ))}
         {personalization.todayPlan && usedSignals.has("TODAY_PLAN") ? (
           <ContextLine icon={ClipboardCheck}>
             {t("today_plan", personalization.todayPlan)}

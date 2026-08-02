@@ -106,7 +106,9 @@ describe("community analytics", () => {
         { zone_type: "CHAT", intent: "NEXT_STEP" },
       ],
     ]);
-    expect(JSON.stringify(dataLayer)).not.toMatch(/user|threadId|title|body|content/i);
+    expect(JSON.stringify(dataLayer)).not.toMatch(
+      /user|threadId|title|body|content/i,
+    );
   });
 });
 
@@ -186,6 +188,23 @@ describe("coach analytics", () => {
       zone_type: "QA",
       intent: "STUDY_METHOD",
     });
+    trackCoachEvent("coach_v2_reply", {
+      intent: "FOCUS",
+      tone: "DIRECT",
+      evidence_types: ["TODAY_FOCUS", "RECENT_RHYTHM"],
+    });
+    trackCoachEvent("coach_v2_feedback", {
+      intent: "FOCUS",
+      tone: "DIRECT",
+      feedback: "UP",
+    });
+    trackCoachEvent("coach_v2_action", {
+      action_type: "START_PLAN_SESSION",
+      status: "ACCEPTED",
+    });
+    trackCoachEvent("coach_v2_memory_management", {
+      operation: "FORGET",
+    });
 
     expect(dataLayer).toEqual([
       [
@@ -240,9 +259,29 @@ describe("coach analytics", () => {
         "coach_community_return_reply_created",
         { zone_type: "QA", intent: "STUDY_METHOD" },
       ],
+      [
+        "event",
+        "coach_v2_reply",
+        {
+          intent: "FOCUS",
+          tone: "DIRECT",
+          evidence_types: ["TODAY_FOCUS", "RECENT_RHYTHM"],
+        },
+      ],
+      [
+        "event",
+        "coach_v2_feedback",
+        { intent: "FOCUS", tone: "DIRECT", feedback: "UP" },
+      ],
+      [
+        "event",
+        "coach_v2_action",
+        { action_type: "START_PLAN_SESSION", status: "ACCEPTED" },
+      ],
+      ["event", "coach_v2_memory_management", { operation: "FORGET" }],
     ]);
     expect(JSON.stringify(dataLayer)).not.toMatch(
-      /taskId|threadId|conversationId|title|subject|body|content|user/i,
+      /taskId|threadId|conversationId|messageId|title|subject|body|content|memoryValue|sourceQuote|user/i,
     );
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { PlanTaskDto, PlanTaskOriginDto } from "@mentor/types";
+import type { CommunityCoachPlanTaskOriginDto, PlanTaskDto } from "@mentor/types";
 import Check from "lucide-react/dist/esm/icons/check.mjs";
 import MessageCircle from "lucide-react/dist/esm/icons/message-circle.mjs";
 import ArrowRight from "lucide-react/dist/esm/icons/arrow-right.mjs";
@@ -47,7 +47,7 @@ export function PlanTaskRow({
     "ready" | "checking" | "unavailable"
   >("ready");
 
-  async function openCommunitySource(origin: PlanTaskOriginDto) {
+  async function openCommunitySource(origin: CommunityCoachPlanTaskOriginDto) {
     if (sourceState !== "ready") return;
     if (done) {
       trackCoachEvent("coach_community_completion_return_click", {

@@ -12,10 +12,10 @@ const MODEL = "gpt-4o-mini";
 const EMBED_MODEL = "text-embedding-3-small";
 const EMBED_DIMENSIONS = 1536;
 
-function createConfig(): ConfigService<Env, true> {
+function createConfig(model = MODEL): ConfigService<Env, true> {
   return new ConfigService<Env, true>({
     OPENAI_API_KEY: "test-key",
-    OPENAI_MODEL: MODEL,
+    OPENAI_MODEL: model,
     OPENAI_EMBED_MODEL: EMBED_MODEL,
   });
 }
@@ -105,6 +105,35 @@ describe("OpenAI adapters", () => {
         completionTokens: 4,
         model: MODEL,
       });
+    });
+
+    it("omits sampling temperature for GPT-5 reasoning models", async () => {
+      fetchMock.mockResolvedValue(
+        jsonResponse({
+          status: "completed",
+          output: [
+            {
+              type: "message",
+              role: "assistant",
+              content: [{ type: "output_text", text: "Yanıt" }],
+            },
+          ],
+          usage: { input_tokens: 3, output_tokens: 1 },
+        }),
+      );
+
+      await new OpenAiLlmAdapter(createConfig("gpt-5")).complete({
+        system: "system",
+        user: "user",
+      });
+
+      const request = fetchMock.mock.calls[0]?.[1];
+      const body = JSON.parse(String(request?.body)) as {
+        model: string;
+        temperature?: number;
+      };
+      expect(body.model).toBe("gpt-5");
+      expect(body.temperature).toBeUndefined();
     });
 
     it("maps an incomplete/failed response status to AI_PROVIDER_ERROR", async () => {
