@@ -486,6 +486,9 @@ export interface VisionNoteGoal {
   /** Resolved name, never a plate code. */
   cityName: string | null;
   universityName: string | null;
+  /** KPSS side: the civil-service title and, optionally, the institution. */
+  titleName: string | null;
+  institutionName: string | null;
   /** Localized career-field label (e.g. "Yazılım ve Bilişim"), not the raw enum. */
   careerLabel: string | null;
   motivation: string | null;
@@ -496,7 +499,15 @@ export function buildVisionNotePrompt(
   goal: VisionNoteGoal,
   locale: PromptLocale = "tr",
 ): { system: string; user: string } {
-  const { goalTitle, cityName, universityName, careerLabel, motivation } = goal;
+  const {
+    goalTitle,
+    cityName,
+    universityName,
+    titleName,
+    institutionName,
+    careerLabel,
+    motivation,
+  } = goal;
   const system = [
     promptLanguageInstruction(locale),
     "Sen Mentor uygulamasının sınav hazırlık koçusun. Öğrencinin hedefini hatırlatan KISA — EN FAZLA",
@@ -516,9 +527,16 @@ export function buildVisionNotePrompt(
     : cityName
       ? ` Hedef şehir: ${cityName}.`
       : "";
+  // KPSS goals are a job, not a school: the title carries the ambition and the institution, when
+  // chosen, narrows it. Written as one line so the prompt does not read like a form dump.
+  const postLine = titleName
+    ? ` Hedef kadro: ${titleName}${institutionName ? ` (${institutionName})` : ""}.`
+    : institutionName
+      ? ` Hedef kurum: ${institutionName}.`
+      : "";
   const fieldLine = careerLabel ? ` Hedef alan: ${careerLabel}.` : "";
   const whyLine = motivation ? ` Nedeni: "${motivation}".` : "";
-  const user = `Öğrencinin hedefi: "${goalTitle}".${placeLine}${fieldLine}${whyLine}`;
+  const user = `Öğrencinin hedefi: "${goalTitle}".${placeLine}${postLine}${fieldLine}${whyLine}`;
 
   return { system, user };
 }

@@ -6,6 +6,7 @@ import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
 import { GeoService } from "../../content/application/geo.service";
+import { KpssService } from "../../content/application/kpss.service";
 import { VisionBoardRepository } from "../infrastructure/vision-board.repository";
 import { toVisionDto } from "./coaching.mappers";
 
@@ -20,6 +21,7 @@ export class VisionService {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly visions: VisionBoardRepository,
     private readonly geo: GeoService,
+    private readonly kpss: KpssService,
   ) {}
 
   async getMine(userId: string): Promise<VisionDto | null> {
@@ -41,19 +43,29 @@ export class VisionService {
    * Called only on a cache miss — resolving names on every cached read would be two queries spent
    * on a string nobody looks at.
    */
-  async resolveTargetNames(
-    board: VisionDto,
-  ): Promise<{ cityName: string | null; universityName: string | null }> {
-    const { cityName, universityName } = await this.geo.resolveNames(
-      board.targetCityCode,
-      board.targetUniversityId,
-    );
-    return { cityName: cityName ?? board.targetCity, universityName };
+  async resolveTargetNames(board: VisionDto): Promise<{
+    cityName: string | null;
+    universityName: string | null;
+    titleName: string | null;
+    institutionName: string | null;
+  }> {
+    const [geo, kpss] = await Promise.all([
+      this.geo.resolveNames(board.targetCityCode, board.targetUniversityId),
+      this.kpss.resolveNames(board.targetTitleId, board.targetInstitutionId),
+    ]);
+    return {
+      cityName: geo.cityName ?? board.targetCity,
+      universityName: geo.universityName,
+      titleName: kpss.titleName,
+      institutionName: kpss.institutionName,
+    };
   }
 
   async upsert(userId: string, input: UpsertVisionInput): Promise<VisionDto> {
     const targetCityCode = input.targetCityCode ?? null;
     const targetUniversityId = input.targetUniversityId ?? null;
+    const targetTitleId = input.targetTitleId ?? null;
+    const targetInstitutionId = input.targetInstitutionId ?? null;
 
     // The schema already rejects a university without a city. What it cannot know is whether the
     // university actually sits in that city — the client picks both from the map, but a crafted
@@ -69,11 +81,26 @@ export class VisionService {
       }
     }
 
+    // KPSS targets carry no city relationship to cross-check — an institution is national, and a
+    // round's postings are not a claim about where it operates. Existence is what matters: a
+    // dangling id would only surface later, as a goal the UI cannot name.
+    if (targetTitleId || targetInstitutionId) {
+      const exist = await this.kpss.assertTargetsExist(
+        targetTitleId,
+        targetInstitutionId,
+      );
+      if (!exist) {
+        throw new ValidationFailedError({ reason: "unknown_kpss_target" });
+      }
+    }
+
     const normalized = {
       goalTitle: input.goalTitle.trim(),
       targetCityCode,
       targetCity: input.targetCity?.trim() ? input.targetCity.trim() : null,
       targetUniversityId,
+      targetTitleId,
+      targetInstitutionId,
       careerGroup: input.careerGroup ?? null,
       motivation: input.motivation?.trim() ? input.motivation.trim() : null,
     };

@@ -1432,7 +1432,7 @@ export type aiChatControllerGetProfileResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type aiChatControllerGetProfileResponseSuccess = (aiChatControllerGetProfileResponse200) & {
   headers: Headers;
 };
@@ -1443,19 +1443,19 @@ export type aiChatControllerGetProfileResponse = (aiChatControllerGetProfileResp
 export const getAiChatControllerGetProfileUrl = () => {
 
 
-
+  
 
   return `/v1/coach/profile`
 }
 
 export const aiChatControllerGetProfile = async ( options?: RequestInit): Promise<aiChatControllerGetProfileResponse> => {
-
+  
   return http<aiChatControllerGetProfileResponse>(getAiChatControllerGetProfileUrl(),
-  {
+  {      
     ...options,
     method: 'GET'
-
-
+    
+    
   }
 );}
 
@@ -1465,7 +1465,7 @@ export type aiChatControllerPatchProfileResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type aiChatControllerPatchProfileResponseSuccess = (aiChatControllerPatchProfileResponse200) & {
   headers: Headers;
 };
@@ -1476,15 +1476,15 @@ export type aiChatControllerPatchProfileResponse = (aiChatControllerPatchProfile
 export const getAiChatControllerPatchProfileUrl = () => {
 
 
-
+  
 
   return `/v1/coach/profile`
 }
 
 export const aiChatControllerPatchProfile = async (coachProfilePatchDto: CoachProfilePatchDto, options?: RequestInit): Promise<aiChatControllerPatchProfileResponse> => {
-
+  
   return http<aiChatControllerPatchProfileResponse>(getAiChatControllerPatchProfileUrl(),
-  {
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1499,7 +1499,7 @@ export type aiChatControllerListMemoriesResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type aiChatControllerListMemoriesResponseSuccess = (aiChatControllerListMemoriesResponse200) & {
   headers: Headers;
 };
@@ -1510,19 +1510,19 @@ export type aiChatControllerListMemoriesResponse = (aiChatControllerListMemories
 export const getAiChatControllerListMemoriesUrl = () => {
 
 
-
+  
 
   return `/v1/coach/memories`
 }
 
 export const aiChatControllerListMemories = async ( options?: RequestInit): Promise<aiChatControllerListMemoriesResponse> => {
-
+  
   return http<aiChatControllerListMemoriesResponse>(getAiChatControllerListMemoriesUrl(),
-  {
+  {      
     ...options,
     method: 'GET'
-
-
+    
+    
   }
 );}
 
@@ -1532,7 +1532,7 @@ export type aiChatControllerClearMemoryFactsResponse204 = {
   data: void
   status: 204
 }
-
+    
 export type aiChatControllerClearMemoryFactsResponseSuccess = (aiChatControllerClearMemoryFactsResponse204) & {
   headers: Headers;
 };
@@ -1543,19 +1543,19 @@ export type aiChatControllerClearMemoryFactsResponse = (aiChatControllerClearMem
 export const getAiChatControllerClearMemoryFactsUrl = () => {
 
 
-
+  
 
   return `/v1/coach/memories`
 }
 
 export const aiChatControllerClearMemoryFacts = async ( options?: RequestInit): Promise<aiChatControllerClearMemoryFactsResponse> => {
-
+  
   return http<aiChatControllerClearMemoryFactsResponse>(getAiChatControllerClearMemoryFactsUrl(),
-  {
+  {      
     ...options,
     method: 'DELETE'
-
-
+    
+    
   }
 );}
 
@@ -1565,7 +1565,7 @@ export type aiChatControllerPatchMemoryResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type aiChatControllerPatchMemoryResponseSuccess = (aiChatControllerPatchMemoryResponse200) & {
   headers: Headers;
 };
@@ -1576,16 +1576,16 @@ export type aiChatControllerPatchMemoryResponse = (aiChatControllerPatchMemoryRe
 export const getAiChatControllerPatchMemoryUrl = (id: string,) => {
 
 
-
+  
 
   return `/v1/coach/memories/${id}`
 }
 
 export const aiChatControllerPatchMemory = async (id: string,
     coachMemoryFactPatchDto: CoachMemoryFactPatchDto, options?: RequestInit): Promise<aiChatControllerPatchMemoryResponse> => {
-
+  
   return http<aiChatControllerPatchMemoryResponse>(getAiChatControllerPatchMemoryUrl(id),
-  {
+  {      
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1600,7 +1600,7 @@ export type aiChatControllerDeleteMemoryFactResponse204 = {
   data: void
   status: 204
 }
-
+    
 export type aiChatControllerDeleteMemoryFactResponseSuccess = (aiChatControllerDeleteMemoryFactResponse204) & {
   headers: Headers;
 };
@@ -1611,19 +1611,19 @@ export type aiChatControllerDeleteMemoryFactResponse = (aiChatControllerDeleteMe
 export const getAiChatControllerDeleteMemoryFactUrl = (id: string,) => {
 
 
-
+  
 
   return `/v1/coach/memories/${id}`
 }
 
 export const aiChatControllerDeleteMemoryFact = async (id: string, options?: RequestInit): Promise<aiChatControllerDeleteMemoryFactResponse> => {
-
+  
   return http<aiChatControllerDeleteMemoryFactResponse>(getAiChatControllerDeleteMemoryFactUrl(id),
-  {
+  {      
     ...options,
     method: 'DELETE'
-
-
+    
+    
   }
 );}
 
@@ -1633,7 +1633,7 @@ export type aiChatControllerDecideActionResponse201 = {
   data: void
   status: 201
 }
-
+    
 export type aiChatControllerDecideActionResponseSuccess = (aiChatControllerDecideActionResponse201) & {
   headers: Headers;
 };
@@ -1644,16 +1644,16 @@ export type aiChatControllerDecideActionResponse = (aiChatControllerDecideAction
 export const getAiChatControllerDecideActionUrl = (messageId: string,) => {
 
 
-
+  
 
   return `/v1/coach/messages/${messageId}/action`
 }
 
 export const aiChatControllerDecideAction = async (messageId: string,
     coachActionDecisionDto: CoachActionDecisionDto, options?: RequestInit): Promise<aiChatControllerDecideActionResponse> => {
-
+  
   return http<aiChatControllerDecideActionResponse>(getAiChatControllerDecideActionUrl(messageId),
-  {
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -2070,7 +2070,7 @@ export type aiInternalControllerCleanupCoachMemoryResponse201 = {
   data: void
   status: 201
 }
-
+    
 export type aiInternalControllerCleanupCoachMemoryResponseSuccess = (aiInternalControllerCleanupCoachMemoryResponse201) & {
   headers: Headers;
 };
@@ -2081,19 +2081,19 @@ export type aiInternalControllerCleanupCoachMemoryResponse = (aiInternalControll
 export const getAiInternalControllerCleanupCoachMemoryUrl = () => {
 
 
-
+  
 
   return `/v1/internal/cron/cleanup-coach-memory`
 }
 
 export const aiInternalControllerCleanupCoachMemory = async ( options?: RequestInit): Promise<aiInternalControllerCleanupCoachMemoryResponse> => {
-
+  
   return http<aiInternalControllerCleanupCoachMemoryResponse>(getAiInternalControllerCleanupCoachMemoryUrl(),
-  {
+  {      
     ...options,
     method: 'POST'
-
-
+    
+    
   }
 );}
 
@@ -2287,6 +2287,72 @@ export const getGeoControllerSearchUrl = () => {
 export const geoControllerSearch = async ( options?: RequestInit): Promise<geoControllerSearchResponse> => {
   
   return http<geoControllerSearchResponse>(getGeoControllerSearchUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type geoControllerGetKpssTargetsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type geoControllerGetKpssTargetsResponseSuccess = (geoControllerGetKpssTargetsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type geoControllerGetKpssTargetsResponse = (geoControllerGetKpssTargetsResponseSuccess)
+
+export const getGeoControllerGetKpssTargetsUrl = () => {
+
+
+  
+
+  return `/v1/content/kpss-targets`
+}
+
+export const geoControllerGetKpssTargets = async ( options?: RequestInit): Promise<geoControllerGetKpssTargetsResponse> => {
+  
+  return http<geoControllerGetKpssTargetsResponse>(getGeoControllerGetKpssTargetsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type geoControllerGetKpssCityPostingsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type geoControllerGetKpssCityPostingsResponseSuccess = (geoControllerGetKpssCityPostingsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type geoControllerGetKpssCityPostingsResponse = (geoControllerGetKpssCityPostingsResponseSuccess)
+
+export const getGeoControllerGetKpssCityPostingsUrl = (cityCode: string,) => {
+
+
+  
+
+  return `/v1/content/kpss-targets/cities/${cityCode}`
+}
+
+export const geoControllerGetKpssCityPostings = async (cityCode: string, options?: RequestInit): Promise<geoControllerGetKpssCityPostingsResponse> => {
+  
+  return http<geoControllerGetKpssCityPostingsResponse>(getGeoControllerGetKpssCityPostingsUrl(cityCode),
   {      
     ...options,
     method: 'GET'

@@ -69,6 +69,8 @@ export class VisionNoteService {
         goalTitle: board.goalTitle,
         cityName: names.cityName,
         universityName: names.universityName,
+        titleName: names.titleName,
+        institutionName: names.institutionName,
         careerLabel: board.careerGroup
           ? this.careerLabel(board.careerGroup)
           : null,

@@ -395,6 +395,13 @@ export interface VisionDto {
   targetCity: string | null;
   /** Always accompanied by `targetCityCode`; the server rejects a mismatched pair. */
   targetUniversityId: string | null;
+  /**
+   * KPSS side of the goal. The title is the anchor (a permanent civil-service job name); the
+   * institution is an optional narrower whose list only covers whoever advertised in the imported
+   * round, so it is never required. Which of these three targets applies follows the exam type.
+   */
+  targetTitleId: string | null;
+  targetInstitutionId: string | null;
   careerGroup: CareerGroup | null;
   motivation: string | null;
   aiNote: string | null;

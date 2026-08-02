@@ -3,6 +3,7 @@ import type {
   CityDto,
   GeoRegion,
   GeoResponseDto,
+  ExamFamilyWithTargets,
   GeoSearchResultDto,
   ProgramDto,
   ProgramLevel,
@@ -15,6 +16,7 @@ import { NotFoundError } from "../../../common/errors/domain-error";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
+import { KpssService } from "./kpss.service";
 import {
   GeoRepository,
   type NewCity,
@@ -25,7 +27,13 @@ import {
 } from "../infrastructure/geo.repository";
 
 /** Per-list cap on search results — a search box, not a paginated report. */
-const SEARCH_LIMIT = { cities: 5, universities: 8, programs: 20 } as const;
+const SEARCH_LIMIT = {
+  cities: 5,
+  universities: 8,
+  programs: 20,
+  titles: 10,
+  institutions: 10,
+} as const;
 
 /**
  * Same folding the SQL does, applied to the incoming query so both sides of the comparison
@@ -55,6 +63,7 @@ export class GeoService {
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly geo: GeoRepository,
+    private readonly kpss: KpssService,
   ) {}
 
   /**
@@ -180,14 +189,42 @@ export class GeoService {
    * rendered separately anyway, and a shared ranking across cities/universities/programs would
    * have to invent a relevance scale none of them share.
    */
-  async search(query: string): Promise<GeoSearchResultDto> {
+  async search(
+    query: string,
+    family: ExamFamilyWithTargets = "YKS",
+  ): Promise<GeoSearchResultDto> {
     const needle = foldTurkish(query.trim());
-    if (needle.length < 2) {
-      return { cities: [], universities: [], programs: [] };
+    const empty: GeoSearchResultDto = {
+      cities: [],
+      universities: [],
+      programs: [],
+      titles: [],
+      institutions: [],
+    };
+    if (needle.length < 2) return empty;
+
+    const cityRows = await this.geo.searchCities(
+      this.db,
+      needle,
+      SEARCH_LIMIT.cities,
+    );
+    const cities = cityRows.map((c) => ({
+      code: c.code,
+      name: c.name,
+      slug: c.slug,
+      region: c.region as GeoRegion,
+    }));
+
+    // A KPSS student has no use for university programs; surfacing them was the leak this closes.
+    if (family === "KPSS") {
+      const { titles, institutions } = await this.kpss.search(needle, {
+        titles: SEARCH_LIMIT.titles,
+        institutions: SEARCH_LIMIT.institutions,
+      });
+      return { ...empty, cities, titles, institutions };
     }
 
-    const [cityRows, universityRows, programRows] = await Promise.all([
-      this.geo.searchCities(this.db, needle, SEARCH_LIMIT.cities),
+    const [universityRows, programRows] = await Promise.all([
       this.geo.searchUniversities(this.db, needle, SEARCH_LIMIT.universities),
       this.geo.searchPrograms(this.db, needle, SEARCH_LIMIT.programs),
     ]);
@@ -197,12 +234,8 @@ export class GeoService {
       : new Map<string, number>();
 
     return {
-      cities: cityRows.map((c) => ({
-        code: c.code,
-        name: c.name,
-        slug: c.slug,
-        region: c.region as GeoRegion,
-      })),
+      ...empty,
+      cities,
       universities: universityRows.map((u) =>
         this.toUniversitySearchHit(u, counts.get(u.id) ?? 0),
       ),

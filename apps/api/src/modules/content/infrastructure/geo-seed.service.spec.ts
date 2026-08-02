@@ -96,24 +96,98 @@ describe("universities seed file", () => {
   });
 });
 
-describe("GeoSeedService", () => {
-  it("seeds provinces and universities in a SINGLE call — one batched statement per table", async () => {
-    const calls: Array<{ cities: NewCity[]; universities: NewUniversity[] }> = [];
-    const service = new GeoSeedService({
-      seedGeo: async (input: {
-        cities: NewCity[];
-        universities: NewUniversity[];
-      }) => {
-        calls.push(input);
-      },
-    } as never);
+interface KpssSeedFile {
+  round: string;
+  titles: Array<{ name: string; slug: string }>;
+  institutions: Array<{ name: string; slug: string }>;
+  postings: Array<{
+    osymCode: string;
+    cityCode: string;
+    titleName: string;
+    institutionName: string;
+    quota: number;
+  }>;
+}
 
+const kpssSeed = read<KpssSeedFile>("kpss.seed.json");
+
+describe("kpss seed file", () => {
+  it("points every posting at a province, a known title and a known institution", () => {
+    const codes = new Set(cities.map((c) => c.code));
+    const titleNames = new Set(kpssSeed.titles.map((t) => t.name));
+    const institutionNames = new Set(kpssSeed.institutions.map((i) => i.name));
+
+    const broken = kpssSeed.postings.filter(
+      (p) =>
+        !codes.has(p.cityCode) ||
+        !titleNames.has(p.titleName) ||
+        !institutionNames.has(p.institutionName),
+    );
+    expect(broken).toEqual([]);
+  });
+
+  it("has one row per ÖSYM code and no whitespace-variant duplicates", () => {
+    expect(new Set(kpssSeed.postings.map((p) => p.osymCode)).size).toBe(
+      kpssSeed.postings.length,
+    );
+    // The guides wrap long cells with a literal CRLF at whatever column happened to be narrow, so
+    // "KORUMA VE GÜVENLİK\r\nGÖREVLİSİ" and "KORUMA VE\r\nGÜVENLİK GÖREVLİSİ" arrived as two
+    // titles for one job. Collapsing internal whitespace is what keeps the reference lists honest.
+    for (const list of [kpssSeed.titles, kpssSeed.institutions]) {
+      expect(list.filter((x) => /\s{2,}|[\r\n]/.test(x.name))).toEqual([]);
+      expect(new Set(list.map((x) => x.slug)).size).toBe(list.length);
+    }
+  });
+});
+
+describe("GeoSeedService", () => {
+  function run() {
+    const geoCalls: Array<{ cities: NewCity[]; universities: NewUniversity[] }> = [];
+    const kpssCalls: Array<{
+      titles: unknown[];
+      institutions: unknown[];
+      postings: unknown[];
+    }> = [];
+    const service = new GeoSeedService(
+      {
+        seedGeo: async (input: {
+          cities: NewCity[];
+          universities: NewUniversity[];
+        }) => {
+          geoCalls.push(input);
+        },
+      } as never,
+      {
+        seedKpss: async (input: {
+          titles: unknown[];
+          institutions: unknown[];
+          postings: unknown[];
+        }) => {
+          kpssCalls.push(input);
+        },
+      } as never,
+    );
+    return { service, geoCalls, kpssCalls };
+  }
+
+  it("seeds provinces and universities in a SINGLE call — one batched statement per table", async () => {
+    const { service, geoCalls } = run();
     await service.onModuleInit();
 
     // One call carrying the whole set. If this ever becomes hundreds of calls, the seed has
     // regressed to per-row awaits and every cold start pays that many round-trips to Neon.
-    expect(calls).toHaveLength(1);
-    expect(calls[0]!.cities).toHaveLength(81);
-    expect(calls[0]!.universities).toHaveLength(uniSeed.universities.length);
+    expect(geoCalls).toHaveLength(1);
+    expect(geoCalls[0]!.cities).toHaveLength(81);
+    expect(geoCalls[0]!.universities).toHaveLength(uniSeed.universities.length);
+  });
+
+  it("seeds the KPSS round in a single call too", async () => {
+    const { service, kpssCalls } = run();
+    await service.onModuleInit();
+
+    expect(kpssCalls).toHaveLength(1);
+    expect(kpssCalls[0]!.titles).toHaveLength(kpssSeed.titles.length);
+    expect(kpssCalls[0]!.institutions).toHaveLength(kpssSeed.institutions.length);
+    expect(kpssCalls[0]!.postings).toHaveLength(kpssSeed.postings.length);
   });
 });

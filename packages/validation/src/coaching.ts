@@ -284,6 +284,8 @@ export const upsertVisionSchema = z
     targetCityCode: cityCodeSchema.nullish(),
     targetCity: z.string().trim().min(1).max(80).nullish(),
     targetUniversityId: z.string().uuid().nullish(),
+    targetTitleId: z.string().uuid().nullish(),
+    targetInstitutionId: z.string().uuid().nullish(),
     careerGroup: z.enum(CAREER_GROUPS).nullish(),
     motivation: z.string().trim().min(1).max(500).nullish(),
   })
