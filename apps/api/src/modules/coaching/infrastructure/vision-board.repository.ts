@@ -10,6 +10,8 @@ export interface VisionInput {
   targetCityCode: string | null;
   targetCity: string | null;
   targetUniversityId: string | null;
+  targetTitleId: string | null;
+  targetInstitutionId: string | null;
   careerGroup: string | null;
   motivation: string | null;
 }
@@ -28,7 +30,7 @@ export class VisionBoardRepository {
    * for the old goal, with nothing to signal it is stale.
    */
   async upsert(tx: DatabaseTx, userId: string, input: VisionInput): Promise<VisionBoardRow> {
-    const unchanged = sql`${visionBoards.goalTitle} = ${input.goalTitle} AND ${visionBoards.targetCityCode} IS NOT DISTINCT FROM ${input.targetCityCode} AND ${visionBoards.targetCity} IS NOT DISTINCT FROM ${input.targetCity} AND ${visionBoards.targetUniversityId} IS NOT DISTINCT FROM ${input.targetUniversityId} AND ${visionBoards.careerGroup} IS NOT DISTINCT FROM ${input.careerGroup} AND ${visionBoards.motivation} IS NOT DISTINCT FROM ${input.motivation}`;
+    const unchanged = sql`${visionBoards.goalTitle} = ${input.goalTitle} AND ${visionBoards.targetCityCode} IS NOT DISTINCT FROM ${input.targetCityCode} AND ${visionBoards.targetCity} IS NOT DISTINCT FROM ${input.targetCity} AND ${visionBoards.targetUniversityId} IS NOT DISTINCT FROM ${input.targetUniversityId} AND ${visionBoards.targetTitleId} IS NOT DISTINCT FROM ${input.targetTitleId} AND ${visionBoards.targetInstitutionId} IS NOT DISTINCT FROM ${input.targetInstitutionId} AND ${visionBoards.careerGroup} IS NOT DISTINCT FROM ${input.careerGroup} AND ${visionBoards.motivation} IS NOT DISTINCT FROM ${input.motivation}`;
     const rows = await tx
       .insert(visionBoards)
       .values({
@@ -37,6 +39,8 @@ export class VisionBoardRepository {
         targetCityCode: input.targetCityCode,
         targetCity: input.targetCity,
         targetUniversityId: input.targetUniversityId,
+        targetTitleId: input.targetTitleId,
+        targetInstitutionId: input.targetInstitutionId,
         careerGroup: input.careerGroup,
         motivation: input.motivation,
       })
@@ -47,6 +51,8 @@ export class VisionBoardRepository {
           targetCityCode: input.targetCityCode,
           targetCity: input.targetCity,
           targetUniversityId: input.targetUniversityId,
+          targetTitleId: input.targetTitleId,
+          targetInstitutionId: input.targetInstitutionId,
           careerGroup: input.careerGroup,
           motivation: input.motivation,
           updatedAt: sql`now()`,

@@ -101,11 +101,74 @@ export interface ProgramSearchHitDto {
   cityName: string;
 }
 
-/** One search box over three different things; each list is capped independently. */
+/* ------------------------------- KPSS targets ------------------------------- */
+
+/** A civil-service job name (MÜHENDİS, AVUKAT, VHKİ…). Stable across placement rounds. */
+export interface TitleDto {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+/**
+ * A public institution that appeared in an imported placement round.
+ *
+ * NOT a catalogue of every public body — only whoever advertised. Always presented alongside the
+ * round, and never a required choice, because a user's target may simply not have hired this time.
+ */
+export interface InstitutionDto {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+/** How many vacancies a province carries in the imported round. */
+export interface CityPostingCountDto {
+  cityCode: string;
+  postings: number;
+  /** Sum of ADET — people taken, not rows advertised. */
+  quota: number;
+}
+
+export interface KpssPostingDto {
+  osymCode: string;
+  round: string;
+  /** LISANS | ONLISANS | ORTAOGRETIM */
+  educationLevel: string;
+  titleName: string;
+  institutionName: string;
+  cityCode: string;
+  district: string | null;
+  employmentType: string;
+  serviceClass: string | null;
+  quota: number;
+}
+
+export interface KpssTargetsDto {
+  titles: TitleDto[];
+  institutions: InstitutionDto[];
+  cityPostings: CityPostingCountDto[];
+  /** e.g. "2026-1" — shown with every count so nothing reads as a standing state of the world. */
+  round: string | null;
+  source: GeoSourceDto | null;
+}
+
+/* ---------------------------------- search ---------------------------------- */
+
+export const EXAM_FAMILIES_WITH_TARGETS = ["YKS", "KPSS"] as const;
+export type ExamFamilyWithTargets = (typeof EXAM_FAMILIES_WITH_TARGETS)[number];
+
+/**
+ * One search box, results grouped by kind. Which groups fill depends on the caller's exam family:
+ * a KPSS student has no use for university programs, and showing them was the leak this replaced.
+ * Irrelevant groups come back empty rather than absent, so the client renders whatever is non-empty.
+ */
 export interface GeoSearchResultDto {
   cities: Array<Pick<CityDto, "code" | "name" | "slug" | "region">>;
   universities: UniversitySearchHitDto[];
   programs: ProgramSearchHitDto[];
+  titles: TitleDto[];
+  institutions: InstitutionDto[];
 }
 
 export interface CityDto {

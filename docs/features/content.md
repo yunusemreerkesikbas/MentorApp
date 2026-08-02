@@ -303,3 +303,45 @@ pnpm --filter @mentor/api-client generate
   yalnızca program hit'inden pin için tam kampüs DTO'su lazımsa kalır.
   İlgili: `packages/types/src/geo.ts`, `geo.repository.ts`, `geo.service.ts`,
   `apps/web/.../turkey-map/map-browser.tsx`.
+
+- **KPSS hedef verisi: unvan, kurum, dönem ilanları (2026-08-02)** — `titles` (52 unvan),
+  `institutions` (73 kurum), `kpss_postings` (1.106 ilan / 2.083 kontenjan, `round` = 2026-1).
+  Migration `0071`, RLS `cities`/`universities` ile aynı desen. `vision_boards` += `target_title_id`,
+  `target_institution_id`.
+  **Çapa unvan, kurum değil.** YKS'de "bölüm" yıllarca yaşar; KPSS'te "kadro" tek yerleştirme
+  dönemine ait geçici bir ilandır ve kılavuz yılda iki kez yenilenir. `titles` dönemden döneme
+  neredeyse hiç değişmeyen devlet memurluğu unvanlarıdır — hedef çapası olabilecek tek liste.
+  `institutions` ise **bu dönem ilan verenlerin** anlık görüntüsüdür, Türkiye'nin kamu kurumları
+  kataloğu DEĞİLDİR; bu yüzden hiçbir zaman zorunlu seçim değildir ve API dönemi hep yanında taşır.
+  **Gotcha 1 — sütunlar sabit indeksle okunamaz:** üç kılavuzun düzeni aynı değil, önlisans
+  dosyasında fazladan bir `BİRİM ADI` sütunu var ve sonrası kayıyor. Sabit indeksle `ADET` sanılan
+  şey orada `DERECE`; ilk ölçümde toplam kontenjanı 1.772 sandım, doğrusu **2.083**. Parser sütunları
+  **başlık adıyla** çözer ve eksik başlıkta assert atar.
+  **Gotcha 2 — satır sonu kirliliği:** kılavuz uzun hücreleri sütun genişliğine göre CRLF ile
+  sarıyor, kırılma yeri satırdan satıra değişiyor. `"KORUMA VE GÜVENLİK
+GÖREVLİSİ"` ile
+  `"KORUMA VE
+GÜVENLİK GÖREVLİSİ"` aynı iş. `.trim()` yalnız uçları kırptığı için 53 unvan /
+  77 kurum görünüyordu; iç boşluklar da normalleştirilince gerçek sayı **52 / 73** çıktı. Slug
+  benzersizlik assert'i olmasa bu kirlilik tabloya girecekti.
+  **Gotcha 3:** seed JSON'u id taşımaz, isim taşır. Slug'lar dosyanın kendi referans listelerinden
+  eşlenir — servise ikinci bir slugify koymak, `scripts/lib/turkish.mjs` ile sessizce ayrışmanın
+  en kısa yoluydu.
+  Çalıştırma: `pnpm --filter @mentor/api seed:kpss` (yeni dönem yayımlanınca), sonra boot'ta
+  idempotent batch upsert.
+  İlgili: `build-kpss-seed.mjs`, `kpss.repository.ts`, `kpss.service.ts`, `geo-seed.service.ts`.
+
+- **KPSS uçları + aramada `family` ayrımı (2026-08-02)** — `GET /v1/content/kpss-targets`
+  (52 unvan + 73 kurum + il bazlı ilan/kontenjan sayıları + dönem, 17.7 KB) ve
+  `GET /v1/content/kpss-targets/cities/:cityCode` (bir ilin ilanları, şehir açılınca yüklenir).
+  `/geo` hiç değişmedi — YKS öğrencisi KPSS verisini, KPSS öğrencisi 50 KB'lık üniversite yükünü
+  indirmez.
+  `GET /v1/content/geo/search` artık `family=YKS|KPSS` alıyor (varsayılan YKS). **Mevcut bir kusuru
+  kapatır:** arama sınav türünden bağımsız çalıştığı için KPSS kullanıcısı "bilgisayar" arayınca
+  asla başvuramayacağı YKS mühendislik programlarını görüyordu. Artık KPSS'te 1 unvan / 0 program,
+  YKS'de 20 program / 0 unvan. `geo.service.spec` iki testle kilitliyor.
+  Türkçe katlama (`translate` + `lower`) `turkish-sql.ts`'e çıkarıldı — iki repository'nin aynı
+  katlamayı kullanması şart, ayrışsalar arama sessizce boş dönerdi.
+  **Gotcha:** `@Param()` nesne DTO'su ile orval yol parametresini göremiyor (`createZodDto` Swagger
+  metadata taşımıyor) ve codegen düşüyor; `@Param("cityCode")` adlandırılmış kullanım şart.
+  İlgili: `geo.controller.ts`, `geo.service.ts`, `turkish-sql.ts`, `packages/types/src/geo.ts`.

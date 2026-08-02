@@ -58,8 +58,25 @@ function makeGeoFake(rows: ProgramWithScoreRow[] = []) {
   };
 }
 
-const service = (fake: ReturnType<typeof makeGeoFake>) =>
-  new GeoService({} as never, fake as never);
+/** KPSS half of the search box — records what it was asked so the family split is assertable. */
+function makeKpssFake() {
+  const calls: string[] = [];
+  return {
+    calls,
+    search: async (needle: string) => {
+      calls.push(needle);
+      return {
+        titles: [{ id: "t1", name: "BİLGİSAYAR İŞLETMENİ", slug: "bilgisayar-isletmeni" }],
+        institutions: [],
+      };
+    },
+  };
+}
+
+const service = (
+  fake: ReturnType<typeof makeGeoFake>,
+  kpss: ReturnType<typeof makeKpssFake> = makeKpssFake(),
+) => new GeoService({} as never, fake as never, kpss as never);
 
 describe("GeoService.getUniversityPrograms", () => {
   it("folds the (program, year) join rows back into one program per code", async () => {
@@ -116,7 +133,13 @@ describe("GeoService.search", () => {
   it("returns nothing for a query too short to be meaningful", async () => {
     const fake = makeGeoFake();
     const result = await service(fake).search("k");
-    expect(result).toEqual({ cities: [], universities: [], programs: [] });
+    expect(result).toEqual({
+      cities: [],
+      universities: [],
+      programs: [],
+      titles: [],
+      institutions: [],
+    });
     expect(fake.needles).toEqual([]);
   });
 
@@ -141,5 +164,31 @@ describe("GeoService.search", () => {
         longitude: 32.505705,
       }),
     ]);
+  });
+
+  it("searches civil-service titles and NOT university programs for a KPSS student", async () => {
+    const fake = makeGeoFake();
+    fake.searchPrograms = async () => {
+      throw new Error("programs must not be searched for KPSS");
+    };
+    const kpss = makeKpssFake();
+
+    const result = await service(fake, kpss).search("bilgisayar", "KPSS");
+
+    // The leak this closes: before the family split, a KPSS student searching "bilgisayar" got a
+    // page of YKS engineering programmes they can never apply to.
+    expect(result.programs).toEqual([]);
+    expect(result.universities).toEqual([]);
+    expect(result.titles.map((t) => t.name)).toEqual(["BİLGİSAYAR İŞLETMENİ"]);
+    expect(kpss.calls).toEqual(["bilgisayar"]);
+  });
+
+  it("leaves the KPSS lists empty for a YKS student", async () => {
+    const kpss = makeKpssFake();
+    const result = await service(makeGeoFake(), kpss).search("bilgisayar", "YKS");
+
+    expect(result.titles).toEqual([]);
+    expect(result.institutions).toEqual([]);
+    expect(kpss.calls).toEqual([]);
   });
 });

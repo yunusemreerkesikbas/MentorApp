@@ -538,6 +538,97 @@ export const programScores = pgTable(
   ],
 );
 
+/**
+ * Civil-service titles ("kadro unvanı") — MÜHENDİS, AVUKAT, VHKİ, KÜTÜPHANECİ…
+ *
+ * This is the KPSS goal anchor. Unlike the institution list below, titles barely move between
+ * placement rounds: they are the permanent job names of the public service, so "Konya'da VHKİ
+ * olmak" stays a valid goal long after any particular vacancy is gone.
+ */
+export const titles = pgTable("titles", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  source: text("source").notNull(),
+  sourceUrl: text("source_url").notNull(),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Public institutions that appear in the imported placement round.
+ *
+ * NOT a catalogue of every public body in Turkey — it is whoever posted a vacancy in the rounds we
+ * have imported, which is why it is a secondary filter and never a required choice. A user whose
+ * dream institution simply did not hire this round must still be able to set a goal.
+ */
+export const institutions = pgTable("institutions", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  source: text("source").notNull(),
+  sourceUrl: text("source_url").notNull(),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * One vacancy row from a KPSS placement guide — (institution × title × province) for one round.
+ *
+ * Explicitly round-scoped: `round` is part of the identity of every row and is shown in the UI, so
+ * the map says "2026-1 döneminde bu ilde N ilan" rather than implying a standing state of the
+ * world. Cheap to keep whole (~1.1k rows per round) and the only thing that can tell the map which
+ * institutions are actually present in a province.
+ *
+ * Placement scores are deliberately absent: showing "how many are hired" is a fact, predicting
+ * "will my score be enough" is the placement simulation the product decided against (roadmap §1).
+ */
+export const kpssPostings = pgTable(
+  "kpss_postings",
+  {
+    /** ÖSYM's own row code — unique within a round and printed in the guide. */
+    osymCode: varchar("osym_code", { length: 12 }).primaryKey(),
+    /** Placement round, e.g. "2026-1". */
+    round: text("round").notNull(),
+    /** LISANS | ONLISANS | ORTAOGRETIM — which guide the row came from. */
+    educationLevel: text("education_level").notNull(),
+    institutionId: uuid("institution_id")
+      .notNull()
+      .references(() => institutions.id, { onDelete: "cascade" }),
+    titleId: uuid("title_id")
+      .notNull()
+      .references(() => titles.id, { onDelete: "cascade" }),
+    cityCode: varchar("city_code", { length: 2 })
+      .notNull()
+      .references(() => cities.code, { onDelete: "restrict" }),
+    /** İLÇE — free text; districts are not modelled as entities. */
+    district: text("district"),
+    /** MEMUR | SÖZLEŞMELİ PERSONEL | KİT SÖZLEŞMELİ PERSONEL */
+    employmentType: text("employment_type").notNull(),
+    /** HİZMET SINIFI — GİH, TH, AH, SH… */
+    serviceClass: text("service_class"),
+    grade: smallint("grade"),
+    /** ADET — how many people are taken for this row. */
+    quota: integer("quota").notNull(),
+    source: text("source").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("kpss_postings_city_idx").on(t.cityCode),
+    index("kpss_postings_title_idx").on(t.titleId),
+    index("kpss_postings_institution_idx").on(t.institutionId),
+  ],
+);
+
 /** Global subject taxonomy (e.g. Tarih, Matematik). */
 export const subjects = pgTable(
   "subjects",
@@ -883,6 +974,18 @@ export const visionBoards = pgTable(
     targetCity: text("target_city"),
     targetUniversityId: uuid("target_university_id").references(
       () => universities.id,
+      { onDelete: "set null" },
+    ),
+    /**
+     * KPSS side of the goal. `target_title_id` is the anchor (permanent civil-service title);
+     * `target_institution_id` is an optional narrower whose list is round-scoped, so it must never
+     * be required. YKS uses `target_university_id` above; the exam type decides which apply.
+     */
+    targetTitleId: uuid("target_title_id").references(() => titles.id, {
+      onDelete: "set null",
+    }),
+    targetInstitutionId: uuid("target_institution_id").references(
+      () => institutions.id,
       { onDelete: "set null" },
     ),
     /** CareerGroup — one of ten broad fields; drives the mascot variant. */

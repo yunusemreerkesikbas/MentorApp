@@ -132,6 +132,8 @@ export function toVisionDto(row: VisionBoardRow): VisionDto {
     targetCityCode: row.targetCityCode,
     targetCity: row.targetCity,
     targetUniversityId: row.targetUniversityId,
+    targetTitleId: row.targetTitleId,
+    targetInstitutionId: row.targetInstitutionId,
     careerGroup: row.careerGroup as CareerGroup | null,
     motivation: row.motivation,
     aiNote: row.aiNote,

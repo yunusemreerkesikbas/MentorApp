@@ -51,6 +51,8 @@ describe("AI prompt locale", () => {
           goalTitle: "Become a teacher",
           cityName: null,
           universityName: null,
+          titleName: null,
+          institutionName: null,
           careerLabel: null,
           motivation: null,
         },
