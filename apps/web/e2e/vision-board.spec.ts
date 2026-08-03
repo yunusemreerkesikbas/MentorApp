@@ -116,6 +116,8 @@ const searchResult: GeoSearchResultDto = {
       cityName: "Konya",
     },
   ],
+  titles: [],
+  institutions: [],
 };
 
 /**

@@ -1,7 +1,7 @@
 "use client";
+import { ArrowLeft } from "lucide-react";
 
 import { useEffect, useMemo, useState } from "react";
-import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left.mjs";
 import { useTranslations } from "next-intl";
 import type {
   CityDto,
@@ -12,8 +12,10 @@ import type {
   UniversityProgramsDto,
   UniversitySearchHitDto,
 } from "@mentor/types";
-import { geoControllerGetUniversityPrograms } from "@mentor/api-client";
-import { apiBaseUrl } from "@/lib/api-base";
+import {
+  geoControllerGetUniversityPrograms,
+  geoControllerSearch,
+} from "@mentor/api-client";
 import { universityIdsMatchingSearch } from "./search-pin-filter";
 
 /** Long enough that typing a word is one request, short enough to feel immediate. */
@@ -46,20 +48,6 @@ function locateUniversity(
 
 function unwrap<T>(res: unknown): T | null {
   return ((res as { data?: T | null })?.data ?? (res as T | null)) as T | null;
-}
-
-/**
- * Plain fetch rather than the generated client: `createZodDto` carries no Swagger metadata, so
- * orval emits every query-param endpoint in this repo without its params (`listExams` and
- * `listArticles` are the same). The endpoint is public, so there is nothing to authenticate.
- */
-async function searchGeo(q: string, signal: AbortSignal): Promise<GeoSearchResultDto> {
-  const res = await fetch(
-    `${apiBaseUrl()}/v1/content/geo/search?q=${encodeURIComponent(q)}`,
-    { signal },
-  );
-  if (!res.ok) throw new Error(`Geo search failed: ${res.status}`);
-  return (await res.json()) as GeoSearchResultDto;
 }
 
 /**
@@ -100,7 +88,25 @@ export function MapBrowser({
   onVisibleUniversityIdsChange: (ids: ReadonlySet<string> | null) => void;
 }) {
   const t = useTranslations("vision.map");
-  const [query, setQuery] = useState("");
+  /**
+   * The field text, stored WITH the university it was typed against — the same trick this file
+   * already uses for search results and detail payloads.
+   *
+   * The box means two different things depending on mode: geo search at map level, local program
+   * filter once a university is open. Carrying text across that switch turns a city name into a
+   * filter that matches no programme, so it has to clear. Deriving the reset rather than firing it
+   * from an effect means the empty field is there on the first paint, with no flash of the old
+   * text and no cascading render.
+   *
+   * One deliberate consequence: closing a university and reopening the same one with nothing typed
+   * in between restores its filter, because the text still answers that university. Typing
+   * anything at map level in between replaces it, so geo text can never leak into a programme
+   * filter — which is the case that actually mattered.
+   */
+  const [queryState, setQueryState] = useState<{
+    openId: string | null;
+    value: string;
+  }>({ openId: null, value: "" });
   /**
    * Results are kept WITH the query they answer, and only shown when the two still agree.
    * Storing the payload alone meant that deleting "konya" down to "ka" re-displayed the old hits
@@ -121,6 +127,10 @@ export function MapBrowser({
   } | null>(null);
 
   const openId = openUniversity?.id ?? null;
+  // Text typed against a different university (or against the map) does not belong to this mode.
+  const query = queryState.openId === openId ? queryState.value : "";
+  const setQuery = (value: string) => setQueryState({ openId, value });
+
   const filteringPrograms = openId != null;
   const trimmedQuery = query.trim();
   const searching = !filteringPrograms && trimmedQuery.length >= 2;
@@ -132,17 +142,16 @@ export function MapBrowser({
     [cities, selectedCityCode],
   );
 
-  // Fresh field when opening/closing a university so geo text does not become a stale filter.
-  useEffect(() => {
-    setQuery("");
-  }, [openId]);
-
   useEffect(() => {
     if (!searching) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
-      void searchGeo(trimmedQuery, controller.signal)
-        .then((data) => setResults({ query: trimmedQuery, data }))
+      // `family` omitted — the API defaults to YKS, which is the only caller of this panel.
+      void geoControllerSearch({ q: trimmedQuery }, { signal: controller.signal })
+        .then((res) => {
+          const data = unwrap<GeoSearchResultDto>(res);
+          if (data) setResults({ query: trimmedQuery, data });
+        })
         // Aborted keystrokes land here too; either way there is nothing useful to show.
         .catch(() => undefined);
     }, SEARCH_DEBOUNCE_MS);

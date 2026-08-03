@@ -1,4 +1,5 @@
 "use client";
+import { CalendarPlus, Check, Lock, Share2, Sparkles, X } from "lucide-react";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -16,12 +17,6 @@ import {
   usersControllerMe,
 } from "@mentor/api-client";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import CalendarPlus from "lucide-react/dist/esm/icons/calendar-plus.mjs";
-import Check from "lucide-react/dist/esm/icons/check.mjs";
-import Lock from "lucide-react/dist/esm/icons/lock.mjs";
-import Share2 from "lucide-react/dist/esm/icons/share-2.mjs";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles.mjs";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import { PuhuImage } from "@/components/puhu-image";
 import { Link, useRouter } from "@/i18n/navigation";
 import { trackWeeklyRecapEvent } from "@/lib/analytics";

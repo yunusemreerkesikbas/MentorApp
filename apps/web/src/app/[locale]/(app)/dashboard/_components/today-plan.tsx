@@ -1,8 +1,8 @@
 "use client";
+import { Plus } from "lucide-react";
 
 import { useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import Plus from "lucide-react/dist/esm/icons/plus.mjs";
 import { useTranslations } from "next-intl";
 import type { PlanTaskDto, PlanTaskStatus } from "@mentor/types";
 import { ApiClientError, planTaskControllerUpdate } from "@mentor/api-client";

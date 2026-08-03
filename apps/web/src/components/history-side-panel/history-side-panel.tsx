@@ -1,7 +1,7 @@
 "use client";
+import { PanelLeft } from "lucide-react";
 
 import type { ReactNode } from "react";
-import PanelLeft from "lucide-react/dist/esm/icons/panel-left.mjs";
 
 export interface HistorySidePanelProps {
   title: string;

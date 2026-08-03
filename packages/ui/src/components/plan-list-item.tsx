@@ -1,6 +1,6 @@
 "use client";
+import { Check } from "lucide-react";
 
-import Check from "lucide-react/dist/esm/icons/check.mjs";
 import { Chip } from "./chip.js";
 
 export interface PlanListItemProps {

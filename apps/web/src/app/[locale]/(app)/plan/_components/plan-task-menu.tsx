@@ -1,6 +1,6 @@
 "use client";
+import { EllipsisVertical } from "lucide-react";
 
-import EllipsisVertical from "lucide-react/dist/esm/icons/ellipsis-vertical.mjs";
 import { useTranslations } from "next-intl";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 

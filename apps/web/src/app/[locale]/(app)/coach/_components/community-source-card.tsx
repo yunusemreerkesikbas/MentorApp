@@ -1,6 +1,6 @@
 "use client";
+import { ArrowUpRight } from "lucide-react";
 
-import ArrowUpRight from "lucide-react/dist/esm/icons/arrow-up-right.mjs";
 import { useTranslations } from "next-intl";
 import type {
   CoachConversationOriginDto,

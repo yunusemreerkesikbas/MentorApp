@@ -1,4 +1,5 @@
 "use client";
+import { Send } from "lucide-react";
 
 import {
   forwardRef,
@@ -7,7 +8,6 @@ import {
   useRef,
   type KeyboardEvent,
 } from "react";
-import Send from "lucide-react/dist/esm/icons/send.mjs";
 import { useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { PuhuImage } from "@/components/puhu-image";

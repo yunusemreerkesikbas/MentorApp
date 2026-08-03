@@ -1,4 +1,5 @@
 "use client";
+import { Minus, Pencil, Plus } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
@@ -6,9 +7,6 @@ import { useTranslations } from "next-intl";
 import type { FocusGoalDto } from "@mentor/types";
 import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
 import { Card } from "@mentor/ui";
-import Minus from "lucide-react/dist/esm/icons/minus.mjs";
-import Pencil from "lucide-react/dist/esm/icons/pencil.mjs";
-import Plus from "lucide-react/dist/esm/icons/plus.mjs";
 import { useMentorToast } from "@/lib/mentor-toast";
 
 const GOAL_MIN = 15;

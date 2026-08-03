@@ -1,15 +1,9 @@
 "use client";
+import { ArrowLeft, ChevronDown, ChevronUp, Clock, Crown, Minus, Trophy } from "lucide-react";
 
 import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
-import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left.mjs";
-import Clock from "lucide-react/dist/esm/icons/clock.mjs";
-import Crown from "lucide-react/dist/esm/icons/crown.mjs";
-import Trophy from "lucide-react/dist/esm/icons/trophy.mjs";
-import ChevronUp from "lucide-react/dist/esm/icons/chevron-up.mjs";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down.mjs";
-import Minus from "lucide-react/dist/esm/icons/minus.mjs";
 import type {
   CommunitySummary,
   LeaderboardEntry,

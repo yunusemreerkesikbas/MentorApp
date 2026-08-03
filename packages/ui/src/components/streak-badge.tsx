@@ -1,4 +1,4 @@
-import Flame from "lucide-react/dist/esm/icons/flame.mjs";
+import { Flame } from "lucide-react";
 import { Card } from "./card.js";
 
 export interface StreakBadgeProps {

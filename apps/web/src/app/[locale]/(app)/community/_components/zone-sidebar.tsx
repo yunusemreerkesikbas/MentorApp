@@ -1,14 +1,8 @@
 "use client";
+import { Bookmark, CircleHelp, Hash, House, Megaphone, Rss, Trophy } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import House from "lucide-react/dist/esm/icons/house.mjs";
-import Rss from "lucide-react/dist/esm/icons/rss.mjs";
-import Bookmark from "lucide-react/dist/esm/icons/bookmark.mjs";
-import Trophy from "lucide-react/dist/esm/icons/trophy.mjs";
-import Hash from "lucide-react/dist/esm/icons/hash.mjs";
-import Megaphone from "lucide-react/dist/esm/icons/megaphone.mjs";
-import CircleHelp from "lucide-react/dist/esm/icons/circle-help.mjs";
 import type { ZoneView } from "@mentor/types";
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
 import { Link, usePathname } from "@/i18n/navigation";

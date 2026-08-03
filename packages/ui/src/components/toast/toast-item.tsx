@@ -1,7 +1,7 @@
 "use client";
+import { X } from "lucide-react";
 
 import type * as React from "react";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import type { ToastRecord } from "./types.js";
 
 export interface ToastItemProps {

@@ -794,6 +794,13 @@ html.mentor-sheet-open {
   fill: #fff;
   pointer-events: none;
 }
+/* Count inside a province pin (KPSS): scales with the pin, so it stays legible at every zoom. */
+.mentor-tr-map .mentor-tr-map-pin text {
+  fill: #fff;
+  font-size: 7.5px;
+  font-weight: 700;
+  pointer-events: none;
+}
 .mentor-tr-map > path:hover {
   fill: var(--map-province-hover);
 }

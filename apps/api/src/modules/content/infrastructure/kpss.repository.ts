@@ -111,17 +111,47 @@ export class KpssRepository {
     return db.select().from(institutions).orderBy(asc(institutions.name));
   }
 
-  /** Per-province totals — what the map draws instead of 1.1k individual pins. */
+  /**
+   * Per-province totals — what the map draws instead of 1.1k individual pins.
+   *
+   * With a needle the counts narrow to postings whose title or institution matches it, which is
+   * what turns the search box into a map filter: typing "mühendis" leaves pins only where an
+   * engineer is actually being hired. Counted in SQL rather than by shipping the postings and
+   * filtering client-side — the whole reason they are not in `/kpss-targets` to begin with.
+   */
   async countPostingsByCity(
     db: Database | DatabaseTx,
+    filter?: { titleId?: string; needle?: string },
   ): Promise<CityPostingCountRow[]> {
+    const columns = {
+      cityCode: kpssPostings.cityCode,
+      postings: sql<number>`count(*)::int`,
+      quota: sql<number>`coalesce(sum(${kpssPostings.quota}), 0)::int`,
+    };
+
+    // A chosen title is an exact id, never a name match: picking MÜHENDİS must not drag in
+    // İNŞAAT MÜHENDİSİ, which a substring search would.
+    if (filter?.titleId) {
+      return db
+        .select(columns)
+        .from(kpssPostings)
+        .where(eq(kpssPostings.titleId, filter.titleId))
+        .groupBy(kpssPostings.cityCode);
+    }
+
+    if (!filter?.needle) {
+      return db.select(columns).from(kpssPostings).groupBy(kpssPostings.cityCode);
+    }
+
+    const pattern = `%${filter.needle}%`;
     return db
-      .select({
-        cityCode: kpssPostings.cityCode,
-        postings: sql<number>`count(*)::int`,
-        quota: sql<number>`coalesce(sum(${kpssPostings.quota}), 0)::int`,
-      })
+      .select(columns)
       .from(kpssPostings)
+      .innerJoin(titles, eq(titles.id, kpssPostings.titleId))
+      .innerJoin(institutions, eq(institutions.id, kpssPostings.institutionId))
+      .where(
+        sql`${foldTurkish(titles.name)} LIKE ${pattern} OR ${foldTurkish(institutions.name)} LIKE ${pattern}`,
+      )
       .groupBy(kpssPostings.cityCode);
   }
 

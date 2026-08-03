@@ -1,7 +1,6 @@
 "use client";
+import { Volume2, VolumeX } from "lucide-react";
 
-import Volume2 from "lucide-react/dist/esm/icons/volume-2.mjs";
-import VolumeX from "lucide-react/dist/esm/icons/volume-x.mjs";
 import { useTranslations } from "next-intl";
 
 export interface SessionAmbientToggleProps {

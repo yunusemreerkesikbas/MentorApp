@@ -139,6 +139,10 @@ export interface CreateMoodCheckinDto { [key: string]: unknown }
 
 export interface UpsertVisionDto { [key: string]: unknown }
 
+export interface PutPreferenceSimulationDto { [key: string]: unknown }
+
+export interface RefreshPreferenceSimulationDto { [key: string]: unknown }
+
 export interface CreatePlanTaskDto { [key: string]: unknown }
 
 export interface BulkCreatePlanTasksDto { [key: string]: unknown }
@@ -315,6 +319,44 @@ export type AiChatControllerPlanAdaptationPreviewBody = AiChatControllerPlanAdap
 export type AiGhostControllerNarrateBody = {
   examId?: string;
 };
+
+export type GeoControllerSearchParams = {
+family?: GeoControllerSearchFamily;
+q: string;
+};
+
+export type GeoControllerSearchFamily = typeof GeoControllerSearchFamily[keyof typeof GeoControllerSearchFamily];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GeoControllerSearchFamily = {
+  YKS: 'YKS',
+  KPSS: 'KPSS',
+} as const;
+
+export type GeoControllerGetKpssCityCountsParams = {
+q?: string;
+titleId?: string;
+};
+
+export type GeoControllerSearchProgramsParams = {
+scoreType?: GeoControllerSearchProgramsScoreType;
+pageSize?: number;
+page?: number;
+q: string;
+};
+
+export type GeoControllerSearchProgramsScoreType = typeof GeoControllerSearchProgramsScoreType[keyof typeof GeoControllerSearchProgramsScoreType];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GeoControllerSearchProgramsScoreType = {
+  SAY: 'SAY',
+  EA: 'EA',
+  SÖZ: 'SÖZ',
+  DİL: 'DİL',
+  TYT: 'TYT',
+} as const;
 
 export type CoachingControllerGetAnalysisParams = {
 examId?: string;
@@ -2276,17 +2318,24 @@ export type geoControllerSearchResponseSuccess = (geoControllerSearchResponse200
 
 export type geoControllerSearchResponse = (geoControllerSearchResponseSuccess)
 
-export const getGeoControllerSearchUrl = () => {
+export const getGeoControllerSearchUrl = (params: GeoControllerSearchParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
-  
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/v1/content/geo/search`
+  return stringifiedParams.length > 0 ? `/v1/content/geo/search?${stringifiedParams}` : `/v1/content/geo/search`
 }
 
-export const geoControllerSearch = async ( options?: RequestInit): Promise<geoControllerSearchResponse> => {
+export const geoControllerSearch = async (params: GeoControllerSearchParams, options?: RequestInit): Promise<geoControllerSearchResponse> => {
   
-  return http<geoControllerSearchResponse>(getGeoControllerSearchUrl(),
+  return http<geoControllerSearchResponse>(getGeoControllerSearchUrl(params),
   {      
     ...options,
     method: 'GET'
@@ -2320,6 +2369,46 @@ export const getGeoControllerGetKpssTargetsUrl = () => {
 export const geoControllerGetKpssTargets = async ( options?: RequestInit): Promise<geoControllerGetKpssTargetsResponse> => {
   
   return http<geoControllerGetKpssTargetsResponse>(getGeoControllerGetKpssTargetsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type geoControllerGetKpssCityCountsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type geoControllerGetKpssCityCountsResponseSuccess = (geoControllerGetKpssCityCountsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type geoControllerGetKpssCityCountsResponse = (geoControllerGetKpssCityCountsResponseSuccess)
+
+export const getGeoControllerGetKpssCityCountsUrl = (params?: GeoControllerGetKpssCityCountsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/content/kpss-targets/city-counts?${stringifiedParams}` : `/v1/content/kpss-targets/city-counts`
+}
+
+export const geoControllerGetKpssCityCounts = async (params?: GeoControllerGetKpssCityCountsParams, options?: RequestInit): Promise<geoControllerGetKpssCityCountsResponse> => {
+  
+  return http<geoControllerGetKpssCityCountsResponse>(getGeoControllerGetKpssCityCountsUrl(params),
   {      
     ...options,
     method: 'GET'
@@ -2386,6 +2475,79 @@ export const getGeoControllerGetUniversityProgramsUrl = (id: string,) => {
 export const geoControllerGetUniversityPrograms = async (id: string, options?: RequestInit): Promise<geoControllerGetUniversityProgramsResponse> => {
   
   return http<geoControllerGetUniversityProgramsResponse>(getGeoControllerGetUniversityProgramsUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type geoControllerSearchProgramsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type geoControllerSearchProgramsResponseSuccess = (geoControllerSearchProgramsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type geoControllerSearchProgramsResponse = (geoControllerSearchProgramsResponseSuccess)
+
+export const getGeoControllerSearchProgramsUrl = (params: GeoControllerSearchProgramsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/content/programs/search?${stringifiedParams}` : `/v1/content/programs/search`
+}
+
+export const geoControllerSearchPrograms = async (params: GeoControllerSearchProgramsParams, options?: RequestInit): Promise<geoControllerSearchProgramsResponse> => {
+  
+  return http<geoControllerSearchProgramsResponse>(getGeoControllerSearchProgramsUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type geoControllerGetCampusExperienceResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type geoControllerGetCampusExperienceResponseSuccess = (geoControllerGetCampusExperienceResponse200) & {
+  headers: Headers;
+};
+;
+
+export type geoControllerGetCampusExperienceResponse = (geoControllerGetCampusExperienceResponseSuccess)
+
+export const getGeoControllerGetCampusExperienceUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/content/universities/${id}/campus-experience`
+}
+
+export const geoControllerGetCampusExperience = async (id: string, options?: RequestInit): Promise<geoControllerGetCampusExperienceResponse> => {
+  
+  return http<geoControllerGetCampusExperienceResponse>(getGeoControllerGetCampusExperienceUrl(id),
   {      
     ...options,
     method: 'GET'
@@ -3202,6 +3364,173 @@ export const coachingControllerUpsertVision = async (upsertVisionDto: UpsertVisi
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       upsertVisionDto,)
+  }
+);}
+
+
+
+export type coachingControllerGetPreferenceSimulationAccessResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type coachingControllerGetPreferenceSimulationAccessResponseSuccess = (coachingControllerGetPreferenceSimulationAccessResponse200) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerGetPreferenceSimulationAccessResponse = (coachingControllerGetPreferenceSimulationAccessResponseSuccess)
+
+export const getCoachingControllerGetPreferenceSimulationAccessUrl = () => {
+
+
+  
+
+  return `/v1/coaching/preference-simulation/access`
+}
+
+export const coachingControllerGetPreferenceSimulationAccess = async ( options?: RequestInit): Promise<coachingControllerGetPreferenceSimulationAccessResponse> => {
+  
+  return http<coachingControllerGetPreferenceSimulationAccessResponse>(getCoachingControllerGetPreferenceSimulationAccessUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type coachingControllerGetPreferenceSimulationResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type coachingControllerGetPreferenceSimulationResponseSuccess = (coachingControllerGetPreferenceSimulationResponse200) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerGetPreferenceSimulationResponse = (coachingControllerGetPreferenceSimulationResponseSuccess)
+
+export const getCoachingControllerGetPreferenceSimulationUrl = () => {
+
+
+  
+
+  return `/v1/coaching/preference-simulation`
+}
+
+export const coachingControllerGetPreferenceSimulation = async ( options?: RequestInit): Promise<coachingControllerGetPreferenceSimulationResponse> => {
+  
+  return http<coachingControllerGetPreferenceSimulationResponse>(getCoachingControllerGetPreferenceSimulationUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type coachingControllerPutPreferenceSimulationResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type coachingControllerPutPreferenceSimulationResponseSuccess = (coachingControllerPutPreferenceSimulationResponse200) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerPutPreferenceSimulationResponse = (coachingControllerPutPreferenceSimulationResponseSuccess)
+
+export const getCoachingControllerPutPreferenceSimulationUrl = () => {
+
+
+  
+
+  return `/v1/coaching/preference-simulation`
+}
+
+export const coachingControllerPutPreferenceSimulation = async (putPreferenceSimulationDto: PutPreferenceSimulationDto, options?: RequestInit): Promise<coachingControllerPutPreferenceSimulationResponse> => {
+  
+  return http<coachingControllerPutPreferenceSimulationResponse>(getCoachingControllerPutPreferenceSimulationUrl(),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      putPreferenceSimulationDto,)
+  }
+);}
+
+
+
+export type coachingControllerDeletePreferenceSimulationResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type coachingControllerDeletePreferenceSimulationResponseSuccess = (coachingControllerDeletePreferenceSimulationResponse204) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerDeletePreferenceSimulationResponse = (coachingControllerDeletePreferenceSimulationResponseSuccess)
+
+export const getCoachingControllerDeletePreferenceSimulationUrl = () => {
+
+
+  
+
+  return `/v1/coaching/preference-simulation`
+}
+
+export const coachingControllerDeletePreferenceSimulation = async ( options?: RequestInit): Promise<coachingControllerDeletePreferenceSimulationResponse> => {
+  
+  return http<coachingControllerDeletePreferenceSimulationResponse>(getCoachingControllerDeletePreferenceSimulationUrl(),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type coachingControllerRefreshPreferenceSimulationResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type coachingControllerRefreshPreferenceSimulationResponseSuccess = (coachingControllerRefreshPreferenceSimulationResponse200) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerRefreshPreferenceSimulationResponse = (coachingControllerRefreshPreferenceSimulationResponseSuccess)
+
+export const getCoachingControllerRefreshPreferenceSimulationUrl = () => {
+
+
+  
+
+  return `/v1/coaching/preference-simulation/refresh`
+}
+
+export const coachingControllerRefreshPreferenceSimulation = async (refreshPreferenceSimulationDto: RefreshPreferenceSimulationDto, options?: RequestInit): Promise<coachingControllerRefreshPreferenceSimulationResponse> => {
+  
+  return http<coachingControllerRefreshPreferenceSimulationResponse>(getCoachingControllerRefreshPreferenceSimulationUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      refreshPreferenceSimulationDto,)
   }
 );}
 

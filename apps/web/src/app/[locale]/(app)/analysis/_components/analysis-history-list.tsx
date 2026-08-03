@@ -1,8 +1,8 @@
 "use client";
+import { ChevronDown } from "lucide-react";
 
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down.mjs";
 import { useLocale, useTranslations } from "next-intl";
 import type { ExamSubjectDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";

@@ -83,5 +83,14 @@
   "SOCIAL_BUDDY_REQUEST_EXISTS": "Bu kullanıcıyla zaten bekleyen bir yol arkadaşı isteğin var.",
   "SOCIAL_BUDDY_ALREADY_ACTIVE": "Zaten aktif bir yol arkadaşın var.",
   "SOCIAL_BUDDY_NUDGE_COOLDOWN": "Yol arkadaşını yakın zamanda dürttün — biraz sonra tekrar dene.",
-  "COACHING_WEEKLY_REVIEW_INSUFFICIENT": "Haftalık koç değerlendirmesi için bir deneme veya iki tamamlanmış seans gerekiyor."
+  "COACHING_WEEKLY_REVIEW_INSUFFICIENT": "Haftalık koç değerlendirmesi için bir deneme veya iki tamamlanmış seans gerekiyor.",
+  "COACHING_PREFERENCE_SIMULATION_DISABLED": "Tercih simülasyonu şu anda kullanıma kapalı.",
+  "COACHING_PREFERENCE_EXAM_NOT_SUPPORTED": "Tercih simülasyonu şu anda yalnızca YKS profilleri için açık.",
+  "COACHING_PREFERENCE_DATASET_STALE": "Taslağın eski bir resmî veri sürümüne ait. Düzenlemeden önce taslağı yenile.",
+  "COACHING_PREFERENCE_PROGRAM_INVALID": "Seçilen program güncel resmî katalogda bulunamadı.",
+  "COACHING_PREFERENCE_LIMIT_EXCEEDED": "Tercih sayısı resmî tercih limitini aşıyor.",
+  "COACHING_PREFERENCE_SCORE_TYPE_MISMATCH": "Bu programı karşılaştırmak için ilgili puan türünde bir başarı sırası gerekiyor.",
+  "SCENARIO_REVISION_CONFLICT": "Tercih taslağın başka bir sekmede değişti. Güncel taslağı açıp yeniden dene.",
+  "CONTENT_PROGRAM_DATASET_UNAVAILABLE": "Doğrulanmış güncel YKS program verisi henüz hazır değil.",
+  "CONTENT_CAMPUS_EXPERIENCE_NOT_FOUND": "Bu üniversite için doğrulanmış kampüs turu henüz hazır değil."
 }

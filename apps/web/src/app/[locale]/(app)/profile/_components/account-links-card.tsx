@@ -1,13 +1,7 @@
 "use client";
+import { CalendarDays, ChevronRight, CreditCard, GraduationCap, LogOut, Scale, Trash2 } from "lucide-react";
 
 import { useLocale, useTranslations } from "next-intl";
-import ChevronRight from "lucide-react/dist/esm/icons/chevron-right.mjs";
-import CreditCard from "lucide-react/dist/esm/icons/credit-card.mjs";
-import CalendarDays from "lucide-react/dist/esm/icons/calendar-days.mjs";
-import GraduationCap from "lucide-react/dist/esm/icons/graduation-cap.mjs";
-import LogOut from "lucide-react/dist/esm/icons/log-out.mjs";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2.mjs";
-import Scale from "lucide-react/dist/esm/icons/scale.mjs";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useState, type ComponentProps, type ReactElement } from "react";
 import type { AuthUser, ExamType } from "@mentor/types";

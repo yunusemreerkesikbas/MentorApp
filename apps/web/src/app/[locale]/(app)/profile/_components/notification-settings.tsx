@@ -1,13 +1,11 @@
 "use client";
+import { Bell, Mail, Smartphone } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Card, SectionHeading, Skeleton } from "@mentor/ui";
 import type { NotificationPreferencesDto } from "@mentor/types";
-import Bell from "lucide-react/dist/esm/icons/bell.mjs";
-import Mail from "lucide-react/dist/esm/icons/mail.mjs";
-import Smartphone from "lucide-react/dist/esm/icons/smartphone.mjs";
 import {
   ApiClientError,
   notificationsControllerGetPreferences,

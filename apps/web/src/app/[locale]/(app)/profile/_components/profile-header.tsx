@@ -1,4 +1,5 @@
 "use client";
+import { BadgeCheck, ImagePlus, LoaderCircle, LockKeyhole, MailWarning, Pencil, Trash2 } from "lucide-react";
 
 import {
   useEffect,
@@ -16,13 +17,6 @@ import {
 } from "@mentor/api-client";
 import { Button, TextAreaField, TextField, useDialog } from "@mentor/ui";
 import type { AuthUser } from "@mentor/types";
-import BadgeCheck from "lucide-react/dist/esm/icons/badge-check.mjs";
-import ImagePlus from "lucide-react/dist/esm/icons/image-plus.mjs";
-import LoaderCircle from "lucide-react/dist/esm/icons/loader-circle.mjs";
-import MailWarning from "lucide-react/dist/esm/icons/mail-warning.mjs";
-import LockKeyhole from "lucide-react/dist/esm/icons/lock-keyhole.mjs";
-import Pencil from "lucide-react/dist/esm/icons/pencil.mjs";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2.mjs";
 import { FormError } from "@/components/form";
 import {
   createAvatarUploadUrl,

@@ -1,7 +1,6 @@
 "use client";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 
-import ArrowDownRight from "lucide-react/dist/esm/icons/arrow-down-right.mjs";
-import ArrowUpRight from "lucide-react/dist/esm/icons/arrow-up-right.mjs";
 import { useTranslations } from "next-intl";
 import type { CoachingAnalysisDto } from "@mentor/types";
 import { Card } from "@mentor/ui";

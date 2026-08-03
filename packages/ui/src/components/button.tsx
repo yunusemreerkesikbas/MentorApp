@@ -1,7 +1,7 @@
 "use client";
+import { LoaderCircle } from "lucide-react";
 
 import type * as React from "react";
-import LoaderCircle from "lucide-react/dist/esm/icons/loader-circle.mjs";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;

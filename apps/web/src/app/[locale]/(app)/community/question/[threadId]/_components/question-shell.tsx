@@ -1,9 +1,9 @@
 "use client";
+import { Users } from "lucide-react";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import Users from "lucide-react/dist/esm/icons/users.mjs";
 import {
   ModerationTargetType,
   type ForumCoachIntent,

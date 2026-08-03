@@ -93,3 +93,4 @@ export * from "./geo.js";
 export * from "./community.js";
 export * from "./payments.js";
 export * from "./notifications.js";
+export * from "./preference-simulation.js";

@@ -1,4 +1,5 @@
 "use client";
+import { ImagePlus, Trash2 } from "lucide-react";
 
 import {
   useEffect,
@@ -11,8 +12,6 @@ import { updateMeSchema, usernameSchema } from "@mentor/validation";
 import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
 import type { AuthUser } from "@mentor/types";
 import { TextField } from "@mentor/ui";
-import ImagePlus from "lucide-react/dist/esm/icons/image-plus.mjs";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2.mjs";
 import { FormError } from "@/components/form";
 import {
   createAvatarUploadUrl,

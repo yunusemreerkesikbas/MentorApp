@@ -1,4 +1,5 @@
 "use client";
+import { Gift, X } from "lucide-react";
 
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -7,8 +8,6 @@ import { useTranslations } from "next-intl";
 import { redeemInviteSchema } from "@mentor/validation";
 import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
-import Gift from "lucide-react/dist/esm/icons/gift.mjs";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import { FormError } from "@/components/form";
 import { redeemInviteCode } from "@/lib/economy";
 import { useIsMounted } from "@/lib/use-is-mounted";

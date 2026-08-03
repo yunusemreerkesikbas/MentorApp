@@ -1,7 +1,7 @@
 "use client";
+import { PanelLeft } from "lucide-react";
 
 import type { ReactNode } from "react";
-import PanelLeft from "lucide-react/dist/esm/icons/panel-left.mjs";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   HISTORY_RAIL_COLLAPSED_PX,

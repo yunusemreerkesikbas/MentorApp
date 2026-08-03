@@ -8,6 +8,7 @@ import {
   mockExams,
   moodCheckins,
   planTasks,
+  preferenceScenarios,
   studySessions,
   visionBoards,
 } from "../../../database/schema";
@@ -45,6 +46,9 @@ export class CoachingErasureRepository {
 
       // Wholly personal — drop the row.
       await tx.delete(visionBoards).where(eq(visionBoards.userId, userId));
+      await tx
+        .delete(preferenceScenarios)
+        .where(eq(preferenceScenarios.userId, userId));
 
       // Rows with analytic value — scrub only the free text / AI narration.
       await tx

@@ -1,11 +1,8 @@
 "use client";
+import { ArrowRight, Check, MessageCircle, X } from "lucide-react";
 
 import { useState } from "react";
 import type { CommunityCoachPlanTaskOriginDto, PlanTaskDto } from "@mentor/types";
-import Check from "lucide-react/dist/esm/icons/check.mjs";
-import MessageCircle from "lucide-react/dist/esm/icons/message-circle.mjs";
-import ArrowRight from "lucide-react/dist/esm/icons/arrow-right.mjs";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { trackCoachEvent } from "@/lib/analytics";

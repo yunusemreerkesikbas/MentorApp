@@ -1,7 +1,7 @@
 "use client";
+import { CircleAlert } from "lucide-react";
 
 import type { ReactNode } from "react";
-import CircleAlert from "lucide-react/dist/esm/icons/circle-alert.mjs";
 import type { ToastVariant } from "@mentor/ui";
 import { PuhuImage, type PuhuVariant } from "@/components/puhu-image";
 

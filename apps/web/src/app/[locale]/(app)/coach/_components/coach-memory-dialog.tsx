@@ -1,12 +1,9 @@
 "use client";
+import { Brain, Pencil, Trash2, X } from "lucide-react";
 
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
-import Brain from "lucide-react/dist/esm/icons/brain.mjs";
-import Pencil from "lucide-react/dist/esm/icons/pencil.mjs";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2.mjs";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
 import type { CoachMemoryFactDto, CoachProfileDto } from "@mentor/types";
 import { useIsMounted } from "@/lib/use-is-mounted";

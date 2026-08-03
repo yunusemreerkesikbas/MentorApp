@@ -32,6 +32,18 @@ const GUIDE_YEAR = 2026;
 const SCORE_YEAR = 2025;
 const SOURCE_LABEL = "ÖSYM 2026 Yükseköğretim Programları ve Kontenjanları Kılavuzu";
 const SOURCE_URL = "https://www.osym.gov.tr";
+const DATASET_VERSION = `yks-${GUIDE_YEAR}-guide-${SCORE_YEAR}-placement-v1`;
+const officialPreferenceLimit = Number(
+  process.env.YKS_OFFICIAL_PREFERENCE_LIMIT ?? "",
+);
+const datasetSourceUrl = process.env.YKS_PROGRAM_DATASET_SOURCE_URL?.trim() ?? "";
+const datasetVerifiedAt = process.env.YKS_PROGRAM_DATASET_VERIFIED_AT?.trim() ?? "";
+const parsedDatasetVerifiedAt = new Date(datasetVerifiedAt);
+const hasVerifiedDatasetMetadata =
+  Number.isInteger(officialPreferenceLimit) &&
+  officialPreferenceLimit > 0 &&
+  /^https:\/\//i.test(datasetSourceUrl) &&
+  Number.isFinite(parsedDatasetVerifiedAt.getTime());
 
 const FILES = [
   { file: "2026-osym-lisans.xls", level: "LISANS" },
@@ -204,6 +216,45 @@ async function main() {
 
       written += chunk.length;
       console.log(`  ${written}/${programs.length}…`);
+    }
+
+    // The official limit is deliberately NOT a code default. The July 21 guide is preliminary;
+    // activation must wait until an editor verifies the preference-period guide and supplies the
+    // exact limit from that document (guardrail §4 #1).
+    if (hasVerifiedDatasetMetadata) {
+      await client.query(
+        `UPDATE program_catalog_datasets
+            SET is_active = false, updated_at = now()
+          WHERE exam_type = 'YKS' AND is_active = true`,
+      );
+      await client.query(
+        `INSERT INTO program_catalog_datasets
+           (exam_type, version, guide_year, placement_year, official_preference_limit,
+            source, source_url, verified_at, is_active)
+         VALUES ('YKS', $1, $2, $3, $4, $5, $6, $7, true)
+         ON CONFLICT (version) DO UPDATE SET
+           guide_year = EXCLUDED.guide_year,
+           placement_year = EXCLUDED.placement_year,
+           official_preference_limit = EXCLUDED.official_preference_limit,
+           source = EXCLUDED.source,
+           source_url = EXCLUDED.source_url,
+           verified_at = EXCLUDED.verified_at,
+           is_active = true,
+           updated_at = now()`,
+        [
+          DATASET_VERSION,
+          GUIDE_YEAR,
+          SCORE_YEAR,
+          officialPreferenceLimit,
+          SOURCE_LABEL,
+          datasetSourceUrl,
+          parsedDatasetVerifiedAt,
+        ],
+      );
+    } else {
+      console.warn(
+        "Dataset metadata was not activated: after verifying the final official preference guide, set YKS_OFFICIAL_PREFERENCE_LIMIT, YKS_PROGRAM_DATASET_SOURCE_URL and YKS_PROGRAM_DATASET_VERIFIED_AT together.",
+      );
     }
 
     await client.query("COMMIT");

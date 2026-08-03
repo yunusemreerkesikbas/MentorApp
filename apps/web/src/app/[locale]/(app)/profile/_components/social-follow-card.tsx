@@ -1,7 +1,7 @@
 "use client";
+import { ExternalLink } from "lucide-react";
 
 import { useTranslations } from "next-intl";
-import ExternalLink from "lucide-react/dist/esm/icons/external-link.mjs";
 import { Card, SectionHeading } from "@mentor/ui";
 import { getProfileLinks } from "@/lib/profile-links";
 

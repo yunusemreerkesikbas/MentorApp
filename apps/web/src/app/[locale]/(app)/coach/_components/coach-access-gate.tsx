@@ -1,8 +1,6 @@
 "use client";
+import { BookOpen, Check, Heart } from "lucide-react";
 
-import BookOpen from "lucide-react/dist/esm/icons/book-open.mjs";
-import Check from "lucide-react/dist/esm/icons/check.mjs";
-import Heart from "lucide-react/dist/esm/icons/heart.mjs";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { usePathname, useRouter } from "@/i18n/navigation";

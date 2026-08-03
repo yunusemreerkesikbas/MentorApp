@@ -1,6 +1,6 @@
 "use client";
+import { Plus } from "lucide-react";
 
-import Plus from "lucide-react/dist/esm/icons/plus.mjs";
 import { useTranslations } from "next-intl";
 
 /**

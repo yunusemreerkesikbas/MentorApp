@@ -15,6 +15,7 @@
 | **Postmark** | Transactional email | `POSTMARK_TOKEN` | MVP |
 | **Sentry** | Error monitoring | `SENTRY_DSN` | MVP |
 | **Google Analytics / Search Console** | Consent-gated article analytics + ownership verification | `NEXT_PUBLIC_GA_MEASUREMENT_ID`, `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | MVP |
+| **Google Maps Platform** | Lazy photorealistic 3D campus tour | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | YKS beta |
 | **Render** | Hosting (PaaS) | — (dashboard) | MVP |
 | **Redis** | Presence/leaderboard/cache/queue | (later) | **Phase 2** |
 
@@ -59,6 +60,19 @@
   absent until the visitor explicitly accepts; withdrawal disables collection and clears GA cookies.
 - Search Console verification is optional and is emitted through Next metadata. GA/consent copy must
   receive product-owner legal/KVKK review before production publication.
+
+### Google Maps Platform (YKS campus beta)
+- Enable billing and the Maps JavaScript API for a dedicated browser key. Restrict the key to the
+  production/preview HTTP referrers and restrict its API scope; a public browser key without both
+  restrictions is not rollout-ready.
+- Configure a conservative daily quota plus Cloud Billing budget alerts before enabling
+  `coaching.preference_simulation.enabled`. The feature has a 2D fallback, but quota exhaustion must
+  still be observable.
+- The `maps3d` library loads only on `/hedef/simulasyon`. Never move the loader into the app shell or
+  `/hedef`, otherwise every Vision Board visit pays the Google/3D bundle cost.
+- Verify Selçuk with the real restricted key on desktop and mobile. Persist
+  `PHOTOREALISTIC`; if only terrain is usable, persist `TERRAIN_ONLY` with `HYBRID`. Leave the campus
+  row disabled when coverage or any of the five official POI coordinates is unverified.
 
 ### Render (hosting)
 - Dockerized service, single region **Frankfurt/EU**. Env variables go into the Render dashboard.

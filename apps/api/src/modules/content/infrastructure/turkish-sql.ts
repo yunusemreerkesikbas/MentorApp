@@ -18,3 +18,17 @@ const TR_TO = "ccggiiioossuuaaiiuu";
 
 export const foldTurkish = (column: unknown) =>
   sql`lower(translate(${column}, ${TR_FROM}, ${TR_TO}))`;
+
+/**
+ * The JS half of the same fold, for the incoming query. Kept in this file next to the SQL half
+ * precisely because they must not drift — a mismatch makes every search silently return nothing.
+ * Ordinary `toLowerCase()` is wrong here: "İ" gains a combining dot in JS.
+ */
+const TR_MAP = new Map([...TR_FROM].map((ch, i) => [ch, TR_TO[i]!]));
+
+export function foldTurkishText(value: string): string {
+  return [...value]
+    .map((ch) => TR_MAP.get(ch) ?? ch)
+    .join("")
+    .toLowerCase();
+}

@@ -10,6 +10,7 @@ import { StreakService } from "./application/streak.service";
 import { TodayService } from "./application/today.service";
 import { VisionService } from "./application/vision.service";
 import { WeeklyReviewService } from "./application/weekly-review.service";
+import { PreferenceSimulationService } from "./application/preference-simulation.service";
 import { CoachingErasureService } from "./application/coaching-erasure.service";
 import { CoachEvidenceService } from "./application/coach-evidence.service";
 import { CONTENT_PORT } from "./domain/content.port";
@@ -26,6 +27,7 @@ import { MockExamRepository } from "./infrastructure/mock-exam.repository";
 import { MockExamPhotoRepository } from "./infrastructure/mock-exam-photo.repository";
 import { VisionBoardRepository } from "./infrastructure/vision-board.repository";
 import { WeeklyReviewRepository } from "./infrastructure/weekly-review.repository";
+import { PreferenceScenarioRepository } from "./infrastructure/preference-scenario.repository";
 import { CoachingErasureRepository } from "./infrastructure/coaching-erasure.repository";
 import { CoachingController } from "./presentation/coaching.controller";
 import { MockExamController } from "./presentation/mock-exam.controller";
@@ -52,6 +54,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     TodayService,
     VisionService,
     WeeklyReviewService,
+    PreferenceSimulationService,
     CoachingErasureService,
     CoachEvidenceService,
     CoachingErasureRepository,
@@ -65,6 +68,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     MoodCheckinRepository,
     VisionBoardRepository,
     WeeklyReviewRepository,
+    PreferenceScenarioRepository,
     // W1 ContentService adapter (ContentPort → editorial calendar).
     { provide: CONTENT_PORT, useClass: ContentServiceAdapter },
     CoachingQueryAdapter,
@@ -81,6 +85,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     SessionService,
     VisionService,
     WeeklyReviewService,
+    PreferenceSimulationService,
     StreakService,
   ],
 })

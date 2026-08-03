@@ -50,6 +50,10 @@ export const routing = defineRouting({
       en: "/subscription/result",
     },
     "/vision-board": { tr: "/hedef", en: "/vision-board" },
+    "/vision-board/simulation": {
+      tr: "/hedef/simulasyon",
+      en: "/vision-board/simulation",
+    },
     "/community": { tr: "/topluluk", en: "/community" },
     "/community/feed": { tr: "/topluluk/akis", en: "/community/feed" },
     "/community/saved": {

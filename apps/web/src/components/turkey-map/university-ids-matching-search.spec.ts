@@ -27,7 +27,14 @@ const cities = [
 ] as CityDto[];
 
 function emptyResults(over: Partial<GeoSearchResultDto> = {}): GeoSearchResultDto {
-  return { cities: [], universities: [], programs: [], ...over };
+  return {
+    cities: [],
+    universities: [],
+    programs: [],
+    titles: [],
+    institutions: [],
+    ...over,
+  };
 }
 
 describe("universityIdsMatchingSearch", () => {

@@ -1,4 +1,5 @@
 "use client";
+import { ArrowRight, CheckCircle2, Clock3, LoaderCircle } from "lucide-react";
 
 import { useState } from "react";
 import { flushSync } from "react-dom";
@@ -11,10 +12,6 @@ import {
 import type { QuestProgressView } from "@mentor/types";
 import { useRouter } from "@/i18n/navigation";
 import { useMentorToast } from "@/lib/mentor-toast";
-import ArrowRight from "lucide-react/dist/esm/icons/arrow-right.mjs";
-import CheckCircle2 from "lucide-react/dist/esm/icons/check-circle-2.mjs";
-import Clock3 from "lucide-react/dist/esm/icons/clock-3.mjs";
-import LoaderCircle from "lucide-react/dist/esm/icons/loader-circle.mjs";
 
 interface EconomyQuestsCardProps {
   onDismiss?: () => void;

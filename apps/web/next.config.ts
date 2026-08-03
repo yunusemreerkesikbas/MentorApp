@@ -9,9 +9,18 @@ const nextConfig: NextConfig = {
   // alias is dropped and static export fails with "Couldn't find next-intl config
   // file". We set it on the correct key here. ponytail: drop this when next-intl v4.
   turbopack: {
-    resolveAlias: { "next-intl/config": "./src/i18n/request.ts" },
+    resolveAlias: {
+      "next-intl/config": "./src/i18n/request.ts",
+      // Workspace package `dist/` imports these; Turbopack resolves from packages/*/
+      // and misses pnpm junctions. Pin to the web app install.
+      "lucide-react": "./node_modules/lucide-react",
+      zod: "./node_modules/zod",
+    },
   },
-  // Transpile workspace packages (§8 monorepo).
+  // Tree-shake lucide named imports (Next + lucide guidance).
+  experimental: {
+    optimizePackageImports: ["lucide-react"],
+  },  // Transpile workspace packages (§8 monorepo).
   transpilePackages: [
     "@mentor/ui",
     "@mentor/api-client",

@@ -1,8 +1,8 @@
 "use client";
+import { Plus } from "lucide-react";
 
 import type { PlanTaskDto, PublicHolidayDto } from "@mentor/types";
 import { Card } from "@mentor/ui";
-import Plus from "lucide-react/dist/esm/icons/plus.mjs";
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { monthGridDays } from "@/lib/plan-calendar-layout";

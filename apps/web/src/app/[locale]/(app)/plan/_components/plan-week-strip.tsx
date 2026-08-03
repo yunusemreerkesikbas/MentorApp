@@ -1,10 +1,8 @@
 "use client";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import Calendar from "lucide-react/dist/esm/icons/calendar.mjs";
-import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left.mjs";
-import ChevronRight from "lucide-react/dist/esm/icons/chevron-right.mjs";
 import { useLocale, useTranslations } from "next-intl";
 import type { PlanTaskDto } from "@mentor/types";
 import {

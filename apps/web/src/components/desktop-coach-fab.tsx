@@ -1,7 +1,7 @@
 "use client";
+import { X } from "lucide-react";
 
 import { useState, useSyncExternalStore } from "react";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import { useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 

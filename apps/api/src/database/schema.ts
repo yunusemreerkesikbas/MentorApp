@@ -2298,3 +2298,178 @@ export const aiDailyGreetings = pgTable(
     ),
   ],
 );
+
+/* ==================== YKS preference simulation pilot ====================
+ * Content-owned editorial catalogue/campus records are global reference data.
+ * Coaching-owned scenarios are per-user behavioral data and are RLS-scoped.
+ * Tables are appended here to respect the shared-schema workstream rule.
+ * ======================================================================== */
+
+export const programCatalogDatasets = pgTable(
+  "program_catalog_datasets",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    examType: text("exam_type").notNull(),
+    version: varchar("version", { length: 80 }).notNull(),
+    guideYear: smallint("guide_year").notNull(),
+    placementYear: smallint("placement_year").notNull(),
+    officialPreferenceLimit: smallint("official_preference_limit").notNull(),
+    source: text("source").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+    isActive: boolean("is_active").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("program_catalog_datasets_version_idx").on(t.version),
+    uniqueIndex("program_catalog_datasets_active_exam_idx")
+      .on(t.examType)
+      .where(sql`${t.isActive} = true`),
+    check("program_catalog_datasets_years_chk", sql`${t.guideYear} >= ${t.placementYear}`),
+    check("program_catalog_datasets_limit_chk", sql`${t.officialPreferenceLimit} > 0`),
+  ],
+);
+
+export const campusExperiences = pgTable(
+  "campus_experiences",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    universityId: uuid("university_id")
+      .notNull()
+      .references(() => universities.id, { onDelete: "cascade" }),
+    coverageStatus: text("coverage_status").notNull(),
+    renderMode: text("render_mode").notNull(),
+    initialLatitude: numeric("initial_latitude", { precision: 9, scale: 6 }).notNull(),
+    initialLongitude: numeric("initial_longitude", { precision: 9, scale: 6 }).notNull(),
+    initialAltitude: numeric("initial_altitude", { precision: 10, scale: 2 }).notNull(),
+    initialHeading: numeric("initial_heading", { precision: 6, scale: 2 }).notNull(),
+    initialTilt: numeric("initial_tilt", { precision: 5, scale: 2 }).notNull(),
+    initialRange: numeric("initial_range", { precision: 10, scale: 2 }).notNull(),
+    source: text("source").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+    isEnabled: boolean("is_enabled").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("campus_experiences_university_idx").on(t.universityId),
+    check(
+      "campus_experiences_coverage_chk",
+      sql`${t.coverageStatus} IN ('PHOTOREALISTIC', 'TERRAIN_ONLY', 'UNKNOWN')`,
+    ),
+    check(
+      "campus_experiences_render_mode_chk",
+      sql`${t.renderMode} IN ('PHOTOREALISTIC', 'HYBRID')`,
+    ),
+    check(
+      "campus_experiences_enabled_verified_chk",
+      sql`${t.isEnabled} = false OR ${t.coverageStatus} <> 'UNKNOWN'`,
+    ),
+  ],
+);
+
+export const campusPois = pgTable(
+  "campus_pois",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    campusExperienceId: uuid("campus_experience_id")
+      .notNull()
+      .references(() => campusExperiences.id, { onDelete: "cascade" }),
+    slug: varchar("slug", { length: 120 }).notNull(),
+    category: varchar("category", { length: 80 }).notNull(),
+    titleTr: text("title_tr").notNull(),
+    titleEn: text("title_en").notNull(),
+    summaryTr: text("summary_tr").notNull(),
+    summaryEn: text("summary_en").notNull(),
+    latitude: numeric("latitude", { precision: 9, scale: 6 }).notNull(),
+    longitude: numeric("longitude", { precision: 9, scale: 6 }).notNull(),
+    altitude: numeric("altitude", { precision: 10, scale: 2 }).notNull(),
+    heading: numeric("heading", { precision: 6, scale: 2 }).notNull(),
+    tilt: numeric("tilt", { precision: 5, scale: 2 }).notNull(),
+    range: numeric("range", { precision: 10, scale: 2 }).notNull(),
+    position: smallint("position").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("campus_pois_experience_slug_idx").on(t.campusExperienceId, t.slug),
+    uniqueIndex("campus_pois_experience_position_idx").on(
+      t.campusExperienceId,
+      t.position,
+    ),
+    check("campus_pois_position_chk", sql`${t.position} > 0`),
+  ],
+);
+
+export const preferenceScenarios = pgTable(
+  "preference_scenarios",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    organizationId: uuid("organization_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    examType: text("exam_type").notNull(),
+    datasetVersion: varchar("dataset_version", { length: 80 }).notNull(),
+    rankSay: integer("rank_say"),
+    rankEa: integer("rank_ea"),
+    rankSoz: integer("rank_soz"),
+    rankDil: integer("rank_dil"),
+    rankTyt: integer("rank_tyt"),
+    revision: integer("revision").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("preference_scenarios_user_idx").on(t.userId),
+    index("preference_scenarios_org_idx").on(t.organizationId),
+    check("preference_scenarios_revision_chk", sql`${t.revision} > 0`),
+    check("preference_scenarios_exam_chk", sql`${t.examType} = 'YKS'`),
+  ],
+);
+
+export const preferenceScenarioItems = pgTable(
+  "preference_scenario_items",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    scenarioId: uuid("scenario_id")
+      .notNull()
+      .references(() => preferenceScenarios.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    position: smallint("position").notNull(),
+    programCode: varchar("program_code", { length: 9 }).notNull(),
+    programName: text("program_name").notNull(),
+    faculty: text("faculty").notNull(),
+    level: text("level").notNull(),
+    scoreType: text("score_type").notNull(),
+    quota: integer("quota").notNull(),
+    guideYear: smallint("guide_year").notNull(),
+    placementYear: smallint("placement_year").notNull(),
+    successRank: integer("success_rank"),
+    universityId: uuid("university_id").notNull(),
+    universityName: text("university_name").notNull(),
+    cityCode: varchar("city_code", { length: 2 }).notNull(),
+    cityName: text("city_name").notNull(),
+    source: text("source").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("preference_scenario_items_position_idx").on(t.scenarioId, t.position),
+    uniqueIndex("preference_scenario_items_program_idx").on(
+      t.scenarioId,
+      t.programCode,
+    ),
+    index("preference_scenario_items_user_idx").on(t.userId),
+    check("preference_scenario_items_position_chk", sql`${t.position} > 0`),
+  ],
+);

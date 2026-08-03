@@ -1,10 +1,7 @@
 "use client";
+import { ChevronDown, MessageSquare, PanelLeft, SquarePen } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
-import PanelLeft from "lucide-react/dist/esm/icons/panel-left.mjs";
-import SquarePen from "lucide-react/dist/esm/icons/square-pen.mjs";
-import MessageSquare from "lucide-react/dist/esm/icons/message-square.mjs";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down.mjs";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";

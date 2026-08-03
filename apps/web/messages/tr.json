@@ -1836,7 +1836,101 @@
     "saved_info_title": "Hedefin kaydedildi",
     "saved_info_message": "Koçun ve panelin buna göre seni motive edecek.",
     "saved_info_ok": "Tamam",
-    "save_error": "Kaydedilemedi."
+    "save_error": "Kaydedilemedi.",
+    "simulation_cta": "3D kampüs ve tercih senaryosunu aç",
+    "kpss": {
+      "search_placeholder": "Unvan, kurum veya şehir ara…",
+      "searching": "Aranıyor…",
+      "search_empty": "Sonuç bulunamadı.",
+      "group_titles": "Unvanlar",
+      "group_institutions": "Kurumlar",
+      "group_cities": "Şehirler",
+      "chosen_title": "Hedef unvanın",
+      "chosen_institution": "Hedef kurumun",
+      "clear_title": "Hedef unvanı kaldır",
+      "clear_institution": "Hedef kurumu kaldır",
+      "city_summary": "{postings} ilan · {quota} kontenjan",
+      "round_note": "{round} dönemi ilanları",
+      "loading_postings": "İlanlar yükleniyor…",
+      "no_postings": "Bu ilde bu dönem ilan yok.",
+      "pick_city_hint": "Haritadan bir şehir seç.",
+      "pick_title_hint": "Hedef unvanını seç",
+      "quota": "{count} kişi",
+      "open_hint": "İlanları görmek için tıkla",
+      "open_city_aria": "{name} ilanını aç"
+    }
+  },
+  "preferenceSimulation": {
+    "loading": "Tercih senaryon hazırlanıyor…",
+    "back": "Hedef panosuna dön",
+    "load_error": "Tercih senaryosu şu anda yüklenemedi.",
+    "save_error": "Taslak kaydedilemedi. Güncel taslağı açıp yeniden deneyebilirsin.",
+    "refresh_error": "Taslak güncel veri sürümüne taşınamadı.",
+    "goal_error": "Vision Board hedefi güncellenemedi.",
+    "map_label": "Selçuk Üniversitesi kampüs haritası",
+    "map_fallback": "3D görünüm bu cihazda kullanılamıyor. Tercihlerin ve kampüs bilgileri çalışmaya devam ediyor.",
+    "selcuk_pilot": "Selçuk Üniversitesi pilotu",
+    "campus_unavailable": "Doğrulanmış 3D kampüs turu henüz hazır değil; tercih senaryosunu kullanmaya devam edebilirsin.",
+    "campus_intro": "Beş doğrulanmış durağı sırayla gez veya haritada serbestçe dolaş.",
+    "stop": "Durak {current}/{total}",
+    "official_source": "Resmî kaynağı aç",
+    "access": {
+      "FEATURE_DISABLED": "Tercih simülasyonu beta erişimi şu anda kapalı.",
+      "EXAM_NOT_SUPPORTED": "Bu deneyim şu anda yalnızca YKS profilleri için açık.",
+      "DATASET_UNAVAILABLE": "Doğrulanmış güncel YKS katalog verisi henüz hazır değil."
+    },
+    "tour": {
+      "play": "Turu oynat",
+      "pause": "Turu duraklat",
+      "previous": "Önceki durak",
+      "next": "Sonraki durak",
+      "free_roam": "Serbest gezin"
+    },
+    "tabs": {
+      "CAMPUS": "Kampüs",
+      "PREFERENCES": "Tercihler"
+    },
+    "preferences": {
+      "title": "Tercih senaryom",
+      "disclaimer": "Bu ekran yalnızca geçmişteki son yerleşen sırasıyla sayısal farkı gösterir; yerleşme olasılığı veya garanti üretmez."
+    },
+    "save_state": {
+      "IDLE": "Değişiklik var",
+      "SAVING": "Kaydediliyor…",
+      "SAVED": "Kaydedildi",
+      "ERROR": "Kaydedilemedi"
+    },
+    "stale": "Taslağın eski veri sürümünde. Yenilemede {removeCount} program artık bulunamadığı için kaldırılacak.",
+    "refresh": "Güncel veriyle yenile",
+    "ranks": {
+      "title": "Başarı sıralarım",
+      "placeholder": "Örn. 42000"
+    },
+    "search": {
+      "label": "Tüm YKS programlarında ara",
+      "placeholder": "Üniversite, fakülte veya program…",
+      "searching": "Aranıyor…",
+      "empty": "Sonuç bulunamadı.",
+      "add": "Ekle",
+      "added": "Eklendi",
+      "more": "Daha fazla göster"
+    },
+    "list": {
+      "title": "Tercih listem",
+      "count": "{count}/{limit}",
+      "reorder_aria": "{position}. tercih: {name}. Alt ve üst oklarla taşımak için Alt tuşunu kullan.",
+      "move_up": "Yukarı taşı",
+      "move_down": "Aşağı taşı",
+      "remove": "Tercihten çıkar",
+      "set_goal": "Hedefim yap",
+      "goal_set": "Vision Board hedefin"
+    },
+    "comparison": {
+      "PENDING": "Sayısal fark sunucuda yeniden hesaplanıyor…",
+      "MISSING_USER_RANK": "Bu puan türü için başarı sıranı girince sayısal fark görünür.",
+      "MISSING_PLACEMENT_RANK": "Bu program için geçmiş son yerleşen sırası bulunmuyor.",
+      "value": "Sen: {user} · Geçmiş son yerleşen: {cutoff} · Fark: {delta}"
+    }
   },
   "notifications": {
     "title": "Bildirimler",

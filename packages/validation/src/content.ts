@@ -2,6 +2,7 @@
 import { z } from "zod";
 import { isoDateSchema } from "./coaching.js";
 import { paginationQuerySchema } from "./pagination.js";
+import { YKS_SCORE_TYPES } from "@mentor/types";
 
 export const PUBLIC_HOLIDAY_KINDS = ["FULL", "HALF"] as const;
 
@@ -65,6 +66,15 @@ export const geoSearchQuerySchema = z.object({
   family: z.enum(["YKS", "KPSS"]).default("YKS"),
 });
 export type GeoSearchQuery = z.infer<typeof geoSearchQuerySchema>;
+
+/** Active, official YKS program catalogue search used by the preference builder. */
+export const programCatalogSearchQuerySchema = paginationQuerySchema.extend({
+  q: z.string().trim().min(2).max(100),
+  scoreType: z.enum(YKS_SCORE_TYPES).optional(),
+});
+export type ProgramCatalogSearchQuery = z.infer<
+  typeof programCatalogSearchQuerySchema
+>;
 
 /* --------------------- admin content editor (W6) --------------------- */
 

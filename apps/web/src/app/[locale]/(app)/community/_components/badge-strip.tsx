@@ -1,11 +1,8 @@
 "use client";
+import { Flame, Heart, Moon, Sprout } from "lucide-react";
 
 import { useTranslations } from "next-intl";
 import type { ComponentType } from "react";
-import Flame from "lucide-react/dist/esm/icons/flame.mjs";
-import Moon from "lucide-react/dist/esm/icons/moon.mjs";
-import Heart from "lucide-react/dist/esm/icons/heart.mjs";
-import Sprout from "lucide-react/dist/esm/icons/sprout.mjs";
 import { CommunityBadgeId } from "@mentor/types";
 
 /** Icon + label + soft color per badge. Positive framing only (§3). */

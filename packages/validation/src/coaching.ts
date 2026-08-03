@@ -3,7 +3,7 @@
  * Field copy is NOT here: user-facing messages are localized by the backend.
  */
 import { z } from "zod";
-import { CAREER_GROUPS } from "@mentor/types";
+import { CAREER_GROUPS, YKS_SCORE_TYPES } from "@mentor/types";
 // NOTE: import from the leaf module, NOT "./index.js" — a barrel import here creates an
 // index↔coaching cycle that crashes sync ESM-from-CJS loading (ts-node / node dist).
 import { paginationQuerySchema } from "./pagination.js";
@@ -294,6 +294,40 @@ export const upsertVisionSchema = z
     path: ["targetCityCode"],
   });
 export type UpsertVisionInput = z.infer<typeof upsertVisionSchema>;
+
+/* --------------------------- preference simulation --------------------------- */
+
+const yksRankSchema = z.coerce.number().int().min(1).max(9_999_999).nullish();
+
+export const preferenceRanksSchema = z.object(
+  Object.fromEntries(YKS_SCORE_TYPES.map((type) => [type, yksRankSchema])) as {
+    [K in (typeof YKS_SCORE_TYPES)[number]]: typeof yksRankSchema;
+  },
+);
+
+const programCodeSchema = z.string().regex(/^\d{9}$/);
+
+export const putPreferenceSimulationSchema = z
+  .object({
+    datasetVersion: z.string().trim().min(1).max(80),
+    expectedRevision: z.coerce.number().int().min(0),
+    ranks: preferenceRanksSchema,
+    programCodes: programCodeSchema.array().max(100),
+  })
+  .refine(
+    (value) => new Set(value.programCodes).size === value.programCodes.length,
+    { message: "duplicate_program_code", path: ["programCodes"] },
+  );
+export type PutPreferenceSimulationInput = z.infer<
+  typeof putPreferenceSimulationSchema
+>;
+
+export const refreshPreferenceSimulationSchema = z.object({
+  expectedRevision: z.coerce.number().int().min(1),
+});
+export type RefreshPreferenceSimulationInput = z.infer<
+  typeof refreshPreferenceSimulationSchema
+>;
 
 /* -------------------------------- mock exams -------------------------------- */
 

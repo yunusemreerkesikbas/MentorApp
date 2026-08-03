@@ -1,7 +1,6 @@
 "use client";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left.mjs";
-import ChevronRight from "lucide-react/dist/esm/icons/chevron-right.mjs";
 import { useLocale, useTranslations } from "next-intl";
 import { SegmentPillControl } from "@/components/segment-pill-control";
 import { PlanWeekNavButton } from "./plan-week-nav-button";

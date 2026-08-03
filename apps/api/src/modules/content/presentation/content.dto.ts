@@ -7,6 +7,7 @@ import {
   listInfoArticlesQuerySchema,
   listPublicHolidaysQuerySchema,
   paginationQuerySchema,
+  programCatalogSearchQuerySchema,
 } from "@mentor/validation";
 
 export class ListExamsQueryDto extends createZodDto(paginationQuerySchema) {}
@@ -24,3 +25,6 @@ export class ListPublicHolidaysQueryDto extends createZodDto(
 ) {}
 
 export class GeoSearchQueryDto extends createZodDto(geoSearchQuerySchema) {}
+export class ProgramCatalogSearchQueryDto extends createZodDto(
+  programCatalogSearchQuerySchema,
+) {}

@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import type {
+  CityPostingCountDto,
   InstitutionDto,
   KpssPostingDto,
   KpssTargetsDto,
@@ -16,6 +17,7 @@ import {
   type NewTitle,
   type TitleRow,
 } from "../infrastructure/kpss.repository";
+import { foldTurkishText } from "../infrastructure/turkish-sql";
 
 /**
  * KPSS reference data — civil-service titles, the institutions that posted, and this round's
@@ -65,6 +67,32 @@ export class KpssService {
           }
         : null,
     };
+  }
+
+  /**
+   * Per-province vacancy counts, optionally narrowed to one title or to a search term.
+   *
+   * This is the KPSS answer to YKS pin filtering: typing "mühendis" there hides campuses with no
+   * matching programme, and here it hides provinces with no matching vacancy. A term shorter than
+   * the search minimum is treated as no filter, so the map never blanks out mid-keystroke.
+   *
+   * `titleId` wins over `q`: once a goal is set, the map answers "where is my title hired?" and a
+   * half-typed word in the box must not override that.
+   */
+  async getCityCounts(
+    query?: string,
+    titleId?: string,
+  ): Promise<CityPostingCountDto[]> {
+    const needle = foldTurkishText((query ?? "").trim());
+    const rows = await this.kpss.countPostingsByCity(this.db, {
+      titleId: titleId || undefined,
+      needle: needle.length >= 2 ? needle : undefined,
+    });
+    return rows.map((c) => ({
+      cityCode: c.cityCode,
+      postings: c.postings,
+      quota: c.quota,
+    }));
   }
 
   async getCityPostings(cityCode: string): Promise<KpssPostingDto[]> {

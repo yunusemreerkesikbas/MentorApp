@@ -6,6 +6,8 @@ const KONYA = "42";
 const ANKARA = "06";
 const SELCUK = "11111111-1111-4111-8111-111111111111";
 const HACETTEPE = "22222222-2222-4222-8222-222222222222";
+const VHKI = "33333333-3333-4333-8333-333333333333";
+const SGK = "44444444-4444-4444-8444-444444444444";
 
 const fakeDb = {
   transaction: async <T>(cb: (tx: unknown) => Promise<T>): Promise<T> =>
@@ -17,6 +19,8 @@ interface FakeRow {
   targetCityCode: string | null;
   targetCity: string | null;
   targetUniversityId: string | null;
+  targetTitleId: string | null;
+  targetInstitutionId: string | null;
   careerGroup: string | null;
   motivation: string | null;
   aiNote: string | null;
@@ -38,6 +42,8 @@ function makeVisionsFake() {
     "targetCityCode",
     "targetCity",
     "targetUniversityId",
+    "targetTitleId",
+    "targetInstitutionId",
     "careerGroup",
     "motivation",
   ] as const;
@@ -64,6 +70,16 @@ function makeVisionsFake() {
   };
 }
 
+/** Only the listed KPSS ids exist; anything else is a dangling reference. */
+function makeKpssFake(known: ReadonlyArray<string> = [VHKI, SGK]) {
+  return {
+    assertTargetsExist: async (titleId: string | null, institutionId: string | null) =>
+      (!titleId || known.includes(titleId)) &&
+      (!institutionId || known.includes(institutionId)),
+    resolveNames: async () => ({ titleName: null, institutionName: null }),
+  };
+}
+
 /** Only the listed (university, city) pairs exist — everything else is a mismatch. */
 function makeGeoFake(pairs: ReadonlyArray<readonly [string, string]>) {
   return {
@@ -85,6 +101,7 @@ describe("VisionService", () => {
         [SELCUK, KONYA],
         [HACETTEPE, ANKARA],
       ]) as never,
+      makeKpssFake() as never,
     );
   });
 
@@ -181,5 +198,49 @@ describe("VisionService", () => {
     await service.setAiNote(USER, "Selçuk yolda!", "fake");
     await service.upsert(USER, goal);
     expect((await service.getMine(USER))?.aiNote).toBe("Selçuk yolda!");
+  });
+
+  it("stores a KPSS goal as title plus optional institution", async () => {
+    const dto = await service.upsert(USER, {
+      goalTitle: "Memur olmak",
+      targetCityCode: KONYA,
+      targetTitleId: VHKI,
+      targetInstitutionId: SGK,
+    });
+    expect(dto.targetTitleId).toBe(VHKI);
+    expect(dto.targetInstitutionId).toBe(SGK);
+    // No city cross-check on the KPSS side: an institution is national, and a round's postings are
+    // not a claim about where it operates — so Konya + SGK is a perfectly valid pair.
+    expect(dto.targetCityCode).toBe(KONYA);
+  });
+
+  it("rejects a KPSS target id that does not exist", async () => {
+    await expect(
+      service.upsert(USER, {
+        goalTitle: "Memur olmak",
+        targetTitleId: "99999999-9999-4999-8999-999999999999",
+      }),
+    ).rejects.toMatchObject({ details: { reason: "unknown_kpss_target" } });
+    expect(visions.row).toBeUndefined();
+  });
+
+  it("invalidates the cached AI note when the target title changes", async () => {
+    await service.upsert(USER, { goalTitle: "Memur olmak", targetTitleId: VHKI });
+    await service.setAiNote(USER, "VHKİ yolunda!", "fake");
+    await service.upsert(USER, { goalTitle: "Memur olmak", targetTitleId: SGK });
+    expect((await service.getMine(USER))?.aiNote).toBeNull();
+  });
+
+  it("keeps the cached AI note when a KPSS goal is re-saved unchanged", async () => {
+    const goal = {
+      goalTitle: "Memur olmak",
+      targetCityCode: KONYA,
+      targetTitleId: VHKI,
+      targetInstitutionId: SGK,
+    };
+    await service.upsert(USER, goal);
+    await service.setAiNote(USER, "VHKİ yolunda!", "fake");
+    await service.upsert(USER, goal);
+    expect((await service.getMine(USER))?.aiNote).toBe("VHKİ yolunda!");
   });
 });

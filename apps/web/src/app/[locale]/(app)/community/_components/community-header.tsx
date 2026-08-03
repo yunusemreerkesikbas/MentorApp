@@ -1,11 +1,8 @@
 "use client";
+import { ChevronDown, MessageCircle, Search, X } from "lucide-react";
 
 import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down.mjs";
-import MessageCircle from "lucide-react/dist/esm/icons/message-circle.mjs";
-import Search from "lucide-react/dist/esm/icons/search.mjs";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import { NotificationBell } from "@mentor/ui";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";

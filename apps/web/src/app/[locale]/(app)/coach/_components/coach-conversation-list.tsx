@@ -1,8 +1,7 @@
 "use client";
+import { Ellipsis, Trash2 } from "lucide-react";
 
 import { useEffect, useId, useState } from "react";
-import Ellipsis from "lucide-react/dist/esm/icons/ellipsis.mjs";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2.mjs";
 import { useTranslations } from "next-intl";
 import { Button, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { FormError } from "@/components/form";

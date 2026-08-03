@@ -1,11 +1,10 @@
 "use client";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { DayPicker } from "react-day-picker";
 import { enGB, tr } from "react-day-picker/locale";
 import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
-import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left.mjs";
-import ChevronRight from "lucide-react/dist/esm/icons/chevron-right.mjs";
 import "react-day-picker/style.css";
 import { Card } from "@mentor/ui";
 import { listPlanTaskCalendarDates } from "@/lib/plan-tasks";

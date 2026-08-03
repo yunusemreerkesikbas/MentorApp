@@ -1,9 +1,9 @@
 "use client";
+import { ArrowLeft } from "lucide-react";
 
 import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
-import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left.mjs";
 import { Button } from "@mentor/ui";
 import type { PuhuVariant } from "@/components/puhu-image";
 import { PuhuImage } from "@/components/puhu-image";

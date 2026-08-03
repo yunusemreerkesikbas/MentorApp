@@ -505,6 +505,13 @@
       "when": 1785666424540,
       "tag": "0071_cooing_ares",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1785670251909,
+      "tag": "0072_fancy_arclight",
+      "breakpoints": true
     }
   ]
 }

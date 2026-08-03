@@ -1,9 +1,9 @@
 "use client";
+import { X } from "lucide-react";
 
 import type * as React from "react";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import type { NotificationCategory, UserNotificationDto } from "@mentor/types";
 import { NotificationDrawerItem } from "./notification-drawer-item.js";
 import type { NotificationDrawerLabels, NotificationTab } from "./types.js";

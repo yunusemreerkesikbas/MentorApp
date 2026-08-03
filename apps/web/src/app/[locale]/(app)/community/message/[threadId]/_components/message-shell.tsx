@@ -1,9 +1,9 @@
 "use client";
+import { Users } from "lucide-react";
 
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import Users from "lucide-react/dist/esm/icons/users.mjs";
 import { type CommentView, type ThreadDetail, type ThreadView, type ZoneView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";

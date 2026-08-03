@@ -1,12 +1,7 @@
 "use client";
+import { BadgeCheck, BookOpen, ChevronDown, ClipboardCheck, Clock3, Smile } from "lucide-react";
 
 import { useTranslations } from "next-intl";
-import BadgeCheck from "lucide-react/dist/esm/icons/badge-check.mjs";
-import BookOpen from "lucide-react/dist/esm/icons/book-open.mjs";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down.mjs";
-import ClipboardCheck from "lucide-react/dist/esm/icons/clipboard-check.mjs";
-import Clock3 from "lucide-react/dist/esm/icons/clock-3.mjs";
-import Smile from "lucide-react/dist/esm/icons/smile.mjs";
 import type { CoachPersonalizationDto } from "@mentor/types";
 
 export function CoachPersonalizationContext({

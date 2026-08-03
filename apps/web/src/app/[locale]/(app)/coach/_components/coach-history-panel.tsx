@@ -1,7 +1,6 @@
 "use client";
+import { PanelLeft, SquarePen } from "lucide-react";
 
-import SquarePen from "lucide-react/dist/esm/icons/square-pen.mjs";
-import PanelLeft from "lucide-react/dist/esm/icons/panel-left.mjs";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { CoachConversationList } from "./coach-conversation-list";

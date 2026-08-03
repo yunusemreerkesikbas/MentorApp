@@ -1,4 +1,5 @@
 "use client";
+import { Coins, Gift, ListChecks } from "lucide-react";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -21,9 +22,6 @@ import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { EconomyBalanceCard } from "./economy-balance-card";
 import { EconomyInviteCard } from "./economy-invite-card";
 import { ListRow } from "./account-links-card";
-import Coins from "lucide-react/dist/esm/icons/coins.mjs";
-import Gift from "lucide-react/dist/esm/icons/gift.mjs";
-import ListChecks from "lucide-react/dist/esm/icons/list-checks.mjs";
 
 type EconomyState =
   | { status: "probing" }

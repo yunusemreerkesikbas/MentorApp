@@ -1,11 +1,8 @@
 "use client";
+import { ArrowUpRight, Flame, MessageCircle, Users } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import ArrowUpRight from "lucide-react/dist/esm/icons/arrow-up-right.mjs";
-import Flame from "lucide-react/dist/esm/icons/flame.mjs";
-import MessageCircle from "lucide-react/dist/esm/icons/message-circle.mjs";
-import Users from "lucide-react/dist/esm/icons/users.mjs";
 import type { CommunitySummary, ForumFeedItem, ForumHubView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
