@@ -345,3 +345,35 @@ GÜVENLİK GÖREVLİSİ"` aynı iş. `.trim()` yalnız uçları kırptığı iç
   **Gotcha:** `@Param()` nesne DTO'su ile orval yol parametresini göremiyor (`createZodDto` Swagger
   metadata taşımıyor) ve codegen düşüyor; `@Param("cityCode")` adlandırılmış kullanım şart.
   İlgili: `geo.controller.ts`, `geo.service.ts`, `turkish-sql.ts`, `packages/types/src/geo.ts`.
+
+- **Aramanın haritayı filtrelemesi — KPSS (2026-08-03)** — `GET /v1/content/kpss-targets/city-counts?q=`
+  ile il bazlı ilan sayıları arama terimine göre daralıyor: "mühendis" yazınca haritada yalnız
+  mühendis alımı olan iller pinli kalıyor ve pin sayısı o terime ait sayıya dönüyor. YKS'de arama
+  kampüs pinlerini süzüyordu; bu onun karşılığı.
+  **Sayılar arama sonucundan türetilmiyor, sunucuda yeniden hesaplanıyor.** Sonuç listesi 10 unvanla
+  sınırlı; pinleri o listeden süzseydik, eşleşen tek ilanı listenin dışında kalan iller sessizce
+  haritadan düşerdi. `countPostingsByCity` opsiyonel bir needle alıyor, unvan **veya** kurum adında
+  `foldTurkish` ile eşleştiriyor.
+  İki karakterin altındaki terim "filtre yok" sayılıyor — yoksa harita tuşa basıldıkça boşalıp
+  doluyordu.
+  **Türkçe katlamanın JS yarısı** `geo.service`'ten `turkish-sql.ts`'e taşındı (`foldTurkishText`).
+  İki yarı aynı dosyada durmalı: ayrışırlarsa `LIKE` hiçbir şeye eşleşmez ve arama sessizce boş
+  döner. `TR_MAP` artık `TR_FROM`/`TR_TO`'dan türetiliyor, elle ikinci bir tablo yok.
+  **Gotcha:** `@Query("q")` adlandırılmış kullanılmalı ve `@ApiQuery` ile bildirilmeli; `createZodDto`
+  Swagger metadata taşımadığı için orval aksi halde parametreyi göremiyor.
+  Spec: `kpss.service.spec` (filtresiz / "MÜHENDİS" → "muhendis" katlaması / eşik altı).
+  İlgili: `geo.controller.ts`, `kpss.service.ts`, `kpss.repository.ts`, `turkish-sql.ts`,
+  `use-kpss-targets.ts` (`useCityCountsForQuery`).
+
+- **`geo/search` generated client'a açıldı (2026-08-03)** — `@ApiQuery({ name: "q" })` +
+  `@ApiQuery({ name: "family", enum: ["YKS","KPSS"] })` eklendi. `GeoSearchQueryDto` bir
+  `createZodDto` ve Swagger metadata taşımıyor; bu yüzden orval uzun süredir
+  `geoControllerSearch()`'ü **parametresiz** üretiyordu ve hem `map-browser` hem `kpss-browser`
+  elle `fetch` yazmak zorunda kalıyordu. Artık `geoControllerSearch({ q, family? })` tipli;
+  iki plain fetch de silindi. Doğrulama hâlâ Zod'un — `@ApiQuery` yalnız şemayı tarif ediyor.
+  Bu, `kpss-targets/city-counts` ve `kpss-targets/cities/:cityCode` ile birlikte hedef panosundaki
+  son elle yazılmış isteği de kapatıyor.
+  **Kural:** bu repoda query/path parametresi olan her uç ya adlandırılmış `@Query("x")`/`@Param("x")`
+  ya da `@ApiQuery` bildirimi ister; aksi halde codegen parametreyi sessizce düşürür (ya da
+  `@Param()` nesne DTO'sunda olduğu gibi tamamen düşer).
+  İlgili: `geo.controller.ts`, `map-browser.tsx`, `kpss-browser.tsx`, `packages/api-client/`.

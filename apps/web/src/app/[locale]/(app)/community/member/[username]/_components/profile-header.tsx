@@ -1,10 +1,8 @@
 "use client";
+import { Flame, Globe, Zap } from "lucide-react";
 
 import type { ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import Flame from "lucide-react/dist/esm/icons/flame.mjs";
-import Globe from "lucide-react/dist/esm/icons/globe.mjs";
-import Zap from "lucide-react/dist/esm/icons/zap.mjs";
 import type { PublicProfile } from "@mentor/types";
 import { Button } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";

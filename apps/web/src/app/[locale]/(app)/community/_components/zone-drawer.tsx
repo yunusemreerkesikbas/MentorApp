@@ -1,9 +1,8 @@
 "use client";
+import { Menu, X } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import Menu from "lucide-react/dist/esm/icons/menu.mjs";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import { ZoneSidebar } from "./zone-sidebar";
 
 export function ZoneDrawer() {

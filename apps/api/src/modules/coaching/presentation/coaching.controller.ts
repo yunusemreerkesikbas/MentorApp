@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Post, Put, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 import type {
   MoodCheckinDto,
@@ -7,6 +7,9 @@ import type {
   CoachingAnalysisDto,
   VisionDto,
   WeeklyReviewDto,
+  PreferenceSimulationAccessDto,
+  PreferenceSimulationDto,
+  PreferenceSimulationRefreshResultDto,
 } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { MoodService } from "../application/mood.service";
@@ -14,12 +17,15 @@ import { MockExamService } from "../application/mock-exam.service";
 import { TodayService } from "../application/today.service";
 import { VisionService } from "../application/vision.service";
 import { WeeklyReviewService } from "../application/weekly-review.service";
+import { PreferenceSimulationService } from "../application/preference-simulation.service";
 import {
   AnalysisQueryDto,
   CreateMoodCheckinDto,
   ListMoodCheckinsQueryDto,
   UpsertVisionDto,
   WeeklyReviewQueryDto,
+  PutPreferenceSimulationDto,
+  RefreshPreferenceSimulationDto,
 } from "./coaching.dto";
 
 /** Coaching composite + mood endpoints. Authenticated self resource (global JwtAuthGuard applies). */
@@ -33,6 +39,7 @@ export class CoachingController {
     private readonly mockExams: MockExamService,
     private readonly vision: VisionService,
     private readonly weeklyReview: WeeklyReviewService,
+    private readonly preferenceSimulation: PreferenceSimulationService,
   ) {}
 
   /** Composite daily-hub payload for the Panel (one round-trip). */
@@ -94,6 +101,57 @@ export class CoachingController {
     @Body() dto: UpsertVisionDto,
   ): Promise<VisionDto> {
     return this.vision.upsert(user.id, dto);
+  }
+
+  @Get("preference-simulation/access")
+  getPreferenceSimulationAccess(
+    @CurrentUser() user: RequestUser,
+  ): Promise<PreferenceSimulationAccessDto> {
+    return this.preferenceSimulation.getAccess(user.id);
+  }
+
+  @Get("preference-simulation")
+  getPreferenceSimulation(
+    @CurrentUser() user: RequestUser,
+  ): Promise<PreferenceSimulationDto> {
+    return this.preferenceSimulation.get({
+      userId: user.id,
+      organizationId: user.orgId,
+    });
+  }
+
+  @Put("preference-simulation")
+  putPreferenceSimulation(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: PutPreferenceSimulationDto,
+  ): Promise<PreferenceSimulationDto> {
+    return this.preferenceSimulation.put(
+      { userId: user.id, organizationId: user.orgId },
+      dto,
+    );
+  }
+
+  @Post("preference-simulation/refresh")
+  @HttpCode(200)
+  refreshPreferenceSimulation(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: RefreshPreferenceSimulationDto,
+  ): Promise<PreferenceSimulationRefreshResultDto> {
+    return this.preferenceSimulation.refresh(
+      { userId: user.id, organizationId: user.orgId },
+      dto,
+    );
+  }
+
+  @Delete("preference-simulation")
+  @HttpCode(204)
+  deletePreferenceSimulation(
+    @CurrentUser() user: RequestUser,
+  ): Promise<void> {
+    return this.preferenceSimulation.delete({
+      userId: user.id,
+      organizationId: user.orgId,
+    });
   }
 }
 

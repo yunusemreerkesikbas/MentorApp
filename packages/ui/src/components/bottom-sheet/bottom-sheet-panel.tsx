@@ -1,7 +1,7 @@
 "use client";
+import { X } from "lucide-react";
 
 import { useId } from "react";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import { Button } from "../button.js";
 import { BottomSheetActionList } from "./bottom-sheet-action-list.js";
 import type { BottomSheetRecord } from "./types.js";

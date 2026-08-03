@@ -83,5 +83,14 @@
   "SOCIAL_BUDDY_REQUEST_EXISTS": "You already have a pending buddy request with this user.",
   "SOCIAL_BUDDY_ALREADY_ACTIVE": "You already have an active study buddy.",
   "SOCIAL_BUDDY_NUDGE_COOLDOWN": "You nudged your buddy recently — try again a bit later.",
-  "COACHING_WEEKLY_REVIEW_INSUFFICIENT": "A mock exam or two completed sessions are required for the weekly coach review."
+  "COACHING_WEEKLY_REVIEW_INSUFFICIENT": "A mock exam or two completed sessions are required for the weekly coach review.",
+  "COACHING_PREFERENCE_SIMULATION_DISABLED": "The preference simulation is currently unavailable.",
+  "COACHING_PREFERENCE_EXAM_NOT_SUPPORTED": "The preference simulation is currently available only to YKS profiles.",
+  "COACHING_PREFERENCE_DATASET_STALE": "This draft uses an older official dataset. Refresh it before editing.",
+  "COACHING_PREFERENCE_PROGRAM_INVALID": "The selected program was not found in the active official catalogue.",
+  "COACHING_PREFERENCE_LIMIT_EXCEEDED": "The preference list exceeds the official preference limit.",
+  "COACHING_PREFERENCE_SCORE_TYPE_MISMATCH": "A rank for this program's score type is required for comparison.",
+  "SCENARIO_REVISION_CONFLICT": "Your preference draft changed in another tab. Reload it and try again.",
+  "CONTENT_PROGRAM_DATASET_UNAVAILABLE": "A verified current YKS programme dataset is not available yet.",
+  "CONTENT_CAMPUS_EXPERIENCE_NOT_FOUND": "A verified campus tour is not available for this university yet."
 }

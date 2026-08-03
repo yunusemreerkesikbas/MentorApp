@@ -1,11 +1,7 @@
 "use client";
+import { Check, Pause, Play, SkipForward, X } from "lucide-react";
 
 import type { ReactNode } from "react";
-import Check from "lucide-react/dist/esm/icons/check.mjs";
-import Pause from "lucide-react/dist/esm/icons/pause.mjs";
-import Play from "lucide-react/dist/esm/icons/play.mjs";
-import SkipForward from "lucide-react/dist/esm/icons/skip-forward.mjs";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import { useTranslations } from "next-intl";
 import { Button } from "@mentor/ui";
 

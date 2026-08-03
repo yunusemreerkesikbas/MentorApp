@@ -1,5 +1,5 @@
+import { Play } from "lucide-react";
 import { useTranslations } from "next-intl";
-import Play from "lucide-react/dist/esm/icons/play.mjs";
 import { Link } from "@/i18n/navigation";
 import type { SessionPresetDto } from "@mentor/types";
 import { Card } from "@mentor/ui";

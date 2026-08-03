@@ -1,9 +1,7 @@
 "use client";
+import { ChevronRight, Crown, Trophy } from "lucide-react";
 
 import { useLocale, useTranslations } from "next-intl";
-import Trophy from "lucide-react/dist/esm/icons/trophy.mjs";
-import Crown from "lucide-react/dist/esm/icons/crown.mjs";
-import ChevronRight from "lucide-react/dist/esm/icons/chevron-right.mjs";
 import type { LeaderboardEntry, LeaderboardView } from "@mentor/types";
 import { Link } from "@/i18n/navigation";
 import { AuthorAvatar } from "./author-avatar";

@@ -1,11 +1,7 @@
 "use client";
+import { CheckCircle2, ChevronRight, Clock, RefreshCw, Trash2 } from "lucide-react";
 
 import type * as React from "react";
-import CheckCircle2 from "lucide-react/dist/esm/icons/check-circle-2.mjs";
-import ChevronRight from "lucide-react/dist/esm/icons/chevron-right.mjs";
-import Clock from "lucide-react/dist/esm/icons/clock.mjs";
-import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw.mjs";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2.mjs";
 import type { BottomSheetAction, BottomSheetActionIcon } from "./types.js";
 
 const ICONS: Record<

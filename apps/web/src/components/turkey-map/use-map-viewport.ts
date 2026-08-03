@@ -16,8 +16,8 @@ const WORLD = { w: 1000, h: 420 } as const;
 const MIN_WIDTH = 40;
 const ZOOM_STEP = 1.3;
 /** City zoom-in — content-layer motion (DESIGN.md §9), ease-out expo family. */
-const ZOOM_DURATION_S = 0.48;
-const ZOOM_EASE = [0.22, 1, 0.36, 1] as const;
+export const MAP_ZOOM_DURATION_S = 0.48;
+export const MAP_ZOOM_EASE = [0.22, 1, 0.36, 1] as const;
 /**
  * Pointer must move this far before pan starts. Below that, the gesture stays a click so a
  * neighbouring province remains selectable while zoomed (immediate capture was eating clicks).
@@ -71,6 +71,8 @@ export function useMapViewport() {
   const reduceMotion = useReducedMotion();
   const [view, setView] = useState<Viewport>(FULL);
   const [isPanning, setIsPanning] = useState(false);
+  /** True while a viewBox tween runs — mascot follows the city with duration 0 (no % chase lag). */
+  const [isViewAnimating, setIsViewAnimating] = useState(false);
   const viewRef = useRef(view);
   viewRef.current = view;
   const animRef = useRef<AnimationPlaybackControls | null>(null);
@@ -81,6 +83,7 @@ export function useMapViewport() {
   const cancelAnimation = useCallback(() => {
     animRef.current?.stop();
     animRef.current = null;
+    setIsViewAnimating(false);
   }, []);
 
   const setViewInstant = useCallback(
@@ -108,9 +111,10 @@ export function useMapViewport() {
         return;
       }
 
+      setIsViewAnimating(true);
       animRef.current = animate(0, 1, {
-        duration: ZOOM_DURATION_S,
-        ease: ZOOM_EASE,
+        duration: MAP_ZOOM_DURATION_S,
+        ease: MAP_ZOOM_EASE,
         onUpdate: (t) => {
           const frame = lerpView(from, to, t);
           viewRef.current = frame;
@@ -120,6 +124,7 @@ export function useMapViewport() {
           animRef.current = null;
           viewRef.current = to;
           setView(to);
+          setIsViewAnimating(false);
         },
       });
     },
@@ -127,6 +132,8 @@ export function useMapViewport() {
   );
 
   const reset = useCallback(() => animateTo(FULL), [animateTo]);
+  /** Instant country view — used before city↔city mascot hops so the path stays on-screen. */
+  const snapToFull = useCallback(() => setViewInstant(FULL), [setViewInstant]);
   const isZoomed = view.w < WORLD.w;
 
   /** Frame a province bbox with a margin so its shape does not touch the edges. */
@@ -264,7 +271,9 @@ export function useMapViewport() {
     unit: view.w / WORLD.w,
     isZoomed,
     isPanning,
+    isViewAnimating,
     reset,
+    snapToFull,
     zoomToBox,
     zoomIn: () => zoomBy(1 / ZOOM_STEP, undefined, true),
     zoomOut: () => zoomBy(ZOOM_STEP, undefined, true),

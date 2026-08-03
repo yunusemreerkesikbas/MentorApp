@@ -1,4 +1,5 @@
 "use client";
+import { Sparkles } from "lucide-react";
 
 import {
   forwardRef,
@@ -21,7 +22,6 @@ import {
   subscriptionsControllerGetMine,
 } from "@mentor/api-client";
 import { Button, TextAreaField } from "@mentor/ui";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles.mjs";
 import { useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { trackCoachEvent } from "@/lib/analytics";

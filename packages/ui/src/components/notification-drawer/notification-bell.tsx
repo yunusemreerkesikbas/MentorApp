@@ -1,6 +1,6 @@
 "use client";
+import { Bell } from "lucide-react";
 
-import Bell from "lucide-react/dist/esm/icons/bell.mjs";
 import { useNotificationDrawer } from "./notification-drawer-context.js";
 
 export interface NotificationBellProps {

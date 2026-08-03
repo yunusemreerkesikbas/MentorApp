@@ -1,11 +1,8 @@
 "use client";
+import { Pencil, Sparkles, Trash2, X } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import Pencil from "lucide-react/dist/esm/icons/pencil.mjs";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles.mjs";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2.mjs";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import type { ExamSubjectDto, MockExamDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Skeleton } from "@mentor/ui";

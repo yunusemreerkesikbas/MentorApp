@@ -1,8 +1,7 @@
 "use client";
+import { ClipboardList, PanelLeft } from "lucide-react";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import ClipboardList from "lucide-react/dist/esm/icons/clipboard-list.mjs";
-import PanelLeft from "lucide-react/dist/esm/icons/panel-left.mjs";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type {

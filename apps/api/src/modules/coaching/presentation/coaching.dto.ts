@@ -10,6 +10,8 @@ import {
   listPlanTasksQuerySchema,
   listStudySessionsQuerySchema,
   planTaskCalendarQuerySchema,
+  putPreferenceSimulationSchema,
+  refreshPreferenceSimulationSchema,
   sessionFeedbackSchema,
   startStudySessionSchema,
   updateMockExamSchema,
@@ -39,5 +41,11 @@ export class CreateMockExamDto extends createZodDto(createMockExamSchema) {}
 export class UpdateMockExamDto extends createZodDto(updateMockExamSchema) {}
 export class ListMockExamsQueryDto extends createZodDto(listMockExamsQuerySchema) {}
 export class UpsertVisionDto extends createZodDto(upsertVisionSchema) {}
+export class PutPreferenceSimulationDto extends createZodDto(
+  putPreferenceSimulationSchema,
+) {}
+export class RefreshPreferenceSimulationDto extends createZodDto(
+  refreshPreferenceSimulationSchema,
+) {}
 
 

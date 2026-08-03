@@ -1,18 +1,8 @@
 "use client";
+import { BadgeCheck, BookOpen, Calendar, ChartColumn, Coins, Crown, Gem, House, MessageCircle, User, Users } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import BadgeCheck from "lucide-react/dist/esm/icons/badge-check.mjs";
-import BookOpen from "lucide-react/dist/esm/icons/book-open.mjs";
-import Calendar from "lucide-react/dist/esm/icons/calendar.mjs";
-import ChartColumn from "lucide-react/dist/esm/icons/chart-column.mjs";
-import Coins from "lucide-react/dist/esm/icons/coins.mjs";
-import Crown from "lucide-react/dist/esm/icons/crown.mjs";
-import Gem from "lucide-react/dist/esm/icons/gem.mjs";
-import House from "lucide-react/dist/esm/icons/house.mjs";
-import MessageCircle from "lucide-react/dist/esm/icons/message-circle.mjs";
-import User from "lucide-react/dist/esm/icons/user.mjs";
-import Users from "lucide-react/dist/esm/icons/users.mjs";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { AuthUser, EconomyBalance, SubscriptionView } from "@mentor/types";

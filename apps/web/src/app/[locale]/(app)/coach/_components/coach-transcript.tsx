@@ -1,12 +1,8 @@
 "use client";
+import { CalendarDays, Check, Copy, RefreshCw, ThumbsDown, ThumbsUp } from "lucide-react";
 
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useTranslations } from "next-intl";
-import ThumbsUp from "lucide-react/dist/esm/icons/thumbs-up.mjs";
-import ThumbsDown from "lucide-react/dist/esm/icons/thumbs-down.mjs";
-import Copy from "lucide-react/dist/esm/icons/copy.mjs";
-import Check from "lucide-react/dist/esm/icons/check.mjs";
-import CalendarDays from "lucide-react/dist/esm/icons/calendar-days.mjs";
 import { Button, DataCard, Skeleton, SkeletonGroup } from "@mentor/ui";
 import {
   CoachActionStatus,
@@ -17,7 +13,6 @@ import {
   type CountdownDto,
   type ForumCoachBridgeView,
 } from "@mentor/types";
-import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw.mjs";
 import { Link } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { FormError } from "@/components/form";

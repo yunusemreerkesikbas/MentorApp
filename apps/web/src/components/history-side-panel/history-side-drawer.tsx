@@ -1,8 +1,8 @@
 "use client";
+import { X } from "lucide-react";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import { useTranslations } from "next-intl";
 import { useIsMounted } from "@/lib/use-is-mounted";
 import { HISTORY_DRAWER_CLOSE_MS } from "./constants";

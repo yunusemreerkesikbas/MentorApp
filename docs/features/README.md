@@ -24,6 +24,7 @@
 |---|---|---|
 | Web shell | app nav, landing, B2C sweep | [web-shell.md](./web-shell.md) |
 | i18n | next-intl TR/EN | [i18n.md](./i18n.md) |
+| YKS 3D campus + preference simulation | content + coaching + web | [preference-simulation.md](./preference-simulation.md) |
 
 ## Phase 2/3 (not yet built)
 

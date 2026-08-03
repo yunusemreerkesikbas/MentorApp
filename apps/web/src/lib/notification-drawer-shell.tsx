@@ -1,10 +1,7 @@
 "use client";
+import { Brain, FileText, ListCheck, MessageCircle } from "lucide-react";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import Brain from "lucide-react/dist/esm/icons/brain.mjs";
-import FileText from "lucide-react/dist/esm/icons/file-text.mjs";
-import ListCheck from "lucide-react/dist/esm/icons/list-check.mjs";
-import MessageCircle from "lucide-react/dist/esm/icons/message-circle.mjs";
 import { useTranslations } from "next-intl";
 import type { NotificationCategory, NotificationListDto, UserNotificationDto } from "@mentor/types";
 import { NotificationDrawerProvider, useDialog } from "@mentor/ui";

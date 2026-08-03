@@ -1,7 +1,7 @@
 "use client";
+import { X } from "lucide-react";
 
 import { useState } from "react";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import { motion, useReducedMotion } from "framer-motion";
 import { PuhuImage, type PuhuSizeToken, type PuhuVariant } from "@/components/puhu-image";
 

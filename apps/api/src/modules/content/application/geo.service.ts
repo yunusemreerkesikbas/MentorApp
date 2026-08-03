@@ -25,6 +25,7 @@ import {
   type UniversityRow,
   type UniversitySearchRow,
 } from "../infrastructure/geo.repository";
+import { foldTurkishText } from "../infrastructure/turkish-sql";
 
 /** Per-list cap on search results — a search box, not a paginated report. */
 const SEARCH_LIMIT = {
@@ -34,20 +35,6 @@ const SEARCH_LIMIT = {
   titles: 10,
   institutions: 10,
 } as const;
-
-/**
- * Same folding the SQL does, applied to the incoming query so both sides of the comparison
- * agree. Ordinary `toLowerCase()` is wrong here: "İ" gains a combining dot in JS.
- */
-const TR_MAP: Record<string, string> = {
-  ç: "c", Ç: "c", ğ: "g", Ğ: "g", ı: "i", I: "i", İ: "i",
-  ö: "o", Ö: "o", ş: "s", Ş: "s", ü: "u", Ü: "u",
-  â: "a", Â: "a", î: "i", Î: "i", û: "u", Û: "u",
-};
-
-function foldTurkish(value: string): string {
-  return [...value].map((ch) => TR_MAP[ch] ?? ch).join("").toLowerCase();
-}
 
 /**
  * Geo reference data (provinces + universities) behind the panel's goal map.
@@ -193,7 +180,7 @@ export class GeoService {
     query: string,
     family: ExamFamilyWithTargets = "YKS",
   ): Promise<GeoSearchResultDto> {
-    const needle = foldTurkish(query.trim());
+    const needle = foldTurkishText(query.trim());
     const empty: GeoSearchResultDto = {
       cities: [],
       universities: [],

@@ -1,11 +1,8 @@
 "use client";
+import { HelpCircle, Languages, MessageSquare, Share2 } from "lucide-react";
 
 import { useLocale, useTranslations } from "next-intl";
 import { useTransition } from "react";
-import HelpCircle from "lucide-react/dist/esm/icons/help-circle.mjs";
-import Languages from "lucide-react/dist/esm/icons/languages.mjs";
-import MessageSquare from "lucide-react/dist/esm/icons/message-square.mjs";
-import Share2 from "lucide-react/dist/esm/icons/share-2.mjs";
 import { Card, SectionHeading } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { getProfileLinks } from "@/lib/profile-links";

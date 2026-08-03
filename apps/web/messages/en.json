@@ -1836,7 +1836,100 @@
     "saved_info_title": "Goal saved",
     "saved_info_message": "Your coach and dashboard will motivate you around this goal.",
     "saved_info_ok": "OK",
-    "save_error": "Couldn't save."
+    "save_error": "Couldn't save.",
+    "simulation_cta": "Open 3D campus and preference scenario",
+    "kpss": {
+      "search_placeholder": "Search a title, institution or city…",
+      "searching": "Searching…",
+      "search_empty": "No results.",
+      "group_titles": "Titles",
+      "group_institutions": "Institutions",
+      "group_cities": "Cities",
+      "chosen_title": "Your target title",
+      "chosen_institution": "Your target institution",
+      "clear_title": "Clear target title",
+      "clear_institution": "Clear target institution",
+      "city_summary": "{postings} postings · {quota} positions",
+      "round_note": "{round} placement round",
+      "loading_postings": "Loading postings…",
+      "no_postings": "No postings in this province this round.",
+      "pick_city_hint": "Pick a province on the map.",
+      "pick_title_hint": "Choose your target title",
+      "quota": "{count} people",
+      "open_hint": "Click to see the postings",
+      "open_city_aria": "Open postings in {name}"
+    }
+  },
+  "preferenceSimulation": {
+    "loading": "Preparing your preference scenario…",
+    "back": "Back to Goal Board",
+    "load_error": "The preference scenario could not be loaded right now.",
+    "save_error": "The draft could not be saved. Reload the current draft and try again.",
+    "refresh_error": "The draft could not be moved to the current dataset.",
+    "goal_error": "The Goal Board target could not be updated.",
+    "map_label": "Selçuk University campus map",
+    "map_fallback": "3D view is unavailable on this device. Your preferences and campus insights remain usable.",
+    "selcuk_pilot": "Selçuk University pilot",
+    "campus_unavailable": "The verified 3D campus tour is not ready yet; you can keep using the preference scenario.",
+    "campus_intro": "Visit five verified stops in order or explore the map freely.",
+    "stop": "Stop {current}/{total}",
+    "official_source": "Open official source",
+    "access": {
+      "FEATURE_DISABLED": "Preference simulation beta access is currently closed.",
+      "EXAM_NOT_SUPPORTED": "This experience is currently available only to YKS profiles.",
+      "DATASET_UNAVAILABLE": "A verified current YKS catalogue is not available yet."
+    },
+    "tour": {
+      "play": "Play tour",
+      "pause": "Pause tour",
+      "previous": "Previous stop",
+      "next": "Next stop",
+      "free_roam": "Explore freely"
+    },
+    "tabs": {
+      "CAMPUS": "Campus",
+      "PREFERENCES": "Preferences"
+    },
+    "preferences": {
+      "title": "My preference scenario",
+      "disclaimer": "This screen only shows the numeric difference from the historical last-placed rank; it does not produce a placement probability or guarantee."
+    },
+    "save_state": {
+      "IDLE": "Changes pending",
+      "SAVING": "Saving…",
+      "SAVED": "Saved",
+      "ERROR": "Couldn't save"
+    },
+    "stale": "Your draft uses an older dataset. Refresh will remove {removeCount} programs that are no longer present.",
+    "refresh": "Refresh with current data",
+    "ranks": {
+      "title": "My success ranks",
+      "placeholder": "e.g. 42000"
+    },
+    "search": {
+      "label": "Search all YKS programs",
+      "placeholder": "University, faculty or program…",
+      "searching": "Searching…",
+      "empty": "No results found.",
+      "add": "Add",
+      "added": "Added"
+    },
+    "list": {
+      "title": "My preference list",
+      "count": "{count}/{limit}",
+      "reorder_aria": "Preference {position}: {name}. Hold Alt and use the arrow keys to reorder.",
+      "move_up": "Move up",
+      "move_down": "Move down",
+      "remove": "Remove preference",
+      "set_goal": "Set as my goal",
+      "goal_set": "Your Goal Board target"
+    },
+    "comparison": {
+      "PENDING": "The numeric difference is being recalculated on the server…",
+      "MISSING_USER_RANK": "Enter your rank for this score type to see the numeric difference.",
+      "MISSING_PLACEMENT_RANK": "No historical last-placed rank is available for this program.",
+      "value": "You: {user} · Historical last placed: {cutoff} · Difference: {delta}"
+    }
   },
   "notifications": {
     "title": "Notifications",

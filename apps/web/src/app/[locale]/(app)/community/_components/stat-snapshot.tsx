@@ -1,9 +1,8 @@
 "use client";
+import { Flame, Zap } from "lucide-react";
 
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import Flame from "lucide-react/dist/esm/icons/flame.mjs";
-import Zap from "lucide-react/dist/esm/icons/zap.mjs";
 import type { CommunityLevelView } from "@mentor/types";
 
 /** One metric cell — filled icon chip + label above, big value below. */

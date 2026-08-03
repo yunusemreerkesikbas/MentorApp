@@ -1,9 +1,7 @@
 "use client";
+import { Clock, Pencil, Trash2 } from "lucide-react";
 
 import type { PlanTaskDto } from "@mentor/types";
-import Clock from "lucide-react/dist/esm/icons/clock.mjs";
-import Pencil from "lucide-react/dist/esm/icons/pencil.mjs";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2.mjs";
 import { useLocale, useTranslations } from "next-intl";
 import { planEventColor } from "@/lib/plan-event-colors";
 import { formatDateLabel, formatTimeRange } from "./plan-utils";

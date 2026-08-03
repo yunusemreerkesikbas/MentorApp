@@ -1,10 +1,8 @@
 "use client";
+import { CircleHelp, Hash, MessageCircle } from "lucide-react";
 
 import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import CircleHelp from "lucide-react/dist/esm/icons/circle-help.mjs";
-import Hash from "lucide-react/dist/esm/icons/hash.mjs";
-import MessageCircle from "lucide-react/dist/esm/icons/message-circle.mjs";
 import type { ForumTagView, ZoneView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { trackCommunityEvent } from "@/lib/analytics";

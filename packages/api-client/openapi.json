@@ -1554,7 +1554,28 @@
     "/v1/content/geo/search": {
       "get": {
         "operationId": "GeoController_search",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "family",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "YKS",
+                "KPSS"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -1569,6 +1590,37 @@
       "get": {
         "operationId": "GeoController_getKpssTargets",
         "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/kpss-targets/city-counts": {
+      "get": {
+        "operationId": "GeoController_getKpssCityCounts",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "titleId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -1605,6 +1657,83 @@
     "/v1/content/universities/{id}/programs": {
       "get": {
         "operationId": "GeoController_getUniversityPrograms",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/programs/search": {
+      "get": {
+        "operationId": "GeoController_searchPrograms",
+        "parameters": [
+          {
+            "name": "scoreType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "SAY",
+                "EA",
+                "SÖZ",
+                "DİL",
+                "TYT"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/universities/{id}/campus-experience": {
+      "get": {
+        "operationId": "GeoController_getCampusExperience",
         "parameters": [
           {
             "name": "id",
@@ -2108,6 +2237,117 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpsertVisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/preference-simulation/access": {
+      "get": {
+        "operationId": "CoachingController_getPreferenceSimulationAccess",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/preference-simulation": {
+      "get": {
+        "operationId": "CoachingController_getPreferenceSimulation",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      },
+      "put": {
+        "operationId": "CoachingController_putPreferenceSimulation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutPreferenceSimulationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      },
+      "delete": {
+        "operationId": "CoachingController_deletePreferenceSimulation",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/preference-simulation/refresh": {
+      "post": {
+        "operationId": "CoachingController_refreshPreferenceSimulation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshPreferenceSimulationDto"
               }
             }
           }
@@ -5938,6 +6178,14 @@
         "properties": {}
       },
       "UpsertVisionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "PutPreferenceSimulationDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RefreshPreferenceSimulationDto": {
         "type": "object",
         "properties": {}
       },

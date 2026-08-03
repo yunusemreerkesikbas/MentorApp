@@ -183,6 +183,10 @@ export const CONFIG_CATALOG = {
     true,
     "Registration kill-switch — disable new sign-ups.",
   ),
+  "coaching.preference_simulation.enabled": flag(
+    false,
+    "Runtime gate for the free YKS 3D campus and preference comparison beta.",
+  ),
   "identity.verification_email.resend_limit": identityCount(
     1,
     100,
@@ -503,6 +507,7 @@ export const FeatureFlag = {
   FORUM_COACH_BRIDGE_ENABLED: "forum.coach_bridge.enabled",
   GOOGLE_OAUTH_ENABLED: "identity.google_oauth.enabled",
   SIGNUP_ENABLED: "signup.enabled",
+  PREFERENCE_SIMULATION_ENABLED: "coaching.preference_simulation.enabled",
 } as const satisfies Record<string, ConfigKey>;
 
 export function isConfigKey(key: string): key is ConfigKey {

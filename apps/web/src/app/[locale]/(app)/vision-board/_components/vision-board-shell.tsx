@@ -1,23 +1,27 @@
 "use client";
+import { ArrowLeft, PanelLeft } from "lucide-react";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left.mjs";
-import PanelLeft from "lucide-react/dist/esm/icons/panel-left.mjs";
 import { useTranslations } from "next-intl";
 import {
   CAREER_GROUPS,
   type CareerGroup,
   type CityDto,
   type GeoResponseDto,
+  type InstitutionDto,
+  type PreferenceSimulationAccessDto,
+  type TitleDto,
   type UniversityDto,
   type VisionDto,
 } from "@mentor/types";
 import {
   ApiClientError,
   coachingControllerGetVision,
+  coachingControllerGetPreferenceSimulationAccess,
   coachingControllerUpsertVision,
   geoControllerGetGeo,
+  geoControllerGetCampusExperience,
 } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
@@ -25,8 +29,14 @@ import { FormError } from "@/components/form";
 import { HistorySideDrawer } from "@/components/history-side-panel";
 import { MenuSelect } from "@/components/menu-select";
 import { PuhuImage } from "@/components/puhu-image";
+import { CityPostingHoverCard } from "@/components/turkey-map/city-posting-hover-card";
+import { KpssBrowser } from "@/components/turkey-map/kpss-browser";
 import { MapBrowser } from "@/components/turkey-map/map-browser";
-import { MapCanvas } from "@/components/turkey-map/map-canvas";
+import { MapCanvas, type CityPinAnchor } from "@/components/turkey-map/map-canvas";
+import {
+  useCityCountsForQuery,
+  useKpssTargets,
+} from "@/components/turkey-map/use-kpss-targets";
 import {
   UniversityHoverCard,
   type HoverAnchor,
@@ -67,6 +77,9 @@ export function VisionBoardShell() {
   const [goalTitle, setGoalTitle] = useState("");
   const [targetCityCode, setTargetCityCode] = useState<string | null>(null);
   const [targetUniversity, setTargetUniversity] = useState<UniversityDto | null>(null);
+  /** KPSS anchors: a title is permanent, an institution narrows it. Both null for YKS. */
+  const [targetTitleId, setTargetTitleId] = useState<string | null>(null);
+  const [targetInstitutionId, setTargetInstitutionId] = useState<string | null>(null);
   const [careerGroup, setCareerGroup] = useState<CareerGroup | null>(null);
   /**
    * No longer editable here, but still round-tripped: saving `null` would silently erase the
@@ -76,6 +89,10 @@ export function VisionBoardShell() {
   const [cities, setCities] = useState<CityDto[]>([]);
   const [openUniversity, setOpenUniversity] = useState<UniversityDto | null>(null);
   const [hover, setHover] = useState<HoverAnchor | null>(null);
+  /** KPSS province pin hover — separate from `hover`; the two pin layers never coexist. */
+  const [cityPinHover, setCityPinHover] = useState<CityPinAnchor | null>(null);
+  /** KPSS search term, lifted so the map can filter province pins by it (YKS does the same). */
+  const [kpssQuery, setKpssQuery] = useState("");
   /** Sidebar search hover — province highlight on the map (not a selection). */
   const [previewCityCode, setPreviewCityCode] = useState<string | null>(null);
   /** Sidebar search click — pin the university hover card while the map zooms. */
@@ -91,6 +108,10 @@ export function VisionBoardShell() {
   const isLgRef = useRef(false);
   const hoverHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [simulationAccess, setSimulationAccess] =
+    useState<PreferenceSimulationAccessDto | null>(null);
+  const [simulationReadyUniversityId, setSimulationReadyUniversityId] =
+    useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -149,22 +170,41 @@ export function VisionBoardShell() {
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  useEffect(() => {
-    if (targetCityCode == null) {
-      setPreviewCityCode(null);
-      setSpotlightUniversityId(null);
-    }
-  }, [targetCityCode]);
-
   const selectedCity = targetCityCode
     ? (cities.find((c) => c.code === targetCityCode) ?? null)
     : null;
   const showUniversities = user?.examType === "YKS";
+  const isKpss = user?.examType === "KPSS";
+  const { targets: kpssTargets } = useKpssTargets(isKpss);
+  const targetTitle =
+    kpssTargets?.titles.find((x) => x.id === targetTitleId) ?? null;
+  const targetInstitution =
+    kpssTargets?.institutions.find((x) => x.id === targetInstitutionId) ?? null;
+  // `null` while a search is still in flight or below the minimum — the full counts stand in, so
+  // the map never blanks out between keystrokes.
+  const searchCounts = useCityCountsForQuery(kpssQuery, targetTitleId, isKpss);
+  // Province pins carry the vacancy count, so a province with none gets no pin at all — an empty
+  // marker would read as "nothing found yet" rather than "nobody advertised here".
+  const cityPins = useMemo(() => {
+    if (!isKpss || !kpssTargets) return null;
+    const counts = searchCounts ?? kpssTargets.cityPostings;
+    return counts.flatMap((c) => {
+      const city = cities.find((x) => x.code === c.cityCode);
+      return city ? [{ ...c, cityName: city.name }] : [];
+    });
+  }, [isKpss, kpssTargets, cities, searchCounts]);
   const targetSummary = targetUniversity
     ? targetUniversity.name
-    : selectedCity
-      ? selectedCity.name
-      : null;
+    : targetTitle
+      ? targetTitle.name
+      : selectedCity
+        ? selectedCity.name
+        : null;
+  const simulationReady = Boolean(
+    simulationAccess?.enabled &&
+      targetUniversity &&
+      simulationReadyUniversityId === targetUniversity.id,
+  );
 
   useEffect(() => {
     let active = true;
@@ -173,11 +213,17 @@ export function VisionBoardShell() {
     void Promise.allSettled([
       coachingControllerGetVision(),
       geoControllerGetGeo(),
-    ]).then(([visionRes, geoRes]) => {
+      coachingControllerGetPreferenceSimulationAccess(),
+    ]).then(([visionRes, geoRes, accessRes]) => {
       if (!active) return;
       const geo =
         geoRes.status === "fulfilled" ? unwrap<GeoResponseDto>(geoRes.value) : null;
       setCities(geo?.cities ?? []);
+      setSimulationAccess(
+        accessRes.status === "fulfilled"
+          ? unwrap<PreferenceSimulationAccessDto>(accessRes.value)
+          : null,
+      );
 
       if (visionRes.status === "fulfilled") {
         const dto = unwrap<VisionDto>(visionRes.value);
@@ -186,6 +232,8 @@ export function VisionBoardShell() {
           setTargetCityCode(dto.targetCityCode);
           setCareerGroup(dto.careerGroup);
           setMotivation(dto.motivation);
+          setTargetTitleId(dto.targetTitleId);
+          setTargetInstitutionId(dto.targetInstitutionId);
           // Resolve the saved university id against the list we just loaded, so the panel can
           // name it instead of showing a bare uuid.
           const saved = geo?.cities
@@ -201,6 +249,29 @@ export function VisionBoardShell() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    if (
+      !simulationAccess?.enabled ||
+      !targetUniversity ||
+      targetUniversity.slug !== "selcuk-universitesi"
+    ) {
+      return () => {
+        active = false;
+      };
+    }
+    void geoControllerGetCampusExperience(targetUniversity.id)
+      .then(() => {
+        if (active) setSimulationReadyUniversityId(targetUniversity.id);
+      })
+      .catch(() => {
+        if (active) setSimulationReadyUniversityId(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [simulationAccess?.enabled, targetUniversity]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (saving || goalTitle.trim().length === 0) return;
@@ -213,6 +284,10 @@ export function VisionBoardShell() {
         // The server re-checks that the university really sits in this city, so a mismatched pair
         // is rejected rather than stored.
         targetUniversityId: targetUniversity?.id ?? null,
+        // The other exam family's anchors are never sent: a YKS board would otherwise keep a KPSS
+        // title alive in the AI note long after the user switched.
+        targetTitleId: isKpss ? targetTitleId : null,
+        targetInstitutionId: isKpss ? targetInstitutionId : null,
         careerGroup,
         motivation,
       });
@@ -257,7 +332,8 @@ export function VisionBoardShell() {
     openBrowsePanel();
   }
 
-  const mascot = <PuhuImage variant="proud" career={careerGroup} size="md" />;
+  // 96px — between DESIGN md(72) and lg(120); readable on the map without burying pins.
+  const mascot = <PuhuImage variant="proud" career={careerGroup} size={96} />;
   const careerLabelId = "vision-career-label";
   const careerOptions = [
     { value: "", label: translate("career.none") },
@@ -275,7 +351,28 @@ export function VisionBoardShell() {
         variants: staggerListVariants,
       };
 
-  const mapBrowser = loaded ? (
+  const mapBrowser = !loaded ? (
+    <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+      {common("loading")}
+    </p>
+  ) : isKpss ? (
+    <KpssBrowser
+      targets={kpssTargets}
+      cities={cities}
+      selectedCityCode={targetCityCode}
+      targetTitleId={targetTitleId}
+      targetInstitutionId={targetInstitutionId}
+      onSelectCity={(code) => {
+        handleSelectCity(code);
+        openBrowsePanel();
+      }}
+      onSetTitle={(title) => setTargetTitleId(title?.id ?? null)}
+      onSetInstitution={(institution) =>
+        setTargetInstitutionId(institution?.id ?? null)
+      }
+      onQueryChange={setKpssQuery}
+    />
+  ) : (
     <MapBrowser
       cities={cities}
       selectedCityCode={targetCityCode}
@@ -299,10 +396,6 @@ export function VisionBoardShell() {
       onFocusCampus={handleFocusCampus}
       onVisibleUniversityIdsChange={setVisibleUniversityIds}
     />
-  ) : (
-    <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-      {common("loading")}
-    </p>
   );
 
   const goalFormFields = (
@@ -316,6 +409,10 @@ export function VisionBoardShell() {
       careerOptions={careerOptions}
       selectedCity={selectedCity}
       targetUniversity={targetUniversity}
+      targetTitle={targetTitle}
+      targetInstitution={targetInstitution}
+      onClearTitle={() => setTargetTitleId(null)}
+      onClearInstitution={() => setTargetInstitutionId(null)}
       onClearTarget={() => {
         setTargetCityCode(null);
         setTargetUniversity(null);
@@ -323,6 +420,8 @@ export function VisionBoardShell() {
       saving={saving}
       error={error}
       clearTargetLabel={map("clear_target")}
+      simulationReady={simulationReady}
+      simulationUniversityId={targetUniversity?.id ?? null}
     />
   );
 
@@ -424,8 +523,9 @@ export function VisionBoardShell() {
             spotlightUniversityId={spotlightUniversityId}
             visibleUniversityIds={visibleUniversityIds}
             showOsymSource={showUniversities}
+            cityPins={cityPins}
             activeUniversityId={openUniversity?.id ?? targetUniversity?.id ?? null}
-            overlay={targetCityCode ? { cityCode: targetCityCode, node: mascot } : null}
+            overlay={{ cityCode: targetCityCode, node: mascot }}
             onSelectCity={(code) => {
               // Province click clears pin spotlight; pin click re-sets it in onSelectUniversity
               // (same event — last write wins after batching).
@@ -443,6 +543,10 @@ export function VisionBoardShell() {
               if (anchor) showUniversityHover(anchor);
               else scheduleHoverHide();
             }}
+            onHoverCityPin={(anchor) => {
+              cancelHoverHide();
+              setCityPinHover(anchor);
+            }}
           />
           <UniversityHoverCard
             anchor={hover}
@@ -458,10 +562,17 @@ export function VisionBoardShell() {
               openBrowsePanel();
             }}
           />
-          {/* With no city chosen there is nowhere on the map to stand, so the mascot waits here. */}
-          {!targetCityCode ? (
-            <div className="pointer-events-none absolute left-4 top-4">{mascot}</div>
-          ) : null}
+          <CityPostingHoverCard
+            anchor={cityPinHover}
+            round={kpssTargets?.round ?? null}
+            onHoverRetain={cancelHoverHide}
+            onHoverRelease={() => setCityPinHover(null)}
+            onOpen={(anchor) => {
+              handleSelectCity(anchor.cityCode);
+              setCityPinHover(null);
+              openBrowsePanel();
+            }}
+          />
         </div>
       </div>
 
@@ -491,6 +602,37 @@ export function VisionBoardShell() {
   );
 }
 
+/** A chosen target, sitting in the form bar with a way out of it. */
+function TargetChip({
+  name,
+  clearLabel,
+  onClear,
+}: {
+  name: string;
+  clearLabel: string;
+  onClear: () => void;
+}) {
+  return (
+    <span
+      className="flex min-h-11 max-w-[14rem] items-center gap-2 rounded-[var(--radius-card)] border px-3 text-sm font-semibold"
+      style={{ borderColor: "var(--color-main)", color: "var(--color-main)" }}
+    >
+      <span className="min-w-0 truncate" title={name}>
+        {name}
+      </span>
+      <button
+        type="button"
+        onClick={onClear}
+        aria-label={clearLabel}
+        className="shrink-0 cursor-pointer transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+        style={{ color: "var(--color-secondary)" }}
+      >
+        ✕
+      </button>
+    </span>
+  );
+}
+
 function VisionGoalFields({
   layout,
   goalTitle,
@@ -501,10 +643,16 @@ function VisionGoalFields({
   careerOptions,
   selectedCity,
   targetUniversity,
+  targetTitle,
+  targetInstitution,
+  onClearTitle,
+  onClearInstitution,
   onClearTarget,
   saving,
   error,
   clearTargetLabel,
+  simulationReady,
+  simulationUniversityId,
 }: {
   layout: "bar" | "stack";
   goalTitle: string;
@@ -515,10 +663,16 @@ function VisionGoalFields({
   careerOptions: Array<{ value: string; label: string }>;
   selectedCity: CityDto | null;
   targetUniversity: UniversityDto | null;
+  targetTitle: TitleDto | null;
+  targetInstitution: InstitutionDto | null;
+  onClearTitle: () => void;
+  onClearInstitution: () => void;
   onClearTarget: () => void;
   saving: boolean;
   error: string | null;
   clearTargetLabel: string;
+  simulationReady: boolean;
+  simulationUniversityId: string | null;
 }) {
   const translate = useTranslations("vision");
   const stack = layout === "stack";
@@ -567,24 +721,46 @@ function VisionGoalFields({
         />
       </div>
 
+      {/* The chosen target reads as a chip beside the fields it belongs to. Keeping it in the
+          sidebar buried the one thing being decided under the list it was picked from. */}
       {selectedCity ? (
-        <span
-          className="flex min-h-11 max-w-full items-center gap-2 rounded-[var(--radius-card)] border px-3 text-sm font-semibold"
-          style={{ borderColor: "var(--color-main)", color: "var(--color-main)" }}
+        <TargetChip
+          name={targetUniversity ? targetUniversity.name : selectedCity.name}
+          clearLabel={clearTargetLabel}
+          onClear={onClearTarget}
+        />
+      ) : null}
+
+      {targetTitle ? (
+        <TargetChip
+          name={targetTitle.name}
+          clearLabel={translate("kpss.clear_title")}
+          onClear={onClearTitle}
+        />
+      ) : null}
+
+      {targetInstitution ? (
+        <TargetChip
+          name={targetInstitution.name}
+          clearLabel={translate("kpss.clear_institution")}
+          onClear={onClearInstitution}
+        />
+      ) : null}
+
+      {simulationReady && simulationUniversityId ? (
+        <Link
+          href={{
+            pathname: "/vision-board/simulation",
+            query: { universityId: simulationUniversityId },
+          }}
+          className="inline-flex min-h-11 items-center rounded-[var(--radius-control)] px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{
+            backgroundColor: "var(--color-accent)",
+            color: "var(--color-on-accent)",
+          }}
         >
-          <span className="min-w-0 truncate">
-            {targetUniversity ? targetUniversity.name : selectedCity.name}
-          </span>
-          <button
-            type="button"
-            onClick={onClearTarget}
-            aria-label={clearTargetLabel}
-            className="shrink-0 cursor-pointer transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            style={{ color: "var(--color-secondary)" }}
-          >
-            ✕
-          </button>
-        </span>
+          {translate("simulation_cta")}
+        </Link>
       ) : null}
 
       <Button

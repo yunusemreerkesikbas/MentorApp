@@ -1,7 +1,7 @@
 "use client";
+import { ArrowRight } from "lucide-react";
 
 import { useEffect } from "react";
-import ArrowRight from "lucide-react/dist/esm/icons/arrow-right.mjs";
 import { useLocale, useTranslations } from "next-intl";
 import type { ForumCoachBridgeView } from "@mentor/types";
 import { Link } from "@/i18n/navigation";

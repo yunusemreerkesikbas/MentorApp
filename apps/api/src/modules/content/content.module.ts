@@ -2,8 +2,10 @@ import { Module } from "@nestjs/common";
 import { ContentService } from "./application/content.service";
 import { GeoService } from "./application/geo.service";
 import { KpssService } from "./application/kpss.service";
+import { PreferenceCatalogService } from "./application/preference-catalog.service";
 import { GeoRepository } from "./infrastructure/geo.repository";
 import { KpssRepository } from "./infrastructure/kpss.repository";
+import { PreferenceCatalogRepository } from "./infrastructure/preference-catalog.repository";
 import { GeoSeedService } from "./infrastructure/geo-seed.service";
 import { ExamEventRepository } from "./infrastructure/exam-event.repository";
 import { ExamRepository } from "./infrastructure/exam.repository";
@@ -37,6 +39,8 @@ import { PublicHolidayController } from "./presentation/public-holiday.controlle
     GeoRepository,
     KpssService,
     KpssRepository,
+    PreferenceCatalogService,
+    PreferenceCatalogRepository,
     GeoSeedService,
     ExamRepository,
     ExamEventRepository,
@@ -49,6 +53,6 @@ import { PublicHolidayController } from "./presentation/public-holiday.controlle
     ArticleSeedService,
     HolidaySeedService,
   ],
-  exports: [ContentService, GeoService, KpssService],
+  exports: [ContentService, GeoService, KpssService, PreferenceCatalogService],
 })
 export class ContentModule {}

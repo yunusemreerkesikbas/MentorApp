@@ -1,11 +1,8 @@
 "use client";
+import { Bell, Check, EyeOff, Trash2 } from "lucide-react";
 
 import type * as React from "react";
 import { useRef, useState } from "react";
-import Bell from "lucide-react/dist/esm/icons/bell.mjs";
-import Check from "lucide-react/dist/esm/icons/check.mjs";
-import EyeOff from "lucide-react/dist/esm/icons/eye-off.mjs";
-import Trash2 from "lucide-react/dist/esm/icons/trash-2.mjs";
 import type { NotificationCategory, UserNotificationDto } from "@mentor/types";
 import type { NotificationDrawerLabels } from "./types.js";
 

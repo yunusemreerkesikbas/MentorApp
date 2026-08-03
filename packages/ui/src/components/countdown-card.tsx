@@ -1,4 +1,4 @@
-import Calendar from "lucide-react/dist/esm/icons/calendar.mjs";
+import { Calendar } from "lucide-react";
 import { DataCard } from "./data-card.js";
 
 export interface CountdownCardProps {

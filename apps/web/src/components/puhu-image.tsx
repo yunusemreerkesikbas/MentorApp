@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { CareerGroup } from "@mentor/types";
 
 export type PuhuVariant =
@@ -31,13 +34,7 @@ const FILE_BY_VARIANT: Record<PuhuVariant, string> = {
   winking: "puhu-happy.png",
 };
 
-/**
- * Flip to `true` once the ten career illustrations land in `public/mascot/puhu/career/`
- * (one per CareerGroup, lower-cased slug + `.png`). Until then the career prop is accepted and
- * stored but falls back to the variant artwork — next/image hard-errors on a missing file, so
- * without this gate picking a career would render a broken image instead of just not changing.
- */
-const CAREER_ART_AVAILABLE = false;
+const SWAP_EASE = "easeOut" as const;
 
 function resolvePuhuSize(size: PuhuSizeToken | number): number {
   return typeof size === "number" ? size : PUHU_SIZES[size];
@@ -53,9 +50,8 @@ export function PuhuImage({
   variant: PuhuVariant;
   /**
    * Career field the user is aiming for. When set, it REPLACES the variant artwork with a
-   * dedicated illustration — the career art is drawn from the `default` pose, so it carries no
-   * expression of its own. Ten finished files rather than an accessory overlay: an overlay
-   * anchored for one pose drifts on the other seven, and this way the illustrator owns the result.
+   * dedicated illustration under `/mascot/career/{enum}.png`. Ten finished files rather than
+   * an accessory overlay: an overlay anchored for one pose drifts on the other seven.
    */
   career?: CareerGroup | null;
   /** Token (`sm`/`md`/`lg`) or raw px for special layouts (mood wheel, onboarding). */
@@ -64,21 +60,47 @@ export function PuhuImage({
   priority?: boolean;
 }) {
   const px = resolvePuhuSize(size);
-  const src =
-    career && CAREER_ART_AVAILABLE
-      ? `/mascot/puhu/career/${career.toLowerCase()}.png`
-      : `/mascot/puhu/${FILE_BY_VARIANT[variant]}`;
+  const reduceMotion = useReducedMotion();
+  const src = career
+    ? `/mascot/career/${career.toLowerCase()}.png`
+    : `/mascot/puhu/${FILE_BY_VARIANT[variant]}`;
+  const swapKey = career ?? variant;
+  const transition = {
+    duration: reduceMotion ? 0.15 : 0.28,
+    ease: SWAP_EASE,
+  };
 
   return (
-    <Image
-      src={src}
-      alt=""
-      width={px}
-      height={px}
-      aria-hidden
-      priority={priority}
+    <span
       className={className}
-      style={{ width: px, height: "auto", maxWidth: "100%" }}
-    />
+      style={{
+        display: "inline-block",
+        position: "relative",
+        width: px,
+        height: px,
+        maxWidth: "100%",
+      }}
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={swapKey}
+          className="absolute inset-0 flex items-center justify-center"
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
+          animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
+          transition={transition}
+        >
+          <Image
+            src={src}
+            alt=""
+            width={px}
+            height={px}
+            aria-hidden
+            priority={priority}
+            style={{ width: px, height: "auto", maxWidth: "100%" }}
+          />
+        </motion.span>
+      </AnimatePresence>
+    </span>
   );
 }

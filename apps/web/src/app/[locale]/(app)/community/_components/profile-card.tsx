@@ -1,7 +1,7 @@
 "use client";
+import { Globe } from "lucide-react";
 
 import { useLocale, useTranslations } from "next-intl";
-import Globe from "lucide-react/dist/esm/icons/globe.mjs";
 import { useAuth } from "@/lib/auth-context";
 import { Link } from "@/i18n/navigation";
 import { AuthorAvatar } from "./author-avatar";

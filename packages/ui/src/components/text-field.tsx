@@ -1,9 +1,8 @@
 "use client";
+import { Eye, EyeOff } from "lucide-react";
 
 import type * as React from "react";
 import { useId, useState } from "react";
-import Eye from "lucide-react/dist/esm/icons/eye.mjs";
-import EyeOff from "lucide-react/dist/esm/icons/eye-off.mjs";
 
 export interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;

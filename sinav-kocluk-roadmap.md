@@ -62,10 +62,10 @@ Sınav süreç bilgisi (takvim/başvuru/tercih/yerleştirme; KPSS'te atama/kadro
 | **A — Editoryal** | İnsan-küratör, resmi metin (takvim, başvuru, "atama nasıl olur", kadro türleri) | Doğrudan, otorite | Yüksek |
 | **C — Topluluk (forum)** | Kullanıcı üretimi, deneyimsel | "Topluluk deneyimi, düşük-otorite" **etiketiyle** | Düşük, etiketli |
 
-> **B (yapısal/sayısal — taban puanı/kontenjan/atama simülasyonu) PLANDAN ÇIKARILDI** — yüksek emek + doğruluk/scraping/sorumluluk riski; değer/risk dengesi olumsuz.
+> **B (genel yapısal/sayısal — taban puanı/kontenjan/atama tahmini) PLANDAN ÇIKARILDI** — yüksek emek + doğruluk/scraping/sorumluluk riski; değer/risk dengesi olumsuz. **Dar YKS istisnası (2026-08-02):** editöryal olarak sürümlenen resmî program/yerleşme verisi, yalnız kullanıcının başarı sırası ile geçmiş son yerleşen sırası arasındaki sayısal farkı gösteren tercih senaryosunda kullanılabilir. Olasılık, uygunluk, “güvenli/riskli/garanti” etiketi ve LLM yorumu üretilemez.
 
 ### Karar: Retrieval = vektör (metin)
-- **Metin (A, C)** → embedding + pgvector ile **semantik (vektör) arama**. *(Sayısal B kaldırıldığı için ayrı SQL-sayısal retrieval yolu yok.)*
+- **Metin (A, C)** → embedding + pgvector ile **semantik (vektör) arama**. Tercih senaryosundaki dar YKS istisnası LLM/RAG retrieval değildir; resmî sürümlü veriye karşı deterministik backend hesabıdır.
 
 ### Karar: Güven üst-verisi her kayıtta zorunlu
 `source`, `source_url`, `effective_date`/`valid_until`, `last_verified_at`, `status` (taslak/yayında/arşiv), `is_official`/`confidence`. Bu üst-veri AI'a verilen bağlamın parçası olur; UI'da **kaynak + son güncelleme rozeti** olarak gösterilir (şeffaflık = güven).
@@ -74,7 +74,7 @@ Sınav süreç bilgisi (takvim/başvuru/tercih/yerleştirme; KPSS'te atama/kadro
 **Resmi bilgi (A — tarih/süreç) hiçbir zaman LLM'e serbest ürettirilmez ve topluluk/koç onayına bırakılmaz** — hep doğrulanmış editör içeriğinden gelir (kritik fact = veri kartı). Forum/koç onayı yalnızca deneyimsel (C) içeriği yükseltebilir.
 
 ### Karar: A-katmanı sunum modeli + MVP kapsamı
-- **Bilgi merkezi = yalnız A katmanı** (küratörlü editoryal: sınav takvimi, başvuru/atama/tercih rehberleri, kadro/puan türleri). **B (taban puanı/kontenjan/atama simülasyonu) çıkarıldı** (yukarıdaki not).
+- **Bilgi merkezi = yalnız A katmanı** (küratörlü editoryal: sınav takvimi, başvuru/atama/tercih rehberleri, kadro/puan türleri). Genel B ürünü çıkarılmıştır; yukarıdaki dar YKS tercih senaryosu Bilgi Merkezi değil, kaynak kartlı coaching deneyimidir.
 - **Katmanlı sunum — tek içerik, iki tüketim yolu:**
 ```
         KÜRATÖRLÜ MAKALE (DB, editör doğrular)
@@ -87,7 +87,7 @@ Sınav süreç bilgisi (takvim/başvuru/tercih/yerleştirme; KPSS'te atama/kadro
 - **Maliyet:** SEO sayfaları statik/ücretsiz (LLM yok); AI koç cevabı premium / ücretsizde rate-limit (§7).
 
 ### Açık konular (1. başlık)
-- [x] ~~Kapsam~~ → **Yalnız A katmanı** (küratörlü editoryal). **B (taban puanı/kadro/simülasyon) plandan çıkarıldı** → versiyonlama + scraping konuları da düştü.
+- [x] ~~Kapsam~~ → **Bilgi Merkezi yalnız A katmanı** (küratörlü editoryal). Genel B ürünü plandan çıkarıldı; 2026-08-02 tarihli dar YKS tercih senaryosu resmî kaynak, veri sürümü ve deterministik fark hesabı zorunluluğuyla ayrı coaching istisnasıdır.
 
 ---
 
@@ -720,7 +720,7 @@ Kendi JWT, Drizzle+Neon, Render, Cloudflare (WAF/Turnstile/R2/CDN), iyzico abone
 
 ## 12. Genel Açık Konular
 - [x] ~~Bilgi merkezi kapsamı~~ → **MVP = A-only (küratörlü içerik → SEO sayfası + grounded AI, kaynaklı); B → Faz 2.** NotebookLM = iç editör aracı. (bkz. §1)
-- [x] ~~B katmanı (taban puanı/scraping)~~ → **plandan çıkarıldı** (değer/risk dengesi olumsuz).
+- [x] ~~Genel B katmanı (taban puanı/scraping/tahmin)~~ → **plandan çıkarıldı** (değer/risk dengesi olumsuz). Dar YKS tercih senaryosu yalnız resmî sürümlü veriyi ve sayısal farkı gösterir; olasılık/etiket/LLM yorumu kapsam dışıdır.
 - [ ] Topluluk-onay eşiğinin kalibrasyonu (canlı veriyle).
 - [ ] Koç vetting kriterleri (belge, mülakat, deneme katkısı) — netleştirilecek.
 - [ ] **(Backlog) C-snapshot tazeleme** (Faz 2 forum ile): event-tetikli geçersiz kılma (major-edit / sil / kalite-düşüş / TTL) + tipo significance-gate + yeniden-doğrula. Tasarım taslağı hazır; uygulama **backlog**.

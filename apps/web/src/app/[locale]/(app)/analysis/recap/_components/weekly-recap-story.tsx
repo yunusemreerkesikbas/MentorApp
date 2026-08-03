@@ -1,17 +1,10 @@
 "use client";
+import { ArrowLeft, ArrowRight, Pause, Play, RotateCcw, Volume2, VolumeX, X } from "lucide-react";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import type { WeeklyRecapHighlightDto, WeeklyReviewDto } from "@mentor/types";
 import { AnimatePresence, motion } from "framer-motion";
-import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left.mjs";
-import ArrowRight from "lucide-react/dist/esm/icons/arrow-right.mjs";
-import Pause from "lucide-react/dist/esm/icons/pause.mjs";
-import Play from "lucide-react/dist/esm/icons/play.mjs";
-import RotateCcw from "lucide-react/dist/esm/icons/rotate-ccw.mjs";
-import Volume2 from "lucide-react/dist/esm/icons/volume-2.mjs";
-import VolumeX from "lucide-react/dist/esm/icons/volume-x.mjs";
-import X from "lucide-react/dist/esm/icons/x.mjs";
 import { PuhuImage } from "@/components/puhu-image";
 import {
   buildWeeklyRecapShareCardModel,

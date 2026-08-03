@@ -1118,9 +1118,8 @@ pnpm --filter @mentor/api test
   eklenip `pnpm --filter @mentor/web build:map` çalıştırılmalı. Script 81 il, bozuk path ve
   viewBox dışına düşen centroid için assert eder — içbükey iller (Muğla, Antalya, Hatay) için
   `CENTROID_OVERRIDES` gerekebilir. ODbL atıfı `TurkeyMap` içinde, yalnız harita çizildiğinde.
-  **Gotcha 3:** Kariyer görselleri (`public/mascot/puhu/career/*.png`) henüz yok; `puhu-image.tsx`
-  içindeki `CAREER_ART_AVAILABLE=false` bayrağı bu yüzden kapalı — next/image eksik dosyada hata
-  verir, bayrak açıkken alan seçmek kırık görsel gösterirdi. On PNG eklenince `true` yapılacak.
+  **Gotcha 3 (superseded 2026-08-02):** Kariyer görselleri artık
+  `public/mascot/career/{CareerGroup.toLowerCase()}.png` altında; `CAREER_ART_AVAILABLE` kaldırıldı.
   Kariyer grubu on sabit değerdir, DB tablosu yok; "Henüz karar vermedim" açık bir seçenektir
   (radio semantiğinde seçim temizlenemez, gizli jest de keşfedilebilir değil).
   Onboarding **değişmedi** — harita panelde yaşıyor; `complete-step.tsx`'e keşif CTA'sı eklendi.
@@ -1164,3 +1163,85 @@ pnpm --filter @mentor/api test
   **Gotcha 3:** SVG hâlâ `aria-hidden`; klavye yolu `<select>` ve sidebar listesidir.
   İlgili: `city-picker.tsx`, `map-explorer.tsx`, `map-canvas.tsx`, `clustering.ts`,
   `use-map-viewport.ts`, `university-hover-card.tsx`, `e2e/vision-board.spec.ts`.
+
+- **Kariyer Puhu swap (2026-08-02)** — "Puhu'nun alanı" select değişince haritadaki proud Puhu
+  anında kariyer illüstrasyonuna geçer (Kaydet gerekmez). Asset path:
+  `public/mascot/career/{enum.toLowerCase()}.png` (örn. `YAZILIM` → `yazilim.png`); `null` /
+  "Henüz karar vermedim" → `puhu-proud.png`. `PuhuImage` `CAREER_ART_AVAILABLE` bayrağını kaldırdı;
+  `AnimatePresence` ile crossfade + hafif scale pop (~280ms); `prefers-reduced-motion` yalnız
+  opacity. Vision shell değişmedi — zaten `career={careerGroup}` geçiyordu.
+  **Gotcha:** Dosya adları enum slug'ı olmalı; semantik İngilizce adlar (`doctor.png` vb.) kırık
+  görsel üretir. İlgili: `puhu-image.tsx`, `apps/web/public/mascot/career/`.
+
+- **Hedef mascot boyutu + şehir kayması (2026-08-02)** — Vision board Puhu 96px. Tek overlay
+  `MapCanvas` içinde. Sıra: **önce zoom**, bitince maskot park → şehir (~450ms). Zoom sırasında
+  maskot sol üstte bekler (`%` kovalamaz → titreme yok). Şehirler arası: yeniden zoom, sonra kayma.
+  İlgili: `map-canvas.tsx`, `use-map-viewport.ts`, `vision-board-shell.tsx`.
+
+- **KPSS hedef arayüzü (2026-08-03)** — `vision_boards` artık üç ayrı hedef kolonu taşıyor:
+  `target_university_id` (YKS), `target_title_id` + `target_institution_id` (KPSS). Polimorfik tek
+  kolon yerine üç açık kolon — tip güvenli, sorgusu okunur, hangisinin dolduğu sınav türünden belli.
+  **Çapa unvan, kurum ikincil.** Kadro tek bir yerleştirme dönemine ait geçici bir ilandır; "hedefim
+  şu kadro" altı ay sonra anlamsız bir satıra dönerdi. Unvan kalıcıdır.
+  `KpssBrowser` `MapBrowser`'ın *varyantı değil, muadili*: YKS hedefi şehir → üniversite → program
+  zinciriyle daralır, KPSS hedefi ise şehirden bağımsız bir unvandır. İkisini tek bileşene sokmak
+  her dal için bir prop demekti. `vision-board-shell` içindeki bağlantı tek bir üçlü koşul.
+  **Servis tarafı:** üniversitede olduğu gibi client'a güvenilmez — `VisionService.upsert`
+  `KpssService.assertTargetsExist` ile id'lerin varlığını doğrular, yoksa `unknown_kpss_target`.
+  **Şehir çapraz kontrolü yok** (üniversitenin aksine): kurum ulusaldır, bir dönemin ilanları o
+  kurumun nerede çalıştığının beyanı değildir — Konya + SGK geçerli bir çifttir.
+  **Gotcha 1:** `unchanged` yordamı iki yeni kolonu da listelemeli; eksik kalsaydı unvan değişince
+  eski AI motivasyon notu ayakta kalırdı. `vision.service.spec` bunu iki testle kilitliyor (14/14).
+  **Gotcha 2:** Kaydederken diğer sınav ailesinin çapaları `null` gönderilir; yoksa YKS'ye geçen
+  kullanıcının panosunda eski KPSS unvanı AI notunu beslemeye devam ederdi.
+  **Gotcha 3:** Kurum listesi dönem etiketiyle sunulur (`round_note`) — yalnız o kılavuzda ilan
+  veren kurumları kapsar. Bu dönem alım yapmayan bir kurumu hedefleyen kullanıcı da hedef koyabilmeli.
+  **Kapsam dışı:** il bazlı ilan sayısı rozeti — sayılar zaten şehir seçilince sidebar'da
+  (`city_summary` + ilan listesi) görünüyor; 81 ilde ikinci bir gösterim aynı veriyi tekrar eder.
+  İlgili: `kpss-browser.tsx`, `use-kpss-targets.ts`, `vision-board-shell.tsx`, `vision.service.ts`,
+  `vision-board.repository.ts`, `ai.constants.ts`.
+
+- **KPSS harita + sidebar YKS paritesi (2026-08-03)** — Üç düzeltme, hepsi "YKS'de nasılsa öyle":
+  **1. İlan satırları** mor dolgudan `ProgramRow` kalıbına geçti (şeffaf zemin, `hover:bg-black/[0.04]`,
+  unvan başta `--color-main`, kurum·kişi·ilçe altta `--color-secondary`). İlan listesi kendi
+  `max-h-[22rem]` scroll alanında: bir il 200+ ilan taşıyabiliyor ve rail'i uzatınca arama kutusu
+  erişilemez oluyor, harita da kayıyordu. `Group` başlığı da scroll alanının **dışına** alındı —
+  içerideyken "UNVANLAR" listeyle birlikte kayıp gidiyordu.
+  **2. Harita pinleri.** Üniversitenin koordinatı var, kurumun **yok** — KPSS kılavuzu ilanı en fazla
+  il düzeyinde konumlandırıyor (`district` en iyi ihtimalle "MERKEZ"), ilçe geometrisi de repoda yok.
+  Guardrail §4 #1 gereği uydurma koordinat konmadı: pin **il centroid'ine** oturuyor ve kafasında
+  ilan sayısı taşıyor — "burada bir kurum var" değil, "bu ilde şu kadar ilan var" diyor.
+  İlanı olmayan il pin almaz; boş bir işaret "henüz yüklenmedi" gibi okunurdu.
+  `CityPostingHoverCard` `UniversityHoverCard` ile aynı konumlama kurallarını paylaşır ama ayrı bir
+  bileşendir: ikisi düzende anlaşır, anlamda anlaşmaz — biri gidilebilecek bir yeri, diğeri bir
+  kılavuzun ilan ettiği kontenjanı anlatır, bu yüzden dönem kartın üstünde her zaman yazar.
+  Tıklama → ili seç + sidebar'da ilanları aç (YKS'de pin → üniversite detayı ile aynı ritim).
+  **3. Hedef unvan/kurum** sidebar'dan üst forma **chip** olarak taşındı (`TargetChip`, şehir
+  chip'iyle aynı bileşen). Seçilen şey, seçildiği listenin altında değil, ait olduğu alanların
+  yanında durmalı. Sidebar'da seçili satır artık yalnız kalın/`--color-main` ile işaretleniyor.
+  **Gotcha:** Pin içindeki sayı `<text>` olarak SVG'de; `vector-effect` metne uygulanmadığı için
+  font-size kullanıcı biriminde (7.5px) bırakıldı ve pin ölçeğiyle birlikte büyüyor — zoom'da
+  okunur kalmasının tek yolu buydu.
+  İlgili: `map-canvas.tsx` (`CityPin`/`CityPinAnchor`), `city-posting-hover-card.tsx`,
+  `kpss-browser.tsx`, `vision-board-shell.tsx`, `globals.css` (`.mentor-tr-map-pin text`).
+
+- **Unvan listesi katlandı + seçili unvan haritayı süzüyor (2026-08-03)** — Ekran görüntüsünde
+  MÜHENDİS hedef olarak seçiliyken Ankara pininde **199** yazıyordu: o, Ankara'nın *tüm* ilanları.
+  Filtre yalnız **yazarken** çalışıyordu, unvanı **seçince** çalışmıyordu — yani ekran "hedefin
+  mühendislik" derken haritada mühendislikle ilgisi olmayan bir sayı gösteriyordu.
+  `city-counts` artık `titleId` de alıyor ve **id ile tam eşleşme** yapıyor; ada göre eşleşseydi
+  MÜHENDİS seçimi İNŞAAT MÜHENDİSİ'ni de içine çeker, kullanıcının kendi hedefinin nerede alındığını
+  olduğundan fazla gösterirdi. `titleId` `q`'yu yener: hedef kalıcı soru, arama kutusu geçici.
+  **Unvan listesi `<details>` ile katlandı** (varsayılan kapalı). Açıkken 52 satır tüm rail'i yiyor
+  ve haritaya tıklandığında okunacak asıl şeyi — ilin ilanlarını — ekranın altına itiyordu. Ayrıca
+  YKS'deki üniversite listesinin muadili değil: o liste **seçili ile** kapsamlı, bu ise bağlamsız
+  düz bir katalog ve üstündeki arama kutusu 52 satırı kaydırmaktan hızlı buluyor. "Adını
+  bilmiyorum, seçenekleri göster" için duruyor, gerisinde yoldan çekiliyor.
+  Native `<details>` — state yok, JS yok, klavye ve ekran okuyucu bedava. Özet satırı seçili unvanı
+  taşıyor, yani katlamak seçimi gizlemiyor.
+  **Pin taşması:** 3 haneli sayı pin başlığından taşıyordu (Ankara'nın 199'u konturun üstüne
+  biniyordu); `>= 100` için font 7.5 → 5.5. Bir ilde 1000+ kontenjan bir dönemde oluşmuyor,
+  dolayısıyla üçüncü kademe gereksiz.
+  Spec: `kpss.service.spec` 5 test (filtresiz / katlama / id ile daraltma / id'nin q'yu yenmesi /
+  eşik altı). İlgili: `kpss.repository.ts`, `kpss.service.ts`, `geo.controller.ts`,
+  `kpss-browser.tsx` (`TitlePicker`), `use-kpss-targets.ts`, `map-canvas.tsx`.

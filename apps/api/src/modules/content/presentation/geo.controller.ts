@@ -1,17 +1,22 @@
 import { Controller, Get, Param, ParseUUIDPipe, Query, Res } from "@nestjs/common";
 import type { Response } from "express";
-import { ApiTags } from "@nestjs/swagger";
+import { ApiQuery, ApiTags } from "@nestjs/swagger";
 import type {
+  CampusExperienceDto,
   GeoResponseDto,
   GeoSearchResultDto,
+  CityPostingCountDto,
   KpssPostingDto,
   KpssTargetsDto,
+  ProgramCatalogSearchResponseDto,
   UniversityProgramsDto,
 } from "@mentor/types";
+import { I18nContext } from "nestjs-i18n";
 import { Public } from "../../../common/auth/public.decorator";
 import { GeoService } from "../application/geo.service";
 import { KpssService } from "../application/kpss.service";
-import { GeoSearchQueryDto } from "./content.dto";
+import { PreferenceCatalogService } from "../application/preference-catalog.service";
+import { GeoSearchQueryDto, ProgramCatalogSearchQueryDto } from "./content.dto";
 
 /** A day; the underlying dataset is an editorial import that changes about once a year. */
 const REFERENCE_MAX_AGE = 86400;
@@ -30,6 +35,7 @@ export class GeoController {
   constructor(
     private readonly geo: GeoService,
     private readonly kpss: KpssService,
+    private readonly preferenceCatalog: PreferenceCatalogService,
   ) {}
 
   /**
@@ -52,8 +58,15 @@ export class GeoController {
   /**
    * Search is deliberately NOT cached: it is per-keystroke and the response varies by `q`, so a
    * shared cache would mostly store single-use entries.
+   *
+   * The `@ApiQuery` pair is what makes this callable from the generated client at all: the DTO is a
+   * `createZodDto`, which carries no Swagger metadata, so without these orval emits
+   * `geoControllerSearch()` with no parameters and every caller has to hand-roll a fetch. Zod still
+   * owns validation — these only describe the shape to the spec.
    */
   @Get("geo/search")
+  @ApiQuery({ name: "q", required: true, type: String })
+  @ApiQuery({ name: "family", required: false, enum: ["YKS", "KPSS"] })
   search(@Query() query: GeoSearchQueryDto): Promise<GeoSearchResultDto> {
     return this.geo.search(query.q, query.family);
   }
@@ -69,6 +82,23 @@ export class GeoController {
     const targets = await this.kpss.getTargets();
     res.setHeader("Cache-Control", `public, max-age=${REFERENCE_MAX_AGE}`);
     return targets;
+  }
+
+  /**
+   * Per-province vacancy counts, narrowed by the same term the search box holds — the KPSS
+   * counterpart of filtering campus pins as a YKS student types.
+   *
+   * Not cached: like `geo/search` it varies per keystroke, so a shared cache would mostly hold
+   * single-use entries.
+   */
+  @Get("kpss-targets/city-counts")
+  @ApiQuery({ name: "q", required: false, type: String })
+  @ApiQuery({ name: "titleId", required: false, type: String })
+  getKpssCityCounts(
+    @Query("q") q?: string,
+    @Query("titleId") titleId?: string,
+  ): Promise<CityPostingCountDto[]> {
+    return this.kpss.getCityCounts(q, titleId);
   }
 
   /**
@@ -96,5 +126,37 @@ export class GeoController {
     const result = await this.geo.getUniversityPrograms(id);
     res.setHeader("Cache-Control", `public, max-age=${REFERENCE_MAX_AGE}`);
     return result;
+  }
+
+  /** Versioned, official and paginated YKS catalogue for the preference builder. */
+  @Get("programs/search")
+  @ApiQuery({ name: "q", required: true, type: String })
+  @ApiQuery({ name: "page", required: false, type: Number })
+  @ApiQuery({ name: "pageSize", required: false, type: Number })
+  @ApiQuery({
+    name: "scoreType",
+    required: false,
+    enum: ["SAY", "EA", "SÖZ", "DİL", "TYT"],
+  })
+  searchPrograms(
+    @Query() query: ProgramCatalogSearchQueryDto,
+  ): Promise<ProgramCatalogSearchResponseDto> {
+    return this.preferenceCatalog.search(
+      query.q,
+      query.page,
+      query.pageSize,
+      query.scoreType,
+    );
+  }
+
+  /** Enabled editorial 3D campus tour; unavailable pilots deliberately return 404. */
+  @Get("universities/:id/campus-experience")
+  getCampusExperience(
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<CampusExperienceDto> {
+    return this.preferenceCatalog.getCampusExperience(
+      id,
+      I18nContext.current()?.lang ?? "tr",
+    );
   }
 }

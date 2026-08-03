@@ -1,9 +1,8 @@
 "use client";
+import { CheckCircle2, Sparkles } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import CheckCircle2 from "lucide-react/dist/esm/icons/check-circle-2.mjs";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles.mjs";
 import {
   CoachActionStatus,
   CoachActionType,

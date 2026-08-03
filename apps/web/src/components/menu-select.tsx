@@ -1,7 +1,7 @@
 "use client";
+import { ChevronDown } from "lucide-react";
 
 import { useId } from "react";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down.mjs";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 
 export interface MenuSelectOption {

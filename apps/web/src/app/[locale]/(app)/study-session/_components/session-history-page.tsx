@@ -1,7 +1,7 @@
 "use client";
+import { ChevronLeft } from "lucide-react";
 
 import { useCallback, useEffect, useState } from "react";
-import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left.mjs";
 import { useTranslations } from "next-intl";
 import type { StudySessionDto } from "@mentor/types";
 import { Button, Chip, SectionHeading } from "@mentor/ui";

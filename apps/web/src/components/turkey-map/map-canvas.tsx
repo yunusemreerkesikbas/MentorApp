@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { CityDto, UniversityDto } from "@mentor/types";
@@ -12,6 +12,10 @@ import { useMapViewport } from "./use-map-viewport";
 /** Official ÖSYM YKS programs & quotas guide — linked from the map source note. */
 const OSYM_YKS_GUIDE_URL =
   "https://www.osym.gov.tr/2026-yuksekogretim-kurumlari-sinavi-yks-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu";
+
+/** Park → city flight after zoom settles. */
+const MASCOT_SLIDE_S = 0.45;
+const MASCOT_SLIDE_EASE = [0.22, 1, 0.36, 1] as const;
 
 /**
  * Teardrop map pin whose tip sits at (0,0), so a pin translated to a projected point marks that
@@ -28,6 +32,25 @@ const PIN_SCALE_MOBILE = 1.35;
  * Mid values grow on zoom while country view stays controlled.
  */
 const PIN_ZOOM_FOLLOW = 0.35;
+
+/**
+ * One province, one pin, with the vacancy count in its head — the KPSS counterpart of a campus pin.
+ *
+ * A campus has a geocoded address; a public-sector vacancy does not. The imported guide locates a
+ * posting only down to the province (`district` is at best "MERKEZ"), so the pin sits on the
+ * province centroid and says "this many vacancies here" rather than pretending to be a building.
+ */
+export interface CityPin {
+  cityCode: string;
+  cityName: string;
+  postings: number;
+  quota: number;
+}
+
+export interface CityPinAnchor extends CityPin {
+  /** Bounding box of the pin, in viewport coordinates. */
+  rect: DOMRect;
+}
 
 interface PlacedUniversity {
   x: number;
@@ -51,10 +74,12 @@ export function MapCanvas({
   visibleUniversityIds,
   showOsymSource = false,
   activeUniversityId,
+  cityPins,
   overlay,
   onSelectCity,
   onSelectUniversity,
   onHoverUniversity,
+  onHoverCityPin,
 }: {
   cities: CityDto[];
   selectedCityCode: string | null;
@@ -69,17 +94,22 @@ export function MapCanvas({
   /** YKS map only — ÖSYM program/quota source note at the bottom-right. */
   showOsymSource?: boolean;
   activeUniversityId: string | null;
+  /** KPSS map only — province-centroid vacancy pins instead of campus pins. */
+  cityPins?: CityPin[] | null;
   /**
-   * Anything to pin over a province — the mascot standing on the target city. Kept generic so the
-   * map does not need to know about mascots, and rendered as an HTML layer rather than inside the
-   * SVG so it keeps a constant size no matter how far the viewBox is zoomed.
+   * HTML overlay (e.g. mascot). Kept generic so the map does not need to know about mascots, and
+   * rendered outside the SVG so it keeps a constant size regardless of viewBox zoom.
+   * - `cityCode` set → after zoom settles, sits above that province centroid.
+   * - `cityCode` null (or zoom in progress) → parks at the map's top-left corner.
    */
-  overlay?: { cityCode: string; node: React.ReactNode } | null;
+  overlay?: { cityCode: string | null; node: React.ReactNode } | null;
   /** `null` clears the selection (province toggle-off). */
   onSelectCity: (code: string | null) => void;
   onSelectUniversity: (university: UniversityDto) => void;
   /** `null` starts dismiss; non-null shows the preview next to the pin. */
   onHoverUniversity: (anchor: HoverAnchor | null) => void;
+  /** Same contract as `onHoverUniversity`, for the KPSS province pins. */
+  onHoverCityPin?: (anchor: CityPinAnchor | null) => void;
 }) {
   const t = useTranslations("vision.map");
   const reduceMotion = useReducedMotion();
@@ -90,6 +120,7 @@ export function MapCanvas({
     unit,
     isZoomed,
     isPanning,
+    isViewAnimating,
     reset,
     zoomToBox,
     zoomIn,
@@ -98,6 +129,7 @@ export function MapCanvas({
     handlers,
   } = useMapViewport();
   const prevCityRef = useRef<string | null | undefined>(undefined);
+  const wasDockedRef = useRef(false);
   const [pinScale, setPinScale] = useState(PIN_SCALE_DESKTOP);
 
   useEffect(() => {
@@ -108,7 +140,7 @@ export function MapCanvas({
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  // Frame the selected province (map click or sidebar). Clearing the chip zooms back out.
+  // Zoom first; mascot docks only after the viewBox tween settles.
   useEffect(() => {
     const prev = prevCityRef.current;
     prevCityRef.current = selectedCityCode;
@@ -124,21 +156,33 @@ export function MapCanvas({
     if (shape) zoomToBox(shape.bbox);
   }, [selectedCityCode, reset, zoomToBox]);
 
-  const overlayShape = overlay ? PROVINCES[overlay.cityCode] : null;
+  const overlayShape =
+    overlay?.cityCode != null ? PROVINCES[overlay.cityCode] : null;
   const overlayPos = overlayShape
     ? {
         left: ((overlayShape.cx - view.x) / view.w) * 100,
         top: ((overlayShape.cy - view.y) / view.h) * 100,
       }
     : null;
-  // Hide it once the city is panned off screen instead of pinning it to the nearest edge, where
-  // it would claim to mark a place it no longer points at.
-  const overlayVisible =
-    overlayPos != null &&
+
+  // Dock only when zoom/reset is idle — park during the tween so % never fights viewBox.
+  const overlayDocked =
+    overlay?.cityCode != null && !isViewAnimating && overlayPos != null;
+  const overlayOnCity =
+    overlayDocked &&
     overlayPos.left >= 0 &&
     overlayPos.left <= 100 &&
     overlayPos.top >= 0 &&
     overlayPos.top <= 100;
+  const overlayParked = overlay != null && !overlayOnCity;
+  const overlayVisible = overlayParked || overlayOnCity;
+
+  const justDocked = overlayOnCity && !wasDockedRef.current;
+  const justUndocked = !overlayOnCity && wasDockedRef.current;
+  const mascotSlide = justDocked || justUndocked;
+  useLayoutEffect(() => {
+    wasDockedRef.current = overlayOnCity;
+  }, [overlayOnCity]);
 
   const placed = useMemo<PlacedUniversity[]>(() => {
     const out: PlacedUniversity[] = [];
@@ -255,20 +299,86 @@ export function MapCanvas({
             </g>
           );
         })}
+
+        {(cityPins ?? []).map((pin) => {
+          const shape = PROVINCES[pin.cityCode];
+          if (!shape) return null;
+          const scale = pinScale * Math.pow(unit, PIN_ZOOM_FOLLOW);
+          return (
+            <g
+              key={pin.cityCode}
+              className="mentor-tr-map-pin"
+              data-active={pin.cityCode === selectedCityCode || undefined}
+              transform={`translate(${shape.cx},${shape.cy}) scale(${scale})`}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (consumeClickSuppression()) return;
+                // Pins always select (never toggle off) — opening a province is affirmative.
+                onSelectCity(pin.cityCode);
+              }}
+              onMouseEnter={(e) =>
+                onHoverCityPin?.({
+                  ...pin,
+                  rect: (e.currentTarget as SVGGElement).getBoundingClientRect(),
+                })
+              }
+              onMouseLeave={() => onHoverCityPin?.(null)}
+            >
+              <path d={PIN_PATH} />
+              {/* The head is ~11 units wide inside its stroke; a 3-digit count at full size spills
+                  past it (Ankara's 199 sat on top of the outline). Condensing beyond three digits
+                  is pointless — 1000+ vacancies in one province does not occur in a round. */}
+              <text
+                x={0}
+                y={-13}
+                textAnchor="middle"
+                dominantBaseline="central"
+                style={{ fontSize: pin.postings >= 100 ? 5.5 : 7.5 }}
+              >
+                {pin.postings}
+              </text>
+            </g>
+          );
+        })}
       </svg>
 
-      {overlay && overlayVisible ? (
+      {overlay ? (
         <motion.div
           className="pointer-events-none absolute z-10"
-          style={{
-            left: `${overlayPos!.left}%`,
-            top: `${overlayPos!.top}%`,
-          }}
-          initial={reduceMotion ? false : { opacity: 0, y: 8, scale: 0.92 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          initial={false}
+          animate={
+            overlayOnCity && overlayPos
+              ? {
+                  left: `${overlayPos.left}%`,
+                  top: `${overlayPos.top}%`,
+                  x: "-50%",
+                  y: "-100%",
+                  opacity: 1,
+                }
+              : overlayParked
+                ? {
+                    left: "1rem",
+                    top: "1rem",
+                    x: 0,
+                    y: 0,
+                    opacity: 1,
+                  }
+                : {
+                    left: overlayPos ? `${overlayPos.left}%` : "1rem",
+                    top: overlayPos ? `${overlayPos.top}%` : "1rem",
+                    x: overlayPos ? "-50%" : 0,
+                    y: overlayPos ? "-100%" : 0,
+                    opacity: 0,
+                  }
+          }
+          transition={
+            reduceMotion || !mascotSlide
+              ? { duration: 0 }
+              : { duration: MASCOT_SLIDE_S, ease: MASCOT_SLIDE_EASE }
+          }
+          aria-hidden={!overlayVisible}
         >
-          <div style={{ transform: "translate(-50%, -100%)" }}>{overlay.node}</div>
+          {overlay.node}
         </motion.div>
       ) : null}
 

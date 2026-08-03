@@ -1,9 +1,9 @@
 "use client";
+import { ArrowLeft } from "lucide-react";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
-import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left.mjs";
 import { useTranslations } from "next-intl";
 import type {
   PlanTaskDto,
@@ -411,7 +411,6 @@ export function PlanShell() {
     setWeekTasks(add);
     setMonthTasks(add);
   }, [date]);
-
 
   async function toggle(id: string) {
     const task = findTask(id);

@@ -1,10 +1,10 @@
 "use client";
+import { ChevronLeft } from "lucide-react";
 
 import { useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
-import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left.mjs";
 import type { ReactNode } from "react";
 import { isWelcomeSeen } from "@/lib/welcome-seen";
 

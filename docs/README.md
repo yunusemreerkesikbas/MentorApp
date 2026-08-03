@@ -26,6 +26,7 @@
 - [features/forum.md](./features/forum.md) — zones, feed, Q&A, moderation, SEO (W7)
 - [features/web-shell.md](./features/web-shell.md) — landing, app nav, layout, shared motion, B2C UI polish
 - [features/i18n.md](./features/i18n.md) — next-intl TR/EN URL-based internationalization
+- [features/preference-simulation.md](./features/preference-simulation.md) — YKS 3D campus tour + official historical rank comparison
 
 ## Standards (binding — checked in PR review)
 - [standards/engineering-principles.md](./standards/engineering-principles.md) — SOLID/DRY/KISS/YAGNI, fallbacks, logic-backend-only, localized messages, Definition of Done
