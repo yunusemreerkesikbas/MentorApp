@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type {
   CityPostingCountDto,
+  ExamVariant,
   KpssPostingDto,
   KpssTargetsDto,
 } from "@mentor/types";
@@ -23,14 +24,23 @@ function unwrap<T>(res: unknown): T | null {
  * for ~18KB of civil-service titles they will never open, which is the same reason `/geo` and
  * `/kpss-targets` are separate endpoints in the first place.
  */
-export function useKpssTargets(enabled: boolean) {
+export function useKpssTargets(
+  enabled: boolean,
+  level: ExamVariant | null,
+  datasetId: string | null,
+) {
   const [targets, setTargets] = useState<KpssTargetsDto | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!enabled) return;
     let active = true;
-    void geoControllerGetKpssTargets()
+    // Only the province counts narrow by level; the title list stays whole, so a candidate can
+    // still aim at a job this particular guide did not advertise for them.
+    void geoControllerGetKpssTargets({
+      ...(level ? { level } : {}),
+      ...(datasetId ? { datasetId } : {}),
+    })
       .then((res) => {
         if (!active) return;
         setTargets(unwrap<KpssTargetsDto>(res));
@@ -43,7 +53,7 @@ export function useKpssTargets(enabled: boolean) {
     return () => {
       active = false;
     };
-  }, [enabled]);
+  }, [enabled, level, datasetId]);
 
   return { targets, loaded };
 }
@@ -71,6 +81,8 @@ const COUNTS_DEBOUNCE_MS = 250;
 export function useCityCountsForQuery(
   query: string,
   titleId: string | null,
+  level: ExamVariant | null,
+  datasetId: string | null,
   enabled: boolean,
 ) {
   const [byFilter, setByFilter] = useState<{
@@ -82,14 +94,18 @@ export function useCityCountsForQuery(
   // A chosen title outranks a half-typed word: the goal is the standing question, the box is a
   // passing one. The server applies the same precedence.
   const active = enabled && Boolean(titleId || trimmed.length >= 2);
-  const key = `${titleId ?? ""}|${titleId ? "" : trimmed}`;
+  const key = `${datasetId ?? ""}|${level ?? ""}|${titleId ?? ""}|${titleId ? "" : trimmed}`;
 
   useEffect(() => {
     if (!active) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
       void geoControllerGetKpssCityCounts(
-        titleId ? { titleId } : { q: trimmed },
+        {
+          ...(titleId ? { titleId } : { q: trimmed }),
+          ...(level ? { level } : {}),
+          ...(datasetId ? { datasetId } : {}),
+        },
         { signal: controller.signal },
       )
         .then((res) =>
@@ -102,7 +118,7 @@ export function useCityCountsForQuery(
       controller.abort();
       clearTimeout(timer);
     };
-  }, [key, trimmed, titleId, active]);
+  }, [key, trimmed, titleId, level, datasetId, active]);
 
   if (!active) return null;
   // Counts are kept WITH the filter they answer, so deleting "konya" → "ka" never shows the old
@@ -116,7 +132,12 @@ export function useCityCountsForQuery(
  * Kept out of `/kpss-targets` deliberately: 1.1k rows nobody has asked for is a worse trade than
  * one small request at the moment a province is actually selected.
  */
-export function useCityPostings(cityCode: string | null, enabled: boolean) {
+export function useCityPostings(
+  cityCode: string | null,
+  level: ExamVariant | null,
+  datasetId: string | null,
+  enabled: boolean,
+) {
   const [byCity, setByCity] = useState<{
     cityCode: string;
     postings: KpssPostingDto[];
@@ -125,14 +146,18 @@ export function useCityPostings(cityCode: string | null, enabled: boolean) {
   useEffect(() => {
     if (!enabled || !cityCode) return;
     const controller = new AbortController();
-    void geoControllerGetKpssCityPostings(cityCode, { signal: controller.signal })
+    void geoControllerGetKpssCityPostings(
+      cityCode,
+      { ...(level ? { level } : {}), ...(datasetId ? { datasetId } : {}) },
+      { signal: controller.signal },
+    )
       .then((res) =>
         setByCity({ cityCode, postings: unwrap<KpssPostingDto[]>(res) ?? [] }),
       )
       // Aborted province switches land here too; the stale guard below covers the rest.
       .catch(() => undefined);
     return () => controller.abort();
-  }, [cityCode, enabled]);
+  }, [cityCode, level, datasetId, enabled]);
 
   // Results are kept WITH the province they answer, so switching city never shows the previous
   // one's vacancies while the new request is still in flight.

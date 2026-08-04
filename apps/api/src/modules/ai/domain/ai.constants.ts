@@ -60,6 +60,12 @@ export const AI_EMBED_JOB = "ai.embed-article";
 /** PII-free grounding context passed to the LLM (§4 #6 — no email/name/behavioral data). */
 export interface CoachContext {
   examType: string | null;
+  /**
+   * KPSS guide level. Internal only — deliberately NOT copied into `CoachPersonalizationDto`,
+   * which is a persisted audit snapshot; this exists so the official EXAM_DATE answer resolves
+   * the candidate's own guide instead of whichever KPSS row carries `isCurrent`.
+   */
+  examVariant: string | null;
   /** Coarse subjective signal from today's mood check-in (1..5; null if not checked in). */
   moodLevel: number | null;
   /** PII-free rolling summary of recent study sessions (null when no recent activity). */

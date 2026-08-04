@@ -18,6 +18,7 @@ const user: AuthUser = {
   roles: ["STUDENT"],
   organizationId: null,
   examType: "YKS",
+  examVariant: null,
   examDate: "2026-06-20",
   dailyFocusGoalMinutes: null,
   emailVerified: true,
@@ -64,6 +65,7 @@ const geo: GeoResponseDto = {
       universities: [],
     },
   ],
+  dataset: null,
   universitySource: {
     source: "ÖSYM 2026 Kılavuzu",
     sourceUrl: "https://www.osym.gov.tr",

@@ -48,6 +48,20 @@ export const ExamType = {
 } as const;
 export type ExamType = (typeof ExamType)[keyof typeof ExamType];
 
+/**
+ * Which KPSS guide a candidate sits — stored on `users.examVariant` and on `exams.variant`.
+ *
+ * Only KPSS splits this way, and the split is not cosmetic: the three guides have different exam
+ * dates and advertise different vacancies, so without it an ORTAOGRETIM candidate counts down to
+ * the LISANS date and browses vacancies they cannot apply to.
+ */
+export const ExamVariant = {
+  LISANS: "LISANS",
+  ONLISANS: "ONLISANS",
+  ORTAOGRETIM: "ORTAOGRETIM",
+} as const;
+export type ExamVariant = (typeof ExamVariant)[keyof typeof ExamVariant];
+
 // --- Economy ledger (§3/§11): balance = sum of rows, never a single number ---
 export const Currency = {
   XP: "XP",

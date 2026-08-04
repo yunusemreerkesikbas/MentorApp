@@ -148,14 +148,44 @@ export interface KpssTargetsDto {
   titles: TitleDto[];
   institutions: InstitutionDto[];
   cityPostings: CityPostingCountDto[];
+  /** The edition these counts answer for; null only when nothing is seeded yet. */
+  dataset: DatasetInfoDto | null;
   /** e.g. "2026-1" — shown with every count so nothing reads as a standing state of the world. */
   round: string | null;
   source: GeoSourceDto | null;
 }
 
+/* -------------------------------- datasets -------------------------------- */
+
+/** Which reference dataset an edition belongs to. */
+export const DATASET_KINDS = ["KPSS_POSTINGS", "YKS_PROGRAMS"] as const;
+export type DatasetKind = (typeof DATASET_KINDS)[number];
+
+/**
+ * One published edition of a reference dataset — a KPSS placement round, a YKS guide year.
+ *
+ * `description` is editorial free text stored per edition and already resolved to the caller's
+ * locale. It is stored rather than composed from `source`/`verifiedAt` so each dataset can explain
+ * its own scope ("covers the 2026/1 placement round") without a code change — which is the whole
+ * point of managing it from the backend.
+ */
+export interface DatasetInfoDto {
+  id: string;
+  examFamily: string;
+  kind: DatasetKind;
+  /** Edition label shown in the period picker, e.g. "2026-1". */
+  period: string;
+  /** True for the edition served when no period is requested. */
+  isCurrent: boolean;
+  description: string | null;
+  source: string;
+  sourceUrl: string;
+  verifiedAt: string;
+}
+
 /* ---------------------------------- search ---------------------------------- */
 
-export const EXAM_FAMILIES_WITH_TARGETS = ["YKS", "KPSS"] as const;
+export const EXAM_FAMILIES_WITH_TARGETS = ["YKS", "KPSS", "LGS"] as const;
 export type ExamFamilyWithTargets = (typeof EXAM_FAMILIES_WITH_TARGETS)[number];
 
 /**
@@ -197,4 +227,9 @@ export interface GeoResponseDto {
   cities: CityDto[];
   /** Null while no universities are seeded — cities alone are still fully usable. */
   universitySource: GeoSourceDto | null;
+  /**
+   * The YKS guide edition this payload describes, carrying the editorial note the map renders.
+   * Replaces a hardcoded sentence and a hardcoded guide URL in the client.
+   */
+  dataset: DatasetInfoDto | null;
 }

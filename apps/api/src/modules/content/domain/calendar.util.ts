@@ -34,17 +34,29 @@ export function selectNextEvent<T extends { type: string; eventAt: Date }>(
 
 /**
  * Select the exam used for countdown within a family.
- * 1. Keep only upcoming EXAM_DATE rows (>= today).
- * 2. Prefer an `isCurrent` row within that pool; otherwise pick the nearest.
- * 3. If none upcoming, return null (no silent fallback to past dates).
+ * 1. If the user sits a specific variant, keep only that variant's rows.
+ * 2. Keep only upcoming EXAM_DATE rows (>= today).
+ * 3. Prefer an `isCurrent` row within that pool; otherwise pick the nearest.
+ * 4. If none upcoming, return null (no silent fallback to past dates).
+ *
+ * Step 1 is the whole reason `variant` is on the candidate. Without it the KPSS family resolves to
+ * whichever row carries `isCurrent` — today the LISANS guide — so an ORTAOGRETIM candidate counted
+ * down to 12 July instead of their own 26 July. An unknown variant falls back to the whole family
+ * rather than returning nothing: a stale value on a profile must not blank out the countdown.
  */
 export function selectExamForCountdown(
   candidates: ExamCandidate[],
   today: IsoDate = todayIso(),
+  variant?: string | null,
 ): ExamCandidate | null {
   if (candidates.length === 0) return null;
 
-  const upcoming = candidates
+  const inVariant = variant
+    ? candidates.filter((candidate) => candidate.variant === variant)
+    : candidates;
+  const pool = inVariant.length > 0 ? inVariant : candidates;
+
+  const upcoming = pool
     .filter((candidate) => candidate.examDate >= today)
     .sort((a, b) => a.examDate.localeCompare(b.examDate));
 

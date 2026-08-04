@@ -8,6 +8,7 @@ import {
   CAREER_GROUPS,
   type CareerGroup,
   type CityDto,
+  type DatasetInfoDto,
   type GeoResponseDto,
   type InstitutionDto,
   type PreferenceSimulationAccessDto,
@@ -30,6 +31,10 @@ import { HistorySideDrawer } from "@/components/history-side-panel";
 import { MenuSelect } from "@/components/menu-select";
 import { PuhuImage } from "@/components/puhu-image";
 import { CityPostingHoverCard } from "@/components/turkey-map/city-posting-hover-card";
+import {
+  DatasetPeriodPicker,
+  useDatasets,
+} from "@/components/turkey-map/dataset-period-picker";
 import { KpssBrowser } from "@/components/turkey-map/kpss-browser";
 import { MapBrowser } from "@/components/turkey-map/map-browser";
 import { MapCanvas, type CityPinAnchor } from "@/components/turkey-map/map-canvas";
@@ -87,12 +92,15 @@ export function VisionBoardShell() {
    */
   const [motivation, setMotivation] = useState<string | null>(null);
   const [cities, setCities] = useState<CityDto[]>([]);
+  const [geoDataset, setGeoDataset] = useState<DatasetInfoDto | null>(null);
   const [openUniversity, setOpenUniversity] = useState<UniversityDto | null>(null);
   const [hover, setHover] = useState<HoverAnchor | null>(null);
   /** KPSS province pin hover — separate from `hover`; the two pin layers never coexist. */
   const [cityPinHover, setCityPinHover] = useState<CityPinAnchor | null>(null);
   /** KPSS search term, lifted so the map can filter province pins by it (YKS does the same). */
   const [kpssQuery, setKpssQuery] = useState("");
+  /** Chosen reference edition; `null` = whichever is current. A viewing lens, never the goal. */
+  const [datasetId, setDatasetId] = useState<string | null>(null);
   /** Sidebar search hover — province highlight on the map (not a selection). */
   const [previewCityCode, setPreviewCityCode] = useState<string | null>(null);
   /** Sidebar search click — pin the university hover card while the map zooms. */
@@ -175,14 +183,27 @@ export function VisionBoardShell() {
     : null;
   const showUniversities = user?.examType === "YKS";
   const isKpss = user?.examType === "KPSS";
-  const { targets: kpssTargets } = useKpssTargets(isKpss);
+  // KPSS's three guides advertise different vacancies, so every count on this screen is scoped
+  // to the one the candidate actually sits.
+  const kpssLevel = isKpss ? (user?.examVariant ?? null) : null;
+  const { targets: kpssTargets } = useKpssTargets(isKpss, kpssLevel, datasetId);
+  const datasets = useDatasets(user?.examType ?? null);
+  // KPSS counts answer for the chosen round; YKS still has one edition, so its note comes with
+  // the geo payload. Either way the sentence beside the map is editorial copy, not a constant.
+  const dataset = isKpss ? (kpssTargets?.dataset ?? null) : geoDataset;
   const targetTitle =
     kpssTargets?.titles.find((x) => x.id === targetTitleId) ?? null;
   const targetInstitution =
     kpssTargets?.institutions.find((x) => x.id === targetInstitutionId) ?? null;
   // `null` while a search is still in flight or below the minimum — the full counts stand in, so
   // the map never blanks out between keystrokes.
-  const searchCounts = useCityCountsForQuery(kpssQuery, targetTitleId, isKpss);
+  const searchCounts = useCityCountsForQuery(
+    kpssQuery,
+    targetTitleId,
+    kpssLevel,
+    datasetId,
+    isKpss,
+  );
   // Province pins carry the vacancy count, so a province with none gets no pin at all — an empty
   // marker would read as "nothing found yet" rather than "nobody advertised here".
   const cityPins = useMemo(() => {
@@ -219,6 +240,7 @@ export function VisionBoardShell() {
       const geo =
         geoRes.status === "fulfilled" ? unwrap<GeoResponseDto>(geoRes.value) : null;
       setCities(geo?.cities ?? []);
+      setGeoDataset(geo?.dataset ?? null);
       setSimulationAccess(
         accessRes.status === "fulfilled"
           ? unwrap<PreferenceSimulationAccessDto>(accessRes.value)
@@ -359,6 +381,8 @@ export function VisionBoardShell() {
     <KpssBrowser
       targets={kpssTargets}
       cities={cities}
+      level={kpssLevel}
+      datasetId={datasetId}
       selectedCityCode={targetCityCode}
       targetTitleId={targetTitleId}
       targetInstitutionId={targetInstitutionId}
@@ -522,7 +546,14 @@ export function VisionBoardShell() {
             previewCityCode={previewCityCode}
             spotlightUniversityId={spotlightUniversityId}
             visibleUniversityIds={visibleUniversityIds}
-            showOsymSource={showUniversities}
+            dataset={dataset}
+            periodPicker={
+              <DatasetPeriodPicker
+                datasets={datasets}
+                value={datasetId}
+                onChange={setDatasetId}
+              />
+            }
             cityPins={cityPins}
             activeUniversityId={openUniversity?.id ?? targetUniversity?.id ?? null}
             overlay={{ cityCode: targetCityCode, node: mascot }}

@@ -671,7 +671,18 @@
       "save_error": "Could not save.",
       "kpss_desc": "Civil Servant Selection Exam",
       "yks_desc": "Higher Education Institutions Exam",
-      "lgs_desc": "High School Transition System"
+      "lgs_desc": "High School Transition System",
+    "variant_label": "Your KPSS level",
+    "variant": {
+      "LISANS": "Bachelor's",
+      "ONLISANS": "Associate",
+      "ORTAOGRETIM": "High school"
+    },
+    "variant_desc": {
+      "LISANS": "Four-year degree, or in your final year",
+      "ONLISANS": "Two-year vocational degree",
+      "ORTAOGRETIM": "High school diploma"
+    }
     },
     "account": {
       "title": "Account",
@@ -1773,7 +1784,6 @@
       "no_universities": "No universities listed for this city.",
       "university_count": "{count} universities",
       "attribution": "Map data © OpenStreetMap contributors (ODbL)",
-      "osym_source": "University and program data comes from ÖSYM and is verified against it. See the <link>ÖSYM YKS guide</link> for full details.",
       "back_to_city": "Back to city list",
       "search_placeholder": "Search a university, city or program…",
       "filter_programs_placeholder": "Filter programs at this university…",
@@ -1838,6 +1848,11 @@
     "saved_info_ok": "OK",
     "save_error": "Couldn't save.",
     "simulation_cta": "Open 3D campus and preference scenario",
+    "dataset": {
+      "aria_label": "Data period",
+      "period": "{period}",
+      "period_current": "{period} · current"
+    },
     "kpss": {
       "search_placeholder": "Search a title, institution or city…",
       "searching": "Searching…",
@@ -1853,7 +1868,6 @@
       "round_note": "{round} placement round",
       "loading_postings": "Loading postings…",
       "no_postings": "No postings in this province this round.",
-      "pick_city_hint": "Pick a province on the map.",
       "pick_title_hint": "Choose your target title",
       "quota": "{count} people",
       "open_hint": "Click to see the postings",

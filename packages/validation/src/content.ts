@@ -63,7 +63,7 @@ export const geoSearchQuerySchema = z.object({
    * Which reference sets to search. Defaults to YKS so existing callers keep working; a KPSS
    * client sends "KPSS" and stops receiving university programs it has no use for.
    */
-  family: z.enum(["YKS", "KPSS"]).default("YKS"),
+  family: z.enum(["YKS", "KPSS", "LGS"]).default("YKS"),
 });
 export type GeoSearchQuery = z.infer<typeof geoSearchQuerySchema>;
 

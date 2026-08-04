@@ -76,7 +76,15 @@ function makeKpssFake() {
 const service = (
   fake: ReturnType<typeof makeGeoFake>,
   kpss: ReturnType<typeof makeKpssFake> = makeKpssFake(),
-) => new GeoService({} as never, fake as never, kpss as never);
+) =>
+  new GeoService(
+    {} as never,
+    fake as never,
+    kpss as never,
+    // No edition seeded in unit tests: `dataset` comes back null, which the client renders as
+    // "no source note" rather than a broken one.
+    { getCurrent: async () => undefined, info: () => null } as never,
+  );
 
 describe("GeoService.getUniversityPrograms", () => {
   it("folds the (program, year) join rows back into one program per code", async () => {
@@ -190,5 +198,27 @@ describe("GeoService.search", () => {
     expect(result.titles).toEqual([]);
     expect(result.institutions).toEqual([]);
     expect(kpss.calls).toEqual([]);
+  });
+});
+
+describe("GeoService.search — LGS", () => {
+  it("returns provinces only, never university programmes", async () => {
+    // Before `family` covered LGS, the schema defaulted to YKS and an LGS student searching
+    // "bilgisayar" was shown degree programmes they cannot apply to for another four years.
+    const geo = makeGeoFake();
+    const service = new GeoService(
+      {} as never,
+      geo as never,
+      { search: async () => ({ titles: [], institutions: [] }) } as never,
+      { getCurrent: async () => undefined, info: () => null } as never,
+    );
+
+    const result = await service.search("bilgisayar", "LGS");
+    expect(result.programs).toEqual([]);
+    expect(result.universities).toEqual([]);
+    expect(result.titles).toEqual([]);
+    expect(result.institutions).toEqual([]);
+    // Provinces are the one thing an LGS goal can honestly anchor on today.
+    expect(geo.needles).toEqual(["bilgisayar"]);
   });
 });

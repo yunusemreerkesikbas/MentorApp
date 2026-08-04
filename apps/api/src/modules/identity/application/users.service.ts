@@ -134,13 +134,19 @@ export class UsersService {
 
   /** Minimal onboarding profile (display name + exam selection); deep diagnosis is W2. */
   async updateMe(userId: string, patch: UpdateMeInput): Promise<AuthUser> {
-    const current =
-      patch.avatarStorageKey !== undefined ? await this.usersRepo.findSelf(userId) : undefined;
-    if (patch.avatarStorageKey !== undefined && !current) throw new NotFoundError();
+    // The variant only makes sense next to a family, so a lone variant change needs the stored
+    // one to decide. Everything else keeps the single-write path it had.
+    const needsCurrent =
+      patch.avatarStorageKey !== undefined ||
+      (patch.examVariant !== undefined && patch.examType === undefined);
+    const current = needsCurrent ? await this.usersRepo.findSelf(userId) : undefined;
+    if (needsCurrent && !current) throw new NotFoundError();
 
     if (typeof patch.avatarStorageKey === "string") {
       await this.assertValidAvatar(userId, patch.avatarStorageKey);
     }
+
+    const examVariantPatch = resolveExamVariantPatch(patch, current?.examType);
 
     let user: Awaited<ReturnType<UsersRepository["updateSelf"]>>;
     try {
@@ -153,6 +159,7 @@ export class UsersService {
         ...(patch.bio !== undefined && { bio: patch.bio }),
         ...(patch.website !== undefined && { website: patch.website }),
         ...(patch.examType !== undefined && { examType: patch.examType }),
+        ...examVariantPatch,
         ...(patch.examDate !== undefined && { examDate: patch.examDate }),
         ...(patch.dailyFocusGoalMinutes !== undefined && {
           dailyFocusGoalMinutes: patch.dailyFocusGoalMinutes,
@@ -183,4 +190,28 @@ export class UsersService {
       throw new DomainError(ErrorCode.AUTH_AVATAR_INVALID_IMAGE, HttpStatus.BAD_REQUEST);
     }
   }
+}
+
+/**
+ * Keeps `examType` and `examVariant` consistent server-side.
+ *
+ * Only KPSS splits into guide levels, so any other family stores `null` — and it does so even when
+ * the client sent nothing, because switching YKS→KPSS→YKS would otherwise leave an ORTAOGRETIM
+ * marker behind that silently narrows the countdown and the vacancy map later on.
+ *
+ * Returns a spread-ready patch: an empty object means "leave the column alone".
+ */
+export function resolveExamVariantPatch(
+  patch: Pick<UpdateMeInput, "examType" | "examVariant">,
+  currentExamType: string | null | undefined,
+): { examVariant?: string | null } {
+  const family = patch.examType ?? currentExamType ?? null;
+
+  if (family !== "KPSS") {
+    // Nothing to clear if the family is not changing and no variant was sent.
+    if (patch.examType === undefined && patch.examVariant === undefined) return {};
+    return { examVariant: null };
+  }
+  if (patch.examVariant === undefined) return {};
+  return { examVariant: patch.examVariant };
 }

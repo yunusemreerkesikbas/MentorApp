@@ -431,16 +431,20 @@ export class ContentService {
     });
   }
 
-  /** Authoritative countdown source: family = users.examType (KPSS | YKS | LGS). */
+  /**
+   * Authoritative countdown source: family = users.examType (KPSS | YKS | LGS), narrowed by
+   * users.examVariant where the family has one (KPSS's three guides sit on different dates).
+   */
   async getExamCalendarByFamily(
     family: string | null | undefined,
     asOf?: string,
+    variant?: string | null,
   ): Promise<ExamCalendarDto | null> {
     if (!family) return null;
     this.assertValidFamily(family);
 
     const rows = await this.exams.listFamilyCandidates(this.db, family);
-    const selected = selectExamForCountdown(toExamCandidates(rows), asOf);
+    const selected = selectExamForCountdown(toExamCandidates(rows), asOf, variant);
     if (!selected) return null;
 
     const exam = rows.find((r) => r.exam.id === selected.examId)?.exam;
@@ -454,8 +458,9 @@ export class ContentService {
   async getExamCalendarForCoaching(
     family: string | null | undefined,
     asOf?: string,
+    variant?: string | null,
   ): Promise<ResolvedExamCalendar | null> {
-    const dto = await this.getExamCalendarByFamily(family, asOf);
+    const dto = await this.getExamCalendarByFamily(family, asOf, variant);
     if (!dto) return null;
 
     const examDateEvent = dto.events.find(

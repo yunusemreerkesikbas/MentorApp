@@ -671,7 +671,18 @@
       "save_error": "Kaydedilemedi.",
       "kpss_desc": "Kamu Personeli Seçme Sınavı",
       "yks_desc": "Yükseköğretim Kurumları Sınavı",
-      "lgs_desc": "Liselere Geçiş Sistemi"
+      "lgs_desc": "Liselere Geçiş Sistemi",
+    "variant_label": "KPSS öğrenim düzeyin",
+    "variant": {
+      "LISANS": "Lisans",
+      "ONLISANS": "Önlisans",
+      "ORTAOGRETIM": "Ortaöğretim"
+    },
+    "variant_desc": {
+      "LISANS": "4 yıllık fakülte mezunu ya da son sınıf",
+      "ONLISANS": "2 yıllık meslek yüksekokulu mezunu",
+      "ORTAOGRETIM": "Lise mezunu"
+    }
     },
     "account": {
       "title": "Hesap",
@@ -1773,7 +1784,6 @@
       "no_universities": "Bu şehirde kayıtlı üniversite yok.",
       "university_count": "{count} üniversite",
       "attribution": "Harita verisi © OpenStreetMap katkıcıları (ODbL)",
-      "osym_source": "Üniversite ve program bilgileri ÖSYM'den alınır ve buradan doğrulanır. Ayrıntı için <link>ÖSYM YKS kılavuzuna</link> bakabilirsin.",
       "back_to_city": "Şehir listesine dön",
       "search_placeholder": "Üniversite, şehir veya bölüm ara…",
       "filter_programs_placeholder": "Bu üniversitede bölüm ara…",
@@ -1838,6 +1848,11 @@
     "saved_info_ok": "Tamam",
     "save_error": "Kaydedilemedi.",
     "simulation_cta": "3D kampüs ve tercih senaryosunu aç",
+    "dataset": {
+      "aria_label": "Veri dönemi",
+      "period": "{period} dönemi",
+      "period_current": "{period} dönemi · güncel"
+    },
     "kpss": {
       "search_placeholder": "Unvan, kurum veya şehir ara…",
       "searching": "Aranıyor…",
@@ -1853,7 +1868,6 @@
       "round_note": "{round} dönemi ilanları",
       "loading_postings": "İlanlar yükleniyor…",
       "no_postings": "Bu ilde bu dönem ilan yok.",
-      "pick_city_hint": "Haritadan bir şehir seç.",
       "pick_title_hint": "Hedef unvanını seç",
       "quota": "{count} kişi",
       "open_hint": "İlanları görmek için tıkla",

@@ -20,6 +20,7 @@ const user: AuthUser = {
   roles: ["STUDENT"],
   organizationId: null,
   examType: "YKS",
+  examVariant: null,
   examDate: "2027-06-19",
   dailyFocusGoalMinutes: null,
   emailVerified: true,
@@ -102,6 +103,7 @@ const geo: GeoResponseDto = {
       ],
     },
   ],
+  dataset: null,
   universitySource: {
     source: "ÖSYM",
     sourceUrl: "https://www.osym.gov.tr/",

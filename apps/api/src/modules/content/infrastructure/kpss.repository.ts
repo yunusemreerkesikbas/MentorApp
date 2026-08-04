@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import {
   cities,
@@ -23,7 +23,6 @@ export interface CityPostingCountRow {
 
 export interface PostingRow {
   osymCode: string;
-  round: string;
   educationLevel: string;
   titleName: string;
   institutionName: string;
@@ -83,9 +82,10 @@ export class KpssRepository {
       .insert(kpssPostings)
       .values(rows)
       .onConflictDoUpdate({
-        target: kpssPostings.osymCode,
+        // Matches the composite key: re-importing a round updates its own rows and never touches
+        // another round that happens to reuse an ÖSYM code.
+        target: [kpssPostings.datasetId, kpssPostings.osymCode],
         set: {
-          round: sql`excluded.round`,
           educationLevel: sql`excluded.education_level`,
           institutionId: sql`excluded.institution_id`,
           titleId: sql`excluded.title_id`,
@@ -121,13 +121,23 @@ export class KpssRepository {
    */
   async countPostingsByCity(
     db: Database | DatabaseTx,
-    filter?: { titleId?: string; needle?: string },
+    datasetId: string,
+    filter?: { titleId?: string; needle?: string; educationLevel?: string },
   ): Promise<CityPostingCountRow[]> {
     const columns = {
       cityCode: kpssPostings.cityCode,
       postings: sql<number>`count(*)::int`,
       quota: sql<number>`coalesce(sum(${kpssPostings.quota}), 0)::int`,
     };
+    // `datasetId` is a required argument, not an option: with two rounds loaded, a query that
+    // forgot it would quietly sum both and report double the vacancies. Required means the
+    // compiler catches the omission instead of the map reporting a plausible wrong number.
+    const scope = eq(kpssPostings.datasetId, datasetId);
+    // A candidate can only apply with the guide they sit, so an ORTAOGRETIM user must never see a
+    // LISANS vacancy counted on their map.
+    const level = filter?.educationLevel
+      ? eq(kpssPostings.educationLevel, filter.educationLevel)
+      : undefined;
 
     // A chosen title is an exact id, never a name match: picking MÜHENDİS must not drag in
     // İNŞAAT MÜHENDİSİ, which a substring search would.
@@ -135,12 +145,16 @@ export class KpssRepository {
       return db
         .select(columns)
         .from(kpssPostings)
-        .where(eq(kpssPostings.titleId, filter.titleId))
+        .where(and(scope, eq(kpssPostings.titleId, filter.titleId), level))
         .groupBy(kpssPostings.cityCode);
     }
 
     if (!filter?.needle) {
-      return db.select(columns).from(kpssPostings).groupBy(kpssPostings.cityCode);
+      return db
+        .select(columns)
+        .from(kpssPostings)
+        .where(and(scope, level))
+        .groupBy(kpssPostings.cityCode);
     }
 
     const pattern = `%${filter.needle}%`;
@@ -150,7 +164,11 @@ export class KpssRepository {
       .innerJoin(titles, eq(titles.id, kpssPostings.titleId))
       .innerJoin(institutions, eq(institutions.id, kpssPostings.institutionId))
       .where(
-        sql`${foldTurkish(titles.name)} LIKE ${pattern} OR ${foldTurkish(institutions.name)} LIKE ${pattern}`,
+        and(
+          scope,
+          sql`${foldTurkish(titles.name)} LIKE ${pattern} OR ${foldTurkish(institutions.name)} LIKE ${pattern}`,
+          level,
+        ),
       )
       .groupBy(kpssPostings.cityCode);
   }
@@ -158,12 +176,13 @@ export class KpssRepository {
   /** Everything advertised in one province, for the sidebar list. */
   async listPostingsByCity(
     db: Database | DatabaseTx,
+    datasetId: string,
     cityCode: string,
+    educationLevel?: string,
   ): Promise<PostingRow[]> {
     return db
       .select({
         osymCode: kpssPostings.osymCode,
-        round: kpssPostings.round,
         educationLevel: kpssPostings.educationLevel,
         titleName: titles.name,
         institutionName: institutions.name,
@@ -176,25 +195,16 @@ export class KpssRepository {
       .from(kpssPostings)
       .innerJoin(titles, eq(titles.id, kpssPostings.titleId))
       .innerJoin(institutions, eq(institutions.id, kpssPostings.institutionId))
-      .where(eq(kpssPostings.cityCode, cityCode))
+      .where(
+        and(
+          eq(kpssPostings.datasetId, datasetId),
+          eq(kpssPostings.cityCode, cityCode),
+          educationLevel
+            ? eq(kpssPostings.educationLevel, educationLevel)
+            : undefined,
+        ),
+      )
       .orderBy(asc(titles.name), asc(institutions.name));
-  }
-
-  /** Newest round present in the table — shown next to every count so nothing looks timeless. */
-  async findLatestRound(
-    db: Database | DatabaseTx,
-  ): Promise<{ round: string; source: string; sourceUrl: string; verifiedAt: Date } | undefined> {
-    const rows = await db
-      .select({
-        round: kpssPostings.round,
-        source: kpssPostings.source,
-        sourceUrl: kpssPostings.sourceUrl,
-        verifiedAt: kpssPostings.verifiedAt,
-      })
-      .from(kpssPostings)
-      .orderBy(desc(kpssPostings.round))
-      .limit(1);
-    return rows[0];
   }
 
   async searchTitles(

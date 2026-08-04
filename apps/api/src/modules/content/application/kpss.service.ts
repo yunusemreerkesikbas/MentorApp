@@ -1,6 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
 import type {
   CityPostingCountDto,
+  DatasetInfoDto,
+  DatasetKind,
   InstitutionDto,
   KpssPostingDto,
   KpssTargetsDto,
@@ -9,6 +11,10 @@ import type {
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
+import type {
+  NewReferenceDataset,
+  ReferenceDatasetRow,
+} from "../infrastructure/dataset.repository";
 import {
   KpssRepository,
   type InstitutionRow,
@@ -17,7 +23,10 @@ import {
   type NewTitle,
   type TitleRow,
 } from "../infrastructure/kpss.repository";
+import { DatasetService } from "./dataset.service";
 import { foldTurkishText } from "../infrastructure/turkish-sql";
+
+const KPSS_POSTINGS = "KPSS_POSTINGS" as const;
 
 /**
  * KPSS reference data — civil-service titles, the institutions that posted, and this round's
@@ -35,6 +44,7 @@ export class KpssService {
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly kpss: KpssRepository,
+    private readonly datasets: DatasetService,
   ) {}
 
   /**
@@ -42,12 +52,22 @@ export class KpssService {
    * counts). Postings themselves are NOT included — 1.1k rows nobody has asked for yet; they load
    * per province when a city is opened.
    */
-  async getTargets(): Promise<KpssTargetsDto> {
-    const [titleRows, institutionRows, counts, meta] = await Promise.all([
+  async getTargets(
+    educationLevel?: string | null,
+    datasetId?: string | null,
+    locale?: string,
+  ): Promise<KpssTargetsDto> {
+    const dataset = await this.resolveDataset(datasetId);
+    const [titleRows, institutionRows, counts] = await Promise.all([
       this.kpss.listTitles(this.db),
       this.kpss.listInstitutions(this.db),
-      this.kpss.countPostingsByCity(this.db),
-      this.kpss.findLatestRound(this.db),
+      // Only the counts narrow by level and period. Titles and institutions stay whole: a goal is
+      // a career, and a candidate may well target a title this guide does not advertise for them.
+      dataset
+        ? this.kpss.countPostingsByCity(this.db, dataset.id, {
+            educationLevel: educationLevel || undefined,
+          })
+        : Promise.resolve([]),
     ]);
 
     return {
@@ -58,15 +78,23 @@ export class KpssService {
         postings: c.postings,
         quota: c.quota,
       })),
-      round: meta?.round ?? null,
-      source: meta
+      dataset: dataset ? this.datasets.info(dataset, locale) : null,
+      round: dataset?.period ?? null,
+      source: dataset
         ? {
-            source: meta.source,
-            sourceUrl: meta.sourceUrl,
-            verifiedAt: meta.verifiedAt.toISOString(),
+            source: dataset.source,
+            sourceUrl: dataset.sourceUrl,
+            verifiedAt: dataset.verifiedAt.toISOString(),
           }
         : null,
     };
+  }
+
+  /** Which round a request is about; `DatasetService` owns the resolution rules. */
+  private resolveDataset(
+    datasetId?: string | null,
+  ): Promise<ReferenceDatasetRow | undefined> {
+    return this.datasets.resolve(KPSS_POSTINGS, datasetId);
   }
 
   /**
@@ -82,11 +110,16 @@ export class KpssService {
   async getCityCounts(
     query?: string,
     titleId?: string,
+    educationLevel?: string | null,
+    datasetId?: string | null,
   ): Promise<CityPostingCountDto[]> {
+    const dataset = await this.resolveDataset(datasetId);
+    if (!dataset) return [];
     const needle = foldTurkishText((query ?? "").trim());
-    const rows = await this.kpss.countPostingsByCity(this.db, {
+    const rows = await this.kpss.countPostingsByCity(this.db, dataset.id, {
       titleId: titleId || undefined,
       needle: needle.length >= 2 ? needle : undefined,
+      educationLevel: educationLevel || undefined,
     });
     return rows.map((c) => ({
       cityCode: c.cityCode,
@@ -95,11 +128,23 @@ export class KpssService {
     }));
   }
 
-  async getCityPostings(cityCode: string): Promise<KpssPostingDto[]> {
-    const rows = await this.kpss.listPostingsByCity(this.db, cityCode);
+  async getCityPostings(
+    cityCode: string,
+    educationLevel?: string | null,
+    datasetId?: string | null,
+  ): Promise<KpssPostingDto[]> {
+    const dataset = await this.resolveDataset(datasetId);
+    if (!dataset) return [];
+    const rows = await this.kpss.listPostingsByCity(
+      this.db,
+      dataset.id,
+      cityCode,
+      educationLevel || undefined,
+    );
     return rows.map((r) => ({
       osymCode: r.osymCode,
-      round: r.round,
+      // The round lives on the dataset now, not repeated on every posting row.
+      round: dataset.period,
       educationLevel: r.educationLevel,
       titleName: r.titleName,
       institutionName: r.institutionName,
@@ -157,19 +202,32 @@ export class KpssService {
     };
   }
 
-  /** Seed entry point — one batched statement per table inside a single SERVICE-context tx. */
+  /**
+   * Seed entry point — one batched statement per table inside a single SERVICE-context tx.
+   *
+   * The dataset row is written first because the postings hang off its id. Seeding a second round
+   * is therefore additive: a new period file creates a new edition and leaves the earlier one
+   * intact, which is what makes the period picker have anything to pick from.
+   */
   async seedKpss(input: {
+    dataset: Omit<NewReferenceDataset, "examFamily" | "kind">;
     titles: NewTitle[];
     institutions: NewInstitution[];
-    postings: (Omit<NewPosting, "titleId" | "institutionId"> & {
+    postings: (Omit<NewPosting, "titleId" | "institutionId" | "datasetId"> & {
       titleSlug: string;
       institutionSlug: string;
     })[];
-  }): Promise<void> {
-    await withServiceContext(this.db, async (tx) => {
+  }): Promise<string> {
+    return withServiceContext(this.db, async (tx) => {
+      const dataset = await this.datasets.upsert(tx, {
+        ...input.dataset,
+        examFamily: "KPSS",
+        kind: KPSS_POSTINGS,
+      });
+
       await this.kpss.upsertTitles(tx, input.titles);
       await this.kpss.upsertInstitutions(tx, input.institutions);
-      if (input.postings.length === 0) return;
+      if (input.postings.length === 0) return dataset.id;
 
       // Ids only exist after the upserts above, so slugs are resolved here rather than in the seed
       // file — the JSON stays free of database identifiers and survives a wipe-and-reseed.
@@ -187,9 +245,10 @@ export class KpssService {
         const titleId = titleIdBySlug.get(titleSlug);
         const institutionId = institutionIdBySlug.get(institutionSlug);
         if (!titleId || !institutionId) continue;
-        postings.push({ ...rest, titleId, institutionId });
+        postings.push({ ...rest, titleId, institutionId, datasetId: dataset.id });
       }
       await this.kpss.upsertPostings(tx, postings);
+      return dataset.id;
     });
   }
 }
