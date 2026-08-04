@@ -377,3 +377,63 @@ GÜVENLİK GÖREVLİSİ"` aynı iş. `.trim()` yalnız uçları kırptığı iç
   ya da `@ApiQuery` bildirimi ister; aksi halde codegen parametreyi sessizce düşürür (ya da
   `@Param()` nesne DTO'sunda olduğu gibi tamamen düşer).
   İlgili: `geo.controller.ts`, `map-browser.tsx`, `kpss-browser.tsx`, `packages/api-client/`.
+
+- **Referans veri dönemleri — `reference_datasets` (2026-08-04)** — Referans veri artık "şu an
+  yüklü olan ne ise o" değil; her yayın **bir varlık**. `kpss_postings.round` 1.100 satırda
+  tekrarlanan ve **hiçbir sorgunun süzmediği** bir etiketti: bugün ikinci bir dönem seed'lense
+  haritadaki tüm sayılar ikiye katlanırdı.
+  **Şema:** `reference_datasets` (examFamily · kind · period · sortKey · isCurrent ·
+  descriptionTr/En · kaynak metadata). `kpss_postings.round` → `dataset_id` FK; **PK `osym_code` →
+  `(dataset_id, osym_code)`**. ÖSYM kodları yalnız *dönem içinde* benzersiz; çıplak PK olarak
+  kalsaydı sonraki dönem çakışan bir kodda öncekini sessizce ezerdi.
+  `sortKey` (20261) `period` metnini sıralamanın yerini alır — `"2026-10"` metin sıralamasında
+  `"2026-2"`'nin arkasına düşüyordu, yani eski `ORDER BY round DESC` er geç yanlış dönemi
+  varsayılan yapacaktı.
+  **`datasetId` repository'de zorunlu argüman**, opsiyonel değil: iki dönem yüklüyken onu unutan
+  bir sorgu ikisini toplar ve *makul görünen* yanlış bir sayı üretir. Zorunlu olunca derleyici
+  yakalar.
+  **Bilinmeyen `datasetId` reddedilir**, güncele düşülmez — kullanıcı 2025/2'ye baktığını sanırken
+  2026/1 sayılarını okumamalı; ayırt etmesinin hiçbir yolu yok.
+  **Seed artık dönem dosyası:** `kpss.<round>.seed.json`. Yeni dönem = klasöre ikinci dosya; hiçbir
+  şey silinmez. `geo-seed` `kpss*.seed.json` kalıbını okur, `sortKey`'e göre eskiden yeniye seed'ler
+  ve `isCurrent`'ı **yükleyici** belirler (dosyaların anlaşmasına güvenilmez). Aynı dönemi bildiren
+  iki dosya assert ile reddedilir.
+  **Migration `0074` elle yazıldı** — drizzle-kit mevcut `round` etiketlerini dataset satırlarına
+  bağlayan backfill'i türetemez; yanlış üretmek ya tüm ilanları düşürür ya da bağlantısız bırakırdı.
+  **Uçlar:** `GET /v1/content/datasets` (dönem seçicinin listesi) + üç KPSS ucunda opsiyonel
+  `datasetId`. `program_catalog_datasets`'e dokunulmadı — tercih simülasyonu onu kullanıyor;
+  birleştirme YKS çok-yıllılığıyla birlikte gelecek.
+  Spec: `kpss.service` (varsayılan güncel / istenen döneme kapsam / bilinmeyen id reddi),
+  `geo-seed` (dönem etiketi + sortKey + tek güncel edisyon + eskiden yeniye sıra).
+  **Doğrulanmayı bekleyen:** "iki dönem yüklüyken toplam ikiye katlanmıyor" — ikinci bir KPSS
+  kılavuzu gerektiriyor.
+  İlgili: `schema.ts`, `0074_kpss_dataset_periods.sql`, `kpss.repository.ts`, `kpss.service.ts`,
+  `geo-seed.service.ts`, `geo.controller.ts`, `build-kpss-seed.mjs`, `packages/types/src/geo.ts`.
+
+- **Yönetilebilir kaynak notu + dönem seçici (2026-08-04)** — Haritanın sağ alt notu bir **sabit
+  i18n metni ve sabit bir URL**'di (`osym_source` + `OSYM_YKS_GUIDE_URL`); `GeoSourceDto` istemciye
+  ulaşıyor ama hiç okunmuyordu. Artık metin veri setinin kendisinde: `descriptionTr`/`descriptionEn`,
+  API tarafında locale'e göre çözülüp `DatasetInfoDto.description` olarak geliyor. Sonuç: KPSS/YKS
+  ayrımı için haritada dal yok — her veri seti kendini anlatıyor, kod değişmeden güncelleniyor.
+  `showOsymSource` bayrağı ve sabit URL silindi; `osym_source` anahtarı iki dilden de kaldırıldı.
+  **`DatasetService` + `DatasetRepository` ayrıldı** — "hangi edisyonlar var, hangisi güncel"
+  sorusu her aile için aynı; genel dataset erişimini "KPSS referans tabloları" başlıklı dosyada
+  bırakmak, YKS çağıranının aynı kodu ikinci kez yazmasının kısa yoluydu.
+  **`/geo` artık `dataset` taşıyor** (YKS 2026 edisyonu), `datasets.seed.json`'dan seed'lenir. YKS
+  verisi hâlâ tek sürüm — satır yalnız açıklamayı ve kaynağı taşır, `programs` tablosuna dokunulmaz.
+  **Dönem seçici** haritanın sağ üstünde: tek edisyonda **düz etiket**, birden fazlasında `MenuSelect`.
+  Açılamayan bir dropdown, kontrol taklidi yapan gürültüdür. Güncel edisyon seçilince state `null`'a
+  döner — sonraki dönemde güncelliğini yitirecek bir id'ye sabitlenmez.
+  **Dönem bir görüntüleme merceğidir, hedefi değiştirmez:** unvan/kurum/şehir/üniversite id'leri
+  dönemden bağımsız, dolayısıyla 2025/2'ye bakmak kayıtlı hedefi bozmaz ve tercih simülasyonundaki
+  `refresh()` benzeri bir uzlaştırmaya gerek kalmaz.
+  İlgili: `dataset.service.ts`, `dataset.repository.ts`, `datasets.seed.json`,
+  `dataset-period-picker.tsx`, `map-canvas.tsx`, `geo.service.ts`.
+
+- **LGS arama sızıntısı kapandı (2026-08-04)** — `geoSearchQuerySchema.family` varsayılanı YKS
+  olduğu için LGS kullanıcısı "bilgisayar" arayınca dört yıl sonra başvurabileceği lisans
+  programlarını görüyordu; KPSS için kapattığımız sızıntının aynısı. `family` artık LGS'yi de
+  alıyor ve o dalda **yalnız il** dönüyor — LGS'nin hedef zinciri (il → ilçe → okul) 973 ilçe
+  geometrisi istediği için kapsam dışı; il, bugün dürüstçe cevaplanabilecek tek şey.
+  `EXAM_FAMILIES_WITH_TARGETS` ve controller'daki `@ApiQuery` enum'u aynı sabitten besleniyor,
+  yoksa codegen LGS'yi tipten düşürürdü. Spec: `geo.service` (LGS'de program/üniversite/unvan boş).

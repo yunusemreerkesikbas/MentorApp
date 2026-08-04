@@ -16,6 +16,7 @@ import { NotFoundError } from "../../../common/errors/domain-error";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
+import { DatasetService } from "./dataset.service";
 import { KpssService } from "./kpss.service";
 import {
   GeoRepository,
@@ -51,6 +52,7 @@ export class GeoService {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly geo: GeoRepository,
     private readonly kpss: KpssService,
+    private readonly datasets: DatasetService,
   ) {}
 
   /**
@@ -58,13 +60,14 @@ export class GeoService {
    * per-city detail endpoint: the map hovers over provinces, and a network round-trip per hover
    * is exactly the experience this avoids.
    */
-  async getGeo(): Promise<GeoResponseDto> {
-    const [cityRows, universityRows, sourceRow, programCounts] =
+  async getGeo(locale?: string): Promise<GeoResponseDto> {
+    const [cityRows, universityRows, sourceRow, programCounts, dataset] =
       await Promise.all([
         this.geo.listCities(this.db),
         this.geo.listUniversities(this.db),
         this.geo.findUniversitySource(this.db),
         this.geo.countProgramsByUniversity(this.db),
+        this.datasets.getCurrent("YKS_PROGRAMS"),
       ]);
 
     const byCity = new Map<string, UniversityDto[]>();
@@ -91,6 +94,7 @@ export class GeoService {
             verifiedAt: sourceRow.verifiedAt.toISOString(),
           }
         : null,
+      dataset: dataset ? this.datasets.info(dataset, locale) : null,
     };
   }
 
@@ -201,6 +205,11 @@ export class GeoService {
       slug: c.slug,
       region: c.region as GeoRegion,
     }));
+
+    // LGS has no target dataset yet (the school chain needs 973 district geometries). Provinces
+    // are all it can honestly answer with — and returning them alone closes the same leak as
+    // below: without this branch an LGS student searching "bilgisayar" got YKS degree programmes.
+    if (family === "LGS") return { ...empty, cities };
 
     // A KPSS student has no use for university programs; surfacing them was the leak this closes.
     if (family === "KPSS") {

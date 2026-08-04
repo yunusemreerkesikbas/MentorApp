@@ -794,12 +794,20 @@ html.mentor-sheet-open {
   fill: #fff;
   pointer-events: none;
 }
-/* Count inside a province pin (KPSS): scales with the pin, so it stays legible at every zoom. */
-.mentor-tr-map .mentor-tr-map-pin text {
-  fill: #fff;
-  font-size: 7.5px;
-  font-weight: 700;
+/* KPSS vacancy count — corner badge on the same teardrop as YKS, not inside the pin head. */
+.mentor-tr-map .mentor-tr-map-pin-badge {
   pointer-events: none;
+}
+.mentor-tr-map .mentor-tr-map-pin-badge rect {
+  fill: var(--color-main);
+  stroke: #fff;
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+.mentor-tr-map .mentor-tr-map-pin-badge text {
+  fill: #fff;
+  font-size: 6.5px;
+  font-weight: 700;
 }
 .mentor-tr-map > path:hover {
   fill: var(--map-province-hover);

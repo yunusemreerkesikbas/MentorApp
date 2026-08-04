@@ -36,7 +36,7 @@ export class ContextBuilder {
       }),
       me.examType
         ? this.content
-            .getExamCalendarByFamily(me.examType)
+            .getExamCalendarByFamily(me.examType, undefined, me.examVariant)
             .then((calendar) =>
               calendar
                 ? this.content.listExamSubjectsByExamId(calendar.exam.id)
@@ -68,6 +68,7 @@ export class ContextBuilder {
 
     return {
       examType: me.examType,
+      examVariant: me.examVariant,
       moodLevel: today?.mood ?? null,
       recentSessions: recentSessions
         ? {

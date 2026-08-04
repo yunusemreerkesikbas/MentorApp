@@ -12,6 +12,7 @@ const user: AuthUser = {
   roles: ["STUDENT"],
   organizationId: null,
   examType: "KPSS",
+  examVariant: null,
   examDate: "2026-07-26",
   dailyFocusGoalMinutes: null,
   emailVerified: true,

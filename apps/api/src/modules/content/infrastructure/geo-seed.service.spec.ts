@@ -109,7 +109,7 @@ interface KpssSeedFile {
   }>;
 }
 
-const kpssSeed = read<KpssSeedFile>("kpss.seed.json");
+const kpssSeed = read<KpssSeedFile>("kpss.2026-1.seed.json");
 
 describe("kpss seed file", () => {
   it("points every posting at a province, a known title and a known institution", () => {
@@ -143,7 +143,9 @@ describe("kpss seed file", () => {
 describe("GeoSeedService", () => {
   function run() {
     const geoCalls: Array<{ cities: NewCity[]; universities: NewUniversity[] }> = [];
+    const datasetCalls: unknown[][] = [];
     const kpssCalls: Array<{
+      dataset: { period: string; sortKey: number; isCurrent: boolean };
       titles: unknown[];
       institutions: unknown[];
       postings: unknown[];
@@ -159,15 +161,22 @@ describe("GeoSeedService", () => {
       } as never,
       {
         seedKpss: async (input: {
+          dataset: { period: string; sortKey: number; isCurrent: boolean };
           titles: unknown[];
           institutions: unknown[];
           postings: unknown[];
         }) => {
           kpssCalls.push(input);
+          return "dataset-id";
+        },
+      } as never,
+      {
+        seedDatasets: async (rows: unknown[]) => {
+          datasetCalls.push(rows);
         },
       } as never,
     );
-    return { service, geoCalls, kpssCalls };
+    return { service, geoCalls, kpssCalls, datasetCalls };
   }
 
   it("seeds provinces and universities in a SINGLE call — one batched statement per table", async () => {
@@ -181,13 +190,34 @@ describe("GeoSeedService", () => {
     expect(geoCalls[0]!.universities).toHaveLength(uniSeed.universities.length);
   });
 
-  it("seeds the KPSS round in a single call too", async () => {
+  it("seeds each KPSS round in a single call", async () => {
     const { service, kpssCalls } = run();
     await service.onModuleInit();
 
+    // One call per period file, each carrying its whole set — never per-row awaits.
     expect(kpssCalls).toHaveLength(1);
     expect(kpssCalls[0]!.titles).toHaveLength(kpssSeed.titles.length);
     expect(kpssCalls[0]!.institutions).toHaveLength(kpssSeed.institutions.length);
     expect(kpssCalls[0]!.postings).toHaveLength(kpssSeed.postings.length);
+  });
+
+  it("labels the round and promotes exactly one edition as current", async () => {
+    const { service, kpssCalls } = run();
+    await service.onModuleInit();
+
+    expect(kpssCalls[0]!.dataset.period).toBe(kpssSeed.round);
+    // "2026-1" -> 20261. Sorting the text would put a later "2026-10" behind "2026-2".
+    expect(kpssCalls[0]!.dataset.sortKey).toBe(20261);
+    // Exactly one current edition, decided by the loader rather than trusting the files to agree.
+    expect(kpssCalls.filter((c) => c.dataset.isCurrent)).toHaveLength(1);
+    expect(kpssCalls.at(-1)!.dataset.isCurrent).toBe(true);
+  });
+
+  it("seeds rounds oldest-first so the newest one ends up current", async () => {
+    const { service, kpssCalls } = run();
+    await service.onModuleInit();
+
+    const keys = kpssCalls.map((c) => c.dataset.sortKey);
+    expect([...keys].sort((a, b) => a - b)).toEqual(keys);
   });
 });

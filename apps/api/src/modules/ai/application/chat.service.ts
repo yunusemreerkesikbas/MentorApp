@@ -226,6 +226,8 @@ export class ChatService {
       if (intent === "EXAM_DATE" && ctx.examType) {
         const calendar = await this.content.getExamCalendarByFamily(
           ctx.examType,
+          undefined,
+          ctx.examVariant,
         );
         const event = calendar?.events.find(
           (item) => item.type === ExamEventType.EXAM_DATE,

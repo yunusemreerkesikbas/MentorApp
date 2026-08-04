@@ -1,8 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { GEO_REGIONS, UNIVERSITY_KINDS } from "@mentor/types";
 import { GeoService } from "../application/geo.service";
+import { DatasetService } from "../application/dataset.service";
+import type { NewReferenceDataset } from "./dataset.repository";
 import { KpssService } from "../application/kpss.service";
 import type { NewCity, NewUniversity } from "./geo.repository";
 
@@ -43,7 +45,6 @@ interface SeedNamed {
 
 interface SeedPosting {
   osymCode: string;
-  round: string;
   educationLevel: string;
   titleName: string;
   institutionName: string;
@@ -55,8 +56,27 @@ interface SeedPosting {
   quota: number;
 }
 
+interface DatasetSeedEntry {
+  examFamily: string;
+  kind: string;
+  period: string;
+  sortKey: number;
+  isCurrent?: boolean;
+  descriptionTr?: string | null;
+  descriptionEn?: string | null;
+  source: string;
+  sourceUrl: string;
+  verifiedAt: string;
+}
+
 interface KpssSeedFile {
+  /** Placement round, e.g. "2026-1". Doubles as the dataset edition's period. */
   round: string | null;
+  /** Marks this file as the edition served when no period is requested. */
+  isCurrent?: boolean;
+  /** Editorial note shown beside the data; managed per edition, not in code. */
+  descriptionTr?: string | null;
+  descriptionEn?: string | null;
   source: string;
   sourceUrl: string;
   verifiedAt: string | null;
@@ -66,7 +86,20 @@ interface KpssSeedFile {
 }
 
 /** Shape `KpssService.seedKpss` expects: reference rows plus postings still keyed by slug. */
-type KpssSeed = Parameters<KpssService["seedKpss"]>[0] & { round: string | null };
+type KpssSeed = Parameters<KpssService["seedKpss"]>[0];
+
+/**
+ * "2026-1" -> 20261, so editions sort numerically. Text ordering puts "2026-10" before "2026-2",
+ * which is how the previous `ORDER BY round DESC` would eventually have picked the wrong default.
+ */
+function periodSortKey(period: string): number {
+  const [year, index] = period.split("-");
+  const y = Number(year);
+  if (!Number.isInteger(y)) {
+    throw new Error(`kpss seed: round "${period}" must start with a year`);
+  }
+  return y * 10 + (index ? Number(index) : 0);
+}
 
 /**
  * Loads the geo reference seed on startup (idempotent batch upserts).
@@ -83,6 +116,7 @@ export class GeoSeedService implements OnModuleInit {
   constructor(
     private readonly geo: GeoService,
     private readonly kpss: KpssService,
+    private readonly datasets: DatasetService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -92,10 +126,16 @@ export class GeoSeedService implements OnModuleInit {
         new Set(cities.map((c) => c.code)),
       );
 
-      const kpss = this.readKpss(new Set(cities.map((c) => c.code)));
+      const rounds = this.readKpssRounds(new Set(cities.map((c) => c.code)));
+      const editions = this.readDatasets();
 
       await this.geo.seedGeo({ cities, universities });
-      await this.kpss.seedKpss(kpss);
+      await this.datasets.seedDatasets(editions);
+      // Oldest first, so the newest round is written last and holds `isCurrent` — the promotion
+      // inside `seedKpss` demotes whichever edition held it before.
+      for (const round of rounds) {
+        await this.kpss.seedKpss(round);
+      }
 
       this.logger.log(
         universities.length > 0
@@ -103,10 +143,20 @@ export class GeoSeedService implements OnModuleInit {
           : `Geo seed applied (${cities.length} cities, no university dataset yet).`,
       );
       this.logger.log(
-        kpss.postings.length > 0
-          ? `KPSS seed applied (${kpss.titles.length} titles, ${kpss.institutions.length} institutions, ${kpss.postings.length} postings, round ${kpss.round}).`
+        rounds.length > 0
+          ? `KPSS seed applied (${rounds.length} round(s): ${rounds
+              .map(
+                (r) =>
+                  `${r.dataset.period}${r.dataset.isCurrent ? "*" : ""} ${r.postings.length} postings`,
+              )
+              .join(", ")}).`
           : "KPSS seed skipped (no placement round imported yet).",
       );
+      if (editions.length > 0) {
+        this.logger.log(
+          `Dataset editions applied (${editions.map((d) => `${d.kind} ${d.period}`).join(", ")}).`,
+        );
+      }
     } catch (err) {
       this.logger.error("Geo seed failed.", err);
       throw err;
@@ -183,30 +233,97 @@ export class GeoSeedService implements OnModuleInit {
   }
 
   /**
-   * KPSS placement round. Absent or empty is a supported state — the goal screen still works from
-   * the title list alone, and a KPSS user without an imported round simply sees no vacancy counts.
+   * Editions whose rows are not seeded from a period file — today just the YKS guide year.
+   *
+   * A dataset row with no rows of its own still earns its place: it carries the source note the UI
+   * renders, which is the whole point of managing that copy from the backend instead of hardcoding
+   * a sentence and a URL in the map component.
+   */
+  private readDatasets(): NewReferenceDataset[] {
+    const path = resolve(__dirname, "../seed/datasets.seed.json");
+    let data: { datasets: DatasetSeedEntry[] };
+    try {
+      data = JSON.parse(readFileSync(path, "utf8")) as { datasets: DatasetSeedEntry[] };
+    } catch {
+      return [];
+    }
+    return (data.datasets ?? []).map((d) => {
+      const verifiedAt = new Date(d.verifiedAt);
+      if (Number.isNaN(verifiedAt.getTime())) {
+        throw new Error(`datasets.seed.json: invalid verifiedAt on ${d.kind} ${d.period}`);
+      }
+      return {
+        examFamily: d.examFamily,
+        kind: d.kind,
+        period: d.period,
+        sortKey: d.sortKey,
+        isCurrent: d.isCurrent ?? false,
+        descriptionTr: d.descriptionTr ?? null,
+        descriptionEn: d.descriptionEn ?? null,
+        source: d.source,
+        sourceUrl: d.sourceUrl,
+        verifiedAt,
+      };
+    });
+  }
+
+  /**
+   * Every imported placement round, oldest first.
+   *
+   * Adding a round is dropping a `kpss.<period>.seed.json` next to the existing one — nothing is
+   * deleted and no code changes, which is what makes the period picker have a history to show.
+   */
+  private readKpssRounds(cityCodes: Set<string>): KpssSeed[] {
+    const dir = resolve(__dirname, "../seed");
+    let files: string[];
+    try {
+      files = readdirSync(dir).filter((f) => /^kpss.*\.seed\.json$/.test(f));
+    } catch {
+      return [];
+    }
+
+    const rounds = files
+      .map((f) => this.readKpss(cityCodes, f))
+      .filter((r): r is KpssSeed => r !== null)
+      .sort((a, b) => a.dataset.sortKey - b.dataset.sortKey);
+
+    const periods = new Set(rounds.map((r) => r.dataset.period));
+    if (periods.size !== rounds.length) {
+      throw new Error(
+        "kpss seed: two files declare the same round; one would overwrite the other's postings.",
+      );
+    }
+    // Exactly one current edition, decided here rather than trusting every file to agree.
+    const newest = rounds.at(-1);
+    for (const round of rounds) {
+      round.dataset.isCurrent = round === newest;
+    }
+    return rounds;
+  }
+
+  /**
+   * One KPSS placement round. Absent or empty is a supported state — the goal screen still works
+   * from the title list alone, and a KPSS user without an imported round sees no vacancy counts.
    * Malformed data is not tolerated, for the same reason as above: it would render wrong silently.
    */
-  private readKpss(cityCodes: Set<string>): KpssSeed {
-    const path = resolve(__dirname, "../seed/kpss.seed.json");
+  private readKpss(cityCodes: Set<string>, fileName: string): KpssSeed | null {
+    const path = resolve(__dirname, "../seed", fileName);
     let data: KpssSeedFile;
     try {
       data = JSON.parse(readFileSync(path, "utf8")) as KpssSeedFile;
     } catch {
-      return { titles: [], institutions: [], postings: [], round: null };
+      return null;
     }
 
-    if (data.postings.length === 0) {
-      return { titles: [], institutions: [], postings: [], round: null };
-    }
+    if (data.postings.length === 0) return null;
     if (!data.source || !data.sourceUrl || !data.verifiedAt || !data.round) {
       throw new Error(
-        "kpss.seed.json: round, source, sourceUrl and verifiedAt are mandatory once rows exist (guardrail §4 #1 — the UI renders the round as a trust badge).",
+        `${fileName}: round, source, sourceUrl and verifiedAt are mandatory once rows exist (guardrail §4 #1 — the UI renders the round as a trust badge).`,
       );
     }
     const verifiedAt = new Date(data.verifiedAt);
     if (Number.isNaN(verifiedAt.getTime())) {
-      throw new Error(`kpss.seed.json: invalid verifiedAt "${data.verifiedAt}"`);
+      throw new Error(`${fileName}: invalid verifiedAt "${data.verifiedAt}"`);
     }
 
     const trust = { source: data.source, sourceUrl: data.sourceUrl, verifiedAt };
@@ -221,19 +338,18 @@ export class GeoSeedService implements OnModuleInit {
     const postings = data.postings.map((p) => {
       if (!cityCodes.has(p.cityCode)) {
         throw new Error(
-          `kpss.seed.json: unknown cityCode "${p.cityCode}" on posting ${p.osymCode}`,
+          `${fileName}: unknown cityCode "${p.cityCode}" on posting ${p.osymCode}`,
         );
       }
       const titleSlug = titleSlugByName.get(p.titleName);
       const institutionSlug = institutionSlugByName.get(p.institutionName);
       if (!titleSlug || !institutionSlug) {
         throw new Error(
-          `kpss.seed.json: posting ${p.osymCode} names a title/institution missing from the reference lists`,
+          `${fileName}: posting ${p.osymCode} names a title/institution missing from the reference lists`,
         );
       }
       return {
         osymCode: p.osymCode,
-        round: p.round,
         educationLevel: p.educationLevel,
         cityCode: p.cityCode,
         district: p.district ?? null,
@@ -248,7 +364,16 @@ export class GeoSeedService implements OnModuleInit {
     });
 
     return {
-      round: data.round,
+      dataset: {
+        period: data.round,
+        sortKey: periodSortKey(data.round),
+        // A file with no explicit flag still becomes current when it is the only one loaded;
+        // `seedGeo` promotes the highest sortKey below.
+        isCurrent: data.isCurrent ?? false,
+        descriptionTr: data.descriptionTr ?? null,
+        descriptionEn: data.descriptionEn ?? null,
+        ...trust,
+      },
       titles: data.titles.map((t) => ({ name: t.name, slug: t.slug, ...trust })),
       institutions: data.institutions.map((i) => ({
         name: i.name,

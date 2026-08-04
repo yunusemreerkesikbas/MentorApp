@@ -17,6 +17,7 @@ import {
 import type {
   CampusExperienceDto,
   CityDto,
+  DatasetInfoDto,
   GeoResponseDto,
   PreferenceProgramSnapshotDto,
   PreferenceRankProfileDto,
@@ -79,6 +80,7 @@ export function SimulationShell({ universityId }: { universityId: string }) {
   const [simulation, setSimulation] = useState<PreferenceSimulationDto | null>(null);
   const [campus, setCampus] = useState<CampusExperienceDto | null>(null);
   const [cities, setCities] = useState<CityDto[]>([]);
+  const [geoDataset, setGeoDataset] = useState<DatasetInfoDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mapFailed, setMapFailed] = useState(false);
@@ -142,7 +144,9 @@ export function SimulationShell({ universityId }: { universityId: string }) {
           setMapFailed(true);
         }
         if (geoResponse.status === "fulfilled") {
-          setCities(unwrap<GeoResponseDto>(geoResponse.value)?.cities ?? []);
+          const geo = unwrap<GeoResponseDto>(geoResponse.value);
+          setCities(geo?.cities ?? []);
+          setGeoDataset(geo?.dataset ?? null);
         }
         if (visionResponse.status === "fulfilled") {
           setVision(unwrap<VisionDto>(visionResponse.value));
@@ -458,7 +462,7 @@ export function SimulationShell({ universityId }: { universityId: string }) {
               previewCityCode={null}
               spotlightUniversityId={universityId}
               visibleUniversityIds={null}
-              showOsymSource
+              dataset={geoDataset}
               activeUniversityId={universityId}
               overlay={null}
               onSelectCity={() => undefined}

@@ -1209,9 +1209,9 @@ pnpm --filter @mentor/api test
   içerideyken "UNVANLAR" listeyle birlikte kayıp gidiyordu.
   **2. Harita pinleri.** Üniversitenin koordinatı var, kurumun **yok** — KPSS kılavuzu ilanı en fazla
   il düzeyinde konumlandırıyor (`district` en iyi ihtimalle "MERKEZ"), ilçe geometrisi de repoda yok.
-  Guardrail §4 #1 gereği uydurma koordinat konmadı: pin **il centroid'ine** oturuyor ve kafasında
-  ilan sayısı taşıyor — "burada bir kurum var" değil, "bu ilde şu kadar ilan var" diyor.
-  İlanı olmayan il pin almaz; boş bir işaret "henüz yüklenmedi" gibi okunurdu.
+  Guardrail §4 #1 gereği uydurma koordinat konmadı: pin **il centroid'ine** oturuyor — "burada bir
+  kurum var" değil, "bu ilde şu kadar ilan var" diyor. İlanı olmayan il pin almaz; boş bir işaret
+  "henüz yüklenmedi" gibi okunurdu.
   `CityPostingHoverCard` `UniversityHoverCard` ile aynı konumlama kurallarını paylaşır ama ayrı bir
   bileşendir: ikisi düzende anlaşır, anlamda anlaşmaz — biri gidilebilecek bir yeri, diğeri bir
   kılavuzun ilan ettiği kontenjanı anlatır, bu yüzden dönem kartın üstünde her zaman yazar.
@@ -1219,11 +1219,22 @@ pnpm --filter @mentor/api test
   **3. Hedef unvan/kurum** sidebar'dan üst forma **chip** olarak taşındı (`TargetChip`, şehir
   chip'iyle aynı bileşen). Seçilen şey, seçildiği listenin altında değil, ait olduğu alanların
   yanında durmalı. Sidebar'da seçili satır artık yalnız kalın/`--color-main` ile işaretleniyor.
-  **Gotcha:** Pin içindeki sayı `<text>` olarak SVG'de; `vector-effect` metne uygulanmadığı için
-  font-size kullanıcı biriminde (7.5px) bırakıldı ve pin ölçeğiyle birlikte büyüyor — zoom'da
-  okunur kalmasının tek yolu buydu.
   İlgili: `map-canvas.tsx` (`CityPin`/`CityPinAnchor`), `city-posting-hover-card.tsx`,
-  `kpss-browser.tsx`, `vision-board-shell.tsx`, `globals.css` (`.mentor-tr-map-pin text`).
+  `kpss-browser.tsx`, `vision-board-shell.tsx`, `globals.css` (`.mentor-tr-map-pin`).
+
+- **KPSS pin = YKS silüeti + köşe rozeti (2026-08-04)** — KPSS il pinleri artık YKS kampüs piniyle
+  aynı damla + beyaz göz; ilan sayısı pin kafasının içinde değil, sağ üst köşede pill rozet
+  (`.mentor-tr-map-pin-badge`). Üç haneli sayılar (Ankara ~199) pin konturunu taşmıyor. Usage: KPSS
+  hesabıyla `/hedef` aç, ülke zoom'unda kırmızı pin + sayı rozetini gör. Gotcha: rozet pin
+  grubuyla ölçeklenir (`PIN_ZOOM_FOLLOW`); ayrı bir HTML overlay değil. İlgili: `map-canvas.tsx`,
+  `globals.css`.
+
+- **KPSS sidebar: tek scroll, tam genişlik (2026-08-04)** — Unvan listesi ve il ilanları kendi
+  `max-h` + `mentor-scrollarea` kutularını bıraktı; yalnızca rail scroll ediyor (YKS `MapBrowser`
+  gibi). İç içe `scrollbar-gutter: stable` listeyi dar gösterip üç scrollbar üretiyordu. Şehir
+  seçilmeden "Haritadan bir şehir seç." metni de kalktı — harita zaten yönlendiriyor. Usage: KPSS
+  `/hedef`, unvanı aç/kapa + şehir seç; tek scrollbar görmelisin. İlgili: `kpss-browser.tsx`,
+  `messages/{tr,en}.json`.
 
 - **Unvan listesi katlandı + seçili unvan haritayı süzüyor (2026-08-03)** — Ekran görüntüsünde
   MÜHENDİS hedef olarak seçiliyken Ankara pininde **199** yazıyordu: o, Ankara'nın *tüm* ilanları.
@@ -1245,3 +1256,35 @@ pnpm --filter @mentor/api test
   Spec: `kpss.service.spec` 5 test (filtresiz / katlama / id ile daraltma / id'nin q'yu yenmesi /
   eşik altı). İlgili: `kpss.repository.ts`, `kpss.service.ts`, `geo.controller.ts`,
   `kpss-browser.tsx` (`TitlePicker`), `use-kpss-targets.ts`, `map-canvas.tsx`.
+
+- **KPSS öğrenim düzeyi — `users.examVariant` (2026-08-04)** — İki hata birden kapandı.
+  **1. Yanlış geri sayım.** `exams` tablosunda KPSS üç satır (lisans/önlisans/ortaöğretim, sınav
+  tarihleri 12/19/26 Temmuz) ama `users.examType` yalnız `"KPSS"` idi.
+  [`selectExamForCountdown`](apps/api/src/modules/content/domain/calendar.util.ts) `isCurrent`
+  taşıyan satırı tercih ediyor ve o yalnız lisansta — yani **ortaöğretim adayı 12 Temmuz'a geri
+  sayıyordu**. `ExamCandidate` `variant` alanını zaten taşıyordu, sadece süzmüyordu; düzeltme saf
+  fonksiyonda. Bilinmeyen/eski bir variant tüm aileye düşer: profildeki bayat bir değer geri sayımı
+  komple boşaltmamalı.
+  **2. Yanlış ilanlar.** `kpss_postings.education_level` dolu ama hiçbir sorgu süzmüyordu. Artık
+  `/kpss-targets`, `city-counts` ve `cities/:cityCode` opsiyonel `level` alıyor.
+  **Yalnız sayılar daralıyor, unvan listesi bütün kalıyor** — hedef bir kariyerdir; bu dönem o
+  düzeyde ilan çıkmamış bir unvanı hedeflemek meşrudur.
+  **Servis kuralı:** `examVariant` yalnız KPSS ile anlamlı;
+  [`resolveExamVariantPatch`](apps/api/src/modules/identity/application/users.service.ts) başka
+  ailede `null`'a indirir — client göndermese bile. Yoksa KPSS→YKS→KPSS geçişi arkada bir
+  ORTAOGRETIM işareti bırakır ve arayüzde hiçbir iz olmadan geri sayımı ve haritayı daraltırdı.
+  Tek variant değişikliği (`examType` gelmeden) mevcut aileyi okumak için ek bir sorgu yapar;
+  diğer tüm yollar tek yazma olarak kalır.
+  **Gotcha 1:** Uçlar `@Public()` ve cache'li, bu yüzden `level` oturumdan değil query'den gelir;
+  tanınmayan değer **reddedilmez, düşürülür** — en kötü ihtimalle bu parametreden önceki süzgeçsiz
+  görünüm çıkar, 400 ise bir yazım hatası yüzünden haritayı komple kırardı.
+  **Gotcha 2:** `AuthUser.examVariant` zorunlu alan olarak eklenince TypeScript **8 e2e fixture'ını**
+  yakaladı; hepsine `null` verildi (süzgeçsiz = eski davranış, mevcut assert'ler geçerli kalır).
+  **Gotcha 3:** `CoachContext.examVariant` bilinçli olarak `CoachPersonalizationDto`'ya
+  kopyalanmadı — o kalıcı bir denetim anlık görüntüsü; buradaki alan yalnız resmî EXAM_DATE
+  cevabının doğru kılavuzu çözmesi için var.
+  Spec: `calendar.util` (variant seçimi + bayat variant fallback), `users.service`
+  (`resolveExamVariantPatch` dört senaryo).
+  İlgili: `calendar.util.ts`, `content.service.ts`, `content.port.ts`, `users.service.ts`,
+  `kpss.repository.ts`, `geo.controller.ts`, `exam-step.tsx`, `account-links-card.tsx`,
+  `use-kpss-targets.ts`.

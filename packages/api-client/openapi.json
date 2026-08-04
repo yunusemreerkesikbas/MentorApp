@@ -1562,7 +1562,8 @@
             "schema": {
               "enum": [
                 "YKS",
-                "KPSS"
+                "KPSS",
+                "LGS"
               ],
               "type": "string"
             }
@@ -1589,7 +1590,56 @@
     "/v1/content/kpss-targets": {
       "get": {
         "operationId": "GeoController_getKpssTargets",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "level",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "LISANS",
+                "ONLISANS",
+                "ORTAOGRETIM"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "datasetId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/datasets": {
+      "get": {
+        "operationId": "GeoController_listDatasets",
+        "parameters": [
+          {
+            "name": "family",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "KPSS",
+                "YKS"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -1619,6 +1669,27 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "level",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "LISANS",
+                "ONLISANS",
+                "ORTAOGRETIM"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "datasetId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1639,6 +1710,27 @@
             "name": "cityCode",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "level",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "LISANS",
+                "ONLISANS",
+                "ORTAOGRETIM"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "datasetId",
+            "required": false,
+            "in": "query",
             "schema": {
               "type": "string"
             }

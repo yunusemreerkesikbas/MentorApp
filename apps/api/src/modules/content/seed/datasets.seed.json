@@ -1,0 +1,17 @@
+{
+  "note": "Editions for datasets whose rows are not seeded from a period file. KPSS rounds are NOT listed here — each `kpss.<round>.seed.json` declares its own edition, because the postings have to attach to it. Hand-edited: this is editorial copy, not an import artefact.",
+  "datasets": [
+    {
+      "examFamily": "YKS",
+      "kind": "YKS_PROGRAMS",
+      "period": "2026",
+      "sortKey": 20260,
+      "isCurrent": true,
+      "descriptionTr": "Üniversite ve program bilgileri ÖSYM'den alınır ve buradan doğrulanır. Taban puanlar 2025 yerleştirmesine, kontenjanlar 2026 kılavuzuna aittir. Ayrıntı için ÖSYM YKS kılavuzuna bakabilirsin.",
+      "descriptionEn": "University and programme data comes from ÖSYM and is verified against it. Cutoff scores are from the 2025 placement, quotas from the 2026 guide. See the ÖSYM YKS guide for details.",
+      "source": "ÖSYM 2026 Yükseköğretim Programları ve Kontenjanları Kılavuzu",
+      "sourceUrl": "https://www.osym.gov.tr/2026-yuksekogretim-kurumlari-sinavi-yks-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu",
+      "verifiedAt": "2026-08-02T10:00:00.000Z"
+    }
+  ]
+}

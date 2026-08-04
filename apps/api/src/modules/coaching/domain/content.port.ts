@@ -64,6 +64,8 @@ export interface ContentPort {
   getExamCalendar(
     examType: string | null | undefined,
     asOf?: string,
+    /** `users.examVariant` — KPSS's three guides sit on different dates. */
+    examVariant?: string | null,
   ): Promise<ExamCalendar | null>;
 
   /** Net-scoring rule for an exam type (reserved for W2-b; not used in this slice). */

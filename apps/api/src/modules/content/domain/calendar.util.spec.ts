@@ -91,6 +91,62 @@ describe("selectExamForCountdown", () => {
     expect(picked?.examDate).toBe("2026-07-12");
   });
 
+  it("counts down to the candidate's own KPSS guide, not the isCurrent one", () => {
+    // The regression this exists for: all three KPSS guides live in `exams`, only the LISANS row
+    // carries isCurrent, so an ORTAOGRETIM candidate counted down to 12 July instead of 26 July.
+    const rows = toExamCandidates([
+      {
+        exam: {
+          id: "lisans",
+          slug: "kpss-lisans-2026",
+          name: "KPSS Lisans",
+          family: "KPSS",
+          variant: "LISANS",
+          isCurrent: true,
+        },
+        event: { eventAt: new Date("2026-07-12T06:00:00.000Z") },
+      },
+      {
+        exam: {
+          id: "ortaogretim",
+          slug: "kpss-ortaogretim-2026",
+          name: "KPSS Ortaöğretim",
+          family: "KPSS",
+          variant: "ORTAOGRETIM",
+          isCurrent: false,
+        },
+        event: { eventAt: new Date("2026-07-26T06:00:00.000Z") },
+      },
+    ]);
+
+    expect(selectExamForCountdown(rows, "2026-06-01", "ORTAOGRETIM")?.examDate).toBe(
+      "2026-07-26",
+    );
+    // No variant (YKS/LGS, or a KPSS profile from before the field existed) keeps the old answer.
+    expect(selectExamForCountdown(rows, "2026-06-01")?.examDate).toBe("2026-07-12");
+  });
+
+  it("falls back to the whole family when the stored variant matches nothing", () => {
+    // A stale variant on a profile must not blank out the countdown entirely.
+    const rows = toExamCandidates([
+      {
+        exam: {
+          id: "lisans",
+          slug: "kpss-lisans-2026",
+          name: "KPSS Lisans",
+          family: "KPSS",
+          variant: "LISANS",
+          isCurrent: true,
+        },
+        event: { eventAt: new Date("2026-07-12T06:00:00.000Z") },
+      },
+    ]);
+
+    expect(selectExamForCountdown(rows, "2026-06-01", "ONLISANS")?.examDate).toBe(
+      "2026-07-12",
+    );
+  });
+
   it("returns null when no upcoming dates", () => {
     const rows = toExamCandidates([
       {

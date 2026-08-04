@@ -332,12 +332,68 @@ export type GeoControllerSearchFamily = typeof GeoControllerSearchFamily[keyof t
 export const GeoControllerSearchFamily = {
   YKS: 'YKS',
   KPSS: 'KPSS',
+  LGS: 'LGS',
+} as const;
+
+export type GeoControllerGetKpssTargetsParams = {
+level?: GeoControllerGetKpssTargetsLevel;
+datasetId?: string;
+};
+
+export type GeoControllerGetKpssTargetsLevel = typeof GeoControllerGetKpssTargetsLevel[keyof typeof GeoControllerGetKpssTargetsLevel];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GeoControllerGetKpssTargetsLevel = {
+  LISANS: 'LISANS',
+  ONLISANS: 'ONLISANS',
+  ORTAOGRETIM: 'ORTAOGRETIM',
+} as const;
+
+export type GeoControllerListDatasetsParams = {
+family: GeoControllerListDatasetsFamily;
+};
+
+export type GeoControllerListDatasetsFamily = typeof GeoControllerListDatasetsFamily[keyof typeof GeoControllerListDatasetsFamily];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GeoControllerListDatasetsFamily = {
+  KPSS: 'KPSS',
+  YKS: 'YKS',
 } as const;
 
 export type GeoControllerGetKpssCityCountsParams = {
 q?: string;
 titleId?: string;
+level?: GeoControllerGetKpssCityCountsLevel;
+datasetId?: string;
 };
+
+export type GeoControllerGetKpssCityCountsLevel = typeof GeoControllerGetKpssCityCountsLevel[keyof typeof GeoControllerGetKpssCityCountsLevel];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GeoControllerGetKpssCityCountsLevel = {
+  LISANS: 'LISANS',
+  ONLISANS: 'ONLISANS',
+  ORTAOGRETIM: 'ORTAOGRETIM',
+} as const;
+
+export type GeoControllerGetKpssCityPostingsParams = {
+level?: GeoControllerGetKpssCityPostingsLevel;
+datasetId?: string;
+};
+
+export type GeoControllerGetKpssCityPostingsLevel = typeof GeoControllerGetKpssCityPostingsLevel[keyof typeof GeoControllerGetKpssCityPostingsLevel];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GeoControllerGetKpssCityPostingsLevel = {
+  LISANS: 'LISANS',
+  ONLISANS: 'ONLISANS',
+  ORTAOGRETIM: 'ORTAOGRETIM',
+} as const;
 
 export type GeoControllerSearchProgramsParams = {
 scoreType?: GeoControllerSearchProgramsScoreType;
@@ -2358,17 +2414,64 @@ export type geoControllerGetKpssTargetsResponseSuccess = (geoControllerGetKpssTa
 
 export type geoControllerGetKpssTargetsResponse = (geoControllerGetKpssTargetsResponseSuccess)
 
-export const getGeoControllerGetKpssTargetsUrl = () => {
+export const getGeoControllerGetKpssTargetsUrl = (params?: GeoControllerGetKpssTargetsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
-  
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/v1/content/kpss-targets`
+  return stringifiedParams.length > 0 ? `/v1/content/kpss-targets?${stringifiedParams}` : `/v1/content/kpss-targets`
 }
 
-export const geoControllerGetKpssTargets = async ( options?: RequestInit): Promise<geoControllerGetKpssTargetsResponse> => {
+export const geoControllerGetKpssTargets = async (params?: GeoControllerGetKpssTargetsParams, options?: RequestInit): Promise<geoControllerGetKpssTargetsResponse> => {
   
-  return http<geoControllerGetKpssTargetsResponse>(getGeoControllerGetKpssTargetsUrl(),
+  return http<geoControllerGetKpssTargetsResponse>(getGeoControllerGetKpssTargetsUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type geoControllerListDatasetsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type geoControllerListDatasetsResponseSuccess = (geoControllerListDatasetsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type geoControllerListDatasetsResponse = (geoControllerListDatasetsResponseSuccess)
+
+export const getGeoControllerListDatasetsUrl = (params: GeoControllerListDatasetsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/content/datasets?${stringifiedParams}` : `/v1/content/datasets`
+}
+
+export const geoControllerListDatasets = async (params: GeoControllerListDatasetsParams, options?: RequestInit): Promise<geoControllerListDatasetsResponse> => {
+  
+  return http<geoControllerListDatasetsResponse>(getGeoControllerListDatasetsUrl(params),
   {      
     ...options,
     method: 'GET'
@@ -2431,17 +2534,26 @@ export type geoControllerGetKpssCityPostingsResponseSuccess = (geoControllerGetK
 
 export type geoControllerGetKpssCityPostingsResponse = (geoControllerGetKpssCityPostingsResponseSuccess)
 
-export const getGeoControllerGetKpssCityPostingsUrl = (cityCode: string,) => {
+export const getGeoControllerGetKpssCityPostingsUrl = (cityCode: string,
+    params?: GeoControllerGetKpssCityPostingsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
-  
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/v1/content/kpss-targets/cities/${cityCode}`
+  return stringifiedParams.length > 0 ? `/v1/content/kpss-targets/cities/${cityCode}?${stringifiedParams}` : `/v1/content/kpss-targets/cities/${cityCode}`
 }
 
-export const geoControllerGetKpssCityPostings = async (cityCode: string, options?: RequestInit): Promise<geoControllerGetKpssCityPostingsResponse> => {
+export const geoControllerGetKpssCityPostings = async (cityCode: string,
+    params?: GeoControllerGetKpssCityPostingsParams, options?: RequestInit): Promise<geoControllerGetKpssCityPostingsResponse> => {
   
-  return http<geoControllerGetKpssCityPostingsResponse>(getGeoControllerGetKpssCityPostingsUrl(cityCode),
+  return http<geoControllerGetKpssCityPostingsResponse>(getGeoControllerGetKpssCityPostingsUrl(cityCode,params),
   {      
     ...options,
     method: 'GET'

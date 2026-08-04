@@ -4,7 +4,7 @@ import { CalendarDays, ChevronRight, CreditCard, GraduationCap, LogOut, Scale, T
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useState, type ComponentProps, type ReactElement } from "react";
-import type { AuthUser, ExamType } from "@mentor/types";
+import type { AuthUser, ExamType, ExamVariant } from "@mentor/types";
 import { ApiClientError, http, usersControllerUpdateMe } from "@mentor/api-client";
 import { Card, SectionHeading } from "@mentor/ui";
 import { useAuth } from "@/lib/auth-context";
@@ -128,6 +128,14 @@ export function AccountLinksCard({
     year: "numeric",
   }).format(new Date(user.createdAt));
   const examOptions: ExamType[] = ["KPSS", "YKS", "LGS"];
+  const variantOptions: ExamVariant[] = ["LISANS", "ONLISANS", "ORTAOGRETIM"];
+  // Shown on the row so the level is visible without opening the sheet — it decides which exam
+  // date is counted down to, which is too consequential to keep hidden.
+  const examSummary = user.examType
+    ? user.examVariant
+      ? `${user.examType} · ${tExam(`variant.${user.examVariant}`)}`
+      : user.examType
+    : undefined;
 
   async function openExamSheet() {
     const result = await actionSheet({
@@ -139,11 +147,32 @@ export function AccountLinksCard({
         showChevron: false,
       })),
     });
-    if (result === "cancel" || result === user.examType) return;
+    if (result === "cancel") return;
+    const examType = result as ExamType;
+
+    // KPSS needs a second answer before anything is saved: its three guides have different exam
+    // dates, so writing the family alone would leave the countdown on whichever row is `isCurrent`.
+    let examVariant: ExamVariant | null = null;
+    if (examType === "KPSS") {
+      const level = await actionSheet({
+        title: tExam("variant_label"),
+        actions: variantOptions.map((value) => ({
+          id: value,
+          label: tExam(`variant.${value}`),
+          icon: user.examVariant === value ? "check-circle" : undefined,
+          showChevron: false,
+        })),
+      });
+      if (level === "cancel") return;
+      examVariant = level as ExamVariant;
+    }
+
+    if (examType === user.examType && examVariant === user.examVariant) return;
 
     try {
       const updated = (await usersControllerUpdateMe({
-        examType: result as ExamType,
+        examType,
+        examVariant,
       })) as unknown as AuthUser;
       onSaved(updated);
       toast.success({
@@ -195,6 +224,7 @@ export function AccountLinksCard({
       <div className="mt-3 divide-y divide-black/10 overflow-hidden rounded-[var(--radius-card)]">
         <ListRow
           icon={<GraduationCap size={22} aria-hidden />}
+          description={examSummary}
           onClick={() => void openExamSheet()}
         >
           {t("exam_label")}

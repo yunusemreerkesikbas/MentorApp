@@ -6,13 +6,16 @@ import type {
   GeoResponseDto,
   GeoSearchResultDto,
   CityPostingCountDto,
+  DatasetInfoDto,
   KpssPostingDto,
   KpssTargetsDto,
   ProgramCatalogSearchResponseDto,
   UniversityProgramsDto,
 } from "@mentor/types";
+import { EXAM_FAMILIES_WITH_TARGETS, ExamVariant } from "@mentor/types";
 import { I18nContext } from "nestjs-i18n";
 import { Public } from "../../../common/auth/public.decorator";
+import { DatasetService } from "../application/dataset.service";
 import { GeoService } from "../application/geo.service";
 import { KpssService } from "../application/kpss.service";
 import { PreferenceCatalogService } from "../application/preference-catalog.service";
@@ -20,6 +23,19 @@ import { GeoSearchQueryDto, ProgramCatalogSearchQueryDto } from "./content.dto";
 
 /** A day; the underlying dataset is an editorial import that changes about once a year. */
 const REFERENCE_MAX_AGE = 86400;
+
+const KPSS_LEVELS = Object.values(ExamVariant);
+
+/**
+ * These endpoints are `@Public()` and cacheable, so the level arrives as a query param rather than
+ * from the session — the client already holds `users.examVariant`.
+ *
+ * An unrecognised value is dropped rather than rejected: the worst case is the unfiltered view the
+ * user got before this parameter existed, whereas a 400 would break the whole map over a typo.
+ */
+function normalizeLevel(value?: string): string | null {
+  return value && (KPSS_LEVELS as string[]).includes(value) ? value : null;
+}
 
 /**
  * Public geo reference — provinces, universities and programs behind the goal map.
@@ -35,6 +51,7 @@ export class GeoController {
   constructor(
     private readonly geo: GeoService,
     private readonly kpss: KpssService,
+    private readonly datasetService: DatasetService,
     private readonly preferenceCatalog: PreferenceCatalogService,
   ) {}
 
@@ -50,7 +67,7 @@ export class GeoController {
   async getGeo(
     @Res({ passthrough: true }) res: Response,
   ): Promise<GeoResponseDto> {
-    const geo = await this.geo.getGeo();
+    const geo = await this.geo.getGeo(I18nContext.current()?.lang);
     res.setHeader("Cache-Control", `public, max-age=${REFERENCE_MAX_AGE}`);
     return geo;
   }
@@ -66,7 +83,7 @@ export class GeoController {
    */
   @Get("geo/search")
   @ApiQuery({ name: "q", required: true, type: String })
-  @ApiQuery({ name: "family", required: false, enum: ["YKS", "KPSS"] })
+  @ApiQuery({ name: "family", required: false, enum: EXAM_FAMILIES_WITH_TARGETS })
   search(@Query() query: GeoSearchQueryDto): Promise<GeoSearchResultDto> {
     return this.geo.search(query.q, query.family);
   }
@@ -76,12 +93,40 @@ export class GeoController {
    * counts. Separate from `/geo` so a YKS student never downloads it, and vice versa.
    */
   @Get("kpss-targets")
+  @ApiQuery({ name: "level", required: false, enum: KPSS_LEVELS })
+  @ApiQuery({ name: "datasetId", required: false, type: String })
   async getKpssTargets(
     @Res({ passthrough: true }) res: Response,
+    @Query("level") level?: string,
+    @Query("datasetId") datasetId?: string,
   ): Promise<KpssTargetsDto> {
-    const targets = await this.kpss.getTargets();
+    const targets = await this.kpss.getTargets(
+      normalizeLevel(level),
+      datasetId,
+      I18nContext.current()?.lang,
+    );
     res.setHeader("Cache-Control", `public, max-age=${REFERENCE_MAX_AGE}`);
     return targets;
+  }
+
+  /**
+   * The published editions of a reference dataset — what the period picker lists.
+   *
+   * Kept out of `/kpss-targets` so the picker can render before (and independently of) the heavy
+   * reference payload, and so a YKS screen can ask for its own dataset note without it.
+   */
+  @Get("datasets")
+  @ApiQuery({ name: "family", required: true, enum: ["KPSS", "YKS"] })
+  async listDatasets(
+    @Res({ passthrough: true }) res: Response,
+    @Query("family") family = "KPSS",
+  ): Promise<DatasetInfoDto[]> {
+    const datasets = await this.datasetService.listByFamily(
+      family,
+      I18nContext.current()?.lang,
+    );
+    res.setHeader("Cache-Control", `public, max-age=${REFERENCE_MAX_AGE}`);
+    return datasets;
   }
 
   /**
@@ -94,11 +139,15 @@ export class GeoController {
   @Get("kpss-targets/city-counts")
   @ApiQuery({ name: "q", required: false, type: String })
   @ApiQuery({ name: "titleId", required: false, type: String })
+  @ApiQuery({ name: "level", required: false, enum: KPSS_LEVELS })
+  @ApiQuery({ name: "datasetId", required: false, type: String })
   getKpssCityCounts(
     @Query("q") q?: string,
     @Query("titleId") titleId?: string,
+    @Query("level") level?: string,
+    @Query("datasetId") datasetId?: string,
   ): Promise<CityPostingCountDto[]> {
-    return this.kpss.getCityCounts(q, titleId);
+    return this.kpss.getCityCounts(q, titleId, normalizeLevel(level), datasetId);
   }
 
   /**
@@ -109,11 +158,19 @@ export class GeoController {
    * An unknown plate code is harmless here — it simply matches no rows.
    */
   @Get("kpss-targets/cities/:cityCode")
+  @ApiQuery({ name: "level", required: false, enum: KPSS_LEVELS })
+  @ApiQuery({ name: "datasetId", required: false, type: String })
   async getKpssCityPostings(
     @Param("cityCode") cityCode: string,
     @Res({ passthrough: true }) res: Response,
+    @Query("level") level?: string,
+    @Query("datasetId") datasetId?: string,
   ): Promise<KpssPostingDto[]> {
-    const postings = await this.kpss.getCityPostings(cityCode);
+    const postings = await this.kpss.getCityPostings(
+      cityCode,
+      normalizeLevel(level),
+      datasetId,
+    );
     res.setHeader("Cache-Control", `public, max-age=${REFERENCE_MAX_AGE}`);
     return postings;
   }

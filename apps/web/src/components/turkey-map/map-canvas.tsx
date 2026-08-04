@@ -3,15 +3,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { CityDto, UniversityDto } from "@mentor/types";
+import type { CityDto, DatasetInfoDto, UniversityDto } from "@mentor/types";
 import { PROVINCES } from "./paths.generated";
 import { projectLngLat } from "./projection";
 import type { HoverAnchor } from "./university-hover-card";
 import { useMapViewport } from "./use-map-viewport";
-
-/** Official ÖSYM YKS programs & quotas guide — linked from the map source note. */
-const OSYM_YKS_GUIDE_URL =
-  "https://www.osym.gov.tr/2026-yuksekogretim-kurumlari-sinavi-yks-yuksekogretim-programlari-ve-kontenjanlari-kilavuzu";
 
 /** Park → city flight after zoom settles. */
 const MASCOT_SLIDE_S = 0.45;
@@ -34,7 +30,8 @@ const PIN_SCALE_MOBILE = 1.35;
 const PIN_ZOOM_FOLLOW = 0.35;
 
 /**
- * One province, one pin, with the vacancy count in its head — the KPSS counterpart of a campus pin.
+ * One province, one pin — the KPSS counterpart of a campus pin. Same teardrop as YKS; vacancy
+ * count rides in a corner badge so the pin silhouette stays identical.
  *
  * A campus has a geocoded address; a public-sector vacancy does not. The imported guide locates a
  * posting only down to the province (`district` is at best "MERKEZ"), so the pin sits on the
@@ -72,7 +69,8 @@ export function MapCanvas({
   previewCityCode,
   spotlightUniversityId,
   visibleUniversityIds,
-  showOsymSource = false,
+  dataset,
+  periodPicker,
   activeUniversityId,
   cityPins,
   overlay,
@@ -91,8 +89,14 @@ export function MapCanvas({
    * When set, only these campuses keep a pin (geo search filter). `null` / omitted = all pins.
    */
   visibleUniversityIds?: ReadonlySet<string> | null;
-  /** YKS map only — ÖSYM program/quota source note at the bottom-right. */
-  showOsymSource?: boolean;
+  /**
+   * The reference edition on screen. Its `description` is editorial copy written per dataset and
+   * already localised by the API — the map no longer owns a source sentence or a guide URL, so
+   * KPSS/YKS/LGS each explain themselves without a branch here.
+   */
+  dataset?: DatasetInfoDto | null;
+  /** Period selector, rendered top-right. Passed in so the map stays unaware of dataset loading. */
+  periodPicker?: React.ReactNode;
   activeUniversityId: string | null;
   /** KPSS map only — province-centroid vacancy pins instead of campus pins. */
   cityPins?: CityPin[] | null;
@@ -304,6 +308,9 @@ export function MapCanvas({
           const shape = PROVINCES[pin.cityCode];
           if (!shape) return null;
           const scale = pinScale * Math.pow(unit, PIN_ZOOM_FOLLOW);
+          const countLabel = String(pin.postings);
+          // Pill wide enough for 1–3 digits; stays readable after pin scale.
+          const badgeW = Math.max(10, 4.2 * countLabel.length + 5);
           return (
             <g
               key={pin.cityCode}
@@ -325,18 +332,24 @@ export function MapCanvas({
               onMouseLeave={() => onHoverCityPin?.(null)}
             >
               <path d={PIN_PATH} />
-              {/* The head is ~11 units wide inside its stroke; a 3-digit count at full size spills
-                  past it (Ankara's 199 sat on top of the outline). Condensing beyond three digits
-                  is pointless — 1000+ vacancies in one province does not occur in a round. */}
-              <text
-                x={0}
-                y={-13}
-                textAnchor="middle"
-                dominantBaseline="central"
-                style={{ fontSize: pin.postings >= 100 ? 5.5 : 7.5 }}
-              >
-                {pin.postings}
-              </text>
+              {/* Same white eye as YKS campus pins — silhouette parity. */}
+              <circle cy={-13} r={3.2} />
+              {/*
+                Vacancy count as a corner badge (not inside the head). Scales with the pin group
+                so it stays legible at every zoom without fighting the viewBox.
+              */}
+              <g className="mentor-tr-map-pin-badge" transform="translate(5.5 -19)">
+                <rect
+                  x={-badgeW / 2}
+                  y={-5}
+                  width={badgeW}
+                  height={10}
+                  rx={5}
+                />
+                <text x={0} y={0.5} textAnchor="middle" dominantBaseline="central">
+                  {countLabel}
+                </text>
+              </g>
             </g>
           );
         })}
@@ -382,6 +395,10 @@ export function MapCanvas({
         </motion.div>
       ) : null}
 
+      {periodPicker ? (
+        <div className="absolute right-3 top-3 z-10">{periodPicker}</div>
+      ) : null}
+
       <div className="pointer-events-none absolute inset-x-3 bottom-3 flex items-end justify-between gap-3">
         <p
           className="max-w-[9rem] text-[11px] leading-snug sm:max-w-none"
@@ -390,24 +407,21 @@ export function MapCanvas({
           {t("attribution")}
         </p>
         <div className="flex max-w-[min(100%,20rem)] items-end gap-2 sm:max-w-[24rem]">
-          {showOsymSource ? (
+          {dataset?.description ? (
             <p
               className="pointer-events-auto min-w-0 flex-1 text-right text-[11px] leading-snug"
               style={{ color: "var(--color-secondary)" }}
             >
-              {t.rich("osym_source", {
-                link: (chunks) => (
-                  <a
-                    href={OSYM_YKS_GUIDE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline underline-offset-2 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                    style={{ color: "var(--color-main)" }}
-                  >
-                    {chunks}
-                  </a>
-                ),
-              })}
+              {dataset.description}{" "}
+              <a
+                href={dataset.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                style={{ color: "var(--color-main)" }}
+              >
+                {dataset.source}
+              </a>
             </p>
           ) : null}
           <div className="pointer-events-auto flex shrink-0 flex-col gap-1">

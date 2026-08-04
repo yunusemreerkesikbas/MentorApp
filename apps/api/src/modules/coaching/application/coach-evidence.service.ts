@@ -36,7 +36,7 @@ export class CoachEvidenceService {
     const me = await this.users.getMe(userId);
     const calendar = me.examType
       ? await this.safe("taxonomy-calendar", () =>
-          this.content.getExamCalendar(me.examType),
+          this.content.getExamCalendar(me.examType, undefined, me.examVariant),
         )
       : null;
     const taxonomy = calendar

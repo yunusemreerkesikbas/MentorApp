@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import type {
   CityDto,
+  ExamVariant,
   GeoSearchResultDto,
   InstitutionDto,
   KpssPostingDto,
@@ -35,6 +36,8 @@ function unwrap<T>(res: unknown): T | null {
 export function KpssBrowser({
   targets,
   cities,
+  level,
+  datasetId,
   selectedCityCode,
   targetTitleId,
   targetInstitutionId,
@@ -45,6 +48,10 @@ export function KpssBrowser({
 }: {
   targets: KpssTargetsDto | null;
   cities: CityDto[];
+  /** `users.examVariant` — vacancies the candidate cannot apply with are not theirs to see. */
+  level: ExamVariant | null;
+  /** Chosen reference edition; `null` = current. */
+  datasetId: string | null;
   selectedCityCode: string | null;
   targetTitleId: string | null;
   targetInstitutionId: string | null;
@@ -73,7 +80,7 @@ export function KpssBrowser({
   const activeResults =
     results && results.query === trimmedQuery ? results.data : null;
 
-  const postings = useCityPostings(selectedCityCode, true);
+  const postings = useCityPostings(selectedCityCode, level, datasetId, true);
   const city = useMemo(
     () => cities.find((c) => c.code === selectedCityCode) ?? null,
     [cities, selectedCityCode],
@@ -111,7 +118,7 @@ export function KpssBrowser({
   }, [onQueryChange]);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex w-full min-w-0 flex-col gap-3">
       <input
         type="search"
         value={query}
@@ -153,7 +160,7 @@ export function KpssBrowser({
           />
 
           {city ? (
-            <div className="flex flex-col gap-1">
+            <div className="flex w-full min-w-0 flex-col gap-1">
               <span
                 className="text-xs font-bold uppercase"
                 style={{ color: "var(--color-secondary)" }}
@@ -186,20 +193,17 @@ export function KpssBrowser({
                   {t("no_postings")}
                 </p>
               ) : (
-                // Own scroll area: a province can carry 200+ vacancies, and letting them stretch
-                // the rail pushes the search box out of reach and drags the map with it.
-                <div className="mentor-scrollarea flex max-h-[22rem] flex-col overflow-y-auto">
+                // No nested scroll — the rail (`vision-board-shell`) is the only scroll surface.
+                // Inner max-h + mentor-scrollarea stacked a second gutter beside the rail's and
+                // produced the "narrow list + triple scrollbar" look.
+                <div className="flex w-full min-w-0 flex-col">
                   {postings.map((p) => (
                     <PostingRow key={p.osymCode} posting={p} />
                   ))}
                 </div>
               )}
             </div>
-          ) : (
-            <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-              {t("pick_city_hint")}
-            </p>
-          )}
+          ) : null}
         </>
       )}
     </div>
@@ -337,7 +341,8 @@ function TitlePicker({
           style={{ color: "var(--color-secondary)" }}
         />
       </summary>
-      <div className="mentor-scrollarea flex max-h-[18rem] flex-col overflow-y-auto">
+      {/* Rail scrolls; nesting another overflow here stacked scrollbars with the shell. */}
+      <div className="flex w-full min-w-0 flex-col">
         {titles.map((title) => (
           <Row
             key={title.id}
@@ -381,21 +386,18 @@ function PostingRow({ posting }: { posting: KpssPostingDto }) {
 }
 
 /**
- * The heading stays put while the list scrolls — nesting it inside the scroll area let "UNVANLAR"
- * slide away, leaving an unlabelled column of names.
+ * Search result section — heading above rows; the rail scrolls the whole stack.
  */
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="flex min-h-0 flex-col gap-1">
+    <div className="flex w-full min-w-0 flex-col gap-1">
       <span
         className="text-xs font-bold uppercase"
         style={{ color: "var(--color-secondary)" }}
       >
         {title}
       </span>
-      <div className="mentor-scrollarea flex max-h-[18rem] flex-col overflow-y-auto">
-        {children}
-      </div>
+      <div className="flex w-full min-w-0 flex-col">{children}</div>
     </div>
   );
 }

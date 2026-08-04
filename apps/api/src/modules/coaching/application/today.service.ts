@@ -46,13 +46,18 @@ export class TodayService {
     // Identity owns the profile (display name + exam type) — read via its service, not a coaching query.
     const profile = await this.users.getMe(userId);
     const recapWindow = profile.examType ? weeklyReviewWindows() : null;
-    const calendarPromise = this.content.getExamCalendar(profile.examType);
+    const calendarPromise = this.content.getExamCalendar(
+      profile.examType,
+      undefined,
+      profile.examVariant,
+    );
     const recapCalendarPromise =
       recapWindow == null
         ? Promise.resolve(null)
         : this.content.getExamCalendar(
             profile.examType,
             recapWindow.startDate,
+            profile.examVariant,
           );
     const recapStatusPromise = recapCalendarPromise.then((calendar) =>
       calendar == null

@@ -236,6 +236,7 @@ export function toAuthUser(
     roles: user.roles as AuthUser["roles"],
     organizationId: user.organizationId,
     examType: (user.examType as AuthUser["examType"]) ?? null,
+    examVariant: (user.examVariant as AuthUser["examVariant"]) ?? null,
     examDate: user.examDate ?? null,
     dailyFocusGoalMinutes: user.dailyFocusGoalMinutes ?? null,
     emailVerified: user.emailVerifiedAt != null,

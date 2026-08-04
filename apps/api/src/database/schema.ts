@@ -20,6 +20,7 @@ import {
   jsonb,
   numeric,
   pgTable,
+  primaryKey,
   smallint,
   text,
   time,
@@ -107,6 +108,13 @@ export const users = pgTable(
     organizationId: uuid("organization_id").references(() => organizations.id),
     /** Minimal onboarding; deep diagnosis comes with coaching (W2). */
     examType: text("exam_type"),
+    /**
+     * KPSS guide level (LISANS | ONLISANS | ORTAOGRETIM); null for every other family.
+     *
+     * Unconstrained text, like `examType` and `exams.family` — the enum lives in `@mentor/types`
+     * and is enforced at the API edge, so a new variant never needs a migration.
+     */
+    examVariant: text("exam_variant"),
     examDate: date("exam_date"),
     /** Daily focus goal in minutes (/study-session progress + XP quest); null = no goal set. */
     dailyFocusGoalMinutes: integer("daily_focus_goal_minutes"),
@@ -539,6 +547,57 @@ export const programScores = pgTable(
 );
 
 /**
+ * One published edition of a reference dataset — a KPSS placement round, a YKS guide year.
+ *
+ * Reference data used to be implicitly "whatever is loaded right now": `kpss_postings.round` was a
+ * label repeated on 1.1k rows that no query filtered by, so seeding a second round would have
+ * silently doubled every count on the map. The dataset row makes the edition an entity, so a
+ * period can be selected, labelled, and kept alongside its predecessors instead of overwriting them.
+ *
+ * Deliberately separate from `programCatalogDatasets` for now: that one is wired into the
+ * preference simulation's `datasetVersion` reconciliation, and folding it in belongs with the
+ * `programs` multi-year migration rather than ahead of it.
+ *
+ * `descriptionTr`/`descriptionEn` carry the source note the UI shows beside the data. Storing the
+ * sentence rather than composing it from parts is what makes each dataset independently editable —
+ * a new round can explain its own scope without a code change.
+ */
+export const referenceDatasets = pgTable(
+  "reference_datasets",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    /** KPSS | YKS | LGS — matches `users.examType`. */
+    examFamily: text("exam_family").notNull(),
+    /** KPSS_POSTINGS | YKS_PROGRAMS — which dataset within the family. */
+    kind: text("kind").notNull(),
+    /** Human-facing edition label, e.g. "2026-1" (KPSS round) or "2026" (YKS guide year). */
+    period: text("period").notNull(),
+    /**
+     * Numeric ordering key, e.g. 20261. `period` is text and sorting it lexicographically puts
+     * "2026-10" before "2026-2" — the bug the old `findLatestRound` carried.
+     */
+    sortKey: integer("sort_key").notNull(),
+    isCurrent: boolean("is_current").notNull().default(false),
+    descriptionTr: text("description_tr"),
+    descriptionEn: text("description_en"),
+    source: text("source").notNull(),
+    sourceUrl: text("source_url").notNull(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("reference_datasets_kind_period_idx").on(t.kind, t.period),
+    // At most one current edition per dataset — the fallback when no period is requested.
+    uniqueIndex("reference_datasets_current_kind_idx")
+      .on(t.kind)
+      .where(sql`${t.isCurrent} = true`),
+  ],
+);
+
+/**
  * Civil-service titles ("kadro unvanı") — MÜHENDİS, AVUKAT, VHKİ, KÜTÜPHANECİ…
  *
  * This is the KPSS goal anchor. Unlike the institution list below, titles barely move between
@@ -592,10 +651,16 @@ export const institutions = pgTable("institutions", {
 export const kpssPostings = pgTable(
   "kpss_postings",
   {
-    /** ÖSYM's own row code — unique within a round and printed in the guide. */
-    osymCode: varchar("osym_code", { length: 12 }).primaryKey(),
-    /** Placement round, e.g. "2026-1". */
-    round: text("round").notNull(),
+    /**
+     * ÖSYM's own row code, printed in the guide. Unique *within* a round only — which is why it
+     * is half of the key rather than all of it. As a bare PK, importing a later round whose codes
+     * happened to overlap would have silently overwritten the earlier one.
+     */
+    osymCode: varchar("osym_code", { length: 12 }).notNull(),
+    /** The placement round this row belongs to. Every posting query starts here. */
+    datasetId: uuid("dataset_id")
+      .notNull()
+      .references(() => referenceDatasets.id, { onDelete: "cascade" }),
     /** LISANS | ONLISANS | ORTAOGRETIM — which guide the row came from. */
     educationLevel: text("education_level").notNull(),
     institutionId: uuid("institution_id")
@@ -623,7 +688,12 @@ export const kpssPostings = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    index("kpss_postings_city_idx").on(t.cityCode),
+    primaryKey({
+      name: "kpss_postings_pkey",
+      columns: [t.datasetId, t.osymCode],
+    }),
+    // Every read is "this round, this province" — the composite leads with the round for that.
+    index("kpss_postings_dataset_city_idx").on(t.datasetId, t.cityCode),
     index("kpss_postings_title_idx").on(t.titleId),
     index("kpss_postings_institution_idx").on(t.institutionId),
   ],

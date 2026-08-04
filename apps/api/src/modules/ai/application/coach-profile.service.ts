@@ -140,7 +140,11 @@ export class CoachProfileService {
   ): Promise<Array<{ slug: string; name: string }>> {
     const me = await this.users.getMe(userId);
     if (!me.examType) return [];
-    const calendar = await this.content.getExamCalendarByFamily(me.examType);
+    const calendar = await this.content.getExamCalendarByFamily(
+      me.examType,
+      undefined,
+      me.examVariant,
+    );
     if (!calendar) return [];
     return this.content.listExamSubjectsByExamId(calendar.exam.id);
   }

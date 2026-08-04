@@ -88,6 +88,14 @@ export const updateMeSchema = z
     /** Public personal link (http/https); empty clears it. */
     website: z.preprocess(emptyToNull, z.string().trim().url().max(200).nullable()).optional(),
     examType: z.enum(["KPSS", "YKS", "LGS"]).optional(),
+    /**
+     * KPSS guide level. Only meaningful with `examType: "KPSS"`; the service clears it for any
+     * other family rather than trusting the client to keep the pair consistent.
+     */
+    examVariant: z
+      .enum(["LISANS", "ONLISANS", "ORTAOGRETIM"])
+      .nullable()
+      .optional(),
     /** ISO date (yyyy-mm-dd) of the target exam — must be a real calendar date. */
     examDate: z
       .string()
