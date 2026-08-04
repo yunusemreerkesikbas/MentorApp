@@ -1,7 +1,11 @@
 /**
- * Turns the ÖSYM KPSS placement guides into one `seed/kpss.<round>.seed.json` period file.
+ * Turns the ÖSYM KPSS placement guides into one `seed/kpss.<round>.seed.json` file per round.
  *
- *   source/2026-1-{lisans,onlisans,ortaogretim}-kpss.xlsx  ──▶  seed/kpss.2026-1.seed.json
+ *   source/<round>-{lisans,onlisans,ortaogretim}-kpss.xlsx  ──▶  seed/kpss.<round>.seed.json
+ *   e.g. source/2026-1-lisans-kpss.xlsx                     ──▶  seed/kpss.2026-1.seed.json
+ *
+ * Rounds are DISCOVERED from the directory, not listed in code: publishing a new guide is dropping
+ * three files in, and every round already imported keeps its own seed file untouched.
  *
  * Run when a new placement round is published:
  *   pnpm --filter @mentor/api seed:kpss
@@ -15,7 +19,7 @@
  * the önlisans sheet carries an extra "BİRİM ADI" column, which shifts everything after it — so a
  * fixed index that reads ADET in two files reads DERECE in the third, silently.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
@@ -26,24 +30,63 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const SOURCE_DIR = resolve(HERE, "../src/modules/content/source");
 const SEED_DIR = resolve(HERE, "../src/modules/content/seed");
 
-const ROUND = "2026-1";
-const SOURCE_LABEL = "ÖSYM KPSS-2026/1 Tercih Kılavuzu";
 const SOURCE_URL = "https://www.osym.gov.tr";
+
+/** `2026-1-onlisans-kpss.xlsx` → round "2026-1", level ONLISANS. */
+const GUIDE_FILE = /^(\d{4}-\d+)-(lisans|onlisans|ortaogretim)-kpss\.xlsx$/i;
+const LEVEL_BY_SLUG = {
+  lisans: "LISANS",
+  onlisans: "ONLISANS",
+  ortaogretim: "ORTAOGRETIM",
+};
+
+/** "2026-1" → 20261, so editions sort numerically rather than as text ("2026-10" < "2026-2"). */
+function periodSortKey(round) {
+  const [year, index] = round.split("-");
+  return Number(year) * 10 + Number(index);
+}
+
 /**
  * Shown beside the data in the app, so the numbers never read as a standing state of the world.
- * Stored per round rather than templated in code — a new guide explains its own scope.
+ * Written per round rather than templated at render time — each edition explains its own scope,
+ * and a later one can say something different without a code change.
  */
-const DESCRIPTION_TR = `Kadro ve pozisyon bilgileri ÖSYM'den alınır. ${ROUND.replace("-", "/")} atama dönemini kapsar; bir sonraki dönemde ilanlar tamamen değişir.`;
-const DESCRIPTION_EN = `Vacancy data comes from ÖSYM and covers the ${ROUND.replace("-", "/")} placement round; the next round replaces it entirely.`;
+function describe(round) {
+  const label = round.replace("-", "/");
+  return {
+    descriptionTr: `Kadro ve pozisyon bilgileri ÖSYM'den alınır. ${label} atama dönemini kapsar; her dönemde ilanlar tamamen değişir.`,
+    descriptionEn: `Vacancy data comes from ÖSYM and covers the ${label} placement round; every round replaces the previous one entirely.`,
+  };
+}
 
-/** One file per round: adding a guide never overwrites the previous one. */
-const SEED_FILE = `kpss.${ROUND}.seed.json`;
+/** Groups the guide files in `source/` by round. Missing levels are an error, not a silent gap. */
+function discoverRounds() {
+  const byRound = new Map();
+  for (const file of readdirSync(SOURCE_DIR)) {
+    const match = GUIDE_FILE.exec(file);
+    if (!match) continue;
+    const [, round, levelSlug] = match;
+    const list = byRound.get(round) ?? [];
+    list.push({ file, level: LEVEL_BY_SLUG[levelSlug.toLowerCase()] });
+    byRound.set(round, list);
+  }
 
-const FILES = [
-  { file: "2026-1-lisans-kpss.xlsx", level: "LISANS" },
-  { file: "2026-1-onlisans-kpss.xlsx", level: "ONLISANS" },
-  { file: "2026-1-ortaogretim-kpss.xlsx", level: "ORTAOGRETIM" },
-];
+  const rounds = [...byRound.entries()]
+    .map(([round, files]) => ({ round, files }))
+    .sort((a, b) => periodSortKey(a.round) - periodSortKey(b.round));
+
+  assert(rounds.length > 0, `No KPSS guides found in ${SOURCE_DIR}.`);
+  for (const { round, files } of rounds) {
+    const levels = new Set(files.map((f) => f.level));
+    assert.deepEqual(
+      [...levels].sort(),
+      ["LISANS", "ONLISANS", "ORTAOGRETIM"],
+      // A round missing a level would import as a smaller round and look like an ÖSYM decision.
+      `Round ${round} is missing a guide — expected all three education levels, got ${[...levels].join(", ")}.`,
+    );
+  }
+  return rounds;
+}
 
 /**
  * Collapses internal whitespace, not just the ends.
@@ -85,7 +128,9 @@ function readGuide(file, level, codeBySlug) {
     title: header.findIndex((h) => h.startsWith("KADRO-ÜNVAN")),
     city: at("İL"),
     district: at("İLÇE"),
-    serviceClass: at("HİZMET SINIFI"),
+    // "HİZMET SINIFI" in the 2026/1 guides, plain "SINIFI" in the 2025/2 ones. Matched by suffix
+    // rather than exact text, because the assert below would otherwise reject a valid guide.
+    serviceClass: header.findIndex((h) => h.endsWith("SINIFI")),
     grade: at("DERECE"),
     quota: at("ADET"),
   };
@@ -133,21 +178,18 @@ function readGuide(file, level, codeBySlug) {
   return postings;
 }
 
-function main() {
-  const { cities } = JSON.parse(
-    readFileSync(resolve(SEED_DIR, "cities.seed.json"), "utf8"),
-  );
-  const codeBySlug = new Map(cities.map((c) => [c.slug, c.code]));
-
-  const postings = FILES.flatMap(({ file, level }) =>
+function buildRound({ round, files }, codeBySlug) {
+  const postings = files.flatMap(({ file, level }) =>
     readGuide(file, level, codeBySlug),
   );
 
-  assert(postings.length > 0, "No postings parsed — check the source files.");
+  assert(postings.length > 0, `Round ${round}: no postings parsed — check the source files.`);
   assert.equal(
     new Set(postings.map((p) => p.osymCode)).size,
     postings.length,
-    "Duplicate ÖSYM code across guides — the code is the primary key.",
+    // Within a round the ÖSYM code is the identity; across rounds it may legitimately repeat,
+    // which is exactly why the table keys on (dataset, code) rather than the code alone.
+    `Round ${round}: duplicate ÖSYM code across guides.`,
   );
 
   // Names → the two reference lists. Sorted so a re-import produces a stable diff.
@@ -163,19 +205,19 @@ function main() {
     assert.equal(
       new Set(list.map((x) => x.slug)).size,
       list.length,
-      `Two ${label}s normalise to the same slug — the slug is the join key.`,
+      `Round ${round}: two ${label}s normalise to the same slug — the slug is the join key.`,
     );
   }
 
+  const seedFile = `kpss.${round}.seed.json`;
   writeFileSync(
-    resolve(SEED_DIR, SEED_FILE),
+    resolve(SEED_DIR, seedFile),
     `${JSON.stringify(
       {
         note: "AUTO-GENERATED by scripts/build-kpss-seed.mjs from the ÖSYM KPSS guides under src/modules/content/source/. Do not edit by hand. `institutions` is whoever posted in this round, NOT a catalogue of Turkish public bodies — which is why the UI treats it as an optional filter and always shows the round.",
-        round: ROUND,
-        descriptionTr: DESCRIPTION_TR,
-        descriptionEn: DESCRIPTION_EN,
-        source: SOURCE_LABEL,
+        round,
+        ...describe(round),
+        source: `ÖSYM KPSS-${round.replace("-", "/")} Tercih Kılavuzu`,
         sourceUrl: SOURCE_URL,
         verifiedAt: new Date().toISOString(),
         titles,
@@ -184,7 +226,8 @@ function main() {
       },
       null,
       2,
-    )}\n`,
+    )}
+`,
     "utf8",
   );
 
@@ -193,9 +236,27 @@ function main() {
   for (const p of postings) byLevel[p.educationLevel] = (byLevel[p.educationLevel] ?? 0) + 1;
 
   console.log(
-    `${postings.length} postings · ${quota} positions · ${titles.length} titles · ${institutions.length} institutions\n` +
-      `  ${Object.entries(byLevel).map(([k, v]) => `${k}: ${v}`).join(" · ")}\n` +
-      `  → ${resolve(SEED_DIR, SEED_FILE)}`,
+    `${round}: ${postings.length} postings · ${quota} positions · ${titles.length} titles · ${institutions.length} institutions
+` +
+      `  ${Object.entries(byLevel).map(([k, v]) => `${k}: ${v}`).join(" · ")}
+` +
+      `  → ${seedFile}`,
+  );
+  return { round, postings: postings.length, quota };
+}
+
+function main() {
+  const { cities } = JSON.parse(
+    readFileSync(resolve(SEED_DIR, "cities.seed.json"), "utf8"),
+  );
+  const codeBySlug = new Map(cities.map((c) => [c.slug, c.code]));
+
+  const rounds = discoverRounds();
+  const built = rounds.map((r) => buildRound(r, codeBySlug));
+
+  console.log(
+    `
+${built.length} round(s) written; newest (${built.at(-1).round}) becomes current on seed.`,
   );
 }
 

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { GEO_REGIONS, UNIVERSITY_KINDS } from "@mentor/types";
@@ -109,9 +109,15 @@ interface KpssSeedFile {
   }>;
 }
 
-const kpssSeed = read<KpssSeedFile>("kpss.2026-1.seed.json");
+/** Every imported round, oldest first — the loader reads the directory, so the spec does too. */
+const kpssSeeds = readdirSync(resolve(__dirname, "../seed"))
+  .filter((f) => /^kpss\..*\.seed\.json$/.test(f))
+  .map((f) => read<KpssSeedFile>(f))
+  .sort((a, b) => a.round.localeCompare(b.round));
 
-describe("kpss seed file", () => {
+describe.each(kpssSeeds.map((seed) => [seed.round, seed] as const))(
+  "kpss seed file %s",
+  (_round, kpssSeed) => {
   it("points every posting at a province, a known title and a known institution", () => {
     const codes = new Set(cities.map((c) => c.code));
     const titleNames = new Set(kpssSeed.titles.map((t) => t.name));
@@ -137,6 +143,29 @@ describe("kpss seed file", () => {
       expect(list.filter((x) => /\s{2,}|[\r\n]/.test(x.name))).toEqual([]);
       expect(new Set(list.map((x) => x.slug)).size).toBe(list.length);
     }
+  });
+  },
+);
+
+describe("kpss rounds", () => {
+  it("keeps ÖSYM codes unique within a round, and allows reuse across rounds", () => {
+    for (const seed of kpssSeeds) {
+      expect(new Set(seed.postings.map((p) => p.osymCode)).size).toBe(
+        seed.postings.length,
+      );
+    }
+    // Across rounds a code may legitimately repeat, which is exactly why `kpss_postings` keys on
+    // (dataset_id, osym_code). This asserts the shape holds, not that a collision exists today.
+    const perRound = kpssSeeds.map((s) => new Set(s.postings.map((p) => p.osymCode)));
+    const union = new Set(perRound.flatMap((set) => [...set]));
+    expect(union.size).toBeLessThanOrEqual(
+      perRound.reduce((sum, set) => sum + set.size, 0),
+    );
+  });
+
+  it("declares each round exactly once", () => {
+    const rounds = kpssSeeds.map((s) => s.round);
+    expect(new Set(rounds).size).toBe(rounds.length);
   });
 });
 
@@ -195,19 +224,26 @@ describe("GeoSeedService", () => {
     await service.onModuleInit();
 
     // One call per period file, each carrying its whole set — never per-row awaits.
-    expect(kpssCalls).toHaveLength(1);
-    expect(kpssCalls[0]!.titles).toHaveLength(kpssSeed.titles.length);
-    expect(kpssCalls[0]!.institutions).toHaveLength(kpssSeed.institutions.length);
-    expect(kpssCalls[0]!.postings).toHaveLength(kpssSeed.postings.length);
+    expect(kpssCalls).toHaveLength(kpssSeeds.length);
+    for (const [i, seed] of kpssSeeds.entries()) {
+      expect(kpssCalls[i]!.titles).toHaveLength(seed.titles.length);
+      expect(kpssCalls[i]!.institutions).toHaveLength(seed.institutions.length);
+      expect(kpssCalls[i]!.postings).toHaveLength(seed.postings.length);
+    }
   });
 
   it("labels the round and promotes exactly one edition as current", async () => {
     const { service, kpssCalls } = run();
     await service.onModuleInit();
 
-    expect(kpssCalls[0]!.dataset.period).toBe(kpssSeed.round);
+    expect(kpssCalls.map((c) => c.dataset.period)).toEqual(
+      kpssSeeds.map((s) => s.round),
+    );
     // "2026-1" -> 20261. Sorting the text would put a later "2026-10" behind "2026-2".
-    expect(kpssCalls[0]!.dataset.sortKey).toBe(20261);
+    expect(kpssCalls.at(-1)!.dataset.sortKey).toBe(
+      Number(kpssSeeds.at(-1)!.round.split("-")[0]) * 10 +
+        Number(kpssSeeds.at(-1)!.round.split("-")[1]),
+    );
     // Exactly one current edition, decided by the loader rather than trusting the files to agree.
     expect(kpssCalls.filter((c) => c.dataset.isCurrent)).toHaveLength(1);
     expect(kpssCalls.at(-1)!.dataset.isCurrent).toBe(true);
