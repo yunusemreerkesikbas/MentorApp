@@ -145,6 +145,11 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Desktop coach FAB drag (2026-08-05)** — Fixed bottom-right Puhu entry can be press-dragged
+  anywhere in the viewport (clamped to a 24px edge pad). Short click still opens `/coach`;
+  position persists for the browser session via `sessionStorage`. Bounce pauses while dragging.
+  Related: `desktop-coach-fab.tsx`.
+
 - **Kişiselleştirilmiş Mentor V2 — coaching kanıtı ve aksiyon döngüsü (2026-08-02)** — Public
   `CoachEvidenceService`; bugünkü plan/odak, 7–28 günlük ritim, streak, kaba mood yönü, deneme odağı,
   normalize hedef ve AI görev sonuçlarını taksonomi-doğrulanmış, PII-minimal özetlere çevirir. Ham

@@ -437,3 +437,27 @@ GÜVENLİK GÖREVLİSİ"` aynı iş. `.trim()` yalnız uçları kırptığı iç
   geometrisi istediği için kapsam dışı; il, bugün dürüstçe cevaplanabilecek tek şey.
   `EXAM_FAMILIES_WITH_TARGETS` ve controller'daki `@ApiQuery` enum'u aynı sabitten besleniyor,
   yoksa codegen LGS'yi tipten düşürürdü. Spec: `geo.service` (LGS'de program/üniversite/unvan boş).
+
+- **İkinci KPSS dönemi (2025/2) + çok dönemli importer (2026-08-05)** — Faz B'nin asıl doğrulaması:
+  `build-kpss-seed.mjs` artık dönemleri **klasörden keşfediyor**, kodda listelemiyor. Yeni kılavuz
+  yayımlanınca üç dosyayı bırakmak yetiyor; daha önce içe aktarılmış her dönem kendi seed dosyasında
+  dokunulmadan kalıyor.
+  Dosya adı konvansiyonu: `<round>-{lisans,onlisans,ortaogretim}-kpss.xlsx` → `kpss.<round>.seed.json`.
+  Kullanıcının eklediği `kpss-2025-2lisans.xlsx` kalıbı bu konvansiyona yeniden adlandırıldı; iki
+  ayrı kalıbı destekleyen bir regex yazmaktansa tek konvansiyon.
+  **Kılavuzlar arası iki fark çıktı:** (1) hizmet sınıfı sütunu 2026/1'de `HİZMET SINIFI`,
+  2025/2'de yalnız `SINIFI` — artık son ekle eşleşiyor, yoksa mevcut assert geçerli bir kılavuzu
+  reddediyordu. (2) `KADRO-ÜNVAN(I)` farkı zaten `startsWith` ile karşılanıyordu.
+  **Sonuç:** 2025-2 → 1808 ilan · 3732 kontenjan · 52 unvan · 87 kurum;
+  2026-1 → 1106 · 2083 · 52 · 73 (**önceki içe aktarmayla birebir aynı** — refactor ayrıştırmayı
+  bozmadı). Unvan listeleri eşit büyüklükte ama aynı değil: 40 ortak, birleşim 64. Kurumlarda
+  41 ortak, birleşim 119. Yani `titles`/`institutions` dönemler arası **birleşiyor** (kalıcı
+  varlıklar), `postings` döneme kapalı kalıyor — tasarımın beklediği davranış.
+  **İki dönem arasında ÖSYM kodu çakışması yok** (bugün için); yine de `(dataset_id, osym_code)`
+  bileşik anahtarı doğru olan — çakışma olmaması bir garanti değil, bir gözlem.
+  Seed logu Faz B'yi kanıtlıyor: `KPSS seed applied (2 round(s): 2025-2 1808 postings,
+  2026-1* 1106 postings)` — sayılar toplanmıyor, eskiden yeniye yükleniyor, `*` güncel dönemi
+  işaretliyor.
+  `geo-seed.service.spec` artık dönem sayısından bağımsız: seed klasörünü okuyup her dönem için
+  aynı bütünlük testlerini `describe.each` ile koşuyor (17 test).
+  İlgili: `build-kpss-seed.mjs`, `geo-seed.service.spec.ts`, `seed/kpss.2025-2.seed.json`.
