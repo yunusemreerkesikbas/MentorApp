@@ -3,7 +3,16 @@
  * Field copy is NOT here: user-facing messages are localized by the backend.
  */
 import { z } from "zod";
-import { CAREER_GROUPS, YKS_SCORE_TYPES } from "@mentor/types";
+import {
+  CAREER_GROUPS,
+  VISION_BOARD_FRAMES,
+  VISION_BOARD_TEXTURES,
+  VISION_IMAGE_FRAMES,
+  VISION_STICKERS,
+  VISION_TEXT_ALIGNS,
+  VISION_TEXT_FONTS,
+  YKS_SCORE_TYPES,
+} from "@mentor/types";
 // NOTE: import from the leaf module, NOT "./index.js" — a barrel import here creates an
 // index↔coaching cycle that crashes sync ESM-from-CJS loading (ts-node / node dist).
 import { paginationQuerySchema } from "./pagination.js";
@@ -294,6 +303,149 @@ export const upsertVisionSchema = z
     path: ["targetCityCode"],
   });
 export type UpsertVisionInput = z.infer<typeof upsertVisionSchema>;
+
+/* ----------------------------- vision board collage ----------------------------- */
+
+/**
+ * Caps. They exist for two reasons that have nothing to do with taste: the document is stored as
+ * one jsonb value and re-sent on every `/coaching/vision` read, and the panel card renders every
+ * image at once. Twenty photos is already a busy collage.
+ */
+export const VISION_BOARD_MAX_ITEMS = 60;
+export const VISION_BOARD_MAX_IMAGES = 20;
+export const VISION_BOARD_MAX_TEXTS = 30;
+
+/** Board photos live at `vision-board/{userId}/{uuid}.{ext}`. The owner check is the service's job. */
+export const visionBoardStorageKeySchema = z
+  .string()
+  .regex(
+    /^vision-board\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|jpeg|png|webp)$/i,
+    "invalid_storage_key",
+  );
+
+const hexColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, "invalid_color");
+
+/**
+ * Coordinates are absolute px in the 1620×1080 design space, deliberately allowed well outside it:
+ * letting a photo bleed past the edge is normal collage composition and the stage clips it. The
+ * bounds only exist to keep a crafted document from carrying Infinity into a canvas draw call.
+ */
+const coordSchema = z.coerce.number().finite().min(-5_000).max(5_000);
+const sizeSchema = z.coerce.number().finite().min(8).max(5_000);
+
+const boardItemBaseShape = {
+  id: z.string().uuid(),
+  x: coordSchema,
+  y: coordSchema,
+  width: sizeSchema,
+  height: sizeSchema,
+  rotation: z.coerce.number().finite().min(-180).max(180),
+  opacity: z.coerce.number().finite().min(0).max(1),
+  z: z.coerce.number().int().min(0).max(999),
+};
+
+const boardImageItemSchema = z.object({
+  ...boardItemBaseShape,
+  kind: z.literal("image"),
+  storageKey: visionBoardStorageKeySchema,
+  frame: z.enum(VISION_IMAGE_FRAMES),
+});
+
+const boardTextItemSchema = z.object({
+  ...boardItemBaseShape,
+  kind: z.literal("text"),
+  text: z.string().trim().min(1).max(280),
+  font: z.enum(VISION_TEXT_FONTS),
+  size: z.coerce.number().finite().min(12).max(160),
+  color: hexColorSchema,
+  bold: z.boolean(),
+  italic: z.boolean(),
+  align: z.enum(VISION_TEXT_ALIGNS),
+  lineHeight: z.coerce.number().finite().min(0.8).max(3),
+  letterSpacing: z.coerce.number().finite().min(-10).max(40),
+  background: z
+    .object({
+      color: hexColorSchema,
+      opacity: z.coerce.number().finite().min(0).max(1),
+      padding: z.coerce.number().finite().min(0).max(80),
+      radius: z.coerce.number().finite().min(0).max(80),
+    })
+    .nullable(),
+  source: z.literal("goal").optional(),
+});
+
+const boardStickerItemSchema = z.object({
+  ...boardItemBaseShape,
+  kind: z.literal("sticker"),
+  asset: z.enum(VISION_STICKERS),
+});
+
+const boardItemSchema = z.discriminatedUnion("kind", [
+  boardImageItemSchema,
+  boardTextItemSchema,
+  boardStickerItemSchema,
+]);
+
+/**
+ * The full collage. Written by `PUT /coaching/vision/board` only — never by the goal upsert, whose
+ * AI-note invalidation must not fire because somebody nudged a sticker.
+ */
+export const visionBoardDocSchema = z
+  .object({
+    version: z.literal(1),
+    status: z.enum(["DRAFT", "PUBLISHED"]),
+    frame: z.enum(VISION_BOARD_FRAMES),
+    background: z.discriminatedUnion("kind", [
+      z.object({ kind: z.literal("color"), value: hexColorSchema }),
+      z.object({ kind: z.literal("texture"), value: z.enum(VISION_BOARD_TEXTURES) }),
+    ]),
+    items: z.array(boardItemSchema).max(VISION_BOARD_MAX_ITEMS),
+  })
+  .superRefine((doc, ctx) => {
+    const images = doc.items.filter((i) => i.kind === "image").length;
+    if (images > VISION_BOARD_MAX_IMAGES) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "too_many_images",
+        path: ["items"],
+      });
+    }
+    const texts = doc.items.filter((i) => i.kind === "text").length;
+    if (texts > VISION_BOARD_MAX_TEXTS) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "too_many_texts",
+        path: ["items"],
+      });
+    }
+    // Duplicate ids would make selection and undo target the wrong element.
+    if (new Set(doc.items.map((i) => i.id)).size !== doc.items.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "duplicate_item_id",
+        path: ["items"],
+      });
+    }
+  });
+export type VisionBoardDocInput = z.infer<typeof visionBoardDocSchema>;
+
+export const putVisionBoardSchema = z.object({ board: visionBoardDocSchema });
+export type PutVisionBoardInput = z.infer<typeof putVisionBoardSchema>;
+
+/** Board photo upload. Same allowlist as forum images — webp included, no HEIC/SVG. */
+export const VISION_BOARD_IMAGE_MIMES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
+export const VISION_BOARD_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+export const visionBoardImageUploadUrlSchema = z.object({
+  contentType: z.enum(VISION_BOARD_IMAGE_MIMES),
+});
+export type VisionBoardImageUploadUrlInput = z.infer<
+  typeof visionBoardImageUploadUrlSchema
+>;
 
 /* --------------------------- preference simulation --------------------------- */
 

@@ -139,6 +139,10 @@ export interface CreateMoodCheckinDto { [key: string]: unknown }
 
 export interface UpsertVisionDto { [key: string]: unknown }
 
+export interface PutVisionBoardDto { [key: string]: unknown }
+
+export interface CreateVisionBoardImageUploadUrlDto { [key: string]: unknown }
+
 export interface PutPreferenceSimulationDto { [key: string]: unknown }
 
 export interface RefreshPreferenceSimulationDto { [key: string]: unknown }
@@ -3476,6 +3480,74 @@ export const coachingControllerUpsertVision = async (upsertVisionDto: UpsertVisi
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       upsertVisionDto,)
+  }
+);}
+
+
+
+export type coachingControllerPutVisionBoardResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type coachingControllerPutVisionBoardResponseSuccess = (coachingControllerPutVisionBoardResponse200) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerPutVisionBoardResponse = (coachingControllerPutVisionBoardResponseSuccess)
+
+export const getCoachingControllerPutVisionBoardUrl = () => {
+
+
+  
+
+  return `/v1/coaching/vision/board`
+}
+
+export const coachingControllerPutVisionBoard = async (putVisionBoardDto: PutVisionBoardDto, options?: RequestInit): Promise<coachingControllerPutVisionBoardResponse> => {
+  
+  return http<coachingControllerPutVisionBoardResponse>(getCoachingControllerPutVisionBoardUrl(),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      putVisionBoardDto,)
+  }
+);}
+
+
+
+export type coachingControllerCreateVisionBoardImageUploadUrlResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type coachingControllerCreateVisionBoardImageUploadUrlResponseSuccess = (coachingControllerCreateVisionBoardImageUploadUrlResponse201) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerCreateVisionBoardImageUploadUrlResponse = (coachingControllerCreateVisionBoardImageUploadUrlResponseSuccess)
+
+export const getCoachingControllerCreateVisionBoardImageUploadUrlUrl = () => {
+
+
+  
+
+  return `/v1/coaching/vision/board/image-upload-url`
+}
+
+export const coachingControllerCreateVisionBoardImageUploadUrl = async (createVisionBoardImageUploadUrlDto: CreateVisionBoardImageUploadUrlDto, options?: RequestInit): Promise<coachingControllerCreateVisionBoardImageUploadUrlResponse> => {
+  
+  return http<coachingControllerCreateVisionBoardImageUploadUrlResponse>(getCoachingControllerCreateVisionBoardImageUploadUrlUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createVisionBoardImageUploadUrlDto,)
   }
 );}
 

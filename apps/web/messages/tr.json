@@ -672,17 +672,17 @@
       "kpss_desc": "Kamu Personeli Seçme Sınavı",
       "yks_desc": "Yükseköğretim Kurumları Sınavı",
       "lgs_desc": "Liselere Geçiş Sistemi",
-    "variant_label": "KPSS öğrenim düzeyin",
-    "variant": {
-      "LISANS": "Lisans",
-      "ONLISANS": "Önlisans",
-      "ORTAOGRETIM": "Ortaöğretim"
-    },
-    "variant_desc": {
-      "LISANS": "4 yıllık fakülte mezunu ya da son sınıf",
-      "ONLISANS": "2 yıllık meslek yüksekokulu mezunu",
-      "ORTAOGRETIM": "Lise mezunu"
-    }
+      "variant_label": "KPSS öğrenim düzeyin",
+      "variant": {
+        "LISANS": "Lisans",
+        "ONLISANS": "Önlisans",
+        "ORTAOGRETIM": "Ortaöğretim"
+      },
+      "variant_desc": {
+        "LISANS": "4 yıllık fakülte mezunu ya da son sınıf",
+        "ONLISANS": "2 yıllık meslek yüksekokulu mezunu",
+        "ORTAOGRETIM": "Lise mezunu"
+      }
     },
     "account": {
       "title": "Hesap",
@@ -1872,6 +1872,31 @@
       "quota": "{count} kişi",
       "open_hint": "İlanları görmek için tıkla",
       "open_city_aria": "{name} ilanını aç"
+    },
+    "board": {
+      "loading": "Panon hazırlanıyor...",
+      "back": "Hedefim",
+      "add_image": "Görsel",
+      "add_text": "Metin",
+      "new_text": "Yeni metin",
+      "text_content": "Metin",
+      "undo": "Geri al",
+      "redo": "İleri al",
+      "delete": "Sil",
+      "resize": "Boyutlandır",
+      "rotate": "Döndür",
+      "save": "Kaydet",
+      "saved": "Panon kaydedildi",
+      "unsaved": "Kaydedilmedi",
+      "limit_images": "Panoya en fazla 20 görsel ekleyebilirsin.",
+      "limit_texts": "Panoya en fazla 30 metin ekleyebilirsin.",
+      "image_unsupported": "Yalnızca JPG, PNG ve WEBP görseller yüklenebilir.",
+      "image_too_large": "Görsel 5 MB'tan küçük olmalı.",
+      "image_upload_failed": "Görsel yüklenemedi. Tekrar dener misin?",
+      "no_goal_title": "Önce hedefini seç",
+      "no_goal_body": "Pano, hedefinin etrafında kuruluyor. Haritadan hedefini seçtiğinde burası seni bekliyor olacak.",
+      "no_goal_cta": "Hedefimi seç",
+      "open_cta": "Panonu tasarla"
     }
   },
   "preferenceSimulation": {

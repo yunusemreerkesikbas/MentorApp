@@ -18,6 +18,8 @@ import {
   updatePlanTaskSchema,
   updateStudySessionSchema,
   upsertVisionSchema,
+  putVisionBoardSchema,
+  visionBoardImageUploadUrlSchema,
   weeklyReviewQuerySchema,
 } from "@mentor/validation";
 import { createZodDto } from "../../../common/validation/zod-dto";
@@ -41,6 +43,12 @@ export class CreateMockExamDto extends createZodDto(createMockExamSchema) {}
 export class UpdateMockExamDto extends createZodDto(updateMockExamSchema) {}
 export class ListMockExamsQueryDto extends createZodDto(listMockExamsQuerySchema) {}
 export class UpsertVisionDto extends createZodDto(upsertVisionSchema) {}
+/** Body for PUT /v1/coaching/vision/board — the whole collage document, replaced wholesale. */
+export class PutVisionBoardDto extends createZodDto(putVisionBoardSchema) {}
+/** Body for the presign call. Named `Create…` so it doesn't collide with the response DTO type. */
+export class CreateVisionBoardImageUploadUrlDto extends createZodDto(
+  visionBoardImageUploadUrlSchema,
+) {}
 export class PutPreferenceSimulationDto extends createZodDto(
   putPreferenceSimulationSchema,
 ) {}

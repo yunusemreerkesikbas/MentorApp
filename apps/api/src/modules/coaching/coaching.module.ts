@@ -9,6 +9,7 @@ import { SessionService } from "./application/session.service";
 import { StreakService } from "./application/streak.service";
 import { TodayService } from "./application/today.service";
 import { VisionService } from "./application/vision.service";
+import { VisionBoardImageService } from "./application/vision-board-image.service";
 import { WeeklyReviewService } from "./application/weekly-review.service";
 import { PreferenceSimulationService } from "./application/preference-simulation.service";
 import { CoachingErasureService } from "./application/coaching-erasure.service";
@@ -53,6 +54,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     MockExamService,
     TodayService,
     VisionService,
+    VisionBoardImageService,
     WeeklyReviewService,
     PreferenceSimulationService,
     CoachingErasureService,

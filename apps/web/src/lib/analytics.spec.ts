@@ -1,5 +1,3 @@
-// The repository reuses apps/api's Vitest runner; apps/web intentionally has no test dependency.
-// @ts-expect-error -- resolved by the explicit @mentor/api Vitest command used for this spec.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ANALYTICS_CONSENT_KEY,

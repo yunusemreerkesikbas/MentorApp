@@ -706,6 +706,7 @@ function VisionGoalFields({
   simulationUniversityId: string | null;
 }) {
   const translate = useTranslations("vision");
+  const board = useTranslations("vision.board");
   const stack = layout === "stack";
 
   return (
@@ -802,6 +803,18 @@ function VisionGoalFields({
       >
         {saving ? translate("saving") : translate("save")}
       </Button>
+
+      {/*
+       * Entry to the collage editor. Deliberately a plain link and not a redirect after save: the
+       * board is optional, and a goal is complete without one.
+       */}
+      <Link
+        href="/vision-board/board"
+        className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        style={{ color: "var(--color-secondary)" }}
+      >
+        {board("open_cta")}
+      </Link>
 
       <div className="w-full">
         <FormError message={error} />

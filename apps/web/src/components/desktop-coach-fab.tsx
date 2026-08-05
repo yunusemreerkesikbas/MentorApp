@@ -1,7 +1,7 @@
 "use client";
 import { X } from "lucide-react";
 
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 
@@ -111,8 +111,19 @@ export function DesktopCoachFab() {
   const offset = liveOffset ?? storedOffset;
 
   const rootRef = useRef<HTMLDivElement>(null);
+  /*
+   * `startDrag` needs the current offset without re-subscribing, so it reads this ref. Synced in an
+   * effect rather than during render: a ref written in render is applied even by a render React
+   * discards. It cannot simply be dropped either — `storedOffset` comes from `useSyncExternalStore`
+   * and changes after mount (the server snapshot is ZERO_OFFSET), so without this the first drag
+   * after hydration would start from the corner.
+   *
+   * Event handlers only run after a commit, so the ref is always current by the time one reads it.
+   */
   const offsetRef = useRef(offset);
-  offsetRef.current = offset;
+  useEffect(() => {
+    offsetRef.current = offset;
+  }, [offset]);
   const suppressClickRef = useRef(false);
   const dragRef = useRef<{
     pointerId: number;

@@ -15,7 +15,7 @@ import type { StoragePort, StorageUploadUrlResult } from "../../ports/storage.po
 
 const UPLOAD_EXPIRY_SEC = 900;
 const PRIVATE_PREFIX = "mock-exams/";
-const PUBLIC_PREFIXES = ["avatars/", "forum/", "content/"] as const;
+const PUBLIC_PREFIXES = ["avatars/", "forum/", "content/", "vision-board/"] as const;
 
 /**
  * Cloudflare R2 adapter (S3-compatible API). Requires R2_* env vars when STORAGE_PROVIDER=r2.

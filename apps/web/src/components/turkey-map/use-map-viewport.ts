@@ -73,8 +73,10 @@ export function useMapViewport() {
   const [isPanning, setIsPanning] = useState(false);
   /** True while a viewBox tween runs — mascot follows the city with duration 0 (no % chase lag). */
   const [isViewAnimating, setIsViewAnimating] = useState(false);
+  // Every `setView` in this hook assigns `viewRef.current` on the line above it, so the ref is
+  // already current at each write. The extra render-time mirror was redundant — and a ref write
+  // during render, which a discarded render would apply anyway.
   const viewRef = useRef(view);
-  viewRef.current = view;
   const animRef = useRef<AnimationPlaybackControls | null>(null);
   const dragRef = useRef<DragState | null>(null);
   /** After a real pan, the following click on a path must be ignored. */

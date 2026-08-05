@@ -1061,6 +1061,18 @@ export const visionBoards = pgTable(
     /** CareerGroup — one of ten broad fields; drives the mascot variant. */
     careerGroup: text("career_group"),
     motivation: text("motivation"),
+    /**
+     * The collage document the user designs on `/hedef/pano` — `{ version, status, frame,
+     * background, items[] }`, shape owned by `visionBoardDocSchema` (@mentor/validation).
+     * `null` = the user has a goal but has never opened the board.
+     *
+     * One jsonb column rather than a `vision_board_items` table: the items are only ever read and
+     * written as a whole document, so rows would buy nothing but joins. Written ONLY by
+     * `updateBoard` — never by the goal upsert, whose AI-note invalidation must not fire when
+     * somebody drags a sticker.
+     * ponytail: `status` lives inside the document; promote it to a column when a query needs it.
+     */
+    board: jsonb("board"),
     aiNote: text("ai_note"),
     aiModel: text("ai_model"),
     aiLocale: varchar("ai_locale", { length: 5 }),

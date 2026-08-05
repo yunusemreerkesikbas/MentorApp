@@ -1,5 +1,3 @@
-// The repository reuses apps/api's Vitest runner; apps/web intentionally has no test dependency.
-// @ts-expect-error -- resolved by the explicit @mentor/api Vitest command used for this spec.
 import { describe, expect, it, vi } from "vitest";
 import type { WeeklyRecapTitleId, WeeklyReviewDto } from "@mentor/types";
 import {
@@ -674,7 +672,9 @@ describe("weekly recap local storage", () => {
   });
 
   it("keeps the current week visible and switches it to replay after opening", () => {
-    const getItem = vi.fn(() => null);
+    // Annotated: the test later returns "1" from this mock, and an inferred `() => null` makes
+    // that a type error.
+    const getItem = vi.fn((): string | null => null);
     const setItem = vi.fn();
     const storage = { getItem, setItem };
 

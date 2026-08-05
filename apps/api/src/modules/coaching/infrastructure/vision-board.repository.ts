@@ -66,6 +66,27 @@ export class VisionBoardRepository {
     return rows[0]!;
   }
 
+  /**
+   * Replace the collage document. Touches `board` and nothing else — in particular it does NOT go
+   * through {@link upsert}'s `unchanged` predicate, because moving a photo is not a change of goal
+   * and must never invalidate the cached premium AI note (that would bill an LLM call per drag).
+   *
+   * Returns 0 rows when the user has no goal yet; the caller turns that into a 404 rather than
+   * silently creating a goal-less board.
+   */
+  async updateBoard(
+    tx: DatabaseTx,
+    userId: string,
+    board: unknown,
+  ): Promise<VisionBoardRow | undefined> {
+    const rows = await tx
+      .update(visionBoards)
+      .set({ board, updatedAt: sql`now()` })
+      .where(eq(visionBoards.userId, userId))
+      .returning();
+    return rows[0];
+  }
+
   /** Cache the premium AI motivation note in place (idempotent; tx owns RLS). */
   async setAiNote(
     tx: DatabaseTx,

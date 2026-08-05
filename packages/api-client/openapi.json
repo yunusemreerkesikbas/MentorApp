@@ -2348,6 +2348,64 @@
         ]
       }
     },
+    "/v1/coaching/vision/board": {
+      "put": {
+        "operationId": "CoachingController_putVisionBoard",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutVisionBoardDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/vision/board/image-upload-url": {
+      "post": {
+        "operationId": "CoachingController_createVisionBoardImageUploadUrl",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVisionBoardImageUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
     "/v1/coaching/preference-simulation/access": {
       "get": {
         "operationId": "CoachingController_getPreferenceSimulationAccess",
@@ -6270,6 +6328,14 @@
         "properties": {}
       },
       "UpsertVisionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "PutVisionBoardDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateVisionBoardImageUploadUrlDto": {
         "type": "object",
         "properties": {}
       },

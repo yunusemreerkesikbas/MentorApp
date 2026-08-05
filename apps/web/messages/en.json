@@ -672,17 +672,17 @@
       "kpss_desc": "Civil Servant Selection Exam",
       "yks_desc": "Higher Education Institutions Exam",
       "lgs_desc": "High School Transition System",
-    "variant_label": "Your KPSS level",
-    "variant": {
-      "LISANS": "Bachelor's",
-      "ONLISANS": "Associate",
-      "ORTAOGRETIM": "High school"
-    },
-    "variant_desc": {
-      "LISANS": "Four-year degree, or in your final year",
-      "ONLISANS": "Two-year vocational degree",
-      "ORTAOGRETIM": "High school diploma"
-    }
+      "variant_label": "Your KPSS level",
+      "variant": {
+        "LISANS": "Bachelor's",
+        "ONLISANS": "Associate",
+        "ORTAOGRETIM": "High school"
+      },
+      "variant_desc": {
+        "LISANS": "Four-year degree, or in your final year",
+        "ONLISANS": "Two-year vocational degree",
+        "ORTAOGRETIM": "High school diploma"
+      }
     },
     "account": {
       "title": "Account",
@@ -1872,6 +1872,31 @@
       "quota": "{count} people",
       "open_hint": "Click to see the postings",
       "open_city_aria": "Open postings in {name}"
+    },
+    "board": {
+      "loading": "Preparing your board...",
+      "back": "My goal",
+      "add_image": "Image",
+      "add_text": "Text",
+      "new_text": "New text",
+      "text_content": "Text",
+      "undo": "Undo",
+      "redo": "Redo",
+      "delete": "Delete",
+      "resize": "Resize",
+      "rotate": "Rotate",
+      "save": "Save",
+      "saved": "Your board is saved",
+      "unsaved": "Unsaved",
+      "limit_images": "A board can hold up to 20 images.",
+      "limit_texts": "A board can hold up to 30 text blocks.",
+      "image_unsupported": "Only JPG, PNG and WEBP images can be uploaded.",
+      "image_too_large": "The image must be smaller than 5 MB.",
+      "image_upload_failed": "The image could not be uploaded. Try again?",
+      "no_goal_title": "Pick your goal first",
+      "no_goal_body": "The board is built around your goal. Choose it on the map and this page will be waiting.",
+      "no_goal_cta": "Choose my goal",
+      "open_cta": "Design your board"
     }
   },
   "preferenceSimulation": {
