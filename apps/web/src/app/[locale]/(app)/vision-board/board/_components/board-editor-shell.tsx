@@ -115,6 +115,7 @@ export function BoardEditorShell() {
   const [detailCollapsed, setDetailCollapsed] = useState(false);
   const [colorTarget, setColorTarget] = useState<ColorPanelTarget | null>(null);
   const [previews, setPreviews] = useState<PreviewMap>({});
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const previewsRef = useRef<PreviewMap>({});
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -666,7 +667,38 @@ export function BoardEditorShell() {
           </AnimatePresence>
         </div>
 
-        <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto">
+        <div
+          className="relative flex min-h-0 flex-1 items-start justify-center overflow-auto"
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+            setIsDraggingOver(true);
+          }}
+          onDragLeave={(event) => {
+            if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+            setIsDraggingOver(false);
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            setIsDraggingOver(false);
+            if (event.dataTransfer.files.length) void addImages(event.dataTransfer.files);
+          }}
+        >
+          {isDraggingOver ? (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-[var(--radius-card)]"
+              style={{
+                border: "2px dashed var(--color-accent)",
+                backgroundColor: "var(--color-progress-track)",
+                opacity: 0.85,
+              }}
+            >
+              <span className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+                {t("drop_hint")}
+              </span>
+            </div>
+          ) : null}
           <div className="w-full max-w-full">
             <BoardFrame
               frame={state.doc.frame}
