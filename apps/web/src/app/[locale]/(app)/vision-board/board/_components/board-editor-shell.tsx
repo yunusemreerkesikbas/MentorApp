@@ -180,9 +180,15 @@ export function BoardEditorShell() {
   const handleSelect = useCallback(
     (id: string | null) => {
       setEditingTextId((current) => (current && current !== id ? null : current));
+      const item = id ? state.doc.items.find((candidate) => candidate.id === id) : null;
+      if (item) {
+        setColorTarget(null);
+        setActivePanel(item.kind === "text" ? "text" : item.kind === "image" ? "image" : "sticker");
+        setDetailCollapsed(false);
+      }
       dispatch({ type: "select", id });
     },
-    [dispatch],
+    [dispatch, state.doc.items],
   );
   const handleItemPointerDown = useCallback(
     (event: React.PointerEvent, item: VisionBoardItem) =>
