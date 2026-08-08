@@ -62,6 +62,7 @@ const StageItem = memo(function StageItem({
   item,
   selected,
   interactive,
+  hideContent,
   onSelect,
   onItemPointerDown,
   onItemDoubleClick,
@@ -70,6 +71,8 @@ const StageItem = memo(function StageItem({
   item: VisionBoardItem;
   selected: boolean;
   interactive: boolean;
+  /** True while an overlay (e.g. the inline text editor) fully replaces the item's own render. */
+  hideContent?: boolean;
   /** Must be referentially stable, or the memo above never skips anything. */
   onSelect?: (id: string | null) => void;
   onItemPointerDown?: (event: ReactPointerEvent, item: VisionBoardItem) => void;
@@ -115,7 +118,7 @@ const StageItem = memo(function StageItem({
         touchAction: interactive ? "none" : undefined,
       }}
     >
-      <BoardItemView item={item} />
+      {hideContent ? null : <BoardItemView item={item} />}
       {overlay}
     </div>
   );
@@ -131,6 +134,8 @@ export interface BoardStageProps {
   onPointerMove?: (event: ReactPointerEvent) => void;
   onPointerUp?: (event: ReactPointerEvent) => void;
   selectedId?: string | null;
+  /** The one item, if any, whose overlay fully replaces its own render (the inline text editor). */
+  contentHiddenId?: string | null;
   /** Selection outline + resize/rotate handles, rendered by the editor for the selected item. */
   renderOverlay?: (item: VisionBoardItem) => ReactNode;
   className?: string;
@@ -144,6 +149,7 @@ export function BoardStage({
   onPointerMove,
   onPointerUp,
   selectedId = null,
+  contentHiddenId = null,
   renderOverlay,
   className,
 }: BoardStageProps) {
@@ -179,6 +185,7 @@ export function BoardStage({
           item={item}
           selected={item.id === selectedId}
           interactive={interactive}
+          hideContent={item.id === contentHiddenId}
           onSelect={onSelect}
           onItemPointerDown={onItemPointerDown}
           onItemDoubleClick={onItemDoubleClick}

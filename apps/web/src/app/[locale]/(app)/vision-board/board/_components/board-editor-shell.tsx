@@ -730,6 +730,7 @@ export function BoardEditorShell() {
               <BoardStage
                 doc={docForRender}
                 selectedId={state.selectedId}
+                contentHiddenId={editingTextId}
                 onSelect={handleSelect}
                 onItemPointerDown={handleItemPointerDown}
                 onItemDoubleClick={handleItemDoubleClick}
