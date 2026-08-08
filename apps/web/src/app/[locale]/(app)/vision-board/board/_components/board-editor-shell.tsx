@@ -7,6 +7,7 @@ import {
   Download,
   ImagePlus,
   LayoutTemplate,
+  LoaderCircle,
   PanelTop,
   Redo2,
   Share2,
@@ -106,7 +107,9 @@ export function BoardEditorShell() {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(
+    null,
+  );
   const [exporting, setExporting] = useState(false);
   const [activePanel, setActivePanel] = useState<BoardPanelCategory | null>("board");
   const [detailCollapsed, setDetailCollapsed] = useState(false);
@@ -247,15 +250,18 @@ export function BoardEditorShell() {
         toast.error({ title: t("limit_images") });
         return;
       }
-      setUploading(true);
+      const queued = Array.from(files).slice(0, room);
+      setUploadProgress({ done: 0, total: queued.length });
       try {
-        for (const file of Array.from(files).slice(0, room)) {
+        for (const [index, file] of queued.entries()) {
           if (!isSupportedBoardImage(file)) {
             toast.error({ title: t("image_unsupported") });
+            setUploadProgress({ done: index + 1, total: queued.length });
             continue;
           }
           if (!isWithinBoardImageLimit(file)) {
             toast.error({ title: t("image_too_large") });
+            setUploadProgress({ done: index + 1, total: queued.length });
             continue;
           }
           const uploaded = await uploadBoardImage(file);
@@ -278,11 +284,12 @@ export function BoardEditorShell() {
               url: uploaded.url,
             },
           });
+          setUploadProgress({ done: index + 1, total: queued.length });
         }
       } catch {
         toast.error({ title: t("image_upload_failed") });
       } finally {
-        setUploading(false);
+        setUploadProgress(null);
       }
     },
     [dispatch, state.doc.items, t, toast],
@@ -525,7 +532,7 @@ export function BoardEditorShell() {
                       category={activePanel}
                       doc={state.doc}
                       selected={selected}
-                      uploading={uploading}
+                      uploadProgress={uploadProgress}
                       onAddText={addText}
                       onUploadImage={() => fileInput.current?.click()}
                       onAddSticker={addSticker}
@@ -583,6 +590,7 @@ export function BoardEditorShell() {
             <IconButton
               label={t("download")}
               disabled={exporting}
+              busy={exporting}
               onClick={() => void exportBoard("download", docForRender)}
             >
               <Download aria-hidden size={17} />
@@ -590,6 +598,7 @@ export function BoardEditorShell() {
             <IconButton
               label={t("share")}
               disabled={exporting}
+              busy={exporting}
               onClick={() => void exportBoard("share", docForRender)}
             >
               <Share2 aria-hidden size={17} />
@@ -597,20 +606,36 @@ export function BoardEditorShell() {
             <button
               type="button"
               disabled={saving}
+              aria-busy={saving || undefined}
               onClick={() => void save().then((ok) => ok && toast.success({ title: t("saved") }))}
-              className="h-11 rounded-full px-3 text-sm font-semibold disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              className="inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
               style={{ color: "var(--color-main)" }}
             >
+              {saving ? (
+                <LoaderCircle
+                  aria-hidden
+                  size={15}
+                  className="animate-spin motion-reduce:animate-none"
+                />
+              ) : null}
               {t("save")}
             </button>
             {state.doc.status === "PUBLISHED" ? null : (
               <button
                 type="button"
                 disabled={saving}
+                aria-busy={saving || undefined}
                 onClick={() => void publish()}
-                className="h-11 rounded-full px-3.5 text-sm font-semibold text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                className="inline-flex h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 style={{ backgroundColor: "var(--color-btn)" }}
               >
+                {saving ? (
+                  <LoaderCircle
+                    aria-hidden
+                    size={15}
+                    className="animate-spin motion-reduce:animate-none"
+                  />
+                ) : null}
                 {t("publish")}
               </button>
             )}
@@ -678,11 +703,13 @@ export function BoardEditorShell() {
 function IconButton({
   label,
   disabled,
+  busy,
   onClick,
   children,
 }: {
   label: string;
   disabled?: boolean;
+  busy?: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -690,13 +717,18 @@ function IconButton({
     <button
       type="button"
       aria-label={label}
+      aria-busy={busy || undefined}
       title={label}
-      disabled={disabled}
+      disabled={disabled || busy}
       onClick={onClick}
       className="inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-[var(--color-surface-container)] disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       style={{ color: "var(--color-main)" }}
     >
-      {children}
+      {busy ? (
+        <LoaderCircle aria-hidden size={17} className="animate-spin motion-reduce:animate-none" />
+      ) : (
+        children
+      )}
     </button>
   );
 }

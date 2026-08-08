@@ -11,6 +11,7 @@ import {
   type VisionBoardItem,
 } from "@mentor/types";
 import { useTranslations } from "next-intl";
+import { ProgressBar } from "@mentor/ui";
 import { STICKER_ART } from "@/components/vision-board/board-stickers";
 import { BOARD_COLORS, PLATE_COLORS } from "./board-palettes";
 import { BOARD_TEMPLATE_IDS, type BoardTemplateId } from "./board-templates";
@@ -27,7 +28,7 @@ export interface BoardSidePanelProps {
   category: BoardPanelCategory;
   doc: VisionBoardDoc;
   selected: VisionBoardItem | null;
-  uploading?: boolean;
+  uploadProgress?: { done: number; total: number } | null;
   onAddText: () => void;
   onUploadImage: () => void;
   onAddSticker: (asset: (typeof VISION_STICKERS)[number]) => void;
@@ -43,7 +44,7 @@ export function BoardSidePanel({
   category,
   doc,
   selected,
-  uploading,
+  uploadProgress,
   onAddText,
   onUploadImage,
   onAddSticker,
@@ -113,10 +114,13 @@ export function BoardSidePanel({
     return (
       <Panel>
         <PrimaryAction
-          label={uploading ? t("image_uploading") : t("add_image_cta")}
-          busy={uploading}
+          label={uploadProgress ? t("image_uploading") : t("add_image_cta")}
+          busy={uploadProgress != null}
           onClick={onUploadImage}
         />
+        {uploadProgress && uploadProgress.total > 1 ? (
+          <ProgressBar value={(uploadProgress.done / uploadProgress.total) * 100} />
+        ) : null}
         {selected?.kind === "image" ? (
           <>
             <Field label={t("image_frame")}>
