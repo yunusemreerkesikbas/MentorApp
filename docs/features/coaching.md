@@ -1469,3 +1469,30 @@ pnpm --filter @mentor/api test
   Spec: `vision.service.spec` +5 test (referanssız+eski → silinir · panoda geçen → kalır · yeni
   yüklenen → kalır · yaşı bilinmeyen → kalır · boş sayfada DB'ye gidilmez).
   Kurulum: [`docs/core/storage-r2.md`](docs/core/storage-r2.md).
+
+- **Editör cilası: çerçeve tekrarı, kayma, font, ilerleme, thumbnail, drag&drop (2026-08-08)** —
+  ekran görüntüsü incelemesinden çıkan sekiz düzeltme. Sidebar detay paneli
+  `--color-surface-container` (gri) yerine `--color-surface` kullanıyor artık. Context toolbar,
+  görsel çerçevesi seçeneklerini sidebar ile **birebir tekrar ediyordu** (metin buton + ilk 3 ikon)
+  — tek bir `Frame` ikon tetikleyicisine indirgendi, tam liste yalnız sidebar'da kalıyor.
+  Toolbar `AnimatePresence` ile mount/unmount olurken canvas'ı dikeyde kaydırıyordu (`flex-col`
+  içinde rezerve alan yoktu) — `min-h-[52px]` sarmalayıcı + `w-fit` ile hem kayma hem tam-genişlik
+  gerilmesi düzeltildi. Sol kolona `pt-4` boşluk eklendi.
+  **Font bug'ı:** `font: "heading"` görsel olarak `"body"` ile **birebir aynıydı**
+  (`--font-heading` → `globals.css`'te `--font-body`'ye alias) ve `serif` DESIGN sistemine
+  bağlanmamış sabit `Georgia` idi — `VISION_TEXT_FONTS` fiilen 4 değil 3 farklı görünüme sahipti.
+  Caveat/`--font-script` deseni izlenerek 5 yeni `next/font/google` yüklemesi eklendi (Poppins,
+  Playfair Display, Baloo 2, Oswald, Merriweather → `--font-vision-*`), enum 7 değere çıktı
+  (ek: `rounded`, `condensed`, `classic`). **Gotcha:** DOM render'ı (`board-item-view.tsx`
+  `FONT_STACKS`) ve canvas PNG exporter'ı (`board-export.ts` `FONT_FAMILIES`) **iki ayrı harita** —
+  biri güncellenip diğeri unutulursa ekrandaki pano indirilen PNG ile uyuşmaz; artık
+  `board-text-fonts.spec.ts` ikisinin anahtar kümesini `VISION_TEXT_FONTS`'a karşı doğruluyor.
+  Kaydet/yayınla/indir/paylaş'a `@mentor/ui` `Button`'daki spinner deseni eklendi; çoklu görsel
+  yüklemede `@mentor/ui` `ProgressBar` ile tamamlanan/toplam gösteriliyor (bayt bazlı değil, dosya
+  sayacı — `uploadBoardImage` hâlâ `fetch`, XHR'a geçmedi). Sidebar'ın "Görsel" kategorisine
+  panodaki görsellerin thumbnail grid'i eklendi, tıklayınca canvas'ta seçili hale geliyor. Canvas
+  alanına `onDragOver`/`onDrop` ile sürükle-bırak yükleme eklendi (mevcut `addImages` doğrulaması
+  aynen kullanılıyor — tip/boyut/limit kontrolleri tekrar yazılmadı).
+  İlgili: `board-editor-shell.tsx`, `board-context-toolbar.tsx`, `board-side-panel.tsx`,
+  `board-item-view.tsx`, `board-export.ts`, `[locale]/layout.tsx`, `packages/types/src/coaching.ts`,
+  `board-text-fonts.spec.ts`, `messages/{tr,en}.json` (+7 anahtar).
