@@ -420,7 +420,7 @@ export function BoardEditorShell() {
 
       <nav
         aria-label={t("editor_nav")}
-        className="mentor-scrollarea flex shrink-0 gap-1 overflow-x-auto border-b px-2 py-2 lg:w-16 lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:border-b-0 lg:border-e lg:px-1 lg:py-3"
+        className="mentor-scrollarea flex shrink-0 gap-1 overflow-x-auto border-b px-2 py-2 lg:w-16 lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:border-b-0 lg:border-e lg:px-1 lg:pb-3 lg:pt-4"
         style={{
           backgroundColor: "var(--color-surface)",
           borderColor: "rgba(17, 17, 17, 0.08)",

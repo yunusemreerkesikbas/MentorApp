@@ -330,7 +330,11 @@ export function BoardSidePanel({
 }
 
 function Panel({ children }: { children: ReactNode }) {
-  return <div className="mentor-scrollarea flex flex-col gap-3 overflow-y-auto p-3">{children}</div>;
+  return (
+    <div className="mentor-scrollarea flex flex-col gap-3 overflow-y-auto px-3 pb-3 pt-4">
+      {children}
+    </div>
+  );
 }
 
 function PrimaryAction({
