@@ -178,11 +178,14 @@ function drawImageItem(
   }
 }
 
-const FONT_FAMILIES: Record<VisionBoardTextItem["font"], string> = {
+export const FONT_FAMILIES: Record<VisionBoardTextItem["font"], string> = {
   body: '"Nunito Sans", sans-serif',
-  heading: '"Nunito Sans", sans-serif',
+  heading: '"Poppins", sans-serif',
   script: '"Caveat", cursive',
-  serif: 'Georgia, "Times New Roman", serif',
+  serif: '"Playfair Display", Georgia, serif',
+  rounded: '"Baloo 2", sans-serif',
+  condensed: '"Oswald", sans-serif',
+  classic: '"Merriweather", serif',
 };
 
 function drawTextItem(ctx: CanvasRenderingContext2D, item: VisionBoardTextItem): void {

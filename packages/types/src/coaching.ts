@@ -457,7 +457,15 @@ export const VISION_IMAGE_FRAMES = [
 export type VisionImageFrame = (typeof VISION_IMAGE_FRAMES)[number];
 
 /** Text families. Resolved to concrete `next/font` faces on the client; the document stays abstract. */
-export const VISION_TEXT_FONTS = ["body", "heading", "script", "serif"] as const;
+export const VISION_TEXT_FONTS = [
+  "body",
+  "heading",
+  "script",
+  "serif",
+  "rounded",
+  "condensed",
+  "classic",
+] as const;
 export type VisionTextFont = (typeof VISION_TEXT_FONTS)[number];
 
 export const VISION_TEXT_ALIGNS = ["left", "center", "right"] as const;

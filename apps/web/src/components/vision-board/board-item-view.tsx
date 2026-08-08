@@ -23,11 +23,14 @@ export function cq(px: number): string {
   return `${(px / VISION_BOARD_CANVAS.width) * 100}cqw`;
 }
 
-const FONT_STACKS: Record<VisionBoardTextItem["font"], string> = {
+export const FONT_STACKS: Record<VisionBoardTextItem["font"], string> = {
   body: "var(--font-body)",
-  heading: "var(--font-heading)",
+  heading: "var(--font-vision-heading, sans-serif)",
   script: "var(--font-script, cursive)",
-  serif: "Georgia, 'Times New Roman', serif",
+  serif: "var(--font-vision-serif, serif)",
+  rounded: "var(--font-vision-rounded, sans-serif)",
+  condensed: "var(--font-vision-condensed, sans-serif)",
+  classic: "var(--font-vision-classic, serif)",
 };
 
 /** Chrome around a photo. Each preset must be drawable by the canvas exporter too — keep it simple. */
