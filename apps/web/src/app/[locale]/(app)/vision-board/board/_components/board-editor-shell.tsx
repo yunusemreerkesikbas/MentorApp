@@ -617,25 +617,27 @@ export function BoardEditorShell() {
           </div>
         </div>
 
-        <AnimatePresence initial={false}>
-          {selected ? (
-            <BoardContextToolbar
-              key="context-toolbar"
-              selected={selected}
-              onPatch={patchSelected}
-              onCheckpoint={checkpoint}
-              onLayer={handleLayer}
-              onDuplicate={duplicateSelected}
-              onRemove={removeSelected}
-              onOpenColor={openColor}
-              onOpenImageFrames={() => {
-                setColorTarget(null);
-                setActivePanel("image");
-                setDetailCollapsed(false);
-              }}
-            />
-          ) : null}
-        </AnimatePresence>
+        <div className="flex min-h-[52px] shrink-0 items-center justify-center">
+          <AnimatePresence initial={false}>
+            {selected ? (
+              <BoardContextToolbar
+                key="context-toolbar"
+                selected={selected}
+                onPatch={patchSelected}
+                onCheckpoint={checkpoint}
+                onLayer={handleLayer}
+                onDuplicate={duplicateSelected}
+                onRemove={removeSelected}
+                onOpenColor={openColor}
+                onOpenImageFrames={() => {
+                  setColorTarget(null);
+                  setActivePanel("image");
+                  setDetailCollapsed(false);
+                }}
+              />
+            ) : null}
+          </AnimatePresence>
+        </div>
 
         <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto">
           <div className="w-full max-w-full">

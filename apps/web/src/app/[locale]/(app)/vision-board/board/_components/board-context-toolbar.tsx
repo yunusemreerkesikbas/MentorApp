@@ -58,7 +58,7 @@ export function BoardContextToolbar({
       animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
       exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
       transition={boardChromeTransition}
-      className="mentor-scrollarea flex shrink-0 items-center gap-0.5 overflow-x-auto rounded-[var(--radius-card)] px-1 py-1"
+      className="mentor-scrollarea flex w-fit max-w-full shrink-0 items-center gap-0.5 overflow-x-auto rounded-[var(--radius-card)] px-1 py-1"
       style={{
         backgroundColor: "var(--color-surface)",
         boxShadow: "var(--shadow-card)",
