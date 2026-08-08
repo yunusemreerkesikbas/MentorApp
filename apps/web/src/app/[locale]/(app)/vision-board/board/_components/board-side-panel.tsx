@@ -163,25 +163,27 @@ export function BoardSidePanel({
                 ))}
               </Row>
             </Field>
-            <Field label={`${t("rotation")} · ${Math.round(selected.rotation)}°`}>
+            <Field label={t("rotation")}>
               <Range
                 min={-180}
                 max={180}
                 value={selected.rotation}
                 label={t("rotation")}
+                unit="°"
                 onCommit={onCheckpoint}
                 onChange={(rotation) => onPatch({ rotation }, true)}
               />
             </Field>
-            <Field label={`${t("opacity")} · ${Math.round(selected.opacity * 100)}%`}>
+            <Field label={t("opacity")}>
               <Range
                 min={0}
-                max={1}
-                step={0.05}
-                value={selected.opacity}
+                max={100}
+                step={5}
+                value={selected.opacity * 100}
                 label={t("opacity")}
+                unit="%"
                 onCommit={onCheckpoint}
-                onChange={(opacity) => onPatch({ opacity }, true)}
+                onChange={(opacity) => onPatch({ opacity: opacity / 100 }, true)}
               />
             </Field>
           </>
@@ -209,12 +211,13 @@ export function BoardSidePanel({
                 ))}
               </div>
             </Field>
-            <Field label={`${t("size")} · ${selected.size}px`}>
+            <Field label={t("size")}>
               <Range
                 min={12}
                 max={160}
                 value={selected.size}
                 label={t("size")}
+                unit="px"
                 onCommit={onCheckpoint}
                 onChange={(size) => onPatch({ size }, true)}
               />
@@ -249,33 +252,36 @@ export function BoardSidePanel({
                 </Row>
               ) : null}
             </Field>
-            <Field label={`${t("line_height")} · ${selected.lineHeight.toFixed(1)}`}>
+            <Field label={t("line_height")}>
               <Range
                 min={0.8}
                 max={3}
                 step={0.1}
                 value={selected.lineHeight}
                 label={t("line_height")}
+                decimals={1}
                 onCommit={onCheckpoint}
                 onChange={(lineHeight) => onPatch({ lineHeight }, true)}
               />
             </Field>
-            <Field label={`${t("letter_spacing")} · ${selected.letterSpacing}px`}>
+            <Field label={t("letter_spacing")}>
               <Range
                 min={-10}
                 max={40}
                 value={selected.letterSpacing}
                 label={t("letter_spacing")}
+                unit="px"
                 onCommit={onCheckpoint}
                 onChange={(letterSpacing) => onPatch({ letterSpacing }, true)}
               />
             </Field>
-            <Field label={`${t("rotation")} · ${Math.round(selected.rotation)}°`}>
+            <Field label={t("rotation")}>
               <Range
                 min={-180}
                 max={180}
                 value={selected.rotation}
                 label={t("rotation")}
+                unit="°"
                 onCommit={onCheckpoint}
                 onChange={(rotation) => onPatch({ rotation }, true)}
               />
@@ -452,6 +458,8 @@ function Range({
   step = 1,
   value,
   label,
+  unit = "",
+  decimals = 0,
   onChange,
   onCommit,
 }: {
@@ -460,21 +468,40 @@ function Range({
   step?: number;
   value: number;
   label: string;
+  /** Appended to the value chip — "px", "°", "%", or left blank for a plain ratio. */
+  unit?: string;
+  decimals?: number;
   onChange: (value: number) => void;
   onCommit: () => void;
 }) {
+  const pct = ((value - min) / (max - min)) * 100;
   return (
-    <input
-      type="range"
-      aria-label={label}
-      min={min}
-      max={max}
-      step={step}
-      value={value}
-      onPointerDown={onCommit}
-      onKeyDown={onCommit}
-      onChange={(event) => onChange(Number(event.target.value))}
-      className="h-9 w-full accent-[var(--color-accent)]"
-    />
+    <div className="flex items-center gap-2">
+      <input
+        type="range"
+        aria-label={label}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onPointerDown={onCommit}
+        onKeyDown={onCommit}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="mentor-range h-1.5 w-full flex-1"
+        style={{
+          background: `linear-gradient(to right, var(--color-accent) ${pct}%, var(--color-surface-container) ${pct}%)`,
+        }}
+      />
+      <span
+        className="min-w-11 shrink-0 rounded-[var(--radius-card)] border px-2 py-1 text-center text-xs font-semibold"
+        style={{
+          borderColor: "rgba(17, 17, 17, 0.12)",
+          color: "var(--color-body)",
+        }}
+      >
+        {value.toFixed(decimals)}
+        {unit}
+      </span>
+    </div>
   );
 }

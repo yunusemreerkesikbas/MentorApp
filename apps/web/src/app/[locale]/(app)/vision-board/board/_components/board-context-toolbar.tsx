@@ -137,7 +137,10 @@ export function BoardContextToolbar({
           onPointerDown={onCheckpoint}
           onKeyDown={onCheckpoint}
           onChange={(event) => onPatch({ opacity: Number(event.target.value) }, true)}
-          className="w-16 accent-[var(--color-accent)]"
+          className="mentor-range h-1.5 w-16"
+          style={{
+            background: `linear-gradient(to right, var(--color-accent) ${selected.opacity * 100}%, var(--color-surface-container) ${selected.opacity * 100}%)`,
+          }}
         />
       </label>
 
