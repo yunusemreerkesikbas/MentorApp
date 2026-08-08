@@ -275,7 +275,7 @@ async function drawItem(ctx: CanvasRenderingContext2D, item: VisionBoardItem): P
       ctx.scale(item.width / 100, item.height / 100);
       ctx.translate(-50, -50);
       ctx.fillStyle = cssVar(art.fill.replace(/^var\((--[^)]+)\)$/, "$1"), "#111111");
-      ctx.fill(new Path2D(art.path));
+      ctx.fill(new Path2D(art.path), art.fillRule ?? "nonzero");
     }
   }
   ctx.restore();

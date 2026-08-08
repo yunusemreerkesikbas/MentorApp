@@ -3,18 +3,22 @@ import { VISION_STICKERS, type VisionSticker } from "@mentor/types";
 /**
  * What each built-in sticker actually draws.
  *
- * Two kinds on purpose. The career Puhus are the mascot art already shipped under
- * `public/mascot/career/` — same-origin PNGs, so the canvas exporter can draw them without CORS.
- * The five shapes are SVG path data rather than files: a star does not need a network request, it
- * scales for free, and `new Path2D(d)` lets the exporter draw the exact same outline the DOM shows.
+ * Two kinds on purpose. The Puhu images are mascot art already shipped under
+ * `public/mascot/career/` and `public/mascot/puhu/` — same-origin PNGs, so the canvas exporter
+ * can draw them without CORS. The shapes are SVG path data rather than files: a star does not
+ * need a network request, it scales for free, and `new Path2D(d)` lets the exporter draw the
+ * exact same outline the DOM shows.
  */
 
 export type StickerArt =
   | { kind: "image"; src: string }
-  | { kind: "path"; path: string; fill: string };
+  | { kind: "path"; path: string; fill: string; fillRule?: "nonzero" | "evenodd" };
 
 /** Paths are authored in a 0..100 box so both renderers can scale them the same way. */
-const SHAPES: Record<string, { path: string; fill: string }> = {
+const SHAPES: Record<
+  string,
+  { path: string; fill: string; fillRule?: "nonzero" | "evenodd" }
+> = {
   STAR: {
     path: "M50 4 L62 36 L96 38 L69 59 L79 93 L50 73 L21 93 L31 59 L4 38 L38 36 Z",
     fill: "var(--color-star)",
@@ -35,11 +39,56 @@ const SHAPES: Record<string, { path: string; fill: string }> = {
     path: "M50 6 C33 6 20 19 20 36 C20 58 50 94 50 94 C50 94 80 58 80 36 C80 19 67 6 50 6 Z M50 48 C43 48 38 43 38 36 C38 29 43 24 50 24 C57 24 62 29 62 36 C62 43 57 48 50 48 Z",
     fill: "var(--color-danger)",
   },
+  // Bullseye: three concentric circles, `evenodd` alternates ring / gap / centre dot for free.
+  TARGET: {
+    path: "M98 50 A48 48 0 1 0 2 50 A48 48 0 1 0 98 50 Z M82 50 A32 32 0 1 0 18 50 A32 32 0 1 0 82 50 Z M66 50 A16 16 0 1 0 34 50 A16 16 0 1 0 66 50 Z",
+    fill: "var(--color-danger)",
+    fillRule: "evenodd",
+  },
+  FLAG: {
+    path: "M20 6 L28 6 L28 96 L20 96 Z M28 12 L84 26 L28 42 Z",
+    fill: "var(--color-accent)",
+  },
+  CHECK: {
+    path: "M18 52 L38 72 L84 22 L74 12 L38 50 L28 40 Z",
+    fill: "var(--color-success)",
+  },
+  TROPHY: {
+    path: "M28 8 L72 8 L68 32 C68 46 58 56 50 56 C42 56 32 46 32 32 Z M46 56 L54 56 L54 66 L46 66 Z M30 66 L70 66 L76 80 L24 80 Z",
+    fill: "var(--color-star)",
+  },
+  ROCKET: {
+    path: "M50 4 C60 14 64 30 64 46 L64 66 L36 66 L36 46 C36 30 40 14 50 4 Z M36 58 L20 78 L36 70 Z M64 58 L80 78 L64 70 Z M42 66 L58 66 L50 92 Z",
+    fill: "var(--color-streak)",
+  },
+  GRADCAP: {
+    path: "M50 15 L92 35 L50 55 L8 35 Z M30 42 L70 42 L64 62 C64 68 36 68 36 62 Z",
+    fill: "var(--color-main)",
+  },
+  CROWN: {
+    path: "M15 55 L20 30 L35 55 L50 15 L65 55 L80 30 L85 55 L85 80 L15 80 Z",
+    fill: "var(--color-chip)",
+  },
+  LIGHTNING: {
+    path: "M58 4 L26 52 L46 52 L38 96 L76 42 L54 42 Z",
+    fill: "var(--color-star)",
+  },
+};
+
+/** Puhu's own expressions — distinct from the career mascots, which live under a different path. */
+const PUHU_IMAGES: Partial<Record<VisionSticker, string>> = {
+  PUHU_HAPPY: "/mascot/puhu/puhu-happy.png",
+  PUHU_PROUD: "/mascot/puhu/puhu-proud.png",
+  PUHU_ENCOURAGING: "/mascot/puhu/puhu-encouraging.png",
+  PUHU_SURPRISED: "/mascot/puhu/puhu-surprised.png",
+  PUHU_SLEEPY: "/mascot/puhu/puhu-sleepy.png",
 };
 
 function artFor(sticker: VisionSticker): StickerArt {
   const shape = SHAPES[sticker];
   if (shape) return { kind: "path", ...shape };
+  const puhu = PUHU_IMAGES[sticker];
+  if (puhu) return { kind: "image", src: puhu };
   // MASCOT_YAZILIM → /mascot/career/yazilim.png — the enum mirrors CAREER_GROUPS by construction.
   return {
     kind: "image",

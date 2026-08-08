@@ -329,7 +329,7 @@ export function BoardSidePanel({
                   <img src={art.src} alt="" className="h-8 w-8 object-contain" />
                 ) : (
                   <svg viewBox="0 0 100 100" className="h-7 w-7" aria-hidden>
-                    <path d={art.path} fill={art.fill} />
+                    <path d={art.path} fill={art.fill} fillRule={art.fillRule} />
                   </svg>
                 )}
               </button>
