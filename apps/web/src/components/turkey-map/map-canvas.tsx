@@ -133,7 +133,6 @@ export function MapCanvas({
     handlers,
   } = useMapViewport();
   const prevCityRef = useRef<string | null | undefined>(undefined);
-  const wasDockedRef = useRef(false);
   const [pinScale, setPinScale] = useState(PIN_SCALE_DESKTOP);
 
   useEffect(() => {
@@ -181,11 +180,24 @@ export function MapCanvas({
   const overlayParked = overlay != null && !overlayOnCity;
   const overlayVisible = overlayParked || overlayOnCity;
 
-  const justDocked = overlayOnCity && !wasDockedRef.current;
-  const justUndocked = !overlayOnCity && wasDockedRef.current;
-  const mascotSlide = justDocked || justUndocked;
+  /*
+   * "Did docking just flip?" — picks the mascot's transition below, so it has to be true on the
+   * render that actually COMMITS the flip; a wrong value teleports the mascot instead of sliding
+   * it. Previous value is held in state, not a ref: a render-time ref read taints every value
+   * derived from it, including the transition expression at the JSX site.
+   *
+   * Adjusting state during render instead would not work — React discards and re-runs the render,
+   * so the committed pass would always compute `false` and the slide would never play. Writing it
+   * from a layout effect keeps the flag alive for exactly one committed render, which is the
+   * behaviour this needs. The extra render is one per docking change, on user interaction.
+   */
+  const [wasDocked, setWasDocked] = useState(false);
+  const mascotSlide = wasDocked !== overlayOnCity;
   useLayoutEffect(() => {
-    wasDockedRef.current = overlayOnCity;
+    // The extra render is the point: it is what ends the one-commit window `mascotSlide` is true
+    // for. See the block comment above.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setWasDocked(overlayOnCity);
   }, [overlayOnCity]);
 
   const placed = useMemo<PlacedUniversity[]>(() => {
@@ -211,8 +223,13 @@ export function MapCanvas({
     return out.sort((a, b) => a.y - b.y);
   }, [cities, visibleUniversityIds]);
 
+  // Latest-callback ref, synced in an effect rather than during render (a render-time ref write
+  // is applied even by a render React throws away). Declared above the only effect that reads it,
+  // so the sync always commits first.
   const onHoverUniversityRef = useRef(onHoverUniversity);
-  onHoverUniversityRef.current = onHoverUniversity;
+  useEffect(() => {
+    onHoverUniversityRef.current = onHoverUniversity;
+  });
 
   // Search-result click: keep the hover card on the pin while zoom/pan animates (`viewBox` ticks).
   useEffect(() => {

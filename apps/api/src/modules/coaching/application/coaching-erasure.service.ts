@@ -6,9 +6,10 @@ import { CoachingErasureRepository } from "../infrastructure/coaching-erasure.re
  * KVKK erasure for the coaching module (W2). Admin calls this via the user anonymize flow — coaching
  * owns its own tables (workstreams §2), so admin never writes them directly.
  *
- * The DB scrub is atomic (one tx); the uploaded question photos are then deleted from storage
- * best-effort (`Promise.allSettled`, same as the mock-exam delete path) — a storage hiccup must not
- * roll back an erasure that already succeeded in the DB.
+ * The DB scrub is atomic (one tx); the user's uploaded images — question photos and vision-board
+ * collage photos — are then deleted from storage best-effort (`Promise.allSettled`, same as the
+ * mock-exam delete path), because a storage hiccup must not roll back an erasure that already
+ * succeeded in the DB.
  * Idempotent: re-running on an already-erased user is a no-op.
  */
 @Injectable()
@@ -29,7 +30,7 @@ export class CoachingErasureService {
     const failed = results.filter((r) => r.status === "rejected").length;
     if (failed > 0) {
       this.logger.warn(
-        `Coaching erasure: ${failed}/${photoStorageKeys.length} photo objects could not be deleted for user ${userId}`,
+        `Coaching erasure: ${failed}/${photoStorageKeys.length} image objects could not be deleted for user ${userId}`,
       );
     }
     this.logger.log(`Coaching data erased for user ${userId}`);

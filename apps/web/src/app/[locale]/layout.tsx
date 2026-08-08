@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Nunito_Sans } from "next/font/google";
+import { Caveat, Nunito_Sans } from "next/font/google";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
@@ -18,6 +18,15 @@ const sans = Nunito_Sans({
   subsets: ["latin", "latin-ext"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-body",
+});
+
+/* Handwriting face, used ONLY inside vision-board text items — never in app chrome, which stays on
+   the single DESIGN.md family. A collage needs a voice that is not the interface's. latin-ext for
+   the Turkish glyphs, same as above. */
+const script = Caveat({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "700"],
+  variable: "--font-script",
 });
 
 export function generateStaticParams() {
@@ -78,7 +87,7 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={sans.variable}>
+    <html lang={locale} className={`${sans.variable} ${script.variable}`}>
       {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla) inject body
           attributes pre-hydration; this silences only attribute diffs on <body>. */}
       <body suppressHydrationWarning>

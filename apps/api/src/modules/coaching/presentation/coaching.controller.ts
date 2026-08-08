@@ -5,6 +5,7 @@ import type {
   Paginated,
   TodayPanelResponse,
   CoachingAnalysisDto,
+  VisionBoardImageUploadUrlDto,
   VisionDto,
   WeeklyReviewDto,
   PreferenceSimulationAccessDto,
@@ -16,6 +17,7 @@ import { MoodService } from "../application/mood.service";
 import { MockExamService } from "../application/mock-exam.service";
 import { TodayService } from "../application/today.service";
 import { VisionService } from "../application/vision.service";
+import { VisionBoardImageService } from "../application/vision-board-image.service";
 import { WeeklyReviewService } from "../application/weekly-review.service";
 import { PreferenceSimulationService } from "../application/preference-simulation.service";
 import {
@@ -23,6 +25,8 @@ import {
   CreateMoodCheckinDto,
   ListMoodCheckinsQueryDto,
   UpsertVisionDto,
+  PutVisionBoardDto,
+  CreateVisionBoardImageUploadUrlDto,
   WeeklyReviewQueryDto,
   PutPreferenceSimulationDto,
   RefreshPreferenceSimulationDto,
@@ -38,6 +42,7 @@ export class CoachingController {
     private readonly mood: MoodService,
     private readonly mockExams: MockExamService,
     private readonly vision: VisionService,
+    private readonly visionBoardImages: VisionBoardImageService,
     private readonly weeklyReview: WeeklyReviewService,
     private readonly preferenceSimulation: PreferenceSimulationService,
   ) {}
@@ -101,6 +106,29 @@ export class CoachingController {
     @Body() dto: UpsertVisionDto,
   ): Promise<VisionDto> {
     return this.vision.upsert(user.id, dto);
+  }
+
+  /**
+   * Replace the collage document. Separate from the goal upsert on purpose — that one invalidates
+   * the cached premium AI note when the goal changes, and rearranging a board is not that.
+   * Read path is `GET vision` above, which already carries `board`.
+   */
+  @Put("vision/board")
+  @HttpCode(200)
+  putVisionBoard(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: PutVisionBoardDto,
+  ): Promise<VisionDto> {
+    return this.vision.putBoard(user.id, dto.board);
+  }
+
+  /** Presigned direct-to-R2 upload for one board photo; the client then PUTs the bytes itself. */
+  @Post("vision/board/image-upload-url")
+  createVisionBoardImageUploadUrl(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: CreateVisionBoardImageUploadUrlDto,
+  ): Promise<VisionBoardImageUploadUrlDto> {
+    return this.visionBoardImages.createUploadUrl(user.id, dto.contentType);
   }
 
   @Get("preference-simulation/access")

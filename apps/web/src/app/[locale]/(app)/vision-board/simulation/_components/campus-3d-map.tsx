@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
+import { importLibrary } from "@googlemaps/js-api-loader";
 import type {
   CampusCameraPresetDto,
   CampusExperienceDto,
 } from "@mentor/types";
 
-let loaderConfigured = false;
+import { buildGroundRelativeCameraOptions } from "./campus-camera";
+import { configureGoogleMapsLoader } from "./google-maps-loader";
 
 export function Campus3DMap({
   campus,
@@ -45,25 +46,13 @@ export function Campus3DMap({
   }, [camera]);
 
   useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     const host = hostRef.current;
-    if (!host || !apiKey) {
+    if (!host || !configureGoogleMapsLoader(locale)) {
       onErrorRef.current();
       return;
     }
 
     let active = true;
-    if (!loaderConfigured) {
-      setOptions({
-        key: apiKey,
-        v: "weekly",
-        language: locale,
-        region: "TR",
-        authReferrerPolicy: "origin",
-      });
-      loaderConfigured = true;
-    }
-
     void importLibrary("maps3d")
       .then((library) => {
         if (!active) return;
@@ -108,6 +97,10 @@ export function Campus3DMap({
 
         host.replaceChildren(map);
         mapRef.current = map;
+        map.flyCameraTo({
+          endCamera: buildGroundRelativeCameraOptions(initialCamera),
+          durationMillis: 0,
+        });
       })
       .catch(() => onErrorRef.current());
 
@@ -124,19 +117,14 @@ export function Campus3DMap({
     if (!map) return;
     if (reducedMotion) {
       map.stopCameraAnimation();
-      map.center = camera.center;
-      map.heading = camera.heading;
-      map.tilt = camera.tilt;
-      map.range = camera.range;
+      map.flyCameraTo({
+        endCamera: buildGroundRelativeCameraOptions(camera),
+        durationMillis: 0,
+      });
       return;
     }
     map.flyCameraTo({
-      endCamera: {
-        center: camera.center,
-        heading: camera.heading,
-        tilt: camera.tilt,
-        range: camera.range,
-      },
+      endCamera: buildGroundRelativeCameraOptions(camera),
       durationMillis: 1800,
     });
   }, [activePoiId, camera, reducedMotion]);

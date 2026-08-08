@@ -405,8 +405,175 @@ export interface VisionDto {
   careerGroup: CareerGroup | null;
   motivation: string | null;
   aiNote: string | null;
+  /**
+   * The collage the user designed on `/hedef/pano`; `null` until they open the editor. Carried on
+   * this DTO rather than behind its own GET so the panel card and the editor both get it in the
+   * single `/coaching/vision` round-trip they already make (no waterfall). Writing it is a
+   * separate endpoint — see `PUT /coaching/vision/board`.
+   */
+  board: VisionBoardDoc | null;
+  /**
+   * The reference ids above, resolved to display names — derived on read, never stored.
+   *
+   * Without this every consumer has to fall back to `targetCity`, the legacy free-text column the
+   * map never writes, and the goal silently renders without its city. That is the exact bug the AI
+   * note already hit; the panel card and the board's seed text read the same field.
+   */
+  targetNames: {
+    cityName: string | null;
+    universityName: string | null;
+    titleName: string | null;
+    institutionName: string | null;
+  };
   createdAt: string;
   updatedAt: string;
+}
+
+/* ------------------------------ vision board collage ------------------------------ */
+
+/**
+ * The fixed design space every board coordinate lives in. Items store absolute px here and the
+ * stage is CSS-scaled to whatever width it gets, so one document renders identically in the
+ * editor, in the panel card and in the exported PNG. 3:2 — the wall-pano proportion.
+ */
+export const VISION_BOARD_CANVAS = { width: 1620, height: 1080 } as const;
+
+/** Outer frame around the whole board. Pure CSS in the DOM, four rects in the canvas export. */
+export const VISION_BOARD_FRAMES = ["wood", "gallery", "none"] as const;
+export type VisionBoardFrame = (typeof VISION_BOARD_FRAMES)[number];
+
+/** Board backgrounds; textures are procedural (gradients/dots), so canvas can redraw them. */
+export const VISION_BOARD_TEXTURES = ["cork", "paper", "grid", "linen"] as const;
+export type VisionBoardTexture = (typeof VISION_BOARD_TEXTURES)[number];
+
+/** Per-image chrome. A preset enum, not free-form borders — every value must be canvas-drawable. */
+export const VISION_IMAGE_FRAMES = [
+  "none",
+  "polaroid",
+  "white",
+  "rounded",
+  "tape",
+] as const;
+export type VisionImageFrame = (typeof VISION_IMAGE_FRAMES)[number];
+
+/** Text families. Resolved to concrete `next/font` faces on the client; the document stays abstract. */
+export const VISION_TEXT_FONTS = ["body", "heading", "script", "serif"] as const;
+export type VisionTextFont = (typeof VISION_TEXT_FONTS)[number];
+
+export const VISION_TEXT_ALIGNS = ["left", "center", "right"] as const;
+export type VisionTextAlign = (typeof VISION_TEXT_ALIGNS)[number];
+
+/**
+ * Built-in sticker art. A closed enum, never a URL or a storage key: the board document is
+ * rendered as-is, so an arbitrary src field would be an image-injection hole. Ten career Puhus
+ * (the mascot art already shipped under `public/mascot/career/`) plus five shapes.
+ * Append-only — removing a value orphans it inside somebody's saved board.
+ */
+export const VISION_STICKERS = [
+  "MASCOT_SAGLIK",
+  "MASCOT_MUHENDISLIK",
+  "MASCOT_YAZILIM",
+  "MASCOT_HUKUK_KAMU",
+  "MASCOT_EGITIM",
+  "MASCOT_ISLETME",
+  "MASCOT_SOSYAL_ILETISIM",
+  "MASCOT_SANAT_TASARIM",
+  "MASCOT_FEN",
+  "MASCOT_MIMARLIK",
+  "STAR",
+  "HEART",
+  "SPARKLE",
+  "ARROW",
+  "PIN",
+] as const;
+export type VisionSticker = (typeof VISION_STICKERS)[number];
+
+/** Geometry shared by every item. `z` is the paint order; ties break on array index. */
+export interface VisionBoardItemBase {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** Degrees, -180..180. The slight tilt is what makes a grid of photos read as a collage. */
+  rotation: number;
+  opacity: number;
+  z: number;
+}
+
+export interface VisionBoardImageItem extends VisionBoardItemBase {
+  kind: "image";
+  /** R2 key under `vision-board/{userId}/`; the server rejects anyone else's prefix. */
+  storageKey: string;
+  frame: VisionImageFrame;
+  /**
+   * Read-only, added by the server on every read and stripped by the write schema — never stored.
+   *
+   * The client cannot build this itself: R2 returns an absolute CDN URL while the dev fake storage
+   * returns an API-relative path, so there is no base a `NEXT_PUBLIC_` var could carry. Round-trip
+   * it back on save if you like; `visionBoardDocSchema` drops it.
+   */
+  url?: string;
+}
+
+/**
+ * Styling is per block, not per character. That constraint is load-bearing: it is why the canvas
+ * exporter can stay a plain measure-and-fill loop and still match the DOM exactly. Adding inline
+ * runs means writing a text engine twice.
+ */
+export interface VisionBoardTextItem extends VisionBoardItemBase {
+  kind: "text";
+  text: string;
+  font: VisionTextFont;
+  /** px in canvas space. */
+  size: number;
+  color: string;
+  bold: boolean;
+  italic: boolean;
+  align: VisionTextAlign;
+  lineHeight: number;
+  letterSpacing: number;
+  /** The dark label plate behind quotes/tags. `null` = transparent text. */
+  background: { color: string; opacity: number; padding: number; radius: number } | null;
+  /**
+   * Set on the block seeded from the goal itself. Cleared the moment the user edits it, which is
+   * how a later goal change knows it may refresh this text without overwriting their words.
+   */
+  source?: "goal";
+}
+
+export interface VisionBoardStickerItem extends VisionBoardItemBase {
+  kind: "sticker";
+  asset: VisionSticker;
+}
+
+export type VisionBoardItem =
+  | VisionBoardImageItem
+  | VisionBoardTextItem
+  | VisionBoardStickerItem;
+
+export type VisionBoardStatus = "DRAFT" | "PUBLISHED";
+
+/**
+ * The whole collage. `status` lives inside the document rather than in its own column because no
+ * query filters on it yet; `version` is the migration handle for when the item shape changes.
+ */
+export interface VisionBoardDoc {
+  version: 1;
+  status: VisionBoardStatus;
+  frame: VisionBoardFrame;
+  background:
+    | { kind: "color"; value: string }
+    | { kind: "texture"; value: VisionBoardTexture };
+  items: VisionBoardItem[];
+}
+
+/** Presigned direct-to-R2 upload for one board photo. */
+export interface VisionBoardImageUploadUrlDto {
+  uploadUrl: string;
+  key: string;
+  expiresAt: string;
+  maxBytes: number;
 }
 
 /** Completed-week rule-based review (Europe/Istanbul, active exam scoped). */

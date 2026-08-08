@@ -145,6 +145,19 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Hedef panosu Canva-style editör chrome (2026-08-06)** — `/hedef/pano` far-left kategori
+  rail (Görsel / Metin / Çıkartma / Şablon / Pano) + collapsible detay paneli + seçim üst
+  contextual toolbar (+ renk paneli). App nav bu rotada gizlenir (community workspace ile aynı
+  full-bleed pattern). Yalnız mevcut Mentor özellikleri yeniden yerleştirildi; çizim/Araçlar
+  drill-down yok. Escape önce renk panelini, sonra detayı kapatır. **Motion (framer-motion):**
+  kategori aktif pill `layoutId`, detay paneli slide+fade, panel içeriği `mode="wait"` crossfade,
+  contextual toolbar enter/exit (y + opacity); hepsi DESIGN.md chrome 150–250ms +
+  `useReducedMotion` (opacity-only). Kullanım: kategoriye tıkla → detay açılır; öğe seç → üst
+  quick actions; renk swatch → sol renk paneli. Gotcha: `/vision-board` (harita) app nav’ı
+  göstermeye devam eder — yalnız `/vision-board/board`. İlgili: `layout.tsx`,
+  `board-editor-shell.tsx`, `board-side-panel.tsx`, `board-context-toolbar.tsx`,
+  `board-color-panel.tsx`, `board-chrome-motion.ts`, `board-palettes.ts`, `messages/{tr,en}.json`.
+
 - **Desktop coach FAB drag (2026-08-05)** — Fixed bottom-right Puhu entry can be press-dragged
   anywhere in the viewport (clamped to a 24px edge pad). Short click still opens `/coach`;
   position persists for the browser session via `sessionStorage`. Bounce pauses while dragging.
@@ -1293,3 +1306,166 @@ pnpm --filter @mentor/api test
   İlgili: `calendar.util.ts`, `content.service.ts`, `content.port.ts`, `users.service.ts`,
   `kpss.repository.ts`, `geo.controller.ts`, `exam-step.tsx`, `account-links-card.tsx`,
   `use-kpss-targets.ts`.
+
+- **Hedef panosu → kolaj panosu: veri + kontrat (2026-08-05, PR 1/3)** — Hedef bugüne kadar
+  *veriydi* (başlık + kariyer enum'ı + 4 referans id'si). Artık kullanıcının kendi görsellerini ve
+  metinlerini yerleştirdiği bir **kolaj** taşıyabiliyor. Bu PR yalnız backend + sözleşme; editör
+  (PR 2) ve stil/export/panel kartı (PR 3) ayrı.
+  **Tek `vision_boards.board jsonb` kolonu** (`0075_vision_board_document.sql`) —
+  `{ version, status, frame, background, items[] }`. Ayrı `vision_board_items` tablosu değil:
+  item'lar her zaman bütün doküman olarak okunup yazılıyor, satırlar yalnız join getirirdi.
+  `status` da doküman içinde; bugün hiçbir sorgu ona göre süzmüyor.
+  **🔴 Neden ayrı endpoint (bu PR'ın asıl mimari kararı):** `PUT /v1/coaching/vision/board`
+  yalnız `board` kolonunu yazar. `POST /vision` (hedef upsert'ü) içindeki `unchanged` predicate'i
+  hedef değiştiğinde premium AI notunu null'lıyor — bir çıkartmayı sürüklemek hedef değişikliği
+  **değildir**. İkisi tek uçtan geçseydi her sürükleme yeni bir LLM çağrısı faturalardı (§7).
+  `board` bu yüzden `unchanged`'e **girmiyor**; `vision.service.spec` bunu ayrı bir testle kilitliyor.
+  **Okuma yolu ayrı uç değil:** doküman `VisionDto.board` üzerinde geliyor. Panel kartı ve editör
+  zaten `GET /coaching/vision` çağırıyor; ikinci bir GET yalnız waterfall üretirdi (planda 3 uç
+  vardı, 2'ye indi).
+  **Güvenlik:** görsel key'i `vision-board/{userId}/{uuid}.{ext}` şeklinde; zod **biçimi**,
+  `putBoard` **sahipliği** doğruluyor (`foreign_storage_key`). Zod userId'yi bilemez, servis
+  biçimi tekrar kontrol etmez — ikisi birlikte kapıyı kapatıyor. `sticker.asset` kapalı bir enum,
+  serbest URL değil: doküman olduğu gibi render edildiği için `src` alanı görsel enjeksiyonu olurdu.
+  Limitler: 60 item / 20 görsel / 30 metin (jsonb her `/vision` okumasında dönüyor, panel kartı
+  görsellerin hepsini birden yüklüyor).
+  **KVKK — iki delik birden:** (1) board'dan çıkarılan fotoğrafın R2 objesi siliniyor
+  (`putBoard` eski/yeni key setlerini diff'liyor, tx dışında best-effort). Bu olmasa silinen
+  fotoğraf public URL'iyle sonsuza kadar kalırdı. (2) `coaching-erasure.repository` satırı silmeden
+  **önce** `board->items` key'lerini okuyor; jsonb dışında bu objelere işaret eden hiçbir şey yok,
+  satır gidince bir daha bulunamazlardı.
+  **Gotcha 1 (mimari):** orphan diff'i başta `updateBoard`'dan *sonra* `before.board` okuyordu ve
+  test fake'i aynı objeyi döndürdüğü için hiçbir şey silinmedi. Gerçek Drizzle detached satır
+  döndürdüğü için üretimde çalışırdı — yani sessizce repository'nin obje kimliğine bağlıydı.
+  Eski key seti artık yazmadan **önce** snapshot'lanıyor.
+  **Gotcha 2 (migration):** `drizzle-kit generate` **kullanılamıyor**. `0074` bilinçli olarak elle
+  yazılmış (backfill) ama `meta/0074_snapshot.json` hiç üretilmemiş; generator hâlâ `0073`'e karşı
+  diff alıp `kpss_postings.dataset_id`'yi soruyor ve zaten uygulanmış DDL'i yeniden üretiyor. `0075`
+  bu yüzden elle yazıldı. Snapshot zinciri onarılana kadar her şema değişikliği elle yazılacak.
+  **Gotcha 3 (test):** `vision.service.spec`'teki `USER` sabiti `"u1"` idi; board key şeması
+  userId'nin uuid olmasını şart koştuğu için gerçek bir uuid'ye çevrildi.
+  **Not:** `apps/web` build'i `popover-menu.tsx`'te framer-motion↔React 19 tip uyuşmazlığıyla
+  kırık — bu PR'dan önce de kırıktı (temiz ağaçta doğrulandı), burayla ilgisi yok.
+  Spec: `vision.service.spec` +11 test (AI notu korunuyor · yabancı key · hedefsiz board ·
+  orphan silme/koruma · goal upsert board'u ezmiyor · şema limitleri).
+  İlgili: `schema.ts`, `0075_vision_board_document.sql`, `vision-board.repository.ts`
+  (`updateBoard`), `vision.service.ts` (`putBoard`), `vision-board-image.service.ts`,
+  `coaching.controller.ts`, `coaching-erasure.repository.ts`, `r2-storage.adapter.ts`
+  (`vision-board/` prefix'i), `packages/validation/src/coaching.ts`, `packages/types/src/coaching.ts`.
+
+- **Hedef panosu → kolaj editörü çekirdeği (2026-08-06, PR 2/3)** — `/hedef/pano`
+  (`vision-board/board`) açıldı: görsel yükleme, metin bloğu, taşı/boyutlandır/döndür, undo/redo,
+  taslak kaydetme. Stil katmanı (arka planlar, fontlar, çıkartmalar, şablonlar), canvas export ve
+  panel kartı PR 3'te.
+  **Ölçüm yok — `cqw` var.** Sahne `container-type: inline-size` taşıyor ve her uzunluk
+  `cqw` cinsinden (`cq(px)` yardımcısı, 1620 birimlik tasarım uzayına göre). Böylece aynı doküman
+  tam ekran editörde de panel kartındaki küçük önizlemede de ResizeObserver olmadan doğru render
+  ediliyor. `cqw` konteynerin **genişliğinin** payı olduğu ve sahnenin oranı sabit olduğu için her
+  iki eksen de canvas genişliğine bölünüyor.
+  **`BoardStage` tek render kaynağı.** Editör seçim çerçevesini ve tutamakları sahnenin *etrafına*
+  sarıyor, içine değil — iki ayrı renderer yazılsaydı sapma yalnızca "panom panelde bozuk görünüyor"
+  olarak ortaya çıkardı.
+  **Tek pointer sistemi** (`use-item-gesture` + saf `board-gesture-math`). framer-motion `drag`
+  yalnız taşımayı çözerdi; resize/rotate matematiği zaten elle yazılacaktı ve tek elemanı paylaşan
+  iki sistem, sürüklemeden ölçeklemeye geçerken fotoğrafı zıplatır. Döndürülmüş bir öğe kendi
+  eksenlerinde büyüsün diye ekran deltası `toLocalDelta` ile öğenin eksenlerine çevriliyor.
+  **Görsel URL'i sunucudan geliyor.** `VisionBoardImageItem.url` her okumada türetiliyor, yazma
+  şeması tarafından atılıyor — client bunu üretemez: R2 mutlak CDN URL'i, dev'deki fake store ise
+  API-göreli bir yol döndürüyor, yani `NEXT_PUBLIC_` bir base'in taşıyabileceği ortak bir kök yok.
+  **Gotcha 1 (undo):** ilk sürümde gesture pointer-UP'ta commit ediyordu. Transient patch'ler
+  `doc`'u zaten ilerlettiği için undo yığınına sürüklemenin **bittiği** yer yazılıyordu ve undo
+  hiçbir şey yapmıyordu. Snapshot artık ilk harekette (`checkpoint`) alınıyor — dokümanın
+  sürükleme öncesi hali yalnız o an hâlâ mevcut. `use-board-reducer.spec` bunu kilitliyor.
+  **Gotcha 2 (`next build` tsconfig'i yeniden yazıyor):** `apps/web/tsconfig.json`'a konan JSONC
+  yorumları build sırasında dosyanın tümüyle yeniden üretilmesine ve `paths` girdilerinin
+  **silinmesine** yol açtı. Oraya asla açıklama yazma; gerekçe `apps/web/AGENTS.md`'de. Yorumsuz
+  girdiler build'e dayanıyor.
+  **Gotcha 3 (React tipleri):** `apps/admin` React 18 olduğu için pnpm `@types/react@18`'i hoist
+  ediyor; kendi `@types/react`'ini deklare etmeyen paketler (framer-motion) 18'in tiplerini
+  çözüyor, bizim kod ise 19'da. İki `ReactNode` birleşimi karşılıklı atanamıyor →
+  `motion.div`'e `ReactNode` değişkeni `children` olarak geçince derleme hatası. `apps/web`
+  `tsconfig` `paths`'inde React tipleri sabitlendi; `pnpm.overrides` çözemez (framer-motion'ın
+  override edilecek bir `@types/react` kenarı yok).
+  **Yan iş — `apps/web` testleri artık gerçekten çalışıyor.** `src/**/*.spec.ts` altında 9 dosya
+  birikmişti ama pakette `test` script'i yoktu, yani `turbo run test` paketi komple atlıyordu ve CI
+  onları hiç çalıştırmıyordu (dosyaların başındaki "apps/api'nin runner'ı kullanılıyor" notu
+  gerçekte işlemiyordu: api'nin vitest `include`'u apps/web'e ulaşmıyor). Vitest + `test` script'i
+  eklendi; bu, `vitest` çözülemediği için konmuş 9 bayat `@ts-expect-error` direktifini ve
+  `weekly-recap.spec.ts`'te gizli kalmış bir tip hatasını açığa çıkardı — hepsi temizlendi.
+  Toplam 122 test yeşil.
+  **Yan iş — React Compiler lint hataları.** `turbo` cache'i yeşil sonuç replay ettiği için 13
+  `react-hooks/refs` hatası gizli kalmıştı (`--force` ile ortaya çıktı). `use-map-viewport.ts`'teki
+  render-time ref yazımı **gereksizdi** (her `setView` zaten ref'i güncelliyor) → silindi;
+  `map-canvas`'taki latest-callback ref'i ve `desktop-coach-fab`'daki offset mirror'ı effect'e
+  taşındı; mascot docking bayrağı ref yerine state'e çevrildi (ref okuması türev zinciri boyunca
+  yayılıyor ve JSX kullanım noktasını da kirletiyordu). Hepsi 0 hataya indi.
+  Spec: `use-board-reducer.spec` 15 test (undo/redo, 30 adım sınırı, transient patch, z sıralaması),
+  `board-gesture-math.spec` 19 test (eksen dönüşümü, köşe resize, oran kilidi, açı normalizasyonu).
+  İlgili: `components/vision-board/{board-stage,board-item-view,board-frame,board-document,board-stickers}`,
+  `vision-board/board/_components/*`, `lib/vision-board-images.ts`, `i18n/routing.ts`,
+  `messages/{tr,en}.json` (`vision.board.*`, 23 anahtar).
+
+- **Hedef panosu → stil, export, yayınlama (2026-08-06, PR 3/3)** — Kolaj tamamlandı: arka planlar,
+  dış/görsel çerçeveleri, fontlar, çıkartmalar, şablonlar, bağlama duyarlı üst bar, PNG indirme,
+  cihazın paylaş sayfası, yayınlama ve panel kartının board görünümü.
+  **Export elle yazılmış Canvas 2D** (`board-export.ts`, ~300 satır) — html2canvas yok, sunucu
+  render yok. Doküman zaten "blok bazlı stille dikdörtgenler listesi", yani `drawImage`/`fillText`
+  onu doğrudan çiziyor. Bu **yalnızca metin modeli karakter değil blok bazlı olduğu için** geçerli;
+  satır içi biçimlendirme eklenirse bu dosya bir metin motoruna dönüşür.
+  **Sapma riskini kapatan şey:** satır sarma, `object-fit: cover` kırpması ve çerçeve içi boşlukları
+  `board-export-layout.ts`'te, DOM renderer'ıyla **paylaşılan saf fonksiyonlarda**. İki renderer'ın
+  sessizce ayrışması aksi halde ancak kullanıcı PNG'yi indirince fark edilirdi.
+  **Fontlar `document.fonts.ready` beklenerek** ölçülüyor — web font inmeden ölçüm yapmak metni
+  fallback yüze göre sarar ve PNG ekrandakinden farklı dizilir.
+  **Tainted canvas sessizce yutulmuyor:** `BoardExportTaintedError` ayrı bir mesaj gösteriyor
+  ("görseller indirmeye kapalı geldi"), çünkü boş bir PNG döndürmek kullanıcıya *kendi panosunun*
+  bozuk olduğunu düşündürürdü. R2 public bucket'ında CORS şart.
+  **`el yazısı` fontu (Caveat) yalnız pano metinlerinde** — uygulama kroması tek DESIGN.md ailesinde
+  kalıyor. Kolajın arayüzün sesinden farklı bir sese ihtiyacı var, chrome'un yok.
+  **Panel kartı stored thumbnail kullanmıyor:** yayınlanmış board, editörün kullandığı `BoardStage`
+  ile `readOnly` render ediliyor. Böylece thumbnail üretimi/yükleme/bayatlama/orphan temizliği diye
+  bir alt sistem hiç doğmadı ve pano her zaman güncel.
+  **Kaydet diyaloğu panoya davete dönüştü** — kullanıcı hedefine tam da o an bağlanıyor; reddetmek
+  onu haritada bırakıyor, pano opsiyonel kalıyor.
+  **Gotcha 1 (`blob:` URL'i):** `resolveApiUrl` yalnız http(s) tanıyor ve başka her şeyin başına API
+  base'ini ekliyor — yeni yüklenen fotoğrafın `blob:` önizlemesini hem editörde hem export'ta
+  bozuyordu. `boardImageSrc`/`needsCrossOrigin` bunu ayırıyor; `blob:` aynı origin olduğu için
+  `crossOrigin` de verilmemeli, yoksa düz bir yükleme gereksiz yere CORS isteğine dönüşüyor.
+  **Gotcha 2 (fake storage):** PR 1'de R2'ye `vision-board/` prefix'i eklenmişti ama
+  `fake-storage.controller.ts`'teki `limitsForKey` dalı unutulmuştu; dev'de default allowlist'e
+  (jpeg+png) düşüp **webp yüklemeleri reddediliyordu**. Eklendi.
+  **Gotcha 3 (`targetCity` bayat kolonu — kapandı):** `VisionDto.targetNames` artık okuma başına
+  çözülüyor. Harita yalnız `targetCityCode` yazdığı için panel kartındaki şehir chip'i ve panonun
+  seed metni boş kalıyordu; `resolveNames` null id'lerde kısa devre yaptığı için hedefi olmayan
+  kullanıcıya ek sorgu maliyeti yok.
+  **Gotcha 4 (şablon uygularken veri kaybı):** `applyTemplate` mevcut görselleri slot'lara
+  **yeniden akıtıyor**, silmiyor; sadece dokunulmamış `source: "goal"` metnini yeniden konumlandırıyor.
+  Bir düzen denemek yüzünden yüklenmiş fotoğrafları kaybetmek en kötü sürpriz olurdu.
+  Spec: `board-export-layout.spec` 27 test (satır sarma + uzun kelime kırma, cover kırpması, sıfır
+  boyutlu kaynak, çerçeve boşlukları, `blob:`/`data:`/mutlak/göreli URL ayrımı),
+  `vision.service.spec` 29 test (+`targetNames` çözümü).
+  İlgili: `board-export.ts`, `board-export-layout.ts`, `board-toolbar.tsx`, `board-templates.ts`,
+  `board-stickers.ts`, `vision-board-card.tsx`, `vision.service.ts` (`enrich`),
+  `fake-storage.controller.ts`, `[locale]/layout.tsx` (Caveat), `messages/{tr,en}.json` (82 anahtar).
+
+- **Vision board orphan süpürme + R2 hazırlığı (2026-08-07)** — `putBoard` panodan çıkarılan
+  fotoğrafları zaten siliyordu; göremediği sızıntı şuydu: **editörde görsel yükleyip hiç
+  kaydetmeden çıkan** kullanıcının objesi. Hiçbir kayıt ona işaret etmediği için bir daha
+  bulunamıyordu — ve bu, public URL'de duran kişisel veri demek (KVKK). Maliyet gerekçe değil,
+  ihmal edilebilir düzeyde.
+  `VisionService.cleanupOrphanImages()` + `VisionBoardMaintenanceService` (6 saatte bir, forum'un
+  `ForumMaintenanceService`'ini birebir izler). Forum'un aksine bekleyen-yükleme ledger'ı yok, o
+  yüzden bucket listeleniyor: `StoragePort.listObjects(prefix, limit)` eklendi (R2'de
+  `ListObjectsV2`, fake'te `.fake-storage` okuması).
+  **Süpürme coaching modülünde, forum cron'una eklenmedi** — `vision_boards` coaching'in tablosu,
+  forum servisinin ona uzanması bounded-context sınırını ihlal ederdi (workstreams §2).
+  **İki koruma:** 24 saatlik grace window (devam eden bir düzenleme oturumunun yüklemeleri
+  silinmemeli) ve **`lastModified` null ise obje "genç" sayılır** — bilinmeyen yaşta asla silme.
+  Referanslı anahtarlar SQL'de `jsonb_array_elements` ile açılıyor
+  (`listAllReferencedImageKeys`); tüm pano belgelerini API'ye taşıyıp atmak, fotoğraf sayısıyla
+  değil kolaj büyüklüğüyle ölçeklenirdi.
+  Ayrıca `content/articles` boyut limiti fake controller'dan `content.constants.ts`'e taşındı
+  (aynı sayı iki yerde duruyordu).
+  Spec: `vision.service.spec` +5 test (referanssız+eski → silinir · panoda geçen → kalır · yeni
+  yüklenen → kalır · yaşı bilinmeyen → kalır · boş sayfada DB'ye gidilmez).
+  Kurulum: [`docs/core/storage-r2.md`](docs/core/storage-r2.md).

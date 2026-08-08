@@ -4,6 +4,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -11,11 +12,17 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { Env } from "../../../config/env.validation";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import type { StoragePort, StorageUploadUrlResult } from "../../ports/storage.port";
+import type {
+  StorageObjectSummary,
+  StoragePort,
+  StorageUploadUrlResult,
+} from "../../ports/storage.port";
+import {
+  PRIVATE_PREFIX,
+  isPublicKey,
+} from "../../storage/storage-prefixes";
 
 const UPLOAD_EXPIRY_SEC = 900;
-const PRIVATE_PREFIX = "mock-exams/";
-const PUBLIC_PREFIXES = ["avatars/", "forum/", "content/"] as const;
 
 /**
  * Cloudflare R2 adapter (S3-compatible API). Requires R2_* env vars when STORAGE_PROVIDER=r2.
@@ -62,7 +69,9 @@ export class R2StorageAdapter implements StoragePort {
 
   private bucketForKey(key: string): string {
     if (key.startsWith(PRIVATE_PREFIX)) return this.privateBucket!;
-    if (PUBLIC_PREFIXES.some((prefix) => key.startsWith(prefix))) return this.publicBucket!;
+    if (isPublicKey(key)) return this.publicBucket!;
+    // Unknown prefix is rejected rather than defaulted: guessing "probably public" is how a
+    // private object ends up on the internet.
     throw new DomainError(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST);
   }
 
@@ -110,6 +119,23 @@ export class R2StorageAdapter implements StoragePort {
     } catch (err) {
       this.logger.warn(`R2 getObject failed for ${key}: ${String(err)}`);
       return null;
+    }
+  }
+
+  async listObjects(prefix: string, limit: number): Promise<StorageObjectSummary[]> {
+    this.ensureReady();
+    const bucket = this.bucketForKey(prefix);
+    try {
+      const res = await this.client!.send(
+        new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, MaxKeys: limit }),
+      );
+      return (res.Contents ?? []).flatMap((item) =>
+        item.Key ? [{ key: item.Key, lastModified: item.LastModified ?? null }] : [],
+      );
+    } catch (err) {
+      // A sweep must never take the caller down; an empty page just means "nothing to do now".
+      this.logger.warn(`R2 listObjects failed for ${prefix}: ${String(err)}`);
+      return [];
     }
   }
 

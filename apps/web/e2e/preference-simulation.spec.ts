@@ -154,20 +154,26 @@ test("kampüs turu, tercih ekleme ve autosave harita hatasında da çalışır",
   const api = await mockApi(page);
   await page.goto(`/hedef/simulasyon?universityId=${universityId}`);
 
-  await expect(page.getByTestId("campus-map-fallback")).toBeVisible();
+  await expect(page.getByTestId("campus-map-fallback")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: "Kuşbakışı" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByRole("button", { name: "Yürüyüş" })).toBeVisible();
   await expect(page.getByText("Kampüs durağı 1")).toBeVisible();
   await page.getByRole("button", { name: "Sonraki durak" }).click();
   await expect(page.getByText("Doğrulanmış kampüs bilgisi 2")).toBeVisible();
 
   await page.getByRole("tab", { name: "Tercihler" }).click();
-  await page.getByLabel("SAY").fill("42000");
+  await page.getByRole("spinbutton", { name: "SAY", exact: true }).fill("42000");
+  await expect.poll(() => api.savedBodies.at(-1)?.programCodes).toEqual([]);
   await page.getByLabel("Tüm YKS programlarında ara").fill("bilgisayar");
   await expect(page.getByText("Bilgisayar Mühendisliği")).toBeVisible();
   await page.getByRole("button", { name: "Ekle" }).click();
 
-  await expect.poll(() => api.savedBodies.length).toBeGreaterThan(0);
+  await expect.poll(() => api.savedBodies.at(-1)?.programCodes).toEqual(["102210277"]);
   expect(api.savedBodies.at(-1)).toMatchObject({
-    expectedRevision: 1,
+    expectedRevision: 2,
     ranks: { SAY: 42000 },
     programCodes: ["102210277"],
   });
@@ -179,6 +185,7 @@ async function mockApi(page: Page) {
   await page.addInitScript(() =>
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
   );
+  await page.route("https://maps.googleapis.com/**", (route) => route.abort());
 
   await page.route("http://localhost:3001/v1/**", async (route) => {
     const request = route.request();
@@ -207,6 +214,7 @@ async function mockApi(page: Page) {
     if (method === "PUT" && path === "/v1/coaching/preference-simulation") {
       const body = request.postDataJSON() as Record<string, unknown> & {
         ranks: Record<string, number | null>;
+        programCodes: string[];
       };
       savedBodies.push(body);
       return json(route, {
@@ -215,7 +223,7 @@ async function mockApi(page: Page) {
           ...initialSimulation.scenario!,
           revision: 2,
           ranks: { ...initialSimulation.scenario!.ranks, ...body.ranks },
-          items: [
+          items: body.programCodes.includes(search.items[0].code) ? [
             {
               snapshot: {
                 ...search.items[0],
@@ -232,7 +240,7 @@ async function mockApi(page: Page) {
                 direction: "AHEAD",
               },
             },
-          ],
+          ] : [],
         },
       });
     }

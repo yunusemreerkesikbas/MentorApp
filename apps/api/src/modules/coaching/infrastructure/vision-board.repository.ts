@@ -66,6 +66,27 @@ export class VisionBoardRepository {
     return rows[0]!;
   }
 
+  /**
+   * Replace the collage document. Touches `board` and nothing else — in particular it does NOT go
+   * through {@link upsert}'s `unchanged` predicate, because moving a photo is not a change of goal
+   * and must never invalidate the cached premium AI note (that would bill an LLM call per drag).
+   *
+   * Returns 0 rows when the user has no goal yet; the caller turns that into a 404 rather than
+   * silently creating a goal-less board.
+   */
+  async updateBoard(
+    tx: DatabaseTx,
+    userId: string,
+    board: unknown,
+  ): Promise<VisionBoardRow | undefined> {
+    const rows = await tx
+      .update(visionBoards)
+      .set({ board, updatedAt: sql`now()` })
+      .where(eq(visionBoards.userId, userId))
+      .returning();
+    return rows[0];
+  }
+
   /** Cache the premium AI motivation note in place (idempotent; tx owns RLS). */
   async setAiNote(
     tx: DatabaseTx,
@@ -78,6 +99,24 @@ export class VisionBoardRepository {
       .update(visionBoards)
       .set({ aiNote: note, aiModel: model, aiLocale: locale, aiNoteAt: new Date() })
       .where(eq(visionBoards.userId, userId));
+  }
+
+  /**
+   * Every image key referenced by any saved board, across all users.
+   *
+   * Unfolded in SQL rather than by loading documents into memory: the orphan sweep only needs the
+   * key strings, and shipping every board's full jsonb to the API to throw all of it away would
+   * scale with collage size instead of with photo count.
+   */
+  async listAllReferencedImageKeys(tx: DatabaseTx): Promise<string[]> {
+    const rows = await tx.execute<{ storage_key: string }>(sql`
+      SELECT item ->> 'storageKey' AS storage_key
+      FROM ${visionBoards}, jsonb_array_elements(${visionBoards.board} -> 'items') AS item
+      WHERE ${visionBoards.board} IS NOT NULL
+        AND item ->> 'kind' = 'image'
+        AND item ->> 'storageKey' IS NOT NULL
+    `);
+    return (rows.rows ?? []).map((row) => row.storage_key);
   }
 
   async findByUser(tx: DatabaseTx, userId: string): Promise<VisionBoardRow | undefined> {

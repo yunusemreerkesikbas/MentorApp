@@ -555,3 +555,17 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 - Slice-1 plan: [`plans/2026-06-22-forum-community-slice1-plan.md`](../plans/2026-06-22-forum-community-slice1-plan.md)
 - Seam: [economy.md](./economy.md) (XP on accepted answer), [i18n.md](./i18n.md) (topluluk namespace)
 - Status: [core/mvp-status.md](../core/mvp-status.md) (W7 breakdown)
+
+- **Ek anahtarı R2'de yönlendirilmiyordu (2026-08-07)** — `forum-attachments/{userId}/…` üretiliyor
+  ama R2 adapter'ının public prefix listesinde `forum/` yazıyordu. `"forum-attachments/"`,
+  `"forum/"` ile başlamadığı için `bucketForKey` `BAD_REQUEST` atardı: **`STORAGE_PROVIDER=r2`'ye
+  geçildiği an her ek yükleme, public URL üretimi ve silme kırılırdı.** Dev'de görünmüyordu çünkü
+  fake adapter prefix'e göre yönlendirme yapmıyor, fake controller ise doğru prefix'i tanıyordu.
+  CI de yakalamıyordu: adapter spec'i `"forum/thread/image.webp"` diye **hiçbir servisin
+  üretmediği** bir anahtarı test ediyordu.
+  Düzeltme prefix'i değiştirmekle bitmedi — asıl sorun iki bağımsız liste olmasıydı. Artık tek
+  kaynak: [`shared/storage/storage-prefixes.ts`](apps/api/src/shared/storage/storage-prefixes.ts);
+  hem R2 adapter'ı hem fake controller oradan okuyor. Spec'te her prefix için bir **drift testi**
+  var; `forum-attachments/` geri `forum/` yapılınca 2 test kırmızıya dönüyor (doğrulandı).
+  **Gotcha:** yeni bir yükleme özelliği eklerken prefix'i yalnız servise yazmak yetmez —
+  `storage-prefixes.ts`'e de eklenmeli, yoksa dev'de çalışıp production'da 400 verir.

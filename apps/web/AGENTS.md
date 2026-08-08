@@ -11,6 +11,20 @@
 - All React/Next.js code follows the **`vercel-react-best-practices`** skill (priority: async-waterfall → bundle → server).
 - Data comes from the **single API**: `@mentor/api-client` (NestJS `/v1`). Don't build a separate backend/route logic.
 - Server component by default; client only when needed. Turkish tone (§0), accessibility.
+- **Unit tests:** `pnpm --filter @mentor/web test` (Vitest, `src/**/*.spec.ts`, Node env — pure logic
+  only; anything needing a DOM belongs in `test:e2e`). CI runs it through `turbo run test`.
+- **`tsconfig.json` is rewritten by `next build`** — it drops JSONC comments and any key it does not
+  recognise, so never document anything inside that file. Two entries there are load-bearing and
+  must not be removed:
+  - `paths.react` / `paths.react-dom` pin React's types for the whole program, `node_modules`
+    `.d.ts` files included. `apps/admin` is React 18 (accepted deviation), so pnpm hoists
+    `@types/react@18` into `.pnpm/node_modules`, and any package that does not declare its own
+    `@types/react` — framer-motion is the one that bites — resolves 18's types while our code is on
+    19. The two `ReactNode` unions are not mutually assignable, so passing a `ReactNode` variable as
+    `children` to `motion.div` fails to compile. `pnpm.overrides` cannot fix it: framer-motion
+    declares no `@types/react` edge, and forcing 19 workspace-wide would break admin.
+  - After changing anything in `tsconfig.json`, run `pnpm --filter @mentor/web build` and re-read
+    the file to confirm the toolchain kept your change.
 
 The block below is managed by the Next.js toolchain (don't edit by hand):
 

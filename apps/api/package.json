@@ -16,6 +16,7 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "openapi:export": "ts-node -T scripts/export-openapi.ts",
+    "storage:check": "ts-node -T scripts/storage-check.ts",
     "seed:forum": "ts-node -T scripts/seed-forum.ts",
     "seed:analysis-demo": "ts-node -T scripts/seed-analysis-demo.ts",
     "db:generate": "drizzle-kit generate",

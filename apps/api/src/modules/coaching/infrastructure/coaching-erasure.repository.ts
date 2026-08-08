@@ -18,6 +18,20 @@ import { acquireUserPlanLock } from "./plan-task.repository";
 export const ERASED_TASK_TITLE = "Silinmiş görev";
 
 /**
+ * Storage keys of the photos inside a vision-board document. Defensive rather than typed: this
+ * runs on rows written by older versions of the app, and an erasure must not throw because one
+ * user's board predates a shape change — a key we fail to read is an object we never delete.
+ */
+function visionBoardImageKeys(board: unknown): string[] {
+  const items = (board as { items?: unknown })?.items;
+  if (!Array.isArray(items)) return [];
+  return items.flatMap((item) => {
+    const key = (item as { kind?: unknown; storageKey?: unknown })?.storageKey;
+    return typeof key === "string" && key.length > 0 ? [key] : [];
+  });
+}
+
+/**
  * KVKK erasure for coaching (W2). One SERVICE-ctx transaction so the scrub is atomic.
  *
  * Erased: everything the user typed or the AI wrote about them (mood/session notes, vision board,
@@ -43,6 +57,15 @@ export class CoachingErasureRepository {
       await tx
         .delete(mockExamPhotoCategorizations)
         .where(eq(mockExamPhotoCategorizations.userId, userId));
+
+      // Same for the vision board's collage photos: they are only ever named from inside the
+      // jsonb document, so once the row is gone nothing can find the objects again. Read them
+      // out first or they stay at a public R2 URL forever.
+      const boards = await tx
+        .select({ board: visionBoards.board })
+        .from(visionBoards)
+        .where(eq(visionBoards.userId, userId));
+      const boardImageKeys = boards.flatMap((row) => visionBoardImageKeys(row.board));
 
       // Wholly personal — drop the row.
       await tx.delete(visionBoards).where(eq(visionBoards.userId, userId));
@@ -71,7 +94,12 @@ export class CoachingErasureRepository {
         .set({ title: ERASED_TASK_TITLE })
         .where(eq(planTasks.userId, userId));
 
-      return { photoStorageKeys: photos.map((p) => p.storageKey) };
+      return {
+        photoStorageKeys: [
+          ...photos.map((p) => p.storageKey),
+          ...boardImageKeys,
+        ],
+      };
     });
   }
 }

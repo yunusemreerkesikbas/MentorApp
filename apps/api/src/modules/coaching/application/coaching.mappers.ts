@@ -10,6 +10,7 @@ import type {
   SessionPresetId,
   StudySessionDto,
   StudySessionStatus,
+  VisionBoardDoc,
   VisionDto,
 } from "@mentor/types";
 import type { MockExamSubjectRow } from "../infrastructure/mock-exam.repository";
@@ -137,6 +138,16 @@ export function toVisionDto(row: VisionBoardRow): VisionDto {
     careerGroup: row.careerGroup as CareerGroup | null,
     motivation: row.motivation,
     aiNote: row.aiNote,
+    // Cast, not parse: the column is only ever written through `visionBoardDocSchema`, and
+    // re-validating on every panel read would spend a schema walk on data we just wrote.
+    board: (row.board as VisionBoardDoc | null) ?? null,
+    // Filled in by VisionService, which owns the reference lookups; the mapper stays synchronous.
+    targetNames: {
+      cityName: null,
+      universityName: null,
+      titleName: null,
+      institutionName: null,
+    },
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

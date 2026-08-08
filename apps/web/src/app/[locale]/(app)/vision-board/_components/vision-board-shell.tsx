@@ -25,7 +25,7 @@ import {
   geoControllerGetCampusExperience,
 } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { HistorySideDrawer } from "@/components/history-side-panel";
 import { MenuSelect } from "@/components/menu-select";
@@ -74,10 +74,12 @@ function unwrap<T>(res: unknown): T | null {
 export function VisionBoardShell() {
   const translate = useTranslations("vision");
   const map = useTranslations("vision.map");
+  const board = useTranslations("vision.board");
   const common = useTranslations("common");
   const reduceMotion = useReducedMotion();
+  const router = useRouter();
   const { user } = useAuth();
-  const { info } = useMentorDialog();
+  const { confirm } = useMentorDialog();
 
   const [goalTitle, setGoalTitle] = useState("");
   const [targetCityCode, setTargetCityCode] = useState<string | null>(null);
@@ -221,6 +223,13 @@ export function VisionBoardShell() {
       : selectedCity
         ? selectedCity.name
         : null;
+  const simulationPilotUniversityId = useMemo(
+    () =>
+      cities
+        .flatMap((city) => city.universities)
+        .find((university) => university.slug === "selcuk-universitesi")?.id ?? null,
+    [cities],
+  );
   const simulationReady = Boolean(
     simulationAccess?.enabled &&
       targetUniversity &&
@@ -275,16 +284,15 @@ export function VisionBoardShell() {
     let active = true;
     if (
       !simulationAccess?.enabled ||
-      !targetUniversity ||
-      targetUniversity.slug !== "selcuk-universitesi"
+      !simulationPilotUniversityId
     ) {
       return () => {
         active = false;
       };
     }
-    void geoControllerGetCampusExperience(targetUniversity.id)
+    void geoControllerGetCampusExperience(simulationPilotUniversityId)
       .then(() => {
-        if (active) setSimulationReadyUniversityId(targetUniversity.id);
+        if (active) setSimulationReadyUniversityId(simulationPilotUniversityId);
       })
       .catch(() => {
         if (active) setSimulationReadyUniversityId(null);
@@ -292,7 +300,7 @@ export function VisionBoardShell() {
     return () => {
       active = false;
     };
-  }, [simulationAccess?.enabled, targetUniversity]);
+  }, [simulationAccess?.enabled, simulationPilotUniversityId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -313,11 +321,18 @@ export function VisionBoardShell() {
         careerGroup,
         motivation,
       });
-      await info({
+      /*
+       * The save confirmation doubles as the board's invitation — the one moment the user has just
+       * committed to a goal and is most likely to want to picture it. Declining keeps them here;
+       * the board stays optional either way.
+       */
+      const toBoard = await confirm({
         title: translate("saved_info_title"),
-        message: translate("saved_info_message"),
-        okLabel: translate("saved_info_ok"),
+        message: board("save_prompt"),
+        confirmLabel: board("save_prompt_cta"),
+        cancelLabel: translate("saved_info_ok"),
       });
+      if (toBoard) router.push("/vision-board/board");
     } catch (err) {
       setError(
         err instanceof ApiClientError ? err.body.message : translate("save_error"),
@@ -586,6 +601,16 @@ export function VisionBoardShell() {
             }
             onHoverRetain={cancelHoverHide}
             onHoverRelease={scheduleHoverHide}
+            simulation={
+              hover &&
+              simulationAccess?.enabled &&
+              simulationReadyUniversityId === hover.university.id
+                ? {
+                    universityId: hover.university.id,
+                    label: map("simulation_cta"),
+                  }
+                : null
+            }
             onOpen={(anchor) => {
               setSpotlightUniversityId(anchor.university.id);
               handleSelectCity(anchor.cityCode);
@@ -706,6 +731,7 @@ function VisionGoalFields({
   simulationUniversityId: string | null;
 }) {
   const translate = useTranslations("vision");
+  const board = useTranslations("vision.board");
   const stack = layout === "stack";
 
   return (
@@ -802,6 +828,18 @@ function VisionGoalFields({
       >
         {saving ? translate("saving") : translate("save")}
       </Button>
+
+      {/*
+       * Entry to the collage editor. Deliberately a plain link and not a redirect after save: the
+       * board is optional, and a goal is complete without one.
+       */}
+      <Link
+        href="/vision-board/board"
+        className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        style={{ color: "var(--color-secondary)" }}
+      >
+        {board("open_cta")}
+      </Link>
 
       <div className="w-full">
         <FormError message={error} />

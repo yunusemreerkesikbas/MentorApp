@@ -1,4 +1,3 @@
-// @ts-expect-error -- executed with apps/api's Vitest runner.
 import { describe, expect, it } from "vitest";
 import type { ForumCoachIntent } from "@mentor/types";
 import {

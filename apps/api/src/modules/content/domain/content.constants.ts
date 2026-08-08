@@ -41,3 +41,15 @@ export const ContentEventTopic = {
   ARTICLE_PUBLISHED: "content.article.published",
   ARTICLE_UPDATED: "content.article.updated",
 } as const;
+
+/**
+ * Article cover/body image upload cap. Lives here rather than inline in the service because the
+ * dev fake-storage controller enforces the same number on the way in — two copies of a limit is
+ * how one of them quietly stops matching the other.
+ *
+ * R2 cannot enforce this: a presigned PUT accepts whatever the client sends, so this is an
+ * advisory the client checks and the fake path enforces. Real protection is the bucket's
+ * lifecycle/orphan sweep, not this constant.
+ */
+export const ARTICLE_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+export const ARTICLE_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp"] as const;

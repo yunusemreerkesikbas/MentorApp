@@ -1,7 +1,11 @@
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Injectable } from "@nestjs/common";
-import type { StoragePort, StorageUploadUrlResult } from "../../ports/storage.port";
+import type {
+  StorageObjectSummary,
+  StoragePort,
+  StorageUploadUrlResult,
+} from "../../ports/storage.port";
 
 /** Local fake object store keyed by storage key (dev/test). */
 const memoryStore = new Map<string, { bytes: Buffer; contentType: string }>();
@@ -50,6 +54,30 @@ export class FakeStorageAdapter implements StoragePort {
     if (!row) return null;
     if (maxBytes !== undefined && row.bytes.length > maxBytes) return null;
     return row.bytes;
+  }
+
+  async listObjects(prefix: string, limit: number): Promise<StorageObjectSummary[]> {
+    const seen = new Map<string, Date | null>();
+    // Disk first, then the in-process map, so an object written this run is listed even before it
+    // has been read back from disk.
+    try {
+      const files = await readdir(storageRoot);
+      for (const file of files) {
+        if (file.endsWith(".json")) continue; // sidecar metadata, not an object
+        const key = decodeURIComponent(file);
+        if (!key.startsWith(prefix)) continue;
+        const info = await stat(path.join(storageRoot, file)).catch(() => null);
+        seen.set(key, info?.mtime ?? null);
+      }
+    } catch {
+      /* No .fake-storage directory yet — nothing has been uploaded. */
+    }
+    for (const key of memoryStore.keys()) {
+      if (key.startsWith(prefix) && !seen.has(key)) seen.set(key, new Date());
+    }
+    return [...seen.entries()]
+      .slice(0, limit)
+      .map(([key, lastModified]) => ({ key, lastModified }));
   }
 
   async deleteObject(key: string): Promise<void> {

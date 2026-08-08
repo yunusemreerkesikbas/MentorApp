@@ -50,6 +50,8 @@ export const routing = defineRouting({
       en: "/subscription/result",
     },
     "/vision-board": { tr: "/hedef", en: "/vision-board" },
+    /** Collage editor. `/hedef` stays the data step (map + goal form); this is the optional canvas. */
+    "/vision-board/board": { tr: "/hedef/pano", en: "/vision-board/board" },
     "/vision-board/simulation": {
       tr: "/hedef/simulasyon",
       en: "/vision-board/simulation",
