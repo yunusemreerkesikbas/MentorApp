@@ -12,6 +12,7 @@ import {
 } from "@mentor/types";
 import { useTranslations } from "next-intl";
 import { ProgressBar } from "@mentor/ui";
+import { FONT_DISPLAY_NAMES, FONT_STACKS } from "@/components/vision-board/board-item-view";
 import { STICKER_ART } from "@/components/vision-board/board-stickers";
 import { BOARD_COLORS, PLATE_COLORS } from "./board-palettes";
 import { BOARD_TEMPLATE_IDS, type BoardTemplateId } from "./board-templates";
@@ -172,7 +173,7 @@ export function BoardSidePanel({
                 ))}
               </Row>
             </Field>
-            <Field label={t("rotation")}>
+            <Field label={`${t("rotation")} · ${Math.round(selected.rotation)}°`}>
               <Range
                 min={-180}
                 max={180}
@@ -182,7 +183,7 @@ export function BoardSidePanel({
                 onChange={(rotation) => onPatch({ rotation }, true)}
               />
             </Field>
-            <Field label={t("opacity")}>
+            <Field label={`${t("opacity")} · ${Math.round(selected.opacity * 100)}%`}>
               <Range
                 min={0}
                 max={1}
@@ -209,35 +210,23 @@ export function BoardSidePanel({
         <PrimaryAction label={t("add_text_cta")} onClick={onAddText} />
         {selected?.kind === "text" ? (
           <>
-            <Field label={t("text_content")}>
-              <textarea
-                value={selected.text}
-                maxLength={280}
-                rows={3}
-                onFocus={onCheckpoint}
-                onChange={(event) =>
-                  onPatch({ text: event.target.value, source: undefined }, true)
-                }
-                className="w-full rounded-[var(--radius-card)] p-2 text-sm"
-                style={{
-                  backgroundColor: "var(--color-surface)",
-                  color: "var(--color-body)",
-                }}
-              />
-            </Field>
+            <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
+              {t("edit_on_canvas_hint")}
+            </p>
             <Field label={t("font")}>
-              <Row>
+              <div className="flex flex-col gap-1">
                 {VISION_TEXT_FONTS.map((font) => (
                   <Pill
                     key={font}
                     active={selected.font === font}
-                    label={t(`font_${font}`)}
+                    label={FONT_DISPLAY_NAMES[font]}
+                    fontFamily={FONT_STACKS[font]}
                     onClick={() => onPatch({ font })}
                   />
                 ))}
-              </Row>
+              </div>
             </Field>
-            <Field label={t("size")}>
+            <Field label={`${t("size")} · ${selected.size}px`}>
               <Range
                 min={12}
                 max={160}
@@ -277,7 +266,7 @@ export function BoardSidePanel({
                 </Row>
               ) : null}
             </Field>
-            <Field label={t("line_height")}>
+            <Field label={`${t("line_height")} · ${selected.lineHeight.toFixed(1)}`}>
               <Range
                 min={0.8}
                 max={3}
@@ -288,7 +277,7 @@ export function BoardSidePanel({
                 onChange={(lineHeight) => onPatch({ lineHeight }, true)}
               />
             </Field>
-            <Field label={t("letter_spacing")}>
+            <Field label={`${t("letter_spacing")} · ${selected.letterSpacing}px`}>
               <Range
                 min={-10}
                 max={40}
@@ -298,7 +287,7 @@ export function BoardSidePanel({
                 onChange={(letterSpacing) => onPatch({ letterSpacing }, true)}
               />
             </Field>
-            <Field label={t("rotation")}>
+            <Field label={`${t("rotation")} · ${Math.round(selected.rotation)}°`}>
               <Range
                 min={-180}
                 max={180}
@@ -421,10 +410,13 @@ function Row({ children }: { children: ReactNode }) {
 function Pill({
   active,
   label,
+  fontFamily,
   onClick,
 }: {
   active?: boolean;
   label: string;
+  /** Renders the pill's own label in the font it represents — a live preview, not just a name. */
+  fontFamily?: string;
   onClick: () => void;
 }) {
   return (
@@ -436,6 +428,7 @@ function Pill({
       style={{
         backgroundColor: active ? "var(--color-main)" : "var(--color-surface)",
         color: active ? "#ffffff" : "var(--color-body)",
+        fontFamily,
       }}
     >
       {label}

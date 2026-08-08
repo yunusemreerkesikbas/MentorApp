@@ -55,6 +55,7 @@ import { BoardContextToolbar } from "./board-context-toolbar";
 import type { ColorPanelTarget } from "./board-palettes";
 import { BoardSelectionOverlay } from "./board-selection-overlay";
 import { BoardSidePanel, type BoardPanelCategory } from "./board-side-panel";
+import { BoardTextInlineEditor } from "./board-text-inline-editor";
 import { applyTemplate } from "./board-templates";
 import { useBoardReducer } from "./use-board-reducer";
 import { useItemGesture } from "./use-item-gesture";
@@ -116,6 +117,7 @@ export function BoardEditorShell() {
   const [colorTarget, setColorTarget] = useState<ColorPanelTarget | null>(null);
   const [previews, setPreviews] = useState<PreviewMap>({});
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [rawEditingTextId, setEditingTextId] = useState<string | null>(null);
   const previewsRef = useRef<PreviewMap>({});
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -176,7 +178,10 @@ export function BoardEditorShell() {
   });
 
   const handleSelect = useCallback(
-    (id: string | null) => dispatch({ type: "select", id }),
+    (id: string | null) => {
+      setEditingTextId((current) => (current && current !== id ? null : current));
+      dispatch({ type: "select", id });
+    },
     [dispatch],
   );
   const handleItemPointerDown = useCallback(
@@ -184,6 +189,21 @@ export function BoardEditorShell() {
       gesture.begin(event, item, { kind: "move" }),
     [gesture],
   );
+  const handleItemDoubleClick = useCallback(
+    (item: VisionBoardItem) => {
+      if (item.kind !== "text") return;
+      checkpoint();
+      setEditingTextId(item.id);
+    },
+    [checkpoint],
+  );
+
+  // Derived, not stored: a deleted or undone-away item can't stay "being edited", and deriving it
+  // means there is nothing to resync in an effect when the item list changes underneath it.
+  const editingTextId =
+    rawEditingTextId && state.doc.items.some((item) => item.id === rawEditingTextId)
+      ? rawEditingTextId
+      : null;
 
   const selectedId = state.selectedId;
   const handleLayer = useCallback(
@@ -712,19 +732,29 @@ export function BoardEditorShell() {
                 selectedId={state.selectedId}
                 onSelect={handleSelect}
                 onItemPointerDown={handleItemPointerDown}
+                onItemDoubleClick={handleItemDoubleClick}
                 onPointerMove={gesture.move}
                 onPointerUp={gesture.end}
-                renderOverlay={(item) => (
-                  <BoardSelectionOverlay
-                    item={item}
-                    resizeLabel={t("resize")}
-                    rotateLabel={t("rotate")}
-                    resizeHandlers={(corner: ResizeCorner) =>
-                      gesture.handlersFor(item, { kind: "resize", corner })
-                    }
-                    rotateHandlers={gesture.handlersFor(item, { kind: "rotate" })}
-                  />
-                )}
+                renderOverlay={(item) =>
+                  item.kind === "text" && item.id === editingTextId ? (
+                    <BoardTextInlineEditor
+                      item={item}
+                      label={t("text_content")}
+                      onChange={(text) => patch(item.id, { text, source: undefined })}
+                      onDone={() => setEditingTextId(null)}
+                    />
+                  ) : (
+                    <BoardSelectionOverlay
+                      item={item}
+                      resizeLabel={t("resize")}
+                      rotateLabel={t("rotate")}
+                      resizeHandlers={(corner: ResizeCorner) =>
+                        gesture.handlersFor(item, { kind: "resize", corner })
+                      }
+                      rotateHandlers={gesture.handlersFor(item, { kind: "rotate" })}
+                    />
+                  )
+                }
               />
             </BoardFrame>
           </div>

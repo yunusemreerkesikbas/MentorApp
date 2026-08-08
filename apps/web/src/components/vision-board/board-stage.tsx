@@ -64,6 +64,7 @@ const StageItem = memo(function StageItem({
   interactive,
   onSelect,
   onItemPointerDown,
+  onItemDoubleClick,
   overlay,
 }: {
   item: VisionBoardItem;
@@ -72,6 +73,7 @@ const StageItem = memo(function StageItem({
   /** Must be referentially stable, or the memo above never skips anything. */
   onSelect?: (id: string | null) => void;
   onItemPointerDown?: (event: ReactPointerEvent, item: VisionBoardItem) => void;
+  onItemDoubleClick?: (item: VisionBoardItem) => void;
   overlay?: ReactNode;
 }) {
   return (
@@ -84,6 +86,14 @@ const StageItem = memo(function StageItem({
               event.stopPropagation();
               onSelect?.(item.id);
               onItemPointerDown?.(event, item);
+            }
+          : undefined
+      }
+      onDoubleClick={
+        interactive
+          ? (event) => {
+              event.stopPropagation();
+              onItemDoubleClick?.(item);
             }
           : undefined
       }
@@ -116,6 +126,7 @@ export interface BoardStageProps {
   /** Read-only surfaces (panel card, export preview) pass nothing else. */
   onSelect?: (id: string | null) => void;
   onItemPointerDown?: (event: ReactPointerEvent, item: VisionBoardItem) => void;
+  onItemDoubleClick?: (item: VisionBoardItem) => void;
   /** Delegated on the stage root so a drag keeps tracking wherever the pointer goes. */
   onPointerMove?: (event: ReactPointerEvent) => void;
   onPointerUp?: (event: ReactPointerEvent) => void;
@@ -129,6 +140,7 @@ export function BoardStage({
   doc,
   onSelect,
   onItemPointerDown,
+  onItemDoubleClick,
   onPointerMove,
   onPointerUp,
   selectedId = null,
@@ -169,6 +181,7 @@ export function BoardStage({
           interactive={interactive}
           onSelect={onSelect}
           onItemPointerDown={onItemPointerDown}
+          onItemDoubleClick={onItemDoubleClick}
           overlay={item.id === selectedId ? renderOverlay?.(item) : undefined}
         />
       ))}

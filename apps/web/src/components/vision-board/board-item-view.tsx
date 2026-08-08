@@ -33,6 +33,17 @@ export const FONT_STACKS: Record<VisionBoardTextItem["font"], string> = {
   classic: "var(--font-vision-classic, serif)",
 };
 
+/** The actual family name shown in the font picker — so a user picks by what it looks like. */
+export const FONT_DISPLAY_NAMES: Record<VisionBoardTextItem["font"], string> = {
+  body: "Nunito Sans",
+  heading: "Poppins",
+  script: "Caveat",
+  serif: "Playfair Display",
+  rounded: "Baloo 2",
+  condensed: "Oswald",
+  classic: "Merriweather",
+};
+
 /** Chrome around a photo. Each preset must be drawable by the canvas exporter too — keep it simple. */
 function frameStyle(frame: VisionImageFrame): CSSProperties {
   switch (frame) {
