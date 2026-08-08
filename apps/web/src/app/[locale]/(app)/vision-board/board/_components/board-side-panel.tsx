@@ -114,7 +114,7 @@ export function BoardSidePanel({
           <ProgressBar value={(uploadProgress.done / uploadProgress.total) * 100} />
         ) : null}
         {doc.items.some((item) => item.kind === "image") ? (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="grid grid-cols-2 gap-2">
             {doc.items
               .filter((item) => item.kind === "image")
               .map((item) => (
@@ -124,8 +124,11 @@ export function BoardSidePanel({
                   aria-label={t("select_image")}
                   aria-pressed={item.id === selectedId}
                   onClick={() => onSelectItem(item.id)}
-                  className="h-12 w-12 shrink-0 overflow-hidden rounded-[var(--radius-card)] focus-visible:outline-none"
+                  className="w-full overflow-hidden rounded-[var(--radius-card)] focus-visible:outline-none"
                   style={{
+                    // Box matches the photo's own placed proportions — a portrait shot gets a
+                    // portrait thumbnail, not a square crop guessing at what matters in it.
+                    aspectRatio: `${item.width} / ${item.height}`,
                     outline:
                       item.id === selectedId
                         ? "2px solid var(--color-focus-ring)"
@@ -182,11 +185,7 @@ export function BoardSidePanel({
               />
             </Field>
           </>
-        ) : (
-          <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
-            {t("image_panel_hint")}
-          </p>
-        )}
+        ) : null}
       </Panel>
     );
   }
@@ -197,9 +196,6 @@ export function BoardSidePanel({
         <PrimaryAction label={t("add_text_cta")} onClick={onAddText} />
         {selected?.kind === "text" ? (
           <>
-            <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
-              {t("edit_on_canvas_hint")}
-            </p>
             <Field label={t("font")}>
               <div className="flex flex-col gap-1">
                 {VISION_TEXT_FONTS.map((font) => (
@@ -285,11 +281,7 @@ export function BoardSidePanel({
               />
             </Field>
           </>
-        ) : (
-          <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
-            {t("text_panel_hint")}
-          </p>
-        )}
+        ) : null}
       </Panel>
     );
   }

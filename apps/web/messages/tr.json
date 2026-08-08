@@ -2001,8 +2001,6 @@
       "image_uploading": "Yükleniyor…",
       "select_image": "Görseli seç",
       "drop_hint": "Görseli buraya bırak",
-      "image_panel_hint": "Bir görsel seçince çerçevesini buradan ayarlayabilirsin.",
-      "text_panel_hint": "Bir metin seçince yazı tipi ve boyutu burada açılır.",
       "context_toolbar": "Seçim araçları",
       "rotate_90": "90° döndür",
       "duplicate": "Çoğalt",
