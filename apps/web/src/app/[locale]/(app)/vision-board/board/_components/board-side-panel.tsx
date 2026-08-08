@@ -493,14 +493,33 @@ function Range({
         }}
       />
       <span
-        className="min-w-11 shrink-0 rounded-[var(--radius-card)] border px-2 py-1 text-center text-xs font-semibold"
-        style={{
-          borderColor: "rgba(17, 17, 17, 0.12)",
-          color: "var(--color-body)",
-        }}
+        className="flex h-9 min-w-16 shrink-0 items-center justify-center gap-0.5 rounded-[var(--radius-card)] border px-1.5"
+        style={{ borderColor: "rgba(17, 17, 17, 0.12)" }}
       >
-        {value.toFixed(decimals)}
-        {unit}
+        <input
+          type="number"
+          aria-label={label}
+          min={min}
+          max={max}
+          step={step}
+          value={value.toFixed(decimals)}
+          onFocus={onCommit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur();
+          }}
+          onChange={(event) => {
+            const next = Number(event.target.value);
+            if (Number.isNaN(next)) return;
+            onChange(Math.min(max, Math.max(min, next)));
+          }}
+          className="w-full min-w-0 bg-transparent text-center text-xs font-semibold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          style={{ color: "var(--color-body)" }}
+        />
+        {unit ? (
+          <span className="shrink-0 text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
+            {unit}
+          </span>
+        ) : null}
       </span>
     </div>
   );
