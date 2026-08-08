@@ -28,10 +28,12 @@ export interface BoardSidePanelProps {
   category: BoardPanelCategory;
   doc: VisionBoardDoc;
   selected: VisionBoardItem | null;
+  selectedId: string | null;
   uploadProgress?: { done: number; total: number } | null;
   onAddText: () => void;
   onUploadImage: () => void;
   onAddSticker: (asset: (typeof VISION_STICKERS)[number]) => void;
+  onSelectItem: (id: string) => void;
   onApplyTemplate: (id: BoardTemplateId) => void;
   onPatch: (patch: Partial<VisionBoardItem>, transient?: boolean) => void;
   onCheckpoint: () => void;
@@ -44,10 +46,12 @@ export function BoardSidePanel({
   category,
   doc,
   selected,
+  selectedId,
   uploadProgress,
   onAddText,
   onUploadImage,
   onAddSticker,
+  onSelectItem,
   onApplyTemplate,
   onPatch,
   onCheckpoint,
@@ -120,6 +124,39 @@ export function BoardSidePanel({
         />
         {uploadProgress && uploadProgress.total > 1 ? (
           <ProgressBar value={(uploadProgress.done / uploadProgress.total) * 100} />
+        ) : null}
+        {doc.items.some((item) => item.kind === "image") ? (
+          <div className="flex flex-wrap gap-1.5">
+            {doc.items
+              .filter((item) => item.kind === "image")
+              .map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-label={t("select_image")}
+                  aria-pressed={item.id === selectedId}
+                  onClick={() => onSelectItem(item.id)}
+                  className="h-12 w-12 shrink-0 overflow-hidden rounded-[var(--radius-card)] focus-visible:outline-none"
+                  style={{
+                    outline:
+                      item.id === selectedId
+                        ? "2px solid var(--color-focus-ring)"
+                        : "1px solid rgba(0,0,0,0.08)",
+                    outlineOffset: "1px",
+                  }}
+                >
+                  {item.url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- small panel thumbnail, not an export target
+                    <img src={item.url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div
+                      className="h-full w-full"
+                      style={{ backgroundColor: "var(--color-surface-container)" }}
+                    />
+                  )}
+                </button>
+              ))}
+          </div>
         ) : null}
         {selected?.kind === "image" ? (
           <>

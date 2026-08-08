@@ -1976,6 +1976,8 @@
       "add_image_cta": "Upload image",
       "add_text_cta": "Add text box",
       "image_uploading": "Uploading…",
+      "select_image": "Select image",
+      "drop_hint": "Drop image here",
       "image_panel_hint": "Select an image to adjust its frame here.",
       "text_panel_hint": "Select a text block to edit font and size here.",
       "context_toolbar": "Selection tools",

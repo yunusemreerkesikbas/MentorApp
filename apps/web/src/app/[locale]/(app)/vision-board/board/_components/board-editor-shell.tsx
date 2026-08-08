@@ -532,10 +532,12 @@ export function BoardEditorShell() {
                       category={activePanel}
                       doc={state.doc}
                       selected={selected}
+                      selectedId={state.selectedId}
                       uploadProgress={uploadProgress}
                       onAddText={addText}
                       onUploadImage={() => fileInput.current?.click()}
                       onAddSticker={addSticker}
+                      onSelectItem={handleSelect}
                       onApplyTemplate={(id) =>
                         dispatch({ type: "replace", doc: applyTemplate(state.doc, id) })
                       }
