@@ -38,6 +38,7 @@ import {
   toExamCandidates,
 } from "../domain/calendar.util";
 import {
+  ARTICLE_IMAGE_MAX_BYTES,
   ExamEventType,
   InfoArticleCategory,
 } from "../domain/content.constants";
@@ -771,7 +772,7 @@ export class ContentService {
       key: signed.key,
       publicUrl: this.storage.getPublicUrl(signed.key),
       expiresAt: signed.expiresAt,
-      maxBytes: 5 * 1024 * 1024,
+      maxBytes: ARTICLE_IMAGE_MAX_BYTES,
     };
   }
 

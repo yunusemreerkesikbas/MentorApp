@@ -12,20 +12,45 @@ import {
   FORUM_FILE_MIME,
   FORUM_IMAGE_MIME,
 } from "../../modules/forum/domain/attachment.constants";
+import {
+  VISION_BOARD_IMAGE_MAX_BYTES,
+  VISION_BOARD_IMAGE_MIMES,
+} from "@mentor/validation";
+import {
+  ARTICLE_IMAGE_MAX_BYTES,
+  ARTICLE_IMAGE_MIMES,
+} from "../../modules/content/domain/content.constants";
 
 /** Forum accepts images + files; the authoritative per-kind size cap is enforced in resolveForumAttachments. */
 const FORUM_ATTACHMENT_MIME = new Set([...FORUM_IMAGE_MIME, ...FORUM_FILE_MIME]);
-const ARTICLE_IMAGE_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-/** Per-resource size + mime rules, keyed by the object's prefix (matches each upload-url endpoint). */
+/**
+ * Per-resource size + mime rules, keyed by the object's prefix.
+ *
+ * Prefixes come from `storage-prefixes.ts` — the same list the R2 adapter routes on — so a new
+ * upload feature cannot be accepted here while being rejected there (which is exactly how forum
+ * attachments ended up broken under R2 while working in dev).
+ */
 function limitsForKey(key: string): { maxBytes: number; allowedMime: Set<string> } {
-  if (key.startsWith("avatars/")) return { maxBytes: AVATAR_MAX_BYTES, allowedMime: AVATAR_ALLOWED_MIME };
+  if (key.startsWith("avatars/")) {
+    return { maxBytes: AVATAR_MAX_BYTES, allowedMime: AVATAR_ALLOWED_MIME };
+  }
   if (key.startsWith("forum-attachments/")) {
     return { maxBytes: FORUM_FILE_MAX_BYTES, allowedMime: FORUM_ATTACHMENT_MIME };
   }
-  if (key.startsWith("content/articles/")) {
-    return { maxBytes: 5 * 1024 * 1024, allowedMime: ARTICLE_IMAGE_MIME };
+  if (key.startsWith("content/")) {
+    return {
+      maxBytes: ARTICLE_IMAGE_MAX_BYTES,
+      allowedMime: new Set(ARTICLE_IMAGE_MIMES),
+    };
   }
+  if (key.startsWith("vision-board/")) {
+    return {
+      maxBytes: VISION_BOARD_IMAGE_MAX_BYTES,
+      allowedMime: new Set(VISION_BOARD_IMAGE_MIMES),
+    };
+  }
+  // `mock-exams/` — the private prefix, and the only one left.
   return { maxBytes: PHOTO_MAX_BYTES, allowedMime: PHOTO_ALLOWED_MIME };
 }
 

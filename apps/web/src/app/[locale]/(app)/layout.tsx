@@ -20,6 +20,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const t = useTranslations("panel");
   const isCommunityWorkspace =
     pathname === "/community" || pathname.startsWith("/community/");
+  // Full-bleed collage editor — Canva-style chrome owns the left edge (no app nav).
+  const isBoardEditorWorkspace = pathname === "/vision-board/board";
+  const hideAppChrome = isCommunityWorkspace || isBoardEditorWorkspace;
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/login");
@@ -45,10 +48,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         className="min-h-screen"
         style={{ backgroundColor: "var(--color-bg)" }}
       >
-        {isCommunityWorkspace ? null : <AppNav />}
+        {hideAppChrome ? null : <AppNav />}
         <div
           className={
-            isCommunityWorkspace
+            hideAppChrome
               ? "min-h-screen"
               : `min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0 lg:pl-60`
           }

@@ -1,14 +1,16 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
+  Footprints,
   GripVertical,
+  Map as MapIcon,
   Pause,
   Play,
   RotateCcw,
@@ -47,6 +49,13 @@ import { Button } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { MapCanvas } from "@/components/turkey-map/map-canvas";
 
+import { CampusWalkAvatar } from "./campus-walk-avatar";
+import {
+  initialCampusWalkState,
+  reduceCampusWalkState,
+} from "./campus-walk-state";
+import type { CampusWalkAvailability } from "./campus-street-view";
+
 const Campus3DMap = dynamic(
   () => import("./campus-3d-map").then((module) => module.Campus3DMap),
   {
@@ -57,8 +66,14 @@ const Campus3DMap = dynamic(
   },
 );
 
+const CampusStreetView = dynamic(
+  () => import("./campus-street-view").then((module) => module.CampusStreetView),
+  { ssr: false },
+);
+
 type PanelTab = "CAMPUS" | "PREFERENCES";
 type SaveState = "IDLE" | "SAVING" | "SAVED" | "ERROR";
+type CampusViewMode = "AERIAL" | "WALK";
 
 const EMPTY_RANKS: PreferenceRankProfileDto = {
   SAY: null,
@@ -88,6 +103,13 @@ export function SimulationShell({ universityId }: { universityId: string }) {
   const [activePoiIndex, setActivePoiIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [freeRoam, setFreeRoam] = useState(false);
+  const [viewMode, setViewMode] = useState<CampusViewMode>("AERIAL");
+  const [walkAvailability, setWalkAvailability] =
+    useState<CampusWalkAvailability>("CHECKING");
+  const [walkState, dispatchWalkEvent] = useReducer(
+    reduceCampusWalkState,
+    initialCampusWalkState,
+  );
   const [ranks, setRanks] = useState<PreferenceRankProfileDto>(EMPTY_RANKS);
   const [items, setItems] = useState<PreferenceScenarioItemDto[]>([]);
   const [revision, setRevision] = useState(0);
@@ -303,6 +325,21 @@ export function SimulationShell({ universityId }: { universityId: string }) {
     ? campus?.initialCamera
     : (activePoi?.camera ?? campus?.initialCamera);
 
+  function selectCampusPoi(index: number) {
+    setPlaying(false);
+    setFreeRoam(false);
+    setViewMode("AERIAL");
+    setTab("CAMPUS");
+    if (index === activePoiIndex) return;
+
+    setWalkAvailability("CHECKING");
+    const nextPoi = campus?.pois[index];
+    if (nextPoi) {
+      dispatchWalkEvent({ type: "POI_CHANGED", poiId: nextPoi.id });
+    }
+    setActivePoiIndex(index);
+  }
+
   function mutateDraft(mutator: () => void) {
     if (simulation?.stale) return;
     dirtyRef.current = true;
@@ -446,11 +483,7 @@ export function SimulationShell({ universityId }: { universityId: string }) {
             reducedMotion={reducedMotion}
             onSelectPoi={(poiId) => {
               const index = campus.pois.findIndex((poi) => poi.id === poiId);
-              if (index >= 0) {
-                setFreeRoam(false);
-                setActivePoiIndex(index);
-                setTab("CAMPUS");
-              }
+              if (index >= 0) selectCampusPoi(index);
             }}
             onError={() => setMapFailed(true)}
           />
@@ -475,7 +508,26 @@ export function SimulationShell({ universityId }: { universityId: string }) {
           </div>
         )}
 
-        <div className="absolute left-3 top-3 flex items-center gap-2">
+        {campus && activePoi ? (
+          <CampusStreetView
+            active={viewMode === "WALK" && walkAvailability === "AVAILABLE"}
+            poi={activePoi}
+            locale={locale}
+            onAvailabilityChange={(availability) => {
+              setWalkAvailability(availability);
+              if (availability === "UNAVAILABLE" || availability === "ERROR") {
+                setViewMode("AERIAL");
+              }
+            }}
+            onWalkEvent={dispatchWalkEvent}
+          />
+        ) : null}
+
+        {viewMode === "WALK" && walkAvailability === "AVAILABLE" ? (
+          <CampusWalkAvatar phase={walkState.phase} reducedMotion={reducedMotion} />
+        ) : null}
+
+        <div className="absolute left-3 top-3 z-30 flex items-center gap-2">
           <Link
             href="/vision-board"
             className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-[var(--color-surface)] shadow-[var(--shadow-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
@@ -488,42 +540,57 @@ export function SimulationShell({ universityId }: { universityId: string }) {
           </span>
         </div>
 
+        {campus && activePoi ? (
+          <CampusModeControl
+            mode={viewMode}
+            availability={walkAvailability}
+            onSelectAerial={() => setViewMode("AERIAL")}
+            onSelectWalk={() => {
+              if (walkAvailability !== "AVAILABLE") return;
+              setPlaying(false);
+              setFreeRoam(false);
+              setViewMode("WALK");
+            }}
+            t={t}
+          />
+        ) : null}
+
         {campus ? (
-          <div className="absolute bottom-[48%] left-3 flex flex-wrap gap-2 lg:bottom-4">
-            <MapControl
-              label={playing ? t("tour.pause") : t("tour.play")}
-              onClick={() => {
-                setFreeRoam(false);
-                setPlaying((current) => !current);
-              }}
-              icon={playing ? <Pause className="size-4" /> : <Play className="size-4" />}
-            />
+          <div className="absolute bottom-[48%] left-3 z-30 flex flex-wrap gap-2 lg:bottom-4">
+            {viewMode === "AERIAL" ? (
+              <MapControl
+                label={playing ? t("tour.pause") : t("tour.play")}
+                onClick={() => {
+                  setFreeRoam(false);
+                  setViewMode("AERIAL");
+                  setPlaying((current) => !current);
+                }}
+                icon={playing ? <Pause className="size-4" /> : <Play className="size-4" />}
+              />
+            ) : null}
             <MapControl
               label={t("tour.previous")}
-              onClick={() => {
-                setPlaying(false);
-                setFreeRoam(false);
-                setActivePoiIndex((current) => Math.max(0, current - 1));
-              }}
+              onClick={() => selectCampusPoi(Math.max(0, activePoiIndex - 1))}
               icon={<ChevronUp className="size-4" />}
             />
             <MapControl
               label={t("tour.next")}
-              onClick={() => {
-                setPlaying(false);
-                setFreeRoam(false);
-                setActivePoiIndex((current) => Math.min(campus.pois.length - 1, current + 1));
-              }}
+              onClick={() =>
+                selectCampusPoi(Math.min(campus.pois.length - 1, activePoiIndex + 1))
+              }
               icon={<ChevronDown className="size-4" />}
             />
-            <MapControl
-              label={t("tour.free_roam")}
-              onClick={() => {
-                setPlaying(false);
-                setFreeRoam(true);
-              }}
-              icon={<RotateCcw className="size-4" />}
-            />
+            {viewMode === "AERIAL" ? (
+              <MapControl
+                label={t("tour.free_roam")}
+                onClick={() => {
+                  setPlaying(false);
+                  setViewMode("AERIAL");
+                  setFreeRoam(true);
+                }}
+                icon={<RotateCcw className="size-4" />}
+              />
+            ) : null}
           </div>
         ) : null}
       </section>
@@ -550,7 +617,7 @@ export function SimulationShell({ universityId }: { universityId: string }) {
 
         <div className="mentor-scrollarea min-h-0 flex-1 overflow-y-auto p-4">
           {tab === "CAMPUS" ? (
-            <CampusPanel campus={campus} activePoiIndex={activePoiIndex} onSelect={setActivePoiIndex} t={t} />
+            <CampusPanel campus={campus} activePoiIndex={activePoiIndex} onSelect={selectCampusPoi} t={t} />
           ) : (
             <PreferencePanel
               simulation={simulation}
@@ -609,6 +676,81 @@ function MapControl({ label, onClick, icon }: { label: string; onClick: () => vo
     <button type="button" onClick={onClick} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[var(--color-surface)] px-3 text-sm font-semibold shadow-[var(--shadow-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]" aria-label={label}>
       {icon}<span className="hidden sm:inline">{label}</span>
     </button>
+  );
+}
+
+function CampusModeControl({
+  mode,
+  availability,
+  onSelectAerial,
+  onSelectWalk,
+  t,
+}: {
+  mode: CampusViewMode;
+  availability: CampusWalkAvailability;
+  onSelectAerial: () => void;
+  onSelectWalk: () => void;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  const walkDisabled = availability !== "AVAILABLE";
+
+  return (
+    <div className="absolute right-3 top-16 z-30 flex max-w-[calc(100%-1.5rem)] flex-col items-end gap-2 sm:top-3">
+      <div
+        className="grid grid-cols-2 rounded-full border bg-[var(--color-surface)] p-1 shadow-[var(--shadow-card)]"
+        style={{ borderColor: "var(--color-border)" }}
+        role="group"
+        aria-label={t("walk.mode_label")}
+      >
+        <button
+          type="button"
+          aria-pressed={mode === "AERIAL"}
+          onClick={onSelectAerial}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{
+            backgroundColor:
+              mode === "AERIAL" ? "var(--color-main)" : "transparent",
+            color:
+              mode === "AERIAL"
+                ? "var(--color-on-main)"
+                : "var(--color-secondary)",
+          }}
+        >
+          <MapIcon className="size-4" aria-hidden />
+          {t("walk.aerial")}
+        </button>
+        <button
+          type="button"
+          aria-pressed={mode === "WALK"}
+          disabled={walkDisabled}
+          onClick={onSelectWalk}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-50"
+          style={{
+            backgroundColor:
+              mode === "WALK" ? "var(--color-main)" : "transparent",
+            color:
+              mode === "WALK"
+                ? "var(--color-on-main)"
+                : "var(--color-secondary)",
+          }}
+        >
+          <Footprints className="size-4" aria-hidden />
+          {t("walk.street")}
+        </button>
+      </div>
+      <p
+        className="max-w-xs rounded-full bg-[var(--color-surface)] px-3 py-2 text-right text-xs font-semibold shadow-[var(--shadow-card)]"
+        style={{
+          color:
+            availability === "ERROR"
+              ? "var(--color-error)"
+              : "var(--color-secondary)",
+        }}
+        aria-live="polite"
+      >
+        {t(`walk.status.${availability}`)}
+      </p>
+    </div>
   );
 }
 

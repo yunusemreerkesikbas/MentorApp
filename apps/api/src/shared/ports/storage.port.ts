@@ -19,4 +19,18 @@ export interface StoragePort {
   readObject(key: string, maxBytes?: number): Promise<Buffer | null>;
   /** Best-effort cleanup for replaced user uploads. */
   deleteObject(key: string): Promise<void>;
+  /**
+   * One page of objects under a prefix, for orphan sweeps.
+   *
+   * Bounded rather than paginated on purpose: a sweep that runs on a timer should do a fixed
+   * amount of work per pass and let the next pass pick up the rest, not walk a whole bucket while
+   * holding an interval open.
+   */
+  listObjects(prefix: string, limit: number): Promise<StorageObjectSummary[]>;
+}
+
+export interface StorageObjectSummary {
+  key: string;
+  /** Null when the backend cannot report it; sweeps must then treat the object as too young. */
+  lastModified: Date | null;
 }

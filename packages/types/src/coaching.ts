@@ -412,6 +412,19 @@ export interface VisionDto {
    * separate endpoint — see `PUT /coaching/vision/board`.
    */
   board: VisionBoardDoc | null;
+  /**
+   * The reference ids above, resolved to display names — derived on read, never stored.
+   *
+   * Without this every consumer has to fall back to `targetCity`, the legacy free-text column the
+   * map never writes, and the goal silently renders without its city. That is the exact bug the AI
+   * note already hit; the panel card and the board's seed text read the same field.
+   */
+  targetNames: {
+    cityName: string | null;
+    universityName: string | null;
+    titleName: string | null;
+    institutionName: string | null;
+  };
   createdAt: string;
   updatedAt: string;
 }

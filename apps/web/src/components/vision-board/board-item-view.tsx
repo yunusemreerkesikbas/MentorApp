@@ -6,7 +6,7 @@ import {
   type VisionBoardTextItem,
   type VisionImageFrame,
 } from "@mentor/types";
-import { resolveApiUrl } from "@/lib/api-base";
+import { boardImageSrc, needsCrossOrigin } from "./board-export-layout";
 import { STICKER_ART } from "./board-stickers";
 
 /**
@@ -88,9 +88,9 @@ function ImageItemView({ item }: { item: VisionBoardImageItem }) {
          */
         // eslint-disable-next-line @next/next/no-img-element -- next/image drops `crossOrigin`
         <img
-          src={resolveApiUrl(item.url)}
+          src={boardImageSrc(item.url)}
           alt=""
-          crossOrigin="anonymous"
+          crossOrigin={needsCrossOrigin(item.url) ? "anonymous" : undefined}
           loading="lazy"
           draggable={false}
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}

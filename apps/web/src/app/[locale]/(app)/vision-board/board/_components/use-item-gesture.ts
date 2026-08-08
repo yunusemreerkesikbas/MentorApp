@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { VISION_BOARD_CANVAS, type VisionBoardItem } from "@mentor/types";
 import {
@@ -143,7 +143,12 @@ export function useItemGesture({ patch, checkpoint, lockRatioFor }: UseItemGestu
     [begin, end, move],
   );
 
-  return { begin, move, end, handlersFor, isDragging: () => session.current != null };
+  // Memoised so consumers can depend on the whole object without rebuilding their own callbacks
+  // every render — `BoardStage`'s memoised items rely on those staying stable.
+  return useMemo(
+    () => ({ begin, move, end, handlersFor, isDragging: () => session.current != null }),
+    [begin, end, handlersFor, move],
+  );
 }
 
 export type { ResizeCorner };

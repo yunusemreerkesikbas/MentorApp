@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import {
   VISION_BOARD_CANVAS,
@@ -29,8 +30,7 @@ const BACKGROUNDS: Record<string, CSSProperties> = {
   },
   paper: {
     backgroundColor: "#faf7f2",
-    backgroundImage:
-      "radial-gradient(rgba(0, 0, 0, 0.045) 1px, transparent 1.2px)",
+    backgroundImage: "radial-gradient(rgba(0, 0, 0, 0.045) 1px, transparent 1.2px)",
     backgroundSize: "5px 5px",
   },
   grid: {
@@ -51,11 +51,74 @@ function backgroundStyle(background: VisionBoardDoc["background"]): CSSPropertie
   return BACKGROUNDS[background.value] ?? BACKGROUNDS.paper!;
 }
 
+/**
+ * One placed item.
+ *
+ * Memoised, and that is what makes dragging smooth: a gesture patches only the item under the
+ * pointer, so every other item keeps its object identity and skips re-rendering entirely. Without
+ * this, one pointer move re-renders the whole board — twenty photos included.
+ */
+const StageItem = memo(function StageItem({
+  item,
+  selected,
+  interactive,
+  onSelect,
+  onItemPointerDown,
+  overlay,
+}: {
+  item: VisionBoardItem;
+  selected: boolean;
+  interactive: boolean;
+  /** Must be referentially stable, or the memo above never skips anything. */
+  onSelect?: (id: string | null) => void;
+  onItemPointerDown?: (event: ReactPointerEvent, item: VisionBoardItem) => void;
+  overlay?: ReactNode;
+}) {
+  return (
+    <div
+      data-board-item={item.id}
+      onPointerDown={
+        interactive
+          ? (event) => {
+              // Stop the stage's own handler from immediately clearing the selection.
+              event.stopPropagation();
+              onSelect?.(item.id);
+              onItemPointerDown?.(event, item);
+            }
+          : undefined
+      }
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        width: cq(item.width),
+        height: cq(item.height),
+        /*
+         * Position via `translate` rather than `left`/`top`: those trigger layout on every frame of
+         * a drag, a transform does not. `cqw` is a length unit (a share of the container's width),
+         * not a percentage of the element, so it composes correctly inside `translate`.
+         */
+        transform: `translate(${cq(item.x)}, ${cq(item.y)}) rotate(${item.rotation}deg)`,
+        transformOrigin: "center center",
+        opacity: item.opacity,
+        cursor: interactive ? (selected ? "move" : "pointer") : undefined,
+        touchAction: interactive ? "none" : undefined,
+      }}
+    >
+      <BoardItemView item={item} />
+      {overlay}
+    </div>
+  );
+});
+
 export interface BoardStageProps {
   doc: VisionBoardDoc;
   /** Read-only surfaces (panel card, export preview) pass nothing else. */
   onSelect?: (id: string | null) => void;
   onItemPointerDown?: (event: ReactPointerEvent, item: VisionBoardItem) => void;
+  /** Delegated on the stage root so a drag keeps tracking wherever the pointer goes. */
+  onPointerMove?: (event: ReactPointerEvent) => void;
+  onPointerUp?: (event: ReactPointerEvent) => void;
   selectedId?: string | null;
   /** Selection outline + resize/rotate handles, rendered by the editor for the selected item. */
   renderOverlay?: (item: VisionBoardItem) => ReactNode;
@@ -66,6 +129,8 @@ export function BoardStage({
   doc,
   onSelect,
   onItemPointerDown,
+  onPointerMove,
+  onPointerUp,
   selectedId = null,
   renderOverlay,
   className,
@@ -76,7 +141,16 @@ export function BoardStage({
   return (
     <div
       className={className}
+      data-board-stage={interactive ? "" : undefined}
       onPointerDown={interactive ? () => onSelect?.(null) : undefined}
+      /*
+       * Move/up live here, not on each item. Pointer capture keeps delivering events to the item
+       * that was pressed and they bubble to this root, so one pair of handlers serves every
+       * gesture — and a fast drag that leaves the item (or the stage) never drops it.
+       */
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
       style={{
         containerType: "inline-size",
         position: "relative",
@@ -87,40 +161,17 @@ export function BoardStage({
         ...backgroundStyle(doc.background),
       }}
     >
-      {ordered.map((item) => {
-        const selected = item.id === selectedId;
-        return (
-          <div
-            key={item.id}
-            data-board-item={item.id}
-            onPointerDown={
-              interactive
-                ? (event) => {
-                    // Stop the stage's own handler from immediately clearing the selection.
-                    event.stopPropagation();
-                    onSelect?.(item.id);
-                    onItemPointerDown?.(event, item);
-                  }
-                : undefined
-            }
-            style={{
-              position: "absolute",
-              left: cq(item.x),
-              top: cq(item.y),
-              width: cq(item.width),
-              height: cq(item.height),
-              transform: `rotate(${item.rotation}deg)`,
-              opacity: item.opacity,
-              cursor: interactive ? (selected ? "move" : "pointer") : undefined,
-              // Rotation happens about the middle so a tilted item stays where it looks like it is.
-              transformOrigin: "center center",
-            }}
-          >
-            <BoardItemView item={item} />
-            {selected ? renderOverlay?.(item) : null}
-          </div>
-        );
-      })}
+      {ordered.map((item) => (
+        <StageItem
+          key={item.id}
+          item={item}
+          selected={item.id === selectedId}
+          interactive={interactive}
+          onSelect={onSelect}
+          onItemPointerDown={onItemPointerDown}
+          overlay={item.id === selectedId ? renderOverlay?.(item) : undefined}
+        />
+      ))}
     </div>
   );
 }

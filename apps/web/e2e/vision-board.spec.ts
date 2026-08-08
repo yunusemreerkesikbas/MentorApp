@@ -1,8 +1,10 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import type {
   AuthUser,
+  CampusExperienceDto,
   GeoResponseDto,
   GeoSearchResultDto,
+  PreferenceSimulationAccessDto,
   UniversityProgramsDto,
 } from "@mentor/types";
 
@@ -122,6 +124,39 @@ const searchResult: GeoSearchResultDto = {
   institutions: [],
 };
 
+const simulationAccess: PreferenceSimulationAccessDto = {
+  enabled: true,
+  reason: null,
+  dataset: {
+    version: "yks-2026-guide-2025-placement-v1",
+    examType: "YKS",
+    guideYear: 2026,
+    placementYear: 2025,
+    officialPreferenceLimit: 24,
+    source: "ÖSYM 2026 YKS Kılavuzu",
+    sourceUrl: "https://www.osym.gov.tr/",
+    verifiedAt: "2026-08-02T00:00:00.000Z",
+  },
+};
+
+const campus: CampusExperienceDto = {
+  id: "33333333-3333-4333-8333-333333333333",
+  universityId: SELCUK.id,
+  universityName: SELCUK.name,
+  coverageStatus: "TERRAIN_ONLY",
+  renderMode: "HYBRID",
+  initialCamera: {
+    center: { lat: 38.024207, lng: 32.505705, altitude: 0 },
+    heading: 70,
+    tilt: 55,
+    range: 1_900,
+  },
+  source: "Selçuk Üniversitesi",
+  sourceUrl: "https://aday.selcuk.edu.tr/home/Kampuste_Yasam",
+  verifiedAt: "2026-08-08T00:00:00.000Z",
+  pois: [],
+};
+
 /**
  * Mobile: browse + form live in a left drawer. Desktop: persistent rail + top form.
  * Both Playwright projects run this file — open the drawer only below the `lg` breakpoint.
@@ -186,7 +221,7 @@ test("şehir seçilince üniversiteleri, üniversiteye girince bölümleri göst
   await selectKonya(page);
   const root = browseRoot(page);
 
-  await expect(root.getByText("Konya · 1 üniversite")).toBeVisible();
+  await expect(root.getByText("Konya · 2 üniversite")).toBeVisible();
   await root.getByRole("button", { name: SELCUK.name }).click();
 
   await expect(root.getByText("TEKNOLOJİ FAKÜLTESİ")).toBeVisible();
@@ -232,6 +267,21 @@ test("üniversite pinleri ülke görünümünde, zoom gerekmeden çizilir", asyn
   await expect(pins).toHaveCount(1);
 });
 
+test("Selçuk hover kartı hedef seçmeden 3D simülasyonu açar", async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) < 1024, "Hover action is desktop-only");
+  await mockVisionApi(page);
+  await page.goto("/hedef");
+
+  await page.locator(".mentor-tr-map-pin").hover();
+
+  const simulationLink = page.getByRole("link", { name: "3D simülasyonu aç" });
+  await expect(simulationLink).toBeVisible();
+  await expect(simulationLink).toHaveAttribute(
+    "href",
+    `/hedef/simulasyon?universityId=${SELCUK.id}`,
+  );
+});
+
 test("arama üniversite, şehir ve bölümde çalışır", async ({ page }) => {
   await mockVisionApi(page);
   await page.goto("/hedef");
@@ -262,6 +312,12 @@ async function mockVisionApi(page: Page) {
     }
     if (method === "GET" && path === "/v1/users/me") return json(route, user);
     if (method === "GET" && path === "/v1/content/geo") return json(route, geo);
+    if (method === "GET" && path.endsWith("/preference-simulation/access")) {
+      return json(route, simulationAccess);
+    }
+    if (method === "GET" && path.includes("/campus-experience")) {
+      return json(route, campus);
+    }
     if (method === "GET" && path === "/v1/content/geo/search") {
       return json(route, searchResult);
     }

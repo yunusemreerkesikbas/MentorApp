@@ -145,6 +145,19 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Hedef panosu Canva-style editör chrome (2026-08-06)** — `/hedef/pano` far-left kategori
+  rail (Görsel / Metin / Çıkartma / Şablon / Pano) + collapsible detay paneli + seçim üst
+  contextual toolbar (+ renk paneli). App nav bu rotada gizlenir (community workspace ile aynı
+  full-bleed pattern). Yalnız mevcut Mentor özellikleri yeniden yerleştirildi; çizim/Araçlar
+  drill-down yok. Escape önce renk panelini, sonra detayı kapatır. **Motion (framer-motion):**
+  kategori aktif pill `layoutId`, detay paneli slide+fade, panel içeriği `mode="wait"` crossfade,
+  contextual toolbar enter/exit (y + opacity); hepsi DESIGN.md chrome 150–250ms +
+  `useReducedMotion` (opacity-only). Kullanım: kategoriye tıkla → detay açılır; öğe seç → üst
+  quick actions; renk swatch → sol renk paneli. Gotcha: `/vision-board` (harita) app nav’ı
+  göstermeye devam eder — yalnız `/vision-board/board`. İlgili: `layout.tsx`,
+  `board-editor-shell.tsx`, `board-side-panel.tsx`, `board-context-toolbar.tsx`,
+  `board-color-panel.tsx`, `board-chrome-motion.ts`, `board-palettes.ts`, `messages/{tr,en}.json`.
+
 - **Desktop coach FAB drag (2026-08-05)** — Fixed bottom-right Puhu entry can be press-dragged
   anywhere in the viewport (clamped to a 24px edge pad). Short click still opens `/coach`;
   position persists for the browser session via `sessionStorage`. Bounce pauses while dragging.
@@ -1391,3 +1404,68 @@ pnpm --filter @mentor/api test
   İlgili: `components/vision-board/{board-stage,board-item-view,board-frame,board-document,board-stickers}`,
   `vision-board/board/_components/*`, `lib/vision-board-images.ts`, `i18n/routing.ts`,
   `messages/{tr,en}.json` (`vision.board.*`, 23 anahtar).
+
+- **Hedef panosu → stil, export, yayınlama (2026-08-06, PR 3/3)** — Kolaj tamamlandı: arka planlar,
+  dış/görsel çerçeveleri, fontlar, çıkartmalar, şablonlar, bağlama duyarlı üst bar, PNG indirme,
+  cihazın paylaş sayfası, yayınlama ve panel kartının board görünümü.
+  **Export elle yazılmış Canvas 2D** (`board-export.ts`, ~300 satır) — html2canvas yok, sunucu
+  render yok. Doküman zaten "blok bazlı stille dikdörtgenler listesi", yani `drawImage`/`fillText`
+  onu doğrudan çiziyor. Bu **yalnızca metin modeli karakter değil blok bazlı olduğu için** geçerli;
+  satır içi biçimlendirme eklenirse bu dosya bir metin motoruna dönüşür.
+  **Sapma riskini kapatan şey:** satır sarma, `object-fit: cover` kırpması ve çerçeve içi boşlukları
+  `board-export-layout.ts`'te, DOM renderer'ıyla **paylaşılan saf fonksiyonlarda**. İki renderer'ın
+  sessizce ayrışması aksi halde ancak kullanıcı PNG'yi indirince fark edilirdi.
+  **Fontlar `document.fonts.ready` beklenerek** ölçülüyor — web font inmeden ölçüm yapmak metni
+  fallback yüze göre sarar ve PNG ekrandakinden farklı dizilir.
+  **Tainted canvas sessizce yutulmuyor:** `BoardExportTaintedError` ayrı bir mesaj gösteriyor
+  ("görseller indirmeye kapalı geldi"), çünkü boş bir PNG döndürmek kullanıcıya *kendi panosunun*
+  bozuk olduğunu düşündürürdü. R2 public bucket'ında CORS şart.
+  **`el yazısı` fontu (Caveat) yalnız pano metinlerinde** — uygulama kroması tek DESIGN.md ailesinde
+  kalıyor. Kolajın arayüzün sesinden farklı bir sese ihtiyacı var, chrome'un yok.
+  **Panel kartı stored thumbnail kullanmıyor:** yayınlanmış board, editörün kullandığı `BoardStage`
+  ile `readOnly` render ediliyor. Böylece thumbnail üretimi/yükleme/bayatlama/orphan temizliği diye
+  bir alt sistem hiç doğmadı ve pano her zaman güncel.
+  **Kaydet diyaloğu panoya davete dönüştü** — kullanıcı hedefine tam da o an bağlanıyor; reddetmek
+  onu haritada bırakıyor, pano opsiyonel kalıyor.
+  **Gotcha 1 (`blob:` URL'i):** `resolveApiUrl` yalnız http(s) tanıyor ve başka her şeyin başına API
+  base'ini ekliyor — yeni yüklenen fotoğrafın `blob:` önizlemesini hem editörde hem export'ta
+  bozuyordu. `boardImageSrc`/`needsCrossOrigin` bunu ayırıyor; `blob:` aynı origin olduğu için
+  `crossOrigin` de verilmemeli, yoksa düz bir yükleme gereksiz yere CORS isteğine dönüşüyor.
+  **Gotcha 2 (fake storage):** PR 1'de R2'ye `vision-board/` prefix'i eklenmişti ama
+  `fake-storage.controller.ts`'teki `limitsForKey` dalı unutulmuştu; dev'de default allowlist'e
+  (jpeg+png) düşüp **webp yüklemeleri reddediliyordu**. Eklendi.
+  **Gotcha 3 (`targetCity` bayat kolonu — kapandı):** `VisionDto.targetNames` artık okuma başına
+  çözülüyor. Harita yalnız `targetCityCode` yazdığı için panel kartındaki şehir chip'i ve panonun
+  seed metni boş kalıyordu; `resolveNames` null id'lerde kısa devre yaptığı için hedefi olmayan
+  kullanıcıya ek sorgu maliyeti yok.
+  **Gotcha 4 (şablon uygularken veri kaybı):** `applyTemplate` mevcut görselleri slot'lara
+  **yeniden akıtıyor**, silmiyor; sadece dokunulmamış `source: "goal"` metnini yeniden konumlandırıyor.
+  Bir düzen denemek yüzünden yüklenmiş fotoğrafları kaybetmek en kötü sürpriz olurdu.
+  Spec: `board-export-layout.spec` 27 test (satır sarma + uzun kelime kırma, cover kırpması, sıfır
+  boyutlu kaynak, çerçeve boşlukları, `blob:`/`data:`/mutlak/göreli URL ayrımı),
+  `vision.service.spec` 29 test (+`targetNames` çözümü).
+  İlgili: `board-export.ts`, `board-export-layout.ts`, `board-toolbar.tsx`, `board-templates.ts`,
+  `board-stickers.ts`, `vision-board-card.tsx`, `vision.service.ts` (`enrich`),
+  `fake-storage.controller.ts`, `[locale]/layout.tsx` (Caveat), `messages/{tr,en}.json` (82 anahtar).
+
+- **Vision board orphan süpürme + R2 hazırlığı (2026-08-07)** — `putBoard` panodan çıkarılan
+  fotoğrafları zaten siliyordu; göremediği sızıntı şuydu: **editörde görsel yükleyip hiç
+  kaydetmeden çıkan** kullanıcının objesi. Hiçbir kayıt ona işaret etmediği için bir daha
+  bulunamıyordu — ve bu, public URL'de duran kişisel veri demek (KVKK). Maliyet gerekçe değil,
+  ihmal edilebilir düzeyde.
+  `VisionService.cleanupOrphanImages()` + `VisionBoardMaintenanceService` (6 saatte bir, forum'un
+  `ForumMaintenanceService`'ini birebir izler). Forum'un aksine bekleyen-yükleme ledger'ı yok, o
+  yüzden bucket listeleniyor: `StoragePort.listObjects(prefix, limit)` eklendi (R2'de
+  `ListObjectsV2`, fake'te `.fake-storage` okuması).
+  **Süpürme coaching modülünde, forum cron'una eklenmedi** — `vision_boards` coaching'in tablosu,
+  forum servisinin ona uzanması bounded-context sınırını ihlal ederdi (workstreams §2).
+  **İki koruma:** 24 saatlik grace window (devam eden bir düzenleme oturumunun yüklemeleri
+  silinmemeli) ve **`lastModified` null ise obje "genç" sayılır** — bilinmeyen yaşta asla silme.
+  Referanslı anahtarlar SQL'de `jsonb_array_elements` ile açılıyor
+  (`listAllReferencedImageKeys`); tüm pano belgelerini API'ye taşıyıp atmak, fotoğraf sayısıyla
+  değil kolaj büyüklüğüyle ölçeklenirdi.
+  Ayrıca `content/articles` boyut limiti fake controller'dan `content.constants.ts`'e taşındı
+  (aynı sayı iki yerde duruyordu).
+  Spec: `vision.service.spec` +5 test (referanssız+eski → silinir · panoda geçen → kalır · yeni
+  yüklenen → kalır · yaşı bilinmeyen → kalır · boş sayfada DB'ye gidilmez).
+  Kurulum: [`docs/core/storage-r2.md`](docs/core/storage-r2.md).

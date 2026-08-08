@@ -101,6 +101,24 @@ export class VisionBoardRepository {
       .where(eq(visionBoards.userId, userId));
   }
 
+  /**
+   * Every image key referenced by any saved board, across all users.
+   *
+   * Unfolded in SQL rather than by loading documents into memory: the orphan sweep only needs the
+   * key strings, and shipping every board's full jsonb to the API to throw all of it away would
+   * scale with collage size instead of with photo count.
+   */
+  async listAllReferencedImageKeys(tx: DatabaseTx): Promise<string[]> {
+    const rows = await tx.execute<{ storage_key: string }>(sql`
+      SELECT item ->> 'storageKey' AS storage_key
+      FROM ${visionBoards}, jsonb_array_elements(${visionBoards.board} -> 'items') AS item
+      WHERE ${visionBoards.board} IS NOT NULL
+        AND item ->> 'kind' = 'image'
+        AND item ->> 'storageKey' IS NOT NULL
+    `);
+    return (rows.rows ?? []).map((row) => row.storage_key);
+  }
+
   async findByUser(tx: DatabaseTx, userId: string): Promise<VisionBoardRow | undefined> {
     const rows = await tx
       .select()

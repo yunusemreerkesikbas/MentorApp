@@ -79,6 +79,15 @@ function makeVisionsFake() {
       row.board = board;
       return row;
     },
+    /** Mirrors the SQL unfold: image storage keys from every saved board. */
+    listAllReferencedImageKeys: async () => {
+      const items = (row?.board as { items?: { kind: string; storageKey?: string }[] } | null)
+        ?.items;
+      if (!Array.isArray(items)) return [];
+      return items.flatMap((item) =>
+        item.kind === "image" && item.storageKey ? [item.storageKey] : [],
+      );
+    },
     setAiNote: async (_tx: unknown, _userId: string, note: string) => {
       if (row) row.aiNote = note;
     },
@@ -89,14 +98,23 @@ function makeVisionsFake() {
 /** Records what the service asked storage to delete, so orphan cleanup is observable. */
 function makeStorageFake() {
   const deleted: string[] = [];
+  let listing: { key: string; lastModified: Date | null }[] = [];
   return {
     deleted,
+    setListing(next: { key: string; lastModified: Date | null }[]) {
+      listing = next;
+    },
     deleteObject: async (key: string) => {
       deleted.push(key);
     },
     getPublicUrl: (key: string) => `/fake-object?key=${key}`,
+    listObjects: async () => listing,
   };
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const longAgo = () => new Date(Date.now() - 3 * DAY_MS);
+const justNow = () => new Date();
 
 /** Item ids and object names are uuids (the client mints them with `crypto.randomUUID()`). */
 const uid = (n: number) => `${String(n).padStart(8, "0")}-0000-4000-8000-000000000000`;
@@ -146,6 +164,11 @@ function makeGeoFake(pairs: ReadonlyArray<readonly [string, string]>) {
   return {
     universityExistsInCity: async (universityId: string, cityCode: string) =>
       pairs.some(([u, c]) => u === universityId && c === cityCode),
+    /** Every read enriches the DTO with display names, so this is on the hot path now. */
+    resolveNames: async (cityCode: string | null, universityId: string | null) => ({
+      cityName: cityCode ? `il-${cityCode}` : null,
+      universityName: universityId ? `uni-${universityId.slice(0, 4)}` : null,
+    }),
   };
 }
 
@@ -262,6 +285,29 @@ describe("VisionService", () => {
     await service.setAiNote(USER, "Selçuk yolda!", "fake");
     await service.upsert(USER, goal);
     expect((await service.getMine(USER))?.aiNote).toBe("Selçuk yolda!");
+  });
+
+  /**
+   * The bug this closes: the map only ever writes `targetCityCode`, so every consumer reading the
+   * legacy `targetCity` column saw null — the panel chip vanished and the board seeded without a
+   * city. Names are now resolved on read.
+   */
+  it("resolves the target city name on read even when targetCity is null", async () => {
+    await service.upsert(USER, { goalTitle: "Tıp", targetCityCode: KONYA });
+    const dto = await service.getMine(USER);
+    expect(dto?.targetCity).toBeNull();
+    expect(dto?.targetNames.cityName).toBe(`il-${KONYA}`);
+  });
+
+  it("leaves the resolved names null when no target was picked", async () => {
+    await service.upsert(USER, { goalTitle: "Sadece hedef" });
+    const dto = await service.getMine(USER);
+    expect(dto?.targetNames).toEqual({
+      cityName: null,
+      universityName: null,
+      titleName: null,
+      institutionName: null,
+    });
   });
 
   it("stores a KPSS goal as title plus optional institution", async () => {
@@ -388,6 +434,52 @@ describe("VisionService", () => {
       await service.upsert(USER, { goalTitle: "Tıp" });
 
       expect((await service.getMine(USER))?.board?.items).toHaveLength(1);
+    });
+  });
+
+  /**
+   * `putBoard` cleans up photos removed from a board. This covers the other leak it cannot see:
+   * uploads from an editing session that was never saved. Those are personal data at a public URL
+   * with nothing left pointing at them (KVKK) — cost is not the reason this exists.
+   */
+  describe("cleanupOrphanImages", () => {
+    it("deletes an unreferenced object past the grace window", async () => {
+      await service.upsert(USER, { goalTitle: "Hukuk" });
+      storage.setListing([{ key: IMAGE_A, lastModified: longAgo() }]);
+
+      await expect(service.cleanupOrphanImages()).resolves.toEqual({ deleted: 1 });
+      expect(storage.deleted).toEqual([IMAGE_A]);
+    });
+
+    it("keeps an object a saved board still references", async () => {
+      await service.upsert(USER, { goalTitle: "Hukuk" });
+      await service.putBoard(USER, boardWith([imageItem(uid(1), IMAGE_A)]));
+      storage.deleted.length = 0;
+      storage.setListing([{ key: IMAGE_A, lastModified: longAgo() }]);
+
+      await expect(service.cleanupOrphanImages()).resolves.toEqual({ deleted: 0 });
+      expect(storage.deleted).toEqual([]);
+    });
+
+    /** An editing session in progress must not have its uploads pulled out from under it. */
+    it("keeps a freshly uploaded object even with no board referencing it", async () => {
+      await service.upsert(USER, { goalTitle: "Hukuk" });
+      storage.setListing([{ key: IMAGE_A, lastModified: justNow() }]);
+
+      await expect(service.cleanupOrphanImages()).resolves.toEqual({ deleted: 0 });
+    });
+
+    /** Missing metadata is treated as "too young" — never delete on an unknown age. */
+    it("keeps an object whose age cannot be determined", async () => {
+      await service.upsert(USER, { goalTitle: "Hukuk" });
+      storage.setListing([{ key: IMAGE_A, lastModified: null }]);
+
+      await expect(service.cleanupOrphanImages()).resolves.toEqual({ deleted: 0 });
+    });
+
+    it("does no database work when the bucket page is empty", async () => {
+      storage.setListing([]);
+      await expect(service.cleanupOrphanImages()).resolves.toEqual({ deleted: 0 });
     });
   });
 

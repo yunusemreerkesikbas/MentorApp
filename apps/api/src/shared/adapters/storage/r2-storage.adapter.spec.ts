@@ -3,6 +3,7 @@ import { S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "../../../config/env.validation";
+import { ALL_PREFIXES, PUBLIC_PREFIXES } from "../../storage/storage-prefixes";
 import { R2StorageAdapter } from "./r2-storage.adapter";
 
 const { send } = vi.hoisted(() => ({ send: vi.fn() }));
@@ -42,24 +43,78 @@ describe("R2StorageAdapter", () => {
     vi.clearAllMocks();
   });
 
-  it.each(["avatars/u/avatar.png", "forum/thread/image.webp", "content/articles/cover/a.webp"])(
-    "uploads public key %s to the public bucket",
-    async (key) => {
-      await adapter().createUploadUrl({ key, contentType: "image/png" });
-
-      const command = vi.mocked(getSignedUrl).mock.calls[0]?.[1] as { input: { Bucket: string } };
-      expect(command.input.Bucket).toBe("mentor-public");
+  /*
+   * REAL keys, copied from the services that mint them — not plausible-looking ones.
+   *
+   * The previous version of this table asserted on "forum/thread/image.webp", a key no service has
+   * ever produced. The actual prefix is `forum-attachments/`, which the adapter did not route, so
+   * every forum attachment would have failed under STORAGE_PROVIDER=r2 while this suite stayed
+   * green. If you add an upload feature, add its real key here and to `storage-prefixes.ts`.
+   */
+  const REAL_KEYS: { key: string; bucket: string; source: string }[] = [
+    {
+      key: "avatars/6f1c.../a3d1-....png",
+      bucket: "mentor-public",
+      source: "identity/application/users.service.ts",
     },
-  );
+    {
+      key: "forum-attachments/6f1c.../a3d1-....webp",
+      bucket: "mentor-public",
+      source: "forum/application/forum-thread.service.ts",
+    },
+    {
+      key: "content/articles/cover/a3d1-....webp",
+      bucket: "mentor-public",
+      source: "content/application/content.service.ts",
+    },
+    {
+      key: "content/articles/body/a3d1-....webp",
+      bucket: "mentor-public",
+      source: "content/application/content.service.ts",
+    },
+    {
+      key: "vision-board/6f1c.../a3d1-....jpg",
+      bucket: "mentor-public",
+      source: "coaching/application/vision-board-image.service.ts",
+    },
+    {
+      key: "mock-exams/6f1c.../a3d1-....jpg",
+      bucket: "mentor-private",
+      source: "ai/application/photo-upload.service.ts",
+    },
+  ];
 
-  it("uploads mock-exam photos to the private bucket", async () => {
-    await adapter().createUploadUrl({
-      key: "mock-exams/user-id/photo.jpg",
-      contentType: "image/jpeg",
-    });
+  it.each(REAL_KEYS)("routes $key to $bucket (minted by $source)", async ({ key, bucket }) => {
+    await adapter().createUploadUrl({ key, contentType: "image/png" });
 
     const command = vi.mocked(getSignedUrl).mock.calls[0]?.[1] as { input: { Bucket: string } };
-    expect(command.input.Bucket).toBe("mentor-private");
+    expect(command.input.Bucket).toBe(bucket);
+  });
+
+  /*
+   * Drift guard: every prefix declared in `storage-prefixes.ts` must be routable, and every public
+   * one must yield a public URL. This is what turns "somebody forgot to update the other list"
+   * from a production incident into a failing test.
+   */
+  it.each(ALL_PREFIXES)("routes the declared prefix %s", async (prefix) => {
+    await expect(
+      adapter().createUploadUrl({ key: `${prefix}user/object.bin`, contentType: "image/png" }),
+    ).resolves.toBeDefined();
+  });
+
+  it.each(PUBLIC_PREFIXES)("exposes a public URL for the declared prefix %s", (prefix) => {
+    expect(adapter().getPublicUrl(`${prefix}user/object.bin`)).toBe(
+      `https://media.mentor.test/${prefix}user/object.bin`,
+    );
+  });
+
+  it("every real key is covered by a declared prefix", () => {
+    for (const { key } of REAL_KEYS) {
+      expect(
+        ALL_PREFIXES.some((prefix) => key.startsWith(prefix)),
+        `${key} matches no prefix in storage-prefixes.ts`,
+      ).toBe(true);
+    }
   });
 
   it("reads private objects from the private bucket", async () => {

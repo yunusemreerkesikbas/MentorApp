@@ -7,12 +7,19 @@ import {
 } from "../../../common/errors/domain-error";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
-import { withUserContext } from "../../../database/rls";
+import { withServiceContext, withUserContext } from "../../../database/rls";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import { GeoService } from "../../content/application/geo.service";
 import { KpssService } from "../../content/application/kpss.service";
 import { VisionBoardRepository } from "../infrastructure/vision-board.repository";
 import { toVisionDto } from "./coaching.mappers";
+
+/** Public prefix all board photos live under; the sweep lists exactly this. */
+const VISION_BOARD_PREFIX = "vision-board/";
+/** An object younger than this belongs to an editing session that has not saved yet. */
+const VISION_BOARD_ORPHAN_GRACE_MS = 24 * 60 * 60 * 1000;
+/** Fixed work per sweep pass; the next pass picks up whatever is left. */
+const VISION_BOARD_ORPHAN_SWEEP_BATCH = 500;
 
 /** Storage keys of every photo referenced by a board document. */
 function imageKeysOf(board: VisionBoardDoc | null): Set<string> {
@@ -44,7 +51,18 @@ export class VisionService {
       const row = await this.visions.findByUser(tx, userId);
       return row ? toVisionDto(row) : null;
     });
-    return dto ? this.withImageUrls(dto) : null;
+    return dto ? this.enrich(dto) : null;
+  }
+
+  /**
+   * Everything the stored row cannot answer on its own: image URLs and the reference names behind
+   * the goal's ids. Both derived per read and dropped by the write schema, so neither can go stale.
+   *
+   * The name lookups short-circuit on null ids, so a goal with no map selection costs no queries.
+   */
+  private async enrich(dto: VisionDto): Promise<VisionDto> {
+    const targetNames = await this.resolveTargetNames(dto);
+    return { ...this.withImageUrls(dto), targetNames };
   }
 
   /**
@@ -142,10 +160,11 @@ export class VisionService {
       careerGroup: input.careerGroup ?? null,
       motivation: input.motivation?.trim() ? input.motivation.trim() : null,
     };
-    return withUserContext(this.db, { userId }, async (tx) => {
+    const dto = await withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.visions.upsert(tx, userId, normalized);
       return toVisionDto(row);
     });
+    return this.enrich(dto);
   }
 
   /**
@@ -184,7 +203,7 @@ export class VisionService {
 
         const kept = imageKeysOf(board as VisionBoardDoc);
         const removed = [...previousKeys].filter((key) => !kept.has(key));
-        return { dto: this.withImageUrls(toVisionDto(row)), removedKeys: removed };
+        return { dto: toVisionDto(row), removedKeys: removed };
       },
     );
 
@@ -201,7 +220,44 @@ export class VisionService {
         );
       }
     }
-    return dto;
+    return this.enrich(dto);
+  }
+
+  /**
+   * Delete board photos that no saved board references.
+   *
+   * `putBoard` already cleans up images removed from a board, but it cannot see the other leak:
+   * a user who uploads photos in the editor and closes the tab without ever saving. Those objects
+   * are referenced by nothing, so nothing will ever find them again — and they are personal data
+   * sitting at a public URL (KVKK), which is the real reason this exists. Storage cost is noise.
+   *
+   * Bounded per run and grace-windowed: an object uploaded seconds ago belongs to an editing
+   * session in progress, and deleting it would break a save that is still being composed.
+   */
+  async cleanupOrphanImages(): Promise<{ deleted: number }> {
+    const candidates = await this.storage.listObjects(
+      VISION_BOARD_PREFIX,
+      VISION_BOARD_ORPHAN_SWEEP_BATCH,
+    );
+    if (candidates.length === 0) return { deleted: 0 };
+
+    const cutoff = Date.now() - VISION_BOARD_ORPHAN_GRACE_MS;
+    const referenced = new Set(
+      await withServiceContext(this.db, (tx) => this.visions.listAllReferencedImageKeys(tx)),
+    );
+
+    const orphans = candidates.filter(
+      (object) =>
+        !referenced.has(object.key) &&
+        // Unknown age is treated as "too young": never delete on missing metadata.
+        object.lastModified != null &&
+        object.lastModified.getTime() < cutoff,
+    );
+
+    for (const orphan of orphans) {
+      await this.storage.deleteObject(orphan.key); // best-effort; a missing object is a no-op
+    }
+    return { deleted: orphans.length };
   }
 
   /** Cache the premium AI motivation note (public surface for W3 — coaching owns the table). */

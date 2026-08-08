@@ -141,6 +141,13 @@ export function toVisionDto(row: VisionBoardRow): VisionDto {
     // Cast, not parse: the column is only ever written through `visionBoardDocSchema`, and
     // re-validating on every panel read would spend a schema walk on data we just wrote.
     board: (row.board as VisionBoardDoc | null) ?? null,
+    // Filled in by VisionService, which owns the reference lookups; the mapper stays synchronous.
+    targetNames: {
+      cityName: null,
+      universityName: null,
+      titleName: null,
+      institutionName: null,
+    },
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
