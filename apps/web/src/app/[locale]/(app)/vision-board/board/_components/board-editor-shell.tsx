@@ -254,8 +254,7 @@ export function BoardEditorShell() {
   const openColor = useCallback((target: ColorPanelTarget) => {
     setColorTarget(target);
     setDetailCollapsed(false);
-    if (target === "board") setActivePanel("board");
-    else if (target === "text" || target === "plate") setActivePanel("text");
+    setActivePanel("text");
   }, []);
 
   const addText = useCallback(() => {
@@ -454,7 +453,7 @@ export function BoardEditorShell() {
 
       <nav
         aria-label={t("editor_nav")}
-        className="mentor-scrollarea flex shrink-0 gap-1 overflow-x-auto border-b px-2 py-2 lg:w-16 lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:border-b-0 lg:border-e lg:px-1 lg:pb-3 lg:pt-4"
+        className="mentor-scrollarea flex shrink-0 gap-1 overflow-x-auto border-b px-2 py-2 lg:w-16 lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:border-b-0 lg:border-e lg:px-1 lg:pb-3 lg:pt-8"
         style={{
           backgroundColor: "var(--color-surface)",
           borderColor: "rgba(17, 17, 17, 0.08)",
@@ -547,11 +546,7 @@ export function BoardEditorShell() {
                     <BoardColorPanel
                       target={colorTarget}
                       selected={selected}
-                      doc={state.doc}
                       onPatch={(next) => patchSelected(next)}
-                      onSetBackground={(background) =>
-                        dispatch({ type: "setBackground", background })
-                      }
                       onClose={() => setColorTarget(null)}
                     />
                   ) : activePanel ? (
@@ -574,7 +569,6 @@ export function BoardEditorShell() {
                       onSetBackground={(background) =>
                         dispatch({ type: "setBackground", background })
                       }
-                      onOpenBoardColor={() => openColor("board")}
                     />
                   ) : null}
                 </motion.div>

@@ -266,6 +266,18 @@
     "saved_title": "Saved",
     "saved_empty": "You haven't saved anything yet.",
     "saved_load_more": "Load more",
+    "trends_nav": "Trends",
+    "trends_title": "Trending",
+    "trends_subtitle": "Topics gaining momentum in Mentor communities over the last few days.",
+    "trends_explore": "Explore",
+    "trends_exam": "My exam",
+    "trends_general": "General",
+    "trends_exam_context": "{exam} · Trending",
+    "trends_general_context": "Trending in the community",
+    "trends_post_count": "{count} posts",
+    "trends_more": "Show more",
+    "trends_empty": "There are no trends in this scope yet.",
+    "trends_error": "Trends could not be loaded right now.",
     "announcement_readonly": "Only moderators can post announcements.",
     "load_more": "Load more",
     "sort_label": "Sort",
@@ -1941,7 +1953,7 @@
       "texture_cork": "Cork",
       "texture_paper": "Paper",
       "texture_grid": "Grid",
-      "texture_linen": "Linen",
+      "texture_linen": "Weave",
       "font": "Font",
       "size": "Size",
       "style": "Style",
@@ -1995,8 +2007,7 @@
       "rotate_90": "Rotate 90°",
       "duplicate": "Duplicate",
       "color_panel_title": "Colour",
-      "color_panel_close": "Close colour panel",
-      "color_more": "More"
+      "color_panel_close": "Close colour panel"
     }
   },
   "preferenceSimulation": {

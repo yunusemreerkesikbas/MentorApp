@@ -266,6 +266,18 @@
     "saved_title": "Kaydedilenler",
     "saved_empty": "Henüz bir şey kaydetmedin.",
     "saved_load_more": "Daha fazla",
+    "trends_nav": "Gündem",
+    "trends_title": "Gündemde",
+    "trends_subtitle": "Mentor topluluklarında son günlerde öne çıkan başlıklar.",
+    "trends_explore": "Keşfet",
+    "trends_exam": "Sınavım",
+    "trends_general": "Genel",
+    "trends_exam_context": "{exam} · Gündemde",
+    "trends_general_context": "Toplulukta gündem",
+    "trends_post_count": "{count} gönderi",
+    "trends_more": "Daha fazlasını göster",
+    "trends_empty": "Bu kapsamda henüz gündem oluşmadı.",
+    "trends_error": "Gündem şu anda yüklenemedi.",
     "announcement_readonly": "Sadece yetkililer duyuru paylaşabilir.",
     "load_more": "Daha fazla yükle",
     "sort_label": "Sıralama",
@@ -1941,7 +1953,7 @@
       "texture_cork": "Mantar",
       "texture_paper": "Kağıt",
       "texture_grid": "Izgara",
-      "texture_linen": "Keten",
+      "texture_linen": "Dokuma",
       "font": "Yazı tipi",
       "size": "Boyut",
       "style": "Stil",
@@ -1995,8 +2007,7 @@
       "rotate_90": "90° döndür",
       "duplicate": "Çoğalt",
       "color_panel_title": "Renk",
-      "color_panel_close": "Renk panelini kapat",
-      "color_more": "Daha fazla"
+      "color_panel_close": "Renk panelini kapat"
     }
   },
   "preferenceSimulation": {

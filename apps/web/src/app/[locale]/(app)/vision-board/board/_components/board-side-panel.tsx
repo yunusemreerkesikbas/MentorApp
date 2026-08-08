@@ -40,7 +40,6 @@ export interface BoardSidePanelProps {
   onCheckpoint: () => void;
   onSetFrame: (frame: VisionBoardDoc["frame"]) => void;
   onSetBackground: (background: VisionBoardDoc["background"]) => void;
-  onOpenBoardColor: () => void;
 }
 
 export function BoardSidePanel({
@@ -58,7 +57,6 @@ export function BoardSidePanel({
   onCheckpoint,
   onSetFrame,
   onSetBackground,
-  onOpenBoardColor,
 }: BoardSidePanelProps) {
   const t = useTranslations("vision.board");
 
@@ -98,17 +96,6 @@ export function BoardSidePanel({
                 onClick={() => onSetBackground({ kind: "color", value: color })}
               />
             ))}
-            <button
-              type="button"
-              onClick={onOpenBoardColor}
-              className="min-h-9 rounded-full px-2.5 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-              style={{
-                backgroundColor: "var(--color-surface)",
-                color: "var(--color-body)",
-              }}
-            >
-              {t("color_more")}
-            </button>
           </Row>
         </Field>
       </Panel>
@@ -210,6 +197,9 @@ export function BoardSidePanel({
         <PrimaryAction label={t("add_text_cta")} onClick={onAddText} />
         {selected?.kind === "text" ? (
           <>
+            <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
+              {t("edit_on_canvas_hint")}
+            </p>
             <Field label={t("font")}>
               <div className="flex flex-col gap-1">
                 {VISION_TEXT_FONTS.map((font) => (
@@ -236,26 +226,32 @@ export function BoardSidePanel({
             <Field label={t("plate")}>
               <Row>
                 <Pill
-                  active={selected.background == null}
-                  label={t("plate_none")}
-                  onClick={() => onPatch({ background: null })}
+                  active={selected.background != null}
+                  label={t("plate_toggle")}
+                  onClick={() =>
+                    onPatch({
+                      background: selected.background
+                        ? null
+                        : { color: "#111111", opacity: 1, padding: 24, radius: 8 },
+                    })
+                  }
                 />
-                {PLATE_COLORS.map((color) => (
-                  <Swatch
-                    key={color}
-                    color={color}
-                    label={t("plate")}
-                    active={selected.background?.color === color}
-                    onClick={() =>
-                      onPatch({
-                        background: selected.background
-                          ? { ...selected.background, color }
-                          : { color, opacity: 1, padding: 24, radius: 8 },
-                      })
-                    }
-                  />
-                ))}
               </Row>
+              {selected.background ? (
+                <Row>
+                  {PLATE_COLORS.map((color) => (
+                    <Swatch
+                      key={color}
+                      color={color}
+                      label={t("plate")}
+                      active={selected.background?.color === color}
+                      onClick={() =>
+                        onPatch({ background: { ...selected.background!, color } })
+                      }
+                    />
+                  ))}
+                </Row>
+              ) : null}
             </Field>
             <Field label={`${t("line_height")} · ${selected.lineHeight.toFixed(1)}`}>
               <Range
