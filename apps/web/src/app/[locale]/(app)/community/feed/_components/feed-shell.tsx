@@ -1,7 +1,7 @@
 "use client";
-import { Rss } from "lucide-react";
+import { ListFilter } from "lucide-react";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type {
@@ -9,20 +9,21 @@ import type {
   ForumFeedItem,
   ForumFeedScope,
   ForumFeedSort,
-  ForumSearchView,
   ForumTagView,
 } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Link } from "@/i18n/navigation";
+import { MenuSelect, type MenuSelectOption } from "@/components/menu-select";
+import { SegmentPillControl } from "@/components/segment-pill-control";
 import { trackCommunityEvent } from "@/lib/analytics";
+import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import {
   getForumFeed,
   isForumDisabled,
   listForumTags,
-  searchForum,
 } from "@/lib/forum";
 import { DiscoveryFeedCard } from "./discovery-feed-card";
-import { GlobalComposer } from "./global-composer";
+import { PostListSkeleton } from "../../_components/post-skeleton";
+import { CommunityTrendRail } from "../../_components/community-trend-rail";
 
 type Ready = ForumFeed & { status: "ready"; loadingMore: boolean };
 type State =
@@ -31,23 +32,50 @@ type State =
   | { status: "error"; message: string }
   | Ready;
 
-const SORTS: ForumFeedSort[] = ["trending", "recent", "top"];
-const SCOPES: ForumFeedScope[] = ["relevant", "following"];
+type FeedTab = "featured" | "recent" | "top" | "following";
+type FeedFilterSheetHandle = {
+  getValues: () => { sort: ForumFeedSort; tag: string; zoneType: string };
+};
 
 export function FeedShell() {
   const t = useTranslations("community");
   const searchParams = useSearchParams();
-  const filterDialogRef = useRef<HTMLDialogElement>(null);
+  const { filterSheet } = useMentorBottomSheet();
+  const filterFormRef = useRef<FeedFilterSheetHandle>(null);
   const [scope, setScope] = useState<ForumFeedScope>("relevant");
   const [sort, setSort] = useState<ForumFeedSort>("trending");
   const [tag, setTag] = useState(searchParams.get("tag") ?? "");
   const [zoneType, setZoneType] = useState("");
   const [tags, setTags] = useState<ForumTagView[]>([]);
   const [state, setState] = useState<State>({ status: "loading" });
-  const [search, setSearch] = useState(searchParams.get("q") ?? "");
-  const [searchResult, setSearchResult] = useState<ForumSearchView | null>(null);
-  const [searching, setSearching] = useState(false);
   const queryKey = `${scope}:${sort}:${tag}:${zoneType}`;
+  const activeTab: FeedTab = scope === "following" ? "following" : sort === "recent" ? "recent" : sort === "top" ? "top" : "featured";
+  const feedTabs = [
+    { id: "featured", label: t("feed_sort_trending") },
+    { id: "recent", label: t("feed_sort_recent") },
+    { id: "top", label: t("feed_sort_top") },
+    { id: "following", label: t("feed_scope_following") },
+  ];
+  const mobileFeedTabs = [
+    { id: "featured", label: t("feed_sort_trending") },
+    { id: "following", label: t("feed_scope_following") },
+  ];
+  const mobileActiveTab = scope === "following" ? "following" : "featured";
+  const sortOptions = [
+    { value: "trending", label: t("feed_sort_trending") },
+    { value: "recent", label: t("feed_sort_recent") },
+    { value: "top", label: t("feed_sort_top") },
+  ];
+  const tagOptions = [
+    { value: "", label: t("feed_all_tags") },
+    ...tags.map((entry) => ({ value: entry.slug, label: `#${entry.name}` })),
+  ];
+  const zoneTypeOptions = [
+    { value: "", label: t("feed_all_zone_types") },
+    { value: "CHAT", label: t("type_chat") },
+    { value: "QA", label: t("type_qa") },
+    { value: "ANNOUNCEMENT", label: t("type_announcement") },
+  ];
 
   const load = useCallback(
     (cursor?: string) =>
@@ -88,32 +116,41 @@ export function FeedShell() {
     };
   }, [load, queryKey, t]);
 
-  useEffect(() => {
-    const q = search.trim();
-    if (q.length < 2) return;
-    let active = true;
-    const timer = window.setTimeout(() => {
-      searchForum(q)
-        .then((result) => active && setSearchResult(result))
-        .catch(() => active && setSearchResult({ threads: [], tags: [], people: [] }))
-        .finally(() => active && setSearching(false));
-    }, 250);
-    return () => {
-      active = false;
-      window.clearTimeout(timer);
-    };
-  }, [search]);
-
-  const setTab = (nextSort: ForumFeedSort) => {
-    setState({ status: "loading" });
-    setSort(nextSort);
-    trackCommunityEvent("forum_feed_tab_selected", { sort: nextSort, scope });
-  };
-
-  const setFeedScope = (nextScope: ForumFeedScope) => {
+  const setTab = (nextTab: string) => {
+    const tab = nextTab as FeedTab;
+    const nextScope: ForumFeedScope = tab === "following" ? "following" : "relevant";
+    const nextSort: ForumFeedSort = tab === "recent" || tab === "following" ? "recent" : tab === "top" ? "top" : "trending";
     setState({ status: "loading" });
     setScope(nextScope);
-    trackCommunityEvent("forum_feed_tab_selected", { sort, scope: nextScope });
+    setSort(nextSort);
+    trackCommunityEvent("forum_feed_tab_selected", { sort: nextSort, scope: nextScope });
+  };
+
+  const openMobileFilters = async () => {
+    await filterSheet({
+      title: t("feed_filters"),
+      applyLabel: t("feed_apply_filters"),
+      children: (
+        <FeedFilterSheet
+          ref={filterFormRef}
+          initialSort={sort}
+          defaultSort={scope === "following" ? "recent" : "trending"}
+          initialTag={tag}
+          initialZoneType={zoneType}
+          tagOptions={tagOptions}
+          zoneTypeOptions={zoneTypeOptions}
+          sortOptions={sortOptions}
+        />
+      ),
+      onApply: () => {
+        const values = filterFormRef.current?.getValues();
+        if (!values) return;
+        setState({ status: "loading" });
+        setSort(values.sort);
+        setTag(values.tag);
+        setZoneType(values.zoneType);
+      },
+    });
   };
 
   const refetch = () => {
@@ -164,200 +201,60 @@ export function FeedShell() {
   return (
     <main className="min-w-0 px-4 py-7 sm:px-7 lg:px-8 lg:py-8">
       <div className="mx-auto max-w-[1180px]">
-        <header className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="flex items-center gap-3 text-[30px] font-extrabold tracking-[-0.03em] text-[#111318] sm:text-[34px]">
-              <span className="grid size-10 place-items-center rounded-[10px] bg-[var(--community-blue-soft)] text-[var(--community-blue-ink)]" aria-hidden><Rss size={19} /></span>
-              {t("feed_title")}
-            </h1>
-          </div>
-        </header>
-
-        <div className="mt-7 flex flex-wrap items-center gap-3">
-          <div className="flex gap-1 rounded-[11px] bg-[#f0f1f4] p-1" role="tablist" aria-label={t("feed_sort_label")}>
-            {SORTS.map((entry) => (
-              <button
-                key={entry}
-                type="button"
-                role="tab"
-                aria-selected={sort === entry}
-                onClick={() => setTab(entry)}
-                className={`min-h-11 flex-none rounded-[9px] px-4 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${sort === entry ? "bg-[var(--community-blue)] text-[#111318]" : "text-[#4f5561] hover:bg-white"}`}
-              >
-                {t(`feed_sort_${entry}`)}
-              </button>
-            ))}
-          </div>
-
-          <div className="relative min-w-[210px] flex-1">
-            <label className="sr-only" htmlFor="forum-search">{t("global_search_placeholder")}</label>
-            <input
-              id="forum-search"
-              type="search"
-              value={search}
-              onChange={(event) => {
-                const nextSearch = event.target.value;
-                setSearch(nextSearch);
-                if (nextSearch.trim().length < 2) {
-                  setSearchResult(null);
-                  setSearching(false);
-                } else {
-                  setSearching(true);
-                }
-              }}
-              placeholder={t("feed_filters")}
-              className="min-h-11 w-full rounded-[10px] border border-[#e4e6eb] bg-white px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        <div className="flex flex-nowrap items-center gap-3 border-b border-[#e7e9ee] pb-4">
+          <div className="min-w-0 flex-1 py-1 sm:hidden">
+            <SegmentPillControl
+              items={mobileFeedTabs}
+              value={mobileActiveTab}
+              onChange={setTab}
+              ariaLabel={t("feed_sort_label")}
+              layoutId="community-feed-mobile-tab-pill"
+              idPrefix="community-feed-mobile-tab"
+              equalWidth
             />
-            {(searching || searchResult) && search.trim().length >= 2 && (
-              <SearchPopover
-                result={searchResult}
-                searching={searching}
-                onSelectTag={(slug) => {
-                  setState({ status: "loading" });
-                  setTag(slug);
-                  setSearch("");
-                  setSearchResult(null);
-                }}
-              />
-            )}
           </div>
-          <GlobalComposer onCreated={refetch} />
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-2 border-b border-[#e7e9ee] pb-4">
-          <div className="flex rounded-[10px] bg-[#edeff2] p-1" aria-label={t("feed_scope_label")}>
-            {SCOPES.map((entry) => (
-              <button
-                key={entry}
-                type="button"
-                aria-pressed={scope === entry}
-                onClick={() => setFeedScope(entry)}
-                className={`min-h-11 rounded-[8px] px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${scope === entry ? "bg-white text-[var(--community-blue-ink)]" : "text-[#6f7580] hover:text-[#343945]"}`}
-              >
-                {t(`feed_scope_${entry}`)}
-              </button>
-            ))}
+          <div className="hidden min-w-0 flex-1 overflow-x-auto py-1 sm:block">
+            <SegmentPillControl
+              items={feedTabs}
+              value={activeTab}
+              onChange={setTab}
+              ariaLabel={t("feed_sort_label")}
+              layoutId="community-feed-tab-pill"
+              idPrefix="community-feed-tab"
+            />
           </div>
           <button
             type="button"
-            onClick={() => filterDialogRef.current?.showModal()}
-            className="min-h-11 rounded-[10px] border border-[#e0e3e8] bg-white px-4 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] sm:hidden"
+            aria-label={t("feed_filters")}
+            onClick={() => void openMobileFilters()}
+            className="relative flex size-11 items-center justify-center rounded-full border border-[var(--color-border)] bg-white text-[var(--color-main)] shadow-[var(--shadow-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] sm:hidden"
           >
-            {t("feed_filters")}
-            {(tag || zoneType) && " · 1+"}
+            <ListFilter size={19} aria-hidden />
+            {tag || zoneType || (scope === "relevant" ? sort !== "trending" : sort !== "recent") ? (
+              <span className="absolute right-2 top-2 size-2 rounded-full bg-[var(--community-blue-ink)]" aria-hidden />
+            ) : null}
           </button>
-          <dialog
-            ref={filterDialogRef}
-            aria-labelledby="forum-filter-title"
-            onCancel={(event) => {
-              event.preventDefault();
-              filterDialogRef.current?.close();
-            }}
-            onClick={(event) => {
-              if (event.target === filterDialogRef.current) filterDialogRef.current?.close();
-            }}
-            className="mb-0 mt-auto w-full max-w-none rounded-t-2xl border bg-white p-0 shadow-2xl backdrop:bg-black/35 sm:hidden"
-          >
-            <form method="dialog" className="space-y-4 p-5">
-              <div className="flex items-center justify-between gap-3">
-                <h2 id="forum-filter-title" className="text-lg font-extrabold">
-                  {t("feed_filters")}
-                </h2>
-                <button
-                  type="submit"
-                  aria-label={t("close")}
-                  className="flex h-11 w-11 items-center justify-center rounded-full text-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                >
-                  ×
-                </button>
-              </div>
-              <label className="block text-sm font-bold">
-                {t("feed_filter_tag")}
-                <select
-                  value={tag}
-                  onChange={(event) => {
-                    setState({ status: "loading" });
-                    setTag(event.target.value);
-                  }}
-                  className="mt-2 min-h-11 w-full rounded-xl border bg-white px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                >
-                  <option value="">{t("feed_all_tags")}</option>
-                  {tags.map((entry) => (
-                    <option key={entry.id} value={entry.slug}>
-                      #{entry.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block text-sm font-bold">
-                {t("feed_filter_zone_type")}
-                <select
-                  value={zoneType}
-                  onChange={(event) => {
-                    setState({ status: "loading" });
-                    setZoneType(event.target.value);
-                  }}
-                  className="mt-2 min-h-11 w-full rounded-xl border bg-white px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                >
-                  <option value="">{t("feed_all_zone_types")}</option>
-                  <option value="CHAT">{t("type_chat")}</option>
-                  <option value="QA">{t("type_qa")}</option>
-                  <option value="ANNOUNCEMENT">{t("type_announcement")}</option>
-                </select>
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setState({ status: "loading" });
-                    setTag("");
-                    setZoneType("");
-                  }}
-                  className="min-h-11 rounded-xl border bg-white px-3 text-sm font-bold"
-                >
-                  {t("feed_clear_filters")}
-                </button>
-                <button
-                  type="submit"
-                  className="min-h-11 rounded-xl px-3 text-sm font-bold text-white"
-                  style={{ background: "var(--color-btn)" }}
-                >
-                  {t("feed_apply_filters")}
-                </button>
-              </div>
-            </form>
-          </dialog>
-          <div className="hidden flex-wrap items-center gap-2 sm:flex">
-          <select
+          <div className="ml-auto hidden flex-wrap items-center gap-2 sm:flex">
+          <MenuSelect
             value={tag}
-            onChange={(event) => {
+            onChange={(value) => {
               setState({ status: "loading" });
-              setTag(event.target.value);
+              setTag(value);
             }}
             aria-label={t("feed_filter_tag")}
-            className="min-h-11 rounded-[10px] border border-[#e0e3e8] bg-white px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          >
-            <option value="">{t("feed_all_tags")}</option>
-            {tags.map((entry) => (
-              <option key={entry.id} value={entry.slug}>
-                #{entry.name}
-              </option>
-            ))}
-          </select>
-          <select
+            options={tagOptions}
+            className="w-52"
+          />
+          <MenuSelect
             value={zoneType}
-            onChange={(event) => {
+            onChange={(value) => {
               setState({ status: "loading" });
-              setZoneType(event.target.value);
+              setZoneType(value);
             }}
             aria-label={t("feed_filter_zone_type")}
-            className="min-h-11 rounded-[10px] border border-[#e0e3e8] bg-white px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          >
-            <option value="">{t("feed_all_zone_types")}</option>
-            <option value="CHAT">{t("type_chat")}</option>
-            <option value="QA">{t("type_qa")}</option>
-            <option value="ANNOUNCEMENT">{t("type_announcement")}</option>
-          </select>
+            options={zoneTypeOptions}
+            className="w-48"
+          />
           {(tag || zoneType) && (
             <button
               type="button"
@@ -374,10 +271,10 @@ export function FeedShell() {
           </div>
         </div>
 
-        <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_304px]">
-          <section aria-live="polite" aria-busy={state.status === "loading"}>
+        <div className="mt-5 grid w-full grid-cols-[minmax(0,1fr)] items-start justify-center gap-6 xl:grid-cols-[minmax(0,600px)_300px]">
+          <section className="w-full min-w-0 max-w-[600px] justify-self-center xl:justify-self-auto" aria-live="polite" aria-busy={state.status === "loading"}>
             {state.status === "loading" ? (
-              <FeedSkeleton label={t("loading")} />
+              <PostListSkeleton label={t("loading")} variant="card" />
             ) : state.status === "disabled" ? (
               <EmptyState title={t("soon_title")} body={t("soon_desc")} />
             ) : state.status === "error" ? (
@@ -402,7 +299,7 @@ export function FeedShell() {
               />
             ) : (
               <>
-                <div className="grid gap-4">
+                <div className="overflow-hidden rounded-[var(--radius-card)] border border-[#e2e5ea] bg-white">
                   {state.items.map((item) => (
                     <DiscoveryFeedCard
                       key={item.id}
@@ -411,164 +308,104 @@ export function FeedShell() {
                     />
                   ))}
                 </div>
-                {state.nextCursor && (
+                {state.loadingMore ? (
+                  <div className="mt-4">
+                    <PostListSkeleton label={t("loading")} count={2} variant="card" />
+                  </div>
+                ) : state.nextCursor ? (
                   <div className="mt-5 flex justify-center">
                     <button
                       type="button"
-                      disabled={state.loadingMore}
                       onClick={loadMore}
-                      className="min-h-11 rounded-xl border bg-white px-5 font-bold disabled:opacity-50"
+                      className="min-h-11 rounded-xl border bg-white px-5 font-bold"
                     >
-                      {state.loadingMore ? t("loading") : t("load_more")}
+                      {t("load_more")}
                     </button>
                   </div>
-                )}
+                ) : null}
               </>
             )}
           </section>
 
-          {state.status === "ready" && (
-            <aside className="hidden space-y-7 border-l border-[#e7e9ee] pl-5 xl:block" aria-label={t("feed_context_title")}>
-              <ContextSection title={t("feed_active_threads")} items={state.context.activeThreads} />
-              <ContextSection title={t("feed_suggested_threads")} items={state.context.suggestedThreads} />
-            </aside>
-          )}
+          <div className="sticky top-20 hidden xl:block">
+            <CommunityTrendRail />
+          </div>
         </div>
       </div>
     </main>
   );
 }
 
-function ContextSection({
-  title,
-  items,
-}: {
-  title: string;
-  items: Ready["context"]["activeThreads"];
-}) {
+const FeedFilterSheet = forwardRef<
+  FeedFilterSheetHandle,
+  {
+    initialTag: string;
+    initialSort: ForumFeedSort;
+    defaultSort: ForumFeedSort;
+    initialZoneType: string;
+    sortOptions: MenuSelectOption[];
+    tagOptions: MenuSelectOption[];
+    zoneTypeOptions: MenuSelectOption[];
+  }
+>(function FeedFilterSheet(
+  { initialSort, defaultSort, initialTag, initialZoneType, sortOptions, tagOptions, zoneTypeOptions },
+  ref,
+) {
   const t = useTranslations("community");
-  if (!items.length) return null;
-  return (
-    <section>
-      <h2 className="text-[13px] font-extrabold text-[#4c535f]">{title}</h2>
-      <div className="mt-3 grid gap-3">
-        {items.map((item) => {
-          const href =
-            item.zoneType === "QA"
-              ? ({ pathname: "/community/question/[threadId]", params: { threadId: item.id } } as const)
-              : ({ pathname: "/community/message/[threadId]", params: { threadId: item.id } } as const);
-          return (
-            <Link
-              key={item.id}
-              href={href}
-              className="block min-h-[92px] rounded-[13px] border border-[#e7e9ee] bg-white p-4 transition-colors hover:border-[var(--community-blue-border)] hover:bg-[var(--community-blue-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            >
-              <div className="line-clamp-2 text-[13px] font-bold leading-[1.35] text-[#252933]">{item.title ?? item.bodyExcerpt}</div>
-              <div className="mt-3 text-[11px] text-[#7b808a]">
-                {item.zoneTitle} · {t("comment_total", { count: item.commentCount })}
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
+  const [draftSort, setDraftSort] = useState<ForumFeedSort>(initialSort);
+  const [draftTag, setDraftTag] = useState(initialTag);
+  const [draftZoneType, setDraftZoneType] = useState(initialZoneType);
 
-function SearchPopover({
-  result,
-  searching,
-  onSelectTag,
-}: {
-  result: ForumSearchView | null;
-  searching: boolean;
-  onSelectTag: (slug: string) => void;
-}) {
-  const t = useTranslations("community");
-  const empty =
-    result &&
-    result.threads.length === 0 &&
-    result.tags.length === 0 &&
-    result.people.length === 0;
+  useImperativeHandle(ref, () => ({
+    getValues: () => ({ sort: draftSort, tag: draftTag, zoneType: draftZoneType }),
+  }));
+
   return (
-    <div className="absolute inset-x-0 z-30 mt-2 max-h-[70vh] overflow-y-auto rounded-2xl border bg-white p-3 shadow-xl">
-      {searching && !result ? (
-        <p className="p-3 text-sm" style={{ color: "var(--color-secondary)" }}>
-          {t("loading")}
-        </p>
-      ) : empty ? (
-        <p className="p-3 text-sm" style={{ color: "var(--color-secondary)" }}>
-          {t("search_no_results_global")}
-        </p>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-3">
-          {result?.threads.length ? (
-            <SearchGroup title={t("search_threads")}>
-              {result.threads.map((thread) => {
-                const href =
-                  thread.zoneType === "QA"
-                    ? ({ pathname: "/community/question/[threadId]", params: { threadId: thread.id } } as const)
-                    : ({ pathname: "/community/message/[threadId]", params: { threadId: thread.id } } as const);
-                return (
-                  <Link key={thread.id} href={href} className="block min-h-11 rounded-lg p-2 text-sm hover:bg-black/[0.04]">
-                    <span className="line-clamp-2 font-bold">{thread.title ?? thread.bodyExcerpt}</span>
-                    <span className="mt-1 block text-xs" style={{ color: "var(--color-secondary)" }}>
-                      {thread.zoneTitle}
-                    </span>
-                  </Link>
-                );
-              })}
-            </SearchGroup>
-          ) : null}
-          {result?.tags.length ? (
-            <SearchGroup title={t("search_tags")}>
-              {result.tags.map((entry) => (
-                <button
-                  key={entry.id}
-                  type="button"
-                  onClick={() => onSelectTag(entry.slug)}
-                  className="block min-h-11 w-full rounded-lg p-2 text-left text-sm font-bold hover:bg-black/[0.04]"
-                >
-                  #{entry.name}
-                </button>
-              ))}
-            </SearchGroup>
-          ) : null}
-          {result?.people.length ? (
-            <SearchGroup title={t("search_people")}>
-              {result.people.map((person) => (
-                <Link
-                  key={person.id}
-                  href={{
-                    pathname: "/community/member/[username]",
-                    params: { username: person.username },
-                  }}
-                  className="block min-h-11 rounded-lg p-2 text-sm hover:bg-black/[0.04]"
-                >
-                  <span className="font-bold">{person.displayName}</span>
-                  <span className="ml-1" style={{ color: "var(--color-secondary)" }}>
-                    @{person.username}
-                  </span>
-                </Link>
-              ))}
-            </SearchGroup>
-          ) : null}
-        </div>
-      )}
+    <div className="grid gap-4">
+      <div className="grid gap-2 text-sm font-bold text-[var(--color-main)]">
+        {t("feed_sort_label")}
+        <MenuSelect
+          value={draftSort}
+          onChange={(value) => setDraftSort(value as ForumFeedSort)}
+          options={sortOptions}
+          aria-label={t("feed_sort_label")}
+        />
+      </div>
+      <div className="grid gap-2 text-sm font-bold text-[var(--color-main)]">
+        {t("feed_filter_tag")}
+        <MenuSelect
+          value={draftTag}
+          onChange={setDraftTag}
+          options={tagOptions}
+          aria-label={t("feed_filter_tag")}
+        />
+      </div>
+      <div className="grid gap-2 text-sm font-bold text-[var(--color-main)]">
+        {t("feed_filter_zone_type")}
+        <MenuSelect
+          value={draftZoneType}
+          onChange={setDraftZoneType}
+          options={zoneTypeOptions}
+          aria-label={t("feed_filter_zone_type")}
+          menuSide="top"
+        />
+      </div>
+      {draftSort !== defaultSort || draftTag || draftZoneType ? (
+        <button
+          type="button"
+          onClick={() => {
+            setDraftTag("");
+            setDraftZoneType("");
+            setDraftSort(defaultSort);
+          }}
+          className="min-h-11 justify-self-start px-1 text-sm font-bold text-[var(--community-blue-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        >
+          {t("feed_clear_filters")}
+        </button>
+      ) : null}
     </div>
   );
-}
-
-function SearchGroup({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <h2 className="px-2 text-xs font-bold text-[#656c78]">
-        {title}
-      </h2>
-      <div className="mt-1">{children}</div>
-    </section>
-  );
-}
+});
 
 function EmptyState({
   title,
@@ -586,16 +423,6 @@ function EmptyState({
         {body}
       </p>
       {children}
-    </div>
-  );
-}
-
-function FeedSkeleton({ label }: { label: string }) {
-  return (
-    <div className="grid animate-pulse gap-4" aria-label={label}>
-      {[0, 1, 2].map((entry) => (
-        <div key={entry} className="h-64 rounded-2xl bg-black/[0.05]" />
-      ))}
     </div>
   );
 }

@@ -370,6 +370,15 @@ export interface ForumThreadSummary {
   lastActivityAt: string;
 }
 
+/** Minimal public room data returned by global community search. */
+export interface ForumZoneSearchResult {
+  id: string;
+  slug: string;
+  title: string;
+  type: ZoneType;
+  description: string | null;
+}
+
 /** Active manual featured selection returned to the internal forum editor. */
 export interface ForumFeaturedAdminView {
   threadId: string;
@@ -397,8 +406,23 @@ export interface ForumHubView {
   recommendedZones: ZoneView[];
 }
 
+export type ForumTrendScope = "relevant" | "exam" | "general";
+
+export interface ForumTrendItem extends ForumTagView {
+  threadCount: number;
+}
+
+export interface ForumTrendsView {
+  items: ForumTrendItem[];
+  scope: ForumTrendScope;
+  examType: string | null;
+  windowHours: number;
+}
+
 export interface ForumSearchView {
   threads: ForumThreadSummary[];
+  questions: ForumThreadSummary[];
+  zones: ForumZoneSearchResult[];
   tags: ForumTagView[];
   people: ForumPublicPerson[];
 }

@@ -7,6 +7,7 @@ import {
   Bold,
   BringToFront,
   Copy,
+  Frame,
   Italic,
   RotateCw,
   SendToBack,
@@ -15,10 +16,8 @@ import {
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import {
-  VISION_IMAGE_FRAMES,
   VISION_TEXT_ALIGNS,
   type VisionBoardItem,
-  type VisionImageFrame,
   type VisionTextAlign,
 } from "@mentor/types";
 import { boardChromeTransition } from "./board-chrome-motion";
@@ -59,7 +58,7 @@ export function BoardContextToolbar({
       animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
       exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
       transition={boardChromeTransition}
-      className="mentor-scrollarea flex shrink-0 items-center gap-0.5 overflow-x-auto rounded-[var(--radius-card)] px-1 py-1"
+      className="mentor-scrollarea flex w-fit max-w-full shrink-0 items-center gap-0.5 overflow-x-auto rounded-[var(--radius-card)] px-1 py-1"
       style={{
         backgroundColor: "var(--color-surface)",
         boxShadow: "var(--shadow-card)",
@@ -109,29 +108,7 @@ export function BoardContextToolbar({
       ) : null}
 
       {selected.kind === "image" ? (
-        <>
-          <button
-            type="button"
-            onClick={onOpenImageFrames}
-            className="inline-flex h-11 shrink-0 items-center rounded-full px-3 text-xs font-semibold hover:bg-[var(--color-surface-container)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            style={{ color: "var(--color-main)" }}
-          >
-            {t("image_frame")}
-          </button>
-          <Divider />
-          {VISION_IMAGE_FRAMES.slice(0, 3).map((frame) => (
-            <ToolBtn
-              key={frame}
-              label={t(`image_frame_${frame}`)}
-              pressed={selected.frame === frame}
-              onClick={() => onPatch({ frame: frame as VisionImageFrame })}
-            >
-              <span className="text-[10px] font-bold uppercase">
-                {frame === "none" ? "—" : frame.slice(0, 1)}
-              </span>
-            </ToolBtn>
-          ))}
-        </>
+        <FrameTrigger label={t("image_frame")} onClick={onOpenImageFrames} />
       ) : null}
 
       <Divider />
@@ -160,7 +137,10 @@ export function BoardContextToolbar({
           onPointerDown={onCheckpoint}
           onKeyDown={onCheckpoint}
           onChange={(event) => onPatch({ opacity: Number(event.target.value) }, true)}
-          className="w-16 accent-[var(--color-accent)]"
+          className="mentor-range h-1.5 w-16"
+          style={{
+            background: `linear-gradient(to right, var(--color-accent) ${selected.opacity * 100}%, var(--color-surface-container) ${selected.opacity * 100}%)`,
+          }}
         />
       </label>
 
@@ -189,6 +169,20 @@ function Divider() {
       className="mx-0.5 h-6 w-px shrink-0"
       style={{ backgroundColor: "rgba(17, 17, 17, 0.08)" }}
     />
+  );
+}
+
+function FrameTrigger({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className="grid h-11 w-11 shrink-0 place-items-center rounded-full hover:bg-[var(--color-surface-container)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+    >
+      <Frame aria-hidden size={16} />
+    </button>
   );
 }
 

@@ -10,7 +10,12 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import type { ForumFeedSort, ModerationTargetType, ZoneType } from "@mentor/types";
+import type {
+  ForumFeedSort,
+  ForumTrendScope,
+  ModerationTargetType,
+  ZoneType,
+} from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -68,6 +73,14 @@ export interface ForumThreadSummaryRow {
   body: string;
   commentCount: number;
   lastActivityAt: Date;
+}
+
+export interface ForumZoneSearchRow {
+  id: string;
+  slug: string;
+  title: string;
+  type: string;
+  description: string | null;
 }
 
 export interface ForumFeaturedThreadRow extends ForumThreadSummaryRow {
@@ -477,23 +490,40 @@ export class ForumDiscoveryRepository {
     });
   }
 
-  async trendingTags(locale: string, examType: string | null, limit: number) {
+  async trendingTags(
+    locale: string,
+    examType: string | null,
+    limit: number,
+    scope: ForumTrendScope = "relevant",
+    windowHours = 72,
+  ) {
     return withServiceContext(this.db, async (tx) => {
       const conditions = [
         eq(forumTags.isActive, true),
         isNull(forumThreads.deletedAt),
         eq(forumZones.visibility, "PUBLIC"),
         eq(forumZones.isArchived, false),
-        sql`${forumThreads.lastActivityAt} >= now() - interval '72 hours'`,
+        sql`${forumThreads.lastActivityAt} >= now() - (${windowHours} * interval '1 hour')`,
       ];
-      if (examType) {
+      if (scope === "general") {
+        conditions.push(isNull(forumTags.examType));
+        conditions.push(isNull(forumZones.examType));
+      } else if (scope === "exam") {
+        if (!examType) return [];
+        conditions.push(eq(forumTags.examType, examType));
+        conditions.push(or(isNull(forumZones.examType), eq(forumZones.examType, examType))!);
+      } else if (examType) {
         conditions.push(or(isNull(forumTags.examType), eq(forumTags.examType, examType))!);
         conditions.push(or(isNull(forumZones.examType), eq(forumZones.examType, examType))!);
+      } else {
+        conditions.push(isNull(forumTags.examType));
+        conditions.push(isNull(forumZones.examType));
       }
       const rows = await tx
         .select({
           tag: getTableColumns(forumTags),
           threadCount: sql<number>`count(distinct ${forumThreads.id})::int`,
+          latestActivityAt: sql<Date>`max(${forumThreads.lastActivityAt})`,
         })
         .from(forumTags)
         .innerJoin(forumThreadTags, eq(forumThreadTags.tagId, forumTags.id))
@@ -501,7 +531,11 @@ export class ForumDiscoveryRepository {
         .innerJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
         .where(and(...conditions))
         .groupBy(forumTags.id)
-        .orderBy(desc(sql`count(distinct ${forumThreads.id})`), asc(locale === "en" ? forumTags.nameEn : forumTags.nameTr))
+        .orderBy(
+          desc(sql`count(distinct ${forumThreads.id})`),
+          desc(sql`max(${forumThreads.lastActivityAt})`),
+          asc(locale === "en" ? forumTags.nameEn : forumTags.nameTr),
+        )
         .limit(limit);
       return rows.map((row) => ({ tag: row.tag, threadCount: Number(row.threadCount) }));
     });
@@ -540,9 +574,20 @@ export class ForumDiscoveryRepository {
     });
   }
 
-  async searchThreadSummaries(q: string, limit: number): Promise<ForumThreadSummaryRow[]> {
+  async searchThreadSummaries(
+    q: string,
+    limit: number,
+    zoneType?: ZoneType,
+  ): Promise<ForumThreadSummaryRow[]> {
     return withServiceContext(this.db, async (tx) => {
       const match = sql`to_tsvector('turkish', coalesce(${forumThreads.title}, '') || ' ' || ${forumThreads.body}) @@ websearch_to_tsquery('turkish', ${q})`;
+      const conditions = [
+        isNull(forumThreads.deletedAt),
+        eq(forumZones.visibility, "PUBLIC"),
+        eq(forumZones.isArchived, false),
+        match,
+      ];
+      if (zoneType) conditions.push(eq(forumZones.type, zoneType));
       return tx
         .select({
           id: forumThreads.id,
@@ -559,20 +604,38 @@ export class ForumDiscoveryRepository {
         })
         .from(forumThreads)
         .innerJoin(forumZones, eq(forumThreads.zoneId, forumZones.id))
-        .where(
-          and(
-            isNull(forumThreads.deletedAt),
-            eq(forumZones.visibility, "PUBLIC"),
-            eq(forumZones.isArchived, false),
-            match,
-          ),
-        )
+        .where(and(...conditions))
         .orderBy(
           desc(
             sql`ts_rank(to_tsvector('turkish', coalesce(${forumThreads.title}, '') || ' ' || ${forumThreads.body}), websearch_to_tsquery('turkish', ${q}))`,
           ),
           desc(forumThreads.lastActivityAt),
         )
+        .limit(limit);
+    });
+  }
+
+  async searchZones(q: string, limit: number): Promise<ForumZoneSearchRow[]> {
+    return withServiceContext(this.db, (tx) => {
+      const document = sql`to_tsvector('turkish', ${forumZones.title} || ' ' || coalesce(${forumZones.description}, ''))`;
+      const query = sql`websearch_to_tsquery('turkish', ${q})`;
+      return tx
+        .select({
+          id: forumZones.id,
+          slug: forumZones.slug,
+          title: forumZones.title,
+          type: forumZones.type,
+          description: forumZones.description,
+        })
+        .from(forumZones)
+        .where(
+          and(
+            eq(forumZones.visibility, "PUBLIC"),
+            eq(forumZones.isArchived, false),
+            sql`${document} @@ ${query}`,
+          ),
+        )
+        .orderBy(desc(sql`ts_rank(${document}, ${query})`), asc(forumZones.title))
         .limit(limit);
     });
   }

@@ -2,47 +2,31 @@
 
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { VisionBoardDoc, VisionBoardItem } from "@mentor/types";
-import {
-  BOARD_COLORS,
-  PLATE_COLORS,
-  TEXT_COLORS,
-  type ColorPanelTarget,
-} from "./board-palettes";
+import type { VisionBoardItem } from "@mentor/types";
+import { PLATE_COLORS, TEXT_COLORS, type ColorPanelTarget } from "./board-palettes";
+import { Swatch } from "./board-swatch";
 
 export interface BoardColorPanelProps {
   target: ColorPanelTarget;
   selected: VisionBoardItem | null;
-  doc: VisionBoardDoc;
   onPatch: (patch: Partial<VisionBoardItem>) => void;
-  onSetBackground: (background: VisionBoardDoc["background"]) => void;
   onClose: () => void;
 }
 
-export function BoardColorPanel({
-  target,
-  selected,
-  doc,
-  onPatch,
-  onSetBackground,
-  onClose,
-}: BoardColorPanelProps) {
+export function BoardColorPanel({ target, selected, onPatch, onClose }: BoardColorPanelProps) {
   const t = useTranslations("vision.board");
 
-  const colors =
-    target === "text" ? TEXT_COLORS : target === "plate" ? PLATE_COLORS : BOARD_COLORS;
+  const colors = target === "text" ? TEXT_COLORS : PLATE_COLORS;
 
   const active =
     target === "text" && selected?.kind === "text"
       ? selected.color
       : target === "plate" && selected?.kind === "text"
         ? selected.background?.color
-        : target === "board" && doc.background.kind === "color"
-          ? doc.background.value
-          : null;
+        : null;
 
   return (
-    <div className="flex flex-col gap-3 p-3">
+    <div className="flex flex-col gap-3 px-3 pb-3 pt-8">
       <div className="flex items-center justify-between gap-2">
         <h2
           className="text-sm font-bold"
@@ -62,20 +46,17 @@ export function BoardColorPanel({
       </div>
 
       <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
-        {target === "text"
-          ? t("color")
-          : target === "plate"
-            ? t("plate")
-            : t("background")}
+        {target === "text" ? t("color") : t("plate")}
       </p>
 
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-2 pt-2">
         {colors.map((color) => (
-          <button
+          <Swatch
             key={color}
-            type="button"
-            aria-label={`${t("color")}: ${color}`}
-            aria-pressed={active === color}
+            color={color}
+            label={t("color")}
+            active={active === color}
+            size="lg"
             onClick={() => {
               if (target === "text" && selected?.kind === "text") {
                 onPatch({ color });
@@ -83,26 +64,9 @@ export function BoardColorPanel({
               }
               if (target === "plate" && selected?.kind === "text" && selected.background) {
                 onPatch({ background: { ...selected.background, color } });
-                return;
-              }
-              if (target === "board") {
-                onSetBackground({ kind: "color", value: color });
               }
             }}
-            className="grid h-11 w-11 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          >
-            <span
-              className="block h-6 w-6 rounded-full"
-              style={{
-                backgroundColor: color,
-                outline:
-                  active === color
-                    ? "2px solid var(--color-accent)"
-                    : "1px solid rgba(0,0,0,0.12)",
-                outlineOffset: "2px",
-              }}
-            />
-          </button>
+          />
         ))}
       </div>
     </div>

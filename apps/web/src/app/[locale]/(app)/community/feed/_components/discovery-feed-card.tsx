@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState, type KeyboardEvent, type MouseEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ForumFeedItem } from "@mentor/types";
-import { Link } from "@/i18n/navigation";
+import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
+import { Link, useRouter } from "@/i18n/navigation";
+import { relativeTime } from "@/lib/relative-time";
 import {
   bookmarkThread,
   createReport,
@@ -18,8 +20,9 @@ import { AuthorAvatar } from "../../_components/author-avatar";
 import { BookmarkButton } from "../../_components/bookmark-button";
 import { SendButton } from "../../_components/send-button";
 import { AttachmentGallery } from "../../_components/attachment-gallery";
-
-const LIKE_EMOJI = "❤️";
+import { CommentIcon } from "../../_components/forum-icons";
+import { ReactionBar } from "../../_components/reaction-bar";
+import { useCommunityQuickReply } from "../../_components/community-quick-reply";
 
 export function DiscoveryFeedCard({
   item,
@@ -32,6 +35,8 @@ export function DiscoveryFeedCard({
 }) {
   const t = useTranslations("community");
   const locale = useLocale();
+  const router = useRouter();
+  const { openQuickReply } = useCommunityQuickReply();
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(item.title ?? "");
@@ -40,16 +45,24 @@ export function DiscoveryFeedCard({
   const detailHref = isQa
     ? ({ pathname: "/community/question/[threadId]", params: { threadId: item.id } } as const)
     : ({ pathname: "/community/message/[threadId]", params: { threadId: item.id } } as const);
-  const totalReactions = useMemo(
-    () => Object.values(item.reactionCounts).reduce((sum, count) => sum + count, 0),
-    [item.reactionCounts],
-  );
-  const date = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "short",
-  }).format(new Date(item.createdAt));
+  const date = relativeTime(item.createdAt, locale);
 
   const patch = (next: Partial<ForumFeedItem>) => onChange?.({ ...item, ...next });
+
+  const openDetail = () => router.push(detailHref);
+  const isInteractiveTarget = (target: EventTarget | null) =>
+    target instanceof HTMLElement &&
+    Boolean(target.closest("a,button,input,textarea,select,[role='menuitem']"));
+  const handleCardClick = (event: MouseEvent<HTMLElement>) => {
+    if (!editing && !isInteractiveTarget(event.target)) openDetail();
+  };
+  const handleCardKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (editing || isInteractiveTarget(event.target)) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openDetail();
+    }
+  };
 
   const toggleHelpful = async () => {
     if (busyAction) return;
@@ -68,22 +81,22 @@ export function DiscoveryFeedCard({
     }
   };
 
-  const toggleLike = async () => {
+  const changeReaction = async (nextEmoji: string | null, previousEmoji: string | null) => {
     if (busyAction) return;
-    const selected = !item.myReactions.includes(LIKE_EMOJI);
-    const current = item.reactionCounts[LIKE_EMOJI] ?? 0;
+    const nextCounts = { ...item.reactionCounts };
+    if (previousEmoji) nextCounts[previousEmoji] = Math.max(0, (nextCounts[previousEmoji] ?? 0) - 1);
+    if (nextEmoji) nextCounts[nextEmoji] = (nextCounts[nextEmoji] ?? 0) + 1;
     patch({
-      myReactions: selected
-        ? [...item.myReactions, LIKE_EMOJI]
-        : item.myReactions.filter((emoji) => emoji !== LIKE_EMOJI),
-      reactionCounts: {
-        ...item.reactionCounts,
-        [LIKE_EMOJI]: Math.max(0, current + (selected ? 1 : -1)),
-      },
+      myReactions: nextEmoji ? [nextEmoji] : [],
+      reactionCounts: nextCounts,
     });
     setBusyAction("reaction");
     try {
-      await (selected ? reactThread(item.id, LIKE_EMOJI) : unreactThread(item.id, LIKE_EMOJI));
+      await (nextEmoji
+        ? reactThread(item.id, nextEmoji)
+        : previousEmoji
+          ? unreactThread(item.id, previousEmoji)
+          : Promise.resolve());
     } catch {
       patch({ myReactions: item.myReactions, reactionCounts: item.reactionCounts });
     } finally {
@@ -113,23 +126,33 @@ export function DiscoveryFeedCard({
 
   return (
     <article
-      className="rounded-[14px] border border-[#e2e5ea] bg-white p-5 transition-colors hover:border-[var(--community-blue-border)] sm:p-6"
+      role="link"
+      tabIndex={0}
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
+      className="cursor-pointer border-b border-[#e7e9ee] bg-white p-4 transition-colors last:border-b-0 hover:bg-black/[0.015] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:p-5"
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <Link
-            href={{ pathname: "/community/[slug]", params: { slug: item.zone.slug } }}
-            className="rounded-full px-2.5 py-1 text-[11px] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            style={{
-              background: isQa ? "#fff0e9" : item.zone.type === "ANNOUNCEMENT" ? "#eaf4ee" : "#f0efff",
-              color: isQa ? "#a45636" : item.zone.type === "ANNOUNCEMENT" ? "#49735a" : "#5a5592",
-            }}
-          >
-            {item.zone.title}
-          </Link>
-          <span className="text-[11px] font-semibold text-[#777d87]">
-            {isQa ? t("type_qa") : item.zone.type === "ANNOUNCEMENT" ? t("type_announcement") : t("type_chat")}
-          </span>
+        <div className="flex min-w-0 items-center gap-3">
+          <AuthorAvatar name={item.author.displayName} src={item.author.avatarUrl} size={40} />
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-1.5 text-sm">
+              <span className="truncate font-bold text-[var(--color-main)]">{item.author.displayName}</span>
+              <span className="truncate text-[var(--color-secondary)]">@{item.author.username}</span>
+              <span className="text-[var(--color-secondary)]">·</span>
+              <span className="shrink-0 text-[var(--color-secondary)]">{date}</span>
+            </div>
+            <div className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-[var(--color-secondary)]">
+              <Link
+                href={{ pathname: "/community/[slug]", params: { slug: item.zone.slug } }}
+                className="truncate font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              >
+                {item.zone.title}
+              </Link>
+              <span>·</span>
+              <span>{isQa ? t("type_qa") : item.zone.type === "ANNOUNCEMENT" ? t("type_announcement") : t("type_chat")}</span>
+            </div>
+          </div>
           {item.status === "ANSWERED" && (
             <span className="text-[11px] font-bold text-[#4e8060]">
               {t("answered")}
@@ -137,68 +160,57 @@ export function DiscoveryFeedCard({
           )}
         </div>
         <div className="flex items-center gap-1">
-          <BookmarkButton
-            bookmarked={item.myBookmarked}
-            onToggle={(selected) => {
-              patch({ myBookmarked: selected });
-              bookmarkThread(item.id, selected).catch(() => patch({ myBookmarked: item.myBookmarked }));
-            }}
-          />
-          <SendButton href={detailHref} />
           {(item.capabilities.canEdit || item.capabilities.canDelete || item.capabilities.canModerate) && (
-            <details className="relative">
-              <summary
-                className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-full text-lg hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                aria-label={t("actions")}
-              >
-                ···
-              </summary>
-              <div className="absolute right-0 z-20 mt-1 w-44 rounded-xl border bg-white p-1 shadow-lg">
-                {item.capabilities.canEdit && (
-                  <button
-                    type="button"
-                    onClick={() => setEditing(true)}
-                    className="min-h-11 w-full rounded-lg px-3 text-left text-sm hover:bg-black/[0.04]"
-                  >
-                    {t("edit")}
-                  </button>
-                )}
-                {item.capabilities.canModerate && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void pinThread(item.id, !item.isPinned).then(() => patch({ isPinned: !item.isPinned }));
-                    }}
-                    className="min-h-11 w-full rounded-lg px-3 text-left text-sm hover:bg-black/[0.04]"
-                  >
-                    {item.isPinned ? t("unpin") : t("pin")}
-                  </button>
-                )}
-                {item.capabilities.canDelete && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm(t("delete_confirm"))) {
-                        void deleteThread(item.id).then(() => onChange?.(null));
-                      }
-                    }}
-                    className="min-h-11 w-full rounded-lg px-3 text-left text-sm hover:bg-black/[0.04]"
-                    style={{ color: "var(--color-error, #9c2f2f)" }}
-                  >
-                    {t("delete")}
-                  </button>
-                )}
-                {!item.capabilities.canDelete && (
-                  <button
-                    type="button"
-                    onClick={() => void createReport("THREAD", item.id, "OTHER")}
-                    className="min-h-11 w-full rounded-lg px-3 text-left text-sm hover:bg-black/[0.04]"
-                  >
-                    {t("report")}
-                  </button>
-                )}
-              </div>
-            </details>
+            <PopoverMenu
+              align="right"
+              menuClassName="w-44"
+              trigger={({ open, setOpen, menuId }) => (
+                <button
+                  type="button"
+                  aria-label={t("actions")}
+                  aria-haspopup="menu"
+                  aria-expanded={open}
+                  aria-controls={open ? menuId : undefined}
+                  onClick={() => setOpen(!open)}
+                  className="flex size-8 cursor-pointer items-center justify-center rounded-full text-[var(--color-secondary)] transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <circle cx="5" cy="12" r="1.6" />
+                    <circle cx="12" cy="12" r="1.6" />
+                    <circle cx="19" cy="12" r="1.6" />
+                  </svg>
+                </button>
+              )}
+            >
+              {item.capabilities.canEdit ? (
+                <PopoverMenuItem onClick={() => setEditing(true)}>{t("edit")}</PopoverMenuItem>
+              ) : null}
+              {item.capabilities.canModerate ? (
+                <PopoverMenuItem
+                  onClick={() => {
+                    void pinThread(item.id, !item.isPinned).then(() => patch({ isPinned: !item.isPinned }));
+                  }}
+                >
+                  {item.isPinned ? t("unpin") : t("pin")}
+                </PopoverMenuItem>
+              ) : null}
+              {item.capabilities.canDelete ? (
+                <PopoverMenuItem
+                  danger
+                  onClick={() => {
+                    if (window.confirm(t("delete_confirm"))) {
+                      void deleteThread(item.id).then(() => onChange?.(null));
+                    }
+                  }}
+                >
+                  {t("delete")}
+                </PopoverMenuItem>
+              ) : (
+                <PopoverMenuItem onClick={() => void createReport("THREAD", item.id, "OTHER")}>
+                  {t("report")}
+                </PopoverMenuItem>
+              )}
+            </PopoverMenu>
           )}
         </div>
       </div>
@@ -275,56 +287,74 @@ export function DiscoveryFeedCard({
         </div>
       )}
 
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#f0f1f4] pt-4">
-        <div className="flex min-w-0 items-center gap-2">
-          <AuthorAvatar name={item.author.displayName} src={item.author.avatarUrl} size={32} />
-          <div className="min-w-0 text-xs">
-            <div className="truncate font-bold text-[#282c35]">
-              {item.author.displayName}
-              <span className="ml-1 font-normal text-[#858a94]">
-                @{item.author.username}
-              </span>
-            </div>
-            <div className="mt-0.5 text-[#858a94]">
-              {date}
-              {item.editedAt ? ` · ${t("edited")}` : ""}
-              {item.lastActivityAt !== item.createdAt ? ` · ${t("last_activity")}` : ""}
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-1">
+      <div className="mt-3 flex w-full items-center justify-between gap-1">
+        <div className="flex min-w-11 items-center justify-start">
           {isQa ? (
             <button
               type="button"
               aria-pressed={item.myHelpfulVote}
               disabled={busyAction === "helpful"}
               onClick={() => void toggleHelpful()}
-              className="min-h-11 rounded-full border border-transparent px-3 text-sm font-bold hover:bg-[#f3f4f6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              className="min-h-11 px-2 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
               style={{
-                background: item.myHelpfulVote ? "#eaf7f0" : "transparent",
                 color: item.myHelpfulVote ? "#287954" : "#242833",
               }}
             >
               +1 {t("helpful")} · {item.helpfulVoteCount}
             </button>
           ) : (
-            <button
-              type="button"
-              aria-pressed={item.myReactions.includes(LIKE_EMOJI)}
-              disabled={busyAction === "reaction"}
-              onClick={() => void toggleLike()}
-              className={`min-h-11 rounded-full px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${item.myReactions.includes(LIKE_EMOJI) ? "bg-[#fff0ed] text-[#c94f3d]" : "hover:bg-[#f3f4f6]"}`}
-            >
-              {LIKE_EMOJI} {totalReactions}
-            </button>
+            <ReactionBar
+              reactionCounts={item.reactionCounts}
+              myReactions={item.myReactions}
+              onChange={(nextEmoji, previousEmoji) => void changeReaction(nextEmoji, previousEmoji)}
+            />
           )}
+        </div>
+        {isQa ? (
           <Link
             href={detailHref}
-            className="flex min-h-11 items-center rounded-full px-3 text-sm font-semibold text-[#555b66] hover:bg-[#f3f4f6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            aria-label={t("comment_total", { count: item.commentCount })}
+            className="community-post-action flex min-h-11 min-w-11 items-center justify-center gap-1 text-sm text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           >
-            {t("comment_total", { count: item.commentCount })}
+            <CommentIcon />
+            {item.commentCount > 0 ? <span className="text-[13px]">{item.commentCount}</span> : null}
           </Link>
-        </div>
+        ) : (
+          <button
+            type="button"
+            aria-label={t("comment_total", { count: item.commentCount })}
+            className="community-post-action flex min-h-11 min-w-11 items-center justify-center gap-1 text-sm text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            onClick={(event) => {
+              event.stopPropagation();
+              openQuickReply({
+                targetType: "thread",
+                targetId: item.id,
+                zoneId: item.zone.id,
+                author: {
+                  displayName: item.author.displayName,
+                  username: item.author.username,
+                  avatarUrl: item.author.avatarUrl,
+                },
+                createdAt: item.createdAt,
+                body: item.body,
+                attachments: item.attachments,
+                onPendingChange: (delta) =>
+                  patch({ commentCount: Math.max(0, item.commentCount + delta) }),
+              });
+            }}
+          >
+            <CommentIcon />
+            {item.commentCount > 0 ? <span className="text-[13px]">{item.commentCount}</span> : null}
+          </button>
+        )}
+        <SendButton href={detailHref} />
+        <BookmarkButton
+          bookmarked={item.myBookmarked}
+          onToggle={(selected) => {
+            patch({ myBookmarked: selected });
+            bookmarkThread(item.id, selected).catch(() => patch({ myBookmarked: item.myBookmarked }));
+          }}
+        />
       </div>
     </article>
   );

@@ -134,6 +134,12 @@ export const forumFeedQuerySchema = z.object({
 });
 export type ForumFeedQuery = z.infer<typeof forumFeedQuerySchema>;
 
+export const forumTrendsQuerySchema = z.object({
+  scope: z.enum(["relevant", "exam", "general"]).default("relevant"),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+export type ForumTrendsQuery = z.infer<typeof forumTrendsQuerySchema>;
+
 /** Global discovery search returns at most five threads, tags, and public-safe people per group. */
 export const forumSearchQuerySchema = z.object({
   q: z.string().trim().min(2).max(120),

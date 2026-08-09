@@ -24,7 +24,7 @@ export function BookmarkButton({
         e.stopPropagation();
         onToggle(!bookmarked);
       }}
-      className="group/bm flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+      className="community-post-action group/bm flex size-11 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       style={{ color: bookmarked ? "var(--color-chip-text)" : "var(--color-main)" }}
     >
       <span

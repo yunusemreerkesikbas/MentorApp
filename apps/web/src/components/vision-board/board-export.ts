@@ -87,7 +87,14 @@ function paintBackground(ctx: CanvasRenderingContext2D, doc: VisionBoardDoc): vo
     return;
   }
   const texture = doc.background.value;
-  const base = { cork: "#d8b083", paper: "#faf7f2", grid: "#ffffff", linen: "#f2efe9" }[texture];
+  const base = {
+    cork: "#d8b083",
+    paper: "#faf7f2",
+    grid: "#ffffff",
+    linen: "#f2efe9",
+    dots: "#f5f6fb",
+    stripes: "#fdf6f0",
+  }[texture];
   ctx.fillStyle = base;
   ctx.fillRect(0, 0, width, height);
 
@@ -117,10 +124,28 @@ function paintBackground(ctx: CanvasRenderingContext2D, doc: VisionBoardDoc): vo
       ctx.lineTo(width, y);
       ctx.stroke();
     }
-  } else {
+  } else if (texture === "linen") {
     ctx.strokeStyle = "rgba(0, 0, 0, 0.03)";
     ctx.lineWidth = 2;
     for (let i = -height; i < width; i += 4) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i + height, height);
+      ctx.stroke();
+    }
+  } else if (texture === "dots") {
+    ctx.fillStyle = "rgba(85, 172, 238, 0.28)";
+    for (let y = 0; y < height; y += 24) {
+      for (let x = 0; x < width; x += 24) {
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  } else {
+    ctx.strokeStyle = "rgba(243, 112, 90, 0.14)";
+    ctx.lineWidth = 6;
+    for (let i = -height; i < width; i += 16) {
       ctx.beginPath();
       ctx.moveTo(i, 0);
       ctx.lineTo(i + height, height);
@@ -178,11 +203,18 @@ function drawImageItem(
   }
 }
 
-const FONT_FAMILIES: Record<VisionBoardTextItem["font"], string> = {
+export const FONT_FAMILIES: Record<VisionBoardTextItem["font"], string> = {
   body: '"Nunito Sans", sans-serif',
-  heading: '"Nunito Sans", sans-serif',
+  heading: '"Poppins", sans-serif',
   script: '"Caveat", cursive',
-  serif: 'Georgia, "Times New Roman", serif',
+  serif: '"Playfair Display", Georgia, serif',
+  rounded: '"Baloo 2", sans-serif',
+  condensed: '"Oswald", sans-serif',
+  classic: '"Merriweather", serif',
+  impact: '"Anton", sans-serif',
+  elegant: '"Dancing Script", cursive',
+  slab: '"Bitter", serif',
+  mono: '"Space Mono", monospace',
 };
 
 function drawTextItem(ctx: CanvasRenderingContext2D, item: VisionBoardTextItem): void {
@@ -272,7 +304,7 @@ async function drawItem(ctx: CanvasRenderingContext2D, item: VisionBoardItem): P
       ctx.scale(item.width / 100, item.height / 100);
       ctx.translate(-50, -50);
       ctx.fillStyle = cssVar(art.fill.replace(/^var\((--[^)]+)\)$/, "$1"), "#111111");
-      ctx.fill(new Path2D(art.path));
+      ctx.fill(new Path2D(art.path), art.fillRule ?? "nonzero");
     }
   }
   ctx.restore();

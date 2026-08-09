@@ -13,9 +13,22 @@ import { createTextItem } from "@/components/vision-board/board-document";
  * keeps the goal text the user already has; it rearranges, it does not erase.
  */
 
-export type BoardTemplateId = "collage" | "minimal" | "columns";
+export type BoardTemplateId =
+  | "collage"
+  | "minimal"
+  | "columns"
+  | "grid"
+  | "hero"
+  | "filmstrip";
 
-export const BOARD_TEMPLATE_IDS: BoardTemplateId[] = ["collage", "minimal", "columns"];
+export const BOARD_TEMPLATE_IDS: BoardTemplateId[] = [
+  "collage",
+  "minimal",
+  "columns",
+  "grid",
+  "hero",
+  "filmstrip",
+];
 
 const { width: W, height: H } = VISION_BOARD_CANVAS;
 
@@ -46,11 +59,41 @@ const SLOTS: Record<BoardTemplateId, TemplateSlot[]> = {
     { x: 1120, y: 150, width: 400, height: 360, rotation: 0 },
     { x: 1120, y: 560, width: 400, height: 360, rotation: 0 },
   ],
+  grid: [
+    { x: 60, y: 160, width: 440, height: 300, rotation: 0 },
+    { x: 590, y: 160, width: 440, height: 300, rotation: 0 },
+    { x: 1120, y: 160, width: 440, height: 300, rotation: 0 },
+    { x: 60, y: 520, width: 440, height: 300, rotation: 0 },
+    { x: 590, y: 520, width: 440, height: 300, rotation: 0 },
+    { x: 1120, y: 520, width: 440, height: 300, rotation: 0 },
+  ],
+  hero: [
+    { x: 90, y: 220, width: 820, height: 760, rotation: 0 },
+    { x: 970, y: 220, width: 560, height: 360, rotation: 2 },
+    { x: 970, y: 620, width: 560, height: 360, rotation: -2 },
+  ],
+  filmstrip: [
+    { x: 150, y: 140, width: 1320, height: 460, rotation: 0 },
+    { x: 150, y: 660, width: 300, height: 300, rotation: 0 },
+    { x: 490, y: 660, width: 300, height: 300, rotation: 0 },
+    { x: 830, y: 660, width: 300, height: 300, rotation: 0 },
+    { x: 1170, y: 660, width: 300, height: 300, rotation: 0 },
+  ],
 };
 
 export function templateSlots(id: BoardTemplateId): TemplateSlot[] {
   return SLOTS[id];
 }
+
+/** Where each template puts the goal headline — shared by `applyTemplate` and the rail preview. */
+export const TEMPLATE_HEADLINES: Record<BoardTemplateId, { y: number; size: number }> = {
+  collage: { y: H / 2 - 60, size: 76 },
+  minimal: { y: 120, size: 88 },
+  columns: { y: H / 2 - 60, size: 68 },
+  grid: { y: 860, size: 64 },
+  hero: { y: 60, size: 72 },
+  filmstrip: { y: 40, size: 60 },
+};
 
 /**
  * Apply a template to the current document.
@@ -71,17 +114,11 @@ export function applyTemplate(doc: VisionBoardDoc, id: BoardTemplateId): VisionB
   });
 
   // The goal line goes where the template wants a headline; user-written text is left alone.
-  const headline: Record<BoardTemplateId, { y: number; size: number }> = {
-    collage: { y: H / 2 - 60, size: 76 },
-    minimal: { y: 120, size: 88 },
-    columns: { y: H / 2 - 60, size: 68 },
-  };
-
   return {
     ...doc,
     items: items.map((item) =>
       item.kind === "text" && item.source === "goal"
-        ? { ...item, x: (W - item.width) / 2, ...headline[id] }
+        ? { ...item, x: (W - item.width) / 2, ...TEMPLATE_HEADLINES[id] }
         : item,
     ),
   };

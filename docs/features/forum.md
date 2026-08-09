@@ -73,9 +73,9 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `GET /v1/forum/threads/:threadId/detail` | CHAT/ANNOUNCEMENT thread + top-level comments |
 | `POST /v1/forum/threads/:threadId/comments` | Comment on a CHAT/ANNOUNCEMENT thread |
 | `GET/POST /v1/forum/posts/:postId[/replies]` | Comment detail / reply (nested) |
-| `PUT/DELETE /v1/forum/posts/:postId/reactions` | Toggle like on a comment |
+| `PUT/DELETE /v1/forum/posts/:postId/reactions` | Set/replace or remove the viewer's single comment reaction |
 | `POST /v1/forum/threads/:threadId/accept/:postId` | Accept answer (asker, one-shot) |
-| `PUT/DELETE /v1/forum/threads/:threadId/reactions` | Toggle emoji reaction |
+| `PUT/DELETE /v1/forum/threads/:threadId/reactions` | Set/replace or remove the viewer's single thread reaction |
 | `POST /v1/forum/threads/:threadId/pin` | Pin/unpin thread |
 | `POST /v1/forum/attachments/upload-url` | Presigned image upload URL (APP-018) |
 | `PUT/DELETE /v1/forum/threads\|posts/:id/bookmark` | Toggle bookmark (APP-018) |
@@ -91,8 +91,9 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `GET /v1/forum/reports` | Platform moderation queue |
 | `POST /v1/forum/reports/:id/resolve` | Hide/dismiss report |
 | `POST /v1/forum/threads/:threadId/restore` | Restore hidden thread |
-| `GET /v1/forum/search?q=` | Full-text search (QA only) |
+| `GET /v1/forum/search?q=` | Grouped full-text community search (threads, QA questions, public zones, tags, public-safe people; max 5 each) |
 | `GET /v1/forum/hub` | Discovery hub: featured, continue/new blend, trend tags, supporters, room suggestions |
+| `GET /v1/forum/trends?scope=relevant\|exam\|general&limit=` | Exam-aware, time-windowed community tag trends |
 | `GET /v1/forum/feed?scope=&sort=&tag=&zoneType=&cursor=` | Global relevant/following feed with server ranking and opaque cursor |
 | `GET /v1/forum/tags` | Locale-resolved active curated tags |
 | `GET /v1/forum/zones/:slug/feed` | Zone metadata + first feed page + contributors + pinned threads in one request |
@@ -104,6 +105,15 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `GET /v1/forum/public/questions?limit=` | Public QA refs (sitemap) |
 
 ## Geliştirmeler (timeline)
+
+- **Sınava duyarlı Gündem ve tek reaction (2026-08-09)** — `GET /v1/forum/trends` mevcut
+  thread–etiket ilişkilerini ayarlanabilir pencere (varsayılan 72 saat) içinde toplar; yalnız aktif
+  etiketleri, silinmemiş thread'leri ve açık public odaları `relevant`, `exam`, `general` kapsamlarında
+  döndürür. Ayrı cron/tablo yoktur; `/forum/hub.trendingTags` uyumluluğu korunur. Thread ve yorum
+  reaction'ları hedef+kullanıcı başına teke indirildi: PUT atomik ekler/değiştirir, aynı seçim DELETE
+  ile kaldırılır. `0076_forum_single_reaction.sql` eski çoklu kayıtları en yeni kayıt kalacak biçimde
+  temizler ve benzersiz indeksleri daraltır. İlgili: `forum-discovery.{service,repository}.ts`,
+  `forum-{thread,post}.repository.ts`, `schema.ts`, `packages/{types,validation}/src/forum.ts`.
 
 - **ThreadMenu → shared PopoverMenu (2026-08-01)** — Topluluk ⋯ menüsü
   `PopoverMenu` / `PopoverMenuItem` kullanıyor (Plan / Vision ile aynı panel).

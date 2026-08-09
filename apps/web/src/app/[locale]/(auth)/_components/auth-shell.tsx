@@ -1,11 +1,10 @@
 "use client";
-import { ChevronLeft } from "lucide-react";
 
 import { useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
+import { CircularBackLink } from "@/components/circular-back-link";
 import { isWelcomeSeen } from "@/lib/welcome-seen";
 
 const subscribeWelcomeSeen = () => () => undefined;
@@ -51,14 +50,11 @@ export function AuthShell({ children }: { children: ReactNode }) {
       >
         {showBackHome ? (
           <motion.header className="mb-4" {...headerMotion}>
-            <Link
+            <CircularBackLink
               href="/"
-              aria-label={t("back_home")}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-black/5 transition-colors hover:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
-              style={{ color: "var(--color-main)" }}
-            >
-              <ChevronLeft size={20} strokeWidth={2} aria-hidden />
-            </Link>
+              label={t("back_home")}
+              variant="soft"
+            />
           </motion.header>
         ) : null}
         <div className="flex flex-1 flex-col justify-center">{children}</div>

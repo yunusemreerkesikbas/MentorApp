@@ -12,6 +12,7 @@ import {
   feedQuerySchema,
   forumFeedQuerySchema,
   forumSearchQuerySchema,
+  forumTrendsQuerySchema,
   memberSearchQuerySchema,
   pinThreadSchema,
   reactionSchema,
@@ -45,6 +46,7 @@ export class ReportsQueryDto extends createZodDto(reportsQuerySchema) {}
 export class ResolveReportDto extends createZodDto(resolveReportSchema) {}
 export class ForumFeedQueryDto extends createZodDto(forumFeedQuerySchema) {}
 export class ForumSearchQueryDto extends createZodDto(forumSearchQuerySchema) {}
+export class ForumTrendsQueryDto extends createZodDto(forumTrendsQuerySchema) {}
 export class UpdateForumThreadDto extends createZodDto(updateForumThreadSchema) {}
 export class UpdateForumPostDto extends createZodDto(updateForumPostSchema) {}
 export class AdminForumTagCreateDto extends createZodDto(adminForumTagCreateSchema) {}

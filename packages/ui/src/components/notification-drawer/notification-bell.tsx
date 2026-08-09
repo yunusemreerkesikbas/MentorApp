@@ -2,12 +2,15 @@
 import { Bell } from "lucide-react";
 
 import { useNotificationDrawer } from "./notification-drawer-context.js";
+import type { NotificationDrawerDesktopSide } from "./types.js";
 
 export interface NotificationBellProps {
   /** Screen-reader label for the bell button. */
   label?: string;
   /** Word appended after unread count in the aria-label. e.g. "okunmamış" / "unread" */
   unreadLabel?: string;
+  /** Desktop panel edge. Mobile always uses the right-side drawer pattern. */
+  desktopSide?: NotificationDrawerDesktopSide;
 }
 
 /**
@@ -17,6 +20,7 @@ export interface NotificationBellProps {
 export function NotificationBell({
   label = "Notifications",
   unreadLabel = "unread",
+  desktopSide = "left",
 }: NotificationBellProps) {
   const { toggle, unreadCount } = useNotificationDrawer();
 
@@ -27,7 +31,7 @@ export function NotificationBell({
         unreadCount > 0 ? `${label} (${unreadCount} ${unreadLabel})` : label
       }
       aria-haspopup="dialog"
-      onClick={toggle}
+      onClick={() => toggle(desktopSide)}
       className="relative flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-black/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 active:scale-95"
     >
       <Bell size={24} color="var(--color-main)" strokeWidth={2} aria-hidden />

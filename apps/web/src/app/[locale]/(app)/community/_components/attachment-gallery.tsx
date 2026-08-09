@@ -7,10 +7,10 @@ import { resolveApiUrl } from "@/lib/api-base";
 import { formatBytes } from "@/lib/format-bytes";
 
 /**
- * Post image gallery (Phase 1). 1 image keeps its aspect ratio (capped); 2–4 tile in a 2-col grid
- * (3 → first spans both columns). Tapping opens a lightbox carousel (arrows + keyboard + swipe + dots
- * across all images of the post). Lives inside clickable feed rows, so every interaction stops
- * propagation to avoid triggering the row's navigation.
+ * Post image gallery (Phase 1). Every post uses the same 16:9 media frame; images crop with cover.
+ * 2–4 images tile inside that frame. Tapping opens the uncropped lightbox carousel (arrows + keyboard
+ * + swipe + dots across all images of the post). Lives inside clickable feed rows, so every
+ * interaction stops propagation to avoid triggering the row's navigation.
  */
 export function AttachmentGallery({ attachments }: { attachments: Attachment[] }) {
   const t = useTranslations("community");
@@ -46,12 +46,11 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
     <>
       {count > 0 && (
       <div
-        className={`mt-2 grid gap-1 overflow-hidden rounded-[var(--radius-card)] ${single ? "grid-cols-1" : "grid-cols-2"}`}
+        className={`mt-2 grid aspect-[16/9] gap-1 overflow-hidden rounded-[var(--radius-card)] ${single ? "grid-cols-1" : "grid-cols-2"} ${count > 2 ? "grid-rows-2" : ""}`}
         style={{ border: "1px solid rgba(0,0,0,0.08)" }}
       >
         {images.map((a, i) => {
-          const ratio = single && a.width && a.height ? `${a.width} / ${a.height}` : "1 / 1";
-          const span = !single && count === 3 && i === 0 ? "col-span-2" : "";
+          const span = count === 3 && i === 0 ? "row-span-2" : "";
           return (
             <button
               key={a.id}
@@ -61,12 +60,16 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
                 e.stopPropagation();
                 setActiveIndex(i);
               }}
-              className={`relative block w-full cursor-pointer overflow-hidden bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${span}`}
-              style={{ aspectRatio: ratio, maxHeight: single ? 420 : undefined }}
+              className={`relative block h-full min-h-0 w-full cursor-pointer overflow-hidden bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${span}`}
             >
               {/* Storage URL (not next/image — dev fake endpoint + R2 aren't in the image config). */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={resolveApiUrl(a.url)} alt="" loading="lazy" className="h-full w-full object-cover" />
+              <img
+                src={resolveApiUrl(a.url)}
+                alt=""
+                loading="lazy"
+                className="h-full w-full object-cover object-center"
+              />
             </button>
           );
         })}

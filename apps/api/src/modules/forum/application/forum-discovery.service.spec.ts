@@ -13,6 +13,10 @@ const repo = {
   updateThread: vi.fn(),
   getFeaturedThread: vi.fn(),
   setFeaturedThread: vi.fn(),
+  trendingTags: vi.fn(),
+  searchThreadSummaries: vi.fn(),
+  searchZones: vi.fn(),
+  searchTags: vi.fn(),
 };
 const threads = {
   findById: vi.fn(),
@@ -24,7 +28,7 @@ const attachments = {};
 const bookmarks = {};
 const forum = {};
 const threadService = {};
-const users = {};
+const users = { getDiscoveryProfile: vi.fn(), searchPublicUsers: vi.fn() };
 const follow = {};
 const config = { get: vi.fn() };
 const storage = { getPublicUrl: vi.fn((key: string) => `https://cdn.test/${key}`) };
@@ -63,6 +67,88 @@ describe("ForumDiscoveryService mutations", () => {
       code: ErrorCode.FORUM_DISABLED,
       httpStatus: HttpStatus.NOT_FOUND,
     });
+  });
+
+  it("returns exam-aware trends with the configured activity window", async () => {
+    users.getDiscoveryProfile.mockResolvedValue({ examType: "KPSS" });
+    repo.trendingTags.mockResolvedValue([
+      {
+        tag: {
+          id: "11111111-1111-4111-8111-111111111111",
+          slug: "paragraf",
+          nameTr: "Paragraf",
+          nameEn: "Paragraph",
+          examType: "KPSS",
+          coachIntent: null,
+          isActive: true,
+          createdBy: null,
+          updatedBy: null,
+          createdAt: new Date("2026-08-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-08-01T00:00:00.000Z"),
+        },
+        threadCount: 8,
+        latestActivityAt: new Date("2026-08-09T08:00:00.000Z"),
+      },
+    ]);
+    config.get.mockImplementation((key: string) => {
+      if (key === "forum.enabled") return Promise.resolve(true);
+      if (key === "forum.discovery.trending_window_hours") return Promise.resolve(72);
+      return Promise.resolve(0);
+    });
+
+    await expect(
+      service().getTrends({ id: "viewer", roles: ["STUDENT"] }, { scope: "exam", limit: 5 }, "tr"),
+    ).resolves.toMatchObject({
+      scope: "exam",
+      examType: "KPSS",
+      windowHours: 72,
+      items: [{ slug: "paragraf", name: "Paragraf", threadCount: 8 }],
+    });
+    expect(repo.trendingTags).toHaveBeenCalledWith("tr", "KPSS", 5, "exam", 72);
+  });
+
+  it("returns backward-compatible search groups plus public zones and QA questions", async () => {
+    const chatThread = {
+      id: "11111111-1111-4111-8111-111111111111",
+      zoneSlug: "matematik-geometri",
+      zoneTitle: "Matematik & Geometri",
+      zoneType: "CHAT",
+      title: "Problem rutini",
+      body: "Her sabah kısa bir problem rutini uyguluyorum.",
+      commentCount: 3,
+      lastActivityAt: new Date("2026-08-09T08:00:00.000Z"),
+    };
+    const question = {
+      ...chatThread,
+      id: "22222222-2222-4222-8222-222222222222",
+      zoneSlug: "soru-cevap",
+      zoneTitle: "Soru & Cevap",
+      zoneType: "QA",
+      title: "Problem rutinini nasıl kuruyorsunuz?",
+    };
+    repo.searchThreadSummaries.mockResolvedValueOnce([chatThread]).mockResolvedValueOnce([question]);
+    repo.searchZones.mockResolvedValue([
+      {
+        id: "33333333-3333-4333-8333-333333333333",
+        slug: "matematik-geometri",
+        title: "Matematik & Geometri",
+        type: "CHAT",
+        description: "Birlikte çalışılan oda",
+      },
+    ]);
+    repo.searchTags.mockResolvedValue([]);
+    users.searchPublicUsers.mockResolvedValue([]);
+
+    await expect(service().search("viewer", "problem", "tr")).resolves.toMatchObject({
+      threads: [{ id: chatThread.id, zoneType: "CHAT" }],
+      questions: [{ id: question.id, zoneType: "QA" }],
+      zones: [{ slug: "matematik-geometri", type: "CHAT" }],
+      tags: [],
+      people: [],
+    });
+    expect(repo.searchThreadSummaries).toHaveBeenNthCalledWith(1, "problem", 5);
+    expect(repo.searchThreadSummaries).toHaveBeenNthCalledWith(2, "problem", 5, "QA");
+    expect(repo.searchZones).toHaveBeenCalledWith("problem", 5);
   });
 
   it("returns the selected thread summary with the admin featured state", async () => {

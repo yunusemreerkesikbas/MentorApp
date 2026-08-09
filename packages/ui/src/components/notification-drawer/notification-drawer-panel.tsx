@@ -6,7 +6,11 @@ import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import type { NotificationCategory, UserNotificationDto } from "@mentor/types";
 import { NotificationDrawerItem } from "./notification-drawer-item.js";
-import type { NotificationDrawerLabels, NotificationTab } from "./types.js";
+import type {
+  NotificationDrawerDesktopSide,
+  NotificationDrawerLabels,
+  NotificationTab,
+} from "./types.js";
 
 export interface NotificationDrawerPanelProps {
   isOpen: boolean;
@@ -23,6 +27,7 @@ export interface NotificationDrawerPanelProps {
   renderIcon?: (category: NotificationCategory) => React.ReactNode;
   emptyState?: React.ReactNode;
   labels: NotificationDrawerLabels;
+  desktopSide?: NotificationDrawerDesktopSide;
 }
 
 const CLOSE_ANIMATION_MS = 220;
@@ -51,6 +56,7 @@ export function NotificationDrawerPanel({
   renderIcon,
   emptyState,
   labels,
+  desktopSide = "left",
 }: NotificationDrawerPanelProps) {
   const [mounted, setMounted] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -138,8 +144,11 @@ export function NotificationDrawerPanel({
           "fixed inset-y-0 right-0 z-50 flex w-[85vw] max-w-[320px] flex-col bg-white",
           "max-lg:rounded-l-[16px]",
           "shadow-[-8px_0_24px_rgba(0,0,0,0.10)]",
-          // Desktop: popover to the right of the sidebar, aligned with the bell at the top
-          "lg:inset-y-auto lg:right-auto lg:left-64 lg:top-4",
+          // Desktop defaults beside the app sidebar; alternate headers can anchor it to the right.
+          "lg:inset-y-auto",
+          desktopSide === "right"
+            ? "lg:left-auto lg:right-4 lg:top-20"
+            : "lg:right-auto lg:left-64 lg:top-4",
           "lg:h-auto lg:max-h-[560px] lg:w-[380px] lg:max-w-none",
           "lg:rounded-[var(--radius-card)] lg:shadow-[0_8px_32px_rgba(0,0,0,0.14)]",
           closing

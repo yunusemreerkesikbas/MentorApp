@@ -1,6 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Settings, Share2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   type ForumPublicPerson,
@@ -12,7 +15,7 @@ import {
 import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
-import { ZONE_TYPE_ICONS } from "../../_components/zone-icons";
+import { replaceReaction } from "@/lib/forum-reactions";
 import {
   bookmarkThread,
   deleteThread,
@@ -33,12 +36,16 @@ import { ThreadComposer } from "./thread-composer";
 import { ThreadItem } from "./thread-item";
 import { ZoneShellSkeleton } from "./zone-shell-skeleton";
 import { AuthorAvatar } from "../../_components/author-avatar";
+import { CommunityTrendRail } from "../../_components/community-trend-rail";
+import { TabContentSkeleton } from "../../_components/tab-content-skeleton";
+import { PostListSkeleton } from "../../_components/post-skeleton";
 
 interface Ready {
   zone: ZoneView;
   threads: ThreadView[];
   nextCursor: string | null;
   loadingMore: boolean;
+  switchingSort: boolean;
   sort: ThreadSort;
   contributors: ForumPublicPerson[];
   pinnedThreads: ForumThreadSummary[];
@@ -49,9 +56,16 @@ type State =
   | { status: "error"; message: string }
   | ({ status: "ready" } & Ready);
 
+type ZoneTab = "popular" | "recent" | "media" | "about";
+const TAB_SKELETON_MIN_MS = 320;
+
 export function ZoneShell({ slug }: { slug: string }) {
   const t = useTranslations("community");
+  const reduceMotion = useReducedMotion();
   const [state, setState] = useState<State>({ status: "loading" });
+  const [activeTab, setActiveTab] = useState<ZoneTab>("recent");
+  const [shareCopied, setShareCopied] = useState(false);
+  const sortRequestIdRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -65,6 +79,7 @@ export function ZoneShell({ slug }: { slug: string }) {
             threads: result.feed.items,
             nextCursor: result.feed.nextCursor,
             loadingMore: false,
+            switchingSort: false,
             sort: "recent",
             contributors: result.contributors,
             pinnedThreads: result.pinnedThreads,
@@ -109,15 +124,24 @@ export function ZoneShell({ slug }: { slug: string }) {
   );
 
   const onToggleReaction = useCallback(
-    (threadId: string, emoji: string, adding: boolean) => {
-      // optimistic
-      patchReady((r) => ({ ...r, threads: r.threads.map((th) => applyReaction(th, threadId, emoji, adding)) }));
-      const call = adding ? reactThread(threadId, emoji) : unreactThread(threadId, emoji);
+    (threadId: string, nextEmoji: string | null, previousEmoji: string | null) => {
+      patchReady((ready) => ({
+        ...ready,
+        threads: ready.threads.map((thread) =>
+          thread.id === threadId ? replaceReaction(thread, nextEmoji) : thread,
+        ),
+      }));
+      const call = nextEmoji
+        ? reactThread(threadId, nextEmoji)
+        : previousEmoji
+          ? unreactThread(threadId, previousEmoji)
+          : Promise.resolve();
       call.catch(() => {
-        // revert on failure
-        patchReady((r) => ({
-          ...r,
-          threads: r.threads.map((th) => applyReaction(th, threadId, emoji, !adding)),
+        patchReady((ready) => ({
+          ...ready,
+          threads: ready.threads.map((thread) =>
+            thread.id === threadId ? replaceReaction(thread, previousEmoji) : thread,
+          ),
         }));
       });
     },
@@ -198,21 +222,54 @@ export function ZoneShell({ slug }: { slug: string }) {
     (sort: ThreadSort) => {
       const ready = state.status === "ready" ? state : null;
       if (!ready || ready.sort === sort) return;
-      // Keep the current list visible while the new order loads (no flash of empty).
-      patchReady((r) => ({ ...r, sort, loadingMore: true }));
-      listThreads(ready.zone.id, undefined, sort)
-        .then((feed) =>
+      const requestId = ++sortRequestIdRef.current;
+      patchReady((r) => ({ ...r, sort, switchingSort: true }));
+      const minimumSkeleton = new Promise<void>((resolve) => {
+        window.setTimeout(resolve, TAB_SKELETON_MIN_MS);
+      });
+      void (async () => {
+        try {
+          const feed = await listThreads(ready.zone.id, undefined, sort);
+          await minimumSkeleton;
+          if (requestId !== sortRequestIdRef.current) return;
           patchReady((r) => ({
             ...r,
             threads: feed.items,
             nextCursor: feed.nextCursor,
-            loadingMore: false,
-          })),
-        )
-        .catch(() => patchReady((r) => ({ ...r, loadingMore: false })));
+            switchingSort: false,
+          }));
+        } catch {
+          await minimumSkeleton;
+          if (requestId !== sortRequestIdRef.current) return;
+          patchReady((r) => ({ ...r, switchingSort: false }));
+        }
+      })();
     },
     [state, patchReady],
   );
+
+  const onChangeTab = useCallback(
+    (tab: ZoneTab) => {
+      setActiveTab(tab);
+      if (tab === "recent" || tab === "popular") onChangeSort(tab);
+    },
+    [onChangeSort],
+  );
+
+  const onShareZone = useCallback(async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ url });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+    await navigator.clipboard.writeText(url);
+    setShareCopied(true);
+    window.setTimeout(() => setShareCopied(false), 1800);
+  }, []);
 
   if (state.status === "loading") {
     return <ZoneShellSkeleton label={t("loading")} />;
@@ -228,240 +285,259 @@ export function ZoneShell({ slug }: { slug: string }) {
     );
   }
 
-  const { zone, threads, nextCursor, loadingMore, sort, contributors, pinnedThreads } = state;
+  const { zone, threads, nextCursor, loadingMore, switchingSort, contributors, pinnedThreads } = state;
   const isMember = zone.myStatus === "ACTIVE";
   const isQa = zone.type === "QA";
-  const zoneTone =
-    zone.type === "QA"
-      ? "bg-[#fff0ed] text-[#c94f3d]"
-      : zone.type === "ANNOUNCEMENT"
-        ? "bg-[#eaf7f0] text-[#2f8f63]"
-        : "bg-[var(--community-blue-soft)] text-[var(--community-blue-ink)]";
+  const visibleThreads =
+    activeTab === "media"
+      ? threads.filter((thread) => thread.attachments.length > 0)
+      : threads;
+  const memberFaces = contributors.slice(0, 5);
+  const tabs: Array<{ id: ZoneTab; label: string }> = [
+    { id: "popular", label: t("sort_popular") },
+    { id: "recent", label: t("sort_recent") },
+    { id: "media", label: t("zone_tab_media") },
+    { id: "about", label: t("zone_tab_about") },
+  ];
 
   return (
-    <main className="mx-auto min-w-0 max-w-[1180px] px-4 py-5 sm:px-7 lg:px-8 lg:py-6">
-      <nav aria-label={t("breadcrumb_label")} className="mb-5 flex min-h-11 items-center gap-2 border-b border-[#eceef2] pb-4 text-[13px] text-[#7b808a]">
-        <Link href="/community" className="font-semibold text-[#373c47] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">{t("title")}</Link>
-        <span aria-hidden>›</span>
-        <span aria-current="page" className="truncate">{zone.title}</span>
-      </nav>
+    <main className="mx-auto grid min-w-0 max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
+    <section className="min-w-0 bg-white sm:my-6 sm:border-x sm:border-[#e7e9ee]">
+      <header>
+        <div className="relative aspect-[3/1] overflow-hidden bg-[var(--community-blue-soft)]">
+          <Image
+            src="/img/feed.png"
+            alt=""
+            fill
+            priority
+            sizes="600px"
+            className="object-cover object-[center_58%]"
+          />
+        </div>
 
-      <header className="mb-5 flex items-start justify-between gap-3 border-b border-[#eceef2] pb-5">
-        <div className="flex min-w-0 items-center gap-3">
-          <span
-            className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[10px] text-xl ${zoneTone}`}
-          >
-            {zone.emoji ?? ZONE_TYPE_ICONS[zone.type]}
-          </span>
-          <div className="min-w-0">
-            <p className="text-[12px] font-bold text-[#6c727e]">
-              {t(`type_${zone.type.toLowerCase()}` as `type_${string}`)}
-            </p>
-            <h1 className="text-xl font-extrabold leading-tight tracking-[-0.025em] text-[#171a22] sm:text-2xl">
-              {zone.title}
-            </h1>
-            <p className="mt-0.5 text-xs text-[#7b808a]">
+        <div className="px-4 pb-4 pt-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-extrabold leading-tight tracking-[-0.03em] text-[var(--color-main)] sm:text-[28px]">
+                {zone.title}
+              </h1>
+              <span className="mt-2 inline-flex min-h-7 items-center rounded-[10px] border border-[#dfe3ea] px-2.5 text-xs font-bold text-[var(--color-body-text)]">
+                {t(`type_${zone.type.toLowerCase()}` as `type_${string}`)}
+              </span>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => void onShareZone()}
+                aria-label={shareCopied ? t("share_copied") : t("zone_share")}
+                title={shareCopied ? t("share_copied") : t("zone_share")}
+                className="community-post-action grid size-11 place-items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              >
+                <Share2 size={19} aria-hidden />
+              </button>
+              {zone.canModerate ? (
+                <Link
+                  href={{ pathname: "/community/[slug]/management", params: { slug: zone.slug } }}
+                  aria-label={t("manage_link")}
+                  title={t("manage_link")}
+                  className="community-post-action grid size-11 place-items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                >
+                  <Settings size={19} aria-hidden />
+                </Link>
+              ) : null}
+              <JoinButton
+                zoneId={zone.id}
+                myStatus={zone.myStatus}
+                myRole={zone.myRole}
+                joinPolicy={zone.joinPolicy}
+                onJoined={onJoined}
+                onLeft={onLeft}
+              />
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2">
+            {memberFaces.length > 0 ? (
+              <div className="flex -space-x-2" aria-hidden>
+                {memberFaces.map((person) => (
+                  <span key={person.id} className="rounded-full ring-2 ring-white">
+                    <AuthorAvatar name={person.displayName} src={person.avatarUrl} size={28} />
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            <p className="text-sm font-bold text-[var(--color-main)] tabular-nums">
               {t("members", { count: zone.memberCount })}
             </p>
           </div>
         </div>
-        <div className="flex flex-shrink-0 items-center gap-2">
-          <JoinButton
-            zoneId={zone.id}
-            myStatus={zone.myStatus}
-            myRole={zone.myRole}
-            joinPolicy={zone.joinPolicy}
-            onJoined={onJoined}
-            onLeft={onLeft}
-          />
-          {zone.canModerate ? (
-            <Link
-              href={{
-                pathname: "/community/[slug]/management",
-                params: { slug: zone.slug },
-              }}
-              aria-label={t("manage_link")}
-              title={t("manage_link")}
-              className="flex h-9 w-9 items-center justify-center rounded-full border transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-              style={{ borderColor: "rgba(0,0,0,0.10)", color: "var(--color-secondary)" }}
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-            </Link>
-          ) : null}
-        </div>
       </header>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_304px]">
-        <div className="min-w-0">
-        {isQa ? (
-          <>
-            {/* Composer (members only). */}
-            {isMember ? (
-              <div className="mb-6">
-                <AskComposer zoneId={zone.id} />
-              </div>
-            ) : (
-              <p className="mb-6 text-sm" style={{ color: "var(--color-secondary)" }}>
-                {t("compose_join_first")}
-              </p>
-            )}
-            {threads.length === 0 ? (
-              <p className="py-8 text-center text-sm" style={{ color: "var(--color-secondary)" }}>
-                {t("qa_empty")}
-              </p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {threads.map((q) => (
-                  <QuestionListItem key={q.id} question={q} />
+      <div className="grid grid-cols-4 border-y border-[#e7e9ee]" role="tablist" aria-label={t("sort_label") }>
+        {tabs.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => onChangeTab(tab.id)}
+              className="relative min-h-14 px-2 text-sm font-bold text-[var(--color-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)]"
+            >
+              <span className={active ? "text-[var(--color-main)]" : undefined}>{tab.label}</span>
+              {active ? (
+                <motion.span
+                  layoutId="community-zone-tab-indicator"
+                  className="absolute inset-x-4 bottom-0 h-1 rounded-full bg-[var(--community-blue-ink)]"
+                  transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 480, damping: 30 }}
+                  aria-hidden
+                />
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+
+      <AnimatePresence mode="popLayout" initial={false}>
+      {activeTab === "about" ? (
+        <motion.section
+          key="about"
+          initial={reduceMotion ? false : { opacity: 0, x: 34, scale: 0.985 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -24, scale: 0.99 }}
+          transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 30 }}
+          className="space-y-7 px-5 py-6"
+          aria-labelledby="zone-about-title"
+        >
+          <div>
+            <h2 id="zone-about-title" className="text-lg font-extrabold text-[var(--color-main)]">{t("zone_tab_about")}</h2>
+            <p className="mt-2 text-[15px] leading-6 text-[var(--color-body-text)]">
+              {zone.description ?? t("zone_about_empty")}
+            </p>
+          </div>
+          {contributors.length > 0 ? (
+            <div>
+              <h2 className="text-sm font-extrabold text-[var(--color-main)]">{t("zone_contributors")}</h2>
+              <div className="mt-3 grid gap-1 sm:grid-cols-2">
+                {contributors.map((person) => (
+                  <Link
+                    key={person.id}
+                    href={{ pathname: "/community/member/[username]", params: { username: person.username } }}
+                    className="flex min-h-12 items-center gap-3 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                  >
+                    <AuthorAvatar name={person.displayName} src={person.avatarUrl} size={32} />
+                    <span className="truncate text-sm font-bold text-[var(--color-body-text)]">{person.displayName}</span>
+                  </Link>
                 ))}
               </div>
-            )}
-          </>
-        ) : (
-          <>
-          {/* Sort toggle — recent (cursor) vs popular (top by likes+comments). */}
-          {threads.length > 0 && (
-            <div className="mb-3 flex items-center gap-1" role="tablist" aria-label={t("sort_label")}>
-              {(["recent", "popular"] as const).map((s) => {
-                const active = sort === s;
-                return (
-                  <button
-                    key={s}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => onChangeSort(s)}
-                    className="rounded-full px-3 py-1 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                    style={{
-                      background: active ? "var(--color-btn)" : "transparent",
-                      color: active ? "#fff" : "var(--color-secondary)",
-                    }}
-                  >
-                    {t(`sort_${s}` as "sort_recent" | "sort_popular")}
-                  </button>
-                );
-              })}
             </div>
-          )}
-          {/* Flat feed — no card chrome, just border-b dividers directly on the page (Figma 1:262/1:270/1:281). */}
-          <div className="divide-y divide-[#eceef2] border-b border-[#eceef2] bg-white">
-            {/* Composer (members only). ANNOUNCEMENT posts may 403 for non-mods → ThreadComposer surfaces it. */}
-            {isMember ? (
-              <ThreadComposer
-                placeholder={t("compose_placeholder")}
-                submitLabel={t("compose_send")}
-                onSubmit={onPost}
-                zoneId={zone.id}
-              />
-            ) : (
-              <p className="px-3 py-4 text-sm" style={{ color: "var(--color-secondary)" }}>
-                {t("compose_join_first")}
-              </p>
-            )}
-
-            {threads.length === 0 ? (
-              <p className="px-3 py-10 text-center text-sm" style={{ color: "var(--color-secondary)" }}>
-                {t("feed_empty")}
-              </p>
-            ) : (
-              threads.map((th) => (
-                <ThreadItem
-                  key={th.id}
-                  thread={th}
-                  onToggleReaction={(emoji, adding) => onToggleReaction(th.id, emoji, adding)}
-                  onToggleBookmark={(adding) => onToggleBookmark(th.id, adding)}
-                  canModerate={zone.canModerate}
-                  onPin={(pinned) => onPinThread(th.id, pinned)}
-                  onDelete={() => onDeleteThread(th.id)}
-                  clickable
+          ) : null}
+          {pinnedThreads.length > 0 ? (
+            <div>
+              <h2 className="text-sm font-extrabold text-[var(--color-main)]">{t("pinned_posts")}</h2>
+              <div className="mt-3 divide-y divide-[#e7e9ee] border-y border-[#e7e9ee]">
+                {pinnedThreads.map((thread) => (
+                  <p key={thread.id} className="py-3 text-sm font-bold text-[var(--color-body-text)]">
+                    {thread.title ?? thread.bodyExcerpt}
+                  </p>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </motion.section>
+      ) : (
+        <motion.div
+          key={activeTab}
+          initial={reduceMotion ? false : { opacity: 0, x: 34, scale: 0.985 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -24, scale: 0.99 }}
+          transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 30 }}
+          className="divide-y divide-[#e7e9ee] border-b border-[#e7e9ee]"
+        >
+          {switchingSort && (activeTab === "recent" || activeTab === "popular") ? (
+            <TabContentSkeleton label={t("loading")} variant="feed" />
+          ) : (
+          <>
+          {activeTab !== "media" ? (
+            isMember ? (
+              isQa ? (
+                <div className="p-4"><AskComposer zoneId={zone.id} /></div>
+              ) : (
+                <ThreadComposer
+                  placeholder={t("compose_placeholder")}
+                  submitLabel={t("compose_send")}
+                  onSubmit={onPost}
+                  zoneId={zone.id}
                 />
-              ))
-            )}
-          </div>
-          </>
-        )}
+              )
+            ) : (
+              <p className="px-4 py-4 text-sm text-[var(--color-secondary)]">{t("compose_join_first")}</p>
+            )
+          ) : null}
 
-      {nextCursor ? (
-        <div className="mt-5 flex justify-center">
+          {visibleThreads.length === 0 ? (
+            <p className="px-4 py-12 text-center text-sm text-[var(--color-secondary)]">
+              {activeTab === "media" ? t("zone_media_empty") : isQa ? t("qa_empty") : t("feed_empty")}
+            </p>
+          ) : isQa ? (
+            <div className="grid gap-3 p-4">
+              {visibleThreads.map((question) => <QuestionListItem key={question.id} question={question} />)}
+            </div>
+          ) : (
+            visibleThreads.map((thread) => (
+              <ThreadItem
+                key={thread.id}
+                thread={thread}
+                onToggleReaction={(nextEmoji, previousEmoji) =>
+                  onToggleReaction(thread.id, nextEmoji, previousEmoji)
+                }
+                onToggleBookmark={(adding) => onToggleBookmark(thread.id, adding)}
+                canModerate={zone.canModerate}
+                onPin={(pinned) => onPinThread(thread.id, pinned)}
+                onDelete={() => onDeleteThread(thread.id)}
+                onReplyCountChange={(delta) =>
+                  patchReady((ready) => ({
+                    ...ready,
+                    threads: ready.threads.map((entry) =>
+                      entry.id === thread.id
+                        ? { ...entry, commentCount: Math.max(0, entry.commentCount + delta) }
+                        : entry,
+                    ),
+                  }))
+                }
+                clickable
+              />
+            ))
+          )}
+          </>
+          )}
+        </motion.div>
+      )}
+      </AnimatePresence>
+
+      {activeTab !== "about" && nextCursor ? (
+        loadingMore ? (
+          <PostListSkeleton label={t("loading")} count={2} />
+        ) : (
+        <div className="flex justify-center p-5">
           <button
             type="button"
-            disabled={loadingMore}
             onClick={() => void onLoadMore()}
-            className="min-h-11 rounded-xl border bg-white px-5 font-bold disabled:opacity-50"
+            className="min-h-11 rounded-[10px] border border-[#dfe3ea] bg-white px-5 font-bold"
           >
-            {loadingMore ? t("loading") : t("load_more")}
+            {t("load_more")}
           </button>
         </div>
+        )
       ) : null}
-        </div>
-        {(contributors.length > 0 || pinnedThreads.length > 0) && (
-          <aside className="hidden space-y-7 border-l border-[#e7e9ee] pl-5 xl:block" aria-label={t("zone_context_title")}>
-            {contributors.length > 0 && (
-              <section>
-                <h2 className="text-[13px] font-extrabold text-[#4c535f]">{t("zone_contributors")}</h2>
-                <div className="mt-3 grid gap-1">
-                  {contributors.map((person) => (
-                    <Link
-                      key={person.id}
-                      href={{
-                        pathname: "/community/member/[username]",
-                        params: { username: person.username },
-                      }}
-                      className="flex min-h-11 items-center gap-3 rounded-[9px] px-2 py-2 text-sm font-bold text-[#343945] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                    >
-                      <AuthorAvatar name={person.displayName} src={person.avatarUrl} size={32} />
-                      <span className="truncate">{person.displayName}</span>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
-            {pinnedThreads.length > 0 && (
-              <section>
-                <h2 className="text-[13px] font-extrabold text-[#4c535f]">{t("pinned_posts")}</h2>
-                <div className="mt-3 grid gap-3">
-                  {pinnedThreads.map((thread) => {
-                    const href =
-                      thread.zoneType === "QA"
-                        ? ({
-                            pathname: "/community/question/[threadId]",
-                            params: { threadId: thread.id },
-                          } as const)
-                        : ({
-                            pathname: "/community/message/[threadId]",
-                            params: { threadId: thread.id },
-                          } as const);
-                    return (
-                      <Link
-                        key={thread.id}
-                        href={href}
-                        className="block min-h-[72px] rounded-[12px] border border-[#e7e9ee] bg-white p-3 text-sm font-bold text-[#343945] shadow-[0_1px_5px_rgb(18_24_39_/_3%)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                      >
-                        <span className="line-clamp-2">{thread.title ?? thread.bodyExcerpt}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-          </aside>
-        )}
-      </div>
+    </section>
+    <div className="sticky top-20 hidden pt-6 xl:block">
+      <CommunityTrendRail />
+    </div>
     </main>
   );
-}
-
-/** Apply a reaction toggle to one thread's local counts/mine (optimistic). */
-function applyReaction(th: ThreadView, threadId: string, emoji: string, adding: boolean): ThreadView {
-  if (th.id !== threadId) return th;
-  const count = th.reactionCounts[emoji] ?? 0;
-  const counts = { ...th.reactionCounts, [emoji]: Math.max(0, count + (adding ? 1 : -1)) };
-  if (counts[emoji] === 0) delete counts[emoji];
-  const mine = adding ? [...th.myReactions, emoji] : th.myReactions.filter((e) => e !== emoji);
-  return { ...th, reactionCounts: counts, myReactions: mine };
 }
 
 function Centered({ children }: { children: React.ReactNode }) {

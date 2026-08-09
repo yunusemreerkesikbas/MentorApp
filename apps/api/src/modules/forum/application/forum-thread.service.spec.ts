@@ -28,7 +28,7 @@ const makeThreadRepo = () => ({
   findById: vi.fn().mockResolvedValue(threadRow()),
   setPinned: vi.fn().mockResolvedValue(undefined),
   softDelete: vi.fn().mockResolvedValue(undefined),
-  addReaction: vi.fn().mockResolvedValue(undefined),
+  setReaction: vi.fn().mockResolvedValue(undefined),
   removeReaction: vi.fn().mockResolvedValue(undefined),
   reactionCountsByThread: vi.fn().mockResolvedValue(new Map()),
   myReactionsByThread: vi.fn().mockResolvedValue(new Map()),
@@ -55,7 +55,7 @@ const makePostRepo = () => ({
   reactionCountsByPost: vi.fn().mockResolvedValue(new Map()),
   myReactionsByPost: vi.fn().mockResolvedValue(new Map()),
   replyCountsByPost: vi.fn().mockResolvedValue(new Map()),
-  addPostReaction: vi.fn().mockResolvedValue(undefined),
+  setPostReaction: vi.fn().mockResolvedValue(undefined),
   removePostReaction: vi.fn().mockResolvedValue(undefined),
 });
 
@@ -262,13 +262,22 @@ describe("ForumThreadService", () => {
     expect(postRepo.createAnswer).not.toHaveBeenCalled();
   });
 
-  it("reacts and unreacts a comment with the given emoji", async () => {
+  it("sets or replaces a comment reaction and removes the selected emoji", async () => {
     const zoneRepo = makeZoneRepo(ZoneType.CHAT, ZoneMemberStatus.ACTIVE);
     const service = svc(zoneRepo);
     await service.reactPost("u1", "p1", "💪");
-    expect(postRepo.addPostReaction).toHaveBeenCalledWith("p1", "u1", "💪");
+    expect(postRepo.setPostReaction).toHaveBeenCalledWith("p1", "u1", "💪");
     await service.unreactPost("u1", "p1", "💪");
     expect(postRepo.removePostReaction).toHaveBeenCalledWith("p1", "u1", "💪");
+  });
+
+  it("sets or replaces a thread reaction through the single-reaction repository contract", async () => {
+    const zoneRepo = makeZoneRepo(ZoneType.CHAT, ZoneMemberStatus.ACTIVE);
+    const service = svc(zoneRepo);
+    await service.react("u1", "t1", "❤️");
+    expect(threadRepo.setReaction).toHaveBeenCalledWith("t1", "u1", "❤️");
+    await service.unreact("u1", "t1", "❤️");
+    expect(threadRepo.removeReaction).toHaveBeenCalledWith("t1", "u1", "❤️");
   });
 
   it("getCommentDetail returns the focused comment + its direct replies", async () => {

@@ -20,7 +20,7 @@ export function ZoneDrawer() {
   return (
     <div className="lg:hidden">
       <div
-        className="sticky top-16 z-30 flex h-[52px] items-center gap-3 border-b border-[#e7e9ee] bg-white/95 px-4 backdrop-blur"
+        className="sticky top-16 z-30 flex h-[52px] items-center gap-3 border-b border-[#e7e9ee] bg-[var(--community-canvas)] px-4"
       >
         <button
           type="button"

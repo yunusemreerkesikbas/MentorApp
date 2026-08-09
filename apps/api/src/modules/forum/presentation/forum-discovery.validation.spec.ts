@@ -3,6 +3,7 @@ import {
   adminForumTagCreateSchema,
   forumFeedQuerySchema,
   forumSearchQuerySchema,
+  forumTrendsQuerySchema,
   setFeaturedThreadSchema,
   updateForumPostSchema,
   updateForumThreadSchema,
@@ -35,6 +36,16 @@ describe("forum discovery request contracts", () => {
   it("limits global search input and rejects blank queries", () => {
     expect(forumSearchQuerySchema.parse({ q: "  geometri " })).toEqual({ q: "geometri" });
     expect(forumSearchQuerySchema.safeParse({ q: " " }).success).toBe(false);
+  });
+
+  it("defaults trends to the relevant scope and caps the list", () => {
+    expect(forumTrendsQuerySchema.parse({})).toEqual({ scope: "relevant", limit: 20 });
+    expect(forumTrendsQuerySchema.parse({ scope: "exam", limit: "5" })).toEqual({
+      scope: "exam",
+      limit: 5,
+    });
+    expect(forumTrendsQuerySchema.safeParse({ scope: "other" }).success).toBe(false);
+    expect(forumTrendsQuerySchema.safeParse({ limit: 51 }).success).toBe(false);
   });
 
   it("requires at least one thread patch field and caps curated tags at three", () => {

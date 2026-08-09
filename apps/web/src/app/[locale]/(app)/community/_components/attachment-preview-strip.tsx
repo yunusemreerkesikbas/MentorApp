@@ -4,15 +4,22 @@ import { useTranslations } from "next-intl";
 import { formatBytes } from "@/lib/format-bytes";
 import type { PickedAttachment } from "./use-forum-image-picker";
 
-const RemoveButton = ({ label, onClick }: { label: string; onClick: () => void }) => (
+const RemoveButton = ({
+  label,
+  onClick,
+  prominent = false,
+}: {
+  label: string;
+  onClick: () => void;
+  prominent?: boolean;
+}) => (
   <button
     type="button"
     aria-label={label}
     onClick={onClick}
-    className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-    style={{ background: "rgba(0,0,0,0.55)" }}
+    className={`${prominent ? "h-8 w-8 bg-black/70 hover:bg-black/85" : "h-5 w-5 bg-black/55 hover:bg-black/70"} flex flex-shrink-0 items-center justify-center rounded-full text-white transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/70 motion-reduce:transition-none`}
   >
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width={prominent ? 16 : 12} height={prominent ? 16 : 12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
@@ -23,27 +30,43 @@ const RemoveButton = ({ label, onClick }: { label: string; onClick: () => void }
 export function AttachmentPreviewStrip({
   items,
   onRemove,
+  layout = "strip",
 }: {
   items: PickedAttachment[];
   onRemove: (idx: number) => void;
+  layout?: "strip" | "media";
 }) {
   const t = useTranslations("community");
   if (items.length === 0) return null;
 
   return (
-    <div className="mt-2 flex flex-wrap gap-2">
+    <div
+      className={
+        layout === "media"
+          ? "mt-3 grid grid-cols-2 gap-1 overflow-hidden rounded-[var(--radius-card)]"
+          : "mt-2 flex flex-wrap gap-2"
+      }
+    >
       {items.map((p, i) =>
         p.kind === "image" ? (
           <div
             key={p.url}
-            className="relative h-16 w-16 overflow-hidden rounded-[var(--radius-card)]"
+            className={
+              layout === "media"
+                ? `relative min-h-48 overflow-hidden bg-[var(--color-surface-container)] ${items.filter((item) => item.kind === "image").length === 1 ? "col-span-2 aspect-[16/9]" : "aspect-square"}`
+                : "relative h-16 w-16 overflow-hidden rounded-[var(--radius-card)]"
+            }
             style={{ border: "1px solid rgba(0,0,0,0.08)" }}
           >
             {/* Local object-URL preview (not next/image — it's a client blob). */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={p.url} alt="" className="h-full w-full object-cover" />
-            <span className="absolute right-0.5 top-0.5">
-              <RemoveButton label={t("attach_remove")} onClick={() => onRemove(i)} />
+            <span className={layout === "media" ? "absolute right-2 top-2" : "absolute right-0.5 top-0.5"}>
+              <RemoveButton
+                label={t("attach_remove")}
+                onClick={() => onRemove(i)}
+                prominent={layout === "media"}
+              />
             </span>
           </div>
         ) : (

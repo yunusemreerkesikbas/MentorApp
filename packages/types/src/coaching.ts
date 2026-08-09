@@ -443,7 +443,7 @@ export const VISION_BOARD_FRAMES = ["wood", "gallery", "none"] as const;
 export type VisionBoardFrame = (typeof VISION_BOARD_FRAMES)[number];
 
 /** Board backgrounds; textures are procedural (gradients/dots), so canvas can redraw them. */
-export const VISION_BOARD_TEXTURES = ["cork", "paper", "grid", "linen"] as const;
+export const VISION_BOARD_TEXTURES = ["cork", "paper", "grid", "linen", "dots", "stripes"] as const;
 export type VisionBoardTexture = (typeof VISION_BOARD_TEXTURES)[number];
 
 /** Per-image chrome. A preset enum, not free-form borders — every value must be canvas-drawable. */
@@ -457,7 +457,19 @@ export const VISION_IMAGE_FRAMES = [
 export type VisionImageFrame = (typeof VISION_IMAGE_FRAMES)[number];
 
 /** Text families. Resolved to concrete `next/font` faces on the client; the document stays abstract. */
-export const VISION_TEXT_FONTS = ["body", "heading", "script", "serif"] as const;
+export const VISION_TEXT_FONTS = [
+  "body",
+  "heading",
+  "script",
+  "serif",
+  "rounded",
+  "condensed",
+  "classic",
+  "impact",
+  "elegant",
+  "slab",
+  "mono",
+] as const;
 export type VisionTextFont = (typeof VISION_TEXT_FONTS)[number];
 
 export const VISION_TEXT_ALIGNS = ["left", "center", "right"] as const;
@@ -465,8 +477,11 @@ export type VisionTextAlign = (typeof VISION_TEXT_ALIGNS)[number];
 
 /**
  * Built-in sticker art. A closed enum, never a URL or a storage key: the board document is
- * rendered as-is, so an arbitrary src field would be an image-injection hole. Ten career Puhus
- * (the mascot art already shipped under `public/mascot/career/`) plus five shapes.
+ * rendered as-is, so an arbitrary src field would be an image-injection hole. Ten career Puhus +
+ * five Puhu expressions (mascot art shipped under `public/mascot/career/` and `public/mascot/puhu/`),
+ * thirteen shapes, plus forty-one stickers cut from three Illustrator collages under
+ * `public/img/sticker*.svg` (22 stationery/paper + 11 + 8 vision-board scene stickers, several
+ * with their own baked-in text) — see docs/features/coaching.md for how.
  * Append-only — removing a value orphans it inside somebody's saved board.
  */
 export const VISION_STICKERS = [
@@ -485,6 +500,60 @@ export const VISION_STICKERS = [
   "SPARKLE",
   "ARROW",
   "PIN",
+  "PUHU_HAPPY",
+  "PUHU_PROUD",
+  "PUHU_ENCOURAGING",
+  "PUHU_SURPRISED",
+  "PUHU_SLEEPY",
+  "TARGET",
+  "FLAG",
+  "CHECK",
+  "TROPHY",
+  "ROCKET",
+  "GRADCAP",
+  "CROWN",
+  "LIGHTNING",
+  "CARD_STACKED_RED",
+  "PAPER_LINED_TAN",
+  "PAPER_GRID",
+  "CARD_PLAIN_BROWN",
+  "PAPER_LINED_VERTICAL",
+  "NOTEPAD_SPIRAL",
+  "CARD_BLANK_PINK",
+  "CARD_BLANK_LARGE",
+  "TAPE_HATCHED",
+  "TAPE_DIAGONAL",
+  "TAPE_STRIP_CREAM",
+  "TAPE_STRIP_PLAIN",
+  "TAPE_STRIP_TAN",
+  "NOTEPAD_HOLES_FOLD",
+  "FABRIC_PLAID_PEACH",
+  "NOTEPAD_LINED_RED",
+  "FRAME_POLAROID",
+  "PAPER_DOTGRID_DARK",
+  "TAPE_CORAL",
+  "NOTEPAD_SPIRAL_SMALL",
+  "TAPE_CHECKERED",
+  "CARD_ROUNDED_OLIVE",
+  "STAR_OUTLINE_1",
+  "STAR_OUTLINE_2",
+  "SPARKLE_CROSS",
+  "SPARKLE_DASH",
+  "RAINBOW_SQUIGGLE",
+  "SCENE_DREAM_BIG",
+  "CARD_TRAVEL",
+  "CARD_INSPIRATION",
+  "CARD_GOALS",
+  "CARD_VISION_BOARD",
+  "HEART_LOVE",
+  "FLOWER_FRAME_TODO",
+  "FRAME_IMPORTANT",
+  "NOTEPAD_NOTES",
+  "CLOUD_TODAY",
+  "BADGE_VISION_BOARD",
+  "OVAL_ACTIVITY",
+  "CORNER_DOODLES",
+  "ACCENT_SCATTER",
 ] as const;
 export type VisionSticker = (typeof VISION_STICKERS)[number];
 

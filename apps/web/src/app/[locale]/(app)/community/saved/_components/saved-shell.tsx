@@ -6,7 +6,7 @@ import { type SavedFeedItem } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
 import { FormError } from "@/components/form";
-import { toggleReaction } from "@/lib/forum-reactions";
+import { replaceReaction } from "@/lib/forum-reactions";
 import {
   bookmarkPost,
   bookmarkThread,
@@ -79,35 +79,65 @@ export function SavedShell({ embedded = false }: { embedded?: boolean } = {}) {
   }, [patchReady]);
 
   const onToggleReaction = useCallback(
-    (threadId: string, emoji: string, adding: boolean) => {
-      const patch = (v: boolean) => (r: Extract<State, { status: "ready" }>) => ({
+    (threadId: string, nextEmoji: string | null, previousEmoji: string | null) => {
+      const patch = (emoji: string | null) => (r: Extract<State, { status: "ready" }>) => ({
         ...r,
         items: r.items.map((it) =>
           it.type === "thread" && it.thread.id === threadId
-            ? { ...it, thread: toggleReaction(it.thread, emoji, v) }
+            ? { ...it, thread: replaceReaction(it.thread, emoji) }
             : it,
         ),
       });
-      patchReady(patch(adding));
-      const call = adding ? reactThread(threadId, emoji) : unreactThread(threadId, emoji);
-      call.catch(() => patchReady(patch(!adding)));
+      patchReady(patch(nextEmoji));
+      const call = nextEmoji ? reactThread(threadId, nextEmoji) : previousEmoji ? unreactThread(threadId, previousEmoji) : Promise.resolve();
+      call.catch(() => patchReady(patch(previousEmoji)));
     },
     [patchReady],
   );
 
   const onToggleCommentReaction = useCallback(
-    (postId: string, emoji: string, adding: boolean) => {
-      const patch = (v: boolean) => (r: Extract<State, { status: "ready" }>) => ({
+    (postId: string, nextEmoji: string | null, previousEmoji: string | null) => {
+      const patch = (emoji: string | null) => (r: Extract<State, { status: "ready" }>) => ({
         ...r,
         items: r.items.map((it) =>
           it.type === "comment" && it.comment.id === postId
-            ? { ...it, comment: toggleReaction(it.comment, emoji, v) }
+            ? { ...it, comment: replaceReaction(it.comment, emoji) }
             : it,
         ),
       });
-      patchReady(patch(adding));
-      const call = adding ? reactPost(postId, emoji) : unreactPost(postId, emoji);
-      call.catch(() => patchReady(patch(!adding)));
+      patchReady(patch(nextEmoji));
+      const call = nextEmoji ? reactPost(postId, nextEmoji) : previousEmoji ? unreactPost(postId, previousEmoji) : Promise.resolve();
+      call.catch(() => patchReady(patch(previousEmoji)));
+    },
+    [patchReady],
+  );
+
+  const onReplyCountChange = useCallback(
+    (type: SavedFeedItem["type"], id: string, delta: 1 | -1) => {
+      patchReady((ready) => ({
+        ...ready,
+        items: ready.items.map((item) => {
+          if (type === "thread" && item.type === "thread" && item.thread.id === id) {
+            return {
+              ...item,
+              thread: {
+                ...item.thread,
+                commentCount: Math.max(0, item.thread.commentCount + delta),
+              },
+            };
+          }
+          if (type === "comment" && item.type === "comment" && item.comment.id === id) {
+            return {
+              ...item,
+              comment: {
+                ...item.comment,
+                replyCount: Math.max(0, item.comment.replyCount + delta),
+              },
+            };
+          }
+          return item;
+        }),
+      }));
     },
     [patchReady],
   );
@@ -180,9 +210,10 @@ export function SavedShell({ embedded = false }: { embedded?: boolean } = {}) {
               <ThreadItem
                 key={`t-${it.thread.id}`}
                 thread={it.thread}
-                onToggleReaction={(emoji, adding) => onToggleReaction(it.thread.id, emoji, adding)}
+                onToggleReaction={(nextEmoji, previousEmoji) => onToggleReaction(it.thread.id, nextEmoji, previousEmoji)}
                 // Every item here is already saved — the only toggle is unsaving (drops the row).
                 onToggleBookmark={() => onUnbookmarkThread(it.thread.id)}
+                onReplyCountChange={(delta) => onReplyCountChange("thread", it.thread.id, delta)}
                 clickable
               />
             ) : (
@@ -191,6 +222,7 @@ export function SavedShell({ embedded = false }: { embedded?: boolean } = {}) {
                 comment={it.comment}
                 onToggleReaction={onToggleCommentReaction}
                 onToggleBookmark={(id) => onUnbookmarkComment(id)}
+                onReplyCountChange={(delta) => onReplyCountChange("comment", it.comment.id, delta)}
               />
             ),
           )}

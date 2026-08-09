@@ -7,6 +7,7 @@ import {
   Download,
   ImagePlus,
   LayoutTemplate,
+  LoaderCircle,
   PanelTop,
   Redo2,
   Share2,
@@ -54,6 +55,7 @@ import { BoardContextToolbar } from "./board-context-toolbar";
 import type { ColorPanelTarget } from "./board-palettes";
 import { BoardSelectionOverlay } from "./board-selection-overlay";
 import { BoardSidePanel, type BoardPanelCategory } from "./board-side-panel";
+import { BoardTextInlineEditor } from "./board-text-inline-editor";
 import { applyTemplate } from "./board-templates";
 import { useBoardReducer } from "./use-board-reducer";
 import { useItemGesture } from "./use-item-gesture";
@@ -106,12 +108,16 @@ export function BoardEditorShell() {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(
+    null,
+  );
   const [exporting, setExporting] = useState(false);
   const [activePanel, setActivePanel] = useState<BoardPanelCategory | null>("board");
   const [detailCollapsed, setDetailCollapsed] = useState(false);
   const [colorTarget, setColorTarget] = useState<ColorPanelTarget | null>(null);
   const [previews, setPreviews] = useState<PreviewMap>({});
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [rawEditingTextId, setEditingTextId] = useState<string | null>(null);
   const previewsRef = useRef<PreviewMap>({});
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -172,14 +178,38 @@ export function BoardEditorShell() {
   });
 
   const handleSelect = useCallback(
-    (id: string | null) => dispatch({ type: "select", id }),
-    [dispatch],
+    (id: string | null) => {
+      setEditingTextId((current) => (current && current !== id ? null : current));
+      const item = id ? state.doc.items.find((candidate) => candidate.id === id) : null;
+      if (item) {
+        setColorTarget(null);
+        setActivePanel(item.kind === "text" ? "text" : item.kind === "image" ? "image" : "sticker");
+        setDetailCollapsed(false);
+      }
+      dispatch({ type: "select", id });
+    },
+    [dispatch, state.doc.items],
   );
   const handleItemPointerDown = useCallback(
     (event: React.PointerEvent, item: VisionBoardItem) =>
       gesture.begin(event, item, { kind: "move" }),
     [gesture],
   );
+  const handleItemDoubleClick = useCallback(
+    (item: VisionBoardItem) => {
+      if (item.kind !== "text") return;
+      checkpoint();
+      setEditingTextId(item.id);
+    },
+    [checkpoint],
+  );
+
+  // Derived, not stored: a deleted or undone-away item can't stay "being edited", and deriving it
+  // means there is nothing to resync in an effect when the item list changes underneath it.
+  const editingTextId =
+    rawEditingTextId && state.doc.items.some((item) => item.id === rawEditingTextId)
+      ? rawEditingTextId
+      : null;
 
   const selectedId = state.selectedId;
   const handleLayer = useCallback(
@@ -224,8 +254,7 @@ export function BoardEditorShell() {
   const openColor = useCallback((target: ColorPanelTarget) => {
     setColorTarget(target);
     setDetailCollapsed(false);
-    if (target === "board") setActivePanel("board");
-    else if (target === "text" || target === "plate") setActivePanel("text");
+    setActivePanel("text");
   }, []);
 
   const addText = useCallback(() => {
@@ -247,15 +276,18 @@ export function BoardEditorShell() {
         toast.error({ title: t("limit_images") });
         return;
       }
-      setUploading(true);
+      const queued = Array.from(files).slice(0, room);
+      setUploadProgress({ done: 0, total: queued.length });
       try {
-        for (const file of Array.from(files).slice(0, room)) {
+        for (const [index, file] of queued.entries()) {
           if (!isSupportedBoardImage(file)) {
             toast.error({ title: t("image_unsupported") });
+            setUploadProgress({ done: index + 1, total: queued.length });
             continue;
           }
           if (!isWithinBoardImageLimit(file)) {
             toast.error({ title: t("image_too_large") });
+            setUploadProgress({ done: index + 1, total: queued.length });
             continue;
           }
           const uploaded = await uploadBoardImage(file);
@@ -278,11 +310,12 @@ export function BoardEditorShell() {
               url: uploaded.url,
             },
           });
+          setUploadProgress({ done: index + 1, total: queued.length });
         }
       } catch {
         toast.error({ title: t("image_upload_failed") });
       } finally {
-        setUploading(false);
+        setUploadProgress(null);
       }
     },
     [dispatch, state.doc.items, t, toast],
@@ -347,6 +380,61 @@ export function BoardEditorShell() {
     },
     [t, toast],
   );
+
+  /*
+   * Autosave: a paused edit (2s of silence) writes the draft to the server that the manual
+   * "Kaydet" button already writes to — same endpoint, same DRAFT/PUBLISHED status, so a refresh
+   * or a closed tab never loses more than the last couple of seconds of work. Deliberately silent
+   * (no toast, no spinner): the existing "Kaydedilmedi" label already reflects `dirty`, and it
+   * clears itself the moment this fires — that's feedback enough for something that "just works".
+   */
+  useEffect(() => {
+    if (!state.dirty) return;
+    const timer = setTimeout(() => {
+      void http("/v1/coaching/vision/board", {
+        method: "PUT",
+        body: JSON.stringify({ board: state.doc }),
+      })
+        .then(() => dispatch({ type: "saved" }))
+        .catch(() => {
+          /* Silent by design — the manual Save button and its error toast are the fallback. */
+        });
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [dispatch, state.dirty, state.doc]);
+
+  // Refs so the listeners below (registered once) always PUT the latest document, not the one
+  // from whichever render first attached them.
+  const latestDocRef = useRef(state.doc);
+  const latestDirtyRef = useRef(state.dirty);
+  useEffect(() => {
+    latestDocRef.current = state.doc;
+    latestDirtyRef.current = state.dirty;
+  }, [state.doc, state.dirty]);
+
+  useEffect(() => {
+    function flush() {
+      if (!latestDirtyRef.current) return;
+      // `keepalive` lets the request outlive the page — the normal path for a tab actually
+      // closing, where an ordinary fetch would be aborted mid-flight.
+      void http("/v1/coaching/vision/board", {
+        method: "PUT",
+        body: JSON.stringify({ board: latestDocRef.current }),
+        keepalive: true,
+      })
+        .then(() => dispatch({ type: "saved" }))
+        .catch(() => {});
+    }
+    function onVisibilityChange() {
+      if (document.visibilityState === "hidden") flush();
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, [dispatch]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -420,12 +508,26 @@ export function BoardEditorShell() {
 
       <nav
         aria-label={t("editor_nav")}
-        className="mentor-scrollarea flex shrink-0 gap-1 overflow-x-auto border-b px-2 py-2 lg:w-16 lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:border-b-0 lg:border-e lg:px-1 lg:py-3"
+        className="mentor-scrollarea flex shrink-0 gap-1 overflow-x-auto border-b px-2 py-2 lg:w-16 lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:border-b-0 lg:border-e lg:px-1 lg:pb-3 lg:pt-8"
         style={{
           backgroundColor: "var(--color-surface)",
           borderColor: "rgba(17, 17, 17, 0.08)",
         }}
       >
+        <Link
+          href="/vision-board"
+          aria-label={t("back")}
+          title={t("back")}
+          className="mb-1 flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{
+            backgroundColor: "var(--color-surface)",
+            boxShadow: "var(--shadow-card)",
+            color: "var(--color-main)",
+          }}
+        >
+          <ArrowLeft aria-hidden size={18} />
+        </Link>
+
         {CATEGORIES.map(({ id, icon: Icon, labelKey }) => {
           const active = activePanel === id && !detailCollapsed;
           return (
@@ -472,9 +574,9 @@ export function BoardEditorShell() {
             animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -8 }}
             transition={boardChromeTransition}
-            className="relative flex max-h-[40vh] w-full shrink-0 flex-col border-b lg:max-h-none lg:w-64 lg:border-b-0 lg:border-e"
+            className="relative flex min-h-0 max-h-[40vh] w-full shrink-0 flex-col border-b lg:max-h-none lg:w-64 lg:border-b-0 lg:border-e"
             style={{
-              backgroundColor: "var(--color-surface-container)",
+              backgroundColor: "var(--color-surface)",
               borderColor: "rgba(17, 17, 17, 0.08)",
             }}
           >
@@ -513,11 +615,7 @@ export function BoardEditorShell() {
                     <BoardColorPanel
                       target={colorTarget}
                       selected={selected}
-                      doc={state.doc}
                       onPatch={(next) => patchSelected(next)}
-                      onSetBackground={(background) =>
-                        dispatch({ type: "setBackground", background })
-                      }
                       onClose={() => setColorTarget(null)}
                     />
                   ) : activePanel ? (
@@ -525,10 +623,12 @@ export function BoardEditorShell() {
                       category={activePanel}
                       doc={state.doc}
                       selected={selected}
-                      uploading={uploading}
+                      selectedId={state.selectedId}
+                      uploadProgress={uploadProgress}
                       onAddText={addText}
                       onUploadImage={() => fileInput.current?.click()}
                       onAddSticker={addSticker}
+                      onSelectItem={handleSelect}
                       onApplyTemplate={(id) =>
                         dispatch({ type: "replace", doc: applyTemplate(state.doc, id) })
                       }
@@ -538,7 +638,6 @@ export function BoardEditorShell() {
                       onSetBackground={(background) =>
                         dispatch({ type: "setBackground", background })
                       }
-                      onOpenBoardColor={() => openColor("board")}
                     />
                   ) : null}
                 </motion.div>
@@ -548,17 +647,8 @@ export function BoardEditorShell() {
         ) : null}
       </AnimatePresence>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2 lg:p-3">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2 lg:px-3 lg:pb-3 lg:pt-8">
         <div className="flex shrink-0 items-center gap-0.5">
-          <Link
-            href="/vision-board"
-            className="inline-flex h-11 items-center gap-1 rounded-full px-2 text-sm font-semibold"
-            style={{ color: "var(--color-secondary)" }}
-          >
-            <ArrowLeft aria-hidden size={16} />
-            {t("back")}
-          </Link>
-
           <IconButton
             label={t("undo")}
             disabled={!canUndo}
@@ -583,6 +673,7 @@ export function BoardEditorShell() {
             <IconButton
               label={t("download")}
               disabled={exporting}
+              busy={exporting}
               onClick={() => void exportBoard("download", docForRender)}
             >
               <Download aria-hidden size={17} />
@@ -590,6 +681,7 @@ export function BoardEditorShell() {
             <IconButton
               label={t("share")}
               disabled={exporting}
+              busy={exporting}
               onClick={() => void exportBoard("share", docForRender)}
             >
               <Share2 aria-hidden size={17} />
@@ -597,47 +689,96 @@ export function BoardEditorShell() {
             <button
               type="button"
               disabled={saving}
+              aria-busy={saving || undefined}
               onClick={() => void save().then((ok) => ok && toast.success({ title: t("saved") }))}
-              className="h-11 rounded-full px-3 text-sm font-semibold disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              className="inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
               style={{ color: "var(--color-main)" }}
             >
+              {saving ? (
+                <LoaderCircle
+                  aria-hidden
+                  size={15}
+                  className="animate-spin motion-reduce:animate-none"
+                />
+              ) : null}
               {t("save")}
             </button>
             {state.doc.status === "PUBLISHED" ? null : (
               <button
                 type="button"
                 disabled={saving}
+                aria-busy={saving || undefined}
                 onClick={() => void publish()}
-                className="h-11 rounded-full px-3.5 text-sm font-semibold text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                className="inline-flex h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 style={{ backgroundColor: "var(--color-btn)" }}
               >
+                {saving ? (
+                  <LoaderCircle
+                    aria-hidden
+                    size={15}
+                    className="animate-spin motion-reduce:animate-none"
+                  />
+                ) : null}
                 {t("publish")}
               </button>
             )}
           </div>
         </div>
 
-        <AnimatePresence initial={false}>
-          {selected ? (
-            <BoardContextToolbar
-              key="context-toolbar"
-              selected={selected}
-              onPatch={patchSelected}
-              onCheckpoint={checkpoint}
-              onLayer={handleLayer}
-              onDuplicate={duplicateSelected}
-              onRemove={removeSelected}
-              onOpenColor={openColor}
-              onOpenImageFrames={() => {
-                setColorTarget(null);
-                setActivePanel("image");
-                setDetailCollapsed(false);
-              }}
-            />
-          ) : null}
-        </AnimatePresence>
+        <div className="flex min-h-[52px] shrink-0 items-center justify-center">
+          <AnimatePresence initial={false}>
+            {selected ? (
+              <BoardContextToolbar
+                key="context-toolbar"
+                selected={selected}
+                onPatch={patchSelected}
+                onCheckpoint={checkpoint}
+                onLayer={handleLayer}
+                onDuplicate={duplicateSelected}
+                onRemove={removeSelected}
+                onOpenColor={openColor}
+                onOpenImageFrames={() => {
+                  setColorTarget(null);
+                  setActivePanel("image");
+                  setDetailCollapsed(false);
+                }}
+              />
+            ) : null}
+          </AnimatePresence>
+        </div>
 
-        <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto">
+        <div
+          className="relative flex min-h-0 flex-1 items-start justify-center overflow-auto"
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+            setIsDraggingOver(true);
+          }}
+          onDragLeave={(event) => {
+            if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+            setIsDraggingOver(false);
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            setIsDraggingOver(false);
+            if (event.dataTransfer.files.length) void addImages(event.dataTransfer.files);
+          }}
+        >
+          {isDraggingOver ? (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-[var(--radius-card)]"
+              style={{
+                border: "2px dashed var(--color-accent)",
+                backgroundColor: "var(--color-progress-track)",
+                opacity: 0.85,
+              }}
+            >
+              <span className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+                {t("drop_hint")}
+              </span>
+            </div>
+          ) : null}
           <div className="w-full max-w-full">
             <BoardFrame
               frame={state.doc.frame}
@@ -649,21 +790,32 @@ export function BoardEditorShell() {
               <BoardStage
                 doc={docForRender}
                 selectedId={state.selectedId}
+                contentHiddenId={editingTextId}
                 onSelect={handleSelect}
                 onItemPointerDown={handleItemPointerDown}
+                onItemDoubleClick={handleItemDoubleClick}
                 onPointerMove={gesture.move}
                 onPointerUp={gesture.end}
-                renderOverlay={(item) => (
-                  <BoardSelectionOverlay
-                    item={item}
-                    resizeLabel={t("resize")}
-                    rotateLabel={t("rotate")}
-                    resizeHandlers={(corner: ResizeCorner) =>
-                      gesture.handlersFor(item, { kind: "resize", corner })
-                    }
-                    rotateHandlers={gesture.handlersFor(item, { kind: "rotate" })}
-                  />
-                )}
+                renderOverlay={(item) =>
+                  item.kind === "text" && item.id === editingTextId ? (
+                    <BoardTextInlineEditor
+                      item={item}
+                      label={t("text_content")}
+                      onChange={(text) => patch(item.id, { text, source: undefined })}
+                      onDone={() => setEditingTextId(null)}
+                    />
+                  ) : (
+                    <BoardSelectionOverlay
+                      item={item}
+                      resizeLabel={t("resize")}
+                      rotateLabel={t("rotate")}
+                      resizeHandlers={(corner: ResizeCorner) =>
+                        gesture.handlersFor(item, { kind: "resize", corner })
+                      }
+                      rotateHandlers={gesture.handlersFor(item, { kind: "rotate" })}
+                    />
+                  )
+                }
               />
             </BoardFrame>
           </div>
@@ -676,11 +828,13 @@ export function BoardEditorShell() {
 function IconButton({
   label,
   disabled,
+  busy,
   onClick,
   children,
 }: {
   label: string;
   disabled?: boolean;
+  busy?: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -688,13 +842,18 @@ function IconButton({
     <button
       type="button"
       aria-label={label}
+      aria-busy={busy || undefined}
       title={label}
-      disabled={disabled}
+      disabled={disabled || busy}
       onClick={onClick}
       className="inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-[var(--color-surface-container)] disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       style={{ color: "var(--color-main)" }}
     >
-      {children}
+      {busy ? (
+        <LoaderCircle aria-hidden size={17} className="animate-spin motion-reduce:animate-none" />
+      ) : (
+        children
+      )}
     </button>
   );
 }

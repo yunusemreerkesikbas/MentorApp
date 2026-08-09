@@ -1,16 +1,17 @@
 /**
- * Optimistic reaction toggle for any item carrying `reactionCounts` + `myReactions` (ThreadView or
- * CommentView share the shape). Adds/removes the emoji from the viewer's set and bumps its count,
- * dropping the key when it hits zero. Pure — returns a new object.
+ * Optimistic single-reaction replacement for ThreadView/CommentView. The API keeps `myReactions`
+ * as an array for compatibility, but this helper enforces the 0..1 invariant on the client.
  */
-export function toggleReaction<
+export function replaceReaction<
   T extends { reactionCounts: Record<string, number>; myReactions: string[] },
->(item: T, emoji: string, adding: boolean): T {
-  const count = item.reactionCounts[emoji] ?? 0;
-  const reactionCounts = { ...item.reactionCounts, [emoji]: Math.max(0, count + (adding ? 1 : -1)) };
-  if (reactionCounts[emoji] === 0) delete reactionCounts[emoji];
-  const myReactions = adding
-    ? [...item.myReactions, emoji]
-    : item.myReactions.filter((e) => e !== emoji);
-  return { ...item, reactionCounts, myReactions };
+>(item: T, nextEmoji: string | null): T {
+  const previousEmoji = item.myReactions[0] ?? null;
+  if (previousEmoji === nextEmoji) return item;
+  const reactionCounts = { ...item.reactionCounts };
+  if (previousEmoji) {
+    reactionCounts[previousEmoji] = Math.max(0, (reactionCounts[previousEmoji] ?? 0) - 1);
+    if (reactionCounts[previousEmoji] === 0) delete reactionCounts[previousEmoji];
+  }
+  if (nextEmoji) reactionCounts[nextEmoji] = (reactionCounts[nextEmoji] ?? 0) + 1;
+  return { ...item, reactionCounts, myReactions: nextEmoji ? [nextEmoji] : [] };
 }

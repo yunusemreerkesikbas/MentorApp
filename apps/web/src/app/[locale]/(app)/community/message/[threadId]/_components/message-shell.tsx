@@ -1,14 +1,13 @@
 "use client";
-import { Users } from "lucide-react";
 
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type CommentView, type ThreadDetail, type ThreadView, type ZoneView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
-import { toggleReaction } from "@/lib/forum-reactions";
+import { CircularBackLink } from "@/components/circular-back-link";
+import { replaceReaction } from "@/lib/forum-reactions";
 import { trackCoachEvent, trackCommunityEvent } from "@/lib/analytics";
 import {
   communityReturnPlaceholderKey,
@@ -31,6 +30,8 @@ import { CommentRow } from "../../../_components/comment-row";
 import { ThreadComposer } from "../../../[slug]/_components/thread-composer";
 import { ThreadItem } from "../../../[slug]/_components/thread-item";
 import { CommunityCoachBridge } from "../../../_components/community-coach-bridge";
+import { PostDetailSkeleton } from "../../../_components/post-skeleton";
+import { CommunityTrendRail } from "../../../_components/community-trend-rail";
 
 type State =
   | { status: "loading" }
@@ -80,22 +81,35 @@ export function MessageShell({ threadId }: { threadId: string }) {
   }, [threadId, apply, t]);
 
   const onToggleThreadReaction = useCallback(
-    (emoji: string, adding: boolean) => {
-      setState((s) => (s.status === "ready" ? { ...s, thread: toggleReaction(s.thread, emoji, adding) } : s));
-      const call = adding ? reactThread(threadId, emoji) : unreactThread(threadId, emoji);
+    (nextEmoji: string | null, previousEmoji: string | null) => {
+      setState((s) =>
+        s.status === "ready" ? { ...s, thread: replaceReaction(s.thread, nextEmoji) } : s,
+      );
+      const call = nextEmoji
+        ? reactThread(threadId, nextEmoji)
+        : previousEmoji
+          ? unreactThread(threadId, previousEmoji)
+          : Promise.resolve();
       call.catch(() => {
-        setState((s) => (s.status === "ready" ? { ...s, thread: toggleReaction(s.thread, emoji, !adding) } : s));
+        setState((s) =>
+          s.status === "ready" ? { ...s, thread: replaceReaction(s.thread, previousEmoji) } : s,
+        );
       });
     },
     [threadId],
   );
 
-  const onToggleCommentReaction = useCallback((postId: string, emoji: string, adding: boolean) => {
-    const patch = (v: boolean) => (c: CommentView) => (c.id === postId ? toggleReaction(c, emoji, v) : c);
-    setState((s) => (s.status === "ready" ? { ...s, comments: s.comments.map(patch(adding)) } : s));
-    const call = adding ? reactPost(postId, emoji) : unreactPost(postId, emoji);
+  const onToggleCommentReaction = useCallback((postId: string, nextEmoji: string | null, previousEmoji: string | null) => {
+    const patch = (emoji: string | null) => (comment: CommentView) =>
+      comment.id === postId ? replaceReaction(comment, emoji) : comment;
+    setState((s) => (s.status === "ready" ? { ...s, comments: s.comments.map(patch(nextEmoji)) } : s));
+    const call = nextEmoji
+      ? reactPost(postId, nextEmoji)
+      : previousEmoji
+        ? unreactPost(postId, previousEmoji)
+        : Promise.resolve();
     call.catch(() => {
-      setState((s) => (s.status === "ready" ? { ...s, comments: s.comments.map(patch(!adding)) } : s));
+      setState((s) => (s.status === "ready" ? { ...s, comments: s.comments.map(patch(previousEmoji)) } : s));
     });
   }, []);
 
@@ -150,7 +164,44 @@ export function MessageShell({ threadId }: { threadId: string }) {
     [threadId, state, returnContext],
   );
 
-  if (state.status === "loading") return <Centered>{t("loading")}</Centered>;
+  const changeThreadReplyCount = useCallback((delta: 1 | -1) => {
+    setState((current) =>
+      current.status === "ready"
+        ? {
+            ...current,
+            thread: {
+              ...current.thread,
+              commentCount: Math.max(0, current.thread.commentCount + delta),
+            },
+          }
+        : current,
+    );
+  }, []);
+
+  const appendQuickComment = useCallback((created: CommentView) => {
+    setState((current) =>
+      current.status === "ready"
+        ? { ...current, comments: [...current.comments, created] }
+        : current,
+    );
+  }, []);
+
+  const changeCommentReplyCount = useCallback((postId: string, delta: 1 | -1) => {
+    setState((current) =>
+      current.status === "ready"
+        ? {
+            ...current,
+            comments: current.comments.map((comment) =>
+              comment.id === postId
+                ? { ...comment, replyCount: Math.max(0, comment.replyCount + delta) }
+                : comment,
+            ),
+          }
+        : current,
+    );
+  }, []);
+
+  if (state.status === "loading") return <PostDetailSkeleton label={t("loading")} />;
   if (state.status === "disabled") return <Centered>{t("soon_title")}</Centered>;
   if (state.status === "error") {
     return (
@@ -161,51 +212,33 @@ export function MessageShell({ threadId }: { threadId: string }) {
   }
 
   const { thread, comments, zone } = state;
-  const participantNames = Array.from(
-    new Set([thread.authorName, ...thread.commenterNames, ...comments.map((comment) => comment.authorName)]),
-  ).slice(0, 8);
+  const backHref = zone
+    ? ({ pathname: "/community/[slug]", params: { slug: zone.slug } } as const)
+    : "/community";
 
   return (
-    <main className="mx-auto min-w-0 max-w-[1180px] px-4 py-5 sm:px-7 lg:px-8 lg:py-6">
-      <nav aria-label={t("breadcrumb_label")} className="mb-5 flex min-h-11 flex-wrap items-center gap-2 border-b border-[#e7e9ee] pb-4 text-[13px] text-[#7b808a]">
-        <Link href="/community" className="font-semibold text-[#373c47] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
-          {t("title")}
-        </Link>
-        <span aria-hidden="true">›</span>
-        {zone ? (
-          <Link
-            href={{ pathname: "/community/[slug]", params: { slug: zone.slug } }}
-            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          >
-            {zone.title}
-          </Link>
-        ) : (
-          <span>{t("type_chat")}</span>
-        )}
-        <span aria-hidden="true">›</span>
-        <span aria-current="page" className="max-w-[24rem] truncate text-[#222630]">
-          {thread.title ?? thread.body.slice(0, 52)}
-        </span>
-      </nav>
+    <main className="mx-auto grid min-w-0 max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
+      <section className="min-w-0 bg-white sm:my-6 sm:overflow-hidden sm:rounded-[var(--radius-card)] sm:border sm:border-[var(--color-border)]">
+        <header className="flex min-h-16 items-center gap-3 border-b border-[var(--color-border)] px-3 sm:px-4">
+          <CircularBackLink href={backHref} label={t("back_short")} variant="soft" />
+          <h1 className="text-xl font-extrabold tracking-[-0.025em] text-[var(--color-main)]">
+            {t("post_detail_title")}
+          </h1>
+        </header>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_304px]">
-      <div className="min-w-0">
-
-      {/* Main thread */}
-      <div className="overflow-hidden rounded-[14px] border border-[#e5e7ec] bg-white shadow-[0_2px_8px_rgb(18_24_39_/_3%)]">
+        <div className="border-b border-[var(--color-border)]">
         <ThreadItem
           thread={thread}
           onToggleReaction={onToggleThreadReaction}
           onToggleBookmark={onToggleThreadBookmark}
+          onReplyCountChange={changeThreadReplyCount}
+          onReplyCreated={appendQuickComment}
         />
-      </div>
+        </div>
 
-      <CommunityCoachBridge bridge={thread.coachBridge} />
+        <CommunityCoachBridge bridge={thread.coachBridge} />
 
-      <h2 className="mb-3 mt-8 text-[20px] font-extrabold tracking-[-0.025em] text-[#1b1f28]">
-        {t("comment_total", { count: comments.length })}
-      </h2>
-      <div className="rounded-[13px] border border-[#e3e6ea] bg-white">
+        <div className="border-y border-[var(--color-border)]">
         <ThreadComposer
           placeholder={
             returnContext
@@ -217,12 +250,14 @@ export function MessageShell({ threadId }: { threadId: string }) {
           zoneId={thread.zoneId}
           focusOnMount={Boolean(returnContext)}
         />
-      </div>
+        </div>
 
-      {/* Comments (nothing shown when empty — the composer above is the call to action) */}
+        <h2 className="border-b border-[var(--color-border)] px-4 py-3 text-sm font-extrabold text-[var(--color-main)]">
+          {t("comment_total", { count: comments.length })}
+        </h2>
+
       {comments.length > 0 && (
-        <>
-          <div className="mt-5 divide-y divide-[#eceef2] border-t border-[#eceef2]">
+          <div className="divide-y divide-[var(--color-border)]">
             {comments.map((c) => (
               <CommentRow
                 key={c.id}
@@ -230,22 +265,15 @@ export function MessageShell({ threadId }: { threadId: string }) {
                 onToggleReaction={onToggleCommentReaction}
                 onToggleBookmark={onToggleCommentBookmark}
                 highlighted={c.id === highlightId}
+                zoneId={thread.zoneId}
+                onReplyCountChange={(delta) => changeCommentReplyCount(c.id, delta)}
               />
             ))}
           </div>
-        </>
       )}
-      </div>
-      <aside className="hidden border-l border-[#e7e9ee] pl-5 xl:block" aria-label={t("detail_context_title")}>
-        <h2 className="flex items-center gap-2 text-[13px] font-extrabold text-[#4c535f]"><Users size={16} className="text-[var(--community-blue-ink)]" aria-hidden />{t("detail_participants")}</h2>
-        <div className="mt-3 grid gap-1">
-          {participantNames.map((name) => (
-            <span key={name} className="min-h-11 rounded-[9px] px-3 py-3 text-sm font-semibold text-[#343945] hover:bg-white">
-              {name}
-            </span>
-          ))}
-        </div>
-      </aside>
+      </section>
+      <div className="sticky top-20 hidden pt-6 xl:block">
+        <CommunityTrendRail />
       </div>
     </main>
   );

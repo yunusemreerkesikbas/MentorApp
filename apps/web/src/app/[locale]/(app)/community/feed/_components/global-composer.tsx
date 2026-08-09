@@ -114,9 +114,10 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
       <button
         type="button"
         onClick={open}
-        className="min-h-11 rounded-[10px] bg-[var(--community-blue)] px-5 text-sm font-bold text-[#111318] transition-colors hover:bg-[var(--community-blue-hover)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        className="min-h-11 cursor-pointer rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 text-sm font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] transition-[border-color,transform] duration-150 hover:border-[var(--community-blue-border)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       >
-        + {t("composer_new")}
+        <span className="text-[var(--community-blue-ink)]" aria-hidden>+</span>{" "}
+        {t("composer_new")}
       </button>
 
       <dialog

@@ -135,7 +135,13 @@ export function useItemGesture({ patch, checkpoint, lockRatioFor }: UseItemGestu
 
   const handlersFor = useCallback(
     (item: VisionBoardItem, mode: GestureMode) => ({
-      onPointerDown: (event: ReactPointerEvent) => begin(event, item, mode),
+      onPointerDown: (event: ReactPointerEvent) => {
+        // Without this, the pointerdown bubbles to the item's own handler right after this one
+        // runs, which starts a *second*, "move" gesture on the same pointer and stomps the
+        // resize/rotate session this handler just began.
+        event.stopPropagation();
+        begin(event, item, mode);
+      },
       onPointerMove: move,
       onPointerUp: end,
       onPointerCancel: end,

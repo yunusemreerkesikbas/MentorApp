@@ -44,6 +44,16 @@ const BACKGROUNDS: Record<string, CSSProperties> = {
     backgroundImage:
       "repeating-linear-gradient(45deg, rgba(0,0,0,0.03) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgba(0,0,0,0.03) 0 2px, transparent 2px 4px)",
   },
+  dots: {
+    backgroundColor: "#f5f6fb",
+    backgroundImage: "radial-gradient(rgba(85, 172, 238, 0.28) 3px, transparent 3.5px)",
+    backgroundSize: "24px 24px",
+  },
+  stripes: {
+    backgroundColor: "#fdf6f0",
+    backgroundImage:
+      "repeating-linear-gradient(135deg, rgba(243, 112, 90, 0.14) 0 6px, transparent 6px 16px)",
+  },
 };
 
 function backgroundStyle(background: VisionBoardDoc["background"]): CSSProperties {
@@ -62,16 +72,21 @@ const StageItem = memo(function StageItem({
   item,
   selected,
   interactive,
+  hideContent,
   onSelect,
   onItemPointerDown,
+  onItemDoubleClick,
   overlay,
 }: {
   item: VisionBoardItem;
   selected: boolean;
   interactive: boolean;
+  /** True while an overlay (e.g. the inline text editor) fully replaces the item's own render. */
+  hideContent?: boolean;
   /** Must be referentially stable, or the memo above never skips anything. */
   onSelect?: (id: string | null) => void;
   onItemPointerDown?: (event: ReactPointerEvent, item: VisionBoardItem) => void;
+  onItemDoubleClick?: (item: VisionBoardItem) => void;
   overlay?: ReactNode;
 }) {
   return (
@@ -84,6 +99,14 @@ const StageItem = memo(function StageItem({
               event.stopPropagation();
               onSelect?.(item.id);
               onItemPointerDown?.(event, item);
+            }
+          : undefined
+      }
+      onDoubleClick={
+        interactive
+          ? (event) => {
+              event.stopPropagation();
+              onItemDoubleClick?.(item);
             }
           : undefined
       }
@@ -105,7 +128,7 @@ const StageItem = memo(function StageItem({
         touchAction: interactive ? "none" : undefined,
       }}
     >
-      <BoardItemView item={item} />
+      {hideContent ? null : <BoardItemView item={item} />}
       {overlay}
     </div>
   );
@@ -116,10 +139,13 @@ export interface BoardStageProps {
   /** Read-only surfaces (panel card, export preview) pass nothing else. */
   onSelect?: (id: string | null) => void;
   onItemPointerDown?: (event: ReactPointerEvent, item: VisionBoardItem) => void;
+  onItemDoubleClick?: (item: VisionBoardItem) => void;
   /** Delegated on the stage root so a drag keeps tracking wherever the pointer goes. */
   onPointerMove?: (event: ReactPointerEvent) => void;
   onPointerUp?: (event: ReactPointerEvent) => void;
   selectedId?: string | null;
+  /** The one item, if any, whose overlay fully replaces its own render (the inline text editor). */
+  contentHiddenId?: string | null;
   /** Selection outline + resize/rotate handles, rendered by the editor for the selected item. */
   renderOverlay?: (item: VisionBoardItem) => ReactNode;
   className?: string;
@@ -129,9 +155,11 @@ export function BoardStage({
   doc,
   onSelect,
   onItemPointerDown,
+  onItemDoubleClick,
   onPointerMove,
   onPointerUp,
   selectedId = null,
+  contentHiddenId = null,
   renderOverlay,
   className,
 }: BoardStageProps) {
@@ -167,8 +195,10 @@ export function BoardStage({
           item={item}
           selected={item.id === selectedId}
           interactive={interactive}
+          hideContent={item.id === contentHiddenId}
           onSelect={onSelect}
           onItemPointerDown={onItemPointerDown}
+          onItemDoubleClick={onItemDoubleClick}
           overlay={item.id === selectedId ? renderOverlay?.(item) : undefined}
         />
       ))}
