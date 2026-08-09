@@ -393,7 +393,7 @@ function TemplatePreview({ id }: { id: BoardTemplateId }) {
 function Panel({ children }: { children: ReactNode }) {
   return (
     <div className="mentor-scrollarea h-full min-h-0 overflow-y-auto">
-      <div className="flex flex-col gap-3 px-3 pb-3 pt-4">{children}</div>
+      <div className="flex flex-col gap-3 px-3 pb-3 pt-8">{children}</div>
     </div>
   );
 }

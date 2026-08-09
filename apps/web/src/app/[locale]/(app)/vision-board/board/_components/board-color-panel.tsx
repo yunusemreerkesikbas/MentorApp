@@ -26,7 +26,7 @@ export function BoardColorPanel({ target, selected, onPatch, onClose }: BoardCol
         : null;
 
   return (
-    <div className="flex flex-col gap-3 p-3">
+    <div className="flex flex-col gap-3 px-3 pb-3 pt-8">
       <div className="flex items-center justify-between gap-2">
         <h2
           className="text-sm font-bold"
