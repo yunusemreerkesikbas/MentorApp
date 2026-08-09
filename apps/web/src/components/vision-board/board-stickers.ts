@@ -113,6 +113,25 @@ const STATIONERY_IMAGES: Partial<Record<VisionSticker, string>> = {
   CARD_ROUNDED_OLIVE: "/img/stickers/card_rounded_olive.png",
 };
 
+/**
+ * Vision-board scene stickers — a second Illustrator collage (`public/img/sticker-2.svg`), several
+ * combining a shape with its own baked-in text (e.g. "MY VISION BOARD"), cut out the same way as
+ * `STATIONERY_IMAGES`.
+ */
+const SCENE_IMAGES: Partial<Record<VisionSticker, string>> = {
+  STAR_OUTLINE_1: "/img/stickers/star_outline_1.png",
+  STAR_OUTLINE_2: "/img/stickers/star_outline_2.png",
+  SPARKLE_CROSS: "/img/stickers/sparkle_cross.png",
+  SPARKLE_DASH: "/img/stickers/sparkle_dash.png",
+  RAINBOW_SQUIGGLE: "/img/stickers/rainbow_squiggle.png",
+  SCENE_DREAM_BIG: "/img/stickers/scene_dream_big.png",
+  CARD_TRAVEL: "/img/stickers/card_travel.png",
+  CARD_INSPIRATION: "/img/stickers/card_inspiration.png",
+  CARD_GOALS: "/img/stickers/card_goals.png",
+  CARD_VISION_BOARD: "/img/stickers/card_vision_board.png",
+  HEART_LOVE: "/img/stickers/heart_love.png",
+};
+
 function artFor(sticker: VisionSticker): StickerArt {
   const shape = SHAPES[sticker];
   if (shape) return { kind: "path", ...shape };
@@ -120,6 +139,8 @@ function artFor(sticker: VisionSticker): StickerArt {
   if (puhu) return { kind: "image", src: puhu };
   const stationery = STATIONERY_IMAGES[sticker];
   if (stationery) return { kind: "image", src: stationery };
+  const scene = SCENE_IMAGES[sticker];
+  if (scene) return { kind: "image", src: scene };
   // MASCOT_YAZILIM → /mascot/career/yazilim.png — the enum mirrors CAREER_GROUPS by construction.
   return {
     kind: "image",
