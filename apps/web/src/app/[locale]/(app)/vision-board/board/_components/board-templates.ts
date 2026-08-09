@@ -52,6 +52,13 @@ export function templateSlots(id: BoardTemplateId): TemplateSlot[] {
   return SLOTS[id];
 }
 
+/** Where each template puts the goal headline — shared by `applyTemplate` and the rail preview. */
+export const TEMPLATE_HEADLINES: Record<BoardTemplateId, { y: number; size: number }> = {
+  collage: { y: H / 2 - 60, size: 76 },
+  minimal: { y: 120, size: 88 },
+  columns: { y: H / 2 - 60, size: 68 },
+};
+
 /**
  * Apply a template to the current document.
  *
@@ -71,17 +78,11 @@ export function applyTemplate(doc: VisionBoardDoc, id: BoardTemplateId): VisionB
   });
 
   // The goal line goes where the template wants a headline; user-written text is left alone.
-  const headline: Record<BoardTemplateId, { y: number; size: number }> = {
-    collage: { y: H / 2 - 60, size: 76 },
-    minimal: { y: 120, size: 88 },
-    columns: { y: H / 2 - 60, size: 68 },
-  };
-
   return {
     ...doc,
     items: items.map((item) =>
       item.kind === "text" && item.source === "goal"
-        ? { ...item, x: (W - item.width) / 2, ...headline[id] }
+        ? { ...item, x: (W - item.width) / 2, ...TEMPLATE_HEADLINES[id] }
         : item,
     ),
   };

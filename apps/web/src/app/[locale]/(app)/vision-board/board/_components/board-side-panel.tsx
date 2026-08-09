@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import {
+  VISION_BOARD_CANVAS,
   VISION_BOARD_FRAMES,
   VISION_BOARD_TEXTURES,
   VISION_IMAGE_FRAMES,
@@ -15,7 +16,12 @@ import { ProgressBar } from "@mentor/ui";
 import { FONT_DISPLAY_NAMES, FONT_STACKS } from "@/components/vision-board/board-item-view";
 import { STICKER_ART } from "@/components/vision-board/board-stickers";
 import { BOARD_COLORS, PLATE_COLORS } from "./board-palettes";
-import { BOARD_TEMPLATE_IDS, type BoardTemplateId } from "./board-templates";
+import {
+  BOARD_TEMPLATE_IDS,
+  TEMPLATE_HEADLINES,
+  templateSlots,
+  type BoardTemplateId,
+} from "./board-templates";
 
 /**
  * Category detail bodies for the Canva-style editor rail.
@@ -321,20 +327,67 @@ export function BoardSidePanel({
 
   return (
     <Panel>
-      <div className="flex flex-col gap-1">
+      <div className="grid grid-cols-2 gap-2">
         {BOARD_TEMPLATE_IDS.map((id) => (
           <button
             key={id}
             type="button"
             onClick={() => onApplyTemplate(id)}
-            className="min-h-11 rounded-[var(--radius-card)] px-3 text-left text-sm font-semibold hover:bg-[var(--color-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            style={{ color: "var(--color-main)" }}
+            className="flex flex-col gap-1.5 rounded-[var(--radius-card)] p-1.5 text-left hover:bg-[var(--color-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           >
-            {t(`template_${id}`)}
+            <TemplatePreview id={id} />
+            <span className="text-xs font-semibold" style={{ color: "var(--color-main)" }}>
+              {t(`template_${id}`)}
+            </span>
           </button>
         ))}
       </div>
     </Panel>
+  );
+}
+
+/**
+ * A schematic drawing of the template's own slot data, at board scale — not a screenshot, so it
+ * can never drift from what "apply" actually does to the document.
+ */
+function TemplatePreview({ id }: { id: BoardTemplateId }) {
+  const headline = TEMPLATE_HEADLINES[id];
+  return (
+    <div
+      aria-hidden
+      className="relative w-full overflow-hidden rounded-[6px]"
+      style={{
+        aspectRatio: `${VISION_BOARD_CANVAS.width} / ${VISION_BOARD_CANVAS.height}`,
+        backgroundColor: "var(--color-surface-container)",
+      }}
+    >
+      {templateSlots(id).map((slot, index) => (
+        <div
+          key={index}
+          className="absolute rounded-[2px]"
+          style={{
+            left: `${(slot.x / VISION_BOARD_CANVAS.width) * 100}%`,
+            top: `${(slot.y / VISION_BOARD_CANVAS.height) * 100}%`,
+            width: `${(slot.width / VISION_BOARD_CANVAS.width) * 100}%`,
+            height: `${(slot.height / VISION_BOARD_CANVAS.height) * 100}%`,
+            transform: `rotate(${slot.rotation}deg)`,
+            backgroundColor: "var(--color-progress-track)",
+          }}
+        />
+      ))}
+      <div
+        className="absolute rounded-full"
+        style={{
+          left: "50%",
+          top: `${(headline.y / VISION_BOARD_CANVAS.height) * 100}%`,
+          width: "42%",
+          height: `${(headline.size / VISION_BOARD_CANVAS.height) * 100}%`,
+          transform: "translateX(-50%)",
+          backgroundColor: "var(--color-main)",
+          opacity: 0.35,
+        }}
+      />
+    </div>
   );
 }
 
