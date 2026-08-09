@@ -16,6 +16,7 @@ import { ProgressBar } from "@mentor/ui";
 import { FONT_DISPLAY_NAMES, FONT_STACKS } from "@/components/vision-board/board-item-view";
 import { STICKER_ART } from "@/components/vision-board/board-stickers";
 import { BOARD_COLORS, PLATE_COLORS } from "./board-palettes";
+import { Swatch } from "./board-swatch";
 import {
   BOARD_TEMPLATE_IDS,
   TEMPLATE_HEADLINES,
@@ -468,36 +469,6 @@ function Pill({
   );
 }
 
-function Swatch({
-  color,
-  label,
-  active,
-  onClick,
-}: {
-  color: string;
-  label: string;
-  active?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={`${label}: ${color}`}
-      aria-pressed={active}
-      onClick={onClick}
-      className="grid h-9 w-9 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-    >
-      <span
-        className="block h-5 w-5 rounded-full"
-        style={{
-          backgroundColor: color,
-          outline: active ? "2px solid var(--color-accent)" : "1px solid rgba(0,0,0,0.12)",
-          outlineOffset: "2px",
-        }}
-      />
-    </button>
-  );
-}
 
 function Range({
   min,

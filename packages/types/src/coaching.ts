@@ -443,7 +443,7 @@ export const VISION_BOARD_FRAMES = ["wood", "gallery", "none"] as const;
 export type VisionBoardFrame = (typeof VISION_BOARD_FRAMES)[number];
 
 /** Board backgrounds; textures are procedural (gradients/dots), so canvas can redraw them. */
-export const VISION_BOARD_TEXTURES = ["cork", "paper", "grid", "linen"] as const;
+export const VISION_BOARD_TEXTURES = ["cork", "paper", "grid", "linen", "dots", "stripes"] as const;
 export type VisionBoardTexture = (typeof VISION_BOARD_TEXTURES)[number];
 
 /** Per-image chrome. A preset enum, not free-form borders — every value must be canvas-drawable. */

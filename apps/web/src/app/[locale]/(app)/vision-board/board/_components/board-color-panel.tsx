@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { VisionBoardItem } from "@mentor/types";
 import { PLATE_COLORS, TEXT_COLORS, type ColorPanelTarget } from "./board-palettes";
+import { Swatch } from "./board-swatch";
 
 export interface BoardColorPanelProps {
   target: ColorPanelTarget;
@@ -48,13 +49,14 @@ export function BoardColorPanel({ target, selected, onPatch, onClose }: BoardCol
         {target === "text" ? t("color") : t("plate")}
       </p>
 
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-2 pt-2">
         {colors.map((color) => (
-          <button
+          <Swatch
             key={color}
-            type="button"
-            aria-label={`${t("color")}: ${color}`}
-            aria-pressed={active === color}
+            color={color}
+            label={t("color")}
+            active={active === color}
+            size="lg"
             onClick={() => {
               if (target === "text" && selected?.kind === "text") {
                 onPatch({ color });
@@ -64,20 +66,7 @@ export function BoardColorPanel({ target, selected, onPatch, onClose }: BoardCol
                 onPatch({ background: { ...selected.background, color } });
               }
             }}
-            className="grid h-11 w-11 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          >
-            <span
-              className="block h-6 w-6 rounded-full"
-              style={{
-                backgroundColor: color,
-                outline:
-                  active === color
-                    ? "2px solid var(--color-accent)"
-                    : "1px solid rgba(0,0,0,0.12)",
-                outlineOffset: "2px",
-              }}
-            />
-          </button>
+          />
         ))}
       </div>
     </div>

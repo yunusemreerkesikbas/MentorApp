@@ -44,6 +44,16 @@ const BACKGROUNDS: Record<string, CSSProperties> = {
     backgroundImage:
       "repeating-linear-gradient(45deg, rgba(0,0,0,0.03) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgba(0,0,0,0.03) 0 2px, transparent 2px 4px)",
   },
+  dots: {
+    backgroundColor: "#f5f6fb",
+    backgroundImage: "radial-gradient(rgba(85, 172, 238, 0.28) 3px, transparent 3.5px)",
+    backgroundSize: "24px 24px",
+  },
+  stripes: {
+    backgroundColor: "#fdf6f0",
+    backgroundImage:
+      "repeating-linear-gradient(135deg, rgba(243, 112, 90, 0.14) 0 6px, transparent 6px 16px)",
+  },
 };
 
 function backgroundStyle(background: VisionBoardDoc["background"]): CSSProperties {
