@@ -84,11 +84,42 @@ const PUHU_IMAGES: Partial<Record<VisionSticker, string>> = {
   PUHU_SLEEPY: "/mascot/puhu/puhu-sleepy.png",
 };
 
+/**
+ * Stationery/paper stickers — each cut out (own transparent PNG) from a single Illustrator
+ * collage that shipped as `public/img/sticker.svg` (see docs/features/coaching.md for how).
+ */
+const STATIONERY_IMAGES: Partial<Record<VisionSticker, string>> = {
+  CARD_STACKED_RED: "/img/stickers/card_stacked_red.png",
+  PAPER_LINED_TAN: "/img/stickers/paper_lined_tan.png",
+  PAPER_GRID: "/img/stickers/paper_grid.png",
+  CARD_PLAIN_BROWN: "/img/stickers/card_plain_brown.png",
+  PAPER_LINED_VERTICAL: "/img/stickers/paper_lined_vertical.png",
+  NOTEPAD_SPIRAL: "/img/stickers/notepad_spiral.png",
+  CARD_BLANK_PINK: "/img/stickers/card_blank_pink.png",
+  CARD_BLANK_LARGE: "/img/stickers/card_blank_large.png",
+  TAPE_HATCHED: "/img/stickers/tape_hatched.png",
+  TAPE_DIAGONAL: "/img/stickers/tape_diagonal.png",
+  TAPE_STRIP_CREAM: "/img/stickers/tape_strip_cream.png",
+  TAPE_STRIP_PLAIN: "/img/stickers/tape_strip_plain.png",
+  TAPE_STRIP_TAN: "/img/stickers/tape_strip_tan.png",
+  NOTEPAD_HOLES_FOLD: "/img/stickers/notepad_holes_fold.png",
+  FABRIC_PLAID_PEACH: "/img/stickers/fabric_plaid_peach.png",
+  NOTEPAD_LINED_RED: "/img/stickers/notepad_lined_red.png",
+  FRAME_POLAROID: "/img/stickers/frame_polaroid.png",
+  PAPER_DOTGRID_DARK: "/img/stickers/paper_dotgrid_dark.png",
+  TAPE_CORAL: "/img/stickers/tape_coral.png",
+  NOTEPAD_SPIRAL_SMALL: "/img/stickers/notepad_spiral_small.png",
+  TAPE_CHECKERED: "/img/stickers/tape_checkered.png",
+  CARD_ROUNDED_OLIVE: "/img/stickers/card_rounded_olive.png",
+};
+
 function artFor(sticker: VisionSticker): StickerArt {
   const shape = SHAPES[sticker];
   if (shape) return { kind: "path", ...shape };
   const puhu = PUHU_IMAGES[sticker];
   if (puhu) return { kind: "image", src: puhu };
+  const stationery = STATIONERY_IMAGES[sticker];
+  if (stationery) return { kind: "image", src: stationery };
   // MASCOT_YAZILIM → /mascot/career/yazilim.png — the enum mirrors CAREER_GROUPS by construction.
   return {
     kind: "image",
