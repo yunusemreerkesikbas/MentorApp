@@ -381,6 +381,61 @@ export function BoardEditorShell() {
     [t, toast],
   );
 
+  /*
+   * Autosave: a paused edit (2s of silence) writes the draft to the server that the manual
+   * "Kaydet" button already writes to — same endpoint, same DRAFT/PUBLISHED status, so a refresh
+   * or a closed tab never loses more than the last couple of seconds of work. Deliberately silent
+   * (no toast, no spinner): the existing "Kaydedilmedi" label already reflects `dirty`, and it
+   * clears itself the moment this fires — that's feedback enough for something that "just works".
+   */
+  useEffect(() => {
+    if (!state.dirty) return;
+    const timer = setTimeout(() => {
+      void http("/v1/coaching/vision/board", {
+        method: "PUT",
+        body: JSON.stringify({ board: state.doc }),
+      })
+        .then(() => dispatch({ type: "saved" }))
+        .catch(() => {
+          /* Silent by design — the manual Save button and its error toast are the fallback. */
+        });
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [dispatch, state.dirty, state.doc]);
+
+  // Refs so the listeners below (registered once) always PUT the latest document, not the one
+  // from whichever render first attached them.
+  const latestDocRef = useRef(state.doc);
+  const latestDirtyRef = useRef(state.dirty);
+  useEffect(() => {
+    latestDocRef.current = state.doc;
+    latestDirtyRef.current = state.dirty;
+  }, [state.doc, state.dirty]);
+
+  useEffect(() => {
+    function flush() {
+      if (!latestDirtyRef.current) return;
+      // `keepalive` lets the request outlive the page — the normal path for a tab actually
+      // closing, where an ordinary fetch would be aborted mid-flight.
+      void http("/v1/coaching/vision/board", {
+        method: "PUT",
+        body: JSON.stringify({ board: latestDocRef.current }),
+        keepalive: true,
+      })
+        .then(() => dispatch({ type: "saved" }))
+        .catch(() => {});
+    }
+    function onVisibilityChange() {
+      if (document.visibilityState === "hidden") flush();
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, [dispatch]);
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const targetEl = event.target as HTMLElement | null;
