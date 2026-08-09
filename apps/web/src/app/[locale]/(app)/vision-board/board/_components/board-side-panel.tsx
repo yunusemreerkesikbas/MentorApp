@@ -72,12 +72,12 @@ export function BoardSidePanel({
       <Panel>
         <Field label={t("board_frame")}>
           <Row>
-            {VISION_BOARD_FRAMES.map((frame) => (
+            {VISION_BOARD_FRAMES.filter((frame) => frame !== "none").map((frame) => (
               <Pill
                 key={frame}
                 active={doc.frame === frame}
                 label={t(`frame_${frame}`)}
-                onClick={() => onSetFrame(frame)}
+                onClick={() => onSetFrame(doc.frame === frame ? "none" : frame)}
               />
             ))}
           </Row>
@@ -160,12 +160,12 @@ export function BoardSidePanel({
           <>
             <Field label={t("image_frame")}>
               <Row>
-                {VISION_IMAGE_FRAMES.map((frame) => (
+                {VISION_IMAGE_FRAMES.filter((frame) => frame !== "none").map((frame) => (
                   <Pill
                     key={frame}
                     active={selected.frame === frame}
                     label={t(`image_frame_${frame}`)}
-                    onClick={() => onPatch({ frame })}
+                    onClick={() => onPatch({ frame: selected.frame === frame ? "none" : frame })}
                   />
                 ))}
               </Row>
@@ -231,11 +231,6 @@ export function BoardSidePanel({
             </Field>
             <Field label={t("plate")}>
               <Row>
-                <Pill
-                  active={selected.background == null}
-                  label={t("plate_none")}
-                  onClick={() => onPatch({ background: null })}
-                />
                 {PLATE_COLORS.map((color) => (
                   <Swatch
                     key={color}
@@ -244,9 +239,12 @@ export function BoardSidePanel({
                     active={selected.background?.color === color}
                     onClick={() =>
                       onPatch({
-                        background: selected.background
-                          ? { ...selected.background, color }
-                          : { color, opacity: 1, padding: 24, radius: 8 },
+                        background:
+                          selected.background?.color === color
+                            ? null
+                            : selected.background
+                              ? { ...selected.background, color }
+                              : { color, opacity: 1, padding: 24, radius: 8 },
                       })
                     }
                   />
