@@ -560,7 +560,7 @@ export function BoardEditorShell() {
             animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -8 }}
             transition={boardChromeTransition}
-            className="relative flex max-h-[40vh] w-full shrink-0 flex-col border-b lg:max-h-none lg:w-64 lg:border-b-0 lg:border-e"
+            className="relative flex min-h-0 max-h-[40vh] w-full shrink-0 flex-col border-b lg:max-h-none lg:w-64 lg:border-b-0 lg:border-e"
             style={{
               backgroundColor: "var(--color-surface)",
               borderColor: "rgba(17, 17, 17, 0.08)",
