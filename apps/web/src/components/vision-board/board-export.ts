@@ -211,6 +211,10 @@ export const FONT_FAMILIES: Record<VisionBoardTextItem["font"], string> = {
   rounded: '"Baloo 2", sans-serif',
   condensed: '"Oswald", sans-serif',
   classic: '"Merriweather", serif',
+  impact: '"Anton", sans-serif',
+  elegant: '"Dancing Script", cursive',
+  slab: '"Bitter", serif',
+  mono: '"Space Mono", monospace',
 };
 
 function drawTextItem(ctx: CanvasRenderingContext2D, item: VisionBoardTextItem): void {

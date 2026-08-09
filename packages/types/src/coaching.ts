@@ -465,6 +465,10 @@ export const VISION_TEXT_FONTS = [
   "rounded",
   "condensed",
   "classic",
+  "impact",
+  "elegant",
+  "slab",
+  "mono",
 ] as const;
 export type VisionTextFont = (typeof VISION_TEXT_FONTS)[number];
 

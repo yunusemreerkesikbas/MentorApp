@@ -1,5 +1,17 @@
 import type { Metadata } from "next";
-import { Baloo_2, Caveat, Merriweather, Nunito_Sans, Oswald, Playfair_Display, Poppins } from "next/font/google";
+import {
+  Anton,
+  Baloo_2,
+  Bitter,
+  Caveat,
+  Dancing_Script,
+  Merriweather,
+  Nunito_Sans,
+  Oswald,
+  Playfair_Display,
+  Poppins,
+  Space_Mono,
+} from "next/font/google";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
@@ -56,6 +68,26 @@ const visionClassic = Merriweather({
   subsets: ["latin", "latin-ext"],
   weight: ["400", "700"],
   variable: "--font-vision-classic",
+});
+const visionImpact = Anton({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400"],
+  variable: "--font-vision-impact",
+});
+const visionElegant = Dancing_Script({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "700"],
+  variable: "--font-vision-elegant",
+});
+const visionSlab = Bitter({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "700"],
+  variable: "--font-vision-slab",
+});
+const visionMono = Space_Mono({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "700"],
+  variable: "--font-vision-mono",
 });
 
 export function generateStaticParams() {
@@ -118,7 +150,7 @@ export default async function LocaleLayout({
   return (
     <html
       lang={locale}
-      className={`${sans.variable} ${script.variable} ${visionHeading.variable} ${visionSerif.variable} ${visionRounded.variable} ${visionCondensed.variable} ${visionClassic.variable}`}
+      className={`${sans.variable} ${script.variable} ${visionHeading.variable} ${visionSerif.variable} ${visionRounded.variable} ${visionCondensed.variable} ${visionClassic.variable} ${visionImpact.variable} ${visionElegant.variable} ${visionSlab.variable} ${visionMono.variable}`}
     >
       {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla) inject body
           attributes pre-hydration; this silences only attribute diffs on <body>. */}

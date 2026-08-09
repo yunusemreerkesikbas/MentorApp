@@ -31,6 +31,10 @@ export const FONT_STACKS: Record<VisionBoardTextItem["font"], string> = {
   rounded: "var(--font-vision-rounded, sans-serif)",
   condensed: "var(--font-vision-condensed, sans-serif)",
   classic: "var(--font-vision-classic, serif)",
+  impact: "var(--font-vision-impact, sans-serif)",
+  elegant: "var(--font-vision-elegant, cursive)",
+  slab: "var(--font-vision-slab, serif)",
+  mono: "var(--font-vision-mono, monospace)",
 };
 
 /** The actual family name shown in the font picker — so a user picks by what it looks like. */
@@ -42,6 +46,10 @@ export const FONT_DISPLAY_NAMES: Record<VisionBoardTextItem["font"], string> = {
   rounded: "Baloo 2",
   condensed: "Oswald",
   classic: "Merriweather",
+  impact: "Anton",
+  elegant: "Dancing Script",
+  slab: "Bitter",
+  mono: "Space Mono",
 };
 
 /** Chrome around a photo. Each preset must be drawable by the canvas exporter too — keep it simple. */

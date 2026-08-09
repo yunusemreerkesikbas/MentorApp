@@ -15,7 +15,7 @@ describe("vision board font maps", () => {
     expect(Object.keys(FONT_FAMILIES).sort()).toEqual(expected);
   });
 
-  it("has 7 distinct font entries", () => {
-    expect(VISION_TEXT_FONTS).toHaveLength(7);
+  it("has 11 distinct font entries", () => {
+    expect(VISION_TEXT_FONTS).toHaveLength(11);
   });
 });
