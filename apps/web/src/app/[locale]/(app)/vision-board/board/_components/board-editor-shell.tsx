@@ -514,6 +514,20 @@ export function BoardEditorShell() {
           borderColor: "rgba(17, 17, 17, 0.08)",
         }}
       >
+        <Link
+          href="/vision-board"
+          aria-label={t("back")}
+          title={t("back")}
+          className="mb-1 flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{
+            backgroundColor: "var(--color-surface)",
+            boxShadow: "var(--shadow-card)",
+            color: "var(--color-main)",
+          }}
+        >
+          <ArrowLeft aria-hidden size={18} />
+        </Link>
+
         {CATEGORIES.map(({ id, icon: Icon, labelKey }) => {
           const active = activePanel === id && !detailCollapsed;
           return (
@@ -635,15 +649,6 @@ export function BoardEditorShell() {
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2 lg:p-3">
         <div className="flex shrink-0 items-center gap-0.5">
-          <Link
-            href="/vision-board"
-            className="inline-flex h-11 items-center gap-1 rounded-full px-2 text-sm font-semibold"
-            style={{ color: "var(--color-secondary)" }}
-          >
-            <ArrowLeft aria-hidden size={16} />
-            {t("back")}
-          </Link>
-
           <IconButton
             label={t("undo")}
             disabled={!canUndo}
