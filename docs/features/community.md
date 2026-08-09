@@ -67,6 +67,121 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Akış mobil sekme sadeleştirmesi (2026-08-09)** — Mobil görünür navigasyon “Öne Çıkan” ve
+  “Takip Ettiklerim” olmak üzere iki eşit genişlikli ana sekmeye indirildi. “En Yeni / En İyi”
+  seçenekleri filtre bottom sheet'indeki sıralama alanına taşındı; etiket ve oda türüyle birlikte tek
+  “Uygula” aksiyonunda devreye girer. Aktif sıralama/filtre varsa filtre ikonundaki durum noktası
+  görünür. Desktop dört sekmeli hızlı erişimini korur. İlgili: `feed/_components/feed-shell.tsx`.
+
+- **Akış mobil üst alan hizalaması (2026-08-09)** — Mobil “Kanallar” barı ile Akış gövdesi aynı
+  `community-canvas` yüzey tokenını kullanır. Filtre ikonu sekmelerin altına düşmez; tek satırda sabit
+  kalırken sekmeler dar ekranlarda yatay kayabilir. Global search, topluluk genelinde kişi/etiket/
+  tartışma aradığı için üst header'daki mevcut konumunu korur; sayfa filtresiyle karıştırılmaz.
+  İlgili: `community-parity.css`, `_components/zone-drawer.tsx`,
+  `feed/_components/feed-shell.tsx`.
+
+- **Akış keşif odağı (2026-08-09)** — Global Akış yalnız keşif/filtreleme yüzeyi olarak
+  sadeleştirildi. Sayfa içindeki tekrar eden “Akış” başlığı/ikonu ve bağlamsız “Yeni gönderi” aksiyonu
+  kaldırıldı; içerik üretimi ilgili sohbet, Q/A veya duyuru odasındaki bağlamsal composer üzerinden
+  yapılır. Mobil filtre ikonu tek sekme toolbar'ının sağına taşındı. İlgili:
+  `feed/_components/feed-shell.tsx`.
+
+- **Topluluk bildirim paneli yönü (2026-08-09)** — Global bildirim drawer'ına tetikleyici bazlı
+  masaüstü `left/right` yerleşim desteği eklendi. Varsayılan uygulama zili soldaki mevcut davranışı
+  korurken, sağ üstte konumlanan Topluluk zili paneli sağ kenarda açar. Mobil drawer her zaman sağdan
+  açılmaya devam eder. Sağ panel Topluluk header'ının altında 8 px boşlukla konumlanır ve zil
+  tetikleyicisini örtmez. İlgili: `community/_components/community-header.tsx`,
+  `@mentor/ui/notification-drawer/{types,notification-bell,notification-drawer-context,notification-drawer-panel}.tsx`.
+
+- **Akış mobil skeleton hizalaması (2026-08-09)** — Akış grid'inin loading durumunda içeriğin
+  implicit `max-content` kolon üretmesi engellendi; mobil/tablet kolonu açıkça `minmax(0, 1fr)`
+  olarak tanımlandı. Ana bölüm ve skeleton grubu artık kullanılabilir mobil
+  genişliği doldurur. Feed skeleton'ı ayrı yuvarlak kartlar yerine gerçek akışla aynı tek border'lı,
+  bölücülü post yüzeyini kullanır. İlgili: `_components/post-skeleton.tsx`,
+  `feed/_components/feed-shell.tsx`.
+
+- **Akış mobil filtre bottom sheet'i (2026-08-09)** — Mobilde ayrı satırda duran metinli “Filtreler”
+  butonu kaldırıldı. Filtre aksiyonu başlık satırında “Yeni gönderi” yanında ikon-only 44 px hedefe
+  taşındı; aktif filtre varsa mavi durum noktası gösterir. Eski native dialog yerine shared
+  `BottomSheetProvider` filter layout'u kullanılır; seçimler “Uygula” ile atomik biçimde akışa
+  yansır ve temizleme sheet içinde yapılır. İlgili: `feed/_components/feed-shell.tsx`,
+  `lib/mentor-bottom-sheet.ts`, `@mentor/ui/bottom-sheet`.
+  Sheet footerına yakın oda türü dropdown'u aşağıda kırpılmaması için yukarı açılır; shared
+  `PopoverMenu` ve `MenuSelect` artık ihtiyaca göre `top/bottom` panel yerleşimini destekler.
+
+- **Akış gönderi aksiyon menüsü (2026-08-09)** — Gönderinin üç nokta menüsü native `details`
+  dropdown'undan shared `PopoverMenu` yapısına geçirildi. Düzenle, sabitle, sil ve bildir aksiyonları
+  artık ortak radius/gölge, click-away kapanma, klavye semantiği ve reduced-motion geçişlerini
+  kullanır; silme aksiyonu danger rengiyle ayrışır. İlgili:
+  `feed/_components/discovery-feed-card.tsx`, `components/popover-menu.tsx`.
+
+- **Post aksiyon hover standardı (2026-08-09)** — Reaction, yorum, paylaşım ve kaydetme ikonlarında
+  hover/focus sırasında stroke kalınlığını değiştiren ve görsel sıçrama yaratan davranış kaldırıldı.
+  Yerine ölçüyü değiştirmeyen, yuvarlak ve düşük yoğunluklu nötr hover yüzeyi eklendi. İlgili:
+  `community/community-parity.css`, `_components/reaction-bar.tsx`.
+
+- **Akış yeni gönderi aksiyonu (2026-08-09)** — Akış başlığındaki yeni gönderi tetikleyicisi,
+  dolgulu görünümden beyaz yüzey, ince gri border, siyah metin ve mavi `+` vurgusuna geçirildi.
+  Hover yalnız border'ı belirginleştirir; press geri bildirimi ve reduced-motion desteği korunur. Composer
+  modalinin yayınlama aksiyonu mevcut primary standardını korur. İlgili:
+  `feed/_components/global-composer.tsx`.
+
+- **Shared sekme görsel standardı (2026-08-09)** — `SegmentPillControl` referanstaki sade segmented
+  control diline geçirildi: ince açık gri track, beyaz aktif yüzey, siyah aktif metin ve düşük
+  yoğunluklu gölge. Framer Motion kayan gösterge ile klavye/reduced-motion davranışları korunur;
+  değişiklik Akış ve Plan dahil shared bileşenin tüm tüketicilerine uygulanır. İlgili:
+  `apps/web/src/components/segment-pill-control.tsx`.
+
+- **Akış kontrol çubuğu sadeleştirmesi (2026-08-09)** — Akış içindeki ikinci arama alanı
+  kaldırıldı; arama yalnız global community header üzerinden yapılır. Sıralama ve kapsamın iki ayrı
+  satırda tekrar ettiği yapı, “Öne Çıkan / Yeni / En İyi / Takip Ettiklerim” seçeneklerinden oluşan
+  tek shared sekme çubuğuna indirildi. Etiket ve oda türü filtreleri aynı toolbar'ın sağında kalır;
+  “Yeni gönderi” aksiyonu başlık satırına taşındı. İlgili: `feed/_components/feed-shell.tsx`.
+
+- **Topluluk Akış standardizasyonu (2026-08-09)** — `/community/feed` başlığı ürün dilinde “Akış”
+  olarak sadeleştirildi ve başlık ikonunun dekoratif zemini kaldırıldı. Sıralama/kapsam sekmeleri
+  Plan ile aynı shared `SegmentPillControl`, etiket/oda türü filtreleri Hedef ekranlarıyla aynı
+  `MenuSelect` bileşenini kullanır. Etiket dropdown'u filtreleme için korunurken keşif trendleri sağ
+  rail'deki shared `CommunityTrendRail` içinde gösterilir. Ana kolon 600 px düz post akışına geçti;
+  gönderiler avatar–kimlik üst satırı ve arka plansız, eşit dağıtılmış reaction/yorum/paylaş/kaydet
+  aksiyonlarını kullanır. İlgili: `feed/_components/{feed-shell,discovery-feed-card}.tsx`.
+
+- **Kompakt post zamanı ve yayınlama ilerlemesi (2026-08-09)** — Topluluk post ve yorum zamanları
+  uzun göreli metinler yerine `şimdi`, `4dk`, `3s`, `2g`, `1hf` biçiminde gösterilir; EN karşılıkları
+  da aynı yardımcı üzerinden üretilir. Oda composer'ında yayınlama sırasında buton etiketi artık
+  değişmez. Bunun yerine alt kenardaki ince progress çizgisi işlem sürerken ilerler, ağ ve sunucu
+  kaydı tamamlandığında yüzde 100'e ulaşır; hata halinde sıfırlanır ve reduced-motion tercihine
+  uyar. İlgili: `lib/relative-time.ts`, `feed/_components/discovery-feed-card.tsx`,
+  `[slug]/_components/thread-composer.tsx`.
+
+- **Oda post composer medya deneyimi (2026-08-09)** — Oda içindeki post oluşturma alanı artık
+  oturumdaki kullanıcının gerçek avatarını gösterir. Metin alanı odakta erişilebilir bir sınır alır,
+  içerikle birlikte kontrollü biçimde 192 px yüksekliğe kadar büyür ve sonrasında kendi içinde
+  kayar. Görsel ekleri küçük chip yerine geniş, kırpılmış medya önizlemesiyle; kaldırma aksiyonunu
+  görselin sağ üstünde gösterir. Ortak soru/cevap composer'larının kompakt ek görünümü korunmuştur.
+  İlgili: `[slug]/_components/thread-composer.tsx`, `_components/attachment-preview-strip.tsx`.
+
+- **Canlı topluluk motion geçişleri (2026-08-09)** — Framer Motion ile oda ve Gündem tablarında
+  spring tab göstergesi + yönlü içerik geçişi, reaction ikonlarında hover/tap/pop geri bildirimi ve
+  sidebar linkleri arasında kayan tek active yüzey eklendi. Hareketler yalnız transform/opacity
+  kullanır; `prefers-reduced-motion` etkinse süreler kapatılır. Veri yenileyen oda/Gündem tabları
+  geçiş sırasında ortak satır skeleton'ını gösterir; yerel Medya/Hakkında geçişlerine yapay bekleme
+  eklenmez. Aynı ortak post skeleton'ı Akış'ın ilk/pagination yüklemesinde, oda pagination'ında ve
+  mesaj–yorum–soru detaylarının route/client loading durumlarında kullanılır. İlgili:
+  `_components/{reaction-bar,zone-sidebar,tab-content-skeleton,post-skeleton}.tsx`,
+  `[slug]/_components/zone-shell.tsx`, `trends/_components/trends-shell.tsx`.
+
+- **Topluluk Gündemi sağ rail ve reaction sadeleştirmesi (2026-08-09)** — Oda ekranı masaüstünde
+  600 px akış + 24 px boşluk + 300 px sticky Gündem paneline geçti; ilk beş etiketli trend doğrudan
+  filtreli Akış'a, “Daha fazlasını göster” ise `/topluluk/gundem` sayfasındaki Keşfet/Sınavım/Genel
+  sekmelerine gider. Sınavı olmayan kullanıcıda Sınavım gizlidir; mobilde rail yerine sidebar/drawer
+  Gündem bağlantısı kullanılır. Rail hatası gönderi akışını bloklamaz ve sahte fallback üretmez.
+  Normal oda ve mesaj detayı breadcrumb'ları kaldırıldı, Q/A soru detayı korundu; Katıl/Ayrıl metinli
+  ama 44 px dokunma alanlı kompakt kaldı. Reaction UI tek seçimi boş/dolu kalp ve kutusuz sayaçlarla
+  gösterir; seçim değişimi optimistic olarak eski sayıyı azaltıp yenisini artırır. İlgili:
+  `community/{[slug],trends}/`, `_components/{community-trend-rail,trend-topic-list,reaction-bar,
+  zone-sidebar}.tsx`, `lib/{forum,forum-reactions}.ts`, `messages/{tr,en}.json`.
+
 - **Enerjik kampüs görsel katmanı (2026-07-31)** — İlk parity turundaki sakin/editoryal görünüm,
   öğrenci topluluğunun sosyal enerjisini daha iyi taşıyan içerik-temelli bir dile geliştirildi. Mentor
   mavisi (`--color-progress`) seçili navigasyon ve birincil aksiyonları; mercan soru/yanıt çağrılarını;
@@ -321,3 +436,54 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   kendi planlanan sonuna kadar aktif okunabilir. İlgili: `notifications.service.ts`
   (`pushRealtimeEvent` kuyruk + `createStream` flush), `study-session.repository.ts` (`runningNow`),
   `notification-drawer-shell.tsx`, testler: `realtime-queue.spec.ts`, `session.service.spec.ts`.
+
+- **Topluluk hub editoryal redesign (2026-08-08)** — Topluluk çalışma alanının markası **Mentor**
+  olarak sadeleştirildi; header ve oda ikonlarındaki renkli kutular ile oda satırlarındaki mesaj
+  sayaçları kaldırıldı, sidebar yoğunluğu azaltıldı. Hub'daki öne çıkan tartışma üçüncü görseldeki
+  editoryal hiyerarşiyle mevcut Mentor dilini birleştirecek biçimde `public/img/feed.png`, güçlü başlık,
+  kompakt meta ve siyah birincil/çerçeveli ikincil eylemlerle yeniden kuruldu. “Devam ettiklerin”
+  satırları sıkılaştırıldı; hover animasyonu ve ok arka planları kaldırıldı. **Emek Panon** kişisel
+  streak/XP özetinden arındırılıp trend, destek verenler ve oda keşfine odaklandı; boş durumlar akışa
+  yönlendiren öğretici panellere dönüştürüldü. Takip revizyonunda gri boş durum yüzeyi yumuşak mavi
+  vurguya taşındı ve oda “Katıl” eylemleri erişilebilir adı koruyan kompakt `+` kontrollere çevrildi.
+  Kullanım: `/topluluk`; masaüstünde iki kolon, mobilde
+  sıralı tek kolon. Gotcha: coin/XP topluluk keşif yüzeyine geri eklenmemeli; kişisel ekonomi kendi
+  yüzeyinde kalır. İlgili: `community/{community-parity.css,_components/{hub-shell,zone-sidebar,
+  community-header}.tsx}`, `feed/_components/global-composer.tsx`, `messages/{tr,en}.json`,
+  `e2e/community-hub.spec.ts`.
+  **Ek (2026-08-09):** Hub keşif yüzeyi olarak sadeleştirildi; üstteki yinelenen “Topluluk” başlığı
+  ve bağlamsız global “Yeni gönderi” aksiyonu kaldırıldı. Gönderi oluşturma oda/Q&A bağlamında kalır;
+  loading skeleton da kaldırılan header boşluğunu üretmez. Header çıkışı dairesel, ince çerçeveli
+  sol-chevron kontrolüne dönüştürüldü; locale-aware `CircularBackLink` shared bileşeni giriş ekranında
+  da kullanılarak ölçü, focus ve reduced-motion davranışı ortaklaştırıldı.
+
+- **Topluluk oda sayfası redesign (2026-08-08)** — `/topluluk/[slug]` oda ekranı X topluluklarının
+  okunabilir bilgi mimarisinden yararlanılarak Mentor dilinde yeniden kuruldu: `feed.png` kapak,
+  başlık/tür/üye özeti, gerçek paylaşım ve katılma aksiyonları, Popüler–En Son–Medya–Hakkında
+  sekmeleri ve 600 px odaklı gönderi akışı eklendi. Katkı verenler ile sabit gönderiler kalıcı sağ
+  rail yerine Hakkında sekmesine taşındı. Gönderi aksiyonları eşit dağıtıldı; hover yüzeyi kaldırılıp
+  ikon kalınlığı geri bildirim olarak kullanıldı. Bildirim aboneliği kalıcı API desteği olmadığı için
+  sahte bir toggle olarak eklenmedi. Medya sekmesi mevcut/yüklenmiş sayfadaki ekli gönderileri süzer.
+  İlgili: `[slug]/_components/{zone-shell,zone-shell-skeleton,thread-item}.tsx`,
+  `_components/{reaction-bar,send-button,bookmark-button}.tsx`, `community-parity.css`,
+  `messages/{tr,en}.json`.
+
+- **Topluluk global arama paneli (2026-08-09)** — Header araması tek sayfalık yönlendirme yerine
+  desktopta merkez dialog, mobilde safe-area uyumlu tam ekran keşif yüzeyi olarak yenilendi. En az iki
+  karakterde 250 ms gecikmeyle topluluk/oda, gönderi, Q/A sorusu, etiket ve public-safe kişi sonuçları
+  ayrı gruplarda gelir; ok tuşları + Enter, Escape ve `Ctrl/⌘ + K` desteklenir. Boş sorguda son beş
+  cihaz araması ile mevcut `/v1/forum/trends` gündemi gösterilir; geçmiş yalnız localStorage'dadır ve
+  temizlenebilir. Panel ve arka perde Framer Motion ile kısa fade/yükselme animasyonu kullanır;
+  kapanış native dialog kapanmadan tamamlanır ve reduced-motion tercihi korunur. Son arama/gündem
+  satırları kompaktlaştırıldı; klavye aktifliği ve hover aynı yumuşak yüzey geri bildirimini kullanır.
+  `/v1/forum/search`
+  geriye uyumlu `threads/tags/people` alanlarını koruyup `questions`
+  ve `zones` alanlarıyla genişletildi; yalnız public, arşivlenmemiş odalar ve silinmemiş içerikler
+  aranır. Gotcha: quick actions ve sunucuda arama geçmişi bilinçli olarak yoktur; resmi sınav bilgisi
+  bu aramanın kaynağı değildir. İlgili: `forum-discovery.{service,repository}.ts`, `@mentor/types/forum`,
+  `community-search.tsx`, `community-search-history.ts`, `community-parity.css`, `messages/{tr,en}.json`.
+
+- **Gönderi medya oranı (2026-08-10)** — Akış, oda ve detay yüzeylerinin ortak
+  `AttachmentGallery` bileşeni tüm gönderilerde sabit 16:9 medya çerçevesine geçirildi. Tek ve çoklu
+  görseller kartta `object-fit: cover` ile eşit boyutta gösterilir; tıklanınca mevcut lightbox içinde
+  kırpılmamış `object-contain` hali açılır. Üçlü galeri aynı çerçevede bir büyük + iki küçük karo kullanır.

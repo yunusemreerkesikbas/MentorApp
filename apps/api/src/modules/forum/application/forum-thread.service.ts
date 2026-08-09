@@ -262,7 +262,7 @@ export class ForumThreadService {
   async react(userId: string, threadId: string, emoji: string): Promise<void> {
     await this.assertEnabled();
     await this.requireThread(threadId, userId); // visibility belt
-    await this.threads.addReaction(threadId, userId, emoji);
+    await this.threads.setReaction(threadId, userId, emoji);
   }
 
   async unreact(userId: string, threadId: string, emoji: string): Promise<void> {
@@ -489,7 +489,7 @@ export class ForumThreadService {
   async reactPost(userId: string, postId: string, emoji: string): Promise<void> {
     await this.assertEnabled();
     await this.requirePost(postId, userId); // visibility belt
-    await this.posts.addPostReaction(postId, userId, emoji);
+    await this.posts.setPostReaction(postId, userId, emoji);
   }
 
   async unreactPost(userId: string, postId: string, emoji: string): Promise<void> {

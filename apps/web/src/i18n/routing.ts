@@ -66,6 +66,10 @@ export const routing = defineRouting({
       tr: "/topluluk/siralama",
       en: "/community/leaderboard",
     },
+    "/community/trends": {
+      tr: "/topluluk/gundem",
+      en: "/community/trends",
+    },
     "/community/member/[username]": {
       tr: "/topluluk/uye/[username]",
       en: "/community/member/[username]",

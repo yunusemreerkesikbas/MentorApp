@@ -15,6 +15,7 @@ import {
 } from "./notification-drawer-panel.js";
 import type {
   NotificationDrawerContextValue,
+  NotificationDrawerDesktopSide,
   NotificationDrawerProviderProps,
   NotificationTab,
 } from "./types.js";
@@ -46,6 +47,7 @@ export function NotificationDrawerProvider({
 }: NotificationDrawerProviderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<NotificationTab>("ALL");
+  const [desktopSide, setDesktopSide] = useState<NotificationDrawerDesktopSide>("left");
   const [items, setItems] = useState<UserNotificationDto[]>(itemsProp);
   // Keep items in sync when parent re-fetches
   const prevItemsProp = useRef(itemsProp);
@@ -54,9 +56,15 @@ export function NotificationDrawerProvider({
     setItems(itemsProp);
   }
 
-  const open = useCallback(() => setIsOpen(true), []);
+  const open = useCallback((side: NotificationDrawerDesktopSide = "left") => {
+    setDesktopSide(side);
+    setIsOpen(true);
+  }, []);
   const close = useCallback(() => setIsOpen(false), []);
-  const toggle = useCallback(() => setIsOpen((v) => !v), []);
+  const toggle = useCallback((side: NotificationDrawerDesktopSide = "left") => {
+    setDesktopSide(side);
+    setIsOpen((value) => !value);
+  }, []);
 
   const markRead = useCallback(
     (id: string) => {
@@ -159,6 +167,7 @@ export function NotificationDrawerProvider({
     renderIcon,
     emptyState,
     labels,
+    desktopSide,
   };
 
   return (

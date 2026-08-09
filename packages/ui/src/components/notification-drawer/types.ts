@@ -2,6 +2,7 @@ import type * as React from "react";
 import type { NotificationCategory, UserNotificationDto } from "@mentor/types";
 
 export type NotificationTab = "ALL" | NotificationCategory;
+export type NotificationDrawerDesktopSide = "left" | "right";
 
 export interface NotificationDrawerLabels {
   title: string;
@@ -25,9 +26,9 @@ export interface NotificationDrawerLabels {
 
 export interface NotificationDrawerContextValue {
   isOpen: boolean;
-  open(): void;
+  open(side?: NotificationDrawerDesktopSide): void;
   close(): void;
-  toggle(): void;
+  toggle(side?: NotificationDrawerDesktopSide): void;
   items: UserNotificationDto[];
   unreadCount: number;
   activeTab: NotificationTab;

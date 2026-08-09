@@ -8,7 +8,9 @@ import {
   type ForumPublicPerson,
   type ForumSearchView,
   type ForumTagView,
+  type ForumTrendsView,
   type ForumThreadSummary,
+  type ForumZoneSearchResult,
   type ForumZoneFeedView,
   ModerationTargetType,
   type ZoneRole,
@@ -19,6 +21,7 @@ import type {
   AdminForumTagUpdate,
   FeedQuery,
   ForumFeedQuery,
+  ForumTrendsQuery,
   SetFeaturedThread,
   UpdateForumPost,
   UpdateForumThread,
@@ -226,7 +229,7 @@ export class ForumDiscoveryService {
         }),
         this.repo.recentInteractionThreadIds(actor.id, 8),
         this.repo.listDiscoveryThreads({ ...common, sort: "recent" }),
-        this.repo.trendingTags(lang, profile.examType, 6),
+        this.repo.trendingTags(lang, profile.examType, 6, "relevant", settings.trendingWindowHours),
         this.repo.weeklySupporters(profile.examType, 6),
         this.repo.recommendedZoneIds(actor.id, profile.examType, 3),
       ]);
@@ -271,16 +274,54 @@ export class ForumDiscoveryService {
     };
   }
 
+  async getTrends(
+    actor: ThreadActor,
+    query: ForumTrendsQuery,
+    locale?: string,
+  ): Promise<ForumTrendsView> {
+    await this.assertEnabled();
+    const [profile, settings] = await Promise.all([
+      this.users.getDiscoveryProfile(actor.id),
+      this.settings(),
+    ]);
+    const lang = this.locale(locale);
+    const rows = await this.repo.trendingTags(
+      lang,
+      profile.examType,
+      query.limit,
+      query.scope,
+      settings.trendingWindowHours,
+    );
+    return {
+      items: rows.map(({ tag, threadCount }) => ({
+        ...this.toTagView(tag, lang),
+        threadCount,
+      })),
+      scope: query.scope,
+      examType: profile.examType,
+      windowHours: settings.trendingWindowHours,
+    };
+  }
+
   async search(viewerId: string, q: string, locale?: string): Promise<ForumSearchView> {
     await this.assertEnabled();
     const lang = this.locale(locale);
-    const [threads, tags, people] = await Promise.all([
+    const [threads, questions, zones, tags, people] = await Promise.all([
       this.repo.searchThreadSummaries(q, 5),
+      this.repo.searchThreadSummaries(q, 5, ZoneType.QA),
+      this.repo.searchZones(q, 5),
       this.repo.searchTags(q, 5),
       this.users.searchPublicUsers(q, 5),
     ]);
     return {
       threads: threads.map((row) => this.toSummary(row)),
+      questions: questions.map((row) => this.toSummary(row)),
+      zones: zones.map(
+        (zone): ForumZoneSearchResult => ({
+          ...zone,
+          type: zone.type as ZoneType,
+        }),
+      ),
       tags: tags.map((row) => this.toTagView(row, lang)),
       people,
     };

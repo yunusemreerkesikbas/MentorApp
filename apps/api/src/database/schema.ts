@@ -2036,7 +2036,7 @@ export const forumHelpfulVotes = pgTable(
   ],
 );
 
-/** One reaction per (post, user, emoji) — comment likes (APP-017). Mirrors forum_reactions. */
+/** One reaction per (post, user). Selecting another emoji replaces the current reaction. */
 export const forumPostReactions = pgTable(
   "forum_post_reactions",
   {
@@ -2055,16 +2055,12 @@ export const forumPostReactions = pgTable(
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("forum_post_reactions_unique_idx").on(
-      t.postId,
-      t.userId,
-      t.emoji,
-    ),
+    uniqueIndex("forum_post_reactions_unique_idx").on(t.postId, t.userId),
     index("forum_post_reactions_post_idx").on(t.postId),
   ],
 );
 
-/** One reaction per (thread, user, emoji). Emoji constrained to FORUM_REACTION_EMOJIS in app. */
+/** One reaction per (thread, user). Emoji is constrained to FORUM_REACTION_EMOJIS in app. */
 export const forumReactions = pgTable(
   "forum_reactions",
   {
@@ -2083,7 +2079,7 @@ export const forumReactions = pgTable(
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("forum_reactions_unique_idx").on(t.threadId, t.userId, t.emoji),
+    uniqueIndex("forum_reactions_unique_idx").on(t.threadId, t.userId),
     index("forum_reactions_thread_idx").on(t.threadId),
   ],
 );

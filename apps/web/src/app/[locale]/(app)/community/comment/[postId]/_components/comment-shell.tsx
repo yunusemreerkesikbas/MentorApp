@@ -9,9 +9,9 @@ import {
   type CommentView,
 } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
-import { toggleReaction } from "@/lib/forum-reactions";
+import { CircularBackLink } from "@/components/circular-back-link";
+import { replaceReaction } from "@/lib/forum-reactions";
 import {
   bookmarkPost,
   getCommentDetail,
@@ -32,6 +32,10 @@ import { SendButton } from "../../../_components/send-button";
 import { BookmarkButton } from "../../../_components/bookmark-button";
 import { ThreadComposer } from "../../../[slug]/_components/thread-composer";
 import { ThreadMenu } from "../../../[slug]/_components/thread-menu";
+import { PostDetailSkeleton } from "../../../_components/post-skeleton";
+import { CommunityTrendRail } from "../../../_components/community-trend-rail";
+import { CommentIcon } from "../../../_components/forum-icons";
+import { useCommunityQuickReply } from "../../../_components/community-quick-reply";
 
 type State =
   | { status: "loading" }
@@ -69,10 +73,10 @@ export function CommentShell({ postId }: { postId: string }) {
   }, [postId, apply, t]);
 
   /** Optimistic reaction for any comment id (focused comment or a reply). */
-  const onToggleReaction = useCallback((id: string, emoji: string, adding: boolean) => {
-    setState((s) => (s.status === "ready" ? patchReaction(s, id, emoji, adding) : s));
-    const call = adding ? reactPost(id, emoji) : unreactPost(id, emoji);
-    call.catch(() => setState((s) => (s.status === "ready" ? patchReaction(s, id, emoji, !adding) : s)));
+  const onToggleReaction = useCallback((id: string, nextEmoji: string | null, previousEmoji: string | null) => {
+    setState((s) => (s.status === "ready" ? patchReaction(s, id, nextEmoji) : s));
+    const call = nextEmoji ? reactPost(id, nextEmoji) : previousEmoji ? unreactPost(id, previousEmoji) : Promise.resolve();
+    call.catch(() => setState((s) => (s.status === "ready" ? patchReaction(s, id, previousEmoji) : s)));
   }, []);
 
   /** Optimistic bookmark for any comment id (focused comment or a reply). */
@@ -99,7 +103,30 @@ export function CommentShell({ postId }: { postId: string }) {
     [postId],
   );
 
-  if (state.status === "loading") return <Centered>{t("loading")}</Centered>;
+  const changeReplyCount = useCallback((id: string, delta: 1 | -1) => {
+    setState((current) => {
+      if (current.status !== "ready") return current;
+      const patch = (comment: CommentView) =>
+        comment.id === id
+          ? { ...comment, replyCount: Math.max(0, comment.replyCount + delta) }
+          : comment;
+      return {
+        ...current,
+        comment: patch(current.comment),
+        replies: current.replies.map(patch),
+      };
+    });
+  }, []);
+
+  const appendFocusedReply = useCallback((created: CommentView) => {
+    setState((current) =>
+      current.status === "ready"
+        ? { ...current, replies: [...current.replies, created] }
+        : current,
+    );
+  }, []);
+
+  if (state.status === "loading") return <PostDetailSkeleton label={t("loading")} />;
   if (state.status === "disabled") return <Centered>{t("soon_title")}</Centered>;
   if (state.status === "error") {
     return (
@@ -121,27 +148,28 @@ export function CommentShell({ postId }: { postId: string }) {
       };
 
   return (
-    <main className="mx-auto min-w-0 max-w-2xl px-4 py-6 lg:px-8 lg:py-8">
-      <Link
-        href={backHref}
-        className="mb-3 flex items-center gap-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        style={{ color: "var(--color-secondary)" }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
-        {t("back_short")}
-      </Link>
+    <main className="mx-auto grid min-w-0 max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
+      <section className="min-w-0 bg-white sm:my-6 sm:overflow-hidden sm:rounded-[var(--radius-card)] sm:border sm:border-[var(--color-border)]">
+      <header className="flex min-h-16 items-center gap-3 border-b border-[var(--color-border)] px-3 sm:px-4">
+        <CircularBackLink href={backHref} label={t("back_short")} variant="soft" />
+        <h1 className="text-xl font-extrabold tracking-[-0.025em] text-[var(--color-main)]">
+          {t("post_detail_title")}
+        </h1>
+      </header>
 
-      {/* Focused comment (not clickable — this is its own page) */}
-      <div className="border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+      <div className="border-b border-[var(--color-border)]">
         <FocusedComment
           comment={comment}
           onToggleReaction={onToggleReaction}
           onToggleBookmark={onToggleBookmark}
+          zoneId={state.zoneId}
+          onReplyCountChange={(delta) => changeReplyCount(comment.id, delta)}
+          onReplyCreated={appendFocusedReply}
         />
       </div>
 
       {/* Reply composer — always directly under the post, before any replies */}
-      <div className="border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+      <div className="border-b border-[var(--color-border)]">
         <ThreadComposer
           placeholder={t("reply_placeholder")}
           submitLabel={t("reply_submit")}
@@ -153,13 +181,10 @@ export function CommentShell({ postId }: { postId: string }) {
       {/* Replies (nothing shown when empty — the composer above is the call to action) */}
       {replies.length > 0 && (
         <>
-          <h2
-            className="mb-1 mt-6 px-3 text-[11px] font-semibold uppercase tracking-wide"
-            style={{ color: "var(--color-secondary)" }}
-          >
+          <h2 className="border-b border-[var(--color-border)] px-4 py-3 text-sm font-extrabold text-[var(--color-main)]">
             {t("replies_title")}
           </h2>
-          <div className="divide-y divide-[rgba(0,0,0,0.06)]">
+          <div className="divide-y divide-[var(--color-border)]">
             {replies.map((r) => (
               <CommentRow
                 key={r.id}
@@ -167,11 +192,17 @@ export function CommentShell({ postId }: { postId: string }) {
                 onToggleReaction={onToggleReaction}
                 onToggleBookmark={onToggleBookmark}
                 highlighted={r.id === highlightId}
+                zoneId={state.zoneId}
+                onReplyCountChange={(delta) => changeReplyCount(r.id, delta)}
               />
             ))}
           </div>
         </>
       )}
+      </section>
+      <div className="sticky top-20 hidden pt-6 xl:block">
+        <CommunityTrendRail />
+      </div>
     </main>
   );
 }
@@ -180,13 +211,20 @@ function FocusedComment({
   comment,
   onToggleReaction,
   onToggleBookmark,
+  zoneId,
+  onReplyCountChange,
+  onReplyCreated,
 }: {
   comment: CommentView;
-  onToggleReaction: (id: string, emoji: string, adding: boolean) => void;
+  onToggleReaction: (id: string, nextEmoji: string | null, previousEmoji: string | null) => void;
   onToggleBookmark: (id: string, adding: boolean) => void;
+  zoneId: string;
+  onReplyCountChange: (delta: 1 | -1) => void;
+  onReplyCreated: (comment: CommentView) => void;
 }) {
   const t = useTranslations("community");
   const locale = useLocale();
+  const { openQuickReply } = useCommunityQuickReply();
   return (
     <div className="group flex items-start gap-3 py-4 pl-3 pr-4">
       <AuthorLink username={comment.authorUsername}>
@@ -220,8 +258,36 @@ function FocusedComment({
           <ReactionBar
             reactionCounts={comment.reactionCounts}
             myReactions={comment.myReactions}
-            onToggle={(emoji, adding) => onToggleReaction(comment.id, emoji, adding)}
+            onChange={(nextEmoji, previousEmoji) => onToggleReaction(comment.id, nextEmoji, previousEmoji)}
           />
+
+          <button
+            type="button"
+            aria-label={t("reply")}
+            onClick={() =>
+              openQuickReply({
+                targetType: "post",
+                targetId: comment.id,
+                zoneId,
+                author: {
+                  displayName: comment.authorName,
+                  username: comment.authorUsername,
+                  avatarUrl: comment.authorAvatarUrl,
+                },
+                createdAt: comment.createdAt,
+                body: comment.body,
+                attachments: comment.attachments,
+                onPendingChange: onReplyCountChange,
+                onCreated: onReplyCreated,
+              })
+            }
+            className="community-post-action flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full px-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          >
+            <CommentIcon />
+            {comment.replyCount > 0 ? (
+              <span className="text-[13px] tabular-nums">{comment.replyCount}</span>
+            ) : null}
+          </button>
 
           <SendButton
             href={{
@@ -242,8 +308,8 @@ function FocusedComment({
 type ReadyState = Extract<State, { status: "ready" }>;
 
 /** Optimistic reaction patch across the focused comment + its replies. */
-function patchReaction(s: ReadyState, id: string, emoji: string, adding: boolean): ReadyState {
-  const bump = (c: CommentView): CommentView => (c.id === id ? toggleReaction(c, emoji, adding) : c);
+function patchReaction(s: ReadyState, id: string, nextEmoji: string | null): ReadyState {
+  const bump = (c: CommentView): CommentView => (c.id === id ? replaceReaction(c, nextEmoji) : c);
   return { ...s, comment: bump(s.comment), replies: s.replies.map(bump) };
 }
 

@@ -132,6 +132,18 @@ const SCENE_IMAGES: Partial<Record<VisionSticker, string>> = {
   HEART_LOVE: "/img/stickers/heart_love.png",
 };
 
+/** A third collage (`public/img/sticker-3.svg`) — same cut-and-bake-text technique as SCENE_IMAGES. */
+const SCENE2_IMAGES: Partial<Record<VisionSticker, string>> = {
+  FLOWER_FRAME_TODO: "/img/stickers/flower_frame_todo.png",
+  FRAME_IMPORTANT: "/img/stickers/frame_important.png",
+  NOTEPAD_NOTES: "/img/stickers/notepad_notes.png",
+  CLOUD_TODAY: "/img/stickers/cloud_today.png",
+  BADGE_VISION_BOARD: "/img/stickers/badge_vision_board.png",
+  OVAL_ACTIVITY: "/img/stickers/oval_activity.png",
+  CORNER_DOODLES: "/img/stickers/corner_doodles.png",
+  ACCENT_SCATTER: "/img/stickers/accent_scatter.png",
+};
+
 function artFor(sticker: VisionSticker): StickerArt {
   const shape = SHAPES[sticker];
   if (shape) return { kind: "path", ...shape };
@@ -141,6 +153,8 @@ function artFor(sticker: VisionSticker): StickerArt {
   if (stationery) return { kind: "image", src: stationery };
   const scene = SCENE_IMAGES[sticker];
   if (scene) return { kind: "image", src: scene };
+  const scene2 = SCENE2_IMAGES[sticker];
+  if (scene2) return { kind: "image", src: scene2 };
   // MASCOT_YAZILIM → /mascot/career/yazilim.png — the enum mirrors CAREER_GROUPS by construction.
   return {
     kind: "image",

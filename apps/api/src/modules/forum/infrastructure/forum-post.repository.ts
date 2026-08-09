@@ -116,9 +116,15 @@ export class ForumPostRepository {
 
   // --- Comment likes (forum_post_reactions) + count aggregates (APP-017) ---
 
-  async addPostReaction(postId: string, userId: string, emoji: string): Promise<void> {
+  async setPostReaction(postId: string, userId: string, emoji: string): Promise<void> {
     await withServiceContext(this.db, async (tx) => {
-      await tx.insert(forumPostReactions).values({ postId, userId, emoji }).onConflictDoNothing();
+      await tx
+        .insert(forumPostReactions)
+        .values({ postId, userId, emoji })
+        .onConflictDoUpdate({
+          target: [forumPostReactions.postId, forumPostReactions.userId],
+          set: { emoji, createdAt: new Date() },
+        });
     });
   }
 
@@ -159,7 +165,7 @@ export class ForumPostRepository {
     });
   }
 
-  /** Batched: which emojis the viewer themselves reacted with, per post (RLS user context). */
+  /** Batched viewer reaction state. Arrays are retained for API compatibility but contain 0..1 item. */
   async myReactionsByPost(postIds: string[], userId: string): Promise<Map<string, string[]>> {
     if (postIds.length === 0) return new Map();
     return withUserContext(this.db, { userId }, async (tx) => {

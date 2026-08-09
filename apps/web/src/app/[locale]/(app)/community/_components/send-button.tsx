@@ -64,7 +64,7 @@ export function SendButton({ href, publicUrl }: { href: ShareHref; publicUrl?: s
         e.stopPropagation();
         void share();
       }}
-      className="group/send flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+      className="community-post-action group/send flex size-11 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       style={{ color: "var(--color-main)" }}
     >
       <span className="inline-flex">

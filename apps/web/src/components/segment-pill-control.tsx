@@ -77,7 +77,7 @@ export function SegmentPillControl({
       role="tablist"
       aria-label={ariaLabel}
       className={[
-        "flex shrink-0 rounded-full border border-white/40 p-1",
+        "flex shrink-0 rounded-full p-1",
         equalWidth ? "w-full" : "self-start",
         className,
       ]
@@ -85,7 +85,7 @@ export function SegmentPillControl({
         .join(" ")}
       style={{
         backgroundColor:
-          "color-mix(in srgb, var(--color-surface-container) 80%, transparent)",
+          "color-mix(in srgb, var(--color-surface-container) 58%, white)",
       }}
     >
       {items.map((item) => {
@@ -103,7 +103,7 @@ export function SegmentPillControl({
             onClick={() => onChange(item.id)}
             onKeyDown={(event) => moveFocus(event, item.id)}
             className={[
-              "relative cursor-pointer rounded-full px-4 py-1.5 text-sm font-semibold",
+              "relative cursor-pointer rounded-full px-4 py-1.5 text-sm font-semibold transition-colors duration-150 motion-reduce:transition-none",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]",
               equalWidth ? "min-h-11 flex-1" : "min-h-9",
             ]
@@ -111,7 +111,7 @@ export function SegmentPillControl({
               .join(" ")}
             style={{
               fontFamily: "var(--font-heading)",
-              color: active ? "#fff" : "var(--color-secondary)",
+              color: active ? "var(--color-main)" : "var(--color-secondary)",
             }}
           >
             {active ? (
@@ -119,7 +119,7 @@ export function SegmentPillControl({
                 <span
                   className="absolute inset-0 rounded-full"
                   style={{
-                    backgroundColor: "var(--color-main)",
+                    backgroundColor: "var(--color-surface)",
                     boxShadow: "var(--shadow-card)",
                   }}
                   aria-hidden
@@ -129,7 +129,7 @@ export function SegmentPillControl({
                   layoutId={layoutId}
                   className="absolute inset-0 rounded-full"
                   style={{
-                    backgroundColor: "var(--color-main)",
+                    backgroundColor: "var(--color-surface)",
                     boxShadow: "var(--shadow-card)",
                   }}
                   transition={pillTransition}

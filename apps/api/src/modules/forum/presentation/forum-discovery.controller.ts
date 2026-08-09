@@ -16,6 +16,7 @@ import type {
   ForumFeed,
   ForumHubView,
   ForumTagView,
+  ForumTrendsView,
   ForumZoneFeedView,
 } from "@mentor/types";
 import { ModerationTargetType } from "@mentor/types";
@@ -25,6 +26,7 @@ import { ForumCoachBridgeService } from "../application/forum-coach-bridge.servi
 import {
   FeedQueryDto,
   ForumFeedQueryDto,
+  ForumTrendsQueryDto,
   UpdateForumPostDto,
   UpdateForumThreadDto,
 } from "./forum.dto";
@@ -49,6 +51,14 @@ export class ForumDiscoveryController {
     @Query() query: ForumFeedQueryDto,
   ): Promise<ForumFeed> {
     return this.discovery.getFeed({ id: user.id, roles: user.roles }, query);
+  }
+
+  @Get("trends")
+  trends(
+    @CurrentUser() user: RequestUser,
+    @Query() query: ForumTrendsQueryDto,
+  ): Promise<ForumTrendsView> {
+    return this.discovery.getTrends({ id: user.id, roles: user.roles }, query);
   }
 
   @Get("tags")

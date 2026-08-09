@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { LoaderCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ZoneJoinPolicy, ZoneMemberStatus, ZoneRole } from "@mentor/types";
-import { Button, useDialog } from "@mentor/ui";
+import { useDialog } from "@mentor/ui";
 import { joinZone, leaveZone } from "@/lib/forum";
 
 /**
@@ -45,9 +46,9 @@ export function JoinButton({
   if (myStatus === "ACTIVE") {
     if (myRole === "OWNER") return null;
     return (
-      <Button
-        variant="secondary"
+      <CompactMembershipButton
         busy={busy}
+        label={busy ? t("leaving") : t("leave")}
         onClick={async () => {
           if (joinPolicy === "REQUEST") {
             const ok = await dialog.confirm({
@@ -61,29 +62,29 @@ export function JoinButton({
           }
           await leave();
         }}
-      >
-        {busy ? t("leaving") : t("leave")}
-      </Button>
+      />
     );
   }
 
   if (myStatus === "PENDING") {
     return (
-      <span className="inline-flex items-center gap-3">
-        <span className="text-sm" style={{ color: "var(--color-secondary)" }}>
+      <span className="inline-flex items-center gap-1.5">
+        <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
           {t("join_pending")}
         </span>
-        <Button variant="secondary" busy={busy} onClick={() => void leave()}>
-          {t("cancel_request")}
-        </Button>
+        <CompactMembershipButton
+          busy={busy}
+          label={t("cancel_request")}
+          onClick={() => void leave()}
+        />
       </span>
     );
   }
 
   return (
-    <Button
-      variant="secondary"
+    <CompactMembershipButton
       busy={busy}
+      label={busy ? t("joining") : t("join")}
       onClick={async () => {
         setBusy(true);
         try {
@@ -93,8 +94,33 @@ export function JoinButton({
           setBusy(false);
         }
       }}
+    />
+  );
+}
+
+function CompactMembershipButton({
+  label,
+  busy,
+  onClick,
+}: {
+  label: string;
+  busy: boolean;
+  onClick: () => void | Promise<void>;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      aria-busy={busy || undefined}
+      onClick={() => void onClick()}
+      className="group inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-card)] p-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
     >
-      {busy ? t("joining") : t("join")}
-    </Button>
+      <span className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[var(--radius-card)] border border-[color-mix(in_srgb,var(--color-main)_15%,transparent)] px-2.5 text-xs font-bold text-[var(--color-main)]">
+        {busy ? (
+          <LoaderCircle size={14} strokeWidth={2.5} className="animate-spin motion-reduce:animate-none" aria-hidden />
+        ) : null}
+        {label}
+      </span>
+    </button>
   );
 }

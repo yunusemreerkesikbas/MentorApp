@@ -323,9 +323,15 @@ export class ForumThreadRepository {
     });
   }
 
-  async addReaction(threadId: string, userId: string, emoji: string): Promise<void> {
+  async setReaction(threadId: string, userId: string, emoji: string): Promise<void> {
     await withServiceContext(this.db, async (tx) => {
-      await tx.insert(forumReactions).values({ threadId, userId, emoji }).onConflictDoNothing();
+      await tx
+        .insert(forumReactions)
+        .values({ threadId, userId, emoji })
+        .onConflictDoUpdate({
+          target: [forumReactions.threadId, forumReactions.userId],
+          set: { emoji, createdAt: new Date() },
+        });
     });
   }
 
@@ -466,7 +472,7 @@ export class ForumThreadRepository {
     });
   }
 
-  /** Batched: which emojis the viewer themselves reacted with, per thread (one query). */
+  /** Batched viewer reaction state. Arrays are retained for API compatibility but contain 0..1 item. */
   async myReactionsByThread(threadIds: string[], userId: string): Promise<Map<string, string[]>> {
     if (threadIds.length === 0) return new Map();
     return withUserContext(this.db, { userId }, async (tx) => {

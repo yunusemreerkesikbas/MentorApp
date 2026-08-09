@@ -9,5 +9,6 @@ export type {
   NotificationDrawerProviderProps,
   NotificationDrawerContextValue,
   NotificationDrawerLabels,
+  NotificationDrawerDesktopSide,
   NotificationTab,
 } from "./types.js";

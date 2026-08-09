@@ -12,7 +12,7 @@ import { getPublicProfile } from "@/lib/community";
 import { sendBuddyRequest } from "@/lib/buddy";
 import { followUser, unfollowUser } from "@/lib/follow";
 import { useMentorToast } from "@/lib/mentor-toast";
-import { toggleReaction } from "@/lib/forum-reactions";
+import { replaceReaction } from "@/lib/forum-reactions";
 import {
   bookmarkPost,
   bookmarkThread,
@@ -90,15 +90,15 @@ export function ProfileShell({ username }: { username: string }) {
   }, [patchReady, username]);
 
   const onToggleReaction = useCallback(
-    (threadId: string, emoji: string, adding: boolean) => {
-      const patch = (v: boolean) => (r: Ready) => ({
+    (threadId: string, nextEmoji: string | null, previousEmoji: string | null) => {
+      const patch = (emoji: string | null) => (r: Ready) => ({
         ...r,
         items: r.items.map((it) =>
-          it.type === "thread" && it.thread.id === threadId ? { ...it, thread: toggleReaction(it.thread, emoji, v) } : it,
+          it.type === "thread" && it.thread.id === threadId ? { ...it, thread: replaceReaction(it.thread, emoji) } : it,
         ),
       });
-      patchReady(patch(adding));
-      (adding ? reactThread(threadId, emoji) : unreactThread(threadId, emoji)).catch(() => patchReady(patch(!adding)));
+      patchReady(patch(nextEmoji));
+      (nextEmoji ? reactThread(threadId, nextEmoji) : previousEmoji ? unreactThread(threadId, previousEmoji) : Promise.resolve()).catch(() => patchReady(patch(previousEmoji)));
     },
     [patchReady],
   );
@@ -118,17 +118,17 @@ export function ProfileShell({ username }: { username: string }) {
   );
 
   const onToggleCommentReaction = useCallback(
-    (postId: string, emoji: string, adding: boolean) => {
-      const patch = (v: boolean) => (r: Ready) => ({
+    (postId: string, nextEmoji: string | null, previousEmoji: string | null) => {
+      const patch = (emoji: string | null) => (r: Ready) => ({
         ...r,
         items: r.items.map((it) =>
           it.type === "comment" && it.comment.id === postId
-            ? { ...it, comment: toggleReaction(it.comment, emoji, v) }
+            ? { ...it, comment: replaceReaction(it.comment, emoji) }
             : it,
         ),
       });
-      patchReady(patch(adding));
-      (adding ? reactPost(postId, emoji) : unreactPost(postId, emoji)).catch(() => patchReady(patch(!adding)));
+      patchReady(patch(nextEmoji));
+      (nextEmoji ? reactPost(postId, nextEmoji) : previousEmoji ? unreactPost(postId, previousEmoji) : Promise.resolve()).catch(() => patchReady(patch(previousEmoji)));
     },
     [patchReady],
   );
@@ -143,6 +143,36 @@ export function ProfileShell({ username }: { username: string }) {
       });
       patchReady(patch(adding));
       bookmarkPost(postId, adding).catch(() => patchReady(patch(!adding)));
+    },
+    [patchReady],
+  );
+
+  const onReplyCountChange = useCallback(
+    (type: ForumActivityItem["type"], id: string, delta: 1 | -1) => {
+      patchReady((ready) => ({
+        ...ready,
+        items: ready.items.map((item) => {
+          if (type === "thread" && item.type === "thread" && item.thread.id === id) {
+            return {
+              ...item,
+              thread: {
+                ...item.thread,
+                commentCount: Math.max(0, item.thread.commentCount + delta),
+              },
+            };
+          }
+          if (type === "comment" && item.type === "comment" && item.comment.id === id) {
+            return {
+              ...item,
+              comment: {
+                ...item.comment,
+                replyCount: Math.max(0, item.comment.replyCount + delta),
+              },
+            };
+          }
+          return item;
+        }),
+      }));
     },
     [patchReady],
   );
@@ -285,8 +315,9 @@ export function ProfileShell({ username }: { username: string }) {
                   {it.type === "thread" ? (
                     <ThreadItem
                       thread={it.thread}
-                      onToggleReaction={(emoji, adding) => onToggleReaction(it.thread.id, emoji, adding)}
+                      onToggleReaction={(nextEmoji, previousEmoji) => onToggleReaction(it.thread.id, nextEmoji, previousEmoji)}
                       onToggleBookmark={(adding) => onToggleThreadBookmark(it.thread.id, adding)}
+                      onReplyCountChange={(delta) => onReplyCountChange("thread", it.thread.id, delta)}
                       clickable
                     />
                   ) : (
@@ -296,6 +327,7 @@ export function ProfileShell({ username }: { username: string }) {
                       comment={it.comment}
                       onToggleReaction={onToggleCommentReaction}
                       onToggleBookmark={onToggleCommentBookmark}
+                      onReplyCountChange={(delta) => onReplyCountChange("comment", it.comment.id, delta)}
                       rowHref={
                         it.comment.parentPostId
                           ? {

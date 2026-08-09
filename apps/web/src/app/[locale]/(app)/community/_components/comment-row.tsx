@@ -3,7 +3,7 @@
 import { useEffect, useRef, type KeyboardEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ModerationTargetType, type CommentView } from "@mentor/types";
-import { Link, useRouter } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "./author-avatar";
 import { AuthorLink } from "./author-link";
@@ -14,6 +14,7 @@ import { ReactionBar } from "./reaction-bar";
 import { SendButton, type ShareHref } from "./send-button";
 import { BookmarkButton } from "./bookmark-button";
 import { ThreadMenu } from "../[slug]/_components/thread-menu";
+import { useCommunityQuickReply } from "./community-quick-reply";
 
 /**
  * One comment in a thread/comment detail. Twitter-style: the whole row opens the comment's own
@@ -29,16 +30,27 @@ export function CommentRow({
   onToggleBookmark,
   rowHref,
   highlighted,
+  zoneId,
+  onReplyCountChange,
+  onReplyCreated,
 }: {
   comment: CommentView;
-  onToggleReaction: (postId: string, emoji: string, adding: boolean) => void;
+  onToggleReaction: (
+    postId: string,
+    nextEmoji: string | null,
+    previousEmoji: string | null,
+  ) => void;
   onToggleBookmark: (postId: string, adding: boolean) => void;
   rowHref?: ShareHref;
   highlighted?: boolean;
+  zoneId?: string;
+  onReplyCountChange?: (delta: 1 | -1) => void;
+  onReplyCreated?: (comment: CommentView) => void;
 }) {
   const t = useTranslations("community");
   const locale = useLocale();
   const router = useRouter();
+  const { openQuickReply } = useCommunityQuickReply();
   const href = {
     pathname: "/community/comment/[postId]",
     params: { postId: comment.id },
@@ -103,21 +115,40 @@ export function CommentRow({
           <ReactionBar
             reactionCounts={comment.reactionCounts}
             myReactions={comment.myReactions}
-            onToggle={(emoji, adding) => onToggleReaction(comment.id, emoji, adding)}
+            onChange={(nextEmoji, previousEmoji) =>
+              onToggleReaction(comment.id, nextEmoji, previousEmoji)
+            }
           />
 
-          <Link
-            href={href}
+          <button
+            type="button"
             aria-label={t("reply")}
-            onClick={(e) => e.stopPropagation()}
-            className="flex h-8 items-center gap-1 rounded-full px-1.5 transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            onClick={(e) => {
+              e.stopPropagation();
+              openQuickReply({
+                targetType: "post",
+                targetId: comment.id,
+                zoneId,
+                author: {
+                  displayName: comment.authorName,
+                  username: comment.authorUsername,
+                  avatarUrl: comment.authorAvatarUrl,
+                },
+                createdAt: comment.createdAt,
+                body: comment.body,
+                attachments: comment.attachments,
+                onPendingChange: onReplyCountChange,
+                onCreated: onReplyCreated,
+              });
+            }}
+            className="flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full px-2 transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             style={{ color: "var(--color-main)" }}
           >
             <CommentIcon />
             {comment.replyCount > 0 && (
               <span className="text-[13px] tabular-nums">{comment.replyCount}</span>
             )}
-          </Link>
+          </button>
 
           <SendButton href={href} />
           <BookmarkButton

@@ -1,7 +1,9 @@
 "use client";
-import { Bookmark, CircleHelp, Hash, House, Megaphone, Rss, Trophy } from "lucide-react";
+import { Bookmark, CircleHelp, Hash, House, Megaphone, Rss, TrendingUp, Trophy } from "lucide-react";
 
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { LayoutGroup, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { ZoneView } from "@mentor/types";
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
@@ -21,7 +23,10 @@ const GROUPS = [
  */
 export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const t = useTranslations("community");
+  const reduceMotion = useReducedMotion();
   const pathname = usePathname();
+  const params = useParams<{ slug?: string }>();
+  const activeZoneSlug = params.slug;
   const [zones, setZones] = useState<ZoneView[] | null>(null);
   const [error, setError] = useState(false);
 
@@ -49,8 +54,13 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
     );
   }
 
+  const activeTransition = reduceMotion
+    ? { duration: 0 }
+    : { type: "spring" as const, stiffness: 430, damping: 32, mass: 0.75 };
+
   return (
-    <nav className="flex flex-col gap-7 px-4">
+    <LayoutGroup id="community-sidebar-navigation">
+    <nav className="flex flex-col gap-5 px-3">
       <div className="grid gap-1">
         {[
           {
@@ -85,16 +95,38 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
               pathname.endsWith("/community/leaderboard") ||
               pathname.endsWith("/topluluk/siralama"),
           },
+          {
+            href: "/community/trends" as const,
+            label: t("trends_nav"),
+            icon: TrendingUp,
+            active:
+              pathname.endsWith("/community/trends") ||
+              pathname.endsWith("/topluluk/gundem"),
+          },
         ].map(({ href, label, icon: Icon, active }) => (
           <Link
             key={href}
             href={href}
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
-            className={`flex min-h-11 items-center gap-3 rounded-[9px] px-3 py-2 text-[14px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${active ? "bg-[var(--community-blue-soft)] font-bold text-[var(--community-blue-ink)]" : "font-medium text-[#4d535f] hover:bg-white"}`}
+            className={`relative isolate flex min-h-11 items-center gap-3 overflow-hidden rounded-[10px] px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${active ? "font-bold text-[var(--community-blue-ink)]" : "font-medium text-[var(--color-secondary)] hover:bg-white"}`}
           >
-            <Icon size={17} strokeWidth={active ? 2.2 : 1.8} aria-hidden="true" />
-            {label}
+            {active ? (
+              <motion.span
+                layoutId="community-sidebar-active-link"
+                className="absolute inset-0 -z-10 rounded-[10px] bg-[var(--community-blue-soft)]"
+                transition={activeTransition}
+                aria-hidden
+              />
+            ) : null}
+            <motion.span
+              className="inline-flex"
+              animate={reduceMotion ? undefined : { scale: active ? 1.12 : 1, rotate: active ? -4 : 0 }}
+              transition={activeTransition}
+            >
+              <Icon size={17} strokeWidth={active ? 2.2 : 1.8} aria-hidden="true" />
+            </motion.span>
+            <span>{label}</span>
           </Link>
         ))}
       </div>
@@ -108,25 +140,24 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
           </SkeletonGroup>
         </div>
       ) : (
-        <div className="flex flex-col gap-7">
+        <div className="flex flex-col gap-5">
           {GROUPS.map(({ type, key }) => {
             const group = zones.filter((z) => z.type === type);
             const GroupIcon = type === "CHAT" ? Hash : type === "ANNOUNCEMENT" ? Megaphone : CircleHelp;
             const iconTone =
               type === "CHAT"
-                ? "bg-[var(--community-blue-soft)] text-[var(--community-blue-ink)]"
+                ? "text-[var(--community-blue-ink)]"
                 : type === "QA"
-                  ? "bg-[#fff0ed] text-[#c94f3d]"
-                  : "bg-[#eaf7f0] text-[#2f8f63]";
+                  ? "text-[var(--community-coral)]"
+                  : "text-[var(--community-green)]";
             if (group.length === 0) return null;
             return (
               <div key={type} className="flex flex-col gap-1">
-                <p className="mb-2 px-2 text-[12px] font-bold text-[#6c727e]">
+                <p className="mb-1 px-2 text-xs font-bold text-[var(--color-secondary)]">
                   {t(key)}
                 </p>
                 {group.map((z) => {
-                  const isActive =
-                    pathname.includes(`/community/${z.slug}/`) || pathname.endsWith(`/community/${z.slug}`);
+                  const isActive = activeZoneSlug === z.slug;
                   return (
                     <Link
                       key={z.id}
@@ -136,13 +167,25 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
                       }}
                       onClick={onNavigate}
                       aria-current={isActive ? "page" : undefined}
-                      className={`flex min-h-11 items-center gap-3 rounded-[9px] px-3 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${isActive ? "bg-white ring-1 ring-inset ring-[var(--community-blue-border)]" : "hover:bg-white"}`}
+                      className={`relative isolate flex min-h-11 items-center gap-2.5 overflow-hidden rounded-[10px] px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${isActive ? "font-bold text-[var(--community-blue-ink)]" : "hover:bg-white"}`}
                     >
-                      <span className={`grid size-7 shrink-0 place-items-center rounded-[8px] ${iconTone}`}>
-                        <GroupIcon size={14} strokeWidth={2} aria-hidden />
-                      </span>
+                      {isActive ? (
+                        <motion.span
+                          layoutId="community-sidebar-active-link"
+                          className="absolute inset-0 -z-10 rounded-[10px] bg-[var(--community-blue-soft)]"
+                          transition={activeTransition}
+                          aria-hidden
+                        />
+                      ) : null}
+                      <motion.span
+                        className={`grid size-6 shrink-0 place-items-center ${isActive ? "text-[var(--community-blue-ink)]" : iconTone}`}
+                        animate={reduceMotion ? undefined : { scale: isActive ? 1.14 : 1, rotate: isActive ? -5 : 0 }}
+                        transition={activeTransition}
+                      >
+                        <GroupIcon size={16} strokeWidth={isActive ? 2.2 : 2} aria-hidden />
+                      </motion.span>
                       <span className="min-w-0 flex-1">
-                        <span className={`flex items-center gap-1.5 truncate text-[13px] ${isActive ? "font-bold text-[var(--community-blue-ink)]" : "font-medium text-[#252a35]"}`}>
+                        <span className={`flex items-center gap-1.5 truncate text-sm ${isActive ? "font-bold text-[var(--community-blue-ink)]" : "font-medium text-[var(--color-body-text)]"}`}>
                           <span className="min-w-0 truncate">{z.title}</span>
                         {z.myStatus === "ACTIVE" && (
                           <span
@@ -150,9 +193,6 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
                             aria-hidden="true"
                           />
                         )}
-                        </span>
-                        <span className="mt-0.5 block truncate text-[11px] text-[#858a94]">
-                          {t("messages_count", { count: z.threadCount })}
                         </span>
                       </span>
                     </Link>
@@ -164,5 +204,6 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       )}
     </nav>
+    </LayoutGroup>
   );
 }

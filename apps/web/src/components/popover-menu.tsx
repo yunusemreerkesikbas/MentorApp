@@ -22,6 +22,7 @@ type PopoverMenuContextValue = {
 const PopoverMenuContext = createContext<PopoverMenuContextValue | null>(null);
 
 export type PopoverMenuAlign = "left" | "right";
+export type PopoverMenuSide = "top" | "bottom";
 
 export interface PopoverMenuProps {
   /**
@@ -35,6 +36,8 @@ export interface PopoverMenuProps {
   }) => ReactNode;
   children: ReactNode;
   align?: PopoverMenuAlign;
+  /** Opens above the trigger when space below is constrained (for example sheet footers). */
+  side?: PopoverMenuSide;
   /** Stretch the panel to the trigger's width (form selects). */
   matchTriggerWidth?: boolean;
   /** Extra classes on the floating panel (e.g. `w-48`, `min-w-[14rem]`). */
@@ -53,6 +56,7 @@ export function PopoverMenu({
   trigger,
   children,
   align = "right",
+  side = "bottom",
   matchTriggerWidth = false,
   menuClassName,
   panelRole = "menu",
@@ -79,6 +83,8 @@ export function PopoverMenu({
     : align === "left"
       ? "left-0"
       : "right-0";
+  const sideClass = side === "top" ? "bottom-full mb-1 origin-bottom" : "mt-1 origin-top";
+  const closedOffset = side === "top" ? 4 : -4;
 
   return (
     <div className="relative">
@@ -96,8 +102,9 @@ export function PopoverMenu({
               id={menuId}
               role={panelRole}
               className={[
-                "absolute z-50 mt-1 origin-top overflow-hidden rounded-[var(--radius-card)] bg-white py-1",
+                "absolute z-50 overflow-hidden rounded-[var(--radius-card)] bg-white py-1",
                 widthClass,
+                sideClass,
                 menuClassName ?? (matchTriggerWidth ? "" : "w-48"),
               ]
                 .filter(Boolean)
@@ -108,11 +115,11 @@ export function PopoverMenu({
                 boxShadow: "var(--shadow-card)",
               }}
               initial={
-                reduceMotion ? false : { opacity: 0, scaleY: 0.85, y: -4 }
+                reduceMotion ? false : { opacity: 0, scaleY: 0.85, y: closedOffset }
               }
               animate={{ opacity: 1, scaleY: 1, y: 0 }}
               exit={
-                reduceMotion ? undefined : { opacity: 0, scaleY: 0.9, y: -4 }
+                reduceMotion ? undefined : { opacity: 0, scaleY: 0.9, y: closedOffset }
               }
               transition={reduceMotion ? { duration: 0 } : menuTransition}
             >

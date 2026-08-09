@@ -10,6 +10,8 @@ import type {
   ForumHubView,
   ForumSearchView,
   ForumTagView,
+  ForumTrendsView,
+  ForumTrendScope,
   ForumZoneFeedView,
   MentionSuggestion,
   ModerationTargetType,
@@ -86,6 +88,14 @@ export async function postThread(
 
 export async function getForumHub(): Promise<ForumHubView> {
   return (await http<ForumHubView>("/v1/forum/hub")) as ForumHubView;
+}
+
+export async function getForumTrends(
+  scope: ForumTrendScope = "relevant",
+  limit = 20,
+): Promise<ForumTrendsView> {
+  const qs = new URLSearchParams({ scope, limit: String(limit) });
+  return (await http<ForumTrendsView>(`/v1/forum/trends?${qs.toString()}`)) as ForumTrendsView;
 }
 
 export async function getForumFeed(input: {

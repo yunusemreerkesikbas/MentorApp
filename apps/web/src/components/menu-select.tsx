@@ -16,6 +16,8 @@ export interface MenuSelectProps {
   disabled?: boolean;
   id?: string;
   className?: string;
+  /** Prefer opening above the field when it sits near a sheet/dialog footer. */
+  menuSide?: "top" | "bottom";
   /** Associates the trigger with an external visible label (`htmlFor` on that label). */
   "aria-labelledby"?: string;
   "aria-label"?: string;
@@ -38,6 +40,7 @@ export function MenuSelect({
   disabled,
   id,
   className,
+  menuSide = "bottom",
   "aria-labelledby": ariaLabelledBy,
   "aria-label": ariaLabel,
 }: MenuSelectProps) {
@@ -49,6 +52,7 @@ export function MenuSelect({
     <div className={className}>
       <PopoverMenu
         align="left"
+        side={menuSide}
         matchTriggerWidth
         panelRole="listbox"
         trigger={({ open, setOpen, menuId }) => (

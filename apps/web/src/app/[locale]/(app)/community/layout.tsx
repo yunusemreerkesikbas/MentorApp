@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import "./community-parity.css";
 import { CommunityHeader } from "./_components/community-header";
+import { CommunityQuickReplyProvider } from "./_components/community-quick-reply";
 import { ZoneSidebar } from "./_components/zone-sidebar";
 import { ZoneDrawer } from "./_components/zone-drawer";
 
@@ -10,15 +11,17 @@ import { ZoneDrawer } from "./_components/zone-drawer";
  */
 export default function CommunityLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="community-workspace">
-      <CommunityHeader />
-      <ZoneDrawer />
-      <div className="community-workspace__body">
-        <aside className="community-workspace__sidebar">
-          <ZoneSidebar />
-        </aside>
-        <div className="community-workspace__content">{children}</div>
+    <CommunityQuickReplyProvider>
+      <div className="community-workspace">
+        <CommunityHeader />
+        <ZoneDrawer />
+        <div className="community-workspace__body">
+          <aside className="community-workspace__sidebar">
+            <ZoneSidebar />
+          </aside>
+          <div className="community-workspace__content">{children}</div>
+        </div>
       </div>
-    </div>
+    </CommunityQuickReplyProvider>
   );
 }

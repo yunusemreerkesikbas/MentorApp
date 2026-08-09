@@ -13,6 +13,7 @@ import { MentionText } from "../../_components/mention-text";
 import { ReactionBar } from "../../_components/reaction-bar";
 import { SendButton } from "../../_components/send-button";
 import { BookmarkButton } from "../../_components/bookmark-button";
+import { useCommunityQuickReply } from "../../_components/community-quick-reply";
 import { ThreadMenu } from "./thread-menu";
 
 export function ThreadItem({
@@ -23,19 +24,24 @@ export function ThreadItem({
   onPin,
   onDelete,
   clickable = false,
+  onReplyCountChange,
+  onReplyCreated,
 }: {
   thread: ThreadView;
-  onToggleReaction: (emoji: string, adding: boolean) => void;
+  onToggleReaction: (nextEmoji: string | null, previousEmoji: string | null) => void;
   onToggleBookmark: (adding: boolean) => void;
   canModerate?: boolean;
   onPin?: (pinned: boolean) => void;
   onDelete?: () => void;
   /** Feed rows open the post detail on click (Twitter-style); the detail page's own thread doesn't. */
   clickable?: boolean;
+  onReplyCountChange?: (delta: 1 | -1) => void;
+  onReplyCreated?: (comment: import("@mentor/types").CommentView) => void;
 }) {
   const t = useTranslations("community");
   const locale = useLocale();
   const router = useRouter();
+  const { openQuickReply } = useCommunityQuickReply();
   const detailHref = {
     pathname: "/community/message/[threadId]",
     params: { threadId: thread.id },
@@ -146,24 +152,41 @@ export function ThreadItem({
 
         {/* Action row — reaction palette + comment · send (share link) · bookmark. Reaction counts
             render as chips inside the ReactionBar; the summary line below keeps the comment total. */}
-        <div className="-ml-1.5 mt-2 flex flex-wrap items-center gap-1.5">
+        <div className="mt-2 flex w-full flex-wrap items-center justify-between gap-1">
           <ReactionBar
             reactionCounts={thread.reactionCounts}
             myReactions={thread.myReactions}
-            onToggle={onToggleReaction}
+            onChange={onToggleReaction}
           />
 
-          <Link
-            href={detailHref}
+          <button
+            type="button"
             aria-label={t("comment")}
-            onClick={(e) => e.stopPropagation()}
-            className="group/cmt flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            className="community-post-action group/cmt flex size-11 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             style={{ color: "var(--color-main)" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              openQuickReply({
+                targetType: "thread",
+                targetId: thread.id,
+                zoneId: thread.zoneId,
+                author: {
+                  displayName: thread.authorName,
+                  username: thread.authorUsername,
+                  avatarUrl: thread.authorAvatarUrl,
+                },
+                createdAt: thread.createdAt,
+                body: thread.body,
+                attachments: thread.attachments,
+                onPendingChange: onReplyCountChange,
+                onCreated: onReplyCreated,
+              });
+            }}
           >
             <span className="inline-flex">
               <CommentIcon />
             </span>
-          </Link>
+          </button>
 
           <SendButton href={detailHref} />
           <BookmarkButton bookmarked={thread.myBookmarked} onToggle={onToggleBookmark} />

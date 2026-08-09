@@ -42,6 +42,7 @@ import { MentionSuggestions } from "../../../_components/mention-suggestions";
 import { AcceptButton } from "./accept-button";
 import { AnswerItem } from "./answer-item";
 import { CommunityCoachBridge } from "../../../_components/community-coach-bridge";
+import { PostDetailSkeleton } from "../../../_components/post-skeleton";
 
 type State =
   | { status: "loading" }
@@ -180,7 +181,7 @@ export function QuestionShell({ threadId }: { threadId: string }) {
     };
   }, [threadId, t]);
 
-  if (state.status === "loading") return <Centered>{t("loading")}</Centered>;
+  if (state.status === "loading") return <PostDetailSkeleton label={t("loading")} />;
   if (state.status === "disabled") return <Centered>{t("soon_title")}</Centered>;
   if (state.status === "error") {
     return (
