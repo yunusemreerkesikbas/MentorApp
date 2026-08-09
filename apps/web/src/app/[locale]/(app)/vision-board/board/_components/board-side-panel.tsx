@@ -225,32 +225,26 @@ export function BoardSidePanel({
             <Field label={t("plate")}>
               <Row>
                 <Pill
-                  active={selected.background != null}
-                  label={t("plate_toggle")}
-                  onClick={() =>
-                    onPatch({
-                      background: selected.background
-                        ? null
-                        : { color: "#111111", opacity: 1, padding: 24, radius: 8 },
-                    })
-                  }
+                  active={selected.background == null}
+                  label={t("plate_none")}
+                  onClick={() => onPatch({ background: null })}
                 />
+                {PLATE_COLORS.map((color) => (
+                  <Swatch
+                    key={color}
+                    color={color}
+                    label={t("plate")}
+                    active={selected.background?.color === color}
+                    onClick={() =>
+                      onPatch({
+                        background: selected.background
+                          ? { ...selected.background, color }
+                          : { color, opacity: 1, padding: 24, radius: 8 },
+                      })
+                    }
+                  />
+                ))}
               </Row>
-              {selected.background ? (
-                <Row>
-                  {PLATE_COLORS.map((color) => (
-                    <Swatch
-                      key={color}
-                      color={color}
-                      label={t("plate")}
-                      active={selected.background?.color === color}
-                      onClick={() =>
-                        onPatch({ background: { ...selected.background!, color } })
-                      }
-                    />
-                  ))}
-                </Row>
-              ) : null}
             </Field>
             <Field label={t("line_height")}>
               <Range
