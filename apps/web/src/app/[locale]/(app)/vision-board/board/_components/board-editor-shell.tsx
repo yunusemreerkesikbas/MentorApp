@@ -647,7 +647,7 @@ export function BoardEditorShell() {
         ) : null}
       </AnimatePresence>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2 lg:p-3">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2 lg:px-3 lg:pb-3 lg:pt-8">
         <div className="flex shrink-0 items-center gap-0.5">
           <IconButton
             label={t("undo")}
