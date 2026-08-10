@@ -39,7 +39,7 @@ export const FONT_STACKS: Record<VisionBoardTextItem["font"], string> = {
 
 /** The actual family name shown in the font picker — so a user picks by what it looks like. */
 export const FONT_DISPLAY_NAMES: Record<VisionBoardTextItem["font"], string> = {
-  body: "Nunito Sans",
+  body: "Plus Jakarta Sans",
   heading: "Poppins",
   script: "Caveat",
   serif: "Playfair Display",

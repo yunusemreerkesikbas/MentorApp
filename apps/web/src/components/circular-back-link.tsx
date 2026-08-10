@@ -1,4 +1,4 @@
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 import type { ComponentProps } from "react";
 
 import { Link } from "@/i18n/navigation";
@@ -7,6 +7,7 @@ type CircularBackLinkProps = {
   href: ComponentProps<typeof Link>["href"];
   label: string;
   variant?: "outlined" | "soft";
+  icon?: "chevron" | "close";
   className?: string;
 };
 
@@ -21,6 +22,7 @@ export function CircularBackLink({
   href,
   label,
   variant = "outlined",
+  icon = "chevron",
   className = "",
 }: CircularBackLinkProps) {
   return (
@@ -29,16 +31,18 @@ export function CircularBackLink({
       aria-label={label}
       className={[
         "grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full border text-[var(--color-main)]",
-        "transition-[background-color,transform] duration-150 ease-out hover:-translate-x-0.5",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2",
-        "motion-reduce:transform-none motion-reduce:transition-none",
+        "transition-[background-color,transform] duration-150 ease-out",
         variantClasses[variant],
         className,
       ]
         .filter(Boolean)
         .join(" ")}
     >
-      <ChevronLeft size={20} strokeWidth={2} aria-hidden />
+      {icon === "close" ? (
+        <X size={19} strokeWidth={2} aria-hidden />
+      ) : (
+        <ChevronLeft size={20} strokeWidth={2} aria-hidden />
+      )}
     </Link>
   );
 }

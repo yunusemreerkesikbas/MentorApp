@@ -11,6 +11,7 @@ import { ForumImagePicker } from "../../_components/forum-image-picker";
 import { useForumImagePicker } from "../../_components/use-forum-image-picker";
 import { useMentionAutocomplete } from "../../_components/use-mention-autocomplete";
 import { MentionSuggestions } from "../../_components/mention-suggestions";
+import { EmojiPickerButton } from "../../_components/EmojiPickerButton";
 
 /** Ask a question in a QA zone (title + body + images) → navigate to the new question detail. */
 export function AskComposer({ zoneId }: { zoneId: string }) {
@@ -64,6 +65,15 @@ export function AskComposer({ zoneId }: { zoneId: string }) {
           {...mention.inputProps}
         />
         <MentionSuggestions mention={mention} />
+      </div>
+      <div className="flex items-center justify-between">
+        <EmojiPickerButton
+          textareaRef={bodyRef}
+          value={body}
+          onValueChange={setBody}
+          disabled={busy}
+        />
+        <span className="text-xs text-[var(--color-secondary)]">{body.length}/4000</span>
       </div>
       <ForumImagePicker picker={picker} disabled={busy} />
       <FormError message={picker.error} />

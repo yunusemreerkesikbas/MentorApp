@@ -2,12 +2,13 @@
 import { Bookmark, CircleHelp, Hash, House, Megaphone, Rss, TrendingUp, Trophy } from "lucide-react";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { LayoutGroup, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { ZoneView } from "@mentor/types";
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
 import { Link, usePathname } from "@/i18n/navigation";
+import { useAuth } from "@/lib/auth-context";
 import { listZones } from "@/lib/forum";
 
 /** Room groups in display order — one section header replaces the per-item category eyebrow. */
@@ -25,6 +26,8 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const t = useTranslations("community");
   const reduceMotion = useReducedMotion();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { user } = useAuth();
   const params = useParams<{ slug?: string }>();
   const activeZoneSlug = params.slug;
   const [zones, setZones] = useState<ZoneView[] | null>(null);
@@ -79,14 +82,19 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
               pathname.endsWith("/community/feed") ||
               pathname.endsWith("/topluluk/akis"),
           },
-          {
-            href: "/community/saved" as const,
+          ...(user?.username ? [{
+            href: {
+              pathname: "/community/member/[username]" as const,
+              params: { username: user.username },
+              query: { tab: "bookmarks" },
+            },
             label: t("saved_nav"),
             icon: Bookmark,
             active:
-              pathname.endsWith("/community/saved") ||
-              pathname.endsWith("/topluluk/kayitli"),
-          },
+              (pathname.endsWith(`/community/member/${user.username}`) ||
+                pathname.endsWith(`/topluluk/uye/${user.username}`)) &&
+              ["bookmarks", "saved"].includes(searchParams.get("tab") ?? ""),
+          }] : []),
           {
             href: "/community/leaderboard" as const,
             label: t("rank_page_title"),
@@ -105,7 +113,7 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
           },
         ].map(({ href, label, icon: Icon, active }) => (
           <Link
-            key={href}
+            key={label}
             href={href}
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}

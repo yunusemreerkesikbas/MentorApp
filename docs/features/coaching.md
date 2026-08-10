@@ -145,6 +145,16 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Streak rescue success Puhu video sheet (2026-08-10)** — Daily streak celebration keeps the
+  flame hero. After a successful coin streak rescue, `/panel` opens a one-shot sheet:
+  full-bleed square looping video, bottom 40px clipped (draft watermark), celebration-style
+  days badge (top-left), title + reassurance overlaid on a soft scrim, streak-soft rim/glow,
+  top-right ×; dismiss via × / backdrop / Escape (no primary CTA). Asset:
+  `public/video/character/puhu-streak-kept.mp4` (muted, autoplay, loop; reduced-motion /
+  error → `PuhuImage` happy). Opens after successful coin rescue (toast removed for that
+  path). QA: `/panel?mockStreakRescueSuccess=1` (or a day count). Related:
+  `streak-rescue-success.tsx`, `panel-shell.tsx`.
+
 - **Hedef panosu Canva-style editör chrome (2026-08-06)** — `/hedef/pano` far-left kategori
   rail (Görsel / Metin / Çıkartma / Şablon / Pano) + collapsible detay paneli + seçim üst
   contextual toolbar (+ renk paneli). App nav bu rotada gizlenir (community workspace ile aynı
@@ -758,6 +768,35 @@ pnpm --filter @mentor/api test
   refetch ve otomatik görünüm/tarih değişimi yoktur. Free kullanıcı taslak çağrısı yapılmadan
   `/abonelik` sayfasına gider. Gotcha: tekrar oluşturulan taslaklar bilinçli olarak dedupe edilmez.
   Dosyalar: `plan-coach-draft-action.tsx`, `plan-shell.tsx`, `plan-tasks.ts`.
+
+- **Deneme Analizi UI cilası: takvim, boş durumlar, chart altyapısı (2026-08-11)** — beş parçalı
+  redesign. **Gir sekmesi:** yerel tarayıcı `type="date"` inputu kaldırıldı; Plan'daki
+  `react-day-picker` + "Bugün" kalıbı (`.mentor-plan-day-picker-wrap` global CSS'i) analiz özelinde
+  `analysis-date-picker-sheet.tsx` olarak kopyalandı (planlı-gün işaretleri gerekmediği için
+  `PlanDatePickerSheet`'in kendisi değil, sadeleştirilmiş bir kopyası — plan-tasks'a bağımlılık
+  yok) ve `useMentorBottomSheet().filterSheet` ile açılıyor; varsayılan hâlâ bugünün tarihi.
+  "Son denemeyi kopyala" `SectionHeading action` linkinden çıkıp gerçek `Button` olarak forma taşındı
+  (`AnalysisMockExamForm`'a yeni `headerAction` slotu); tekli "Kaydet" artık `fullWidth` değil, sağa
+  yaslı — düzenleme sheet'indeki (Vazgeç + Kaydet) iki-buton grid'i değişmedi. **Boş durumlar:**
+  sayfadaki altı adet elle yazılmış "chip + paragraf" kartı (`ExamTypeGate`, `NoExamSeed`,
+  `AnalysisGhostTeaser`, trend-boş kartı, foto-sekmesi iki kartı) `@/components/empty-state`
+  `EmptyState`'e (görsel yoksa otomatik pastel placeholder) devredildi — trend-boş kartına artık
+  Gir sekmesine götüren bir CTA var. **Chart altyapısı:** `@nivo/core` + `@nivo/line` eklendi,
+  DESIGN token'larına bağlı tema ile `src/components/stat-line-chart.tsx` (`StatLineChart`) yazıldı;
+  hover tooltip özel render (`x:`/`y:` etiketleri yerine nokta rengi + tarih + kalın değer,
+  `shadow-card` kart), point'ler dolgu rengiyle + beyaz kenarlık (uçtaki nokta dahil hepsi net
+  görünür), `compact` prop'u eksen/grid'siz salt sparkline modu açıyor. Önce yalnız geçmiş listesinde
+  (`AnalysisHistoryList`, ≥2 kayıt) kanıt amaçlı denendi; onay sonrası üst KPI bandındaki
+  (`AnalysisSummaryBand`) custom SVG sparkline da (tone rengiyle, `compact`) buna geçirildi — diğer
+  istatistik kartları (odak kartı, gelişim sekmesi trend grafiği) bilinçli olarak dokunulmadı.
+  Metin: `trend_subtitle`'daki tekrar eden "— sıralama yok" ibaresi (aynı uyarı zaten üst KPI
+  bandında ve ders ortalamaları alt başlığında var) sadeleştirildi. `tsc --noEmit` ve `eslint`
+  temiz; canlı tarayıcı doğrulaması kullanıcı tarafından yapıldı.
+  Dosyalar: `analysis-mock-exam-form.tsx`, `analysis-date-picker-sheet.tsx` (yeni),
+  `analysis-tab-entry.tsx`, `analysis-shell.tsx`, `analysis-ghost-teaser.tsx`,
+  `analysis-tab-progress.tsx`, `analysis-tab-mistakes.tsx`, `analysis-history-list.tsx`,
+  `analysis-summary-band.tsx`, `stat-line-chart.tsx` (yeni), `messages/{tr,en}.json`,
+  `apps/web/package.json`.
 
 ## Gotchas / Known issues
 

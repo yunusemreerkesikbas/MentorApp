@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { FileText, X } from "lucide-react";
+import { ExternalLink, FileText, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { Attachment, CommentView } from "@mentor/types";
 import type { AttachmentInput } from "@mentor/validation";
@@ -22,6 +22,7 @@ import { relativeTime } from "@/lib/relative-time";
 
 import { ThreadComposer } from "../[slug]/_components/thread-composer";
 import { AuthorAvatar } from "./author-avatar";
+import { AuthorLink } from "./author-link";
 
 const SOURCE_PREVIEW_MAX_LENGTH = 240;
 
@@ -96,6 +97,7 @@ export function CommunityQuickReplyProvider({ children }: { children: ReactNode 
   const sourceText = target ? truncateSourcePreview(target.body) : "";
   const image = target?.attachments.find((attachment) => attachment.kind === "image");
   const file = target?.attachments.find((attachment) => attachment.kind === "file");
+  const imageUrl = image ? resolveApiUrl(image.url) : null;
 
   return (
     <CommunityQuickReplyContext.Provider value={contextValue}>
@@ -116,11 +118,10 @@ export function CommunityQuickReplyProvider({ children }: { children: ReactNode 
         <AnimatePresence onExitComplete={finishClose}>
           {visible && target ? (
             <>
-              <motion.button
-                type="button"
+              <motion.div
                 key="quick-reply-scrim"
                 className="community-quick-reply-dialog__scrim"
-                aria-label={t("close")}
+                aria-hidden
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -149,11 +150,16 @@ export function CommunityQuickReplyProvider({ children }: { children: ReactNode 
                 <div className="community-quick-reply-panel__body">
                   <div className="community-quick-reply-source">
                     <div className="community-quick-reply-source__avatar">
-                      <AuthorAvatar
-                        name={target.author.displayName}
-                        src={target.author.avatarUrl}
-                        size={40}
-                      />
+                      <AuthorLink
+                        username={target.author.username}
+                        className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2"
+                      >
+                        <AuthorAvatar
+                          name={target.author.displayName}
+                          src={target.author.avatarUrl}
+                          size={36}
+                        />
+                      </AuthorLink>
                       <span aria-hidden />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -162,9 +168,12 @@ export function CommunityQuickReplyProvider({ children }: { children: ReactNode 
                           {target.author.displayName}
                         </strong>
                         {target.author.username ? (
-                          <span className="truncate text-[13px] text-[var(--color-secondary)]">
+                          <AuthorLink
+                            username={target.author.username}
+                            className="truncate text-[13px] text-[var(--color-secondary)] transition-colors hover:text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+                          >
                             @{target.author.username}
-                          </span>
+                          </AuthorLink>
                         ) : null}
                         <span className="text-xs text-[var(--color-secondary)]">
                           · {relativeTime(target.createdAt, locale)}
@@ -173,33 +182,45 @@ export function CommunityQuickReplyProvider({ children }: { children: ReactNode 
                       <p className="mt-1 line-clamp-3 whitespace-pre-wrap break-words text-[15px] leading-[22px] text-[var(--color-body)]">
                         {sourceText}
                       </p>
-                      {image ? (
-                        <div className="mt-3 aspect-[16/7] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-soft)]">
-                          {/* Forum media can be an API fake URL or R2 URL, so it cannot use next/image. */}
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={resolveApiUrl(image.url)}
-                            alt={t("quick_reply_source_image")}
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
+                      {imageUrl ? (
+                        <a
+                          href={imageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={t("quick_reply_open_media")}
+                          className="mt-3 flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] bg-[var(--color-soft)] px-3 text-[13px] text-[var(--community-blue-ink)] transition-colors hover:bg-black/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+                        >
+                          <span className="min-w-0 flex-1 truncate">{imageUrl}</span>
+                          <ExternalLink size={16} className="shrink-0" aria-hidden />
+                        </a>
                       ) : file ? (
                         <div className="mt-3 flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-secondary)]">
                           <FileText size={18} aria-hidden />
                           <span className="truncate">{file.fileName ?? t("attach_file")}</span>
                         </div>
                       ) : null}
-                      <p className="mt-3 text-[13px] text-[var(--community-blue-ink)]">
-                        {t("quick_reply_to", {
-                          username: target.author.username
+                      <p className="mt-3 text-[13px] text-[var(--color-secondary)]">
+                        {t.rich("quick_reply_to", {
+                          handle: target.author.username
                             ? `@${target.author.username}`
                             : target.author.displayName,
+                          username: (chunks) =>
+                            target.author.username ? (
+                              <AuthorLink
+                                username={target.author.username}
+                                className="text-[var(--community-blue-ink)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                              >
+                                {chunks}
+                              </AuthorLink>
+                            ) : (
+                              <span className="font-semibold text-[var(--color-main)]">{chunks}</span>
+                            ),
                         })}
                       </p>
                     </div>
                   </div>
 
-                  <div className="border-t border-[var(--color-border)]">
+                  <div className="community-quick-reply-composer">
                     <ThreadComposer
                       key={`${target.targetType}-${target.targetId}`}
                       placeholder={t("reply_placeholder")}

@@ -28,7 +28,7 @@ import {
 import type { AttachmentInput } from "@mentor/validation";
 import { CommentRow } from "../../../_components/comment-row";
 import { ThreadComposer } from "../../../[slug]/_components/thread-composer";
-import { ThreadItem } from "../../../[slug]/_components/thread-item";
+import { CommunityPostCard } from "../../../_components/community-post-card";
 import { CommunityCoachBridge } from "../../../_components/community-coach-bridge";
 import { PostDetailSkeleton } from "../../../_components/post-skeleton";
 import { CommunityTrendRail } from "../../../_components/community-trend-rail";
@@ -227,7 +227,7 @@ export function MessageShell({ threadId }: { threadId: string }) {
         </header>
 
         <div className="border-b border-[var(--color-border)]">
-        <ThreadItem
+        <CommunityPostCard
           thread={thread}
           onToggleReaction={onToggleThreadReaction}
           onToggleBookmark={onToggleThreadBookmark}

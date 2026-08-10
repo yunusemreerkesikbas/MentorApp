@@ -2,8 +2,8 @@
 
 import type { KeyboardEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import type { ThreadView } from "@mentor/types";
-import { Link, useRouter } from "@/i18n/navigation";
+import type { CommentView, ThreadView } from "@mentor/types";
+import { useRouter } from "@/i18n/navigation";
 import { relativeTime } from "@/lib/relative-time";
 import { AuthorAvatar } from "../../_components/author-avatar";
 import { AuthorLink } from "../../_components/author-link";
@@ -36,7 +36,7 @@ export function ThreadItem({
   /** Feed rows open the post detail on click (Twitter-style); the detail page's own thread doesn't. */
   clickable?: boolean;
   onReplyCountChange?: (delta: 1 | -1) => void;
-  onReplyCreated?: (comment: import("@mentor/types").CommentView) => void;
+  onReplyCreated?: (comment: CommentView) => void;
 }) {
   const t = useTranslations("community");
   const locale = useLocale();
@@ -46,12 +46,6 @@ export function ThreadItem({
     pathname: "/community/message/[threadId]",
     params: { threadId: thread.id },
   } as const;
-  const repliers = thread.commenterNames.slice(0, 3);
-
-  // Reaction counts live in the ReactionBar chips now; the summary keeps only the comment total.
-  const summary: string[] = [];
-  if (thread.commentCount > 0) summary.push(t("comment_total", { count: thread.commentCount }));
-
   // Twitter-style row: the whole post navigates to its detail; interactive children stop propagation.
   const open = () => router.push(detailHref);
   const onRowKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -67,33 +61,16 @@ export function ThreadItem({
         onClick: open,
         onKeyDown: onRowKeyDown,
         className:
-          "flex cursor-pointer touch-manipulation items-stretch gap-3 py-4 pl-3 pr-4 transition-colors hover:bg-black/[0.015] focus-visible:outline-none focus-visible:bg-black/[0.02]",
+          "flex cursor-pointer touch-manipulation items-start gap-3 border-b border-[#e7e9ee] bg-white p-4 transition-colors last:border-b-0 hover:bg-black/[0.015] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:p-5",
       }
-    : { className: "flex items-stretch gap-3 py-4 pl-3 pr-4" };
+    : { className: "flex items-start gap-3 border-b border-[#e7e9ee] bg-white p-4 last:border-b-0 sm:p-5" };
 
   return (
     <div {...rowProps}>
-      {/* Avatar column + connector rail down to the replier cluster (Figma 1:282/1:285) */}
-      <div className="flex flex-col items-center">
+      <div className="shrink-0">
         <AuthorLink username={thread.authorUsername}>
-          <AuthorAvatar name={thread.authorName} size={36} src={thread.authorAvatarUrl} />
+          <AuthorAvatar name={thread.authorName} size={40} src={thread.authorAvatarUrl} />
         </AuthorLink>
-        {repliers.length > 0 && (
-          <>
-            <div className="mt-2 w-px flex-1" style={{ background: "rgba(0,0,0,0.10)" }} aria-hidden="true" />
-            <div className="mt-2 flex" aria-hidden="true">
-              {repliers.map((name, i) => (
-                <span
-                  key={`${name}-${i}`}
-                  className="inline-flex rounded-full ring-2 ring-white"
-                  style={{ marginLeft: i === 0 ? 0 : -8 }}
-                >
-                  <AuthorAvatar name={name} size={20} />
-                </span>
-              ))}
-            </div>
-          </>
-        )}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -140,20 +117,38 @@ export function ThreadItem({
           </div>
         </div>
 
-        {/* Body */}
+        {thread.title && (
+          <h2 className="mt-4 text-[22px] font-extrabold leading-[1.2] tracking-[-0.025em] text-[#171a22] sm:text-[24px]">
+            {thread.title}
+          </h2>
+        )}
         <p
-          className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-[22px]"
-          style={{ color: "var(--color-body)" }}
+          className={`${thread.title ? "mt-2 text-[#69707c]" : "mt-4 text-[#343945]"} whitespace-pre-wrap break-words text-[14px] leading-[1.55]`}
         >
           <MentionText text={thread.body} />
         </p>
 
-        <AttachmentGallery attachments={thread.attachments} />
+        {thread.attachments.length > 0 && (
+          <div className="mt-4">
+            <AttachmentGallery attachments={thread.attachments} />
+          </div>
+        )}
 
-        {/* Action row — reaction palette + comment · send (share link) · bookmark. Reaction counts
-            render as chips inside the ReactionBar; the summary line below keeps the comment total. */}
-        <div className="mt-2 flex w-full flex-wrap items-center justify-between gap-1">
+        {(thread.tags?.length ?? 0) > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {thread.tags?.slice(0, 3).map((tag) => (
+              <span key={tag.id} className="rounded-full bg-[#f3f4f6] px-2.5 py-1 text-[11px] font-semibold text-[#666d78]">
+                #{tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Action row — reaction palette + comment count · send (share link) · bookmark. */}
+        <div className="mt-3 flex w-full flex-wrap items-center gap-1">
           <ReactionBar
+            targetType="THREAD"
+            targetId={thread.id}
             reactionCounts={thread.reactionCounts}
             myReactions={thread.myReactions}
             onChange={onToggleReaction}
@@ -161,8 +156,8 @@ export function ThreadItem({
 
           <button
             type="button"
-            aria-label={t("comment")}
-            className="community-post-action group/cmt flex size-11 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            aria-label={t("comment_total", { count: thread.commentCount })}
+            className="community-post-action group/cmt flex min-h-11 min-w-11 items-center justify-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             style={{ color: "var(--color-main)" }}
             onClick={(e) => {
               e.stopPropagation();
@@ -186,18 +181,15 @@ export function ThreadItem({
             <span className="inline-flex">
               <CommentIcon />
             </span>
+            {thread.commentCount > 0 ? (
+              <span className="text-[13px]">{thread.commentCount}</span>
+            ) : null}
           </button>
 
           <SendButton href={detailHref} />
           <BookmarkButton bookmarked={thread.myBookmarked} onToggle={onToggleBookmark} />
         </div>
 
-        {/* Summary line (Figma 1:305 "7 respostas · 59 curtidas") */}
-        {summary.length > 0 && (
-          <p className="mt-1.5 text-[13px] tracking-[-0.2px]" style={{ color: "var(--color-secondary)" }}>
-            {summary.join(" · ")}
-          </p>
-        )}
       </div>
     </div>
   );

@@ -479,9 +479,9 @@ export type VisionTextAlign = (typeof VISION_TEXT_ALIGNS)[number];
  * Built-in sticker art. A closed enum, never a URL or a storage key: the board document is
  * rendered as-is, so an arbitrary src field would be an image-injection hole. Ten career Puhus +
  * five Puhu expressions (mascot art shipped under `public/mascot/career/` and `public/mascot/puhu/`),
- * thirteen shapes, plus forty-one stickers cut from three Illustrator collages under
- * `public/img/sticker*.svg` (22 stationery/paper + 11 + 8 vision-board scene stickers, several
- * with their own baked-in text) — see docs/features/coaching.md for how.
+ * thirteen shapes, plus forty-nine stickers cut from four Illustrator collages under
+ * `public/img/sticker*.svg` (22 stationery/paper + 11 + 8 vision-board scene stickers + 8 aesthetic
+ * stickers, several with their own baked-in text) — see docs/features/coaching.md for how.
  * Append-only — removing a value orphans it inside somebody's saved board.
  */
 export const VISION_STICKERS = [
@@ -554,6 +554,14 @@ export const VISION_STICKERS = [
   "OVAL_ACTIVITY",
   "CORNER_DOODLES",
   "ACCENT_SCATTER",
+  "CAP_FLAT",
+  "STATUE_TORSO_ROSES",
+  "TV_RETRO",
+  "PHOTO_VINTAGE_REDACTED",
+  "LIGHTBULB_VINTAGE",
+  "SUNGLASSES_HEART",
+  "DIAMOND_GEM",
+  "COTTON_CANDY_HAND",
 ] as const;
 export type VisionSticker = (typeof VISION_STICKERS)[number];
 

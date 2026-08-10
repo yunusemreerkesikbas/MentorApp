@@ -91,6 +91,24 @@ export const FORUM_LIKE_EMOJI = "❤️" as const;
 export const FORUM_REACTION_EMOJIS = ["❤️", "👍", "💪", "🎉", "🙏"] as const;
 export type ForumReactionEmoji = (typeof FORUM_REACTION_EMOJIS)[number];
 
+/** Public-safe identity shown in the reaction details panel. */
+export interface ReactionUserView {
+  userId: string;
+  displayName: string;
+  username: string | null;
+  avatarUrl: string | null;
+  emoji: ForumReactionEmoji;
+  reactedAt: string;
+}
+
+/** Offset-paginated reaction identities for one visible thread or post. */
+export interface ReactionUsersPage {
+  items: ReactionUserView[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 /** Thread status — meaningful only for QA questions (chat/announcement stay OPEN). */
 export const ThreadStatus = {
   OPEN: "OPEN",

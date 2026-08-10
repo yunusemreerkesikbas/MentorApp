@@ -9,12 +9,14 @@ import { trackCommunityEvent } from "@/lib/analytics";
 import { listForumTags, listZones, postThread } from "@/lib/forum";
 import { ForumImagePicker } from "../../_components/forum-image-picker";
 import { useForumImagePicker } from "../../_components/use-forum-image-picker";
+import { EmojiPickerButton } from "../../_components/EmojiPickerButton";
 
 type ComposerMode = "share" | "question";
 
 export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
   const t = useTranslations("community");
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
   const picker = useForumImagePicker();
   const [mode, setMode] = useState<ComposerMode>("share");
   const [zones, setZones] = useState<ZoneView[]>([]);
@@ -205,9 +207,11 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
               />
             </label>
 
-            <label className="grid gap-1.5 text-sm font-bold text-[#2c3039]">
-              {t("composer_content")}
+            <div className="grid gap-1.5 text-sm font-bold text-[#2c3039]">
+              <label htmlFor="global-composer-body">{t("composer_content")}</label>
               <textarea
+                id="global-composer-body"
+                ref={bodyRef}
                 value={body}
                 onChange={(event) => setBody(event.target.value)}
                 maxLength={4000}
@@ -216,10 +220,16 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
                 placeholder={t("composer_content_placeholder")}
                 className="min-h-[128px] rounded-[10px] border border-[#e1e4e8] bg-[#fbfcfd] p-4 font-normal leading-6 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
               />
-              <span className="text-right text-xs font-normal text-[#858a94]">
-                {body.length}/4000
-              </span>
-            </label>
+              <div className="flex items-center justify-between">
+                <EmojiPickerButton
+                  textareaRef={bodyRef}
+                  value={body}
+                  onValueChange={setBody}
+                  disabled={busy}
+                />
+                <span className="text-xs font-normal text-[#858a94]">{body.length}/4000</span>
+              </div>
+            </div>
 
             <fieldset>
               <legend className="text-sm font-bold text-[#2c3039]">

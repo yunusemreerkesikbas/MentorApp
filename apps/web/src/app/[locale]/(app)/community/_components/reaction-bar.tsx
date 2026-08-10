@@ -2,173 +2,237 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Heart, SmilePlus } from "lucide-react";
+import { Heart } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { FORUM_REACTION_EMOJIS } from "@mentor/types";
+import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
+import { ReactionDetailsContent } from "./reaction-details-content";
+import { getDefaultReactionChange, getReactionSummary } from "./reaction-summary";
 
-/** Single-choice reaction control with lively, reduced-motion-aware feedback. */
+interface ReactionBarProps {
+  targetType: "THREAD" | "POST";
+  targetId: string;
+  reactionCounts: Record<string, number>;
+  myReactions: string[];
+  onChange: (
+    nextEmoji: string | null,
+    previousEmoji: string | null,
+  ) => void | Promise<void>;
+}
+
+/** LinkedIn-style default reaction action plus a right-aligned people-summary trigger. */
 export function ReactionBar({
+  targetType,
+  targetId,
   reactionCounts,
   myReactions,
   onChange,
-}: {
-  reactionCounts: Record<string, number>;
-  myReactions: string[];
-  onChange: (nextEmoji: string | null, previousEmoji: string | null) => void;
-}) {
+}: ReactionBarProps) {
   const t = useTranslations("community");
   const reduceMotion = useReducedMotion();
+  const { show } = useMentorBottomSheet();
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef(false);
+  const currentEmoji = myReactions[0] ?? null;
+  const summary = getReactionSummary(reactionCounts);
+
+  const cancelScheduledClose = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = null;
+  };
+
+  const scheduleClose = () => {
+    cancelScheduledClose();
+    closeTimerRef.current = setTimeout(() => setOpen(false), 150);
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = null;
+  };
 
   useEffect(() => {
     if (!open) return;
-    const onDoc = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
+    const handlePointerDown = (event: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) setOpen(false);
     };
-    const onKey = (event: KeyboardEvent) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
 
-  const currentEmoji = myReactions[0] ?? null;
-  const heart = FORUM_REACTION_EMOJIS[0];
-  const heartCount = reactionCounts[heart] ?? 0;
-  const otherCounts = FORUM_REACTION_EMOJIS.slice(1).filter(
-    (emoji) => (reactionCounts[emoji] ?? 0) > 0,
+  useEffect(
+    () => () => {
+      cancelScheduledClose();
+      cancelLongPress();
+    },
+    [],
   );
 
-  const select = (emoji: string) => {
-    onChange(currentEmoji === emoji ? null : emoji, currentEmoji);
+  const handleDefaultReaction = () => {
+    if (longPressTriggeredRef.current) {
+      longPressTriggeredRef.current = false;
+      return;
+    }
+    const change = getDefaultReactionChange(currentEmoji);
+    void onChange(change.nextEmoji, change.previousEmoji);
     setOpen(false);
   };
 
-  return (
-    <div ref={ref} className="relative flex items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
-      <motion.button
-        type="button"
-        aria-label={t("reaction_add")}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-        whileHover={reduceMotion ? undefined : { scale: 1.12, rotate: open ? 0 : -8 }}
-        whileTap={reduceMotion ? undefined : { scale: 0.82, rotate: 8 }}
-        transition={{ type: "spring", stiffness: 520, damping: 20 }}
-        className="community-post-action flex size-11 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        style={{ color: "var(--color-main)" }}
-      >
-        <motion.span
-          className="inline-flex"
-          animate={reduceMotion ? undefined : { rotate: open ? 45 : 0 }}
-          transition={{ type: "spring", stiffness: 420, damping: 22 }}
-        >
-          <SmilePlus size={18} aria-hidden="true" />
-        </motion.span>
-      </motion.button>
+  const handleSelect = (emoji: string) => {
+    void onChange(currentEmoji === emoji ? null : emoji, currentEmoji);
+    setOpen(false);
+  };
 
-      <motion.button
-        type="button"
-        aria-pressed={currentEmoji === heart}
-        aria-label={`${heart} ${heartCount}`}
-        onClick={() => select(heart)}
-        whileHover={reduceMotion ? undefined : { scale: 1.12 }}
-        whileTap={reduceMotion ? undefined : { scale: 0.78 }}
-        transition={{ type: "spring", stiffness: 560, damping: 20 }}
-        className="community-post-action inline-flex min-h-11 min-w-11 items-center justify-center gap-1 text-[13px] tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        style={{ color: currentEmoji === heart ? "var(--color-like-active)" : "var(--color-main)" }}
-      >
-        <motion.span
-          className="inline-flex"
-          animate={
-            reduceMotion || currentEmoji !== heart
-              ? { scale: 1, rotate: 0 }
-              : { scale: [1, 1.45, 0.9, 1], rotate: [0, -12, 8, 0] }
+  const handleOpenDetails = () => {
+    show({
+      title: t("reactions_title"),
+      layout: "filter",
+      bodyScroll: true,
+      children: (
+        <ReactionDetailsContent
+          targetType={targetType}
+          targetId={targetId}
+          initialCounts={reactionCounts}
+        />
+      ),
+    });
+  };
+
+  return (
+    <>
+      <div
+        ref={pickerRef}
+        className="relative flex items-center"
+        onClick={(event) => event.stopPropagation()}
+        onPointerEnter={(event) => {
+          if (event.pointerType === "mouse") {
+            cancelScheduledClose();
+            setOpen(true);
           }
-          transition={{ duration: reduceMotion ? 0 : 0.42, ease: "easeOut" }}
+        }}
+        onPointerLeave={(event) => {
+          if (event.pointerType === "mouse") scheduleClose();
+        }}
+        onFocusCapture={(event) => {
+          if ((event.target as HTMLElement).matches(":focus-visible")) {
+            cancelScheduledClose();
+            setOpen(true);
+          }
+        }}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+        }}
+      >
+        <motion.button
+          type="button"
+          aria-label={t("reaction_add")}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-pressed={currentEmoji !== null}
+          onClick={handleDefaultReaction}
+          onPointerDown={(event) => {
+            if (event.pointerType !== "touch") return;
+            cancelLongPress();
+            longPressTriggeredRef.current = false;
+            longPressTimerRef.current = setTimeout(() => {
+              longPressTriggeredRef.current = true;
+              setOpen(true);
+            }, 450);
+          }}
+          onPointerUp={cancelLongPress}
+          onPointerCancel={cancelLongPress}
+          whileHover={reduceMotion ? undefined : { scale: 1.08 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.9 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="community-post-action flex size-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{
+            color:
+              currentEmoji === "❤️"
+                ? "var(--color-like-active)"
+                : "var(--color-secondary)",
+          }}
         >
-          <Heart size={18} fill={currentEmoji === heart ? "currentColor" : "none"} aria-hidden />
-        </motion.span>
-        <AnimatePresence initial={false} mode="popLayout">
-          {heartCount > 0 ? (
-            <motion.span
-              key={heartCount}
-              className="text-[13px]"
-              initial={reduceMotion ? false : { y: 6, opacity: 0, scale: 0.7 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={reduceMotion ? undefined : { y: -6, opacity: 0, scale: 0.7 }}
-              transition={{ type: "spring", stiffness: 500, damping: 24 }}
+          {currentEmoji && currentEmoji !== "❤️" ? (
+            <span className="text-[18px]" aria-hidden>{currentEmoji}</span>
+          ) : (
+            <Heart
+              size={20}
+              fill={currentEmoji === "❤️" ? "currentColor" : "none"}
+              aria-hidden="true"
+            />
+          )}
+        </motion.button>
+
+        <AnimatePresence>
+          {open ? (
+            <motion.div
+              role="menu"
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.8, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.86, y: 6 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className="absolute bottom-full left-0 z-20 mb-1 flex gap-1 rounded-full border bg-white p-1 shadow-[var(--shadow-card)]"
+              style={{ borderColor: "var(--color-border)" }}
             >
-              {heartCount}
-            </motion.span>
+              {FORUM_REACTION_EMOJIS.map((emoji) => (
+                <motion.button
+                  key={emoji}
+                  type="button"
+                  role="menuitemradio"
+                  aria-label={emoji}
+                  aria-checked={currentEmoji === emoji}
+                  onClick={() => handleSelect(emoji)}
+                  whileHover={reduceMotion ? undefined : { scale: 1.22, y: -3 }}
+                  whileTap={reduceMotion ? undefined : { scale: 0.86 }}
+                  transition={{ duration: 0.16, ease: "easeOut" }}
+                  className="flex size-11 items-center justify-center rounded-full text-[18px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                >
+                  {emoji}
+                </motion.button>
+              ))}
+            </motion.div>
           ) : null}
         </AnimatePresence>
-      </motion.button>
+      </div>
 
-      {otherCounts.map((emoji) => (
+      {summary.hasReactions ? (
         <motion.button
-          key={emoji}
           type="button"
-          aria-pressed={currentEmoji === emoji}
-          aria-label={`${emoji} ${reactionCounts[emoji]}`}
-          onClick={() => select(emoji)}
-          whileHover={reduceMotion ? undefined : { scale: 1.14, y: -2 }}
-          whileTap={reduceMotion ? undefined : { scale: 0.8 }}
-          transition={{ type: "spring", stiffness: 520, damping: 19 }}
-          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 px-1 text-[13px] font-semibold tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          aria-label={t("reaction_total", { count: summary.total })}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleOpenDetails();
+          }}
+          whileHover={reduceMotion ? undefined : { scale: 1.03 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.96 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="order-last ml-auto flex min-h-11 items-center rounded-full px-1.5 text-[13px] tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{ color: "var(--color-secondary)" }}
         >
-          <motion.span
-            className={currentEmoji === emoji ? "text-lg" : undefined}
-            animate={
-              reduceMotion || currentEmoji !== emoji
-                ? undefined
-                : { scale: [1, 1.4, 1], rotate: [0, -10, 8, 0] }
-            }
-            transition={{ duration: 0.38 }}
-            aria-hidden
-          >
-            {emoji}
-          </motion.span>
-          <span className="text-[13px]">{reactionCounts[emoji]}</span>
-        </motion.button>
-      ))}
-
-      <AnimatePresence>
-        {open ? (
-          <motion.div
-            role="menu"
-            initial={reduceMotion ? false : { opacity: 0, scale: 0.72, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.78, y: 8 }}
-            transition={{ type: "spring", stiffness: 440, damping: 24 }}
-            className="absolute bottom-full left-0 z-20 mb-1 flex gap-1 rounded-full border bg-white p-1 shadow-[var(--shadow-card)]"
-            style={{ borderColor: "rgba(0,0,0,0.08)" }}
-          >
-            {FORUM_REACTION_EMOJIS.map((emoji, index) => (
-              <motion.button
+          <span className="flex items-center" aria-hidden>
+            {summary.emojis.slice(0, 3).map((emoji, index) => (
+              <span
                 key={emoji}
-                type="button"
-                role="menuitemradio"
-                autoFocus={index === 0}
-                aria-label={emoji}
-                aria-checked={currentEmoji === emoji}
-                onClick={() => select(emoji)}
-                whileHover={reduceMotion ? undefined : { scale: 1.28, y: -4 }}
-                whileTap={reduceMotion ? undefined : { scale: 0.76 }}
-                transition={{ type: "spring", stiffness: 560, damping: 18 }}
-                className={`flex size-11 items-center justify-center text-[18px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${currentEmoji === emoji ? "font-black" : ""}`}
+                className="flex size-6 items-center justify-center rounded-full bg-white text-sm ring-1 ring-white"
+                style={{ marginLeft: index === 0 ? 0 : -6, zIndex: 3 - index }}
               >
                 {emoji}
-              </motion.button>
+              </span>
             ))}
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-    </div>
+          </span>
+          <span className="ml-1.5">{summary.total}</span>
+        </motion.button>
+      ) : null}
+    </>
   );
 }

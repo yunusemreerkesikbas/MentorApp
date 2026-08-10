@@ -6,9 +6,9 @@ import {
   Caveat,
   Dancing_Script,
   Merriweather,
-  Nunito_Sans,
   Oswald,
   Playfair_Display,
+  Plus_Jakarta_Sans,
   Poppins,
   Space_Mono,
 } from "next/font/google";
@@ -26,7 +26,7 @@ import "../globals.css";
 
 /* DESIGN.md §3 — one smooth UI family for headings + body. latin-ext covers Turkish glyphs
    (ç ğ ı İ ş ö ü). globals.css aliases --font-heading to this body variable. */
-const sans = Nunito_Sans({
+const sans = Plus_Jakarta_Sans({
   subsets: ["latin", "latin-ext"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-body",
@@ -43,7 +43,7 @@ const script = Caveat({
 
 /* The rest of the vision-board's font picker — same rule as Caveat above: used ONLY inside
    vision-board text items, never app chrome. Each gets its own token so the app's own
-   --font-heading / --font-body stay pinned to Nunito Sans (DESIGN.md §3). */
+   --font-heading / --font-body stay pinned to Plus Jakarta Sans (DESIGN.md §3). */
 const visionHeading = Poppins({
   subsets: ["latin", "latin-ext"],
   weight: ["400", "700"],

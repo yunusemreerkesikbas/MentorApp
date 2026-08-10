@@ -37,7 +37,7 @@ product
 
 **Emotional goals:** Relief from loneliness · renewed motivation without pressure · quiet confidence that "someone is walking with me" · safety when asking embarrassing or fragile questions (AI→teacher trust line: raw confessions stay with the AI; only signals reach coaches).
 
-**Visual personality (strategic, not tokens):** Soft and human on a monochrome-forward Nuton base — black primary actions, white surfaces, pastel blob atmosphere, Nunito Sans warmth. Premium feel through craft and calm, not through saturated "EdTech purple" or SaaS hero metrics.
+**Visual personality (strategic, not tokens):** Soft and human on a monochrome-forward Nuton base — black primary actions, white surfaces, pastel blob atmosphere, Plus Jakarta Sans warmth. Premium feel through craft and calm, not through saturated "EdTech purple" or SaaS hero metrics.
 
 **Reference feel (what to borrow, not clone):**
 - **Duolingo / streak apps:** daily ritual and delight in small wins — but **without** guilt, shame, or aggressive loss aversion.
@@ -81,7 +81,7 @@ product
 **Target:** WCAG 2.1 **AA** for student-facing web (contrast, focus, keyboard paths). Admin follows the same bar where feasible.
 
 **Known needs:**
-- **Turkish typography:** Full glyph coverage (ç ğ ı İ ş ö ü) — Nunito Sans with `latin-ext`; no fallback gaps in UI copy.
+- **Turkish typography:** Full glyph coverage (ç ğ ı İ ş ö ü) — Plus Jakarta Sans with `latin-ext`; no fallback gaps in UI copy.
 - **Color:** Body text ≥4.5:1 on backgrounds; UI indicators ≥3:1. Semantic states (`danger`, `success`, `focus-ring`) are defined for forms and keyboard focus — not borrowed from decorative pinks.
 - **Motion:** All animations respect `prefers-reduced-motion` (crossfade or instant transition). No content gated behind entrance animations.
 - **i18n:** TR default, EN mirrored (`next-intl`); nav and static copy via translation keys — no hardcoded Turkish in components.

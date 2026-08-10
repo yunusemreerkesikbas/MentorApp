@@ -7,10 +7,10 @@ import { resolveApiUrl } from "@/lib/api-base";
 import { formatBytes } from "@/lib/format-bytes";
 
 /**
- * Post image gallery (Phase 1). Every post uses the same 16:9 media frame; images crop with cover.
- * 2–4 images tile inside that frame. Tapping opens the uncropped lightbox carousel (arrows + keyboard
- * + swipe + dots across all images of the post). Lives inside clickable feed rows, so every
- * interaction stops propagation to avoid triggering the row's navigation.
+ * Post image gallery. Multiple images use a 1.25-slide swipe rail on mobile and tile inside the
+ * shared 16:9 frame on desktop. Tapping opens the uncropped lightbox carousel (arrows + keyboard +
+ * swipe + dots across all images of the post). Lives inside clickable feed rows, so interactions
+ * stop propagation to avoid triggering the row's navigation.
  */
 export function AttachmentGallery({ attachments }: { attachments: Attachment[] }) {
   const t = useTranslations("community");
@@ -46,11 +46,15 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
     <>
       {count > 0 && (
       <div
-        className={`mt-2 grid aspect-[16/9] gap-1 overflow-hidden rounded-[var(--radius-card)] ${single ? "grid-cols-1" : "grid-cols-2"} ${count > 2 ? "grid-rows-2" : ""}`}
+        className={
+          single
+            ? "mt-2 grid aspect-[16/9] grid-cols-1 overflow-hidden rounded-[var(--radius-card)]"
+            : `mt-2 flex snap-x snap-mandatory overflow-x-auto gap-1 overscroll-x-contain rounded-[var(--radius-card)] md:grid md:aspect-[16/9] md:grid-cols-2 md:overflow-hidden ${count > 2 ? "md:grid-rows-2" : ""}`
+        }
         style={{ border: "1px solid rgba(0,0,0,0.08)" }}
       >
         {images.map((a, i) => {
-          const span = count === 3 && i === 0 ? "row-span-2" : "";
+          const span = count === 3 && i === 0 ? "md:row-span-2" : "";
           return (
             <button
               key={a.id}
@@ -60,7 +64,7 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
                 e.stopPropagation();
                 setActiveIndex(i);
               }}
-              className={`relative block h-full min-h-0 w-full cursor-pointer overflow-hidden bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${span}`}
+              className={`relative block h-full min-h-0 cursor-pointer overflow-hidden bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${single ? "w-full" : "aspect-[16/9] w-4/5 shrink-0 snap-start md:aspect-auto md:w-full md:shrink md:[scroll-snap-align:none]"} ${span}`}
             >
               {/* Storage URL (not next/image — dev fake endpoint + R2 aren't in the image config). */}
               {/* eslint-disable-next-line @next/next/no-img-element */}

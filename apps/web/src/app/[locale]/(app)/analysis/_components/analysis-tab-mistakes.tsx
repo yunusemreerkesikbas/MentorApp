@@ -11,6 +11,7 @@ import {
   SkeletonGroup,
 } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
+import { EmptyState } from "@/components/empty-state";
 import { FormError } from "@/components/form";
 import { PhotoCategorizeCard } from "./photo-categorize-card";
 
@@ -79,17 +80,20 @@ export function AnalysisTabMistakes({
       </p>
 
       {!activeMockExamId ? (
-        <Card className="flex flex-col items-start gap-4">
-          <SectionHeading as="h2" subtitle={t("photo_no_exam_desc")}>
-            {t("photo_section_title")}
-          </SectionHeading>
-          <Link
-            href={{ pathname: "/analysis", query: { tab: "entry" } }}
-            className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            style={{ backgroundColor: "var(--color-btn)" }}
-          >
-            {t("photo_enter_exam")}
-          </Link>
+        <Card>
+          <EmptyState
+            title={t("photo_section_title")}
+            description={t("photo_no_exam_desc")}
+            action={
+              <Link
+                href={{ pathname: "/analysis", query: { tab: "entry" } }}
+                className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                style={{ backgroundColor: "var(--color-btn)" }}
+              >
+                {t("photo_enter_exam")}
+              </Link>
+            }
+          />
         </Card>
       ) : photoAccessState.status === "error" ? (
         <Card className="flex flex-col items-start gap-3">
@@ -207,17 +211,14 @@ export function AnalysisTabMistakes({
         </Card>
       ) : (
         <Card>
-          <SectionHeading subtitle={t("photo_signals_empty_desc")}>
-            {t("photo_signals_title")}
-          </SectionHeading>
-          {activeMockExamId && photoAccess?.canCategorize ? (
-            <p
-              className="mt-3 text-sm"
-              style={{ color: "var(--color-secondary)" }}
-            >
-              {t("photo_signals_empty_action")}
-            </p>
-          ) : null}
+          <EmptyState
+            title={t("photo_signals_title")}
+            description={
+              activeMockExamId && photoAccess?.canCategorize
+                ? t("photo_signals_empty_action")
+                : t("photo_signals_empty_desc")
+            }
+          />
         </Card>
       )}
     </div>

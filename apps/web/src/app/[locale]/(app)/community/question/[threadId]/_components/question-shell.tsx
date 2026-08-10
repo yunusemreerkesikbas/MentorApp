@@ -39,6 +39,7 @@ import { SendButton } from "../../../_components/send-button";
 import { BookmarkButton } from "../../../_components/bookmark-button";
 import { useMentionAutocomplete } from "../../../_components/use-mention-autocomplete";
 import { MentionSuggestions } from "../../../_components/mention-suggestions";
+import { EmojiPickerButton } from "../../../_components/EmojiPickerButton";
 import { AcceptButton } from "./accept-button";
 import { AnswerItem } from "./answer-item";
 import { CommunityCoachBridge } from "../../../_components/community-coach-bridge";
@@ -412,6 +413,15 @@ function AnswerComposer({
           {...mention.inputProps}
         />
         <MentionSuggestions mention={mention} />
+      </div>
+      <div className="flex items-center justify-between">
+        <EmojiPickerButton
+          textareaRef={textareaRef}
+          value={value}
+          onValueChange={setValue}
+          disabled={busy}
+        />
+        <span className="text-xs text-[var(--color-secondary)]">{value.length}/4000</span>
       </div>
       <ForumImagePicker picker={picker} disabled={busy} />
       <FormError message={picker.error} />

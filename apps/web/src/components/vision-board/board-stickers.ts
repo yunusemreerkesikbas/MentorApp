@@ -144,6 +144,18 @@ const SCENE2_IMAGES: Partial<Record<VisionSticker, string>> = {
   ACCENT_SCATTER: "/img/stickers/accent_scatter.png",
 };
 
+/** A fourth collage (`public/img/sticker-4.svg`) — retro/aesthetic decorative stickers, no text. */
+const AESTHETIC_IMAGES: Partial<Record<VisionSticker, string>> = {
+  CAP_FLAT: "/img/stickers/cap_flat.png",
+  STATUE_TORSO_ROSES: "/img/stickers/statue_torso_roses.png",
+  TV_RETRO: "/img/stickers/tv_retro.png",
+  PHOTO_VINTAGE_REDACTED: "/img/stickers/photo_vintage_redacted.png",
+  LIGHTBULB_VINTAGE: "/img/stickers/lightbulb_vintage.png",
+  SUNGLASSES_HEART: "/img/stickers/sunglasses_heart.png",
+  DIAMOND_GEM: "/img/stickers/diamond_gem.png",
+  COTTON_CANDY_HAND: "/img/stickers/cotton_candy_hand.png",
+};
+
 function artFor(sticker: VisionSticker): StickerArt {
   const shape = SHAPES[sticker];
   if (shape) return { kind: "path", ...shape };
@@ -155,6 +167,8 @@ function artFor(sticker: VisionSticker): StickerArt {
   if (scene) return { kind: "image", src: scene };
   const scene2 = SCENE2_IMAGES[sticker];
   if (scene2) return { kind: "image", src: scene2 };
+  const aesthetic = AESTHETIC_IMAGES[sticker];
+  if (aesthetic) return { kind: "image", src: aesthetic };
   // MASCOT_YAZILIM → /mascot/career/yazilim.png — the enum mirrors CAREER_GROUPS by construction.
   return {
     kind: "image",

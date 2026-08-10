@@ -148,10 +148,10 @@ export async function renderWeeklyRecapShareCard(
   context.textAlign = "left";
   context.textBaseline = "top";
   context.fillStyle = "rgba(255, 255, 255, 0.72)";
-  context.font = '800 28px "Nunito Sans", sans-serif';
+  context.font = '800 28px "Plus Jakarta Sans", sans-serif';
   context.fillText(copy.weeklyTitleLabel, 90, 545, 760);
   context.fillStyle = "#ffffff";
-  context.font = '900 82px "Nunito Sans", sans-serif';
+  context.font = '900 82px "Plus Jakarta Sans", sans-serif';
   drawFittedCanvasText(
     context,
     model.weeklyTitle ?? copy.weeklyTitleFallback,
@@ -166,7 +166,7 @@ export async function renderWeeklyRecapShareCard(
   context.fillRect(0, 760, 1080, 1160);
 
   context.fillStyle = "#000000";
-  context.font = '900 60px "Nunito Sans", sans-serif';
+  context.font = '900 60px "Plus Jakarta Sans", sans-serif';
   drawFittedCanvasText(context, copy.title, 90, 815, 900, 60, 44);
 
   const rows = buildWeeklyRecapShareCardRows(model, copy);
@@ -180,10 +180,10 @@ export async function renderWeeklyRecapShareCard(
 
   if (leadRow) {
     context.fillStyle = "#000000";
-    context.font = '900 108px "Nunito Sans", sans-serif';
+    context.font = '900 108px "Plus Jakarta Sans", sans-serif';
     drawFittedCanvasText(context, leadRow.value, 90, 970, 800, 108, 72);
     context.fillStyle = "rgba(0, 0, 0, 0.66)";
-    context.font = '800 32px "Nunito Sans", sans-serif';
+    context.font = '800 32px "Plus Jakarta Sans", sans-serif';
     context.fillText(leadRow.label, 96, 1095, 760);
   }
 
@@ -195,10 +195,10 @@ export async function renderWeeklyRecapShareCard(
 
     context.textAlign = "left";
     context.fillStyle = "#000000";
-    context.font = '900 58px "Nunito Sans", sans-serif';
+    context.font = '900 58px "Plus Jakarta Sans", sans-serif';
     drawFittedCanvasText(context, row.value, x, y, 380, 58, 38);
     context.fillStyle = "rgba(0, 0, 0, 0.62)";
-    context.font = '800 25px "Nunito Sans", sans-serif';
+    context.font = '800 25px "Plus Jakarta Sans", sans-serif';
     context.fillText(row.label, x, y + 66, 380);
   });
 
@@ -207,16 +207,16 @@ export async function renderWeeklyRecapShareCard(
     context.fillRect(90, 1650, 900, 4);
     context.textAlign = "left";
     context.fillStyle = "rgba(0, 0, 0, 0.62)";
-    context.font = '800 28px "Nunito Sans", sans-serif';
+    context.font = '800 28px "Plus Jakarta Sans", sans-serif';
     context.fillText(subjectRow.label, 90, 1690, 760);
     context.fillStyle = "#000000";
-    context.font = '900 58px "Nunito Sans", sans-serif';
+    context.font = '900 58px "Plus Jakarta Sans", sans-serif';
     drawFittedCanvasText(context, subjectRow.value, 90, 1735, 900, 58, 40);
   }
 
   context.textAlign = "left";
   context.fillStyle = "#000000";
-  context.font = '900 30px "Nunito Sans", sans-serif';
+  context.font = '900 30px "Plus Jakarta Sans", sans-serif';
   context.fillText(copy.signature, 90, 1855, 760);
 
   return canvasToBlob(canvas);
@@ -287,7 +287,7 @@ function drawFittedCanvasText(
   let size = initialSize;
   while (size > minimumSize && context.measureText(value).width > maxWidth) {
     size -= 2;
-    context.font = `900 ${size}px "Nunito Sans", sans-serif`;
+    context.font = `900 ${size}px "Plus Jakarta Sans", sans-serif`;
   }
   context.fillText(value, x, y, maxWidth);
 }

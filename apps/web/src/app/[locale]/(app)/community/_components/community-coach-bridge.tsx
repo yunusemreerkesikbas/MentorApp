@@ -25,13 +25,13 @@ export function CommunityCoachBridge({ bridge }: { bridge: ForumCoachBridgeView 
   const zoneType = bridge.zone.type;
 
   return (
-    <div className="mt-4 flex w-full flex-col gap-3 rounded-[13px] border border-[color:color-mix(in_srgb,var(--community-blue)_42%,white)] bg-[color:color-mix(in_srgb,var(--community-blue)_10%,white)] p-3 sm:flex-row sm:items-center sm:gap-4 sm:px-4">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_1px_4px_rgb(20_40_80_/_8%)]">
-          <PuhuImage variant="encouraging" size={34} />
+    <div className="mx-3 my-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[var(--radius-card)] border border-[color:color-mix(in_srgb,var(--community-blue)_26%,white)] bg-[color:color-mix(in_srgb,var(--community-blue)_7%,white)] px-3 py-2.5 sm:gap-3">
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white sm:size-9">
+          <PuhuImage variant="encouraging" size={26} />
         </span>
-        <div className="min-w-0 text-sm font-bold text-[#26364d]">
-          <span className="truncate">#{bridge.tag.name}</span>
+        <div className="min-w-0 truncate whitespace-nowrap text-xs font-bold text-[#26364d] sm:text-[13px]">
+          <span>#{bridge.tag.name}</span>
           <span className="mx-2 text-[#8c98a8]" aria-hidden>·</span>
           <span className="font-semibold text-[#617086]">{bridge.zone.title}</span>
         </div>
@@ -48,10 +48,10 @@ export function CommunityCoachBridge({ bridge }: { bridge: ForumCoachBridgeView 
           zone_type: zoneType,
           intent: bridge.intent,
         })}
-        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--community-blue)] px-4 text-sm font-extrabold text-white transition-colors hover:bg-[var(--community-blue-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:w-auto"
+        className="inline-flex min-h-10 shrink-0 items-center justify-center gap-1 rounded-[var(--radius-card)] bg-[var(--community-blue)] px-3 text-xs font-extrabold text-white transition-colors hover:bg-[var(--community-blue-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:min-h-11 sm:gap-1.5 sm:px-3.5 sm:text-[13px]"
       >
         {t(bridge.intent)}
-        <ArrowRight className="size-4" aria-hidden />
+        <ArrowRight className="size-3.5" aria-hidden />
       </Link>
     </div>
   );

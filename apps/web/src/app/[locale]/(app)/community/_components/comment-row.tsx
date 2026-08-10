@@ -113,6 +113,8 @@ export function CommentRow({
         {/* Action row — reaction palette + reply (opens this comment's detail, where the composer lives) */}
         <div className="-ml-1.5 mt-2 flex flex-wrap items-center gap-2">
           <ReactionBar
+            targetType="POST"
+            targetId={comment.id}
             reactionCounts={comment.reactionCounts}
             myReactions={comment.myReactions}
             onChange={(nextEmoji, previousEmoji) =>

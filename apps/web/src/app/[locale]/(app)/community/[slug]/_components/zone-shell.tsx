@@ -33,7 +33,7 @@ import { AskComposer } from "./ask-composer";
 import { JoinButton } from "./join-button";
 import { QuestionListItem } from "./question-list-item";
 import { ThreadComposer } from "./thread-composer";
-import { ThreadItem } from "./thread-item";
+import { CommunityPostCard } from "../../_components/community-post-card";
 import { ZoneShellSkeleton } from "./zone-shell-skeleton";
 import { AuthorAvatar } from "../../_components/author-avatar";
 import { CommunityTrendRail } from "../../_components/community-trend-rail";
@@ -487,7 +487,7 @@ export function ZoneShell({ slug }: { slug: string }) {
             </div>
           ) : (
             visibleThreads.map((thread) => (
-              <ThreadItem
+              <CommunityPostCard
                 key={thread.id}
                 thread={thread}
                 onToggleReaction={(nextEmoji, previousEmoji) =>

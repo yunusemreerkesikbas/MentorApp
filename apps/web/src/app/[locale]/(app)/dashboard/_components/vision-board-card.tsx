@@ -135,12 +135,6 @@ export function VisionBoardCard() {
               </button>
             ) : null}
 
-            {vision.motivation ? (
-              <p className="text-sm" style={{ color: "var(--color-body)" }}>
-                {vision.motivation}
-              </p>
-            ) : null}
-
             {generating ? (
               <p
                 className="text-sm"
@@ -157,9 +151,11 @@ export function VisionBoardCard() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25 }}
               >
-                {/* Sparkles marks AI-authored content, matching the coach module's own convention. */}
-                <Chip className="inline-flex w-fit items-center gap-1.5">
-                  <Sparkles aria-hidden size={14} />
+                {/* Sparkles marks AI-authored content, matching the coach module's own convention.
+                    Quiet on purpose: this is a provenance label for the sentence below it, not an
+                    action — the note itself stays glanceable rather than hidden behind a click. */}
+                <Chip size="sm" className="inline-flex w-fit items-center gap-1">
+                  <Sparkles aria-hidden size={11} />
                   {translate("coach_chip")}
                 </Chip>
                 <p className="text-sm" style={{ color: "var(--color-body)" }}>

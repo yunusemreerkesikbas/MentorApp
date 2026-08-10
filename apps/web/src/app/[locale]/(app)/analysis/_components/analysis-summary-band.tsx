@@ -1,11 +1,11 @@
 "use client";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { CoachingAnalysisDto } from "@mentor/types";
 import { Card } from "@mentor/ui";
-import { AnalysisSparkline } from "./analysis-sparkline";
-import { trendForSparkline } from "./analysis-types";
+import { StatLineChart } from "@/components/stat-line-chart";
+import { formatTrendDate, trendForSparkline } from "./analysis-types";
 
 /** Sparkline window — last N attempts (newest-first from API, then reversed for L→R). */
 const SPARKLINE_WINDOW = 6;
@@ -29,6 +29,7 @@ function toneFromDelta(delta: string | null | undefined): TrendTone {
 export function AnalysisSummaryBand({ analysis }: AnalysisSummaryBandProps) {
   const t = useTranslations("analysis.summary");
   const tTrend = useTranslations("analysis");
+  const locale = useLocale();
 
   const latest = analysis?.trend[0] ?? null;
   const ghost = analysis?.ghost ?? null;
@@ -42,15 +43,22 @@ export function AnalysisSummaryBand({ analysis }: AnalysisSummaryBandProps) {
       : tone === "down"
         ? "var(--color-danger)"
         : "var(--color-secondary)";
+  const chartData =
+    sparkPoints.length > 0
+      ? [
+          {
+            id: tTrend("trend_title"),
+            data: sparkPoints.map((point) => ({
+              x: formatTrendDate(point.takenAt, locale),
+              y: Number(point.totalNet),
+            })),
+          },
+        ]
+      : null;
 
+  // No attempts yet — the Gir tab's own empty state already teaches this; don't repeat it here.
   if (!latest) {
-    return (
-      <Card data-testid="analysis-metric-banner">
-        <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-          {t("empty")}
-        </p>
-      </Card>
-    );
+    return null;
   }
 
   return (
@@ -117,16 +125,15 @@ export function AnalysisSummaryBand({ analysis }: AnalysisSummaryBandProps) {
           )}
         </div>
 
-        {sparkPoints.length > 0 ? (
+        {chartData ? (
           <div className="min-w-0 w-full sm:max-w-[240px] lg:max-w-[280px] sm:shrink-0">
-            <AnalysisSparkline
-              points={sparkPoints}
-              label={tTrend("trend_title")}
-              width={240}
+            <StatLineChart
+              data={chartData}
+              ariaLabel={tTrend("trend_title")}
               height={64}
-              className="h-16 w-full max-w-full"
-              tone={tone}
-              withFill
+              color={toneColor}
+              valueSuffix=" net"
+              compact
             />
           </div>
         ) : null}

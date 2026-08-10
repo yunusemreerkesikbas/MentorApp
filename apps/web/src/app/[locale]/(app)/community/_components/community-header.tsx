@@ -17,7 +17,7 @@ export function CommunityHeader() {
   return (
     <header className="community-header">
       <div className="community-header__brand">
-        <CircularBackLink href="/dashboard" label={t("back_short")} />
+        <CircularBackLink href="/dashboard" label={common("dialog.close")} icon="close" />
         <Link href="/community" className="community-header__wordmark">
           <span className="community-header__mark" aria-hidden>
             <MessageCircle size={17} strokeWidth={2.2} />

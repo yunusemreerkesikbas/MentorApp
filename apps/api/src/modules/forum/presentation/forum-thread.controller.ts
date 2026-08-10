@@ -17,6 +17,7 @@ import type {
   FollowUserRef,
   ForumActivityFeed,
   ForumAttachmentUploadUrl,
+  ReactionUsersPage,
   SavedFeed,
   ThreadDetail,
   ThreadFeed,
@@ -32,6 +33,7 @@ import {
   FeedQueryDto,
   PinThreadDto,
   ReactionDto,
+  ReactionListQueryDto,
 } from "./forum.dto";
 
 /**
@@ -136,6 +138,15 @@ export class ForumThreadController {
     return { status: "ok" };
   }
 
+  @Get("posts/:postId/reactions")
+  postReactionUsers(
+    @CurrentUser() user: RequestUser,
+    @Param("postId") postId: string,
+    @Query() query: ReactionListQueryDto,
+  ): Promise<ReactionUsersPage> {
+    return this.threads.listPostReactionUsers(user.id, postId, query);
+  }
+
   @Delete("posts/:postId/reactions")
   @HttpCode(204)
   async unreactPost(
@@ -173,6 +184,15 @@ export class ForumThreadController {
   ): Promise<{ status: string }> {
     await this.threads.react(user.id, threadId, dto.emoji);
     return { status: "ok" };
+  }
+
+  @Get("threads/:threadId/reactions")
+  threadReactionUsers(
+    @CurrentUser() user: RequestUser,
+    @Param("threadId") threadId: string,
+    @Query() query: ReactionListQueryDto,
+  ): Promise<ReactionUsersPage> {
+    return this.threads.listThreadReactionUsers(user.id, threadId, query);
   }
 
   @Delete("threads/:threadId/reactions")

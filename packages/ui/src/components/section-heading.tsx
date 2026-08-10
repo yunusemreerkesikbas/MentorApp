@@ -4,7 +4,7 @@ export interface SectionHeadingProps {
   children: React.ReactNode;
   /** Optional action placed immediately beside the title (e.g. add “+”). */
   action?: React.ReactNode;
-  /** Optional supporting line under the title (Nunito Sans 14 secondary). */
+  /** Optional supporting line under the title (Plus Jakarta Sans 14 secondary). */
   subtitle?: React.ReactNode;
   /** Heading level — keeps the document outline correct per screen. Default h2. */
   as?: "h2" | "h3";
@@ -12,7 +12,7 @@ export interface SectionHeadingProps {
 }
 
 /**
- * Section heading (DESIGN.md §3 — H2 Nunito Sans 20/SemiBold #111, §6 layout).
+ * Section heading (DESIGN.md §3 — H2 Plus Jakarta Sans 20/SemiBold #111, §6 layout).
  * Presentational/server-safe: title + optional inline action, optional subtitle.
  */
 export function SectionHeading({

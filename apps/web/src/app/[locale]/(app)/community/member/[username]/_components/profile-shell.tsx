@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type ForumActivityItem, type PublicProfile } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
 import { getPublicProfile } from "@/lib/community";
@@ -24,7 +25,7 @@ import {
   unreactThread,
 } from "@/lib/forum";
 import { CommentRow } from "../../../_components/comment-row";
-import { ThreadItem } from "../../../[slug]/_components/thread-item";
+import { CommunityPostCard } from "../../../_components/community-post-card";
 import { SavedShell } from "../../../saved/_components/saved-shell";
 import { FollowListPanel } from "./follow-list-panel";
 import { ProfileHeader } from "./profile-header";
@@ -46,10 +47,15 @@ type State =
 /** A user's public forum profile — header (identity + gamification) + their activity feed. */
 export function ProfileShell({ username }: { username: string }) {
   const t = useTranslations("community");
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const { error: showErrorToast } = useMentorToast();
   const { user } = useAuth();
   const isOwn = !!user?.username && user.username === username;
-  const [tab, setTab] = useState<"posts" | "saved">("posts");
+  const requestedTab = ["bookmarks", "saved"].includes(searchParams.get("tab") ?? "")
+    ? "bookmarks"
+    : "posts";
+  const [tab, setTab] = useState<"posts" | "bookmarks">(requestedTab);
   const [listView, setListView] = useState<"followers" | "following" | null>(null);
   const [state, setState] = useState<State>({ status: "loading" });
 
@@ -71,6 +77,19 @@ export function ProfileShell({ username }: { username: string }) {
       active = false;
     };
   }, [username, t]);
+
+  useEffect(() => {
+    setTab(requestedTab);
+  }, [requestedTab]);
+
+  const selectTab = (nextTab: "posts" | "bookmarks") => {
+    setTab(nextTab);
+    router.replace({
+      pathname: "/community/member/[username]",
+      params: { username },
+      query: nextTab === "bookmarks" ? { tab: "bookmarks" } : {},
+    });
+  };
 
   const patchReady = useCallback(
     (fn: (r: Ready) => Ready) => setState((s) => (s.status === "ready" ? fn(s) : s)),
@@ -260,13 +279,13 @@ export function ProfileShell({ username }: { username: string }) {
       {/* Tabs — only on your own profile, where "Kaydedilenler" (private) is meaningful. */}
       {isOwn && (
         <div className="flex gap-1 border-b px-4 lg:px-6" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
-          {(["posts", "saved"] as const).map((k) => {
+          {(["posts", "bookmarks"] as const).map((k) => {
             const active = tab === k;
             return (
               <button
                 key={k}
                 type="button"
-                onClick={() => setTab(k)}
+                onClick={() => selectTab(k)}
                 aria-current={active ? "page" : undefined}
                 className="relative -mb-px px-3 py-3 text-[14px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 style={{ color: active ? "var(--color-main)" : "var(--color-secondary)" }}
@@ -285,10 +304,8 @@ export function ProfileShell({ username }: { username: string }) {
         </div>
       )}
 
-      {isOwn && tab === "saved" ? (
-        <div className="px-4 pt-4 lg:px-6">
-          <SavedShell embedded />
-        </div>
+      {isOwn && tab === "bookmarks" ? (
+        <SavedShell embedded />
       ) : items.length === 0 ? (
         <p className="px-4 py-12 text-center text-sm" style={{ color: "var(--color-secondary)" }}>
           {t("profile_activity_empty")}
@@ -313,7 +330,7 @@ export function ProfileShell({ username }: { username: string }) {
                     </Link>
                   )}
                   {it.type === "thread" ? (
-                    <ThreadItem
+                    <CommunityPostCard
                       thread={it.thread}
                       onToggleReaction={(nextEmoji, previousEmoji) => onToggleReaction(it.thread.id, nextEmoji, previousEmoji)}
                       onToggleBookmark={(adding) => onToggleThreadBookmark(it.thread.id, adding)}
