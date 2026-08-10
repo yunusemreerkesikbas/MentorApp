@@ -63,6 +63,15 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **Chrome typography → Plus Jakarta Sans (2026-08-10)** — App chrome heading/body family
+  switched from Nunito Sans to **Plus Jakarta Sans** (`latin` + `latin-ext`, weights
+  400–700). Load site: `apps/web` `[locale]/layout.tsx` → `--font-body` (globals alias
+  `--font-heading`). Shared tokens: `packages/ui` `theme.css` + `tokens.ts`. Vision-board
+  specialty fonts unchanged; only the `body` picker/export stack label follows chrome.
+  Temporary `/dev/font-compare` lab removed. Usage: hard refresh after deploy so the new
+  Google font CSS applies. Gotcha: admin (Duralux) untouched. Related: `layout.tsx`,
+  `DESIGN.md` §3, `board-item-view.tsx`, `board-export.ts`.
+
 - **Yasal sayfa altyapısı (APP-032, 2026-07-31)** — Web'in **hiç yasal sayfası yoktu** ve bu iki
   somut kusur üretiyordu: kayıt formu *"KVKK aydınlatma metnini okudum"* dedirtip **var olmayan ve
   linklenmemiş** bir metne rıza topluyordu; abonelik onayı otomatik tahsilatı anlatıp mesafeli satış

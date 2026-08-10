@@ -19,7 +19,7 @@ import {
 } from "@/lib/forum";
 import { BookmarkIcon } from "../../_components/forum-icons";
 import { CommentRow } from "../../_components/comment-row";
-import { ThreadItem } from "../../[slug]/_components/thread-item";
+import { CommunityPostCard } from "../../_components/community-post-card";
 
 type State =
   | { status: "loading" }
@@ -207,7 +207,7 @@ export function SavedShell({ embedded = false }: { embedded?: boolean } = {}) {
         <div className="divide-y divide-[rgba(0,0,0,0.06)]">
           {items.map((it) =>
             it.type === "thread" ? (
-              <ThreadItem
+              <CommunityPostCard
                 key={`t-${it.thread.id}`}
                 thread={it.thread}
                 onToggleReaction={(nextEmoji, previousEmoji) => onToggleReaction(it.thread.id, nextEmoji, previousEmoji)}

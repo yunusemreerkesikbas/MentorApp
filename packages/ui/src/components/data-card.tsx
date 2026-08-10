@@ -11,11 +11,11 @@ export interface DataCardSource {
 }
 
 export interface DataCardProps {
-  /** Small label above the value (Nunito Sans 12 secondary, uppercased). */
+  /** Small label above the value (Plus Jakarta Sans 12 secondary, uppercased). */
   label?: string;
-  /** Headline value — the authoritative fact (Nunito Sans, large). */
+  /** Headline value — the authoritative fact (Plus Jakarta Sans, large). */
   value: React.ReactNode;
-  /** Supporting line under the value (Nunito Sans 14 secondary). */
+  /** Supporting line under the value (Plus Jakarta Sans 14 secondary). */
   caption?: React.ReactNode;
   /** Leading visual (icon/emoji), sized by the caller. */
   icon?: React.ReactNode;

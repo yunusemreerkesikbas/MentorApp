@@ -14,6 +14,15 @@ export type PostWithAuthor = PostRow & {
 /** Author-listing row enriched with its zone (for the profile activity feed's "posted in X" label). */
 export type PostWithAuthorAndZone = PostWithAuthor & { zoneTitle: string; zoneSlug: string };
 
+export interface PostReactionUserRow {
+  userId: string;
+  displayName: string;
+  username: string | null;
+  avatarStorageKey: string | null;
+  emoji: string;
+  reactedAt: Date;
+}
+
 /**
  * QA answer access (slice 3). Reads run in user context (RLS belt: non-deleted answers to any
  * authed user); writes run in SERVICE context — mirrors ForumThreadRepository.
@@ -162,6 +171,49 @@ export class ForumPostRepository {
         map.set(r.postId, entry);
       }
       return map;
+    });
+  }
+
+  async listReactionUsers(
+    postId: string,
+    opts: { page: number; pageSize: number; emoji?: string },
+  ): Promise<PostReactionUserRow[]> {
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select({
+          userId: users.id,
+          displayName: sql<string>`coalesce(${users.displayName}, ${users.username}, '')`,
+          username: users.username,
+          avatarStorageKey: users.avatarStorageKey,
+          emoji: forumPostReactions.emoji,
+          reactedAt: forumPostReactions.createdAt,
+        })
+        .from(forumPostReactions)
+        .innerJoin(users, eq(users.id, forumPostReactions.userId))
+        .where(
+          and(
+            eq(forumPostReactions.postId, postId),
+            opts.emoji ? eq(forumPostReactions.emoji, opts.emoji) : undefined,
+          ),
+        )
+        .orderBy(desc(forumPostReactions.createdAt))
+        .limit(opts.pageSize)
+        .offset((opts.page - 1) * opts.pageSize),
+    );
+  }
+
+  async countReactionUsers(postId: string, emoji?: string): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const [row] = await tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(forumPostReactions)
+        .where(
+          and(
+            eq(forumPostReactions.postId, postId),
+            emoji ? eq(forumPostReactions.emoji, emoji) : undefined,
+          ),
+        );
+      return row?.count ?? 0;
     });
   }
 

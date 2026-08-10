@@ -23,6 +23,15 @@ export interface SuggestedUserRow {
   avatarStorageKey: string | null;
 }
 
+export interface ReactionUserRow {
+  userId: string;
+  displayName: string;
+  username: string | null;
+  avatarStorageKey: string | null;
+  emoji: string;
+  reactedAt: Date;
+}
+
 export type ThreadRow = typeof forumThreads.$inferSelect;
 export type ThreadWithAuthor = ThreadRow & {
   authorName: string;
@@ -369,6 +378,49 @@ export class ForumThreadRepository {
         map.set(r.threadId, entry);
       }
       return map;
+    });
+  }
+
+  async listReactionUsers(
+    threadId: string,
+    opts: { page: number; pageSize: number; emoji?: string },
+  ): Promise<ReactionUserRow[]> {
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select({
+          userId: users.id,
+          displayName: sql<string>`coalesce(${users.displayName}, ${users.username}, '')`,
+          username: users.username,
+          avatarStorageKey: users.avatarStorageKey,
+          emoji: forumReactions.emoji,
+          reactedAt: forumReactions.createdAt,
+        })
+        .from(forumReactions)
+        .innerJoin(users, eq(users.id, forumReactions.userId))
+        .where(
+          and(
+            eq(forumReactions.threadId, threadId),
+            opts.emoji ? eq(forumReactions.emoji, opts.emoji) : undefined,
+          ),
+        )
+        .orderBy(desc(forumReactions.createdAt))
+        .limit(opts.pageSize)
+        .offset((opts.page - 1) * opts.pageSize),
+    );
+  }
+
+  async countReactionUsers(threadId: string, emoji?: string): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const [row] = await tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(forumReactions)
+        .where(
+          and(
+            eq(forumReactions.threadId, threadId),
+            emoji ? eq(forumReactions.emoji, emoji) : undefined,
+          ),
+        );
+      return row?.count ?? 0;
     });
   }
 

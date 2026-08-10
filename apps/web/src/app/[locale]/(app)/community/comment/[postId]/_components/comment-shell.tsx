@@ -256,6 +256,8 @@ function FocusedComment({
         <AttachmentGallery attachments={comment.attachments} />
         <div className="-ml-1.5 mt-2 flex flex-wrap items-center gap-2">
           <ReactionBar
+            targetType="POST"
+            targetId={comment.id}
             reactionCounts={comment.reactionCounts}
             myReactions={comment.myReactions}
             onChange={(nextEmoji, previousEmoji) => onToggleReaction(comment.id, nextEmoji, previousEmoji)}

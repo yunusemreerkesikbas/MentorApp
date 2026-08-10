@@ -487,3 +487,23 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   `AttachmentGallery` bileşeni tüm gönderilerde sabit 16:9 medya çerçevesine geçirildi. Tek ve çoklu
   görseller kartta `object-fit: cover` ile eşit boyutta gösterilir; tıklanınca mevcut lightbox içinde
   kırpılmamış `object-contain` hali açılır. Üçlü galeri aynı çerçevede bir büyük + iki küçük karo kullanır.
+
+- **Post detayı ve hızlı yanıt deneyimi (2026-08-10)** — CHAT/ANNOUNCEMENT gönderi ve yorumlarının
+  reply aksiyonu community layout seviyesindeki tek `CommunityQuickReplyProvider` üzerinden açılan
+  ortak composer dialoguna bağlandı. Dialog desktopta merkez, mobilde safe-area uyumlu tam ekran
+  çalışır; kaynak yazar/tarih/metin özeti ile ilk görselin tıklanabilir URL’sini gösterir ve mevcut
+  `postComment`/`postReply` çağrılarını kullanır. Başarılı yanıtta çağıran akışın comment/reply sayacı
+  güncellenir; hata halinde taslak ve dialog korunur. Normal post ve yorum detayları 600 px thread +
+  300 px sticky Gündemde rail düzenine geçti; Katılımcılar rail'i kaldırıldı, inline composer ve
+  `CommunityCoachBridge` korundu. Kullanım: post gövdesi ayrı detay sayfasını, comment ikonu hızlı
+  yanıt dialogunu açar; yazarın `@username` alanları profil sayfasına gider. Gotcha: Q/A akışı ve
+  video attachment desteği bu kapsamda değiştirilmedi.
+  İlgili: `community/_components/community-quick-reply.tsx`, `thread-item.tsx`, `comment-row.tsx`,
+  `message-shell.tsx`, `comment-shell.tsx`, `community-parity.css`.
+
+- **Mobil detay başlığı ve koç köprüsü hizası (2026-08-10)** — Topluluk kabuğunun dashboard'a
+  dönen sol üst kontrolü, detay içindeki geri navigasyonundan ayrıştırılarak ortak dairesel kontrolün
+  `close` varyantına geçirildi. `CommunityCoachBridge` mobilde iki satıra kaymak yerine, dar alanda
+  metni güvenle kısaltan tek satırlı bilgi + aksiyon düzeni kullanır. Detay başlığındaki sol-chevron
+  geri kontrolü korunur. İlgili: `circular-back-link.tsx`, `community-header.tsx`,
+  `community-coach-bridge.tsx`.

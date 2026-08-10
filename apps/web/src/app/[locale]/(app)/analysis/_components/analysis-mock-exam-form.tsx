@@ -1,11 +1,25 @@
 "use client";
+import { CalendarDays } from "lucide-react";
 
-import { useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useMemo, useRef } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type { ExamSubjectDto } from "@mentor/types";
 import { Button, TextField } from "@mentor/ui";
-import type { SubjectScores } from "./analysis-types";
+import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
+import {
+  AnalysisDatePickerSheet,
+  type AnalysisDatePickerSheetHandle,
+} from "./analysis-date-picker-sheet";
 import { subjectTotal, validateSubjectCounts } from "./analysis-types";
+import type { SubjectScores } from "./analysis-types";
+
+function formatTakenAtLabel(iso: string, locale: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(locale, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 interface AnalysisMockExamFormProps {
   subjects: ExamSubjectDto[];
@@ -23,6 +37,8 @@ interface AnalysisMockExamFormProps {
   onSubmit: (e: React.FormEvent) => void;
   submitLabel?: string;
   onCancel?: () => void;
+  /** Rendered above the field grid, right-aligned (e.g. "copy last exam"). */
+  headerAction?: React.ReactNode;
 }
 
 export function AnalysisMockExamForm({
@@ -37,15 +53,37 @@ export function AnalysisMockExamForm({
   onSubmit,
   submitLabel,
   onCancel,
+  headerAction,
 }: AnalysisMockExamFormProps) {
   const t = useTranslations("analysis");
+  const locale = useLocale();
+  const bottomSheet = useMentorBottomSheet();
+  const datePickerRef = useRef<AnalysisDatePickerSheetHandle>(null);
   const invalidSlug = useMemo(
     () => validateSubjectCounts(subjects, scores),
     [subjects, scores],
   );
 
+  async function openDateSheet() {
+    await bottomSheet.filterSheet({
+      title: t("date_sheet_title"),
+      applyLabel: t("date_sheet_apply"),
+      children: (
+        <AnalysisDatePickerSheet ref={datePickerRef} defaultValue={takenAtDate} />
+      ),
+      onApply: () => {
+        const picked = datePickerRef.current?.getValue() ?? takenAtDate;
+        onTakenAtChange(picked);
+      },
+    });
+  }
+
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
+      {headerAction ? (
+        <div className="flex justify-end">{headerAction}</div>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <TextField
           label={t("publisher_label")}
@@ -53,12 +91,37 @@ export function AnalysisMockExamForm({
           onChange={(event) => onPublisherChange(event.target.value)}
           autoComplete="off"
         />
-        <TextField
-          label={t("taken_at_label")}
-          type="date"
-          value={takenAtDate}
-          onChange={(event) => onTakenAtChange(event.target.value)}
-        />
+        <label className="flex flex-col gap-1">
+          <span
+            className="text-xs font-semibold"
+            style={{
+              color: "var(--color-secondary)",
+              fontFamily: "var(--font-heading)",
+            }}
+          >
+            {t("taken_at_label")}
+          </span>
+          <button
+            type="button"
+            onClick={() => void openDateSheet()}
+            className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[var(--radius-card)] border bg-white/50 px-5 py-3 text-left text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            style={{
+              color: "var(--color-body)",
+              boxShadow: "var(--shadow-card)",
+              fontFamily: "var(--font-body)",
+              borderColor: "#ffffff",
+            }}
+            data-testid="analysis-taken-at-trigger"
+          >
+            {formatTakenAtLabel(takenAtDate, locale)}
+            <CalendarDays
+              className="size-5 shrink-0"
+              style={{ color: "var(--color-secondary)" }}
+              strokeWidth={2}
+              aria-hidden
+            />
+          </button>
+        </label>
       </div>
 
       <div
@@ -146,7 +209,7 @@ export function AnalysisMockExamForm({
         })}
       </div>
 
-      <div className={onCancel ? "grid gap-2 sm:grid-cols-2" : undefined}>
+      <div className={onCancel ? "grid gap-2 sm:grid-cols-2" : "flex justify-end"}>
         {onCancel ? (
           <Button
             type="button"
@@ -161,7 +224,7 @@ export function AnalysisMockExamForm({
         <Button
           type="submit"
           busy={submitting}
-          fullWidth
+          fullWidth={Boolean(onCancel)}
           disabled={invalidSlug != null}
         >
           {submitLabel ?? t("save")}

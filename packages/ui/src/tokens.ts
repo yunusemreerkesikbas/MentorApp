@@ -32,8 +32,8 @@ export const colors = {
 } as const;
 
 export const typography = {
-  heading: "'Nunito Sans', sans-serif",
-  body: "'Nunito Sans', sans-serif",
+  heading: "'Plus Jakarta Sans', sans-serif",
+  body: "'Plus Jakarta Sans', sans-serif",
 } as const;
 
 /** Uniform radius — button/field/card/chip/thumb (DESIGN.md §5). */

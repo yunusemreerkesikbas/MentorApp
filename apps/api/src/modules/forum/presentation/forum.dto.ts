@@ -16,6 +16,7 @@ import {
   memberSearchQuerySchema,
   pinThreadSchema,
   reactionSchema,
+  reactionListQuerySchema,
   reportsQuerySchema,
   resolveReportSchema,
   searchQuerySchema,
@@ -37,6 +38,7 @@ export class CreateThreadDto extends createZodDto(createThreadSchema) {}
 export class FeedQueryDto extends createZodDto(feedQuerySchema) {}
 export class BookmarkQueryDto extends createZodDto(bookmarkQuerySchema) {}
 export class ReactionDto extends createZodDto(reactionSchema) {}
+export class ReactionListQueryDto extends createZodDto(reactionListQuerySchema) {}
 export class PinThreadDto extends createZodDto(pinThreadSchema) {}
 export class CreateAnswerDto extends createZodDto(createAnswerSchema) {}
 export class AttachmentUploadUrlDto extends createZodDto(attachmentUploadUrlSchema) {}

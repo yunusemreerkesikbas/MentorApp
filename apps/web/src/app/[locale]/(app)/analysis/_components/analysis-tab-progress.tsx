@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { CoachingAnalysisDto, WeeklyReviewDto } from "@mentor/types";
 import { Button, Card, SectionHeading } from "@mentor/ui";
+import { Link } from "@/i18n/navigation";
+import { EmptyState } from "@/components/empty-state";
 import {
   WeeklyRecapTeaser,
   WeeklyRecapTeaserSkeleton,
@@ -56,24 +58,19 @@ export function AnalysisTabProgress({
       <div className="flex flex-col gap-6">
         {weeklyReview}
         <Card>
-          <div className="mt-4 flex flex-col items-center gap-4 py-6 text-center">
-            <span
-              className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold"
-              style={{
-                backgroundColor:
-                  "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-                color: "var(--color-chip-text)",
-              }}
-            >
-              {t("empty_trend_chip")}
-            </span>
-            <p
-              className="text-base"
-              style={{ color: "var(--color-secondary)" }}
-            >
-              {t("empty_trend_desc")}
-            </p>
-          </div>
+          <EmptyState
+            title={t("empty_trend_chip")}
+            description={t("empty_trend_desc")}
+            action={
+              <Link
+                href={{ pathname: "/analysis", query: { tab: "entry" } }}
+                className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+                style={{ backgroundColor: "var(--color-btn)" }}
+              >
+                {t("summary.new_entry")}
+              </Link>
+            }
+          />
         </Card>
       </div>
     );

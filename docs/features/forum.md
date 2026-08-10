@@ -74,8 +74,10 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `POST /v1/forum/threads/:threadId/comments` | Comment on a CHAT/ANNOUNCEMENT thread |
 | `GET/POST /v1/forum/posts/:postId[/replies]` | Comment detail / reply (nested) |
 | `PUT/DELETE /v1/forum/posts/:postId/reactions` | Set/replace or remove the viewer's single comment reaction |
+| `GET /v1/forum/posts/:postId/reactions?page=&pageSize=&emoji=` | Visibility-gated, paginated public reactor list; optional emoji filter |
 | `POST /v1/forum/threads/:threadId/accept/:postId` | Accept answer (asker, one-shot) |
 | `PUT/DELETE /v1/forum/threads/:threadId/reactions` | Set/replace or remove the viewer's single thread reaction |
+| `GET /v1/forum/threads/:threadId/reactions?page=&pageSize=&emoji=` | Visibility-gated, paginated public reactor list; optional emoji filter |
 | `POST /v1/forum/threads/:threadId/pin` | Pin/unpin thread |
 | `POST /v1/forum/attachments/upload-url` | Presigned image upload URL (APP-018) |
 | `PUT/DELETE /v1/forum/threads\|posts/:id/bookmark` | Toggle bookmark (APP-018) |
@@ -105,6 +107,41 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `GET /v1/forum/public/questions?limit=` | Public QA refs (sitemap) |
 
 ## Geliştirmeler (timeline)
+
+- **Kaydedilenler profil sekmesi ve ortak post kartı (2026-08-11)** — Sol navigasyondaki “Kaydedilenler” korunur ancak ayrı liste sayfası açmak yerine oturumdaki kullanıcının `/community/member/{username}?tab=bookmarks` adresine gider. İç terminoloji kullanıcı aksiyonuyla uyumlu biçimde `bookmarks` kullanır; eski `?tab=saved` bağlantısı geriye uyumluluk için aynı sekmeyi açar. Profil sekmesi URL ile senkron olduğundan doğrudan bağlantı, geri ve ileri gezinme çalışır; eski `/community/saved` adresi uyumluluk için aynı hedefe yönlendirir. Kaydedilmiş postlar artık ekstra iç padding olmadan Akış yoğunluğunda gösterilir. Oda, mesaj detayı, profil ve kaydedilenler `CommunityPostCard` üzerinden aynı avatar (40 px), kullanıcı meta alanı, 22–24 px başlık, 14 px gövde, medya/etiket ve aksiyon satırı sunumunu kullanır; optimistic reaction/bookmark işlemleri ilgili shell'lerde kalır.
+  Yorum sayısı ayrı bir “3 yorum” özet satırı olarak tekrarlanmaz; doğrudan yorum ikonunun yanında sayısal rozet metni olarak gösterilir.
+
+- **Topluluk ana sayfası mikro metinleri (2026-08-11)** — Ana sayfa başlıkları Twitter/X'in kısa ve gönderi odaklı ürün diline yaklaştırıldı: “tartışma” yerine “gönderi”, “Devam ettiklerin” yerine “Kaldığın yerden”, keşif panelinde “Gündemde neler var?” ve “Gündemdekiler” kullanılır. Destek verenler takip önerisi olmadığı için semantik korunarak “Öne çıkan kişiler”, oda önerileri ise “İlgini çekebilecek odalar” olarak adlandırılır. Boş durumlar ve CTA'lar da aynı kısa dilde TR/EN aynalandı.
+
+- **Tüm composer'larda ortak emoji seçici (2026-08-11)** — `emoji-picker-react` yalnız seçici açıldığında dinamik yüklenir. Ana akış paylaşımı, oda mesajı, soru, yorum ve yanıt oluşturma alanları aynı `EmojiPickerButton` bileşenini kullanır. Emoji mevcut imleç/seçim konumuna eklenir; 4000 karakter sınırında emoji yarım eklenmez. Picker mobilde ekran kenarlarına güvenli biçimde sabitlenir, masaüstünde tetikleyicinin yanında açılır; dialog içinden çağrıldığında tarayıcının top-layer kuralı nedeniyle ilgili dialog'a portal edilir. Dışarı tıklama ve `Escape` kapatır; TR/EN arama ve erişilebilirlik etiketleri aynalanmıştır. İlgili dosyalar: `EmojiPickerButton.tsx`, `insert-emoji.ts`, dört composer ve `messages/{tr,en}.json`.
+  **Konum düzeltmesi:** masaüstünde kullanılabilir boşluğa göre postun üstüne çevrilmez; daima composer aksiyonunun altından, belge akışına bağlı açılır. Böylece sayfa picker'a doğru kaydırılabilir ve yazılan metin görünür kalır. Mobil davranış alt panel olarak korunur.
+  **Kompakt yoğunluk:** picker arama ve kategori metinleri 14 px, emoji görselleri 24 px olarak ortak bileşen kapsamında ayarlanır.
+
+- **LinkedIn tarzı reaction özeti ve kişi listesi (2026-08-10)** — `ReactionBar`, reaction yokken yalnız
+  Lucide boş kalbi gösterir; kısa tıklama varsayılan kalbi ekler/kaldırır, hover/klavye odağı veya mobilde
+  uzun basma önceki reaction paletini açar. Kullanıcının farklı reaction seçimi aksiyon ikonunda görünür. Yorum, paylaşım
+  ve kaydetme aksiyonları solda gruplanır; reaction varsa en fazla üç örtüşen emoji ve toplam sayı satırın
+  en sağında yer alır. Özete dokununca bottom-sheet açılır. Detay içinde reaction değiştirme kaldırıldı;
+  `Tümü` ve yalnız aktif emoji+sayı kontrolleri tek üst filtre şeridi olarak kullanıcı listesini süzer.
+  Aktif filtre 2 px hareketli alt çizgiyle belirtilir; filtre değişiminde liste kısa, reduced-motion uyumlu
+  fade/translate geçişi kullanır. Reaction listesinin viewport'u mobilde `18rem`, masaüstünde `20rem`
+  sabittir ve taşan içerik kendi içinde scroll olur; böylece tab geçişlerinde dialog yüksekliği değişmez.
+  Kullanıcı listenin sonuna yaklaştığında sonraki sayfa otomatik yüklenir; manuel “Daha fazla yükle”
+  butonu yoktur. İlk sayfa hatası ikonlu ve tek “Yenile” aksiyonlu merkezî durumdur; sonraki sayfa
+  hatasında mevcut kullanıcılar korunur ve listenin altında kompakt yeniden deneme gösterilir.
+  Yeni `GET /v1/forum/{threads|posts}/:id/reactions?page=&pageSize=&emoji=` uçları yalnız hedefi görme
+  yetkisi olan kullanıcıya public profil alanlarını (`displayName`, `username`, `avatarUrl`) ve reaction
+  zamanını döndürür; gizli/özel oda içeriğinden kimlik sızdırmaz. Veri zaten hedef + kullanıcı + emoji +
+  zaman olarak tutulduğu için migration gerekmedi. Global keşif akışında göreli tarih (`1hf`, `2s`)
+  sağdaki ⋯ menüsünün yanındadır. İlgili: `reaction-details-content.tsx`, `reaction-bar.tsx`,
+  `reaction-summary.ts`, `forum-thread.service.ts`, `forum-{thread,post}.repository.ts`.
+
+- **Mobil çoklu görsel şeridi (2026-08-10)** — Akış ve detaylardaki `AttachmentGallery`, 2–4
+  görseli mobilde Twitter benzeri native yatay kaydırma ve snap davranışıyla `1.25 slidesPerView`
+  (`w-4/5`) oranında gösterir; sıradaki görsel kaydırma ipucu olarak görünür. Feed karesi 16:9
+  `object-cover` kırpmayı korur, görsele dokunmak mevcut kırpılmamış tam ekran önizlemeyi açar.
+  Tek görsel mobilde tam genişlikte, `md` ve üstünde önceki 2 sütunlu grid düzenindedir. Ek carousel
+  bağımlılığı yoktur. İlgili: `attachment-gallery.tsx`, `attachment-gallery.spec.ts`.
 
 - **Sınava duyarlı Gündem ve tek reaction (2026-08-09)** — `GET /v1/forum/trends` mevcut
   thread–etiket ilişkilerini ayarlanabilir pencere (varsayılan 72 saat) içinde toplar; yalnız aktif

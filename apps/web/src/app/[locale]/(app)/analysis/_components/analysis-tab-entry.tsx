@@ -1,10 +1,12 @@
 "use client";
+import { Copy } from "lucide-react";
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ExamSubjectDto, ExamSummaryDto, MockExamDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Card, SectionHeading } from "@mentor/ui";
+import { Button, Card, SectionHeading } from "@mentor/ui";
+import { EmptyState } from "@/components/empty-state";
 import { fetchMockExamsList } from "@/lib/mock-exams";
 import type { SubjectScores } from "./analysis-types";
 import { AnalysisMockExamForm } from "./analysis-mock-exam-form";
@@ -26,20 +28,12 @@ interface AnalysisTabEntryProps {
 function NoExamSeed() {
   const translate = useTranslations("analysis");
   return (
-    <div className="mt-4 flex flex-col items-center gap-4 py-4 text-center">
-      <span
-        className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold capitalize"
-        style={{
-          backgroundColor: "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-          color: "var(--color-chip-text)",
-        }}
-      >
-        {translate("no_seed_chip")}
-      </span>
-      <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-        {translate("no_seed_desc")}
-      </p>
-    </div>
+    <EmptyState
+      className="mt-4"
+      title={translate("no_seed_chip")}
+      description={translate("no_seed_desc")}
+      puhuVariant="sleepy"
+    />
   );
 }
 
@@ -89,23 +83,7 @@ export function AnalysisTabEntry({
 
   return (
     <Card id="analysis-form">
-      <SectionHeading
-        subtitle={exam?.name}
-        action={
-          canCopy ? (
-            <button
-              type="button"
-              onClick={() => void handleCopyLast()}
-              disabled={copying}
-              className="min-h-11 text-sm font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60"
-              style={{ color: "var(--color-main)" }}
-              data-testid="analysis-copy-last"
-            >
-              {copying ? t("copy_last_busy") : t("copy_last")}
-            </button>
-          ) : undefined
-        }
-      >
+      <SectionHeading subtitle={exam?.name}>
         {t("result_entry_title")}
       </SectionHeading>
       {copyError ? (
@@ -131,6 +109,20 @@ export function AnalysisTabEntry({
             onTakenAtChange={onTakenAtChange}
             onScoreChange={onScoreChange}
             onSubmit={onSubmit}
+            headerAction={
+              canCopy ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  busy={copying}
+                  onClick={() => void handleCopyLast()}
+                  data-testid="analysis-copy-last"
+                >
+                  <Copy className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
+                  {copying ? t("copy_last_busy") : t("copy_last")}
+                </Button>
+              ) : undefined
+            }
           />
         </div>
       )}

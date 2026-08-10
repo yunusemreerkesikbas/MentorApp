@@ -205,6 +205,12 @@ export const reactionSchema = z.object({
 });
 export type Reaction = z.infer<typeof reactionSchema>;
 
+/** Paginated public identities for a target's reaction details panel. */
+export const reactionListQuerySchema = paginationQuerySchema.extend({
+  emoji: z.enum(FORUM_REACTION_EMOJIS).optional(),
+});
+export type ReactionListQuery = z.infer<typeof reactionListQuerySchema>;
+
 /** Pin/unpin a thread (owner/mod). */
 export const pinThreadSchema = z.object({ pinned: z.boolean() });
 export type PinThread = z.infer<typeof pinThreadSchema>;

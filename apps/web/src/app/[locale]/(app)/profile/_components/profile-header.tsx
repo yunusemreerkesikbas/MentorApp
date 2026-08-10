@@ -78,7 +78,7 @@ function ProfileAvatar({
 }
 
 /**
- * Profile identity row — Nuton thumb placeholder (#D6DBFD) + Nunito Sans name stack.
+ * Profile identity row — Nuton thumb placeholder (#D6DBFD) + Plus Jakarta Sans name stack.
  */
 export function ProfileHeader({
   onSaved,

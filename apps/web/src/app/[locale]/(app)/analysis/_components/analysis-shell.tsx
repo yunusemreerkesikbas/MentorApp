@@ -23,6 +23,7 @@ import {
 } from "@mentor/api-client";
 import { Button, Card } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
+import { EmptyState } from "@/components/empty-state";
 import { FormError } from "@/components/form";
 import {
   HistorySideDrawer,
@@ -602,33 +603,23 @@ function ExamTypeGate() {
 
   return (
     <Card>
-      <div className="flex flex-col items-center gap-4 py-4 text-center">
-        <span
-          className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold capitalize"
-          style={{
-            backgroundColor:
-              "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-            color: "var(--color-chip-text)",
-            fontFamily: "var(--font-body)",
-          }}
-        >
-          {t("needs_exam_chip")}
-        </span>
-        <p className="text-base" style={{ color: "var(--color-secondary)" }}>
-          {t("needs_exam_desc")}
-        </p>
-        <Link
-          href="/profile"
-          className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none sm:w-auto"
-          style={{
-            backgroundColor: "var(--color-btn)",
-            boxShadow: "var(--shadow-card)",
-            fontFamily: "var(--font-body)",
-          }}
-        >
-          {t("needs_exam_cta")}
-        </Link>
-      </div>
+      <EmptyState
+        title={t("needs_exam_chip")}
+        description={t("needs_exam_desc")}
+        action={
+          <Link
+            href="/profile"
+            className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            style={{
+              backgroundColor: "var(--color-btn)",
+              boxShadow: "var(--shadow-card)",
+              fontFamily: "var(--font-body)",
+            }}
+          >
+            {t("needs_exam_cta")}
+          </Link>
+        }
+      />
     </Card>
   );
 }

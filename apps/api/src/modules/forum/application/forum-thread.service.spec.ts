@@ -31,6 +31,8 @@ const makeThreadRepo = () => ({
   setReaction: vi.fn().mockResolvedValue(undefined),
   removeReaction: vi.fn().mockResolvedValue(undefined),
   reactionCountsByThread: vi.fn().mockResolvedValue(new Map()),
+  listReactionUsers: vi.fn().mockResolvedValue([]),
+  countReactionUsers: vi.fn().mockResolvedValue(0),
   myReactionsByThread: vi.fn().mockResolvedValue(new Map()),
   commentCountsByThread: vi.fn().mockResolvedValue(new Map()),
   recentCommentersByThread: vi.fn().mockResolvedValue(new Map()),
@@ -53,6 +55,8 @@ const makePostRepo = () => ({
   listTopLevel: vi.fn().mockResolvedValue([]),
   listReplies: vi.fn().mockResolvedValue([]),
   reactionCountsByPost: vi.fn().mockResolvedValue(new Map()),
+  listReactionUsers: vi.fn().mockResolvedValue([]),
+  countReactionUsers: vi.fn().mockResolvedValue(0),
   myReactionsByPost: vi.fn().mockResolvedValue(new Map()),
   replyCountsByPost: vi.fn().mockResolvedValue(new Map()),
   setPostReaction: vi.fn().mockResolvedValue(undefined),
@@ -278,6 +282,76 @@ describe("ForumThreadService", () => {
     expect(threadRepo.setReaction).toHaveBeenCalledWith("t1", "u1", "❤️");
     await service.unreact("u1", "t1", "❤️");
     expect(threadRepo.removeReaction).toHaveBeenCalledWith("t1", "u1", "❤️");
+  });
+
+  it("lists visible thread reaction users with emoji filtering and public avatar URLs", async () => {
+    const service = svc(makeZoneRepo());
+    threadRepo.listReactionUsers.mockResolvedValue([
+      {
+        userId: "u2",
+        displayName: "Ayşe",
+        username: "ayse",
+        avatarStorageKey: "avatars/u2.webp",
+        emoji: "❤️",
+        reactedAt: new Date("2026-08-10T20:00:00Z"),
+      },
+    ]);
+    threadRepo.countReactionUsers.mockResolvedValue(1);
+
+    const result = await service.listThreadReactionUsers("u1", "t1", {
+      page: 2,
+      pageSize: 20,
+      emoji: "❤️",
+    });
+
+    expect(threadRepo.findById.mock.invocationCallOrder[0]).toBeLessThan(
+      threadRepo.listReactionUsers.mock.invocationCallOrder[0]!,
+    );
+    expect(threadRepo.listReactionUsers).toHaveBeenCalledWith("t1", {
+      page: 2,
+      pageSize: 20,
+      emoji: "❤️",
+    });
+    expect(result).toEqual({
+      items: [
+        {
+          userId: "u2",
+          displayName: "Ayşe",
+          username: "ayse",
+          avatarUrl: "/v1/storage/fake-object?key=avatars%2Fu2.webp",
+          emoji: "❤️",
+          reactedAt: "2026-08-10T20:00:00.000Z",
+        },
+      ],
+      total: 1,
+      page: 2,
+      pageSize: 20,
+    });
+  });
+
+  it("lists visible post reaction users through the post repository", async () => {
+    const service = svc(makeZoneRepo());
+    postRepo.listReactionUsers.mockResolvedValue([
+      {
+        userId: "u3",
+        displayName: "Can",
+        username: null,
+        avatarStorageKey: null,
+        emoji: "👍",
+        reactedAt: new Date("2026-08-10T20:05:00Z"),
+      },
+    ]);
+    postRepo.countReactionUsers.mockResolvedValue(1);
+
+    const result = await service.listPostReactionUsers("u1", "p1", {
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(postRepo.findById.mock.invocationCallOrder[0]).toBeLessThan(
+      postRepo.listReactionUsers.mock.invocationCallOrder[0]!,
+    );
+    expect(result.items[0]).toMatchObject({ userId: "u3", avatarUrl: null, emoji: "👍" });
   });
 
   it("getCommentDetail returns the focused comment + its direct replies", async () => {

@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-Nuton’s language remains the base: **monochrome-forward** — near-black text and **black primary buttons** on a **white background**, softened by **blurred pastel gradient blobs**, **translucent white cards**, a **blue-tinted soft shadow family**, and **10 px rounded corners everywhere**. Accents are soft pastels (violet chips, blue progress), not a single saturated brand color. Mentor uses **Nunito Sans** for headings and body (Turkish-complete, warm at small sizes).
+Nuton’s language remains the base: **monochrome-forward** — near-black text and **black primary buttons** on a **white background**, softened by **blurred pastel gradient blobs**, **translucent white cards**, a **blue-tinted soft shadow family**, and **10 px rounded corners everywhere**. Accents are soft pastels (violet chips, blue progress), not a single saturated brand color. Mentor uses **Plus Jakarta Sans** for headings and body (Turkish-complete, warm at small sizes).
 
 **Evolve (2026-07-12):** We keep Nuton hex/type/radius. We add surface hierarchy, hover elevation, a documented visual language (Puhu + `visuals/`), rich motion with reduced-motion guardrails, and empty/loading rules. Premium feel comes from craft and companionship — not EdTech purple, cream paper backgrounds, or hero-metric grids.
 
@@ -17,7 +17,7 @@ Nuton’s language remains the base: **monochrome-forward** — near-black text 
 intentional celebration exception with feature-scoped tokens: coral `#FF5B49`, deep purple
 `#400073`, lavender `#AFB1FF`, mint `#16D0A6`, and ink `#000000`. These saturated colors and the
 committed Figma exports under `public/visuals/weekly-recap-2023/` must not leak into ordinary app
-surfaces. Static typography remains Nunito Sans; decorative shapes are exported assets, not
+surfaces. Static typography remains Plus Jakarta Sans; decorative shapes are exported assets, not
 recreated CSS/React artwork.
 
 Base canvas: **375 px** wide. Content column **335 px** → **20 px** side gutters. Desktop: gutters **20–32 px**; page max-widths below.
@@ -89,22 +89,22 @@ Errors use `danger` — not `like-active`. Countdown is calm (not alarm-red).
 
 ## 3. Typography
 
-- **Headings / Body / UI:** **Nunito Sans** with `latin-ext` (ç ğ ı İ ş ö ü).
+- **Headings / Body / UI:** **Plus Jakarta Sans** with `latin-ext` (ç ğ ı İ ş ö ü).
 - Product register: fixed rem scale (not fluid clamp display). One family is correct.
 
 | Style | Font | Size | Weight | Line-height |
 |---|---|---|---|---|
-| H1 | Nunito Sans | 32 | 700 Bold | 1.2 |
-| H2 | Nunito Sans | 20 | 600 SemiBold | 1.4 |
-| H3 | Nunito Sans | 16 | 500 Medium | 1.7 |
-| H4 | Nunito Sans | 18 | 700 Bold | 1.5 |
-| H5 | Nunito Sans | 16 | 700 Bold | 1.5 |
-| Body | Nunito Sans | 16 | 400 Regular | 1.7 |
-| Caption/meta | Nunito Sans | 14 | 400 Regular | 1.7 |
-| Small label | Nunito Sans | 12 | 400 Regular | 1.7 |
-| Tab label (mobile bottom bar only) | Nunito Sans | 8 | 600 SemiBold | normal · **UPPERCASE** |
-| Desktop sidebar nav | Nunito Sans | 14 | 600 SemiBold | 1.4 · **sentence case** |
-| Button | Nunito Sans | 18 | 700 Bold | 1.7 · capitalize |
+| H1 | Plus Jakarta Sans | 32 | 700 Bold | 1.2 |
+| H2 | Plus Jakarta Sans | 20 | 600 SemiBold | 1.4 |
+| H3 | Plus Jakarta Sans | 16 | 500 Medium | 1.7 |
+| H4 | Plus Jakarta Sans | 18 | 700 Bold | 1.5 |
+| H5 | Plus Jakarta Sans | 16 | 700 Bold | 1.5 |
+| Body | Plus Jakarta Sans | 16 | 400 Regular | 1.7 |
+| Caption/meta | Plus Jakarta Sans | 14 | 400 Regular | 1.7 |
+| Small label | Plus Jakarta Sans | 12 | 400 Regular | 1.7 |
+| Tab label (mobile bottom bar only) | Plus Jakarta Sans | 8 | 600 SemiBold | normal · **UPPERCASE** |
+| Desktop sidebar nav | Plus Jakarta Sans | 14 | 600 SemiBold | 1.4 · **sentence case** |
+| Button | Plus Jakarta Sans | 18 | 700 Bold | 1.7 · capitalize |
 
 Text colors: headings `#111`, body/value `#333`, meta/secondary `#666`.
 
@@ -144,7 +144,7 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 
 ## 6. Components (Nuton specs + Mentor primitives)
 
-**Primary button** (`btn` 2:770): bg `#000`, radius 10, label Nunito Sans Bold 18 `#FFF` capitalize.
+**Primary button** (`btn` 2:770): bg `#000`, radius 10, label Plus Jakarta Sans Bold 18 `#FFF` capitalize.
 
 **Text field** (`field` 2:722): translucent surface + white border + `shadow-card`.
 
@@ -302,7 +302,7 @@ deliberate presence cue, disabled under reduced motion.
 - Global feed referansı kart yoğunluğu, sekmeler ve bağlamsal rail için kullanılır; oda içi CHAT
   mevcut düz kanal ritmini korur. Slack/Discord referansından yalnız grup başlıkları, breadcrumb ve
   katkı verenler deseni alınır; presence/typing/realtime kanal davranışı alınmaz.
-- Kartlar açık yüzey, `main/body-text/secondary-text`, `chip`, `btn`, 10px radius ve Nunito Sans
+- Kartlar açık yüzey, `main/body-text/secondary-text`, `chip`, `btn`, 10px radius ve Plus Jakarta Sans
   tokenlarını kullanır. Referans görsellerin font/renk sistemi kopyalanmaz; negatif oy yoktur.
 - Mobilde sol oda drawer'ı ve native modal focus trap; desktopta global feed/oda/detay için
   bağlamsal rail. Etkileşim hedefleri en az 44px, focus ring görünür, motion yalnız ölçülü
@@ -312,7 +312,7 @@ deliberate presence cue, disabled under reduced motion.
 
 ## 13. Open Items / asset backlog
 
-- [x] Turkish glyph coverage — Nunito Sans `latin-ext`.
+- [x] Turkish glyph coverage — Plus Jakarta Sans `latin-ext`.
 - [x] Desktop breakpoints — `lg` sidebar switch.
 - [x] Surface hierarchy + hover shadow + visual/motion language (2026-07-12 evolve).
 - [x] Motion personality — celebration vs measured surfaces (§9.1, 2026-07-26).

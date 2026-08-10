@@ -13,12 +13,14 @@ import type {
   ForumTrendsView,
   ForumTrendScope,
   ForumZoneFeedView,
+  ForumReactionEmoji,
   MentionSuggestion,
   ModerationTargetType,
   Paginated,
   QuestionDetail,
   ReportReason,
   ReportView,
+  ReactionUsersPage,
   SavedFeed,
   ThreadDetail,
   ThreadFeed,
@@ -236,6 +238,22 @@ export async function unreactPost(postId: string, emoji: string): Promise<void> 
     method: "DELETE",
     body: JSON.stringify({ emoji }),
   });
+}
+
+export async function listReactionUsers(
+  targetType: "THREAD" | "POST",
+  targetId: string,
+  input: { page?: number; pageSize?: number; emoji?: ForumReactionEmoji } = {},
+): Promise<ReactionUsersPage> {
+  const segment = targetType === "THREAD" ? "threads" : "posts";
+  const query = new URLSearchParams({
+    page: String(input.page ?? 1),
+    pageSize: String(input.pageSize ?? 20),
+  });
+  if (input.emoji) query.set("emoji", input.emoji);
+  return (await http<ReactionUsersPage>(
+    `/v1/forum/${segment}/${targetId}/reactions?${query.toString()}`,
+  )) as ReactionUsersPage;
 }
 
 export async function postAnswer(

@@ -6,10 +6,12 @@ import {
   type CommentDetail,
   type CommentView,
   type FollowUserRef,
+  type ForumReactionEmoji,
   type ForumAttachmentUploadUrl,
   type ForumActivityFeed,
   type ForumActivityItem,
   ModerationTargetType,
+  type ReactionUsersPage,
   type SavedFeed,
   type SavedFeedItem,
   type ThreadDetail,
@@ -18,7 +20,7 @@ import {
   ZoneRole,
   ZoneType,
 } from "@mentor/types";
-import type { CreateAnswer, CreateThread, FeedQuery } from "@mentor/validation";
+import type { CreateAnswer, CreateThread, FeedQuery, ReactionListQuery } from "@mentor/validation";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -492,6 +494,58 @@ export class ForumThreadService {
     await this.posts.setPostReaction(postId, userId, emoji);
   }
 
+  async listThreadReactionUsers(
+    viewerId: string,
+    threadId: string,
+    query: ReactionListQuery,
+  ): Promise<ReactionUsersPage> {
+    await this.assertEnabled();
+    await this.requireThread(threadId, viewerId);
+    const [rows, total] = await Promise.all([
+      this.threads.listReactionUsers(threadId, query),
+      this.threads.countReactionUsers(threadId, query.emoji),
+    ]);
+    return {
+      items: rows.map((row) => ({
+        userId: row.userId,
+        displayName: row.displayName,
+        username: row.username,
+        avatarUrl: row.avatarStorageKey ? this.storage.getPublicUrl(row.avatarStorageKey) : null,
+        emoji: row.emoji as ForumReactionEmoji,
+        reactedAt: row.reactedAt.toISOString(),
+      })),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
+  }
+
+  async listPostReactionUsers(
+    viewerId: string,
+    postId: string,
+    query: ReactionListQuery,
+  ): Promise<ReactionUsersPage> {
+    await this.assertEnabled();
+    await this.requirePost(postId, viewerId);
+    const [rows, total] = await Promise.all([
+      this.posts.listReactionUsers(postId, query),
+      this.posts.countReactionUsers(postId, query.emoji),
+    ]);
+    return {
+      items: rows.map((row) => ({
+        userId: row.userId,
+        displayName: row.displayName,
+        username: row.username,
+        avatarUrl: row.avatarStorageKey ? this.storage.getPublicUrl(row.avatarStorageKey) : null,
+        emoji: row.emoji as ForumReactionEmoji,
+        reactedAt: row.reactedAt.toISOString(),
+      })),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
+  }
+
   async unreactPost(userId: string, postId: string, emoji: string): Promise<void> {
     await this.assertEnabled();
     await this.requirePost(postId, userId);
@@ -593,6 +647,8 @@ export class ForumThreadService {
     if (!post) throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     const thread = await this.threads.findById(post.threadId, viewerId);
     if (!thread) throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
+    const zone = await this.zones.findById(thread.zoneId, viewerId);
+    if (!zone) throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
     return { post, zoneId: thread.zoneId };
   }
 

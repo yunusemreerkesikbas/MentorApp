@@ -58,6 +58,7 @@ import { useMentorToast } from "@/lib/mentor-toast";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { useDailyGreeting } from "@/lib/use-daily-greeting";
 import { useStreakCelebration } from "@/components/streak-celebration";
+import { StreakRescueSuccess } from "@/components/streak-rescue-success";
 import {
   getWeeklyRecapTeaserState,
   type WeeklyRecapTeaserState,
@@ -97,6 +98,10 @@ export function PanelShell({ initialData }: PanelShellProps) {
     useStreakCelebration();
   const searchParams = useSearchParams();
   const mockCelebrationPreviewed = useRef(false);
+  const mockRescueSuccessPreviewed = useRef(false);
+  const [rescueSuccessDays, setRescueSuccessDays] = useState<number | null>(
+    null,
+  );
   const shouldReduceMotion = useReducedMotion();
   const [data, setData] = useState<TodayPanelResponse | null>(
     initialData ?? null,
@@ -246,13 +251,11 @@ export function PanelShell({ initialData }: PanelShellProps) {
     try {
       await purchaseStreakRescue();
       setStreakRescue(null);
-      toast.success({
-        title: t("streak_rescue_success_title"),
-        message: t("streak_rescue_success_message"),
-        duration: 4000,
-      });
-      await refreshToday({ silent: true });
+      const next = await refreshToday({ silent: true });
       notifyEconomyChanged();
+      setRescueSuccessDays(
+        Math.max(next?.streak.currentStreak ?? data?.streak.currentStreak ?? 1, 1),
+      );
     } catch (err) {
       toast.error({
         title: t("streak_rescue_error_title"),
@@ -263,7 +266,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
       });
       await refreshStreakRescue();
     }
-  }, [refreshStreakRescue, refreshToday, t, toast]);
+  }, [data?.streak.currentStreak, refreshStreakRescue, refreshToday, t, toast]);
 
   const moodCheckin = useMoodCheckin({
     initial: data?.mood ?? null,
@@ -285,6 +288,20 @@ export function PanelShell({ initialData }: PanelShellProps) {
         : Math.max(data?.streak.currentStreak ?? 0, 1);
     previewCelebrate(days);
   }, [data?.streak.currentStreak, previewCelebrate, searchParams]);
+
+  // Dev/QA: `?mockStreakRescueSuccess=1` (or days) opens the rescue success sheet.
+  useEffect(() => {
+    if (mockRescueSuccessPreviewed.current) return;
+    const raw = searchParams.get("mockStreakRescueSuccess");
+    if (raw == null || raw === "" || raw === "0" || raw === "false") return;
+    mockRescueSuccessPreviewed.current = true;
+    const parsed = Number.parseInt(raw, 10);
+    const days =
+      Number.isFinite(parsed) && parsed > 0
+        ? parsed
+        : Math.max(data?.streak.currentStreak ?? 0, 1);
+    setRescueSuccessDays(days);
+  }, [data?.streak.currentStreak, searchParams]);
 
   useEffect(() => {
     let active = true;
@@ -550,6 +567,12 @@ export function PanelShell({ initialData }: PanelShellProps) {
       {loading ? <p className="sr-only">{t("loading")}</p> : null}
       {error ? <FormError message={error} /> : null}
       {celebration}
+      {rescueSuccessDays != null ? (
+        <StreakRescueSuccess
+          days={rescueSuccessDays}
+          onClose={() => setRescueSuccessDays(null)}
+        />
+      ) : null}
     </main>
   );
 }

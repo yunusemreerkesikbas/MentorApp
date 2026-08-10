@@ -11,6 +11,7 @@ export type PuhuVariant =
   | "host"
   | "premium"
   | "proud"
+  | "sleepy"
   | "surprised"
   | "winking";
 
@@ -30,6 +31,7 @@ const FILE_BY_VARIANT: Record<PuhuVariant, string> = {
   host: "puhu-host.png",
   premium: "puhu-premium.png",
   proud: "puhu-proud.png",
+  sleepy: "puhu-sleepy.png",
   surprised: "puhu-surprised.png",
   winking: "puhu-happy.png",
 };

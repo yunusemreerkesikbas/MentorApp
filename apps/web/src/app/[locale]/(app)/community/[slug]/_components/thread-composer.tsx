@@ -15,6 +15,7 @@ import {
 } from "../../_components/use-forum-image-picker";
 import { useMentionAutocomplete } from "../../_components/use-mention-autocomplete";
 import { MentionSuggestions } from "../../_components/mention-suggestions";
+import { EmojiPickerButton } from "../../_components/EmojiPickerButton";
 
 const COMPOSER_TEXTAREA_MAX_HEIGHT = 192;
 const SUBMIT_PROGRESS_CEILING = 92;
@@ -190,6 +191,13 @@ export function ThreadComposer({
 
           <div className="mt-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
+              <EmojiPickerButton
+                textareaRef={textareaRef}
+                value={value}
+                onValueChange={setValue}
+                onInserted={resizeTextarea}
+                disabled={busy}
+              />
               <button
                 type="button"
                 aria-label={t("attach")}

@@ -139,8 +139,6 @@ export function DiscoveryFeedCard({
             <div className="flex min-w-0 items-center gap-1.5 text-sm">
               <span className="truncate font-bold text-[var(--color-main)]">{item.author.displayName}</span>
               <span className="truncate text-[var(--color-secondary)]">@{item.author.username}</span>
-              <span className="text-[var(--color-secondary)]">·</span>
-              <span className="shrink-0 text-[var(--color-secondary)]">{date}</span>
             </div>
             <div className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-[var(--color-secondary)]">
               <Link
@@ -159,7 +157,8 @@ export function DiscoveryFeedCard({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
+          <span className="whitespace-nowrap px-1 text-xs text-[var(--color-secondary)]">{date}</span>
           {(item.capabilities.canEdit || item.capabilities.canDelete || item.capabilities.canModerate) && (
             <PopoverMenu
               align="right"
@@ -287,9 +286,9 @@ export function DiscoveryFeedCard({
         </div>
       )}
 
-      <div className="mt-3 flex w-full items-center justify-between gap-1">
-        <div className="flex min-w-11 items-center justify-start">
-          {isQa ? (
+      <div className="mt-3 flex w-full items-center gap-1">
+        {isQa ? (
+          <div className="flex min-w-11 items-center justify-start">
             <button
               type="button"
               aria-pressed={item.myHelpfulVote}
@@ -302,14 +301,16 @@ export function DiscoveryFeedCard({
             >
               +1 {t("helpful")} · {item.helpfulVoteCount}
             </button>
-          ) : (
-            <ReactionBar
-              reactionCounts={item.reactionCounts}
-              myReactions={item.myReactions}
-              onChange={(nextEmoji, previousEmoji) => void changeReaction(nextEmoji, previousEmoji)}
-            />
-          )}
-        </div>
+          </div>
+        ) : (
+          <ReactionBar
+            targetType="THREAD"
+            targetId={item.id}
+            reactionCounts={item.reactionCounts}
+            myReactions={item.myReactions}
+            onChange={(nextEmoji, previousEmoji) => void changeReaction(nextEmoji, previousEmoji)}
+          />
+        )}
         {isQa ? (
           <Link
             href={detailHref}
