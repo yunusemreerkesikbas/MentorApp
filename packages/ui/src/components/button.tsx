@@ -48,12 +48,12 @@ function variantStyles(variant: NonNullable<ButtonProps["variant"]>): {
       };
     case "accent":
       return {
-        className: "text-white hover:opacity-90",
+        className:
+          "text-white shadow-[var(--shadow-card)] hover:opacity-90 hover:shadow-[var(--shadow-card-hover)]",
         style: {
           backgroundColor: "var(--color-accent)",
           color: "#fff",
           borderColor: "var(--color-accent)",
-          boxShadow: "var(--shadow-card)",
         },
       };
     case "soft":
@@ -80,12 +80,12 @@ function variantStyles(variant: NonNullable<ButtonProps["variant"]>): {
       };
     default:
       return {
-        className: "text-white hover:opacity-90",
+        className:
+          "text-white shadow-[var(--shadow-card)] hover:opacity-90 hover:shadow-[var(--shadow-card-hover)]",
         style: {
           backgroundColor: "var(--color-btn)",
           color: "#fff",
           borderColor: "var(--color-btn)",
-          boxShadow: "var(--shadow-card)",
         },
       };
   }
@@ -93,8 +93,10 @@ function variantStyles(variant: NonNullable<ButtonProps["variant"]>): {
 
 /**
  * Primary button (DESIGN.md §6, node 2:770): black fill, radius 10,
- * Plus Jakarta Sans Bold, white label, single shadow token. Loading = spinner + same (localized) label,
- * disabled, `aria-busy`. Tokenized keyboard focus ring (DESIGN.md §2.4).
+ * Plus Jakarta Sans Bold, white label. Filled variants (`primary`/`accent`) rest at `shadow-card`
+ * and lift to `shadow-card-hover` on hover; all variants press to 98% scale on `:active` (DESIGN.md
+ * §9 Micro layer). Loading = spinner + same (localized) label, disabled, `aria-busy`. Tokenized
+ * keyboard focus ring (DESIGN.md §2.4).
  */
 export function Button({
   children,
@@ -111,7 +113,7 @@ export function Button({
       {...rest}
       disabled={disabled || busy}
       aria-busy={busy || undefined}
-      className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-card)] border px-6 py-3 text-base font-bold outline-none transition-[opacity,background-color] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none ${look.className} ${fullWidth ? "w-full" : "w-fit"} ${className ?? ""}`}
+      className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-card)] border px-6 py-3 text-base font-bold outline-none transition-[opacity,background-color,box-shadow,transform] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 motion-reduce:transition-none motion-reduce:active:scale-100 ${look.className} ${fullWidth ? "w-full" : "w-fit"} ${className ?? ""}`}
       style={{
         ...look.style,
         fontFamily: "var(--font-body)",

@@ -265,10 +265,30 @@ export class MockExamService {
         examName: examNameById.get(row.examId) ?? "Deneme",
       }));
 
+      const recentTotals = new Map<string, { sum: number; count: number }>();
+      for (const rows of recentSubjectsByMockExamId.values()) {
+        for (const row of rows) {
+          const current = recentTotals.get(row.subjectRef) ?? {
+            sum: 0,
+            count: 0,
+          };
+          current.sum += Number(row.net);
+          current.count += 1;
+          recentTotals.set(row.subjectRef, current);
+        }
+      }
+      const recentAverageBySubject = new Map(
+        [...recentTotals].map(([subjectRef, total]) => [
+          subjectRef,
+          (total.sum / total.count).toFixed(2),
+        ]),
+      );
+
       const toStrength = (
         subjectRef: string,
         averageNet: string,
         attemptCount: number,
+        recentAverageNet: string | null = null,
       ) => {
         const counts = questionCountsBySlug.get(subjectRef);
         const questionCount =
@@ -283,24 +303,22 @@ export class MockExamService {
             questionCount != null && questionCount > 0
               ? ((Number(averageNet) / questionCount) * 100).toFixed(2)
               : null,
+          recentAverageNet,
+          /** Last-4-attempts average vs lifetime average — direction the subject is trending. */
+          netDelta:
+            recentAverageNet != null
+              ? (Number(recentAverageNet) - Number(averageNet)).toFixed(2)
+              : null,
         };
       };
       const subjects = breakdown.map((row) =>
-        toStrength(row.subjectRef, row.avgNet, row.attemptCount),
+        toStrength(
+          row.subjectRef,
+          row.avgNet,
+          row.attemptCount,
+          recentAverageBySubject.get(row.subjectRef) ?? null,
+        ),
       );
-
-      const recentTotals = new Map<string, { sum: number; count: number }>();
-      for (const rows of recentSubjectsByMockExamId.values()) {
-        for (const row of rows) {
-          const current = recentTotals.get(row.subjectRef) ?? {
-            sum: 0,
-            count: 0,
-          };
-          current.sum += Number(row.net);
-          current.count += 1;
-          recentTotals.set(row.subjectRef, current);
-        }
-      }
       const recentSubjects = [...recentTotals].map(([subjectRef, total]) =>
         toStrength(
           subjectRef,

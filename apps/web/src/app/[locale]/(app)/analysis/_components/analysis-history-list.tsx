@@ -1,7 +1,7 @@
 "use client";
 import { ChevronDown } from "lucide-react";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import type { ExamSubjectDto } from "@mentor/types";
@@ -12,7 +12,6 @@ import {
   SkeletonGroup,
   skeletonStaggerStyle,
 } from "@mentor/ui";
-import { StatLineChart } from "@/components/stat-line-chart";
 import { fetchMockExamsList } from "@/lib/mock-exams";
 import { formatTrendDate } from "./analysis-types";
 import { AnalysisHistoryDetail } from "./analysis-history-detail";
@@ -103,17 +102,6 @@ export function AnalysisHistoryList({
     setExpandedId((current) => (current === id ? null : id));
   }
 
-  const netChartData = useMemo(() => {
-    if (items.length < 2) return null;
-    const points = [...items]
-      .reverse()
-      .map((item) => ({
-        x: formatTrendDate(item.takenAt, locale),
-        y: Number(item.totalNet),
-      }));
-    return [{ id: t("net_chart_label"), data: points }];
-  }, [items, locale, t]);
-
   if (loading) {
     return <HistoryListSkeleton />;
   }
@@ -141,15 +129,6 @@ export function AnalysisHistoryList({
 
   return (
     <>
-      {netChartData ? (
-        <StatLineChart
-          data={netChartData}
-          ariaLabel={t("net_chart_label")}
-          height={140}
-          valueSuffix=" net"
-        />
-      ) : null}
-
       <ul className="flex flex-col gap-0.5" data-testid="analysis-history-list">
         {items.map((item) => {
           const expanded = expandedId === item.id;

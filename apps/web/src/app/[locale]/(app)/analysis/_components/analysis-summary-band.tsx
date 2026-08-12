@@ -37,12 +37,9 @@ export function AnalysisSummaryBand({ analysis }: AnalysisSummaryBandProps) {
     ? trendForSparkline(analysis.trend.slice(0, SPARKLINE_WINDOW))
     : [];
   const tone = toneFromDelta(ghost?.previousDelta);
+  // Downward analytics use `secondary`, never `danger` (DESIGN.md §2.4) — anti-shame guardrail.
   const toneColor =
-    tone === "up"
-      ? "var(--color-success)"
-      : tone === "down"
-        ? "var(--color-danger)"
-        : "var(--color-secondary)";
+    tone === "up" ? "var(--color-success)" : "var(--color-secondary)";
   const chartData =
     sparkPoints.length > 0
       ? [
@@ -130,7 +127,7 @@ export function AnalysisSummaryBand({ analysis }: AnalysisSummaryBandProps) {
             <StatLineChart
               data={chartData}
               ariaLabel={tTrend("trend_title")}
-              height={64}
+              height={76}
               color={toneColor}
               valueSuffix=" net"
               compact

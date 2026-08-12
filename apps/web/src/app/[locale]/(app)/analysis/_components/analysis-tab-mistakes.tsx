@@ -84,6 +84,7 @@ export function AnalysisTabMistakes({
           <EmptyState
             title={t("photo_section_title")}
             description={t("photo_no_exam_desc")}
+            puhuVariant="default"
             action={
               <Link
                 href={{ pathname: "/analysis", query: { tab: "entry" } }}
@@ -218,6 +219,7 @@ export function AnalysisTabMistakes({
                 ? t("photo_signals_empty_action")
                 : t("photo_signals_empty_desc")
             }
+            puhuVariant="default"
           />
         </Card>
       )}

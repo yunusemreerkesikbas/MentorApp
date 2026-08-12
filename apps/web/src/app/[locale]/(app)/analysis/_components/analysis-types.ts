@@ -30,10 +30,6 @@ export function shouldRevealFirstInsight(attemptCount: number): boolean {
   return attemptCount === 0;
 }
 
-export function shouldOpenAnalysisEvidence(hasNextFocus: boolean): boolean {
-  return !hasNextFocus;
-}
-
 export function buildAnalysisCoachHref(seed: string) {
   return {
     pathname: "/coach/chat" as const,

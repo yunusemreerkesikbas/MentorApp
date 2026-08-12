@@ -507,3 +507,44 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   metni güvenle kısaltan tek satırlı bilgi + aksiyon düzeni kullanır. Detay başlığındaki sol-chevron
   geri kontrolü korunur. İlgili: `circular-back-link.tsx`, `community-header.tsx`,
   `community-coach-bridge.tsx`.
+
+- **Topluluk üye profili redesign (2026-08-11)** — `/topluluk/uye/[username]` mobilde mevcut
+  avatarı portre hero olarak kullanan, görüntü hatasında kullanıcıya özel pastel fallback'e düşen
+  kimlik yüzeyine geçirildi. Premium üyelik yalnız `EntitlementService` üzerinden alınan public-safe
+  boolean ile ışıltı rozeti olarak gösterilir; takipçi, takip edilen ve silinmemiş thread +
+  yorum/yanıtların toplamından oluşan aktivite sayacı hero içinde yer alır. Paylaş aksiyonu Web Share
+  API'yi, desteklenmeyen cihazlarda pano kopyalamayı kullanır; takip ve yol arkadaşı davranışları
+  korunur. Desktopta 600 px profil/akış ile 300 px sticky ilerleme paneli; mobilde sekmelerden önce
+  aynı panel kullanılır. Panel önceki–mevcut–sonraki seviyeyi keskin inline SVG medallionlarla,
+  XP ilerlemesini ve kazanılmış badge açıklamalarını gösterir. Posts/Bookmarks seçimi URL geçmişine
+  yazılır; doğrudan `?tab=bookmarks` ve tarayıcı geri/ileri davranışı korunur. Gotcha: avatar ayrı bir
+  cover değildir; Premium rozeti doğrulanmış hesap işareti değildir ve abonelik nedeni/süresi public
+  sözleşmeye çıkmaz. İlgili: `community.service.ts`, `forum-post.repository.ts`,
+  `@mentor/types/community`, `profile-{header,shell}.tsx`, `profile-level-window.ts`, `badge-strip.tsx`,
+  `messages/{tr,en}.json`.
+  **Polish (2026-08-12):** Mobilde ayrı 52 px “Kanallar” satırı kaldırıldı; erişilebilir 44 px hamburger
+  tetikleyicisi topluluk üst barına taşındı ve drawer kapanışında odak tetikleyiciye döner. Swipe-only
+  gezinme, keşfedilebilirlik ve sistem geri hareketiyle çakışmaması için eklenmedi. Profil avatarı üst
+  medya alanında maskeyle beyaz kimlik yüzeyine erir; isim artık görselin opak bölgesiyle çakışmaz.
+  Premium işareti doğrulama tikinden ayrışan sıcak sparkle seal’e çevrildi. Yolculuk paneli ink zemin +
+  mavi aktif ilerleme hiyerarşisini korurken yumuşak geçiş ışığı, belirgin mevcut medallion ve kart
+  yerine sade badge satırlarıyla hafifletildi. İlgili: `community-header.tsx`, `zone-drawer{-context}.tsx`,
+  `community-parity.css`, `profile-header.tsx`, `profile-shell.tsx`, `badge-strip.tsx`.
+  **İnce ayar:** Hero tabanı beyaza ayrılarak medya zemininden sızan mavi sınır kaldırıldı; yolculuk
+  panelindeki iki yinelenen açıklama ve işlevsiz dekoratif sparkle kaldırılarak seviye, XP ve kazanımlar
+  tek bakışta okunur hale getirildi. Mobil yolculuk panelinin padding, medallion, bölüm aralığı ve
+  açıklamalı rozet yoğunluğu sıkılaştırıldı; desktop ölçüleri korunurken 375 px görünüm için kart
+  yüksekliği regresyon sınırı eklendi. Topluluk başlığı ve ortak uygulama kabuğundaki kullanıcı
+  avatarları artık hesap merkezine değil, oturumdaki kullanıcının public topluluk profiline gider.
+  **Profil/ayarlar ayrımı (2026-08-12):** Public kimlik yüzeyi `/topluluk/uye/[username]` altında
+  kalırken hesap, bildirim ve uygulama tercihleri `/ayarlar` altında toplandı. Sol navigasyondaki
+  “Profil” girişi dişli ikonlu “Ayarlar” olarak yenilendi; public profildeki düzenleme aksiyonları ve
+  ayar gerektiren uygulama bağlantıları yeni adrese taşındı. Eski `/profil` adresi yer imleri ve dış
+  bağlantılar bozulmasın diye `/ayarlar` adresine yönlenir. Kullanıcı adı bulunmayan avatar bağlantısı
+  güvenli fallback olarak Ayarlar'ı açar. İlgili: `i18n/routing.ts`, `app-nav.tsx`,
+  `(app)/{profile,settings}/page.tsx`, `community/member/[username]/_components/profile-header.tsx`.
+  Kendi profilindeki hero kalem ikonu, aynı hedefe giden iki düzenleme aksiyonu oluşturmaması için
+  kaldırıldı; aksiyon satırındaki metinli “Profili düzenle” bağlantısı tek birincil düzenleme girişi
+  olarak bırakıldı. Bu bağlantı `/ayarlar?section=profile` adresini açar ve profil düzenleme panelini
+  doğrudan gösterir; kullanıcı genel Ayarlar sayfasında ilgili alanı aramak zorunda kalmaz. Diğer
+  kullanıcı profillerindeki sağ üst overflow menüsü değişmedi.

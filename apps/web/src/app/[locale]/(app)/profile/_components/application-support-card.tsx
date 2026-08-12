@@ -21,7 +21,7 @@ export function ApplicationSupportCard() {
 
   function switchLocale(next: (typeof LOCALES)[number]) {
     startTransition(() => {
-      router.replace("/profile", { locale: next });
+      router.replace("/settings", { locale: next });
     });
   }
 

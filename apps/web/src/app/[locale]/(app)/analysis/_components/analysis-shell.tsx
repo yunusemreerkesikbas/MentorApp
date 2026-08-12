@@ -2,6 +2,7 @@
 import { ClipboardList, PanelLeft } from "lucide-react";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type {
@@ -12,7 +13,6 @@ import type {
   ExamSummaryDto,
   MockExamDto,
   PhotoAccessDto,
-  WeeklyReviewDto,
 } from "@mentor/types";
 import {
   ApiClientError,
@@ -49,6 +49,12 @@ import {
   type SubjectScores,
 } from "./analysis-types";
 
+const tabTransition = {
+  type: "tween" as const,
+  duration: 0.2,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
+
 const railIconBtn =
   "inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] transition-colors hover:bg-black/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
 
@@ -64,8 +70,6 @@ type ExamAsyncState<T> =
   | { status: "ready"; examId: string; data: T }
   | { status: "error"; examId: string; message: string };
 
-type DevelopmentExtras = WeeklyReviewDto;
-
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
@@ -75,10 +79,6 @@ type LoadState =
 function getAnalysisUrl(examId: string): string {
   const qs = new URLSearchParams({ examId });
   return `/v1/coaching/analysis?${qs.toString()}`;
-}
-
-function getWeeklyReviewUrl(examId: string): string {
-  return `/v1/coaching/weekly-review?examId=${encodeURIComponent(examId)}`;
 }
 
 function getMockExamsUrl(): string {
@@ -95,6 +95,7 @@ export function AnalysisShell() {
   const [tab, setActiveTab] = useState<AnalysisTab>(() =>
     parseAnalysisTab(searchParams.get("tab")),
   );
+  const reduceMotion = useReducedMotion();
 
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [scores, setScores] = useState<Record<string, SubjectScores>>({});
@@ -106,9 +107,6 @@ export function AnalysisShell() {
     new Date().toISOString().slice(0, 10),
   );
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [developmentExtras, setDevelopmentExtras] = useState<
-    ExamAsyncState<DevelopmentExtras>
-  >({ status: "idle", examId: null });
   const [photoAccessState, setPhotoAccessState] = useState<
     ExamAsyncState<PhotoAccessDto>
   >({ status: "idle", examId: null });
@@ -188,7 +186,6 @@ export function AnalysisShell() {
         if (!active) return;
 
         setScores(emptyScores(subjectRows));
-        setDevelopmentExtras({ status: "idle", examId: current?.id ?? null });
         setPhotoAccessState({ status: "idle", examId: current?.id ?? null });
         setLoadState({
           status: "ready",
@@ -227,36 +224,6 @@ export function AnalysisShell() {
   const analysis = readyData?.analysis ?? null;
   const activeMockExamId = analysis?.trend[0]?.id ?? null;
 
-  const loadDevelopmentExtras = useCallback(
-    async (examId: string) => {
-      setDevelopmentExtras({ status: "loading", examId });
-      try {
-        const weeklyReview = await http<WeeklyReviewDto>(
-          getWeeklyReviewUrl(examId),
-        );
-        setDevelopmentExtras((current) =>
-          current.status === "loading" && current.examId === examId
-            ? { status: "ready", examId, data: weeklyReview }
-            : current,
-        );
-      } catch (loadError) {
-        setDevelopmentExtras((current) =>
-          current.status === "loading" && current.examId === examId
-            ? {
-                status: "error",
-                examId,
-                message:
-                  loadError instanceof Error
-                    ? loadError.message
-                    : t("weekly.load_error"),
-              }
-            : current,
-        );
-      }
-    },
-    [t],
-  );
-
   const loadPhotoAccess = useCallback(
     async (examId: string) => {
       setPhotoAccessState({ status: "loading", examId });
@@ -286,17 +253,6 @@ export function AnalysisShell() {
   );
 
   useEffect(() => {
-    if (!exam || tab !== "progress") return;
-    if (
-      developmentExtras.examId === exam.id &&
-      developmentExtras.status !== "idle"
-    ) {
-      return;
-    }
-    void loadDevelopmentExtras(exam.id);
-  }, [developmentExtras, exam, loadDevelopmentExtras, tab]);
-
-  useEffect(() => {
     if (!exam || tab !== "mistakes") return;
     if (
       photoAccessState.examId === exam.id &&
@@ -322,21 +278,20 @@ export function AnalysisShell() {
     );
   }, [exam, loadState.status]);
 
-  const invalidateExtraData = useCallback(() => {
-    setDevelopmentExtras({ status: "idle", examId: exam?.id ?? null });
+  const invalidatePhotoAccess = useCallback(() => {
     setPhotoAccessState({ status: "idle", examId: exam?.id ?? null });
   }, [exam?.id]);
 
   const handleHistoryChanged = useCallback(() => {
     setHistoryRefreshKey((key) => key + 1);
-    invalidateExtraData();
+    invalidatePhotoAccess();
     void refreshAnalysis();
-  }, [invalidateExtraData, refreshAnalysis]);
+  }, [invalidatePhotoAccess, refreshAnalysis]);
 
   const handlePhotoCategorized = useCallback(() => {
-    invalidateExtraData();
+    invalidatePhotoAccess();
     void refreshAnalysis();
-  }, [invalidateExtraData, refreshAnalysis]);
+  }, [invalidatePhotoAccess, refreshAnalysis]);
 
   function updateScore(
     slug: string,
@@ -391,7 +346,7 @@ export function AnalysisShell() {
         title: t("saved_toast_title"),
         message: t("saved_toast_message", { net: result.totalNet }),
       });
-      invalidateExtraData();
+      invalidatePhotoAccess();
       await refreshAnalysis();
       setHistoryRefreshKey((key) => key + 1);
       setScores(emptyScores(subjects));
@@ -522,64 +477,50 @@ export function AnalysisShell() {
 
             <AnalysisSegmentControl value={tab} onChange={setTab} />
 
-            <div
-              role="tabpanel"
-              id="analysis-panel-entry"
-              aria-labelledby="analysis-tab-entry"
-              hidden={tab !== "entry"}
-            >
-              {tab === "entry" ? (
-                <AnalysisTabEntry
-                  exam={exam}
-                  subjects={subjects}
-                  scores={scores}
-                  submitting={submitting}
-                  publisherName={publisherName}
-                  takenAtDate={takenAtDate}
-                  onPublisherChange={setPublisherName}
-                  onTakenAtChange={setTakenAtDate}
-                  onScoreChange={updateScore}
-                  onSubmit={(event) => void submit(event)}
-                  onCopyLast={handleCopyLast}
-                />
-              ) : null}
-            </div>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={tab}
+                role="tabpanel"
+                id={`analysis-panel-${tab}`}
+                aria-labelledby={`analysis-tab-${tab}`}
+                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
+                transition={reduceMotion ? { duration: 0 } : tabTransition}
+              >
+                {tab === "entry" ? (
+                  <AnalysisTabEntry
+                    exam={exam}
+                    subjects={subjects}
+                    scores={scores}
+                    submitting={submitting}
+                    publisherName={publisherName}
+                    takenAtDate={takenAtDate}
+                    onPublisherChange={setPublisherName}
+                    onTakenAtChange={setTakenAtDate}
+                    onScoreChange={updateScore}
+                    onSubmit={(event) => void submit(event)}
+                    onCopyLast={handleCopyLast}
+                  />
+                ) : null}
 
-            <div
-              role="tabpanel"
-              id="analysis-panel-progress"
-              aria-labelledby="analysis-tab-progress"
-              hidden={tab !== "progress"}
-            >
-              {tab === "progress" ? (
-                <AnalysisTabProgress
-                  analysis={analysis}
-                  extras={developmentExtras}
-                  onRetryExtras={() => {
-                    if (exam) void loadDevelopmentExtras(exam.id);
-                  }}
-                />
-              ) : null}
-            </div>
+                {tab === "progress" ? (
+                  <AnalysisTabProgress analysis={analysis} />
+                ) : null}
 
-            <div
-              role="tabpanel"
-              id="analysis-panel-mistakes"
-              aria-labelledby="analysis-tab-mistakes"
-              hidden={tab !== "mistakes"}
-            >
-              {tab === "mistakes" ? (
-                <AnalysisTabMistakes
-                  activeMockExamId={activeMockExamId}
-                  photoAccessState={photoAccessState}
-                  analysis={analysis}
-                  onCategorized={handlePhotoCategorized}
-                  onRetryAccess={() => {
-                    if (exam) void loadPhotoAccess(exam.id);
-                  }}
-                />
-              ) : null}
-            </div>
+                {tab === "mistakes" ? (
+                  <AnalysisTabMistakes
+                    activeMockExamId={activeMockExamId}
+                    photoAccessState={photoAccessState}
+                    analysis={analysis}
+                    onCategorized={handlePhotoCategorized}
+                    onRetryAccess={() => {
+                      if (exam) void loadPhotoAccess(exam.id);
+                    }}
+                  />
+                ) : null}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -606,9 +547,10 @@ function ExamTypeGate() {
       <EmptyState
         title={t("needs_exam_chip")}
         description={t("needs_exam_desc")}
+        puhuVariant="host"
         action={
           <Link
-            href="/profile"
+            href="/settings"
             className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
             style={{
               backgroundColor: "var(--color-btn)",

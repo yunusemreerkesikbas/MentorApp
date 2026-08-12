@@ -786,17 +786,76 @@ pnpm --filter @mentor/api test
   hover tooltip özel render (`x:`/`y:` etiketleri yerine nokta rengi + tarih + kalın değer,
   `shadow-card` kart), point'ler dolgu rengiyle + beyaz kenarlık (uçtaki nokta dahil hepsi net
   görünür), `compact` prop'u eksen/grid'siz salt sparkline modu açıyor. Önce yalnız geçmiş listesinde
-  (`AnalysisHistoryList`, ≥2 kayıt) kanıt amaçlı denendi; onay sonrası üst KPI bandındaki
-  (`AnalysisSummaryBand`) custom SVG sparkline da (tone rengiyle, `compact`) buna geçirildi — diğer
-  istatistik kartları (odak kartı, gelişim sekmesi trend grafiği) bilinçli olarak dokunulmadı.
+  (`AnalysisHistoryList`, ≥2 kayıt) kanıt amaçlı denendi — sidebar rail `overflow-y-auto` olduğu için
+  Nivo'nun chart'a göre `position:absolute` konumlanan tooltip'i üstteki noktada kesiliyordu (`pt-6`
+  ile geçici düzeltildi). Kullanıcıyla birlikte gözden geçirince üst KPI bandı (`AnalysisSummaryBand`)
+  ile aynı trendi iki kez, farklı görünümlerde göstermenin gereksiz olduğuna karar verildi — geçmiş
+  listesi sade bir liste olarak kalsın, chart yalnız KPI bandında (tone rengiyle, `compact`) dursun
+  diye **`AnalysisHistoryList`'ten `StatLineChart` tamamen kaldırıldı** (`pt-6` workaround'u ve
+  `net_chart_label` çevirisiyle birlikte). Diğer istatistik kartları (odak kartı, gelişim sekmesi
+  trend grafiği) bilinçli olarak dokunulmadı — infra tek bir yerde (KPI bandı) kanıtlanmış oldu.
   Metin: `trend_subtitle`'daki tekrar eden "— sıralama yok" ibaresi (aynı uyarı zaten üst KPI
-  bandında ve ders ortalamaları alt başlığında var) sadeleştirildi. `tsc --noEmit` ve `eslint`
-  temiz; canlı tarayıcı doğrulaması kullanıcı tarafından yapıldı.
+  bandında ve ders ortalamaları alt başlığında var) sadeleştirildi; üst KPI bandının `!latest` boş
+  metni de kaldırıldı (Gir sekmesindeki Puhu'lu boş durum zaten aynı şeyi anlatıyor, iki boş-durum
+  mesajı üst üste yığılmasın diye `AnalysisSummaryBand` veri yokken artık `null` render ediyor).
+  `tsc --noEmit` ve `eslint` temiz; canlı tarayıcı doğrulaması kullanıcı tarafından yapıldı.
   Dosyalar: `analysis-mock-exam-form.tsx`, `analysis-date-picker-sheet.tsx` (yeni),
   `analysis-tab-entry.tsx`, `analysis-shell.tsx`, `analysis-ghost-teaser.tsx`,
   `analysis-tab-progress.tsx`, `analysis-tab-mistakes.tsx`, `analysis-history-list.tsx`,
-  `analysis-summary-band.tsx`, `stat-line-chart.tsx` (yeni), `messages/{tr,en}.json`,
-  `apps/web/package.json`.
+  `analysis-summary-band.tsx`, `stat-line-chart.tsx` (yeni), `puhu-image.tsx` (+`sleepy` varyantı),
+  `messages/{tr,en}.json`, `apps/web/package.json`.
+
+- **Gelişim (progress) sekmesi cilası + Button/Chip primitive polish (2026-08-11)** — dört parçalı
+  devam. **Haftalık özet:** `WeeklyRecapTeaser` artık Analiz > Gelişim'de gösterilmiyor — Panel'deki
+  versiyonu (`source="dashboard"`) zaten localStorage ile "new/replay/hidden" durumunu yönetip
+  açılınca kendini gizliyor; buradaki versiyonun öyle bir mantığı yoktu (her ziyarette kalıcı
+  gösteriyordu), aynı kartı iki yerde göstermek gereksizdi. Kaldırma, `analysis-shell.tsx`'teki
+  `developmentExtras` state + `loadDevelopmentExtras` fetch + tetikleyici `useEffect`'i, ve
+  `analysis-tab-progress.tsx`'teki `WeeklyReviewSlot`'u tamamen söktü (`invalidateExtraData` →
+  `invalidatePhotoAccess` olarak sadeleşti, artık sadece foto-erişim state'ini geçersiz kılıyor).
+  `/analysis/recap` sayfası ve Panel'deki teaser dokunulmadı. **Chip/Button:** kullanıcı iki bileşenin
+  de `@mentor/ui`'da tek merkezden yönetildiğini onayladı, o yüzden per-component override yerine
+  kaynağı düzenledik (uygulama genelinde ~105 dosyayı etkiler, katmanı kasıtlı olarak ekledik):
+  `Button` artık dolgu varyantlarında (`primary`/`accent`) hover'da `shadow-card` → `shadow-card-hover`
+  yükseliyor (önceden statik inline `boxShadow` hover'ı engelliyordu, className tabanlı `shadow-[...]`
+  kullanıma geçirdik) ve tüm varyantlar `active:scale-[0.98]` basma geri bildirimi kazandı — DESIGN.md
+  §9 Micro katmanında tanımlı ama Button'da eksik olan `active` durumuydu. `Chip`'e `chip-text` @18%
+  ince kenarlık eklendi (düz dolgu yerine biraz daha tanımlı/premium). **Tab geçişi:** üç panel artık
+  `hidden` attribute yerine `AnimatePresence mode="wait"` ile crossfade+8px kayma (`tabTransition`,
+  200ms, reduced-motion'da instant) — sadece aktif tab mount ediliyor; Gelişim'in kendi `window` state'i
+  (4/8/12 filtre) tab değişince sıfırlanıyor, kabul edilebilir bir ödün (veri kaybı yok, hepsi parent'ta
+  controlled). Foto sekmesinin mevcut `SkeletonGroup` fallback'i zaten kapsıyordu, yeni skeleton
+  gerekmedi. **Metin:** `focus.subtitle` ("Bir sonraki küçük adım") kaldırıldı — başlığın hemen altında
+  zaten spesifik içerik (ders adı + mesaj) var, jenerik ara satır gereksizdi; `focus.recent_subtitle`
+  ve `evidence_subtitle` daha kişisel/akıcı ifadelere çevrildi (`sen` odaklı, "odak dersi" gibi
+  dolaylı kalıplar yerine doğrudan "bu dersteki net seyrin").
+  `tsc --noEmit` ve `eslint` (`@mentor/web` + `@mentor/ui`) temiz.
+  Dosyalar: `analysis-shell.tsx`, `analysis-tab-progress.tsx`, `analysis-next-focus-card.tsx`,
+  `packages/ui/src/components/{button,chip}.tsx`, `messages/{tr,en}.json`.
+
+- **"Ders bazlı ortalamalar" kartları: yoğunluk, odak rozeti, trend göstergesi (2026-08-12)** —
+  referans bir finans-app stat-tile görseli (icon + büyük değer + "This Month" + yeşil/kırmızı
+  %değişim + mini grafik) baz alınarak. **İkon yok** — referansta ikon gelir/gider gibi anlamlı bir
+  ayrım taşıyordu, bizde her kart aynı "ders" kavramı olduğu için jenerik bir ikon salt dekorasyon
+  olurdu (DESIGN.md "her kartta illüstrasyon" yasağı). **Grid:** `grid-cols-2 sm:grid-cols-3` sabit
+  kolonu, `repeat(auto-fit, minmax(9.5rem,1fr))` ile değiştirildi — ders sayısı ne olursa olsun kartlar
+  sıkışık, boş alan bırakmıyor. **Mor kart açıklandı:** `analysis.nextFocus.subjectRef`
+  eşleşen kart zaten `--color-chip` tint'iyle vurgulanıyordu ama sebep hiçbir yerde yazılı değildi —
+  artık küçük bir "Odak" `Chip`'i var. **Backend'e yeni alan:** `SubjectStrengthDto`'ya
+  `recentAverageNet` (son ≤4 denemenin ortalaması) ve `netDelta` (`recentAverageNet − averageNet`,
+  yani "son performansın tüm-zamanlar ortalamana göre nerede") eklendi — `mock-exam.service.ts`
+  zaten `recentSubjects`'i focus seçimi için hesaplıyordu, yeni sorgu gerekmedi, sadece hesaplama
+  sırası `subjects` inşasından önceye alındı. FE, `netDelta`'nın işaretine göre `TrendingUp`/
+  `TrendingDown` (lucide, "stonk" ikonları) gösteriyor — **düşüş yeşil/kırmızı değil, success/secondary**
+  (DESIGN.md §2.4: "downward analytics use secondary, never red" — aynı turdaki taramada
+  `AnalysisSummaryBand`'in bu kuralı ihlal eden eski `danger` kullanımı da düzeltildi). Sahte veri
+  üretilmedi — |delta| < 0.005 iken hiç gösterge gösterilmiyor (yuvarlama gürültüsü "trend" gibi
+  sunulmuyor). "Tüm kayıtlı denemeler" alt başlığı ve tekrar eden `avg_template` ("Ort. X · N
+  deneme" — X zaten yukarıda büyük yazıyordu) kaldırıldı. `tsc --noEmit` (`@mentor/web` +
+  `@mentor/api`) temiz; `mock-exam.service.spec` (13), `analysis-focus.spec` (11) yeşil;
+  `e2e/analysis.fixture.ts` yeni alanlarla güncellendi.
+  Dosyalar: `mock-exam.service.ts`, `packages/types/src/coaching.ts`, `analysis-tab-progress.tsx`,
+  `analysis-summary-band.tsx`, `messages/{tr,en}.json`, `e2e/analysis.fixture.ts`.
 
 ## Gotchas / Known issues
 

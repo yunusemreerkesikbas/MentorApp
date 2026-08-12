@@ -81,6 +81,10 @@ export interface PublicProfile {
   followerCount: number;
   /** How many users this profile follows. */
   followingCount: number;
+  /** Authored threads + non-deleted comments/replies. */
+  activityCount: number;
+  /** Public premium marker only; subscription details remain private. */
+  isPremium: boolean;
   /** Whether the viewer follows this profile. false when it's the viewer's own profile (can't follow self). */
   isFollowing: boolean;
   /** Viewer's study-buddy relation to this profile (drives the profile buddy button). */

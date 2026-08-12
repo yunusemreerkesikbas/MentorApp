@@ -2,7 +2,9 @@
 import { BadgeCheck, ImagePlus, LoaderCircle, LockKeyhole, MailWarning, Pencil, Trash2 } from "lucide-react";
 
 import {
+  useCallback,
   useEffect,
+  useRef,
   useState,
   type ChangeEvent,
   type FormEvent,
@@ -81,9 +83,11 @@ function ProfileAvatar({
  * Profile identity row — Nuton thumb placeholder (#D6DBFD) + Plus Jakarta Sans name stack.
  */
 export function ProfileHeader({
+  autoOpenEdit = false,
   onSaved,
   user,
 }: {
+  autoOpenEdit?: boolean;
   onSaved: (user: AuthUser) => void;
   user: AuthUser;
 }) {
@@ -92,8 +96,9 @@ export function ProfileHeader({
   const sheet = useMentorBottomSheet();
   const toast = useMentorToast();
   const [resendingVerification, setResendingVerification] = useState(false);
+  const didAutoOpenEdit = useRef(false);
 
-  function openEditDialog() {
+  const openEditDialog = useCallback(() => {
     sheet.show({
       title: t("edit.title"),
       layout: "filter",
@@ -109,7 +114,13 @@ export function ProfileHeader({
         />
       ),
     });
-  }
+  }, [onSaved, sheet, t, user]);
+
+  useEffect(() => {
+    if (!autoOpenEdit || didAutoOpenEdit.current) return;
+    didAutoOpenEdit.current = true;
+    openEditDialog();
+  }, [autoOpenEdit, openEditDialog]);
 
   async function resendVerificationEmail() {
     if (resendingVerification) return;

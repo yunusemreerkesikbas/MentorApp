@@ -382,7 +382,7 @@ function ExamTypeGate() {
       <div className="flex flex-col items-center gap-4 py-4 text-center">
         <EmptyState chip={t("no_exam_chip")} description={t("no_exam_desc")} />
         <Link
-          href="/profile"
+          href="/settings"
           className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none sm:w-auto"
           style={{
             backgroundColor: "var(--color-btn)",

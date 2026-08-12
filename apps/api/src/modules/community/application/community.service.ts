@@ -16,6 +16,7 @@ import { ForumService } from "../../forum/application/forum.service";
 import { UsersService } from "../../identity/application/users.service";
 import { FollowService } from "../../identity/application/follow.service";
 import { BuddyService } from "../../identity/application/buddy.service";
+import { EntitlementService } from "../../payments/application/entitlement.service";
 import { deriveBadges } from "../domain/badges";
 import { previousWindowStart, resolveMovement, windowStart } from "../domain/leaderboard-window";
 
@@ -38,6 +39,7 @@ export class CommunityService {
     private readonly buddy: BuddyService,
     private readonly config: ConfigRegistryService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    private readonly entitlement: EntitlementService,
   ) {}
 
   async getSummary(userId: string): Promise<CommunitySummary> {
@@ -93,7 +95,7 @@ export class CommunityService {
     }
     const economyEnabled = await this.config.get("economy.enabled");
     const isSelf = viewerId === user.id;
-    const [currentStreak, activity, followerCount, followingCount, isFollowing, buddyStatus] =
+    const [currentStreak, activity, followerCount, followingCount, isFollowing, buddyStatus, entitlement] =
       await Promise.all([
         this.streak.getCurrentStreak(user.id),
         this.forum.getAuthorActivity(user.id),
@@ -103,6 +105,7 @@ export class CommunityService {
         isSelf
           ? Promise.resolve("none" as const)
           : this.buddy.getStatusBetween(viewerId, user.id),
+        this.entitlement.getEntitlement(user.id, user.roles),
       ]);
     const badges = deriveBadges({
       currentStreak,
@@ -127,6 +130,8 @@ export class CommunityService {
       level: balance?.level ?? null,
       followerCount,
       followingCount,
+      activityCount: activity.totalThreads + activity.totalPosts,
+      isPremium: entitlement.isPremium,
       isFollowing,
       buddyStatus,
     };

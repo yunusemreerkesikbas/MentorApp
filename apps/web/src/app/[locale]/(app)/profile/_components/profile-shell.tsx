@@ -23,9 +23,9 @@ type LoadState =
   | { status: "ready"; user: AuthUser };
 
 /**
- * /profile orchestrator — account hub only; panel overview stays on /dashboard.
+ * /settings orchestrator — account hub only; public identity lives under /community/member.
  */
-export function ProfileShell() {
+export function ProfileShell({ openProfileEditor = false }: { openProfileEditor?: boolean }) {
   const t = useTranslations("profile");
   const { setUserFromServer } = useAuth();
   const reduceMotion = useReducedMotion();
@@ -90,6 +90,7 @@ export function ProfileShell() {
         <section className="flex min-w-0 flex-col gap-5 lg:gap-6">
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <ProfileHeader
+              autoOpenEdit={openProfileEditor}
               user={user}
               onSaved={(next) => {
                 handleUserSaved(next);

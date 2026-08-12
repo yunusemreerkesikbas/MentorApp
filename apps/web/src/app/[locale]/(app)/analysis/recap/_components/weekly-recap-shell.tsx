@@ -318,7 +318,7 @@ export function WeeklyRecapShell() {
           title={t("needs_exam.title")}
           message={t("needs_exam.message")}
           action={
-            <Link className={primaryLinkClass} href="/profile">
+            <Link className={primaryLinkClass} href="/settings">
               {t("needs_exam.cta")}
             </Link>
           }
@@ -607,7 +607,7 @@ function PuhuNoteSheet({
               : t("unlock.cta", { cost: lockedView.cost })}
           </button>
         ) : lockedView ? (
-          <Link href="/profile" className={`${secondaryLinkClass} mt-6`}>
+          <Link href="/settings" className={`${secondaryLinkClass} mt-6`}>
             {t("unlock.insufficient", {
               cost: lockedView.cost,
               balance: lockedView.coinConfirmed,

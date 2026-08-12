@@ -1,5 +1,5 @@
 "use client";
-import { BadgeCheck, BookOpen, Calendar, ChartColumn, Coins, Crown, Gem, House, MessageCircle, User, Users } from "lucide-react";
+import { BadgeCheck, BookOpen, Calendar, ChartColumn, Coins, Crown, Gem, House, MessageCircle, Settings, Users } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
@@ -28,7 +28,7 @@ const TAB_EASE = [0.22, 1, 0.36, 1] as const;
  *  - mobile: avatar header + floating pill tab (Koç elevated center, icons only)
  *  - ≥1024px (lg): left sidebar with sentence-case labels; Koç is desktop floating
  *    Puhu FAB (bottom-right), not a sidebar item
- * Profile is avatar-only on mobile; sidebar keeps Profil + Topluluk.
+ * Public profile is avatar-only on mobile; sidebar keeps Ayarlar + Topluluk.
  */
 
 const NAV_ITEMS = [
@@ -38,7 +38,7 @@ const NAV_ITEMS = [
   { href: "/analysis", labelKey: "analysis", icon: ChartColumn },
   { href: "/knowledge", labelKey: "knowledge", icon: BookOpen },
   { href: "/community", labelKey: "community", icon: Users, sidebarOnly: true },
-  { href: "/profile", labelKey: "profile", icon: User, sidebarOnly: true },
+  { href: "/settings", labelKey: "settings", icon: Settings, sidebarOnly: true },
 ] as const;
 
 const TAB_ITEMS = NAV_ITEMS.filter((i) => !("sidebarOnly" in i && i.sidebarOnly));
@@ -366,7 +366,14 @@ function AvatarLink({
 
   return (
     <Link
-      href="/profile"
+      href={
+        user.username
+          ? {
+              pathname: "/community/member/[username]" as const,
+              params: { username: user.username },
+            }
+          : "/settings"
+      }
       aria-label={t("profile_link")}
       className="relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
     >

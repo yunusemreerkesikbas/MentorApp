@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { type ForumActivityItem, type PublicProfile } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button } from "@mentor/ui";
+import { Button, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { Link, useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
@@ -28,7 +28,7 @@ import { CommentRow } from "../../../_components/comment-row";
 import { CommunityPostCard } from "../../../_components/community-post-card";
 import { SavedShell } from "../../../saved/_components/saved-shell";
 import { FollowListPanel } from "./follow-list-panel";
-import { ProfileHeader } from "./profile-header";
+import { ProfileHeader, ProfileProgressPanel } from "./profile-header";
 
 type Ready = {
   status: "ready";
@@ -55,7 +55,7 @@ export function ProfileShell({ username }: { username: string }) {
   const requestedTab = ["bookmarks", "saved"].includes(searchParams.get("tab") ?? "")
     ? "bookmarks"
     : "posts";
-  const [tab, setTab] = useState<"posts" | "bookmarks">(requestedTab);
+  const tab = requestedTab;
   const [listView, setListView] = useState<"followers" | "following" | null>(null);
   const [state, setState] = useState<State>({ status: "loading" });
 
@@ -78,13 +78,8 @@ export function ProfileShell({ username }: { username: string }) {
     };
   }, [username, t]);
 
-  useEffect(() => {
-    setTab(requestedTab);
-  }, [requestedTab]);
-
   const selectTab = (nextTab: "posts" | "bookmarks") => {
-    setTab(nextTab);
-    router.replace({
+    router.push({
       pathname: "/community/member/[username]",
       params: { username },
       query: nextTab === "bookmarks" ? { tab: "bookmarks" } : {},
@@ -233,7 +228,7 @@ export function ProfileShell({ username }: { username: string }) {
     });
   }, [patchReady, showErrorToast, t, username]);
 
-  if (state.status === "loading") return <Centered>{t("loading")}</Centered>;
+  if (state.status === "loading") return <ProfileLoading label={t("loading")} />;
   if (state.status === "disabled") return <Centered>{t("soon_title")}</Centered>;
   if (state.status === "notfound") return <Centered>{t("profile_not_found")}</Centered>;
   if (state.status === "error") {
@@ -247,18 +242,10 @@ export function ProfileShell({ username }: { username: string }) {
   const { profile, items, nextCursor, loadingMore } = state;
 
   return (
-    <main className="mx-auto min-w-0 max-w-2xl px-0 py-0">
-      <div className="px-4 pt-4 lg:px-6">
-        <Link
-          href="/community"
-          className="inline-flex items-center gap-1 text-sm transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
-          {t("back")}
-        </Link>
-      </div>
+    <main className="mx-auto grid min-w-0 max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
+      <section className="min-w-0 bg-white">
       <ProfileHeader
+        key={profile.userId}
         profile={profile}
         isOwn={isOwn}
         onToggleFollow={onToggleFollow}
@@ -266,6 +253,12 @@ export function ProfileShell({ username }: { username: string }) {
         onOpenFollowers={() => setListView("followers")}
         onOpenFollowing={() => setListView("following")}
       />
+
+      <div className="profile-progress-mobile px-4 pb-4 pt-8 xl:hidden">
+        <div className="relative z-10">
+          <ProfileProgressPanel profile={profile} />
+        </div>
+      </div>
 
       {listView ? (
         <FollowListPanel
@@ -376,7 +369,31 @@ export function ProfileShell({ username }: { username: string }) {
       )}
         </>
       )}
+      </section>
+
+      <aside className="sticky top-20 hidden xl:block">
+        <ProfileProgressPanel profile={profile} />
+      </aside>
     </main>
+  );
+}
+
+function ProfileLoading({ label }: { label: string }) {
+  return (
+    <SkeletonGroup label={label} className="mx-auto grid max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
+      <div className="overflow-hidden bg-white sm:border-x sm:border-[#e7e9ee]">
+        <Skeleton className="h-[min(52dvh,440px)] w-full rounded-none sm:h-[420px]" />
+        <div className="flex justify-center gap-3 px-4 py-5">
+          <Skeleton className="size-11 rounded-full" />
+          <Skeleton className="h-11 w-40 rounded-full" />
+          <Skeleton className="size-11 rounded-full" />
+        </div>
+        <div className="border-t border-[#e7e9ee] px-4 py-4">
+          <Skeleton className="h-4 w-36 rounded-full" />
+        </div>
+      </div>
+      <Skeleton className="hidden h-[360px] rounded-[var(--radius-card)] xl:block" />
+    </SkeletonGroup>
   );
 }
 

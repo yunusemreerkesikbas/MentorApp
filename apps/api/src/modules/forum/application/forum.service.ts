@@ -52,7 +52,7 @@ export class ForumService {
   /** Per-author activity signals for the community effort board's behaviour badges (read-only). */
   getAuthorActivity(
     userId: string,
-  ): Promise<{ totalPosts: number; nightPosts: number; reactionsReceived: number }> {
+  ): Promise<{ totalPosts: number; totalThreads: number; nightPosts: number; reactionsReceived: number }> {
     return this.posts.authorActivityStats(userId);
   }
 
