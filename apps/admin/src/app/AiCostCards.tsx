@@ -15,7 +15,7 @@ const FEATURE_LABEL: Record<string, string> = {
     chat: "Sohbet",
     vision: "Foto kategorize",
     mood: "Ruh hali",
-    ghost: "Geçmiş-ben",
+    ghost: "Geçmiş Halin",
     vision_note: "Hedef notu",
     session_reflection: "Seans yansıması",
     weekly_review: "Haftalık özet",

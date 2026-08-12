@@ -12,6 +12,7 @@ export function AnalysisGhostTeaser() {
       <EmptyState
         title={t("ghost_teaser_title")}
         description={t("ghost_teaser_desc")}
+        puhuVariant="encouraging"
       />
     </Card>
   );

@@ -54,7 +54,7 @@ export function AnalysisNextFocusCard({ focus }: AnalysisNextFocusCardProps) {
               {sourceLabel} · {t("evidence", { count: focus.evidenceCount })}
             </span>
           </div>
-          <SectionHeading subtitle={t("subtitle")}>{t("title")}</SectionHeading>
+          <SectionHeading>{t("title")}</SectionHeading>
           <div className="flex flex-col gap-1">
             <p
               className="text-2xl font-bold"

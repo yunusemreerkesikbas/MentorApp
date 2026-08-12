@@ -93,8 +93,8 @@
     "UNAVAILABLE": "Bu konuda do\u011frulanm\u0131\u015f bir kart veya kaynak \u015fu anda mevcut de\u011fil. Bilgi Merkezi'ni kontrol edebilirsin."
   },
   "ghost": {
-    "NEW_RECORD": "Yeni rekor! Şimdiye kadarki en iyi netini geçtin. Geçmiş-ben'i resmen geride bıraktın.",
-    "BEAT_PREVIOUS": "Geçen denemeni geçtin — geçmiş-ben'i yendin. İvme seninle.",
+    "NEW_RECORD": "Yeni rekor! Şimdiye kadarki en iyi netini geçtin. Geçmiş halini resmen geride bıraktın.",
+    "BEAT_PREVIOUS": "Geçen denemeni geçtin — geçmiş halini geride bıraktın. İvme seninle.",
     "TIED": "Geçen denemenle aynı seviyedesin. İstikrar da bir kazanç; küçük bir adımla öne geç.",
     "BELOW_PREVIOUS": "Bu sefer biraz geride kaldın, olur böyle. Tek bir denemeye takılma — trendine bak, yanındayım."
   },

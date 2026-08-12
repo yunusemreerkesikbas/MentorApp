@@ -37,8 +37,6 @@ interface AnalysisMockExamFormProps {
   onSubmit: (e: React.FormEvent) => void;
   submitLabel?: string;
   onCancel?: () => void;
-  /** Rendered above the field grid, right-aligned (e.g. "copy last exam"). */
-  headerAction?: React.ReactNode;
 }
 
 export function AnalysisMockExamForm({
@@ -53,7 +51,6 @@ export function AnalysisMockExamForm({
   onSubmit,
   submitLabel,
   onCancel,
-  headerAction,
 }: AnalysisMockExamFormProps) {
   const t = useTranslations("analysis");
   const locale = useLocale();
@@ -80,10 +77,6 @@ export function AnalysisMockExamForm({
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      {headerAction ? (
-        <div className="flex justify-end">{headerAction}</div>
-      ) : null}
-
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <TextField
           label={t("publisher_label")}

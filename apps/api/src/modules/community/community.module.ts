@@ -3,6 +3,7 @@ import { CoachingModule } from "../coaching/coaching.module";
 import { EconomyModule } from "../economy/economy.module";
 import { ForumModule } from "../forum/forum.module";
 import { IdentityModule } from "../identity/identity.module";
+import { PaymentsModule } from "../payments/payments.module";
 import { BuddyViewService } from "./application/buddy-view.service";
 import { CommunityService } from "./application/community.service";
 import { BuddyController } from "./presentation/buddy.controller";
@@ -15,7 +16,7 @@ import { CommunityController } from "./presentation/community.controller";
  * `ConfigRegistryService` is global.
  */
 @Module({
-  imports: [IdentityModule, CoachingModule, ForumModule, EconomyModule],
+  imports: [IdentityModule, CoachingModule, ForumModule, EconomyModule, PaymentsModule],
   controllers: [CommunityController, BuddyController],
   providers: [CommunityService, BuddyViewService],
 })

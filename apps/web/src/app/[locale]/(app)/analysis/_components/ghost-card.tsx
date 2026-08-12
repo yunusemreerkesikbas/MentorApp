@@ -14,9 +14,7 @@ export function GhostCard({ ghost }: GhostCardProps) {
 
   return (
     <Card className="flex flex-col gap-4">
-      <SectionHeading as="h2" subtitle={translate("subtitle")}>
-        {translate("title")}
-      </SectionHeading>
+      <SectionHeading as="h2">{translate("title")}</SectionHeading>
 
       <p className="text-sm" style={{ color: "var(--color-body)" }}>
         {ghost.headline}

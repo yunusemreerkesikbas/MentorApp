@@ -143,7 +143,7 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
           </ul>
 
           {isInsufficientCoin ? (
-            <Button onClick={() => router.push({ pathname: "/profile", query: { returnTo } })}>
+            <Button onClick={() => router.push({ pathname: "/settings", query: { returnTo } })}>
               {t("go_profile")}
             </Button>
           ) : access.reason === "PAYMENT_PREMIUM_REQUIRED" ? (

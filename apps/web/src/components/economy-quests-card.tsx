@@ -62,7 +62,7 @@ export function EconomyQuestsCard({
     onboardingQuests.find((quest) => !quest.completed && quest.action) ??
     null;
 
-  function navigateAfterDismiss(path: "/plan" | "/study-session" | "/dashboard" | "/subscription" | "/profile") {
+  function navigateAfterDismiss(path: "/plan" | "/study-session" | "/dashboard" | "/subscription" | "/settings") {
     flushSync(() => {
       onDismiss?.();
     });
@@ -96,7 +96,7 @@ export function EconomyQuestsCard({
         onInviteRequested();
         return;
       }
-      navigateAfterDismiss("/profile");
+      navigateAfterDismiss("/settings");
       return;
     }
     if (action !== "verify-email" || resendingVerification) return;

@@ -144,7 +144,7 @@ export function SubjectPicker({
           {labels.hint}
         </p>
         <Link
-          href="/profile"
+          href="/settings"
           className="text-sm font-semibold"
           style={{ color: "var(--color-progress)" }}
         >

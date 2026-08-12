@@ -9,6 +9,7 @@ const PRIVATE_PATHS = [
   "/coach",
   "/analysis",
   "/profile",
+  "/settings",
   "/subscription",
   "/vision-board",
   "/community",

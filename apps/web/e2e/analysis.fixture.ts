@@ -70,6 +70,8 @@ export const firstAnalysis: CoachingAnalysisDto = {
       attemptCount: 1,
       questionCount: 30,
       normalizedAveragePercent: "40.00",
+      recentAverageNet: "12.00",
+      netDelta: "0.00",
     },
   ],
   nextFocus: {

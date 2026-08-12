@@ -216,6 +216,10 @@ export interface SubjectStrengthDto {
   questionCount: number | null;
   /** Server-computed averageNet / questionCount × 100. */
   normalizedAveragePercent: string | null;
+  /** Average net across the last up to 4 attempts; null when no recent window applies. */
+  recentAverageNet: string | null;
+  /** recentAverageNet − averageNet — recent trend vs lifetime average. Null when recentAverageNet is null. */
+  netDelta: string | null;
 }
 
 /** Foto analizinden gelen ders sinyalleri (zayıflık ipucu; net ortalamasından ayrı). */

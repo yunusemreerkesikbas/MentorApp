@@ -1,49 +1,44 @@
 "use client";
-import { Menu, X } from "lucide-react";
+import { X } from "lucide-react";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { ZoneSidebar } from "./zone-sidebar";
+import { useZoneDrawer } from "./zone-drawer-context";
 
 export function ZoneDrawer() {
   const t = useTranslations("community");
-  const [open, setOpen] = useState(false);
-  const close = () => setOpen(false);
+  const { open, closeDrawer } = useZoneDrawer();
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    const previousOverflow = document.body.style.overflow;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeDrawer(); };
+    document.body.style.overflow = "hidden";
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [closeDrawer, open]);
 
   return (
     <div className="lg:hidden">
-      <div
-        className="sticky top-16 z-30 flex h-[52px] items-center gap-3 border-b border-[#e7e9ee] bg-[var(--community-canvas)] px-4"
-      >
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label={t("drawer_open")}
-          className="grid size-11 place-items-center rounded-[9px] text-[#171b25] hover:bg-[#f1f2f5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        >
-          <Menu size={20} aria-hidden />
-        </button>
-        <span className="text-sm font-bold text-[#171b25]">
-          {t("drawer_open")}
-        </span>
-      </div>
-
       {open && (
         <div
           className="fixed inset-0 top-16 z-[41] bg-black/35"
-          onClick={close}
+          onClick={closeDrawer}
           aria-hidden="true"
         />
       )}
 
       <div
+        id="community-zone-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("drawer_open")}
+        aria-hidden={!open}
+        inert={!open}
         className="fixed bottom-0 left-0 top-16 z-[42] w-[min(82vw,280px)] overflow-y-auto bg-[#f6f7f9] py-5 transition-transform duration-200"
         style={{
           transform: open ? "translateX(0)" : "translateX(-100%)",
@@ -53,12 +48,12 @@ export function ZoneDrawer() {
         <button
           type="button"
           aria-label={t("close")}
-          onClick={close}
+          onClick={closeDrawer}
           className="absolute right-3 top-3 grid size-11 place-items-center rounded-[9px] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         >
           <X size={19} aria-hidden />
         </button>
-        <ZoneSidebar onNavigate={close} />
+        <ZoneSidebar onNavigate={closeDrawer} />
       </div>
     </div>
   );

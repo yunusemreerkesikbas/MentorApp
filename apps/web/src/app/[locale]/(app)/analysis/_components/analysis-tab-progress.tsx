@@ -1,45 +1,31 @@
 "use client";
 
+import { TrendingDown, TrendingUp } from "lucide-react";
+
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import type { CoachingAnalysisDto, WeeklyReviewDto } from "@mentor/types";
-import { Button, Card, SectionHeading } from "@mentor/ui";
+import type { CoachingAnalysisDto } from "@mentor/types";
+import { Card, Chip, SectionHeading } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { EmptyState } from "@/components/empty-state";
-import {
-  WeeklyRecapTeaser,
-  WeeklyRecapTeaserSkeleton,
-} from "@/components/weekly-recap-teaser";
+import { InfoTooltip } from "@/components/info-tooltip";
 import { AnalysisGhostTeaser } from "./analysis-ghost-teaser";
 import { AnalysisHeroBackdrop } from "./analysis-hero-backdrop";
 import { AnalysisNextFocusCard } from "./analysis-next-focus-card";
 import { AnalysisSparkline } from "./analysis-sparkline";
 import {
   formatTrendDate,
-  shouldOpenAnalysisEvidence,
   sliceTrend,
   trendForSparkline,
   type TrendWindow,
 } from "./analysis-types";
 import { GhostCard } from "./ghost-card";
 
-type DevelopmentExtrasState =
-  | { status: "idle"; examId: string | null }
-  | { status: "loading"; examId: string }
-  | { status: "ready"; examId: string; data: WeeklyReviewDto }
-  | { status: "error"; examId: string; message: string };
-
 interface AnalysisTabProgressProps {
   analysis: CoachingAnalysisDto | null;
-  extras: DevelopmentExtrasState;
-  onRetryExtras: () => void;
 }
 
-export function AnalysisTabProgress({
-  analysis,
-  extras,
-  onRetryExtras,
-}: AnalysisTabProgressProps) {
+export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
   const t = useTranslations("analysis");
   const locale = useLocale();
   const [window, setWindow] = useState<TrendWindow>("12");
@@ -49,18 +35,14 @@ export function AnalysisTabProgress({
   const sparkPoints = useMemo(() => trendForSparkline(sliced), [sliced]);
   const ghost = analysis?.ghost ?? null;
 
-  const weeklyReview = (
-    <WeeklyReviewSlot extras={extras} onRetry={onRetryExtras} />
-  );
-
   if (!analysis || trend.length === 0) {
     return (
       <div className="flex flex-col gap-6">
-        {weeklyReview}
         <Card>
           <EmptyState
             title={t("empty_trend_chip")}
             description={t("empty_trend_desc")}
+            puhuVariant="encouraging"
             action={
               <Link
                 href={{ pathname: "/analysis", query: { tab: "entry" } }}
@@ -82,35 +64,20 @@ export function AnalysisTabProgress({
         <AnalysisNextFocusCard focus={analysis.nextFocus} />
       ) : null}
 
-      {weeklyReview}
-
-      <details
-        open={shouldOpenAnalysisEvidence(analysis.nextFocus != null)}
-        className="rounded-[var(--radius-card)] border p-4 sm:p-5"
-        style={{
-          borderColor: "color-mix(in srgb, var(--color-main) 10%, transparent)",
-          background: "var(--color-surface-container)",
-        }}
-      >
-        <summary className="min-h-11 cursor-pointer rounded-[var(--radius-card)] py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
-          <span className="ml-2 inline-flex flex-col gap-1 align-middle">
-            <span
-              className="font-bold"
-              style={{
-                color: "var(--color-main)",
-                fontFamily: "var(--font-heading)",
-              }}
-            >
-              {t("evidence_title")}
-            </span>
-            <span
-              className="text-sm font-normal"
-              style={{ color: "var(--color-secondary)" }}
-            >
-              {t("evidence_subtitle")}
-            </span>
-          </span>
-        </summary>
+      <section aria-labelledby="analysis-evidence-heading">
+        <div className="flex items-center gap-1">
+          <h3
+            id="analysis-evidence-heading"
+            className="text-xl leading-tight font-semibold"
+            style={{
+              color: "var(--color-main)",
+              fontFamily: "var(--font-heading)",
+            }}
+          >
+            {t("evidence_title")}
+          </h3>
+          <InfoTooltip text={t("evidence_subtitle")} />
+        </div>
 
         <div className="mt-4 flex flex-col gap-6">
           <div className="grid items-start gap-6 lg:grid-cols-2">
@@ -203,55 +170,101 @@ export function AnalysisTabProgress({
 
           {analysis.subjects.length > 0 ? (
             <Card>
-              <SectionHeading subtitle={t("subject_avg_scope")}>
-                {t("subject_avg_title")}
-              </SectionHeading>
-              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <SectionHeading>{t("subject_avg_title")}</SectionHeading>
+              <div
+                className="mt-4 grid gap-3"
+                style={{
+                  gridTemplateColumns: "repeat(auto-fit, minmax(9.5rem, 1fr))",
+                }}
+              >
                 {analysis.subjects.map((subject) => {
                   const isFocus =
                     analysis.nextFocus?.subjectRef === subject.subjectRef;
+                  const delta =
+                    subject.netDelta != null ? Number(subject.netDelta) : 0;
+                  const trendUp = delta > 0.005;
+                  const trendDown = delta < -0.005;
+                  const deltaDisplay =
+                    trendUp && subject.netDelta != null
+                      ? `+${subject.netDelta}`
+                      : subject.netDelta;
                   return (
                     <div
                       key={subject.subjectRef}
-                      className="flex flex-col gap-1 rounded-[var(--radius-card)] p-3"
+                      className="flex flex-col gap-2 rounded-[var(--radius-card)] p-3"
                       style={{
                         background: isFocus
                           ? "color-mix(in srgb, var(--color-chip) 18%, white)"
                           : "rgba(0,0,0,0.03)",
                       }}
                     >
+                      <div className="flex items-start justify-between gap-2">
+                        <span
+                          className="min-w-0 truncate text-sm font-semibold"
+                          style={{ color: "var(--color-secondary)" }}
+                        >
+                          {subject.subjectName}
+                        </span>
+                        {isFocus ? (
+                          <Chip size="sm" className="shrink-0">
+                            {t("subject_focus_badge")}
+                          </Chip>
+                        ) : null}
+                      </div>
+
                       <span
-                        className="text-sm font-semibold"
-                        style={{ color: "var(--color-main)" }}
-                      >
-                        {subject.subjectName}
-                      </span>
-                      <span
-                        className="text-lg font-bold tabular-nums"
-                        style={{ color: "var(--color-main)" }}
+                        className="text-2xl font-bold leading-none tabular-nums"
+                        style={{
+                          color: "var(--color-main)",
+                          fontFamily: "var(--font-heading)",
+                        }}
                       >
                         {subject.averageNet}
                       </span>
-                      <span
-                        className="text-xs"
-                        style={{ color: "var(--color-secondary)" }}
-                      >
-                        {t("avg_template", {
-                          avg: subject.averageNet,
-                          count: subject.attemptCount,
-                        })}
-                      </span>
-                      {subject.normalizedAveragePercent != null &&
-                      subject.questionCount != null ? (
+
+                      <div className="flex items-center justify-between gap-2">
                         <span
-                          className="text-xs font-semibold tabular-nums"
-                          style={{ color: "var(--color-chip-text)" }}
+                          className="text-xs"
+                          style={{ color: "var(--color-secondary)" }}
                         >
-                          {t("avg_normalized", {
-                            percent: subject.normalizedAveragePercent,
-                            questions: subject.questionCount,
-                          })}
+                          {t("avg_count", { count: subject.attemptCount })}
                         </span>
+                        {subject.normalizedAveragePercent != null ? (
+                          <span
+                            className="text-xs font-semibold tabular-nums"
+                            style={{ color: "var(--color-chip-text)" }}
+                          >
+                            {t("avg_normalized", {
+                              percent: subject.normalizedAveragePercent,
+                            })}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {trendUp || trendDown ? (
+                        <div
+                          className="flex items-center gap-1 text-xs font-semibold tabular-nums"
+                          style={{
+                            color: trendUp
+                              ? "var(--color-success)"
+                              : "var(--color-secondary)",
+                          }}
+                        >
+                          {trendUp ? (
+                            <TrendingUp
+                              className="size-3.5 shrink-0"
+                              strokeWidth={2.25}
+                              aria-hidden
+                            />
+                          ) : (
+                            <TrendingDown
+                              className="size-3.5 shrink-0"
+                              strokeWidth={2.25}
+                              aria-hidden
+                            />
+                          )}
+                          {t("subject_trend_delta", { delta: deltaDisplay })}
+                        </div>
                       ) : null}
                     </div>
                   );
@@ -260,48 +273,7 @@ export function AnalysisTabProgress({
             </Card>
           ) : null}
         </div>
-      </details>
+      </section>
     </div>
   );
-}
-
-function WeeklyReviewSlot({
-  extras,
-  onRetry,
-}: {
-  extras: DevelopmentExtrasState;
-  onRetry: () => void;
-}) {
-  const t = useTranslations("analysis.weekly");
-
-  if (extras.status === "ready") {
-    return (
-      <WeeklyRecapTeaser
-        period={extras.data.period}
-        status={extras.data.recap.status}
-        source="analysis"
-        examId={extras.examId}
-      />
-    );
-  }
-
-  if (extras.status === "error") {
-    return (
-      <Card className="flex flex-col items-start gap-3">
-        <SectionHeading>{t("title")}</SectionHeading>
-        <p
-          role="status"
-          className="text-sm"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {t("load_error")}
-        </p>
-        <Button type="button" variant="secondary" onClick={onRetry}>
-          {t("retry")}
-        </Button>
-      </Card>
-    );
-  }
-
-  return <WeeklyRecapTeaserSkeleton />;
 }

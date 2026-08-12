@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ExamSubjectDto, ExamSummaryDto, MockExamDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, Card, SectionHeading } from "@mentor/ui";
+import { Card, SectionHeading } from "@mentor/ui";
 import { EmptyState } from "@/components/empty-state";
 import { fetchMockExamsList } from "@/lib/mock-exams";
 import type { SubjectScores } from "./analysis-types";
@@ -83,9 +83,27 @@ export function AnalysisTabEntry({
 
   return (
     <Card id="analysis-form">
-      <SectionHeading subtitle={exam?.name}>
-        {t("result_entry_title")}
-      </SectionHeading>
+      <div className="flex items-start justify-between gap-3">
+        <SectionHeading subtitle={exam?.name}>
+          {t("result_entry_title")}
+        </SectionHeading>
+        {canCopy ? (
+          <button
+            type="button"
+            onClick={() => void handleCopyLast()}
+            disabled={copying}
+            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-[var(--radius-card)] border px-3 text-xs font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
+            style={{
+              color: "var(--color-main)",
+              borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",
+            }}
+            data-testid="analysis-copy-last"
+          >
+            <Copy className="size-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
+            {copying ? t("copy_last_busy") : t("copy_last")}
+          </button>
+        ) : null}
+      </div>
       {copyError ? (
         <p
           className="mt-2 text-sm"
@@ -109,20 +127,6 @@ export function AnalysisTabEntry({
             onTakenAtChange={onTakenAtChange}
             onScoreChange={onScoreChange}
             onSubmit={onSubmit}
-            headerAction={
-              canCopy ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  busy={copying}
-                  onClick={() => void handleCopyLast()}
-                  data-testid="analysis-copy-last"
-                >
-                  <Copy className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
-                  {copying ? t("copy_last_busy") : t("copy_last")}
-                </Button>
-              ) : undefined
-            }
           />
         </div>
       )}

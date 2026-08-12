@@ -44,6 +44,7 @@ export const routing = defineRouting({
       en: "/knowledge/[slug]",
     },
     "/profile": { tr: "/profil", en: "/profile" },
+    "/settings": { tr: "/ayarlar", en: "/settings" },
     "/subscription": { tr: "/abonelik", en: "/subscription" },
     "/subscription/result": {
       tr: "/abonelik/sonuc",

@@ -1,5 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
-import { ProfileShell } from "./_components/profile-shell";
+import { redirect } from "@/i18n/navigation";
 
 export default async function ProfilePage({
   params,
@@ -7,6 +6,5 @@ export default async function ProfilePage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  setRequestLocale(locale);
-  return <ProfileShell />;
+  redirect({ href: "/settings", locale });
 }

@@ -38,15 +38,21 @@ export class ForumPostRepository {
    */
   authorActivityStats(
     userId: string,
-  ): Promise<{ totalPosts: number; nightPosts: number; reactionsReceived: number }> {
+  ): Promise<{ totalPosts: number; totalThreads: number; nightPosts: number; reactionsReceived: number }> {
     return withServiceContext(this.db, async (tx) => {
-      const [posts] = await tx
+      const [[posts], [threads]] = await Promise.all([
+        tx
         .select({
           total: sql<number>`count(*)::int`,
           night: sql<number>`count(*) filter (where extract(hour from ${forumPosts.createdAt}) < 5)::int`,
         })
         .from(forumPosts)
-        .where(and(eq(forumPosts.authorId, userId), isNull(forumPosts.deletedAt)));
+        .where(and(eq(forumPosts.authorId, userId), isNull(forumPosts.deletedAt))),
+        tx
+          .select({ total: sql<number>`count(*)::int` })
+          .from(forumThreads)
+          .where(and(eq(forumThreads.authorId, userId), isNull(forumThreads.deletedAt))),
+      ]);
 
       const [react] = await tx
         .select({ n: sql<number>`count(*)::int` })
@@ -56,6 +62,7 @@ export class ForumPostRepository {
 
       return {
         totalPosts: posts?.total ?? 0,
+        totalThreads: threads?.total ?? 0,
         nightPosts: posts?.night ?? 0,
         reactionsReceived: react?.n ?? 0,
       };
