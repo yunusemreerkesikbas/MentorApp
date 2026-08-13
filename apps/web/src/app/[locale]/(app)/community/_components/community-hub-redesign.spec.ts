@@ -30,6 +30,14 @@ describe("community hub editorial redesign contract", () => {
     expect(readComponent("zone-sidebar.tsx")).not.toContain('t("messages_count"');
   });
 
+  it("keeps navigation available without rendering a second error when rooms fail", () => {
+    const sidebar = readComponent("zone-sidebar.tsx");
+
+    expect(sidebar).not.toContain('t("error")');
+    expect(sidebar).not.toContain("if (error)");
+    expect(sidebar).toContain(".catch(() => setZones([]))");
+  });
+
   it("keeps personal streak and XP out of the effort board", () => {
     const hub = readComponent("hub-shell.tsx");
 

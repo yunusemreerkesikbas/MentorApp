@@ -3,7 +3,7 @@ import { Menu, MessageCircle } from "lucide-react";
 
 import { useTranslations } from "next-intl";
 import { NotificationBell } from "@mentor/ui";
-import { Link } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { CircularBackLink } from "@/components/circular-back-link";
 import { AuthorAvatar } from "./author-avatar";
@@ -14,12 +14,18 @@ export function CommunityHeader() {
   const t = useTranslations("community");
   const common = useTranslations("common");
   const { user } = useAuth();
+  const pathname = usePathname();
   const { open, openDrawer, triggerRef } = useZoneDrawer();
+  const isMemberProfile = pathname.startsWith("/community/member/");
 
   return (
     <header className="community-header">
       <div className="community-header__brand">
-        <CircularBackLink href="/dashboard" label={common("dialog.close")} icon="close" />
+        <CircularBackLink
+          href={isMemberProfile ? "/community" : "/dashboard"}
+          label={isMemberProfile ? t("back") : common("dialog.close")}
+          icon={isMemberProfile ? "chevron" : "close"}
+        />
         <Link href="/community" className="community-header__wordmark community-header__wordmark--desktop">
           <span className="community-header__mark" aria-hidden>
             <MessageCircle size={17} strokeWidth={2.2} />

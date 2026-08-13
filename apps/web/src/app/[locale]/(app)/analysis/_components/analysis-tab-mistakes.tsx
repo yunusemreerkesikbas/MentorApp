@@ -69,16 +69,6 @@ export function AnalysisTabMistakes({
 
   return (
     <div className="flex flex-col gap-6">
-      <p
-        className="rounded-[var(--radius-card)] px-4 py-3 text-sm leading-6"
-        style={{
-          background: "color-mix(in srgb, var(--color-chip) 14%, white)",
-          color: "var(--color-body)",
-        }}
-      >
-        {t("photo_trust")}
-      </p>
-
       {!activeMockExamId ? (
         <Card>
           <EmptyState

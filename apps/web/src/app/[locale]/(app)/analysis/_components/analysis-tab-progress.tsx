@@ -9,17 +9,15 @@ import { Card, Chip, SectionHeading } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { EmptyState } from "@/components/empty-state";
 import { InfoTooltip } from "@/components/info-tooltip";
+import { StatLineChart } from "@/components/stat-line-chart";
 import { AnalysisGhostTeaser } from "./analysis-ghost-teaser";
-import { AnalysisHeroBackdrop } from "./analysis-hero-backdrop";
 import { AnalysisNextFocusCard } from "./analysis-next-focus-card";
-import { AnalysisSparkline } from "./analysis-sparkline";
 import {
   formatTrendDate,
   sliceTrend,
   trendForSparkline,
   type TrendWindow,
 } from "./analysis-types";
-import { GhostCard } from "./ghost-card";
 
 interface AnalysisTabProgressProps {
   analysis: CoachingAnalysisDto | null;
@@ -33,6 +31,21 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
   const trend = useMemo(() => analysis?.trend ?? [], [analysis]);
   const sliced = useMemo(() => sliceTrend(trend, window), [trend, window]);
   const sparkPoints = useMemo(() => trendForSparkline(sliced), [sliced]);
+  const chartData = useMemo(
+    () =>
+      sparkPoints.length > 0
+        ? [
+            {
+              id: t("trend_title"),
+              data: sparkPoints.map((point) => ({
+                x: formatTrendDate(point.takenAt, locale),
+                y: Number(point.totalNet),
+              })),
+            },
+          ]
+        : null,
+    [sparkPoints, locale, t],
+  );
   const ghost = analysis?.ghost ?? null;
 
   if (!analysis || trend.length === 0) {
@@ -80,48 +93,55 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
         </div>
 
         <div className="mt-4 flex flex-col gap-6">
-          <div className="grid items-start gap-6 lg:grid-cols-2">
-            <Card className="relative min-w-0 overflow-hidden">
-              <AnalysisHeroBackdrop />
-              <div className="relative z-10 flex flex-col gap-4">
-                <SectionHeading subtitle={t("trend_subtitle")}>
-                  {t("trend_title")}
-                </SectionHeading>
+          <div
+            className={
+              ghost
+                ? "grid gap-6"
+                : "grid items-start gap-6 lg:grid-cols-2"
+            }
+          >
+            <Card className="min-w-0">
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <SectionHeading subtitle={t("trend_subtitle")}>
+                    {t("trend_title")}
+                  </SectionHeading>
 
-                <div
-                  className="flex gap-2"
-                  role="group"
-                  aria-label={t("time_filter.label")}
-                >
-                  {(["4", "8", "12"] as const).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-pressed={window === value}
-                      onClick={() => setWindow(value)}
-                      className="min-h-11 cursor-pointer rounded-[var(--radius-card)] px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                      style={{
-                        background:
-                          window === value
-                            ? "color-mix(in srgb, var(--color-chip) 25%, white)"
-                            : "rgba(0,0,0,0.04)",
-                        color:
-                          window === value
-                            ? "var(--color-main)"
-                            : "var(--color-secondary)",
-                      }}
-                    >
-                      {t(
-                        `time_filter.${
-                          value === "4"
-                            ? "last4"
-                            : value === "8"
-                              ? "last8"
-                              : "last12"
-                        }`,
-                      )}
-                    </button>
-                  ))}
+                  <div
+                    className="flex shrink-0 gap-2"
+                    role="group"
+                    aria-label={t("time_filter.label")}
+                  >
+                    {(["4", "8", "12"] as const).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={window === value}
+                        onClick={() => setWindow(value)}
+                        className="min-h-11 cursor-pointer rounded-[var(--radius-card)] px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                        style={{
+                          background:
+                            window === value
+                              ? "color-mix(in srgb, var(--color-chip) 25%, white)"
+                              : "rgba(0,0,0,0.04)",
+                          color:
+                            window === value
+                              ? "var(--color-main)"
+                              : "var(--color-secondary)",
+                        }}
+                      >
+                        {t(
+                          `time_filter.${
+                            value === "4"
+                              ? "last4"
+                              : value === "8"
+                                ? "last8"
+                                : "last12"
+                          }`,
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {sparkPoints.length === 1 ? (
@@ -131,41 +151,18 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
                   >
                     {t("trend_first")}: {sparkPoints[0]!.totalNet}
                   </p>
+                ) : chartData ? (
+                  <StatLineChart
+                    data={chartData}
+                    ariaLabel={t("trend_title")}
+                    height={220}
+                    valueSuffix=" net"
+                  />
                 ) : null}
-
-                <AnalysisSparkline
-                  points={sparkPoints}
-                  label={t("trend_title")}
-                />
-
-                <ul
-                  className="flex flex-col gap-2 border-t pt-3"
-                  style={{
-                    borderColor:
-                      "color-mix(in srgb, var(--color-main) 8%, transparent)",
-                  }}
-                >
-                  {sliced.map((point) => (
-                    <li key={point.id} className="flex justify-between text-sm">
-                      <span style={{ color: "var(--color-body)" }}>
-                        {formatTrendDate(point.takenAt, locale)}
-                      </span>
-                      <span
-                        className="font-bold tabular-nums"
-                        style={{
-                          color: "var(--color-main)",
-                          fontFamily: "var(--font-heading)",
-                        }}
-                      >
-                        {point.totalNet}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
               </div>
             </Card>
 
-            {ghost ? <GhostCard ghost={ghost} /> : <AnalysisGhostTeaser />}
+            {ghost ? null : <AnalysisGhostTeaser />}
           </div>
 
           {analysis.subjects.length > 0 ? (
@@ -191,19 +188,36 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
                   return (
                     <div
                       key={subject.subjectRef}
-                      className="flex flex-col gap-2 rounded-[var(--radius-card)] p-3"
+                      className="flex flex-col gap-2.5 rounded-[var(--radius-card)] border p-4"
                       style={{
                         background: isFocus
                           ? "color-mix(in srgb, var(--color-chip) 18%, white)"
-                          : "rgba(0,0,0,0.03)",
+                          : "#ffffff",
+                        borderColor: isFocus
+                          ? "transparent"
+                          : "color-mix(in srgb, var(--color-main) 8%, transparent)",
                       }}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <span
-                          className="min-w-0 truncate text-sm font-semibold"
-                          style={{ color: "var(--color-secondary)" }}
-                        >
-                          {subject.subjectName}
+                        <span className="flex min-w-0 items-center gap-1">
+                          <span
+                            className="truncate text-sm font-semibold"
+                            style={{ color: "var(--color-secondary)" }}
+                          >
+                            {subject.subjectName}
+                          </span>
+                          <InfoTooltip
+                            text={
+                              subject.normalizedAveragePercent != null
+                                ? t("subject_tile_info_full", {
+                                    count: subject.attemptCount,
+                                    percent: subject.normalizedAveragePercent,
+                                  })
+                                : t("subject_tile_info_basic", {
+                                    count: subject.attemptCount,
+                                  })
+                            }
+                          />
                         </span>
                         {isFocus ? (
                           <Chip size="sm" className="shrink-0">
@@ -212,60 +226,42 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
                         ) : null}
                       </div>
 
-                      <span
-                        className="text-2xl font-bold leading-none tabular-nums"
-                        style={{
-                          color: "var(--color-main)",
-                          fontFamily: "var(--font-heading)",
-                        }}
-                      >
-                        {subject.averageNet}
-                      </span>
-
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
                         <span
-                          className="text-xs"
-                          style={{ color: "var(--color-secondary)" }}
+                          className="text-2xl font-bold leading-none tabular-nums"
+                          style={{
+                            color: "var(--color-main)",
+                            fontFamily: "var(--font-heading)",
+                          }}
                         >
-                          {t("avg_count", { count: subject.attemptCount })}
+                          {subject.averageNet}
                         </span>
-                        {subject.normalizedAveragePercent != null ? (
+                        {trendUp || trendDown ? (
                           <span
-                            className="text-xs font-semibold tabular-nums"
-                            style={{ color: "var(--color-chip-text)" }}
+                            className="inline-flex w-fit items-center gap-0.5 text-xs font-semibold tabular-nums"
+                            style={{
+                              color: trendUp
+                                ? "var(--color-success)"
+                                : "var(--color-secondary)",
+                            }}
                           >
-                            {t("avg_normalized", {
-                              percent: subject.normalizedAveragePercent,
-                            })}
+                            {trendUp ? (
+                              <TrendingUp
+                                className="size-3.5 shrink-0"
+                                strokeWidth={2.25}
+                                aria-hidden
+                              />
+                            ) : (
+                              <TrendingDown
+                                className="size-3.5 shrink-0"
+                                strokeWidth={2.25}
+                                aria-hidden
+                              />
+                            )}
+                            {deltaDisplay}
                           </span>
                         ) : null}
                       </div>
-
-                      {trendUp || trendDown ? (
-                        <div
-                          className="flex items-center gap-1 text-xs font-semibold tabular-nums"
-                          style={{
-                            color: trendUp
-                              ? "var(--color-success)"
-                              : "var(--color-secondary)",
-                          }}
-                        >
-                          {trendUp ? (
-                            <TrendingUp
-                              className="size-3.5 shrink-0"
-                              strokeWidth={2.25}
-                              aria-hidden
-                            />
-                          ) : (
-                            <TrendingDown
-                              className="size-3.5 shrink-0"
-                              strokeWidth={2.25}
-                              aria-hidden
-                            />
-                          )}
-                          {t("subject_trend_delta", { delta: deltaDisplay })}
-                        </div>
-                      ) : null}
                     </div>
                   );
                 })}

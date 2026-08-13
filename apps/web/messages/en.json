@@ -258,6 +258,8 @@
     "attach_remove": "Remove",
     "attach_view": "View image",
     "attach_close": "Close",
+    "profile_photo_open": "Open profile photo",
+    "profile_photo_preview_label": "{name} profile photo preview",
     "attach_prev": "Previous image",
     "attach_next": "Next image",
     "attach_too_many": "You can add up to {max} attachments.",
@@ -992,9 +994,8 @@
     "trend_title": "Score trend",
     "trend_subtitle": "Personal progress",
     "subject_avg_title": "Subject averages",
-    "avg_count": "{count} exams",
     "subject_focus_badge": "Focus",
-    "subject_trend_delta": "{delta} net (last 4)",
+    "subject_tile_info_basic": "You've entered {count} exams for this subject. The arrow next to it shows where your last 4 exams sit versus this average.",
     "photo_signals_title": "Subject signals",
     "photo_signals_subtitle": "Hints from photo analysis",
     "photo_topic_signals_title": "Topic signals",
@@ -1060,7 +1061,8 @@
     "validation_over_count": "{subject}: total exceeds question count ({total}/{max}).",
     "saved_toast_title": "Mock exam saved",
     "saved_toast_message": "Total net: {net}",
-    "photo_quota": "{remaining} / {limit} analyses left this month",
+    "photo_quota_label": "Analyses left this month",
+    "photo_quota_count": "{remaining}/{limit}",
     "time_filter": {
       "label": "Time range",
       "last4": "Last 4",
@@ -1103,7 +1105,7 @@
       "delete_success_title": "Exam deleted",
       "delete_success_message": "Your analysis now reflects your remaining exams."
     },
-    "avg_normalized": "{percent}%",
+    "subject_tile_info_full": "You've entered {count} exams for this subject. Your average net is {percent}% of the total question count. The arrow next to it shows where your last 4 exams sit versus this average.",
     "photo_signals_empty_desc": "No subject signals yet. Add a wrong-answer photo and we will collect the clues here.",
     "photo_trust": "A photo only classifies its topic or subject; it never solves the question.",
     "photo_no_exam_desc": "Enter a mock exam result before attaching a photo.",
@@ -1505,16 +1507,11 @@
     "back_subscription": "Back to subscription"
   },
   "ghost": {
-    "title": "Your Past Self",
-    "previous_delta": "{delta} net (previous attempt)",
     "new_record": "🏆 New record",
     "record_delta": "{delta} to record",
-    "by_subject": "By subject:",
     "narrating": "Your coach is interpreting your progress…",
     "coach_chip": "Your coach",
-    "premium_nudge": "The Premium coach narrates your progress as a personal story →",
-    "latest_net": "Latest net",
-    "change": "Change"
+    "premium_nudge": "The Premium coach narrates your progress as a personal story →"
   },
   "photo": {
     "error_type": "You can only upload JPEG or PNG.",
@@ -1530,8 +1527,10 @@
     "locked_unavailable_title": "Photo analysis is unavailable",
     "locked_unavailable_subtitle": "This feature is temporarily unavailable. Please try again later.",
     "upgrade": "Upgrade to Premium",
-    "upload_subtitle": "Upload one wrong-question photo; we'll classify its subject and, when possible, its topic (no solution).",
+    "upload_subtitle": "Upload one wrong-question photo; we'll classify its subject and, when possible, its topic.",
     "upload_title": "Subject and topic guess from photo",
+    "upload_cta": "Analyze",
+    "upload_another": "Upload another question",
     "remaining": "Remaining analyses this month: {count}",
     "file_label": "Question photo (JPEG/PNG)",
     "analyzing": "Analyzing…",

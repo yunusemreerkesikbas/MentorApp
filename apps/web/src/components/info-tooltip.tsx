@@ -44,7 +44,7 @@ export function InfoTooltip({ text, className }: InfoTooltipProps) {
         <span
           id={tooltipId}
           role="tooltip"
-          className="pointer-events-none absolute left-1/2 top-full z-20 mt-1.5 w-56 -translate-x-1/2 text-pretty rounded-[var(--radius-card)] px-3 py-2 text-xs leading-relaxed"
+          className="pointer-events-none absolute left-1/2 top-full z-20 mt-1.5 w-64 -translate-x-1/2 text-pretty rounded-[var(--radius-card)] px-3 py-2 text-xs leading-relaxed"
           style={{
             background: "#ffffff",
             color: "var(--color-body)",

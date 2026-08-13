@@ -20,6 +20,7 @@ import {
 import { Button, TextAreaField, TextField, useDialog } from "@mentor/ui";
 import type { AuthUser } from "@mentor/types";
 import { FormError } from "@/components/form";
+import { UserAvatar } from "@/components/user-avatar";
 import {
   createAvatarUploadUrl,
   putAvatarToSignedUrl,
@@ -30,13 +31,6 @@ import { useMentorToast } from "@/lib/mentor-toast";
 
 const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 const AVATAR_TYPES = new Set(["image/jpeg", "image/png"]);
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-}
 
 function ProfileAvatar({
   alt,
@@ -50,33 +44,7 @@ function ProfileAvatar({
   user: AuthUser;
 }) {
   const src = overrideUrl === undefined ? resolveAvatarUrl(user.avatarUrl) : overrideUrl;
-  const sizeClass = size === "lg" ? "size-28 text-4xl" : "size-16 text-2xl";
-
-  if (src) {
-    return (
-      // ponytail: next/image breaks this fake-object URL in dev; plain img is the direct public object.
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={src}
-        alt={alt}
-        className={`${sizeClass} rounded-full border-4 border-white object-cover shadow-[var(--shadow-card)]`}
-      />
-    );
-  }
-
-  return (
-    <div
-      className={`grid ${sizeClass} place-items-center rounded-full border-4 border-white font-bold shadow-[var(--shadow-card)]`}
-      style={{
-        backgroundColor: "#D6DBFD",
-        color: "var(--color-main)",
-        fontFamily: "var(--font-heading)",
-      }}
-      aria-hidden
-    >
-      {initials(user.displayName)}
-    </div>
-  );
+  return <UserAvatar alt={alt} frame="strong" name={user.displayName} size={size === "lg" ? 112 : 64} src={src} className="shadow-[var(--shadow-card)]" />;
 }
 
 /**

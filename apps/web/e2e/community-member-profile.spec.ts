@@ -65,12 +65,68 @@ test("üye profili responsive hero, aksiyonlar ve seviye panelini korur", async 
       "href",
       "/topluluk/uye/yunus_emre",
     );
+    await expect(
+      page.locator(".community-header__profile").locator(":scope > img, :scope > span").first(),
+    ).toHaveCSS("border-top-width", "0px");
+    expect(
+      await page
+        .locator(".community-header__profile")
+        .locator(":scope > img, :scope > span")
+        .first()
+        .evaluate((element) => getComputedStyle(element).boxShadow),
+    ).toContain("0px 0px 0px 1px");
+    await expect(
+      page.locator(".community-header").getByRole("link", { name: "Topluluk" }),
+    ).toHaveAttribute("href", "/topluluk");
+    await expect(
+      page.locator(".profile-hero").getByRole("link", { name: "Topluluk" }),
+    ).toHaveCount(0);
     await expect(page.getByRole("img", { name: "Premium üye" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Premium üye" })).toHaveCSS(
+      "background-color",
+      "rgba(0, 0, 0, 0)",
+    );
     await expect(page.getByText("12", { exact: true }).first()).toBeVisible();
     await expect(page.getByRole("img", { name: `${profile.displayName} profil fotoğrafı` })).toBeVisible();
     expect(
       await page.locator(".profile-hero").evaluate((element) => getComputedStyle(element).backgroundColor),
     ).toBe("rgb(255, 255, 255)");
+    await expect(page.locator(".profile-hero__mist")).toHaveCount(0);
+    const identitySurface = await page
+      .locator(".profile-hero__identity")
+      .evaluate((element) => {
+        const style = getComputedStyle(element);
+        return {
+          backgroundColor: style.backgroundColor,
+          borderTopWidth: style.borderTopWidth,
+          borderTopLeftRadius: style.borderTopLeftRadius,
+          borderTopRightRadius: style.borderTopRightRadius,
+        };
+    });
+    expect(identitySurface.backgroundColor).toBe("rgb(255, 255, 255)");
+    const heroComposition = await page.locator(".profile-hero").evaluate((hero) => {
+      const media = hero.querySelector<HTMLElement>(".profile-hero__media");
+      const identity = hero.querySelector<HTMLElement>(".profile-hero__identity");
+      if (!media || !identity) throw new Error("Profile hero surfaces are missing");
+      return {
+        heroHeight: hero.getBoundingClientRect().height,
+        mediaHeight: media.getBoundingClientRect().height,
+        identityHeight: identity.getBoundingClientRect().height,
+      };
+    });
+    if (viewport.width < 1280) {
+      expect(identitySurface.borderTopWidth).toBe("1px");
+      expect(identitySurface.borderTopLeftRadius).not.toBe("0px");
+      expect(identitySurface.borderTopRightRadius).not.toBe("0px");
+      await expect(page.locator(".profile-header")).toHaveCSS("border-left-width", "1px");
+      expect(heroComposition.mediaHeight / heroComposition.heroHeight).toBeGreaterThan(0.58);
+      expect(heroComposition.mediaHeight / heroComposition.heroHeight).toBeLessThan(0.64);
+      expect(heroComposition.identityHeight).toBeLessThan(heroComposition.mediaHeight);
+    } else {
+      expect(identitySurface.borderTopWidth).toBe("0px");
+      expect(heroComposition.heroHeight).toBe(360);
+      expect(heroComposition.mediaHeight).toBe(180);
+    }
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
@@ -83,6 +139,17 @@ test("üye profili responsive hero, aksiyonlar ve seviye panelini korur", async 
       await expect(page.getByText("Kanallar", { exact: true })).toHaveCount(0);
 
       if (viewport.width === 375) {
+        const avatarTrigger = page.getByRole("button", { name: "Profil fotoğrafını aç" }).first();
+        await avatarTrigger.click();
+        const preview = page.getByRole("dialog", {
+          name: `${profile.displayName} profil fotoğrafı önizlemesi`,
+        });
+        await expect(preview).toBeVisible();
+        await expect(preview.getByRole("img", { name: `${profile.displayName} profil fotoğrafı` })).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(preview).toBeHidden();
+        await expect(avatarTrigger).toBeFocused();
+
         await channelsButton.click();
         await expect(page.getByRole("dialog", { name: "Kanallar" })).toBeVisible();
         await page.keyboard.press("Escape");
@@ -94,10 +161,37 @@ test("üye profili responsive hero, aksiyonlar ve seviye panelini korur", async 
     const desktopPanel = page.locator("aside").filter({ hasText: "Yolculuk seviyesi" });
     if (viewport.width >= 1280) {
       await expect(desktopPanel).toBeVisible();
+      await expect(page.locator(".profile-desktop-avatar")).toBeVisible();
+      await expect(page.locator(".profile-desktop-avatar")).toHaveCSS("width", "96px");
+      await expect(page.locator(".profile-desktop-avatar img")).toHaveCSS("border-top-width", "0px");
+      await expect(page.locator(".profile-desktop-avatar img")).toHaveCSS("outline-width", "1px");
+      expect(
+        await page.locator(".profile-desktop-avatar img").evaluate((element) => getComputedStyle(element).boxShadow),
+      ).toContain("0px 0px 0px 4px");
+      await expect(page.locator(".profile-header")).toHaveCSS("border-left-width", "0px");
+      const actionRow = page.locator(".profile-header__action-row");
+      const actionBox = await actionRow.boundingBox();
+      const headerBox = await page.locator(".profile-header").boundingBox();
+      const avatarBox = await page.locator(".profile-desktop-avatar").boundingBox();
+      expect(actionBox).not.toBeNull();
+      expect(headerBox).not.toBeNull();
+      expect(avatarBox).not.toBeNull();
+      expect(Math.abs(actionBox!.x + actionBox!.width - (headerBox!.x + headerBox!.width))).toBeLessThanOrEqual(20);
+      expect(actionBox!.y).toBeGreaterThanOrEqual(avatarBox!.y);
+      expect(actionBox!.y).toBeLessThanOrEqual(avatarBox!.y + avatarBox!.height);
+      await expect(actionRow.getByRole("button", { name: "Profili paylaş" })).toHaveCSS("width", "40px");
+      await expect(actionRow.getByRole("button", { name: "Takip et" })).toHaveCSS("min-width", "144px");
+      const metricBoxes = await page.locator(".profile-metrics > *").evaluateAll((elements) =>
+        elements.map((element) => element.getBoundingClientRect()),
+      );
+      expect(metricBoxes).toHaveLength(3);
+      expect(metricBoxes[1]!.x - (metricBoxes[0]!.x + metricBoxes[0]!.width)).toBeLessThanOrEqual(32);
+      expect(metricBoxes[2]!.x - (metricBoxes[1]!.x + metricBoxes[1]!.width)).toBeLessThanOrEqual(32);
       expect(await desktopPanel.evaluate((element) => getComputedStyle(element).position)).toBe(
         "sticky",
       );
     } else {
+      await expect(page.locator(".profile-desktop-avatar")).toBeHidden();
       await expect(desktopPanel).toBeHidden();
       await expect(page.getByText("Yolculuk seviyesi").first()).toBeVisible();
 
@@ -108,6 +202,10 @@ test("üye profili responsive hero, aksiyonlar ve seviye panelini korur", async 
         const panelBox = await compactPanel.boundingBox();
         expect(panelBox).not.toBeNull();
         expect(panelBox!.height).toBeLessThanOrEqual(460);
+        await expect(compactPanel).toHaveCSS("box-shadow", "none");
+        expect(
+          await compactPanel.evaluate((element) => getComputedStyle(element).backgroundImage),
+        ).toBe("none");
       }
     }
 
@@ -131,7 +229,7 @@ test("üye profili responsive hero, aksiyonlar ve seviye panelini korur", async 
       name: "Çok Uzun İsimli Bir Topluluk Üyesi Soyadı",
     }),
   ).toBeVisible();
-  await expect(page.getByText("ÇU", { exact: true })).toBeVisible();
+  await expect(page.locator(".profile-desktop-avatar").getByText("ÇS", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );

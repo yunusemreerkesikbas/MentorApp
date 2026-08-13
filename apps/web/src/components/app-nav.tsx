@@ -11,9 +11,9 @@ import { subscriptionsControllerGetMine } from "@mentor/api-client";
 
 import { LanguageToggle } from "@/components/language-toggle";
 import { DesktopCoachFab } from "@/components/desktop-coach-fab";
+import { UserAvatar } from "@/components/user-avatar";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { resolveAvatarUrl } from "@/lib/avatar";
 import {
   ECONOMY_CHANGED_EVENT,
   fetchEconomyBalance,
@@ -361,8 +361,7 @@ function AvatarLink({
   user: AuthUser;
 }) {
   const t = useTranslations("nav");
-  const src = resolveAvatarUrl(user.avatarUrl);
-  const sizeClass = size === "lg" ? "size-14 text-base" : "size-11 text-sm";
+  const avatarSize = size === "lg" ? 56 : 44;
 
   return (
     <Link
@@ -377,27 +376,7 @@ function AvatarLink({
       aria-label={t("profile_link")}
       className="relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
     >
-      {src ? (
-        // ponytail: plain img — same as profile header (signed/public object URL).
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={src}
-          alt=""
-          className={`${sizeClass} rounded-full object-cover`}
-        />
-      ) : (
-        <span
-          className={`grid ${sizeClass} place-items-center rounded-full font-bold`}
-          style={{
-            backgroundColor: "#D6DBFD",
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-          aria-hidden
-        >
-          {initials(user.displayName)}
-        </span>
-      )}
+      <UserAvatar name={user.displayName} size={avatarSize} src={user.avatarUrl} />
       <AvatarBadge premium={premium} verified={user.emailVerified} />
     </Link>
   );
@@ -477,13 +456,6 @@ function NavLink({
 
 function NavIcon({ icon: Icon, active }: { icon: LucideIcon; active: boolean }) {
   return <Icon size={22} strokeWidth={active ? 2.25 : 2} aria-hidden />;
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
 function formatCompact(value: number) {

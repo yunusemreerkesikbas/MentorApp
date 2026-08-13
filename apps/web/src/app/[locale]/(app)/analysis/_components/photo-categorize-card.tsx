@@ -8,6 +8,7 @@ import type { CategorizePhotoResultDto, PhotoAccessDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button, Card, Chip, ProgressBar, SectionHeading } from "@mentor/ui";
 import { FormError } from "@/components/form";
+import { InfoTooltip } from "@/components/info-tooltip";
 import {
   categorizeMockExamPhoto,
   createPhotoUploadUrl,
@@ -45,9 +46,15 @@ export function PhotoCategorizeCard({
     setPreviewUrl(null);
   }, [previewUrl]);
 
+  const resetAll = useCallback(() => {
+    clearPreview();
+    setResult(null);
+  }, [clearPreview]);
+
   const stageFile = useCallback(
     (file: File | null) => {
       clearPreview();
+      setResult(null);
       if (!file) return;
       const contentType =
         file.type === "image/png" ? "image/png" : "image/jpeg";
@@ -83,7 +90,6 @@ export function PhotoCategorizeCard({
           clientRequestId,
         );
         setResult(result);
-        clearPreview();
         onCategorized?.();
       } catch (err) {
         setError(
@@ -97,7 +103,7 @@ export function PhotoCategorizeCard({
         setBusy(false);
       }
     },
-    [access.canCategorize, mockExamId, onCategorized, translate, clearPreview],
+    [access.canCategorize, mockExamId, onCategorized, translate],
   );
 
   if (!access.canCategorize) {
@@ -137,18 +143,29 @@ export function PhotoCategorizeCard({
 
   return (
     <Card className="flex flex-col gap-3">
-      <SectionHeading as="h2" subtitle={translate("upload_subtitle")}>
-        {translate("upload_title")}
-      </SectionHeading>
+      <div className="flex items-start justify-between gap-3">
+        <SectionHeading as="h2" subtitle={translate("upload_subtitle")}>
+          {translate("upload_title")}
+        </SectionHeading>
+        <InfoTooltip text={tAnalysis("photo_trust")} className="mt-0.5" />
+      </div>
 
       {access.remainingThisMonth != null && access.monthlyLimit != null ? (
         <div className="flex flex-col gap-1">
-          <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
-            {tAnalysis("photo_quota", {
-              remaining: access.remainingThisMonth,
-              limit: access.monthlyLimit,
-            })}
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
+              {tAnalysis("photo_quota_label")}
+            </span>
+            <span
+              className="text-xs font-semibold tabular-nums"
+              style={{ color: "var(--color-main)" }}
+            >
+              {tAnalysis("photo_quota_count", {
+                remaining: access.remainingThisMonth,
+                limit: access.monthlyLimit,
+              })}
+            </span>
+          </div>
           <ProgressBar
             value={
               access.monthlyLimit > 0
@@ -169,7 +186,7 @@ export function PhotoCategorizeCard({
 
       <FormError message={error} />
 
-      {!pendingFile ? (
+      {!pendingFile && !result ? (
         <div
           role="button"
           tabIndex={0}
@@ -235,67 +252,78 @@ export function PhotoCategorizeCard({
               />
             </div>
           ) : null}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              busy={busy}
-              onClick={() => void uploadFile(pendingFile)}
-            >
-              {translate("upload_title")}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={busy}
-              onClick={clearPreview}
-            >
-              {tAnalysis("history.close")}
-            </Button>
-          </div>
+
+          {result ? (
+            <div className="flex flex-col gap-2" role="status">
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className="text-sm"
+                  style={{ color: "var(--color-secondary)" }}
+                >
+                  {translate("result_prefix")}
+                </span>
+                {result.topicRefs.map((topic) => (
+                  <Chip key={topic.subjectSlug + ":" + topic.slug}>
+                    {topic.subjectName} · {topic.name}
+                  </Chip>
+                ))}
+                {result.topicRefs.length === 0
+                  ? result.subjectRefs.map((subject) => (
+                      <Chip key={subject.slug}>{subject.name}</Chip>
+                    ))
+                  : null}
+              </div>
+              {result.topicRefs.length === 0 && result.subjectRefs.length > 0 ? (
+                <p
+                  className="text-sm"
+                  style={{ color: "var(--color-secondary)" }}
+                >
+                  {translate("topic_undetermined")}
+                </p>
+              ) : result.subjectRefs.length === 0 ? (
+                <p
+                  className="text-sm"
+                  style={{ color: "var(--color-secondary)" }}
+                >
+                  {translate("result_empty")}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                onClick={resetAll}
+                className="inline-flex min-h-9 w-fit cursor-pointer items-center rounded-[var(--radius-card)] px-3 text-xs font-semibold underline outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                style={{ color: "var(--color-main)" }}
+              >
+                {translate("upload_another")}
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void uploadFile(pendingFile!)}
+                className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-[var(--radius-card)] px-3 text-xs font-semibold text-white outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
+                style={{ backgroundColor: "var(--color-btn)" }}
+              >
+                {busy ? translate("analyzing") : translate("upload_cta")}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={clearPreview}
+                className="inline-flex min-h-9 cursor-pointer items-center rounded-[var(--radius-card)] border px-3 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none hover:bg-white/60"
+                style={{
+                  color: "var(--color-main)",
+                  borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",
+                }}
+              >
+                {tAnalysis("history.close")}
+              </button>
+            </div>
+          )}
         </div>
       )}
-
-      {busy && !pendingFile ? (
-        <p
-          className="text-sm"
-          role="status"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {translate("analyzing")}
-        </p>
-      ) : null}
-
-      {result ? (
-        <div className="flex flex-col gap-2" role="status">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className="text-sm"
-              style={{ color: "var(--color-secondary)" }}
-            >
-              {translate("result_prefix")}
-            </span>
-            {result.topicRefs.map((topic) => (
-              <Chip key={topic.subjectSlug + ":" + topic.slug}>
-                {topic.subjectName} · {topic.name}
-              </Chip>
-            ))}
-            {result.topicRefs.length === 0
-              ? result.subjectRefs.map((subject) => (
-                  <Chip key={subject.slug}>{subject.name}</Chip>
-                ))
-              : null}
-          </div>
-          {result.topicRefs.length === 0 && result.subjectRefs.length > 0 ? (
-            <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-              {translate("topic_undetermined")}
-            </p>
-          ) : result.subjectRefs.length === 0 ? (
-            <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-              {translate("result_empty")}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
     </Card>
   );
 }

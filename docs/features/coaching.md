@@ -857,6 +857,22 @@ pnpm --filter @mentor/api test
   Dosyalar: `mock-exam.service.ts`, `packages/types/src/coaching.ts`, `analysis-tab-progress.tsx`,
   `analysis-summary-band.tsx`, `messages/{tr,en}.json`, `e2e/analysis.fixture.ts`.
 
+- **Ders kartları: chip yerine inline trend, açıklayıcı info metni, "Net trendi" → StatLineChart
+  (2026-08-12)** — devam. Ders bazlı ortalama kartlarında `TrendingUp`/`TrendingDown` rozeti artık
+  büyük net değerinin yanında (tinted pill değil, sade renkli ikon+değer); "5 deneme" satırı
+  kaldırılıp ders adının yanına `InfoTooltip` eklendi — hover/tap'te hem deneme sayısını hem
+  `normalizedAveragePercent`'in ne anlama geldiğini (ortalama netin toplam soru sayısına oranı)
+  açık cümlelerle anlatıyor. Kart `p-3`→`p-4`, `gap-2`→`gap-2.5` ile biraz büyüdü.
+  **"Kanıtlar ve geçmiş" > Net trendi:** kullanıcı ApexCharts eklemeyi sordu — reddedildi (zaten
+  `@nivo/line` tabanlı `StatLineChart` altyapısı var, ikinci bir chart kütüphanesi bundle'ı şişirip
+  görsel dili tutarsızlaştırırdı). Bunun yerine eski özel `AnalysisSparkline` SVG'si + altındaki
+  tarih/net `<ul>` listesi (chart'ın kendisiyle aynı veriyi iki kez gösteriyordu) `StatLineChart`
+  (non-compact, eksenli, hover tooltip'i tarih+net gösteriyor) ile değiştirildi —
+  `analysis-next-focus-card.tsx`'teki `AnalysisSparkline` kullanımı (farklı bağlam, "Son 4 deneme"
+  mini paneli) dokunulmadan kaldı.
+  `tsc --noEmit` ve `eslint` temiz.
+  Dosyalar: `analysis-tab-progress.tsx`, `info-tooltip.tsx`, `messages/{tr,en}.json`.
+
 ## Gotchas / Known issues
 
 - **Session history date filter is UTC** — `from`/`to` bound `started_at` to UTC calendar days
