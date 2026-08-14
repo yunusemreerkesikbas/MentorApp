@@ -873,6 +873,17 @@ export const NOTEBOOK_ENTRY_STATUSES = ["ACTIVE", "HEALED", "ARCHIVED"] as const
 export type NotebookEntryStatus = (typeof NOTEBOOK_ENTRY_STATUSES)[number];
 
 /**
+ * Where the question came from — never what the entry *means*.
+ *
+ * A community question only enters the book with the user's own "I could not do this either", so a
+ * `COMMUNITY` entry counts toward the weakness map exactly like an `OWN` one. Anything they merely
+ * found interesting belongs in the forum's bookmarks; letting it in here would make the map
+ * describe other people's gaps.
+ */
+export const NOTEBOOK_SOURCES = ["OWN", "COMMUNITY"] as const;
+export type NotebookSource = (typeof NOTEBOOK_SOURCES)[number];
+
+/**
  * A page, not a wall: 3:4 portrait against the vision board's 3:2. Same absolute-px-in-a-fixed-
  * design-space trick as `VISION_BOARD_CANVAS`, so one document renders identically at any width.
  */
@@ -922,6 +933,11 @@ export interface NotebookEntryDto {
   lastReviewedAt: string | null;
   /** Null once `HEALED`/`ARCHIVED` — the row leaves the due query by having no due date. */
   nextReviewAt: string | null;
+  source: NotebookSource;
+  /** Soft ref to the forum thread this mistake was asked in; null until the user asks. */
+  communityThreadId: string | null;
+  /** Set when the asker accepted an answer — the card has a verified solution waiting. */
+  communityAnsweredAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

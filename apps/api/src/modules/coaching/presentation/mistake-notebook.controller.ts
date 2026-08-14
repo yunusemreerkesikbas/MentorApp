@@ -23,6 +23,7 @@ import { CurrentUser, type RequestUser } from "../../../common/auth/current-user
 import { MistakeNotebookService } from "../application/mistake-notebook.service";
 import {
   CreateNotebookEntryDto,
+  LinkNotebookThreadDto,
   NotebookImageUploadUrlDto,
   PutNotebookPageDto,
   ReviewNotebookEntryDto,
@@ -87,6 +88,23 @@ export class MistakeNotebookController {
     @Body() dto: ReviewNotebookEntryDto,
   ): Promise<NotebookEntryDto> {
     return this.notebook.reviewEntry(user.id, id, dto.solved);
+  }
+
+  /**
+   * Record the forum thread the user just asked this mistake in.
+   *
+   * The client creates the thread through the forum API first and posts the id here — coaching
+   * never calls into forum. The reverse direction (an accepted answer landing back on the card) is
+   * a domain-event listener, not a call either.
+   */
+  @Post("entries/:id/community-thread")
+  @HttpCode(HttpStatus.OK)
+  linkThread(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: LinkNotebookThreadDto,
+  ): Promise<NotebookEntryDto> {
+    return this.notebook.linkCommunityThread(user.id, id, dto.threadId);
   }
 
   @Delete("entries/:id")

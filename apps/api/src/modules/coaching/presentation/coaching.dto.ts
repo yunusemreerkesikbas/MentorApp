@@ -6,6 +6,7 @@ import {
   createMockExamSchema,
   createNotebookEntrySchema,
   createPlanTaskSchema,
+  linkNotebookThreadSchema,
   notebookImageUploadUrlSchema,
   putNotebookPageSchema,
   reviewNotebookEntrySchema,
@@ -71,6 +72,7 @@ export class ReviewNotebookEntryDto extends createZodDto(
   reviewNotebookEntrySchema,
 ) {}
 export class PutNotebookPageDto extends createZodDto(putNotebookPageSchema) {}
+export class LinkNotebookThreadDto extends createZodDto(linkNotebookThreadSchema) {}
 export class NotebookImageUploadUrlDto extends createZodDto(
   notebookImageUploadUrlSchema,
 ) {}

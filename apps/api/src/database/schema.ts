@@ -1224,6 +1224,21 @@ export const mistakeNotebookEntries = pgTable(
      * same column the due query filters on means that query stays a single index scan.
      */
     nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
+    /**
+     * OWN | COMMUNITY. Where the question came from — never what the entry means: a community
+     * question only enters the book with the user's own "I could not do this either", so it counts
+     * toward the weakness map exactly like the rest. Anything they merely wanted to keep belongs in
+     * the forum's own bookmarks, not here, or the map starts describing other people's gaps.
+     */
+    source: text("source").notNull().default("OWN"),
+    /**
+     * SOFT ref → forum threads, deliberately without a FK: threads belong to another bounded
+     * context and a database edge would couple coaching's table to forum's. A deleted thread leaves
+     * an id that reads as "no thread", the same rule `exam_id` follows.
+     */
+    communityThreadId: uuid("community_thread_id"),
+    /** Set by the `forum.answer.accepted` listener — the card has a verified answer waiting. */
+    communityAnsweredAt: timestamp("community_answered_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1233,6 +1248,7 @@ export const mistakeNotebookEntries = pgTable(
   },
   (t) => [
     index("mistake_notebook_due_idx").on(t.userId, t.nextReviewAt),
+    index("mistake_notebook_thread_idx").on(t.communityThreadId),
     index("mistake_notebook_user_created_idx").on(t.userId, t.createdAt),
     index("mistake_notebook_user_subject_idx").on(t.userId, t.subjectRef),
     index("mistake_notebook_mock_idx").on(t.mockExamId),

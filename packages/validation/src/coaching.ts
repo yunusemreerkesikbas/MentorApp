@@ -7,6 +7,7 @@ import {
   CAREER_GROUPS,
   NOTEBOOK_ERROR_TYPES,
   NOTEBOOK_PAPERS,
+  NOTEBOOK_SOURCES,
   VISION_BOARD_FRAMES,
   VISION_BOARD_TEXTURES,
   VISION_IMAGE_FRAMES,
@@ -633,6 +634,9 @@ export type PutNotebookPageInput = z.infer<typeof putNotebookPageSchema>;
  */
 export const createNotebookEntrySchema = z.object({
   examId: z.string().uuid(),
+  source: z.enum(NOTEBOOK_SOURCES).default("OWN"),
+  /** Set when the entry starts from a community question the user also could not solve. */
+  communityThreadId: z.string().uuid().nullish(),
   mockExamId: z.string().uuid().nullish(),
   storageKey: notebookStorageKeySchema.nullish(),
   subjectRef: z.string().trim().min(1).max(120).nullish(),
@@ -656,6 +660,18 @@ export const updateNotebookEntrySchema = z
 export type UpdateNotebookEntryInput = z.infer<
   typeof updateNotebookEntrySchema
 >;
+
+/**
+ * Link an existing entry to the forum thread the user just asked it in.
+ *
+ * The client creates the thread through the forum's own API and posts the id here, rather than
+ * coaching creating threads: a coaching service reaching into forum would be the cross-context call
+ * the module rules forbid, and the forum already owns every rule about what a question may contain.
+ */
+export const linkNotebookThreadSchema = z.object({
+  threadId: z.string().uuid(),
+});
+export type LinkNotebookThreadInput = z.infer<typeof linkNotebookThreadSchema>;
 
 /** The review answer. One boolean — "could you do it this time?" — and the ladder does the rest. */
 export const reviewNotebookEntrySchema = z.object({ solved: z.boolean() });

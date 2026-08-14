@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { NotebookEntryDto } from "@mentor/types";
 import { Button, Card, Chip, SectionHeading } from "@mentor/ui";
+import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { reviewNotebookEntry } from "@/lib/notebook";
 
@@ -34,8 +35,50 @@ export function NotebookReviewPanel({
   const [index, setIndex] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Set when the student misses a card they had already got right once. That second miss is the
+   * moment they have proved they are stuck — and the moment they will accept help. Offering the
+   * community on the *first* miss would be offering it to everyone, every time, which is noise.
+   */
+  const [stuck, setStuck] = useState<NotebookEntryDto | null>(null);
 
   const entry = entries[index];
+
+  if (stuck) {
+    return (
+      <Card className="flex flex-col items-start gap-3">
+        <SectionHeading as="h2" subtitle={t("stuck_subtitle")}>
+          {t("stuck_title")}
+        </SectionHeading>
+        {/*
+          A handoff, not a silent post. Which zone a question belongs in depends on what the user
+          has joined, and publishing on somebody's behalf from a side panel is the wrong shape for
+          an action that puts their photo in front of strangers -- copyright warning included.
+        */}
+        <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+          {t("stuck_copyright")}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/community"
+            className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            style={{ backgroundColor: "var(--color-btn)" }}
+          >
+            {t("stuck_ask")}
+          </Link>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setStuck(null);
+              setIndex((current) => current + 1);
+            }}
+          >
+            {t("stuck_skip")}
+          </Button>
+        </div>
+      </Card>
+    );
+  }
 
   if (!entry) {
     return (
@@ -53,7 +96,13 @@ export function NotebookReviewPanel({
     setBusy(true);
     setError(null);
     try {
-      onReviewed(await reviewNotebookEntry(entry.id, solved));
+      const wasProgressing = entry.reviewCount > 0;
+      const updated = await reviewNotebookEntry(entry.id, solved);
+      onReviewed(updated);
+      if (!solved && wasProgressing && !updated.communityThreadId) {
+        setStuck(updated);
+        return;
+      }
       setIndex((current) => current + 1);
     } catch {
       setError(t("error_review"));

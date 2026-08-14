@@ -1587,7 +1587,13 @@
       "grid": "Grid",
       "dotted": "Dotted",
       "plain": "Plain"
-    }
+    },
+    "card_community_answered": "Answered in the community",
+    "stuck_title": "This one caught you a second time",
+    "stuck_subtitle": "You do not have to wrestle with it alone — ask the community.",
+    "stuck_copyright": "Before you share: a photo of a publisher's question may be copyrighted. Describing your own attempt and where you got stuck usually helps more anyway.",
+    "stuck_ask": "Ask the community",
+    "stuck_skip": "Skip for now"
   },
   "photo": {
     "error_type": "You can only upload JPEG or PNG.",

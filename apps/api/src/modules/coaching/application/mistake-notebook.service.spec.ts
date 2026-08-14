@@ -9,6 +9,7 @@ const OTHER = "66666666-6666-4666-8666-666666666666";
 const EXAM = "77777777-7777-4777-8777-777777777777";
 const ENTRY = "88888888-8888-4888-8888-888888888888";
 const ITEM = "99999999-9999-4999-8999-999999999999";
+const THREAD = "12121212-1212-4212-8212-121212121212";
 
 const fakeDb = {
   transaction: async <T>(cb: (tx: unknown) => Promise<T>): Promise<T> =>
@@ -27,6 +28,9 @@ function makeEntryRow(patch: Partial<MistakeNotebookEntryRow> = {}) {
     errorType: "CARELESS",
     note: null,
     status: "ACTIVE",
+    source: "OWN",
+    communityThreadId: null,
+    communityAnsweredAt: null,
     reviewCount: 0,
     lastReviewedAt: null,
     nextReviewAt: new Date("2026-08-16T09:00:00.000Z"),
@@ -96,6 +100,27 @@ function makeRepoFake() {
       return { doc };
     },
     listAllReferencedImageKeys: async () => [],
+    linkThread: async (
+      _tx: unknown,
+      userId: string,
+      id: string,
+      threadId: string,
+    ) => {
+      const row = entries.get(id);
+      if (!row || row.userId !== userId) return undefined;
+      Object.assign(row, { communityThreadId: threadId });
+      return row;
+    },
+    markThreadAnswered: async (_tx: unknown, threadId: string, at: Date) => {
+      let marked = 0;
+      for (const row of entries.values()) {
+        if (row.communityThreadId === threadId) {
+          Object.assign(row, { communityAnsweredAt: at });
+          marked += 1;
+        }
+      }
+      return marked;
+    },
   };
 }
 
@@ -152,6 +177,7 @@ describe("MistakeNotebookService", () => {
       const dto = await ctx.service.createEntry(USER, {
         examId: EXAM,
         errorType: "CARELESS",
+        source: "OWN",
       });
 
       expect(dto.nextReviewAt).not.toBeNull();
@@ -165,6 +191,7 @@ describe("MistakeNotebookService", () => {
         ctx.service.createEntry(USER, {
           examId: EXAM,
           errorType: "CARELESS",
+          source: "OWN",
           storageKey: `notebook/${OTHER}/${ITEM}.jpg`,
         }),
       ).rejects.toThrow();
@@ -175,6 +202,7 @@ describe("MistakeNotebookService", () => {
         ctx.service.createEntry(USER, {
           examId: EXAM,
           errorType: "CARELESS",
+          source: "OWN",
           topicRef: "problemler",
         }),
       ).rejects.toThrow();
@@ -185,6 +213,7 @@ describe("MistakeNotebookService", () => {
         ctx.service.createEntry(USER, {
           examId: EXAM,
           errorType: "CARELESS",
+          source: "OWN",
           subjectRef: "uydurma-ders",
         }),
       ).rejects.toThrow();
@@ -194,6 +223,7 @@ describe("MistakeNotebookService", () => {
       const dto = await ctx.service.createEntry(USER, {
         examId: EXAM,
         errorType: "UNKNOWN_TOPIC",
+        source: "OWN",
         subjectRef: "matematik",
         topicRef: "problemler",
       });
@@ -270,6 +300,41 @@ describe("MistakeNotebookService", () => {
     it("does not review another user's entry", async () => {
       ctx.repo.entries.set(ENTRY, makeEntryRow({ userId: OTHER }));
       await expect(ctx.service.reviewEntry(USER, ENTRY, true)).rejects.toThrow();
+    });
+  });
+
+  describe("community bridge", () => {
+    it("links a thread the caller owns and leaves it unanswered until somebody accepts", async () => {
+      ctx.repo.entries.set(ENTRY, makeEntryRow());
+      const dto = await ctx.service.linkCommunityThread(USER, ENTRY, THREAD);
+      expect(dto.communityThreadId).toBe(THREAD);
+      expect(dto.communityAnsweredAt).toBeNull();
+    });
+
+    it("refuses to link another user's entry", async () => {
+      ctx.repo.entries.set(ENTRY, makeEntryRow({ userId: OTHER }));
+      await expect(
+        ctx.service.linkCommunityThread(USER, ENTRY, THREAD),
+      ).rejects.toThrow();
+    });
+
+    it("marks every card on a thread — two students can ask the same question", async () => {
+      ctx.repo.entries.set(ENTRY, makeEntryRow({ communityThreadId: THREAD }));
+      ctx.repo.entries.set(
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        makeEntryRow({
+          id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          userId: OTHER,
+          communityThreadId: THREAD,
+        }),
+      );
+
+      expect(await ctx.service.markCommunityAnswered(THREAD, new Date())).toBe(2);
+    });
+
+    it("ignores a thread nobody linked", async () => {
+      ctx.repo.entries.set(ENTRY, makeEntryRow());
+      expect(await ctx.service.markCommunityAnswered(THREAD, new Date())).toBe(0);
     });
   });
 

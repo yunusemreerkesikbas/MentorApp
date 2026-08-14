@@ -109,12 +109,21 @@ export function NotebookEntryCard({ entry, due, onOpen }: NotebookEntryCardProps
           style={{
             marginTop: "auto",
             fontSize: "3cqw",
-            color: healed ? "var(--color-success)" : "var(--color-secondary)",
+            // An answer waiting outranks the review count: it is the only line here the user can
+            // act on right now, and a healed card that got there via the community still earned it.
+            color: entry.communityAnsweredAt
+              ? "var(--color-accent)"
+              : healed
+                ? "var(--color-success)"
+                : "var(--color-secondary)",
+            fontWeight: entry.communityAnsweredAt ? 600 : 400,
           }}
         >
-          {healed
-            ? t("card_healed")
-            : t("card_review_count", { count: entry.reviewCount })}
+          {entry.communityAnsweredAt
+            ? t("card_community_answered")
+            : healed
+              ? t("card_healed")
+              : t("card_review_count", { count: entry.reviewCount })}
         </span>
       </span>
     </button>

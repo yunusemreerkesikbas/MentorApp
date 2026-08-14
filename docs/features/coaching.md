@@ -1683,3 +1683,33 @@ pnpm --filter @mentor/api test
   sayfasının altında duruyor, uzun kuyruk panonun işi.
   İlgili: `components/stage/*`, `use-notebook-page.ts`(+spec), `notebook-edit-bar.tsx`,
   `notebook-page-stage.tsx`, `notebook-shell.tsx`, `lib/notebook-layout.ts`, `board-editor-shell.tsx`.
+
+- **Defter ↔ topluluk köprüsü: yarısı bağlandı (2026-08-14, APP-042)** — Tekrar sırasında ikinci kez
+  "yine çözemedim" denen an, öğrencinin takıldığını **kanıtladığı** andı ve şimdiye kadar ölüydü:
+  uygulama kartı yeniden zamanlayıp geçiyordu. Artık o anda topluluk teklif ediliyor. **İlk
+  kaçırmada değil, ikincide** — ilkinde teklif etmek herkese her seferinde teklif etmek olurdu, yani
+  gürültü (`reviewCount > 0` iken kaçırma).
+  **Migration 0078** 0077'de bilerek ertelenen üç kolonu getiriyor: `source` (OWN | COMMUNITY),
+  `community_thread_id`, `community_answered_at`. Thread id'de **FK yok, bilerek**: thread'ler
+  forum'un bounded context'inde, veritabanı seviyesinde bir kenar coaching'in tablosunu forum'unkine
+  bağımlı yapardı — silinmiş bir thread "thread yok" diye okunuyor, `exam_id`'nin izlediği soft-ref
+  kuralının aynısı.
+  **Geri yön tek kuplaj noktası:** `NotebookForumListener`, `forum.answer.accepted` olayını dinleyip
+  o thread'e bağlı kartları işaretliyor (economy'nin `ForumEventsListener`'ıyla birebir aynı kalıp).
+  Forum defterin varlığını bilmiyor, defter forum tablosuna dokunmuyor. Listener hata yutuyor +
+  logluyor: `emitAsync` accept'in içinde await ediliyor, burada fırlatmak zaten commit olmuş bir
+  accept'i 500'lerdi. `markThreadAnswered` **çoğul**: iki öğrenci aynı soruyu bağlayabilir, ikisinin
+  de kartı cevabı hak eder.
+  **Gotcha — `source` girdinin ne *anlama geldiğini* değil, sorunun nereden geldiğini söyler.**
+  Topluluktan gelen soru deftere ancak kullanıcının kendi "ben de çözemedim" beyanıyla giriyor, yani
+  zayıflık haritasına `OWN` gibi sayılıyor. Sadece ilginç bulduğu şey forum'un kendi bookmark'ına
+  ait; buraya alınsa harita başkalarının eksiklerini anlatmaya başlardı.
+  **Yarım kalan yer, bilerek:** thread'i defter **oluşturmuyor**. Hangi zone'a soru sorulacağı
+  kullanıcının katıldığı zone'lara bağlı ve defterden zone seçmek tahmin olurdu; ayrıca birinin
+  fotoğrafını yabancıların önüne koyan bir eylemi yan panelden sessizce yapmak yanlış şekil. Defter
+  devrediyor: telif uyarısı + `/community`'ye yönlendirme. **Topluluk tarafının soruyu oluşturup
+  `POST /v1/coaching/notebook/entries/{id}/community-thread` ile geri bağlaması gerekiyor** — o uç
+  hazır ve testli, çağıran taraf yok.
+  İlgili: `0078_notebook_community_bridge.sql`, `notebook-forum.listener.ts`,
+  `mistake-notebook.{service,repository}.ts`, `notebook-review-panel.tsx`, `notebook-entry-card.tsx`,
+  `lib/notebook.ts`.

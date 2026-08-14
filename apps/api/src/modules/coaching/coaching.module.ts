@@ -4,6 +4,7 @@ import { IdentityModule } from "../identity/identity.module";
 import { MoodService } from "./application/mood.service";
 import { DailyQuestSignalService } from "./application/daily-quest-signal.service";
 import { MistakeNotebookService } from "./application/mistake-notebook.service";
+import { NotebookForumListener } from "./application/notebook-forum.listener";
 import { MockExamService } from "./application/mock-exam.service";
 import { PlanService } from "./application/plan.service";
 import { SessionService } from "./application/session.service";
@@ -58,6 +59,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
   providers: [
     PlanService,
     MistakeNotebookService,
+    NotebookForumListener,
     DailyQuestSignalService,
     SessionService,
     StreakService,

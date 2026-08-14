@@ -173,6 +173,8 @@ export class MistakeNotebookService {
         topicRef: input.topicRef ?? null,
         errorType: input.errorType,
         note: input.note?.trim() ? input.note.trim() : null,
+        source: input.source,
+        communityThreadId: input.communityThreadId ?? null,
         nextReviewAt: firstReviewAt(),
       }),
     );
@@ -213,6 +215,41 @@ export class MistakeNotebookService {
     });
     const [dto] = await this.toEntryDtos([row]);
     return dto!;
+  }
+
+  /**
+   * Link an entry to the forum thread the user just asked it in.
+   *
+   * Coaching does not create the thread — the client posts it through the forum's own API and hands
+   * back the id. A coaching service calling into forum would be the cross-context call the module
+   * rules forbid, and forum already owns every rule about what a question may contain.
+   *
+   * The thread id is not verified to exist: doing so would require exactly that call. A wrong id
+   * degrades to a link that goes nowhere, which is a dead link and not a data leak — the id names
+   * a public thread, and nothing about this entry is exposed by it.
+   */
+  async linkCommunityThread(
+    userId: string,
+    entryId: string,
+    threadId: string,
+  ): Promise<NotebookEntryDto> {
+    const row = await withUserContext(this.db, { userId }, async (tx) => {
+      const linked = await this.notebook.linkThread(tx, userId, entryId, threadId);
+      if (!linked) throw new NotFoundError({ reason: "notebook_entry_missing" });
+      return linked;
+    });
+    const [dto] = await this.toEntryDtos([row]);
+    return dto!;
+  }
+
+  /**
+   * An answer was accepted on a thread somebody linked. Called by the forum-event listener, which
+   * knows a thread but not whose notebook it belongs to — so this runs in SERVICE context.
+   */
+  async markCommunityAnswered(threadId: string, answeredAt: Date): Promise<number> {
+    return withServiceContext(this.db, (tx) =>
+      this.notebook.markThreadAnswered(tx, threadId, answeredAt),
+    );
   }
 
   /** Answer "could you do it this time?" and let the ladder pick the next moment. */
@@ -404,6 +441,9 @@ export class MistakeNotebookService {
         note: row.note,
         status: row.status as NotebookEntryDto["status"],
         reviewCount: row.reviewCount,
+        source: row.source as NotebookEntryDto["source"],
+        communityThreadId: row.communityThreadId,
+        communityAnsweredAt: row.communityAnsweredAt?.toISOString() ?? null,
         lastReviewedAt: row.lastReviewedAt?.toISOString() ?? null,
         nextReviewAt: row.nextReviewAt?.toISOString() ?? null,
         createdAt: row.createdAt.toISOString(),

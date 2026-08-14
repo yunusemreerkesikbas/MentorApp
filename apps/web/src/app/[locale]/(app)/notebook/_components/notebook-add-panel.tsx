@@ -87,6 +87,7 @@ export function NotebookAddPanel({
     try {
       const entry = await createNotebookEntry({
         examId,
+        source: "OWN",
         storageKey: photo?.key ?? null,
         subjectRef: subjectRef || null,
         // A topic only ever comes from a pre-label, and it is meaningless without its subject.

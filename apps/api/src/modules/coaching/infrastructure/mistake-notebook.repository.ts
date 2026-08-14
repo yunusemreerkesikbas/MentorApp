@@ -11,6 +11,8 @@ export type MistakeNotebookPageRow = typeof mistakeNotebookPages.$inferSelect;
 
 export interface CreateNotebookEntryRow {
   examId: string;
+  source: string;
+  communityThreadId: string | null;
   mockExamId: string | null;
   storageKey: string | null;
   subjectRef: string | null;
@@ -238,6 +240,46 @@ export class MistakeNotebookRepository {
       })
       .returning();
     return rows[0]!;
+  }
+
+  /** Attach the forum thread the user just asked this mistake in. */
+  async linkThread(
+    tx: DatabaseTx,
+    userId: string,
+    entryId: string,
+    threadId: string,
+  ): Promise<MistakeNotebookEntryRow | undefined> {
+    const rows = await tx
+      .update(mistakeNotebookEntries)
+      .set({ communityThreadId: threadId, updatedAt: sql`now()` })
+      .where(
+        and(
+          eq(mistakeNotebookEntries.id, entryId),
+          eq(mistakeNotebookEntries.userId, userId),
+        ),
+      )
+      .returning();
+    return rows[0];
+  }
+
+  /**
+   * Mark every entry pointing at a thread as answered.
+   *
+   * Service-scoped and not filtered by user, because the caller is the accepted-answer listener:
+   * it knows a thread, not whose notebook the thread came from. Plural on purpose — two students
+   * can link the same question, and both of their cards deserve the answer.
+   */
+  async markThreadAnswered(
+    tx: DatabaseTx,
+    threadId: string,
+    answeredAt: Date,
+  ): Promise<number> {
+    const rows = await tx
+      .update(mistakeNotebookEntries)
+      .set({ communityAnsweredAt: answeredAt, updatedAt: sql`now()` })
+      .where(eq(mistakeNotebookEntries.communityThreadId, threadId))
+      .returning({ id: mistakeNotebookEntries.id });
+    return rows.length;
   }
 
   /**

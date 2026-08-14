@@ -79,6 +79,23 @@ export async function updateNotebookEntry(
   })) as NotebookEntryDto;
 }
 
+/**
+ * Record the forum thread this mistake was asked in.
+ *
+ * The thread is created through the forum's own flow, not from here: which zone a question belongs
+ * in depends on what the user has joined, and picking one on their behalf would be a guess. The
+ * notebook hands the question over and stores the id it gets back.
+ */
+export async function linkNotebookThread(
+  id: string,
+  threadId: string,
+): Promise<NotebookEntryDto> {
+  return (await http<NotebookEntryDto>(
+    `/v1/coaching/notebook/entries/${id}/community-thread`,
+    { method: "POST", body: JSON.stringify({ threadId }) },
+  )) as NotebookEntryDto;
+}
+
 /** "Could you do it this time?" — the interval ladder lives on the server. */
 export async function reviewNotebookEntry(
   id: string,

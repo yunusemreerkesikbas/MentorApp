@@ -1587,7 +1587,13 @@
       "grid": "Kareli",
       "dotted": "Noktalı",
       "plain": "Düz"
-    }
+    },
+    "card_community_answered": "Toplulukta cevaplandı",
+    "stuck_title": "Bu soru seni ikinci kez yakaladı",
+    "stuck_subtitle": "Tek başına uğraşmana gerek yok — toplulukta sorabilirsin.",
+    "stuck_copyright": "Paylaşırken dikkat: yayın denemesi sorusunun fotoğrafı telifli olabilir. Kendi çözüm denemeni ve takıldığın yeri anlatman genelde daha çok işe yarar.",
+    "stuck_ask": "Toplulukta sor",
+    "stuck_skip": "Şimdilik geç"
   },
   "photo": {
     "error_type": "Yalnızca JPEG veya PNG yükleyebilirsin.",

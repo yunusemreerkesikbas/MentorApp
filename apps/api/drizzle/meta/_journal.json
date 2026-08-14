@@ -547,6 +547,13 @@
       "when": 1786800000000,
       "tag": "0077_mistake_notebook",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1786810000000,
+      "tag": "0078_notebook_community_bridge",
+      "breakpoints": true
     }
   ]
 }
