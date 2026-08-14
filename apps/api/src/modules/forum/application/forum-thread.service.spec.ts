@@ -93,6 +93,13 @@ const makeZoneRepo = (
   findMembership: vi
     .fn()
     .mockResolvedValue(memberStatus ? { role: ZoneRole.MEMBER, status: memberStatus } : null),
+  findMembershipsByZone: vi.fn().mockResolvedValue(
+    new Map(
+      memberStatus
+        ? [["z1", { role: ZoneRole.MEMBER, status: memberStatus }]]
+        : [],
+    ),
+  ),
 });
 
 const enabledConfig = { get: vi.fn().mockResolvedValue(true) };
@@ -187,6 +194,25 @@ describe("ForumThreadService", () => {
     expect(feed.items[0]!.reactionCounts).toEqual({ "👍": 3 });
     expect(feed.items[0]!.myReactions).toEqual(["👍"]);
     expect(feed.nextCursor).toBe(feed.items[1]!.createdAt); // limit reached → there may be more
+  });
+
+  it("listFeed exposes owner edit and delete capabilities from server policy", async () => {
+    const zoneRepo = makeZoneRepo();
+    const now = new Date();
+    threadRepo.listFeed.mockResolvedValue([
+      threadRow({ authorId: "u1", createdAt: now, updatedAt: now }),
+    ]);
+    const service = svc(zoneRepo);
+
+    const feed = await service.listFeed("u1", "z1", { limit: 20, sort: "recent" }, [
+      UserRole.STUDENT,
+    ]);
+
+    expect(feed.items[0]!.capabilities).toMatchObject({
+      canEdit: true,
+      canDelete: true,
+      canModerate: false,
+    });
   });
 
   it("blocks delete by a non-author non-mod, allows the author", async () => {

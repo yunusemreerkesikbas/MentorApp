@@ -1732,3 +1732,64 @@ pnpm --filter @mentor/api test
   **uygulama kabuğunun çağırdığı her uç açıkça mock'lanmalı**, yoksa hata defterde değil kabukta
   patlar ve teşhis yanıltıcı olur.
   İlgili: `apps/web/e2e/notebook.spec.ts`, `apps/web/src/lib/content-topics.ts`.
+
+- **Defter kabuğu 2. tur: rail+panel yan menü, bağımsız sayfa kaydırma, gelişmiş spiral (2026-08-14,
+  APP-042)** — Kullanıcı geri bildirimiyle dört değişiklik: (1) sabit rail (Ekle/Sticker/Not/Kağıt
+  ikonları) + açılır-kapanır panel, vision-board editörünün `board-side-panel.tsx` kalıbı birebir
+  taşındı (`notebook-side-panel.tsx`); monolitik `notebook-edit-bar.tsx` kaldırıldı. (2) "Defteri aç"
+  butonu kalktı — kapağın kendisi artık `role="button"` + `tabIndex` + `onKeyDown` ile açılan kontrol
+  (`NotebookCover`'a `onOpen`/`openLabel` eklendi); klavye/ekran okuyucu erişimi kaybolmadı, sadece
+  ayrı bir buton olmaktan çıktı. (3) Sayfa çevirme artık **sadece değişen sayfa** kayıyor: eskiden
+  tüm çift sayfa tek bir `rotateY` bloğu gibi dönüyordu, şimdi sol ve sağ sayfa **bağımsız**
+  `AnimatePresence` bölgeleri (`overflow:hidden` kesme kutusu + `translateX` slide), ikisi de aynı
+  `direction`'a göre kayıyor ama spine ve karşı sayfa sarsılmıyor. Kapak↔açık-defter geçişi ayrı bir
+  dış `AnimatePresence` (crossfade, `mode="wait"` — aspect-ratio tek-sayfadan çift-sayfaya sıçradığı
+  için üst üste binmesin diye) . (4) Spiral: halka artık **kapalı elips + ayrı vurgu elipsi + delik
+  üstte radial-gradient** — tel dokunun içinden geçiyormuş gibi görünüyor, "metalik" parlama ayrı bir
+  ince stroke. Görsel asset eklenmedi; prosedürel iyileştirme yeterli görüldü (mimari zaten raster'ı
+  reddediyordu — bkz. dosya başındaki not).
+  **Undo/sil artık rail kategorisi değil**, vision-board'un canvas üstü mini araç çubuğu gibi ayrı
+  bir ikon satırı — ikisi de `focused` (en son dokunulan taraf) üzerinde çalışıyor.
+  **Bilerek karar verilen açık nokta:** "Ekle" panelinin içinde `NotebookAddPanel` kendi `Card`
+  sarmalayıcısıyla geliyor, bu da panel+kart iç içe iki kutu gibi görünebilir — kozmetik, gerekirse
+  `NotebookAddPanel`'in kartı soyulabilir.
+  İlgili: `notebook-shell.tsx` (yeniden yazıldı), `notebook-side-panel.tsx` (yeni),
+  `notebook-surface.tsx` (spiral + `NotebookCover.onOpen`), `notebook-edit-bar.tsx` (silindi).
+
+- **Defter kabuğu 3. tur: sayfa geçişi katmanlanıyor, tam sticker seti, foto-önce kart, sayfa-içi not
+  düzenleme (2026-08-14, APP-042)** — Beş değişiklik: (1) **Sayfa çevirme artık tek birim.** Sol ve
+  sağ sayfa ayrı `AnimatePresence` bölgeleri olmaktan çıktı; çift sayfa TEK bir kaydırılan blok, gelen
+  blok `zIndex:2` ile giden bloğun (`zIndex:1`) **üstünden geçerek** kapanıyor — "sağdaki yaprak
+  soldakinin üstüne gelecek" isteğinin karşılığı. İki katmanlı yapı korunuyor: dış `AnimatePresence`
+  (`mode="wait"`) sadece kapak↔açık-defter arasında geçiyor (en-boy oranı tek sayfadan çifte
+  sıçradığı için üst üste binmesin diye bekliyor), iç `AnimatePresence` sayfa çevirmeleri için
+  (üst üste binsin diye beklemiyor — "üstüne gelme" efekti bunu gerektiriyor). Framer Motion'ın
+  `initial`/`exit` prop'ları fonksiyon kabul etmediği için (`custom` sadece `variants` üzerinden
+  çalışıyor) geçiş `variants` objesine taşındı.
+  (2) **Sticker alanı vision-board'un tam 68 parçalık setine çıktı** — önceki 8'lik "ponytail"
+  kısayolu kaldırıldı (kullanıcı haklıydı: mimari zaten paylaşılıyor, kısıtlamanın gerekçesi
+  zayıftı). Aria-label'lar da tekrar üretilmedi — `vision.board.sticker_*` çevirileri (68 anahtar)
+  doğrudan kullanılıyor, notebook namespace'ine ikinci bir kopya açılmadı. Panel genişliği `lg:w-64`
+  → `lg:w-80`.
+  (3) **Fotoğraflı kart artık sadece fotoğraf.** Chip/konu/not/durum satırı karta gömülü değil,
+  `group-hover`/`group-focus-within` ile açılan bir overlay'e taşındı (saf CSS, yeni kütüphane yok).
+  Tıklama artık **tam ekran önizleme** açıyor (`NotebookImageLightbox` — community'nin galeri
+  lightbox'ının tek-görsel, ok/karusel'siz sadeleştirilmiş hali). **Bilinen ödün:** fotoğraflı
+  kartlarda çift-tıkla-incele artık ulaşılamaz — ilk tıklama önizlemeyi açtığı için ikinci tıklama
+  önizlemenin arka planına düşüyor (kapatıyor), stage'in `onDoubleClick`'ine hiç ulaşmıyor.
+  Fotoğrafsız (yalnızca not) kartlarda çift-tık-incele aynen çalışıyor. Fotoğraflı kartlar için
+  inceleme yolu tekrar şeridi akışı.
+  (4) Not girme sidebar formu tamamen kaldırıldı. "Not" artık bir kategori değil, vision-board'un
+  `addText` deseniyle birebir aynı **anlık eylem**: tıklanınca boş bir not öğesi odaklı sayfaya
+  ekleniyor ve **sayfa üzerinde** satır-içi `<textarea>` (`NotebookTextInlineEditor`,
+  `BoardTextInlineEditor`'ın notebook'a taşınmış hali) doğrudan düzenleme moduna giriyor — ayrıca
+  çift tıklama da (artık entry+text kolu birlikte) aynı düzenleyiciyi açıyor. Boş bırakılıp
+  odaktan çıkılırsa öğe **silinir**, hiçbir zaman boş metinle kaydedilmez (şema `min(1)` istiyor).
+  `NotebookPageStage`'e vision-board'un `contentHiddenId` deseni eklendi — düzenlenen öğenin statik
+  render'ı, üstündeki textarea ile çakışmasın diye gizleniyor.
+  (5) Alt boşluk + kapak butonu: kabuğa dikey padding eklendi, önceki/sonraki butonlar sütunun
+  altına sabitlendi; "Defteri aç" butonu kalktı, kapağın kendisi `role="button"` + klavye desteğiyle
+  açılan kontrol oldu.
+  İlgili: `notebook-shell.tsx`, `notebook-side-panel.tsx`, `notebook-entry-card.tsx`,
+  `notebook-page-stage.tsx`, `notebook-text-inline-editor.tsx` (yeni),
+  `notebook-image-lightbox.tsx` (yeni), `notebook-surface.tsx`.

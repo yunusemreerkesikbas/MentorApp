@@ -14,22 +14,28 @@ const REASONS: { value: ReportReason; key: string }[] = [
 ];
 
 /**
- * Threads-style "⋯" overflow menu (Figma 1:288 dots). Consolidates a target's actions — report
- * (always) + pin/delete (moderators) — into one compact dropdown instead of inline text. Reused for
- * both feed threads (targetType THREAD) and comments (targetType POST) so headers stay narrow.
+ * Threads-style "⋯" overflow menu. Server capabilities decide whether the viewer sees owner
+ * edit/delete actions, moderation actions, or report. Reused for threads and comments so headers
+ * stay narrow and action placement remains consistent.
  */
 export function ThreadMenu({
   targetId,
   targetType = ModerationTargetType.THREAD,
   isPinned = false,
+  canEdit,
+  canDelete,
   canModerate,
+  onEdit,
   onPin,
   onDelete,
 }: {
   targetId: string;
   targetType?: ModerationTargetType;
   isPinned?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
   canModerate?: boolean;
+  onEdit?: () => void;
   onPin?: (pinned: boolean) => void;
   onDelete?: () => void;
 }) {
@@ -62,7 +68,7 @@ export function ThreadMenu({
       trigger={({ open: isOpen, setOpen: setMenuOpen, menuId }) => (
         <button
           type="button"
-          aria-label={t("report")}
+          aria-label={t("actions")}
           aria-haspopup="menu"
           aria-expanded={isOpen}
           aria-controls={isOpen ? menuId : undefined}
@@ -83,6 +89,9 @@ export function ThreadMenu({
     >
       {view === "menu" ? (
         <>
+          {canEdit ? (
+            <PopoverMenuItem onClick={() => onEdit?.()}>{t("edit")}</PopoverMenuItem>
+          ) : null}
           {canModerate ? (
             <PopoverMenuItem
               onClick={() => {
@@ -92,10 +101,12 @@ export function ThreadMenu({
               {isPinned ? t("unpin") : t("pin")}
             </PopoverMenuItem>
           ) : null}
-          <PopoverMenuItem closeOnClick={false} onClick={() => setView("report")}>
-            {t("report")}
-          </PopoverMenuItem>
-          {canModerate ? (
+          {!canDelete ? (
+            <PopoverMenuItem closeOnClick={false} onClick={() => setView("report")}>
+              {t("report")}
+            </PopoverMenuItem>
+          ) : null}
+          {canDelete ? (
             <PopoverMenuItem danger onClick={() => onDelete?.()}>
               {t("delete")}
             </PopoverMenuItem>

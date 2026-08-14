@@ -18,8 +18,8 @@ import { NotebookEntryCard } from "./notebook-entry-card";
  * (`components/stage/`) — a rectangle with a rotation behaves the same on either surface.
  */
 
-/** Design-space px → a share of the container's width. */
-function cq(value: number): string {
+/** Design-space px → a share of the container's width. Exported for the text inline editor. */
+export function cq(value: number): string {
   return `${(value / NOTEBOOK_PAGE_CANVAS.width) * 100}cqw`;
 }
 
@@ -29,9 +29,11 @@ const StageItem = memo(function StageItem({
   due,
   interactive,
   selected,
+  hideContent,
   onSelect,
   onItemPointerDown,
-  onOpenEntry,
+  onItemDoubleClick,
+  onPreviewImage,
   overlay,
 }: {
   item: NotebookPageItem;
@@ -39,10 +41,13 @@ const StageItem = memo(function StageItem({
   due?: boolean;
   interactive: boolean;
   selected: boolean;
+  /** True while an overlay (the inline text editor) fully replaces the item's own render. */
+  hideContent?: boolean;
   /** Must be referentially stable, or the memo above never skips anything. */
   onSelect?: (id: string | null) => void;
   onItemPointerDown?: (event: ReactPointerEvent, item: NotebookPageItem) => void;
-  onOpenEntry?: (entry: NotebookEntryDto) => void;
+  onItemDoubleClick?: (item: NotebookPageItem) => void;
+  onPreviewImage?: (entry: NotebookEntryDto) => void;
   overlay?: ReactNode;
 }) {
   return (
@@ -55,6 +60,18 @@ const StageItem = memo(function StageItem({
               event.stopPropagation();
               onSelect?.(item.id);
               onItemPointerDown?.(event, item);
+            }
+          : undefined
+      }
+      // Single click selects (for arranging); double-click opens a card or starts editing a note.
+      // The stage is always interactive now — same as the vision board, which has no separate
+      // view/edit mode — so a second, explicit gesture is what lets an item still be opened
+      // without fighting the drag.
+      onDoubleClick={
+        interactive && item.kind !== "sticker"
+          ? (event) => {
+              event.stopPropagation();
+              onItemDoubleClick?.(item);
             }
           : undefined
       }
@@ -71,18 +88,12 @@ const StageItem = memo(function StageItem({
         touchAction: interactive ? "none" : undefined,
       }}
     >
-      {item.kind === "entry" ? (
+      {hideContent ? null : item.kind === "entry" ? (
         // An item whose entry was deleted renders as nothing rather than as a broken card: the
         // page repairs itself on its next save, which is cheaper than rewriting every page on
         // delete.
         entry ? (
-          <NotebookEntryCard
-            entry={entry}
-            due={due}
-            // While arranging, a tap selects the card instead of opening it — otherwise every
-            // attempt to drag ends in a review sheet.
-            onOpen={interactive ? undefined : onOpenEntry}
-          />
+          <NotebookEntryCard entry={entry} due={due} onPreview={onPreviewImage} />
         ) : null
       ) : (
         <BoardItemView item={item} />
@@ -97,13 +108,17 @@ export interface NotebookPageStageProps {
   entries: NotebookEntryDto[];
   /** Entry ids whose review moment has arrived — the page lifts them out of the crowd. */
   dueIds?: ReadonlySet<string>;
-  onOpenEntry?: (entry: NotebookEntryDto) => void;
   /** Passing any of the editing props below turns the page into an arrangeable surface. */
   onSelect?: (id: string | null) => void;
   onItemPointerDown?: (event: ReactPointerEvent, item: NotebookPageItem) => void;
+  onItemDoubleClick?: (item: NotebookPageItem) => void;
+  /** Fires when a photo card's own click target is used — opens the full-size preview. */
+  onPreviewImage?: (entry: NotebookEntryDto) => void;
   onPointerMove?: (event: ReactPointerEvent) => void;
   onPointerUp?: (event: ReactPointerEvent) => void;
   selectedId?: string | null;
+  /** The one item, if any, whose overlay fully replaces its own render (the inline text editor). */
+  contentHiddenId?: string | null;
   renderOverlay?: (item: NotebookPageItem) => ReactNode;
 }
 
@@ -111,12 +126,14 @@ export function NotebookPageStage({
   items,
   entries,
   dueIds,
-  onOpenEntry,
   onSelect,
   onItemPointerDown,
+  onItemDoubleClick,
+  onPreviewImage,
   onPointerMove,
   onPointerUp,
   selectedId = null,
+  contentHiddenId = null,
   renderOverlay,
 }: NotebookPageStageProps) {
   const interactive = Boolean(onSelect || onItemPointerDown);
@@ -150,9 +167,11 @@ export function NotebookPageStage({
           due={item.kind === "entry" ? dueIds?.has(item.entryId) : false}
           interactive={interactive}
           selected={item.id === selectedId}
+          hideContent={item.id === contentHiddenId}
           onSelect={onSelect}
           onItemPointerDown={onItemPointerDown}
-          onOpenEntry={onOpenEntry}
+          onItemDoubleClick={onItemDoubleClick}
+          onPreviewImage={onPreviewImage}
           overlay={item.id === selectedId ? renderOverlay?.(item) : undefined}
         />
       ))}

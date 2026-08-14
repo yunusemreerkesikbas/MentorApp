@@ -73,7 +73,7 @@ export class ForumThreadController {
     @Param("id") zoneId: string,
     @Query() q: FeedQueryDto,
   ): Promise<ThreadFeed> {
-    return this.threads.listFeed(user.id, zoneId, q);
+    return this.threads.listFeed(user.id, zoneId, q, user.roles);
   }
 
   /** The viewer's cross-zone "Akış" feed — threads by the people they follow, newest first. */
@@ -82,7 +82,7 @@ export class ForumThreadController {
     @CurrentUser() user: RequestUser,
     @Query() q: BookmarkQueryDto,
   ): Promise<ThreadFeed> {
-    return this.threads.getFollowingFeed(user.id, q.before);
+    return this.threads.getFollowingFeed(user.id, q.before, user.roles);
   }
 
   /** "Kimi takip et" — people to follow (active authors in your zones + cohort fallback). */
@@ -96,7 +96,7 @@ export class ForumThreadController {
     @CurrentUser() user: RequestUser,
     @Param("threadId") threadId: string,
   ): Promise<ThreadDetail> {
-    return this.threads.getThreadDetail(user.id, threadId);
+    return this.threads.getThreadDetail(user.id, threadId, user.roles);
   }
 
   // ponytail: static rate-limit; mirror the thread-post limit until abuse data warrants config.
@@ -208,7 +208,7 @@ export class ForumThreadController {
   /** The viewer's saved feed (threads + posts interleaved, newest-saved first). */
   @Get("bookmarks")
   bookmarks(@CurrentUser() user: RequestUser, @Query() q: BookmarkQueryDto): Promise<SavedFeed> {
-    return this.threads.getMyBookmarks(user.id, q.before);
+    return this.threads.getMyBookmarks(user.id, q.before, user.roles);
   }
 
   /** A user's activity feed (their threads + posts interleaved, newest first) for their profile page. */
@@ -218,7 +218,7 @@ export class ForumThreadController {
     @Param("username") username: string,
     @Query() q: BookmarkQueryDto,
   ): Promise<ForumActivityFeed> {
-    return this.threads.getUserActivity(user.id, username, q.before);
+    return this.threads.getUserActivity(user.id, username, q.before, user.roles);
   }
 
   @Put("threads/:threadId/bookmark")

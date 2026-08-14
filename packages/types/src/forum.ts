@@ -176,6 +176,32 @@ export interface MentionSuggestion {
   avatarUrl: string | null;
 }
 
+export const ForumPollStatus = {
+  ACTIVE: "ACTIVE",
+  CLOSED: "CLOSED",
+} as const;
+export type ForumPollStatus = (typeof ForumPollStatus)[keyof typeof ForumPollStatus];
+
+export interface ForumPollOptionView {
+  id: string;
+  text: string;
+  position: number;
+  voteCount: number | null;
+  percentage: number | null;
+}
+
+/** Anonymous poll read model. Voter identities are intentionally never exposed. */
+export interface ForumPollView {
+  id: string;
+  endsAt: string;
+  status: ForumPollStatus;
+  canVote: boolean;
+  resultsVisible: boolean;
+  myOptionId: string | null;
+  totalVoteCount: number;
+  options: ForumPollOptionView[];
+}
+
 /** POST /v1/forum/attachments/upload-url → client PUTs the file to `uploadUrl`, then sends `key`. */
 export interface ForumAttachmentUploadUrl {
   uploadUrl: string;

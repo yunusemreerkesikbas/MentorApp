@@ -342,7 +342,7 @@ export class ForumDiscoveryService {
     await this.assertEnabled();
     const zone = await this.forum.getZone(actor.id, actor.roles, slug);
     const [feed, contributors, pinned] = await Promise.all([
-      this.threadService.listFeed(actor.id, zone.id, query),
+      this.threadService.listFeed(actor.id, zone.id, query, actor.roles),
       this.repo.zoneContributors(zone.id, 6),
       this.repo.pinnedThreadSummaries(zone.id, 4),
     ]);

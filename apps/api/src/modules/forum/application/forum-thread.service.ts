@@ -44,8 +44,10 @@ import {
   canDeleteThread,
   canPinThread,
   canPostInZone,
+  isPlatformStaff,
   type ForumActor,
 } from "../domain/forum.policy";
+import { evaluateForumEditPolicy } from "../domain/forum-discovery.policy";
 import { ForumEventTopic } from "../domain/forum.events";
 import { ForumZoneRepository } from "../infrastructure/forum-zone.repository";
 import {
@@ -200,10 +202,17 @@ export class ForumThreadService {
     // fetch with JOIN so authorName is populated in the immediate response
     const rowWithAuthor = await this.threads.findById(row.id, actor.id);
     if (!rowWithAuthor) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
-    return threadRowToView(rowWithAuthor, {}, [], this.storage, 0, [], attached);
+    const view = threadRowToView(rowWithAuthor, {}, [], this.storage, 0, [], attached);
+    await this.attachThreadCapabilities([rowWithAuthor], [view], actor);
+    return view;
   }
 
-  async listFeed(viewerId: string, zoneId: string, q: FeedQuery): Promise<ThreadFeed> {
+  async listFeed(
+    viewerId: string,
+    zoneId: string,
+    q: FeedQuery,
+    roles: string[] = [],
+  ): Promise<ThreadFeed> {
     await this.assertEnabled();
     const zone = await this.zones.findById(zoneId, viewerId);
     if (!zone) throw new DomainError(ErrorCode.FORUM_ZONE_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -233,6 +242,7 @@ export class ForumThreadService {
         bookmarked.has(r.id),
       ),
     );
+    await this.attachThreadCapabilities(rows, items, { id: viewerId, roles });
     // Popular is a single top-N page (no time cursor). Recent paginates on createdAt.
     // ponytail: heuristic cursor — a full page may have more; worst case one empty trailing fetch.
     const last = items.at(-1);
@@ -299,7 +309,7 @@ export class ForumThreadService {
    * The viewer's saved feed (newest-saved first), threads + posts interleaved. Deleted/hidden targets
    * (RLS-invisible via findManyByIds) silently drop out; the bookmark row is left for a future unsave.
    */
-  async getMyBookmarks(viewerId: string, before?: string): Promise<SavedFeed> {
+  async getMyBookmarks(viewerId: string, before?: string, roles: string[] = []): Promise<SavedFeed> {
     await this.assertEnabled();
     const limit = 20;
     const rows = await this.bookmarks.listForUser(viewerId, {
@@ -316,7 +326,7 @@ export class ForumThreadService {
       this.threads.findManyByIds(threadIds, viewerId),
       this.posts.findManyByIds(postIds, viewerId),
     ]);
-    const threadViews = await this.buildThreadViews(threads, viewerId);
+    const threadViews = await this.buildThreadViews(threads, { id: viewerId, roles });
     const postViews = await this.decorateComments(posts, viewerId);
     const threadById = new Map(threadViews.map((t) => [t.id, t]));
     const postById = new Map(postViews.map((p) => [p.id, p]));
@@ -338,7 +348,12 @@ export class ForumThreadService {
    * Viewer state (reactions/bookmarks/likes) is the *viewer's* — so they can interact from the profile.
    * Fetches `limit` from each source and merges: each source's top-N contains all global-top-N candidates.
    */
-  async getUserActivity(viewerId: string, username: string, before?: string): Promise<ForumActivityFeed> {
+  async getUserActivity(
+    viewerId: string,
+    username: string,
+    before?: string,
+    roles: string[] = [],
+  ): Promise<ForumActivityFeed> {
     await this.assertEnabled();
     const user = await this.users.findByUsername(username);
     if (!user) throw new NotFoundError();
@@ -348,7 +363,7 @@ export class ForumThreadService {
       this.posts.listByAuthor(user.id, viewerId, { limit, before }),
     ]);
     const [threadViews, postViews] = await Promise.all([
-      this.buildThreadViews(threads, viewerId),
+      this.buildThreadViews(threads, { id: viewerId, roles }),
       this.decorateComments(posts, viewerId),
     ]);
     // buildThreadViews/decorateComments preserve input order, so zone[i] pairs with view[i].
@@ -378,13 +393,13 @@ export class ForumThreadService {
    * Threads-only (comments/answers are out of scope). RLS in listByAuthorIds elides threads in zones
    * the viewer can't see, so the feed never leaks non-member content.
    */
-  async getFollowingFeed(viewerId: string, before?: string): Promise<ThreadFeed> {
+  async getFollowingFeed(viewerId: string, before?: string, roles: string[] = []): Promise<ThreadFeed> {
     await this.assertEnabled();
     const followeeIds = await this.follow.getFolloweeIds(viewerId);
     if (followeeIds.length === 0) return { items: [], nextCursor: null };
     const limit = 20;
     const rows = await this.threads.listByAuthorIds(followeeIds, viewerId, { limit, before });
-    const items = await this.buildThreadViews(rows, viewerId);
+    const items = await this.buildThreadViews(rows, { id: viewerId, roles });
     // ponytail: heuristic cursor (matches listFeed) — a full page may have more; worst case one empty fetch.
     const last = items.at(-1);
     const nextCursor = rows.length === limit && last ? last.createdAt : null;
@@ -421,8 +436,9 @@ export class ForumThreadService {
   /** Fold reaction/comment counts + viewer state into ThreadViews for a set of rows (batched). */
   private async buildThreadViews(
     rows: ThreadWithAuthor[],
-    viewerId: string,
+    actor: ThreadActor,
   ): Promise<ThreadView[]> {
+    const viewerId = actor.id;
     const ids = rows.map((r) => r.id);
     const [counts, mine, commentCounts, attachMap, bookmarked] = await Promise.all([
       this.threads.reactionCountsByThread(ids),
@@ -431,7 +447,7 @@ export class ForumThreadService {
       this.attachments.listForTargets(ModerationTargetType.THREAD, ids),
       this.bookmarks.myBookmarkedTargets(ModerationTargetType.THREAD, ids, viewerId),
     ]);
-    return rows.map((r) =>
+    const views = rows.map((r) =>
       threadRowToView(
         r,
         counts.get(r.id) ?? {},
@@ -443,6 +459,58 @@ export class ForumThreadService {
         bookmarked.has(r.id),
       ),
     );
+    await this.attachThreadCapabilities(rows, views, actor);
+    return views;
+  }
+
+  /** Add viewer-scoped actions to every legacy ThreadView without leaking policy to the client. */
+  private async attachThreadCapabilities(
+    rows: ThreadWithAuthor[],
+    views: ThreadView[],
+    actor: ThreadActor,
+  ): Promise<void> {
+    if (rows.length === 0) return;
+    const ids = rows.map((row) => row.id);
+    const zoneIds = [...new Set(rows.map((row) => row.zoneId))];
+    const [editWindowMinutes, helpfulCounts, memberships] = await Promise.all([
+      this.config.get("forum.discovery.edit_window_minutes"),
+      this.discovery?.helpfulCounts(ModerationTargetType.THREAD, ids) ??
+        Promise.resolve(new Map<string, number>()),
+      this.zones.findMembershipsByZone(zoneIds, actor.id),
+    ]);
+    const now = new Date();
+
+    rows.forEach((row, index) => {
+      const view = views[index];
+      if (!view) return;
+      const membership = memberships.get(row.zoneId);
+      const forumActor: ForumActor = {
+        userId: actor.id,
+        platformRoles: actor.roles,
+        zoneRole: (membership?.role as ZoneRole | undefined) ?? null,
+      };
+      const reactionCount = Object.values(view.reactionCounts).reduce(
+        (total, count) => total + count,
+        0,
+      );
+      const edit = evaluateForumEditPolicy({
+        viewerId: actor.id,
+        authorId: row.authorId,
+        createdAt: row.createdAt,
+        now,
+        editWindowMinutes: Number(editWindowMinutes),
+        interactionCount: view.commentCount + reactionCount + (helpfulCounts.get(row.id) ?? 0),
+      });
+      view.capabilities = {
+        canEdit: edit.allowed,
+        canDelete: canDeleteThread(forumActor, row.authorId),
+        canModerate:
+          isPlatformStaff(actor.roles) ||
+          membership?.role === ZoneRole.OWNER ||
+          membership?.role === ZoneRole.MODERATOR,
+        editDeadline: row.authorId === actor.id ? edit.deadline.toISOString() : null,
+      };
+    });
   }
 
   /** Top-level comment on a CHAT/ANNOUNCEMENT thread (APP-017). QA replies use the answer flow. */
@@ -553,7 +621,7 @@ export class ForumThreadService {
   }
 
   /** A CHAT/ANNOUNCEMENT thread + its top-level comments. QA uses ForumQaService.getQuestion. */
-  async getThreadDetail(viewerId: string, threadId: string): Promise<ThreadDetail> {
+  async getThreadDetail(viewerId: string, threadId: string, roles: string[] = []): Promise<ThreadDetail> {
     await this.assertEnabled();
     const thread = await this.requireThread(threadId, viewerId);
     const [counts, mine, commentCounts, topLevel, attachMap, bookmarked, tags, coachBridge] = await Promise.all([
@@ -578,6 +646,7 @@ export class ForumThreadService {
       attachMap.get(threadId) ?? [],
       bookmarked.has(threadId),
     );
+    await this.attachThreadCapabilities([thread], [view], { id: viewerId, roles });
     const lang = (I18nContext.current()?.lang ?? "tr").toLowerCase().startsWith("en") ? "en" : "tr";
     view.tags = (tags.get(threadId) ?? []).map((tag) => ({
       id: tag.id,

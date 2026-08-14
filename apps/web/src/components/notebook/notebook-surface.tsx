@@ -22,7 +22,8 @@ const SPIRAL_WIDTH = "7cqw";
 /** One ring per this much height. Keyed to width so the binding scales with the page, not the view. */
 const RING_STEP = 7.2;
 
-const PAPERS: Record<NotebookPaper, CSSProperties> = {
+/** Exported so the sidebar's paper picker can render a live swatch per option, not just a label. */
+export const PAPERS: Record<NotebookPaper, CSSProperties> = {
   ruled: {
     backgroundImage: `repeating-linear-gradient(180deg, transparent 0 calc(${LINE_STEP} - 1px), var(--notebook-rule) calc(${LINE_STEP} - 1px) ${LINE_STEP})`,
   },
@@ -41,13 +42,16 @@ const PAPERS: Record<NotebookPaper, CSSProperties> = {
  *
  * An SVG `<pattern>` rather than a stack of elements or a repeating gradient: the pattern tiles
  * itself to whatever height the page ends up at, so nothing has to count rings or measure the
- * container, and unlike a gradient it can actually draw a ring — a stroked arc that leaves the
- * paper on one side and comes back on the other.
+ * container. Each ring is a closed loop bulging past the page's own left edge — the way a real
+ * coil sits proud of the paper — with the punched hole painted on top of it, so the wire reads as
+ * threading through the hole rather than just sitting beside it. A thin, offset highlight stroke
+ * is what turns a flat tint into something that looks like metal catching light.
  */
 function SpiralBinding() {
   // Ids are document-global; two notebooks on one screen would otherwise share one gradient.
   const id = useId();
   const wire = `${id}-wire`;
+  const hole = `${id}-hole`;
   const ring = `${id}-ring`;
 
   return (
@@ -58,32 +62,52 @@ function SpiralBinding() {
       style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
     >
       <defs>
-        <linearGradient id={wire} x1="0" y1="0" x2="1" y2="0">
+        <linearGradient id={wire} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="var(--notebook-wire-dark)" />
-          <stop offset="45%" stopColor="var(--notebook-wire-light)" />
+          <stop offset="50%" stopColor="var(--notebook-wire-light)" />
           <stop offset="100%" stopColor="var(--notebook-wire-dark)" />
         </linearGradient>
+        <radialGradient id={hole} cx="35%" cy="35%" r="75%">
+          <stop offset="0%" stopColor="var(--notebook-hole)" />
+          <stop
+            offset="100%"
+            stopColor="color-mix(in srgb, var(--notebook-hole) 35%, transparent)"
+          />
+        </radialGradient>
         <pattern
           id={ring}
           width="100%"
           height={RING_STEP * 6}
           patternUnits="userSpaceOnUse"
         >
-          {/* The punched hole, with the paper's own shadow falling into it. */}
+          {/* The coil: a full loop, centred just past the page edge so most of it bulges outward. */}
           <ellipse
-            cx="62%"
+            cx="30%"
             cy={RING_STEP * 3}
-            rx={RING_STEP * 0.9}
-            ry={RING_STEP * 0.9}
-            fill="var(--notebook-hole)"
-          />
-          {/* The wire: over the paper on the left, behind it on the right of the hole. */}
-          <path
-            d={`M 20% ${RING_STEP * 3} q 30% ${-RING_STEP * 2.4} 62% ${-RING_STEP * 0.6}`}
+            rx={RING_STEP * 1.35}
+            ry={RING_STEP * 1.05}
             fill="none"
             stroke={`url(#${wire})`}
-            strokeWidth={RING_STEP * 0.7}
-            strokeLinecap="round"
+            strokeWidth={RING_STEP * 0.5}
+          />
+          {/* Specular highlight — offset up-left of the coil's own centre, not concentric with it. */}
+          <ellipse
+            cx="27%"
+            cy={RING_STEP * 2.8}
+            rx={RING_STEP * 1.35}
+            ry={RING_STEP * 1.05}
+            fill="none"
+            stroke="var(--notebook-wire-light)"
+            strokeWidth={RING_STEP * 0.14}
+            strokeOpacity="0.6"
+          />
+          {/* The punched hole, painted last so the coil visibly threads through it. */}
+          <ellipse
+            cx="64%"
+            cy={RING_STEP * 3}
+            rx={RING_STEP * 0.85}
+            ry={RING_STEP * 0.85}
+            fill={`url(#${hole})`}
           />
         </pattern>
       </defs>
@@ -175,6 +199,9 @@ export interface NotebookCoverProps {
   title: string;
   subtitle?: string;
   children?: ReactNode;
+  /** Present → the whole cover opens the book, with the accessible name a screen reader announces. */
+  onOpen?: () => void;
+  openLabel?: string;
 }
 
 /**
@@ -183,16 +210,41 @@ export interface NotebookCoverProps {
  * Deliberately not a photo of a notebook: the texture is two gradients (a cloth weave and a corner
  * sheen), so it recolours with the theme and stays crisp at any size. If it ever reads as cheap the
  * fix is one SVG texture layer on top, not a full-page image.
+ *
+ * The whole surface is the open control, not a button floating on top of it — there is no separate
+ * "open" affordance once the cover itself so plainly is one. Keyboard and screen-reader users get
+ * the same control via `role="button"` + `tabIndex`, named by `openLabel`.
  */
-export function NotebookCover({ title, subtitle, children }: NotebookCoverProps) {
+export function NotebookCover({
+  title,
+  subtitle,
+  children,
+  onOpen,
+  openLabel,
+}: NotebookCoverProps) {
   return (
     <div
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      aria-label={onOpen ? openLabel : undefined}
+      onClick={onOpen}
+      onKeyDown={
+        onOpen
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onOpen();
+              }
+            }
+          : undefined
+      }
       style={{
         containerType: "inline-size",
         position: "relative",
         width: "100%",
         height: "100%",
         overflow: "hidden",
+        cursor: onOpen ? "pointer" : undefined,
         backgroundColor: "var(--notebook-cover)",
         backgroundImage:
           "repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgba(0,0,0,0.05) 0 2px, transparent 2px 4px), radial-gradient(120% 90% at 15% 0%, rgba(255,255,255,0.16), transparent 60%)",

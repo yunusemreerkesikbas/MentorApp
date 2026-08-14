@@ -14,9 +14,11 @@ import type {
  *
  * Everything else covering this feature is pure logic — the review ladder, the page reducer, the
  * slot placement, the error-type threshold. None of it can answer "does the cover actually open",
- * "does adding a card persist", "does a healed card go quiet". That is what this file is for, and
- * the first thing it caught was a client calling `/v1/exams/{slug}/topics` while the controller is
- * mounted at `content/exams` — a 404 no typecheck could see.
+ * "does adding a card persist", "does a healed card go quiet". That is what this file is for.
+ *
+ * The book opens onto a two-page spread (left index, right index+1), each page independently
+ * interactive with its own gesture session and autosave — the sidebar's arranging tools act on
+ * whichever side the student last touched ("focused side", defaulting to left).
  */
 
 const exam = {
@@ -99,15 +101,20 @@ function makeEntry(overrides: Partial<NotebookEntryDto> = {}): NotebookEntryDto 
   };
 }
 
+function emptyPage(index: number): NotebookPageDto {
+  return { pageIndex: index, doc: { version: 1, paper: "ruled", items: [] }, entries: [] };
+}
+
 interface NotebookApiOptions {
   overview?: Partial<NotebookOverviewDto>;
   /** Entries the strip reports as due; also what the review panel walks through. */
   due?: NotebookEntryDto[];
-  page?: Partial<NotebookPageDto>;
+  /** Seed specific page indices; anything unlisted comes back as a fresh empty page. */
+  pages?: Record<number, NotebookPageDto>;
 }
 
 async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
-  const savedPages: unknown[] = [];
+  const savedPages: Array<{ index: number; doc: unknown }> = [];
   const createdEntries: Record<string, unknown>[] = [];
   const reviews: Array<{ id: string; solved: boolean }> = [];
 
@@ -118,12 +125,8 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
     healedCount: 0,
     ...options.overview,
   };
-  const notebookPage: NotebookPageDto = {
-    pageIndex: 0,
-    doc: { version: 1, paper: "ruled", items: [] },
-    entries: [],
-    ...options.page,
-  };
+  const seededPages = options.pages ?? {};
+  const allSeededEntries = Object.values(seededPages).flatMap((p) => p.entries);
 
   /*
    * Collected, not just logged. The first run of this file died on a blank page with no clue why;
@@ -133,7 +136,7 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
   const pageErrors: string[] = [];
   page.on("pageerror", (err) => pageErrors.push(err.message));
 
-  // The consent bar docks over the bottom of the page and covers the add panel's buttons.
+  // The consent bar docks over the bottom of the page and covers the sidebar's buttons.
   await page.addInitScript(() =>
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
   );
@@ -151,13 +154,7 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
     // App-shell chrome. Without these the notification bell reads `.items` off an empty 204 and
     // takes the whole page down with it — which is exactly what this file caught first time out.
     if (method === "GET" && path === "/v1/notifications") {
-      return json(route, {
-        items: [],
-        total: 0,
-        page: 1,
-        pageSize: 20,
-        unreadCount: 0,
-      });
+      return json(route, { items: [], total: 0, page: 1, pageSize: 20, unreadCount: 0 });
     }
     if (method === "POST" && path === "/v1/notifications/stream-token") {
       return json(route, { token: "test-stream" });
@@ -186,13 +183,16 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
     if (method === "GET" && path === "/v1/coaching/notebook/reviews/due") {
       return json(route, options.due ?? []);
     }
-    if (method === "GET" && path.startsWith("/v1/coaching/notebook/pages/")) {
-      return json(route, notebookPage);
+    const pageMatch = path.match(/\/v1\/coaching\/notebook\/pages\/(\d+)$/);
+    if (method === "GET" && pageMatch) {
+      const index = Number(pageMatch[1]);
+      return json(route, seededPages[index] ?? emptyPage(index));
     }
-    if (method === "PUT" && path.startsWith("/v1/coaching/notebook/pages/")) {
+    if (method === "PUT" && pageMatch) {
+      const index = Number(pageMatch[1]);
       const body = request.postDataJSON() as { doc: unknown };
-      savedPages.push(body.doc);
-      return json(route, { ...notebookPage, doc: body.doc });
+      savedPages.push({ index, doc: body.doc });
+      return json(route, { pageIndex: index, doc: body.doc, entries: [] });
     }
     if (method === "POST" && path === "/v1/coaching/notebook/entries") {
       const body = request.postDataJSON() as Record<string, unknown>;
@@ -212,7 +212,9 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
       const id = path.split("/").at(-2)!;
       const body = request.postDataJSON() as { solved: boolean };
       reviews.push({ id, solved: body.solved });
-      const source = (options.due ?? []).find((entry) => entry.id === id);
+      const source = [...(options.due ?? []), ...allSeededEntries].find(
+        (entry) => entry.id === id,
+      );
       return json(
         route,
         makeEntry({
@@ -232,7 +234,9 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
   return { savedPages, createdEntries, reviews, pageErrors };
 }
 
-test("kapak açılır, sayfa çevrilir, kapaktan geriye gidilemez", async ({ page }) => {
+test("kapak açılır, sağ ve sol sayfalar birlikte gösterilir, kapaktan geriye gidilemez", async ({
+  page,
+}) => {
   const api = await mockNotebookApi(page);
   await page.goto("/yanlis-defteri");
 
@@ -241,12 +245,13 @@ test("kapak açılır, sayfa çevrilir, kapaktan geriye gidilemez", async ({ pag
   await expect(page.getByText("Kapak")).toBeVisible();
 
   await page.getByRole("button", { name: "Defteri aç" }).click();
-  await expect(page.getByText("Sayfa 1")).toBeVisible();
+  // A spread, not a single leaf: opening the book shows pages 1 AND 2 at once.
+  await expect(page.getByText("Sayfa 1-2")).toBeVisible();
 
   await page.getByRole("button", { name: "Sonraki" }).click();
-  await expect(page.getByText("Sayfa 2")).toBeVisible();
+  await expect(page.getByText("Sayfa 3-4")).toBeVisible();
 
-  // Back past page 0 closes the book rather than doing nothing.
+  // Back past the first spread closes the book rather than doing nothing.
   await page.getByRole("button", { name: "Önceki" }).click();
   await page.getByRole("button", { name: "Önceki" }).click();
   await expect(page.getByText("Kapak")).toBeVisible();
@@ -255,13 +260,16 @@ test("kapak açılır, sayfa çevrilir, kapaktan geriye gidilemez", async ({ pag
   expect(api.pageErrors).toEqual([]);
 });
 
-test("yanlış eklenir: hata tipi zorunlu, ders ve konu seçilebilir, sayfaya yerleşir", async ({
+test("yan panel her zaman açık: yanlış eklenir, hata tipi zorunlu, ders/konu seçilir, sol sayfaya yerleşir", async ({
   page,
 }) => {
   const api = await mockNotebookApi(page);
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: "Defteri aç" }).click();
-  await page.getByRole("button", { name: "Yanlış ekle" }).click();
+
+  // No "arrange the page" toggle to click first — the rail is already there, collapsed.
+  await expect(page.getByRole("button", { name: "Sayfayı düzenle" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Ekle" }).click();
 
   // The one required field: with no error type the form cannot be submitted.
   const submit = page.getByRole("button", { name: "Deftere ekle" });
@@ -284,9 +292,12 @@ test("yanlış eklenir: hata tipi zorunlu, ders ve konu seçilebilir, sayfaya ye
     source: "OWN",
   });
 
-  // Placement is autosaved; nothing asks the user to press save.
+  // Placement is autosaved on the focused side — left (index 0) by default — with nothing asking
+  // the user to press save.
   await expect.poll(() => api.savedPages.length, { timeout: 5_000 }).toBeGreaterThan(0);
-  const doc = api.savedPages.at(-1) as { items: Array<{ kind: string }> };
+  const saved = api.savedPages.find((entry) => entry.index === 0);
+  expect(saved).toBeDefined();
+  const doc = saved!.doc as { items: Array<{ kind: string }> };
   expect(doc.items.filter((item) => item.kind === "entry")).toHaveLength(1);
 });
 
@@ -294,7 +305,7 @@ test("konu seçici derse göre daralır", async ({ page }) => {
   await mockNotebookApi(page);
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: "Defteri aç" }).click();
-  await page.getByRole("button", { name: "Yanlış ekle" }).click();
+  await page.getByRole("button", { name: "Ekle" }).click();
 
   await page.getByLabel("Ders").selectOption("tarih");
   const topic = page.getByLabel("Konu");
@@ -303,31 +314,12 @@ test("konu seçici derse göre daralır", async ({ page }) => {
 });
 
 test("tekrar şeridi açılır, çözülen kart iyileşir ve şerit boşalır", async ({ page }) => {
+  // The strip and the review panel work off the due list directly and never need the book to be
+  // open, so no page needs seeding here — only the due-strip test below does that.
   const due = [makeEntry({ reviewCount: 2 })];
   const api = await mockNotebookApi(page, {
     due,
     overview: { dueCount: 1, entryCount: 1 },
-    page: {
-      doc: {
-        version: 1,
-        paper: "ruled",
-        items: [
-          {
-            id: "55555555-5555-4555-8555-555555555555",
-            kind: "entry",
-            entryId: due[0]!.id,
-            x: 170,
-            y: 90,
-            width: 800,
-            height: 300,
-            rotation: 0,
-            opacity: 1,
-            z: 1,
-          },
-        ],
-      },
-      entries: due,
-    },
   });
 
   await page.goto("/yanlis-defteri");
@@ -363,16 +355,57 @@ test("ikinci kez kaçırılan soruda topluluk teklif edilir, telif uyarısıyla"
   await expect(page.getByRole("link", { name: "Toplulukta sor" })).toBeVisible();
 });
 
-test("düzenleme modunda sticker yapıştırılır ve sayfa kaydedilir", async ({ page }) => {
-  const api = await mockNotebookApi(page);
+test("çift tıkla kart açılır ve sol sayfadaki bir kart sağ sayfayı etkilemez", async ({
+  page,
+}) => {
+  const entry = makeEntry({ reviewCount: 2 });
+  const seededLeft: NotebookPageDto = {
+    pageIndex: 0,
+    doc: {
+      version: 1,
+      paper: "ruled",
+      items: [
+        {
+          id: "66666666-6666-4666-8666-666666666666",
+          kind: "entry",
+          entryId: entry.id,
+          x: 170,
+          y: 90,
+          width: 800,
+          height: 300,
+          rotation: 0,
+          opacity: 1,
+          z: 1,
+        },
+      ],
+    },
+    entries: [entry],
+  };
+  await mockNotebookApi(page, { pages: { 0: seededLeft } });
+
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: "Defteri aç" }).click();
 
-  await page.getByRole("button", { name: "Sayfayı düzenle" }).click();
-  await page.getByRole("button", { name: "Sticker ekle" }).first().click();
+  // Not due, not in the strip flow — the only way to this card is arranging + opening it directly.
+  await page.getByText("Problemler").dblclick();
+  await expect(page.getByText("Bu sefer çözebildin mi?")).toBeVisible();
+  // A single card has nothing to count through.
+  await expect(page.getByText("1 / 1")).toHaveCount(0);
+});
+
+test("sidebar sticker ekler, sayfaya yapıştırır ve otomatik kaydeder", async ({ page }) => {
+  const api = await mockNotebookApi(page);
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await page.getByRole("button", { name: "Sticker" }).click();
+
+  // The full vision-board sticker set, not a shortlist — each one keeps its own translated name.
+  await page.getByRole("button", { name: "Yıldız" }).click();
 
   await expect.poll(() => api.savedPages.length, { timeout: 5_000 }).toBeGreaterThan(0);
-  const doc = api.savedPages.at(-1) as { items: Array<{ kind: string }> };
+  const firstSave = api.savedPages.find((entry) => entry.index === 0);
+  expect(firstSave).toBeDefined();
+  const doc = firstSave!.doc as { items: Array<{ kind: string }> };
   expect(doc.items.filter((item) => item.kind === "sticker")).toHaveLength(1);
 
   // Undo is a real affordance, not decoration.
@@ -380,12 +413,90 @@ test("düzenleme modunda sticker yapıştırılır ve sayfa kaydedilir", async (
   await expect
     .poll(
       () => {
-        const latest = api.savedPages.at(-1) as { items: unknown[] };
-        return latest.items.length;
+        const latest = api.savedPages.filter((entry) => entry.index === 0).at(-1) as {
+          doc: { items: unknown[] };
+        };
+        return latest.doc.items.length;
       },
       { timeout: 5_000 },
     )
     .toBe(0);
+});
+
+test("not: tıklayınca sayfa üzerinde düzenlenebilir alan açılır; boş bırakılırsa eklenmez", async ({
+  page,
+}) => {
+  const api = await mockNotebookApi(page);
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: "Defteri aç" }).click();
+
+  // No sidebar form: the note lands directly on the page, already in edit mode.
+  await page.getByRole("button", { name: "Not" }).click();
+  const editor = page.getByLabel("Not metni");
+  await expect(editor).toBeFocused();
+  await editor.fill("Bir daha köklü ifade unutma");
+  await editor.blur();
+
+  await expect.poll(() => api.savedPages.length, { timeout: 5_000 }).toBeGreaterThan(0);
+  const saved = api.savedPages.find((entry) => entry.index === 0);
+  const doc = saved!.doc as { items: Array<{ kind: string; text?: string }> };
+  const notes = doc.items.filter((item) => item.kind === "text");
+  expect(notes).toHaveLength(1);
+  expect(notes[0]!.text).toBe("Bir daha köklü ifade unutma");
+
+  // A second note, left empty, must never be persisted — the schema requires non-empty text.
+  await page.getByRole("button", { name: "Not" }).click();
+  await page.getByLabel("Not metni").blur();
+  await expect
+    .poll(() => {
+      const latest = api.savedPages.filter((entry) => entry.index === 0).at(-1)!.doc as {
+        items: Array<{ kind: string }>;
+      };
+      return latest.items.filter((item) => item.kind === "text").length;
+    })
+    .toBe(1);
+});
+
+test("fotoğraflı kart sadece görseli gösterir; tıklayınca tam ekran önizleme açılır", async ({
+  page,
+}) => {
+  const entry = makeEntry({ url: "https://cdn.test/soru.jpg" });
+  const seededLeft: NotebookPageDto = {
+    pageIndex: 0,
+    doc: {
+      version: 1,
+      paper: "ruled",
+      items: [
+        {
+          id: "77777777-7777-4777-8777-777777777777",
+          kind: "entry",
+          entryId: entry.id,
+          x: 170,
+          y: 90,
+          width: 800,
+          height: 300,
+          rotation: 0,
+          opacity: 1,
+          z: 1,
+        },
+      ],
+    },
+    entries: [entry],
+  };
+  await mockNotebookApi(page, { pages: { 0: seededLeft } });
+
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: "Defteri aç" }).click();
+
+  // The clickable surface is the photo itself, named for what it opens — not a chip or a topic
+  // label sitting inline (those move into the hover card, which is a CSS-opacity concern better
+  // confirmed by eye than by a text-presence assertion here).
+  await page.getByRole("button", { name: /Fotoğrafı büyüt/ }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
 });
 
 const corsHeaders = {

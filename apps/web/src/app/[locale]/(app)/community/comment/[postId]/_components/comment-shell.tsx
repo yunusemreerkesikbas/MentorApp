@@ -250,7 +250,7 @@ function FocusedComment({
             <ThreadMenu targetId={comment.id} targetType={ModerationTargetType.POST} />
           </span>
         </div>
-        <p className="mt-1.5 whitespace-pre-wrap break-words text-[16px] leading-[24px]" style={{ color: "var(--color-body)" }}>
+        <p className="mt-1.5 whitespace-pre-wrap break-words text-[15px] leading-[22px]" style={{ color: "var(--color-body)" }}>
           <MentionText text={comment.body} />
         </p>
         <AttachmentGallery attachments={comment.attachments} />

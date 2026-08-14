@@ -117,7 +117,10 @@ export function NotebookReviewPanel({
         <SectionHeading as="h2" subtitle={t("review_subtitle")}>
           {t("review_title")}
         </SectionHeading>
-        <Chip>{t("review_progress", { current: index + 1, total: entries.length })}</Chip>
+        {/* A single card opened from the page (double-click) has nothing to count through. */}
+        {entries.length > 1 ? (
+          <Chip>{t("review_progress", { current: index + 1, total: entries.length })}</Chip>
+        ) : null}
       </div>
 
       <FormError message={error} />
