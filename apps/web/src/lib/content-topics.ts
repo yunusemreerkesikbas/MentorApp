@@ -10,6 +10,6 @@ import { http } from "@mentor/api-client";
  */
 export async function fetchExamTopics(examSlug: string): Promise<ExamTopicDto[]> {
   return (await http<ExamTopicDto[]>(
-    `/v1/exams/${encodeURIComponent(examSlug)}/topics`,
+    `/v1/content/exams/${encodeURIComponent(examSlug)}/topics`,
   )) as ExamTopicDto[];
 }

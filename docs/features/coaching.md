@@ -1713,3 +1713,22 @@ pnpm --filter @mentor/api test
   İlgili: `0078_notebook_community_bridge.sql`, `notebook-forum.listener.ts`,
   `mistake-notebook.{service,repository}.ts`, `notebook-review-panel.tsx`, `notebook-entry-card.tsx`,
   `lib/notebook.ts`.
+
+- **Defter E2E testi + ilk gerçek hatalar (2026-08-14, APP-042)** — Defterle ilgili o ana kadarki
+  **her test saf mantıktı** (tekrar merdiveni, sayfa reducer'ı, yerleşim, hata-tipi eşiği); hiçbiri
+  "kapak gerçekten açılıyor mu", "eklenen kart kaydediliyor mu", "iyileşen kart susuyor mu"
+  sorusuna cevap vermiyordu. `apps/web/e2e/notebook.spec.ts` 6 senaryoyu iki viewport'ta koşuyor:
+  kapak→sayfa→geri kapak, ekleme (hata tipi zorunlu + ders/konu), konu seçicinin derse göre
+  daralması, tekrar akışı + iyileşme, ikinci kaçırmada topluluk teklifi, sticker + undo + autosave.
+  **İlk koşuda iki gerçek hata çıktı, ikisi de tipkontrolün göremeyeceği cinsten:**
+  (1) `content-topics.ts` `/v1/exams/{slug}/topics`'e gidiyordu ama controller `content/exams`
+  altında mount edilmiş — çalışma zamanında 404. (2) Sayfa tamamen boş açılıyordu: bildirim zili
+  mock'lanmamış bir uçtan gelen boş 204 üzerinde `.items` okuyup **tüm sayfayı** hata sınırına
+  düşürüyordu. İkincisi sadece `page.on("pageerror")` dinlenerek görülebildi, o yüzden dinleyici
+  kalıcı hale getirildi: hatalar toplanıyor ve kapak testinde `toEqual([])` ile doğrulanıyor —
+  bir sonraki sessiz çökme sessiz kalmasın.
+  **Gotcha:** E2E `next start` istiyor, yani `pnpm --filter @mentor/web build` olmadan koşmuyor
+  (`playwright.config.ts` webServer). Ayrıca mock tablosundaki catch-all `204` döndürdüğü için
+  **uygulama kabuğunun çağırdığı her uç açıkça mock'lanmalı**, yoksa hata defterde değil kabukta
+  patlar ve teşhis yanıltıcı olur.
+  İlgili: `apps/web/e2e/notebook.spec.ts`, `apps/web/src/lib/content-topics.ts`.
