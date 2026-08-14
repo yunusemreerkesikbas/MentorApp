@@ -30,5 +30,6 @@ export type EmailTemplate = (typeof EmailTemplate)[keyof typeof EmailTemplate];
 /** Delivery / schedule template ids (notification_deliveries.template — not only email). */
 export const DeliveryTemplate = {
   SESSION_RETURN: "coaching.session-return",
+  NOTEBOOK_REVIEW: "coaching.notebook-review",
 } as const;
 export type DeliveryTemplate = (typeof DeliveryTemplate)[keyof typeof DeliveryTemplate];

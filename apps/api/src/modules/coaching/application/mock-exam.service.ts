@@ -4,6 +4,7 @@ import type {
   CoachingAnalysisDto,
   GhostComparisonDto,
   MockExamDto,
+  NotebookErrorSignalDto,
   Paginated,
 } from "@mentor/types";
 import type {
@@ -29,6 +30,14 @@ import {
 import { computeGhost } from "../domain/ghost";
 import { computeSubjectNet, computeTotalNet, formatNet } from "../domain/net";
 import { buildFocusTrend, selectAnalysisFocus } from "../domain/analysis-focus";
+import { selectErrorPattern } from "../domain/notebook-error-pattern.policy";
+import { MistakeNotebookRepository } from "../infrastructure/mistake-notebook.repository";
+
+/**
+ * How far back the notebook weakness signals look. Long enough that a quiet fortnight does not
+ * blank the analysis, short enough that a topic fixed two months ago stops being "your weakness".
+ */
+const NOTEBOOK_SIGNAL_WINDOW_MS = 60 * 24 * 60 * 60 * 1000;
 import {
   MockExamRepository,
   type MockExamRow,
@@ -51,6 +60,7 @@ export class MockExamService {
     @Inject(CONTENT_PORT) private readonly content: ContentPort,
     private readonly mockExams: MockExamRepository,
     private readonly photoRows: MockExamPhotoRepository,
+    private readonly notebook: MistakeNotebookRepository,
     private readonly i18n: I18nService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
@@ -327,15 +337,19 @@ export class MockExamService {
         ),
       );
 
-      const [photoSignals, topicSignalRows] = await Promise.all([
-        this.photoRows.listPhotoSubjectSignals(tx, userId, examId, recentIds),
-        this.photoRows.listPhotoTopicSignals(
-          tx,
-          userId,
-          examId,
-          trendRows.map((row) => row.id),
-        ),
+      /*
+       * Weakness signals come from the mistake notebook now, not from the retired photo-categorize
+       * card. Two things changed with the source: the scope is a recency window rather than "which
+       * mock exams were recent" (most mistakes are caught while studying and carry no attempt), and
+       * every entry now also says *why* it was missed — which is what `errorSignals` reads.
+       */
+      const notebookSince = new Date(Date.now() - NOTEBOOK_SIGNAL_WINDOW_MS);
+      const [photoSignals, topicSignalRows, errorSignals] = await Promise.all([
+        this.notebook.listSubjectSignals(tx, userId, examId, notebookSince),
+        this.notebook.listTopicSignals(tx, userId, examId, notebookSince),
+        this.notebook.listErrorTypeSignals(tx, userId, examId, notebookSince),
       ]);
+      const errorPattern = selectErrorPattern(errorSignals);
       const photoSubjectSignals = photoSignals.map((row) => ({
         subjectRef: row.subjectRef,
         subjectName: slugToName.get(row.subjectRef) ?? row.subjectRef,
@@ -408,6 +422,15 @@ export class MockExamService {
         subjects,
         photoSubjectSignals,
         photoTopicSignals,
+        notebookErrorSignals: errorSignals.map((signal) => ({
+          errorType: signal.errorType as NotebookErrorSignalDto["errorType"],
+          count: signal.count,
+        })),
+        notebookErrorMessage: errorPattern
+          ? this.i18n.translate(`coaching.notebook_pattern.${errorPattern}`, {
+              lang: I18nContext.current()?.lang ?? "tr",
+            })
+          : null,
         nextFocus,
         personalRecordNet,
         ghost,

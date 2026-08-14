@@ -4,7 +4,12 @@ import {
   bulkCreatePlanTasksSchema,
   createMoodCheckinSchema,
   createMockExamSchema,
+  createNotebookEntrySchema,
   createPlanTaskSchema,
+  notebookImageUploadUrlSchema,
+  putNotebookPageSchema,
+  reviewNotebookEntrySchema,
+  updateNotebookEntrySchema,
   listMockExamsQuerySchema,
   listMoodCheckinsQuerySchema,
   listPlanTasksQuerySchema,
@@ -54,6 +59,20 @@ export class PutPreferenceSimulationDto extends createZodDto(
 ) {}
 export class RefreshPreferenceSimulationDto extends createZodDto(
   refreshPreferenceSimulationSchema,
+) {}
+
+export class CreateNotebookEntryDto extends createZodDto(
+  createNotebookEntrySchema,
+) {}
+export class UpdateNotebookEntryDto extends createZodDto(
+  updateNotebookEntrySchema,
+) {}
+export class ReviewNotebookEntryDto extends createZodDto(
+  reviewNotebookEntrySchema,
+) {}
+export class PutNotebookPageDto extends createZodDto(putNotebookPageSchema) {}
+export class NotebookImageUploadUrlDto extends createZodDto(
+  notebookImageUploadUrlSchema,
 ) {}
 
 

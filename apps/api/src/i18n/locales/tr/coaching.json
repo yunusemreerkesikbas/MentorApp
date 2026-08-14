@@ -68,17 +68,17 @@
   },
   "nextAction": {
     "START_TASK": {
-      "title": "{taskTitle} ile ba\u015fla",
-      "message": "Bug\u00fcn\u00fcn tek k\u00fc\u00e7\u00fck ad\u0131m\u0131 bu. Haz\u0131rsan ba\u015flayal\u0131m.",
-      "lowMoodMessage": "Bug\u00fcn sadece bu k\u00fc\u00e7\u00fck ad\u0131ma odaklan. K\u0131sa tutmak da tamam."
+      "title": "{taskTitle} ile başla",
+      "message": "Bugünün tek küçük adımı bu. Hazırsan başlayalım.",
+      "lowMoodMessage": "Bugün sadece bu küçük adıma odaklan. Kısa tutmak da tamam."
     },
     "ADD_TASK": {
-      "title": "Bug\u00fcn i\u00e7in bir g\u00f6rev ekle",
-      "message": "K\u00fc\u00e7\u00fck ve ger\u00e7ek\u00e7i bir g\u00f6rev se\u00e7; tek ad\u0131m yeter."
+      "title": "Bugün için bir görev ekle",
+      "message": "Küçük ve gerçekçi bir görev seç; tek adım yeter."
     },
     "DAY_COMPLETE": {
-      "title": "Bug\u00fcn\u00fcn plan\u0131 tamam",
-      "message": "Bug\u00fcnl\u00fck bu kadar. Eme\u011fini fark et ve dinlen."
+      "title": "Bugünün planı tamam",
+      "message": "Bugünlük bu kadar. Emeğini fark et ve dinlen."
     }
   },
   "planAdaptation": {
@@ -86,11 +86,11 @@
     "NO_CHANGE": "Şu an planını değiştirmen gerekmiyor. Mevcut küçük adımlarla devam edebilirsin."
   },
   "official": {
-    "EXAM_DATE": "Resm\u00ee s\u0131nav tarihini do\u011frulanm\u0131\u015f kartta g\u00f6rebilirsin.",
-    "APPLICATION": "Ba\u015fvuru bilgisi i\u00e7in yaln\u0131z do\u011frulanm\u0131\u015f Bilgi Merkezi kaynaklar\u0131n\u0131 payla\u015f\u0131yorum.",
-    "RESULT_PLACEMENT": "Sonu\u00e7 ve yerle\u015ftirme bilgisi i\u00e7in yaln\u0131z do\u011frulanm\u0131\u015f kaynaklar\u0131 payla\u015f\u0131yorum.",
-    "PROCESS": "Resm\u00ee s\u00fcre\u00e7 i\u00e7in yaln\u0131z do\u011frulanm\u0131\u015f Bilgi Merkezi kaynaklar\u0131n\u0131 payla\u015f\u0131yorum.",
-    "UNAVAILABLE": "Bu konuda do\u011frulanm\u0131\u015f bir kart veya kaynak \u015fu anda mevcut de\u011fil. Bilgi Merkezi'ni kontrol edebilirsin."
+    "EXAM_DATE": "Resmî sınav tarihini doğrulanmış kartta görebilirsin.",
+    "APPLICATION": "Başvuru bilgisi için yalnız doğrulanmış Bilgi Merkezi kaynaklarını paylaşıyorum.",
+    "RESULT_PLACEMENT": "Sonuç ve yerleştirme bilgisi için yalnız doğrulanmış kaynakları paylaşıyorum.",
+    "PROCESS": "Resmî süreç için yalnız doğrulanmış Bilgi Merkezi kaynaklarını paylaşıyorum.",
+    "UNAVAILABLE": "Bu konuda doğrulanmış bir kart veya kaynak şu anda mevcut değil. Bilgi Merkezi'ni kontrol edebilirsin."
   },
   "ghost": {
     "NEW_RECORD": "Yeni rekor! Şimdiye kadarki en iyi netini geçtin. Geçmiş halini resmen geride bıraktın.",
@@ -175,5 +175,14 @@
     "FOCUS_SESSION_RHYTHM": "Bu hafta ritmi sürdürmek için iki küçük odak seansı planlayalım.",
     "TASK_SUBJECT": "{subject} haftalık tekrar",
     "TASK_SESSION": "İki odak seansı planla"
+  },
+  "notebook_pattern": {
+    "KNOWLEDGE_GAP": "Son yanlışlarının çoğu bilmediğin konulardan. Burada tekrar gerçekten işe yarar.",
+    "RUSHING": "Konuyu biliyorsun — yanlışlarının çoğu dikkat hatası. Tekrar etmek yerine yavaşlayıp kontrol etmeyi dene.",
+    "READING": "Yanlışlarının çoğu soruyu yanlış okumaktan. Soru kökünü iki kez okumak burada net kazandırır.",
+    "DISTRACTOR": "Çeldiricilere takılıyorsun. Şıkları elemeden önce cevabını kendin kurmayı dene.",
+    "TIME_PRESSURE": "Yanlışlarının çoğu zaman baskısından. Soru başına süreni ölçmek iyi bir sonraki adım.",
+    "SECOND_GUESSING": "Doğru cevabı bulup değiştiriyorsun. İlk kararına güvenmeyi denemeye değer.",
+    "MIXED": "Yanlışların tek bir sebepte toplanmıyor. Birkaç tekrar daha biriktikçe örüntü netleşecek."
   }
 }

@@ -5,6 +5,8 @@
 import { z } from "zod";
 import {
   CAREER_GROUPS,
+  NOTEBOOK_ERROR_TYPES,
+  NOTEBOOK_PAPERS,
   VISION_BOARD_FRAMES,
   VISION_BOARD_TEXTURES,
   VISION_IMAGE_FRAMES,
@@ -333,7 +335,8 @@ const hexColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, "invalid_color");
 const coordSchema = z.coerce.number().finite().min(-5_000).max(5_000);
 const sizeSchema = z.coerce.number().finite().min(8).max(5_000);
 
-const boardItemBaseShape = {
+/** Exported: the mistake notebook composes the same geometry into its own document. */
+export const boardItemBaseShape = {
   id: z.string().uuid(),
   x: coordSchema,
   y: coordSchema,
@@ -351,7 +354,7 @@ const boardImageItemSchema = z.object({
   frame: z.enum(VISION_IMAGE_FRAMES),
 });
 
-const boardTextItemSchema = z.object({
+export const boardTextItemSchema = z.object({
   ...boardItemBaseShape,
   kind: z.literal("text"),
   text: z.string().trim().min(1).max(280),
@@ -374,7 +377,7 @@ const boardTextItemSchema = z.object({
   source: z.literal("goal").optional(),
 });
 
-const boardStickerItemSchema = z.object({
+export const boardStickerItemSchema = z.object({
   ...boardItemBaseShape,
   kind: z.literal("sticker"),
   asset: z.enum(VISION_STICKERS),
@@ -531,4 +534,145 @@ export const weeklyReviewQuerySchema = z.object({
   examId: z.string().uuid(),
 });
 export type WeeklyReviewQuery = z.infer<typeof weeklyReviewQuerySchema>;
+
+/* ------------------------------- mistake notebook ------------------------------- */
+
+/**
+ * Per-page caps. Lower than the board's on purpose: a page is read and written as one jsonb value
+ * and a page crowded past this stops reading as a page. Running out is the prompt to turn to a new
+ * one, which is exactly the interaction we want.
+ */
+export const NOTEBOOK_PAGE_MAX_ITEMS = 40;
+export const NOTEBOOK_PAGE_MAX_ENTRIES = 12;
+export const NOTEBOOK_MAX_PAGES = 200;
+
+/** Notebook photos live at `notebook/{userId}/{uuid}.{ext}`. The owner check is the service's job. */
+export const notebookStorageKeySchema = z
+  .string()
+  .regex(
+    /^notebook\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.(jpg|jpeg|png|webp)$/i,
+    "invalid_storage_key",
+  );
+
+/** Same allowlist as the board and forum uploaders — webp in, no HEIC/SVG. */
+export const NOTEBOOK_IMAGE_MIMES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
+export const NOTEBOOK_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+export const notebookImageUploadUrlSchema = z.object({
+  contentType: z.enum(NOTEBOOK_IMAGE_MIMES),
+});
+export type NotebookImageUploadUrlInput = z.infer<
+  typeof notebookImageUploadUrlSchema
+>;
+
+const notebookEntryItemSchema = z.object({
+  ...boardItemBaseShape,
+  kind: z.literal("entry"),
+  entryId: z.string().uuid(),
+});
+
+const notebookPageItemSchema = z.discriminatedUnion("kind", [
+  notebookEntryItemSchema,
+  boardTextItemSchema,
+  boardStickerItemSchema,
+]);
+
+export const notebookPageDocSchema = z
+  .object({
+    version: z.literal(1),
+    paper: z.enum(NOTEBOOK_PAPERS),
+    items: z.array(notebookPageItemSchema).max(NOTEBOOK_PAGE_MAX_ITEMS),
+  })
+  .superRefine((doc, ctx) => {
+    const entries = doc.items.filter((item) => item.kind === "entry");
+    if (entries.length > NOTEBOOK_PAGE_MAX_ENTRIES) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "too_many_entries",
+        path: ["items"],
+      });
+    }
+    // Duplicate ids would make selection and undo target the wrong element.
+    if (new Set(doc.items.map((item) => item.id)).size !== doc.items.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "duplicate_item_id",
+        path: ["items"],
+      });
+    }
+    // The same entry twice on one page renders two cards for one mistake, and a review tap would
+    // update only whichever the pointer hit.
+    const entryIds = entries.map((item) => item.entryId);
+    if (new Set(entryIds).size !== entryIds.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "duplicate_entry_ref",
+        path: ["items"],
+      });
+    }
+  });
+export type NotebookPageDocInput = z.infer<typeof notebookPageDocSchema>;
+
+export const notebookPageIndexSchema = z.coerce
+  .number()
+  .int()
+  .min(0)
+  .max(NOTEBOOK_MAX_PAGES - 1);
+
+export const putNotebookPageSchema = z.object({ doc: notebookPageDocSchema });
+export type PutNotebookPageInput = z.infer<typeof putNotebookPageSchema>;
+
+/**
+ * Subject/topic are optional at creation: the student may add the photo first and label it after,
+ * and a free user labels it by hand while a premium one gets it pre-filled. What is NOT optional is
+ * `errorType` — it is the single field the whole feature exists to collect.
+ */
+export const createNotebookEntrySchema = z.object({
+  examId: z.string().uuid(),
+  mockExamId: z.string().uuid().nullish(),
+  storageKey: notebookStorageKeySchema.nullish(),
+  subjectRef: z.string().trim().min(1).max(120).nullish(),
+  topicRef: z.string().trim().min(1).max(120).nullish(),
+  errorType: z.enum(NOTEBOOK_ERROR_TYPES),
+  note: z.string().trim().max(500).nullish(),
+});
+export type CreateNotebookEntryInput = z.infer<
+  typeof createNotebookEntrySchema
+>;
+
+export const updateNotebookEntrySchema = z
+  .object({
+    subjectRef: z.string().trim().min(1).max(120).nullish(),
+    topicRef: z.string().trim().min(1).max(120).nullish(),
+    errorType: z.enum(NOTEBOOK_ERROR_TYPES).optional(),
+    note: z.string().trim().max(500).nullish(),
+    status: z.enum(["ACTIVE", "ARCHIVED"]).optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, { message: "empty_patch" });
+export type UpdateNotebookEntryInput = z.infer<
+  typeof updateNotebookEntrySchema
+>;
+
+/** The review answer. One boolean — "could you do it this time?" — and the ladder does the rest. */
+export const reviewNotebookEntrySchema = z.object({ solved: z.boolean() });
+export type ReviewNotebookEntryInput = z.infer<
+  typeof reviewNotebookEntrySchema
+>;
+
+/**
+ * No idempotency key, unlike the mock-exam categorize: a pre-label is a suggestion the user is
+ * about to overwrite anyway, nothing persists it, and there is no row to dedupe against. The cost
+ * of a retry is one quota unit, which is cheaper than a table that exists only to save one.
+ */
+export const prelabelNotebookEntrySchema = z.object({
+  storageKey: notebookStorageKeySchema,
+  examId: z.string().uuid(),
+});
+export type PrelabelNotebookEntryInput = z.infer<
+  typeof prelabelNotebookEntrySchema
+>;
 

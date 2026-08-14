@@ -8,6 +8,7 @@ import {
   ghostNarrationSchema,
   paginationQuerySchema,
   photoUploadUrlSchema,
+  prelabelNotebookEntrySchema,
   sessionReflectionSchema,
   weeklyReviewNarrationSchema,
   coachProfilePatchSchema,
@@ -112,4 +113,8 @@ export class SessionReflectionBodyDto extends createZodDto(
 
 export class WeeklyReviewNarrationBodyDto extends createZodDto(
   weeklyReviewNarrationSchema,
+) {}
+
+export class PrelabelNotebookEntryDto extends createZodDto(
+  prelabelNotebookEntrySchema,
 ) {}

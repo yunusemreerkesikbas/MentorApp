@@ -1,5 +1,5 @@
 "use client";
-import { BadgeCheck, BookOpen, Calendar, ChartColumn, Coins, Crown, Gem, House, MessageCircle, Settings, Users } from "lucide-react";
+import { BadgeCheck, BookOpen, Calendar, ChartColumn, Coins, Crown, Gem, House, MessageCircle, NotebookPen, Settings, Users } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
@@ -37,6 +37,9 @@ const NAV_ITEMS = [
   { href: "/coach", labelKey: "coach", icon: MessageCircle, sidebarExclude: true },
   { href: "/analysis", labelKey: "analysis", icon: ChartColumn },
   { href: "/knowledge", labelKey: "knowledge", icon: BookOpen },
+  /* Sidebar-only for now: the mobile tab pill is full at five, and the notebook's own return
+     path is the review notification, not a tab the user hunts for. */
+  { href: "/notebook", labelKey: "notebook", icon: NotebookPen, sidebarOnly: true },
   { href: "/community", labelKey: "community", icon: Users, sidebarOnly: true },
   { href: "/settings", labelKey: "settings", icon: Settings, sidebarOnly: true },
 ] as const;

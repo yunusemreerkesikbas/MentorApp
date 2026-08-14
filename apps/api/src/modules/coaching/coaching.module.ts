@@ -3,6 +3,7 @@ import { ContentModule } from "../content/content.module";
 import { IdentityModule } from "../identity/identity.module";
 import { MoodService } from "./application/mood.service";
 import { DailyQuestSignalService } from "./application/daily-quest-signal.service";
+import { MistakeNotebookService } from "./application/mistake-notebook.service";
 import { MockExamService } from "./application/mock-exam.service";
 import { PlanService } from "./application/plan.service";
 import { SessionService } from "./application/session.service";
@@ -25,6 +26,7 @@ import { PlanTaskRepository } from "./infrastructure/plan-task.repository";
 import { StreakFreezeRepository } from "./infrastructure/streak-freeze.repository";
 import { StreakStateRepository } from "./infrastructure/streak-state.repository";
 import { StudySessionRepository } from "./infrastructure/study-session.repository";
+import { MistakeNotebookRepository } from "./infrastructure/mistake-notebook.repository";
 import { MockExamRepository } from "./infrastructure/mock-exam.repository";
 import { MockExamPhotoRepository } from "./infrastructure/mock-exam-photo.repository";
 import { VisionBoardRepository } from "./infrastructure/vision-board.repository";
@@ -32,6 +34,7 @@ import { WeeklyReviewRepository } from "./infrastructure/weekly-review.repositor
 import { PreferenceScenarioRepository } from "./infrastructure/preference-scenario.repository";
 import { CoachingErasureRepository } from "./infrastructure/coaching-erasure.repository";
 import { CoachingController } from "./presentation/coaching.controller";
+import { MistakeNotebookController } from "./presentation/mistake-notebook.controller";
 import { MockExamController } from "./presentation/mock-exam.controller";
 import { PlanTaskController } from "./presentation/plan-task.controller";
 import { StudySessionController } from "./presentation/study-session.controller";
@@ -45,9 +48,16 @@ import { StudySessionController } from "./presentation/study-session.controller"
  */
 @Module({
   imports: [ContentModule, IdentityModule],
-  controllers: [CoachingController, PlanTaskController, StudySessionController, MockExamController],
+  controllers: [
+    CoachingController,
+    PlanTaskController,
+    StudySessionController,
+    MockExamController,
+    MistakeNotebookController,
+  ],
   providers: [
     PlanService,
+    MistakeNotebookService,
     DailyQuestSignalService,
     SessionService,
     StreakService,
@@ -64,6 +74,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     CoachingErasureRepository,
     PlanTaskRepository,
     StudySessionRepository,
+    MistakeNotebookRepository,
     MockExamRepository,
     MockExamPhotoRepository,
     DailyActivityRepository,
@@ -83,6 +94,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     CoachingErasureService,
     CoachEvidenceService,
     DailyQuestSignalService,
+    MistakeNotebookService,
     MockExamService,
     MoodService,
     PlanService,

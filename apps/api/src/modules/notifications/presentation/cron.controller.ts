@@ -3,6 +3,7 @@ import { ApiTags } from "@nestjs/swagger";
 import { Public } from "../../../common/auth/public.decorator";
 import { DailyReminderService } from "../application/daily-reminder.service";
 import { JobRunnerService } from "../application/job-runner.service";
+import { NotebookReviewReminderService } from "../application/notebook-review-reminder.service";
 import { CronSecretGuard } from "../../../common/auth/cron-secret.guard";
 
 /** Internal cron triggers (Render Cron → HTTP, no continuous polling). */
@@ -14,6 +15,7 @@ export class CronController {
   constructor(
     private readonly runner: JobRunnerService,
     private readonly dailyReminders: DailyReminderService,
+    private readonly notebookReviews: NotebookReviewReminderService,
   ) {}
 
   @Post("process-jobs")
@@ -24,5 +26,11 @@ export class CronController {
   @Post("dispatch-daily-reminders")
   dispatchDailyReminders() {
     return this.dailyReminders.dispatchForToday();
+  }
+
+  /** Its own trigger, not folded into the daily reminder: different audience, different cadence. */
+  @Post("dispatch-notebook-reviews")
+  dispatchNotebookReviews() {
+    return this.notebookReviews.dispatchDue();
   }
 }

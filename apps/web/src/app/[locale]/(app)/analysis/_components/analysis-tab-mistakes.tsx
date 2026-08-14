@@ -1,42 +1,18 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { CoachingAnalysisDto, PhotoAccessDto } from "@mentor/types";
-import {
-  Button,
-  Card,
-  ProgressBar,
-  SectionHeading,
-  Skeleton,
-  SkeletonGroup,
-} from "@mentor/ui";
+import type { CoachingAnalysisDto } from "@mentor/types";
+import { Card, ProgressBar, SectionHeading } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { EmptyState } from "@/components/empty-state";
-import { FormError } from "@/components/form";
-import { PhotoCategorizeCard } from "./photo-categorize-card";
-
-type PhotoAccessState =
-  | { status: "idle"; examId: string | null }
-  | { status: "loading"; examId: string }
-  | { status: "ready"; examId: string; data: PhotoAccessDto }
-  | { status: "error"; examId: string; message: string };
 
 interface AnalysisTabMistakesProps {
-  activeMockExamId: string | null;
-  photoAccessState: PhotoAccessState;
   analysis: CoachingAnalysisDto | null;
-  onCategorized: () => void;
-  onRetryAccess: () => void;
 }
 
-export function AnalysisTabMistakes({
-  activeMockExamId,
-  photoAccessState,
-  analysis,
-  onCategorized,
-  onRetryAccess,
-}: AnalysisTabMistakesProps) {
+export function AnalysisTabMistakes({ analysis }: AnalysisTabMistakesProps) {
   const t = useTranslations("analysis");
+  const notebookT = useTranslations("notebook");
   const signals = analysis?.photoSubjectSignals ?? [];
   const topicSignals = analysis?.photoTopicSignals ?? [];
   const topicGroups = topicSignals.reduce<
@@ -64,52 +40,79 @@ export function AnalysisTabMistakes({
     (maximum, signal) => Math.max(maximum, signal.count),
     0,
   );
-  const photoAccess =
-    photoAccessState.status === "ready" ? photoAccessState.data : null;
+  const errorSignals = analysis?.notebookErrorSignals ?? [];
+  const maxErrorCount = errorSignals.reduce(
+    (maximum, signal) => Math.max(maximum, signal.count),
+    0,
+  );
 
   return (
     <div className="flex flex-col gap-6">
-      {!activeMockExamId ? (
+      {/*
+        The notebook replaced the photo-categorize card here. That card told the student the
+        subject of a mistake they had just made — something they already knew — and burned a
+        premium quota doing it. What they cannot work out alone is the shape below: not *where*
+        the points went, but *why*.
+      */}
+      {errorSignals.length > 0 ? (
+        <Card className="flex flex-col gap-3">
+          <SectionHeading as="h2" subtitle={t("error_signals_subtitle")}>
+            {t("error_signals_title")}
+          </SectionHeading>
+          {analysis?.notebookErrorMessage ? (
+            <p className="text-sm" style={{ color: "var(--color-body)" }}>
+              {analysis.notebookErrorMessage}
+            </p>
+          ) : null}
+          <ul className="flex flex-col gap-2">
+            {errorSignals.map((signal) => (
+              <li key={signal.errorType} className="flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm" style={{ color: "var(--color-main)" }}>
+                    {notebookT(`error_type.${signal.errorType}`)}
+                  </span>
+                  <span
+                    className="text-xs font-semibold tabular-nums"
+                    style={{ color: "var(--color-secondary)" }}
+                  >
+                    {signal.count}
+                  </span>
+                </div>
+                <ProgressBar
+                  value={
+                    maxErrorCount > 0
+                      ? Math.round((signal.count / maxErrorCount) * 100)
+                      : 0
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/notebook"
+            className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            style={{ backgroundColor: "var(--color-btn)" }}
+          >
+            {t("notebook_open")}
+          </Link>
+        </Card>
+      ) : (
         <Card>
           <EmptyState
-            title={t("photo_section_title")}
-            description={t("photo_no_exam_desc")}
+            title={t("notebook_empty_title")}
+            description={t("notebook_empty_desc")}
             puhuVariant="default"
             action={
               <Link
-                href={{ pathname: "/analysis", query: { tab: "entry" } }}
+                href="/notebook"
                 className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 style={{ backgroundColor: "var(--color-btn)" }}
               >
-                {t("photo_enter_exam")}
+                {t("notebook_open")}
               </Link>
             }
           />
         </Card>
-      ) : photoAccessState.status === "error" ? (
-        <Card className="flex flex-col items-start gap-3">
-          <SectionHeading as="h2" subtitle={t("photo_unavailable")}>
-            {t("photo_section_title")}
-          </SectionHeading>
-          <FormError message={photoAccessState.message} />
-          <Button type="button" variant="secondary" onClick={onRetryAccess}>
-            {t("photo_retry")}
-          </Button>
-        </Card>
-      ) : photoAccess ? (
-        <PhotoCategorizeCard
-          mockExamId={activeMockExamId}
-          access={photoAccess}
-          onCategorized={onCategorized}
-        />
-      ) : (
-        <SkeletonGroup label={t("photo_loading")} className="block">
-          <Card className="flex flex-col gap-4">
-            <Skeleton className="h-6 w-48 rounded-[var(--radius-card)]" />
-            <Skeleton className="h-28 w-full rounded-[var(--radius-card)]" />
-            <Skeleton className="h-11 w-full rounded-[var(--radius-card)]" />
-          </Card>
-        </SkeletonGroup>
       )}
 
       {topicSignals.length > 0 ? (
@@ -204,11 +207,7 @@ export function AnalysisTabMistakes({
         <Card>
           <EmptyState
             title={t("photo_signals_title")}
-            description={
-              activeMockExamId && photoAccess?.canCategorize
-                ? t("photo_signals_empty_action")
-                : t("photo_signals_empty_desc")
-            }
+            description={t("photo_signals_empty_desc")}
             puhuVariant="default"
           />
         </Card>

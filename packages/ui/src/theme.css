@@ -47,6 +47,22 @@
   --color-surface-translucent: rgba(255, 255, 255, 0.5);
   --color-focus-ring: #1d6fbf;
 
+  /* Mistake notebook ("yanlış defteri") surface — paper, ruling, wire binding, cover.
+     Own tokens rather than reused semantic ones: these describe a physical object, and tying
+     the paper to --color-surface would drag the notebook along with any surface retune. */
+  --notebook-paper: #fdfbf6;
+  /** Ruling and grid lines — visible but never competing with what is written on them. */
+  --notebook-rule: rgba(37, 73, 150, 0.14);
+  /** The single red margin line every Turkish exercise book has. */
+  --notebook-margin-rule: rgba(243, 112, 90, 0.55);
+  --notebook-hole: rgba(37, 73, 150, 0.16);
+  --notebook-wire-light: #e4e7ee;
+  --notebook-wire-dark: #9aa3b4;
+  --notebook-cover: #3c4a63;
+  /** The stuck-on cover label. */
+  --notebook-label: #fdfbf6;
+  --notebook-page-shadow: 0px 8px 24px rgba(37, 73, 150, 0.14);
+
   /* Typography */
   --font-heading: "Plus Jakarta Sans", sans-serif;
   --font-body: "Plus Jakarta Sans", sans-serif;

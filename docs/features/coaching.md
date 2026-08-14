@@ -1610,3 +1610,48 @@ pnpm --filter @mentor/api test
   İlgili: `board-editor-shell.tsx`, `board-context-toolbar.tsx`, `board-side-panel.tsx`,
   `board-item-view.tsx`, `board-export.ts`, `[locale]/layout.tsx`, `packages/types/src/coaching.ts`,
   `board-text-fonts.spec.ts`, `messages/{tr,en}.json` (+7 anahtar).
+
+- **Yanlış defteri: veri, defter kabuğu, kart, tekrar motoru, analiz köprüsü (2026-08-14, APP-042)** —
+  `foto → ders/konu kategorize` özelliği emekliye ayrıldı ve yerine **yanlış defteri** geldi.
+  Gerekçe: kategorize öğrenciye **zaten bildiği** şeyi söylüyordu (yanlış yaptığı dersi ve konuyu
+  öğrenci bilir), üstüne premium kotasını bir etiketleme işine yakıyordu. Öğrencinin bilmediği ve
+  kayıt tutmadığı şey **hata tipi** — "Problemler'de 8 yanlış" bilgisi *"konuyu tekrar et"*
+  dedirtir (çoğu zaman yanlış karar, boşa giden hafta), *"8 yanlışın 6'sı dikkat hatası"* bilgisi
+  *"konu tamam, yavaşla"* dedirtir.
+  **Veri modeli — bilerek ikiye bölünmüş:** `mistake_notebook_entries` öğrencinin yanlış hakkında
+  *söylediği* şeyi tutar (kolon, çünkü iki sorgu var: cron `next_review_at`'i tarıyor, analiz
+  `error_type`'ı topluyor); `mistake_notebook_pages` sadece *nereye koyduğunu* tutar (sorgulanmıyor
+  → sayfa başına tek jsonb). Vision board'un aksine kullanıcı başına tek doküman **değil**: defter
+  sınırsız büyür, tek sayfayı kaydetmek tüm kitabı yeniden yazmamalı. `mock_exam_id` nullable +
+  `ON DELETE SET NULL` — yanlışların çoğu deneme dışında yakalanıyor, deneme silinince ondan
+  çıkarılan ders silinmemeli. Migration `0077` elle yazıldı (0074/0075'teki gerekçe: `drizzle-kit
+  generate` hâlâ 0074 öncesi snapshot'a diff atıyor; ayrıca RLS üretemiyor).
+  **Defter görseli CSS + inline SVG, raster asset yok** — `board-stage.tsx:22` kuralı koyuyor:
+  arka planlar prosedürel, çünkü canvas exporter'ı her birini yeniden üretmek zorunda. Spiral bir
+  SVG `<pattern>`; kendini sayfa yüksekliğine tile ediyor, yani hiçbir yerde ring sayılmıyor veya
+  konteyner ölçülmüyor. Sayfa çevirme `framer-motion` `rotateY` (yeni bağımlılık yok),
+  `prefers-reduced-motion`'da çapraz geçiş. Tokenlar `theme.css`'e `--notebook-*` olarak eklendi.
+  **Tekrar merdiveni sabit: 2 → 7 → 21 gün → HEALED**, SM-2 değil — uyarlanabilir algoritma bizde
+  olmayan bir zorluk sinyali ister (burada not yok, sadece "bu sefer çözebildin mi?") ve gerçek
+  kullanım olmadan kalibre edilemez. Başarısızlık `reviewCount`'u **sıfırlar**, bir basamak geri
+  almaz: üç haftada kaçırılan kart "neredeyse öğrenilmiş" değildir, öyle davranmak kartı merdivenin
+  tepesinde sonsuza kadar sektirir. İyileşen kart sayfadan **silinmiyor**, soluklaşıyor — duvar bir
+  iyileşme haritası; iyileştikçe boşalan sayfa iyileşmenin kanıtını da götürür.
+  **Hatırlatma** kullanıcı başına tek bildirim + sayı taşıyor (girdi başına fan-out verimli bir
+  günü bildirim fırtınasına çevirirdi — §0'ın yasakladığı utandırma kalıbı), gün içinde `tryRecord`
+  ile idempotent, e-posta kanalı yok (yanlışlar hakkında e-posta saatler sonra ve bağlamsız gelir).
+  Notifications coaching'in tablosuna dokunmuyor: `CoachingQueryPort.listNotebookReviewCandidates`.
+  **Gotcha — analiz sinyallerinin kaynağı değişti:** `photoSubjectSignals`/`photoTopicSignals` artık
+  `mock_exam_photo_categorizations` yerine defter girdilerinden besleniyor. İsimler korundu (rename
+  focus engine + weekly review + istemcilere yayılırdı, kullanıcıya faydası sıfır), ama **scope
+  değişti**: "hangi denemeler yeniydi" yerine **60 günlük pencere**, çünkü girdilerin çoğunda
+  `mock_exam_id` yok. `photo-categorize-card.tsx` silindi, `analysis-shell.tsx`'teki tüm
+  photo-access state'i (loader, effect, invalidation) temizlendi.
+  **Kapsam dışı bırakılanlar:** kart sürükleme (`use-item-gesture` `VisionBoardItem`'a tiplenmiş,
+  jenerikleştirmek vision board editörünü yeniden doğrulamayı gerektiriyor); free'de konu seçimi
+  (content'te public topics endpoint'i yok — konu yalnız premium ön-etiketlemeden geliyor);
+  topluluk köprüsü; karne→form OCR.
+  İlgili: `mistake-notebook.{service,repository}.ts`, `notebook-review.policy.ts`,
+  `notebook-error-pattern.policy.ts`, `mistake-notebook.controller.ts`,
+  `notebook-review-reminder.service.ts`, `components/notebook/*`, `[locale]/(app)/notebook/*`,
+  `lib/notebook{,-layout}.ts`, `drizzle/0077_mistake_notebook.sql`, `messages/{tr,en}.json`.

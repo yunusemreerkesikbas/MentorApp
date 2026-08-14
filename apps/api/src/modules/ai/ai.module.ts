@@ -58,7 +58,10 @@ import { AiSessionController } from "./presentation/ai-session.controller";
 import { AiGhostController } from "./presentation/ai-ghost.controller";
 import { AiVisionController } from "./presentation/ai-vision.controller";
 import { AiWeeklyReviewController } from "./presentation/ai-weekly-review.controller";
-import { AiMockExamPhotoController } from "./presentation/ai-mock-exam-photo.controller";
+import {
+  AiMockExamPhotoController,
+  AiNotebookPrelabelController,
+} from "./presentation/ai-mock-exam-photo.controller";
 import { AiPhotoController } from "./presentation/ai-photo.controller";
 import { AdminEmbeddingController } from "./presentation/admin-embedding.controller";
 import { AiInternalController } from "./presentation/ai-internal.controller";
@@ -85,6 +88,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     AiWeeklyReviewController,
     AiPhotoController,
     AiMockExamPhotoController,
+    AiNotebookPrelabelController,
     AdminEmbeddingController,
     AiInternalController,
   ],

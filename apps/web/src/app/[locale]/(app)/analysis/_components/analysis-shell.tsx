@@ -12,7 +12,6 @@ import type {
   ExamSubjectDto,
   ExamSummaryDto,
   MockExamDto,
-  PhotoAccessDto,
 } from "@mentor/types";
 import {
   ApiClientError,
@@ -30,7 +29,6 @@ import {
   HistorySideRail,
 } from "@/components/history-side-panel";
 import { useMentorToast } from "@/lib/mentor-toast";
-import { fetchPhotoAccess } from "@/lib/mock-exams";
 import { AnalysisContentSkeleton } from "./analysis-content-skeleton";
 import { AnalysisHistoryList } from "./analysis-history-list";
 import { AnalysisSegmentControl } from "./analysis-segment-control";
@@ -64,11 +62,6 @@ type ReadyData = {
   analysis: CoachingAnalysisDto | null;
 };
 
-type ExamAsyncState<T> =
-  | { status: "idle"; examId: string | null }
-  | { status: "loading"; examId: string }
-  | { status: "ready"; examId: string; data: T }
-  | { status: "error"; examId: string; message: string };
 
 type LoadState =
   | { status: "loading" }
@@ -107,9 +100,6 @@ export function AnalysisShell() {
     new Date().toISOString().slice(0, 10),
   );
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const [photoAccessState, setPhotoAccessState] = useState<
-    ExamAsyncState<PhotoAccessDto>
-  >({ status: "idle", examId: null });
   const [historyOpen, setHistoryOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(true);
   const entryScrollRequested = useRef(false);
@@ -186,7 +176,6 @@ export function AnalysisShell() {
         if (!active) return;
 
         setScores(emptyScores(subjectRows));
-        setPhotoAccessState({ status: "idle", examId: current?.id ?? null });
         setLoadState({
           status: "ready",
           data: {
@@ -222,46 +211,6 @@ export function AnalysisShell() {
     [readyData?.subjects],
   );
   const analysis = readyData?.analysis ?? null;
-  const activeMockExamId = analysis?.trend[0]?.id ?? null;
-
-  const loadPhotoAccess = useCallback(
-    async (examId: string) => {
-      setPhotoAccessState({ status: "loading", examId });
-      try {
-        const access = await fetchPhotoAccess();
-        setPhotoAccessState((current) =>
-          current.status === "loading" && current.examId === examId
-            ? { status: "ready", examId, data: access }
-            : current,
-        );
-      } catch (loadError) {
-        setPhotoAccessState((current) =>
-          current.status === "loading" && current.examId === examId
-            ? {
-                status: "error",
-                examId,
-                message:
-                  loadError instanceof Error
-                    ? loadError.message
-                    : t("photo_access_error"),
-              }
-            : current,
-        );
-      }
-    },
-    [t],
-  );
-
-  useEffect(() => {
-    if (!exam || tab !== "mistakes") return;
-    if (
-      photoAccessState.examId === exam.id &&
-      photoAccessState.status !== "idle"
-    ) {
-      return;
-    }
-    void loadPhotoAccess(exam.id);
-  }, [exam, loadPhotoAccess, photoAccessState, tab]);
 
   const refreshAnalysis = useCallback(async () => {
     if (!exam || loadState.status !== "ready") return;
@@ -278,20 +227,10 @@ export function AnalysisShell() {
     );
   }, [exam, loadState.status]);
 
-  const invalidatePhotoAccess = useCallback(() => {
-    setPhotoAccessState({ status: "idle", examId: exam?.id ?? null });
-  }, [exam?.id]);
-
   const handleHistoryChanged = useCallback(() => {
     setHistoryRefreshKey((key) => key + 1);
-    invalidatePhotoAccess();
     void refreshAnalysis();
-  }, [invalidatePhotoAccess, refreshAnalysis]);
-
-  const handlePhotoCategorized = useCallback(() => {
-    invalidatePhotoAccess();
-    void refreshAnalysis();
-  }, [invalidatePhotoAccess, refreshAnalysis]);
+  }, [refreshAnalysis]);
 
   function updateScore(
     slug: string,
@@ -346,7 +285,6 @@ export function AnalysisShell() {
         title: t("saved_toast_title"),
         message: t("saved_toast_message", { net: result.totalNet }),
       });
-      invalidatePhotoAccess();
       await refreshAnalysis();
       setHistoryRefreshKey((key) => key + 1);
       setScores(emptyScores(subjects));
@@ -510,13 +448,7 @@ export function AnalysisShell() {
 
                 {tab === "mistakes" ? (
                   <AnalysisTabMistakes
-                    activeMockExamId={activeMockExamId}
-                    photoAccessState={photoAccessState}
                     analysis={analysis}
-                    onCategorized={handlePhotoCategorized}
-                    onRetryAccess={() => {
-                      if (exam) void loadPhotoAccess(exam.id);
-                    }}
                   />
                 ) : null}
               </motion.div>

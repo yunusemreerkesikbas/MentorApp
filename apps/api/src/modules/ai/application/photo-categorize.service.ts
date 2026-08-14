@@ -1,6 +1,9 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
-import type { CategorizePhotoResultDto } from "@mentor/types";
-import type { CategorizePhotoInput } from "@mentor/validation";
+import type { CategorizePhotoResultDto, NotebookPrelabelDto } from "@mentor/types";
+import type {
+  CategorizePhotoInput,
+  PrelabelNotebookEntryInput,
+} from "@mentor/validation";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
@@ -154,6 +157,103 @@ export class PhotoCategorizeService {
               },
             ]
           : [],
+    };
+  }
+
+  /**
+   * Pre-label one mistake-notebook photo: the same whitelist-bounded classification (§4 #2), just
+   * scoped to an exam instead of a mock-exam attempt.
+   *
+   * This is what the retired standalone card became. On its own, "this is a Maths / Problems
+   * question" told the student what they already knew; in front of a notebook form it saves two
+   * taps on a label they then confirm or correct — the model indexes, the student decides.
+   *
+   * Nothing is persisted: the answer lands in a form the user is about to edit, and the entry they
+   * save is the record. Premium-gated through the same quota as the mock-exam path (§4 #4).
+   */
+  async prelabelNotebookPhoto(
+    userId: string,
+    rolesHint: string[] | undefined,
+    input: PrelabelNotebookEntryInput,
+  ): Promise<NotebookPrelabelDto> {
+    if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
+      throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+    }
+    await this.photoAccess.assertCanCategorize(userId, rolesHint);
+
+    // The schema proves the key's shape; only the request knows whose it should be. Without this
+    // a crafted key would read another user's photo through our vision quota.
+    if (!input.storageKey.startsWith(`notebook/${userId}/`)) {
+      throw new DomainError(
+        ErrorCode.AI_PHOTO_INVALID_IMAGE,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const imageBytes = await this.storage.readObject(input.storageKey);
+    if (!imageBytes?.length) {
+      throw new DomainError(
+        ErrorCode.AI_PHOTO_INVALID_IMAGE,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (imageBytes.length > PHOTO_MAX_BYTES) {
+      throw new DomainError(
+        ErrorCode.PAYLOAD_TOO_LARGE,
+        HttpStatus.PAYLOAD_TOO_LARGE,
+      );
+    }
+
+    const [subjects, topics] = await Promise.all([
+      this.content.listExamSubjectsByExamId(input.examId),
+      this.content.listExamTopicsByExamId(input.examId),
+    ]);
+    const allowedSubjects = subjects.map(({ slug, name }) => ({ slug, name }));
+    const allowedTopics = topics.map(({ subjectSlug, slug, name }) => ({
+      subjectSlug,
+      slug,
+      name,
+    }));
+
+    await this.budget.assertWithinBudget();
+    const visionResult = await this.vision.categorizeImage({
+      imageBytes,
+      mimeType: input.storageKey.toLowerCase().endsWith(".png")
+        ? "image/png"
+        : "image/jpeg",
+      allowedSubjects,
+      allowedTopics,
+    });
+
+    await this.usage.append({
+      userId,
+      model: visionResult.model,
+      feature: AiUsageFeature.VISION,
+      promptTokens: visionResult.promptTokens,
+      completionTokens: visionResult.completionTokens,
+      costMicros: estimateCostMicros(
+        visionResult.model,
+        visionResult.promptTokens,
+        visionResult.completionTokens,
+      ),
+    });
+
+    const subject = allowedSubjects.find(
+      (item) => item.slug === visionResult.subjectSlug,
+    );
+    const topic = subject
+      ? allowedTopics.find(
+          (item) =>
+            item.subjectSlug === subject.slug &&
+            item.slug === visionResult.topicSlug,
+        )
+      : undefined;
+
+    return {
+      subjectRef: subject?.slug ?? null,
+      subjectName: subject?.name ?? null,
+      topicRef: topic?.slug ?? null,
+      topicName: topic?.name ?? null,
     };
   }
 

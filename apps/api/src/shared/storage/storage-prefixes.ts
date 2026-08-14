@@ -23,6 +23,14 @@ export const PUBLIC_PREFIXES = [
   "content/",
   /** `coaching/application/vision-board-image.service.ts` → `vision-board/{userId}/{uuid}.{ext}` */
   "vision-board/",
+  /**
+   * `coaching/application/mistake-notebook.service.ts` → `notebook/{userId}/{uuid}.{ext}`
+   *
+   * Public with an unguessable key, the same trade the vision board makes: the browser has to
+   * render these directly and `StoragePort` has no signed-read. The mitigations are the ones that
+   * apply there too — the uuid path is never listed, and erasure deletes the objects.
+   */
+  "notebook/",
 ] as const;
 
 export type PublicPrefix = (typeof PUBLIC_PREFIXES)[number];

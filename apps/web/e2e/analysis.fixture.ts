@@ -47,6 +47,8 @@ export const emptyAnalysis: CoachingAnalysisDto = {
   subjects: [],
   photoSubjectSignals: [],
   photoTopicSignals: [],
+  notebookErrorSignals: [],
+  notebookErrorMessage: null,
   nextFocus: null,
   personalRecordNet: null,
   ghost: null,

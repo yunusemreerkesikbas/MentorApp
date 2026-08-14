@@ -301,11 +301,31 @@ export interface GhostComparisonDto {
 }
 
 /** Personal deneme analysis — no ranking (guardrail §0). */
+/**
+ * How the user's recent mistakes break down by *why* they were missed.
+ *
+ * The one thing on this screen the student could not have worked out themselves: they know which
+ * topics hurt, they do not know whether the cause is a gap or a habit — and the two call for
+ * opposite responses.
+ */
+export interface NotebookErrorSignalDto {
+  errorType: NotebookErrorType;
+  count: number;
+}
+
 export interface CoachingAnalysisDto {
   trend: MockExamTrendPointDto[];
   subjects: SubjectStrengthDto[];
+  /**
+   * Named for the retired photo-categorize card, now fed by mistake-notebook entries — the shape
+   * is identical and renaming would ripple through the focus engine, the weekly review and the
+   * clients for no user-visible gain.
+   */
   photoSubjectSignals: PhotoSubjectSignalDto[];
   photoTopicSignals: PhotoTopicSignalDto[];
+  notebookErrorSignals: NotebookErrorSignalDto[];
+  /** Backend-localized reading of the distribution above; `null` when there is too little to say. */
+  notebookErrorMessage: string | null;
   /** `null` until a mock-exam or photo signal supplies personal evidence. */
   nextFocus: AnalysisFocusDto | null;
   /** All-time best total net across all attempts; null when no attempts. */
@@ -821,4 +841,121 @@ export interface WeeklyReviewDto {
     message: string;
   } | null;
   suggestedTask: { title: string; subject: string | null } | null;
+}
+
+/* ------------------------------ mistake notebook ------------------------------ */
+
+/**
+ * Why the answer was wrong — the one thing a student does *not* already know about their own
+ * mistakes. They know the subject and the topic; they do not track whether they keep losing points
+ * to carelessness or to a real gap, and that difference is the whole study decision.
+ *
+ * A closed enum picked with one tap, never an AI output: classifying *why* is the student's own
+ * reflection, and §4 #2 keeps the model out of the answer entirely.
+ * Append-only — removing a value orphans it inside somebody's saved entry.
+ */
+export const NOTEBOOK_ERROR_TYPES = [
+  "UNKNOWN_TOPIC",
+  "CARELESS",
+  "MISREAD",
+  "DISTRACTOR",
+  "TIME",
+  "CHANGED_ANSWER",
+] as const;
+export type NotebookErrorType = (typeof NOTEBOOK_ERROR_TYPES)[number];
+
+/**
+ * `ACTIVE` = still in the review rotation · `HEALED` = survived the full interval ladder ·
+ * `ARCHIVED` = the student put it away without solving it. Nothing is ever deleted on review —
+ * the wall is a healing map, and a healed card staying visible is the point.
+ */
+export const NOTEBOOK_ENTRY_STATUSES = ["ACTIVE", "HEALED", "ARCHIVED"] as const;
+export type NotebookEntryStatus = (typeof NOTEBOOK_ENTRY_STATUSES)[number];
+
+/**
+ * A page, not a wall: 3:4 portrait against the vision board's 3:2. Same absolute-px-in-a-fixed-
+ * design-space trick as `VISION_BOARD_CANVAS`, so one document renders identically at any width.
+ */
+export const NOTEBOOK_PAGE_CANVAS = { width: 1080, height: 1440 } as const;
+
+/** Paper under the items. Procedural like the board textures — CSS gradients, no raster asset. */
+export const NOTEBOOK_PAPERS = ["ruled", "grid", "dotted", "plain"] as const;
+export type NotebookPaper = (typeof NOTEBOOK_PAPERS)[number];
+
+/**
+ * One wrong answer placed on a page. Geometry only — everything the student *said* about the
+ * mistake lives on the entry row, because `nextReviewAt` is a cron query and `errorType` is an
+ * analysis aggregate. The document holds placement, the table holds meaning.
+ */
+export interface NotebookEntryItem extends VisionBoardItemBase {
+  kind: "entry";
+  entryId: string;
+}
+
+/** Stickers and text are the vision board's, verbatim — same shapes, same editor hooks. */
+export type NotebookPageItem =
+  | NotebookEntryItem
+  | VisionBoardTextItem
+  | VisionBoardStickerItem;
+
+export interface NotebookPageDoc {
+  version: 1;
+  paper: NotebookPaper;
+  items: NotebookPageItem[];
+}
+
+export interface NotebookEntryDto {
+  id: string;
+  /** Null for a mistake caught outside a mock exam — most of them are. */
+  mockExamId: string | null;
+  storageKey: string | null;
+  /** Read-only, server-added on every read and dropped by the write schema — never stored. */
+  url: string | null;
+  subjectRef: string | null;
+  subjectName: string | null;
+  topicRef: string | null;
+  topicName: string | null;
+  errorType: NotebookErrorType;
+  note: string | null;
+  status: NotebookEntryStatus;
+  reviewCount: number;
+  lastReviewedAt: string | null;
+  /** Null once `HEALED`/`ARCHIVED` — the row leaves the due query by having no due date. */
+  nextReviewAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Cover screen payload: enough to render the cover and the "bugün tekrar" strip, nothing more. */
+export interface NotebookOverviewDto {
+  pageCount: number;
+  entryCount: number;
+  dueCount: number;
+  healedCount: number;
+}
+
+export interface NotebookPageDto {
+  pageIndex: number;
+  doc: NotebookPageDoc;
+  /** Only the entries this page's items reference, hydrated for rendering. */
+  entries: NotebookEntryDto[];
+}
+
+/**
+ * Premium vision pre-labelling. Classification only, same whitelist-bounded prompt as the retired
+ * standalone card (§4 #2) — the student confirms or corrects it with one tap.
+ */
+export interface NotebookPrelabelDto {
+  subjectRef: string | null;
+  subjectName: string | null;
+  topicRef: string | null;
+  topicName: string | null;
+}
+
+/** Presigned direct-to-R2 upload for one notebook photo. */
+export interface NotebookImageUploadUrlDto {
+  uploadUrl: string;
+  key: string;
+  expiresAt: string;
+  maxBytes: number;
 }

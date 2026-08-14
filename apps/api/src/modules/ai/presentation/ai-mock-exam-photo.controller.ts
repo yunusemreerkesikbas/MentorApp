@@ -1,10 +1,26 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { CategorizePhotoResultDto, PhotoUploadUrlDto } from "@mentor/types";
+import type {
+  CategorizePhotoResultDto,
+  NotebookPrelabelDto,
+  PhotoUploadUrlDto,
+} from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { PhotoCategorizeService } from "../application/photo-categorize.service";
 import { PhotoUploadService } from "../application/photo-upload.service";
-import { CategorizePhotoDto, PhotoUploadUrlDto as PhotoUploadUrlBodyDto } from "./ai.dto";
+import {
+  CategorizePhotoDto,
+  PhotoUploadUrlDto as PhotoUploadUrlBodyDto,
+  PrelabelNotebookEntryDto,
+} from "./ai.dto";
 
 /**
  * Mock-exam photo upload + vision categorize (W3). Lives in AI module to avoid coaching↔ai circular imports.
@@ -33,5 +49,26 @@ export class AiMockExamPhotoController {
     @Body() dto: CategorizePhotoDto,
   ): Promise<CategorizePhotoResultDto> {
     return this.photoCategorize.categorize(user.id, user.roles, id, dto);
+  }
+}
+
+/**
+ * Notebook photo pre-labelling. A separate controller because it is a different resource, and it
+ * lives in the AI module for the same reason the one above does: coaching cannot import vision
+ * without a circular module edge.
+ */
+@ApiTags("ai")
+@ApiBearerAuth()
+@Controller("coaching/notebook")
+export class AiNotebookPrelabelController {
+  constructor(private readonly photoCategorize: PhotoCategorizeService) {}
+
+  @Post("entries/prelabel")
+  @HttpCode(HttpStatus.OK)
+  prelabel(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: PrelabelNotebookEntryDto,
+  ): Promise<NotebookPrelabelDto> {
+    return this.photoCategorize.prelabelNotebookPhoto(user.id, user.roles, dto);
   }
 }
