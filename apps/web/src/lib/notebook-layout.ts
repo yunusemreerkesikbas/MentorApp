@@ -1,4 +1,8 @@
-import { NOTEBOOK_PAGE_CANVAS, type NotebookPageItem } from "@mentor/types";
+import {
+  NOTEBOOK_PAGE_CANVAS,
+  type NotebookPageItem,
+  type VisionSticker,
+} from "@mentor/types";
 
 /**
  * Where a freshly added mistake card lands on the page.
@@ -54,5 +58,52 @@ export function nextEntrySlot(items: NotebookPageItem[]): EntrySlot | null {
     // Alternating tilt, so consecutive cards do not lean the same way.
     rotation: used % 2 === 0 ? -0.8 : 0.9,
     z: highestZ + 1,
+  };
+}
+
+/**
+ * A new sticker or note lands in the middle of the page, on top.
+ *
+ * Centre rather than "next free slot": decoration is not content, so it has no queue to join — the
+ * user is about to drag it wherever they meant it to go anyway.
+ */
+function centred(width: number, height: number, items: NotebookPageItem[]) {
+  return {
+    id: crypto.randomUUID(),
+    x: Math.round((NOTEBOOK_PAGE_CANVAS.width - width) / 2),
+    y: Math.round((NOTEBOOK_PAGE_CANVAS.height - height) / 2),
+    width,
+    height,
+    rotation: 0,
+    opacity: 1,
+    z: items.reduce((max, item) => Math.max(max, item.z), 0) + 1,
+  };
+}
+
+export function createStickerItem(
+  asset: VisionSticker,
+  items: NotebookPageItem[],
+): NotebookPageItem {
+  return { ...centred(180, 180, items), kind: "sticker", asset };
+}
+
+/** Note defaults mirror the board's text item so the shared renderer needs no notebook branch. */
+export function createNoteItem(
+  text: string,
+  items: NotebookPageItem[],
+): NotebookPageItem {
+  return {
+    ...centred(420, 120, items),
+    kind: "text",
+    text,
+    font: "script",
+    size: 44,
+    color: "#111111",
+    bold: false,
+    italic: false,
+    align: "left",
+    lineHeight: 1.2,
+    letterSpacing: 0,
+    background: null,
   };
 }

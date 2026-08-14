@@ -1571,7 +1571,23 @@
     "error_save": "Yanlış kaydedilemedi.",
     "error_review": "Tekrar kaydedilemedi.",
     "error_place": "Yanlış deftere eklendi ama sayfadaki yeri kaydedilemedi.",
-    "error_page_full": "Bu sayfa doldu — sonraki sayfaya geç."
+    "error_page_full": "Bu sayfa doldu — sonraki sayfaya geç.",
+    "edit_open": "Sayfayı düzenle",
+    "edit_done": "Bitir",
+    "edit_add_sticker": "Sticker ekle",
+    "edit_add_note": "Not ekle",
+    "edit_note_placeholder": "Sayfaya bir not yapıştır…",
+    "edit_paper": "Kağıt",
+    "edit_undo": "Geri al",
+    "edit_delete": "Seçileni sil",
+    "edit_resize": "Boyutlandır",
+    "edit_rotate": "Döndür",
+    "paper": {
+      "ruled": "Çizgili",
+      "grid": "Kareli",
+      "dotted": "Noktalı",
+      "plain": "Düz"
+    }
   },
   "photo": {
     "error_type": "Yalnızca JPEG veya PNG yükleyebilirsin.",

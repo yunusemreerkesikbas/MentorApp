@@ -8,9 +8,10 @@ import type {
   ExamSubjectDto,
   NotebookEntryDto,
   NotebookOverviewDto,
+  NotebookPageDoc,
   NotebookPageDto,
 } from "@mentor/types";
-import { NOTEBOOK_PAGE_CANVAS } from "@mentor/types";
+import { NOTEBOOK_PAGE_CANVAS, type NotebookPaper, type NotebookPageItem, type VisionSticker } from "@mentor/types";
 import {
   contentControllerCalendarByFamily,
   contentControllerSubjectsBySlug,
@@ -30,7 +31,11 @@ import {
   fetchNotebookPage,
   saveNotebookPage,
 } from "@/lib/notebook";
-import { nextEntrySlot } from "@/lib/notebook-layout";
+import { createNoteItem, createStickerItem, nextEntrySlot } from "@/lib/notebook-layout";
+import { useItemGesture } from "@/components/stage/use-item-gesture";
+import { SelectionOverlay } from "@/components/stage/selection-overlay";
+import { NotebookEditBar } from "./notebook-edit-bar";
+import { useNotebookPage } from "./use-notebook-page";
 import { NotebookAddPanel } from "./notebook-add-panel";
 import { NotebookContentSkeleton } from "./notebook-content-skeleton";
 import { NotebookReviewPanel } from "./notebook-review-panel";
@@ -39,6 +44,12 @@ import { NotebookReviewPanel } from "./notebook-review-panel";
 const TURN_THRESHOLD_PX = 60;
 
 type View = { kind: "cover" } | { kind: "page"; index: number };
+
+/** Matches the server's blank page, so an unsaved page and a fetched empty one render alike. */
+const EMPTY_PAGE: NotebookPageDoc = { version: 1, paper: "ruled", items: [] };
+
+/** Long enough that a drag settles first, short enough that a closed tab loses nothing. */
+const AUTOSAVE_DELAY_MS = 900;
 
 interface ExamContext {
   id: string;
@@ -60,6 +71,21 @@ export function NotebookShell() {
   const [overview, setOverview] = useState<NotebookOverviewDto | null>(null);
   const [exam, setExam] = useState<ExamContext | null>(null);
   const [page, setPage] = useState<NotebookPageDto | null>(null);
+  const [editing, setEditing] = useState(false);
+  const {
+    state: pageState,
+    dispatch: pageDispatch,
+    patch,
+    checkpoint,
+    selected,
+    canUndo,
+  } = useNotebookPage(EMPTY_PAGE);
+  const gesture = useItemGesture<NotebookPageItem>({
+    patch,
+    checkpoint,
+    lockRatioFor: (item) => item.kind === "sticker",
+    canvasWidth: NOTEBOOK_PAGE_CANVAS.width,
+  });
   const [due, setDue] = useState<NotebookEntryDto[]>([]);
   const [reviewing, setReviewing] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -124,7 +150,9 @@ export function NotebookShell() {
     let cancelled = false;
     fetchNotebookPage(view.index)
       .then((data) => {
-        if (!cancelled) setPage(data);
+        if (cancelled) return;
+        setPage(data);
+        pageDispatch({ type: "replace", doc: data.doc });
       })
       .catch(() => {
         if (!cancelled) setError(t("error_load"));
@@ -132,7 +160,23 @@ export function NotebookShell() {
     return () => {
       cancelled = true;
     };
-  }, [view, t]);
+  }, [view, t, pageDispatch]);
+
+  /*
+   * Autosave rather than a save button: the user came here to review, and a page that silently
+   * loses a dragged sticker because they navigated away is worse than any save affordance.
+   */
+  useEffect(() => {
+    if (view.kind !== "page" || !pageState.dirty) return;
+    const index = view.index;
+    const doc = pageState.doc;
+    const timer = setTimeout(() => {
+      saveNotebookPage(index, doc)
+        .then(() => pageDispatch({ type: "saved" }))
+        .catch(() => setError(t("error_place")));
+    }, AUTOSAVE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [pageState.dirty, pageState.doc, view, pageDispatch, t]);
 
   /**
    * Turning back from page 0 closes the book rather than doing nothing. A notebook that traps you
@@ -167,36 +211,31 @@ export function NotebookShell() {
    * If that save fails the mistake is still in the book, so the banner says "we could not place
    * it", not "we lost it".
    */
+  /**
+   * Place a freshly saved entry on the open page.
+   *
+   * The entry row already exists at this point — placing it only records where its card sits, and
+   * the autosave effect persists that. If the page is full we say so rather than stacking a card
+   * off the bottom edge where nobody would find it.
+   */
   const handleCreated = useCallback(
-    async (entry: NotebookEntryDto) => {
-      if (view.kind !== "page" || !page) return;
-      const slot = nextEntrySlot(page.doc.items);
+    (entry: NotebookEntryDto) => {
+      const slot = nextEntrySlot(pageState.doc.items);
       if (!slot) {
         setError(t("error_page_full"));
         setAdding(false);
         return;
       }
-
-      const doc = {
-        ...page.doc,
-        items: [
-          ...page.doc.items,
-          { ...slot, id: crypto.randomUUID(), kind: "entry" as const, entryId: entry.id, opacity: 1 },
-        ],
-      };
-      // Optimistic: the card appears the moment it is saved, and a failed page save only costs its
-      // position — which the next save fixes.
-      setPage({ ...page, doc, entries: [...page.entries, entry] });
+      pageDispatch({
+        type: "add",
+        item: { ...slot, id: crypto.randomUUID(), kind: "entry", entryId: entry.id, opacity: 1 },
+      });
+      setPage((current) =>
+        current ? { ...current, entries: [...current.entries, entry] } : current,
+      );
       setAdding(false);
-
-      try {
-        await saveNotebookPage(view.index, doc);
-        setOverview(await fetchNotebookOverview());
-      } catch {
-        setError(t("error_place"));
-      }
     },
-    [page, view, t],
+    [pageState.doc.items, pageDispatch, t],
   );
 
   /**
@@ -320,11 +359,40 @@ export function NotebookShell() {
                 <Button onClick={() => turn(1)}>{t("cover_open")}</Button>
               </NotebookCover>
             ) : (
-              <NotebookPageSurface paper={page?.doc.paper ?? "ruled"}>
+              <NotebookPageSurface paper={pageState.doc.paper}>
                 <NotebookPageStage
-                  items={page?.doc.items ?? []}
+                  items={pageState.doc.items}
                   entries={page?.entries ?? []}
                   dueIds={dueIds}
+                  onOpenEntry={(entry) => {
+                    setDue([entry]);
+                    setReviewing(true);
+                  }}
+                  selectedId={editing ? pageState.selectedId : null}
+                  onSelect={
+                    editing ? (id) => pageDispatch({ type: "select", id }) : undefined
+                  }
+                  onItemPointerDown={
+                    editing
+                      ? (event, item) => gesture.begin(event, item, { kind: "move" })
+                      : undefined
+                  }
+                  onPointerMove={editing ? gesture.move : undefined}
+                  onPointerUp={editing ? gesture.end : undefined}
+                  renderOverlay={
+                    editing
+                      ? (item) => (
+                          <SelectionOverlay
+                            resizeHandlers={(corner) =>
+                              gesture.handlersFor(item, { kind: "resize", corner })
+                            }
+                            rotateHandlers={gesture.handlersFor(item, { kind: "rotate" })}
+                            resizeLabel={t("edit_resize")}
+                            rotateLabel={t("edit_rotate")}
+                          />
+                        )
+                      : undefined
+                  }
                 />
               </NotebookPageSurface>
             )}
@@ -344,17 +412,59 @@ export function NotebookShell() {
         </Button>
       </div>
 
-      {view.kind === "page" && exam ? (
-        adding ? (
-          <NotebookAddPanel
-            examId={exam.id}
-            subjects={exam.subjects}
-            onCreated={(entry) => void handleCreated(entry)}
-            onCancel={() => setAdding(false)}
-          />
-        ) : (
-          <Button onClick={() => setAdding(true)}>{t("add_open")}</Button>
-        )
+      {view.kind === "page" ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-2">
+            {exam && !adding ? (
+              <Button onClick={() => setAdding(true)}>{t("add_open")}</Button>
+            ) : null}
+            <Button
+              variant={editing ? "primary" : "secondary"}
+              onClick={() => {
+                setEditing((current) => !current);
+                pageDispatch({ type: "select", id: null });
+              }}
+            >
+              {editing ? t("edit_done") : t("edit_open")}
+            </Button>
+          </div>
+
+          {editing ? (
+            <NotebookEditBar
+              paper={pageState.doc.paper}
+              canUndo={canUndo}
+              hasSelection={selected != null}
+              onAddSticker={(asset: VisionSticker) =>
+                pageDispatch({
+                  type: "add",
+                  item: createStickerItem(asset, pageState.doc.items),
+                })
+              }
+              onAddNote={(text: string) =>
+                pageDispatch({
+                  type: "add",
+                  item: createNoteItem(text, pageState.doc.items),
+                })
+              }
+              onSetPaper={(paper: NotebookPaper) =>
+                pageDispatch({ type: "setPaper", paper })
+              }
+              onUndo={() => pageDispatch({ type: "undo" })}
+              onDeleteSelected={() =>
+                selected && pageDispatch({ type: "remove", id: selected.id })
+              }
+            />
+          ) : null}
+
+          {adding && exam ? (
+            <NotebookAddPanel
+              examId={exam.id}
+              subjects={exam.subjects}
+              onCreated={handleCreated}
+              onCancel={() => setAdding(false)}
+            />
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

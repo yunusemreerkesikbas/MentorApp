@@ -10,7 +10,7 @@ import {
   snapAngle,
   toCanvasScale,
   toLocalDelta,
-} from "./board-gesture-math";
+} from "./gesture-math";
 
 function item(overrides: Partial<VisionBoardTextItem> = {}): VisionBoardTextItem {
   return {
@@ -26,8 +26,10 @@ function item(overrides: Partial<VisionBoardTextItem> = {}): VisionBoardTextItem
 
 describe("toCanvasScale", () => {
   it("maps screen px to canvas units", () => {
-    // A stage rendered 810 CSS px wide is half the 1620-unit canvas.
-    expect(toCanvasScale(810)).toBe(2);
+    // A stage rendered 810 CSS px wide is half the 1620-unit board canvas.
+    expect(toCanvasScale(810, 1620)).toBe(2);
+    // The same helper serves the notebook's narrower page, which is the point of the parameter.
+    expect(toCanvasScale(540, 1080)).toBe(2);
   });
 });
 

@@ -18,6 +18,7 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import {
+  VISION_BOARD_CANVAS,
   VISION_STICKERS,
   type VisionBoardDoc,
   type VisionBoardItem,
@@ -53,13 +54,13 @@ import { BoardColorPanel } from "./board-color-panel";
 import { BoardContentSkeleton } from "./board-content-skeleton";
 import { BoardContextToolbar } from "./board-context-toolbar";
 import type { ColorPanelTarget } from "./board-palettes";
-import { BoardSelectionOverlay } from "./board-selection-overlay";
+import { SelectionOverlay } from "@/components/stage/selection-overlay";
 import { BoardSidePanel, type BoardPanelCategory } from "./board-side-panel";
 import { BoardTextInlineEditor } from "./board-text-inline-editor";
 import { applyTemplate } from "./board-templates";
 import { useBoardReducer } from "./use-board-reducer";
-import { useItemGesture } from "./use-item-gesture";
-import type { ResizeCorner } from "./board-gesture-math";
+import { useItemGesture } from "@/components/stage/use-item-gesture";
+import type { ResizeCorner } from "@/components/stage/gesture-math";
 
 /**
  * Collage editor — `/hedef/pano`.
@@ -175,6 +176,7 @@ export function BoardEditorShell() {
     patch,
     checkpoint,
     lockRatioFor: (item) => item.kind === "image",
+    canvasWidth: VISION_BOARD_CANVAS.width,
   });
 
   const handleSelect = useCallback(
@@ -805,8 +807,7 @@ export function BoardEditorShell() {
                       onDone={() => setEditingTextId(null)}
                     />
                   ) : (
-                    <BoardSelectionOverlay
-                      item={item}
+                    <SelectionOverlay
                       resizeLabel={t("resize")}
                       rotateLabel={t("rotate")}
                       resizeHandlers={(corner: ResizeCorner) =>

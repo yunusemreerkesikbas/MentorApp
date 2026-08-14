@@ -1571,7 +1571,23 @@
     "error_save": "The mistake could not be saved.",
     "error_review": "The review could not be saved.",
     "error_place": "The mistake was added, but its place on the page could not be saved.",
-    "error_page_full": "This page is full — turn to the next one."
+    "error_page_full": "This page is full — turn to the next one.",
+    "edit_open": "Arrange the page",
+    "edit_done": "Done",
+    "edit_add_sticker": "Add a sticker",
+    "edit_add_note": "Add a note",
+    "edit_note_placeholder": "Stick a note on the page…",
+    "edit_paper": "Paper",
+    "edit_undo": "Undo",
+    "edit_delete": "Delete selected",
+    "edit_resize": "Resize",
+    "edit_rotate": "Rotate",
+    "paper": {
+      "ruled": "Ruled",
+      "grid": "Grid",
+      "dotted": "Dotted",
+      "plain": "Plain"
+    }
   },
   "photo": {
     "error_type": "You can only upload JPEG or PNG.",

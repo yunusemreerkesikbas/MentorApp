@@ -1,9 +1,7 @@
 "use client";
 
 import type { PointerEvent as ReactPointerEvent } from "react";
-import type { VisionBoardItem } from "@mentor/types";
-import { cq } from "@/components/vision-board/board-item-view";
-import type { ResizeCorner } from "./board-gesture-math";
+import type { ResizeCorner } from "./gesture-math";
 
 /**
  * Selection outline plus the four resize corners and a rotate grip.
@@ -11,6 +9,10 @@ import type { ResizeCorner } from "./board-gesture-math";
  * Handles are sized in fixed CSS px, not `cqw`: a touch target has to stay tappable at 44px no
  * matter how small the stage is drawn, which is the one place where scaling with the board would
  * be exactly wrong.
+ *
+ * Takes no item: the outline fills its parent and the handles sit at percentages of it, so the
+ * overlay never needs to know the design space it is drawn in — which is what lets one component
+ * serve both the 1620-unit board and the 1080-unit notebook page.
  */
 
 const HANDLE_HIT = 44;
@@ -23,8 +25,7 @@ const CORNERS: { corner: ResizeCorner; top: string; left: string; cursor: string
   { corner: "sw", top: "100%", left: "0%", cursor: "nesw-resize" },
 ];
 
-export interface BoardSelectionOverlayProps {
-  item: VisionBoardItem;
+export interface SelectionOverlayProps {
   resizeHandlers: (corner: ResizeCorner) => {
     onPointerDown: (event: ReactPointerEvent) => void;
     onPointerMove: (event: ReactPointerEvent) => void;
@@ -41,13 +42,12 @@ export interface BoardSelectionOverlayProps {
   rotateLabel: string;
 }
 
-export function BoardSelectionOverlay({
-  item,
+export function SelectionOverlay({
   resizeHandlers,
   rotateHandlers,
   resizeLabel,
   rotateLabel,
-}: BoardSelectionOverlayProps) {
+}: SelectionOverlayProps) {
   return (
     <>
       <div
@@ -109,7 +109,7 @@ export function BoardSelectionOverlay({
           width: HANDLE_HIT,
           height: HANDLE_HIT,
           // Sits above the box, clear of the top corners.
-          transform: `translate(-50%, calc(-100% - ${cq(item.height * 0.04)}))`,
+          transform: "translate(-50%, calc(-100% - 4%))",
           background: "transparent",
           border: "none",
           padding: 0,

@@ -1655,3 +1655,31 @@ pnpm --filter @mentor/api test
   `notebook-error-pattern.policy.ts`, `mistake-notebook.controller.ts`,
   `notebook-review-reminder.service.ts`, `components/notebook/*`, `[locale]/(app)/notebook/*`,
   `lib/notebook{,-layout}.ts`, `drizzle/0077_mistake_notebook.sql`, `messages/{tr,en}.json`.
+
+- **Defter sayfası düzenlenebilir oldu: jest katmanı paylaşıma çıktı (2026-08-14, APP-042)** —
+  Defterin "motor" yarısı (şerit, tekrar, bildirim) çalışıyordu ama **"sahiplenme" yarısı** eksikti:
+  kartlar otomatik diziliyor, sticker/not yapıştırılamıyordu. Canvas o hâliyle stillenmiş bir
+  listeydi.
+  **Jest katmanı `components/stage/` altına taşındı ve iki yüzeye birden hizmet ediyor:**
+  `board-gesture-math` → `gesture-math`, `use-item-gesture`, `board-selection-overlay` →
+  `selection-overlay`. İki bağ koparıldı — tip `VisionBoardItem` yerine `VisionBoardItemBase`
+  (dönen dikdörtgen her iki yüzeyde de aynı davranıyor), ve `toCanvasScale` artık `canvasWidth`
+  parametresi alıyor (pano 1620, defter sayfası 1080 birim). **`SelectionOverlay`'in `item` prop'u
+  tamamen kalktı**: çerçeve ebeveynini dolduruyor, tutamaçlar yüzde konumlu, yani overlay hangi
+  tasarım uzayında çizildiğini bilmek zorunda değil — tek bileşenin iki yüzeye hizmet etmesini
+  sağlayan da bu. Pano editörü yeniden yönlendirildi, 34 testi geçiyor.
+  **`use-board-reducer` bilerek jenerikleştirilmedi.** O reducer panonun kendi kelime dağarcığını
+  taşıyor (frame, background, yayın durumu) ve defter sayfasında bunların hiçbiri yok; ikisini
+  birden karşılayacak hâle getirmek `use-notebook-page`'in 60 satırından pahalıya gelirdi. Defter
+  reducer'ı tek yönlü geçmiş tutuyor (undo var, redo yok — sayfa saniyeler içinde düzenleniyor).
+  **Gotcha:** `patch` **checkpoint almıyor**. Sürükleme saniyede onlarca patch atıyor; her birini
+  anlık görüntülemek geçmişi neredeyse aynı 100 dokümanla doldururdu — jest, hareket *başlarken*
+  tam bir checkpoint alıyor (`use-item-gesture` içindeki `drag.moved` kapısı). Undo, o dokümanda
+  hiç var olmamış seçimi de düşürüyor; ikisi de testle çivilendi.
+  Düzenleme modunda karta dokunmak **seçiyor, açmıyor** — yoksa her sürükleme denemesi tekrar
+  ekranıyla bitiyordu. Kaydetme 900 ms debounce ile otomatik: kullanıcı buraya tekrar etmeye
+  geliyor, sürüklediği sticker'ı sayfadan çıktığı için kaybetmesi herhangi bir kaydet
+  göstergesinden kötü. Sticker listesi 8 ile sınırlı (panonun 77'si değil) — bu çubuk tekrar
+  sayfasının altında duruyor, uzun kuyruk panonun işi.
+  İlgili: `components/stage/*`, `use-notebook-page.ts`(+spec), `notebook-edit-bar.tsx`,
+  `notebook-page-stage.tsx`, `notebook-shell.tsx`, `lib/notebook-layout.ts`, `board-editor-shell.tsx`.
