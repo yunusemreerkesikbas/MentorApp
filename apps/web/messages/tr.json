@@ -1550,7 +1550,6 @@
     "add_subject_label": "Ders",
     "add_subject_none": "Seçme",
     "add_prelabelling": "AI öneriyor…",
-    "add_topic_suggested": "Konu önerisi: {topic}",
     "add_note_label": "Not (isteğe bağlı)",
     "add_submit": "Deftere ekle",
     "add_cancel": "Vazgeç",
@@ -1593,7 +1592,8 @@
     "stuck_subtitle": "Tek başına uğraşmana gerek yok — toplulukta sorabilirsin.",
     "stuck_copyright": "Paylaşırken dikkat: yayın denemesi sorusunun fotoğrafı telifli olabilir. Kendi çözüm denemeni ve takıldığın yeri anlatman genelde daha çok işe yarar.",
     "stuck_ask": "Toplulukta sor",
-    "stuck_skip": "Şimdilik geç"
+    "stuck_skip": "Şimdilik geç",
+    "add_topic_label": "Konu"
   },
   "photo": {
     "error_type": "Yalnızca JPEG veya PNG yükleyebilirsin.",

@@ -1550,7 +1550,6 @@
     "add_subject_label": "Subject",
     "add_subject_none": "Skip",
     "add_prelabelling": "AI is suggesting…",
-    "add_topic_suggested": "Suggested topic: {topic}",
     "add_note_label": "Note (optional)",
     "add_submit": "Add to the notebook",
     "add_cancel": "Cancel",
@@ -1593,7 +1592,8 @@
     "stuck_subtitle": "You do not have to wrestle with it alone — ask the community.",
     "stuck_copyright": "Before you share: a photo of a publisher's question may be copyrighted. Describing your own attempt and where you got stuck usually helps more anyway.",
     "stuck_ask": "Ask the community",
-    "stuck_skip": "Skip for now"
+    "stuck_skip": "Skip for now",
+    "add_topic_label": "Topic"
   },
   "photo": {
     "error_type": "You can only upload JPEG or PNG.",

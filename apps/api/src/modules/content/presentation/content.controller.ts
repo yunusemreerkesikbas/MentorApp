@@ -1,6 +1,12 @@
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
-import type { ExamCalendarDto, Paginated, ExamSummaryDto, ExamSubjectDto } from "@mentor/types";
+import type {
+  ExamCalendarDto,
+  Paginated,
+  ExamSummaryDto,
+  ExamSubjectDto,
+  ExamTopicDto,
+} from "@mentor/types";
 import { Public } from "../../../common/auth/public.decorator";
 import { ContentService } from "../application/content.service";
 import { ListExamsQueryDto } from "./content.dto";
@@ -30,5 +36,10 @@ export class ContentController {
   @Get(":slug/subjects")
   subjectsBySlug(@Param("slug") slug: string): Promise<ExamSubjectDto[]> {
     return this.content.listExamSubjectsBySlug(slug);
+  }
+
+  @Get(":slug/topics")
+  topicsBySlug(@Param("slug") slug: string): Promise<ExamTopicDto[]> {
+    return this.content.listExamTopicsBySlug(slug);
   }
 }

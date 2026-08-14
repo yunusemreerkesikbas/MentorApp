@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type {
   ExamCalendarDto,
   ExamSubjectDto,
+  ExamTopicDto,
   NotebookEntryDto,
   NotebookOverviewDto,
   NotebookPageDoc,
@@ -25,6 +26,7 @@ import {
   NotebookPageSurface,
 } from "@/components/notebook/notebook-surface";
 import { NotebookPageStage } from "@/components/notebook/notebook-page-stage";
+import { fetchExamTopics } from "@/lib/content-topics";
 import {
   fetchDueEntries,
   fetchNotebookOverview,
@@ -54,6 +56,8 @@ const AUTOSAVE_DELAY_MS = 900;
 interface ExamContext {
   id: string;
   subjects: ExamSubjectDto[];
+  /** Every topic of the exam, carrying its parent subject — the picker filters client-side. */
+  topics: ExamTopicDto[];
 }
 
 /**
@@ -112,10 +116,15 @@ export function NotebookShell() {
           )) as unknown as ExamCalendarDto | null;
           const current = calendar?.exam ?? null;
           if (!current) return null;
-          const subjects = (await contentControllerSubjectsBySlug(
-            current.slug,
-          )) as unknown as ExamSubjectDto[];
-          return { id: current.id, subjects };
+          // Both taxonomies in one round-trip pair: the topic list is small enough to hold whole,
+          // which spares the picker a fetch every time the subject changes.
+          const [subjects, topics] = await Promise.all([
+            contentControllerSubjectsBySlug(current.slug) as unknown as Promise<
+              ExamSubjectDto[]
+            >,
+            fetchExamTopics(current.slug),
+          ]);
+          return { id: current.id, subjects, topics };
         })(),
       ]);
       if (cancelled) return;
@@ -460,6 +469,7 @@ export function NotebookShell() {
             <NotebookAddPanel
               examId={exam.id}
               subjects={exam.subjects}
+              topics={exam.topics}
               onCreated={handleCreated}
               onCancel={() => setAdding(false)}
             />

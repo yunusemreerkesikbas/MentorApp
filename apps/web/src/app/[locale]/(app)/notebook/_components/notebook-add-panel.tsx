@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import type { ExamSubjectDto, NotebookEntryDto } from "@mentor/types";
+import type { ExamSubjectDto, ExamTopicDto, NotebookEntryDto } from "@mentor/types";
 import { NOTEBOOK_ERROR_TYPES, type NotebookErrorType } from "@mentor/types";
 import { Button, Card, SectionHeading, TextAreaField } from "@mentor/ui";
 import { FormError } from "@/components/form";
@@ -18,6 +18,7 @@ import {
 interface NotebookAddPanelProps {
   examId: string;
   subjects: ExamSubjectDto[];
+  topics: ExamTopicDto[];
   onCreated: (entry: NotebookEntryDto) => void;
   onCancel: () => void;
 }
@@ -36,6 +37,7 @@ interface NotebookAddPanelProps {
 export function NotebookAddPanel({
   examId,
   subjects,
+  topics,
   onCreated,
   onCancel,
 }: NotebookAddPanelProps) {
@@ -45,12 +47,17 @@ export function NotebookAddPanel({
   const [errorType, setErrorType] = useState<NotebookErrorType | null>(null);
   const [subjectRef, setSubjectRef] = useState<string>("");
   const [topicRef, setTopicRef] = useState<string | null>(null);
-  const [topicName, setTopicName] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [photo, setPhoto] = useState<{ key: string; url: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [prelabelling, setPrelabelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Filtered from the whole taxonomy rather than fetched per subject: the list is small, and a
+  // fetch on every subject change would put a spinner in the middle of a two-tap form.
+  const subjectTopics = subjectRef
+    ? topics.filter((topic) => topic.subjectSlug === subjectRef)
+    : [];
 
   async function handleFile(file: File | null) {
     if (!file) return;
@@ -70,7 +77,6 @@ export function NotebookAddPanel({
       if (suggestion?.subjectRef) {
         setSubjectRef(suggestion.subjectRef);
         setTopicRef(suggestion.topicRef);
-        setTopicName(suggestion.topicName);
       }
     } catch {
       setError(t("error_upload"));
@@ -180,9 +186,8 @@ export function NotebookAddPanel({
           value={subjectRef}
           onChange={(event) => {
             setSubjectRef(event.target.value);
-            // A hand-picked subject invalidates a suggested topic that belonged to another one.
+            // A hand-picked subject invalidates a topic that belonged to another one.
             setTopicRef(null);
-            setTopicName(null);
           }}
           className="min-h-11 rounded-[var(--radius-card)] border px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           style={{
@@ -198,12 +203,37 @@ export function NotebookAddPanel({
             </option>
           ))}
         </select>
-        {topicName && subjectRef ? (
-          <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-            {t("add_topic_suggested", { topic: topicName })}
-          </span>
-        ) : null}
       </label>
+
+      {/*
+        The topic picker is free, and that matters: the topic-level weakness map is the headline of
+        the analysis screen, and until this list existed the only way to fill it was the premium
+        pre-label — a paywall by accident rather than by decision. Premium still saves the two taps.
+      */}
+      {subjectTopics.length > 0 ? (
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+            {t("add_topic_label")}
+          </span>
+          <select
+            value={topicRef ?? ""}
+            onChange={(event) => setTopicRef(event.target.value || null)}
+            className="min-h-11 rounded-[var(--radius-card)] border px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            style={{
+              color: "var(--color-main)",
+              borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",
+              backgroundColor: "var(--color-surface)",
+            }}
+          >
+            <option value="">{t("add_subject_none")}</option>
+            {subjectTopics.map((topic) => (
+              <option key={topic.slug} value={topic.slug}>
+                {topic.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       <TextAreaField
         label={t("add_note_label")}

@@ -164,7 +164,7 @@ function buildService(overrides?: {
     eventEmitter as never,
     storage as never,
   );
-  return { service, exams, events, articles, subjects, eventEmitter, storage };
+  return { service, exams, events, articles, subjects, topics, eventEmitter, storage };
 }
 
 describe("ContentService — exam calendar resolution", () => {
@@ -513,6 +513,32 @@ describe("ContentService — info articles", () => {
 
     await expect(service.getArticleForEmbedding("article-1")).resolves.toMatchObject({
       body: "Required documents Bring your ID.",
+    });
+  });
+});
+
+describe("ContentService — exam topics by slug", () => {
+  it("returns the exam's topics, so a free user can label where they went wrong", async () => {
+    const { service, topics } = buildService();
+    const row = {
+      subjectSlug: "matematik",
+      subjectName: "Matematik",
+      slug: "problemler",
+      name: "Problemler",
+      sortOrder: 0,
+    };
+    topics.listByExamId.mockResolvedValue([row] as never);
+
+    await expect(service.listExamTopicsBySlug("kpss-lisans-2026")).resolves.toEqual([
+      row,
+    ]);
+    expect(topics.listByExamId).toHaveBeenCalledWith(expect.anything(), "exam-lisans");
+  });
+
+  it("404s on an unknown exam rather than returning an empty taxonomy", async () => {
+    const { service } = buildService({ candidates: [] });
+    await expect(service.listExamTopicsBySlug("yok-boyle-sinav")).rejects.toMatchObject({
+      code: ErrorCode.CONTENT_EXAM_NOT_FOUND,
     });
   });
 });

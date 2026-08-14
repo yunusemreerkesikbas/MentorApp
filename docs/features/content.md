@@ -461,3 +461,17 @@ GÜVENLİK GÖREVLİSİ"` aynı iş. `.trim()` yalnız uçları kırptığı iç
   `geo-seed.service.spec` artık dönem sayısından bağımsız: seed klasörünü okuyup her dönem için
   aynı bütünlük testlerini `describe.each` ile koşuyor (17 test).
   İlgili: `build-kpss-seed.mjs`, `geo-seed.service.spec.ts`, `seed/kpss.2025-2.seed.json`.
+
+- **Public `GET /v1/exams/{slug}/topics` (2026-08-14, APP-042)** — `:slug/subjects`'in kardeşi.
+  Konu taksonomisine dışarıdan erişim yoktu; yanlış defteri geldiğinde bunun bir yan etkisi ortaya
+  çıktı: öğrenci yanlışını konuya etiketleyemiyordu, **konu ancak premium vision ön-etiketlemesinden
+  gelebiliyordu.** Bu, roadmap'in ana vaadi olan "konu-seviyesi ince zayıflık haritası"nı bir karar
+  sonucu değil, **bir endpoint'in yokluğu yüzünden** ödeme duvarının arkasına itiyordu.
+  Uç public referans verisi döndürüyor (kullanıcıya özel hiçbir şey yok), `ExamTopicDto` parent
+  ders slug'ını da taşıyor — istemci ikinci bir çağrı yapmadan filtreliyor. Defterin ekleme paneli
+  tüm listeyi bir kez çekip ders seçimine göre client-side süzüyor: liste küçük ve her ders
+  değişiminde fetch atmak iki tıklık formun ortasına spinner koymak olurdu.
+  Premium farkı bozulmuyor — ön-etiketleme hâlâ o iki tıkı kullanıcı yerine yapıyor, artık free
+  kullanıcının da o iki tıkı yapma imkânı var.
+  İlgili: `content.controller.ts`, `content.service.ts`(+spec), `packages/types/src/content.ts`,
+  `apps/web/src/lib/content-topics.ts`, `notebook-add-panel.tsx`.
