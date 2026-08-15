@@ -31,31 +31,12 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const params = useParams<{ slug?: string }>();
   const activeZoneSlug = params.slug;
   const [zones, setZones] = useState<ZoneView[] | null>(null);
-  const [error, setError] = useState(false);
 
   useEffect(() => {
     listZones()
       .then((res) => setZones(res.items))
-      .catch(() => setError(true));
+      .catch(() => setZones([]));
   }, []);
-
-  if (error) {
-    return (
-      <div className="px-5">
-        <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
-          {t("error")}
-        </p>
-        <Link
-          href="/community"
-          onClick={onNavigate}
-          className="mt-2 block text-xs underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{ color: "var(--color-accent)" }}
-        >
-          {t("refresh")}
-        </Link>
-      </div>
-    );
-  }
 
   const activeTransition = reduceMotion
     ? { duration: 0 }

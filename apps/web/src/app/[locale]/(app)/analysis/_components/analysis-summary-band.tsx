@@ -29,6 +29,7 @@ function toneFromDelta(delta: string | null | undefined): TrendTone {
 export function AnalysisSummaryBand({ analysis }: AnalysisSummaryBandProps) {
   const t = useTranslations("analysis.summary");
   const tTrend = useTranslations("analysis");
+  const tGhost = useTranslations("ghost");
   const locale = useLocale();
 
   const latest = analysis?.trend[0] ?? null;
@@ -120,6 +121,14 @@ export function AnalysisSummaryBand({ analysis }: AnalysisSummaryBandProps) {
               {t("caption")}
             </p>
           )}
+
+          {ghost ? (
+            <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
+              {ghost.isNewRecord
+                ? tGhost("new_record")
+                : tGhost("record_delta", { delta: ghost.recordDelta })}
+            </p>
+          ) : null}
         </div>
 
         {chartData ? (

@@ -10,6 +10,7 @@ import { PUSH_PORT } from "../../shared/ports/push.port";
 import { CoachingModule } from "../coaching/coaching.module";
 import { IdentityModule } from "../identity/identity.module";
 import { DailyReminderService } from "./application/daily-reminder.service";
+import { NotebookReviewReminderService } from "./application/notebook-review-reminder.service";
 import { SendEmailHandler } from "./application/handlers/send-email.handler";
 import { SendPushHandler } from "./application/handlers/send-push.handler";
 import { SessionReturnReminderHandler } from "./application/handlers/session-return-reminder.handler";
@@ -52,6 +53,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     NotificationsService,
     NotificationsErasureService,
     DailyReminderService,
+    NotebookReviewReminderService,
     SessionReturnReminderService,
     PaymentsEventsListener,
     CoachingEventsListener,

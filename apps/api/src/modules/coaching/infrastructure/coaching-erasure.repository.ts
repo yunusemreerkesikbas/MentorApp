@@ -4,6 +4,8 @@ import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
 import {
+  mistakeNotebookEntries,
+  mistakeNotebookPages,
   mockExamPhotoCategorizations,
   mockExams,
   moodCheckins,
@@ -67,6 +69,24 @@ export class CoachingErasureRepository {
         .where(eq(visionBoards.userId, userId));
       const boardImageKeys = boards.flatMap((row) => visionBoardImageKeys(row.board));
 
+      // Mistake notebook: the entries hold the user's own confessions about what they get wrong,
+      // and the photos are of exam questions they were sitting with. Wholly personal — nothing
+      // here has aggregate value worth keeping, so both tables go. The keys are columns rather
+      // than jsonb, so unlike the board this needs no defensive unfolding.
+      const notebookPhotos = await tx
+        .select({ storageKey: mistakeNotebookEntries.storageKey })
+        .from(mistakeNotebookEntries)
+        .where(eq(mistakeNotebookEntries.userId, userId));
+      const notebookImageKeys = notebookPhotos.flatMap((row) =>
+        row.storageKey ? [row.storageKey] : [],
+      );
+      await tx
+        .delete(mistakeNotebookEntries)
+        .where(eq(mistakeNotebookEntries.userId, userId));
+      await tx
+        .delete(mistakeNotebookPages)
+        .where(eq(mistakeNotebookPages.userId, userId));
+
       // Wholly personal — drop the row.
       await tx.delete(visionBoards).where(eq(visionBoards.userId, userId));
       await tx
@@ -98,6 +118,7 @@ export class CoachingErasureRepository {
         photoStorageKeys: [
           ...photos.map((p) => p.storageKey),
           ...boardImageKeys,
+          ...notebookImageKeys,
         ],
       };
     });

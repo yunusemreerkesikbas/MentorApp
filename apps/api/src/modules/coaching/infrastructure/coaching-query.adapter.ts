@@ -1,13 +1,14 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull, lte, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
-import { users } from "../../../database/schema";
+import { mistakeNotebookEntries, users } from "../../../database/schema";
 import { UserStatus } from "../../identity/domain/identity.constants";
 import type {
   CoachingQueryPort,
   DailyReminderCandidate,
+  NotebookReviewCandidate,
 } from "../../coaching/domain/coaching-query.port";
 
 /** SERVICE-scoped queries for W5 daily reminder eligibility. */
@@ -43,6 +44,37 @@ export class CoachingQueryAdapter implements CoachingQueryPort {
             )`,
           ),
         );
+      return rows;
+    });
+  }
+
+  /**
+   * One row per user with work waiting, not one per due entry: the reminder is a single nudge
+   * carrying a count, and fanning out per entry would turn a productive day into a notification
+   * storm — the exact shaming pattern the tone rules rule out (§0).
+   */
+  async listNotebookReviewCandidates(now: Date): Promise<NotebookReviewCandidate[]> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({
+          userId: users.id,
+          email: users.email,
+          displayName: users.displayName,
+          dueCount: sql<number>`count(${mistakeNotebookEntries.id})`.mapWith(Number),
+        })
+        .from(users)
+        .innerJoin(
+          mistakeNotebookEntries,
+          eq(mistakeNotebookEntries.userId, users.id),
+        )
+        .where(
+          and(
+            eq(users.status, UserStatus.ACTIVE),
+            isNotNull(mistakeNotebookEntries.nextReviewAt),
+            lte(mistakeNotebookEntries.nextReviewAt, now),
+          ),
+        )
+        .groupBy(users.id, users.email, users.displayName);
       return rows;
     });
   }

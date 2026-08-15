@@ -254,7 +254,7 @@ export function ProfileShell({ username }: { username: string }) {
         onOpenFollowing={() => setListView("following")}
       />
 
-      <div className="profile-progress-mobile px-4 pb-4 pt-8 xl:hidden">
+      <div className="profile-progress-mobile px-4 pb-4 xl:hidden">
         <div className="relative z-10">
           <ProfileProgressPanel profile={profile} />
         </div>

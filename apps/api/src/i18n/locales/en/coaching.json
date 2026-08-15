@@ -175,5 +175,14 @@
     "FOCUS_SESSION_RHYTHM": "Let's keep the rhythm with two small focus sessions this week.",
     "TASK_SUBJECT": "Weekly {subject} review",
     "TASK_SESSION": "Plan two focus sessions"
+  },
+  "notebook_pattern": {
+    "KNOWLEDGE_GAP": "Most of your recent mistakes are topics you did not know. Review genuinely helps here.",
+    "RUSHING": "You know the topic — most of your mistakes are careless slips. Try slowing down and checking rather than re-studying.",
+    "READING": "Most of your mistakes come from misreading the question. Reading the stem twice pays off here.",
+    "DISTRACTOR": "Distractors are catching you. Try forming your own answer before eliminating options.",
+    "TIME_PRESSURE": "Most of your mistakes come from time pressure. Timing yourself per question is a good next step.",
+    "SECOND_GUESSING": "You find the right answer and then change it. Trusting your first call is worth a try.",
+    "MIXED": "Your mistakes do not point at one cause yet. The pattern will sharpen as a few more pile up."
   }
 }

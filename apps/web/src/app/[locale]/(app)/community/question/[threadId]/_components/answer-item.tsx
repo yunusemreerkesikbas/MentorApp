@@ -51,7 +51,7 @@ export function AnswerItem({
           </span>
         ) : null}
       </div>
-      <p className="mt-2 whitespace-pre-wrap text-base" style={{ color: "var(--color-main)" }}>
+      <p className="mt-2 whitespace-pre-wrap text-[15px] leading-[22px]" style={{ color: "var(--color-main)" }}>
         <MentionText text={answer.body} />
       </p>
       <AttachmentGallery attachments={answer.attachments} />

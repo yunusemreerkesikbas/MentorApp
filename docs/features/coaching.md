@@ -857,6 +857,22 @@ pnpm --filter @mentor/api test
   Dosyalar: `mock-exam.service.ts`, `packages/types/src/coaching.ts`, `analysis-tab-progress.tsx`,
   `analysis-summary-band.tsx`, `messages/{tr,en}.json`, `e2e/analysis.fixture.ts`.
 
+- **Ders kartları: chip yerine inline trend, açıklayıcı info metni, "Net trendi" → StatLineChart
+  (2026-08-12)** — devam. Ders bazlı ortalama kartlarında `TrendingUp`/`TrendingDown` rozeti artık
+  büyük net değerinin yanında (tinted pill değil, sade renkli ikon+değer); "5 deneme" satırı
+  kaldırılıp ders adının yanına `InfoTooltip` eklendi — hover/tap'te hem deneme sayısını hem
+  `normalizedAveragePercent`'in ne anlama geldiğini (ortalama netin toplam soru sayısına oranı)
+  açık cümlelerle anlatıyor. Kart `p-3`→`p-4`, `gap-2`→`gap-2.5` ile biraz büyüdü.
+  **"Kanıtlar ve geçmiş" > Net trendi:** kullanıcı ApexCharts eklemeyi sordu — reddedildi (zaten
+  `@nivo/line` tabanlı `StatLineChart` altyapısı var, ikinci bir chart kütüphanesi bundle'ı şişirip
+  görsel dili tutarsızlaştırırdı). Bunun yerine eski özel `AnalysisSparkline` SVG'si + altındaki
+  tarih/net `<ul>` listesi (chart'ın kendisiyle aynı veriyi iki kez gösteriyordu) `StatLineChart`
+  (non-compact, eksenli, hover tooltip'i tarih+net gösteriyor) ile değiştirildi —
+  `analysis-next-focus-card.tsx`'teki `AnalysisSparkline` kullanımı (farklı bağlam, "Son 4 deneme"
+  mini paneli) dokunulmadan kaldı.
+  `tsc --noEmit` ve `eslint` temiz.
+  Dosyalar: `analysis-tab-progress.tsx`, `info-tooltip.tsx`, `messages/{tr,en}.json`.
+
 ## Gotchas / Known issues
 
 - **Session history date filter is UTC** — `from`/`to` bound `started_at` to UTC calendar days
@@ -1594,3 +1610,186 @@ pnpm --filter @mentor/api test
   İlgili: `board-editor-shell.tsx`, `board-context-toolbar.tsx`, `board-side-panel.tsx`,
   `board-item-view.tsx`, `board-export.ts`, `[locale]/layout.tsx`, `packages/types/src/coaching.ts`,
   `board-text-fonts.spec.ts`, `messages/{tr,en}.json` (+7 anahtar).
+
+- **Yanlış defteri: veri, defter kabuğu, kart, tekrar motoru, analiz köprüsü (2026-08-14, APP-042)** —
+  `foto → ders/konu kategorize` özelliği emekliye ayrıldı ve yerine **yanlış defteri** geldi.
+  Gerekçe: kategorize öğrenciye **zaten bildiği** şeyi söylüyordu (yanlış yaptığı dersi ve konuyu
+  öğrenci bilir), üstüne premium kotasını bir etiketleme işine yakıyordu. Öğrencinin bilmediği ve
+  kayıt tutmadığı şey **hata tipi** — "Problemler'de 8 yanlış" bilgisi *"konuyu tekrar et"*
+  dedirtir (çoğu zaman yanlış karar, boşa giden hafta), *"8 yanlışın 6'sı dikkat hatası"* bilgisi
+  *"konu tamam, yavaşla"* dedirtir.
+  **Veri modeli — bilerek ikiye bölünmüş:** `mistake_notebook_entries` öğrencinin yanlış hakkında
+  *söylediği* şeyi tutar (kolon, çünkü iki sorgu var: cron `next_review_at`'i tarıyor, analiz
+  `error_type`'ı topluyor); `mistake_notebook_pages` sadece *nereye koyduğunu* tutar (sorgulanmıyor
+  → sayfa başına tek jsonb). Vision board'un aksine kullanıcı başına tek doküman **değil**: defter
+  sınırsız büyür, tek sayfayı kaydetmek tüm kitabı yeniden yazmamalı. `mock_exam_id` nullable +
+  `ON DELETE SET NULL` — yanlışların çoğu deneme dışında yakalanıyor, deneme silinince ondan
+  çıkarılan ders silinmemeli. Migration `0077` elle yazıldı (0074/0075'teki gerekçe: `drizzle-kit
+  generate` hâlâ 0074 öncesi snapshot'a diff atıyor; ayrıca RLS üretemiyor).
+  **Defter görseli CSS + inline SVG, raster asset yok** — `board-stage.tsx:22` kuralı koyuyor:
+  arka planlar prosedürel, çünkü canvas exporter'ı her birini yeniden üretmek zorunda. Spiral bir
+  SVG `<pattern>`; kendini sayfa yüksekliğine tile ediyor, yani hiçbir yerde ring sayılmıyor veya
+  konteyner ölçülmüyor. Sayfa çevirme `framer-motion` `rotateY` (yeni bağımlılık yok),
+  `prefers-reduced-motion`'da çapraz geçiş. Tokenlar `theme.css`'e `--notebook-*` olarak eklendi.
+  **Tekrar merdiveni sabit: 2 → 7 → 21 gün → HEALED**, SM-2 değil — uyarlanabilir algoritma bizde
+  olmayan bir zorluk sinyali ister (burada not yok, sadece "bu sefer çözebildin mi?") ve gerçek
+  kullanım olmadan kalibre edilemez. Başarısızlık `reviewCount`'u **sıfırlar**, bir basamak geri
+  almaz: üç haftada kaçırılan kart "neredeyse öğrenilmiş" değildir, öyle davranmak kartı merdivenin
+  tepesinde sonsuza kadar sektirir. İyileşen kart sayfadan **silinmiyor**, soluklaşıyor — duvar bir
+  iyileşme haritası; iyileştikçe boşalan sayfa iyileşmenin kanıtını da götürür.
+  **Hatırlatma** kullanıcı başına tek bildirim + sayı taşıyor (girdi başına fan-out verimli bir
+  günü bildirim fırtınasına çevirirdi — §0'ın yasakladığı utandırma kalıbı), gün içinde `tryRecord`
+  ile idempotent, e-posta kanalı yok (yanlışlar hakkında e-posta saatler sonra ve bağlamsız gelir).
+  Notifications coaching'in tablosuna dokunmuyor: `CoachingQueryPort.listNotebookReviewCandidates`.
+  **Gotcha — analiz sinyallerinin kaynağı değişti:** `photoSubjectSignals`/`photoTopicSignals` artık
+  `mock_exam_photo_categorizations` yerine defter girdilerinden besleniyor. İsimler korundu (rename
+  focus engine + weekly review + istemcilere yayılırdı, kullanıcıya faydası sıfır), ama **scope
+  değişti**: "hangi denemeler yeniydi" yerine **60 günlük pencere**, çünkü girdilerin çoğunda
+  `mock_exam_id` yok. `photo-categorize-card.tsx` silindi, `analysis-shell.tsx`'teki tüm
+  photo-access state'i (loader, effect, invalidation) temizlendi.
+  **Kapsam dışı bırakılanlar:** kart sürükleme (`use-item-gesture` `VisionBoardItem`'a tiplenmiş,
+  jenerikleştirmek vision board editörünü yeniden doğrulamayı gerektiriyor); free'de konu seçimi
+  (content'te public topics endpoint'i yok — konu yalnız premium ön-etiketlemeden geliyor);
+  topluluk köprüsü; karne→form OCR.
+  İlgili: `mistake-notebook.{service,repository}.ts`, `notebook-review.policy.ts`,
+  `notebook-error-pattern.policy.ts`, `mistake-notebook.controller.ts`,
+  `notebook-review-reminder.service.ts`, `components/notebook/*`, `[locale]/(app)/notebook/*`,
+  `lib/notebook{,-layout}.ts`, `drizzle/0077_mistake_notebook.sql`, `messages/{tr,en}.json`.
+
+- **Defter sayfası düzenlenebilir oldu: jest katmanı paylaşıma çıktı (2026-08-14, APP-042)** —
+  Defterin "motor" yarısı (şerit, tekrar, bildirim) çalışıyordu ama **"sahiplenme" yarısı** eksikti:
+  kartlar otomatik diziliyor, sticker/not yapıştırılamıyordu. Canvas o hâliyle stillenmiş bir
+  listeydi.
+  **Jest katmanı `components/stage/` altına taşındı ve iki yüzeye birden hizmet ediyor:**
+  `board-gesture-math` → `gesture-math`, `use-item-gesture`, `board-selection-overlay` →
+  `selection-overlay`. İki bağ koparıldı — tip `VisionBoardItem` yerine `VisionBoardItemBase`
+  (dönen dikdörtgen her iki yüzeyde de aynı davranıyor), ve `toCanvasScale` artık `canvasWidth`
+  parametresi alıyor (pano 1620, defter sayfası 1080 birim). **`SelectionOverlay`'in `item` prop'u
+  tamamen kalktı**: çerçeve ebeveynini dolduruyor, tutamaçlar yüzde konumlu, yani overlay hangi
+  tasarım uzayında çizildiğini bilmek zorunda değil — tek bileşenin iki yüzeye hizmet etmesini
+  sağlayan da bu. Pano editörü yeniden yönlendirildi, 34 testi geçiyor.
+  **`use-board-reducer` bilerek jenerikleştirilmedi.** O reducer panonun kendi kelime dağarcığını
+  taşıyor (frame, background, yayın durumu) ve defter sayfasında bunların hiçbiri yok; ikisini
+  birden karşılayacak hâle getirmek `use-notebook-page`'in 60 satırından pahalıya gelirdi. Defter
+  reducer'ı tek yönlü geçmiş tutuyor (undo var, redo yok — sayfa saniyeler içinde düzenleniyor).
+  **Gotcha:** `patch` **checkpoint almıyor**. Sürükleme saniyede onlarca patch atıyor; her birini
+  anlık görüntülemek geçmişi neredeyse aynı 100 dokümanla doldururdu — jest, hareket *başlarken*
+  tam bir checkpoint alıyor (`use-item-gesture` içindeki `drag.moved` kapısı). Undo, o dokümanda
+  hiç var olmamış seçimi de düşürüyor; ikisi de testle çivilendi.
+  Düzenleme modunda karta dokunmak **seçiyor, açmıyor** — yoksa her sürükleme denemesi tekrar
+  ekranıyla bitiyordu. Kaydetme 900 ms debounce ile otomatik: kullanıcı buraya tekrar etmeye
+  geliyor, sürüklediği sticker'ı sayfadan çıktığı için kaybetmesi herhangi bir kaydet
+  göstergesinden kötü. Sticker listesi 8 ile sınırlı (panonun 77'si değil) — bu çubuk tekrar
+  sayfasının altında duruyor, uzun kuyruk panonun işi.
+  İlgili: `components/stage/*`, `use-notebook-page.ts`(+spec), `notebook-edit-bar.tsx`,
+  `notebook-page-stage.tsx`, `notebook-shell.tsx`, `lib/notebook-layout.ts`, `board-editor-shell.tsx`.
+
+- **Defter ↔ topluluk köprüsü: yarısı bağlandı (2026-08-14, APP-042)** — Tekrar sırasında ikinci kez
+  "yine çözemedim" denen an, öğrencinin takıldığını **kanıtladığı** andı ve şimdiye kadar ölüydü:
+  uygulama kartı yeniden zamanlayıp geçiyordu. Artık o anda topluluk teklif ediliyor. **İlk
+  kaçırmada değil, ikincide** — ilkinde teklif etmek herkese her seferinde teklif etmek olurdu, yani
+  gürültü (`reviewCount > 0` iken kaçırma).
+  **Migration 0078** 0077'de bilerek ertelenen üç kolonu getiriyor: `source` (OWN | COMMUNITY),
+  `community_thread_id`, `community_answered_at`. Thread id'de **FK yok, bilerek**: thread'ler
+  forum'un bounded context'inde, veritabanı seviyesinde bir kenar coaching'in tablosunu forum'unkine
+  bağımlı yapardı — silinmiş bir thread "thread yok" diye okunuyor, `exam_id`'nin izlediği soft-ref
+  kuralının aynısı.
+  **Geri yön tek kuplaj noktası:** `NotebookForumListener`, `forum.answer.accepted` olayını dinleyip
+  o thread'e bağlı kartları işaretliyor (economy'nin `ForumEventsListener`'ıyla birebir aynı kalıp).
+  Forum defterin varlığını bilmiyor, defter forum tablosuna dokunmuyor. Listener hata yutuyor +
+  logluyor: `emitAsync` accept'in içinde await ediliyor, burada fırlatmak zaten commit olmuş bir
+  accept'i 500'lerdi. `markThreadAnswered` **çoğul**: iki öğrenci aynı soruyu bağlayabilir, ikisinin
+  de kartı cevabı hak eder.
+  **Gotcha — `source` girdinin ne *anlama geldiğini* değil, sorunun nereden geldiğini söyler.**
+  Topluluktan gelen soru deftere ancak kullanıcının kendi "ben de çözemedim" beyanıyla giriyor, yani
+  zayıflık haritasına `OWN` gibi sayılıyor. Sadece ilginç bulduğu şey forum'un kendi bookmark'ına
+  ait; buraya alınsa harita başkalarının eksiklerini anlatmaya başlardı.
+  **Yarım kalan yer, bilerek:** thread'i defter **oluşturmuyor**. Hangi zone'a soru sorulacağı
+  kullanıcının katıldığı zone'lara bağlı ve defterden zone seçmek tahmin olurdu; ayrıca birinin
+  fotoğrafını yabancıların önüne koyan bir eylemi yan panelden sessizce yapmak yanlış şekil. Defter
+  devrediyor: telif uyarısı + `/community`'ye yönlendirme. **Topluluk tarafının soruyu oluşturup
+  `POST /v1/coaching/notebook/entries/{id}/community-thread` ile geri bağlaması gerekiyor** — o uç
+  hazır ve testli, çağıran taraf yok.
+  İlgili: `0078_notebook_community_bridge.sql`, `notebook-forum.listener.ts`,
+  `mistake-notebook.{service,repository}.ts`, `notebook-review-panel.tsx`, `notebook-entry-card.tsx`,
+  `lib/notebook.ts`.
+
+- **Defter E2E testi + ilk gerçek hatalar (2026-08-14, APP-042)** — Defterle ilgili o ana kadarki
+  **her test saf mantıktı** (tekrar merdiveni, sayfa reducer'ı, yerleşim, hata-tipi eşiği); hiçbiri
+  "kapak gerçekten açılıyor mu", "eklenen kart kaydediliyor mu", "iyileşen kart susuyor mu"
+  sorusuna cevap vermiyordu. `apps/web/e2e/notebook.spec.ts` 6 senaryoyu iki viewport'ta koşuyor:
+  kapak→sayfa→geri kapak, ekleme (hata tipi zorunlu + ders/konu), konu seçicinin derse göre
+  daralması, tekrar akışı + iyileşme, ikinci kaçırmada topluluk teklifi, sticker + undo + autosave.
+  **İlk koşuda iki gerçek hata çıktı, ikisi de tipkontrolün göremeyeceği cinsten:**
+  (1) `content-topics.ts` `/v1/exams/{slug}/topics`'e gidiyordu ama controller `content/exams`
+  altında mount edilmiş — çalışma zamanında 404. (2) Sayfa tamamen boş açılıyordu: bildirim zili
+  mock'lanmamış bir uçtan gelen boş 204 üzerinde `.items` okuyup **tüm sayfayı** hata sınırına
+  düşürüyordu. İkincisi sadece `page.on("pageerror")` dinlenerek görülebildi, o yüzden dinleyici
+  kalıcı hale getirildi: hatalar toplanıyor ve kapak testinde `toEqual([])` ile doğrulanıyor —
+  bir sonraki sessiz çökme sessiz kalmasın.
+  **Gotcha:** E2E `next start` istiyor, yani `pnpm --filter @mentor/web build` olmadan koşmuyor
+  (`playwright.config.ts` webServer). Ayrıca mock tablosundaki catch-all `204` döndürdüğü için
+  **uygulama kabuğunun çağırdığı her uç açıkça mock'lanmalı**, yoksa hata defterde değil kabukta
+  patlar ve teşhis yanıltıcı olur.
+  İlgili: `apps/web/e2e/notebook.spec.ts`, `apps/web/src/lib/content-topics.ts`.
+
+- **Defter kabuğu 2. tur: rail+panel yan menü, bağımsız sayfa kaydırma, gelişmiş spiral (2026-08-14,
+  APP-042)** — Kullanıcı geri bildirimiyle dört değişiklik: (1) sabit rail (Ekle/Sticker/Not/Kağıt
+  ikonları) + açılır-kapanır panel, vision-board editörünün `board-side-panel.tsx` kalıbı birebir
+  taşındı (`notebook-side-panel.tsx`); monolitik `notebook-edit-bar.tsx` kaldırıldı. (2) "Defteri aç"
+  butonu kalktı — kapağın kendisi artık `role="button"` + `tabIndex` + `onKeyDown` ile açılan kontrol
+  (`NotebookCover`'a `onOpen`/`openLabel` eklendi); klavye/ekran okuyucu erişimi kaybolmadı, sadece
+  ayrı bir buton olmaktan çıktı. (3) Sayfa çevirme artık **sadece değişen sayfa** kayıyor: eskiden
+  tüm çift sayfa tek bir `rotateY` bloğu gibi dönüyordu, şimdi sol ve sağ sayfa **bağımsız**
+  `AnimatePresence` bölgeleri (`overflow:hidden` kesme kutusu + `translateX` slide), ikisi de aynı
+  `direction`'a göre kayıyor ama spine ve karşı sayfa sarsılmıyor. Kapak↔açık-defter geçişi ayrı bir
+  dış `AnimatePresence` (crossfade, `mode="wait"` — aspect-ratio tek-sayfadan çift-sayfaya sıçradığı
+  için üst üste binmesin diye) . (4) Spiral: halka artık **kapalı elips + ayrı vurgu elipsi + delik
+  üstte radial-gradient** — tel dokunun içinden geçiyormuş gibi görünüyor, "metalik" parlama ayrı bir
+  ince stroke. Görsel asset eklenmedi; prosedürel iyileştirme yeterli görüldü (mimari zaten raster'ı
+  reddediyordu — bkz. dosya başındaki not).
+  **Undo/sil artık rail kategorisi değil**, vision-board'un canvas üstü mini araç çubuğu gibi ayrı
+  bir ikon satırı — ikisi de `focused` (en son dokunulan taraf) üzerinde çalışıyor.
+  **Bilerek karar verilen açık nokta:** "Ekle" panelinin içinde `NotebookAddPanel` kendi `Card`
+  sarmalayıcısıyla geliyor, bu da panel+kart iç içe iki kutu gibi görünebilir — kozmetik, gerekirse
+  `NotebookAddPanel`'in kartı soyulabilir.
+  İlgili: `notebook-shell.tsx` (yeniden yazıldı), `notebook-side-panel.tsx` (yeni),
+  `notebook-surface.tsx` (spiral + `NotebookCover.onOpen`), `notebook-edit-bar.tsx` (silindi).
+
+- **Defter kabuğu 3. tur: sayfa geçişi katmanlanıyor, tam sticker seti, foto-önce kart, sayfa-içi not
+  düzenleme (2026-08-14, APP-042)** — Beş değişiklik: (1) **Sayfa çevirme artık tek birim.** Sol ve
+  sağ sayfa ayrı `AnimatePresence` bölgeleri olmaktan çıktı; çift sayfa TEK bir kaydırılan blok, gelen
+  blok `zIndex:2` ile giden bloğun (`zIndex:1`) **üstünden geçerek** kapanıyor — "sağdaki yaprak
+  soldakinin üstüne gelecek" isteğinin karşılığı. İki katmanlı yapı korunuyor: dış `AnimatePresence`
+  (`mode="wait"`) sadece kapak↔açık-defter arasında geçiyor (en-boy oranı tek sayfadan çifte
+  sıçradığı için üst üste binmesin diye bekliyor), iç `AnimatePresence` sayfa çevirmeleri için
+  (üst üste binsin diye beklemiyor — "üstüne gelme" efekti bunu gerektiriyor). Framer Motion'ın
+  `initial`/`exit` prop'ları fonksiyon kabul etmediği için (`custom` sadece `variants` üzerinden
+  çalışıyor) geçiş `variants` objesine taşındı.
+  (2) **Sticker alanı vision-board'un tam 68 parçalık setine çıktı** — önceki 8'lik "ponytail"
+  kısayolu kaldırıldı (kullanıcı haklıydı: mimari zaten paylaşılıyor, kısıtlamanın gerekçesi
+  zayıftı). Aria-label'lar da tekrar üretilmedi — `vision.board.sticker_*` çevirileri (68 anahtar)
+  doğrudan kullanılıyor, notebook namespace'ine ikinci bir kopya açılmadı. Panel genişliği `lg:w-64`
+  → `lg:w-80`.
+  (3) **Fotoğraflı kart artık sadece fotoğraf.** Chip/konu/not/durum satırı karta gömülü değil,
+  `group-hover`/`group-focus-within` ile açılan bir overlay'e taşındı (saf CSS, yeni kütüphane yok).
+  Tıklama artık **tam ekran önizleme** açıyor (`NotebookImageLightbox` — community'nin galeri
+  lightbox'ının tek-görsel, ok/karusel'siz sadeleştirilmiş hali). **Bilinen ödün:** fotoğraflı
+  kartlarda çift-tıkla-incele artık ulaşılamaz — ilk tıklama önizlemeyi açtığı için ikinci tıklama
+  önizlemenin arka planına düşüyor (kapatıyor), stage'in `onDoubleClick`'ine hiç ulaşmıyor.
+  Fotoğrafsız (yalnızca not) kartlarda çift-tık-incele aynen çalışıyor. Fotoğraflı kartlar için
+  inceleme yolu tekrar şeridi akışı.
+  (4) Not girme sidebar formu tamamen kaldırıldı. "Not" artık bir kategori değil, vision-board'un
+  `addText` deseniyle birebir aynı **anlık eylem**: tıklanınca boş bir not öğesi odaklı sayfaya
+  ekleniyor ve **sayfa üzerinde** satır-içi `<textarea>` (`NotebookTextInlineEditor`,
+  `BoardTextInlineEditor`'ın notebook'a taşınmış hali) doğrudan düzenleme moduna giriyor — ayrıca
+  çift tıklama da (artık entry+text kolu birlikte) aynı düzenleyiciyi açıyor. Boş bırakılıp
+  odaktan çıkılırsa öğe **silinir**, hiçbir zaman boş metinle kaydedilmez (şema `min(1)` istiyor).
+  `NotebookPageStage`'e vision-board'un `contentHiddenId` deseni eklendi — düzenlenen öğenin statik
+  render'ı, üstündeki textarea ile çakışmasın diye gizleniyor.
+  (5) Alt boşluk + kapak butonu: kabuğa dikey padding eklendi, önceki/sonraki butonlar sütunun
+  altına sabitlendi; "Defteri aç" butonu kalktı, kapağın kendisi `role="button"` + klavye desteğiyle
+  açılan kontrol oldu.
+  İlgili: `notebook-shell.tsx`, `notebook-side-panel.tsx`, `notebook-entry-card.tsx`,
+  `notebook-page-stage.tsx`, `notebook-text-inline-editor.tsx` (yeni),
+  `notebook-image-lightbox.tsx` (yeni), `notebook-surface.tsx`.

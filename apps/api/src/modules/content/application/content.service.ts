@@ -5,6 +5,7 @@ import type {
   ArticleImageUploadUrlDto,
   ExamCalendarDto,
   ExamSubjectDto,
+  ExamTopicDto,
   ExamSummaryDto,
   InfoArticleDto,
   InfoArticleSummaryDto,
@@ -266,6 +267,26 @@ export class ContentService {
     }
     const rows = await this.subjects.listByExamId(this.db, exam.id);
     return rows.map(toExamSubjectDto);
+  }
+
+  /**
+   * The exam's topics, by slug.
+   *
+   * Public sibling of {@link listExamSubjectsBySlug}. It exists because the mistake notebook lets a
+   * student label *why* and *where* they went wrong, and the "where" was reachable only through the
+   * premium vision pre-label until now — which put the topic-level weakness map behind a paywall by
+   * accident rather than by decision.
+   */
+  async listExamTopicsBySlug(slug: string): Promise<ExamTopicDto[]> {
+    const exam = await this.exams.findBySlug(this.db, slug);
+    if (!exam) {
+      throw new DomainError(
+        ErrorCode.CONTENT_EXAM_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+        { slug },
+      );
+    }
+    return this.topics.listByExamId(this.db, exam.id);
   }
 
   async getExamById(examId: string): Promise<{

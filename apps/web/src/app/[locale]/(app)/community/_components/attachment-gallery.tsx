@@ -1,19 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { Attachment } from "@mentor/types";
 import { resolveApiUrl } from "@/lib/api-base";
 import { formatBytes } from "@/lib/format-bytes";
 
 /**
- * Post image gallery. Multiple images use a 1.25-slide swipe rail on mobile and tile inside the
- * shared 16:9 frame on desktop. Tapping opens the uncropped lightbox carousel (arrows + keyboard +
+ * Post image gallery. A single image keeps its intrinsic aspect ratio. Multiple images use a
+ * 1.25-slide swipe rail on mobile and a Twitter-style tile on desktop. Tapping opens the uncropped lightbox carousel (arrows + keyboard +
  * swipe + dots across all images of the post). Lives inside clickable feed rows, so interactions
  * stop propagation to avoid triggering the row's navigation.
  */
 export function AttachmentGallery({ attachments }: { attachments: Attachment[] }) {
   const t = useTranslations("community");
+  const reduceMotion = useReducedMotion();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const images = attachments.filter((a) => a.kind === "image");
   const files = attachments.filter((a) => a.kind === "file");
@@ -48,10 +50,9 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
       <div
         className={
           single
-            ? "mt-2 grid aspect-[16/9] grid-cols-1 overflow-hidden rounded-[var(--radius-card)]"
-            : `mt-2 flex snap-x snap-mandatory overflow-x-auto gap-1 overscroll-x-contain rounded-[var(--radius-card)] md:grid md:aspect-[16/9] md:grid-cols-2 md:overflow-hidden ${count > 2 ? "md:grid-rows-2" : ""}`
+            ? "mt-3 grid w-full grid-cols-1"
+            : `mt-3 flex snap-x snap-mandatory gap-2.5 overflow-x-auto overscroll-x-contain md:grid md:aspect-[16/9] md:grid-cols-2 md:overflow-hidden ${count > 2 ? "md:grid-rows-2" : ""}`
         }
-        style={{ border: "1px solid rgba(0,0,0,0.08)" }}
       >
         {images.map((a, i) => {
           const span = count === 3 && i === 0 ? "md:row-span-2" : "";
@@ -64,7 +65,7 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
                 e.stopPropagation();
                 setActiveIndex(i);
               }}
-              className={`relative block h-full min-h-0 cursor-pointer overflow-hidden bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${single ? "w-full" : "aspect-[16/9] w-4/5 shrink-0 snap-start md:aspect-auto md:w-full md:shrink md:[scroll-snap-align:none]"} ${span}`}
+              className={`relative block min-h-0 cursor-pointer overflow-hidden rounded-[30px] border border-black/20 bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${single ? "w-full" : "h-full aspect-[16/9] w-4/5 shrink-0 snap-start md:aspect-auto md:w-full md:shrink md:[scroll-snap-align:none]"} ${span}`}
             >
               {/* Storage URL (not next/image — dev fake endpoint + R2 aren't in the image config). */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -72,7 +73,7 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
                 src={resolveApiUrl(a.url)}
                 alt=""
                 loading="lazy"
-                className="h-full w-full object-cover object-center"
+                className={single ? "h-auto w-full object-contain" : "h-full w-full object-cover object-center"}
               />
             </button>
           );
@@ -114,8 +115,14 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
         </div>
       )}
 
-      {active && (
-        <div
+      <AnimatePresence>
+      {active ? (
+        <motion.div
+          key="attachment-lightbox"
+          initial={reduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={reduceMotion ? { opacity: 0 } : { opacity: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: "rgba(0,0,0,0.85)" }}
           onClick={(e) => {
@@ -170,11 +177,14 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
             </>
           )}
 
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <motion.img
             src={resolveApiUrl(active.url)}
             alt=""
             className="max-h-full max-w-full rounded-[var(--radius-card)] object-contain"
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.98, y: 4 }}
+            transition={{ duration: reduceMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
             onClick={(e) => e.stopPropagation()}
             onTouchStart={(e) => {
               touchStartX.current = e.changedTouches[0]!.clientX;
@@ -199,8 +209,9 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
               ))}
             </div>
           )}
-        </div>
-      )}
+        </motion.div>
+      ) : null}
+      </AnimatePresence>
     </>
   );
 }

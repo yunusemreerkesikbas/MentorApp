@@ -70,18 +70,44 @@ export type AttachmentInput = z.infer<typeof attachmentInputSchema>;
 const attachmentsField = z.array(attachmentInputSchema).max(FORUM_MAX_ATTACHMENTS).optional();
 const forumTagIdsField = z.array(z.string().uuid()).max(3).optional();
 
+export const forumPollInputSchema = z
+  .object({
+    options: z.array(z.string().trim().min(1).max(25)).min(2).max(4),
+    durationMinutes: z.number().int().min(5).max(7 * 24 * 60),
+  })
+  .superRefine((value, ctx) => {
+    const normalized = value.options.map((option) => option.toLocaleLowerCase("tr-TR"));
+    if (new Set(normalized).size !== normalized.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["options"],
+        message: "Poll options must be unique",
+      });
+    }
+  });
+export type ForumPollInput = z.infer<typeof forumPollInputSchema>;
+
 /**
  * Post a thread. CHAT/ANNOUNCEMENT use body only; a QA question also carries a `title` (the
  * service requires a non-empty title when the zone is QA and rejects it otherwise). Optional image
  * attachments (max 4) — QA zones ignore them (attachments land on chat/announcement posts, APP-018).
  */
-export const createThreadSchema = z.object({
-  body: z.string().trim().min(1).max(4000),
-  title: z.string().trim().min(5).max(200).optional(),
-  attachments: attachmentsField,
-  tagIds: forumTagIdsField,
-});
+export const createThreadSchema = z
+  .object({
+    body: z.string().trim().min(1).max(4000),
+    title: z.string().trim().min(5).max(200).optional(),
+    attachments: attachmentsField,
+    tagIds: forumTagIdsField,
+    poll: forumPollInputSchema.optional(),
+  })
+  .refine((value) => !(value.poll && value.attachments?.length), {
+    path: ["poll"],
+    message: "Polls and attachments cannot be combined",
+  });
 export type CreateThread = z.infer<typeof createThreadSchema>;
+
+export const pollVoteSchema = z.object({ optionId: z.string().uuid() });
+export type PollVote = z.infer<typeof pollVoteSchema>;
 
 /** Post an answer/comment. Optional image attachments (max 4) — used by comments/replies (APP-018). */
 export const createAnswerSchema = z.object({

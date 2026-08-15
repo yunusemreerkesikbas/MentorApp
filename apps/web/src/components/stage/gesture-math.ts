@@ -1,9 +1,14 @@
-import { VISION_BOARD_CANVAS, type VisionBoardItem } from "@mentor/types";
+import type { VisionBoardItemBase } from "@mentor/types";
 
 /**
- * Geometry for dragging, resizing and rotating a board item. Pure functions, no DOM — the hook
+ * Geometry for dragging, resizing and rotating a placed item. Pure functions, no DOM — the hook
  * feeds them pointer deltas already converted to canvas units, which keeps the only tricky part
  * (rotation) testable without a browser.
+ *
+ * Typed on `VisionBoardItemBase` rather than on any one document's item union: the vision board and
+ * the mistake notebook place different things, but a rectangle with a rotation behaves the same
+ * either way. Their design spaces differ too, which is why the canvas width is a parameter instead
+ * of an import — a notebook page is 1080 units wide, a board 1620.
  */
 
 export type GestureMode =
@@ -16,9 +21,9 @@ export type ResizeCorner = "nw" | "ne" | "se" | "sw";
 /** Minimum on-canvas size. Below this an item is a dot nobody can grab again. */
 export const MIN_ITEM_SIZE = 32;
 
-/** Screen px → canvas px. The stage is `width` CSS px wide and 1620 canvas units across. */
-export function toCanvasScale(stageWidthPx: number): number {
-  return VISION_BOARD_CANVAS.width / stageWidthPx;
+/** Screen px → canvas px. The stage is `stageWidthPx` CSS px wide and `canvasWidth` units across. */
+export function toCanvasScale(stageWidthPx: number, canvasWidth: number): number {
+  return canvasWidth / stageWidthPx;
 }
 
 /**
@@ -39,10 +44,10 @@ export function toLocalDelta(
 }
 
 export function applyMove(
-  item: VisionBoardItem,
+  item: VisionBoardItemBase,
   dx: number,
   dy: number,
-): Pick<VisionBoardItem, "x" | "y"> {
+): Pick<VisionBoardItemBase, "x" | "y"> {
   return { x: Math.round(item.x + dx), y: Math.round(item.y + dy) };
 }
 
@@ -52,12 +57,12 @@ export function applyMove(
  * so a stretched box stays stretched in the PNG too.
  */
 export function applyResize(
-  item: VisionBoardItem,
+  item: VisionBoardItemBase,
   corner: ResizeCorner,
   dx: number,
   dy: number,
   lockRatio: boolean,
-): Pick<VisionBoardItem, "x" | "y" | "width" | "height"> {
+): Pick<VisionBoardItemBase, "x" | "y" | "width" | "height"> {
   const signX = corner === "ne" || corner === "se" ? 1 : -1;
   const signY = corner === "sw" || corner === "se" ? 1 : -1;
 

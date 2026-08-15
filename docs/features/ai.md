@@ -852,3 +852,19 @@ excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sa
   promptta çıkıyor mu, üniversite şehri bastırıyor mu, kariyer etiketi çevriliyor mu).
   İlgili: `vision-note.service.ts`, `vision.service.ts`, `geo.service.ts`, `geo.repository.ts`,
   `ai.constants.ts`, `prompt-locale.spec.ts`.
+
+- **Vision'ın işi değişti: kategorize → defter ön-etiketleme (2026-08-14, APP-042)** — `foto → ders/konu
+  kategorize` tek başına bir vitrin özelliğiydi ve öğrenciye zaten bildiğini söylüyordu; analiz
+  sayfasındaki kart kaldırıldı. `PhotoCategorizeService` **duruyor**, işi değişti:
+  `prelabelNotebookPhoto()` yanlış defterine kart eklenirken ders/konu **önerir**, öğrenci tek tapla
+  onaylar veya düzeltir. Aynı whitelist'li prompt (`PHOTO_CLASSIFY_SYSTEM`), aynı `PhotoAccessService`
+  kotası, aynı `AiBudgetGuard` — §4 #2 (çözmez, sınıflandırır) ve §4 #4 (free'de koşulsuz AI yok)
+  aynen korunuyor. Uç: `POST /v1/coaching/notebook/entries/prelabel` (AI modülünde, çünkü coaching
+  vision'ı import edemez — döngüsel modül kenarı).
+  **İki bilinçli fark:** (1) `clientRequestId` yok — ön-etiketleme kalıcı bir satır üretmiyor, dedupe
+  edecek yer yok; elle yeniden deneme bir kota birimine mal oluyor, bunu önlemek için tablo açmak
+  pahalı. (2) İstemcide **başarısızlık hata değil**: free kullanıcı, tükenmiş kota ve kararsız model
+  aynı sonuca çıkar — öğrenci kendisi etiketler, ki bu her zaman çalışan yol.
+  `mock-exams/{id}/categorize-photo` ucu geriye dönük uyumluluk için duruyor ama artık hiçbir
+  istemci çağırmıyor; `mock_exam_photo_categorizations` yazılmıyor (temizlik ayrı migration).
+  İlgili: `photo-categorize.service.ts`, `ai-mock-exam-photo.controller.ts`, `ai.dto.ts`.

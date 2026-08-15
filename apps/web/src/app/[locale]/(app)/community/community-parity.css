@@ -567,10 +567,12 @@
 .profile-hero__media {
   position: absolute;
   inset: 0 0 auto;
-  height: 78%;
+  height: calc(60% + 8px);
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 62%, rgb(0 0 0 / 88%) 74%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 62%, rgb(0 0 0 / 88%) 74%, transparent 100%);
+}
+
+.profile-hero__identity {
+  border-top: 1px solid var(--color-border);
 }
 
 .profile-hero__image {
@@ -600,49 +602,49 @@
     color-mix(in srgb, var(--color-progress-track) 65%, white);
 }
 
-.profile-hero__mist {
-  position: absolute;
-  inset: 42% 0 0;
-  z-index: 10;
-  background: linear-gradient(to bottom, transparent 0%, rgb(255 255 255 / 76%) 48%, #fff 78%);
-  backdrop-filter: blur(2px);
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 35%);
-  mask-image: linear-gradient(to bottom, transparent, #000 35%);
-}
-
 .profile-progress-mobile {
   position: relative;
   isolation: isolate;
 }
 
-.profile-progress-mobile::before {
-  position: absolute;
-  inset: 0 20px auto;
-  height: 72px;
-  border-radius: var(--radius-card);
-  background: color-mix(in srgb, var(--color-progress-track) 58%, white);
-  filter: blur(22px);
-  opacity: 0.72;
-  content: "";
-}
-
 .profile-progress-panel {
   position: relative;
-  background:
-    radial-gradient(circle at 82% -8%, rgb(85 172 238 / 20%), transparent 34%),
-    var(--color-main);
-}
-
-.profile-progress-panel::before {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgb(189 235 255 / 72%), transparent);
-  content: "";
+  background: var(--color-main);
 }
 
 .profile-level-medallion--current svg {
-  filter: drop-shadow(0 5px 8px rgb(85 172 238 / 28%));
+  filter: drop-shadow(0 2px 3px rgb(85 172 238 / 18%));
+}
+
+@media (min-width: 1280px) {
+  .profile-header {
+    position: relative;
+  }
+
+  .profile-hero__media {
+    height: 180px;
+    background: color-mix(in srgb, var(--color-soft) 72%, var(--color-secondary-light));
+  }
+
+  .profile-hero__image {
+    display: none;
+  }
+
+  .profile-hero__media > span {
+    display: none;
+  }
+
+  .profile-hero__identity {
+    border-top: 0;
+  }
+
+  .profile-header__action-row {
+    position: absolute;
+    top: 194px;
+    right: 20px;
+    z-index: 30;
+  }
+
 }
 
 @media (max-width: 1023px) {

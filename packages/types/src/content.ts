@@ -111,3 +111,15 @@ export interface ExamSubjectDto {
   questionCount: number | null;
   sortOrder: number;
 }
+
+/**
+ * Topic in the exam taxonomy, carrying its parent subject so a client can group or filter without
+ * a second call. Public reference data, same as the subjects above — nothing user-scoped here.
+ */
+export interface ExamTopicDto {
+  subjectSlug: string;
+  subjectName: string;
+  slug: string;
+  name: string;
+  sortOrder: number;
+}

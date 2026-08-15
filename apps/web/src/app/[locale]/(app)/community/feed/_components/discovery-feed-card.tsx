@@ -130,7 +130,7 @@ export function DiscoveryFeedCard({
       tabIndex={0}
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
-      className="cursor-pointer border-b border-[#e7e9ee] bg-white p-4 transition-colors last:border-b-0 hover:bg-black/[0.015] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:p-5"
+      className="cursor-pointer border-b border-[#e7e9ee] bg-white px-4 py-3 transition-colors last:border-b-0 hover:bg-black/[0.015] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:px-5"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
@@ -251,7 +251,7 @@ export function DiscoveryFeedCard({
           </div>
         </div>
       ) : (
-        <Link href={detailHref} className="mt-5 block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
+        <Link href={detailHref} className="mt-2 block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
           {item.title && (
             <h2
               className={compact ? "text-lg font-bold text-[#171a22]" : "text-[22px] font-extrabold leading-[1.2] tracking-[-0.025em] text-[#171a22] sm:text-[24px]"}
@@ -260,21 +260,19 @@ export function DiscoveryFeedCard({
             </h2>
           )}
           <p
-            className={`${item.title ? "mt-2" : ""} ${compact ? "line-clamp-2" : "line-clamp-3"} whitespace-pre-line text-[14px] leading-[1.55] ${item.title ? "text-[#69707c]" : "text-[#343945]"}`}
+            className={`${item.title ? "mt-1" : ""} ${compact ? "line-clamp-2" : "line-clamp-3"} whitespace-pre-line text-[15px] leading-[1.55] ${item.title ? "text-[#69707c]" : "text-[#343945]"}`}
           >
             {item.body}
           </p>
         </Link>
       )}
 
-      {!compact && item.attachments.length > 0 && (
-        <div className="mt-4">
-          <AttachmentGallery attachments={item.attachments} />
-        </div>
-      )}
+      {!compact && item.attachments.length > 0 ? (
+        <AttachmentGallery attachments={item.attachments} />
+      ) : null}
 
       {item.tags.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap gap-2">
           {item.tags.slice(0, 3).map((tag) => (
             <span
               key={tag.id}
@@ -286,7 +284,7 @@ export function DiscoveryFeedCard({
         </div>
       )}
 
-      <div className="mt-3 flex w-full items-center gap-1">
+      <div className="mt-1 flex w-full items-center gap-1">
         {isQa ? (
           <div className="flex min-w-11 items-center justify-start">
             <button

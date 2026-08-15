@@ -548,3 +548,93 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   olarak bırakıldı. Bu bağlantı `/ayarlar?section=profile` adresini açar ve profil düzenleme panelini
   doğrudan gösterir; kullanıcı genel Ayarlar sayfasında ilgili alanı aramak zorunda kalmaz. Diğer
   kullanıcı profillerindeki sağ üst overflow menüsü değişmedi.
+  **Detay navigasyonu (2026-08-13):** Üye profilinde üst üste görünen topluluk çıkış `X` kontrolü
+  ve hero geri oku tek kontrole indirildi. Community header, üye profili route'unda `X` yerine
+  `/topluluk` hedefli geri oku gösterir; hero içindeki yinelenen geri kontrolü kaldırıldı. Topluluk
+  ana yüzeylerinde panel çıkışını sağlayan `X` davranışı korunur.
+  **Hero görsel geçişi (2026-08-13):** Profil fotoğrafı blur, maske veya sis efekti olmadan keskin
+  gösterilir. Kimlik alanı, referans görünümdeki gibi fotoğrafın altına hafifçe binen ve yalnız üst
+  köşeleri yuvarlatılmış beyaz yüzeydir; isim, üyelik bilgisi ve sayaçlar bu sabit yüzeyde kalır.
+  Böylece farklı avatar renklerinde geçiş tonu değişmez. İlgili: `profile-header.tsx`,
+  `community-parity.css`, `community-member-profile.spec.ts`.
+  **Görsel polish:** Kimlik yüzeyinin fotoğrafa oturuşu ince üst ayrımla netleştirildi; isim ölçüsü ve
+  harf aralığı uzun Türkçe adlarda daha dengeli hale getirildi. Premium seal optik olarak küçültüldü;
+  paylaş, takip ve düzenleme aksiyonlarına 150–250 ms hover/press geri bildirimi eklendi. Hareketler
+  `prefers-reduced-motion` altında kapanır ve 44 px dokunma hedefleri korunur.
+  **Hero kompozisyon oranı:** Aksiyonların hero dışında devam etmesi nedeniyle matematiksel `%50/%50`
+  bölünme görseli gereğinden fazla kısaltıyordu. Referansın optik yarı-yarıya dengesi için portre hero
+  yüksekliğinin yaklaşık `%60`ını kaplar; kompakt kimlik yüzeyi ve hemen altındaki aksiyonlar kalan
+  görsel ağırlığı dengeler. Fotoğraf panelin arkasında 8 px devam eder; token tabanlı 1 px üst/yan
+  sınırlar korunur.
+  **Editorial sport polish:** Premium işareti rozet benzeri sarı daire yerine küçük, tek renk brass
+  sparkle olarak sadeleştirildi. Yan aksiyonlarda geniş gölge yerine 1 px sınır ve yüzey hover'ı
+  kullanılır. Seviye panelindeki radial glow, üst parıltı ve mobil blur halo kaldırıldı; koyu yüzey,
+  aktif mavi medallion ve XP çizgisi tek vurgu sistemi olarak bırakıldı.
+  **Desktop avatar düzeni:** Mobil portre hero korunurken `xl` görünümde büyük portre banner
+  tekrarı kaldırıldı. Ayrı cover verisi bulunmadığından desktop, nötr cover yüzeyi üzerine binen
+  104 px dairesel avatar kullanır; kimlik, sayaçlar ve aksiyonlar sola hizalanır. Desktop profil
+  kolonundaki dış border kaldırılır, mobildeki çerçeveli yüzey değişmez.
+  Desktop aksiyon grubu, cover'ın hemen altındaki avatar bindirme bandında sağ üste konumlanır;
+  Twitter benzeri biçimde avatarla aynı yatay bölgede görünür. Mobildeki ortalanmış
+  share/takip/düzenleme düzeni korunur.
+  **Desktop yoğunluk polish:** Cover 180 px, hero 360 px ve avatar 96 px olarak sıkılaştırıldı.
+  Bio/website bulunmayan profillerde aksiyon grubunun eski akış boşluğu kaldırılır; sayaçlardan
+  sekmelere uzanan işlevsiz beyaz alan azaltılır. Bio bulunan profiller gerekli alt ritmi korur.
+  Desktop sayaç grubu kimlik başlangıcına 8 px yaklaştırıldı. Aksiyon grubu sağ kenardan 20 px
+  içeride konumlanır; desktop ikon kontrolleri 40 px, ana aksiyon 144×40 px olur. Mobilde 44 px
+  dokunma hedefleri korunur.
+  Desktop takipçi/takip/aktivite sayaçları eşit genişlikte sütunlar yerine sola hizalı kompakt bilgi
+  satırı kullanır. İlk sayaç kimlik metniyle aynı başlangıç çizgisindedir; öğeler arası boşluk 32 px'tir.
+  Avatarı bulunan kullanıcıların mobil hero görseli ve desktop dairesel avatarı tam ekran önizlemeyi
+  açar. Görsel kırpılmadan gösterilir; Escape, backdrop ve kapatma düğmesi modalı kapatır, gövde
+  kaydırması kilitlenir ve odak modalı açan avatara geri döner. Fallback avatar etkileşimsiz kalır.
+  Önizleme açılış/kapanışında 200 ms ease-out opacity ve hafif scale geçişi kullanılır. Bounce veya
+  layout animasyonu yoktur; `prefers-reduced-motion` açıkken geçiş anlık hale gelir. Odak, kapanış
+  animasyonu tamamlandıktan sonra tetikleyici avatara döner.
+  **Shared avatar sistemi:** Kullanıcı kimliği gösteren avatarlar uygulama seviyesindeki `UserAvatar`
+  bileşeninde birleştirildi. Görsel ve baş harf fallback'i aynı renk/ölçü mantığını kullanır; varsayılan
+  avatarlar token tabanlı 1 px dış halka, hero/profile avatarları `strong` 4 px beyaz dış halka alır.
+  Topluluk `AuthorAvatar` API'si geriye uyumlu adaptör olarak `UserAvatar`ı kullanır; navigasyon,
+  onboarding, hesap profili, topluluk ve çalışma arkadaşı yüzeyleri aynı kaynaktan render edilir.
+  Post/attachment görselleri kullanıcı avatarı olmadığı için bu sisteme dahil değildir.
+  Açık cover ve beyaz yüzeylerde çerçevenin kaybolmaması için standart avatar halkası nötr `%15` ink
+  kontrastındadır. `strong` profil avatarı 4 px beyaz ayırıcıya ek olarak 1 px koyu dış hairline
+  kullanır; geniş gölge veya glow eklenmez. Halkalar artık görsel kutusunun dışında çizilir: çerçeve
+  96 px profil avatarını 88 px'e, 36 px post avatarını 34 px'e düşürmez; kaynak görsel tam hedef
+  çözünürlükte render edilir.
+  **Tekil hata sahipliği (2026-08-14):** Topluluk hub verisi ile yardımcı kanal listesi aynı anda
+  yüklenemediğinde artık iki ayrı hata mesajı gösterilmez. Sayfa seviyesindeki merkezî hata ve yenileme
+  aksiyonu tek kaynak olarak kalır; kanal listesi hatası sessizce boş listeye düşer ve sol paneldeki ana
+  navigasyon kullanılabilir durumda tutulur. İlgili: `hub-shell.tsx`, `zone-sidebar.tsx`,
+  `community-hub-redesign.spec.ts`.
+  **Ortak post yoğunluğu (2026-08-14):** `CommunityPostCard` tarafından kullanılan canonical
+  `ThreadItem` dikey ritmi sıkılaştırıldı. Kartın yatay 16/20 px gutter'ı korunurken dikey padding
+  12 px'e indirildi; header, metin, görsel, etiket ve aksiyonlar arasındaki gereksiz 12–16 px
+  boşluklar 4–12 px gruplama ritmine çekildi. Avatar ölçüsü ve aksiyonların minimum 44 px dokunma
+  hedefleri değişmedi; akış, oda, üye profili ve bookmarks aynı görünümü kullanmaya devam eder.
+  **Post/media görsel kontratı (2026-08-14):** Topluluk hub akışı, oda, üye profili, bookmarks ve
+  post/cevap detaylarındaki gövde metni 15 px'e eşitlendi; reaction toplamları 13 px tabular numerals
+  olarak sabitlendi. Ortak `AttachmentGallery` tek görselde kaynağın doğal aspect-ratio'sunu korur;
+  çoklu görsel mobilde 1.25 slide swipe rail, desktopta Twitter benzeri tile düzenini sürdürür.
+  Her medya öğesi bütün yüzeylerde kendi 30 px radius ve nötr `%20` sınırını taşır; çoklu görseller
+  tek bir dış çerçeveye sarılmaz ve aralarında 10 px gap kullanılır. Galeri kendi 12 px üst ritmini sahiplenir, böylece çağıran kartların çift margin üretmesi
+  engellenir. İlgili: `thread-item.tsx`, `discovery-feed-card.tsx`, `attachment-gallery.tsx`,
+  `comment-row.tsx`, `comment-shell.tsx`, `question-shell.tsx`, `answer-item.tsx`.
+  Media lightbox açılışında backdrop 200 ms ease-out ile belirir; görsel aynı sürede hafif scale ve
+  dikey offset'ten yerine oturur. Kapanış ters yönde fade/scale kullanır. Animasyon yalnız opacity ve
+  transform özelliklerini değiştirir; `prefers-reduced-motion` açıkken süre sıfırlanır.
+  **Ortak post sahiplik aksiyonları (2026-08-15):** Oda, üye profili, bookmarks ve post detayında
+  kullanılan `CommunityPostCard` üç nokta menüsü sunucu tarafından hesaplanan `capabilities`
+  alanına bağlandı. Gönderi sahibi düzenleme süresi ve etkileşim kilidi uygunsa içeriği kart içinde
+  düzenleyebilir; silme hakkı varsa onay sonrası gönderiyi kaldırabilir. Moderatör sabitleme/silme,
+  diğer kullanıcı ise bildirme aksiyonunu görür. Yetki kullanıcı adı karşılaştırmasıyla istemcide
+  tahmin edilmez; `ForumThreadService` edit/delete/moderation kararlarını tüm legacy `ThreadView`
+  yüzeylerine ekler. İlgili: `forum-thread.service.ts`, `forum-thread.controller.ts`,
+  `thread-item.tsx`, `thread-menu.tsx`, `community-post-actions.spec.ts`.
+  **Ortak oluşturma/düzenleme alanı (2026-08-15):** Gönderi içi düzenleme formu, yeni gönderi
+  composer'ındaki gövde alanıyla aynı `ComposerBodyField` bileşenini kullanır. Böylece 15 px metin,
+  10 px yüzey radius'u, emoji seçici, 4000 karakter sayacı, disabled/focus durumları ve
+  `Ctrl/Cmd + Enter` ile kaydetme davranışı iki akışta da aynıdır. Başlık alanı da aynı input
+  yüzeyine eşitlendi; mevcut medya edit endpoint'i tarafından değiştirilmez. İlgili:
+  `composer-body-field.tsx`, `global-composer.tsx`, `thread-item.tsx`,
+  `community-post-actions.spec.ts`.

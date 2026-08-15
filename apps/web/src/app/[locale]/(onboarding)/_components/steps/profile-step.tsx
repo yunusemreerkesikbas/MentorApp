@@ -13,6 +13,7 @@ import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
 import type { AuthUser } from "@mentor/types";
 import { TextField } from "@mentor/ui";
 import { FormError } from "@/components/form";
+import { UserAvatar } from "@/components/user-avatar";
 import {
   createAvatarUploadUrl,
   putAvatarToSignedUrl,
@@ -25,13 +26,6 @@ const PROFILE_FORM_ID = "onboarding-profile-form";
 const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 const AVATAR_TYPES = new Set(["image/jpeg", "image/png"]);
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-}
-
 function AvatarPreview({
   name,
   src,
@@ -39,31 +33,7 @@ function AvatarPreview({
   name: string;
   src: string | null;
 }) {
-  if (src) {
-    return (
-      // ponytail: signed/fake object URLs already resolve publicly; plain img avoids next/image config.
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={src}
-        alt=""
-        className="size-14 rounded-full border-[3px] border-white object-cover"
-      />
-    );
-  }
-
-  return (
-    <div
-      className="grid size-14 place-items-center rounded-full border-[3px] border-white text-xl font-bold"
-      style={{
-        backgroundColor: "#D6DBFD",
-        color: "var(--color-main)",
-        fontFamily: "var(--font-heading)",
-      }}
-      aria-hidden
-    >
-      {initials(name)}
-    </div>
-  );
+  return <UserAvatar frame="strong" name={name} size={56} src={src} />;
 }
 
 export function ProfileStep({

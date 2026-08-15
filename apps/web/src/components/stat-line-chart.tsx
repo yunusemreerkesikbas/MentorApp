@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { ResponsiveLine } from "@nivo/line";
 import type { DotsItemSymbolProps } from "@nivo/core";
 
@@ -24,8 +25,6 @@ export interface StatLineChartProps {
   /** No axes/grid — bare line + area + points, for tight KPI-band spark use. */
   compact?: boolean;
 }
-
-const GRADIENT_ID = "stat-line-gradient";
 
 /** Small dot for older points; a "you are here" ring for the latest one. */
 function makePointSymbol(color: string, lastIndex: number) {
@@ -59,6 +58,9 @@ export function StatLineChart({
   compact = false,
 }: StatLineChartProps) {
   const lastIndex = (data[0]?.data.length ?? 1) - 1;
+  // Unique per instance — a shared literal id would collide when multiple charts render on
+  // the same page, and the browser resolves `url(#id)` to whichever element matches first.
+  const gradientId = `stat-line-gradient-${useId()}`;
 
   return (
     <div role="img" aria-label={ariaLabel} style={{ height }}>
@@ -78,7 +80,7 @@ export function StatLineChart({
         enableArea
         defs={[
           {
-            id: GRADIENT_ID,
+            id: gradientId,
             type: "linearGradient",
             colors: [
               { offset: 0, color, opacity: 0.3 },
@@ -86,7 +88,7 @@ export function StatLineChart({
             ],
           },
         ]}
-        fill={[{ match: "*", id: GRADIENT_ID }]}
+        fill={[{ match: "*", id: gradientId }]}
         enablePoints
         pointSize={compact ? 7 : 9}
         pointSymbol={makePointSymbol(color, lastIndex)}

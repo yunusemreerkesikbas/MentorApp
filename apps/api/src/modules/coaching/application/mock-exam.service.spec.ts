@@ -80,6 +80,11 @@ describe("MockExamService", () => {
     listPhotoTopicSignals: ReturnType<typeof vi.fn>;
     listStorageKeys: ReturnType<typeof vi.fn>;
   };
+  let notebookRows: {
+    listSubjectSignals: ReturnType<typeof vi.fn>;
+    listTopicSignals: ReturnType<typeof vi.fn>;
+    listErrorTypeSignals: ReturnType<typeof vi.fn>;
+  };
   let service: MockExamService;
 
   beforeEach(() => {
@@ -93,14 +98,23 @@ describe("MockExamService", () => {
       listPhotoTopicSignals: vi.fn(),
       listStorageKeys: vi.fn(),
     };
+    notebookRows = {
+      listSubjectSignals: vi.fn(),
+      listTopicSignals: vi.fn(),
+      listErrorTypeSignals: vi.fn(),
+    };
     repo.listSubjectsByMockExamIds.mockResolvedValue(new Map());
-    photoRows.listPhotoSubjectSignals.mockResolvedValue([]);
-    photoRows.listPhotoTopicSignals.mockResolvedValue([]);
+    notebookRows.listSubjectSignals.mockResolvedValue([]);
+    notebookRows.listTopicSignals.mockResolvedValue([]);
+    notebookRows.listSubjectSignals.mockResolvedValue([]);
+    notebookRows.listTopicSignals.mockResolvedValue([]);
+    notebookRows.listErrorTypeSignals.mockResolvedValue([]);
     service = new MockExamService(
       fakeDb,
       contentPort as never,
       repo as never,
       photoRows as never,
+      notebookRows as never,
       i18nFake,
       storageFake as never,
     );
@@ -308,7 +322,7 @@ describe("MockExamService", () => {
       },
       { slug: "tarih", name: "Tarih", questionCount: 27, sortOrder: 1 },
     ]);
-    photoRows.listPhotoSubjectSignals.mockResolvedValue([
+    notebookRows.listSubjectSignals.mockResolvedValue([
       { subjectRef: "tarih", count: 2 },
     ]);
 
@@ -356,10 +370,10 @@ describe("MockExamService", () => {
         sortOrder: 0,
       },
     ]);
-    photoRows.listPhotoSubjectSignals.mockResolvedValue([
+    notebookRows.listSubjectSignals.mockResolvedValue([
       { subjectRef: "turkce", count: 2 },
     ]);
-    photoRows.listPhotoTopicSignals.mockResolvedValue([
+    notebookRows.listTopicSignals.mockResolvedValue([
       {
         subjectRef: "turkce",
         topicRef: "paragraf",
@@ -475,23 +489,25 @@ describe("MockExamService", () => {
       },
       { slug: "matematik", name: "Matematik", questionCount: 30, sortOrder: 1 },
     ]);
-    photoRows.listPhotoSubjectSignals.mockResolvedValue([
+    notebookRows.listSubjectSignals.mockResolvedValue([
       { subjectRef: "turkce", count: 3 },
     ]);
 
     const result = await service.getAnalysis(USER, EXAM_ID);
 
-    expect(photoRows.listPhotoSubjectSignals).toHaveBeenCalledWith(
+    // The notebook scopes by a recency window, not by which mock exams happened to be recent:
+    // most mistakes are logged while studying and carry no attempt at all.
+    expect(notebookRows.listSubjectSignals).toHaveBeenCalledWith(
       expect.anything(),
       USER,
       EXAM_ID,
-      ["m5", "m4", "m3", "m2"],
+      expect.any(Date),
     );
-    expect(photoRows.listPhotoTopicSignals).toHaveBeenCalledWith(
+    expect(notebookRows.listTopicSignals).toHaveBeenCalledWith(
       expect.anything(),
       USER,
       EXAM_ID,
-      ["m5", "m4", "m3", "m2", "m1"],
+      expect.any(Date),
     );
     expect(result.nextFocus).toMatchObject({
       subjectRef: "turkce",
@@ -534,11 +550,11 @@ describe("MockExamService", () => {
       USER,
       EXAM_ID,
     );
-    expect(photoRows.listPhotoSubjectSignals).toHaveBeenCalledWith(
+    expect(notebookRows.listSubjectSignals).toHaveBeenCalledWith(
       expect.anything(),
       USER,
       EXAM_ID,
-      ["m1"],
+      expect.any(Date),
     );
     expect(repo.maxTotalNet).toHaveBeenCalledWith(
       expect.anything(),

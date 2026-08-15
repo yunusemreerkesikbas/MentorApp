@@ -1183,6 +1183,107 @@ export const mockExamPhotoCategorizations = pgTable(
   ],
 );
 
+/**
+ * Mistake notebook ("yanlış defteri") — one row per wrong answer the user chose to keep.
+ *
+ * These are columns, not another jsonb document, because two queries need them: the review job
+ * scans `next_review_at`, and the analysis tab aggregates `error_type`. Placement on the page is
+ * the other half and *does* stay in jsonb — see `mistakeNotebookPages`.
+ *
+ * `mock_exam_id` is nullable and ON DELETE SET NULL on purpose: most mistakes are caught while
+ * studying, not in a mock exam, and deleting an exam must not delete the lessons drawn from it.
+ */
+export const mistakeNotebookEntries = pgTable(
+  "mistake_notebook_entries",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** SOFT ref → content.exams (no FK), same rule as `mockExams`. */
+    examId: uuid("exam_id").notNull(),
+    mockExamId: uuid("mock_exam_id").references(() => mockExams.id, {
+      onDelete: "set null",
+    }),
+    /** R2 key under `notebook/{userId}/`. Null = a text-only entry, which is allowed. */
+    storageKey: text("storage_key"),
+    /** SOFT refs → content subject/topic slugs; both null until the user (or vision) labels it. */
+    subjectRef: text("subject_ref"),
+    topicRef: text("topic_ref"),
+    /** `NOTEBOOK_ERROR_TYPES`. Text, not a pg enum — the list is append-only and config-like. */
+    errorType: text("error_type").notNull(),
+    note: text("note"),
+    /** ACTIVE | HEALED | ARCHIVED. */
+    status: text("status").notNull().default("ACTIVE"),
+    reviewCount: integer("review_count").notNull().default(0),
+    lastReviewedAt: timestamp("last_reviewed_at", { withTimezone: true }),
+    /**
+     * Null once the entry leaves the rotation (HEALED/ARCHIVED). Keeping the exit condition in the
+     * same column the due query filters on means that query stays a single index scan.
+     */
+    nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
+    /**
+     * OWN | COMMUNITY. Where the question came from — never what the entry means: a community
+     * question only enters the book with the user's own "I could not do this either", so it counts
+     * toward the weakness map exactly like the rest. Anything they merely wanted to keep belongs in
+     * the forum's own bookmarks, not here, or the map starts describing other people's gaps.
+     */
+    source: text("source").notNull().default("OWN"),
+    /**
+     * SOFT ref → forum threads, deliberately without a FK: threads belong to another bounded
+     * context and a database edge would couple coaching's table to forum's. A deleted thread leaves
+     * an id that reads as "no thread", the same rule `exam_id` follows.
+     */
+    communityThreadId: uuid("community_thread_id"),
+    /** Set by the `forum.answer.accepted` listener — the card has a verified answer waiting. */
+    communityAnsweredAt: timestamp("community_answered_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("mistake_notebook_due_idx").on(t.userId, t.nextReviewAt),
+    index("mistake_notebook_thread_idx").on(t.communityThreadId),
+    index("mistake_notebook_user_created_idx").on(t.userId, t.createdAt),
+    index("mistake_notebook_user_subject_idx").on(t.userId, t.subjectRef),
+    index("mistake_notebook_mock_idx").on(t.mockExamId),
+  ],
+);
+
+/**
+ * One row per notebook page. Unlike the vision board's single document per user, a notebook grows
+ * without bound — saving one page must not rewrite the whole book, and turning to a page must not
+ * ship every other page's items.
+ *
+ * `doc` shape is owned by `notebookPageDocSchema` (@mentor/validation): `{ version, paper, items }`
+ * where an item is an entry reference, a sticker or a text block. Entry *content* is never in here.
+ */
+export const mistakeNotebookPages = pgTable(
+  "mistake_notebook_pages",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pageIndex: integer("page_index").notNull(),
+    doc: jsonb("doc").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("mistake_notebook_pages_user_idx").on(t.userId, t.pageIndex)],
+);
+
 /* ===================== W4 · payments =====================
  * Subscription billing (§7): plan catalog, subscriptions (state machine),
  * append-only charge ledger, idempotent webhook event log. Money = integer
