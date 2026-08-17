@@ -47,20 +47,20 @@ function CoachChatBackdrop() {
       data-testid="coach-chat-backdrop"
     >
       <div
-        className="absolute -left-28 -top-24 h-[28rem] w-[28rem] rounded-full opacity-30 blur-[150px]"
-        style={{ backgroundColor: "#FF2DAB" }}
+        className="absolute -left-28 -top-24 h-[28rem] w-[28rem] rounded-full blur-[150px]"
+        style={{ backgroundColor: "var(--blob-pink)", opacity: "var(--blob-pink-opacity)" }}
       />
       <div
-        className="absolute -right-32 top-[18%] h-[32rem] w-[32rem] rounded-full opacity-50 blur-[150px]"
-        style={{ backgroundColor: "#9BC1FB" }}
+        className="absolute -right-32 top-[18%] h-[32rem] w-[32rem] rounded-full blur-[150px]"
+        style={{ backgroundColor: "var(--blob-blue)", opacity: "var(--blob-blue-opacity)" }}
       />
       <div
-        className="absolute -bottom-16 left-[8%] h-[30rem] w-[30rem] rounded-full opacity-50 blur-[150px]"
-        style={{ backgroundColor: "#BDEBFF" }}
+        className="absolute -bottom-16 left-[8%] h-[30rem] w-[30rem] rounded-full blur-[150px]"
+        style={{ backgroundColor: "var(--blob-cyan)", opacity: "var(--blob-cyan-opacity)" }}
       />
       <div
-        className="absolute bottom-0 right-[-12%] h-80 w-80 rounded-full opacity-40 blur-[140px]"
-        style={{ backgroundColor: "#9BC1FB" }}
+        className="absolute bottom-0 right-[-12%] h-80 w-80 rounded-full blur-[140px]"
+        style={{ backgroundColor: "var(--blob-blue)", opacity: "var(--blob-blue-opacity)" }}
       />
     </div>
   );
@@ -481,14 +481,14 @@ export function CoachChatShell() {
   }
 
   const railIconBtn =
-    "inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] transition-colors hover:bg-black/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
+    "inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
 
   return (
     <div className="relative flex h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] w-full overflow-hidden lg:h-screen lg:max-h-none">
       <CoachChatBackdrop />
 
       <motion.aside
-        className="relative z-[1] hidden h-full shrink-0 overflow-hidden border-r bg-white/85 backdrop-blur-md lg:flex lg:flex-col"
+        className="relative z-[1] hidden h-full shrink-0 overflow-hidden border-r bg-[color-mix(in_srgb,var(--color-surface)_85%,transparent)] backdrop-blur-md lg:flex lg:flex-col"
         style={{
           borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)",
         }}
@@ -579,7 +579,7 @@ export function CoachChatShell() {
           <button
             type="button"
             onClick={() => setHistoryOpen(true)}
-            className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
             aria-label={tLanding("history_open")}
             data-testid="coach-history-open"
           >
@@ -596,7 +596,7 @@ export function CoachChatShell() {
           {/* Soft top edge fade — same idea as expandable bubble “show more” veil. */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 z-10 h-10 bg-gradient-to-b from-white to-transparent"
+            className="pointer-events-none absolute inset-x-0 top-0 z-10 h-10 bg-gradient-to-b from-[var(--color-bg)] to-transparent"
           />
           <CoachTranscript
             messages={messages}
@@ -642,7 +642,7 @@ export function CoachChatShell() {
                 onClick={() => scrollToBottomRef.current?.()}
                 aria-label={tCoachChat("scroll_to_bottom")}
                 data-testid="coach-scroll-to-bottom"
-                className="absolute bottom-full left-1/2 z-20 mb-5 inline-flex size-9 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-[var(--shadow-card)] backdrop-blur-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+                className="absolute bottom-full left-1/2 z-20 mb-5 inline-flex size-9 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] shadow-[var(--shadow-card)] backdrop-blur-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
                 style={{
                   border:
                     "1px solid color-mix(in srgb, var(--color-main) 8%, transparent)",

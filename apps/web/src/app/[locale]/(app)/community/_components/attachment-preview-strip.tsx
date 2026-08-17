@@ -30,11 +30,13 @@ const RemoveButton = ({
 export function AttachmentPreviewStrip({
   items,
   onRemove,
+  onPreviewImage,
   layout = "strip",
 }: {
   items: PickedAttachment[];
   onRemove: (idx: number) => void;
-  layout?: "strip" | "media";
+  onPreviewImage?: (image: Extract<PickedAttachment, { kind: "image" }>) => void;
+  layout?: "strip" | "compact" | "media";
 }) {
   const t = useTranslations("community");
   if (items.length === 0) return null;
@@ -44,7 +46,9 @@ export function AttachmentPreviewStrip({
       className={
         layout === "media"
           ? "mt-3 grid grid-cols-2 gap-1 overflow-hidden rounded-[var(--radius-card)]"
-          : "mt-2 flex flex-wrap gap-2"
+          : layout === "compact"
+            ? "mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4"
+            : "mt-2 flex flex-wrap gap-2"
       }
     >
       {items.map((p, i) =>
@@ -54,25 +58,39 @@ export function AttachmentPreviewStrip({
             className={
               layout === "media"
                 ? `relative min-h-48 overflow-hidden bg-[var(--color-surface-container)] ${items.filter((item) => item.kind === "image").length === 1 ? "col-span-2 aspect-[16/9]" : "aspect-square"}`
-                : "relative h-16 w-16 overflow-hidden rounded-[var(--radius-card)]"
+                : layout === "compact"
+                  ? "relative aspect-square overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface-container)]"
+                  : "relative h-16 w-16 overflow-hidden rounded-[var(--radius-card)]"
             }
             style={{ border: "1px solid rgba(0,0,0,0.08)" }}
           >
-            {/* Local object-URL preview (not next/image — it's a client blob). */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={p.url} alt="" className="h-full w-full object-cover" />
-            <span className={layout === "media" ? "absolute right-2 top-2" : "absolute right-0.5 top-0.5"}>
+            {onPreviewImage ? (
+              <button
+                type="button"
+                aria-label={t("attach_view")}
+                onClick={() => onPreviewImage(p)}
+                className="h-full w-full cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)]"
+              >
+                {/* Local object-URL preview (not next/image — it's a client blob). */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.url} alt="" className="h-full w-full object-cover" />
+              </button>
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={p.url} alt="" className="h-full w-full object-cover" />
+            )}
+            <span className={`${layout === "media" ? "right-2 top-2" : layout === "compact" ? "right-1 top-1" : "right-0.5 top-0.5"} absolute z-10`}>
               <RemoveButton
                 label={t("attach_remove")}
                 onClick={() => onRemove(i)}
-                prominent={layout === "media"}
+                prominent={layout !== "strip"}
               />
             </span>
           </div>
         ) : (
           <div
             key={`file-${i}`}
-            className="flex max-w-full items-center gap-2 rounded-[var(--radius-card)] px-2.5 py-2"
+            className={`${layout === "compact" ? "col-span-3 sm:col-span-4" : ""} flex max-w-full items-center gap-2 rounded-[var(--radius-card)] px-2.5 py-2`}
             style={{ border: "1px solid rgba(0,0,0,0.08)", background: "rgba(0,0,0,0.02)" }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

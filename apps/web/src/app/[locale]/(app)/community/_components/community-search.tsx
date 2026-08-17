@@ -431,7 +431,7 @@ function SearchResultRow({ item, active, onSelect, onPointerEnter }: { item: Sea
     detail = item.value.description;
     label = t(item.value.type === ZoneType.CHAT ? "type_chat" : item.value.type === ZoneType.ANNOUNCEMENT ? "type_announcement" : "type_qa");
   } else if (item.kind === "tag") {
-    title = `#${item.value.name}`;
+    title = `#${item.value.slug}`;
     label = t("search_tag_label");
   } else {
     title = item.value.title || item.value.bodyExcerpt;
@@ -481,8 +481,8 @@ function SearchStart({ trends, trendsLoaded, trendsFailed, recentSearches, onSea
         {trendsFailed ? (
           <div className="community-search-panel__state compact"><p>{t("search_trends_error")}</p><button type="button" onClick={onRetryTrends}>{t("search_retry")}</button></div>
         ) : trends.length ? trends.map((trend) => (
-          <button key={trend.id} type="button" className="community-search-start__row trend" onClick={() => onSearch(trend.name)}>
-            <span><strong>#{trend.name}</strong><small>{t("trend_thread_count", { count: trend.threadCount })}</small></span>
+          <button key={trend.id} type="button" className="community-search-start__row trend" onClick={() => onSearch(trend.slug)}>
+            <span><strong>#{trend.slug}</strong><small>{t("trend_thread_count", { count: trend.threadCount })}</small></span>
           </button>
         )) : trendsLoaded ? (
           <p className="community-search-panel__message">{t("search_trends_empty")}</p>

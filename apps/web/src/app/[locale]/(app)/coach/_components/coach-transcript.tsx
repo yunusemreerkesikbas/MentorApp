@@ -444,7 +444,7 @@ function FeedbackRow({
   const translate = useTranslations("coach_chat");
   const [copied, setCopied] = useState(false);
   const base =
-    "inline-flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none";
+    "inline-flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none";
 
   function copyReply() {
     void navigator.clipboard.writeText(text).then(() => {
@@ -529,7 +529,7 @@ function SourceChips({ sources }: { sources: CoachSource[] }) {
               pathname: "/knowledge/[slug]",
               params: { slug: s.slug },
             }}
-            className="min-h-8 rounded-[var(--radius-card)] border border-white bg-white/50 px-3 py-1 text-xs font-bold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            className="min-h-8 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_50%,transparent)] px-3 py-1 text-xs font-bold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
             style={{
               color: "var(--color-chip-text)",
               boxShadow: "var(--shadow-card)",

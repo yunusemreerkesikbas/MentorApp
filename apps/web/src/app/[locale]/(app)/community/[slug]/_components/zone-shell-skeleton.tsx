@@ -3,7 +3,7 @@ import { Skeleton, SkeletonGroup } from "@mentor/ui";
 export function ZoneShellSkeleton({ label = "Yükleniyor…" }: { label?: string }) {
   return (
     <SkeletonGroup label={label} className="mx-auto grid max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
-        <div className="bg-white sm:my-6 sm:border-x sm:border-[var(--color-border)]">
+        <div className="bg-[var(--color-surface)] sm:my-6 sm:border-x sm:border-[var(--color-border)]">
         <Skeleton className="aspect-[3/1] w-full" />
         <div className="space-y-3 px-4 py-4">
           <Skeleton className="h-8 w-56 rounded-[var(--radius-card)]" />

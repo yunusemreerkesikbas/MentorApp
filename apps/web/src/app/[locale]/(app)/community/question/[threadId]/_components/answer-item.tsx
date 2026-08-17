@@ -10,6 +10,7 @@ import {
   type ShareHref,
 } from "../../../_components/send-button";
 import { BookmarkButton } from "../../../_components/bookmark-button";
+import { HelpfulButton } from "../../../_components/helpful-button";
 
 /**
  * One answer. Accepted answers are highlighted; `accept`/`report` are slots filled by the shell.
@@ -40,13 +41,13 @@ export function AnswerItem({
   );
 
   return (
-    <article className={answer.isAccepted ? "rounded-[12px] bg-[#eaf7f0] p-4" : "border-b border-[#eceef2] px-1 py-4"}>
+    <article className={answer.isAccepted ? "rounded-[12px] bg-[var(--community-green-soft)] p-4" : "border-b border-[var(--color-border)] px-1 py-4"}>
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
           {when}
         </span>
         {answer.isAccepted ? (
-          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-[#287954]">
+          <span className="rounded-full bg-[var(--color-surface)] px-2.5 py-1 text-xs font-bold text-[var(--community-green)]">
             ✓ {t("accepted")}
           </span>
         ) : null}
@@ -58,15 +59,12 @@ export function AnswerItem({
       <div className="-ml-1.5 mt-3 flex items-center gap-1">
         <SendButton href={shareHref} publicUrl={sharePublicUrl} />
         <BookmarkButton bookmarked={answer.myBookmarked} onToggle={onToggleBookmark} />
-        <button
-          type="button"
-          aria-pressed={answer.myHelpfulVote ?? false}
-          onClick={() => onToggleHelpful(!(answer.myHelpfulVote ?? false))}
-          className="min-h-11 rounded-full px-3 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{ background: answer.myHelpfulVote ? "#eaf7f0" : "transparent", color: answer.myHelpfulVote ? "#287954" : undefined }}
-        >
-          +1 {t("helpful")} · {answer.helpfulVoteCount ?? 0}
-        </button>
+        <HelpfulButton
+          count={answer.helpfulVoteCount ?? 0}
+          selected={answer.myHelpfulVote ?? false}
+          canVote={answer.canHelpfulVote ?? true}
+          onToggle={onToggleHelpful}
+        />
         {accept}
         {report}
       </div>

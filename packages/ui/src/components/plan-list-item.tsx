@@ -37,7 +37,7 @@ export function PlanListItem({
       aria-label={title}
       onClick={onToggle}
       disabled={!interactive}
-      className={`flex min-h-[56px] w-full items-center gap-3 rounded-[var(--radius-card)] px-3 py-2 text-left transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 disabled:cursor-default motion-reduce:transition-none ${className ?? ""}`}
+      className={`flex min-h-[56px] w-full items-center gap-3 rounded-[var(--radius-card)] px-3 py-2 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] focus-visible:outline-none focus-visible:ring-2 disabled:cursor-default motion-reduce:transition-none ${className ?? ""}`}
     >
       <span
         aria-hidden

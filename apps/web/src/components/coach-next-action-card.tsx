@@ -30,7 +30,7 @@ export function CoachNextActionCard({
 
   return (
     <section
-      className="rounded-[var(--radius-card)] bg-white/90 px-4 py-4 shadow-[var(--shadow-card)]"
+      className="rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] px-4 py-4 shadow-[var(--shadow-card)]"
       aria-labelledby={`coach-next-action-title-${surface}`}
       data-testid="coach-next-action"
     >

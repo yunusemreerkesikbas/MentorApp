@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { Button } from "@mentor/ui";
 import type { PuhuVariant } from "@/components/puhu-image";
 import { PuhuImage } from "@/components/puhu-image";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { OnboardingProgress } from "./onboarding-progress";
 
 type LayoutMode = "centered" | "split";
@@ -78,18 +79,19 @@ export function OnboardingStepLayout({
       ) : (
         <div className="min-w-11" aria-hidden />
       )}
-      {onSkip && skipLabel ? (
-        <button
-          type="button"
-          onClick={onSkip}
-          className="-me-1 min-h-11 cursor-pointer px-1 text-sm font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none lg:me-0"
-          style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
-        >
-          {skipLabel}
-        </button>
-      ) : (
-        <div className="min-w-11" aria-hidden />
-      )}
+      <div className="flex items-center gap-1">
+        <ThemeToggle />
+        {onSkip && skipLabel ? (
+          <button
+            type="button"
+            onClick={onSkip}
+            className="-me-1 min-h-11 cursor-pointer px-1 text-sm font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none lg:me-0"
+            style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
+          >
+            {skipLabel}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 
@@ -178,9 +180,10 @@ export function OnboardingStepLayout({
         mode === "centered"
           ? undefined
           : {
-              backgroundColor: "rgba(255,255,255,0.55)",
+              backgroundColor:
+                "color-mix(in srgb, var(--color-surface) 55%, transparent)",
               boxShadow: "var(--shadow-card)",
-              border: "1px solid #ffffff",
+              border: "1px solid var(--color-border)",
             }
       }
     >
@@ -236,7 +239,8 @@ export function OnboardingStepLayout({
         <div className="hidden h-11 items-center justify-start lg:col-start-1 lg:row-start-1 lg:flex">
           {backControl}
         </div>
-        <div className="hidden h-11 items-center justify-end lg:col-start-2 lg:row-start-1 lg:flex">
+        <div className="hidden h-11 items-center justify-end gap-1 lg:col-start-2 lg:row-start-1 lg:flex">
+          <ThemeToggle />
           {skipControl}
         </div>
 

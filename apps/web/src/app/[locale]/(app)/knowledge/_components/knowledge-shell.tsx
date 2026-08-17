@@ -383,7 +383,7 @@ function ExamTypeGate() {
         <EmptyState chip={t("no_exam_chip")} description={t("no_exam_desc")} />
         <Link
           href="/settings"
-          className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none sm:w-auto"
+          className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-[var(--color-btn-label)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none sm:w-auto"
           style={{
             backgroundColor: "var(--color-btn)",
             boxShadow: "var(--shadow-card)",

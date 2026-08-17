@@ -365,6 +365,12 @@ export const CONFIG_CATALOG = {
     100,
     "Trending/top score bonus for a question with an accepted answer.",
   ),
+  "forum.discovery.score.unanswered_question_bonus": forumCount(
+    2,
+    0,
+    100,
+    "Small trending/top score bonus for a QA question that has no answers yet.",
+  ),
   "ai.chat.daily_limit": aiCount(
     30,
     100000,

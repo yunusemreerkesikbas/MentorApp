@@ -17,16 +17,28 @@ export function BackgroundBlobs({ drift = true }: { drift?: boolean } = {}) {
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
     >
       <div
-        className={`absolute -top-24 -left-24 h-96 w-96 rounded-full opacity-40 blur-[150px] ${driftClass ?? ""}`}
-        style={{ backgroundColor: "#FF2DAB", animationDelay: "0s" }}
+        className={`absolute -top-24 -left-24 h-96 w-96 rounded-full blur-[150px] ${driftClass ?? ""}`}
+        style={{
+          backgroundColor: "var(--blob-pink)",
+          opacity: "var(--blob-pink-opacity)",
+          animationDelay: "0s",
+        }}
       />
       <div
-        className={`absolute top-1/3 -right-32 h-[28rem] w-[28rem] rounded-full opacity-60 blur-[150px] ${driftClass ?? ""}`}
-        style={{ backgroundColor: "#9BC1FB", animationDelay: "-8s" }}
+        className={`absolute top-1/3 -right-32 h-[28rem] w-[28rem] rounded-full blur-[150px] ${driftClass ?? ""}`}
+        style={{
+          backgroundColor: "var(--blob-blue)",
+          opacity: "var(--blob-blue-opacity)",
+          animationDelay: "-8s",
+        }}
       />
       <div
-        className={`absolute -bottom-32 left-1/4 h-96 w-96 rounded-full opacity-60 blur-[150px] ${driftClass ?? ""}`}
-        style={{ backgroundColor: "#BDEBFF", animationDelay: "-16s" }}
+        className={`absolute -bottom-32 left-1/4 h-96 w-96 rounded-full blur-[150px] ${driftClass ?? ""}`}
+        style={{
+          backgroundColor: "var(--blob-cyan)",
+          opacity: "var(--blob-cyan-opacity)",
+          animationDelay: "-16s",
+        }}
       />
     </div>
   );

@@ -27,7 +27,7 @@ function Spot({ entry, place, youLabel }: { entry: LeaderboardEntry; place: 0 | 
           />
         )}
         <span className="block rounded-full p-[2px]" style={{ background: MEDAL[place] }}>
-          <span className="block rounded-full bg-white p-[2px]">
+          <span className="block rounded-full bg-[var(--color-surface)] p-[2px]">
             <AuthorAvatar name={name} size={first ? 52 : 40} src={entry.avatarUrl ?? undefined} />
           </span>
         </span>

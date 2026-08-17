@@ -1,5 +1,5 @@
 "use client";
-import { Bookmark, CircleHelp, Hash, House, Megaphone, Rss, TrendingUp, Trophy } from "lucide-react";
+import { Bookmark, House, Rss, TrendingUp, Trophy } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
@@ -10,6 +10,7 @@ import { Skeleton, SkeletonGroup } from "@mentor/ui";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { listZones } from "@/lib/forum";
+import { ZoneTypeIcon } from "./zone-type-icon";
 
 /** Room groups in display order — one section header replaces the per-item category eyebrow. */
 const GROUPS = [
@@ -98,7 +99,7 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
             href={href}
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
-            className={`relative isolate flex min-h-11 items-center gap-3 overflow-hidden rounded-[10px] px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${active ? "font-bold text-[var(--community-blue-ink)]" : "font-medium text-[var(--color-secondary)] hover:bg-white"}`}
+            className={`relative isolate flex min-h-11 items-center gap-3 overflow-hidden rounded-[10px] px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${active ? "font-bold text-[var(--community-blue-ink)]" : "font-medium text-[var(--color-secondary)] hover:bg-[var(--color-surface)]"}`}
           >
             {active ? (
               <motion.span
@@ -132,7 +133,6 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
         <div className="flex flex-col gap-5">
           {GROUPS.map(({ type, key }) => {
             const group = zones.filter((z) => z.type === type);
-            const GroupIcon = type === "CHAT" ? Hash : type === "ANNOUNCEMENT" ? Megaphone : CircleHelp;
             const iconTone =
               type === "CHAT"
                 ? "text-[var(--community-blue-ink)]"
@@ -156,7 +156,7 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
                       }}
                       onClick={onNavigate}
                       aria-current={isActive ? "page" : undefined}
-                      className={`relative isolate flex min-h-11 items-center gap-2.5 overflow-hidden rounded-[10px] px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${isActive ? "font-bold text-[var(--community-blue-ink)]" : "hover:bg-white"}`}
+                      className={`relative isolate flex min-h-11 items-center gap-2.5 overflow-hidden rounded-[10px] px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${isActive ? "font-bold text-[var(--community-blue-ink)]" : "hover:bg-[var(--color-surface)]"}`}
                     >
                       {isActive ? (
                         <motion.span
@@ -171,7 +171,7 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
                         animate={reduceMotion ? undefined : { scale: isActive ? 1.14 : 1, rotate: isActive ? -5 : 0 }}
                         transition={activeTransition}
                       >
-                        <GroupIcon size={16} strokeWidth={isActive ? 2.2 : 2} aria-hidden />
+                        <ZoneTypeIcon type={type} size={16} strokeWidth={isActive ? 2.2 : 2} aria-hidden />
                       </motion.span>
                       <span className="min-w-0 flex-1">
                         <span className={`flex items-center gap-1.5 truncate text-sm ${isActive ? "font-bold text-[var(--community-blue-ink)]" : "font-medium text-[var(--color-body-text)]"}`}>

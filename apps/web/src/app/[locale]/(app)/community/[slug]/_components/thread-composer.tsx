@@ -2,9 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { ListChecks } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { AttachmentInput } from "@mentor/validation";
+import type { ZoneView } from "@mentor/types";
+import { forumPollInputSchema, type AttachmentInput, type ForumPollInput } from "@mentor/validation";
 import { ApiClientError } from "@mentor/api-client";
+import { useDialog } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
 import { AttachmentPreviewStrip } from "../../_components/attachment-preview-strip";
@@ -16,6 +19,8 @@ import {
 import { useMentionAutocomplete } from "../../_components/use-mention-autocomplete";
 import { MentionSuggestions } from "../../_components/mention-suggestions";
 import { EmojiPickerButton } from "../../_components/EmojiPickerButton";
+import { AudienceSelector } from "../../_components/audience-selector";
+import { DEFAULT_FORUM_POLL, ForumPollComposer } from "../../_components/forum-poll-composer";
 
 const COMPOSER_TEXTAREA_MAX_HEIGHT = 192;
 const SUBMIT_PROGRESS_CEILING = 92;
@@ -34,24 +39,30 @@ export function ThreadComposer({
   submitLabel,
   onSubmit,
   zoneId,
+  audience,
+  allowPoll = false,
   focusOnMount = false,
   variant = "default",
 }: {
   placeholder: string;
   submitLabel: string;
-  onSubmit: (body: string, attachments: AttachmentInput[]) => Promise<void>;
+  onSubmit: (body: string, attachments: AttachmentInput[], poll?: ForumPollInput) => Promise<void>;
   /** Enables @mention autocomplete over the zone's members; omitted → plain textarea. */
   zoneId?: string;
+  audience?: ZoneView;
+  allowPoll?: boolean;
   /** Community completion return: focus and reveal the empty composer after it mounts. */
   focusOnMount?: boolean;
   /** Reply dialogs reuse uploads and mentions but use a text submit control. */
   variant?: "default" | "reply-dialog";
 }) {
   const t = useTranslations("community");
+  const dialog = useDialog();
   const { user } = useAuth();
   const reduceMotion = useReducedMotion();
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
+  const [poll, setPoll] = useState<ForumPollInput | null>(null);
   const [submitProgress, setSubmitProgress] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -88,6 +99,13 @@ export function ThreadComposer({
     setBusy(true);
     setSubmitProgress(8);
     setError(null);
+    const parsedPoll = poll ? forumPollInputSchema.safeParse(poll) : null;
+    if (parsedPoll && !parsedPoll.success) {
+      setSubmitProgress(0);
+      setError(t("poll_validation_error"));
+      setBusy(false);
+      return;
+    }
     progressIntervalRef.current = setInterval(() => {
       setSubmitProgress((current) =>
         Math.min(
@@ -97,13 +115,14 @@ export function ThreadComposer({
       );
     }, SUBMIT_PROGRESS_INTERVAL_MS);
     try {
-      const attachments = await uploadAll();
-      await onSubmit(body, attachments);
+      const attachments = poll ? [] : await uploadAll();
+      await onSubmit(body, attachments, parsedPoll?.success ? parsedPoll.data : undefined);
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       progressIntervalRef.current = null;
       setSubmitProgress(100);
       setValue("");
       reset();
+      setPoll(null);
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
         textareaRef.current.style.overflowY = "hidden";
@@ -120,6 +139,36 @@ export function ThreadComposer({
     } finally {
       setBusy(false);
     }
+  };
+
+  const addPoll = async () => {
+    if (items.length > 0) {
+      const confirmed = await dialog.confirm({
+        title: t("poll_media_conflict_title"),
+        message: t("poll_media_conflict_message"),
+        confirmLabel: t("poll_media_remove_confirm"),
+        cancelLabel: t("cancel"),
+        closeLabel: t("close"),
+      });
+      if (!confirmed) return;
+      reset();
+    }
+    setPoll({ ...DEFAULT_FORUM_POLL, options: [...DEFAULT_FORUM_POLL.options] });
+  };
+
+  const openAttachmentPicker = async () => {
+    if (poll) {
+      const confirmed = await dialog.confirm({
+        title: t("poll_media_conflict_title"),
+        message: t("poll_remove_for_media_message"),
+        confirmLabel: t("poll_remove"),
+        cancelLabel: t("cancel"),
+        closeLabel: t("close"),
+      });
+      if (!confirmed) return;
+      setPoll(null);
+    }
+    fileRef.current?.click();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -168,6 +217,11 @@ export function ThreadComposer({
           size={40}
         />
         <div className="relative min-w-0 flex-1 rounded-[var(--radius-card)] border border-transparent px-3 py-2 transition-colors duration-150 focus-within:border-[var(--color-focus-ring)] motion-reduce:transition-none">
+          {audience ? (
+            <div className="mb-2">
+              <AudienceSelector zones={[audience]} value={audience.id} locked />
+            </div>
+          ) : null}
           <textarea
             ref={textareaRef}
             value={value}
@@ -188,6 +242,11 @@ export function ThreadComposer({
           <MentionSuggestions mention={mention} />
 
           <AttachmentPreviewStrip items={items} onRemove={removeAt} layout="media" />
+          {poll ? (
+            <div className="mt-3">
+              <ForumPollComposer value={poll} onChange={setPoll} onRemove={() => setPoll(null)} disabled={busy} />
+            </div>
+          ) : null}
 
           <div className="mt-2 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -198,11 +257,23 @@ export function ThreadComposer({
                 onInserted={resizeTextarea}
                 disabled={busy}
               />
+              {allowPoll ? (
+                <button
+                  type="button"
+                  aria-label={t("poll_add")}
+                  aria-pressed={Boolean(poll)}
+                  disabled={busy || Boolean(poll)}
+                  onClick={() => void addPoll()}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-secondary)] transition-colors hover:bg-black/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ListChecks size={18} aria-hidden />
+                </button>
+              ) : null}
               <button
                 type="button"
                 aria-label={t("attach")}
                 disabled={busy || atLimit}
-                onClick={() => fileRef.current?.click()}
+                onClick={() => void openAttachmentPicker()}
                 className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[rgba(0,0,0,0.06)] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 style={{ color: "var(--color-secondary)" }}
               >
@@ -230,7 +301,7 @@ export function ThreadComposer({
               className={`flex cursor-pointer items-center justify-center rounded-full font-bold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none ${variant === "reply-dialog" ? "min-h-11 px-5 text-sm" : "h-9 w-9"}`}
               style={{
                 background: value.trim() ? "var(--color-btn)" : "var(--color-soft)",
-                color: value.trim() ? "#fff" : "var(--color-secondary)",
+                color: value.trim() ? "var(--color-btn-label)" : "var(--color-secondary)",
               }}
             >
               {variant === "reply-dialog" ? (

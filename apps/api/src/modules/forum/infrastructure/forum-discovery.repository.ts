@@ -23,8 +23,11 @@ import {
   forumBookmarks,
   forumHelpfulVotes,
   forumPostReactions,
+  forumPollVotes,
+  forumPolls,
   forumPosts,
   forumReactions,
+  forumTagSuggestions,
   forumTags,
   forumThreadTags,
   forumThreads,
@@ -35,6 +38,7 @@ import {
 import type { ForumFeedCursor } from "../domain/forum-discovery.policy";
 
 export type ForumTagRow = typeof forumTags.$inferSelect;
+export type ForumTagSuggestionRow = typeof forumTagSuggestions.$inferSelect;
 
 export interface DiscoveryWeights {
   participant: number;
@@ -42,6 +46,7 @@ export interface DiscoveryWeights {
   bookmark: number;
   helpful: number;
   accepted: number;
+  unanswered: number;
 }
 
 export type DiscoveryThreadRow = typeof forumThreads.$inferSelect & {
@@ -91,6 +96,108 @@ export interface ForumFeaturedThreadRow extends ForumThreadSummaryRow {
 @Injectable()
 export class ForumDiscoveryRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+
+  async createTagSuggestion(
+    suggestedBy: string,
+    requestedName: string,
+    normalizedSlug: string,
+  ): Promise<ForumTagSuggestionRow | null> {
+    return withServiceContext(this.db, async (tx) => {
+      const [existingTag] = await tx
+        .select({ id: forumTags.id })
+        .from(forumTags)
+        .where(eq(forumTags.slug, normalizedSlug))
+        .limit(1);
+      if (existingTag) return null;
+
+      const [row] = await tx
+        .insert(forumTagSuggestions)
+        .values({ suggestedBy, requestedName, normalizedSlug })
+        .onConflictDoNothing()
+        .returning();
+      return row ?? null;
+    });
+  }
+
+  async listTagSuggestions(): Promise<ForumTagSuggestionRow[]> {
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select()
+        .from(forumTagSuggestions)
+        .where(eq(forumTagSuggestions.status, "PENDING"))
+        .orderBy(asc(forumTagSuggestions.createdAt)),
+    );
+  }
+
+  async resolveTagSuggestion(
+    actorId: string,
+    suggestionId: string,
+    input:
+      | { action: "REJECT" }
+      | {
+          action: "APPROVE";
+          nameTr: string;
+          nameEn: string;
+          examType: string | null;
+        },
+  ): Promise<
+    | { kind: "NOT_FOUND" }
+    | { kind: "RESOLVED" }
+    | { kind: "OK"; row: ForumTagSuggestionRow }
+  > {
+    return withServiceContext(this.db, async (tx) => {
+      const [suggestion] = await tx
+        .select()
+        .from(forumTagSuggestions)
+        .where(eq(forumTagSuggestions.id, suggestionId))
+        .limit(1);
+      if (!suggestion) return { kind: "NOT_FOUND" };
+      if (suggestion.status !== "PENDING") return { kind: "RESOLVED" };
+
+      let resolvedTagId: string | null = null;
+      if (input.action === "APPROVE") {
+        const [existing] = await tx
+          .select({ id: forumTags.id })
+          .from(forumTags)
+          .where(eq(forumTags.slug, suggestion.normalizedSlug))
+          .limit(1);
+        if (existing) {
+          resolvedTagId = existing.id;
+        } else {
+          const [tag] = await tx
+            .insert(forumTags)
+            .values({
+              slug: suggestion.normalizedSlug,
+              nameTr: input.nameTr,
+              nameEn: input.nameEn,
+              examType: input.examType,
+              createdBy: actorId,
+              updatedBy: actorId,
+            })
+            .returning({ id: forumTags.id });
+          resolvedTagId = tag!.id;
+        }
+      }
+
+      const [row] = await tx
+        .update(forumTagSuggestions)
+        .set({
+          status: input.action === "APPROVE" ? "APPROVED" : "REJECTED",
+          resolvedTagId,
+          reviewedBy: actorId,
+          reviewedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(forumTagSuggestions.id, suggestionId),
+            eq(forumTagSuggestions.status, "PENDING"),
+          ),
+        )
+        .returning();
+      return row ? { kind: "OK", row } : { kind: "RESOLVED" };
+    });
+  }
 
   async listDiscoveryThreads(opts: {
     viewerId: string;
@@ -156,6 +263,7 @@ export class ForumDiscoveryRepository {
         + (${bookmarkCount} * ${opts.weights.bookmark})
         + (${helpfulVoteCount} * ${opts.weights.helpful})
         + (case when ${forumThreads.acceptedPostId} is not null then ${opts.weights.accepted} else 0 end)
+        + (case when ${forumZones.type} = 'QA' and ${commentCount} = 0 then ${opts.weights.unanswered} else 0 end)
       )::int`;
 
       const conditions = [
@@ -411,6 +519,9 @@ export class ForumDiscoveryRepository {
               + (select count(*) from ${forumReactions} fr where fr.thread_id = ${targetId})
               + (select count(*) from ${forumHelpfulVotes} fhv
                 where fhv.target_type = 'THREAD' and fhv.target_id = ${targetId})
+              + (select count(*) from ${forumPollVotes} fpv
+                inner join ${forumPolls} fpo on fpo.id = fpv.poll_id
+                where fpo.thread_id = ${targetId})
             )::int`,
           })
           .from(forumThreads)

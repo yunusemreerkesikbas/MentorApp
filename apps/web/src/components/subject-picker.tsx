@@ -186,7 +186,7 @@ export function SubjectPicker({
         className="cursor-pointer rounded-full px-3.5 py-2 text-xs font-bold tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
         style={{
           fontFamily: "var(--font-body)",
-          backgroundColor: selected ? "var(--color-accent)" : "#fff",
+          backgroundColor: selected ? "var(--color-accent)" : "var(--color-surface)",
           color: selected ? "#fff" : "var(--color-main)",
           border: selected
             ? "1px solid var(--color-accent)"

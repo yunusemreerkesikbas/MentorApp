@@ -237,7 +237,7 @@ export function SessionHistoryPage() {
       {state === "ready" && sessions.length > 0 ? (
         <section className="flex w-full flex-col gap-3">
           <ul
-            className="flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-white bg-white/70"
+            className="flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_70%,transparent)]"
             style={{ boxShadow: "var(--shadow-card)" }}
           >
             {sessions.map((s, i) => {

@@ -414,7 +414,7 @@ export function SessionDoneState({
                     ? t("checkin_note_subject", { subject })
                     : t("checkin_note_placeholder")
                 }
-                className="w-full rounded-[var(--radius-card)] border bg-white/60 px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-2"
+                className="w-full rounded-[var(--radius-card)] border bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-2"
                 style={{
                   borderColor: "var(--color-progress-track)",
                   color: "var(--color-main)",
@@ -452,7 +452,7 @@ export function SessionDoneState({
         )}
         <Link
           href="/dashboard"
-          className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+          className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] text-sm font-semibold transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
           style={{
             color: "var(--color-main)",
             fontFamily: "var(--font-heading)",

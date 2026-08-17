@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   adminForumTagCreateSchema,
+  createForumTagSuggestionSchema,
+  reviewForumTagSuggestionSchema,
   forumFeedQuerySchema,
   forumSearchQuerySchema,
   forumTrendsQuerySchema,
@@ -22,6 +24,7 @@ describe("forum discovery request contracts", () => {
         sort: "top",
         tag: "calisma-ipuclari",
         zoneType: "QA",
+        contentType: "questions",
         cursor: "opaque",
       }),
     ).toMatchObject({
@@ -29,8 +32,10 @@ describe("forum discovery request contracts", () => {
       sort: "top",
       tag: "calisma-ipuclari",
       zoneType: "QA",
+      contentType: "questions",
       cursor: "opaque",
     });
+    expect(forumFeedQuerySchema.safeParse({ contentType: "other" }).success).toBe(false);
   });
 
   it("limits global search input and rejects blank queries", () => {
@@ -116,5 +121,27 @@ describe("forum discovery request contracts", () => {
         featuredUntil: "not-a-date",
       }).success,
     ).toBe(false);
+  });
+
+  it("validates member tag suggestions and explicit admin review actions", () => {
+    expect(createForumTagSuggestionSchema.parse({ name: "  Çalışma Rutini  " })).toEqual({
+      name: "Çalışma Rutini",
+    });
+    expect(createForumTagSuggestionSchema.safeParse({ name: "a" }).success).toBe(false);
+    expect(
+      reviewForumTagSuggestionSchema.parse({
+        action: "APPROVE",
+        nameTr: "Çalışma Rutini",
+        nameEn: "Study Routine",
+      }),
+    ).toEqual({
+      action: "APPROVE",
+      nameTr: "Çalışma Rutini",
+      nameEn: "Study Routine",
+      examType: null,
+    });
+    expect(reviewForumTagSuggestionSchema.parse({ action: "REJECT" })).toEqual({
+      action: "REJECT",
+    });
   });
 });

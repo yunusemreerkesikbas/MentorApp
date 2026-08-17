@@ -100,7 +100,7 @@ export function CoachActionCard({
   if (status === CoachActionStatus.CANCELLED) return null;
 
   return (
-    <div className="flex max-w-[85%] flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-white/80 p-3 shadow-[var(--shadow-card)]">
+    <div className="flex max-w-[85%] flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)] p-3 shadow-[var(--shadow-card)]">
       <p className="flex items-center gap-2 text-sm font-semibold text-[var(--color-body-text)]">
         <Sparkles className="size-4 text-[var(--color-accent)]" aria-hidden />
         {action.label}
@@ -110,7 +110,7 @@ export function CoachActionCard({
           type="button"
           disabled={busy}
           onClick={() => void decide("ACCEPT")}
-          className="min-h-10 rounded-full bg-[var(--color-main)] px-4 text-sm font-semibold text-white disabled:opacity-50"
+          className="min-h-10 rounded-full bg-[var(--color-btn)] px-4 text-sm font-semibold text-[var(--color-btn-label)] disabled:opacity-50"
         >
           {t("approve")}
         </button>

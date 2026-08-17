@@ -86,7 +86,7 @@ export function NotificationSettings() {
         {t("title")}
       </SectionHeading>
       {error ? <FormError message={error} /> : null}
-      <div className="mt-3 divide-y divide-black/10 overflow-hidden rounded-[var(--radius-card)]">
+      <div className="mt-3 divide-y divide-[var(--color-border)] overflow-hidden rounded-[var(--radius-card)]">
         <ToggleRow
           checked={emailEnabled}
           description={t("email_desc")}
@@ -135,7 +135,7 @@ function ToggleRow({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex min-h-16 min-w-0 cursor-pointer items-center justify-between gap-3 bg-white px-3 py-3 transition-colors hover:bg-black/[0.03] focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)] focus-within:ring-offset-2">
+    <label className="flex min-h-16 min-w-0 cursor-pointer items-center justify-between gap-3 bg-[var(--color-surface)] px-3 py-3 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)] focus-within:ring-offset-2">
       <span className="flex min-w-0 items-center gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]">
           {icon}
@@ -159,14 +159,14 @@ function ToggleRow({
       <span
         className={[
           "relative h-7 w-12 shrink-0 rounded-full transition-colors",
-          checked ? "bg-[var(--color-main)]" : "bg-black/15",
+          checked ? "bg-[var(--color-btn)]" : "bg-[color-mix(in_srgb,var(--color-main)_15%,transparent)]",
           disabled ? "opacity-60" : "",
         ].join(" ")}
         aria-hidden
       >
         <span
           className={[
-            "absolute left-1 top-1 size-5 rounded-full bg-white transition-transform",
+            `absolute left-1 top-1 size-5 rounded-full transition-transform ${checked ? "bg-[var(--color-btn-label)]" : "bg-[var(--color-surface)]"}`,
             checked ? "translate-x-5" : "",
           ].join(" ")}
         />

@@ -49,7 +49,7 @@ export function PuhuCoachBubble({
   return (
     <div className={className}>
       <motion.div
-        className="mentor-coach-bubble relative max-w-[280px] rounded-[var(--radius-card)] border border-white bg-white p-4 shadow-[var(--shadow-card)]"
+        className="mentor-coach-bubble relative max-w-[280px] rounded-[var(--radius-card)] border border-[var(--color-surface)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)]"
         {...bubbleMotion}
       >
         {dismissible ? (

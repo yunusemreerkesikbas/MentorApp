@@ -6,6 +6,7 @@ import {
   canCommentInZone,
   canCreateZone,
   canDeleteThread,
+  canGiveHelpfulVote,
   canLeaveZone,
   canModerateZone,
   canPostInZone,
@@ -118,6 +119,13 @@ describe("forum.policy", () => {
     it("rejects accepting your own answer (self-accept XP farm)", () => {
       // Asker "u1" answered their own question — accept must be denied.
       expect(canAcceptAnswer(actor([UserRole.STUDENT]), "u1", "u1")).toBe(false);
+    });
+  });
+
+  describe("canGiveHelpfulVote", () => {
+    it("allows votes only on another user's content", () => {
+      expect(canGiveHelpfulVote("viewer", "author")).toBe(true);
+      expect(canGiveHelpfulVote("viewer", "viewer")).toBe(false);
     });
   });
 

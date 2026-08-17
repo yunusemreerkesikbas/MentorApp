@@ -113,8 +113,8 @@ export function CoachConversationList({
                 className={[
                   "flex items-center gap-1 rounded-[10px] transition-colors motion-reduce:transition-none",
                   active || menuOpen
-                    ? "bg-black/[0.06]"
-                    : "hover:bg-black/[0.05]",
+                    ? "bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)]"
+                    : "hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)]",
                 ].join(" ")}
               >
                 <Link
@@ -194,7 +194,7 @@ function ConversationRowMenu({
         }}
         className={[
           "inline-flex size-8 items-center justify-center rounded-[8px] transition-[opacity,background-color,color] motion-reduce:transition-none",
-          "hover:bg-black/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-50",
+          "hover:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-50",
           // Touch: always visible. Pointer: reveal on row hover / when open.
           open
             ? "opacity-100"
@@ -215,7 +215,7 @@ function ConversationRowMenu({
           <div
             id={menuId}
             role="menu"
-            className="absolute right-0 z-50 mt-1 min-w-[9.5rem] overflow-hidden rounded-[10px] bg-white py-1 shadow-[var(--shadow-card)]"
+            className="absolute right-0 z-50 mt-1 min-w-[9.5rem] overflow-hidden rounded-[10px] bg-[var(--color-surface)] py-1 shadow-[var(--shadow-card)]"
             style={{
               border: "1px solid color-mix(in srgb, var(--color-main) 8%, transparent)",
             }}
@@ -229,7 +229,7 @@ function ConversationRowMenu({
                 e.stopPropagation();
                 onDelete();
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-black/[0.04] disabled:opacity-50 focus-visible:outline-none focus-visible:bg-black/[0.04]"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] disabled:opacity-50 focus-visible:outline-none focus-visible:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)]"
               style={{ color: "var(--color-danger)" }}
             >
               <Trash2 className="size-3.5 shrink-0" aria-hidden />

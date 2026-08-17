@@ -55,13 +55,13 @@ export function TrendsShell() {
   ];
 
   return (
-    <main className="mx-auto min-w-0 max-w-[600px] bg-white sm:my-6 sm:border-x sm:border-[#e7e9ee]">
-      <header className="border-b border-[#e7e9ee] px-4 pb-4 pt-5">
+    <main className="mx-auto min-w-0 max-w-[600px] bg-[var(--color-surface)] sm:my-6 sm:border-x sm:border-[var(--color-border)]">
+      <header className="border-b border-[var(--color-border)] px-4 pb-4 pt-5">
         <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[var(--color-main)]">{t("trends_title")}</h1>
         <p className="mt-1 text-sm text-[var(--color-secondary)]">{t("trends_subtitle")}</p>
       </header>
 
-      <div className={`grid border-b border-[#e7e9ee] ${tabs.length === 3 ? "grid-cols-3" : "grid-cols-2"}`} role="tablist" aria-label={t("trends_title")}>
+      <div className={`grid border-b border-[var(--color-border)] ${tabs.length === 3 ? "grid-cols-3" : "grid-cols-2"}`} role="tablist" aria-label={t("trends_title")}>
         {tabs.map((tab) => {
           const active = scope === tab.scope;
           return (

@@ -3,6 +3,10 @@ import { ChevronDown } from "lucide-react";
 
 import { useId } from "react";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
+import {
+  menuSelectTextClass,
+  type MenuSelectTextSize,
+} from "@/components/menu-select-typography";
 
 export interface MenuSelectOption {
   value: string;
@@ -16,6 +20,7 @@ export interface MenuSelectProps {
   disabled?: boolean;
   id?: string;
   className?: string;
+  textSize?: MenuSelectTextSize;
   /** Prefer opening above the field when it sits near a sheet/dialog footer. */
   menuSide?: "top" | "bottom";
   /** Associates the trigger with an external visible label (`htmlFor` on that label). */
@@ -24,9 +29,9 @@ export interface MenuSelectProps {
 }
 
 const fieldStyle = {
-  borderColor: "var(--color-border, #e2e2e2)",
+  borderColor: "var(--color-border)",
   color: "var(--color-body)",
-  backgroundColor: "var(--color-surface, #fff)",
+  backgroundColor: "var(--color-surface)",
 } as const;
 
 /**
@@ -40,6 +45,7 @@ export function MenuSelect({
   disabled,
   id,
   className,
+  textSize = "base",
   menuSide = "bottom",
   "aria-labelledby": ariaLabelledBy,
   "aria-label": ariaLabel,
@@ -66,7 +72,7 @@ export function MenuSelect({
             aria-labelledby={ariaLabelledBy}
             aria-label={ariaLabel}
             onClick={() => setOpen(!open)}
-            className="flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-[var(--radius-card)] border px-3 text-left text-base transition-colors hover:bg-black/[0.02] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+            className={`flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-[var(--radius-card)] border px-3 text-left ${menuSelectTextClass(textSize)} transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_2%,transparent)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none`}
             style={fieldStyle}
           >
             <span className="min-w-0 flex-1 truncate">

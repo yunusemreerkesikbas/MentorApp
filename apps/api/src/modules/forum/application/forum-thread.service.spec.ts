@@ -84,6 +84,7 @@ const makeUsersService = () => ({
   suggestCohortPeers: vi.fn().mockResolvedValue([]),
 });
 const makeFollowService = () => ({ getFolloweeIds: vi.fn().mockResolvedValue([]) });
+const makePollService = () => ({ viewsForThreads: vi.fn().mockResolvedValue(new Map()) });
 
 const makeZoneRepo = (
   zoneType: ZoneType = ZoneType.CHAT,
@@ -122,7 +123,7 @@ describe("ForumThreadService", () => {
   let usersService: ReturnType<typeof makeUsersService>;
   let follow: ReturnType<typeof makeFollowService>;
 
-  const svc = (zoneRepo: ReturnType<typeof makeZoneRepo>) => {
+  const svc = (zoneRepo: ReturnType<typeof makeZoneRepo>, pollService = makePollService()) => {
     postRepo = makePostRepo();
     mentions = makeMentionService();
     usersService = makeUsersService();
@@ -139,6 +140,9 @@ describe("ForumThreadService", () => {
       mentions as never,
       usersService as never,
       follow as never,
+      undefined,
+      undefined,
+      pollService as never,
     );
   };
 
@@ -196,6 +200,42 @@ describe("ForumThreadService", () => {
     expect(feed.nextCursor).toBe(feed.items[1]!.createdAt); // limit reached → there may be more
   });
 
+  it("creates a CHAT poll as part of the thread aggregate", async () => {
+    const poll = { options: ["Sabah", "Akşam"], durationMinutes: 1_440 };
+    await svc(makeZoneRepo()).postThread(actor([UserRole.STUDENT]), "z1", {
+      body: "Ne zaman çalışalım?",
+      poll,
+    });
+    expect(threadRepo.createThread).toHaveBeenCalledWith({
+      zoneId: "z1",
+      authorId: "u1",
+      body: "Ne zaman çalışalım?",
+      title: null,
+      poll,
+    });
+  });
+
+  it("rejects polls in QA zones", async () => {
+    await expect(
+      svc(makeZoneRepo(ZoneType.QA)).postThread(actor([UserRole.STUDENT]), "z1", {
+        title: "Ne zaman çalışalım?",
+        body: "Bir zaman seçelim.",
+        poll: { options: ["Sabah", "Akşam"], durationMinutes: 1_440 },
+      }),
+    ).rejects.toMatchObject({ code: "FORUM_POLL_NOT_ALLOWED", httpStatus: HttpStatus.BAD_REQUEST });
+    expect(threadRepo.createThread).not.toHaveBeenCalled();
+  });
+
+  it("revalidates malformed poll input at the service boundary", async () => {
+    await expect(
+      svc(makeZoneRepo()).postThread(actor([UserRole.STUDENT]), "z1", {
+        body: "Ne zaman çalışalım?",
+        poll: { options: ["Sabah", "sabah"], durationMinutes: 1 } as never,
+      }),
+    ).rejects.toMatchObject({ code: "FORUM_POLL_NOT_ALLOWED", httpStatus: HttpStatus.BAD_REQUEST });
+    expect(threadRepo.createThread).not.toHaveBeenCalled();
+  });
+
   it("listFeed exposes owner edit and delete capabilities from server policy", async () => {
     const zoneRepo = makeZoneRepo();
     const now = new Date();
@@ -213,6 +253,21 @@ describe("ForumThreadService", () => {
       canDelete: true,
       canModerate: false,
     });
+  });
+
+  it("listFeed decorates thread rows with viewer-specific polls in one batch", async () => {
+    const polls = makePollService();
+    const pollView = { id: "poll-1", resultsVisible: false };
+    polls.viewsForThreads.mockResolvedValue(new Map([["t1", pollView]]));
+    threadRepo.listFeed.mockResolvedValue([threadRow({ id: "t1" })]);
+
+    const feed = await svc(makeZoneRepo(), polls).listFeed("u1", "z1", {
+      limit: 20,
+      sort: "recent",
+    });
+
+    expect(polls.viewsForThreads).toHaveBeenCalledWith(["t1"], "u1");
+    expect(feed.items[0]?.poll).toBe(pollView);
   });
 
   it("blocks delete by a non-author non-mod, allows the author", async () => {

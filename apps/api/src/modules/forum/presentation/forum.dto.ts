@@ -7,6 +7,7 @@ import {
   bookmarkQuerySchema,
   createAnswerSchema,
   createReportSchema,
+  createForumTagSuggestionSchema,
   createThreadSchema,
   createZoneSchema,
   feedQuerySchema,
@@ -15,6 +16,7 @@ import {
   forumTrendsQuerySchema,
   memberSearchQuerySchema,
   pinThreadSchema,
+  pollVoteSchema,
   reactionSchema,
   reactionListQuerySchema,
   reportsQuerySchema,
@@ -40,10 +42,12 @@ export class BookmarkQueryDto extends createZodDto(bookmarkQuerySchema) {}
 export class ReactionDto extends createZodDto(reactionSchema) {}
 export class ReactionListQueryDto extends createZodDto(reactionListQuerySchema) {}
 export class PinThreadDto extends createZodDto(pinThreadSchema) {}
+export class PollVoteDto extends createZodDto(pollVoteSchema) {}
 export class CreateAnswerDto extends createZodDto(createAnswerSchema) {}
 export class AttachmentUploadUrlDto extends createZodDto(attachmentUploadUrlSchema) {}
 export class SearchQueryDto extends createZodDto(searchQuerySchema) {}
 export class CreateReportDto extends createZodDto(createReportSchema) {}
+export class CreateForumTagSuggestionDto extends createZodDto(createForumTagSuggestionSchema) {}
 export class ReportsQueryDto extends createZodDto(reportsQuerySchema) {}
 export class ResolveReportDto extends createZodDto(resolveReportSchema) {}
 export class ForumFeedQueryDto extends createZodDto(forumFeedQuerySchema) {}

@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
+  Post,
   Put,
   Query,
 } from "@nestjs/common";
@@ -16,6 +17,7 @@ import type {
   ForumFeed,
   ForumHubView,
   ForumTagView,
+  ForumTagSuggestionView,
   ForumTrendsView,
   ForumZoneFeedView,
 } from "@mentor/types";
@@ -25,6 +27,7 @@ import { ForumDiscoveryService } from "../application/forum-discovery.service";
 import { ForumCoachBridgeService } from "../application/forum-coach-bridge.service";
 import {
   FeedQueryDto,
+  CreateForumTagSuggestionDto,
   ForumFeedQueryDto,
   ForumTrendsQueryDto,
   UpdateForumPostDto,
@@ -64,6 +67,14 @@ export class ForumDiscoveryController {
   @Get("tags")
   tags(@CurrentUser() user: RequestUser): Promise<ForumTagView[]> {
     return this.discovery.listTags(user.id);
+  }
+
+  @Post("tag-suggestions")
+  tagSuggestion(
+    @CurrentUser() user: RequestUser,
+    @Body() body: CreateForumTagSuggestionDto,
+  ): Promise<ForumTagSuggestionView> {
+    return this.discovery.createTagSuggestion(user.id, body);
   }
 
   @Get("threads/:threadId/coach-bridge")

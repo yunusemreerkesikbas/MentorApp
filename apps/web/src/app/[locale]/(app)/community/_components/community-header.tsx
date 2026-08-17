@@ -6,6 +6,7 @@ import { NotificationBell } from "@mentor/ui";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { CircularBackLink } from "@/components/circular-back-link";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { AuthorAvatar } from "./author-avatar";
 import { CommunitySearch } from "./community-search";
 import { useZoneDrawer } from "./zone-drawer-context";
@@ -55,6 +56,7 @@ export function CommunityHeader() {
           unreadLabel={common("notifications_unread_label")}
           desktopSide="right"
         />
+        <ThemeToggle />
         {user ? (
           <Link
             href={

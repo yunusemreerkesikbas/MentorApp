@@ -9,7 +9,7 @@ import {
 } from "@/lib/stagger-motion";
 
 const chipBase =
-  "inline-flex h-9 max-w-full shrink-0 cursor-pointer items-center rounded-full bg-white px-3.5 text-[12px] font-semibold whitespace-nowrap shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none";
+  "inline-flex h-9 max-w-full shrink-0 cursor-pointer items-center rounded-full bg-[var(--color-surface)] px-3.5 text-[12px] font-semibold whitespace-nowrap shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none";
 
 /**
  * Ephemeral follow-up seeds for the latest coach reply — docked above the composer

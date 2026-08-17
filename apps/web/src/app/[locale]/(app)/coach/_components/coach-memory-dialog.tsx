@@ -139,7 +139,7 @@ export function CoachMemoryDialog() {
       <button
         type="button"
         onClick={() => void show()}
-        className="flex min-h-10 w-full items-center gap-2.5 rounded-[10px] px-2.5 text-left text-sm font-semibold transition-colors hover:bg-black/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        className="flex min-h-10 w-full items-center gap-2.5 rounded-[10px] px-2.5 text-left text-sm font-semibold transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         style={{
           color: "var(--color-main)",
           fontFamily: "var(--font-heading)",
@@ -162,7 +162,7 @@ export function CoachMemoryDialog() {
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="coach-memory-title"
-                className="relative z-[101] flex max-h-[80dvh] w-full max-w-lg flex-col rounded-[var(--radius-card)] bg-white p-5 shadow-[var(--shadow-card)]"
+                className="relative z-[101] flex max-h-[80dvh] w-full max-w-lg flex-col rounded-[var(--radius-card)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]"
               >
                 <div className="flex items-start gap-3">
                   <div className="min-w-0 flex-1">
@@ -248,7 +248,7 @@ export function CoachMemoryDialog() {
                                     onChange={(event) =>
                                       setEditValue(event.target.value)
                                     }
-                                    className="min-h-10 min-w-0 flex-1 rounded-[10px] border bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                                    className="min-h-10 min-w-0 flex-1 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                                     style={{
                                       borderColor: "var(--color-border)",
                                     }}
@@ -275,7 +275,7 @@ export function CoachMemoryDialog() {
                                   type="button"
                                   disabled={mutating || !editValue.trim()}
                                   onClick={() => void saveFact(fact)}
-                                  className="min-h-10 rounded-full bg-[var(--color-main)] px-3 text-sm font-semibold text-white disabled:opacity-50"
+                                  className="min-h-10 rounded-full bg-[var(--color-btn)] px-3 text-sm font-semibold text-[var(--color-btn-label)] disabled:opacity-50"
                                 >
                                   {t("save")}
                                 </button>
@@ -295,7 +295,7 @@ export function CoachMemoryDialog() {
                                     setEditingId(fact.id);
                                     setEditValue(fact.value);
                                   }}
-                                  className="inline-flex size-9 items-center justify-center rounded-full hover:bg-black/5 disabled:opacity-50"
+                                  className="inline-flex size-9 items-center justify-center rounded-full hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] disabled:opacity-50"
                                 >
                                   <Pencil className="size-4" aria-hidden />
                                 </button>
@@ -304,7 +304,7 @@ export function CoachMemoryDialog() {
                                   disabled={mutating}
                                   aria-label={t("forget")}
                                   onClick={() => void forget(fact.id)}
-                                  className="inline-flex size-9 items-center justify-center rounded-full text-[var(--color-danger)] hover:bg-black/5 disabled:opacity-50"
+                                  className="inline-flex size-9 items-center justify-center rounded-full text-[var(--color-danger)] hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] disabled:opacity-50"
                                 >
                                   <Trash2 className="size-4" aria-hidden />
                                 </button>

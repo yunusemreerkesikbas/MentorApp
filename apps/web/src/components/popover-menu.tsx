@@ -102,7 +102,7 @@ export function PopoverMenu({
               id={menuId}
               role={panelRole}
               className={[
-                "absolute z-50 overflow-hidden rounded-[var(--radius-card)] bg-white py-1",
+                "absolute z-50 overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface)] py-1",
                 widthClass,
                 sideClass,
                 menuClassName ?? (matchTriggerWidth ? "" : "w-48"),

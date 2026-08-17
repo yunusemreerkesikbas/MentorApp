@@ -63,6 +63,88 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **Collapsible desktop sidebar (2026-08-15)** — Desktop AppNav (`lg+`) now
+  collapses to a 52px icon rail (analysis history rail width). Expanded stays
+  the current 240px labeled sidebar. Top-right `PanelLeft` collapses; the same
+  icon at the top of the strip expands. Collapsed chrome: nav icons + theme
+  toggle; wordmark, identity, economy, notifications, and language stay in the
+  expanded rail. Hover/focus on a rail icon shows the link name. Preference
+  persists in the `mentor-sidebar` cookie with a pre-paint bootstrap so reload
+  does not flash the wide rail. `/hedef/pano` keeps the collapsed rail (does not
+  hide AppNav); leaving restores the cookie. Usage: any `(app)` screen that
+  shows AppNav (not community workspace). Gotcha: content padding is
+  `var(--app-sidebar-width)` via `.mentor-app-shell`, not `lg:pl-60`.
+  Related: `app-nav.tsx`, `app-sidebar.ts`, `use-app-sidebar.ts`,
+  `(app)/layout.tsx`, `[locale]/layout.tsx`, `globals.css`.
+
+- **Mobile AppNav token pass (2026-08-15)** — Mobile top header, floating tab pill,
+  active Koç bubble, avatar badge, and economy chips use `--color-surface` /
+  `--color-btn` / `--color-btn-label`. Theme toggle sits in the mobile header
+  (desktop sidebar already had one). Usage: any `(app)` screen under `lg`.
+  Related: `app-nav.tsx`.
+
+- **Knowledge token pass (2026-08-15)** — `/bilgi` hub CTA and article coach/trust
+  chrome follow `--color-btn-label` / `--color-surface`. Related:
+  `docs/features/content.md`.
+
+- **Onboarding token pass (2026-08-15)** — Wizard card, avatar well, and exam pills
+  follow `--color-surface` / `--color-btn-label`. Theme toggle is in the step
+  header. Related: `docs/features/identity.md`.
+
+- **Study-session token pass (2026-08-15)** — `/seans` history, buddy field, and
+  circular controls follow `--color-surface` / `--color-border`. Related:
+  `docs/features/coaching.md`.
+
+- **Hedef panosu keeps collapsed AppNav (2026-08-15)** — `/hedef/pano` no longer
+  hides the desktop sidebar. The 52px icon rail stays visible (locked collapsed,
+  cookie unchanged) so leaving the editor restores the previous width. Mobile
+  editor chrome stays full-bleed (no tab bar / header / coach FAB). Usage: open
+  the collage editor from `/hedef`. Related: `layout.tsx`, `app-nav.tsx`,
+  `app-sidebar.ts`.
+
+- **Vision-board token pass (2026-08-15)** — `/hedef` map chrome + `/hedef/pano` editor
+  chrome follow `--color-surface` / `--color-btn-label`. Canvas stays collage-native.
+  Related: `docs/features/coaching.md`.
+
+- **Auth token pass (2026-08-15)** — Auth card, Google well, and soft back-link follow
+  `--color-surface` / `--color-border`. Theme toggle is in the card header (no AppNav).
+  Related: `docs/features/identity.md`.
+
+- **Analysis token pass (2026-08-15)** — `/analiz` cards, history, and CTAs follow
+  `--color-surface` / `--color-btn-label`. Weekly-recap story stays recap-native.
+  Related: `docs/features/coaching.md`.
+
+- **Settings token pass (2026-08-15)** — `/ayarlar` hub rows, toggles, and edit surfaces
+  follow `--color-surface` / `--color-btn-label`. Appearance pills live in the App card
+  (mobile can switch theme here). Related: `docs/features/identity.md`.
+
+- **Coach token pass (2026-08-15)** — `/koc` chat chrome, composer, history, and Puhu
+  bubbles follow `--color-surface` / `--color-btn-label`; backdrop uses `--blob-*`.
+  Related: `docs/features/coaching.md`.
+
+- **Community token pass (2026-08-15)** — Community workspace stopped re-locking light
+  `--color-*` hex. Feed/zone/profile/question surfaces + header/sidebar use theme tokens.
+  Theme toggle is in the community header (AppNav stays hidden). Related:
+  `docs/features/community.md`.
+
+- **Plan token pass (2026-08-15)** — Plan calendar/timeline + shared dialog/field primitives
+  follow `--color-surface` / `--color-btn-label`. Related: `docs/features/coaching.md`.
+
+- **Panel token pass (2026-08-15)** — First feature surface on the theme tokens: panel cards
+  and `@mentor/ui` `Card` use `--color-surface` / `--color-border` so dark charcoal + light
+  ink stay paired. Related: `card.tsx`, `panel-shell.tsx`, `docs/features/coaching.md`.
+
+- **Light/dark theme infrastructure (2026-08-15)** — Class-based theme (`html.dark`), cookie
+  `mentor-theme=light|dark` (default **light**, no system follow), blocking bootstrap script in
+  `[locale]/layout.tsx` so the first paint matches the cookie. Sidebar footer toggle (Sun/Moon)
+  next to the language switch; rail uses surface/border tokens and a 200ms color transition
+  (`motion-reduce` instant). Usage: desktop sidebar → moon/sun; reload keeps the choice. Gotcha:
+  community workspace hides `AppNav` — toggle is in the community header; mobile
+  `(app)` header now has the same moon/sun; `/ayarlar` has appearance pills;
+  `/giris` / `/kayit` / `/onboarding` have card/step-header toggles. Related:
+  `apps/web/src/lib/theme.ts`, `use-theme.ts`, `theme-toggle.tsx`, `app-nav.tsx`,
+  `packages/ui/src/theme.css`, `DESIGN.md` §2.5.
+
 - **Chrome typography → Plus Jakarta Sans (2026-08-10)** — App chrome heading/body family
   switched from Nunito Sans to **Plus Jakarta Sans** (`latin` + `latin-ext`, weights
   400–700). Load site: `apps/web` `[locale]/layout.tsx` → `--font-body` (globals alias

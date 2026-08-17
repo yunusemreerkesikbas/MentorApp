@@ -26,7 +26,7 @@ export function PlanViewSwitcher({
     <div
       role="tablist"
       aria-label={t("view_switch_aria")}
-      className="flex w-full rounded-full border border-white/40 p-1"
+      className="flex w-full rounded-full border border-[color-mix(in_srgb,var(--color-border)_70%,transparent)] p-1"
       style={{
         backgroundColor: "color-mix(in srgb, var(--color-surface-container) 80%, transparent)",
       }}
@@ -43,7 +43,7 @@ export function PlanViewSwitcher({
             className="relative min-h-10 flex-1 cursor-pointer rounded-full px-3 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2"
             style={{
               fontFamily: "var(--font-heading)",
-              color: active ? "#fff" : "var(--color-secondary)",
+              color: active ? "var(--color-btn-label)" : "var(--color-secondary)",
             }}
           >
             {active ? (

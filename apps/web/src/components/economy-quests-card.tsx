@@ -125,7 +125,7 @@ export function EconomyQuestsCard({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="shrink-0 bg-white pb-3">
+      <div className="shrink-0 bg-[var(--color-surface)] pb-3">
         <QuestProgressGauge
           percent={percent}
           percentLabel={translate("quests_percent", { percent })}
@@ -140,7 +140,7 @@ export function EconomyQuestsCard({
         {nextQuest ? (
           <button
             type="button"
-            className="mt-3 flex w-full cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-card)] border border-black/10 bg-white px-4 py-3 text-left shadow-[var(--shadow-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
+            className="mt-3 flex w-full cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-left shadow-[var(--shadow-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
             onClick={() => void handleAction(nextQuest.action)}
           >
             <span className="min-w-0">
@@ -158,7 +158,7 @@ export function EconomyQuestsCard({
         {questTabs.length > 1 ? (
           <div
             aria-label={translate("quests_tabs_label")}
-            className="mt-3 flex rounded-[var(--radius-card)] border border-black/10 bg-black/[0.04] p-1"
+            className="mt-3 flex rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] p-1"
             role="tablist"
           >
             {questTabs.map((tab) => {
@@ -179,7 +179,7 @@ export function EconomyQuestsCard({
                 >
                   {selected ? (
                     <motion.span
-                      className="absolute inset-0 rounded-[var(--radius-card)] bg-white shadow-[var(--shadow-card)]"
+                      className="absolute inset-0 rounded-[var(--radius-card)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]"
                       layoutId="quest-tab-indicator"
                       transition={
                         reduceMotion
@@ -348,7 +348,7 @@ function QuestRow({
 
   return (
     <li
-      className={`rounded-[var(--radius-card)] bg-white/60 p-3 ${
+      className={`rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] p-3 ${
         quest.completed ? "opacity-55" : ""
       }`}
     >
@@ -394,7 +394,7 @@ function QuestProgressGauge({
   const progress = Math.min(100, Math.max(0, percent)) / 100;
 
   return (
-    <div className="mt-4 rounded-[var(--radius-card)] bg-white/60 px-4 pb-3 pt-4 shadow-[var(--shadow-card)]">
+    <div className="mt-4 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] px-4 pb-3 pt-4 shadow-[var(--shadow-card)]">
       <div className="relative mx-auto h-[140px] w-full max-w-[360px]">
         <svg
           aria-label={`${progressLabel} ${percentLabel}`}
@@ -406,7 +406,7 @@ function QuestProgressGauge({
             d={arcPath}
             fill="none"
             pathLength={1}
-            stroke="color-mix(in srgb, var(--color-progress-track) 70%, white)"
+            stroke="color-mix(in srgb, var(--color-progress-track) 70%, var(--color-surface))"
             strokeLinecap="round"
             strokeWidth={14}
           />

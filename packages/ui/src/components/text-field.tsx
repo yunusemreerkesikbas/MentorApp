@@ -56,12 +56,12 @@ export function TextField({
           type={effectiveType}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
-          className={`min-h-11 w-full rounded-[var(--radius-card)] border bg-white/50 px-5 py-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${showToggle ? "pr-12" : ""}`}
+          className={`min-h-11 w-full rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] px-5 py-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${showToggle ? "pr-12" : ""}`}
           style={{
             color: "var(--color-body)",
             boxShadow: "var(--shadow-card)",
             fontFamily: "var(--font-body)",
-            borderColor: error ? "var(--color-danger)" : "#ffffff",
+            borderColor: error ? "var(--color-danger)" : "var(--color-border)",
           }}
         />
         {showToggle ? (

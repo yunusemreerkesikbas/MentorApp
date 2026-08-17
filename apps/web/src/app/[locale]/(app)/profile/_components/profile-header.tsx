@@ -124,7 +124,7 @@ export function ProfileHeader({
           onClick={openEditDialog}
           aria-label={t("edit.action")}
           title={t("edit.action")}
-          className="absolute -right-2 top-1 grid min-h-11 min-w-11 place-items-center rounded-full bg-white text-[var(--color-main)] shadow-[var(--shadow-card)] transition-colors hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="absolute -right-2 top-1 grid min-h-11 min-w-11 place-items-center rounded-full bg-[var(--color-surface)] text-[var(--color-main)] shadow-[var(--shadow-card)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         >
           <Pencil size={17} aria-hidden />
         </button>
@@ -133,7 +133,7 @@ export function ProfileHeader({
             role="img"
             aria-label={t("email_verified")}
             title={t("email_verified")}
-            className="absolute -right-1 bottom-1 grid size-8 place-items-center rounded-full border-2 border-white bg-white text-[var(--color-main)] shadow-[var(--shadow-card)]"
+            className="absolute -right-1 bottom-1 grid size-8 place-items-center rounded-full border-2 border-[var(--color-bg)] bg-[var(--color-surface)] text-[var(--color-main)] shadow-[var(--shadow-card)]"
           >
             <BadgeCheck size={17} strokeWidth={2.2} aria-hidden />
           </span>
@@ -151,10 +151,10 @@ export function ProfileHeader({
             className="absolute -right-2 bottom-0 grid min-h-11 min-w-11 place-items-center rounded-full text-[var(--color-chip-text)] transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transform-none motion-reduce:transition-none"
           >
             <span
-              className="grid size-8 place-items-center rounded-full border-2 border-white shadow-[var(--shadow-card)]"
+              className="grid size-8 place-items-center rounded-full border-2 border-[var(--color-bg)] shadow-[var(--shadow-card)]"
               style={{
                 backgroundColor:
-                  "color-mix(in srgb, var(--color-chip) 38%, white)",
+                  "color-mix(in srgb, var(--color-chip) 38%, var(--color-surface))",
               }}
             >
               {resendingVerification ? (
@@ -189,7 +189,7 @@ export function ProfileHeader({
             pathname: "/community/member/[username]",
             params: { username: user.username },
           }}
-          className="mt-3 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="mt-3 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           style={{ color: "var(--color-accent)" }}
         >
           {t("community_profile_link")}
@@ -319,7 +319,7 @@ function ProfileEditForm({
       onSubmit={(event) => void handleSubmit(event)}
     >
       {error ? <FormError message={error} /> : null}
-      <div className="flex items-center gap-3 rounded-[var(--radius-card)] bg-white/45 p-3 shadow-[var(--shadow-card)]">
+      <div className="flex items-center gap-3 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_45%,transparent)] p-3 shadow-[var(--shadow-card)]">
         <ProfileAvatar
           alt={t("avatar_alt", { name: user.displayName })}
           overrideUrl={removeAvatar ? null : (avatarPreviewUrl ?? undefined)}
@@ -337,7 +337,7 @@ function ProfileEditForm({
             {t("avatar_label")}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-card)] bg-[var(--color-main)] px-3 py-2 text-sm font-semibold text-white transition hover:brightness-105 focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)]">
+            <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-card)] bg-[var(--color-btn)] px-3 py-2 text-sm font-semibold text-[var(--color-btn-label)] transition hover:brightness-105 focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)]">
               <ImagePlus size={17} aria-hidden />
               {t("avatar_change")}
               <input
@@ -351,7 +351,7 @@ function ProfileEditForm({
             {user.avatarUrl || avatarPreviewUrl ? (
               <button
                 type="button"
-                className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-black/10 bg-white px-3 py-2 text-sm font-semibold text-[var(--color-main)] transition hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-semibold text-[var(--color-main)] transition hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={saving}
                 onClick={handleRemoveAvatar}
               >
@@ -437,7 +437,7 @@ function LockedEmailField({
       >
         {label}
       </span>
-      <div className="flex min-h-11 min-w-0 items-center gap-3 rounded-[var(--radius-card)] border border-white bg-white/50 px-4 py-3 shadow-[var(--shadow-card)]">
+      <div className="flex min-h-11 min-w-0 items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_50%,transparent)] px-4 py-3 shadow-[var(--shadow-card)]">
         <LockKeyhole
           className="shrink-0 text-[var(--color-secondary)]"
           size={18}

@@ -25,6 +25,8 @@
 
 ## Design & accessibility
 - [ ] UI values **only from DESIGN.md tokens** (`@mentor/ui` / CSS variables). **No magic numbers.**
+- [ ] **Theme:** `html.dark` + CSS vars (DESIGN.md §2.5). Default light. New colors go through tokens —
+  never `bg-white` / `#fff` / `dark:bg-black`. Tailwind `dark:` only when a value cannot be a token.
 - [ ] Uniform radius (10px token), single shadow token, 4px grid spacing — DESIGN.md §4-5.
 - [ ] Semantic HTML + WCAG AA (contrast, keyboard, focus ring, touch ≥44px). Turkish glyphs (Plus Jakarta Sans latin-ext fallback).
 - [ ] **Tone (§0):** encouraging, anti-shaming. Calm countdown (not alarm-red), no result ranking.
@@ -77,6 +79,6 @@ spinners for content placeholders (button `LoaderCircle` for in-flight actions i
   (next-intl 3.x writes it to the wrong key) — see [i18n feature doc](../features/i18n.md).
 
 ## Don't
-- ❌ off-DESIGN magic numbers/colors · ❌ needless client components · ❌ barrel imports · ❌ derived state in
+- ❌ off-DESIGN magic numbers/colors · ❌ `bg-white` / `#fff` / `dark:bg-black` instead of tokens · ❌ needless client components · ❌ barrel imports · ❌ derived state in
   effects · ❌ bypassing api-client with direct `fetch` · ❌ hardcoded TR strings · ❌ `next/link`·`next/navigation`
   for in-app navigation (use `@/i18n/navigation`).

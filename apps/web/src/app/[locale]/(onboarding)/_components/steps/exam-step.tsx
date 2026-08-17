@@ -152,12 +152,12 @@ function OptionButton({
       aria-checked={active}
       disabled={disabled}
       onClick={onClick}
-      className="flex min-h-[52px] w-full cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-card)] px-3 py-2.5 text-left transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 disabled:opacity-60 motion-reduce:transition-none"
+      className="flex min-h-[52px] w-full cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-card)] px-3 py-2.5 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface)_70%,transparent)] focus-visible:outline-none focus-visible:ring-2 disabled:opacity-60 motion-reduce:transition-none"
       style={{
         border: active ? "2px solid var(--color-main)" : "1px solid transparent",
         backgroundColor: active
-          ? "color-mix(in srgb, var(--color-chip) 25%, white)"
-          : "rgba(255,255,255,0.65)",
+          ? "color-mix(in srgb, var(--color-chip) 25%, var(--color-surface))"
+          : "color-mix(in srgb, var(--color-surface) 65%, transparent)",
       }}
       animate={
         reduceMotion
@@ -176,8 +176,8 @@ function OptionButton({
       </div>
       {active ? (
         <span
-          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-          style={{ backgroundColor: "var(--color-main)" }}
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-[var(--color-btn-label)]"
+          style={{ backgroundColor: "var(--color-btn)" }}
           aria-hidden
         >
           ✓

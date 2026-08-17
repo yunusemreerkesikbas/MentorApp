@@ -27,7 +27,7 @@ export function PlanAddTaskButton({
         onClick={onClick}
         disabled={disabled}
         aria-label={t("add_task_aria")}
-        className="group absolute top-0 right-0 z-10 flex h-9 flex-row-reverse items-center overflow-hidden rounded-[var(--radius-card)] border border-white/60 bg-white/70 transition-[background-color,border-color,box-shadow] duration-200 ease-out hover:border-white hover:bg-white hover:shadow-[var(--shadow-card)] focus-visible:border-white focus-visible:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:shadow-[var(--shadow-card)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:shadow-none"
+        className="group absolute top-0 right-0 z-10 flex h-9 flex-row-reverse items-center overflow-hidden rounded-[var(--radius-card)] border border-[color-mix(in_srgb,var(--color-border)_70%,transparent)] bg-[color-mix(in_srgb,var(--color-surface)_70%,transparent)] transition-[background-color,border-color,box-shadow] duration-200 ease-out hover:border-[var(--color-border)] hover:bg-[var(--color-surface)] hover:shadow-[var(--shadow-card)] focus-visible:border-[var(--color-border)] focus-visible:bg-[var(--color-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:shadow-[var(--shadow-card)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:shadow-none"
         style={{ color: "var(--color-main)" }}
       >
         <span className="flex size-9 shrink-0 items-center justify-center cursor-pointer">

@@ -31,7 +31,7 @@ export function PlanTaskMenu({
           aria-controls={open ? menuId : undefined}
           disabled={disabled}
           onClick={() => setOpen(!open)}
-          className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-colors hover:bg-white/60 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+          className="flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
           style={{ color: "var(--color-secondary)" }}
         >
           <EllipsisVertical size={20} strokeWidth={2} aria-hidden />

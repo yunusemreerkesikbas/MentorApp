@@ -197,7 +197,7 @@ export function ProfileStep({
           {t("username_hint")}
         </p>
 
-        <div className="flex items-center gap-3 rounded-[var(--radius-card)] border border-white/80 bg-white/35 p-3">
+        <div className="flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_35%,transparent)] p-3">
           <AvatarPreview name={user.displayName} src={avatarSrc} />
           <div className="min-w-0 flex-1">
             <p
@@ -210,7 +210,7 @@ export function ProfileStep({
               {t("avatar_label")}
             </p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
-              <label className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-[var(--radius-card)] border border-black/10 bg-white/70 px-3 py-2 text-sm font-semibold text-[var(--color-main)] transition hover:bg-white focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)]">
+              <label className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_70%,transparent)] px-3 py-2 text-sm font-semibold text-[var(--color-main)] transition hover:bg-[var(--color-surface)] focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)]">
                 <ImagePlus size={16} aria-hidden />
                 {t("avatar_change")}
                 <input
@@ -224,7 +224,7 @@ export function ProfileStep({
               {user.avatarUrl || avatarPreviewUrl ? (
                 <button
                   type="button"
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-card)] px-2.5 py-2 text-sm font-semibold text-[var(--color-secondary)] transition hover:bg-white/70 hover:text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-card)] px-2.5 py-2 text-sm font-semibold text-[var(--color-secondary)] transition hover:bg-[color-mix(in_srgb,var(--color-surface)_70%,transparent)] hover:text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={saving}
                   onClick={handleRemoveAvatar}
                 >

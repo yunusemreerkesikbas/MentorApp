@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable, Optional } from "@nestjs/common";
 import { I18nContext } from "nestjs-i18n";
 import {
   type ForumFeed,
@@ -8,6 +8,7 @@ import {
   type ForumPublicPerson,
   type ForumSearchView,
   type ForumTagView,
+  type ForumTagSuggestionView,
   type ForumTrendsView,
   type ForumThreadSummary,
   type ForumZoneSearchResult,
@@ -19,6 +20,8 @@ import {
 import type {
   AdminForumTagCreate,
   AdminForumTagUpdate,
+  CreateForumTagSuggestion,
+  ReviewForumTagSuggestion,
   FeedQuery,
   ForumFeedQuery,
   ForumTrendsQuery,
@@ -37,9 +40,10 @@ import {
   encodeForumFeedCursor,
   evaluateForumEditPolicy,
   mergeHubDiscussionIds,
+  normalizeForumTagSlug,
   uniqueForumTagIds,
 } from "../domain/forum-discovery.policy";
-import { canDeleteThread, isPlatformStaff } from "../domain/forum.policy";
+import { canDeleteThread, canGiveHelpfulVote, isPlatformStaff } from "../domain/forum.policy";
 import { ForumAttachmentRepository } from "../infrastructure/forum-attachment.repository";
 import { ForumBookmarkRepository } from "../infrastructure/forum-bookmark.repository";
 import {
@@ -48,6 +52,7 @@ import {
   ForumDiscoveryRepository,
   type ForumSupporterRow,
   type ForumTagRow,
+  type ForumTagSuggestionRow,
   type ForumThreadSummaryRow,
 } from "../infrastructure/forum-discovery.repository";
 import { ForumPostRepository } from "../infrastructure/forum-post.repository";
@@ -56,6 +61,7 @@ import { ForumZoneRepository } from "../infrastructure/forum-zone.repository";
 import { threadRowToView } from "./forum.mappers";
 import { ForumService } from "./forum.service";
 import { ForumThreadService, type ThreadActor } from "./forum-thread.service";
+import { ForumPollService } from "./forum-poll.service";
 
 interface DiscoverySettings {
   trendingWindowHours: number;
@@ -80,6 +86,7 @@ export class ForumDiscoveryService {
     private readonly follow: FollowService,
     private readonly config: ConfigRegistryService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    @Optional() private readonly polls?: ForumPollService,
   ) {}
 
   private locale(value?: string): "tr" | "en" {
@@ -104,6 +111,7 @@ export class ForumDiscoveryService {
       bookmark,
       helpful,
       accepted,
+      unanswered,
     ] = await Promise.all([
       this.config.get("forum.discovery.trending_window_hours"),
       this.config.get("forum.discovery.top_window_days"),
@@ -114,13 +122,14 @@ export class ForumDiscoveryService {
       this.config.get("forum.discovery.score.bookmark_weight"),
       this.config.get("forum.discovery.score.helpful_weight"),
       this.config.get("forum.discovery.score.accepted_answer_bonus"),
+      this.config.get("forum.discovery.score.unanswered_question_bonus"),
     ]);
     return {
       trendingWindowHours,
       topWindowDays,
       editWindowMinutes,
       featuredDefaultDays,
-      weights: { participant, reaction, bookmark, helpful, accepted },
+      weights: { participant, reaction, bookmark, helpful, accepted, unanswered },
     };
   }
 
@@ -145,7 +154,8 @@ export class ForumDiscoveryService {
       authorIds,
       sort: query.sort,
       tag: query.tag,
-      zoneType: query.zoneType,
+      zoneType: query.contentType === "questions" ? ZoneType.QA : query.contentType ? undefined : query.zoneType,
+      zoneTypes: query.contentType === "posts" ? [ZoneType.CHAT, ZoneType.ANNOUNCEMENT] : undefined,
       cursor: cursor ?? undefined,
       limit: query.limit + 1,
       trendingWindowHours: settings.trendingWindowHours,
@@ -368,7 +378,7 @@ export class ForumDiscoveryService {
       if (!zone || zone.type !== ZoneType.QA) {
         throw new DomainError(ErrorCode.FORUM_NOT_A_QUESTION, HttpStatus.BAD_REQUEST);
       }
-      if (thread.authorId === viewerId) {
+      if (!canGiveHelpfulVote(viewerId, thread.authorId)) {
         throw new DomainError(ErrorCode.FORUM_HELPFUL_VOTE_SELF, HttpStatus.BAD_REQUEST);
       }
     } else {
@@ -379,7 +389,7 @@ export class ForumDiscoveryService {
       if (!thread || !zone || zone.type !== ZoneType.QA) {
         throw new DomainError(ErrorCode.FORUM_NOT_A_QUESTION, HttpStatus.BAD_REQUEST);
       }
-      if (post.authorId === viewerId) {
+      if (!canGiveHelpfulVote(viewerId, post.authorId)) {
         throw new DomainError(ErrorCode.FORUM_HELPFUL_VOTE_SELF, HttpStatus.BAD_REQUEST);
       }
     }
@@ -441,6 +451,42 @@ export class ForumDiscoveryService {
     const unique = uniqueForumTagIds(tagIds ?? []);
     await this.assertActiveTags(unique);
     return unique;
+  }
+
+  async createTagSuggestion(
+    viewerId: string,
+    input: CreateForumTagSuggestion,
+  ): Promise<ForumTagSuggestionView> {
+    await this.assertEnabled();
+    const normalizedSlug = normalizeForumTagSlug(input.name);
+    if (normalizedSlug.length < 2) {
+      throw new DomainError(ErrorCode.FORUM_TAG_SUGGESTION_INVALID, HttpStatus.BAD_REQUEST);
+    }
+    const row = await this.repo.createTagSuggestion(viewerId, input.name, normalizedSlug);
+    if (!row) {
+      throw new DomainError(ErrorCode.FORUM_TAG_SUGGESTION_EXISTS, HttpStatus.CONFLICT);
+    }
+    return this.toTagSuggestionView(row);
+  }
+
+  async listAdminTagSuggestions(): Promise<ForumTagSuggestionView[]> {
+    const rows = await this.repo.listTagSuggestions();
+    return rows.map((row) => this.toTagSuggestionView(row));
+  }
+
+  async reviewAdminTagSuggestion(
+    actorId: string,
+    suggestionId: string,
+    input: ReviewForumTagSuggestion,
+  ): Promise<ForumTagSuggestionView> {
+    const result = await this.repo.resolveTagSuggestion(actorId, suggestionId, input);
+    if (result.kind === "NOT_FOUND") {
+      throw new DomainError(ErrorCode.FORUM_TAG_SUGGESTION_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    if (result.kind !== "OK") {
+      throw new DomainError(ErrorCode.FORUM_TAG_SUGGESTION_RESOLVED, HttpStatus.CONFLICT);
+    }
+    return this.toTagSuggestionView(result.row);
   }
 
   async listAdminTags(): Promise<ForumTagView[]> {
@@ -535,7 +581,7 @@ export class ForumDiscoveryService {
   ): Promise<ForumFeedItem[]> {
     const ids = rows.map((row) => row.id);
     const zoneIds = [...new Set(rows.map((row) => row.zoneId))];
-    const [tags, reactionCounts, myReactions, attachMap, bookmarked, myHelpful, memberships] =
+    const [tags, reactionCounts, myReactions, attachMap, bookmarked, myHelpful, memberships, pollViews] =
       await Promise.all([
         this.repo.tagsByThread(ids, locale),
         this.threads.reactionCountsByThread(ids),
@@ -544,6 +590,7 @@ export class ForumDiscoveryService {
         this.bookmarks.myBookmarkedTargets(ModerationTargetType.THREAD, ids, actor.id),
         this.repo.myHelpfulTargets(ModerationTargetType.THREAD, ids, actor.id),
         this.zones.findMembershipsByZone(zoneIds, actor.id),
+        this.polls?.viewsForThreads(ids, actor.id) ?? Promise.resolve(new Map()),
       ]);
     return rows.map((row) => {
       const membership = memberships.get(row.zoneId);
@@ -559,7 +606,11 @@ export class ForumDiscoveryService {
         now: new Date(),
         editWindowMinutes: settings.editWindowMinutes,
         interactionCount:
-          row.commentCount + row.reactionCount + row.helpfulVoteCount + (row.acceptedPostId ? 1 : 0),
+          row.commentCount +
+          row.reactionCount +
+          row.helpfulVoteCount +
+          (row.acceptedPostId ? 1 : 0) +
+          (pollViews.get(row.id)?.totalVoteCount ?? 0),
       });
       const legacy = threadRowToView(
         row,
@@ -589,6 +640,7 @@ export class ForumDiscoveryService {
         },
         title: row.title,
         body: row.body,
+        poll: pollViews.get(row.id) ?? null,
         status: legacy.status,
         acceptedPostId: row.acceptedPostId,
         isPinned: row.isPinned,
@@ -597,6 +649,7 @@ export class ForumDiscoveryService {
         myReactions: legacy.myReactions,
         helpfulVoteCount: row.helpfulVoteCount,
         myHelpfulVote: myHelpful.has(row.id),
+        canHelpfulVote: canGiveHelpfulVote(actor.id, row.authorId),
         commentCount: row.commentCount,
         attachments: legacy.attachments,
         myBookmarked: legacy.myBookmarked,
@@ -627,6 +680,18 @@ export class ForumDiscoveryService {
         createdAt: tag.createdAt.toISOString(),
         updatedAt: tag.updatedAt.toISOString(),
       }),
+    };
+  }
+
+  private toTagSuggestionView(row: ForumTagSuggestionRow): ForumTagSuggestionView {
+    return {
+      id: row.id,
+      requestedName: row.requestedName,
+      normalizedSlug: row.normalizedSlug,
+      status: row.status as ForumTagSuggestionView["status"],
+      resolvedTagId: row.resolvedTagId,
+      createdAt: row.createdAt.toISOString(),
+      reviewedAt: row.reviewedAt?.toISOString() ?? null,
     };
   }
 

@@ -243,7 +243,7 @@ export function ProfileShell({ username }: { username: string }) {
 
   return (
     <main className="mx-auto grid min-w-0 max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
-      <section className="min-w-0 bg-white">
+      <section className="min-w-0 bg-[var(--color-surface)]">
       <ProfileHeader
         key={profile.userId}
         profile={profile}
@@ -381,14 +381,14 @@ export function ProfileShell({ username }: { username: string }) {
 function ProfileLoading({ label }: { label: string }) {
   return (
     <SkeletonGroup label={label} className="mx-auto grid max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
-      <div className="overflow-hidden bg-white sm:border-x sm:border-[#e7e9ee]">
+      <div className="overflow-hidden bg-[var(--color-surface)] sm:border-x sm:border-[var(--color-border)]">
         <Skeleton className="h-[min(52dvh,440px)] w-full rounded-none sm:h-[420px]" />
         <div className="flex justify-center gap-3 px-4 py-5">
           <Skeleton className="size-11 rounded-full" />
           <Skeleton className="h-11 w-40 rounded-full" />
           <Skeleton className="size-11 rounded-full" />
         </div>
-        <div className="border-t border-[#e7e9ee] px-4 py-4">
+        <div className="border-t border-[var(--color-border)] px-4 py-4">
           <Skeleton className="h-4 w-36 rounded-full" />
         </div>
       </div>

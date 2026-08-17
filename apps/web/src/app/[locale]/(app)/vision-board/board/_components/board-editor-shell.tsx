@@ -510,7 +510,7 @@ export function BoardEditorShell() {
 
       <nav
         aria-label={t("editor_nav")}
-        className="mentor-scrollarea flex shrink-0 gap-1 overflow-x-auto border-b px-2 py-2 lg:w-16 lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:border-b-0 lg:border-e lg:px-1 lg:pb-3 lg:pt-8"
+        className="mentor-scrollarea flex shrink-0 gap-1 overflow-x-auto border-b px-2 py-2 lg:w-16 lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:border-b-0 lg:border-e lg:px-1 lg:pb-3 lg:pt-3"
         style={{
           backgroundColor: "var(--color-surface)",
           borderColor: "rgba(17, 17, 17, 0.08)",
@@ -520,7 +520,7 @@ export function BoardEditorShell() {
           href="/vision-board"
           aria-label={t("back")}
           title={t("back")}
-          className="mb-1 flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="flex size-11 shrink-0 items-center justify-center self-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           style={{
             backgroundColor: "var(--color-surface)",
             boxShadow: "var(--shadow-card)",
@@ -541,7 +541,7 @@ export function BoardEditorShell() {
               onClick={() => openCategory(id)}
               className="relative flex min-h-11 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] px-1 py-1.5 text-[10px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:min-w-0 lg:w-full"
               style={{
-                color: active ? "#ffffff" : "var(--color-secondary)",
+                color: active ? "var(--color-btn-label)" : "var(--color-secondary)",
               }}
             >
               {active ? (
@@ -549,14 +549,14 @@ export function BoardEditorShell() {
                   <span
                     aria-hidden
                     className="absolute inset-0 rounded-[var(--radius-card)]"
-                    style={{ backgroundColor: "var(--color-main)" }}
+                    style={{ backgroundColor: "var(--color-btn)" }}
                   />
                 ) : (
                   <motion.span
                     layoutId="board-editor-nav-active"
                     aria-hidden
                     className="absolute inset-0 rounded-[var(--radius-card)]"
-                    style={{ backgroundColor: "var(--color-main)" }}
+                    style={{ backgroundColor: "var(--color-btn)" }}
                     transition={boardChromeTransition}
                   />
                 )
@@ -649,7 +649,7 @@ export function BoardEditorShell() {
         ) : null}
       </AnimatePresence>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2 lg:px-3 lg:pb-3 lg:pt-8">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2 lg:px-3 lg:pb-3 lg:pt-3">
         <div className="flex shrink-0 items-center gap-0.5">
           <IconButton
             label={t("undo")}
@@ -711,7 +711,7 @@ export function BoardEditorShell() {
                 disabled={saving}
                 aria-busy={saving || undefined}
                 onClick={() => void publish()}
-                className="inline-flex h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                className="inline-flex h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-[var(--color-btn-label)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 style={{ backgroundColor: "var(--color-btn)" }}
               >
                 {saving ? (

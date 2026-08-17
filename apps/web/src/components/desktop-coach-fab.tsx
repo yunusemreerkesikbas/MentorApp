@@ -230,7 +230,7 @@ export function DesktopCoachFab() {
     >
       {!nudgeDismissed ? (
         <div className="pointer-events-auto relative">
-          <div className="mentor-coach-bubble mentor-coach-bubble--end relative max-w-[280px] rounded-[var(--radius-card)] border border-white bg-white p-4 shadow-[var(--shadow-card)]">
+          <div className="mentor-coach-bubble mentor-coach-bubble--end relative max-w-[280px] rounded-[var(--radius-card)] border border-[var(--color-surface)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)]">
             <button
               type="button"
               onClick={handleDismissNudge}

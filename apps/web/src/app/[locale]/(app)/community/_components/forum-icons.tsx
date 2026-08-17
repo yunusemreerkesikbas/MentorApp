@@ -36,6 +36,24 @@ export function CommentIcon() {
   );
 }
 
+export function HelpfulVoteIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg
+      width="19"
+      height="19"
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 4 4 12h5v8h6v-8h5L12 4Z" />
+    </svg>
+  );
+}
+
 export function BookmarkIcon({ filled }: { filled: boolean }) {
   return (
     <svg

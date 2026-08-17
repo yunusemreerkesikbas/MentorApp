@@ -8,7 +8,7 @@ export function ArticleTrustFooter() {
   const translate = useTranslations("article");
   return (
     <footer className="mt-8">
-      <Card className="!bg-white/50">
+      <Card className="!bg-[color-mix(in_srgb,var(--color-surface)_50%,transparent)]">
         <div className="flex flex-col gap-3">
           <span
             className="rounded-[var(--radius-card)] px-3 py-1.5 text-xs font-bold"

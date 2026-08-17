@@ -87,7 +87,7 @@ export function GoogleAuthButton({ mode, onBeforeStart }: GoogleAuthButtonProps)
         type="button"
         aria-label={t("continue")}
         onClick={handleClick}
-        className="mx-auto flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border bg-white transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 motion-reduce:transition-none"
+        className="mx-auto flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border bg-[var(--color-surface)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] motion-reduce:transition-none"
         style={{
           borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",
         }}

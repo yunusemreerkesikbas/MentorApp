@@ -16,7 +16,7 @@ export function BoardContentSkeleton() {
       label={t("loading")}
       className="flex h-dvh flex-col lg:flex-row"
     >
-      <div className="flex gap-1 px-2 py-2 lg:w-16 lg:flex-col lg:px-1 lg:py-3">
+      <div className="flex gap-1 px-2 py-2 lg:w-16 lg:flex-col lg:px-1 lg:pb-3 lg:pt-3">
         {[0, 1, 2, 3, 4].map((index) => (
           <Skeleton
             key={index}

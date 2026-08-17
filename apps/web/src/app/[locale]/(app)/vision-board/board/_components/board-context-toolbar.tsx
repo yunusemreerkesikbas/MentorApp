@@ -207,7 +207,7 @@ function SwatchTrigger({
         className="block h-5 w-5 rounded-full"
         style={{
           backgroundColor: color,
-          outline: "1px solid rgba(0,0,0,0.12)",
+          outline: "1px solid var(--color-border)",
           outlineOffset: "2px",
         }}
       />

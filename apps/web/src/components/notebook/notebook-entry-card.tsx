@@ -111,26 +111,35 @@ export function NotebookEntryCard({ entry, due, onPreview }: NotebookEntryCardPr
           className="block h-full w-full cursor-pointer overflow-hidden rounded-[var(--radius-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           style={{ ...borderStyle, opacity: healed ? 0.55 : 1 }}
         >
+          {/*
+            `object-contain`, not `cover`: the placed box's aspect ratio is whatever the user drags
+            it to, almost never the photo's own — and this photo IS the question, unlike a vision
+            board photo where a tight crop is a look. Cropping into an equation or an answer choice
+            makes the card useless for the one thing it exists to be reviewed for. The fill colour
+            behind it is what keeps the letterboxed edges from reading as a rendering gap.
+          */}
           <span
             className="relative block h-full w-full"
             style={{ backgroundColor: "var(--color-surface-container)" }}
           >
-            <Image src={entry.url} alt="" fill sizes="480px" className="object-cover" unoptimized />
+            <Image src={entry.url} alt="" fill sizes="480px" className="object-contain" unoptimized />
           </span>
         </button>
 
-        {/* Details only on hover/focus — the photo itself stays clean. */}
+        {/* Details only on hover/focus — the photo itself stays clean. Sized down from the
+            page's own `DetailLines` scale: this overlay sits on a small thumbnail, not a full
+            card, and was reading as oversized captions rather than a quiet detail layer. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-[1.4cqw] rounded-b-[var(--radius-card)] p-[3.4cqw] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 motion-reduce:transition-none"
+          className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-[1cqw] rounded-b-[var(--radius-card)] p-[2.6cqw] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 motion-reduce:transition-none"
           style={{ background: "linear-gradient(to top, rgba(17,17,17,0.78), transparent)" }}
         >
           <span
             style={{
               alignSelf: "flex-start",
-              padding: "1cqw 2.8cqw",
+              padding: "0.7cqw 2.1cqw",
               borderRadius: 999,
-              fontSize: "3cqw",
+              fontSize: "2.3cqw",
               fontWeight: 600,
               color: "#ffffff",
               backgroundColor: "rgba(255,255,255,0.2)",
@@ -140,21 +149,21 @@ export function NotebookEntryCard({ entry, due, onPreview }: NotebookEntryCardPr
           </span>
           <span
             className="truncate"
-            style={{ fontSize: "3.4cqw", fontWeight: 700, color: "#ffffff" }}
+            style={{ fontSize: "2.6cqw", fontWeight: 700, color: "#ffffff" }}
           >
             {entry.topicName ?? entry.subjectName ?? t("card_unlabelled")}
           </span>
           {entry.note ? (
             <span
               className="line-clamp-2"
-              style={{ fontSize: "2.8cqw", color: "rgba(255,255,255,0.85)" }}
+              style={{ fontSize: "2.1cqw", color: "rgba(255,255,255,0.85)" }}
             >
               {entry.note}
             </span>
           ) : null}
           <span
             style={{
-              fontSize: "2.8cqw",
+              fontSize: "2.1cqw",
               color: entry.communityAnsweredAt
                 ? "#93c5fd"
                 : healed

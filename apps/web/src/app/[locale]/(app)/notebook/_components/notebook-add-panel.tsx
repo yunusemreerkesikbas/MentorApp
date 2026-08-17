@@ -1,12 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { ExamSubjectDto, ExamTopicDto, NotebookEntryDto } from "@mentor/types";
 import { NOTEBOOK_ERROR_TYPES, type NotebookErrorType } from "@mentor/types";
-import { Button, Card, SectionHeading, TextAreaField } from "@mentor/ui";
+import { Card, SectionHeading, TextAreaField } from "@mentor/ui";
 import { FormError } from "@/components/form";
+import { MenuSelect } from "@/components/menu-select";
+import { NotebookCompactButton } from "@/components/notebook/notebook-compact-button";
 import {
   createNotebookEntry,
   isSupportedNotebookImage,
@@ -15,11 +17,23 @@ import {
   uploadNotebookImage,
 } from "@/lib/notebook";
 
+/** width/height of the uploaded file itself — what the placed card on the page is sized from
+ *  (`nextEntrySlot`), so a portrait exam photo lands in a portrait slot, not a letterboxed one. */
+function measureImageAspect(url: string): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.onload = () => resolve(img.naturalWidth / img.naturalHeight);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 interface NotebookAddPanelProps {
   examId: string;
   subjects: ExamSubjectDto[];
   topics: ExamTopicDto[];
-  onCreated: (entry: NotebookEntryDto) => void;
+  /** `aspect` is the uploaded photo's own width/height, null for a text-only mistake. */
+  onCreated: (entry: NotebookEntryDto, aspect: number | null) => void;
   onCancel: () => void;
 }
 
@@ -43,12 +57,17 @@ export function NotebookAddPanel({
 }: NotebookAddPanelProps) {
   const t = useTranslations("notebook");
   const fileRef = useRef<HTMLInputElement>(null);
+  const reactId = useId();
+  const subjectLabelId = `notebook-add-subject-${reactId}`;
+  const topicLabelId = `notebook-add-topic-${reactId}`;
 
   const [errorType, setErrorType] = useState<NotebookErrorType | null>(null);
   const [subjectRef, setSubjectRef] = useState<string>("");
   const [topicRef, setTopicRef] = useState<string | null>(null);
   const [note, setNote] = useState("");
-  const [photo, setPhoto] = useState<{ key: string; url: string } | null>(null);
+  const [photo, setPhoto] = useState<{ key: string; url: string; aspect: number | null } | null>(
+    null,
+  );
   const [busy, setBusy] = useState(false);
   const [prelabelling, setPrelabelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +87,10 @@ export function NotebookAddPanel({
     setBusy(true);
     try {
       const uploaded = await uploadNotebookImage(file);
-      setPhoto(uploaded);
+      // A failed measurement (rare — the same URL just loaded successfully via `uploadNotebookImage`)
+      // still leaves a usable entry: `nextEntrySlot` just falls back to its own default height.
+      const aspect = await measureImageAspect(uploaded.url).catch(() => null);
+      setPhoto({ ...uploaded, aspect });
 
       // Premium nicety, never a gate: the form is already usable without it, so a failure here
       // silently leaves the labels for the student to fill in.
@@ -101,7 +123,7 @@ export function NotebookAddPanel({
         errorType,
         note: note.trim() || null,
       });
-      onCreated(entry);
+      onCreated(entry, photo?.aspect ?? null);
     } catch {
       setError(t("error_save"));
       setBusy(false);
@@ -117,18 +139,25 @@ export function NotebookAddPanel({
       <FormError message={error} />
 
       {photo ? (
-        <div className="relative mx-auto aspect-[4/3] w-full max-w-xs overflow-hidden rounded-[var(--radius-card)]">
+        <div
+          className="relative mx-auto w-full max-w-xs overflow-hidden rounded-[var(--radius-card)]"
+          style={{
+            aspectRatio: photo.aspect ?? 4 / 3,
+            backgroundColor: "var(--color-surface-container)",
+          }}
+        >
           <Image src={photo.url} alt="" fill className="object-contain" unoptimized />
         </div>
       ) : (
         <div className="flex flex-col gap-1">
-          <Button
+          <NotebookCompactButton
             variant="secondary"
+            fullWidth
             disabled={busy}
             onClick={() => fileRef.current?.click()}
           >
             {t("add_photo")}
-          </Button>
+          </NotebookCompactButton>
           <input
             ref={fileRef}
             type="file"
@@ -176,34 +205,29 @@ export function NotebookAddPanel({
         </div>
       </fieldset>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+      <div className="flex flex-col gap-1">
+        <span
+          id={subjectLabelId}
+          className="text-sm font-semibold"
+          style={{ color: "var(--color-main)" }}
+        >
           {t("add_subject_label")}
           {prelabelling ? ` · ${t("add_prelabelling")}` : ""}
         </span>
-        {/* Native select: the platform already ships a good one on every phone. */}
-        <select
+        <MenuSelect
           value={subjectRef}
-          onChange={(event) => {
-            setSubjectRef(event.target.value);
+          aria-labelledby={subjectLabelId}
+          options={[
+            { value: "", label: t("add_subject_none") },
+            ...subjects.map((subject) => ({ value: subject.slug, label: subject.name })),
+          ]}
+          onChange={(next) => {
+            setSubjectRef(next);
             // A hand-picked subject invalidates a topic that belonged to another one.
             setTopicRef(null);
           }}
-          className="min-h-11 rounded-[var(--radius-card)] border px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{
-            color: "var(--color-main)",
-            borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",
-            backgroundColor: "var(--color-surface)",
-          }}
-        >
-          <option value="">{t("add_subject_none")}</option>
-          {subjects.map((subject) => (
-            <option key={subject.slug} value={subject.slug}>
-              {subject.name}
-            </option>
-          ))}
-        </select>
-      </label>
+        />
+      </div>
 
       {/*
         The topic picker is free, and that matters: the topic-level weakness map is the headline of
@@ -211,28 +235,24 @@ export function NotebookAddPanel({
         pre-label — a paywall by accident rather than by decision. Premium still saves the two taps.
       */}
       {subjectTopics.length > 0 ? (
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+        <div className="flex flex-col gap-1">
+          <span
+            id={topicLabelId}
+            className="text-sm font-semibold"
+            style={{ color: "var(--color-main)" }}
+          >
             {t("add_topic_label")}
           </span>
-          <select
+          <MenuSelect
             value={topicRef ?? ""}
-            onChange={(event) => setTopicRef(event.target.value || null)}
-            className="min-h-11 rounded-[var(--radius-card)] border px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            style={{
-              color: "var(--color-main)",
-              borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",
-              backgroundColor: "var(--color-surface)",
-            }}
-          >
-            <option value="">{t("add_subject_none")}</option>
-            {subjectTopics.map((topic) => (
-              <option key={topic.slug} value={topic.slug}>
-                {topic.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            aria-labelledby={topicLabelId}
+            options={[
+              { value: "", label: t("add_subject_none") },
+              ...subjectTopics.map((topic) => ({ value: topic.slug, label: topic.name })),
+            ]}
+            onChange={(next) => setTopicRef(next || null)}
+          />
+        </div>
       ) : null}
 
       <TextAreaField
@@ -243,13 +263,13 @@ export function NotebookAddPanel({
         rows={3}
       />
 
-      <div className="flex flex-wrap gap-2">
-        <Button disabled={busy || !errorType} onClick={() => void handleSubmit()}>
+      <div className="flex gap-2">
+        <NotebookCompactButton busy={busy} disabled={!errorType} onClick={() => void handleSubmit()}>
           {t("add_submit")}
-        </Button>
-        <Button variant="secondary" disabled={busy} onClick={onCancel}>
+        </NotebookCompactButton>
+        <NotebookCompactButton variant="secondary" disabled={busy} onClick={onCancel}>
           {t("add_cancel")}
-        </Button>
+        </NotebookCompactButton>
       </div>
     </Card>
   );

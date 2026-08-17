@@ -7,6 +7,7 @@ import type {
     ForumFeaturedAdminView,
     ForumCoachIntent,
     ForumSearchView,
+    ForumTagSuggestionView,
     ForumTagView,
     ForumThreadSummary,
     Paginated,
@@ -44,6 +45,7 @@ const COACH_INTENT_LABELS: Record<ForumCoachIntent, string> = {
 export default function ForumManagementPage() {
     const [zones, setZones] = useState<ZoneView[]>([]);
     const [tags, setTags] = useState<ForumTagView[]>([]);
+    const [tagSuggestions, setTagSuggestions] = useState<ForumTagSuggestionView[]>([]);
     const [featured, setFeatured] = useState<ForumFeaturedAdminView | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -51,17 +53,20 @@ export default function ForumManagementPage() {
     const load = useCallback(async () => {
         setLoading(true);
         setError(false);
-        const [zoneResult, tagResult, featuredResult] = await Promise.allSettled([
+        const [zoneResult, tagResult, suggestionResult, featuredResult] = await Promise.allSettled([
             apiClient.get<Paginated<ZoneView>>("/forum/zones?pageSize=100"),
             apiClient.get<ForumTagView[]>("/admin/forum/tags"),
+            apiClient.get<ForumTagSuggestionView[]>("/admin/forum/tag-suggestions"),
             apiClient.get<ForumFeaturedAdminView | null>("/admin/forum/featured-thread"),
         ]);
         if (zoneResult.status === "fulfilled") setZones(zoneResult.value.data.items);
         if (tagResult.status === "fulfilled") setTags(tagResult.value.data);
+        if (suggestionResult.status === "fulfilled") setTagSuggestions(suggestionResult.value.data);
         if (featuredResult.status === "fulfilled") setFeatured(featuredResult.value.data);
         setError(
             zoneResult.status === "rejected" ||
             tagResult.status === "rejected" ||
+            suggestionResult.status === "rejected" ||
             featuredResult.status === "rejected",
         );
         setLoading(false);
@@ -91,12 +96,104 @@ export default function ForumManagementPage() {
                 {!loading && (
                     <>
                         <FeaturedEditor value={featured} onChanged={load} />
+                        <TagSuggestionManager suggestions={tagSuggestions} onChanged={load} />
                         <TagManager tags={tags} onChanged={load} />
                         <ZoneTable zones={zones} />
                     </>
                 )}
             </div>
         </>
+    );
+}
+
+function TagSuggestionManager({
+    suggestions,
+    onChanged,
+}: {
+    suggestions: ForumTagSuggestionView[];
+    onChanged: () => Promise<void>;
+}) {
+    return (
+        <section className="card stretch stretch-full mb-4">
+            <div className="card-header">
+                <div>
+                    <h5 className="mb-1">Bekleyen etiket önerileri</h5>
+                    <p className="mb-0 fs-12 text-muted">
+                        Onaylanan öneri havuza eklenir; kullanıcının mevcut sorusuna geriye dönük bağlanmaz.
+                    </p>
+                </div>
+                <span className="badge bg-soft-primary text-primary">{suggestions.length}</span>
+            </div>
+            <div className="card-body">
+                {suggestions.length === 0 ? (
+                    <p className="mb-0 text-muted">Değerlendirilecek etiket önerisi yok.</p>
+                ) : (
+                    <div className="d-grid gap-3">
+                        {suggestions.map((suggestion) => (
+                            <TagSuggestionRow
+                                key={suggestion.id}
+                                suggestion={suggestion}
+                                onChanged={onChanged}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+        </section>
+    );
+}
+
+function TagSuggestionRow({
+    suggestion,
+    onChanged,
+}: {
+    suggestion: ForumTagSuggestionView;
+    onChanged: () => Promise<void>;
+}) {
+    const [nameTr, setNameTr] = useState(suggestion.requestedName);
+    const [nameEn, setNameEn] = useState(suggestion.requestedName);
+    const [examType, setExamType] = useState("");
+    const [busy, setBusy] = useState(false);
+
+    const review = async (action: "APPROVE" | "REJECT") => {
+        setBusy(true);
+        try {
+            await apiClient.patch(`/admin/forum/tag-suggestions/${suggestion.id}`,
+                action === "APPROVE"
+                    ? { action, nameTr: nameTr.trim(), nameEn: nameEn.trim(), examType: examType.trim() || null }
+                    : { action },
+            );
+            await onChanged();
+        } catch (error) {
+            await showApiError(error, "Etiket önerisi değerlendirilemedi.");
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <div className="row g-2 align-items-end border rounded p-2">
+            <div className="col-md-2">
+                <div className="fw-semibold">#{suggestion.normalizedSlug}</div>
+                <div className="fs-12 text-muted">{suggestion.requestedName}</div>
+            </div>
+            <div className="col-md-3">
+                <label className="form-label fs-12">Türkçe ad</label>
+                <input className="form-control" value={nameTr} onChange={(event) => setNameTr(event.target.value)} />
+            </div>
+            <div className="col-md-3">
+                <label className="form-label fs-12">İngilizce ad</label>
+                <input className="form-control" value={nameEn} onChange={(event) => setNameEn(event.target.value)} />
+            </div>
+            <div className="col-md-2">
+                <label className="form-label fs-12">Sınav tipi</label>
+                <input className="form-control" value={examType} onChange={(event) => setExamType(event.target.value)} placeholder="Tümü" />
+            </div>
+            <div className="col-md-2 d-flex gap-2">
+                <button className="btn btn-primary btn-sm" disabled={busy || !nameTr.trim() || !nameEn.trim()} onClick={() => void review("APPROVE")}>Onayla</button>
+                <button className="btn btn-outline-danger btn-sm" disabled={busy} onClick={() => void review("REJECT")}>Reddet</button>
+            </div>
+        </div>
     );
 }
 
@@ -403,7 +500,7 @@ function TagManager({
                 <div>
                     <h5 className="mb-1">Kürasyonlu etiketler</h5>
                     <p className="mb-0 fs-12 text-muted">
-                        Kullanıcılar serbest etiket yazamaz; aktif listedeki en fazla üç etiketi seçer.
+                        Kullanıcılar aktif listeden seçim yapar; bulamadıkları etiketleri inceleme için önerebilir.
                     </p>
                 </div>
             </div>

@@ -110,6 +110,11 @@ export function canAcceptAnswer(
   return actor.userId === questionAuthorId && answerAuthorId !== questionAuthorId;
 }
 
+/** Helpful votes are peer feedback; authors cannot vote for their own content. */
+export function canGiveHelpfulVote(viewerId: string, authorId: string): boolean {
+  return viewerId !== authorId;
+}
+
 /** Delete a thread: its author, or a zone owner/mod / platform staff (moderation). */
 export function canDeleteThread(actor: ForumActor, authorId: string): boolean {
   return actor.userId === authorId || canModerateZone(actor);

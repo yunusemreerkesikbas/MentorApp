@@ -41,7 +41,7 @@ export function PlanDateNav({
       />
 
       {progress && progress.total > 0 ? (
-        <div className="flex flex-col gap-1.5 border-t border-white/30 pt-3">
+        <div className="flex flex-col gap-1.5 border-t border-[color-mix(in_srgb,var(--color-border)_70%,transparent)] pt-3">
           <div className="flex items-center justify-between text-sm font-semibold">
             <span style={{ color: "var(--color-main)" }}>
               {t("progress", { done: progress.done, total: progress.total })}

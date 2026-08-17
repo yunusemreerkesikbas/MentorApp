@@ -17,7 +17,33 @@ export default function EditExamPage() {
         let active = true;
         apiClient
             .get<AdminExamDetail>(`/admin/content/exams/${params.slug}`)
-            .then(({ data }) => { if (active) setDetail(data); })
+            .then(({ data }) => {
+                // #region agent log
+                fetch("http://127.0.0.1:7497/ingest/21f8ef43-7e17-46b1-8c00-47111ca62dd3", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "54e609" },
+                    body: JSON.stringify({
+                        sessionId: "54e609",
+                        runId: "pre-fix",
+                        hypothesisId: "H4",
+                        location: "exams/[slug]/page.tsx:useEffect",
+                        message: "Admin exam detail GET in browser",
+                        data: {
+                            paramSlug: params.slug,
+                            examSlug: data?.exam?.slug ?? null,
+                            eventCount: data?.events?.length ?? null,
+                            events: (data?.events ?? []).map((e) => ({
+                                type: e.type,
+                                eventAt: e.eventAt,
+                                verifiedBy: e.verifiedBy,
+                            })),
+                        },
+                        timestamp: Date.now(),
+                    }),
+                }).catch(() => {});
+                // #endregion
+                if (active) setDetail(data);
+            })
             .catch(() => { if (active) setDetail(null); })
             .finally(() => { if (active) setLoading(false); });
         return () => { active = false; };

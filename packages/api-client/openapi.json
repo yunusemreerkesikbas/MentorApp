@@ -1421,6 +1421,35 @@
         ]
       }
     },
+    "/v1/coaching/notebook/entries/prelabel": {
+      "post": {
+        "operationId": "AiNotebookPrelabelController_prelabel",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrelabelNotebookEntryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/admin/ai/reembed": {
       "post": {
         "operationId": "AdminEmbeddingController_reembed",
@@ -1517,6 +1546,29 @@
     "/v1/content/exams/{slug}/subjects": {
       "get": {
         "operationId": "ContentController_subjectsBySlug",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/exams/{slug}/topics": {
+      "get": {
+        "operationId": "ContentController_topicsBySlug",
         "parameters": [
           {
             "name": "slug",
@@ -2972,6 +3024,306 @@
         ]
       }
     },
+    "/v1/coaching/notebook": {
+      "get": {
+        "operationId": "MistakeNotebookController_getOverview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/notebook/reviews/due": {
+      "get": {
+        "operationId": "MistakeNotebookController_listDue",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/notebook/entries/image-upload-url": {
+      "post": {
+        "operationId": "MistakeNotebookController_createUploadUrl",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotebookImageUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/notebook/entries": {
+      "post": {
+        "operationId": "MistakeNotebookController_createEntry",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNotebookEntryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/notebook/entries/{id}": {
+      "patch": {
+        "operationId": "MistakeNotebookController_updateEntry",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotebookEntryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      },
+      "delete": {
+        "operationId": "MistakeNotebookController_deleteEntry",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/notebook/entries/{id}/review": {
+      "post": {
+        "operationId": "MistakeNotebookController_reviewEntry",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewNotebookEntryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/notebook/entries/{id}/community-thread": {
+      "post": {
+        "operationId": "MistakeNotebookController_linkThread",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkNotebookThreadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/notebook/pages/{index}": {
+      "get": {
+        "operationId": "MistakeNotebookController_getPage",
+        "parameters": [
+          {
+            "name": "index",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      },
+      "put": {
+        "operationId": "MistakeNotebookController_putPage",
+        "parameters": [
+          {
+            "name": "index",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutNotebookPageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
     "/v1/forum/zones": {
       "get": {
         "operationId": "ForumController_list",
@@ -3614,6 +3966,32 @@
           "forum"
         ]
       },
+      "get": {
+        "operationId": "ForumThreadController_postReactionUsers",
+        "parameters": [
+          {
+            "name": "postId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
       "delete": {
         "operationId": "ForumThreadController_unreactPost",
         "parameters": [
@@ -3802,6 +4180,32 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      },
+      "get": {
+        "operationId": "ForumThreadController_threadReactionUsers",
+        "parameters": [
+          {
+            "name": "threadId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -4395,12 +4799,60 @@
         ]
       }
     },
+    "/v1/forum/trends": {
+      "get": {
+        "operationId": "ForumDiscoveryController_trends",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
     "/v1/forum/tags": {
       "get": {
         "operationId": "ForumDiscoveryController_tags",
         "parameters": [],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/tag-suggestions": {
+      "post": {
+        "operationId": "ForumDiscoveryController_tagSuggestion",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateForumTagSuggestionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": ""
           }
         },
@@ -4565,6 +5017,44 @@
         ],
         "responses": {
           "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/polls/{pollId}/votes": {
+      "post": {
+        "operationId": "ForumPollController_vote",
+        "parameters": [
+          {
+            "name": "pollId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PollVoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": ""
           }
         },
@@ -5508,6 +5998,63 @@
         ]
       }
     },
+    "/v1/admin/forum/tag-suggestions": {
+      "get": {
+        "operationId": "AdminForumController_tagSuggestions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/forum/tag-suggestions/{suggestionId}": {
+      "patch": {
+        "operationId": "AdminForumController_reviewTagSuggestion",
+        "parameters": [
+          {
+            "name": "suggestionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewForumTagSuggestionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/admin/forum/tags/{tagId}": {
       "patch": {
         "operationId": "AdminForumController_updateTag",
@@ -5883,6 +6430,20 @@
     "/v1/internal/cron/dispatch-daily-reminders": {
       "post": {
         "operationId": "CronController_dispatchDailyReminders",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "internal"
+        ]
+      }
+    },
+    "/v1/internal/cron/dispatch-notebook-reviews": {
+      "post": {
+        "operationId": "CronController_dispatchNotebookReviews",
         "parameters": [],
         "responses": {
           "201": {
@@ -6311,6 +6872,10 @@
         "type": "object",
         "properties": {}
       },
+      "PrelabelNotebookEntryDto": {
+        "type": "object",
+        "properties": {}
+      },
       "CheckoutDto": {
         "type": "object",
         "properties": {}
@@ -6383,6 +6948,30 @@
         "type": "object",
         "properties": {}
       },
+      "NotebookImageUploadUrlDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateNotebookEntryDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateNotebookEntryDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ReviewNotebookEntryDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "LinkNotebookThreadDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "PutNotebookPageDto": {
+        "type": "object",
+        "properties": {}
+      },
       "CreateZoneDto": {
         "type": "object",
         "properties": {}
@@ -6423,11 +7012,19 @@
         "type": "object",
         "properties": {}
       },
+      "CreateForumTagSuggestionDto": {
+        "type": "object",
+        "properties": {}
+      },
       "UpdateForumThreadDto": {
         "type": "object",
         "properties": {}
       },
       "UpdateForumPostDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "PollVoteDto": {
         "type": "object",
         "properties": {}
       },
@@ -6460,6 +7057,10 @@
         "properties": {}
       },
       "RefundSubscriptionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ReviewForumTagSuggestionDto": {
         "type": "object",
         "properties": {}
       },

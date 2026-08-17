@@ -181,7 +181,7 @@ export function ReactionBar({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.86, y: 6 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="absolute bottom-full left-0 z-20 mb-1 flex gap-1 rounded-full border bg-white p-1 shadow-[var(--shadow-card)]"
+              className="absolute bottom-full left-0 z-20 mb-1 flex gap-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] p-1 shadow-[var(--shadow-card)]"
               style={{ borderColor: "var(--color-border)" }}
             >
               {FORUM_REACTION_EMOJIS.map((emoji) => (
@@ -223,7 +223,7 @@ export function ReactionBar({
             {summary.emojis.slice(0, 3).map((emoji, index) => (
               <span
                 key={emoji}
-                className="flex size-6 items-center justify-center rounded-full bg-white text-sm ring-1 ring-white"
+                className="flex size-6 items-center justify-center rounded-full bg-[var(--color-surface)] text-sm ring-1 ring-[var(--color-surface)]"
                 style={{ marginLeft: index === 0 ? 0 : -6, zIndex: 3 - index }}
               >
                 {emoji}

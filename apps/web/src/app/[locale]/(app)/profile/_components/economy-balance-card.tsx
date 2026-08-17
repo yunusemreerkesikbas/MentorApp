@@ -125,7 +125,7 @@ export function EconomyBalanceCard({ balance }: EconomyBalanceCardProps) {
           {translate("go_coach")}
         </Button>
       </div>
-      <div className="mt-6 border-t border-black/10 pt-4">
+      <div className="mt-6 border-t border-[var(--color-border)] pt-4">
         <h3 className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
           {translate("ledger_title")}
         </h3>
@@ -142,7 +142,7 @@ export function EconomyBalanceCard({ balance }: EconomyBalanceCardProps) {
             {translate("ledger_empty")}
           </p>
         ) : (
-          <ul className="mt-3 divide-y divide-black/10">
+          <ul className="mt-3 divide-y divide-[var(--color-border)]">
             {ledger.entries.map((entry) => (
               <li key={entry.id} className="flex items-start justify-between gap-3 py-3">
                 <div className="min-w-0">

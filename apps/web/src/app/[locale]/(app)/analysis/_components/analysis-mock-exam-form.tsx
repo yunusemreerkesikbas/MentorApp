@@ -97,12 +97,12 @@ export function AnalysisMockExamForm({
           <button
             type="button"
             onClick={() => void openDateSheet()}
-            className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[var(--radius-card)] border bg-white/50 px-5 py-3 text-left text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            className="flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[var(--radius-card)] border bg-[color-mix(in_srgb,var(--color-surface)_50%,transparent)] px-5 py-3 text-left text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             style={{
               color: "var(--color-body)",
               boxShadow: "var(--shadow-card)",
               fontFamily: "var(--font-body)",
-              borderColor: "#ffffff",
+              borderColor: "var(--color-border)",
             }}
             data-testid="analysis-taken-at-trigger"
           >

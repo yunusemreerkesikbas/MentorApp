@@ -40,7 +40,7 @@ export function AnalysisNextFocusCard({ focus }: AnalysisNextFocusCardProps) {
       className="relative overflow-hidden"
       style={{
         background:
-          "linear-gradient(145deg, color-mix(in srgb, var(--color-chip) 16%, white), white 72%)",
+          "linear-gradient(145deg, color-mix(in srgb, var(--color-chip) 16%, var(--color-surface)), var(--color-surface) 72%)",
       }}
     >
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.8fr)] lg:items-center">
@@ -90,7 +90,7 @@ export function AnalysisNextFocusCard({ focus }: AnalysisNextFocusCardProps) {
                   title: focus.suggestedTaskTitle,
                 },
               }}
-              className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-white transition-opacity duration-200 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:w-fit"
+              className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-[var(--color-btn-label)] transition-opacity duration-200 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:w-fit"
               style={{
                 backgroundColor: "var(--color-btn)",
                 boxShadow: "var(--shadow-card)",
@@ -103,7 +103,7 @@ export function AnalysisNextFocusCard({ focus }: AnalysisNextFocusCardProps) {
               className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] border px-5 py-3 text-sm font-bold transition-opacity duration-200 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:w-fit"
               style={{
                 borderColor: "var(--color-border)",
-                backgroundColor: "white",
+                backgroundColor: "var(--color-surface)",
                 color: "var(--color-btn)",
               }}
             >
@@ -114,7 +114,10 @@ export function AnalysisNextFocusCard({ focus }: AnalysisNextFocusCardProps) {
 
         <div
           className="flex min-w-0 flex-col gap-2 rounded-[var(--radius-card)] p-4"
-          style={{ background: "rgba(255,255,255,0.58)" }}
+          style={{
+            background:
+              "color-mix(in srgb, var(--color-surface) 58%, transparent)",
+          }}
         >
           <div className="flex items-start justify-between gap-3">
             <div>

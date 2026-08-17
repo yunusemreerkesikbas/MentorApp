@@ -139,7 +139,7 @@ export function BoardSidePanel({
                     outline:
                       item.id === selectedId
                         ? "2px solid var(--color-focus-ring)"
-                        : "1px solid rgba(0,0,0,0.08)",
+                        : "1px solid var(--color-border)",
                     outlineOffset: "1px",
                   }}
                 >
@@ -305,7 +305,7 @@ export function BoardSidePanel({
                   `sticker_${asset.startsWith("MASCOT_") ? "mascot" : asset.toLowerCase()}`,
                 )}
                 onClick={() => onAddSticker(asset)}
-                className="grid min-h-11 min-w-11 place-items-center rounded-[var(--radius-card)] p-1 hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                className="grid min-h-11 min-w-11 place-items-center rounded-[var(--radius-card)] p-1 hover:bg-[color-mix(in_srgb,var(--color-surface)_70%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 style={{ backgroundColor: "var(--color-surface)" }}
               >
                 {art.kind === "image" ? (
@@ -412,7 +412,7 @@ function PrimaryAction({
       type="button"
       disabled={busy}
       onClick={onClick}
-      className="min-h-11 w-full rounded-[var(--radius-card)] px-3 text-sm font-semibold text-white disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+      className="min-h-11 w-full rounded-[var(--radius-card)] px-3 text-sm font-semibold text-[var(--color-btn-label)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       style={{ backgroundColor: "var(--color-btn)" }}
     >
       {label}
@@ -457,8 +457,8 @@ function Pill({
       onClick={onClick}
       className="min-h-9 rounded-full px-2.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       style={{
-        backgroundColor: active ? "var(--color-main)" : "var(--color-surface)",
-        color: active ? "#ffffff" : "var(--color-body)",
+        backgroundColor: active ? "var(--color-btn)" : "var(--color-surface)",
+        color: active ? "var(--color-btn-label)" : "var(--color-body)",
         fontFamily,
       }}
     >

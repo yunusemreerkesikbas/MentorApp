@@ -38,7 +38,7 @@ function variantStyles(variant: NonNullable<ButtonProps["variant"]>): {
   switch (variant) {
     case "secondary":
       return {
-        className: "hover:bg-white/60",
+        className: "hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)]",
         style: {
           backgroundColor: "transparent",
           color: "var(--color-main)",
@@ -61,7 +61,7 @@ function variantStyles(variant: NonNullable<ButtonProps["variant"]>): {
         className: "hover:opacity-90",
         style: {
           backgroundColor:
-            "color-mix(in srgb, var(--color-accent-soft) 70%, #fff)",
+            "color-mix(in srgb, var(--color-accent-soft) 70%, var(--color-surface))",
           color: "var(--color-main)",
           borderColor:
             "color-mix(in srgb, var(--color-accent) 22%, transparent)",
@@ -81,10 +81,10 @@ function variantStyles(variant: NonNullable<ButtonProps["variant"]>): {
     default:
       return {
         className:
-          "text-white shadow-[var(--shadow-card)] hover:opacity-90 hover:shadow-[var(--shadow-card-hover)]",
+          "shadow-[var(--shadow-card)] hover:opacity-90 hover:shadow-[var(--shadow-card-hover)]",
         style: {
           backgroundColor: "var(--color-btn)",
-          color: "#fff",
+          color: "var(--color-btn-label)",
           borderColor: "var(--color-btn)",
         },
       };
@@ -92,8 +92,8 @@ function variantStyles(variant: NonNullable<ButtonProps["variant"]>): {
 }
 
 /**
- * Primary button (DESIGN.md §6, node 2:770): black fill, radius 10,
- * Plus Jakarta Sans Bold, white label. Filled variants (`primary`/`accent`) rest at `shadow-card`
+ * Primary button (DESIGN.md §6, node 2:770): `--color-btn` fill, radius 10,
+ * Plus Jakarta Sans Bold, `--color-btn-label`. Filled variants (`primary`/`accent`) rest at `shadow-card`
  * and lift to `shadow-card-hover` on hover; all variants press to 98% scale on `:active` (DESIGN.md
  * §9 Micro layer). Loading = spinner + same (localized) label, disabled, `aria-busy`. Tokenized
  * keyboard focus ring (DESIGN.md §2.4).

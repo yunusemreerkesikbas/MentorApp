@@ -73,7 +73,7 @@ export function CoachHistoryPanel({
           type="button"
           onClick={handleNewChat}
           data-testid="coach-history-new-chat"
-          className="flex min-h-10 w-full items-center gap-2.5 rounded-[10px] px-2.5 text-left text-sm font-semibold transition-colors hover:bg-black/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+          className="flex min-h-10 w-full items-center gap-2.5 rounded-[10px] px-2.5 text-left text-sm font-semibold transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
           style={{
             color: "var(--color-main)",
             fontFamily: "var(--font-heading)",

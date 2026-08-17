@@ -1,5 +1,5 @@
 "use client";
-import { HelpCircle, Languages, MessageSquare, Share2 } from "lucide-react";
+import { HelpCircle, Languages, MessageSquare, Moon, Share2, Sun } from "lucide-react";
 
 import { useLocale, useTranslations } from "next-intl";
 import { useTransition } from "react";
@@ -7,6 +7,7 @@ import { Card, SectionHeading } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { getProfileLinks } from "@/lib/profile-links";
 import { useMentorToast } from "@/lib/mentor-toast";
+import { useTheme } from "@/lib/use-theme";
 import { ListRow } from "./account-links-card";
 
 const LOCALES = ["tr", "en"] as const;
@@ -17,6 +18,7 @@ export function ApplicationSupportCard() {
   const router = useRouter();
   const toast = useMentorToast();
   const [isPending, startTransition] = useTransition();
+  const { theme, setTheme } = useTheme();
   const links = getProfileLinks();
 
   function switchLocale(next: (typeof LOCALES)[number]) {
@@ -56,8 +58,8 @@ export function ApplicationSupportCard() {
   return (
     <Card solid className="p-4">
       <SectionHeading>{t("title")}</SectionHeading>
-      <div className="mt-3 divide-y divide-black/10 overflow-hidden rounded-[var(--radius-card)]">
-        <div className="flex min-h-14 w-full min-w-0 items-center justify-between gap-2 bg-white px-3 py-1.5">
+      <div className="mt-3 divide-y divide-[var(--color-border)] overflow-hidden rounded-[var(--radius-card)]">
+        <div className="flex min-h-14 w-full min-w-0 items-center justify-between gap-2 bg-[var(--color-surface)] px-3 py-1.5">
           <span className="flex min-w-0 items-center gap-3">
             <span className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]">
               <Languages size={20} aria-hidden />
@@ -74,7 +76,7 @@ export function ApplicationSupportCard() {
                 disabled={isPending}
                 aria-pressed={locale === item}
                 onClick={() => switchLocale(item)}
-                className="min-h-11 rounded-[var(--radius-card)] px-3 text-sm font-bold transition hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60"
+                className="min-h-11 rounded-[var(--radius-card)] px-3 text-sm font-bold transition hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60"
                 style={{
                   color:
                     locale === item
@@ -82,11 +84,44 @@ export function ApplicationSupportCard() {
                       : "var(--color-secondary)",
                   backgroundColor:
                     locale === item
-                      ? "color-mix(in srgb, var(--color-progress-track) 45%, white)"
+                      ? "color-mix(in srgb, var(--color-progress-track) 45%, var(--color-surface))"
                       : "transparent",
                 }}
               >
                 {item.toUpperCase()}
+              </button>
+            ))}
+          </span>
+        </div>
+        <div className="flex min-h-14 w-full min-w-0 items-center justify-between gap-2 bg-[var(--color-surface)] px-3 py-1.5">
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]">
+              {theme === "dark" ? <Moon size={20} aria-hidden /> : <Sun size={20} aria-hidden />}
+            </span>
+            <span className="truncate text-base font-bold text-[var(--color-main)]">
+              {t("theme")}
+            </span>
+          </span>
+          <span className="flex shrink-0 gap-1" aria-label={t("theme_aria")}>
+            {(["light", "dark"] as const).map((item) => (
+              <button
+                key={item}
+                type="button"
+                aria-pressed={theme === item}
+                onClick={() => setTheme(item)}
+                className="min-h-11 rounded-[var(--radius-card)] px-3 text-sm font-bold transition hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                style={{
+                  color:
+                    theme === item
+                      ? "var(--color-main)"
+                      : "var(--color-secondary)",
+                  backgroundColor:
+                    theme === item
+                      ? "color-mix(in srgb, var(--color-progress-track) 45%, var(--color-surface))"
+                      : "transparent",
+                }}
+              >
+                {t(item === "light" ? "theme_light" : "theme_dark")}
               </button>
             ))}
           </span>

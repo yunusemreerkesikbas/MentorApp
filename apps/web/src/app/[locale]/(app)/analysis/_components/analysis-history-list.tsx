@@ -143,8 +143,8 @@ export function AnalysisHistoryList({
                   "grid min-h-10 w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-[10px] px-2.5 py-2 text-left",
                   "transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none",
                   expanded
-                    ? "bg-black/[0.06]"
-                    : "hover:bg-black/[0.05]",
+                    ? "bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)]"
+                    : "hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)]",
                 ].join(" ")}
               >
                 <span className="min-w-0">

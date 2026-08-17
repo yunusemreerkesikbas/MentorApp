@@ -17,7 +17,7 @@ import { AnalysisHistoryEditSheet } from "./analysis-history-edit-sheet";
 import { formatTrendDate } from "./analysis-types";
 
 const pillBtnClass =
-  "inline-flex min-h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full border bg-white px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none";
+  "inline-flex min-h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full border bg-[var(--color-surface)] px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none";
 
 interface AnalysisHistoryDetailProps {
   mockExamId: string;
@@ -260,7 +260,7 @@ export function AnalysisHistoryDetail({
                 }),
                 detail.id,
               )}
-              className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] border bg-transparent px-3 py-2 text-sm font-bold transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+              className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] border bg-transparent px-3 py-2 text-sm font-bold transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
               style={{
                 color: "var(--color-main)",
                 borderColor:
@@ -422,7 +422,7 @@ function HistoryDetailDrawer({
         className="fixed bottom-0 right-0 z-30 flex w-full max-w-md flex-col overflow-hidden sm:rounded-tl-[var(--radius-card)]"
         style={{
           top: "3.5rem",
-          background: "var(--color-bg, white)",
+          background: "var(--color-surface)",
           boxShadow: "var(--shadow-card)",
         }}
         role="dialog"

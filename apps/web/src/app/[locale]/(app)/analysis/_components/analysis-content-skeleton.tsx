@@ -12,7 +12,7 @@ export function AnalysisContentSkeleton() {
   return (
     <main className="flex w-full min-h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] lg:min-h-[calc(100dvh-4rem)]">
       <aside
-        className="relative z-[1] hidden h-auto w-72 shrink-0 border-r bg-white/85 backdrop-blur-md lg:flex lg:flex-col"
+        className="relative z-[1] hidden h-auto w-72 shrink-0 border-r bg-[color-mix(in_srgb,var(--color-surface)_85%,transparent)] backdrop-blur-md lg:flex lg:flex-col"
         style={{
           borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)",
         }}
@@ -52,7 +52,7 @@ export function AnalysisContentSkeleton() {
             </div>
           </Card>
 
-          <div className="flex gap-1 rounded-full border border-white/40 p-1">
+          <div className="flex gap-1 rounded-full border border-[var(--color-border)] p-1">
             {[0, 1, 2].map((i) => (
               <Skeleton
                 key={i}

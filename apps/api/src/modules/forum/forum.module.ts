@@ -10,7 +10,9 @@ import { ForumMentionService } from "./application/forum-mention.service";
 import { ForumErasureService } from "./application/forum-erasure.service";
 import { ForumDiscoveryService } from "./application/forum-discovery.service";
 import { ForumCoachBridgeService } from "./application/forum-coach-bridge.service";
+import { ForumPollService } from "./application/forum-poll.service";
 import { ForumDiscoveryRepository } from "./infrastructure/forum-discovery.repository";
+import { ForumPollRepository } from "./infrastructure/forum-poll.repository";
 import { ForumErasureRepository } from "./infrastructure/forum-erasure.repository";
 import { ForumZoneRepository } from "./infrastructure/forum-zone.repository";
 import { ForumZoneSeedService } from "./infrastructure/forum-zone-seed.service";
@@ -27,6 +29,7 @@ import { ForumModerationController } from "./presentation/forum-moderation.contr
 import { ForumPublicController } from "./presentation/forum-public.controller";
 import { ForumInternalController } from "./presentation/forum-internal.controller";
 import { ForumDiscoveryController } from "./presentation/forum-discovery.controller";
+import { ForumPollController } from "./presentation/forum-poll.controller";
 
 /**
  * Forum/community (Phase-2 pulled into MVP — design 2026-06-22). Slice 1: Zone + scoped membership.
@@ -43,6 +46,7 @@ import { ForumDiscoveryController } from "./presentation/forum-discovery.control
     ForumPublicController,
     ForumInternalController,
     ForumDiscoveryController,
+    ForumPollController,
   ],
   providers: [
     CronSecretGuard,
@@ -63,8 +67,10 @@ import { ForumDiscoveryController } from "./presentation/forum-discovery.control
     ForumErasureRepository,
     ForumErasureService,
     ForumDiscoveryService,
+    ForumPollService,
     ForumCoachBridgeService,
     ForumDiscoveryRepository,
+    ForumPollRepository,
   ],
   exports: [
     ForumService,

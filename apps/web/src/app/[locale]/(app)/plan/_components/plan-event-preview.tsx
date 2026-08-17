@@ -66,7 +66,7 @@ export function PlanEventPreview({ preview }: { preview: PlanEventPreviewState |
     <div
       role="tooltip"
       aria-live="polite"
-      className="pointer-events-none fixed z-[60] flex flex-col gap-2 rounded-[var(--radius-card)] border border-white bg-white p-3 shadow-[var(--shadow-card)]"
+      className="pointer-events-none fixed z-[60] flex flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)]"
       style={{ left, top, width: CARD_WIDTH }}
     >
       <div className="flex items-start gap-2">

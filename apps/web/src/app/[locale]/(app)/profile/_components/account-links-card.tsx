@@ -36,7 +36,7 @@ export function ListRow({
 }) {
   // Nuton list item ~56px (DESIGN.md §4); keep ≥44px touch via min-h-11.
   const className =
-    "flex min-h-14 w-full min-w-0 items-center justify-between gap-3 bg-white px-3 py-1.5 text-left transition-colors hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
+    "flex min-h-14 w-full min-w-0 items-center justify-between gap-3 bg-[var(--color-surface)] px-3 py-1.5 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
   const style = { color: danger ? "var(--color-danger)" : "var(--color-main)" };
   const label = (
     <span className="flex min-w-0 items-center gap-3">
@@ -221,7 +221,7 @@ export function AccountLinksCard({
   return (
     <Card solid className="p-4">
       <SectionHeading>{tAccount("title")}</SectionHeading>
-      <div className="mt-3 divide-y divide-black/10 overflow-hidden rounded-[var(--radius-card)]">
+      <div className="mt-3 divide-y divide-[var(--color-border)] overflow-hidden rounded-[var(--radius-card)]">
         <ListRow
           icon={<GraduationCap size={22} aria-hidden />}
           description={examSummary}

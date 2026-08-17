@@ -23,6 +23,10 @@ import { AttachmentGallery } from "../../_components/attachment-gallery";
 import { CommentIcon } from "../../_components/forum-icons";
 import { ReactionBar } from "../../_components/reaction-bar";
 import { useCommunityQuickReply } from "../../_components/community-quick-reply";
+import { ForumPollCard } from "../../_components/forum-poll-card";
+import { HelpfulButton } from "../../_components/helpful-button";
+import { isFeedInteractiveTarget } from "./feed-interactive-target";
+import { questionMarkdownToPlainText } from "./question-composer-state";
 
 export function DiscoveryFeedCard({
   item,
@@ -50,14 +54,11 @@ export function DiscoveryFeedCard({
   const patch = (next: Partial<ForumFeedItem>) => onChange?.({ ...item, ...next });
 
   const openDetail = () => router.push(detailHref);
-  const isInteractiveTarget = (target: EventTarget | null) =>
-    target instanceof HTMLElement &&
-    Boolean(target.closest("a,button,input,textarea,select,[role='menuitem']"));
   const handleCardClick = (event: MouseEvent<HTMLElement>) => {
-    if (!editing && !isInteractiveTarget(event.target)) openDetail();
+    if (!editing && !isFeedInteractiveTarget(event.target)) openDetail();
   };
   const handleCardKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (editing || isInteractiveTarget(event.target)) return;
+    if (editing || isFeedInteractiveTarget(event.target)) return;
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       openDetail();
@@ -130,7 +131,7 @@ export function DiscoveryFeedCard({
       tabIndex={0}
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
-      className="cursor-pointer border-b border-[#e7e9ee] bg-white px-4 py-3 transition-colors last:border-b-0 hover:bg-black/[0.015] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:px-5"
+      className="cursor-pointer border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 transition-colors last:border-b-0 hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:px-5"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
@@ -147,8 +148,16 @@ export function DiscoveryFeedCard({
               >
                 {item.zone.title}
               </Link>
-              <span>·</span>
-              <span>{isQa ? t("type_qa") : item.zone.type === "ANNOUNCEMENT" ? t("type_announcement") : t("type_chat")}</span>
+              {isQa ? (
+                <span className="rounded-full border border-[var(--community-coral)] px-2 py-0.5 text-[11px] font-bold text-[var(--community-coral)]">
+                  {t("feed_question_badge")}
+                </span>
+              ) : (
+                <>
+                  <span>·</span>
+                  <span>{item.zone.type === "ANNOUNCEMENT" ? t("type_announcement") : t("type_chat")}</span>
+                </>
+              )}
             </div>
           </div>
           {item.status === "ANSWERED" && (
@@ -242,7 +251,7 @@ export function DiscoveryFeedCard({
             <button
               type="button"
               disabled={busyAction === "edit" || !body.trim()}
-              className="min-h-11 rounded-xl px-4 font-bold text-white disabled:opacity-50"
+              className="min-h-11 rounded-xl px-4 font-bold text-[var(--color-btn-label)] disabled:opacity-50"
               style={{ background: "var(--color-btn)" }}
               onClick={() => void saveEdit()}
             >
@@ -254,52 +263,36 @@ export function DiscoveryFeedCard({
         <Link href={detailHref} className="mt-2 block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
           {item.title && (
             <h2
-              className={compact ? "text-lg font-bold text-[#171a22]" : "text-[22px] font-extrabold leading-[1.2] tracking-[-0.025em] text-[#171a22] sm:text-[24px]"}
+              className={compact || isQa ? "text-lg font-bold leading-snug text-[var(--color-main)]" : "text-[22px] font-extrabold leading-[1.2] tracking-[-0.025em] text-[var(--color-main)] sm:text-[24px]"}
             >
               {item.title}
             </h2>
           )}
           <p
-            className={`${item.title ? "mt-1" : ""} ${compact ? "line-clamp-2" : "line-clamp-3"} whitespace-pre-line text-[15px] leading-[1.55] ${item.title ? "text-[#69707c]" : "text-[#343945]"}`}
+            className={`${item.title ? "mt-1" : ""} ${compact ? "line-clamp-2" : "line-clamp-3"} whitespace-pre-line text-[15px] leading-[1.55] ${item.title ? "text-[var(--color-secondary)]" : "text-[var(--color-body-text)]"}`}
           >
-            {item.body}
+            {isQa ? questionMarkdownToPlainText(item.body) : item.body}
           </p>
         </Link>
       )}
+
+      {!editing && item.poll ? (
+        <ForumPollCard poll={item.poll} onChange={(poll) => patch({ poll })} />
+      ) : null}
 
       {!compact && item.attachments.length > 0 ? (
         <AttachmentGallery attachments={item.attachments} />
       ) : null}
 
-      {item.tags.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {item.tags.slice(0, 3).map((tag) => (
-            <span
-              key={tag.id}
-              className="rounded-full bg-[#f3f4f6] px-2.5 py-1 text-[11px] font-semibold text-[#666d78]"
-            >
-              #{tag.name}
-            </span>
-          ))}
-        </div>
-      )}
-
       <div className="mt-1 flex w-full items-center gap-1">
         {isQa ? (
-          <div className="flex min-w-11 items-center justify-start">
-            <button
-              type="button"
-              aria-pressed={item.myHelpfulVote}
-              disabled={busyAction === "helpful"}
-              onClick={() => void toggleHelpful()}
-              className="min-h-11 px-2 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-              style={{
-                color: item.myHelpfulVote ? "#287954" : "#242833",
-              }}
-            >
-              +1 {t("helpful")} · {item.helpfulVoteCount}
-            </button>
-          </div>
+          <HelpfulButton
+            count={item.helpfulVoteCount}
+            selected={item.myHelpfulVote}
+            canVote={item.canHelpfulVote ?? true}
+            disabled={busyAction === "helpful"}
+            onToggle={() => void toggleHelpful()}
+          />
         ) : (
           <ReactionBar
             targetType="THREAD"

@@ -44,6 +44,7 @@ export function threadRowToView(
     authorAvatarUrl: avatarUrl(t.authorAvatarStorageKey, storage),
     title: t.title,
     body: t.body,
+    poll: null,
     status: t.status as ThreadView["status"],
     acceptedPostId: t.acceptedPostId,
     isPinned: t.isPinned,

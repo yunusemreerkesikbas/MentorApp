@@ -114,6 +114,9 @@ export interface CommunityAnalyticsParams {
     sort: "trending" | "recent" | "top";
     scope: "relevant" | "following";
   };
+  forum_feed_kind_selected: {
+    kind: "all" | "posts" | "questions";
+  };
   forum_coach_bridge_impression: {
     zone_type: "CHAT" | "QA";
     intent: ForumCoachIntent;

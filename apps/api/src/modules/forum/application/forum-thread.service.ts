@@ -20,7 +20,13 @@ import {
   ZoneRole,
   ZoneType,
 } from "@mentor/types";
-import type { CreateAnswer, CreateThread, FeedQuery, ReactionListQuery } from "@mentor/validation";
+import {
+  forumPollInputSchema,
+  type CreateAnswer,
+  type CreateThread,
+  type FeedQuery,
+  type ReactionListQuery,
+} from "@mentor/validation";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -42,6 +48,7 @@ import { ForumMentionService } from "./forum-mention.service";
 import {
   canCommentInZone,
   canDeleteThread,
+  canGiveHelpfulVote,
   canPinThread,
   canPostInZone,
   isPlatformStaff,
@@ -65,6 +72,7 @@ import {
 import { uniqueForumTagIds } from "../domain/forum-discovery.policy";
 import { postRowToCommentView, threadRowToView } from "./forum.mappers";
 import { ForumCoachBridgeService } from "./forum-coach-bridge.service";
+import { ForumPollService } from "./forum-poll.service";
 
 /** Minimal authenticated principal the controller passes in (id + platform roles). */
 export interface ThreadActor {
@@ -92,6 +100,7 @@ export class ForumThreadService {
     private readonly follow: FollowService,
     @Optional() private readonly discovery?: ForumDiscoveryRepository,
     @Optional() private readonly coachBridge?: ForumCoachBridgeService,
+    @Optional() private readonly polls?: ForumPollService,
   ) {}
 
   /** Presigned upload URL for a post attachment — image or file (APP-027). Client PUTs, then sends `key`. */
@@ -170,6 +179,13 @@ export class ForumThreadService {
       throw new DomainError(ErrorCode.FORUM_QUESTION_TITLE_REQUIRED, HttpStatus.BAD_REQUEST);
     }
     const title = zone.type === ZoneType.QA ? dto.title : null;
+    const parsedPoll = dto.poll ? forumPollInputSchema.safeParse(dto.poll) : null;
+    if (
+      (parsedPoll && !parsedPoll.success) ||
+      (dto.poll && (zone.type === ZoneType.QA || dto.attachments?.length))
+    ) {
+      throw new DomainError(ErrorCode.FORUM_POLL_NOT_ALLOWED, HttpStatus.BAD_REQUEST);
+    }
     // Resolve/validate BEFORE inserting the thread so a bad attachment fails without leaving a post.
     // QA questions carry images too (Phase 2) — same path as chat/announcement.
     const toAttach = await resolveForumAttachments(this.storage, actor.id, dto.attachments);
@@ -185,6 +201,7 @@ export class ForumThreadService {
       body: dto.body,
       title,
       ...(tagIds.length > 0 && { tagIds }),
+      ...(parsedPoll?.success && { poll: parsedPoll.data }),
     });
     const attached = await this.attachments.insertMany(
       ModerationTargetType.THREAD,
@@ -203,6 +220,7 @@ export class ForumThreadService {
     const rowWithAuthor = await this.threads.findById(row.id, actor.id);
     if (!rowWithAuthor) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
     const view = threadRowToView(rowWithAuthor, {}, [], this.storage, 0, [], attached);
+    await this.attachPolls([view], actor.id);
     await this.attachThreadCapabilities([rowWithAuthor], [view], actor);
     return view;
   }
@@ -242,6 +260,7 @@ export class ForumThreadService {
         bookmarked.has(r.id),
       ),
     );
+    await this.attachPolls(items, viewerId);
     await this.attachThreadCapabilities(rows, items, { id: viewerId, roles });
     // Popular is a single top-N page (no time cursor). Recent paginates on createdAt.
     // ponytail: heuristic cursor — a full page may have more; worst case one empty trailing fetch.
@@ -459,6 +478,7 @@ export class ForumThreadService {
         bookmarked.has(r.id),
       ),
     );
+    await this.attachPolls(views, viewerId);
     await this.attachThreadCapabilities(rows, views, actor);
     return views;
   }
@@ -499,7 +519,11 @@ export class ForumThreadService {
         createdAt: row.createdAt,
         now,
         editWindowMinutes: Number(editWindowMinutes),
-        interactionCount: view.commentCount + reactionCount + (helpfulCounts.get(row.id) ?? 0),
+        interactionCount:
+          view.commentCount +
+          reactionCount +
+          (helpfulCounts.get(row.id) ?? 0) +
+          (view.poll?.totalVoteCount ?? 0),
       });
       view.capabilities = {
         canEdit: edit.allowed,
@@ -510,7 +534,17 @@ export class ForumThreadService {
           membership?.role === ZoneRole.MODERATOR,
         editDeadline: row.authorId === actor.id ? edit.deadline.toISOString() : null,
       };
+      view.canHelpfulVote = canGiveHelpfulVote(actor.id, row.authorId);
     });
+  }
+
+  private async attachPolls(views: ThreadView[], viewerId: string): Promise<void> {
+    if (!this.polls || views.length === 0) return;
+    const pollViews = await this.polls.viewsForThreads(
+      views.map((view) => view.id),
+      viewerId,
+    );
+    for (const view of views) view.poll = pollViews.get(view.id) ?? null;
   }
 
   /** Top-level comment on a CHAT/ANNOUNCEMENT thread (APP-017). QA replies use the answer flow. */
@@ -646,6 +680,7 @@ export class ForumThreadService {
       attachMap.get(threadId) ?? [],
       bookmarked.has(threadId),
     );
+    await this.attachPolls([view], viewerId);
     await this.attachThreadCapabilities([thread], [view], { id: viewerId, roles });
     const lang = (I18nContext.current()?.lang ?? "tr").toLowerCase().startsWith("en") ? "en" : "tr";
     view.tags = (tags.get(threadId) ?? []).map((tag) => ({

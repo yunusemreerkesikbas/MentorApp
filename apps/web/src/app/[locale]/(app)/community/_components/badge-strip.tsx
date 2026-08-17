@@ -30,7 +30,7 @@ export function BadgeStrip({
     <div className={`flex flex-col ${compact ? "gap-1.5" : "gap-2"}`}>
       <p
         className="text-xs font-bold"
-        style={{ color: onDark ? "rgba(255,255,255,0.82)" : "var(--color-secondary)" }}
+        style={{ color: onDark ? "color-mix(in srgb, var(--color-btn-label) 82%, transparent)" : "var(--color-secondary)" }}
       >
         {t("badges_title")}
       </p>
@@ -53,8 +53,8 @@ export function BadgeStrip({
               </span>
               {detailed ? (
                 <span className="min-w-0">
-                  <span className={`block text-xs font-bold ${onDark ? "text-white" : "text-[var(--color-main)]"}`}>{t(meta.key as "badge_marathon")}</span>
-                  <span className={`mt-0.5 block text-[11px] leading-4 ${onDark ? "text-white/55" : "text-[var(--color-secondary)]"}`}>{t(meta.descriptionKey as "badge_marathon_description")}</span>
+                  <span className={`block text-xs font-bold ${onDark ? "text-[var(--color-btn-label)]" : "text-[var(--color-main)]"}`}>{t(meta.key as "badge_marathon")}</span>
+                  <span className={`mt-0.5 block text-[11px] leading-4 ${onDark ? "text-[color-mix(in_srgb,var(--color-btn-label)_55%,transparent)]" : "text-[var(--color-secondary)]"}`}>{t(meta.descriptionKey as "badge_marathon_description")}</span>
                 </span>
               ) : t(meta.key as "badge_marathon")}
             </span>

@@ -336,6 +336,48 @@ describe("forum zones (e2e)", () => {
     expect(listed.threadCount).toBeGreaterThanOrEqual(1);
   });
 
+  it("creates a poll, keeps results private before voting, and enforces one vote plus DB-time expiry", async () => {
+    await setForumEnabled(true);
+    const zoneId = await createZone(ZoneType.CHAT, "Anket Sohbeti");
+    const voter = await signup("poll-voter");
+    const voterAuth = { Authorization: `Bearer ${voter.accessToken}` };
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
+    await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(voterAuth);
+
+    const posted = await request(app.getHttpServer())
+      .post(`/v1/forum/zones/${zoneId}/threads`)
+      .set(asUser())
+      .send({ body: "Bugün ne çalışalım?", poll: { options: ["Türkçe", "Matematik"], durationMinutes: 60 } });
+    expect(posted.status).toBe(201);
+    expect(posted.body.poll).toMatchObject({ resultsVisible: false, totalVoteCount: 0 });
+    expect(posted.body.poll.options.every((option: { voteCount: number | null }) => option.voteCount === null)).toBe(true);
+
+    const pollId = posted.body.poll.id as string;
+    const optionId = posted.body.poll.options[0].id as string;
+    const voted = await request(app.getHttpServer())
+      .post(`/v1/forum/polls/${pollId}/votes`)
+      .set(voterAuth)
+      .send({ optionId });
+    expect(voted.status).toBe(201);
+    expect(voted.body).toMatchObject({ resultsVisible: true, myOptionId: optionId, totalVoteCount: 1 });
+    expect(voted.body.options.reduce((sum: number, option: { percentage: number }) => sum + option.percentage, 0)).toBe(100);
+
+    await request(app.getHttpServer())
+      .post(`/v1/forum/polls/${pollId}/votes`)
+      .set(voterAuth)
+      .send({ optionId })
+      .expect(409);
+
+    await svc(async (client) => {
+      await client.query("update forum_polls set ends_at = created_at + interval '1 millisecond' where id = $1", [pollId]);
+    });
+    await request(app.getHttpServer())
+      .post(`/v1/forum/polls/${pollId}/votes`)
+      .set(asUser())
+      .send({ optionId })
+      .expect(409);
+  });
+
   it("attachments: upload → post with image → feed returns it; rejects a foreign key + >4 (APP-018)", async () => {
     await setForumEnabled(true);
     const zoneId = await createZone(ZoneType.CHAT, "Ekli Sohbet");

@@ -6,6 +6,8 @@ import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import {
   forumPosts,
+  forumPollOptions,
+  forumPolls,
   forumReactions,
   forumTags,
   forumThreadTags,
@@ -56,6 +58,7 @@ export class ForumThreadRepository {
     body: string;
     title?: string | null;
     tagIds?: string[];
+    poll?: { options: string[]; durationMinutes: number };
   }): Promise<ThreadRow> {
     return withServiceContext(this.db, async (tx) => {
       const tagIds = [...new Set(input.tagIds ?? [])];
@@ -82,6 +85,22 @@ export class ForumThreadRepository {
         await tx
           .insert(forumThreadTags)
           .values(tagIds.map((tagId) => ({ threadId: thread.id, tagId })));
+      }
+      if (input.poll) {
+        const [poll] = await tx
+          .insert(forumPolls)
+          .values({
+            threadId: thread.id,
+            endsAt: new Date(Date.now() + input.poll.durationMinutes * 60_000),
+          })
+          .returning({ id: forumPolls.id });
+        await tx.insert(forumPollOptions).values(
+          input.poll.options.map((text, position) => ({
+            pollId: poll!.id,
+            text,
+            position,
+          })),
+        );
       }
       return thread;
     });

@@ -476,8 +476,8 @@ function ZoomButton({
       onClick={onClick}
       className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-[var(--radius-card)] border text-base font-bold shadow-[var(--shadow-card)] transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
       style={{
-        borderColor: "var(--color-border, #e2e2e2)",
-        backgroundColor: "var(--color-surface, #fff)",
+        borderColor: "var(--color-border)",
+        backgroundColor: "var(--color-surface)",
         color: "var(--color-main)",
       }}
     >

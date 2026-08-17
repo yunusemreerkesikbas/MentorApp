@@ -8,8 +8,11 @@ export const colors = {
   bodyText: "#333333", // body
   secondaryText: "#666666", // caption/meta/inactive nav
   btn: "#000000", // primary button fill
+  btnLabel: "#FFFFFF",
   bg: "#FFFFFF",
   surface: "#FFFFFF",
+  /** Chrome edges — sidebar rail, field rim (Nuton white hairline). */
+  border: "#FFFFFF",
   /** Muted wells — tab rail, sidebar track, skeleton (DESIGN.md §2.2). */
   surfaceContainer: "#F0EDEC",
   // accent / semantic
@@ -29,6 +32,55 @@ export const colors = {
   danger: "#B42318",
   success: "#2E7D54",
   focusRing: "#1D6FBF",
+} as const;
+
+/**
+ * Dark ramp (DESIGN.md §2.5). Soft charcoal — not terminal black.
+ * Runtime source of truth is `html.dark` CSS vars; this mirror is for RN / non-CSS consumers.
+ */
+export const colorsDark = {
+  main: "#F4F4F5",
+  bodyText: "#D4D4D8",
+  secondaryText: "#A1A1AA",
+  btn: "#F4F4F5",
+  btnLabel: "#12141A",
+  bg: "#12141A",
+  surface: "#1A1D24",
+  border: "rgba(255, 255, 255, 0.10)",
+  surfaceContainer: "#242833",
+  chip: "#BEA1FE",
+  chipText: "#C4B8E0",
+  progress: "#55ACEE",
+  accent: "#55ACEE",
+  progressTrack: "#2C3D56",
+  accentSoft: "#2C3D56",
+  star: "#FFC700",
+  streak: "#F3705A",
+  streakCore: "#FFD15C",
+  streakSoft: "#3A2A28",
+  likeActive: "#FF2DAB",
+  errorContainer: "#3D2422",
+  danger: "#F28B82",
+  success: "#6BC49A",
+  focusRing: "#7EB6E8",
+} as const;
+
+export const blobs = {
+  pink: "#FF2DAB",
+  blue: "#9BC1FB",
+  cyan: "#BDEBFF",
+  pinkOpacity: 0.4,
+  blueOpacity: 0.6,
+  cyanOpacity: 0.6,
+} as const;
+
+export const blobsDark = {
+  pink: "#FF2DAB",
+  blue: "#9BC1FB",
+  cyan: "#BDEBFF",
+  pinkOpacity: 0.14,
+  blueOpacity: 0.2,
+  cyanOpacity: 0.18,
 } as const;
 
 export const typography = {

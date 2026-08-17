@@ -12,8 +12,12 @@
   --color-body: #333333;
   --color-secondary: #666666;
   --color-btn: #000000;
+  /** Label on `--color-btn` — white on black (light), ink on inverted fill (dark). */
+  --color-btn-label: #ffffff;
   --color-bg: #ffffff;
   --color-surface: #ffffff;
+  /** Chrome edges (sidebar rail, field rim). Light = Nuton white hairline. */
+  --color-border: #ffffff;
   /**
    * Surface hierarchy (DESIGN.md §2.2):
    * muted wells — tab switcher rail, sidebar track, skeleton shimmer.
@@ -73,6 +77,57 @@
   /* Shadow family — same tint; hover is one step stronger (DESIGN.md §5). */
   --shadow-card: 0px 4px 10px rgba(37, 73, 150, 0.1);
   --shadow-card-hover: 0px 6px 14px rgba(37, 73, 150, 0.1);
+
+  /* Ambient blobs (DESIGN.md §2.2) — hue stays; opacity swaps on html.dark. */
+  --blob-pink: #ff2dab;
+  --blob-blue: #9bc1fb;
+  --blob-cyan: #bdebff;
+  --blob-pink-opacity: 0.4;
+  --blob-blue-opacity: 0.6;
+  --blob-cyan-opacity: 0.6;
+}
+
+/* Class-based dark — do not use prefers-color-scheme as the source of truth. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  color-scheme: light;
+}
+
+::placeholder {
+  color: var(--color-secondary);
+  opacity: 1;
+}
+
+/*
+ * Dark overrides the same --color-* vars Tailwind utilities already read.
+ * Notebook / weekly-recap / vision-board canvas tokens stay light-locked.
+ */
+html.dark {
+  color-scheme: dark;
+  --color-main: #f4f4f5;
+  --color-body: #d4d4d8;
+  --color-secondary: #a1a1aa;
+  --color-btn: #f4f4f5;
+  --color-btn-label: #12141a;
+  --color-bg: #12141a;
+  --color-surface: #1a1d24;
+  --color-surface-container: #242833;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-surface-translucent: rgba(26, 29, 36, 0.62);
+  --color-chip-text: #c4b8e0;
+  --color-progress-track: #2c3d56;
+  --color-accent-soft: #2c3d56;
+  --color-streak-soft: #3a2a28;
+  --color-danger: #f28b82;
+  --color-success: #6bc49a;
+  --color-error-container: #3d2422;
+  --color-focus-ring: #7eb6e8;
+  --shadow-card: 0px 4px 12px rgba(37, 73, 150, 0.28);
+  --shadow-card-hover: 0px 6px 16px rgba(37, 73, 150, 0.32);
+  --blob-pink-opacity: 0.14;
+  --blob-blue-opacity: 0.2;
+  --blob-cyan-opacity: 0.18;
 }
 
 /* --- Skeleton shimmer (surface-container gray; passive tab rail register) --- */
@@ -101,7 +156,7 @@
   background: linear-gradient(
     90deg,
     color-mix(in srgb, var(--color-surface-container) 65%, transparent) 0%,
-    color-mix(in srgb, var(--color-surface-container) 95%, white) 50%,
+    color-mix(in srgb, var(--color-surface-container) 95%, var(--color-surface)) 50%,
     color-mix(in srgb, var(--color-surface-container) 65%, transparent) 100%
   );
   background-size: 200% 100%;

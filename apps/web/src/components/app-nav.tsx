@@ -1,7 +1,7 @@
 "use client";
-import { BadgeCheck, BookOpen, Calendar, ChartColumn, Coins, Crown, Gem, House, MessageCircle, NotebookPen, Settings, Users } from "lucide-react";
+import { BadgeCheck, BookOpen, Calendar, ChartColumn, Coins, Crown, Gem, House, MessageCircle, NotebookPen, PanelLeft, Settings, Users } from "lucide-react";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -10,9 +10,16 @@ import { NotificationBell } from "@mentor/ui";
 import { subscriptionsControllerGetMine } from "@mentor/api-client";
 
 import { LanguageToggle } from "@/components/language-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { DesktopCoachFab } from "@/components/desktop-coach-fab";
 import { UserAvatar } from "@/components/user-avatar";
 import { Link, usePathname } from "@/i18n/navigation";
+import {
+  APP_SIDEBAR_COLLAPSED_PX,
+  applyAppSidebar,
+  isBoardEditorPath,
+  parseAppSidebarCookie,
+} from "@/lib/app-sidebar";
 import { useAuth } from "@/lib/auth-context";
 import {
   ECONOMY_CHANGED_EVENT,
@@ -20,6 +27,7 @@ import {
   isEconomyDisabled,
 } from "@/lib/economy";
 import { isNavActive } from "@/lib/nav-active";
+import { useAppSidebar } from "@/lib/use-app-sidebar";
 
 /** Chrome micro-motion — DESIGN.md §9 (~150–250ms, ease-out). */
 const TAB_EASE = [0.22, 1, 0.36, 1] as const;
@@ -48,6 +56,9 @@ const TAB_ITEMS = NAV_ITEMS.filter((i) => !("sidebarOnly" in i && i.sidebarOnly)
 const SIDEBAR_ITEMS = NAV_ITEMS.filter(
   (i) => !("sidebarExclude" in i && i.sidebarExclude),
 );
+
+const sidebarIconBtn =
+  "inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] text-[var(--color-main)] transition-colors duration-200 hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
 
 export function AppNav() {
   const pathname = usePathname();
@@ -98,23 +109,150 @@ export function AppNav() {
     };
   }, []);
 
+  const isBoardEditor = isBoardEditorPath(pathname);
+
   return (
     <>
-      <aside
-        className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col gap-1 border-r border-white bg-white/50 p-5 backdrop-blur lg:flex"
-        style={{ boxShadow: "var(--shadow-card)" }}
-        aria-label={t("aria_label")}
+      <DesktopSidebar
+        balance={balance}
+        pathname={pathname}
+        premium={premium}
+        user={user}
+      />
+
+      {isBoardEditor ? null : (
+        <header className="fixed inset-x-0 top-0 z-20 flex h-16 items-center gap-3 border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] px-4 backdrop-blur transition-colors duration-200 motion-reduce:transition-none lg:hidden">
+          {user ? (
+            <MobileIdentity premium={premium} user={user} />
+          ) : (
+            <Link
+              href="/dashboard"
+              className="text-xl font-bold"
+              style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+            >
+              Mentor
+            </Link>
+          )}
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <EconomyPills balance={balance} />
+            <ThemeToggle />
+            <NotificationBell
+              label={ui("notifications_label")}
+              unreadLabel={ui("notifications_unread_label")}
+            />
+          </div>
+        </header>
+      )}
+
+      {isBoardEditor ? null : (
+        <nav
+          className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 lg:hidden"
+          aria-label={t("aria_label")}
+        >
+          <MobileTabBar pathname={pathname} />
+        </nav>
+      )}
+
+      {!pathname.startsWith("/coach") && !isBoardEditor ? <DesktopCoachFab /> : null}
+    </>
+  );
+}
+
+function DesktopSidebar({
+  balance,
+  pathname,
+  premium,
+  user,
+}: {
+  balance: EconomyBalance | null;
+  pathname: string;
+  premium: boolean;
+  user: AuthUser | null;
+}) {
+  const t = useTranslations("nav");
+  const forceCollapsed = isBoardEditorPath(pathname);
+  const { open: storedOpen, setOpen } = useAppSidebar();
+  const open = forceCollapsed ? false : storedOpen;
+
+  useLayoutEffect(() => {
+    if (!forceCollapsed) return;
+    applyAppSidebar(false);
+    return () => applyAppSidebar(parseAppSidebarCookie(document.cookie));
+  }, [forceCollapsed]);
+
+  return (
+    <aside
+      className="mentor-app-sidebar fixed inset-y-0 left-0 z-20 hidden overflow-visible flex-col border-r border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_50%,transparent)] backdrop-blur transition-colors duration-200 motion-reduce:transition-none lg:flex"
+      style={{ boxShadow: "var(--shadow-card)" }}
+      aria-label={t("aria_label")}
+      data-testid="app-sidebar"
+    >
+      <div
+        className="mentor-app-sidebar-collapsed absolute inset-y-0 left-0 z-[1] flex flex-col items-center gap-1 px-1 pt-3"
+        style={{ width: APP_SIDEBAR_COLLAPSED_PX }}
+        aria-hidden={open}
+        inert={open}
+        data-testid="app-sidebar-collapsed"
       >
-        <Link
-          href="/dashboard"
-          className="mb-4 inline-flex min-h-11 items-center text-2xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+        {forceCollapsed ? null : (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className={sidebarIconBtn}
+            aria-expanded={open}
+            aria-label={t("sidebar_expand")}
+            data-testid="app-sidebar-expand"
+          >
+            <PanelLeft size={20} strokeWidth={2.25} aria-hidden />
+          </button>
+        )}
+        <div className="flex flex-col items-center gap-1">
+          {SIDEBAR_ITEMS.map((item) => (
+            <CollapsedNavLink
+              key={item.href}
+              item={item}
+              label={t(item.labelKey)}
+              active={isNavActive(pathname, item.href)}
+            />
+          ))}
+        </div>
+        <div
+          className="mt-auto flex justify-center border-t py-3"
           style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
+            borderColor: "color-mix(in srgb, var(--color-secondary) 24%, transparent)",
           }}
         >
-          Mentor
-        </Link>
+          <ThemeToggle />
+        </div>
+      </div>
+
+      <div
+        className="mentor-app-sidebar-expanded absolute inset-0 flex flex-col gap-1 overflow-hidden p-5"
+        aria-hidden={!open}
+        inert={!open}
+      >
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <Link
+            href="/dashboard"
+            className="inline-flex min-h-11 items-center text-2xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            style={{
+              color: "var(--color-main)",
+              fontFamily: "var(--font-heading)",
+            }}
+          >
+            Mentor
+          </Link>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className={sidebarIconBtn}
+            aria-expanded={open}
+            aria-label={t("sidebar_collapse")}
+            data-testid="app-sidebar-collapse"
+          >
+            <PanelLeft size={20} strokeWidth={2.25} aria-hidden />
+          </button>
+        </div>
 
         {user ? (
           <SidebarIdentity
@@ -136,43 +274,16 @@ export function AppNav() {
         </div>
 
         <div
-          className="mt-auto border-t pt-4"
-          style={{ borderColor: "var(--color-secondary-light, #e5e7eb)" }}
+          className="mt-auto flex items-center justify-between gap-2 border-t pt-4"
+          style={{
+            borderColor: "color-mix(in srgb, var(--color-secondary) 24%, transparent)",
+          }}
         >
           <LanguageToggle />
+          <ThemeToggle />
         </div>
-      </aside>
-
-      <header className="fixed inset-x-0 top-0 z-20 flex h-16 items-center gap-3 border-b border-black/10 bg-white/90 px-4 backdrop-blur lg:hidden">
-        {user ? (
-          <MobileIdentity premium={premium} user={user} />
-        ) : (
-          <Link
-            href="/dashboard"
-            className="text-xl font-bold"
-            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-          >
-            Mentor
-          </Link>
-        )}
-        <div className="ml-auto flex shrink-0 items-center gap-1">
-          <EconomyPills balance={balance} />
-          <NotificationBell
-            label={ui("notifications_label")}
-            unreadLabel={ui("notifications_unread_label")}
-          />
-        </div>
-      </header>
-
-      <nav
-        className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 lg:hidden"
-        aria-label={t("aria_label")}
-      >
-        <MobileTabBar pathname={pathname} />
-      </nav>
-
-      {!pathname.startsWith("/coach") ? <DesktopCoachFab /> : null}
-    </>
+      </div>
+    </aside>
   );
 }
 
@@ -185,7 +296,7 @@ function MobileTabBar({ pathname }: { pathname: string }) {
 
   return (
     <motion.div
-      className="flex h-[60px] items-center rounded-full border border-black/8 bg-white px-1.5 shadow-[var(--shadow-card)]"
+      className="flex h-[60px] items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 shadow-[var(--shadow-card)]"
       initial={reduceMotion ? false : { y: 12, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={
@@ -236,8 +347,8 @@ function MobileTabLink({
         <motion.span
           className="absolute -top-3 grid size-11 place-items-center rounded-full shadow-[var(--shadow-card)]"
           animate={{
-            backgroundColor: active ? "var(--color-main)" : "#ffffff",
-            color: active ? "#ffffff" : "var(--color-main)",
+            backgroundColor: active ? "var(--color-btn)" : "var(--color-bg)",
+            color: active ? "var(--color-btn-label)" : "var(--color-main)",
           }}
           whileHover={reduceMotion ? undefined : { scale: 1.05 }}
           whileTap={tap}
@@ -259,7 +370,7 @@ function MobileTabLink({
       <motion.span
         className="relative grid size-11 place-items-center"
         animate={{
-          color: active ? "#ffffff" : "var(--color-secondary)",
+          color: active ? "var(--color-btn-label)" : "var(--color-secondary)",
         }}
         whileHover={
           reduceMotion || active ? undefined : { color: "var(--color-main)" }
@@ -270,7 +381,7 @@ function MobileTabLink({
         {active ? (
           <motion.span
             layoutId="mobile-tab-active-circle"
-            className="absolute inset-0 rounded-full bg-[var(--color-main)]"
+            className="absolute inset-0 rounded-full bg-[var(--color-btn)]"
             transition={transition}
             aria-hidden
           />
@@ -394,7 +505,7 @@ function AvatarBadge({ premium, verified }: { premium: boolean; verified: boolea
       role="img"
       aria-label={premium ? t("badge_premium") : t("badge_verified")}
       title={premium ? t("badge_premium") : t("badge_verified")}
-      className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full border-2 border-white bg-white text-[var(--color-main)] shadow-[var(--shadow-card)]"
+      className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full border-2 border-[var(--color-bg)] bg-[var(--color-surface)] text-[var(--color-main)] shadow-[var(--shadow-card)]"
     >
       {premium ? (
         <Crown className="size-3 text-[var(--color-progress)]" strokeWidth={2.4} aria-hidden />
@@ -415,11 +526,11 @@ function EconomyPills({ balance }: { balance: EconomyBalance | null }) {
       aria-label={t("earned_rights_label")}
     >
       {/* Coins → the spendable currency; Gem → XP reputation. Don't swap these back. */}
-      <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_40%,white)] px-2 py-1 text-[11px] font-bold tabular-nums text-[var(--color-main)]">
+      <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_40%,var(--color-surface))] px-2 py-1 text-[11px] font-bold tabular-nums text-[var(--color-main)]">
         <Coins className="size-3.5 text-[var(--color-progress)]" aria-hidden />
         {formatCompact(balance.coinConfirmed)}
       </span>
-      <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,#FCD34D_30%,white)] px-2 py-1 text-[11px] font-bold tabular-nums text-[var(--color-main)]">
+      <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,#FCD34D_30%,var(--color-surface))] px-2 py-1 text-[11px] font-bold tabular-nums text-[var(--color-main)]">
         <Gem className="size-3.5 text-[#B7791F]" aria-hidden />
         {formatCompact(balance.xp)}
       </span>
@@ -442,8 +553,10 @@ function NavLink({
     <Link
       href={item.href}
       aria-current={active ? "page" : undefined}
-      className={`flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] px-3 py-2 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${
-        active ? "bg-white/80" : "hover:bg-white/60"
+      className={`flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] px-3 py-2 text-base transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${
+        active
+          ? "bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)]"
+          : "hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)]"
       }`}
       style={{
         color: active ? "var(--color-main)" : "var(--color-secondary)",
@@ -453,6 +566,42 @@ function NavLink({
     >
       <NavIcon icon={Icon} active={active} />
       {label}
+    </Link>
+  );
+}
+
+function CollapsedNavLink({
+  item,
+  label,
+  active,
+}: {
+  item: (typeof SIDEBAR_ITEMS)[number];
+  label: string;
+  active: boolean;
+}) {
+  const Icon = item.icon;
+
+  return (
+    <Link
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      aria-label={label}
+      className={`group relative flex size-11 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none ${
+        active
+          ? "bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)]"
+          : "hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)]"
+      }`}
+      style={{
+        color: active ? "var(--color-main)" : "var(--color-secondary)",
+      }}
+    >
+      <NavIcon icon={Icon} active={active} />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-full top-1/2 z-30 ml-2 -translate-y-1/2 whitespace-nowrap rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm font-semibold text-[var(--color-main)] opacity-0 shadow-[var(--shadow-card)] transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"
+      >
+        {label}
+      </span>
     </Link>
   );
 }

@@ -16,6 +16,7 @@ import { SendButton } from "../../_components/send-button";
 import { BookmarkButton } from "../../_components/bookmark-button";
 import { ComposerBodyField } from "../../_components/composer-body-field";
 import { useCommunityQuickReply } from "../../_components/community-quick-reply";
+import { ForumPollCard } from "../../_components/forum-poll-card";
 import { ThreadMenu } from "./thread-menu";
 
 export function ThreadItem({
@@ -51,6 +52,7 @@ export function ThreadItem({
   const [content, setContent] = useState<{ title: string | null; body: string } | null>(null);
   const [draftTitle, setDraftTitle] = useState(thread.title ?? "");
   const [draftBody, setDraftBody] = useState(thread.body);
+  const [poll, setPoll] = useState(thread.poll);
   const displayedTitle = content ? content.title : thread.title;
   const displayedBody = content ? content.body : thread.body;
   const detailHref = {
@@ -108,9 +110,9 @@ export function ThreadItem({
         onClick: open,
         onKeyDown: onRowKeyDown,
         className:
-          "flex cursor-pointer touch-manipulation items-start gap-3 border-b border-[#e7e9ee] bg-white px-4 py-3 transition-colors last:border-b-0 hover:bg-black/[0.015] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:px-5",
+          "flex cursor-pointer touch-manipulation items-start gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 transition-colors last:border-b-0 hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none sm:px-5",
       }
-    : { className: "flex items-start gap-3 border-b border-[#e7e9ee] bg-white px-4 py-3 last:border-b-0 sm:px-5" };
+    : { className: "flex items-start gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 last:border-b-0 sm:px-5" };
 
   if (deleted) return null;
 
@@ -179,7 +181,7 @@ export function ThreadItem({
                   onChange={(event) => setDraftTitle(event.target.value)}
                   maxLength={200}
                   disabled={busy}
-                  className="min-h-12 rounded-[10px] border border-[#e1e4e8] bg-[#fbfcfd] px-4 text-[15px] font-normal outline-none disabled:cursor-not-allowed disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                  className="min-h-12 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-soft)] px-4 text-[15px] font-normal outline-none disabled:cursor-not-allowed disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 />
               </label>
             ) : null}
@@ -199,11 +201,11 @@ export function ThreadItem({
                 {editError}
               </p>
             ) : null}
-            <div className="flex justify-end gap-2 border-t border-[#eef0f3] pt-4">
+            <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
               <button
                 type="button"
                 disabled={busy}
-                className="min-h-11 rounded-[10px] border border-[#dfe2e7] bg-white px-5 text-sm font-bold text-[#343945] disabled:opacity-50"
+                className="min-h-11 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 text-sm font-bold text-[var(--color-body-text)] disabled:opacity-50"
                 onClick={() => setEditing(false)}
               >
                 {t("cancel")}
@@ -211,7 +213,7 @@ export function ThreadItem({
               <button
                 type="button"
                 disabled={busy || !draftBody.trim()}
-                className="min-h-11 rounded-[10px] bg-[var(--color-btn)] px-6 text-sm font-bold text-white transition-opacity duration-150 hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
+                className="min-h-11 rounded-[10px] bg-[var(--color-btn)] px-6 text-sm font-bold text-[var(--color-btn-label)] transition-opacity duration-150 hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
                 onClick={() => void saveEdit()}
               >
                 {t("save")}
@@ -219,13 +221,13 @@ export function ThreadItem({
             </div>
           </div>
         ) : displayedTitle ? (
-          <h2 className="mt-2 text-[22px] font-extrabold leading-[1.2] tracking-[-0.025em] text-[#171a22] sm:text-[24px]">
+          <h2 className="mt-2 text-[18px] font-extrabold leading-[1.2] tracking-[-0.025em] text-[var(--color-main)] sm:text-[18px]">
             {displayedTitle}
           </h2>
         ) : null}
         {!editing ? (
           <p
-            className={`${displayedTitle ? "text-[#69707c]" : "text-[#343945]"} whitespace-pre-wrap break-words text-[15px] leading-[1.55]`}
+            className={`${displayedTitle ? "text-[var(--color-secondary)]" : "text-[var(--color-body-text)]"} whitespace-pre-wrap break-words text-[15px] leading-[1.55]`}
           >
             <MentionText text={displayedBody} />
           </p>
@@ -237,19 +239,11 @@ export function ThreadItem({
           </p>
         ) : null}
 
+        {!editing && poll ? <ForumPollCard poll={poll} onChange={setPoll} /> : null}
+
         {!editing && thread.attachments.length > 0 ? (
           <AttachmentGallery attachments={thread.attachments} />
         ) : null}
-
-        {(thread.tags?.length ?? 0) > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {thread.tags?.slice(0, 3).map((tag) => (
-              <span key={tag.id} className="rounded-full bg-[#f3f4f6] px-2.5 py-1 text-[11px] font-semibold text-[#666d78]">
-                #{tag.name}
-              </span>
-            ))}
-          </div>
-        )}
 
         {/* Action row — reaction palette + comment count · send (share link) · bookmark. */}
         <div className="mt-1 flex w-full flex-wrap items-center gap-1">
