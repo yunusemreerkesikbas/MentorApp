@@ -9,7 +9,7 @@ import {
 } from "react";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 
-/** White border draw + bg glow on hover — DESIGN.md §9 micro. No scale. */
+/** Border draw + surface glow on hover — DESIGN.md §9 micro. No scale. */
 const DRAW_EASE = [0.22, 1, 0.36, 1] as const;
 /** Matches --radius-card (DESIGN.md §5). */
 const CARD_RADIUS = 10;
@@ -21,7 +21,7 @@ const shellVariants: Variants = {
   },
   hover: {
     boxShadow:
-      "0 0 0 1px rgba(255,255,255,0.55), 0 0 28px rgba(255,255,255,0.4), 0 4px 14px rgba(37, 73, 150, 0.10)",
+      "0 0 0 1px color-mix(in srgb, var(--color-border) 80%, transparent), 0 0 28px color-mix(in srgb, var(--color-surface) 55%, transparent), var(--shadow-card-hover)",
     transition: { duration: 0.45, ease: DRAW_EASE },
   },
 };
@@ -104,7 +104,7 @@ export function SoftPromoShell({ children, className, style }: SoftPromoShellPro
         className="pointer-events-none absolute inset-0 z-0 rounded-[var(--radius-card)]"
         style={{
           background:
-            "radial-gradient(ellipse 85% 75% at 50% 40%, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.2) 45%, transparent 75%)",
+            "radial-gradient(ellipse 85% 75% at 50% 40%, color-mix(in srgb, var(--color-surface) 72%, transparent) 0%, color-mix(in srgb, var(--color-surface) 20%, transparent) 45%, transparent 75%)",
         }}
         variants={bgGlowVariants}
       />
@@ -124,13 +124,13 @@ export function SoftPromoShell({ children, className, style }: SoftPromoShellPro
             height={rectH}
             rx={rectRx}
             ry={rectRx}
-            stroke="white"
+            stroke="var(--color-border)"
             strokeWidth={STROKE}
             strokeLinecap="round"
             strokeLinejoin="round"
             variants={borderVariants}
             style={{
-              filter: "drop-shadow(0 0 5px rgba(255,255,255,0.95))",
+              filter: "drop-shadow(0 0 5px color-mix(in srgb, var(--color-border) 80%, transparent))",
             }}
           />
         </svg>

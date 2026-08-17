@@ -32,7 +32,7 @@ export function StartSessionCta({ presets }: { presets: SessionPresetDto[] }) {
 
         <Link
           href="/study-session"
-          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 disabled:opacity-60 motion-reduce:transition-none"
+          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-[var(--color-btn-label)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 disabled:opacity-60 motion-reduce:transition-none"
           style={{
             backgroundColor: "var(--color-btn)",
             boxShadow: "var(--shadow-card)",

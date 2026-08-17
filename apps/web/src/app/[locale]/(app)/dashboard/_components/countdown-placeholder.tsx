@@ -33,7 +33,7 @@ export function CountdownPlaceholder() {
           className="mt-4 flex min-h-[44px] w-fit items-center rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
           style={{
             backgroundColor: "var(--color-btn)",
-            color: "#fff",
+            color: "var(--color-btn-label)",
             boxShadow: "var(--shadow-card)",
             fontFamily: "var(--font-body)",
           }}

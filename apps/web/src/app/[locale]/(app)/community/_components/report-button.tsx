@@ -64,7 +64,7 @@ export function ReportButton({
               setMode("done"); // idempotent — re-report is a no-op server-side
             }
           }}
-          className="rounded-[var(--radius-card)] border px-2 py-1 text-xs transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60 motion-reduce:transition-none"
+          className="rounded-[var(--radius-card)] border px-2 py-1 text-xs transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60 motion-reduce:transition-none"
           style={{ borderColor: "color-mix(in srgb, var(--color-main) 12%, transparent)", color: "var(--color-main)" }}
         >
           {t(r.key as `report_${string}`)}

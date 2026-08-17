@@ -36,7 +36,7 @@ function IconButton({
       disabled={busy}
       aria-label={label}
       title={label}
-      className={`flex cursor-pointer items-center justify-center rounded-full border border-white transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 disabled:opacity-40 motion-reduce:transition-none ${
+      className={`flex cursor-pointer items-center justify-center rounded-full border border-[var(--color-border)] transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 disabled:opacity-40 motion-reduce:transition-none ${
         primary ? "h-16 w-16" : "h-12 w-12"
       }`}
       style={

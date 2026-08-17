@@ -5,6 +5,9 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { ForumDiscoveryService } from "./forum-discovery.service";
 
 const repo = {
+  listDiscoveryThreads: vi.fn(),
+  tagsByThread: vi.fn(),
+  myHelpfulTargets: vi.fn(),
   interactionCount: vi.fn(),
   addHelpfulVote: vi.fn(),
   removeHelpfulVote: vi.fn(),
@@ -17,19 +20,24 @@ const repo = {
   searchThreadSummaries: vi.fn(),
   searchZones: vi.fn(),
   searchTags: vi.fn(),
+  createTagSuggestion: vi.fn(),
+  listTagSuggestions: vi.fn(),
+  resolveTagSuggestion: vi.fn(),
 };
 const threads = {
   findById: vi.fn(),
   findByIdIncludingDeleted: vi.fn(),
+  reactionCountsByThread: vi.fn(),
+  myReactionsByThread: vi.fn(),
 };
 const posts = { findById: vi.fn() };
 const zones = { findById: vi.fn(), findMembershipsByZone: vi.fn() };
-const attachments = {};
-const bookmarks = {};
+const attachments = { listForTargets: vi.fn() };
+const bookmarks = { myBookmarkedTargets: vi.fn() };
 const forum = {};
 const threadService = {};
 const users = { getDiscoveryProfile: vi.fn(), searchPublicUsers: vi.fn() };
-const follow = {};
+const follow = { getFolloweeIds: vi.fn() };
 const config = { get: vi.fn() };
 const storage = { getPublicUrl: vi.fn((key: string) => `https://cdn.test/${key}`) };
 
@@ -58,6 +66,13 @@ describe("ForumDiscoveryService mutations", () => {
       if (key === "forum.discovery.edit_window_minutes") return Promise.resolve(30);
       return Promise.resolve(0);
     });
+    repo.tagsByThread.mockResolvedValue(new Map());
+    repo.myHelpfulTargets.mockResolvedValue(new Set());
+    threads.reactionCountsByThread.mockResolvedValue(new Map());
+    threads.myReactionsByThread.mockResolvedValue(new Map());
+    attachments.listForTargets.mockResolvedValue(new Map());
+    bookmarks.myBookmarkedTargets.mockResolvedValue(new Set());
+    zones.findMembershipsByZone.mockResolvedValue(new Map());
   });
 
   it("keeps the forum feature flag's existing 404 behavior", async () => {
@@ -67,6 +82,100 @@ describe("ForumDiscoveryService mutations", () => {
       code: ErrorCode.FORUM_DISABLED,
       httpStatus: HttpStatus.NOT_FOUND,
     });
+  });
+
+  it("normalizes a member tag suggestion and returns the pending view", async () => {
+    repo.createTagSuggestion.mockResolvedValue({
+      id: "suggestion",
+      requestedName: "Çalışma Rutini",
+      normalizedSlug: "calisma-rutini",
+      status: "PENDING",
+      resolvedTagId: null,
+      createdAt: new Date("2026-08-16T10:00:00.000Z"),
+      reviewedAt: null,
+    });
+
+    await expect(
+      service().createTagSuggestion("viewer", { name: "Çalışma Rutini" }),
+    ).resolves.toMatchObject({ normalizedSlug: "calisma-rutini", status: "PENDING" });
+    expect(repo.createTagSuggestion).toHaveBeenCalledWith(
+      "viewer",
+      "Çalışma Rutini",
+      "calisma-rutini",
+    );
+  });
+
+  it("returns conflict when a canonical tag or pending suggestion already exists", async () => {
+    repo.createTagSuggestion.mockResolvedValue(null);
+
+    await expect(
+      service().createTagSuggestion("viewer", { name: "Planlama" }),
+    ).rejects.toMatchObject({
+      code: ErrorCode.FORUM_TAG_SUGGESTION_EXISTS,
+      httpStatus: HttpStatus.CONFLICT,
+    });
+  });
+
+  it("returns the approved suggestion produced by the transactional repository review", async () => {
+    repo.resolveTagSuggestion.mockResolvedValue({
+      kind: "OK",
+      row: {
+        id: "suggestion",
+        requestedName: "Çalışma Rutini",
+        normalizedSlug: "calisma-rutini",
+        status: "APPROVED",
+        resolvedTagId: "tag",
+        createdAt: new Date("2026-08-16T10:00:00.000Z"),
+        reviewedAt: new Date("2026-08-16T11:00:00.000Z"),
+      },
+    });
+
+    await expect(
+      service().reviewAdminTagSuggestion("editor", "suggestion", {
+        action: "APPROVE",
+        nameTr: "Çalışma Rutini",
+        nameEn: "Study Routine",
+        examType: null,
+      }),
+    ).resolves.toMatchObject({ status: "APPROVED", resolvedTagId: "tag" });
+  });
+
+  it("returns conflict when an editor reviews an already resolved suggestion", async () => {
+    repo.resolveTagSuggestion.mockResolvedValue({ kind: "RESOLVED" });
+
+    await expect(
+      service().reviewAdminTagSuggestion("editor", "suggestion", { action: "REJECT" }),
+    ).rejects.toMatchObject({
+      code: ErrorCode.FORUM_TAG_SUGGESTION_RESOLVED,
+      httpStatus: HttpStatus.CONFLICT,
+    });
+  });
+
+  it("maps the feed content filter to question-only or non-QA repository filters", async () => {
+    users.getDiscoveryProfile.mockResolvedValue({ examType: "KPSS" });
+    repo.listDiscoveryThreads.mockResolvedValue([]);
+
+    await service().getFeed(
+      { id: "viewer", roles: ["STUDENT"] },
+      { scope: "relevant", sort: "recent", contentType: "questions", limit: 20 },
+      "tr",
+    );
+    expect(repo.listDiscoveryThreads).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        zoneType: "QA",
+        zoneTypes: undefined,
+        weights: expect.objectContaining({ unanswered: 0 }),
+      }),
+    );
+
+    await service().getFeed(
+      { id: "viewer", roles: ["STUDENT"] },
+      { scope: "relevant", sort: "recent", contentType: "posts", limit: 20 },
+      "tr",
+    );
+    expect(repo.listDiscoveryThreads).toHaveBeenLastCalledWith(
+      expect.objectContaining({ zoneType: undefined, zoneTypes: ["CHAT", "ANNOUNCEMENT"] }),
+    );
   });
 
   it("returns exam-aware trends with the configured activity window", async () => {

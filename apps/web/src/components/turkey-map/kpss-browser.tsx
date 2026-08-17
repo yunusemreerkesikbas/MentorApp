@@ -127,9 +127,9 @@ export function KpssBrowser({
         aria-label={t("search_placeholder")}
         className="min-h-[44px] w-full rounded-[var(--radius-card)] border px-3 text-base"
         style={{
-          borderColor: "var(--color-border, #e2e2e2)",
+          borderColor: "var(--color-border)",
           color: "var(--color-body)",
-          backgroundColor: "var(--color-surface, #fff)",
+          backgroundColor: "var(--color-surface)",
         }}
       />
 
@@ -315,7 +315,7 @@ function TitlePicker({
 
   return (
     <details className="group flex flex-col gap-1">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-[var(--radius-card)] px-2.5 text-left transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-[var(--radius-card)] px-2.5 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none">
         <span className="flex min-w-0 flex-col">
           <span
             className="text-xs font-bold uppercase"
@@ -371,7 +371,7 @@ function PostingRow({ posting }: { posting: KpssPostingDto }) {
     .join(" · ");
 
   return (
-    <div className="flex flex-col gap-0.5 rounded-[var(--radius-card)] px-2.5 py-2 transition-colors hover:bg-black/[0.04] motion-reduce:transition-none">
+    <div className="flex flex-col gap-0.5 rounded-[var(--radius-card)] px-2.5 py-2 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] motion-reduce:transition-none">
       <span
         className="text-sm font-semibold leading-snug"
         style={{ color: "var(--color-main)" }}
@@ -416,7 +416,7 @@ function Row({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className="w-full cursor-pointer rounded-[var(--radius-card)] px-2.5 py-2 text-left text-sm transition-colors hover:bg-black/[0.04] focus-visible:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+      className="w-full cursor-pointer rounded-[var(--radius-card)] px-2.5 py-2 text-left text-sm transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
       style={{
         color: selected ? "var(--color-main)" : "var(--color-body)",
         fontWeight: selected ? 700 : 400,

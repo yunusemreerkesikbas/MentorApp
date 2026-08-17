@@ -211,9 +211,9 @@ export function MapBrowser({
         aria-label={searchPlaceholder}
         className="min-h-11 w-full rounded-[var(--radius-card)] border px-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         style={{
-          borderColor: "var(--color-border, #e2e2e2)",
+          borderColor: "var(--color-border)",
           color: "var(--color-body)",
-          backgroundColor: "var(--color-surface, #fff)",
+          backgroundColor: "var(--color-surface)",
         }}
       />
 
@@ -434,7 +434,7 @@ function UniversityDetail({
           type="button"
           onClick={onBack}
           aria-label={t("back_to_city")}
-          className="inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+          className="inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
           style={{ color: "var(--color-secondary)" }}
         >
           <ArrowLeft size={20} strokeWidth={2} aria-hidden />
@@ -460,7 +460,10 @@ function UniversityDetail({
                 border: "2px solid var(--color-main)",
                 color: "var(--color-main)",
               }
-            : { backgroundColor: "var(--color-main)", color: "#fff" }
+            : {
+                backgroundColor: "var(--color-btn)",
+                color: "var(--color-btn-label)",
+              }
         }
       >
         {isTarget ? t("target_selected") : t("set_target")}
@@ -519,7 +522,7 @@ function ProgramRow({ program }: { program: ProgramDto }) {
   ].join(" · ");
 
   return (
-    <div className="flex flex-col gap-0.5 rounded-[var(--radius-card)] px-2.5 py-2 transition-colors hover:bg-black/[0.04] motion-reduce:transition-none">
+    <div className="flex flex-col gap-0.5 rounded-[var(--radius-card)] px-2.5 py-2 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] motion-reduce:transition-none">
       <span
         className="text-sm font-semibold leading-snug"
         style={{ color: "var(--color-main)" }}
@@ -581,7 +584,7 @@ function ResultRow({
       onClick={onClick}
       onMouseEnter={onHoverStart}
       onFocus={onHoverStart}
-      className="w-full cursor-pointer rounded-[var(--radius-card)] px-2.5 py-2 text-left transition-colors hover:bg-black/[0.04] focus-visible:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+      className="w-full cursor-pointer rounded-[var(--radius-card)] px-2.5 py-2 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
     >
       {content}
     </button>

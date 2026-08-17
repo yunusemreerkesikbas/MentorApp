@@ -558,13 +558,13 @@ function PuhuNoteSheet({
         animate={{ opacity: 1, y: 0 }}
         exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 32 }}
         transition={{ duration: reducedMotion ? 0 : 0.32 }}
-        className="relative mb-3 w-full max-w-lg rounded-[var(--radius-card)] bg-white px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-7 text-center shadow-2xl md:mb-0"
+        className="relative mb-3 w-full max-w-lg rounded-[var(--radius-card)] bg-[var(--color-surface)] px-6 pb-[max(24px,env(safe-area-inset-bottom))] pt-7 text-center shadow-2xl md:mb-0"
       >
         <button
           type="button"
           onClick={onClose}
           aria-label={t("controls.close_note")}
-          className="absolute right-3 top-3 inline-flex size-11 items-center justify-center rounded-full bg-black/5 text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="absolute right-3 top-3 inline-flex size-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         >
           <X className="size-5" aria-hidden />
         </button>
@@ -690,8 +690,8 @@ function RecapMessageState({
 }
 
 const primaryLinkClass =
-  "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] bg-[var(--color-btn)] px-5 py-3 text-sm font-bold text-white shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
+  "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] bg-[var(--color-btn)] px-5 py-3 text-sm font-bold text-[var(--color-btn-label)] shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
 const secondaryLinkClass =
-  "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] border border-white bg-white/70 px-5 py-3 text-sm font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
+  "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_70%,transparent)] px-5 py-3 text-sm font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
 const dockActionClass =
   "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full px-2 py-2 text-xs font-black text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white";

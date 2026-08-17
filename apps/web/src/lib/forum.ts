@@ -10,10 +10,12 @@ import type {
   ForumHubView,
   ForumSearchView,
   ForumTagView,
+  ForumTagSuggestionView,
   ForumTrendsView,
   ForumTrendScope,
   ForumZoneFeedView,
   ForumReactionEmoji,
+  ForumPollView,
   MentionSuggestion,
   ModerationTargetType,
   Paginated,
@@ -29,7 +31,7 @@ import type {
   ZoneMemberView,
   ZoneView,
 } from "@mentor/types";
-import type { AttachmentInput } from "@mentor/validation";
+import type { AttachmentInput, ForumPollInput } from "@mentor/validation";
 import { ApiClientError, http } from "@mentor/api-client";
 
 /**
@@ -76,6 +78,7 @@ export async function postThread(
   title?: string,
   attachments?: AttachmentInput[],
   tagIds?: string[],
+  poll?: ForumPollInput,
 ): Promise<ThreadView> {
   return (await http<ThreadView>(`/v1/forum/zones/${zoneId}/threads`, {
     method: "POST",
@@ -84,8 +87,16 @@ export async function postThread(
       ...(title ? { title } : {}),
       ...(attachments?.length ? { attachments } : {}),
       ...(tagIds?.length ? { tagIds } : {}),
+      ...(poll ? { poll } : {}),
     }),
   })) as ThreadView;
+}
+
+export async function votePoll(pollId: string, optionId: string): Promise<ForumPollView> {
+  return (await http<ForumPollView>(`/v1/forum/polls/${pollId}/votes`, {
+    method: "POST",
+    body: JSON.stringify({ optionId }),
+  })) as ForumPollView;
 }
 
 export async function getForumHub(): Promise<ForumHubView> {
@@ -105,6 +116,7 @@ export async function getForumFeed(input: {
   sort: ForumFeedSort;
   tag?: string;
   zoneType?: string;
+  contentType?: "posts" | "questions";
   cursor?: string;
   limit?: number;
 }): Promise<ForumFeed> {
@@ -115,6 +127,7 @@ export async function getForumFeed(input: {
   });
   if (input.tag) qs.set("tag", input.tag);
   if (input.zoneType) qs.set("zoneType", input.zoneType);
+  if (input.contentType) qs.set("contentType", input.contentType);
   if (input.cursor) qs.set("cursor", input.cursor);
   return (await http<ForumFeed>(`/v1/forum/feed?${qs.toString()}`)) as ForumFeed;
 }
@@ -326,6 +339,13 @@ export async function searchZoneMembers(zoneId: string, q: string): Promise<Ment
 export async function searchQuestions(q: string): Promise<Paginated<ThreadView>> {
   const qs = new URLSearchParams({ q, pageSize: "30" });
   return (await http<Paginated<ThreadView>>(`/v1/forum/search?${qs.toString()}`)) as Paginated<ThreadView>;
+}
+
+export async function suggestForumTag(name: string): Promise<ForumTagSuggestionView> {
+  return (await http<ForumTagSuggestionView>("/v1/forum/tag-suggestions", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  })) as ForumTagSuggestionView;
 }
 
 // --- Moderation surfaces (owner/mod or platform staff; backend authz-gated) ---

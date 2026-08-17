@@ -199,7 +199,7 @@ export function EconomyInviteCard({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 grid size-11 place-items-center rounded-full bg-white/90 text-[var(--color-main)] shadow-[var(--shadow-card)] outline-none transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-white sm:right-3 sm:top-3"
+          className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 grid size-11 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] text-[var(--color-main)] shadow-[var(--shadow-card)] outline-none transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-white sm:right-3 sm:top-3"
           aria-label={translate("invite_close")}
         >
           <X size={20} strokeWidth={2.25} aria-hidden />
@@ -309,7 +309,7 @@ export function EconomyInviteCard({
                       <button
                         type="button"
                         onClick={() => void handleCopy()}
-                        className="min-w-[5.75rem] cursor-pointer rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] outline-none transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-white"
+                        className="min-w-[5.75rem] cursor-pointer rounded-full bg-[var(--color-surface)] px-5 py-2.5 text-sm font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] outline-none transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-white"
                         style={{ fontFamily: "var(--font-body)" }}
                         aria-live="polite"
                       >
@@ -328,7 +328,7 @@ export function EconomyInviteCard({
 
           {/* Full-bleed redeem dock — flush to modal edges; parent clips bottom radius */}
           <motion.div
-            className="relative z-[1] w-full shrink-0 rounded-t-[24px] bg-white px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:pb-5"
+            className="relative z-[1] w-full shrink-0 rounded-t-[24px] bg-[var(--color-surface)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:pb-5"
             initial={reduceMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{
@@ -358,7 +358,7 @@ export function EconomyInviteCard({
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="MENTOR-…"
                 autoComplete="off"
-                className="min-h-11 w-full rounded-[var(--radius-card)] border bg-white px-3 text-base focus-visible:outline-none focus-visible:ring-2"
+                className="min-h-11 w-full rounded-[var(--radius-card)] border bg-[var(--color-surface)] px-3 text-base focus-visible:outline-none focus-visible:ring-2"
                 style={{
                   borderColor:
                     "color-mix(in srgb, var(--color-main) 12%, transparent)",

@@ -153,6 +153,7 @@ export type FeedQuery = z.infer<typeof feedQuerySchema>;
 export const forumFeedQuerySchema = z.object({
   scope: z.enum(["relevant", "following"]).default("relevant"),
   sort: z.enum(["trending", "recent", "top"]).default("trending"),
+  contentType: z.enum(["posts", "questions"]).optional(),
   tag: z.string().trim().min(1).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   zoneType: z.nativeEnum(ZoneType).optional(),
   cursor: z.string().trim().min(1).max(1000).optional(),
@@ -212,6 +213,36 @@ export const adminForumTagUpdateSchema = adminForumTagCreateSchema
   .partial()
   .refine((value) => Object.keys(value).length > 0, { message: "At least one field is required" });
 export type AdminForumTagUpdate = z.infer<typeof adminForumTagUpdateSchema>;
+
+export const createForumTagSuggestionSchema = z.object({
+  name: z.string().trim().min(2).max(80),
+});
+export type CreateForumTagSuggestion = z.infer<typeof createForumTagSuggestionSchema>;
+
+export const reviewForumTagSuggestionSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("APPROVE"),
+    nameTr: z.string().trim().min(2).max(80),
+    nameEn: z.string().trim().min(2).max(80),
+    examType: z.string().trim().max(32).nullable().default(null),
+  }),
+  z.object({ action: z.literal("REJECT") }),
+]);
+export type ReviewForumTagSuggestion = z.infer<typeof reviewForumTagSuggestionSchema>;
+
+/** Object-shaped equivalent for Nest's class-based DTO adapter. */
+export const reviewForumTagSuggestionDtoSchema = z
+  .object({
+    action: z.enum(["APPROVE", "REJECT"]),
+    nameTr: z.string().trim().min(2).max(80).optional(),
+    nameEn: z.string().trim().min(2).max(80).optional(),
+    examType: z.string().trim().max(32).nullable().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.action === "APPROVE" && (!value.nameTr || !value.nameEn)) {
+      ctx.addIssue({ code: "custom", message: "Approved tags require Turkish and English names" });
+    }
+  });
 
 export const setFeaturedThreadSchema = z.object({
   threadId: z.string().uuid(),

@@ -101,7 +101,7 @@ export function CoachStarterChips({ onSeed }: CoachStarterChipsProps) {
             key={key}
             type="button"
             onClick={() => onSeed(text)}
-            className={`${chipBase} bg-white`}
+            className={`${chipBase} bg-[var(--color-surface)]`}
             style={{ color: "var(--color-main)" }}
           >
             {text}

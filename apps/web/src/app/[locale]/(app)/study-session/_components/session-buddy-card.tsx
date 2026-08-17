@@ -293,7 +293,7 @@ function BuddyEmptyState({
           placeholder={t("buddy_invite_placeholder")}
           aria-label={t("buddy_invite_title")}
           autoComplete="off"
-          className="min-w-0 flex-1 rounded-[var(--radius-card)] border bg-white/60 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
+          className="min-w-0 flex-1 rounded-[var(--radius-card)] border bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
           style={{ borderColor: "var(--color-progress-track)", color: "var(--color-main)" }}
         />
         <button

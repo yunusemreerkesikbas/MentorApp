@@ -67,6 +67,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `GET /v1/forum/zones/:id/members/search?q=` | @mention autocomplete — active-member username prefix search (APP-021) |
 | `DELETE /v1/forum/zones/:id/members/:userId` | Reject pending or remove active member (owner/mod/staff; OWNER protected) |
 | `POST /v1/forum/zones/:id/threads` | Post thread/ask question |
+| `POST /v1/forum/polls/:pollId/votes` | Cast the viewer's single immutable anonymous poll vote |
 | `GET /v1/forum/zones/:id/threads` | Cursor feed (pinned first) |
 | `POST /v1/forum/threads/:threadId/answers` | Post QA answer |
 | `GET /v1/forum/threads/:threadId` | Question detail (q + answers) |
@@ -96,7 +97,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `GET /v1/forum/search?q=` | Grouped full-text community search (threads, QA questions, public zones, tags, public-safe people; max 5 each) |
 | `GET /v1/forum/hub` | Discovery hub: featured, continue/new blend, trend tags, supporters, room suggestions |
 | `GET /v1/forum/trends?scope=relevant\|exam\|general&limit=` | Exam-aware, time-windowed community tag trends |
-| `GET /v1/forum/feed?scope=&sort=&tag=&zoneType=&cursor=` | Global relevant/following feed with server ranking and opaque cursor |
+| `GET /v1/forum/feed?scope=&sort=&tag=&zoneType=&contentType=&cursor=` | Global relevant/following feed; `contentType=posts|questions` is additive, with server ranking and opaque cursor |
 | `GET /v1/forum/tags` | Locale-resolved active curated tags |
 | `GET /v1/forum/zones/:slug/feed` | Zone metadata + first feed page + contributors + pinned threads in one request |
 | `PATCH /v1/forum/threads/:id` · `PATCH /v1/forum/posts/:id` | Owner-only, time/interaction-locked editing |
@@ -107,6 +108,41 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `GET /v1/forum/public/questions?limit=` | Public QA refs (sitemap) |
 
 ## Geliştirmeler (timeline)
+
+- **Karma akışta Q/A görünürlüğü (2026-08-15)** — Q/A soruları normal akışta kalır; yeni
+  `Tümü · Paylaşımlar · Sorular` segmenti backend'deki additive `contentType=posts|questions`
+  filtresini kullanır. `posts`, CHAT+ANNOUNCEMENT; `questions`, yalnız QA thread'lerini getirir.
+  İlgili akış mevcut exam/public görünürlük kapsamını, takip akışı ise takip ilişkisini korur.
+  Q/A kartında tekrarlı “Soru-Cevap” tür metni yerine sade “Soru” rozeti, daha dengeli başlık
+  boyutu, Faydalı aksiyonu ve cevap sayısı gösterilir. Trending/top skorunda cevapsız soruya
+  küçük ve merkezi ayarlanabilir `unanswered_question_bonus=2` desteği verilir; bu değer tek
+  katılımcı ağırlığından (`3`) düşük olduğu için karma akışı domine etmez. İlgili:
+  `feed-shell.tsx`, `discovery-feed-card.tsx`, `forum-discovery.{service,repository}.ts`.
+
+- **Topluluk anketi ve hedef kitle seçimi (2026-08-15)** — CHAT ve paylaşma yetkisi bulunan
+  ANNOUNCEMENT ana gönderileri artık 2–4 seçenekli, 5 dakika–7 gün süreli anket taşıyabilir.
+  Kullanım: akışın üstündeki inline composer'da önce aktif üyesi olunan uygun topluluk seçilir;
+  topluluk içindeki composer aynı hedefi kilitli rozetle gösterir. Oy tek, anonim ve değiştirilemez;
+  sonuçlar oy verildikten veya anket kapandıktan sonra görünür. Anket ile ek birbirini dışlar ve
+  geçiş erişilebilir onay ister. Oy, gönderi düzenleme kilidine katılır fakat discovery skoru,
+  `lastActivityAt` ve bildirim üretimini etkilemez. Poll/thread/seçenek oluşturma tek transaction'dır;
+  feed/detail yolları poll verisini toplu yükler. Gotcha: migration forward-only'dir ve production
+  öncesi `0079_forum_polls.sql` uygulanmalıdır. İlgili: `forum-poll.{service,repository,controller}.ts`,
+  `forum-poll-card.tsx`, `global-composer.tsx`, `packages/{types,validation}/src/forum.ts`.
+
+- **Akış composer sadeleştirmesi (2026-08-15)** — Hedef kitle rozeti görsel olarak küçültüldü;
+  dropdown ve sidebar artık topluluk türünü aynı `ZoneTypeIcon` (`#`, megafon, soru) bileşeniyle
+  gösterir. Normal paylaşımda başlık alanı ve bağımsız etiket listesi yoktur; anket eklenince anket
+  başlığı görünür. Metinde `#` yazıldığında aktif küratörlü etiketler ada veya slug'a göre filtrelenen,
+  klavyeyle kullanılabilen bir öneri listesinde açılır. Seçilen öneri metne kararlı slug ile eklenir ve
+  discovery filtresine bağlanır; eşleşmeyen serbest hashtag metinde kullanılabilir ama otomatik yeni tag
+  kaydı oluşturmaz. Post kartları etiketi ikinci kez chip olarak göstermez. İlgili: `composer-hashtags.ts`,
+  `hashtag-suggestions.tsx`, `global-composer.tsx`, `audience-selector.tsx`, `zone-type-icon.tsx`.
+  **Anket başlığı düzeltmesi:** anket etkin olduğunda genel içerik textarea'sı ve araç çubuğu gizlenir;
+  yalnız anket başlığı ile seçenek/süre alanları kalır. CHAT/ANNOUNCEMENT thread'lerinde `title` alanı
+  backend tarafından bilinçli olarak `null` tutulduğu için anket başlığı mevcut sözleşmeye uygun biçimde
+  `body` alanına yazılır; böylece kartta kullanıcıya gösterilen metin anket başlığıdır. Anket kaldırılırsa
+  başlık normal paylaşım metnine geri taşınır. İlgili regresyon kuralı: `composer-thread-text.ts`.
 
 - **Kaydedilenler profil sekmesi ve ortak post kartı (2026-08-11)** — Sol navigasyondaki “Kaydedilenler” korunur ancak ayrı liste sayfası açmak yerine oturumdaki kullanıcının `/community/member/{username}?tab=bookmarks` adresine gider. İç terminoloji kullanıcı aksiyonuyla uyumlu biçimde `bookmarks` kullanır; eski `?tab=saved` bağlantısı geriye uyumluluk için aynı sekmeyi açar. Profil sekmesi URL ile senkron olduğundan doğrudan bağlantı, geri ve ileri gezinme çalışır; eski `/community/saved` adresi uyumluluk için aynı hedefe yönlendirir. Kaydedilmiş postlar artık ekstra iç padding olmadan Akış yoğunluğunda gösterilir. Oda, mesaj detayı, profil ve kaydedilenler `CommunityPostCard` üzerinden aynı avatar (40 px), kullanıcı meta alanı, 22–24 px başlık, 14 px gövde, medya/etiket ve aksiyon satırı sunumunu kullanır; optimistic reaction/bookmark işlemleri ilgili shell'lerde kalır.
   Yorum sayısı ayrı bir “3 yorum” özet satırı olarak tekrarlanmaz; doğrudan yorum ikonunun yanında sayısal rozet metni olarak gösterilir.
@@ -548,6 +584,61 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 - **İsim + @username gösterimi (APP-017)** — Post/yorum başlığında görünen ad artık `coalesce(username, displayName)` değil; **ayrı iki alan**: `authorName` = displayName (insan adı), `authorUsername` = @handle (nullable). `ThreadView`/`AnswerView`/`CommentView` + repo satır tipleri + tüm `coalesce` select'leri + mapper'lar güncellendi. Web: thread-item / comment-row / FocusedComment başlıklarında "İsim @handle · zaman" (handle yoksa gizli, ikisi de truncate — mobil-güvenli). Seed hayalet kullanıcılarına geçerli @handle verildi (`^[a-z0-9_]{3,24}$`, tire→alt çizgi). *(APP-017)*
 
+- **Akış sıralaması tek filtre menüsünde (2026-08-15)** — Akışın üstündeki ikinci görünür
+  sekme şeridi kaldırıldı. `Öne Çıkan`, `Yeni`, `En İyi` ve `Takip ettiklerim` seçenekleri
+  masaüstünde `Filtrele` dropdown'ına, mobilde aynı filtre bottom-sheet'ine taşındı; içerik
+  türü için kullanılan `Tümü / Paylaşımlar / Sorular` sekmeleri yerinde kaldı. Seçili sıralama
+  menüde onay işaretiyle gösterilir. Sıralama/kapsam dönüşümü `feed-tab-selection.ts` içinde
+  tek kaynaktır ve dört kombinasyon birim testiyle korunur. Related: `feed-shell.tsx`,
+  `feed-tab-selection.ts`, `messages/{tr,en}.json`.
+
+- **Twitter-benzeri akış composer'ı (2026-08-15)** — Global composer kapalıyken avatar,
+  şeffaf `Neler oluyor?` alanı, araçlar ve yayınlama aksiyonundan oluşan sade görünüme geçti.
+  Odaklandığında hedef kitle ve gönderi türü iki ayrı kompakt kontrol olarak açılır; büyük
+  `Paylaşım / Soru` tab şeridi kaldırıldı. Gönderi türü menüsünden `Soru` seçildiğinde ayrı
+  soru formu açılır; `Paylaşım` seçildiğinde CHAT/yetkili ANNOUNCEMENT hedefleri kullanılır.
+  Anket görünümünde normal metin alanı gösterilmez; yalnız anket başlığı, seçenekler
+  ve süre korunur. Standart paylaşım composer'ı dışarı tıklanınca taslağı silmeden yeniden
+  kompakt hâle gelir; alan kaybını önlemek için soru ve aktif anket formları açık kalır.
+  `Herkes yanıtlayabilir` satırı ürüne eklenmedi. Related:
+  `global-composer.tsx`, `composer-body-field.tsx`, `composer-presentation.ts`.
+
+- **Q/A soru composer'ı ve zengin metin (2026-08-16)** — Akış composer'ında `Soru` seçimi
+  masaüstünde merkezî modal, mobilde ekranın altından açılan yüksek bottom-sheet kullanır;
+  normal post alanını büyütmez. Formda zorunlu QA hedef kitlesi, başlık, Lexical tabanlı temel
+  zengin metin editörü, isteğe bağlı en fazla üç aktif/küratörlü etiket ve ekler bulunur.
+  Soru tipi V1'de özellikle eklenmedi; etiketler yeni serbest değer üretmez. Editör çıktısı
+  mevcut `body` alanında Markdown olarak saklanır (ham HTML saklanmaz), bu nedenle şema/API
+  değişikliği gerekmez. Dialog kapatılınca taslak sayfa oturumu boyunca korunur, başarılı
+  yayından sonra sıfırlanır. Akış ve oda listelerinde Markdown düz metin önizlemesine çevrilir;
+  soru detayında güvenli `react-markdown` renderer ile biçimlendirilir. **Gotcha:** Lexical
+  yalnız dialog açıldığında dinamik yüklenir; soru metnini başka yüzeylerde gösteren yeni
+  bileşenler ham `body` basmamalı, detayda `ForumMarkdown`, özetlerde
+  `questionMarkdownToPlainText` kullanmalıdır. Related: `question-composer-dialog.tsx`,
+  `question-rich-text-editor.tsx`, `question-composer-state.ts`, `forum-markdown.tsx`,
+  `global-composer.tsx`, `messages/{tr,en}.json`.
+  Etiket alanı boşken ilgili kullanıcının forum trendlerindeki ilk 6 aktif etiketi 12px
+  öneri chip'leri olarak gösterir; trend isteği başarısızsa aktif küratörlü listeye geri döner.
+  Arama yazıldıkça filtrelenir ve baştaki `#` isteğe bağlıdır. Composer'a eklenen yerel görsel
+  orta boy 3/4 sütunlu kare önizlemesine tıklanınca Escape, dışarı tıklama ve klavye odak
+  döngüsünü destekleyen tam ekran önizleme açılır; dosya ekleri bu davranışa dahil değildir.
+  Community etiket yüzeylerinde görünür canonical biçim ASCII slug'dır
+  (`#calisma-ipuclari`): küçük harf, boşluksuz ve kelimeler tireyle ayrılır. Lokalize `name`
+  alanları admin/i18n/erişilebilirlik için korunur; URL filtreleriyle aynı stabil slug gösterilir.
+
+- **Q/A faydalı aksiyonu ikonlaştırıldı (2026-08-16)** — `+1 Faydalı` metin aksiyonu,
+  beğeni kalbiyle karışmayan yukarı-oy (`HelpfulVoteIcon`) ikonu ve oy sayısına dönüştürüldü.
+  Akıştaki Q/A kartı, soru detayı ve cevaplar ortak `HelpfulButton` kullanır; seçili durumda
+  ikon dolu yeşil görünür. Görsel metin kaldırılırken ekran okuyucu etiketi ve `aria-pressed`
+  durumu korundu. Related: `helpful-button.tsx`, `helpful-action.ts`, `forum-icons.tsx`.
+  **Gotcha:** SVG'nin kendisine tıklanınca `event.target` bir `SVGElement` olur; kartın eski
+  `instanceof HTMLElement` kontrolü bunu interaktif saymayıp detay navigasyonunu tetikliyordu.
+  `isFeedInteractiveTarget` artık `closest()` yeteneğini kullanarak SVG dahil buton içindeki
+  tüm hedefleri doğru ayırır; oy aksiyonu karttan ayrık çalışır.
+  Kendi içeriğinde backend read modelleri `canHelpfulVote: false` döndürür; ikon ve toplam oy
+  görünür kalır ancak API çağrısı üretmez, hover/focus açıklaması kuralı kullanıcıya bildirir.
+  Mutation endpoint'indeki `FORUM_HELPFUL_VOTE_SELF` kontrolü güvenlik katmanı olarak korunur.
+
 ### Figma fidelity backlog (backend gerektirir)
 
 - ~~**Görsel/attachment + carousel**~~ — **Yapıldı** (Faz 1 CHAT/ANNOUNCEMENT · Faz 2 QA soru+cevap + lightbox carousel + orphan-cleanup, APP-018). ~~Dosya ekleri~~ **Yapıldı** (PDF + Office, APP-027). Kalan: **video** ekleri.
@@ -556,6 +647,16 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 - **Repost** — hâlâ kapsam dışı (ürün kararı; karşılık gelen entity yok). *Harici paylaşım (Send) yapıldı — APP-018; cevaplı QA sorularında artık public SEO linki paylaşılıyor (WP-J).*
 - ~~**Zone başına agregat "X mesaj" sayacı**~~ — **Yapıldı** (`ZoneView.threadCount` + `threadCountsByZone` batched aggregate; sidebar "X üye · Y mesaj", APP-026).
 - **Profil kartı sosyal alanları** — ~~takipçi sayısı~~ **Yapıldı** (takip grafı + takipçi/takip sayaç & listeleri, APP-022). Kalan: **bio + web sitesi** (`AuthUser`/`users`'da yok; şema + endpoint gerekir).
+
+### Kullanıcı etiket önerileri (2026-08-16)
+
+- Soru modalında etiket araması sonuç vermediğinde kullanıcı ASCII hashtag'i inceleme için
+  önerebilir. Öneri soruya otomatik bağlanmaz; onaydan sonra yalnızca kürasyonlu havuza eklenir.
+- Backend Türkçe karakterleri kararlı ASCII slug'a dönüştürür, mevcut veya bekleyen aynı slug'ı
+  `409 FORUM_TAG_SUGGESTION_EXISTS` ile engeller. Admin onay/red işlemi denetim kaydı üretir.
+- `forum_tag_suggestions` kişisel içerikten ayrıdır; hesap silmede öneren ve inceleyen kimlikleri
+  anonimleştirilir. İlgili dosyalar: forum discovery service/repository/controller, admin forum
+  controller ve web soru composer'ı.
 
 ## Gotchas / Known issues
 

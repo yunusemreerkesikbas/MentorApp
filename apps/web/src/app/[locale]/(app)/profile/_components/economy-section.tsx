@@ -163,7 +163,7 @@ export function EconomySection({ refreshKey = 0 }: EconomySectionProps) {
     <>
     <Card solid className="p-4">
       <SectionHeading>{profile("title")}</SectionHeading>
-      <div className="mt-3 divide-y divide-black/10 overflow-hidden rounded-[var(--radius-card)]">
+      <div className="mt-3 divide-y divide-[var(--color-border)] overflow-hidden rounded-[var(--radius-card)]">
         <ListRow
           icon={<Coins size={22} aria-hidden />}
           onClick={showBalance}

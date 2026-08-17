@@ -243,7 +243,7 @@ export function PlanCalendarView({
             }),
           })}
           className="fixed right-5 bottom-[calc(96px+env(safe-area-inset-bottom))] z-40 flex size-14 cursor-pointer items-center justify-center rounded-full shadow-[var(--shadow-card)] focus-visible:outline-none focus-visible:ring-2 lg:hidden"
-          style={{ backgroundColor: "var(--color-main)", color: "#fff" }}
+          style={{ backgroundColor: "var(--color-btn)", color: "var(--color-btn-label)" }}
         >
           <Plus size={26} strokeWidth={2.5} aria-hidden />
         </button>

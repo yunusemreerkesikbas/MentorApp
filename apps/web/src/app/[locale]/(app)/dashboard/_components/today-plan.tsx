@@ -152,7 +152,7 @@ function AddTaskLink() {
   return (
     <Link
       href="/plan"
-      className="flex min-h-[44px] items-center gap-1.5 rounded-[var(--radius-card)] px-3 text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+      className="flex min-h-[44px] items-center gap-1.5 rounded-[var(--radius-card)] px-3 text-sm font-semibold transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
       style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
     >
       <Plus size={18} strokeWidth={2} aria-hidden />
@@ -180,7 +180,7 @@ function EmptyState() {
       </p>
       <Link
         href="/plan"
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-card)] border px-4 text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-card)] border px-4 text-sm font-semibold transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
         style={{
           color: "var(--color-main)",
           borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",

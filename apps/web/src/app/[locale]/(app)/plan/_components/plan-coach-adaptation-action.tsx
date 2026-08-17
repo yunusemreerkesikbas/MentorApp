@@ -197,7 +197,7 @@ const PlanCoachAdaptationPreview = forwardRef<PreviewHandle, PreviewProps>(
               {dayRows.map((row) => (
                 <label
                   key={row.key}
-                  className="flex min-h-11 cursor-pointer items-start gap-3 rounded-[var(--radius-card)] border bg-white/50 px-3 py-2.5"
+                  className="flex min-h-11 cursor-pointer items-start gap-3 rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] px-3 py-2.5"
                   style={{ borderColor: "var(--color-progress-track)" }}
                 >
                   <input

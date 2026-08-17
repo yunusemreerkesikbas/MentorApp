@@ -909,10 +909,66 @@ export type NotebookPageItem =
   | VisionBoardTextItem
   | VisionBoardStickerItem;
 
+/**
+ * The pens. Append-only, same rule as every other enum here — dropping a value orphans it inside
+ * somebody's saved page.
+ *
+ * `fountain` is the odd one out: the other six are velocity/pressure profiles fed to the same
+ * outline algorithm, while a fountain nib's width comes from the angle between the stroke and a
+ * fixed nib direction. It gets its own maths in `notebook-ink.ts`.
+ */
+export const NOTEBOOK_INK_TOOLS = [
+  "pencil",
+  "pen",
+  "fineliner",
+  "marker",
+  "highlighter",
+  "brush",
+  "fountain",
+] as const;
+export type NotebookInkTool = (typeof NOTEBOOK_INK_TOOLS)[number];
+
+/**
+ * One drawn line, in the page's own 1080×1440 design space — so ink lands where it was drawn at
+ * any container width, exactly like every item.
+ *
+ * The eraser is not a tool that gets stored: it removes whole strokes, so what it leaves behind is
+ * a shorter array, not an "erased" record.
+ */
+export interface NotebookInkStroke {
+  id: string;
+  tool: NotebookInkTool;
+  /** `#rrggbb`. The eraser never reaches here, so there is no "no colour" case. */
+  color: string;
+  /** Nib width in design-space px, before the tool's own thinning. */
+  size: number;
+  opacity: number;
+  /**
+   * Flat `[x, y, pressure, x, y, pressure, …]`.
+   *
+   * A flat array rather than `{x, y, pressure}[]`: the keys repeat once per sample and a page can
+   * hold thousands of them, so objects roughly triple the jsonb this document costs to store, read
+   * and re-validate on every autosave.
+   */
+  points: number[];
+}
+
 export interface NotebookPageDoc {
   version: 1;
   paper: NotebookPaper;
   items: NotebookPageItem[];
+  /**
+   * Freehand ink, a sibling of `items` rather than another item kind.
+   *
+   * As an item it would burn one of the page's forty slots per stroke, carry a
+   * `VisionBoardItemBase` geometry it never uses, and — because the stage hands every item to the
+   * gesture layer — become draggable, which ink on paper is not. As its own field it is one flat
+   * list rendered as one SVG layer.
+   *
+   * The cost of that choice: a single layer has a single depth, and it sits above every item. You
+   * cannot slide a sticker over ink you already drew. Neither can you on paper.
+   */
+  ink: NotebookInkStroke[];
 }
 
 export interface NotebookEntryDto {

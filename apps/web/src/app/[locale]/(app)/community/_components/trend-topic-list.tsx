@@ -13,7 +13,7 @@ export function TrendTopicList({ items }: { items: ForumTrendItem[] }) {
         <Link
           key={item.id}
           href={{ pathname: "/community/feed", query: { tag: item.slug } }}
-          className="block min-h-20 border-t border-[#e7e9ee] px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)]"
+          className="block min-h-20 border-t border-[var(--color-border)] px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)]"
         >
           <span className="block text-xs leading-5 text-[var(--color-secondary)]">
             {item.examType
@@ -21,7 +21,7 @@ export function TrendTopicList({ items }: { items: ForumTrendItem[] }) {
               : t("trends_general_context")}
           </span>
           <span className="block truncate text-[15px] font-extrabold text-[var(--color-main)]">
-            #{item.name}
+            #{item.slug}
           </span>
           <span className="mt-0.5 block text-xs text-[var(--color-secondary)]">
             {t("trends_post_count", { count: item.threadCount })}

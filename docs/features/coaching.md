@@ -145,6 +145,72 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Study-session light/dark surfaces (2026-08-15)** — `/seans` history lists, buddy
+  invite field, done-state note, and circular controls use `--color-surface` /
+  `--color-border`. Pause stays white-on-`--color-progress`. Usage: sidebar
+  moon/sun on `/seans`. Related: `session-history.tsx`, `session-controls.tsx`,
+  `session-done-state.tsx`, `docs/features/web-shell.md`.
+
+- **Pano editor theme toggle (2026-08-15)** — Sağ üst tema butonu kaldırıldı;
+  `/hedef/pano` temayı yalnız collapsed AppNav footer'dan değiştirir. Related:
+  `board-editor-shell.tsx`.
+
+- **Hedef panosu rail hizası (2026-08-15)** — Collapsed AppNav ile pano kategori
+  rail / geri tuşu / undo sırası aynı `pt-3` + 44px ilk hedef. Related:
+  `board-editor-shell.tsx`, `app-nav.tsx`.
+
+- **Hedef panosu collapsed AppNav (2026-08-15)** — `/hedef/pano` keeps the desktop
+  52px icon rail instead of hiding AppNav. Collapse is route-forced (cookie not
+  overwritten). Mobile editor stays full-bleed. Related: `layout.tsx`,
+  `app-nav.tsx`, `app-sidebar.ts`.
+
+- **Vision board light/dark chrome (2026-08-15)** — `/hedef` map chrome and `/hedef/pano`
+  editor chrome use `--color-surface` / `--color-btn-label`. Canvas, frames, export,
+  and color palettes stay collage-native (DESIGN.md §2.5). Theme toggle sits in the
+  editor top bar (AppNav is hidden on `/hedef/pano`). Turkey landmass mixes secondary
+  into `--color-surface` (not `white`) so dark charcoal does not glare; province
+  seams and label halos use `--color-bg`. Pin red + white eye stay map-native.
+  Usage: sidebar moon/sun on `/hedef`; editor bar on `/hedef/pano`. Related:
+  `vision-board-shell.tsx`, `board-editor-shell.tsx`, `map-browser.tsx`,
+  `globals.css` (`.mentor-tr-map`), `docs/features/web-shell.md`.
+
+- **Analysis light/dark surfaces (2026-08-15)** — `/analiz` tabs, history rail/drawer,
+  next-focus card, and mock-exam form use `--color-surface` / `--color-btn-label`.
+  Shared `HistorySideRail` / `HistorySideDrawer` follow the same so Koç history
+  chrome stays paired. Weekly-recap story + overlay dock stay recap-native
+  (DESIGN.md §2.5); only the note dialog and post-recap CTAs follow theme.
+  Usage: sidebar moon/sun on `/analiz`. Related: `analysis-shell.tsx`,
+  `analysis-tab-progress.tsx`, `history-side-rail.tsx`,
+  `docs/features/web-shell.md`.
+
+- **Coach calibration pills (2026-08-15)** — Preference chips no longer use hardcoded
+  `white` fill. Unselected = surface + main ink; selected = `--color-btn` /
+  `--color-btn-label`. Dark charcoal no longer washes the labels out. Related:
+  `coach-calibration-card.tsx`.
+
+- **Coach light/dark surfaces (2026-08-15)** — `/koc` chat shell, composer, history rail/drawer,
+  memory dialog, calibration/action cards, and Puhu speech bubbles use `--color-surface` /
+  `--color-btn-label`. Pastel backdrop blobs read `--blob-*` opacities so dark charcoal
+  stays calm. User bubbles stay white-on-`--color-progress`. Usage: sidebar moon/sun on
+  `/koc/sohbet`. Gotcha: mobile AppNav chrome is still a later slice. Related:
+  `coach-chat-shell.tsx`, `coach-composer.tsx`, `puhu-coach-bubble.tsx`,
+  `docs/features/web-shell.md`.
+
+- **Plan light/dark surfaces (2026-08-15)** — `/plan` calendar, timeline, view switcher, and
+  add/adapt dialogs use surface/border/btn-label tokens. Shared `Dialog`, `TextField`,
+  `TextAreaField`, and `BottomSheet` follow the same so modal titles/labels stay readable
+  on charcoal (no more light ink on `bg-white`). Usage: open “Yeni etkinlik” or coach
+  adapt in dark. Gotcha: today-dot on `--color-progress` still uses white (mid-blue).
+  Related: `plan-view-switcher.tsx`, `plan-add-task-button.tsx`, `dialog-panel.tsx`,
+  `text-field.tsx`, `globals.css` `.mentor-plan-day-picker`.
+
+- **Panel light/dark surfaces (2026-08-15)** — `/panel` cards, rhythm well, ritual/community
+  promo shells, and coach-next-action now use `--color-surface` / `--color-main` instead of
+  hardcoded `bg-white` + light text (dark-mode contrast break). `@mentor/ui` `Card` follows
+  the same tokens. Usage: toggle theme in the sidebar; greeting + metrics stay readable.
+  Gotcha: weekly-recap teaser and vision-board canvas stay on their own palettes. Related:
+  `panel-shell.tsx`, `community-card.tsx`, `soft-promo-shell.tsx`, `packages/ui/src/components/card.tsx`.
+
 - **Streak rescue success Puhu video sheet (2026-08-10)** — Daily streak celebration keeps the
   flame hero. After a successful coin streak rescue, `/panel` opens a one-shot sheet:
   full-bleed square looping video, bottom 40px clipped (draft watermark), celebration-style
@@ -1793,3 +1859,440 @@ pnpm --filter @mentor/api test
   İlgili: `notebook-shell.tsx`, `notebook-side-panel.tsx`, `notebook-entry-card.tsx`,
   `notebook-page-stage.tsx`, `notebook-text-inline-editor.tsx` (yeni),
   `notebook-image-lightbox.tsx` (yeni), `notebook-surface.tsx`.
+
+- **Defter kabuğu 4. tur: gerçek yaprak çevirme, daha büyük defter, alta oturan sayfa kontrolleri
+  (2026-08-15, APP-042)** — Kullanıcı geri bildirimi netti: "şu anda sağdan sola doğru **yatay
+  zeminde** kayıyor", istenen ise gerçek bir kitapta olduğu gibi **tek yaprağın** ciltten kalkıp
+  kıvrılarak **karşı sayfanın üstüne** düşmesi. Üç değişiklik:
+  (1) **`NotebookPageTurn` (yeni).** 3. turda gelen "tek blok kayan çift sayfa" ve onun ardından
+  denenen "çift sayfayı birlikte `rotateY` ile döndürme" ara adımı da yanlıştı: gerçek kitap **iki
+  sayfayı birlikte döndürmez**, ciltte menteşelenmiş **tek yaprağı** çevirir. Artık iki canlı
+  sahnenin üstünde uçan, `pointer-events:none` + `aria-hidden` **dekoratif** bir yaprak var:
+  `transform-origin` spine tarafında, `rotateY` 0→∓180, `backface-visibility` ile ön yüz (defterin
+  kendi kağıt deseni, `PAPERS` yeniden kullanıldı) ve arka yüz (kağıdın alt tarafı — çizgisiz,
+  gri degrade) otomatik takas ediliyor. Kıvrım hissi üç ucuz sinyalden: menteşede koyu kırışık +
+  serbest kenarda parlama degradesi, serbest kenarda yumuşayan `border-radius`, ve yaprak dikey
+  konuma gelirken `scaleY` 1→0.972 (ayakta duran kağıt yatan kağıttan kısa görünür). Ayrıca yaprağın
+  düştüğü sayfaya süpürülen ayrı bir gölge katmanı var. Yaprak **dekoratif olduğu için** alttaki
+  `useItemGesture` sürükleme/seçim katmanı çevirme sırasında hiç sökülüp kurulmuyor.
+  **Bilerek bırakılan iki tavan** (`ponytail:` yorumlarıyla dosyada işaretli): (a) uçan yaprak
+  **boş kağıt**, sayfanın gerçek öğelerini taşımıyor — taşımak uçuş boyunca 3. ve 4. sayfa
+  dökümanını da bellekte tutmayı gerektirirdi, ~600 ms'de kimsenin okuyamayacağı bir kazanç için;
+  gerekirse `left±2` erken çekilip iki yüze etkileşimsiz `NotebookPageStage` basılır. (b) Kıvrım
+  **gölgelendirme, geometri değil** — kağıdın gerçekten bükülmesi (sütun sütun deformasyon) WebGL
+  veya canvas tabanlı bir page-flip kütüphanesi ister, ikisi de sahnelerimizin yaşadığı DOM'u
+  sahiplenmek istiyor.
+  Alttaki içerik takası artık kaymıyor, **çapraz solma** (yaprağın süresinin %80'i, `easeInOut`) —
+  değişim en görünür olduğu orta noktada yaprak zaten spine üzerinde duruyor. Tam kitap doğruluğu
+  (açılan taraf t=0'da, örtülen taraf t=0.5'te değişsin) giden sayfanın dökümanını uçuş boyunca
+  tutmayı gerektirir; yarım vuruşluk fark gerçekten göze batarsa yapılacak iş bu.
+  `prefers-reduced-motion` açıkken yaprak hiç oluşturulmuyor, sade crossfade kalıyor.
+  (2) **Defter büyüdü:** genişlik tavanı 1180px→1440px, yükseklik bütçesi %74/%80dvh→%88/%92dvh
+  (kapak dahil). `object-fit: contain` mantığı korundu — defter hâlâ sayfanın kendisini kaydırmaya
+  zorlayamıyor.
+  (3) **Sayfa kontrolleri gerçek alta oturdu:** kabuk `min-h-[100dvh]`, orta satır `flex-1` — mevcut
+  `mt-auto` artık viewport'un gerçek altına yaslanıyor, defterin hemen altında asılı kalmıyor.
+  İlgili: `notebook-page-turn.tsx` (yeni), `notebook-shell.tsx`.
+
+- **Defter büyütmesi kaydırmaya sebep oldu, bütçe geri çekildi (2026-08-15, APP-042)** — 4. turda
+  yükseklik bütçesi %74/%80dvh→%88/%92dvh yapılmıştı; bu, araç çubuğu (geri al/sil/kaydet) + sayfalama
+  satırı + boşluklar için ayrılmış payı neredeyse sıfırladı. `min-h-[100dvh]` kabuk + `flex-1` sütun
+  içindeki defter kendi `aspectRatio`'suyla sabit yükseklikte (flex tarafından küçültülemez), bu yüzden
+  toplam içerik (araç çubuğu + defter + sayfalama + padding) 100dvh'i aştığında sayfa **kayan** bir
+  sayfaya dönüştü. Bütçe %78/%84dvh'e çekildi — orijinal %74/%80'den hâlâ büyük ama krom için ~beşte
+  bir viewport payı geri verildi. Kalıcı not: bu bütçeyi tekrar büyütmeden önce toolbar+pagination+
+  padding'in gerçek yüksekliğini ölç, körlemesine artırma.
+  İlgili: `notebook-shell.tsx`.
+
+- **Defter biraz daha büyüdü (2026-08-15, APP-042)** — Taşma düzeldikten sonra ekran görüntüsünde hâlâ
+  belirgin siyah pay vardı (yanlarda ve altta). Bütçe %78/%84dvh→**%84/%90dvh**, genişlik tavanı
+  1440px→**1680px** (kapak 680px→**760px**). Krom payı beşte birden ona indi; taşma tekrar denendi,
+  yok.
+  İlgili: `notebook-shell.tsx`.
+
+- **%84/%90dvh de taştı, %80/%86'ya çekildi + alt boşluk sıkıldı (2026-08-15, APP-042)** — Kullanıcı
+  bir önceki büyütmenin de taştığını bildirdi; "alttaki butonları küçültelim mi" sorusuna DESIGN.md'nin
+  bağlayıcı kuralıyla ("Etkileşim hedefleri en az 44px") cevap hayır oldu — sayfalama okları `size-11`
+  (44px, dokunma hedefi tabanı) altına düşürülmedi. Onun yerine: bütçe %84/%90dvh→**%80/%86dvh** (ilk
+  denenen kararlı değer %78/%84'ün az üstü, bilinerek çalışmayan %84/%90'ın altı), sayfalama satırının
+  kendi `gap-4 pt-2`→**`gap-3 pt-1`**'i sıkıldı — birkaç px'lik pay butonlardan değil boşluktan geri
+  alındı. **Ders:** bu bütçeyi bir daha "gözle" büyütmeden önce toolbar+pagination+padding'in gerçek
+  px yüksekliğini ölç; iki turdur körlemesine artırıp iki turdur geri çekiliyoruz.
+  İlgili: `notebook-shell.tsx`.
+
+- **Defter kabuğu 5. tur: tek merkezî cilt, kapak menteşesi, kağıt geçişi (2026-08-15, APP-042)** —
+  Kullanıcı iki referans görsel verdi (açık spiralli defter + mevcut ekran görüntüsü) ve teşhis nettir:
+  "spiral ortada olacak ve yaprakları birbirine bağlayacak — şu anda ayrı ayrı duruyor". Dört değişiklik:
+  (1) **`NotebookSpine` (yeni).** Her sayfa kendi sol kenarında `SpiralBinding` çiziyordu; iki sayfa
+  yan yana gelince ortaya "iki ayrı defter" çıkıyordu. Artık **tek cilt**: spine'da duran tek bir SVG,
+  kendi sütununun dışına taşarak (`left:-70%`, `width:240%`) her iki yaprağın **iç kenarına** deliklerini
+  basıyor ve halkalarını oluğun üzerinden geçiriyor — gerçek bir spiralde teli iki yaprağın deliğinden
+  birden geçiren o çapraz geçiş, iki sayfanın "tek kitap" okunmasının tek sebebi. `zIndex:2` ile
+  kağıdın üstünde. Halka ritmi (`RING_STEP`, aynı tile yüksekliği) `SpiralBinding` ile paylaşılıyor, ki
+  kapak ile açık defter aynı defter gibi hizalansın. Gradient tanımları `BindingDefs`'e çıkarıldı.
+  (2) **`NotebookPageSurface` artık ciltlenme kenarını biliyor:** `binding: "left" | "right"` (çizgi,
+  kırmızı marj çizgisi, spiral sütunu ve içerik padding'i tek bayraktan türüyor — bir sayfa asla bir
+  kenardan çizgili başka kenardan padding'li kalamaz) + `coil: boolean` (spread'de tel spine'ın işi,
+  sayfa sadece delikli marjını koruyor). Sol sayfa `binding="right" coil={false}`, sağ sayfa
+  `binding="left" coil={false}`.
+  (3) **Spread geometrisi tek sayıdan türüyor.** `SPINE_GUTTER` 56→**48** ve `notebook-surface.tsx`'e
+  taşındı; oradan
+  `PAGE_PERCENT` / `SPINE_PERCENT` türetiliyor. Kabuğun en-boy oranı, spine genişliği ve uçan yaprağın
+  uçuş yolu artık üç ayrı elle ayarlanmış yüzde değil, aynı sayının türevi. (Kabuk `notebook-page-turn`'ü
+  import ettiği için sabitler kabukta duramazdı — döngüsel import olurdu.)
+  **Oluk bilerek dar.** İlk denemede 120 yapılmıştı ("tele yer açalım") ve sonuç yanlıştı: halkalar o
+  genişliği kapatmak için gerilince cilt değil **tel örgü çit** gibi okundu, arada da uygulama arka planı
+  göründü. Gerçek açık spiralli defterde iki yaprak neredeyse birbirine değer, delikler tam iç kenara
+  açılmıştır ve tel dar bir kanalda ilerler. İki tur daralttıktan sonra oturan değerler: oluk
+  120→48→**34** (≈%1.55), SVG taşması olukla orantılı
+  (`left:-50%`, `width:200%` — ikinci bir elle ayarlanmış sayı olmasın diye), `RING_STEP` 7.2→**5.6**,
+  halka `rx` %36→%34, delikler %16/%84→**%23/%77** (yani yaprakların delinmiş kenarına). Spine artık
+  şeffaf değil: kağıt rengi + iki dudakta koyulaşan degrade, yani sayfaların cilde kıvrıldığı kanal.
+  (4) **Üç animasyon eklendi/derinleştirildi.** (a) **Kağıt tipi** (çizgili↔kareli↔noktalı↔düz) artık
+  anında sıçramıyor, `AnimatePresence` ile `paper`'a keyed 0.3s çapraz solma — çizgi deseni sayfanın
+  dokusunun kendisi, tek karede takas edilmesi "render hatası" gibi okunuyordu; kırmızı marj çizgisi de
+  ait olduğu desenle birlikte gidiyor. Opaklık geçişi zaten hareketin *azaltılmış* alternatifi olduğu
+  için ayrı `prefers-reduced-motion` dalı yok. (b) **Kapak** artık crossfade değil, gerçek kapak gibi
+  **sol kenarından (spine) menteşeli** açılıyor/kapanıyor (`rotateY` 0↔-105°, sarmalayıcıda
+  `perspective:1800`) — yapraklarla aynı eksen, aynı easing, dolayısıyla "aynı nesne" hissi.
+  (c) **Yaprak çevirme derinleşti:** süre 0.62s→**0.78s**, perspektif 2000→**1400** (uzak perspektif
+  yayı düzleştirip "silme" efektine benzetiyordu), bükülme `scaleY` 0.972→**0.952**, düşen yaprağın
+  gölgesi belirginleşti.
+  İlgili: `notebook-surface.tsx` (`NotebookSpine` + `BindingDefs` + `binding`/`coil` + geometri),
+  `notebook-shell.tsx`, `notebook-page-turn.tsx`.
+
+- **Yaprak kıvrılırken taşıyordu, `overflow:hidden` geri kondu (2026-08-15, APP-042)** — Bu turun asıl
+  hatası boyut/bütçe değil, bir regresyondu: `NotebookPageTurn`'ü eklerken sarmalayıcı `spread-container`
+  için "artık spread'in kendisi taşımıyor, o yüzden `overflow:hidden` gereksiz" diye düşünülmüştü — ama
+  uçan yaprak `perspective` + `rotateY` + `scaleY` ile döndüğü için kendi kutusunun *mürekkep taşması*
+  ("ink overflow") ekrana onun kutusundan büyük çiziliyordu, kırpan hiçbir şey olmadığı için tarayıcı
+  bunu kaydırılabilir alan sayıp **body'yi kaydırıyordu**. Düzeltme: `spread-container`'a
+  `overflow:hidden` geri kondu — hem sürükle-çevir spread'ini hem uçan yaprağı (kendi kırpması yok)
+  defterin kendi kutusuna kırpıyor. Yaprağın kutusu (`top:0,bottom:0`, genişlik `PAGE_WIDTH`) zaten
+  konteynerin içinde kaldığı için normal koşullarda kırpma yaprağı görsel olarak kesmiyor.
+  İlgili: `notebook-shell.tsx`.
+
+- **Defter kabuğu 6. tur: not için vision-board'un yazı editörü (2026-08-15, APP-042)** — Kullanıcı
+  vision-board'un "Metin" panelinin ekran görüntüsünü referans verip "metin girildiğinde vision-
+  board'da olduğu gibi metin editörü de ekleyelim" dedi. Notebook'un metin öğeleri zaten birebir
+  `VisionBoardTextItem` (font, boyut, satır/harf aralığı, arka plan "plaka" rengi, döndürme — hepsi
+  şemada var), sadece hiç yüzeye çıkmıyordu; `NotebookTextInlineEditor`'daki eski not "notebook
+  exposes no font/colour controls" artık geçersiz.
+  (1) **`NotebookPanelCategory`'ye `"text"` eklendi.** "Not" ekleme rail'de ayrı bir *eylem* olarak
+  kalıyor (kategori değil — sayfaya anında yerleşip satır-içi düzenlemeye giriyor, board'un `addText`'i
+  gibi); yeni "text" kategorisinin kendi ekleme butonu yok, sadece seçili notun font/boyut/plaka/
+  satır aralığı/harf aralığı/döndürme kontrollerini gösteriyor. Not seçili değilken kısa bir ipucu
+  metni (`text_panel_empty`).
+  (2) **Otomatik açılma, board'daki `handleSelect` ile birebir aynı desen.** Board'da bir metin öğesi
+  seçilince panel otomatik "Metin" kategorisine geçiyor (`board-editor-shell.tsx:188`); notebook'a
+  aynı davranış `handleSelect(side, id)` ile geldi — hem sol hem sağ sayfanın `onSelect`'i artık buna
+  yönleniyor, seçilen öğe `text` ise panel `"text"`'e geçip açılıyor. `handleAddNote` da aynısını
+  yapıyor, ki "Not" ile eklenen taze not, sayfa üstündeki satır-içi yazma kutusuyla **birlikte** yan
+  panelde de kontrol edilebilir olsun.
+  (3) **`Field`/`Row`/`Pill`/`Swatch`/`Range` yardımcıları `board-side-panel.tsx`'ten birebir
+  kopyalandı** (sadece stil taşıyan, board'a özgü state tutmayan yarısı) — paylaşmak o dosyanın kendi
+  route'unun `_components`'inden dışarı çıkarmak demekti, ~80 satırlık salt-stil yardımcıyı
+  kopyalamak o cross-route erişimden daha ucuz görüldü. Aynı gerekçeyle `PLATE_COLORS` da
+  `NOTE_PLATE_COLORS` olarak yerelde kopyalandı (`board-palettes.ts` route-özel). `board-swatch.tsx`'in
+  kendi renk-adı tooltip'i taşınmadı — sekiz plaka rengi gözle tanınabilir, board'un `vision.board`
+  renk-adı çevirilerine bağımlılık eklemeye değmedi.
+  (4) **Çeviri anahtarları board'dan ödünç alınıyor** (`font`, `size`, `plate`, `line_height`,
+  `letter_spacing`, `rotation` — `useTranslations("vision.board")`), tıpkı sticker isimlerinin zaten
+  yaptığı gibi; tek yeni anahtar `notebook.text_panel_empty` (boş durum ipucu).
+  İlgili: `notebook-side-panel.tsx`, `notebook-shell.tsx`, `messages/{en,tr}.json`.
+
+- **Sürükleyerek sayfa çevirme kaldırıldı (2026-08-15, APP-042)** — Kullanıcı: "sayfa değişikliği
+  sadece alttaki butonlarla olsun, şu anda yaprak üzerinde mouse ile değiştirilebiliyor". Dönen
+  yaprağın kendisi zaten dekoratif ve tıklanamaz olsa da, altındaki spread'e framer-motion'ın
+  `drag="x"` + `onDragEnd` eşik mantığı hâlâ bağlıydı — fare/parmakla sürükleyerek de sayfa
+  çevrilebiliyordu. `drag`/`dragElastic`/`dragConstraints`/`onDragEnd` ve artık kullanılmayan
+  `TURN_THRESHOLD_PX` kaldırıldı. Sayfa değiştirme artık yalnızca alt oklardan ve klavye
+  ok tuşlarından (`turn()`, değişmedi) çalışıyor.
+  İlgili: `notebook-shell.tsx`.
+
+- **Defter kabuğu 7. tur: mobilde tek yaprak (2026-08-15, APP-042)** — Kullanıcı ekran görüntüsüyle
+  net bir sorun gösterdi: dar ekranda iki-sayfalık spread'in en-boy oranı (`SPREAD_WIDTH_PER_HEIGHT`,
+  geniş bir oran) telefon genişliğine sıkışınca yükseklik çok küçülüyor, defter ince bir şerit gibi
+  üstte kalıp altında kocaman siyah boşluk bırakıyordu. İstek: "mobil görünümde sayfa tek yaprakta
+  gözüksün, taşma durumunu önleyelim yine".
+  (1) **`MOBILE_QUERY = "(max-width: 639px)"`** (Tailwind'in kendi `sm` kırılımı) + `matchMedia` ile
+  `isMobile` state — `vision-board-shell.tsx`'in zaten kullandığı desenin birebir aynısı
+  (`addEventListener("change", sync)`).
+  (2) **`mobileSide: "left" | "right"`** — spread'in hangi yaprağının o an tek başına göründüğünü
+  tutuyor. `goPage(dir)` adında yeni bir yönlendirici: mobilde ve spread içindeyken, gösterilen
+  yaprak henüz spread'in kenarına (dir'e göre sağ/sol) gelmediyse SADECE `mobileSide`'ı değiştirip
+  spread içi bir yaprak çeviriyor (fetch yok, `turn()`'e hiç dokunmuyor); kenara gelindiyse asıl
+  `turn(dir)`'i çağırıp inen tarafı ayarlıyor. Masaüstünde `goPage` sadece `turn`'e devrediyor —
+  davranış değişmedi. Pagination butonları, klavye ok tuşları ve kapağın `onOpen`'ı hepsi `turn`
+  yerine `goPage`'e yönlendirildi.
+  (3) **`NotebookPageTurn`'e `single?: boolean`.** Spread-geometrisine bağlı (`PAGE_PERCENT`,
+  `RIGHT_PAGE_LEFT`) hesaplar `single` modunda tam-genişlik + her zaman sol menteşeye sabitlendi
+  (telefon her zaman TEK sayfa gösteriyor, spine her zaman kendi sol kenarında — spread'in
+  sağ/sol'a göre değişen menteşesi tek yaprakta anlamsız). Hem spread-arası `turn()` içindeki
+  `flip` hem `goPage`'in spread-içi flip'i artık `single: isMobile` taşıyor.
+  (4) **Tek yaprak render'ı** — spread ağacı `isMobile` ise `NotebookPageSurface`'i varsayılan
+  `binding="left" coil` (kendi spiraliyle normal tek sayfa görünümü, kullanıcının referans
+  görselindeki gibi) ile TEK basıyor, `NotebookSpine`/ikinci `NotebookPageSurface` hiç render
+  edilmiyor. Crossfade key'i mobilde `spread-${left}-${mobileSide}` — spread içi geçişin de kendi
+  view state'i yokken yine de tetiklenmesi için.
+  (5) **Boyut/taşma:** `MOBILE_LEAF_MAX_WIDTH` kapak ile aynı tek-sayfa oranını, ama spread'in
+  krom bütçesini (80dvh — araç çubuğu + sayfalama + padding kapak'takinden fazla) kullanıyor;
+  kapağın kendi 86dvh'i buraya uymazdı (kapak ekranında araç çubuğu yok). Wrapper'ın
+  `aspectRatio`'su da `isSpread && !isMobile` şartına bağlandı.
+  (6) `focused` artık `isMobile ? mobileSide : focusedSide`'dan türüyor — ayrı bir senkron `useEffect`
+  yazılmıştı ama `react-hooks/set-state-in-effect` (`biome`) reddetti ("effect içinde senkron
+  setState kademeli render'a yol açar"); state'i ayrı tutup effect'le eşitlemek yerine `focused`'ı
+  doğrudan `isMobile`'a göre türetmek hem daha az kod hem kural-uyumlu.
+  Yeni çeviri anahtarı: `notebook.page_label` ("Sayfa {page}") — mobilde `page_range_label`
+  ("Sayfa {from}-{to}") yerine geçiyor.
+  İlgili: `notebook-shell.tsx`, `notebook-page-turn.tsx`, `messages/{en,tr}.json`.
+
+- **Mobilde alt oklar ekranın altında kalıyordu, ayrı bütçe eklendi (2026-08-15, APP-042)** —
+  `MOBILE_LEAF_MAX_WIDTH` yanlışlıkla spread'in %80dvh bütçesini paylaşıyordu. O bütçe rail'in
+  (Ekle/Sticker/Kağıt/Not) masaüstünde `lg:flex-row` ile içeriğin **yanında** durduğunu varsayarak
+  hesaplanmıştı; `lg` altında aynı rail düz `flex-col`'a düşüp içeriğin **üstüne** tam bir satır
+  daha ekliyor — araç çubuğu+sayfalama+padding'in üstüne. Sonuç: sayfalama okları ekranın altına
+  taşıp görünmez oldu. Mobil için ayrı, daha küçük bütçe: %80dvh→**%70dvh**, rail'e kendi ~%10dvh'i
+  bırakıldı.
+  İlgili: `notebook-shell.tsx`.
+
+- **Dördüncü taşma turu: dvh tahmini terk edildi, flex tabanlı gerçek boyutlandırmaya geçildi
+  (2026-08-15, APP-042)** — Kullanıcı: "sorun devam ediyor, mobilde hâlâ scrollable yapı var".
+  Art arda dört `calc(Ndvh * oran)` tahmini (masaüstünde %88/%92, %84/%90, mobilde %80dvh, sonra
+  %70dvh) her seferinde en az bir kez taştı — her tur "araç çubuğu+sayfalama+padding ne kadar yer
+  kaplıyor" diye gözle tahmin edip bir dvh sayısı yazmak, gerçek krom yüksekliği değişince
+  (rail'in masaüstünde yanda, mobilde üstte olması gibi) tekrar tekrar yanlış çıktı.
+  **Kök çözüm: tahmin etmeyi bırak, flexbox'a gerçek sayıyı hesaplat.** Defter sarmalayıcısı artık
+  kendi genişliğinden (`aspectRatio`) yükseklik türetmiyor — tam tersi: sütunun bir flex öğesi
+  (`flex: 1 1 0%`, `min-height: 0`) oldu, araç çubuğu ve sayfalama satırlarından (kardeşleri, doğal
+  yükseklikte) **arta kalan gerçek pikseli** flexbox'tan alıyor, `aspectRatio` de genişliği o
+  flex-çözümlü yükseklikten türetiyor — yön tersine döndü. `maxWidth` artık sadece düz bir piksel
+  tavanı (`1680px`/`760px`/`480px`), krom için gizli bir bütçe taşımıyor.
+  Bunun çalışması için nested flex zincirinde her katman `min-height`/`min-width`'in varsayılan
+  `auto` (içerik-tabanlı taban) tuzağından çıkmalı: sütun (`min-h-0 min-w-0` — masaüstünde yatay,
+  mobilde dikey yön değiştiği için ikisi de gerekti) ve satır (`min-h-0`, savunma amaçlı) da
+  eklendi. **Sayfalama satırındaki `mt-auto` kaldırıldı** — flexbox'ta auto-margin'ler flex-grow'dan
+  ÖNCE boş alanı kapar; defter zaten sütunun tek `flex-grow` öğesiyken yanına bir de auto-margin'li
+  kardeş koymak, o boş alanı auto-margin'e kaptırıp defterin yüksekliğini sıfıra çökertirdi. Artık
+  sayfalama satırı hiçbir margin numarası olmadan, defterden sonra doğal boyutunda duruyor.
+  Kök nedeni tam bu yüzden dört tur boyunca atlanmıştı: defterin boyutu **içerikten** (kendi
+  `aspectRatio`'sundan) türüyordu, ki bu da onu ata zincirine geri "doğal yükseklik" olarak sızdırıp
+  `ROOT`'un `min-h-[100dvh]`'ini aşmasına (ve sayfayı kaydırmaya) sebep oluyordu — hangi `dvh` sayısı
+  yazılırsa yazılsın, ölçüm YÖNÜ ters olduğu sürece taşma garanti kalıyordu.
+  İlgili: `notebook-shell.tsx`.
+
+- **Beşinci tur: flex+aspectRatio de yanlış çıktı, JS-ölçümlü "contain" ile değiştirildi
+  (2026-08-15, APP-042)** — Bir önceki tur ("dördüncü taşma turu") flex'in kendi hesapladığı
+  yüksekliği `aspectRatio`'ya devretmenin dvh tahminini gereksiz kılacağını iddia etmişti; kullanıcı
+  "hem X hem Y ekseninde overflow var" diye bildirdi ve haklıydı — o yaklaşım da yanlıştı, farklı bir
+  şekilde. İki ayrı hata iç içeydi:
+  (1) Sarmalayıcının kendisi `flex:1 1 0%` + `aspectRatio` taşıyordu: flex-çözümlü YÜKSEKLİK'ten
+  genişlik türetiliyordu ama genişliği sütunun gerçek genişliğine karşı **kırpan hiçbir şey yoktu**
+  (sütunun `items-center`'ı çocuğu geniş olsa bile ortalar, taşırmaz-hale getirmez) — dar telefonda
+  yaprak sağdan taşıyordu (X ekseni).
+  (2) Bunu "iç/dış kutu" ayrımıyla düzeltmeye çalışırken (`width:auto;height:auto;aspect-ratio;
+  max-width;max-height:100%`) statik bir HTML test sayfasında **gerçekten ölçüldü** (kod tabanına
+  hiç girmeden `apps/web/public/` altında geçici bir dosyayla) ve iki gerçek bulgu çıktı:
+  boş içerikli bir kutuda `width:auto;height:auto` + `aspect-ratio` **0×0'a çöküyor** (flex satır
+  yönünde ana eksen içerik-tabanlı boyutlanıyor, boş kutunun içeriği de 0); ve `width:min(100%,cap);
+  height:auto;aspect-ratio;max-height:100%` kombinasyonunda `max-height` devreye girince oran
+  **korunmuyor, kutu eziliyordu** (genişlik sabit kalıp yükseklik kırpılıyor) — yani düz bir
+  `<div>`'in `aspect-ratio`'su, bir `<img>`'in `max-width`/`max-height` içinde oranını koruyarak
+  küçülmesi gibi davranmıyor.
+  **Gerçek düzeltme: CSS'e güvenmeyi bırakıp JS ile ölç.** `useFitSize` (yeni), dış kutuyu
+  `ResizeObserver` ile izleyip gerçek piksel genişlik/yüksekliğini veriyor; `fitWithin` (yeni, saf
+  fonksiyon, `object-fit:contain`'in yaptığı aritmetik) o ölçümden defterin genişlik×yükseklik'ini
+  hesaplıyor — hangi eksen bağlayıcıysa ona göre küçülüyor, hiçbir eksende taşmıyor. İç kutu artık
+  `aspectRatio` CSS'i değil, doğrudan hesaplanmış piksel `width`/`height` taşıyor. Üç eski
+  `calc(Ndvh*oran)` sabiti (`NOTEBOOK_MAX_WIDTH` vb.) düz piksel sayılarına indirgendi
+  (`NOTEBOOK_MAX_WIDTH_PX` vb.) — artık sadece üst sınır, boyutu belirleyen değil.
+  **Doğrulama yöntemi de değişti:** önceki dört tur hiç ölçülmeden, sadece kodu okuyup mantık
+  yürüterek "artık doğru" denmişti. Bu turda hem izole bir `ResizeObserver`+`aspect-ratio` testi hem
+  de gerçek bileşen ağacının bir kopyası `apps/web/public/`'a geçici olarak yazılıp tarayıcıda
+  `getBoundingClientRect()`/`document.documentElement.scrollWidth` ile gerçekten ölçüldü, sonra
+  silindi — koda girmeden önce.
+  İlgili: `notebook-shell.tsx` (`useFitSize`, `fitWithin`, yeni).
+
+- **Altıncı tur: JS-ölçümlü genişlik + aspectRatio yükseklik (görünmezlik + taşma birlikte çözüldü)
+  (2026-08-15, APP-042)** — Beşinci turun "JS ile ölç" fikri doğruydu ama uygulaması yanlıştı:
+  `useFitSize`'ın ölçtüğü değeri hem `width` hem `height`'e DOĞRUDAN piksel olarak basıyordu
+  (`width: fitted.width, height: fitted.height`), ve ilk render'da (ResizeObserver henüz ateşlemeden)
+  bu değerler `{0,0}` idi — kullanıcı "hiçbir şey gözükmüyor" dedi, haklıydı: sayfa gerçekten 0×0
+  render ediyordu, üstelik `useEffect` (asenkron, boyama sonrası) kullanıldığı için bu ilk kare her
+  zaman görünür kalabiliyordu.
+  **Düzeltme, ölçümü DOĞRU yöne uyguladı.** Altıncı turda anlaşıldı ki 5. turdaki asıl doğru fikir
+  ilk (birinci) turun mekanizmasıydı — `aspectRatio`'nun WIDTH'ten HEIGHT türetmesi (tek yön, hiçbir
+  zaman 0'a çökmez, çünkü sadece bir boyut `auto`) — bozuk olan hiç mekanizma değil, sadece genişliğe
+  yazılan `dvh` SAYISIYDI. Şimdi: `useFitSize` `useLayoutEffect` + anlık `getBoundingClientRect()`
+  ile (ResizeObserver'ın ilk callback'ini beklemeden, boyamadan ÖNCE) dış kutuyu ölçüyor;
+  `fitWithin`'in sonucu SADECE `maxWidth`'e besleniyor (`width:"100%" maxWidth:<ölçülen>
+  aspectRatio:R` — `width`/`height`'e değil), ölçüm gelmeden önceki tek kare için de düz piksel
+  tavanına (`notebookMaxWidthPx`) düşen bir `||` yedeği var — yani hiçbir zaman 0 genişlikte
+  render olmuyor.
+  **İki ayrı izole test ile doğrulandı** (`apps/web/public/` altında geçici dosyalar, sonra silindi):
+  (a) `width:auto;height:auto;aspect-ratio` gerçekten 0×0'a çöktüğü ve `max-height` ile ezildiği
+  ayrı ayrı gösterildi (5. turun neden yanlış olduğunun kanıtı); (b) `width:100%;maxWidth:<ölçülen>;
+  aspectRatio` — dış kutu normal (uzun) VE aşırı kısa (60px) iki senaryoda da — hiçbir zaman 0×0'a
+  çökmedi, hiçbir eksende taşmadı, oranı her zaman korudu.
+  **Ders, altıncı kez tekrarlanmasın diye altı çizili:** `aspect-ratio` sadece TEK yönde (bilinen
+  boyuttan bilinmeyene) güvenilir; iki `auto` boyutla veya `max-height` ile "iki yönlü sıkıştırma"
+  beklemek yanlış varsayım. Bundan sonra bu dosyada boyutlandırma değişikliği yapılacaksa, gerçek
+  değeri kodda değiştirmeden ÖNCE izole bir test sayfasında ölçülmeli.
+  İlgili: `notebook-shell.tsx` (`useFitSize`, `fitWithin`).
+
+- **Sayfalama satırı `sticky` ile sabitlendi (2026-08-15, APP-042)** — Kullanıcı masaüstü büyüklüğünü
+  onayladı ("desktop görünümü büyük olsun") ve ayrıca "prev-next butonları absolute position ile
+  sabitleyelim, scroll durumunda aşağıda kalmasını engelle" istedi. `position:fixed` yerine
+  `position:sticky; bottom:0` kullanıldı: `fixed` satırı sütunün flex akışından tamamen çıkarır —
+  defter (`flex-grow` tek öğe) boşalan alanı doldurup pill'in altına render olurdu, telafi için ekstra
+  boşluk ayarlamak gerekirdi. `sticky` ise normal koşulda (asıl amaç zaten `useFitSize` ile bunu
+  sağlamaktı) sıradan bir akış öğesi gibi davranıyor — defterin hemen altında, olduğu gibi — sadece
+  sayfa gerçekten bir viewport'tan uzun olursa (örn. ileride eklenebilecek bir içerik) kayarken
+  viewport'un altına yapışıp kayboluşu engelliyor. Arkasına `var(--color-bg)` verildi ki sabitlendiği
+  anda altından kayan içerik etiketin boşluklarından görünmesin.
+  İlgili: `notebook-shell.tsx`.
+
+- **"Yeni yanlış" formu: paylaşılan dropdown, yan yana butonlar, biraz daha geniş panel
+  (2026-08-15, APP-042)** — Kullanıcı üç şey istedi: ders/konu native `<select>`'lerini uygulamanın
+  geri kalanındaki paylaşılan açılır menüyle değiştirmek, alt butonları ("Deftere ekle"/"Vazgeç")
+  yan yana getirmek, ve panelin sıkışık hissini gidermek (genişlet ya da metni küçült).
+  (1) **Native `<select>` → `MenuSelect`** (`@/components/menu-select` — `PopoverMenu` üzerine kurulu,
+  uygulamanın geri kalanında zaten kullanılan tek paylaşılan dropdown, ör. vision-board'un kariyer
+  seçici). `<label>` sarmalayıcı yerine `id`+`aria-labelledby` idiomuna geçildi — `MenuSelect`'in
+  tetikleyicisi bir `<button>`, ve `<label>`'ın örtük etiketleme'si sadece native form kontrollerinde
+  (input/select/textarea) çalışıyor, keyfi bir buton'da değil. **Bilinen ödün:** `PopoverMenu`
+  `position:absolute` kullanıyor, portal yok — vision-board-shell.tsx'te tam bu yüzden "form scroll
+  panelinin dışına konuldu" notu var. Buradaki form hâlâ `overflow-y-auto` bir panelin içinde; alan
+  panelin altına yakınsa açılan liste kırpılabilir. Kullanıcı şikayet etmedi, dokunulmadı — gerçek bir
+  sorun çıkarsa düzeltme aynı: formu scroll alanının dışına taşımak.
+  (2) **Butonlar `flex-1` ile yan yana, `flex-wrap` kaldırıldı.** `Button`'ın kendi `px-6`/`text-base`
+  sınıflarını `className` ile ezmeye ÇALIŞILMADI — bileşen `cn`/`tailwind-merge` gibi bir birleştirme
+  yardımcısı kullanmadan sabit bir string'e ekliyor, bu yüzden çağıranın verdiği sınıfın cascade'i
+  kazanacağı garanti değil. `flex-1` (flex-basis:0% + grow:1) flex item'ın ANA eksen boyutlandırmasını
+  zaten domine ediyor, `w-fit`'le çakışmıyor — güvenli.
+  (3) **Panel genişliği** `lg:w-80`→**`lg:w-96`** (masaüstü). Mobilde zaten `w-full` (dokunulmadı —
+  o boyutlandırma zaten kırılgandı, altıncı turda ancak sabitlendi, tekrar oynatılmadı).
+  İlgili: `notebook-add-panel.tsx`, `notebook-shell.tsx`.
+
+- **Üç buton küçültüldü, `CompactButton` yerel bileşeni eklendi (2026-08-15, APP-042)** — Kullanıcı
+  "Deftere ekle", "Vazgeç" ve "Fotoğraf çek veya seç" butonlarını küçültmek istedi. Bir önceki turda
+  not edilen risk gerçekti: paylaşılan `Button`'ı `className` ile küçültmeye çalışmak (bir cascade
+  kumarı, `cn`/`tailwind-merge` olmadan) yerine, bu formun kendi üç eylemi için yerel `CompactButton`
+  yazıldı — aynı görsel dil (radius token, focus ring, press scale), formda zaten var olan neden-tipi
+  pillerle aynı boyut (`min-h-9`, o pilller de hiçbir zaman paylaşılan `Button` olmadığı için bu
+  savaşı hiç vermemişti). `fullWidth` prop'u foto butonunun tam genişliğini korudu; alt iki buton
+  `flex-1` ile yan yana kaldı.
+  İlgili: `notebook-add-panel.tsx`.
+
+- **Tekrar paneli tam ekran modala taşındı, kart görseli object-contain oldu, rail'deki gerçek bug
+  düzeltildi (2026-08-15, APP-042)** — Üç ayrı istek:
+  (1) **`NotebookReviewPanel` artık `NotebookImageLightbox` ile aynı kabuk** (fixed backdrop,
+  Escape, click-away, X kapat) — eskiden sayfanın kendi akışına gömülü bir `<Card>` olarak en üstte
+  açılıyordu (görsel küçük, çok boşluk, butonlar alt alta). Chip/konu/not bilgisi artık fotoğrafın
+  ÜSTÜNDE sol üstte bindirme olarak duruyor — `NotebookEntryCard`'ın kendi hover kartıyla aynı görsel
+  dil (yarı saydam koyu zemin, beyaz metin). İlerleme rozeti ("3/7") sağ üstte. Metin-only (fotoğrafsız)
+  kayıtlarda bindirilecek görsel olmadığı için bilgi düz bir blok olarak kalıyor. Butonlar
+  `NotebookCompactButton`'a taşındı (aşağıya bak).
+  (2) **`NotebookCompactButton` paylaşılan bileşene çıkarıldı** (`components/notebook/
+  notebook-compact-button.tsx`) — bir önceki turda `notebook-add-panel.tsx`'e yerel yazılmıştı,
+  şimdi `notebook-review-panel.tsx` de aynı ihtiyacı duyunca kopyalamak yerine paylaşıldı. Yeni bir
+  `ghost` varyant eklendi (üçüncü, düşük öncelikli eylem — "Sonra devam ederim" — için, dolgu/kenarlık
+  yok).
+  (3) **Defter üzerindeki kart görseli**: `object-cover`→**`object-contain`**. Yerleştirilen kutunun
+  en-boy oranı kullanıcının sürüklediği her neyse, neredeyse hiçbir zaman fotoğrafın kendi oranı
+  değil — ve bu fotoğraf SORUNUN KENDİSİ, vision-board'daki gibi estetik bir kırpma burada bir
+  şıkkı/denklemi kesip kartı incelemeye yaramaz hale getirebilir. Vision-board'un `cover` tercihiyle
+  kasıtlı bir ayrım.
+  (4) **Rail'deki "ilk tıklama çalışmıyor" gerçek bir bug'dı, tahmin değil.** `openCategory`,
+  `setActivePanel`'ın updater'ı İÇİNDEN `setDetailCollapsed`'ı yan etki olarak çağırıyordu — saf
+  olmayan bir updater. React'ın Strict Mode'u (dev) updater fonksiyonlarını mükerrer çağırarak tam
+  bunu yakalamaya çalışır; bir TOGGLE (`c => !c`) mükerrer çağrıldığında kendini iptal eder
+  (true→false→true), sabit bir değer (`false`) ise mükerrer çağrılsa da idempotent kalır.
+  `activePanel`'ın varsayılanı zaten `"add"` (rail'in ilk kategorisi) olduğu için "Ekle"ye İLK
+  tıklama her zaman toggle koluna giriyordu — ve sessizce hiçbir şey yapmıyordu. Başka bir kategoriye
+  (`"sticker"` gibi) tıklamak "switch" koluna (`setDetailCollapsed(false)`, idempotent) giriyordu,
+  çalışıyordu — bu da "önce Sticker'a basınca Ekle çalışıyor" bulgusunu birebir açıklıyor. Düzeltme:
+  iki `setState` çağrısı birbirinden ayrıldı, hiçbiri artık diğerinin updater'ı içinde değil.
+  İlgili: `notebook-review-panel.tsx` (yeniden yazıldı), `notebook-compact-button.tsx` (yeni),
+  `notebook-add-panel.tsx`, `notebook-entry-card.tsx`, `notebook-shell.tsx`.
+
+- **Modal gerçek "full preview" oldu, defterdeki görsel artık kendi oranına göre yerleşiyor
+  (2026-08-15, APP-042)** — Kullanıcı ekran görüntüsüyle iki net sorun gösterdi: (a) tekrar modalında
+  görsel sabit `aspect-[4/3]` bir kutuya zorlanıyordu, çoğu sınav fotoğrafı dikey olduğu için
+  görselin sağında solunda kocaman siyah boşluk oluşuyordu, üstelik bilgi kutusu görselin ÜSTÜNE değil
+  YANINA (ayrı bir siyah blok olarak) oturuyordu; (b) defter sayfasındaki kartlarda da aynı sebepten
+  siyah boşluklar vardı — `nextEntrySlot` her zaman sabit 300px yükseklik kullanıyordu, yüklenen
+  fotoğrafın gerçek oranı hiç bilinmiyordu.
+  (1) **Kök neden aynıydı: hiçbir yerde fotoğrafın gerçek eni/boyu ölçülmüyordu.**
+  `notebook-add-panel.tsx`'e `measureImageAspect(url)` eklendi (`new window.Image()` ile yükleyip
+  `naturalWidth/naturalHeight`) — yükleme bitince bir kere ölçülüyor, `photo.aspect` olarak
+  saklanıyor. `NotebookAddPanel.onCreated`, `NotebookSidePanel.onCreated` ve `notebook-shell.tsx`'in
+  `handleCreated`'ı hepsi `(entry, aspect)` taşıyacak şekilde güncellendi.
+  (2) **`nextEntrySlot(items, aspect)`** artık yüksekliği `ENTRY_WIDTH / aspect`'ten türetiyor
+  (180–420px'e kelepçeli — çok uzun/kısa bir fotoğraf yine de tek bir kart gibi okunsun diye), aspect
+  verilmezse eski sabit `ENTRY_HEIGHT` davranışı aynen kalıyor (geriye dönük uyumlu, mevcut testler
+  dokunulmadan geçti). `y` konumlandırması bilerek hâlâ sabit adımla — her kartın gerçek yüksekliğini
+  toplamak bu düzeltmenin kapsamının ötesinde bir masonry-layout işiydi, "sonra sürükleyip
+  düzeltebilirler" felsefesi zaten var.
+  (3) **`NotebookEntryCard`'daki `object-cover` zaten bir önceki turda `object-contain`'e çevrilmişti**
+  — artık kutunun kendisi de fotoğrafın oranını taşıdığı için, taze eklenen kartlarda letterbox
+  neredeyse hiç kalmıyor (eski, önceden kaydedilmiş kartlar sabit 300px'te kalmaya devam ediyor —
+  geriye dönük migrasyon kapsam dışı).
+  (4) **Tekrar modalı artık gerçek full-preview.** `NotebookImageLightbox` ile aynı kabuk
+  (`h-[85vh]`, sabit oran YOK — `object-contain` fotoğrafın gerçek oranını koruyor). Eskiden fotoğrafın
+  ALTINDA ayrı bir beyaz panelde duran soru+3 buton artık fotoğrafın ÜSTÜNDE, alttan yukarı koyulaşan
+  bir gradyanın içinde (kartın kendi hover-overlay'iyle aynı görsel dil). Bilgi kutusu (chip/konu/not)
+  sol üstte, ilerleme rozeti sağ üstte — ikisi de `rgba(17,17,17,0.6)` ince bir zemin üstünde, okunurluk
+  için. `NotebookCompactButton`'a yeni `onDark` prop'u eklendi: `secondary`/`ghost` varyantların
+  `--color-main` metni koyu zeminde neredeyse görünmez kalırdı, `onDark` beyaz metin/kenarlığa
+  geçiyor (`primary` zaten dolgulu olduğu için hiç etkilenmiyor). Metin-only (fotoğrafsız) girişler
+  hâlâ eski sınırlı kart düzeninde — bindirilecek görsel yok.
+  İlgili: `notebook-layout.ts`, `notebook-add-panel.tsx`, `notebook-side-panel.tsx`,
+  `notebook-shell.tsx`, `notebook-review-panel.tsx`, `notebook-compact-button.tsx`.
+
+- **Modala ince zemin, hover metinleri küçültüldü, eski kartlar da kendi fotoğrafına oturuyor
+  (2026-08-15, APP-042)** — Kullanıcı iki ekran görüntüsüyle devam eden sorunları gösterdi:
+  (1) **Modal kutusu tamamen şeffaftı.** `object-contain` neredeyse hiçbir zaman kutuyu tam
+  doldurmaz (dikey fotoğraf kutuyu enine, yatay fotoğraf boyuna taşırır); kutunun kendi arka planı
+  olmayınca üstteki bilgi kutusu ve alttaki butonlar KUTUYA göre konumlanıp fotoğrafın değil, çıplak
+  siyah backdrop'un üstünde havada asılı gibi duruyordu. `var(--color-bg)` + `rounded-[var(--radius-
+  card)]` verildi — artık tek parça bir "fotoğraf kartı" gibi okunuyor.
+  (2) **`NotebookEntryCard`'ın hover overlay'i küçültüldü** — sayfanın kendi `DetailLines`
+  ölçeğiyle kıyaslanınca oransız büyüktü (küçük bir thumbnail üstünde büyük başlıklar gibi
+  duruyordu): chip 3cqw→2.3cqw, başlık 3.4cqw→2.6cqw, not/durum satırları 2.8cqw→2.1cqw, iç boşluk
+  ve satır arası da orantılı küçüldü.
+  (3) **Defterdeki eski kartların siyah boşlukları — geriye dönük düzeltme.** Önceki turda
+  `nextEntrySlot` sadece YENİ eklenen fotoğraflar için kutuyu fotoğrafın oranına göre boyutlandırıyordu;
+  bu turdan ÖNCE yerleştirilmiş kartlar sabit 300px yükseklikte kalmaya devam ediyordu. Şimdi
+  `NotebookEntryCard`'ın `<Image>`'i kendi `onLoad`'unda gerçek `naturalWidth/naturalHeight`'ı bir
+  kez raporluyor (`onNaturalSize` → `NotebookPageStage`'in yeni `onEntryNaturalSize` prop'u →
+  `notebook-shell.tsx`'in `handleEntryNaturalSize`'ı); kutunun genişliği sabit kalıp yüksekliği
+  fotoğrafın gerçek oranına göre sessizce düzeltiliyor (`Math.abs(fark) < 4` koruması sayesinde
+  zaten doğru boyuttaki kartlarda hiçbir şey tetiklenmiyor, sürükleme/yeniden boyutlandırmayla da
+  çakışmıyor — `onLoad` aynı `src` için yalnızca bir kez ateşleniyor). **Bilerek alınan risk:**
+  erken aşama bir uygulama olduğu ve gerçek kullanıcı verisi henüz olmadığı için, kullanıcının
+  BİLEREK yeniden boyutlandırdığı bir kartla "hiç dokunulmamış varsayılan boyuttaki" bir kartı ayırt
+  eden bir bayrak yok — ileride gerçek kullanıcılar kartları elle yeniden boyutlandırmaya başlarsa bu
+  otomatik düzeltme onların seçimini sessizce geçersiz kılabilir; o noktada "bir kez düzeltildi"
+  bayrağı eklenmesi gerekir.
+  İlgili: `notebook-review-panel.tsx`, `notebook-entry-card.tsx`, `notebook-page-stage.tsx`,
+  `notebook-shell.tsx`.
+
+- **Geriye dönük otomatik-boyutlandırma tamamen geri alındı — kaydetmeyi bozuyordu (2026-08-15,
+  APP-042)** — Bir önceki turda eklenen `handleEntryNaturalSize` (eski kartların kutusunu fotoğrafın
+  gerçek oranına göre sessizce düzelten özellik) kelepçesizdi; bir düzeltmeyle (8–5000px şema
+  sınırına kelepçelemek) denendi ama kullanıcı sorunun **devam ettiğini** bildirdi — "eklenen her
+  görsel kapakta sayılıyor (entry satırı oluşuyor) ama defterde gözükmüyor (sayfa PUT'u 400
+  dönüyor)". İkinci bir kör yama denemek yerine özelliğin tamamı geri alındı: `notebook-shell.tsx`
+  (`handleEntryNaturalSize` + üç `onEntryNaturalSize` bağlantısı), `notebook-page-stage.tsx`
+  (`onEntryNaturalSize` prop'u ve `StageItem`'a aktarımı), `notebook-entry-card.tsx` (`onNaturalSize`
+  prop'u ve `<Image onLoad>` ölçümü) — hepsi kaldırıldı.
+  **Kalan, güvenli düzeltme:** `nextEntrySlot(items, aspect)` hâlâ duruyor — yeni eklenen fotoğraflar
+  yerleştirilirken kutuları fotoğrafın oranına göre (180–420px'e kelepçeli) boyutlanmaya devam
+  ediyor, çünkü bu asla var olan bir dokümanı geriye dönük yamalamıyor, sadece YENİ bir öğe
+  oluştururken bir kerelik kullanılıyor — kaydetmeyi bozma riski taşımıyor.
+  Eski, önceden yerleştirilmiş kartlardaki siyah boşluk sorunu **tekrar açık**: otomatik düzeltme
+  güvenilir hale getirilemedi, kaldırıldı. Gerekirse ileride "bir kez düzeltildi" bayrağıyla veya
+  server-side bir migration ile ele alınmalı — istemci tarafında sessizce çalışan bir kelepçe daha
+  eklemek yerine.
+  İlgili: `notebook-shell.tsx`, `notebook-page-stage.tsx`, `notebook-entry-card.tsx`.

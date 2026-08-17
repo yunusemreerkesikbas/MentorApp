@@ -22,7 +22,7 @@ export function SessionAmbientToggle({
       aria-label={muted ? translate("unmute") : translate("mute")}
       aria-pressed={!muted}
       title={muted ? translate("unmute") : translate("mute")}
-      className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-white transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+      className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-[var(--color-border)] transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
       style={{
         backgroundColor: muted
           ? "var(--color-surface)"

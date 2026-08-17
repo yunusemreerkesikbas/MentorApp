@@ -49,7 +49,7 @@ export function ZoneDrawer() {
           type="button"
           aria-label={t("close")}
           onClick={closeDrawer}
-          className="absolute right-3 top-3 grid size-11 place-items-center rounded-[9px] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="absolute right-3 top-3 grid size-11 place-items-center rounded-[9px] hover:bg-[var(--color-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         >
           <X size={19} aria-hidden />
         </button>

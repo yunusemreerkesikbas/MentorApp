@@ -47,12 +47,12 @@ export function TextAreaField({
         id={inputId}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
-        className="min-h-[88px] w-full resize-y rounded-[var(--radius-card)] border bg-white/50 px-5 py-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        className="min-h-[88px] w-full resize-y rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] px-5 py-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         style={{
           color: "var(--color-body)",
           boxShadow: "var(--shadow-card)",
           fontFamily: "var(--font-body)",
-          borderColor: error ? "var(--color-danger)" : "#ffffff",
+          borderColor: error ? "var(--color-danger)" : "var(--color-border)",
         }}
       />
       {error ? (

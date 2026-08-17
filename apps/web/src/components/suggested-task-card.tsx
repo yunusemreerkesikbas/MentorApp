@@ -41,7 +41,7 @@ export function SuggestedTaskCard({
   return (
     <div className={className ?? "flex justify-start"}>
       <div
-        className="flex max-w-[85%] flex-col gap-2 rounded-[var(--radius-card)] border border-white bg-white/50 px-4 py-3 text-left"
+        className="flex max-w-[85%] flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_50%,transparent)] px-4 py-3 text-left"
         style={{ boxShadow: "var(--shadow-card)" }}
       >
         <span
@@ -59,7 +59,7 @@ export function SuggestedTaskCard({
           </span>
           {task.subject ? (
             <span
-              className="rounded-full bg-white px-2.5 py-0.5 text-xs font-bold"
+              className="rounded-full bg-[var(--color-surface)] px-2.5 py-0.5 text-xs font-bold"
               style={{ color: "var(--color-chip-text)" }}
             >
               {task.subject}

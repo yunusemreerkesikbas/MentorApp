@@ -67,7 +67,7 @@ export function HubShell() {
       <Centered title={t("hub_error_title")} body={state.message}>
         <button
           type="button"
-          className="mt-4 min-h-11 rounded-[10px] bg-[var(--color-btn)] px-5 text-sm font-bold text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="mt-4 min-h-11 rounded-[10px] bg-[var(--color-btn)] px-5 text-sm font-bold text-[var(--color-btn-label)] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           onClick={() => window.location.reload()}
         >
           {t("refresh")}
@@ -99,10 +99,10 @@ export function HubShell() {
     <main className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-7 lg:px-8 lg:py-10">
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.03fr)_minmax(380px,1fr)]">
         <section
-          className="flex min-h-[480px] flex-col overflow-hidden rounded-[10px] bg-white shadow-[var(--shadow-card)]"
+          className="flex min-h-[480px] flex-col overflow-hidden rounded-[10px] bg-[var(--color-surface)] shadow-[var(--shadow-card)]"
           aria-label={t("hub_featured")}
         >
-          <div className="relative h-44 overflow-hidden bg-white sm:h-48">
+          <div className="relative h-44 overflow-hidden bg-[var(--color-surface)] sm:h-48">
             <Image
               src="/img/feed.png"
               alt={t("hub_featured_image_alt")}
@@ -187,7 +187,7 @@ export function HubShell() {
                 <div className="mt-auto flex flex-col gap-3 pt-5 sm:flex-row">
                   <Link
                     href={detailHref(hub.featured)}
-                    className="flex min-h-11 flex-1 items-center justify-center rounded-[10px] bg-[var(--color-btn)] px-5 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                    className="flex min-h-11 flex-1 items-center justify-center rounded-[10px] bg-[var(--color-btn)] px-5 text-sm font-bold text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                   >
                     {t("join")}
                   </Link>
@@ -209,7 +209,7 @@ export function HubShell() {
                 </p>
                 <Link
                   href="/community/feed"
-                  className="mt-5 flex min-h-11 w-fit items-center justify-center rounded-[10px] bg-[var(--color-btn)] px-5 text-sm font-bold text-white hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                  className="mt-5 flex min-h-11 w-fit items-center justify-center rounded-[10px] bg-[var(--color-btn)] px-5 text-sm font-bold text-[var(--color-btn-label)] hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 >
                   {t("hub_open_feed")}
                 </Link>
@@ -219,7 +219,7 @@ export function HubShell() {
         </section>
 
         <section
-          className="overflow-hidden rounded-[10px] border border-[var(--color-border)] bg-white"
+          className="overflow-hidden rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)]"
           aria-labelledby="continue-heading"
         >
           <div className="flex min-h-16 items-center justify-between gap-3 border-b border-[var(--color-border)] px-4 py-3 sm:px-5">
@@ -282,7 +282,7 @@ export function HubShell() {
       </div>
 
       <section
-        className="mt-5 rounded-[10px] border border-[var(--color-border)] bg-white p-5 sm:p-6"
+        className="mt-5 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6"
         aria-labelledby="effort-board-heading"
       >
         <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--color-border)] pb-5">
@@ -322,7 +322,7 @@ export function HubShell() {
                       className="shrink-0 text-[var(--community-blue-ink)]"
                       aria-hidden
                     />
-                    <span className="truncate">{tag.name}</span>
+                    <span className="truncate">{tag.slug}</span>
                   </span>
                   <span className="text-xs text-[var(--color-secondary)]">
                     {tag.threadCount}

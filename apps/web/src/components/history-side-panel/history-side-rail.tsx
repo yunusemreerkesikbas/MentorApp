@@ -16,7 +16,7 @@ const railTransition = {
 };
 
 const railIconBtn =
-  "inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] transition-colors hover:bg-black/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
+  "inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
 
 export interface HistorySideRailProps {
   title: string;
@@ -53,7 +53,7 @@ export function HistorySideRail({
 
   return (
     <motion.aside
-      className="relative z-[1] hidden h-full shrink-0 overflow-hidden border-r bg-white/85 backdrop-blur-md lg:flex lg:flex-col"
+      className="relative z-[1] hidden h-full shrink-0 overflow-hidden border-r bg-[color-mix(in_srgb,var(--color-surface)_85%,transparent)] backdrop-blur-md lg:flex lg:flex-col"
       style={{
         borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)",
       }}

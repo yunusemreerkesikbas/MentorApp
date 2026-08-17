@@ -18,6 +18,7 @@ import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.po
 import {
   canAcceptAnswer,
   canDeleteThread,
+  canGiveHelpfulVote,
   canPostInZone,
   type ForumActor,
 } from "../domain/forum.policy";
@@ -188,6 +189,7 @@ export class ForumQaService {
     }));
     question.helpfulVoteCount = threadHelpful.get(threadId) ?? 0;
     question.myHelpfulVote = myThreadHelpful.has(threadId);
+    question.canHelpfulVote = canGiveHelpfulVote(viewerId, thread.authorId);
     question.coachBridge = coachBridge;
     return {
       question,
@@ -200,6 +202,7 @@ export class ForumQaService {
         );
         answer.helpfulVoteCount = answerHelpful.get(a.id) ?? 0;
         answer.myHelpfulVote = myAnswerHelpful.has(a.id);
+        answer.canHelpfulVote = canGiveHelpfulVote(viewerId, a.authorId);
         return answer;
       }),
     };

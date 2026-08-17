@@ -39,7 +39,7 @@ export function BottomSheetPanel({
       aria-modal="true"
       aria-labelledby={titleId}
       data-mentor-bottom-sheet-panel
-      className={`flex w-full flex-col overflow-hidden bg-white ${panelSize} max-lg:rounded-t-[16px] max-lg:shadow-[0px_-4px_10px_rgba(37,73,150,0.10)] lg:max-w-[480px] lg:rounded-[var(--radius-card)] lg:border lg:border-white lg:shadow-[var(--shadow-card)] ${panelAnimation}`}
+      className={`flex w-full flex-col overflow-hidden bg-[var(--color-surface)] ${panelSize} max-lg:rounded-t-[16px] max-lg:shadow-[0px_-4px_10px_rgba(37,73,150,0.10)] lg:max-w-[480px] lg:rounded-[var(--radius-card)] lg:border lg:border-[var(--color-border)] lg:shadow-[var(--shadow-card)] ${panelAnimation}`}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Drag handle — mobile only */}
@@ -80,7 +80,7 @@ export function BottomSheetPanel({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-card)] transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-card)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface-container)_60%,transparent)] focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
             aria-label={sheet.closeLabel}
           >
             <X size={20} strokeWidth={2} color="var(--color-secondary)" />

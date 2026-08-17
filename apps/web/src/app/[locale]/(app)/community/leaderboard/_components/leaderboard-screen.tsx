@@ -182,7 +182,7 @@ function PodiumSpot({
           className="block rounded-full p-[3px]"
           style={{ background: `linear-gradient(145deg, ${MEDAL[place]}, color-mix(in srgb, ${MEDAL[place]} 40%, white))` }}
         >
-          <span className="block rounded-full bg-white p-[2px]">
+          <span className="block rounded-full bg-[var(--color-surface)] p-[2px]">
             <AuthorAvatar name={name} size={size} src={entry.avatarUrl ?? undefined} />
           </span>
         </span>

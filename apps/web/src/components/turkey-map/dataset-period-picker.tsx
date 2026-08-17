@@ -69,8 +69,8 @@ export function DatasetPeriodPicker({
   const selected = datasets.find((d) => d.id === value) ?? current;
 
   const chrome = {
-    borderColor: "var(--color-border, #e2e2e2)",
-    backgroundColor: "var(--color-surface, #fff)",
+    borderColor: "var(--color-border)",
+    backgroundColor: "var(--color-surface)",
     color: "var(--color-main)",
   } as const;
 
@@ -88,7 +88,7 @@ export function DatasetPeriodPicker({
   return (
     <div
       className="rounded-[var(--radius-card)] shadow-[var(--shadow-card)]"
-      style={{ width: "11rem", backgroundColor: "var(--color-surface, #fff)" }}
+      style={{ width: "11rem", backgroundColor: "var(--color-surface)" }}
     >
       <MenuSelect
         value={selected.id}

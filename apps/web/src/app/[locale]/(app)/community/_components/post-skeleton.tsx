@@ -14,8 +14,8 @@ export function PostListSkeleton({
       label={label}
       className={
         variant === "card"
-          ? "w-full overflow-hidden rounded-[var(--radius-card)] border border-[#e7e9ee] bg-white divide-y divide-[#e7e9ee]"
-          : "w-full divide-y divide-[#e7e9ee]"
+          ? "w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] divide-y divide-[var(--color-border)]"
+          : "w-full divide-y divide-[var(--color-border)]"
       }
     >
       {Array.from({ length: count }).map((_, index) => (
@@ -23,8 +23,8 @@ export function PostListSkeleton({
           key={index}
           className={
             variant === "card"
-              ? "flex w-full gap-3 bg-white px-4 py-5"
-              : "flex gap-3 bg-white px-4 py-4"
+              ? "flex w-full gap-3 bg-[var(--color-surface)] px-4 py-5"
+              : "flex gap-3 bg-[var(--color-surface)] px-4 py-4"
           }
         >
           <Skeleton className="size-9 shrink-0 rounded-full" />
@@ -50,9 +50,9 @@ export function PostListSkeleton({
 
 export function PostDetailSkeleton({ label }: { label: string }) {
   return (
-    <main className="mx-auto min-w-0 max-w-[600px] bg-white sm:my-6 sm:border-x sm:border-[#e7e9ee]">
+    <main className="mx-auto min-w-0 max-w-[600px] bg-[var(--color-surface)] sm:my-6 sm:border-x sm:border-[var(--color-border)]">
       <PostListSkeleton label={label} count={1} />
-      <div className="border-y border-[#e7e9ee] px-4 py-4">
+      <div className="border-y border-[var(--color-border)] px-4 py-4">
         <SkeletonGroup label={label} className="space-y-3">
           <Skeleton className="h-16 w-full rounded-[var(--radius-card)]" />
           <Skeleton className="ml-auto h-10 w-24 rounded-[var(--radius-card)]" />

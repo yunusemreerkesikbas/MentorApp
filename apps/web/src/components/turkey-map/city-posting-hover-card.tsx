@@ -48,13 +48,13 @@ export function CityPostingHoverCard({
       onMouseEnter={onHoverRetain}
       onMouseLeave={onHoverRelease}
       onClick={() => onOpen?.(anchor)}
-      className="fixed z-[60] flex cursor-pointer flex-col gap-1 rounded-[var(--radius-card)] border p-3 text-left shadow-[var(--shadow-card)] transition-colors hover:bg-black/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+      className="fixed z-[60] flex cursor-pointer flex-col gap-1 rounded-[var(--radius-card)] border p-3 text-left shadow-[var(--shadow-card)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_2%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       style={{
         left,
         top,
         width: CARD_WIDTH,
-        borderColor: "var(--color-border, #e2e2e2)",
-        backgroundColor: "var(--color-surface, #fff)",
+        borderColor: "var(--color-border)",
+        backgroundColor: "var(--color-surface)",
       }}
     >
       <span

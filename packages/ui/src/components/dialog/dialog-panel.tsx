@@ -23,7 +23,7 @@ export function DialogPanel({ dialog, onAction }: DialogPanelProps) {
       aria-modal="true"
       aria-labelledby={titleId}
       data-mentor-dialog-panel
-      className={`relative w-full max-w-[360px] border border-white bg-white/92 p-6 shadow-[var(--shadow-card)] backdrop-blur-md lg:max-w-[480px] ${isPromo ? "flex flex-col items-center text-center" : "flex flex-col"} ${dialog.exiting ? "opacity-0 motion-reduce:opacity-0" : "animate-dialog-enter motion-reduce:animate-none"} rounded-[var(--radius-card)] motion-reduce:transition-none transition-opacity duration-200`}
+      className={`relative w-full max-w-[360px] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_92%,transparent)] p-6 shadow-[var(--shadow-card)] backdrop-blur-md lg:max-w-[480px] ${isPromo ? "flex flex-col items-center text-center" : "flex flex-col"} ${dialog.exiting ? "opacity-0 motion-reduce:opacity-0" : "animate-dialog-enter motion-reduce:animate-none"} rounded-[var(--radius-card)] motion-reduce:transition-none transition-opacity duration-200`}
       onClick={(e) => e.stopPropagation()}
     >
       {dialog.hero ? (

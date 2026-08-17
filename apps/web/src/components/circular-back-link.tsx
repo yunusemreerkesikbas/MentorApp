@@ -14,7 +14,7 @@ type CircularBackLinkProps = {
 const variantClasses = {
   outlined:
     "border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] hover:bg-[var(--color-soft)]",
-  soft: "border-transparent bg-black/5 hover:bg-black/10",
+  soft: "border-transparent bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] hover:bg-[color-mix(in_srgb,var(--color-main)_10%,transparent)]",
 } as const;
 
 /** Locale-aware, accessible circular navigation control for returning to a parent surface. */

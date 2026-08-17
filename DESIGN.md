@@ -1,6 +1,6 @@
 # DESIGN.md — Exam Coaching Platform · Design System
 
-> Status: Living design record · Updated: 2026-07-12  
+> Status: Living design record · Updated: 2026-08-15  
 > Product decisions: [`sinav-kocluk-roadmap.md`](./sinav-kocluk-roadmap.md) · Product register: [`PRODUCT.md`](./PRODUCT.md)  
 > **Visual foundation:** **Nuton — Online Learning Mobile App** Figma UI template, **evolved** into Mentor’s own system (companionship platform).  
 > Source of truth for base values: Figma file `8lc7t0P5kibfQ7GMzLSl3l` (Dev Mode MCP). Evolve layers (surfaces, visual language, motion) are Mentor-owned and documented here.
@@ -34,6 +34,7 @@ Base canvas: **375 px** wide. Content column **335 px** → **20 px** side gutte
 | `body-text` | `#333333` | Body copy, input values |
 | `secondary-text` | `#666666` | Captions, meta, labels, inactive nav |
 | `btn` | `#000000` | Primary button fill |
+| `btn-label` | `#FFFFFF` | Label on `btn` (inverts in dark — §2.5) |
 | `label-dark-secondary` | `#EBEBF5` | Secondary label on dark |
 
 Body text must stay ≥4.5:1 on backgrounds. Do not use colors lighter than `secondary` for readable copy.
@@ -84,6 +85,40 @@ Blobs carry atmosphere. Do not introduce cream/sand body backgrounds (PRODUCT an
 | `error-container` | `#ffdad6` | Error icon circle background |
 
 Errors use `danger` — not `like-active`. Countdown is calm (not alarm-red).
+
+### 2.5 Light / dark theme
+
+**Default is light.** Cookie `mentor-theme=light|dark` (no cookie → light). Do not follow `prefers-color-scheme` unless a later product decision adds a `system` value.
+
+**Light canvas:** `#FFFFFF` + the decorative blobs in §2.2. That *is* the login-page atmosphere (`BackgroundBlobs` in the locale layout). Do not add a page-level backdrop-filter / glass wash.
+
+**Dark canvas:** soft charcoal, not terminal black (`#000`).
+
+| Token | Dark | Usage |
+|---|---|---|
+| `bg` | `#12141A` | Screen base (blobs sit behind, dimmed) |
+| `surface` | `#1A1D24` | Cards / sidebar mix |
+| `surface-container` | `#242833` | Wells, rails, skeleton base |
+| `surface-translucent` | `rgba(26,29,36,0.62)` | Soft fields |
+| `border` | `rgba(255,255,255,0.10)` | Chrome hairline |
+| `main` | `#F4F4F5` | Headings, active nav |
+| `body-text` | `#D4D4D8` | Body — ≥4.5:1 on `bg` |
+| `secondary-text` | `#A1A1AA` | Meta / inactive |
+| `btn` | `#F4F4F5` | Primary fill (inverted) |
+| `btn-label` | `#12141A` | Label on `btn` |
+| `chip-text` | `#C4B8E0` | Chip label on dark |
+| `progress-track` / `accent-soft` | `#2C3D56` | Soft accent wells |
+| `streak-soft` | `#3A2A28` | Streak day wells |
+| `danger` | `#F28B82` | Error — ≥4.5:1 on `bg` |
+| `success` | `#6BC49A` | Positive — ≥4.5:1 on `bg` |
+| `focus-ring` | `#7EB6E8` | Keyboard focus |
+| `error-container` | `#3D2422` | Error icon well |
+
+Blob hues stay (`#FF2DAB` / `#9BC1FB` / `#BDEBFF`). Dark opacities: pink 0.14 · blue 0.20 · cyan 0.18.
+
+**Runtime:** `html.dark` overrides the same `--color-*` CSS variables. New UI must use those tokens — never `bg-white`, `#fff`, or `dark:bg-black`. Tailwind `dark:` is an escape hatch only when a value cannot be a token.
+
+**Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage).
 
 ---
 
@@ -144,7 +179,7 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 
 ## 6. Components (Nuton specs + Mentor primitives)
 
-**Primary button** (`btn` 2:770): bg `#000`, radius 10, label Plus Jakarta Sans Bold 18 `#FFF` capitalize.
+**Primary button** (`btn` 2:770): fill `btn`, label `btn-label`, radius 10, Plus Jakarta Sans Bold 18 capitalize. Light = black/`#FFF`; dark inverts (§2.5).
 
 **Text field** (`field` 2:722): translucent surface + white border + `shadow-card`.
 
@@ -280,6 +315,11 @@ deliberate presence cue, disabled under reduced motion.
 ## 11. Mobile → Desktop Adaptation
 
 - Bottom Tab Bar → **left sidebar** at `lg` (1024px); active `#111`.
+  Desktop rail is 240px with sentence-case labels. A top-right `PanelLeft` control
+  collapses it to a 52px icon strip (same width as the analysis history rail).
+  Hover/focus on a rail icon reveals the link name. Preference persists via the
+  `mentor-sidebar` cookie (no expanded flash on reload). `/hedef/pano` keeps this
+  collapsed rail visible (does not hide AppNav).
 - Single-column → multi-column (main + right rail) where product needs it.
 - Hover: `shadow-card-hover` on interactive elevated cards; focus: `focus-ring`.
 

@@ -86,7 +86,7 @@ export const CoachComposer = forwardRef<
   return (
     <div className="relative z-10 shrink-0 bg-transparent px-5 pt-1 pb-2">
       <div
-        className="mx-auto max-w-2xl rounded-[18px] bg-white px-2.5 py-2 shadow-[var(--shadow-card)]"
+        className="mx-auto max-w-2xl rounded-[18px] bg-[var(--color-surface)] px-2.5 py-2 shadow-[var(--shadow-card)]"
         style={{
           border: "1px solid color-mix(in srgb, var(--color-main) 6%, transparent)",
         }}

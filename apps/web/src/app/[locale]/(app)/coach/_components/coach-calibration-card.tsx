@@ -65,7 +65,7 @@ export function CoachCalibrationCard() {
   }
 
   return (
-    <section className="mb-3 w-full max-w-lg rounded-[var(--radius-card)] bg-white/85 p-4 text-left shadow-[var(--shadow-card)]">
+    <section className="mb-3 w-full max-w-lg rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_85%,transparent)] p-4 text-left shadow-[var(--shadow-card)]">
       <p className="text-sm font-semibold text-[var(--color-main)]">
         {t("intro")}
       </p>
@@ -104,7 +104,7 @@ export function CoachCalibrationCard() {
           type="button"
           disabled={busy || !support || !directness || !memory}
           onClick={() => void save()}
-          className="min-h-10 rounded-full bg-[var(--color-main)] px-4 text-sm font-semibold text-white disabled:opacity-50"
+          className="min-h-10 rounded-full bg-[var(--color-btn)] px-4 text-sm font-semibold text-[var(--color-btn-label)] disabled:opacity-50"
         >
           {t("save")}
         </button>
@@ -142,33 +142,38 @@ function ChoiceRow({
 }) {
   return (
     <fieldset className="mt-3">
-      <legend className="text-sm font-medium text-[var(--color-body-text)]">
+      <legend className="text-sm font-medium text-[var(--color-body)]">
         {label}
       </legend>
       {hint ? (
         <p className="mt-1 text-xs text-[var(--color-secondary)]">{hint}</p>
       ) : null}
       <div className="mt-2 flex flex-wrap gap-2">
-        {options.map(([option, text]) => (
+        {options.map(([option, text]) => {
+          const selected = value === option;
+          return (
           <button
             key={option}
             type="button"
-            aria-pressed={value === option}
+            aria-pressed={selected}
             onClick={() => onChange(option)}
             className="min-h-9 rounded-full border px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             style={{
-              borderColor:
-                value === option
-                  ? "var(--color-progress)"
-                  : "var(--color-border)",
-              backgroundColor:
-                value === option ? "var(--color-surface-container)" : "white",
-              color: "var(--color-main)",
+              borderColor: selected
+                ? "var(--color-btn)"
+                : "var(--color-border)",
+              backgroundColor: selected
+                ? "var(--color-btn)"
+                : "var(--color-surface)",
+              color: selected
+                ? "var(--color-btn-label)"
+                : "var(--color-main)",
             }}
           >
             {text}
           </button>
-        ))}
+          );
+        })}
       </div>
     </fieldset>
   );

@@ -12,7 +12,13 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { type ForumFeaturedAdminView, type ForumTagView, UserRole } from "@mentor/types";
+import {
+  type ForumFeaturedAdminView,
+  type ForumTagSuggestionView,
+  type ForumTagView,
+  UserRole,
+} from "@mentor/types";
+import type { ReviewForumTagSuggestion } from "@mentor/validation";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { Roles } from "../../../common/auth/roles.decorator";
 import { ForumDiscoveryService } from "../../forum/application/forum-discovery.service";
@@ -21,6 +27,7 @@ import { AdminAuditInterceptor } from "./admin-audit.interceptor";
 import {
   AdminForumTagCreateDto,
   AdminForumTagUpdateDto,
+  ReviewForumTagSuggestionDto,
   SetFeaturedThreadDto,
 } from "./admin.dto";
 import { Audit } from "./audit.decorator";
@@ -37,6 +44,36 @@ export class AdminForumController {
   @Get("tags")
   tags(): Promise<ForumTagView[]> {
     return this.forum.listAdminTags();
+  }
+
+  @Get("tag-suggestions")
+  tagSuggestions(): Promise<ForumTagSuggestionView[]> {
+    return this.forum.listAdminTagSuggestions();
+  }
+
+  @Patch("tag-suggestions/:suggestionId")
+  @Audit(AuditAction.FORUM_TAG_SUGGESTION_REVIEW)
+  async reviewTagSuggestion(
+    @CurrentUser() actor: RequestUser,
+    @Param("suggestionId") suggestionId: string,
+    @Body() body: ReviewForumTagSuggestionDto,
+    @Req() req: AuditableRequest,
+  ): Promise<ForumTagSuggestionView> {
+    const before = (await this.forum.listAdminTagSuggestions()).find(
+      (suggestion) => suggestion.id === suggestionId,
+    );
+    const after = await this.forum.reviewAdminTagSuggestion(
+      actor.id,
+      suggestionId,
+      body as ReviewForumTagSuggestion,
+    );
+    setAuditContext(req, {
+      targetType: AuditTargetType.FORUM_TAG_SUGGESTION,
+      targetId: suggestionId,
+      before: before ?? null,
+      after,
+    });
+    return after;
   }
 
   @Post("tags")

@@ -51,9 +51,9 @@ import { useMentorDialog } from "@/lib/mentor-dialog";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 
 const fieldStyle = {
-  borderColor: "var(--color-border, #e2e2e2)",
+  borderColor: "var(--color-border)",
   color: "var(--color-body)",
-  backgroundColor: "var(--color-surface, #fff)",
+  backgroundColor: "var(--color-surface)",
 } as const;
 
 const GOAL_INPUT_MAX_WIDTH = "18rem";
@@ -469,7 +469,7 @@ export function VisionBoardShell() {
       {isLg ? (
         <motion.div
           className="mentor-scrollarea flex h-full w-[340px] shrink-0 flex-col gap-4 overflow-y-auto border-r p-5"
-          style={{ borderColor: "var(--color-border, #e2e2e2)" }}
+          style={{ borderColor: "var(--color-border)" }}
           {...panelMotion}
         >
           <motion.div
@@ -498,12 +498,12 @@ export function VisionBoardShell() {
         {!isLg ? (
           <div
             className="flex shrink-0 items-center gap-2 border-b px-3 py-2"
-            style={{ borderColor: "var(--color-border, #e2e2e2)" }}
+            style={{ borderColor: "var(--color-border)" }}
           >
             <Link
               href="/dashboard"
               aria-label={common("back_panel")}
-              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[var(--radius-card)] transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[var(--radius-card)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
               style={{ color: "var(--color-secondary)" }}
             >
               <ArrowLeft size={20} strokeWidth={2} aria-hidden />
@@ -527,7 +527,7 @@ export function VisionBoardShell() {
             <button
               type="button"
               onClick={() => setPanelOpen(true)}
-              className="inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+              className="inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
               aria-label={translate("browse_open")}
               data-testid="vision-browse-open"
             >
@@ -544,7 +544,7 @@ export function VisionBoardShell() {
         {isLg ? (
           <motion.form
             className="flex shrink-0 flex-wrap items-end gap-3 border-b p-4"
-            style={{ borderColor: "var(--color-border, #e2e2e2)" }}
+            style={{ borderColor: "var(--color-border)" }}
             onSubmit={(e) => void handleSubmit(e)}
             initial={reduceMotion ? false : { opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}

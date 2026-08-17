@@ -129,6 +129,8 @@ export interface PhotoUploadUrlDto { [key: string]: unknown }
 
 export interface CategorizePhotoDto { [key: string]: unknown }
 
+export interface PrelabelNotebookEntryDto { [key: string]: unknown }
+
 export interface CheckoutDto { [key: string]: unknown }
 
 export interface DeepAnalysisDto { [key: string]: unknown }
@@ -165,6 +167,18 @@ export interface CreateMockExamDto { [key: string]: unknown }
 
 export interface UpdateMockExamDto { [key: string]: unknown }
 
+export interface NotebookImageUploadUrlDto { [key: string]: unknown }
+
+export interface CreateNotebookEntryDto { [key: string]: unknown }
+
+export interface UpdateNotebookEntryDto { [key: string]: unknown }
+
+export interface ReviewNotebookEntryDto { [key: string]: unknown }
+
+export interface LinkNotebookThreadDto { [key: string]: unknown }
+
+export interface PutNotebookPageDto { [key: string]: unknown }
+
 export interface CreateZoneDto { [key: string]: unknown }
 
 export interface AssignOwnerDto { [key: string]: unknown }
@@ -185,9 +199,13 @@ export interface CreateReportDto { [key: string]: unknown }
 
 export interface ResolveReportDto { [key: string]: unknown }
 
+export interface CreateForumTagSuggestionDto { [key: string]: unknown }
+
 export interface UpdateForumThreadDto { [key: string]: unknown }
 
 export interface UpdateForumPostDto { [key: string]: unknown }
+
+export interface PollVoteDto { [key: string]: unknown }
 
 export interface UpdateUserStatusDto { [key: string]: unknown }
 
@@ -204,6 +222,8 @@ export interface UpsertExamDto { [key: string]: unknown }
 export interface UpsertExamEventDto { [key: string]: unknown }
 
 export interface RefundSubscriptionDto { [key: string]: unknown }
+
+export interface ReviewForumTagSuggestionDto { [key: string]: unknown }
 
 export interface AdminForumTagCreateDto { [key: string]: unknown }
 
@@ -2135,6 +2155,40 @@ export const aiMockExamPhotoControllerCategorizePhoto = async (id: string,
 
 
 
+export type aiNotebookPrelabelControllerPrelabelResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type aiNotebookPrelabelControllerPrelabelResponseSuccess = (aiNotebookPrelabelControllerPrelabelResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiNotebookPrelabelControllerPrelabelResponse = (aiNotebookPrelabelControllerPrelabelResponseSuccess)
+
+export const getAiNotebookPrelabelControllerPrelabelUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebook/entries/prelabel`
+}
+
+export const aiNotebookPrelabelControllerPrelabel = async (prelabelNotebookEntryDto: PrelabelNotebookEntryDto, options?: RequestInit): Promise<aiNotebookPrelabelControllerPrelabelResponse> => {
+  
+  return http<aiNotebookPrelabelControllerPrelabelResponse>(getAiNotebookPrelabelControllerPrelabelUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      prelabelNotebookEntryDto,)
+  }
+);}
+
+
+
 export type adminEmbeddingControllerReembedResponse201 = {
   data: void
   status: 201
@@ -2323,6 +2377,39 @@ export const getContentControllerSubjectsBySlugUrl = (slug: string,) => {
 export const contentControllerSubjectsBySlug = async (slug: string, options?: RequestInit): Promise<contentControllerSubjectsBySlugResponse> => {
   
   return http<contentControllerSubjectsBySlugResponse>(getContentControllerSubjectsBySlugUrl(slug),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type contentControllerTopicsBySlugResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type contentControllerTopicsBySlugResponseSuccess = (contentControllerTopicsBySlugResponse200) & {
+  headers: Headers;
+};
+;
+
+export type contentControllerTopicsBySlugResponse = (contentControllerTopicsBySlugResponseSuccess)
+
+export const getContentControllerTopicsBySlugUrl = (slug: string,) => {
+
+
+  
+
+  return `/v1/content/exams/${slug}/topics`
+}
+
+export const contentControllerTopicsBySlug = async (slug: string, options?: RequestInit): Promise<contentControllerTopicsBySlugResponse> => {
+  
+  return http<contentControllerTopicsBySlugResponse>(getContentControllerTopicsBySlugUrl(slug),
   {      
     ...options,
     method: 'GET'
@@ -4268,6 +4355,346 @@ export const mockExamControllerRemove = async (id: string, options?: RequestInit
 
 
 
+export type mistakeNotebookControllerGetOverviewResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mistakeNotebookControllerGetOverviewResponseSuccess = (mistakeNotebookControllerGetOverviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerGetOverviewResponse = (mistakeNotebookControllerGetOverviewResponseSuccess)
+
+export const getMistakeNotebookControllerGetOverviewUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebook`
+}
+
+export const mistakeNotebookControllerGetOverview = async ( options?: RequestInit): Promise<mistakeNotebookControllerGetOverviewResponse> => {
+  
+  return http<mistakeNotebookControllerGetOverviewResponse>(getMistakeNotebookControllerGetOverviewUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mistakeNotebookControllerListDueResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mistakeNotebookControllerListDueResponseSuccess = (mistakeNotebookControllerListDueResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerListDueResponse = (mistakeNotebookControllerListDueResponseSuccess)
+
+export const getMistakeNotebookControllerListDueUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebook/reviews/due`
+}
+
+export const mistakeNotebookControllerListDue = async ( options?: RequestInit): Promise<mistakeNotebookControllerListDueResponse> => {
+  
+  return http<mistakeNotebookControllerListDueResponse>(getMistakeNotebookControllerListDueUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mistakeNotebookControllerCreateUploadUrlResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type mistakeNotebookControllerCreateUploadUrlResponseSuccess = (mistakeNotebookControllerCreateUploadUrlResponse201) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerCreateUploadUrlResponse = (mistakeNotebookControllerCreateUploadUrlResponseSuccess)
+
+export const getMistakeNotebookControllerCreateUploadUrlUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebook/entries/image-upload-url`
+}
+
+export const mistakeNotebookControllerCreateUploadUrl = async (notebookImageUploadUrlDto: NotebookImageUploadUrlDto, options?: RequestInit): Promise<mistakeNotebookControllerCreateUploadUrlResponse> => {
+  
+  return http<mistakeNotebookControllerCreateUploadUrlResponse>(getMistakeNotebookControllerCreateUploadUrlUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      notebookImageUploadUrlDto,)
+  }
+);}
+
+
+
+export type mistakeNotebookControllerCreateEntryResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type mistakeNotebookControllerCreateEntryResponseSuccess = (mistakeNotebookControllerCreateEntryResponse201) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerCreateEntryResponse = (mistakeNotebookControllerCreateEntryResponseSuccess)
+
+export const getMistakeNotebookControllerCreateEntryUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebook/entries`
+}
+
+export const mistakeNotebookControllerCreateEntry = async (createNotebookEntryDto: CreateNotebookEntryDto, options?: RequestInit): Promise<mistakeNotebookControllerCreateEntryResponse> => {
+  
+  return http<mistakeNotebookControllerCreateEntryResponse>(getMistakeNotebookControllerCreateEntryUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createNotebookEntryDto,)
+  }
+);}
+
+
+
+export type mistakeNotebookControllerUpdateEntryResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mistakeNotebookControllerUpdateEntryResponseSuccess = (mistakeNotebookControllerUpdateEntryResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerUpdateEntryResponse = (mistakeNotebookControllerUpdateEntryResponseSuccess)
+
+export const getMistakeNotebookControllerUpdateEntryUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coaching/notebook/entries/${id}`
+}
+
+export const mistakeNotebookControllerUpdateEntry = async (id: string,
+    updateNotebookEntryDto: UpdateNotebookEntryDto, options?: RequestInit): Promise<mistakeNotebookControllerUpdateEntryResponse> => {
+  
+  return http<mistakeNotebookControllerUpdateEntryResponse>(getMistakeNotebookControllerUpdateEntryUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateNotebookEntryDto,)
+  }
+);}
+
+
+
+export type mistakeNotebookControllerDeleteEntryResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type mistakeNotebookControllerDeleteEntryResponseSuccess = (mistakeNotebookControllerDeleteEntryResponse204) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerDeleteEntryResponse = (mistakeNotebookControllerDeleteEntryResponseSuccess)
+
+export const getMistakeNotebookControllerDeleteEntryUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coaching/notebook/entries/${id}`
+}
+
+export const mistakeNotebookControllerDeleteEntry = async (id: string, options?: RequestInit): Promise<mistakeNotebookControllerDeleteEntryResponse> => {
+  
+  return http<mistakeNotebookControllerDeleteEntryResponse>(getMistakeNotebookControllerDeleteEntryUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type mistakeNotebookControllerReviewEntryResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mistakeNotebookControllerReviewEntryResponseSuccess = (mistakeNotebookControllerReviewEntryResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerReviewEntryResponse = (mistakeNotebookControllerReviewEntryResponseSuccess)
+
+export const getMistakeNotebookControllerReviewEntryUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coaching/notebook/entries/${id}/review`
+}
+
+export const mistakeNotebookControllerReviewEntry = async (id: string,
+    reviewNotebookEntryDto: ReviewNotebookEntryDto, options?: RequestInit): Promise<mistakeNotebookControllerReviewEntryResponse> => {
+  
+  return http<mistakeNotebookControllerReviewEntryResponse>(getMistakeNotebookControllerReviewEntryUrl(id),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reviewNotebookEntryDto,)
+  }
+);}
+
+
+
+export type mistakeNotebookControllerLinkThreadResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mistakeNotebookControllerLinkThreadResponseSuccess = (mistakeNotebookControllerLinkThreadResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerLinkThreadResponse = (mistakeNotebookControllerLinkThreadResponseSuccess)
+
+export const getMistakeNotebookControllerLinkThreadUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coaching/notebook/entries/${id}/community-thread`
+}
+
+export const mistakeNotebookControllerLinkThread = async (id: string,
+    linkNotebookThreadDto: LinkNotebookThreadDto, options?: RequestInit): Promise<mistakeNotebookControllerLinkThreadResponse> => {
+  
+  return http<mistakeNotebookControllerLinkThreadResponse>(getMistakeNotebookControllerLinkThreadUrl(id),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      linkNotebookThreadDto,)
+  }
+);}
+
+
+
+export type mistakeNotebookControllerGetPageResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mistakeNotebookControllerGetPageResponseSuccess = (mistakeNotebookControllerGetPageResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerGetPageResponse = (mistakeNotebookControllerGetPageResponseSuccess)
+
+export const getMistakeNotebookControllerGetPageUrl = (index: number,) => {
+
+
+  
+
+  return `/v1/coaching/notebook/pages/${index}`
+}
+
+export const mistakeNotebookControllerGetPage = async (index: number, options?: RequestInit): Promise<mistakeNotebookControllerGetPageResponse> => {
+  
+  return http<mistakeNotebookControllerGetPageResponse>(getMistakeNotebookControllerGetPageUrl(index),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mistakeNotebookControllerPutPageResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mistakeNotebookControllerPutPageResponseSuccess = (mistakeNotebookControllerPutPageResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerPutPageResponse = (mistakeNotebookControllerPutPageResponseSuccess)
+
+export const getMistakeNotebookControllerPutPageUrl = (index: number,) => {
+
+
+  
+
+  return `/v1/coaching/notebook/pages/${index}`
+}
+
+export const mistakeNotebookControllerPutPage = async (index: number,
+    putNotebookPageDto: PutNotebookPageDto, options?: RequestInit): Promise<mistakeNotebookControllerPutPageResponse> => {
+  
+  return http<mistakeNotebookControllerPutPageResponse>(getMistakeNotebookControllerPutPageUrl(index),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      putNotebookPageDto,)
+  }
+);}
+
+
+
 export type forumControllerListResponse200 = {
   data: void
   status: 200
@@ -4981,6 +5408,39 @@ export const forumThreadControllerReactPost = async (postId: string,
 
 
 
+export type forumThreadControllerPostReactionUsersResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumThreadControllerPostReactionUsersResponseSuccess = (forumThreadControllerPostReactionUsersResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumThreadControllerPostReactionUsersResponse = (forumThreadControllerPostReactionUsersResponseSuccess)
+
+export const getForumThreadControllerPostReactionUsersUrl = (postId: string,) => {
+
+
+  
+
+  return `/v1/forum/posts/${postId}/reactions`
+}
+
+export const forumThreadControllerPostReactionUsers = async (postId: string, options?: RequestInit): Promise<forumThreadControllerPostReactionUsersResponse> => {
+  
+  return http<forumThreadControllerPostReactionUsersResponse>(getForumThreadControllerPostReactionUsersUrl(postId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
 export type forumThreadControllerUnreactPostResponse204 = {
   data: void
   status: 204
@@ -5182,6 +5642,39 @@ export const forumThreadControllerReact = async (threadId: string,
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       reactionDto,)
+  }
+);}
+
+
+
+export type forumThreadControllerThreadReactionUsersResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumThreadControllerThreadReactionUsersResponseSuccess = (forumThreadControllerThreadReactionUsersResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumThreadControllerThreadReactionUsersResponse = (forumThreadControllerThreadReactionUsersResponseSuccess)
+
+export const getForumThreadControllerThreadReactionUsersUrl = (threadId: string,) => {
+
+
+  
+
+  return `/v1/forum/threads/${threadId}/reactions`
+}
+
+export const forumThreadControllerThreadReactionUsers = async (threadId: string, options?: RequestInit): Promise<forumThreadControllerThreadReactionUsersResponse> => {
+  
+  return http<forumThreadControllerThreadReactionUsersResponse>(getForumThreadControllerThreadReactionUsersUrl(threadId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
   }
 );}
 
@@ -5929,6 +6422,39 @@ export const forumDiscoveryControllerFeed = async ( options?: RequestInit): Prom
 
 
 
+export type forumDiscoveryControllerTrendsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type forumDiscoveryControllerTrendsResponseSuccess = (forumDiscoveryControllerTrendsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type forumDiscoveryControllerTrendsResponse = (forumDiscoveryControllerTrendsResponseSuccess)
+
+export const getForumDiscoveryControllerTrendsUrl = () => {
+
+
+  
+
+  return `/v1/forum/trends`
+}
+
+export const forumDiscoveryControllerTrends = async ( options?: RequestInit): Promise<forumDiscoveryControllerTrendsResponse> => {
+  
+  return http<forumDiscoveryControllerTrendsResponse>(getForumDiscoveryControllerTrendsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
 export type forumDiscoveryControllerTagsResponse200 = {
   data: void
   status: 200
@@ -5957,6 +6483,40 @@ export const forumDiscoveryControllerTags = async ( options?: RequestInit): Prom
     method: 'GET'
     
     
+  }
+);}
+
+
+
+export type forumDiscoveryControllerTagSuggestionResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type forumDiscoveryControllerTagSuggestionResponseSuccess = (forumDiscoveryControllerTagSuggestionResponse201) & {
+  headers: Headers;
+};
+;
+
+export type forumDiscoveryControllerTagSuggestionResponse = (forumDiscoveryControllerTagSuggestionResponseSuccess)
+
+export const getForumDiscoveryControllerTagSuggestionUrl = () => {
+
+
+  
+
+  return `/v1/forum/tag-suggestions`
+}
+
+export const forumDiscoveryControllerTagSuggestion = async (createForumTagSuggestionDto: CreateForumTagSuggestionDto, options?: RequestInit): Promise<forumDiscoveryControllerTagSuggestionResponse> => {
+  
+  return http<forumDiscoveryControllerTagSuggestionResponse>(getForumDiscoveryControllerTagSuggestionUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createForumTagSuggestionDto,)
   }
 );}
 
@@ -6155,6 +6715,41 @@ export const forumDiscoveryControllerUnhelpfulPost = async (postId: string, opti
     method: 'DELETE'
     
     
+  }
+);}
+
+
+
+export type forumPollControllerVoteResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type forumPollControllerVoteResponseSuccess = (forumPollControllerVoteResponse201) & {
+  headers: Headers;
+};
+;
+
+export type forumPollControllerVoteResponse = (forumPollControllerVoteResponseSuccess)
+
+export const getForumPollControllerVoteUrl = (pollId: string,) => {
+
+
+  
+
+  return `/v1/forum/polls/${pollId}/votes`
+}
+
+export const forumPollControllerVote = async (pollId: string,
+    pollVoteDto: PollVoteDto, options?: RequestInit): Promise<forumPollControllerVoteResponse> => {
+  
+  return http<forumPollControllerVoteResponse>(getForumPollControllerVoteUrl(pollId),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      pollVoteDto,)
   }
 );}
 
@@ -7302,6 +7897,74 @@ export const adminForumControllerCreateTag = async (adminForumTagCreateDto: Admi
 
 
 
+export type adminForumControllerTagSuggestionsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminForumControllerTagSuggestionsResponseSuccess = (adminForumControllerTagSuggestionsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminForumControllerTagSuggestionsResponse = (adminForumControllerTagSuggestionsResponseSuccess)
+
+export const getAdminForumControllerTagSuggestionsUrl = () => {
+
+
+  
+
+  return `/v1/admin/forum/tag-suggestions`
+}
+
+export const adminForumControllerTagSuggestions = async ( options?: RequestInit): Promise<adminForumControllerTagSuggestionsResponse> => {
+  
+  return http<adminForumControllerTagSuggestionsResponse>(getAdminForumControllerTagSuggestionsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminForumControllerReviewTagSuggestionResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminForumControllerReviewTagSuggestionResponseSuccess = (adminForumControllerReviewTagSuggestionResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminForumControllerReviewTagSuggestionResponse = (adminForumControllerReviewTagSuggestionResponseSuccess)
+
+export const getAdminForumControllerReviewTagSuggestionUrl = (suggestionId: string,) => {
+
+
+  
+
+  return `/v1/admin/forum/tag-suggestions/${suggestionId}`
+}
+
+export const adminForumControllerReviewTagSuggestion = async (suggestionId: string,
+    reviewForumTagSuggestionDto: ReviewForumTagSuggestionDto, options?: RequestInit): Promise<adminForumControllerReviewTagSuggestionResponse> => {
+  
+  return http<adminForumControllerReviewTagSuggestionResponse>(getAdminForumControllerReviewTagSuggestionUrl(suggestionId),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reviewForumTagSuggestionDto,)
+  }
+);}
+
+
+
 export type adminForumControllerUpdateTagResponse200 = {
   data: void
   status: 200
@@ -7863,6 +8526,39 @@ export const getCronControllerDispatchDailyRemindersUrl = () => {
 export const cronControllerDispatchDailyReminders = async ( options?: RequestInit): Promise<cronControllerDispatchDailyRemindersResponse> => {
   
   return http<cronControllerDispatchDailyRemindersResponse>(getCronControllerDispatchDailyRemindersUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type cronControllerDispatchNotebookReviewsResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type cronControllerDispatchNotebookReviewsResponseSuccess = (cronControllerDispatchNotebookReviewsResponse201) & {
+  headers: Headers;
+};
+;
+
+export type cronControllerDispatchNotebookReviewsResponse = (cronControllerDispatchNotebookReviewsResponseSuccess)
+
+export const getCronControllerDispatchNotebookReviewsUrl = () => {
+
+
+  
+
+  return `/v1/internal/cron/dispatch-notebook-reviews`
+}
+
+export const cronControllerDispatchNotebookReviews = async ( options?: RequestInit): Promise<cronControllerDispatchNotebookReviewsResponse> => {
+  
+  return http<cronControllerDispatchNotebookReviewsResponse>(getCronControllerDispatchNotebookReviewsUrl(),
   {      
     ...options,
     method: 'POST'

@@ -92,7 +92,7 @@ export function AnalysisTabEntry({
             type="button"
             onClick={() => void handleCopyLast()}
             disabled={copying}
-            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-[var(--radius-card)] border px-3 text-xs font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
+            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-[var(--radius-card)] border px-3 text-xs font-semibold transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
             style={{
               color: "var(--color-main)",
               borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",

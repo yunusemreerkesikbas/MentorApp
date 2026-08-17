@@ -76,6 +76,21 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **Exam calendar seed no longer overwrites admin edits (2026-08-16)** — startup seed
+  called `upsertExam` / `upsertEvent` on every API boot, so W6 calendar edits on
+  `/content/exams/:slug` reset to `exams.seed.json` whenever the API restarted (Nest
+  `--watch` included). Seed now inserts **missing** exams and event types only, matching
+  article seed. Usage: save a date in admin, restart API; the date stays. To change a
+  date that already exists, use the admin editor (updating the JSON does not rewrite
+  existing rows). Related: `content-seed.service.ts`, `ContentService.hasExam` /
+  `hasExamEvent`.
+
+- **Knowledge light/dark surfaces (2026-08-15)** — `/bilgi` hub CTA and public article
+  coach/trust chrome use `--color-btn-label` / `--color-surface`. Article body
+  already read `--color-*`. Usage: sidebar moon/sun on `/bilgi`; public
+  `/bilgi/[slug]` follows the same cookie. Related: `knowledge-shell.tsx`,
+  `article-content.tsx`, `article-trust-footer.tsx`, `docs/features/web-shell.md`.
+
 - **Sınav listesi sayfalaması deterministik (APP-031, 2026-07-31)** — `ExamRepository.listPaged`
   `ORDER BY (family, name)` ile sıralıyordu; **aynı adlı sınavlarda tiebreaker yoktu**, dolayısıyla
   Postgres eşitleri keyfi sırada döndürüyordu. Sonuç: sayfalar arasında gezen bir admin bir satırı
@@ -318,9 +333,9 @@ pnpm --filter @mentor/api-client generate
   şey orada `DERECE`; ilk ölçümde toplam kontenjanı 1.772 sandım, doğrusu **2.083**. Parser sütunları
   **başlık adıyla** çözer ve eksik başlıkta assert atar.
   **Gotcha 2 — satır sonu kirliliği:** kılavuz uzun hücreleri sütun genişliğine göre CRLF ile
-  sarıyor, kırılma yeri satırdan satıra değişiyor. `"KORUMA VE GÜVENLİK
+  sarıyor, kırılma yeri satırdan satıra değişiyor. `"KORUMA VE GÜVENLİK
 GÖREVLİSİ"` ile
-  `"KORUMA VE
+  `"KORUMA VE
 GÜVENLİK GÖREVLİSİ"` aynı iş. `.trim()` yalnız uçları kırptığı için 53 unvan /
   77 kurum görünüyordu; iç boşluklar da normalleştirilince gerçek sayı **52 / 73** çıktı. Slug
   benzersizlik assert'i olmasa bu kirlilik tabloya girecekti.

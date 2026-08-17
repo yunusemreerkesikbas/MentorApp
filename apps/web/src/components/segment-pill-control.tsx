@@ -85,7 +85,7 @@ export function SegmentPillControl({
         .join(" ")}
       style={{
         backgroundColor:
-          "color-mix(in srgb, var(--color-surface-container) 58%, white)",
+          "color-mix(in srgb, var(--color-surface-container) 58%, var(--color-surface))",
       }}
     >
       {items.map((item) => {

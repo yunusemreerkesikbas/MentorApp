@@ -371,10 +371,10 @@ export function MoodWheelPicker({
   return (
     <div className="flex w-full flex-col items-center gap-3">
       <div
-        className="relative w-full overflow-hidden rounded-[var(--radius-card)] border border-white/80 px-0 pb-2 pt-2"
+        className="relative w-full overflow-hidden rounded-[var(--radius-card)] border border-[color-mix(in_srgb,var(--color-border)_80%,transparent)] px-0 pb-2 pt-2"
         style={{
           background:
-            "linear-gradient(180deg, color-mix(in srgb, var(--color-progress-track) 40%, white) 0%, color-mix(in srgb, var(--color-chip) 20%, white) 100%)",
+            "linear-gradient(180deg, color-mix(in srgb, var(--color-progress-track) 40%, var(--color-surface)) 0%, color-mix(in srgb, var(--color-chip) 20%, var(--color-surface)) 100%)",
         }}
       >
         <div

@@ -17,7 +17,7 @@ export function MentionSuggestions({ mention }: { mention: MentionAutocomplete }
       id={mention.listboxId}
       role="listbox"
       aria-label={t("mention_suggestions_label")}
-      className="absolute left-0 top-full z-20 mt-1 w-full max-w-sm overflow-hidden rounded-[var(--radius-card)] bg-white py-1 shadow-lg"
+      className="absolute left-0 top-full z-20 mt-1 w-full max-w-sm overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface)] py-1 shadow-lg"
       style={{ border: "1px solid rgba(0,0,0,0.08)" }}
     >
       {mention.suggestions.map((s, i) => (

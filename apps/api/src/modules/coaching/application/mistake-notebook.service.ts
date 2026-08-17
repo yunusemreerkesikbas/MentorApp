@@ -44,7 +44,12 @@ const EXTENSIONS: Record<string, string> = {
 };
 
 /** A page the user has never saved. Ruled paper, nothing on it — the blank page they turn to. */
-const EMPTY_PAGE: NotebookPageDoc = { version: 1, paper: "ruled", items: [] };
+const EMPTY_PAGE: NotebookPageDoc = {
+  version: 1,
+  paper: "ruled",
+  items: [],
+  ink: [],
+};
 
 /** The strip only ever shows a handful; a due list longer than this is a wall of guilt, not a nudge. */
 const DUE_LIMIT = 20;
@@ -103,7 +108,17 @@ export class MistakeNotebookService {
       { userId },
       async (tx) => {
         const row = await this.notebook.findPage(tx, userId, pageIndex);
-        const page = (row?.doc as NotebookPageDoc | undefined) ?? EMPTY_PAGE;
+        /*
+         * Spread over the empty page rather than casting the stored value straight across. The
+         * write schema defaults new fields, but that only runs on the way in — a row written
+         * before a field existed comes back out of jsonb without it, and the cast would promise
+         * the client a property that is actually `undefined`. `ink` is the first field to have
+         * that problem; this makes it the last, without a backfill migration.
+         */
+        const stored = row?.doc as Partial<NotebookPageDoc> | undefined;
+        const page: NotebookPageDoc = stored
+          ? { ...EMPTY_PAGE, ...stored }
+          : EMPTY_PAGE;
         const entryIds = page.items.flatMap((item) =>
           item.kind === "entry" ? [item.entryId] : [],
         );

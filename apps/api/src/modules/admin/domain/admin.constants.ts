@@ -24,6 +24,7 @@ export const AuditAction = {
   SUBSCRIPTION_CANCEL: "subscription.cancel",
   FORUM_TAG_CREATE: "forum.tag.create",
   FORUM_TAG_UPDATE: "forum.tag.update",
+  FORUM_TAG_SUGGESTION_REVIEW: "forum.tag-suggestion.review",
   FORUM_FEATURED_SET: "forum.featured.set",
   FORUM_FEATURED_CLEAR: "forum.featured.clear",
 } as const;
@@ -38,6 +39,7 @@ export const AuditTargetType = {
   EXAM_EVENT: "exam-event",
   SUBSCRIPTION: "subscription",
   FORUM_TAG: "forum-tag",
+  FORUM_TAG_SUGGESTION: "forum-tag-suggestion",
   FORUM_THREAD: "forum-thread",
 } as const;
 export type AuditTargetType = (typeof AuditTargetType)[keyof typeof AuditTargetType];

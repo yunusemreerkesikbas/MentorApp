@@ -14,6 +14,9 @@ rebuilt before `apps/web` typecheck sees new exports.
 
 - **Tokens, not numbers:** colors/spacing/radius/typography come from `theme.css` (`@theme`) → CSS vars.
   Thumb pastels are the only accepted hex outside the token file (DESIGN accents).
+- **Light/dark:** class `html.dark` (cookie `mentor-theme`, default light). Dark overrides the same
+  `--color-*` vars — do not fork utilities. `@custom-variant dark` lives in `theme.css`. Rebuild
+  `@mentor/ui` after token edits.
 - **Fonts:** Plus Jakarta Sans latin-ext (Turkish glyphs), loaded once in the root layout.
 - **Responsive shell:** mobile tab bar (63px + safe-area inset) ↔ desktop sidebar; the same primitives
   adapt. Active nav = main-color indicator, not accent fill (anti-alarm per §0).
@@ -112,6 +115,14 @@ N/A (UI package, not REST).
 - **Skeleton animation primitives** — `packages/ui/src/components/skeleton/` + `theme.css`
   (`.mentor-skeleton-shimmer`, `.mentor-skeleton-enter`). Animation/a11y global; each web screen
   owns `*-content-skeleton.tsx` layout. *(0068.)*
+- **Card follows theme (2026-08-15)** — `Card` uses `--color-surface` / `--color-border` /
+  `--color-surface-translucent` instead of `bg-white`. Panel is the first consumer pass.
+- **Light/dark theme tokens (2026-08-15)** — `html.dark` overrides `--color-*` / `--shadow-*` /
+  blob opacities. Soft charcoal (`#12141A` / `#1A1D24`), not `#000`. `colorsDark` + `blobs` /
+  `blobsDark` in `tokens.ts`. `BackgroundBlobs` reads blob tokens. Primary button label uses
+  `--color-btn-label` so the invert works. Usage: set cookie `mentor-theme=dark` or use the
+  sidebar toggle. Gotcha: notebook / weekly-recap / vision-board canvas stay light-locked.
+  Related: `theme.css`, `tokens.ts`, `background-blobs.tsx`, `button.tsx`.
 
 ## Gotchas / Known issues
 

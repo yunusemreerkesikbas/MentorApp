@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useEffect, type ReactNode } from "react";
 import { AppNav } from "@/components/app-nav";
+import { isBoardEditorPath } from "@/lib/app-sidebar";
 import { MOBILE_TAB_BAR_PADDING_CLASS } from "@/lib/app-shell";
 import { useAuth } from "@/lib/auth-context";
 import { NotificationDrawerShell } from "@/lib/notification-drawer-shell";
@@ -12,6 +13,8 @@ import { hasCompletedOnboarding } from "@/lib/post-auth-destination";
 /**
  * App shell + auth guard: anonymous users are redirected to /login.
  * Layout (DESIGN.md §8): bottom tab bar on mobile, left sidebar ≥1024px.
+ * Community keeps its own chrome. `/hedef/pano` keeps the desktop sidebar
+ * locked collapsed so the collage editor stays full-preview without losing nav.
  */
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { status, user } = useAuth();
@@ -20,9 +23,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const t = useTranslations("panel");
   const isCommunityWorkspace =
     pathname === "/community" || pathname.startsWith("/community/");
-  // Full-bleed collage editor — Canva-style chrome owns the left edge (no app nav).
-  const isBoardEditorWorkspace = pathname === "/vision-board/board";
-  const hideAppChrome = isCommunityWorkspace || isBoardEditorWorkspace;
+  const isBoardEditorWorkspace = isBoardEditorPath(pathname);
+  const hideAppChrome = isCommunityWorkspace;
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/login");
@@ -53,7 +55,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           className={
             hideAppChrome
               ? "min-h-screen"
-              : `min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0 lg:pl-60`
+              : isBoardEditorWorkspace
+                ? "mentor-app-shell min-h-screen"
+                : `mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`
           }
         >
           {children}

@@ -67,6 +67,16 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Theme token pass (2026-08-15)** — Community workspace no longer locks light hex on
+  `--color-*`. Surfaces inherit `html` / `html.dark` (`--color-surface`, `--color-border`,
+  `--color-btn-label`). Soft community wells (blue/coral/green) mix against surface.
+  Header search/sidebar/profile chrome follow the same tokens. Theme toggle sits in the
+  community header (AppNav is hidden here). Lightbox/photo overlays stay white-on-dark.
+  Usage: flip moon/sun in the community header; cookie `mentor-theme` persists. Gotcha:
+  `--community-canvas` is `--color-bg`, not a separate light gray. Related:
+  `community-parity.css`, `community-header.tsx`, feed/zone/profile shells,
+  `docs/features/web-shell.md`.
+
 - **Akış mobil sekme sadeleştirmesi (2026-08-09)** — Mobil görünür navigasyon “Öne Çıkan” ve
   “Takip Ettiklerim” olmak üzere iki eşit genişlikli ana sekmeye indirildi. “En Yeni / En İyi”
   seçenekleri filtre bottom sheet'indeki sıralama alanına taşındı; etiket ve oda türüyle birlikte tek

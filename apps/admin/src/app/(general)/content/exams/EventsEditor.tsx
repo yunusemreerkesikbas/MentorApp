@@ -1,5 +1,5 @@
 'use client'
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Swal from "sweetalert2";
 import apiClient from "@/lib/apiClient";
 import type { AdminExamDetail, AdminExamEvent } from "@/lib/types";
@@ -12,20 +12,48 @@ const toLocalInput = (iso?: string) => {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
+function formFromEvents(events: AdminExamEvent[], type: string) {
+    const existing = events.find((x) => x.type === type);
+    return {
+        type,
+        eventAt: toLocalInput(existing?.eventAt),
+        source: existing?.source ?? "",
+        sourceUrl: existing?.sourceUrl ?? "",
+        verifiedBy: existing?.verifiedBy ?? "",
+        verifiedAt: toLocalInput(existing?.verifiedAt),
+    };
+}
+
 // Calendar events editor for one exam (§4 #1): trust metadata required; upsert by (exam, type).
 export default function EventsEditor({ slug, events, onChange }: {
     slug: string;
     events: AdminExamEvent[];
     onChange: (events: AdminExamEvent[]) => void;
 }) {
-    const [f, setF] = useState({
-        type: "EXAM_DATE",
-        eventAt: toLocalInput(),
-        source: "",
-        sourceUrl: "",
-        verifiedBy: "",
-        verifiedAt: toLocalInput(),
-    });
+    const [f, setF] = useState(() => formFromEvents(events, "EXAM_DATE"));
+    useEffect(() => {
+        const hydrated = formFromEvents(events, "EXAM_DATE");
+        // #region agent log
+        fetch("http://127.0.0.1:7497/ingest/21f8ef43-7e17-46b1-8c00-47111ca62dd3", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "54e609" },
+            body: JSON.stringify({
+                sessionId: "54e609",
+                runId: "post-fix",
+                hypothesisId: "H2",
+                location: "EventsEditor.tsx:init",
+                message: "EventsEditor form hydrated from events",
+                data: {
+                    slug,
+                    formType: hydrated.type,
+                    formEventAt: hydrated.eventAt,
+                    tableExamDate: events.find((e) => e.type === "EXAM_DATE")?.eventAt ?? null,
+                },
+                timestamp: Date.now(),
+            }),
+        }).catch(() => {});
+        // #endregion
+    }, [events, slug]);
     const [busy, setBusy] = useState(false);
     const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((p) => ({ ...p, [k]: e.target.value }));
 
@@ -33,14 +61,39 @@ export default function EventsEditor({ slug, events, onChange }: {
         e.preventDefault();
         setBusy(true);
         try {
-            const { data } = await apiClient.post<{ events: AdminExamEvent[] }>(`/admin/content/exams/${encodeURIComponent(slug)}/events`, {
+            const payload = {
                 type: f.type,
                 eventAt: new Date(f.eventAt).toISOString(),
                 source: f.source,
                 sourceUrl: f.sourceUrl,
                 verifiedBy: f.verifiedBy,
                 verifiedAt: new Date(f.verifiedAt).toISOString(),
-            });
+            };
+            const { data } = await apiClient.post<{ events: AdminExamEvent[] }>(`/admin/content/exams/${encodeURIComponent(slug)}/events`, payload);
+            // #region agent log
+            fetch("http://127.0.0.1:7497/ingest/21f8ef43-7e17-46b1-8c00-47111ca62dd3", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "54e609" },
+                body: JSON.stringify({
+                    sessionId: "54e609",
+                    runId: "pre-fix",
+                    hypothesisId: "H3",
+                    location: "EventsEditor.tsx:submit",
+                    message: "Admin event POST response",
+                    data: {
+                        slug,
+                        payload,
+                        responseEventCount: data?.events?.length ?? null,
+                        responseEvents: (data?.events ?? []).map((e) => ({
+                            type: e.type,
+                            eventAt: e.eventAt,
+                            verifiedBy: e.verifiedBy,
+                        })),
+                    },
+                    timestamp: Date.now(),
+                }),
+            }).catch(() => {});
+            // #endregion
             onChange(data.events);
             await Swal.fire({ icon: "success", title: "Etkinlik kaydedildi", timer: 1000, showConfirmButton: false });
         } catch (err) {

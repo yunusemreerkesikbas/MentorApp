@@ -10,7 +10,7 @@ export function TabContentSkeleton({
 }) {
   if (variant === "trends") {
     return (
-      <SkeletonGroup label={label} className="divide-y divide-[#e7e9ee]">
+      <SkeletonGroup label={label} className="divide-y divide-[var(--color-border)]">
         {Array.from({ length: 5 }).map((_, index) => (
           <div key={index} className="space-y-2 px-4 py-4">
             <Skeleton className="h-3 w-28 rounded-full" />
@@ -24,7 +24,7 @@ export function TabContentSkeleton({
 
   return (
     <div>
-      <SkeletonGroup label={label} className="border-b border-[#e7e9ee]">
+      <SkeletonGroup label={label} className="border-b border-[var(--color-border)]">
       <div className="space-y-3 px-4 py-4">
         <Skeleton className="h-5 w-40 rounded-full" />
         <Skeleton className="h-16 w-full rounded-[var(--radius-card)]" />

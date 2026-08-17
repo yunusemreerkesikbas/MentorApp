@@ -59,7 +59,7 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
             action={
               <Link
                 href={{ pathname: "/analysis", query: { tab: "entry" } }}
-                className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+                className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-[var(--color-btn-label)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
                 style={{ backgroundColor: "var(--color-btn)" }}
               >
                 {t("summary.new_entry")}
@@ -122,8 +122,8 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
                         style={{
                           background:
                             window === value
-                              ? "color-mix(in srgb, var(--color-chip) 25%, white)"
-                              : "rgba(0,0,0,0.04)",
+                              ? "color-mix(in srgb, var(--color-chip) 25%, var(--color-surface))"
+                              : "color-mix(in srgb, var(--color-main) 4%, transparent)",
                           color:
                             window === value
                               ? "var(--color-main)"
@@ -191,8 +191,8 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
                       className="flex flex-col gap-2.5 rounded-[var(--radius-card)] border p-4"
                       style={{
                         background: isFocus
-                          ? "color-mix(in srgb, var(--color-chip) 18%, white)"
-                          : "#ffffff",
+                          ? "color-mix(in srgb, var(--color-chip) 18%, var(--color-surface))"
+                          : "var(--color-surface)",
                         borderColor: isFocus
                           ? "transparent"
                           : "color-mix(in srgb, var(--color-main) 8%, transparent)",

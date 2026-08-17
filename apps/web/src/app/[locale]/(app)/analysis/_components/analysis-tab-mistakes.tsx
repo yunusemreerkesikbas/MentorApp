@@ -90,7 +90,7 @@ export function AnalysisTabMistakes({ analysis }: AnalysisTabMistakesProps) {
           </ul>
           <Link
             href="/notebook"
-            className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             style={{ backgroundColor: "var(--color-btn)" }}
           >
             {t("notebook_open")}
@@ -105,7 +105,7 @@ export function AnalysisTabMistakes({ analysis }: AnalysisTabMistakesProps) {
             action={
               <Link
                 href="/notebook"
-                className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 style={{ backgroundColor: "var(--color-btn)" }}
               >
                 {t("notebook_open")}

@@ -210,7 +210,7 @@ export function PlanTaskRow({
           <button
             type="button"
             onClick={onDismissCompletionPrompt}
-            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-[#6f7580] hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-[var(--color-secondary)] hover:bg-[color-mix(in_srgb,var(--color-surface)_70%,transparent)] focus-visible:outline-none focus-visible:ring-2"
             aria-label={t("community_completion_dismiss")}
           >
             <X size={17} aria-hidden />

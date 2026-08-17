@@ -225,7 +225,7 @@ export function PlanTimeGrid({
                       // slot's accessible name unique.
                       time: `${multiDay ? `${formatWeekdayShort(day.iso, locale)} ` : ""}${String(hour).padStart(2, "0")}:00`,
                     })}
-                    className="absolute inset-x-0 w-full border-t transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 disabled:cursor-default disabled:hover:bg-transparent motion-reduce:transition-none"
+                    className="absolute inset-x-0 w-full border-t transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface)_70%,transparent)] focus-visible:outline-none focus-visible:ring-2 disabled:cursor-default disabled:hover:bg-transparent motion-reduce:transition-none"
                     style={{
                       top: hour * HOUR_PX,
                       height: HOUR_PX,

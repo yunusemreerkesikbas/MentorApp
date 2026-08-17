@@ -28,7 +28,7 @@ export function CoachChatSkeleton() {
         </div>
       </SkeletonGroup>
 
-      <div className="border-t border-white px-5 py-3">
+      <div className="border-t border-[var(--color-border)] px-5 py-3">
         <Skeleton className="h-11 w-full rounded-[var(--radius-card)]" />
       </div>
     </main>

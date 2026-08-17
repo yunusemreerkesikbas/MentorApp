@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   CAREER_GROUPS,
   NOTEBOOK_ERROR_TYPES,
+  NOTEBOOK_INK_TOOLS,
   NOTEBOOK_PAPERS,
   NOTEBOOK_SOURCES,
   VISION_BOARD_FRAMES,
@@ -582,11 +583,69 @@ const notebookPageItemSchema = z.discriminatedUnion("kind", [
   boardStickerItemSchema,
 ]);
 
+/**
+ * Ink budget. Three caps rather than one because they fail differently: the stroke cap keeps the
+ * SVG layer's path count in a range browsers render smoothly, the per-stroke cap stops one endless
+ * scribble from being the whole page, and the total-point cap is the only one that actually bounds
+ * the jsonb — 12k samples is roughly 200 KB of document, which still autosaves inside the 900 ms
+ * debounce.
+ *
+ * The client simplifies each stroke (RDP) before storing it, so a normal drawing lands far under
+ * these; hitting them means something is wrong, not that somebody drew a lot.
+ */
+export const NOTEBOOK_PAGE_MAX_STROKES = 200;
+export const NOTEBOOK_INK_MAX_POINTS = 400;
+export const NOTEBOOK_INK_MAX_TOTAL_POINTS = 12_000;
+
+/** `[x, y, pressure]` per sample — see `NotebookInkStroke` for why the array is flat. */
+const NOTEBOOK_INK_POINT_STRIDE = 3;
+
+const notebookInkStrokeSchema = z.object({
+  id: z.string().uuid(),
+  tool: z.enum(NOTEBOOK_INK_TOOLS),
+  color: hexColorSchema,
+  size: z.coerce.number().finite().min(1).max(120),
+  opacity: z.coerce.number().finite().min(0).max(1),
+  points: z
+    .array(coordSchema)
+    // Two samples minimum: one point is a tap, and the outline algorithm has nothing to widen.
+    .min(NOTEBOOK_INK_POINT_STRIDE * 2)
+    .max(NOTEBOOK_INK_POINT_STRIDE * NOTEBOOK_INK_MAX_POINTS)
+    .refine(
+      (points) => points.length % NOTEBOOK_INK_POINT_STRIDE === 0,
+      "invalid_point_stride",
+    )
+    /*
+     * `coordSchema` guards x and y, but every third slot is pressure and the outline algorithm
+     * multiplies the nib width by it — a crafted 5000 would ask the renderer for a polygon the
+     * size of a city. The coordinates themselves stay deliberately loose (a stroke may run off
+     * the page edge, same as an item), so only this slot needs the tighter range.
+     */
+    .refine(
+      (points) =>
+        points.every(
+          (value, index) =>
+            index % NOTEBOOK_INK_POINT_STRIDE !== 2 ||
+            (value >= 0 && value <= 1),
+        ),
+      "invalid_pressure",
+    ),
+});
+
 export const notebookPageDocSchema = z
   .object({
     version: z.literal(1),
     paper: z.enum(NOTEBOOK_PAPERS),
     items: z.array(notebookPageItemSchema).max(NOTEBOOK_PAGE_MAX_ITEMS),
+    /*
+     * Defaulted, not optional, and that default is the whole backward-compatibility story: every
+     * page written before drawing existed parses into a document with empty ink, so no migration
+     * and no `version` bump. Readers downstream can treat `ink` as always present.
+     */
+    ink: z
+      .array(notebookInkStrokeSchema)
+      .max(NOTEBOOK_PAGE_MAX_STROKES)
+      .default([]),
   })
   .superRefine((doc, ctx) => {
     const entries = doc.items.filter((item) => item.kind === "entry");
@@ -613,6 +672,30 @@ export const notebookPageDocSchema = z
         code: z.ZodIssueCode.custom,
         message: "duplicate_entry_ref",
         path: ["items"],
+      });
+    }
+    /*
+     * The real size guard. `max(NOTEBOOK_PAGE_MAX_STROKES)` alone lets 200 strokes × 400 samples
+     * through, which is an order of magnitude more document than the autosave should be shipping.
+     */
+    const points = doc.ink.reduce(
+      (total, stroke) => total + stroke.points.length / NOTEBOOK_INK_POINT_STRIDE,
+      0,
+    );
+    if (points > NOTEBOOK_INK_MAX_TOTAL_POINTS) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "ink_budget_exceeded",
+        path: ["ink"],
+      });
+    }
+    // Same reason as `duplicate_item_id`: the eraser removes by id, and a duplicate makes one
+    // wipe take a stroke the user did not touch.
+    if (new Set(doc.ink.map((stroke) => stroke.id)).size !== doc.ink.length) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "duplicate_stroke_id",
+        path: ["ink"],
       });
     }
   });

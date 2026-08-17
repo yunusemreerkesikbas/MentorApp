@@ -36,7 +36,7 @@ export function CommunityCard() {
       className="p-5 sm:p-6"
       style={{
         backgroundColor:
-          "color-mix(in srgb, var(--color-progress-track) 68%, white)",
+          "color-mix(in srgb, var(--color-progress-track) 38%, var(--color-surface))",
       }}
     >
       <span
@@ -49,7 +49,7 @@ export function CommunityCard() {
       />
       <span
         className="pointer-events-none absolute -bottom-12 left-1/3 size-28 rounded-full opacity-40"
-        style={{ background: "color-mix(in srgb, #9BC1FB 35%, transparent)" }}
+        style={{ background: "color-mix(in srgb, var(--blob-blue) 35%, transparent)" }}
         aria-hidden
       />
 
@@ -66,7 +66,7 @@ export function CommunityCard() {
           </p>
           <Link
             href="/community"
-            className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-5 text-sm font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[var(--color-surface)] px-5 text-sm font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             style={{ fontFamily: "var(--font-heading)" }}
           >
             {t("panel_card_cta")}

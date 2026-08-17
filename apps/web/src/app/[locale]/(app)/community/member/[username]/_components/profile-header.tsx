@@ -51,7 +51,7 @@ function IconButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="grid size-11 cursor-pointer place-items-center rounded-full border border-[var(--color-border)] bg-white text-[var(--color-main)] transition-[background-color,border-color,transform] duration-200 ease-out hover:border-black/15 hover:bg-[var(--color-soft)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none xl:size-10"
+      className="grid size-11 cursor-pointer place-items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-main)] transition-[background-color,border-color,transform] duration-200 ease-out hover:border-[color-mix(in_srgb,var(--color-main)_15%,transparent)] hover:bg-[var(--color-soft)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none xl:size-10"
     >
       {children}
     </button>
@@ -126,8 +126,8 @@ export function ProfileHeader({
   };
 
   return (
-    <section className="profile-header overflow-hidden border-x border-[var(--color-border)] bg-white xl:border-x-0">
-      <div className="profile-hero relative min-h-[min(53dvh,448px)] overflow-hidden bg-white sm:min-h-[428px] xl:min-h-[360px]">
+    <section className="profile-header overflow-hidden border-x border-[var(--color-border)] bg-[var(--color-surface)] xl:border-x-0">
+      <div className="profile-hero relative min-h-[min(53dvh,448px)] overflow-hidden bg-[var(--color-surface)] sm:min-h-[428px] xl:min-h-[360px]">
         {avatarUrl ? (
           <button
             type="button"
@@ -170,7 +170,7 @@ export function ProfileHeader({
                   aria-controls={open ? menuId : undefined}
                   aria-haspopup="menu"
                   onClick={() => setOpen(!open)}
-                  className="grid size-11 place-items-center rounded-full bg-white/90 text-[var(--color-main)] shadow-[var(--shadow-card)] transition-colors duration-200 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+                  className="grid size-11 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] text-[var(--color-main)] shadow-[var(--shadow-card)] transition-colors duration-200 hover:bg-[var(--color-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
                 >
                   <MoreHorizontal size={20} aria-hidden />
                 </button>
@@ -186,13 +186,13 @@ export function ProfileHeader({
           ) : null}
         </div>
 
-        <div className="profile-hero__identity absolute inset-x-0 bottom-0 z-20 rounded-t-[var(--radius-card)] bg-white px-5 pb-5 pt-4 text-center sm:px-8 sm:pb-6 sm:pt-5 xl:rounded-none xl:px-7 xl:pb-5 xl:pt-14 xl:text-left">
+        <div className="profile-hero__identity absolute inset-x-0 bottom-0 z-20 rounded-t-[var(--radius-card)] bg-[var(--color-surface)] px-5 pb-5 pt-4 text-center sm:px-8 sm:pb-6 sm:pt-5 xl:rounded-none xl:px-7 xl:pb-5 xl:pt-14 xl:text-left">
           <button
             type="button"
             aria-label={avatarUrl ? t("profile_photo_open") : undefined}
             disabled={!avatarUrl}
             onClick={(event) => openPreview(event.currentTarget)}
-            className="profile-desktop-avatar absolute -top-12 left-7 hidden size-24 rounded-full bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-default xl:block"
+            className="profile-desktop-avatar absolute -top-12 left-7 hidden size-24 rounded-full bg-[var(--color-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-default xl:block"
           >
             <UserAvatar
               name={profile.displayName}
@@ -239,7 +239,7 @@ export function ProfileHeader({
           {isOwn ? (
             <Link
               href={{ pathname: "/settings", query: { section: "profile" } }}
-              className="inline-flex min-h-11 min-w-40 items-center justify-center rounded-full bg-[var(--color-btn)] px-6 text-sm font-bold text-white transition-[opacity,transform] duration-200 ease-out hover:opacity-88 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none xl:min-h-10 xl:min-w-36 xl:px-5"
+              className="inline-flex min-h-11 min-w-40 items-center justify-center rounded-full bg-[var(--color-btn)] px-6 text-sm font-bold text-[var(--color-btn-label)] transition-[opacity,transform] duration-200 ease-out hover:opacity-88 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none xl:min-h-10 xl:min-w-36 xl:px-5"
             >
               {t("edit_profile")}
             </Link>
@@ -247,7 +247,7 @@ export function ProfileHeader({
             <button
               type="button"
               onClick={onToggleFollow}
-              className={`min-h-11 min-w-40 rounded-full px-6 text-sm font-bold transition-[background-color,color,transform] duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none xl:min-h-10 xl:min-w-36 xl:px-5 ${profile.isFollowing ? "border border-black/10 bg-white text-[var(--color-main)] hover:bg-black/[0.03]" : "bg-[var(--color-btn)] text-white hover:opacity-88"}`}
+              className={`min-h-11 min-w-40 rounded-full px-6 text-sm font-bold transition-[background-color,color,transform] duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none xl:min-h-10 xl:min-w-36 xl:px-5 ${profile.isFollowing ? "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-main)] hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)]" : "bg-[var(--color-btn)] text-[var(--color-btn-label)] hover:opacity-88"}`}
             >
               {profile.isFollowing ? t("following_state") : t("follow")}
             </button>
@@ -351,7 +351,7 @@ function BuddyAction({ status, onRequest }: { status: PublicProfile["buddyStatus
   if (status === "unavailable") return null;
   if (status === "pending_incoming") {
     return (
-      <Link href="/study-session" aria-label={t("buddy_respond")} className="grid size-11 place-items-center rounded-full border border-black/10 bg-white text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
+      <Link href="/study-session" aria-label={t("buddy_respond")} className="grid size-11 place-items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
         <Users size={18} aria-hidden />
       </Link>
     );
@@ -384,7 +384,7 @@ export function ProfileProgressPanel({ profile }: { profile: PublicProfile }) {
   const levels = level ? getProfileLevelWindow(level.tier, MAX_LEVEL) : [];
 
   return (
-    <section className="profile-progress-panel overflow-hidden rounded-[var(--radius-card)] border border-white/10 p-4 text-white xl:p-5">
+    <section className="profile-progress-panel overflow-hidden rounded-[var(--radius-card)] border border-[color-mix(in_srgb,var(--color-btn-label)_10%,transparent)] p-4 text-[var(--color-btn-label)] xl:p-5">
       <h2 className="text-base font-bold">{t("profile_progress_title")}</h2>
 
       {level ? (
@@ -400,31 +400,31 @@ export function ProfileProgressPanel({ profile }: { profile: PublicProfile }) {
             ))}
           </div>
           <div className="mt-2 text-center xl:mt-4">
-            <p className="text-sm font-bold text-white">{t("level_label", { tier: level.tier })} · {t(`level_${level.tier}` as "level_1")}</p>
+            <p className="text-sm font-bold text-[var(--color-btn-label)]">{t("level_label", { tier: level.tier })} · {t(`level_${level.tier}` as "level_1")}</p>
           </div>
           <div className="mt-3 xl:mt-4">
-            <div className="flex items-center justify-between text-xs text-white/70">
+            <div className="flex items-center justify-between text-xs text-[color-mix(in_srgb,var(--color-btn-label)_70%,transparent)]">
               <span>{t("stat_xp")}</span>
               <span className="tabular-nums">{level.xp.toLocaleString(locale)}{level.nextAt ? ` / ${level.nextAt.toLocaleString(locale)}` : ""}</span>
             </div>
-            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/15 xl:mt-2">
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--color-btn-label)_15%,transparent)] xl:mt-2">
               <div className="h-full rounded-full bg-[var(--color-progress)]" style={{ width: `${percent}%` }} />
             </div>
           </div>
         </>
       ) : (
-        <p className="mt-5 text-sm text-white/70">{t("profile_progress_unavailable")}</p>
+        <p className="mt-5 text-sm text-[color-mix(in_srgb,var(--color-btn-label)_70%,transparent)]">{t("profile_progress_unavailable")}</p>
       )}
 
-      <div className="mt-4 border-t border-white/10 pt-3 xl:mt-5 xl:pt-4">
-        <div className="flex items-center justify-between text-xs text-white/65">
+      <div className="mt-4 border-t border-[color-mix(in_srgb,var(--color-btn-label)_10%,transparent)] pt-3 xl:mt-5 xl:pt-4">
+        <div className="flex items-center justify-between text-xs text-[color-mix(in_srgb,var(--color-btn-label)_65%,transparent)]">
           <span>{t("stat_streak")}</span>
-          <span className="font-bold tabular-nums text-white">{t("stat_streak_days", { count: profile.streak })}</span>
+          <span className="font-bold tabular-nums text-[var(--color-btn-label)]">{t("stat_streak_days", { count: profile.streak })}</span>
         </div>
       </div>
 
       {profile.badges.length > 0 ? (
-        <div className="profile-badge-panel mt-4 border-t border-white/10 pt-3 xl:mt-5 xl:pt-4">
+        <div className="profile-badge-panel mt-4 border-t border-[color-mix(in_srgb,var(--color-btn-label)_10%,transparent)] pt-3 xl:mt-5 xl:pt-4">
           <BadgeStrip badges={profile.badges} detailed compact onDark />
         </div>
       ) : null}
@@ -437,11 +437,11 @@ function LevelMedallion({ tier, current, future }: { tier: number | null; curren
     <div className={`profile-level-medallion flex flex-col items-center transition-transform duration-200 motion-reduce:transition-none ${current ? "profile-level-medallion--current -translate-y-1" : ""}`}>
       <div className={`relative grid aspect-square w-full max-w-16 place-items-center xl:max-w-[76px] ${future ? "opacity-45" : ""}`}>
         <svg viewBox="0 0 80 80" className="absolute inset-0 h-full w-full" aria-hidden>
-          <path d="M40 3 70 20v40L40 77 10 60V20Z" fill={current ? "var(--color-progress)" : future ? "transparent" : "color-mix(in srgb, var(--color-progress-track) 70%, white)"} stroke={future ? "rgba(255,255,255,.72)" : current ? "var(--color-progress-track)" : "#FFFFFF"} strokeWidth={current ? "3" : "2"} />
-          <path d="M40 10 64 24v32L40 70 16 56V24Z" fill="none" stroke="rgba(255,255,255,.45)" strokeWidth="1" />
+          <path d="M40 3 70 20v40L40 77 10 60V20Z" fill={current ? "var(--color-progress)" : future ? "transparent" : "color-mix(in srgb, var(--color-progress-track) 55%, var(--color-btn))"} stroke={future ? "color-mix(in srgb, var(--color-btn-label) 72%, transparent)" : current ? "var(--color-progress-track)" : "var(--color-btn-label)"} strokeWidth={current ? "3" : "2"} />
+          <path d="M40 10 64 24v32L40 70 16 56V24Z" fill="none" stroke="color-mix(in srgb, var(--color-btn-label) 45%, transparent)" strokeWidth="1" />
         </svg>
         {tier === null ? null : (
-          <span className={`relative text-lg font-extrabold tabular-nums ${current ? "text-white" : future ? "text-white" : "text-[var(--color-main)]"}`}>{tier}</span>
+          <span className={`relative text-lg font-extrabold tabular-nums ${current ? "text-white" : "text-[var(--color-btn-label)]"}`}>{tier}</span>
         )}
       </div>
     </div>

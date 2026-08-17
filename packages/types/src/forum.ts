@@ -227,6 +227,7 @@ export interface ThreadView {
   /** QA question headline; null for chat/announcement. */
   title: string | null;
   body: string;
+  poll: ForumPollView | null;
   status: ThreadStatus;
   /** Accepted answer's post id (QA only); null otherwise. */
   acceptedPostId: string | null;
@@ -251,6 +252,8 @@ export interface ThreadView {
   helpfulVoteCount?: number;
   /** Whether the viewer has given their one helpful vote. */
   myHelpfulVote?: boolean;
+  /** Server-computed permission; false for the content author. */
+  canHelpfulVote?: boolean;
   /** The latest thread/reply/reaction activity used by discovery sorting. */
   lastActivityAt?: string;
   /** Last owner edit time; null when the original content is unchanged. */
@@ -282,6 +285,7 @@ export interface AnswerView {
   myBookmarked: boolean;
   helpfulVoteCount?: number;
   myHelpfulVote?: boolean;
+  canHelpfulVote?: boolean;
   editedAt?: string | null;
   capabilities?: ForumCapabilities;
   createdAt: string;
@@ -348,6 +352,18 @@ export interface ForumTagView {
   updatedAt?: string;
 }
 
+export type ForumTagSuggestionStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface ForumTagSuggestionView {
+  id: string;
+  requestedName: string;
+  normalizedSlug: string;
+  status: ForumTagSuggestionStatus;
+  resolvedTagId: string | null;
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
 /** Public-safe community context; never contains thread body, authors, comments, or profile data. */
 export interface ForumCoachBridgeView {
   threadId: string;
@@ -384,6 +400,7 @@ export interface ForumFeedItem {
   author: ForumPublicPerson;
   title: string | null;
   body: string;
+  poll: ForumPollView | null;
   status: ThreadStatus;
   acceptedPostId: string | null;
   isPinned: boolean;
@@ -392,6 +409,7 @@ export interface ForumFeedItem {
   myReactions: string[];
   helpfulVoteCount: number;
   myHelpfulVote: boolean;
+  canHelpfulVote?: boolean;
   commentCount: number;
   attachments: Attachment[];
   myBookmarked: boolean;

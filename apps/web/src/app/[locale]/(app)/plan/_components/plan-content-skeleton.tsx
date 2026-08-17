@@ -9,7 +9,7 @@ const TIMELINE_DAY_COUNT = 4;
 function PlanTaskRowSkeleton({ index }: { index: number }) {
   return (
     <div
-      className="flex min-h-[56px] items-center gap-2 border-b border-white/30 py-2 last:border-b-0"
+      className="flex min-h-[56px] items-center gap-2 border-b border-[color-mix(in_srgb,var(--color-border)_70%,transparent)] py-2 last:border-b-0"
       style={skeletonStaggerStyle(index)}
     >
       <Skeleton className="h-6 w-6 shrink-0 rounded-full" />

@@ -483,7 +483,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
                   pathname: "/plan",
                   query: { coach: "adapt", source: "mood" },
                 }}
-                className="flex min-h-11 items-center justify-between gap-3 rounded-[var(--radius-card)] border bg-white px-4 py-3 text-sm font-semibold shadow-[var(--shadow-card)] focus-visible:outline-none focus-visible:ring-2"
+                className="flex min-h-11 items-center justify-between gap-3 rounded-[var(--radius-card)] border bg-[var(--color-surface)] px-4 py-3 text-sm font-semibold shadow-[var(--shadow-card)] focus-visible:outline-none focus-visible:ring-2"
                 style={{
                   borderColor: "var(--color-progress-track)",
                   color: "var(--color-main)",
@@ -603,7 +603,7 @@ function DailyRhythmCard({
   const displayMood = moodValue ?? mood?.mood ?? null;
 
   return (
-    <article className="overflow-hidden rounded-[var(--radius-card)] bg-white shadow-[var(--shadow-card)]">
+    <article className="overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]">
       <div className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_120px] sm:p-6">
         <div className="space-y-2">
           <h2 className="text-xl font-bold text-[var(--color-main)]">
@@ -621,16 +621,16 @@ function DailyRhythmCard({
           ) : null}
         </div>
 
-        <div className="mx-auto grid size-24 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)]">
+        <div className="mx-auto grid size-24 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_45%,var(--color-surface))]">
           <PuhuImage variant="winking" size={54} />
         </div>
       </div>
 
-      <div className="border-t border-black/5 px-5 py-4 sm:px-6">
+      <div className="border-t border-[color-mix(in_srgb,var(--color-main)_8%,transparent)] px-5 py-4 sm:px-6">
         <StreakWeekIcons streakDays={streakDays} />
       </div>
 
-      <div className="grid grid-cols-2 border-t border-black/5 sm:grid-cols-4">
+      <div className="grid grid-cols-2 border-t border-[color-mix(in_srgb,var(--color-main)_8%,transparent)] sm:grid-cols-4">
         <MetricTile
           label={t("metric_plan")}
           value={`${doneCount}/${tasks.length}`}
@@ -718,7 +718,7 @@ function ExpandableRhythmCopy({ text }: { text: string }) {
         {!expanded && needsToggle ? (
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[var(--color-surface)] to-transparent"
           />
         ) : null}
       </motion.div>
@@ -795,10 +795,10 @@ function StreakDayGlyph({ done, today }: { done: boolean; today: boolean }) {
       className={[
         "grid size-9 place-items-center rounded-full sm:size-10",
         done
-          ? "bg-[linear-gradient(165deg,color-mix(in_srgb,var(--color-streak-core)_55%,white)_0%,var(--color-streak-soft)_100%)] shadow-[0_2px_12px_color-mix(in_srgb,var(--color-streak)_32%,transparent)]"
+          ? "bg-[linear-gradient(165deg,color-mix(in_srgb,var(--color-streak-core)_55%,var(--color-surface))_0%,var(--color-streak-soft)_100%)] shadow-[0_2px_12px_color-mix(in_srgb,var(--color-streak)_32%,transparent)]"
           : today
-            ? "border-[1.5px] border-[var(--color-streak)] bg-[linear-gradient(165deg,color-mix(in_srgb,var(--color-streak-core)_40%,white)_0%,var(--color-streak-soft)_100%)]"
-            : "bg-[color-mix(in_srgb,var(--color-surface-container)_70%,white)]",
+            ? "border-[1.5px] border-[var(--color-streak)] bg-[linear-gradient(165deg,color-mix(in_srgb,var(--color-streak-core)_40%,var(--color-surface))_0%,var(--color-streak-soft)_100%)]"
+            : "bg-[color-mix(in_srgb,var(--color-surface-container)_70%,var(--color-surface))]",
       ].join(" ")}
       aria-hidden
     >
@@ -848,8 +848,8 @@ function MetricTile({
 }) {
   const wellClass =
     wellTone === "streak"
-      ? "bg-[linear-gradient(165deg,color-mix(in_srgb,var(--color-streak-core)_45%,white)_0%,var(--color-streak-soft)_100%)] text-[var(--color-streak)]"
-      : "bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)] text-[var(--color-progress)]";
+      ? "bg-[linear-gradient(165deg,color-mix(in_srgb,var(--color-streak-core)_45%,var(--color-surface))_0%,var(--color-streak-soft)_100%)] text-[var(--color-streak)]"
+      : "bg-[color-mix(in_srgb,var(--color-progress-track)_45%,var(--color-surface))] text-[var(--color-progress)]";
 
   const content = (
     <>
@@ -862,7 +862,7 @@ function MetricTile({
         <span className="block text-xs font-bold text-[var(--color-secondary)]">
           {label}
         </span>
-        <span className="block truncate text-base font-bold">{value}</span>
+        <span className="block truncate text-base font-bold text-[var(--color-main)]">{value}</span>
       </span>
     </>
   );
@@ -873,7 +873,7 @@ function MetricTile({
         type="button"
         onClick={onClick}
         aria-label={actionLabel ?? label}
-        className="flex w-full items-center gap-3 border-black/5 px-4 py-4 text-left transition hover:bg-black/[0.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-focus-ring)] sm:border-l first:sm:border-l-0"
+        className="flex w-full items-center gap-3 border-[color-mix(in_srgb,var(--color-main)_8%,transparent)] px-4 py-4 text-left transition hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-focus-ring)] sm:border-l first:sm:border-l-0"
       >
         {content}
       </button>
@@ -881,7 +881,7 @@ function MetricTile({
   }
 
   return (
-    <div className="flex items-center gap-3 border-black/5 px-4 py-4 sm:border-l first:sm:border-l-0">
+    <div className="flex items-center gap-3 border-[color-mix(in_srgb,var(--color-main)_8%,transparent)] px-4 py-4 sm:border-l first:sm:border-l-0">
       {content}
     </div>
   );
@@ -957,7 +957,7 @@ function TodayFocusCard({
       className="p-5 sm:p-6"
       style={{
         backgroundColor:
-          "color-mix(in srgb, var(--color-progress-track) 62%, white)",
+          "color-mix(in srgb, var(--color-progress-track) 38%, var(--color-surface))",
       }}
     >
       <span
@@ -1004,7 +1004,7 @@ function TodayFocusCard({
           </Link>
         </div>
 
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/70">
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--color-surface)_70%,transparent)]">
           <div
             className="h-full rounded-full bg-[var(--color-progress)] transition-[width]"
             style={{ width: `${completion}%` }}
@@ -1014,7 +1014,7 @@ function TodayFocusCard({
         {firstTask ? (
           <button
             type="button"
-            className="mt-4 flex w-full items-center gap-3 rounded-[var(--radius-card)] bg-white/80 p-4 text-left shadow-[var(--shadow-card)] transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-4 flex w-full items-center gap-3 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)] p-4 text-left shadow-[var(--shadow-card)] transition hover:bg-[var(--color-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={pendingTaskId === firstTask.id}
             onClick={() => void toggleTask(firstTask)}
           >
@@ -1022,8 +1022,8 @@ function TodayFocusCard({
               className={[
                 "grid size-7 shrink-0 place-items-center rounded-md border",
                 firstTask.status === "DONE"
-                  ? "border-[var(--color-progress)] bg-[var(--color-progress)] text-white"
-                  : "border-[var(--color-secondary)] bg-white",
+                  ? "border-[var(--color-progress)] bg-[var(--color-progress)] text-[var(--color-btn-label)]"
+                  : "border-[var(--color-secondary)] bg-[var(--color-surface)]",
               ].join(" ")}
               aria-hidden
             >
@@ -1036,7 +1036,7 @@ function TodayFocusCard({
                 {firstTask.title}
               </span>
               {firstTask.subject ? (
-                <span className="mt-1 inline-flex rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_45%,white)] px-2 py-0.5 text-xs font-bold text-[var(--color-progress)]">
+                <span className="mt-1 inline-flex rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_45%,var(--color-surface))] px-2 py-0.5 text-xs font-bold text-[var(--color-progress)]">
                   {firstTask.subject}
                 </span>
               ) : null}
@@ -1048,7 +1048,7 @@ function TodayFocusCard({
           {sessionPresets.slice(0, 2).map((preset) => (
             <span
               key={preset.id}
-              className="rounded-full bg-white/80 px-3 py-1 text-xs font-bold text-[var(--color-secondary)]"
+              className="rounded-full bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)] px-3 py-1 text-xs font-bold text-[var(--color-secondary)]"
             >
               {preset.focusMinutes} dk
             </span>
@@ -1057,7 +1057,7 @@ function TodayFocusCard({
 
         <Link
           href="/study-session"
-          className="mt-5 inline-flex min-h-12 w-full max-w-sm items-center justify-center gap-2 rounded-full bg-white px-5 text-base font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="mt-5 inline-flex min-h-12 w-full max-w-sm items-center justify-center gap-2 rounded-full bg-[var(--color-surface)] px-5 text-base font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           style={{ fontFamily: "var(--font-heading)" }}
         >
           <Play className="size-4 fill-current" aria-hidden />
@@ -1107,9 +1107,9 @@ function RitualQuestStrip({ quests }: { quests: QuestProgressView[] }) {
       type="button"
       onClick={showQuests}
       aria-label={t("quests_banner_open")}
-      className="mb-4 flex w-full min-w-0 items-center gap-3 rounded-[var(--radius-card)] bg-white/75 px-3 py-2.5 text-left shadow-[var(--shadow-card)] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+      className="mb-4 flex w-full min-w-0 items-center gap-3 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_75%,transparent)] px-3 py-2.5 text-left shadow-[var(--shadow-card)] transition hover:bg-[var(--color-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
     >
-      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_55%,white)] text-[var(--color-progress)]">
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-progress-track)_55%,var(--color-surface))] text-[var(--color-progress)]">
         <ListChecks className="size-4" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">

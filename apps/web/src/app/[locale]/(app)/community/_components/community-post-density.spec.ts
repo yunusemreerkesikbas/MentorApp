@@ -13,10 +13,10 @@ describe("shared community post density", () => {
       "utf8",
     );
 
-    expect(threadItem).toContain("bg-white px-4 py-3");
+    expect(threadItem).toContain("bg-[var(--color-surface)] px-4 py-3");
     expect(threadItem).toContain("sm:px-5");
     expect(threadItem).not.toContain("sm:p-5");
-    expect(threadItem).toContain('displayedTitle ? "text-[#69707c]"');
+    expect(threadItem).toContain('displayedTitle ? "text-[var(--color-secondary)]"');
     expect(threadItem).toContain("<AttachmentGallery attachments={thread.attachments} />");
     expect(threadItem).toContain('<div className="mt-1 flex w-full');
     expect(threadItem).toContain("min-h-11 min-w-11");
@@ -29,7 +29,7 @@ describe("shared community post density", () => {
       "utf8",
     );
 
-    expect(discoveryCard).toContain("bg-white px-4 py-3");
+    expect(discoveryCard).toContain("bg-[var(--color-surface)] px-4 py-3");
     expect(discoveryCard).not.toContain("sm:p-5");
     expect(discoveryCard).toContain("text-[15px] leading-[1.55]");
   });

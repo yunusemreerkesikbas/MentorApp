@@ -15,6 +15,7 @@ import {
   boolean,
   check,
   date,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -1999,6 +2000,37 @@ export const forumTags = pgTable(
   ],
 );
 
+/** Member-proposed tags remain separate from the curated pool until staff review. */
+export const forumTagSuggestions = pgTable(
+  "forum_tag_suggestions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    requestedName: text("requested_name").notNull(),
+    normalizedSlug: text("normalized_slug").notNull(),
+    status: text("status").notNull().default("PENDING"),
+    suggestedBy: uuid("suggested_by").references(() => users.id, { onDelete: "set null" }),
+    resolvedTagId: uuid("resolved_tag_id").references(() => forumTags.id, {
+      onDelete: "set null",
+    }),
+    reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "forum_tag_suggestions_status_check",
+      sql`${t.status} in ('PENDING', 'APPROVED', 'REJECTED')`,
+    ),
+    uniqueIndex("forum_tag_suggestions_pending_slug_idx")
+      .on(t.normalizedSlug)
+      .where(sql`${t.status} = 'PENDING'`),
+    index("forum_tag_suggestions_status_created_idx").on(t.status, t.createdAt),
+  ],
+);
+
 /* Slice 2 — flat feed item (CHAT message / ANNOUNCEMENT broadcast). No `kind`: behaviour is
  * derived from the parent zone's type. Replies/QA answers (forum_posts) arrive in Slice 3.
  * Soft-delete (deleted_at) keeps the row for moderation audit; feed reads filter it out. */
@@ -2650,5 +2682,68 @@ export const preferenceScenarioItems = pgTable(
     ),
     index("preference_scenario_items_user_idx").on(t.userId),
     check("preference_scenario_items_position_chk", sql`${t.position} > 0`),
+  ],
+);
+
+/* ============================== forum polls ==============================
+ * Optional immutable poll aggregate owned by a forum thread. Organization scope is inherited
+ * through thread -> zone; voter identities remain private and are never exposed by the API.
+ * ======================================================================== */
+export const forumPolls = pgTable(
+  "forum_polls",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    threadId: uuid("thread_id")
+      .notNull()
+      .references(() => forumThreads.id, { onDelete: "cascade" }),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_polls_thread_unique_idx").on(t.threadId),
+    index("forum_polls_ends_idx").on(t.endsAt),
+    check("forum_polls_ends_after_created_chk", sql`${t.endsAt} > ${t.createdAt}`),
+  ],
+);
+
+export const forumPollOptions = pgTable(
+  "forum_poll_options",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    pollId: uuid("poll_id")
+      .notNull()
+      .references(() => forumPolls.id, { onDelete: "cascade" }),
+    text: varchar("text", { length: 25 }).notNull(),
+    position: smallint("position").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_poll_options_poll_position_idx").on(t.pollId, t.position),
+    uniqueIndex("forum_poll_options_poll_id_id_idx").on(t.pollId, t.id),
+    check("forum_poll_options_position_chk", sql`${t.position} between 0 and 3`),
+  ],
+);
+
+export const forumPollVotes = pgTable(
+  "forum_poll_votes",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    pollId: uuid("poll_id")
+      .notNull()
+      .references(() => forumPolls.id, { onDelete: "cascade" }),
+    optionId: uuid("option_id").notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("forum_poll_votes_poll_user_idx").on(t.pollId, t.userId),
+    index("forum_poll_votes_option_idx").on(t.optionId),
+    foreignKey({
+      name: "forum_poll_votes_poll_option_fk",
+      columns: [t.pollId, t.optionId],
+      foreignColumns: [forumPollOptions.pollId, forumPollOptions.id],
+    }).onDelete("cascade"),
   ],
 );

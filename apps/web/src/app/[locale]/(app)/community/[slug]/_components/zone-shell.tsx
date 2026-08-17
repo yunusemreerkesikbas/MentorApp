@@ -28,7 +28,7 @@ import {
   type ThreadSort,
   unreactThread,
 } from "@/lib/forum";
-import type { AttachmentInput } from "@mentor/validation";
+import type { AttachmentInput, ForumPollInput } from "@mentor/validation";
 import { AskComposer } from "./ask-composer";
 import { JoinButton } from "./join-button";
 import { QuestionListItem } from "./question-list-item";
@@ -114,10 +114,10 @@ export function ZoneShell({ slug }: { slug: string }) {
   );
 
   const onPost = useCallback(
-    async (body: string, attachments: AttachmentInput[]) => {
+    async (body: string, attachments: AttachmentInput[], poll?: ForumPollInput) => {
       const ready = state.status === "ready" ? state : null;
       if (!ready) return;
-      const created = await postThread(ready.zone.id, body, undefined, attachments);
+      const created = await postThread(ready.zone.id, body, undefined, attachments, undefined, poll);
       patchReady((r) => ({ ...r, threads: [created, ...r.threads] }));
     },
     [state, patchReady],
@@ -284,6 +284,7 @@ export function ZoneShell({ slug }: { slug: string }) {
 
   const { zone, threads, nextCursor, loadingMore, switchingSort, contributors, pinnedThreads } = state;
   const isMember = zone.myStatus === "ACTIVE";
+  const canCompose = isMember || zone.canModerate;
   const isQa = zone.type === "QA";
   const visibleThreads =
     activeTab === "media"
@@ -299,7 +300,7 @@ export function ZoneShell({ slug }: { slug: string }) {
 
   return (
     <main className="mx-auto grid min-w-0 max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
-    <section className="min-w-0 bg-white sm:my-6 sm:border-x sm:border-[#e7e9ee]">
+    <section className="min-w-0 bg-[var(--color-surface)] sm:my-6 sm:border-x sm:border-[var(--color-border)]">
       <header>
         <div className="relative aspect-[3/1] overflow-hidden bg-[var(--community-blue-soft)]">
           <Image
@@ -318,7 +319,7 @@ export function ZoneShell({ slug }: { slug: string }) {
               <h1 className="text-2xl font-extrabold leading-tight tracking-[-0.03em] text-[var(--color-main)] sm:text-[28px]">
                 {zone.title}
               </h1>
-              <span className="mt-2 inline-flex min-h-7 items-center rounded-[10px] border border-[#dfe3ea] px-2.5 text-xs font-bold text-[var(--color-body-text)]">
+              <span className="mt-2 inline-flex min-h-7 items-center rounded-[10px] border border-[var(--color-border)] px-2.5 text-xs font-bold text-[var(--color-body-text)]">
                 {t(`type_${zone.type.toLowerCase()}` as `type_${string}`)}
               </span>
             </div>
@@ -371,7 +372,7 @@ export function ZoneShell({ slug }: { slug: string }) {
         </div>
       </header>
 
-      <div className="grid grid-cols-4 border-y border-[#e7e9ee]" role="tablist" aria-label={t("sort_label") }>
+      <div className="grid grid-cols-4 border-y border-[var(--color-border)]" role="tablist" aria-label={t("sort_label") }>
         {tabs.map((tab) => {
           const active = activeTab === tab.id;
           return (
@@ -434,7 +435,7 @@ export function ZoneShell({ slug }: { slug: string }) {
           {pinnedThreads.length > 0 ? (
             <div>
               <h2 className="text-sm font-extrabold text-[var(--color-main)]">{t("pinned_posts")}</h2>
-              <div className="mt-3 divide-y divide-[#e7e9ee] border-y border-[#e7e9ee]">
+              <div className="mt-3 divide-y divide-[var(--color-border)] border-y border-[var(--color-border)]">
                 {pinnedThreads.map((thread) => (
                   <p key={thread.id} className="py-3 text-sm font-bold text-[var(--color-body-text)]">
                     {thread.title ?? thread.bodyExcerpt}
@@ -451,22 +452,24 @@ export function ZoneShell({ slug }: { slug: string }) {
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -24, scale: 0.99 }}
           transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 30 }}
-          className="divide-y divide-[#e7e9ee] border-b border-[#e7e9ee]"
+          className="divide-y divide-[var(--color-border)] border-b border-[var(--color-border)]"
         >
           {switchingSort && (activeTab === "recent" || activeTab === "popular") ? (
             <TabContentSkeleton label={t("loading")} variant="feed" />
           ) : (
           <>
           {activeTab !== "media" ? (
-            isMember ? (
+            canCompose ? (
               isQa ? (
-                <div className="p-4"><AskComposer zoneId={zone.id} /></div>
+                <div className="p-4"><AskComposer zone={zone} /></div>
               ) : (
                 <ThreadComposer
                   placeholder={t("compose_placeholder")}
                   submitLabel={t("compose_send")}
                   onSubmit={onPost}
                   zoneId={zone.id}
+                  audience={zone}
+                  allowPoll={zone.type === "CHAT" || (zone.type === "ANNOUNCEMENT" && zone.canModerate)}
                 />
               )
             ) : (
@@ -522,7 +525,7 @@ export function ZoneShell({ slug }: { slug: string }) {
           <button
             type="button"
             onClick={() => void onLoadMore()}
-            className="min-h-11 rounded-[10px] border border-[#dfe3ea] bg-white px-5 font-bold"
+            className="min-h-11 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 font-bold"
           >
             {t("load_more")}
           </button>

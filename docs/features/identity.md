@@ -85,6 +85,26 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **Onboarding light/dark surfaces (2026-08-15)** — Wizard card, avatar well, and exam
+  pills use `--color-surface` / `--color-border`. Selected exam check uses
+  `--color-btn` / `--color-btn-label`. Theme toggle sits in the step header
+  (no AppNav). Usage: `/onboarding` → moon/sun. Related:
+  `onboarding-step-layout.tsx`, `profile-step.tsx`, `exam-step.tsx`,
+  `docs/features/web-shell.md`.
+
+- **Auth light/dark surfaces (2026-08-15)** — `/giris`, `/kayit`, and the shared auth card
+  use `--color-surface` / `--color-border`. Google icon well and the soft back-link
+  follow the same. Theme toggle sits in the card header (no AppNav on auth).
+  Usage: `/giris` → moon/sun. Related: `auth-shell.tsx`, `google-auth-button.tsx`,
+  `circular-back-link.tsx`, `docs/features/web-shell.md`.
+
+- **Settings light/dark surfaces (2026-08-15)** — `/ayarlar` list rows, notification toggles,
+  profile edit chips, and invite redeem dock use `--color-surface` / `--color-btn-label`.
+  Appearance (Açık/Koyu) sits next to language in the App card so mobile can switch
+  theme without the desktop sidebar. Invite hero copy on the decorative overlay stays
+  white. Usage: `/ayarlar` → Uygulama → Görünüm. Related: `profile-shell.tsx`,
+  `application-support-card.tsx`, `notification-settings.tsx`, `docs/features/web-shell.md`.
+
 - **KVKK silme tamamlama + RLS izolasyon kanıtı (WP-K, 2026-07-22)** — `DELETE /v1/account` artık
   forum + sosyal graf + bildirim verisini de kapsıyor (önceden yalnız identity/ai/coaching):
   forum içeriği **redakte** edilir (`"[silinmiş içerik]"` — başkalarının sohbeti bozulmasın),

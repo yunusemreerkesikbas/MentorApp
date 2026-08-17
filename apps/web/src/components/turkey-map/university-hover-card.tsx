@@ -67,8 +67,8 @@ export function UniversityHoverCard({
         left,
         top,
         width: CARD_WIDTH,
-        borderColor: active ? "var(--color-main)" : "var(--color-border, #e2e2e2)",
-        backgroundColor: "var(--color-surface, #fff)",
+        borderColor: active ? "var(--color-main)" : "var(--color-border)",
+        backgroundColor: "var(--color-surface)",
       }}
       data-testid="university-hover-card"
     >
@@ -76,7 +76,7 @@ export function UniversityHoverCard({
         type="button"
         aria-label={t("open_university_aria", { name: university.name })}
         onClick={() => onOpen?.(anchor)}
-        className="flex w-full cursor-pointer flex-col gap-1 p-3 text-left transition-colors hover:bg-black/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+        className="flex w-full cursor-pointer flex-col gap-1 p-3 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_2%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       >
         <span
           className="text-sm font-bold leading-snug"

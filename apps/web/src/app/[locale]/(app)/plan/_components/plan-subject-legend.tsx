@@ -128,7 +128,7 @@ export function PlanSubjectLegend({
       {summary && summarySubject ? (
         <div
           role="tooltip"
-          className="pointer-events-none absolute bottom-full left-0 z-20 mb-2 hidden w-64 flex-col gap-2 rounded-[var(--radius-card)] border border-white bg-white p-3 shadow-[var(--shadow-card)] lg:flex"
+          className="pointer-events-none absolute bottom-full left-0 z-20 mb-2 hidden w-64 flex-col gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)] lg:flex"
         >
           <SubjectSummaryBody
             subject={summarySubject}

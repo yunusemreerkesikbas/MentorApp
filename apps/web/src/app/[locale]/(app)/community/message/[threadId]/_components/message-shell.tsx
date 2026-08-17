@@ -218,7 +218,7 @@ export function MessageShell({ threadId }: { threadId: string }) {
 
   return (
     <main className="mx-auto grid min-w-0 max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
-      <section className="min-w-0 bg-white sm:my-6 sm:overflow-hidden sm:rounded-[var(--radius-card)] sm:border sm:border-[var(--color-border)]">
+      <section className="min-w-0 bg-[var(--color-surface)] sm:my-6 sm:overflow-hidden sm:rounded-[var(--radius-card)] sm:border sm:border-[var(--color-border)]">
         <header className="flex min-h-16 items-center gap-3 border-b border-[var(--color-border)] px-3 sm:px-4">
           <CircularBackLink href={backHref} label={t("back_short")} variant="soft" />
           <h1 className="text-xl font-extrabold tracking-[-0.025em] text-[var(--color-main)]">

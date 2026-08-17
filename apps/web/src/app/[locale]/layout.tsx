@@ -17,6 +17,8 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { BackgroundBlobs } from "@mentor/ui";
 import { routing } from "@/i18n/routing";
+import { APP_SIDEBAR_BOOTSTRAP_SCRIPT } from "@/lib/app-sidebar";
+import { THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme";
 import { AuthProvider } from "@/lib/auth-context";
 import { ToastProviderShell } from "@/lib/toast-provider-shell";
 import { DialogProviderShell } from "@/lib/dialog-provider-shell";
@@ -150,8 +152,13 @@ export default async function LocaleLayout({
   return (
     <html
       lang={locale}
+      suppressHydrationWarning
       className={`${sans.variable} ${script.variable} ${visionHeading.variable} ${visionSerif.variable} ${visionRounded.variable} ${visionCondensed.variable} ${visionClassic.variable} ${visionImpact.variable} ${visionElegant.variable} ${visionSlab.variable} ${visionMono.variable}`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: APP_SIDEBAR_BOOTSTRAP_SCRIPT }} />
+      </head>
       {/* suppressHydrationWarning: browser extensions (e.g. ColorZilla) inject body
           attributes pre-hydration; this silences only attribute diffs on <body>. */}
       <body suppressHydrationWarning>

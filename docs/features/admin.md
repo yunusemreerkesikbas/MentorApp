@@ -136,6 +136,10 @@ targetId, before, after })` for rich diffs.
 - **Admin exam-calendar editor** — `exams` + `exam_events` CRUD (audited, ADMIN/EDITOR); event types
   extended (`APPLICATION_*`, `RESULT_DATE`); trust metadata required. Surfacing new event types on
   web = backlog. *(0024.)*
+- **Exam calendar form hydrates on refresh (2026-08-16)** — the events editor table loaded from
+  the API, but the datetime/source fields always started empty/`now`. After a refresh that looked
+  like the calendar reset even when `exam_events` still held the admin date. The form now prefills
+  from the existing `EXAM_DATE` (or the picked type). Related: `EventsEditor.tsx`.
 - **Admin refund + subscription view** — record-only refund + cancel on user-detail (audited,
   FINANCE); `SubscriptionsService.getAdminView` + `refundLastCharge` (atomic, `SELECT … FOR UPDATE`,
   capped). See [payments.md](./payments.md). *(0025.)*
@@ -173,6 +177,13 @@ targetId, before, after })` for rich diffs.
   template excluded).
 
 ## Backlog
+
+### Forum etiket önerisi moderasyonu (2026-08-16)
+
+- `/forum` ekranı bekleyen kullanıcı etiket önerilerini listeler. Editör Türkçe/İngilizce görünür
+  adları ve isteğe bağlı sınav kapsamını düzenleyerek onaylar ya da öneriyi reddeder.
+- Onay aynı transaction içinde aktif forum etiketi oluşturur; red ve onay işlemleri
+  `forum.tag-suggestion.review` aksiyonuyla audit log'a yazılır.
 
 - MODERATOR endpoints (forum/community — Phase 2) · ADMIN→SUPER_ADMIN full migration/deprecation ·
   org-scoped roles (ORG_ADMIN/COACH — Phase 2/3) · assigning SUPER_ADMIN from the UI (currently

@@ -126,7 +126,7 @@ export function PlanMonthGrid({
                     ? t("calendar_open_day", { date: dayLabel })
                     : t("calendar_add_on", { date: dayLabel })
                 }
-                className="absolute inset-0 cursor-pointer rounded-[var(--radius-card)] transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+                className="absolute inset-0 cursor-pointer rounded-[var(--radius-card)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
               />
 
               <span

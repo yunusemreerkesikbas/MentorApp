@@ -9,6 +9,7 @@ const OTHER = "66666666-6666-4666-8666-666666666666";
 const EXAM = "77777777-7777-4777-8777-777777777777";
 const ENTRY = "88888888-8888-4888-8888-888888888888";
 const ITEM = "99999999-9999-4999-8999-999999999999";
+const STROKE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const THREAD = "12121212-1212-4212-8212-121212121212";
 
 const fakeDb = {
@@ -272,9 +273,38 @@ describe("MistakeNotebookService", () => {
       const page = await ctx.service.getPage(USER, 3);
       expect(page).toEqual({
         pageIndex: 3,
-        doc: { version: 1, paper: "ruled", items: [] },
+        doc: { version: 1, paper: "ruled", items: [], ink: [] },
         entries: [],
       });
+    });
+
+    /*
+     * Every page saved before drawing existed sits in jsonb without an `ink` key. The write
+     * schema's `.default([])` never runs on the way out, so without the read-side fill the client
+     * would get `undefined` where the type promises an array and the page would fail to render.
+     */
+    it("fills in fields a page predates rather than handing back the stored shape", async () => {
+      ctx.repo.pages.set(0, { version: 1, paper: "grid", items: [] });
+
+      const page = await ctx.service.getPage(USER, 0);
+
+      expect(page.doc).toEqual({ version: 1, paper: "grid", items: [], ink: [] });
+    });
+
+    it("keeps stored ink instead of defaulting over it", async () => {
+      const stroke = {
+        id: STROKE,
+        tool: "pen",
+        color: "#111111",
+        size: 6,
+        opacity: 1,
+        points: [10, 10, 0.5, 20, 20, 0.5],
+      };
+      ctx.repo.pages.set(1, { version: 1, paper: "ruled", items: [], ink: [stroke] });
+
+      const page = await ctx.service.getPage(USER, 1);
+
+      expect(page.doc.ink).toEqual([stroke]);
     });
   });
 

@@ -199,7 +199,7 @@ export function VisionBoardCard() {
             </p>
             <Link
               href="/vision-board"
-              className="inline-flex min-h-11 w-fit items-center rounded-[var(--radius-card)] border px-4 text-sm font-semibold transition-colors hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+              className="inline-flex min-h-11 w-fit items-center rounded-[var(--radius-card)] border px-4 text-sm font-semibold transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
               style={{
                 color: "var(--color-main)",
                 borderColor:

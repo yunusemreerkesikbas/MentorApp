@@ -7,8 +7,10 @@ import {
   forumAttachments,
   forumBookmarks,
   forumPosts,
+  forumPollVotes,
   forumReactions,
   forumReports,
+  forumTagSuggestions,
   forumThreads,
   forumZoneMembers,
 } from "../../../database/schema";
@@ -39,9 +41,18 @@ export class ForumErasureRepository {
 
       await tx.delete(forumAttachments).where(eq(forumAttachments.authorId, userId));
       await tx.delete(forumReactions).where(eq(forumReactions.userId, userId));
+      await tx.delete(forumPollVotes).where(eq(forumPollVotes.userId, userId));
       await tx.delete(forumBookmarks).where(eq(forumBookmarks.userId, userId));
       await tx.delete(forumZoneMembers).where(eq(forumZoneMembers.userId, userId));
       await tx.delete(forumReports).where(eq(forumReports.reporterId, userId));
+      await tx
+        .update(forumTagSuggestions)
+        .set({ suggestedBy: null })
+        .where(eq(forumTagSuggestions.suggestedBy, userId));
+      await tx
+        .update(forumTagSuggestions)
+        .set({ reviewedBy: null })
+        .where(eq(forumTagSuggestions.reviewedBy, userId));
 
       await tx
         .update(forumThreads)

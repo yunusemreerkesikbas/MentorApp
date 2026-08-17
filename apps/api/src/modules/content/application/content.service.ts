@@ -1,6 +1,7 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { randomUUID } from "node:crypto";
+import { appendFileSync } from "node:fs";
 import type {
   ArticleImageUploadUrlDto,
   ExamCalendarDto,
@@ -599,7 +600,7 @@ export class ContentService {
           },
         );
       }
-      await this.events.upsertByExamAndType(tx, {
+      const written = await this.events.upsertByExamAndType(tx, {
         examId: exam.id,
         type: data.type,
         eventAt: new Date(data.eventAt),
@@ -608,6 +609,32 @@ export class ContentService {
         verifiedAt: new Date(data.verifiedAt),
         verifiedBy: data.verifiedBy,
       });
+      // #region agent log
+      fetch("http://127.0.0.1:7497/ingest/21f8ef43-7e17-46b1-8c00-47111ca62dd3", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Debug-Session-Id": "54e609",
+        },
+        body: JSON.stringify({
+          sessionId: "54e609",
+          runId: "pre-fix",
+          hypothesisId: "H3",
+          location: "content.service.ts:upsertEvent",
+          message: "upsertEvent wrote exam_events row",
+          data: {
+            examSlug,
+            examId: exam.id,
+            type: data.type,
+            incomingEventAt: data.eventAt,
+            writtenEventAt: written.eventAt.toISOString(),
+            writtenVerifiedBy: written.verifiedBy,
+            pid: process.pid,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
     });
   }
 
@@ -642,10 +669,84 @@ export class ContentService {
         );
       }
       const events = await this.events.listByExamId(tx, exam.id);
+      // #region agent log
+      fetch("http://127.0.0.1:7497/ingest/21f8ef43-7e17-46b1-8c00-47111ca62dd3", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Debug-Session-Id": "54e609",
+        },
+        body: JSON.stringify({
+          sessionId: "54e609",
+          runId: "pre-fix",
+          hypothesisId: "H2",
+          location: "content.service.ts:getExamForAdminWithEvents",
+          message: "Admin exam GET from DB",
+          data: {
+            slug,
+            examId: exam.id,
+            eventCount: events.length,
+            events: events.map((e) => ({
+              type: e.type,
+              eventAt: e.eventAt.toISOString(),
+              verifiedBy: e.verifiedBy,
+            })),
+            pid: process.pid,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+      // #region agent log
+      try {
+        appendFileSync(
+          "c:/Users/emreerkesikbas/Documents/MentorApp/debug-54e609.log",
+          `${JSON.stringify({
+            sessionId: "54e609",
+            runId: "post-fix",
+            hypothesisId: "H2",
+            location: "content.service.ts:getExamForAdminWithEvents:file",
+            message: "Admin exam GET from DB (file)",
+            data: {
+              slug,
+              events: events.map((e) => ({
+                type: e.type,
+                eventAt: e.eventAt.toISOString(),
+                verifiedBy: e.verifiedBy,
+              })),
+            },
+            timestamp: Date.now(),
+          })}\n`,
+        );
+      } catch {
+        /* ignore */
+      }
+      // #endregion
       return {
         exam: toAdminExamView(exam),
         events: events.map(toAdminExamEventView),
       };
+    });
+  }
+
+  /** Startup seed uses this to skip exams the admin (or a previous seed) already created. */
+  async hasExam(slug: string): Promise<boolean> {
+    const row = await withServiceContext(this.db, (tx) =>
+      this.exams.findBySlug(tx, slug),
+    );
+    return row !== undefined;
+  }
+
+  /**
+   * Startup seed uses this so an existing (exam, type) row is never overwritten — otherwise
+   * every API boot would reset W6 admin calendar edits back to `exams.seed.json`.
+   */
+  async hasExamEvent(slug: string, type: string): Promise<boolean> {
+    return withServiceContext(this.db, async (tx) => {
+      const exam = await this.exams.findBySlug(tx, slug);
+      if (!exam) return false;
+      const event = await this.events.findByExamAndType(tx, exam.id, type);
+      return event !== undefined;
     });
   }
 

@@ -398,7 +398,7 @@ export function PlanTimelineView({
                       layoutId={
                         reduceMotion ? undefined : "plan-timeline-day-badge"
                       }
-                      className="mentor-plan-timeline-badge pointer-events-none absolute top-0 z-20 flex h-11 w-11 flex-col items-center justify-center rounded-full border-2 border-white text-center shadow-[var(--shadow-card)] max-lg:h-9 max-lg:w-9"
+                      className="mentor-plan-timeline-badge pointer-events-none absolute top-0 z-20 flex h-11 w-11 flex-col items-center justify-center rounded-full border-2 border-[var(--color-surface)] text-center shadow-[var(--shadow-card)] max-lg:h-9 max-lg:w-9"
                       style={{ backgroundColor: "var(--color-progress)" }}
                       transition={
                         reduceMotion
