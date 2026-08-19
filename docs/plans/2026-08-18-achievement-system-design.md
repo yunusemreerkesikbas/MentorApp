@@ -58,7 +58,8 @@ awards.
 1. An owning module completes a domain action, such as `FocusSessionCompleted`.
 2. It publishes a domain event after the source transaction succeeds.
 3. The community achievement listener evaluates only rules relevant to that event.
-4. The repository inserts the award with a unique `(org_id, user_id, achievement_id)` constraint.
+4. The repository inserts the award with a unique `(user_id, achievement_id)` constraint; `org_id`
+   remains an indexed, nullable tenancy dimension.
 5. A duplicate/replayed event is treated as an idempotent no-op.
 6. The achievement API returns the complete catalog with locked, in-progress, and earned states.
 7. A newly earned achievement may trigger one event-driven, one-shot celebration.
@@ -101,6 +102,18 @@ supporting cast in V1. It remains Mentor-owned Puhu art, not a Duolingo imitatio
 - Pure rule tests cover every threshold boundary and rule version.
 - Idempotency tests prove event replay creates one award.
 - Integration tests cover representative coaching, analysis, and community events.
+
+## Implemented V1 notes (2026-08-18)
+
+- `community.achievements.enabled` defaults to false. Live signals are retained as `BACKFILL` while
+  hidden; no UI, notification, or SSE is exposed.
+- Coaching and forum publish live events and expose batch evidence services. Community owns award
+  persistence, idempotent backfill orchestration, catalogue localization, API visibility, and
+  celebration grouping.
+- Runtime assets are static transparent WebP files. `puhu-default.png` is the development fallback;
+  `pnpm --filter @mentor/web assets:check:achievements` is the release gate for the final 12 assets.
+- Operations run `pnpm --filter @mentor/api achievements:backfill` after migration and before the
+  feature flag is enabled. The command is cursor-paged and safe to repeat.
 - API tests cover locked, progress, earned, and private visibility states.
 - Web tests cover keyboard access, reduced motion, missing-asset fallback, and 375 px layout.
 - Asset checks enforce agreed dimensions, transparency, format, and file-size budgets.

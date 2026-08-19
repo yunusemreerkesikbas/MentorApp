@@ -44,6 +44,19 @@ export class UsersService {
     return this.usersRepo.findByUsernameService(username);
   }
 
+  /** Minimal public-safe owner identity for cross-module achievement writes. */
+  async getAchievementOwner(
+    userId: string,
+  ): Promise<{ id: string; orgId: string | null; username: string | null } | null> {
+    const user = await this.usersRepo.findByIdService(userId);
+    if (!user || user.status !== "ACTIVE") return null;
+    return { id: user.id, orgId: user.organizationId, username: user.username };
+  }
+
+  listAchievementCandidates(afterId: string | null, limit: number) {
+    return this.usersRepo.listActiveAchievementCandidates(afterId, limit);
+  }
+
   /**
    * Cohort peers for follow-suggestion cold-start (forum orchestrates): recent active users in the
    * viewer's exam-type cohort, excluding `excludeIds`. Empty when the viewer is unknown.

@@ -50,8 +50,14 @@ const NOTE_PLATE_COLORS = [
  * that. It only ever shows the vision board's own font/size/plate/spacing/rotation controls for
  * whichever note is currently selected, opened automatically the same way the board opens its
  * "Metin" category on selecting a text item (`notebook-shell.tsx`'s `handleSelect`).
+ *
+ * "draw", likewise, has no body here — but for the opposite reason to "text". Text has controls
+ * that simply live elsewhere in the rail; draw is a *mode*, and its controls are the pen tray that
+ * floats over the notebook itself (`notebook-ink-toolbar.tsx`). Putting them in this panel would
+ * have meant reaching across the page you are drawing on to change pens, and would have cost the
+ * notebook the panel's width at exactly the moment it needs to be as large as possible.
  */
-export type NotebookPanelCategory = "add" | "sticker" | "paper" | "text";
+export type NotebookPanelCategory = "add" | "sticker" | "paper" | "text" | "draw";
 
 export interface NotebookSidePanelProps {
   category: NotebookPanelCategory;

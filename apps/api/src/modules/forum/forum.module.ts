@@ -11,6 +11,7 @@ import { ForumErasureService } from "./application/forum-erasure.service";
 import { ForumDiscoveryService } from "./application/forum-discovery.service";
 import { ForumCoachBridgeService } from "./application/forum-coach-bridge.service";
 import { ForumPollService } from "./application/forum-poll.service";
+import { ForumAchievementEvidenceService } from "./application/forum-achievement-evidence.service";
 import { ForumDiscoveryRepository } from "./infrastructure/forum-discovery.repository";
 import { ForumPollRepository } from "./infrastructure/forum-poll.repository";
 import { ForumErasureRepository } from "./infrastructure/forum-erasure.repository";
@@ -69,6 +70,7 @@ import { ForumPollController } from "./presentation/forum-poll.controller";
     ForumDiscoveryService,
     ForumPollService,
     ForumCoachBridgeService,
+    ForumAchievementEvidenceService,
     ForumDiscoveryRepository,
     ForumPollRepository,
   ],
@@ -79,6 +81,7 @@ import { ForumPollController } from "./presentation/forum-poll.controller";
     ForumErasureService,
     ForumDiscoveryService,
     ForumCoachBridgeService,
+    ForumAchievementEvidenceService,
   ],
 })
 export class ForumModule {}

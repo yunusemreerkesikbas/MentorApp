@@ -527,10 +527,10 @@ function HubSkeleton({ label }: { label: string }) {
   return (
     <main className="mx-auto w-full max-w-6xl animate-pulse px-4 py-8" aria-label={label}>
       <div className="grid gap-5 xl:grid-cols-2">
-        <div className="h-[480px] rounded-[10px] bg-black/[0.05]" />
-        <div className="h-[480px] rounded-[10px] bg-black/[0.05]" />
+        <div className="h-[480px] rounded-[10px] bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)]" />
+        <div className="h-[480px] rounded-[10px] bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)]" />
       </div>
-      <div className="mt-5 h-64 rounded-[10px] bg-black/[0.05]" />
+      <div className="mt-5 h-64 rounded-[10px] bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)]" />
     </main>
   );
 }

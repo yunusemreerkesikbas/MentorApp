@@ -63,6 +63,17 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **Achievement kutlama katmanı (2026-08-18)** — Uygulama kabuğu açılışta ve SSE sonrasında unseen
+  başarıları yakalar; canlı başarıları sırayla, backfill'i tek özet olarak gösterir. Kapatma başarılı
+  acknowledge sonrasında ilerler; hata halinde yeniden denenebilir. `prefers-reduced-motion` yalnız
+  fade kullanır. Final görseller gelene kadar Puhu fallback vardır; yayın öncesi
+  `pnpm --filter @mentor/web assets:check:achievements` 12 adet 1024×1024 alfa WebP'yi doğrular.
+  İlgili: `notification-drawer-shell.tsx`, `components/achievements/**`.
+
+- **Notification drawer + toast token pass (2026-08-18)** — Drawer panel, unread
+  rows, and toast cards follow `--color-surface` / `--color-border`. Related:
+  `docs/features/notifications.md`.
+
 - **Collapsible desktop sidebar (2026-08-15)** — Desktop AppNav (`lg+`) now
   collapses to a 52px icon rail (analysis history rail width). Expanded stays
   the current 240px labeled sidebar. Top-right `PanelLeft` collapses; the same
@@ -121,6 +132,10 @@ http://localhost:3000/panel               # daily ritual hub
 - **Coach token pass (2026-08-15)** — `/koc` chat chrome, composer, history, and Puhu
   bubbles follow `--color-surface` / `--color-btn-label`; backdrop uses `--blob-*`.
   Related: `docs/features/coaching.md`.
+
+- **Community leftover chrome tokens (2026-08-18)** — Inner community chips, hovers,
+  dividers, and hardcoded light hex now follow `--color-surface` / `--color-soft`.
+  Lightbox overlays stay white-on-dark. Related: `docs/features/community.md`.
 
 - **Community token pass (2026-08-15)** — Community workspace stopped re-locking light
   `--color-*` hex. Feed/zone/profile/question surfaces + header/sidebar use theme tokens.
@@ -402,6 +417,43 @@ http://localhost:3000/panel               # daily ritual hub
   haftada-bir görünmesi ve AI/coin davranışları korunur. İlgili dosyalar:
   `weekly-recap-shell.tsx`, `lib/weekly-recap.ts`, `messages/{tr,en}.json`,
   `e2e/weekly-recap.spec.ts`, `e2e/fixtures/analysis.fixture.ts`.
+
+- **Tema lambası — sidebar toggle'ı sahneye dönüştü (2026-08-18)** — Masaüstü sidebar'ın iki
+  footer slotundaki sade ikon düğmesi, footer çizgisinden sarkan bir sarkıt lamba ile değişti;
+  altında Puhu, ucu toplu çekme ipine uzanıyor. **Koyu tema = yanık durum** (`isLit`): sıcak koni
+  ve abajur ağzındaki parıltı yalnız `html.dark` iken boyanır, açık temada abajur mat kalır.
+  Sahne iki ip çizer — tavandan abajura giden asma ipi ve tıklamada aşağı düşüp yayla geri
+  toparlanan çekme ipi. Puhu üç şeyle tepki verir: imleç sahnenin yakınına gelince ona doğru
+  birkaç px yaslanır (`approachPadding` halkası), düğmeye gelince/odaklanınca kanadını ipe
+  uzatır, tıklamadan sonra ışığa göre bir an büzülür (koyuya geçiş) veya kabarır (açığa geçiş).
+  Boşta 4–7 sn'de bir kırpar; sekme gizliyken kırpma yeniden kuyruğa alınır, hiçbir şey ekran
+  dışında oynamaz. **Kullanım:** `<ThemeLamp variant="rail" />` (52px dar sidebar, yalnız lamba)
+  ve `<ThemeLamp variant="panel" />` (açık panel, Puhu dahil); diğer dört toggle noktası sade
+  `ThemeToggle` ile kaldı, mobil başlıkta bu boyda sahnenin yeri yok. Tema `toggleTheme()` ile
+  koreografiden **önce** ve koşulsuz çevrilir — animasyon hiçbir zaman sonucu geciktirmez;
+  reduced-motion'da tüm hareket sıfırlanır, düğme aynen çalışır. Renkler `--lamp-*` token
+  ailesinden gelir (`globals.css`, `.mentor-theme-lamp` scope'u).
+  **Gotcha 1:** Puhu üç **tam gövde sprite**'ı (`rest`/`reach`/`blink`) ile çalışır, kesilmiş
+  katmanlarla değil — görsel üreteci çalıştırmalar arası ortak canvas tutamadığı için kanat
+  döndürülmez, sprite'lar crossfade edilir. Bu üç dosya ortak 320px canvas'ı paylaşır ve **tek tek
+  trim edilmemeli**; trim her birini farklı kırpar ve geçişte zıplama olur. `reach` kutusu `rest`
+  ile aynıdır, sadece sağda 18px kalkık kanat fazlası vardır — bu yüzden `OWL_ART` **duran gövdeyi**
+  ölçer; `reach`'i ölçmek kanat her kalktığında gövdeyi sola kaydırırdı. Bedeli: göz bebekleri ayrı
+  hareket edemediği için bakış takibi yerine tüm gövdenin imlece yaslanması (`computeLean`, ±2px).
+  **Gotcha 2:** Layout *görünür* sanat px'iyle konuşur; `fitArt` görsel kutusunu `OWL_ART` /
+  `SHADE_ART` tanımına göre ölçekleyip kaydırır (`owlArtBox` gövdeyi sahne tabanına bastırır,
+  `shadeArtBox` abajuru asma ipine hizalar). Sanat yenilenirse **tek yapılacak iş** bu iki sabiti
+  `inspect-png.mjs` çıktısından tazelemek — bileşende değişiklik gerekmez.
+  **Gotcha 3:** Üretilen görseller magenta (`#FF00FF`) zeminde isteniyor ve `key-alpha.mjs` ile
+  şeffaflaştırılıyor; magenta Puhu'nun paletinde yok, siyah zemin denendiğinde göz bebekleri de
+  silinmişti. Boru hattının tamamı ve komutlar `public/mascot/puhu/README.md`'de. `--max=320`
+  üç baykuşta da aynı olmalı, yoksa hizalama bozulur.
+  **Gotcha 4:** Puhu'ya düşen sıcak ışık, `rest` sprite'ıyla `mask-image` üzerinden maskeleniyor;
+  maskesiz `soft-light` sidebar zemininde dikdörtgen boyar. Maske hep `rest`'tir — kalkık kanat
+  ışığı da beraberinde sürüklemesin diye. İlgili dosyalar:
+  `components/theme-lamp/{theme-lamp,lamp-cord}.tsx`,
+  `{lamp-choreography,use-lamp-choreography}.ts`, `components/app-nav.tsx`, `app/globals.css`,
+  `public/mascot/puhu/lamp/`, `scripts/{key-alpha,inspect-png,to-png}.*`, `e2e/theme.spec.ts`.
 
 ## Gotchas / Known issues
 

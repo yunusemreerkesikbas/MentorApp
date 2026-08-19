@@ -50,7 +50,7 @@ function Spot({ entry, place, youLabel }: { entry: LeaderboardEntry; place: 0 | 
         className="mt-auto flex w-full items-start justify-center rounded-t-md pt-1"
         style={{
           height: pedH,
-          background: `linear-gradient(to bottom, color-mix(in srgb, ${MEDAL[place]} 22%, white), color-mix(in srgb, ${MEDAL[place]} 6%, white))`,
+          background: `linear-gradient(to bottom, color-mix(in srgb, ${MEDAL[place]} 22%, var(--color-surface)), color-mix(in srgb, ${MEDAL[place]} 6%, var(--color-surface)))`,
         }}
       >
         <span
@@ -76,7 +76,7 @@ export function MiniLeaderboard({ leaderboard }: { leaderboard: LeaderboardView 
   const meOnPodium = me !== null && podium.some((e) => e.isMe);
 
   return (
-    <div className="flex flex-col gap-3 border-t pt-4" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+    <div className="flex flex-col gap-3 border-t pt-4" style={{ borderColor: "var(--color-border)" }}>
       <p
         className="flex items-center gap-2 text-[15px] font-bold"
         style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
@@ -94,7 +94,7 @@ export function MiniLeaderboard({ leaderboard }: { leaderboard: LeaderboardView 
           className="rounded-2xl px-3 pb-4 pt-6"
           style={{
             background:
-              "radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--color-chip) 16%, white) 0%, white 72%)",
+              "radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--color-chip) 16%, var(--color-surface)) 0%, var(--color-surface) 72%)",
           }}
         >
           <div className="flex items-end justify-center gap-1.5">
@@ -109,7 +109,7 @@ export function MiniLeaderboard({ leaderboard }: { leaderboard: LeaderboardView 
         <div
           className="flex items-center gap-2.5 rounded-xl px-3 py-2"
           style={{
-            background: "color-mix(in srgb, var(--color-accent) 10%, white)",
+            background: "color-mix(in srgb, var(--color-accent) 10%, var(--color-surface))",
             border: "1px solid color-mix(in srgb, var(--color-accent) 24%, transparent)",
           }}
         >

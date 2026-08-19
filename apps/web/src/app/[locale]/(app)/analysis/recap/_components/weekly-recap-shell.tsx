@@ -32,7 +32,7 @@ import {
   type WeeklyRecapSlide,
   type WeeklyRecapSource,
 } from "@/lib/weekly-recap";
-import { fetchWeeklyReview } from "@/lib/weekly-recap-api";
+import { completeWeeklyReview, fetchWeeklyReview } from "@/lib/weekly-recap-api";
 import { renderWeeklyRecapShareCard } from "@/lib/weekly-recap-share-card";
 import { WeeklyRecapContentSkeleton } from "./weekly-recap-content-skeleton";
 import {
@@ -210,7 +210,12 @@ export function WeeklyRecapShell() {
       surface: "recap",
       recap_status: review.recap.status,
     });
-  }, [review]);
+    if (review.recap.status === "READY" && state.status === "ready") {
+      void completeWeeklyReview(state.examId, review.period.startDate).catch(() => {
+        completedTracked.current = false;
+      });
+    }
+  }, [review, state]);
 
   const handleShare = useCallback(async () => {
     if (!review || shareBusy) return;

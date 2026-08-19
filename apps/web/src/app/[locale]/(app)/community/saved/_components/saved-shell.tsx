@@ -191,7 +191,7 @@ export function SavedShell({ embedded = false }: { embedded?: boolean } = {}) {
         <div className="flex flex-col items-center px-6 py-16 text-center">
           <span
             className="flex h-12 w-12 items-center justify-center rounded-full"
-            style={{ background: "color-mix(in srgb, var(--color-chip) 16%, white)", color: "var(--color-chip-text)" }}
+            style={{ background: "color-mix(in srgb, var(--color-chip) 16%, var(--color-surface))", color: "var(--color-chip-text)" }}
             aria-hidden="true"
           >
             <BookmarkIcon filled={false} />
@@ -204,7 +204,7 @@ export function SavedShell({ embedded = false }: { embedded?: boolean } = {}) {
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-[rgba(0,0,0,0.06)]">
+        <div className="divide-y divide-[var(--color-border)]">
           {items.map((it) =>
             it.type === "thread" ? (
               <CommunityPostCard

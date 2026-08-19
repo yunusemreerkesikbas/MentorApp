@@ -1,0 +1,22 @@
+{
+  "items": {
+    "first_step": { "title": "First Step", "description": "You completed your first qualifying focus session." },
+    "route_drawn": { "title": "Route Drawn", "description": "You created the first task on your study route." },
+    "dream_space_created": { "title": "Room for Your Dream", "description": "You added the first meaningful piece to your vision board." },
+    "rhythm_found": { "title": "Rhythm Found", "description": "You found a seven-day study rhythm." },
+    "rhythm_kept": { "title": "Rhythm Kept", "description": "You kept your study rhythm for thirty days." },
+    "returned_to_path": { "title": "Right Where You Left Off", "description": "You chose to focus again after some time away." },
+    "route_renewed": { "title": "Route Renewed", "description": "You renewed your plan around your changing needs." },
+    "starting_point_set": { "title": "Your Starting Point", "description": "You recorded your first mock exam and set a starting point." },
+    "mistake_revisited": { "title": "Looked Again", "description": "You revisited an entry in your mistake notebook." },
+    "week_reflected": { "title": "Listened to Your Week", "description": "You intentionally completed your weekly reflection." },
+    "first_hello": { "title": "First Hello", "description": "You shared your first contribution with the community." },
+    "helped_someone": { "title": "You Helped Someone", "description": "One of your contributions helped another learner." }
+  },
+  "notification": {
+    "title": "You earned a new achievement",
+    "body": "{title} is now in your achievement collection.",
+    "backfillTitle": "Your past effort is here too",
+    "backfillBody": "{count} achievements you completed before are now in your collection."
+  }
+}

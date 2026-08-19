@@ -13,7 +13,7 @@ describe("shared post media layout", () => {
     expect(gallery).toContain('"mt-3 grid w-full');
     expect(gallery).toContain("h-auto w-full");
     expect(gallery).not.toContain("grid aspect-[16/9]");
-    expect(gallery).toContain("cursor-pointer overflow-hidden rounded-[30px] border border-black/20");
+    expect(gallery).toContain("cursor-pointer overflow-hidden rounded-[30px] border border-[color-mix(in_srgb,var(--color-main)_20%,transparent)]");
     expect(gallery).not.toContain("grid w-full grid-cols-1 overflow-hidden rounded-[30px] border");
     expect(gallery).not.toContain("overscroll-x-contain rounded-[30px] border");
   });

@@ -101,8 +101,26 @@ function makeEntry(overrides: Partial<NotebookEntryDto> = {}): NotebookEntryDto 
   };
 }
 
+/**
+ * Choose a value from a `MenuSelect` field.
+ *
+ * The add form's subject and topic pickers used to be native `<select>`s driven by
+ * `selectOption`. They are now `MenuSelect` — a button that opens a `PopoverMenu` listbox — so
+ * picking is two clicks, and the option is matched by its visible label rather than its value.
+ */
+async function pickOption(page: Page, field: string, option: string) {
+  await page.getByLabel(field).click();
+  await page.getByRole("option", { name: option, exact: true }).click();
+}
+
 function emptyPage(index: number): NotebookPageDto {
-  return { pageIndex: index, doc: { version: 1, paper: "ruled", items: [] }, entries: [] };
+  return {
+    pageIndex: index,
+    // `ink` is always present on the wire: the service fills it in on read, so a page saved before
+    // drawing existed still arrives with an empty array rather than a missing key.
+    doc: { version: 1, paper: "ruled", items: [], ink: [] },
+    entries: [],
+  };
 }
 
 interface NotebookApiOptions {
@@ -236,7 +254,14 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
 
 test("kapak açılır, sağ ve sol sayfalar birlikte gösterilir, kapaktan geriye gidilemez", async ({
   page,
-}) => {
+}, testInfo) => {
+  /*
+   * Below `sm` the notebook shows one leaf at a time instead of a spread, so the same book reads
+   * as "Sayfa 1" rather than "Sayfa 1-2" and "Sonraki" walks a leaf at a time before turning.
+   * Asserting the desktop labels on both projects is what made this fail only on mobile.
+   */
+  const singleLeaf = testInfo.project.name === "mobile-chromium";
+
   const api = await mockNotebookApi(page);
   await page.goto("/yanlis-defteri");
 
@@ -245,11 +270,16 @@ test("kapak açılır, sağ ve sol sayfalar birlikte gösterilir, kapaktan geriy
   await expect(page.getByText("Kapak")).toBeVisible();
 
   await page.getByRole("button", { name: "Defteri aç" }).click();
-  // A spread, not a single leaf: opening the book shows pages 1 AND 2 at once.
-  await expect(page.getByText("Sayfa 1-2")).toBeVisible();
+  // A spread, not a single leaf: opening the book shows pages 1 AND 2 at once — except on a
+  // phone, where there is no room for two.
+  await expect(
+    page.getByText(singleLeaf ? "Sayfa 1" : "Sayfa 1-2", { exact: true }),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Sonraki" }).click();
-  await expect(page.getByText("Sayfa 3-4")).toBeVisible();
+  await expect(
+    page.getByText(singleLeaf ? "Sayfa 2" : "Sayfa 3-4", { exact: true }),
+  ).toBeVisible();
 
   // Back past the first spread closes the book rather than doing nothing.
   await page.getByRole("button", { name: "Önceki" }).click();
@@ -278,9 +308,9 @@ test("yan panel her zaman açık: yanlış eklenir, hata tipi zorunlu, ders/konu
   await page.getByRole("button", { name: "Biliyordum, dikkat hatası" }).click();
   await expect(submit).toBeEnabled();
 
-  await page.getByLabel("Ders").selectOption("matematik");
+  await pickOption(page, "Ders", "Matematik");
   // The topic picker only appears once a subject narrows it, and it is free — no premium gate.
-  await page.getByLabel("Konu").selectOption("problemler");
+  await pickOption(page, "Konu", "Problemler");
 
   await submit.click();
 
@@ -307,10 +337,13 @@ test("konu seçici derse göre daralır", async ({ page }) => {
   await page.getByRole("button", { name: "Defteri aç" }).click();
   await page.getByRole("button", { name: "Ekle" }).click();
 
-  await page.getByLabel("Ders").selectOption("tarih");
-  const topic = page.getByLabel("Konu");
-  await expect(topic.getByRole("option", { name: "Kurtuluş Savaşı" })).toHaveCount(1);
-  await expect(topic.getByRole("option", { name: "Problemler" })).toHaveCount(0);
+  await pickOption(page, "Ders", "Tarih");
+
+  // `MenuSelect` renders its options in a popover next to the trigger, not inside it, so the
+  // options are only in the DOM while the menu is open and are queried from the page.
+  await page.getByLabel("Konu").click();
+  await expect(page.getByRole("option", { name: "Kurtuluş Savaşı" })).toHaveCount(1);
+  await expect(page.getByRole("option", { name: "Problemler" })).toHaveCount(0);
 });
 
 test("tekrar şeridi açılır, çözülen kart iyileşir ve şerit boşalır", async ({ page }) => {
@@ -364,6 +397,7 @@ test("çift tıkla kart açılır ve sol sayfadaki bir kart sağ sayfayı etkile
     doc: {
       version: 1,
       paper: "ruled",
+      ink: [],
       items: [
         {
           id: "66666666-6666-4666-8666-666666666666",
@@ -400,7 +434,9 @@ test("sidebar sticker ekler, sayfaya yapıştırır ve otomatik kaydeder", async
   await page.getByRole("button", { name: "Sticker" }).click();
 
   // The full vision-board sticker set, not a shortlist — each one keeps its own translated name.
-  await page.getByRole("button", { name: "Yıldız" }).click();
+  // `exact` because that set holds "Yıldız", "Yıldız (1)" and "Yıldız (2)", and role-name matching
+  // is a substring match by default.
+  await page.getByRole("button", { name: "Yıldız", exact: true }).click();
 
   await expect.poll(() => api.savedPages.length, { timeout: 5_000 }).toBeGreaterThan(0);
   const firstSave = api.savedPages.find((entry) => entry.index === 0);
@@ -466,6 +502,7 @@ test("fotoğraflı kart sadece görseli gösterir; tıklayınca tam ekran önizl
     doc: {
       version: 1,
       paper: "ruled",
+      ink: [],
       items: [
         {
           id: "77777777-7777-4777-8777-777777777777",
@@ -497,6 +534,110 @@ test("fotoğraflı kart sadece görseli gösterir; tıklayınca tam ekran önizl
 
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
+});
+
+/**
+ * Drawing, end to end.
+ *
+ * The stroke geometry, the simplification and the eraser hit-test all have unit tests
+ * (`src/lib/notebook-ink.spec.ts`), and the undo/redo/erase actions have reducer tests. None of
+ * them can answer the questions this covers: does a real drag on a real page produce ink, does the
+ * ink reach the server, and does the eraser find what the pen left.
+ */
+async function drawOn(page: Page, box: { x: number; y: number; width: number; height: number }) {
+  // A curve, not a straight line: simplification collapses collinear samples, so a straight drag
+  // would still pass with a broken smoothing step.
+  const startX = box.x + box.width * 0.3;
+  const y = box.y + box.height * 0.45;
+  await page.mouse.move(startX, y);
+  await page.mouse.down();
+  for (let step = 1; step <= 8; step += 1) {
+    await page.mouse.move(startX + step * 12, y + (step % 2 === 0 ? 14 : -14));
+  }
+  await page.mouse.up();
+}
+
+test("çizim modunda sayfaya kalemle çizilir, geri/ileri alınır ve kaydedilir", async ({
+  page,
+}) => {
+  const api = await mockNotebookApi(page);
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: "Defteri aç" }).click();
+
+  // `exact` matters here: role-name matching is a substring match by default, and "Çiz" is a
+  // prefix of the tray's own "Çizimleri sil".
+  await page.getByRole("button", { name: "Çiz", exact: true }).click();
+  const toolbar = page.getByRole("toolbar", { name: "Çizim araçları" });
+  await expect(toolbar).toBeVisible();
+
+  // Nothing drawn yet, so there is nothing to undo or clear.
+  await expect(toolbar.getByRole("button", { name: "Geri al" })).toBeDisabled();
+  await expect(toolbar.getByRole("button", { name: "Çizimleri sil" })).toBeDisabled();
+
+  await toolbar.getByRole("button", { name: "Fosforlu kalem" }).click();
+  await toolbar.getByRole("button", { name: "Renkler" }).click();
+  await toolbar.getByRole("button", { name: "#ffd600" }).click();
+  // The colour strip is a mode you leave deliberately, so picking a swatch does not close it —
+  // the pens and the undo/redo controls are on the strip behind this one.
+  await toolbar.getByRole("button", { name: "Geri", exact: true }).click();
+
+  const surface = page.locator("svg[viewBox='0 0 1080 1440']").first();
+  const box = (await surface.boundingBox())!;
+  await drawOn(page, box);
+
+  // The ink is real DOM: one filled path per stroke, in the page's own design space.
+  await expect(surface.locator("path")).toHaveCount(1);
+  await expect(toolbar.getByRole("button", { name: "Geri al" })).toBeEnabled();
+
+  // It autosaves onto the left page, carrying the pen it was drawn with.
+  await expect.poll(() => api.savedPages.length, { timeout: 5_000 }).toBeGreaterThan(0);
+  const saved = api.savedPages.filter((entry) => entry.index === 0).at(-1);
+  const doc = saved!.doc as { ink: Array<{ tool: string; color: string; points: number[] }> };
+  expect(doc.ink).toHaveLength(1);
+  expect(doc.ink[0]!.tool).toBe("highlighter");
+  expect(doc.ink[0]!.color).toBe("#ffd600");
+  // Simplified on the way out, but still a curve — not collapsed to its two endpoints.
+  expect(doc.ink[0]!.points.length % 3).toBe(0);
+  expect(doc.ink[0]!.points.length).toBeGreaterThan(6);
+
+  await toolbar.getByRole("button", { name: "Geri al" }).click();
+  await expect(surface.locator("path")).toHaveCount(0);
+
+  await toolbar.getByRole("button", { name: "İleri al" }).click();
+  await expect(surface.locator("path")).toHaveCount(1);
+
+  expect(api.pageErrors).toEqual([]);
+});
+
+test("silgi çizilen mürekkebi kaldırır, çizim modu kart sürüklemeyi kapatır", async ({
+  page,
+}) => {
+  const api = await mockNotebookApi(page);
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: "Defteri aç" }).click();
+  // `exact` matters here: role-name matching is a substring match by default, and "Çiz" is a
+  // prefix of the tray's own "Çizimleri sil".
+  await page.getByRole("button", { name: "Çiz", exact: true }).click();
+
+  const toolbar = page.getByRole("toolbar", { name: "Çizim araçları" });
+  const surface = page.locator("svg[viewBox='0 0 1080 1440']").first();
+  const box = (await surface.boundingBox())!;
+
+  await drawOn(page, box);
+  await expect(surface.locator("path")).toHaveCount(1);
+
+  // The eraser retraces the same path, so it must cross the stroke it is meant to remove.
+  await toolbar.getByRole("button", { name: "Silgi" }).click();
+  await drawOn(page, box);
+  await expect(surface.locator("path")).toHaveCount(0);
+
+  // Leaving draw mode hands the pages back to the arranging tools, and the tray goes away.
+  // `exact` matters here: role-name matching is a substring match by default, and "Çiz" is a
+  // prefix of the tray's own "Çizimleri sil".
+  await page.getByRole("button", { name: "Çiz", exact: true }).click();
+  await expect(toolbar).toHaveCount(0);
+
+  expect(api.pageErrors).toEqual([]);
 });
 
 const corsHeaders = {

@@ -11,6 +11,7 @@ import { subscriptionsControllerGetMine } from "@mentor/api-client";
 
 import { LanguageToggle } from "@/components/language-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemeLamp } from "@/components/theme-lamp/theme-lamp";
 import { DesktopCoachFab } from "@/components/desktop-coach-fab";
 import { UserAvatar } from "@/components/user-avatar";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -217,12 +218,12 @@ function DesktopSidebar({
           ))}
         </div>
         <div
-          className="mt-auto flex justify-center border-t py-3"
+          className="mt-auto flex justify-center border-t"
           style={{
             borderColor: "color-mix(in srgb, var(--color-secondary) 24%, transparent)",
           }}
         >
-          <ThemeToggle />
+          <ThemeLamp variant="rail" />
         </div>
       </div>
 
@@ -274,13 +275,13 @@ function DesktopSidebar({
         </div>
 
         <div
-          className="mt-auto flex items-center justify-between gap-2 border-t pt-4"
+          className="mt-auto flex items-end justify-between gap-2 border-t"
           style={{
             borderColor: "color-mix(in srgb, var(--color-secondary) 24%, transparent)",
           }}
         >
           <LanguageToggle />
-          <ThemeToggle />
+          <ThemeLamp variant="panel" />
         </div>
       </div>
     </aside>

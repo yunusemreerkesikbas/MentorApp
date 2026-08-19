@@ -568,6 +568,13 @@
       "when": 1786838618614,
       "tag": "0080_milky_morlun",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1787004367671,
+      "tag": "0081_little_black_widow",
+      "breakpoints": true
     }
   ]
 }

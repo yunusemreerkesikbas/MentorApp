@@ -210,7 +210,7 @@ export function QuestionShell({ threadId }: { threadId: string }) {
   return (
     <main className="mx-auto w-full max-w-[1180px] px-4 py-5 sm:px-7 lg:px-8 lg:py-6">
       <nav aria-label={t("breadcrumb_label")} className="flex min-h-11 flex-wrap items-center gap-2 border-b border-[var(--color-border)] pb-4 text-[13px] text-[var(--color-secondary)]">
-        <Link href="/community" className="font-semibold text-[#373c47] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
+        <Link href="/community" className="font-semibold text-[var(--color-body)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
           {t("title")}
         </Link>
         <span aria-hidden="true">›</span>
@@ -225,7 +225,7 @@ export function QuestionShell({ threadId }: { threadId: string }) {
           <span>{t("type_qa")}</span>
         )}
         <span aria-hidden="true">›</span>
-        <span aria-current="page" className="max-w-[24rem] truncate text-[#222630]">
+        <span aria-current="page" className="max-w-[24rem] truncate text-[var(--color-main)]">
           {question.title}
         </span>
       </nav>
@@ -241,7 +241,7 @@ export function QuestionShell({ threadId }: { threadId: string }) {
           </h1>
           {question.status === "ANSWERED" ? <Chip>{t("answered")}</Chip> : null}
         </div>
-        <p className="mt-2 text-xs text-[#858a94]">
+        <p className="mt-2 text-xs text-[var(--color-secondary)]">
           {when}
         </p>
         <div className="mt-5">
@@ -429,7 +429,7 @@ function AnswerComposer({
           type="button"
           disabled={busy}
           onClick={() => void send()}
-          className="min-h-11 rounded-[10px] bg-[var(--community-blue)] px-5 text-sm font-bold text-[#111318] hover:bg-[var(--community-blue-hover)] hover:text-white disabled:opacity-50"
+          className="min-h-11 rounded-[10px] bg-[var(--community-blue)] px-5 text-sm font-bold text-white hover:bg-[var(--community-blue-hover)] disabled:opacity-50"
         >
           {busy ? t("answer_submitting") : t("answer_submit")}
         </button>

@@ -1482,6 +1482,10 @@ export const userNotifications = pgTable(
     category: text("category").notNull(), // NotificationCategory: COACH | PLAN | CONTENT
     title: text("title").notNull(),
     body: text("body").notNull(),
+    /** Optional idempotency key for event-backed notifications. */
+    dedupeKey: text("dedupe_key"),
+    /** Structured resource metadata; literal legacy notifications keep this null. */
+    data: jsonb("data").$type<Record<string, unknown>>(),
     readAt: timestamp("read_at", { withTimezone: true }),
     linkUrl: text("link_url"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -1490,6 +1494,9 @@ export const userNotifications = pgTable(
   },
   (t) => [
     index("user_notifications_user_created_idx").on(t.userId, t.createdAt),
+    uniqueIndex("user_notifications_user_dedupe_idx")
+      .on(t.userId, t.dedupeKey)
+      .where(sql`${t.dedupeKey} is not null`),
   ],
 );
 
@@ -2745,5 +2752,67 @@ export const forumPollVotes = pgTable(
       columns: [t.pollId, t.optionId],
       foreignColumns: [forumPollOptions.pollId, forumPollOptions.id],
     }).onDelete("cascade"),
+  ],
+);
+
+/* ======================== Community · permanent achievements ========================
+ * Code-owned V1 catalogue; earned rows are immutable except for `celebrated_at`.
+ * Public profile reads expose only earned rows, while writes remain service-only.
+ * =================================================================================== */
+export const userAchievements = pgTable(
+  "user_achievements",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "set null" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    achievementId: text("achievement_id").notNull(),
+    ruleVersion: smallint("rule_version").notNull().default(1),
+    /** LIVE | BACKFILL */
+    source: text("source").notNull(),
+    earnedAt: timestamp("earned_at", { withTimezone: true }).notNull(),
+    celebratedAt: timestamp("celebrated_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("user_achievements_user_achievement_unique_idx").on(
+      t.userId,
+      t.achievementId,
+    ),
+    index("user_achievements_user_earned_idx").on(t.userId, t.earnedAt),
+    index("user_achievements_org_user_idx").on(t.orgId, t.userId),
+    check("user_achievements_source_chk", sql`${t.source} in ('LIVE', 'BACKFILL')`),
+    check("user_achievements_rule_version_chk", sql`${t.ruleVersion} > 0`),
+  ],
+);
+
+/** Explicit, idempotent completion of a READY weekly review. Coaching owns this evidence. */
+export const weeklyReviewCompletions = pgTable(
+  "weekly_review_completions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    examId: uuid("exam_id").notNull(),
+    weekStart: date("week_start").notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("weekly_review_completions_user_exam_week_unique_idx").on(
+      t.userId,
+      t.examId,
+      t.weekStart,
+    ),
+    index("weekly_review_completions_user_completed_idx").on(t.userId, t.completedAt),
   ],
 );

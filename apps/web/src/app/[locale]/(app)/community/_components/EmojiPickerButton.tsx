@@ -131,7 +131,7 @@ export function EmojiPickerButton({
         aria-expanded={open}
         aria-haspopup="dialog"
         onClick={() => setOpen((current) => !current)}
-        className="grid size-11 place-items-center rounded-full text-[var(--color-secondary)] transition-colors duration-150 hover:bg-black/[0.06] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+        className="grid size-11 place-items-center rounded-full text-[var(--color-secondary)] transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       >
         <Smile size={20} aria-hidden />
       </button>

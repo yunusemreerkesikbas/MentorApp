@@ -39,7 +39,7 @@ export function EffortBoardDrawer() {
         className="fixed right-3 top-[3.75rem] z-20 flex h-9 items-center gap-2 rounded-full border px-3 text-xs font-semibold backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         style={{
           borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)",
-          background: "color-mix(in srgb, var(--color-bg, white) 85%, transparent)",
+          background: "color-mix(in srgb, var(--color-bg) 85%, transparent)",
           color: "var(--color-main)",
           fontFamily: "var(--font-heading)",
         }}
@@ -63,12 +63,12 @@ export function EffortBoardDrawer() {
         className="fixed bottom-0 right-0 z-30 w-80 max-w-[85vw] overflow-y-auto px-6 pb-6 transition-transform duration-200"
         style={{
           top: "3.5rem",
-          background: "var(--color-bg, white)",
+          background: "var(--color-bg)",
           transform: open ? "translateX(0)" : "translateX(100%)",
           boxShadow: open ? "var(--shadow-card)" : "none",
         }}
       >
-        <div className="sticky top-0 flex justify-end py-3" style={{ background: "var(--color-bg, white)" }}>
+        <div className="sticky top-0 flex justify-end py-3" style={{ background: "var(--color-bg)" }}>
           <button
             type="button"
             onClick={close}

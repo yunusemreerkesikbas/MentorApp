@@ -7,6 +7,7 @@ import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import { notificationCategorySchema } from "@mentor/validation";
+import { I18nContext, I18nService } from "nestjs-i18n";
 import type {
   NotificationCategory,
   NotificationListDto,
@@ -16,7 +17,11 @@ import type {
 } from "@mentor/types";
 import { NotificationPreferencesRepository } from "../infrastructure/notification-preferences.repository";
 import { PushSubscriptionRepository } from "../infrastructure/push-subscription.repository";
-import { NOTIFICATION_PAGE_SIZE, UserNotificationRepository } from "../infrastructure/user-notification.repository";
+import {
+  NOTIFICATION_PAGE_SIZE,
+  UserNotificationRepository,
+  type UserNotificationRow,
+} from "../infrastructure/user-notification.repository";
 
 const STREAM_TOKEN_TTL_MS = 60_000;
 const HEARTBEAT_INTERVAL_MS = 25_000;
@@ -40,6 +45,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     private readonly pushSubs: PushSubscriptionRepository,
     private readonly preferences: NotificationPreferencesRepository,
     private readonly userNotifs: UserNotificationRepository,
+    private readonly i18n: I18nService,
   ) {}
 
   onModuleInit(): void {
@@ -186,11 +192,25 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     title: string,
     body: string,
     linkUrl?: string,
-  ): Promise<void> {
-    await withServiceContext(this.db, async (tx) => {
-      await this.userNotifs.create(tx, { userId, category, title, body, linkUrl });
+    options?: {
+      dedupeKey?: string;
+      data?: Record<string, unknown>;
+      notifyRealtime?: boolean;
+    },
+  ): Promise<boolean> {
+    const { notifyRealtime = true, ...storageOptions } = options ?? {};
+    const created = await withServiceContext(this.db, async (tx) => {
+      return this.userNotifs.create(tx, {
+        userId,
+        category,
+        title,
+        body,
+        linkUrl,
+        ...storageOptions,
+      });
     });
-    this.pushToStreams(userId);
+    if (created && notifyRealtime) this.pushToStreams(userId);
+    return created !== null;
   }
 
   async listInApp(
@@ -204,7 +224,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
         this.userNotifs.countUnread(tx, userId),
       ]);
       const hasMore = rows.length > NOTIFICATION_PAGE_SIZE;
-      const items = rows.slice(0, NOTIFICATION_PAGE_SIZE).map(toDto);
+      const items = rows.slice(0, NOTIFICATION_PAGE_SIZE).map((row) => this.toDto(row));
       return { items, unreadCount, hasMore };
     });
   }
@@ -213,7 +233,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     return withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.userNotifs.markRead(tx, userId, id);
       if (!row) throw new NotFoundException("notification.not_found");
-      return toDto(row);
+      return this.toDto(row);
     });
   }
 
@@ -227,7 +247,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     return withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.userNotifs.markUnread(tx, userId, id);
       if (!row) throw new NotFoundException("notification.not_found");
-      return toDto(row);
+      return this.toDto(row);
     });
   }
 
@@ -236,24 +256,46 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
       await this.userNotifs.delete(tx, userId, id);
     });
   }
-}
 
-function toDto(row: {
-  id: string;
-  category: string;
-  title: string;
-  body: string;
-  readAt: Date | null;
-  linkUrl: string | null;
-  createdAt: Date;
-}): UserNotificationDto {
-  return {
-    id: row.id,
-    category: notificationCategorySchema.parse(row.category),
-    title: row.title,
-    body: row.body,
-    readAt: row.readAt?.toISOString() ?? null,
-    linkUrl: row.linkUrl ?? null,
-    createdAt: row.createdAt.toISOString(),
-  };
+  private toDto(row: UserNotificationRow): UserNotificationDto {
+    const category = notificationCategorySchema.parse(row.category);
+    let title = row.title;
+    let body = row.body;
+    if (category === "ACHIEVEMENT" && row.data) {
+      const lang = I18nContext.current()?.lang ?? "tr";
+      const kind = row.data.kind;
+      const id = row.data.achievementId;
+      if (kind === "ACHIEVEMENT" && typeof id === "string") {
+        const achievementTitle = String(
+          this.i18n.translate(`achievements.items.${id}.title`, { lang }),
+        );
+        title = String(this.i18n.translate("achievements.notification.title", { lang }));
+        body = String(
+          this.i18n.translate("achievements.notification.body", {
+            lang,
+            args: { title: achievementTitle },
+          }),
+        );
+      } else if (kind === "BACKFILL_SUMMARY" && typeof row.data.count === "number") {
+        title = String(
+          this.i18n.translate("achievements.notification.backfillTitle", { lang }),
+        );
+        body = String(
+          this.i18n.translate("achievements.notification.backfillBody", {
+            lang,
+            args: { count: row.data.count },
+          }),
+        );
+      }
+    }
+    return {
+      id: row.id,
+      category,
+      title,
+      body,
+      readAt: row.readAt?.toISOString() ?? null,
+      linkUrl: row.linkUrl ?? null,
+      createdAt: row.createdAt.toISOString(),
+    };
+  }
 }

@@ -93,7 +93,10 @@ export class CommunityService {
     if (!user || !user.username || user.status === "BANNED" || user.status === "SUSPENDED") {
       throw new NotFoundError();
     }
-    const economyEnabled = await this.config.get("economy.enabled");
+    const [economyEnabled, achievementsEnabled] = await Promise.all([
+      this.config.get("economy.enabled"),
+      this.config.get("community.achievements.enabled"),
+    ]);
     const isSelf = viewerId === user.id;
     const [currentStreak, activity, followerCount, followingCount, isFollowing, buddyStatus, entitlement] =
       await Promise.all([
@@ -119,6 +122,7 @@ export class CommunityService {
       userId: user.id,
       displayName: user.displayName,
       username: user.username,
+      achievementsEnabled,
       avatarUrl: user.avatarStorageKey ? this.storage.getPublicUrl(user.avatarStorageKey) : null,
       examType: user.examType,
       createdAt: user.createdAt.toISOString(),

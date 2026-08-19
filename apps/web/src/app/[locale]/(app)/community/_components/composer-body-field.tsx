@@ -55,7 +55,7 @@ export function ComposerBodyField({
   const textareaRef = externalTextareaRef ?? internalTextareaRef;
 
   return (
-    <div className="grid gap-1.5 text-sm font-bold text-[#2c3039]">
+    <div className="grid gap-1.5 text-sm font-bold text-[var(--color-main)]">
       <label htmlFor={id} className={hideLabel ? "sr-only" : undefined}>
         {label}
       </label>

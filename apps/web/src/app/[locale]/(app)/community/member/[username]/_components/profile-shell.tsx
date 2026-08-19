@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { type ForumActivityItem, type PublicProfile } from "@mentor/types";
+import { type AchievementCollectionDto, type ForumActivityItem, type PublicProfile } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { Link, useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
-import { getPublicProfile } from "@/lib/community";
+import { AchievementCollection } from "@/components/achievements/achievement-collection";
+import { getProfileAchievements, getPublicProfile } from "@/lib/community";
 import { sendBuddyRequest } from "@/lib/buddy";
 import { followUser, unfollowUser } from "@/lib/follow";
 import { useMentorToast } from "@/lib/mentor-toast";
@@ -36,6 +37,7 @@ type Ready = {
   items: ForumActivityItem[];
   nextCursor: string | null;
   loadingMore: boolean;
+  achievements: AchievementCollectionDto | null;
 };
 type State =
   | { status: "loading" }
@@ -52,19 +54,28 @@ export function ProfileShell({ username }: { username: string }) {
   const { error: showErrorToast } = useMentorToast();
   const { user } = useAuth();
   const isOwn = !!user?.username && user.username === username;
-  const requestedTab = ["bookmarks", "saved"].includes(searchParams.get("tab") ?? "")
-    ? "bookmarks"
-    : "posts";
-  const tab = requestedTab;
+  const tabParam = searchParams.get("tab");
+  const requestedTab = tabParam === "achievements"
+    ? "achievements"
+    : ["bookmarks", "saved"].includes(tabParam ?? "")
+      ? "bookmarks"
+      : "posts";
   const [listView, setListView] = useState<"followers" | "following" | null>(null);
   const [state, setState] = useState<State>({ status: "loading" });
 
   useEffect(() => {
     let active = true;
-    Promise.all([getPublicProfile(username), getUserActivity(username)])
-      .then(([profile, feed]) => {
+    getPublicProfile(username).then(async (profile) => {
+      const effectiveTab = (requestedTab === "achievements" && !profile.achievementsEnabled)
+        || (requestedTab === "bookmarks" && !isOwn)
+        ? "posts"
+        : requestedTab;
+      const [feed, achievements] = await Promise.all([
+        effectiveTab === "posts" ? getUserActivity(username) : Promise.resolve({ items: [], nextCursor: null }),
+        effectiveTab === "achievements" ? getProfileAchievements(username) : Promise.resolve(null),
+      ]);
         if (active) {
-          setState({ status: "ready", profile, items: feed.items, nextCursor: feed.nextCursor, loadingMore: false });
+          setState({ status: "ready", profile, items: feed.items, nextCursor: feed.nextCursor, loadingMore: false, achievements });
         }
       })
       .catch((err: unknown) => {
@@ -76,13 +87,13 @@ export function ProfileShell({ username }: { username: string }) {
     return () => {
       active = false;
     };
-  }, [username, t]);
+  }, [isOwn, requestedTab, username, t]);
 
-  const selectTab = (nextTab: "posts" | "bookmarks") => {
+  const selectTab = (nextTab: "posts" | "achievements" | "bookmarks") => {
     router.push({
       pathname: "/community/member/[username]",
       params: { username },
-      query: nextTab === "bookmarks" ? { tab: "bookmarks" } : {},
+      query: nextTab === "posts" ? {} : { tab: nextTab },
     });
   };
 
@@ -239,7 +250,14 @@ export function ProfileShell({ username }: { username: string }) {
     );
   }
 
-  const { profile, items, nextCursor, loadingMore } = state;
+  const { profile, items, nextCursor, loadingMore, achievements } = state;
+  const tab = (requestedTab === "achievements" && !profile.achievementsEnabled)
+    || (requestedTab === "bookmarks" && !isOwn)
+    ? "posts"
+    : requestedTab;
+  const profileTabs: Array<"posts" | "achievements" | "bookmarks"> = isOwn
+    ? ["posts", ...(profile.achievementsEnabled ? ["achievements" as const] : []), "bookmarks"]
+    : ["posts", ...(profile.achievementsEnabled ? ["achievements" as const] : [])];
 
   return (
     <main className="mx-auto grid min-w-0 max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
@@ -269,10 +287,9 @@ export function ProfileShell({ username }: { username: string }) {
         />
       ) : (
         <>
-      {/* Tabs — only on your own profile, where "Kaydedilenler" (private) is meaningful. */}
-      {isOwn && (
-        <div className="flex gap-1 border-b px-4 lg:px-6" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
-          {(["posts", "bookmarks"] as const).map((k) => {
+      {/* Achievements are public; saved items remain private to the profile owner. */}
+      <div className="flex gap-1 border-b px-4 lg:px-6" style={{ borderColor: "var(--color-border)" }}>
+          {profileTabs.map((k) => {
             const active = tab === k;
             return (
               <button
@@ -283,7 +300,7 @@ export function ProfileShell({ username }: { username: string }) {
                 className="relative -mb-px px-3 py-3 text-[14px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 style={{ color: active ? "var(--color-main)" : "var(--color-secondary)" }}
               >
-                {k === "posts" ? t("profile_tab_posts") : t("saved_nav")}
+                {k === "posts" ? t("profile_tab_posts") : k === "achievements" ? t("profile_tab_achievements") : t("saved_nav")}
                 {active && (
                   <span
                     aria-hidden="true"
@@ -295,17 +312,18 @@ export function ProfileShell({ username }: { username: string }) {
             );
           })}
         </div>
-      )}
 
       {isOwn && tab === "bookmarks" ? (
         <SavedShell embedded />
+      ) : tab === "achievements" && achievements ? (
+        <AchievementCollection collection={achievements} />
       ) : items.length === 0 ? (
         <p className="px-4 py-12 text-center text-sm" style={{ color: "var(--color-secondary)" }}>
           {t("profile_activity_empty")}
         </p>
       ) : (
         <>
-          <div className="divide-y divide-[rgba(0,0,0,0.06)]">
+          <div className="divide-y divide-[var(--color-border)]">
             {items.map((it) => {
               const key = it.type === "thread" ? `t-${it.thread.id}` : `c-${it.comment.id}`;
               return (

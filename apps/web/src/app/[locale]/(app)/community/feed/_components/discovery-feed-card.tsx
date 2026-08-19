@@ -161,7 +161,7 @@ export function DiscoveryFeedCard({
             </div>
           </div>
           {item.status === "ANSWERED" && (
-            <span className="text-[11px] font-bold text-[#4e8060]">
+            <span className="text-[11px] font-bold text-[var(--color-success)]">
               {t("answered")}
             </span>
           )}
@@ -180,7 +180,7 @@ export function DiscoveryFeedCard({
                   aria-expanded={open}
                   aria-controls={open ? menuId : undefined}
                   onClick={() => setOpen(!open)}
-                  className="flex size-8 cursor-pointer items-center justify-center rounded-full text-[var(--color-secondary)] transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+                  className="flex size-8 cursor-pointer items-center justify-center rounded-full text-[var(--color-secondary)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                     <circle cx="5" cy="12" r="1.6" />

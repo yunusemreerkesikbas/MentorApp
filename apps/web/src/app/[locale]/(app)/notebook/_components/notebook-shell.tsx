@@ -6,6 +6,7 @@ import {
   ChevronRight,
   LoaderCircle,
   PanelTop,
+  Pen,
   Plus,
   Smile,
   StickyNote,
@@ -42,6 +43,15 @@ import {
   SPINE_GUTTER,
 } from "@/components/notebook/notebook-surface";
 import { NotebookPageStage } from "@/components/notebook/notebook-page-stage";
+import { NotebookInkLayer } from "@/components/notebook/notebook-ink-layer";
+import { useInkDraw } from "@/components/notebook/use-ink-draw";
+import {
+  INK_DEFAULT_COLOR,
+  INK_DEFAULT_TOOL,
+  INK_TOOLS,
+  type InkToolId,
+} from "@/lib/notebook-ink";
+import { NotebookInkToolbar } from "./notebook-ink-toolbar";
 import {
   NotebookPageTurn,
   PAGE_TURN_SECONDS,
@@ -75,7 +85,12 @@ type View = { kind: "cover" } | { kind: "spread"; left: number };
 type Side = "left" | "right";
 
 /** Matches the server's blank page, so an unsaved page and a fetched empty one render alike. */
-const EMPTY_PAGE: NotebookPageDoc = { version: 1, paper: "ruled", items: [] };
+const EMPTY_PAGE: NotebookPageDoc = {
+  version: 1,
+  paper: "ruled",
+  items: [],
+  ink: [],
+};
 
 /** Long enough that a drag settles first, short enough that a closed tab loses nothing. */
 const AUTOSAVE_DELAY_MS = 900;
@@ -147,11 +162,15 @@ const MOBILE_QUERY = "(max-width: 639px)";
 const RAIL_CATEGORIES: {
   id: NotebookPanelCategory;
   icon: typeof Plus;
-  labelKey: "sidebar_add" | "sidebar_sticker" | "edit_paper";
+  labelKey: "sidebar_add" | "sidebar_sticker" | "edit_paper" | "sidebar_draw";
 }[] = [
   { id: "add", icon: Plus, labelKey: "sidebar_add" },
   { id: "sticker", icon: Smile, labelKey: "sidebar_sticker" },
   { id: "paper", icon: PanelTop, labelKey: "edit_paper" },
+  // "draw" has no panel body of its own — its controls are the tray over the notebook. It is
+  // still a category rather than an action like "Not", because it is a *mode*: while it is on,
+  // the pages stop being arrangeable and start taking ink.
+  { id: "draw", icon: Pen, labelKey: "sidebar_draw" },
 ];
 
 interface ExamContext {
@@ -204,6 +223,52 @@ export function NotebookShell() {
     checkpoint: rightPage.checkpoint,
     lockRatioFor: (item) => item.kind === "sticker",
     canvasWidth: NOTEBOOK_PAGE_CANVAS.width,
+  });
+
+  /*
+   * One pen setting for the whole notebook, but a draw session per side — the same split as the
+   * page documents themselves. Picking up the red marker should not become picking it up twice
+   * when you turn to a spread, while a stroke has to land in the document of the page it was
+   * drawn on, and each page autosaves separately.
+   */
+  const [inkTool, setInkTool] = useState<InkToolId>(INK_DEFAULT_TOOL);
+  const [inkColor, setInkColor] = useState<string>(INK_DEFAULT_COLOR);
+  const [inkSize, setInkSize] = useState(INK_TOOLS[INK_DEFAULT_TOOL].size);
+  const [inkOpacity, setInkOpacity] = useState(INK_TOOLS[INK_DEFAULT_TOOL].opacity);
+
+  /**
+   * Switching pens loads that pen's own width and opacity.
+   *
+   * A highlighter left at the fineliner's 4px is not a highlighter, and having to fix the sliders
+   * after every switch is the kind of chore that makes people use one pen. Deliberate overrides
+   * are lost on switching — the alternative is remembering a setting per tool, which is state that
+   * has to be explained the first time it surprises somebody.
+   */
+  const handleToolChange = useCallback((next: InkToolId) => {
+    setInkTool(next);
+    if (next !== "eraser") {
+      setInkSize(INK_TOOLS[next].size);
+      setInkOpacity(INK_TOOLS[next].opacity);
+    }
+  }, []);
+
+  const leftInk = useInkDraw({
+    tool: inkTool,
+    color: inkColor,
+    size: inkSize,
+    opacity: inkOpacity,
+    onStroke: leftPage.addStroke,
+    onErase: leftPage.eraseStrokes,
+    getStrokes: () => leftPage.state.doc.ink,
+  });
+  const rightInk = useInkDraw({
+    tool: inkTool,
+    color: inkColor,
+    size: inkSize,
+    opacity: inkOpacity,
+    onStroke: rightPage.addStroke,
+    onErase: rightPage.eraseStrokes,
+    getStrokes: () => rightPage.state.doc.ink,
   });
 
   /** Below `MOBILE_QUERY`, a spread shows one leaf at a time (`mobileSide`) instead of two. */
@@ -484,6 +549,25 @@ export function NotebookShell() {
    */
   const openCategory = useCallback(
     (id: NotebookPanelCategory) => {
+      /*
+       * "Çiz" is a mode, not a panel, so it toggles rather than expanding: tapping it again puts
+       * the pen down and hands the pages back to the arranging tools. It also always collapses the
+       * side panel, because it has no body to show there and the notebook wants the width.
+       *
+       * Selection is cleared on the way in: a selection outline hanging over a page you are now
+       * drawing on is a control you cannot reach, since the stage stops taking pointers.
+       */
+      if (id === "draw") {
+        const leaving = activePanel === "draw";
+        setActivePanel(leaving ? "add" : "draw");
+        setDetailCollapsed(true);
+        if (!leaving) {
+          leftPage.dispatch({ type: "select", id: null });
+          rightPage.dispatch({ type: "select", id: null });
+          setEditingText(null);
+        }
+        return;
+      }
       if (activePanel === id) {
         setDetailCollapsed((collapsed) => !collapsed);
       } else {
@@ -491,7 +575,7 @@ export function NotebookShell() {
         setDetailCollapsed(false);
       }
     },
-    [activePanel],
+    [activePanel, leftPage, rightPage],
   );
 
   /**
@@ -628,6 +712,13 @@ export function NotebookShell() {
 
   const dueIds = new Set(due.map((entry) => entry.id));
   const isSpread = view.kind === "spread";
+  /**
+   * Draw mode. While it is on, the item stage is handed no pointer callbacks at all, which is what
+   * makes it non-interactive (`NotebookPageStage` derives that from the props it receives) and
+   * lets the ink layer above it take every pointer instead. One flag, checked at three stage
+   * sites: the mobile leaf and the two pages of a spread.
+   */
+  const drawing = isSpread && activePanel === "draw";
   /*
    * The spread itself no longer moves — `NotebookPageTurn` is what the eye follows, and a page that
    * also slid underneath its own turning leaf would read as two animations fighting.
@@ -654,6 +745,7 @@ export function NotebookShell() {
   /** The single page mobile shows — derived once here rather than repeated in every prop below. */
   const mobilePage = mobileSide === "left" ? leftPage : rightPage;
   const mobileGesture = mobileSide === "left" ? leftGesture : rightGesture;
+  const mobileInk = mobileSide === "left" ? leftInk : rightInk;
   const mobileMeta = mobileSide === "left" ? leftMeta : rightMeta;
 
   const notebookRatio =
@@ -727,7 +819,13 @@ export function NotebookShell() {
               }}
             >
               {RAIL_CATEGORIES.map(({ id, icon: Icon, labelKey }) => {
-                const active = activePanel === id && !detailCollapsed;
+                // "Çiz" has no panel to expand — `openCategory` always collapses the side panel
+                // for it — so its pressed state can't depend on `detailCollapsed` the way every
+                // other rail button's does, or it would never look pressed at all.
+                const active =
+                  id === "draw"
+                    ? activePanel === "draw"
+                    : activePanel === id && !detailCollapsed;
                 return (
                   <button
                     key={id}
@@ -745,16 +843,32 @@ export function NotebookShell() {
                   </button>
                 );
               })}
-              {/* Not a category: clicking places a note on the page and starts typing right away. */}
-              <button
-                type="button"
-                onClick={handleAddNote}
-                className="relative flex min-h-11 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] px-1 py-1.5 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:min-w-0"
-                style={{ color: "var(--color-secondary)" }}
-              >
-                <StickyNote aria-hidden size={20} />
-                <span className="leading-tight">{t("sidebar_note")}</span>
-              </button>
+              {/*
+                Not a category: clicking places a note on the page and starts typing right away.
+                It still gets the same pressed look as its rail neighbours while that note's
+                inline editor is open — otherwise this button is the one rail icon that never
+                visibly reacts to being clicked, which reads as broken next to Sticker/Kağıt/Çiz.
+              */}
+              {(() => {
+                const notingHere =
+                  editingText != null &&
+                  editingText.side === (isMobile ? mobileSide : focusedSide);
+                return (
+                  <button
+                    type="button"
+                    aria-pressed={notingHere}
+                    onClick={handleAddNote}
+                    className="relative flex min-h-11 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] px-1 py-1.5 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:min-w-0"
+                    style={{
+                      color: notingHere ? "#ffffff" : "var(--color-secondary)",
+                      backgroundColor: notingHere ? "var(--color-main)" : "transparent",
+                    }}
+                  >
+                    <StickyNote aria-hidden size={20} />
+                    <span className="leading-tight">{t("sidebar_note")}</span>
+                  </button>
+                );
+              })()}
             </nav>
 
             <AnimatePresence initial={false}>
@@ -898,6 +1012,41 @@ export function NotebookShell() {
             }}
           >
             {/*
+              Floats over the notebook's own top edge rather than sitting in flow above it (pushed
+              the whole book down and shrank it — `useFitSize` measures the OUTER box, so a taller
+              toolbar row meant a shorter notebook the instant draw mode turned on) or pinned over
+              the bottom (clipped off-screen there against the pagination row + safe-area inset).
+              The top of the notebook has neither problem: nothing else anchors there, so the tray
+              can overlap it for free. `pointer-events-none` on the wrapper keeps the empty space
+              either side of the tray from stealing taps meant for the page underneath.
+            */}
+            <AnimatePresence>
+              {drawing ? (
+                <div
+                  key="ink-toolbar"
+                  className="pointer-events-none absolute inset-x-0 top-2 z-[35] flex justify-center px-2 sm:top-3"
+                >
+                  <NotebookInkToolbar
+                    tool={inkTool}
+                    color={inkColor}
+                    size={inkSize}
+                    opacity={inkOpacity}
+                    canUndo={focused.canUndo}
+                    canRedo={focused.canRedo}
+                    hasInk={focused.state.doc.ink.length > 0}
+                    onToolChange={handleToolChange}
+                    onColorChange={setInkColor}
+                    onSizeChange={setInkSize}
+                    onOpacityChange={setInkOpacity}
+                    onUndo={() => focused.dispatch({ type: "undo" })}
+                    onRedo={() => focused.dispatch({ type: "redo" })}
+                    onClear={() => focused.dispatch({ type: "clearInk" })}
+                  />
+                </div>
+              ) : null}
+            </AnimatePresence>
+
+            {/*
               Two nested regions on purpose. The outer one, here, only ever swaps cover↔spread — a
               structural change, so `mode="wait"` holds the incoming half back until the outgoing
               one has left, rather than letting them overlap while the aspect ratio jumps from one
@@ -976,9 +1125,12 @@ export function NotebookShell() {
                               contentHiddenId={
                                 editingText?.side === mobileSide ? editingText.id : null
                               }
-                              onSelect={(id) => handleSelect(mobileSide, id)}
-                              onItemPointerDown={(event, item) =>
-                                mobileGesture.begin(event, item, { kind: "move" })
+                              onSelect={drawing ? undefined : (id) => handleSelect(mobileSide, id)}
+                              onItemPointerDown={
+                                drawing
+                                  ? undefined
+                                  : (event, item) =>
+                                      mobileGesture.begin(event, item, { kind: "move" })
                               }
                               onItemDoubleClick={(item) => handleItemDoubleClick(mobileSide, item)}
                               onPreviewImage={setPreviewEntry}
@@ -1008,6 +1160,16 @@ export function NotebookShell() {
                                 )
                               }
                             />
+                            {/* Above the stage: ink annotates what is on the page, so it draws
+                                over the cards rather than under them. */}
+                            <NotebookInkLayer
+                              strokes={mobilePage.state.doc.ink}
+                              liveStroke={mobileInk.liveStroke}
+                              erasing={mobileInk.erasing}
+                              onPointerDown={drawing ? mobileInk.begin : undefined}
+                              onPointerMove={drawing ? mobileInk.move : undefined}
+                              onPointerUp={drawing ? mobileInk.end : undefined}
+                            />
                           </NotebookPageSurface>
                         </div>
                       ) : (
@@ -1027,9 +1189,12 @@ export function NotebookShell() {
                             contentHiddenId={
                               editingText?.side === "left" ? editingText.id : null
                             }
-                            onSelect={(id) => handleSelect("left", id)}
-                            onItemPointerDown={(event, item) =>
-                              leftGesture.begin(event, item, { kind: "move" })
+                            onSelect={drawing ? undefined : (id) => handleSelect("left", id)}
+                            onItemPointerDown={
+                              drawing
+                                ? undefined
+                                : (event, item) =>
+                                    leftGesture.begin(event, item, { kind: "move" })
                             }
                             onItemDoubleClick={(item) => handleItemDoubleClick("left", item)}
                             onPreviewImage={setPreviewEntry}
@@ -1059,6 +1224,14 @@ export function NotebookShell() {
                               )
                             }
                           />
+                          <NotebookInkLayer
+                            strokes={leftPage.state.doc.ink}
+                            liveStroke={leftInk.liveStroke}
+                            erasing={leftInk.erasing}
+                            onPointerDown={drawing ? leftInk.begin : undefined}
+                            onPointerMove={drawing ? leftInk.move : undefined}
+                            onPointerUp={drawing ? leftInk.end : undefined}
+                          />
                         </NotebookPageSurface>
                       </div>
 
@@ -1078,9 +1251,12 @@ export function NotebookShell() {
                             contentHiddenId={
                               editingText?.side === "right" ? editingText.id : null
                             }
-                            onSelect={(id) => handleSelect("right", id)}
-                            onItemPointerDown={(event, item) =>
-                              rightGesture.begin(event, item, { kind: "move" })
+                            onSelect={drawing ? undefined : (id) => handleSelect("right", id)}
+                            onItemPointerDown={
+                              drawing
+                                ? undefined
+                                : (event, item) =>
+                                    rightGesture.begin(event, item, { kind: "move" })
                             }
                             onItemDoubleClick={(item) => handleItemDoubleClick("right", item)}
                             onPreviewImage={setPreviewEntry}
@@ -1109,6 +1285,14 @@ export function NotebookShell() {
                                 />
                               )
                             }
+                          />
+                          <NotebookInkLayer
+                            strokes={rightPage.state.doc.ink}
+                            liveStroke={rightInk.liveStroke}
+                            erasing={rightInk.erasing}
+                            onPointerDown={drawing ? rightInk.begin : undefined}
+                            onPointerMove={drawing ? rightInk.move : undefined}
+                            onPointerUp={drawing ? rightInk.end : undefined}
                           />
                         </NotebookPageSurface>
                       </div>

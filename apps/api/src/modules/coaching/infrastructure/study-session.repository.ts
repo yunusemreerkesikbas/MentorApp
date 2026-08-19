@@ -353,6 +353,27 @@ export class StudySessionRepository {
     return rows[0]?.count ?? 0;
   }
 
+  async findLatestQualifiedBefore(
+    tx: DatabaseTx,
+    userId: string,
+    before: Date,
+    minFocusSeconds: number,
+  ): Promise<Date | null> {
+    const rows = await tx
+      .select({ startedAt: studySessions.startedAt })
+      .from(studySessions)
+      .where(and(
+        eq(studySessions.userId, userId),
+        eq(studySessions.status, StudySessionStatus.COMPLETED),
+        isNotNull(studySessions.endedAt),
+        gte(studySessions.actualFocusSeconds, minFocusSeconds),
+        lt(studySessions.startedAt, before),
+      ))
+      .orderBy(desc(studySessions.startedAt))
+      .limit(1);
+    return rows[0]?.startedAt ?? null;
+  }
+
   /** COMPLETED sessions started on/after `sinceDate` (weekly quest window). */
   async countCompletedSince(
     tx: DatabaseTx,

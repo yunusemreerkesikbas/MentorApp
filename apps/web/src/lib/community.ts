@@ -1,4 +1,7 @@
 import type {
+  AchievementCelebrationsDto,
+  AchievementCollectionDto,
+  AchievementId,
   CommunitySummary,
   LeaderboardView,
   LeaderboardWindow,
@@ -20,6 +23,29 @@ export async function getPublicProfile(username: string): Promise<PublicProfile>
   return (await http<PublicProfile>(
     `/v1/community/profile/${encodeURIComponent(username)}`,
   )) as PublicProfile;
+}
+
+export async function getProfileAchievements(
+  username: string,
+): Promise<AchievementCollectionDto> {
+  return (await http<AchievementCollectionDto>(
+    `/v1/community/profile/${encodeURIComponent(username)}/achievements`,
+  )) as AchievementCollectionDto;
+}
+
+export async function getUnseenAchievements(): Promise<AchievementCelebrationsDto> {
+  return (await http<AchievementCelebrationsDto>(
+    "/v1/community/achievements/unseen",
+  )) as AchievementCelebrationsDto;
+}
+
+export async function markAchievementsCelebrated(
+  achievementIds: AchievementId[],
+): Promise<void> {
+  await http<void>("/v1/community/achievements/celebrated", {
+    method: "POST",
+    body: JSON.stringify({ achievementIds }),
+  });
 }
 
 /** Effort ranking for a time window (full-page tabs: today / weekly / all_time). */

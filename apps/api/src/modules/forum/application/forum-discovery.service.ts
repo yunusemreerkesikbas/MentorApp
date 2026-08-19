@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable, Optional } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { I18nContext } from "nestjs-i18n";
 import {
   type ForumFeed,
@@ -62,6 +63,7 @@ import { threadRowToView } from "./forum.mappers";
 import { ForumService } from "./forum.service";
 import { ForumThreadService, type ThreadActor } from "./forum-thread.service";
 import { ForumPollService } from "./forum-poll.service";
+import { ForumEventTopic, type HelpfulVoteAdded } from "../domain/forum.events";
 
 interface DiscoverySettings {
   trendingWindowHours: number;
@@ -87,6 +89,7 @@ export class ForumDiscoveryService {
     private readonly config: ConfigRegistryService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     @Optional() private readonly polls?: ForumPollService,
+    @Optional() private readonly events?: EventEmitter2,
   ) {}
 
   private locale(value?: string): "tr" | "en" {
@@ -371,6 +374,7 @@ export class ForumDiscoveryService {
     selected: boolean,
   ): Promise<void> {
     await this.assertEnabled();
+    let recipientId: string;
     if (targetType === ModerationTargetType.THREAD) {
       const thread = await this.threads.findById(targetId, viewerId);
       if (!thread) throw new DomainError(ErrorCode.FORUM_THREAD_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -381,6 +385,7 @@ export class ForumDiscoveryService {
       if (!canGiveHelpfulVote(viewerId, thread.authorId)) {
         throw new DomainError(ErrorCode.FORUM_HELPFUL_VOTE_SELF, HttpStatus.BAD_REQUEST);
       }
+      recipientId = thread.authorId;
     } else {
       const post = await this.posts.findById(targetId, viewerId);
       if (!post) throw new DomainError(ErrorCode.FORUM_POST_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -392,9 +397,14 @@ export class ForumDiscoveryService {
       if (!canGiveHelpfulVote(viewerId, post.authorId)) {
         throw new DomainError(ErrorCode.FORUM_HELPFUL_VOTE_SELF, HttpStatus.BAD_REQUEST);
       }
+      recipientId = post.authorId;
     }
     if (selected) {
-      await this.repo.addHelpfulVote(targetType, targetId, viewerId);
+      const inserted = await this.repo.addHelpfulVote(targetType, targetId, viewerId);
+      if (inserted) {
+        const event: HelpfulVoteAdded = { recipientId, actorId: viewerId, targetId };
+        this.events?.emit(ForumEventTopic.HELPFUL_VOTE_ADDED, event);
+      }
     } else {
       await this.repo.removeHelpfulVote(targetType, targetId, viewerId);
     }

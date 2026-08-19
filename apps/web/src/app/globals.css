@@ -941,3 +941,20 @@ html.mentor-sheet-open {
     transition: none;
   }
 }
+
+/* Theme lamp (sidebar footer toggle). The lamp is a physical object in a small scene, so it owns
+   its palette instead of borrowing --color-*: a surface retune must not repaint the shade.
+   Same reasoning as --notebook-* in @mentor/ui. Dark = lit (warm cone), light = unlit matte shade. */
+.mentor-theme-lamp {
+  --lamp-shade: #6b7f9e;
+  --lamp-shade-rim: #52658a;
+  /* Bulb amber. Painted only while lit, so it never washes out the white canvas. */
+  --lamp-glow: #ffb347;
+  --lamp-cord: color-mix(in srgb, var(--color-secondary) 50%, transparent);
+}
+
+html.dark .mentor-theme-lamp {
+  --lamp-shade: #5a6b8c;
+  --lamp-shade-rim: #3f5075;
+  --lamp-cord: color-mix(in srgb, var(--color-secondary) 80%, transparent);
+}

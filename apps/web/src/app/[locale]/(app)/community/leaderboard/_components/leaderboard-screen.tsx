@@ -26,7 +26,7 @@ function MovementIndicator({ movement }: { movement: RankMovement }) {
     return (
       <span
         className="rounded-full px-1.5 py-px text-[9px] font-bold uppercase leading-tight"
-        style={{ background: "color-mix(in srgb, var(--color-chip) 22%, white)", color: "var(--color-chip-text)" }}
+        style={{ background: "color-mix(in srgb, var(--color-chip) 22%, var(--color-surface))", color: "var(--color-chip-text)" }}
       >
         {t("rank_new")}
       </span>
@@ -106,7 +106,7 @@ function ResetCountdown({ window }: { window: LeaderboardWindow }) {
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-medium"
-      style={{ background: "#f5f5f5", color: "var(--color-secondary)" }}
+      style={{ background: "var(--color-soft)", color: "var(--color-secondary)" }}
     >
       <Clock size={13} aria-hidden="true" />
       {label}
@@ -134,7 +134,7 @@ function EncouragingBanner({ me, total }: { me: LeaderboardEntry | null; total: 
     <div
       className="rounded-2xl px-4 py-3 text-[14px] font-medium"
       style={{
-        background: "color-mix(in srgb, var(--color-chip) 14%, white)",
+        background: "color-mix(in srgb, var(--color-chip) 14%, var(--color-surface))",
         color: "var(--color-main)",
       }}
     >
@@ -180,7 +180,7 @@ function PodiumSpot({
         )}
         <span
           className="block rounded-full p-[3px]"
-          style={{ background: `linear-gradient(145deg, ${MEDAL[place]}, color-mix(in srgb, ${MEDAL[place]} 40%, white))` }}
+          style={{ background: `linear-gradient(145deg, ${MEDAL[place]}, color-mix(in srgb, ${MEDAL[place]} 40%, var(--color-surface)))` }}
         >
           <span className="block rounded-full bg-[var(--color-surface)] p-[2px]">
             <AuthorAvatar name={name} size={size} src={entry.avatarUrl ?? undefined} />
@@ -209,7 +209,7 @@ function PodiumSpot({
         style={{
           height: pedH,
           transformOrigin: "bottom",
-          background: `linear-gradient(to bottom, color-mix(in srgb, ${MEDAL[place]} 24%, white), color-mix(in srgb, ${MEDAL[place]} 6%, white))`,
+          background: `linear-gradient(to bottom, color-mix(in srgb, ${MEDAL[place]} 24%, var(--color-surface)), color-mix(in srgb, ${MEDAL[place]} 6%, var(--color-surface)))`,
         }}
         initial={reduce ? false : { scaleY: 0, opacity: 0 }}
         animate={{ scaleY: 1, opacity: 1 }}
@@ -238,7 +238,7 @@ function StandingCard({ me, youLabel, reduce }: { me: LeaderboardEntry; youLabel
       <div
         className="flex items-center gap-3 rounded-2xl px-4 py-3"
         style={{
-          background: "color-mix(in srgb, var(--color-accent) 10%, white)",
+          background: "color-mix(in srgb, var(--color-accent) 10%, var(--color-surface))",
           border: "1px solid color-mix(in srgb, var(--color-accent) 28%, transparent)",
         }}
       >
@@ -268,7 +268,7 @@ function ListRow({ entry, youLabel, index, reduce }: { entry: LeaderboardEntry; 
   return (
     <motion.div
       className="flex items-center gap-3 rounded-xl px-3 py-2"
-      style={entry.isMe ? { background: "color-mix(in srgb, var(--color-accent) 10%, white)" } : undefined}
+      style={entry.isMe ? { background: "color-mix(in srgb, var(--color-accent) 10%, var(--color-surface))" } : undefined}
       initial={reduce ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 + index * 0.04, duration: 0.3, ease: "easeOut" }}
@@ -333,7 +333,7 @@ function WindowTabs({
       role="tablist"
       aria-label={t("rank_window_label")}
       className="flex gap-1 rounded-full p-1"
-      style={{ background: "#f5f5f5" }}
+      style={{ background: "var(--color-soft)" }}
     >
       {order.map((w, i) => {
         const active = w === value;
@@ -426,7 +426,7 @@ export function LeaderboardScreen() {
           href="/community"
           aria-label={t("rank_back")}
           className="flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{ color: "var(--color-main)", background: "#f5f5f5" }}
+          style={{ color: "var(--color-main)", background: "var(--color-soft)" }}
         >
           <ArrowLeft size={18} aria-hidden="true" />
         </Link>
@@ -480,7 +480,7 @@ export function LeaderboardScreen() {
                     })
                   }
                   className="rounded-full px-4 py-2 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                  style={{ background: "#f5f5f5", color: "var(--color-main)" }}
+                  style={{ background: "var(--color-soft)", color: "var(--color-main)" }}
                 >
                   {t("refresh")}
                 </button>
@@ -496,7 +496,7 @@ export function LeaderboardScreen() {
             <div className="flex flex-col items-center gap-3 py-12 text-center">
               <span
                 className="flex h-14 w-14 items-center justify-center rounded-full"
-                style={{ background: "color-mix(in srgb, var(--color-chip) 16%, white)" }}
+                style={{ background: "color-mix(in srgb, var(--color-chip) 16%, var(--color-surface))" }}
               >
                 <Trophy size={24} aria-hidden="true" style={{ color: MEDAL[0] }} />
               </span>
@@ -515,13 +515,13 @@ export function LeaderboardScreen() {
                   className="pointer-events-none absolute inset-0 bg-cover bg-top"
                   style={{ backgroundImage: "url(/leaderboard/podium-bg.png)" }}
                 />
-                {/* Feather to the calm white canvas so the image never overpowers the light theme. */}
+                {/* Feather to the page canvas so the image never overpowers either theme. */}
                 <div
                   aria-hidden="true"
                   className="pointer-events-none absolute inset-0"
                   style={{
                     background:
-                      "radial-gradient(120% 90% at 50% 0%, transparent 0%, transparent 42%, color-mix(in srgb, white 82%, transparent) 78%, white 100%)",
+                      "radial-gradient(120% 90% at 50% 0%, transparent 0%, transparent 42%, color-mix(in srgb, var(--color-bg) 82%, transparent) 78%, var(--color-bg) 100%)",
                   }}
                 />
                 <div className="relative flex items-end justify-center gap-2">
@@ -571,7 +571,7 @@ export function LeaderboardScreen() {
 
           {/* Badges only — streak/XP live on the profile/dashboard, not repeated on the ranking page. */}
           {data.badges.length > 0 && (
-            <div className="border-t pt-5" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+            <div className="border-t pt-5" style={{ borderColor: "var(--color-border)" }}>
               <BadgeStrip badges={data.badges} />
             </div>
           )}

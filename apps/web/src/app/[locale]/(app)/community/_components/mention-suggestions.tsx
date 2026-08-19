@@ -18,7 +18,7 @@ export function MentionSuggestions({ mention }: { mention: MentionAutocomplete }
       role="listbox"
       aria-label={t("mention_suggestions_label")}
       className="absolute left-0 top-full z-20 mt-1 w-full max-w-sm overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface)] py-1 shadow-lg"
-      style={{ border: "1px solid rgba(0,0,0,0.08)" }}
+      style={{ border: "1px solid var(--color-border)" }}
     >
       {mention.suggestions.map((s, i) => (
         <li
@@ -33,7 +33,7 @@ export function MentionSuggestions({ mention }: { mention: MentionAutocomplete }
           }}
           onMouseEnter={() => mention.setActiveIndex(i)}
           className="flex cursor-pointer items-center gap-2.5 px-3 py-2"
-          style={{ background: i === mention.activeIndex ? "rgba(0,0,0,0.05)" : "transparent" }}
+          style={{ background: i === mention.activeIndex ? "color-mix(in srgb, var(--color-main) 5%, transparent)" : "transparent" }}
         >
           <AuthorAvatar name={s.displayName} size={28} src={s.avatarUrl} />
           <span className="min-w-0 flex-1">

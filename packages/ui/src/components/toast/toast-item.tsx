@@ -38,7 +38,7 @@ export function ToastItem({
       role={toast.variant === "error" ? "alert" : "status"}
       data-toast-id={toast.id}
       data-exiting={toast.exiting ? "" : undefined}
-      className={`pointer-events-auto relative w-full overflow-hidden rounded-[var(--radius-card)] border border-white bg-white/85 backdrop-blur-sm transition-opacity duration-200 motion-reduce:transition-none ${stackOpacity} ${toast.exiting ? "!opacity-0" : stackIndex === 0 ? "animate-toast-enter motion-reduce:animate-none" : ""}`}
+      className={`pointer-events-auto relative w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_85%,transparent)] backdrop-blur-sm transition-opacity duration-200 motion-reduce:transition-none ${stackOpacity} ${toast.exiting ? "!opacity-0" : stackIndex === 0 ? "animate-toast-enter motion-reduce:animate-none" : ""}`}
       style={{ boxShadow: "var(--shadow-card)" }}
     >
       <div className="flex items-start p-3">

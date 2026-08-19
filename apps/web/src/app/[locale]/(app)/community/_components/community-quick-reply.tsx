@@ -188,7 +188,7 @@ export function CommunityQuickReplyProvider({ children }: { children: ReactNode 
                           target="_blank"
                           rel="noopener noreferrer"
                           aria-label={t("quick_reply_open_media")}
-                          className="mt-3 flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] bg-[var(--color-soft)] px-3 text-[13px] text-[var(--community-blue-ink)] transition-colors hover:bg-black/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+                          className="mt-3 flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] bg-[var(--color-soft)] px-3 text-[13px] text-[var(--community-blue-ink)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
                         >
                           <span className="min-w-0 flex-1 truncate">{imageUrl}</span>
                           <ExternalLink size={16} className="shrink-0" aria-hidden />

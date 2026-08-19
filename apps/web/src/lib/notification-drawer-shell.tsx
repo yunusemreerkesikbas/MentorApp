@@ -1,11 +1,13 @@
 "use client";
-import { Brain, FileText, ListCheck, MessageCircle } from "lucide-react";
+import { Award, Brain, FileText, ListCheck, MessageCircle } from "lucide-react";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import type { NotificationCategory, NotificationListDto, UserNotificationDto } from "@mentor/types";
+import type { AchievementCelebrationDto, NotificationCategory, NotificationListDto, UserNotificationDto } from "@mentor/types";
 import { NotificationDrawerProvider, useDialog } from "@mentor/ui";
 import { PuhuImage } from "@/components/puhu-image";
+import { AchievementCelebration } from "@/components/achievements/achievement-celebration";
+import { getUnseenAchievements, markAchievementsCelebrated } from "@/lib/community";
 import { useRouter } from "@/i18n/navigation";
 import {
   deleteNotification,
@@ -22,6 +24,7 @@ const ICON_BY_CATEGORY = {
   PLAN: ListCheck,
   CONTENT: FileText,
   FORUM: MessageCircle,
+  ACHIEVEMENT: Award,
 };
 
 const ICON_COLOR_BY_CATEGORY: Record<NotificationCategory, string> = {
@@ -29,6 +32,7 @@ const ICON_COLOR_BY_CATEGORY: Record<NotificationCategory, string> = {
   PLAN: "#4A80D8",
   CONTENT: "var(--color-secondary)",
   FORUM: "var(--color-progress)",
+  ACHIEVEMENT: "var(--color-accent)",
 };
 
 function CategoryIcon({ category }: { category: NotificationCategory }) {
@@ -50,6 +54,7 @@ const CATEGORY_FALLBACK: Record<NotificationCategory, string> = {
   PLAN: "/plan",
   CONTENT: "/knowledge",
   FORUM: "/community",
+  ACHIEVEMENT: "/community",
 };
 
 /** Web-layer wrapper: fetches data, injects i18n labels and Puhu icons. */
@@ -59,9 +64,21 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
   const router = useRouter();
   const dialog = useDialog();
   const [data, setData] = useState<NotificationListDto>(EMPTY);
+  const [celebrations, setCelebrations] = useState<AchievementCelebrationDto[]>([]);
+  const [celebrationBusy, setCelebrationBusy] = useState(false);
+
+  const refreshCelebrationsRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    refreshCelebrationsRef.current = () => {
+      getUnseenAchievements()
+        .then((result) => setCelebrations(result.celebrations))
+        .catch(() => {/* feature disabled or temporarily offline */});
+    };
+  });
 
   useEffect(() => {
     listNotifications().then(setData).catch(() => {/* non-blocking — drawer shows empty */});
+    refreshCelebrationsRef.current();
   }, []);
 
   // Live "study together" invite → attention-grabbing modal. Kept in a ref so the SSE
@@ -110,6 +127,9 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
           if (payload.event === "study_invite" && payload.actorName) {
             showStudyInviteRef.current(payload.actorName);
           }
+          if (payload.event === "achievement_awarded") {
+            refreshCelebrationsRef.current();
+          }
           listNotifications().then(setData).catch(() => {});
         };
         es.onerror = () => {
@@ -125,6 +145,7 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
     function handleVisibility() {
       if (document.visibilityState === "visible") {
         listNotifications().then(setData).catch(() => {});
+        refreshCelebrationsRef.current();
         if (!es || es.readyState === EventSource.CLOSED) connect();
       }
     }
@@ -201,6 +222,18 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
     router.push(href);
   }
 
+  async function handleCelebrationClose(): Promise<void> {
+    const current = celebrations[0];
+    if (!current || celebrationBusy) return;
+    setCelebrationBusy(true);
+    try {
+      await markAchievementsCelebrated(current.items.map((item) => item.id));
+      setCelebrations((items) => items.slice(1));
+    } finally {
+      setCelebrationBusy(false);
+    }
+  }
+
   return (
     <NotificationDrawerProvider
       items={data.items}
@@ -232,6 +265,13 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
       }}
     >
       {children}
+      {celebrations[0] && (
+        <AchievementCelebration
+          celebration={celebrations[0]}
+          busy={celebrationBusy}
+          onClose={() => void handleCelebrationClose()}
+        />
+      )}
     </NotificationDrawerProvider>
   );
 }

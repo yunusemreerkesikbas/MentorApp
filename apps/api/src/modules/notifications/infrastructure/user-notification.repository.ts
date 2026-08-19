@@ -18,10 +18,16 @@ export class UserNotificationRepository {
       title: string;
       body: string;
       linkUrl?: string;
+      dedupeKey?: string;
+      data?: Record<string, unknown>;
     },
-  ): Promise<UserNotificationRow> {
-    const rows = await tx.insert(userNotifications).values(data).returning();
-    return rows[0]!;
+  ): Promise<UserNotificationRow | null> {
+    const rows = await tx
+      .insert(userNotifications)
+      .values(data)
+      .onConflictDoNothing()
+      .returning();
+    return rows[0] ?? null;
   }
 
   async listByUser(

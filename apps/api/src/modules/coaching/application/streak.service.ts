@@ -51,6 +51,14 @@ export class StreakService {
     });
   }
 
+  /** Monotonic high-water mark used for private achievement progress. */
+  getLongestStreak(userId: string): Promise<number> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const row = await this.streak.findByUser(tx, userId);
+      return row?.longestStreak ?? 0;
+    });
+  }
+
   /** Read-only live evidence for the AI boundary; derives without persisting or emitting events. */
   getCoachEvidence(userId: string): Promise<{
     currentStreak: number;

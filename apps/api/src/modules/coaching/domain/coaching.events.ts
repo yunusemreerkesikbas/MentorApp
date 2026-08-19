@@ -10,6 +10,12 @@ export const CoachingEventTopic = {
   SESSION_COMPLETED: "coaching.session-completed",
   PLAN_COMPLETED:    "coaching.plan-completed",
   PLAN_TASK_COMPLETED: "coaching.plan-task-completed",
+  PLAN_TASK_CREATED: "coaching.plan-task-created",
+  PLAN_ADAPTED: "coaching.plan-adapted",
+  VISION_BOARD_SAVED: "coaching.vision-board-saved",
+  MOCK_EXAM_CREATED: "coaching.mock-exam-created",
+  NOTEBOOK_ENTRY_REVIEWED: "coaching.notebook-entry-reviewed",
+  WEEKLY_REVIEW_COMPLETED: "coaching.weekly-review-completed",
 } as const;
 
 export class StreakBroken {
@@ -33,7 +39,7 @@ export class FirstSessionOfDay {
 
 /** Emitted whenever a study session is finalized as COMPLETED (every session, not just first-of-day). */
 export class StudySessionCompleted {
-  constructor(readonly userId: string) {}
+  constructor(readonly userId: string, readonly startedAt: Date) {}
 }
 
 export class DailyPlanCompleted {
@@ -45,4 +51,28 @@ export class PlanTaskCompleted {
     readonly userId: string,
     readonly taskId: string,
   ) {}
+}
+
+export class PlanTaskCreated {
+  constructor(readonly userId: string, readonly createdAt = new Date()) {}
+}
+
+export class PlanAdapted {
+  constructor(readonly userId: string, readonly adaptedAt = new Date()) {}
+}
+
+export class VisionBoardSaved {
+  constructor(readonly userId: string, readonly savedAt = new Date()) {}
+}
+
+export class MockExamCreated {
+  constructor(readonly userId: string, readonly createdAt = new Date()) {}
+}
+
+export class NotebookEntryReviewed {
+  constructor(readonly userId: string, readonly reviewedAt = new Date()) {}
+}
+
+export class WeeklyReviewCompleted {
+  constructor(readonly userId: string, readonly completedAt = new Date()) {}
 }

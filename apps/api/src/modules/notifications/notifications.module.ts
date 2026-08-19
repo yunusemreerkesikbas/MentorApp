@@ -20,6 +20,7 @@ import { BuddyActivityListener } from "./application/listeners/buddy-activity.li
 import { CoachingEventsListener } from "./application/listeners/coaching-events.listener";
 import { ForumEventsListener } from "./application/listeners/forum-events.listener";
 import { IdentityEventsListener } from "./application/listeners/identity-events.listener";
+import { AchievementEventsListener } from "./application/listeners/achievement-events.listener";
 import { PaymentsEventsListener } from "./application/listeners/payments-events.listener";
 import { NotificationsService } from "./application/notifications.service";
 import { NotificationsErasureService } from "./application/notifications-erasure.service";
@@ -60,6 +61,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     BuddyActivityListener,
     ForumEventsListener,
     IdentityEventsListener,
+    AchievementEventsListener,
     NotificationPreferencesRepository,
     PushSubscriptionRepository,
     NotificationDeliveryRepository,

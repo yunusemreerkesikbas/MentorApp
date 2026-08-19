@@ -16,6 +16,54 @@ export const CommunityBadgeId = {
 } as const;
 export type CommunityBadgeId = (typeof CommunityBadgeId)[keyof typeof CommunityBadgeId];
 
+/** Permanent V1 achievements. Definitions and rules are code-owned and append-only. */
+export const AchievementId = {
+  FIRST_STEP: "first_step",
+  ROUTE_DRAWN: "route_drawn",
+  DREAM_SPACE_CREATED: "dream_space_created",
+  RHYTHM_FOUND: "rhythm_found",
+  RHYTHM_KEPT: "rhythm_kept",
+  RETURNED_TO_PATH: "returned_to_path",
+  ROUTE_RENEWED: "route_renewed",
+  STARTING_POINT_SET: "starting_point_set",
+  MISTAKE_REVISITED: "mistake_revisited",
+  WEEK_REFLECTED: "week_reflected",
+  FIRST_HELLO: "first_hello",
+  HELPED_SOMEONE: "helped_someone",
+} as const;
+export type AchievementId = (typeof AchievementId)[keyof typeof AchievementId];
+
+export type AchievementSource = "LIVE" | "BACKFILL";
+export type AchievementStatus = "LOCKED" | "EARNED";
+
+export interface AchievementProgress {
+  current: number;
+  target: number;
+}
+
+export interface AchievementView {
+  id: AchievementId;
+  title: string;
+  description: string;
+  artKey: AchievementId;
+  status: AchievementStatus;
+  earnedAt: string | null;
+  progress: AchievementProgress | null;
+}
+
+export interface AchievementCollectionDto {
+  ownerView: boolean;
+  items: AchievementView[];
+}
+
+export type AchievementCelebrationDto =
+  | { kind: "ACHIEVEMENT"; items: [AchievementView] }
+  | { kind: "BACKFILL_SUMMARY"; items: AchievementView[] };
+
+export interface AchievementCelebrationsDto {
+  celebrations: AchievementCelebrationDto[];
+}
+
 /** XP tier snapshot. `tier` is 1-based; `nextAt` is the XP needed for the next tier (null at top). */
 export interface CommunityLevelView {
   tier: number;
@@ -64,6 +112,8 @@ export interface PublicProfile {
   userId: string;
   displayName: string;
   username: string;
+  /** Global rollout gate; clients hide achievement surfaces while false. */
+  achievementsEnabled: boolean;
   avatarUrl: string | null;
   examType: string | null;
   /** ISO — drives "member since". */

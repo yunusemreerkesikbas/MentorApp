@@ -843,6 +843,12 @@ export interface WeeklyReviewDto {
   suggestedTask: { title: string; subject: string | null } | null;
 }
 
+export interface WeeklyReviewCompletionDto {
+  examId: string;
+  weekStart: string;
+  completedAt: string;
+}
+
 /* ------------------------------ mistake notebook ------------------------------ */
 
 /**

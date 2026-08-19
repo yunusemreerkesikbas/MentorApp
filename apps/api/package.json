@@ -18,6 +18,7 @@
     "openapi:export": "ts-node -T scripts/export-openapi.ts",
     "storage:check": "ts-node -T scripts/storage-check.ts",
     "seed:forum": "ts-node -T scripts/seed-forum.ts",
+    "achievements:backfill": "ts-node -T scripts/backfill-achievements.ts",
     "seed:analysis-demo": "ts-node -T scripts/seed-analysis-demo.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

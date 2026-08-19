@@ -16,7 +16,7 @@ export function CommunityRightRail() {
     <HideCompanion>
       <aside
         className="hidden xl:block xl:w-80 xl:flex-shrink-0 xl:border-l xl:py-6"
-        style={{ borderColor: "rgba(0,0,0,0.08)" }}
+        style={{ borderColor: "var(--color-border)" }}
       >
         <div className="px-6 xl:sticky xl:top-6">
           <EffortBoard />

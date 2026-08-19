@@ -178,7 +178,7 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
                           <span className="min-w-0 truncate">{z.title}</span>
                         {z.myStatus === "ACTIVE" && (
                           <span
-                              className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#65a777]"
+                              className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--color-success)]"
                             aria-hidden="true"
                           />
                         )}
