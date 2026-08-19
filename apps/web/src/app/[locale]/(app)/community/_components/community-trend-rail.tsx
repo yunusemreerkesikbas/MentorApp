@@ -47,9 +47,9 @@ export function CommunityTrendRail() {
         <div className="space-y-4 border-t border-[var(--color-border)] px-4 py-4" aria-label={t("loading")}>
           {Array.from({ length: 3 }).map((_, index) => (
             <div key={index} className="animate-pulse space-y-2">
-              <div className="h-3 w-24 rounded bg-[#eef1f5]" />
-              <div className="h-4 w-36 rounded bg-[#e7ebf0]" />
-              <div className="h-3 w-16 rounded bg-[#eef1f5]" />
+              <div className="h-3 w-24 rounded bg-[var(--color-soft)]" />
+              <div className="h-4 w-36 rounded bg-[var(--color-surface-container)]" />
+              <div className="h-3 w-16 rounded bg-[var(--color-soft)]" />
             </div>
           ))}
         </div>

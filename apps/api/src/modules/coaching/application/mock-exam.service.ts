@@ -1,4 +1,5 @@
-import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable, Optional } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { I18nContext, I18nService } from "nestjs-i18n";
 import type {
   CoachingAnalysisDto,
@@ -48,6 +49,7 @@ import {
   type MockExamPhotoRow,
 } from "../infrastructure/mock-exam-photo.repository";
 import { toMockExamDto } from "./coaching.mappers";
+import { CoachingEventTopic, MockExamCreated } from "../domain/coaching.events";
 
 /**
  * Deneme (mock exam) CRUD + personal analysis. Net is computed server-side from the
@@ -63,6 +65,7 @@ export class MockExamService {
     private readonly notebook: MistakeNotebookRepository,
     private readonly i18n: I18nService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    @Optional() private readonly events?: EventEmitter2,
   ) {}
 
   async create(
@@ -82,7 +85,7 @@ export class MockExamService {
 
     const taxonomy = await this.content.listExamSubjects(input.examId);
     const prepared = this.prepareResult(exam, taxonomy, input.subjects);
-    return withUserContext(this.db, { userId }, async (tx) => {
+    const result = await withUserContext(this.db, { userId }, async (tx) => {
       const created = await this.mockExams.create(tx, {
         userId,
         examId: input.examId,
@@ -98,6 +101,11 @@ export class MockExamService {
         prepared.slugToName,
       );
     });
+    this.events?.emit(
+      CoachingEventTopic.MOCK_EXAM_CREATED,
+      new MockExamCreated(userId),
+    );
+    return result;
   }
 
   async getById(userId: string, id: string): Promise<MockExamDto> {

@@ -31,6 +31,8 @@ interface DragSession<T extends VisionBoardItemBase> {
   mode: GestureMode;
   /** The item as it was when the gesture started — every frame is computed from this, not the last. */
   origin: T;
+  /** The element the press started on, so the deferred pointer capture lands on the right one. */
+  element: HTMLElement;
   startX: number;
   startY: number;
   /** Canvas units per screen px, sampled once: the stage cannot resize mid-gesture. */
@@ -78,6 +80,7 @@ export function useItemGesture<T extends VisionBoardItemBase>({
         pointerId: event.pointerId,
         mode,
         origin: item,
+        element: event.currentTarget as HTMLElement,
         startX: event.clientX,
         startY: event.clientY,
         scale,
@@ -85,7 +88,20 @@ export function useItemGesture<T extends VisionBoardItemBase>({
         centreY: rect.top + ((item.y + item.height / 2) / canvasWidth) * rect.width,
         moved: false,
       };
-      (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+      /*
+       * Capture is taken on the first real move, NOT here.
+       *
+       * Capturing at pointerdown retargets every later pointer event for this pointer to the
+       * captured element, so `pointerup` lands on the item wrapper rather than on whatever child
+       * was actually pressed — and the browser then fires `click` at the nearest common ancestor
+       * of the two, which is that same wrapper. The effect is that NO click handler on any child
+       * of a stage item can ever fire from a mouse or a finger. That is how the notebook's photo
+       * cards ended up with a "Fotoğrafı büyüt" button reachable only by keyboard.
+       *
+       * Deferring costs nothing: capture exists so a fast drag that leaves the element keeps
+       * tracking, and until the pointer has moved there is no drag to lose. Until then the moves
+       * bubble to the stage's own handler, which is where `move` is bound anyway.
+       */
       event.preventDefault();
     },
     [canvasWidth],
@@ -99,8 +115,10 @@ export function useItemGesture<T extends VisionBoardItemBase>({
       const dx = (event.clientX - drag.startX) * drag.scale;
       const dy = (event.clientY - drag.startY) * drag.scale;
       // Snapshot once, here: this is the last instant the pre-gesture document still exists.
+      // This is also where the pointer is captured — see `begin` for why not there.
       if (!drag.moved) {
         drag.moved = true;
+        drag.element.setPointerCapture(drag.pointerId);
         checkpoint();
       }
 
@@ -134,7 +152,9 @@ export function useItemGesture<T extends VisionBoardItemBase>({
       if (!drag || drag.pointerId !== event.pointerId) return;
       session.current = null;
       try {
-        (event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId);
+        // Released from the element that took it, which is only ever the one the press started
+        // on — and only if the gesture actually moved far enough to take it at all.
+        if (drag.moved) drag.element.releasePointerCapture(event.pointerId);
       } catch {
         /* Capture is already gone when the pointer was cancelled — nothing to release. */
       }

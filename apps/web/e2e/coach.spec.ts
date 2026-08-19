@@ -141,7 +141,7 @@ test("dashboard ve koç landing aynı aksiyonu gösterir; dashboard bugün veris
   expect(coachApi.dailyGreetingCalls).toBe(0);
 });
 
-test("dashboard recap teaser'ını aynı cihazda haftada bir gösterir", async ({
+test("dashboard recap teaser'ı açıldıktan sonra tekrar-izle kartına döner, kaybolmaz", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -157,23 +157,37 @@ test("dashboard recap teaser'ını aynı cihazda haftada bir gösterir", async (
     timeZone: "Europe/Istanbul" as const,
     status: "READY" as const,
   };
-  const api = await mockCoachApi(page, {
+  await mockCoachApi(page, {
     today: { ...pendingToday, weeklyRecapPeriod: period },
   });
   await page.goto("/panel");
 
+  /*
+   * The teaser no longer disappears once opened — `panel-shell.tsx`'s `showWeeklyRecap` is
+   * `weeklyRecapState !== "hidden"`, and "hidden" only ever happens for an EMPTY week. A READY
+   * week's card stays mounted for the rest of the season, switching from its "new" copy to a
+   * "tekrar izle" (replay) copy once opened — a revisit affordance, not a one-time reveal.
+   */
   const teaser = page.getByTestId("weekly-recap-teaser-dashboard");
   await expect(teaser).toBeVisible();
-  const todayCallsBeforeOpen = api.todayCalls;
-  const open = teaser.getByRole("link", { name: "Hikâyeyi aç" });
+  await expect(
+    teaser.getByRole("heading", { name: "Senin Haftalık Özetin" }),
+  ).toBeVisible();
+
+  // The whole card is the link — its accessible name is the dynamic teaser title + message, not
+  // a static "open" CTA — so it's found by role alone, scoped to this one card.
+  const open = teaser.getByRole("link");
   await open.evaluate((element) =>
     element.addEventListener("click", (event) => event.preventDefault(), {
       once: true,
     }),
   );
   await open.click();
-  await expect(teaser).toHaveCount(0);
-  expect(api.todayCalls).toBe(todayCallsBeforeOpen);
+
+  await expect(teaser).toBeVisible();
+  await expect(
+    teaser.getByRole("heading", { name: "Haftanın Hikâyesini Tekrar İzle" }),
+  ).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(
@@ -186,11 +200,16 @@ test("dashboard recap teaser'ını aynı cihazda haftada bir gösterir", async (
     )
     .toBe("1");
 
+  // The replay copy survives a reload too — it comes from the same localStorage flag on the
+  // next mount, not from the transient click state.
   await page.reload();
-  await expect(page.getByTestId("weekly-recap-teaser-dashboard")).toHaveCount(
-    0,
-  );
-  expect(api.todayCalls).toBeGreaterThan(todayCallsBeforeOpen);
+  const teaserAfterReload = page.getByTestId("weekly-recap-teaser-dashboard");
+  await expect(teaserAfterReload).toBeVisible();
+  await expect(
+    teaserAfterReload.getByRole("heading", {
+      name: "Haftanın Hikâyesini Tekrar İzle",
+    }),
+  ).toBeVisible();
 });
 
 test("boş plan için görev ekleme chip'ini gösterir", async ({ page }) => {

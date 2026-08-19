@@ -25,15 +25,15 @@ export function CommunityCoachBridge({ bridge }: { bridge: ForumCoachBridgeView 
   const zoneType = bridge.zone.type;
 
   return (
-    <div className="mx-3 my-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[var(--radius-card)] border border-[color:color-mix(in_srgb,var(--community-blue)_26%,white)] bg-[color:color-mix(in_srgb,var(--community-blue)_7%,white)] px-3 py-2.5 sm:gap-3">
+    <div className="mx-3 my-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[var(--radius-card)] border border-[color:color-mix(in_srgb,var(--community-blue)_26%,var(--color-surface))] bg-[color:color-mix(in_srgb,var(--community-blue)_7%,var(--color-surface))] px-3 py-2.5 sm:gap-3">
       <div className="flex min-w-0 items-center gap-2">
         <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface)] sm:size-9">
           <PuhuImage variant="encouraging" size={26} />
         </span>
-        <div className="min-w-0 truncate whitespace-nowrap text-xs font-bold text-[#26364d] sm:text-[13px]">
+        <div className="min-w-0 truncate whitespace-nowrap text-xs font-bold text-[var(--color-main)] sm:text-[13px]">
           <span>#{bridge.tag.slug}</span>
-          <span className="mx-2 text-[#8c98a8]" aria-hidden>·</span>
-          <span className="font-semibold text-[#617086]">{bridge.zone.title}</span>
+          <span className="mx-2 text-[var(--color-secondary)]" aria-hidden>·</span>
+          <span className="font-semibold text-[var(--color-body)]">{bridge.zone.title}</span>
         </div>
       </div>
       <Link

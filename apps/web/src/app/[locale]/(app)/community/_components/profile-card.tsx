@@ -41,7 +41,7 @@ export function ProfileCard() {
             {user.examType ? (
               <span
                 className="rounded-[48px] px-3 py-[7px] text-[9px] font-medium leading-none"
-                style={{ background: "#f5f5f5", color: "var(--color-secondary)" }}
+                style={{ background: "var(--color-soft)", color: "var(--color-secondary)" }}
               >
                 {user.examType}
               </span>
@@ -84,7 +84,7 @@ export function ProfileCard() {
         pathname: "/community/member/[username]",
         params: { username: user.username },
       }}
-      className="-m-2 flex flex-col gap-4 rounded-2xl p-2 transition-colors hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+      className="-m-2 flex flex-col gap-4 rounded-2xl p-2 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
     >
       {content}
     </Link>

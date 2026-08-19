@@ -537,6 +537,12 @@ export const weeklyReviewQuerySchema = z.object({
 });
 export type WeeklyReviewQuery = z.infer<typeof weeklyReviewQuerySchema>;
 
+export const completeWeeklyReviewSchema = z.object({
+  examId: z.string().uuid(),
+  weekStart: z.string().date(),
+});
+export type CompleteWeeklyReviewInput = z.infer<typeof completeWeeklyReviewSchema>;
+
 /* ------------------------------- mistake notebook ------------------------------- */
 
 /**

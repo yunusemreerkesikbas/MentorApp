@@ -18,7 +18,7 @@ export function QuestionListItem({ question }: { question: ThreadView }) {
         params: { threadId: question.id },
       }}
       className="block rounded-2xl bg-[var(--color-surface)] px-5 py-4 transition-shadow duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-      style={{ border: "1px solid rgba(0,0,0,0.08)" }}
+      style={{ border: "1px solid var(--color-border)" }}
     >
       <div className="flex items-start justify-between gap-3">
         <h3

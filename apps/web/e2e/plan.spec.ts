@@ -180,7 +180,11 @@ test.describe("Takvim", () => {
     // A month cell is one line: start time + title (the subject rides on the color).
     const isDesktop = (page.viewportSize()?.width ?? 0) >= 1024;
     if (isDesktop) {
-      const chip = page.getByRole("button", { name: /Matematik tekrar/ }).first();
+      // `.last()`, not `.first()`: the Takvim view's left rail also lists the selected day's
+      // tasks (`PlanDayTodoList`) — a checkbox and an options kebab, both named after the same
+      // task and both earlier in the DOM than the grid itself — so an unscoped `/Matematik
+      // tekrar/` match picks up the rail before it reaches the actual month-grid chip.
+      const chip = page.getByRole("button", { name: /Matematik tekrar/ }).last();
       await expect(chip).toHaveText("13:00 Matematik tekrar");
     }
 
@@ -209,14 +213,19 @@ test.describe("Takvim", () => {
 
     if (isDesktop) {
       // Seven-column hour grid: the event is a positioned block with its full range.
+      // `.last()` for the same reason as the month-grid test: the left rail's day-todo-list
+      // repeats this task's name earlier in the DOM than the grid's own block chip.
       await expect(
-        page.getByRole("button", { name: /Matematik tekrar/ }).first(),
+        page.getByRole("button", { name: /Matematik tekrar/ }).last(),
       ).toContainText("13:00 – 14:30");
     } else {
-      // Agenda: the event is a task row with its completion checkbox.
+      // Agenda: a tap-to-open row, not a checkbox — completion still toggles, but from the
+      // details sheet the tap opens, same as every other calendar event on mobile.
+      // `.last()`: the collapsed date strip above the agenda shows its own tiny per-day chip for
+      // the same task, earlier in the DOM than the agenda row itself.
       await expect(
-        page.getByRole("checkbox", { name: "Matematik tekrar" }),
-      ).toBeVisible();
+        page.getByRole("button", { name: /Matematik tekrar/ }).last(),
+      ).toContainText("13:00 – 14:30");
     }
   });
 
@@ -231,7 +240,10 @@ test.describe("Takvim", () => {
     await page.goto("/plan");
 
     await page.getByRole("button", { name: "09:00 için plan ekle" }).click();
-    await expect(page.getByText("Yeni etkinlik")).toBeVisible();
+    // Named for the sheet itself, not just text on the page: the calendar also carries its own
+    // floating "Görev ekle" add button, and an unscoped role lookup below would match both.
+    const sheet = page.getByLabel("Yeni etkinlik");
+    await expect(sheet).toBeVisible();
 
     // The slot click turns "all day" off and seeds the start time.
     await expect(page.getByRole("checkbox", { name: "Tüm gün" })).not.toBeChecked();
@@ -240,7 +252,7 @@ test.describe("Takvim", () => {
     await page.getByLabel("Yeni görev").fill("Deneme çöz");
     await page.getByLabel("Bitiş").fill("10:30");
     await page.getByLabel("Açıklama").fill("Sayısal bölüm");
-    await page.getByRole("button", { name: "Görev ekle" }).click();
+    await sheet.getByRole("button", { name: "Görev ekle" }).click();
 
     await expect.poll(() => api.createBodies.length).toBe(1);
     expect(api.createBodies[0]).toMatchObject({
@@ -264,7 +276,8 @@ test.describe("Takvim", () => {
     await page.getByLabel("Yeni görev").fill("Geçersiz aralık");
     // Setting the start after the end is auto-corrected, so push the END backwards instead.
     await page.getByLabel("Bitiş").fill("08:00");
-    await page.getByRole("button", { name: "Görev ekle" }).click();
+    // Scoped to the sheet — the calendar's own floating "Görev ekle" add button otherwise ties it.
+    await page.getByLabel("Yeni etkinlik").getByRole("button", { name: "Görev ekle" }).click();
 
     await expect(
       page.getByText("Bitiş saati başlangıçtan sonra olmalı."),

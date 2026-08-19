@@ -29,6 +29,7 @@ export class ForumEventsListener {
     if (recipientId === actorId) return Promise.resolve();
     return this.notifications
       .createInApp(recipientId, "FORUM", title, body, linkUrl)
+      .then(() => undefined)
       .catch((err: unknown) => this.logger.warn(`forum notification failed for ${recipientId}: ${String(err)}`));
   }
 

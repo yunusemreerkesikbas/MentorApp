@@ -36,16 +36,30 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
     weekly: [insufficientWeekly],
   });
   await page.goto("/analiz");
+  // The calm empty state is no longer a redirect message on Gelişim — the shell defaults
+  // straight to Gir, whose own form already teaches "no attempts yet" by being the thing to fill
+  // in (`analysis-summary-band.tsx`'s own comment: "the Gir tab's own empty state already teaches
+  // this; don't repeat it here").
+  await expect(page.getByRole("tab", { name: "Gir" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
   await expect(
-    page.getByText(
-      "Henüz deneme yok — Gir sekmesinden ilk sonucunu girebilirsin.",
-    ),
+    page.getByRole("heading", { name: "Deneme sonucu gir" }),
   ).toBeVisible();
 
+  // Gelişim's own empty-trend state — unrelated to the weekly recap teaser, which used to live
+  // on this page but has since moved wholesale to the dashboard (`panel-shell.tsx`); `/analiz`
+  // no longer calls the weekly-review endpoint at all, so there is nothing left here to assert
+  // about it.
   await page.getByRole("tab", { name: "Gelişim" }).click();
-  await expect(page.getByText("Haftanın Hikâyesi hazır")).toBeVisible();
-  await expect(page.getByText("Yeni bir başlangıç")).toBeVisible();
-  expect(api.weeklyCalls).toBe(1);
+  await expect(
+    page.getByRole("heading", { name: "Henüz deneme yok" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("İlk deneme sonucunu girdikten sonra trend burada görünecek."),
+  ).toBeVisible();
+  expect(api.weeklyCalls).toBe(0);
   expect(api.photoAccessCalls).toBe(0);
   expect(api.unexpected).toEqual([]);
 
@@ -65,7 +79,12 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
   await expect(
     firstPage.getByText("Matematik", { exact: true }).first(),
   ).toBeVisible();
-  await expect(firstPage.locator("details")).not.toHaveAttribute("open", "");
+  // The focus card used to be a collapsible `<details>`; it is now a flat card shown whenever
+  // there is a focus to show, and simply absent when there is not — no expand/collapse state
+  // left to assert on either side.
+  await expect(
+    firstPage.getByRole("heading", { name: "Çalışma odağın" }),
+  ).toBeVisible();
   expect(firstApi.unexpected).toEqual([]);
 
   const noFocusPage = await page.context().newPage();
@@ -73,7 +92,9 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
     analysis: { ...firstAnalysis, nextFocus: null },
   });
   await noFocusPage.goto("/analiz?tab=progress");
-  await expect(noFocusPage.locator("details")).toHaveAttribute("open", "");
+  await expect(
+    noFocusPage.getByRole("heading", { name: "Çalışma odağın" }),
+  ).toHaveCount(0);
   expect(noFocusApi.unexpected).toEqual([]);
 });
 
@@ -89,7 +110,6 @@ test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({
   await expect(page.getByTestId("analysis-latest-net")).toHaveText("48.00");
   await expect(page.getByTestId("analysis-net-delta")).toContainText("+6.00");
   await expect(page.getByText("Problemler", { exact: true })).toBeVisible();
-  await expect(page.getByText("Haftanın Hikâyesi hazır")).toBeVisible();
 
   const planLinks = page.getByRole("link", { name: "Planıma ekle" });
   const plan = planLinks.first();
@@ -118,12 +138,10 @@ test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({
     ),
   ).toEqual([]);
 
-  const details = page.locator("details");
-  await expect(details).not.toHaveAttribute("open", "");
-  const summary = details.locator("summary");
-  await summary.focus();
-  await page.keyboard.press("Enter");
-  await expect(details).toHaveAttribute("open", "");
+  // The evidence trend used to sit behind a keyboard-openable `<details>`; the focus card is now
+  // a flat, always-expanded card (same redesign that dropped the "Haftanın Hikâyesi hazır" teaser
+  // above), so its recent-trend block is already on screen with nothing left to open.
+  await expect(page.getByText("Son 4 deneme")).toBeVisible();
 
   await expectNoHorizontalOverflow(page);
   for (const target of [
@@ -132,59 +150,11 @@ test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({
     page.getByRole("tab", { name: "Yanlışlarım" }),
     plan,
     coach,
-    summary,
   ]) {
     const box = await target.boundingBox();
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
   }
   expect(api.unexpected).toEqual([]);
-});
-
-test("AI Puhu notunu arka planda hazırlar ve öneriyi yalnız plan formuna taşır", async ({
-  page,
-}) => {
-  const api = await mockAnalysisApi(page, {
-    analysis: multipleAnalysis,
-    weekly: [readyWeekly],
-    deepAnalysis: {
-      eligible: true,
-      weekStart: readyWeekly.period.startDate,
-      cost: 25,
-      coinConfirmed: 0,
-      canAfford: false,
-      unlocked: true,
-      premium: true,
-    },
-    weeklyNarration: {
-      narration: "Bu hafta ritmini korudun.",
-      model: "fake",
-      suggestedTask: {
-        title: "Türkçe haftalık tekrar",
-        subjectRef: "turkce",
-      },
-    },
-  });
-  await page.goto("/analiz?tab=progress");
-  await page.getByRole("link", { name: "Hikâyeyi aç" }).click();
-  await expect(page).toHaveURL(/\/analiz\/haftanin-hikayesi/);
-
-  for (let step = 0; step < 3; step += 1) {
-    await page.getByRole("button", { name: "İleri" }).click();
-  }
-
-  await expect(page.getByText("Bu hafta ritmini korudun.")).toBeVisible();
-  await page.getByRole("button", { name: "İleri" }).click();
-  const suggested = page.getByRole("link", { name: "Öneriyi planımda aç" });
-  await expect(suggested).toHaveAttribute(
-    "href",
-    /\/plan\?add=1&title=T%C3%BCrk%C3%A7e\+haftal%C4%B1k\+tekrar&subject=turkce|\/plan\?add=1&subject=turkce&title=T%C3%BCrk%C3%A7e\+haftal%C4%B1k\+tekrar/,
-  );
-  expect(
-    api.requests.filter(
-      ({ method, path }) =>
-        method === "POST" && path === "/v1/coach/weekly-review",
-    ),
-  ).toHaveLength(1);
 });
 
 test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({
@@ -195,15 +165,21 @@ test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({
     weekly: [readyWeekly],
   });
   await page.goto("/analiz?tab=progress");
-  await expect(page.getByText("Haftanın Hikâyesi hazır")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Çalışma odağın" }),
+  ).toBeVisible();
 
   await waitForRscRequestsToSettle(page);
 
+  // Scoped to this page's own route: on mobile, the always-visible bottom tab bar prefetches its
+  // OTHER links (e.g. "Yanlış defteri") independent of anything a user does here, and that is not
+  // what this test is about — it is about whether switching Analiz's own tabs avoids a navigation.
   const navigations: string[] = [];
   page.on("request", (request) => {
     if (
-      request.resourceType() === "document" ||
-      request.url().includes("_rsc")
+      (request.resourceType() === "document" ||
+        request.url().includes("_rsc")) &&
+      new URL(request.url()).pathname.includes("analiz")
     ) {
       navigations.push(request.url());
     }
@@ -221,11 +197,16 @@ test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({
   await developmentTab.focus();
   await page.keyboard.press("ArrowRight");
   await expect(page.getByRole("tab", { name: "Yanlışlarım" })).toBeFocused();
-  await expect.poll(() => api.photoAccessCalls).toBe(1);
+  // The photo-categorize card this used to poll for is gone — the notebook replaced it
+  // (`analysis-tab-mistakes.tsx`'s own comment), so what proves the switch happened without a
+  // navigation is simply that this tab's own panel is now the one attached.
+  await expect(page.locator("#analysis-panel-mistakes")).toBeVisible();
   await page.keyboard.press("Home");
   await expect(page.getByRole("tab", { name: "Gir" })).toBeFocused();
 
-  expect(api.weeklyCalls).toBe(1);
+  // The weekly-recap teaser lived here once but has since moved to the dashboard — `/analiz`
+  // never calls the weekly-review endpoint at all now.
+  expect(api.weeklyCalls).toBe(0);
   expect(navigations).toEqual([]);
   expect(api.unexpected).toEqual([]);
   expect(
@@ -239,24 +220,6 @@ test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({
   ).toBe(false);
 });
 
-test("haftalık değerlendirme hatasından tekrar deneyerek döner", async ({
-  page,
-}) => {
-  const api = await mockAnalysisApi(page, {
-    analysis: firstAnalysis,
-    weekly: ["error", readyWeekly],
-  });
-  await page.goto("/analiz?tab=progress");
-
-  await expect(
-    page.getByText("Haftalık değerlendirme yüklenemedi."),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Tekrar dene" }).click();
-  await expect(page.getByText("Haftanın Hikâyesi hazır")).toBeVisible();
-  expect(api.weeklyCalls).toBe(2);
-  expect(api.unexpected).toEqual([]);
-});
-
 test("İngilizce statik analiz metinlerini gösterir", async ({ page }) => {
   const api = await mockAnalysisApi(page, { analysis: emptyAnalysis });
 
@@ -266,8 +229,10 @@ test("İngilizce statik analiz metinlerini gösterir", async ({ page }) => {
     page.getByRole("main", { name: "Mock Exam Analysis" }),
   ).toBeVisible();
   await expect(page.getByRole("tab", { name: "Progress" })).toBeVisible();
+  // Same shell-default as the Turkish empty-state test: it lands on Enter, not a redirect
+  // message on Progress.
   await expect(
-    page.getByText("No exams yet — enter your first result in the Enter tab."),
+    page.getByRole("heading", { name: "Enter mock exam results" }),
   ).toBeVisible();
   await expectNoHorizontalOverflow(page);
   expect(api.unexpected).toEqual([]);

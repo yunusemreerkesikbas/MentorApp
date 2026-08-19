@@ -37,7 +37,7 @@ export function FollowSuggestions({ onFollowed }: { onFollowed?: () => void }) {
   return (
     <section
       className="border-b px-4 py-4 lg:px-6"
-      style={{ borderColor: "rgba(0,0,0,0.08)" }}
+      style={{ borderColor: "var(--color-border)" }}
       aria-label={t("suggestions_title")}
     >
       <h2 className="mb-3 text-[13px] font-semibold uppercase" style={{ color: "var(--color-secondary)", letterSpacing: "0.06em" }}>

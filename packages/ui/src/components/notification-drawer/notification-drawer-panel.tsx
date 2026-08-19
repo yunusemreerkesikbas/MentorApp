@@ -141,7 +141,7 @@ export function NotificationDrawerPanel({
         aria-label={labels.title}
         className={[
           // Mobile: fixed right drawer, rounded left edge only
-          "fixed inset-y-0 right-0 z-50 flex w-[85vw] max-w-[320px] flex-col bg-white",
+          "fixed inset-y-0 right-0 z-50 flex w-[85vw] max-w-[320px] flex-col bg-[var(--color-surface)]",
           "max-lg:rounded-l-[16px]",
           "shadow-[-8px_0_24px_rgba(0,0,0,0.10)]",
           // Desktop defaults beside the app sidebar; alternate headers can anchor it to the right.
@@ -200,7 +200,7 @@ export function NotificationDrawerPanel({
               type="button"
               onClick={handleClose}
               aria-label={labels.close}
-              className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-1"
+              className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-1"
               style={{ color: "var(--color-secondary)" }}
             >
               <X size={18} aria-hidden />

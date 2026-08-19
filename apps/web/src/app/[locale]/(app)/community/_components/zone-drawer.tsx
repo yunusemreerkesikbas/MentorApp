@@ -39,7 +39,7 @@ export function ZoneDrawer() {
         aria-label={t("drawer_open")}
         aria-hidden={!open}
         inert={!open}
-        className="fixed bottom-0 left-0 top-16 z-[42] w-[min(82vw,280px)] overflow-y-auto bg-[#f6f7f9] py-5 transition-transform duration-200"
+        className="fixed bottom-0 left-0 top-16 z-[42] w-[min(82vw,280px)] overflow-y-auto bg-[var(--community-canvas)] py-5 transition-transform duration-200"
         style={{
           transform: open ? "translateX(0)" : "translateX(-100%)",
           boxShadow: open ? "0 24px 60px rgb(15 23 42 / 18%)" : "none",

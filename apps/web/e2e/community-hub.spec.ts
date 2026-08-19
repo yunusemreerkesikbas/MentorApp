@@ -51,7 +51,11 @@ test("topluluk hub redesign sözleşmesini masaüstü ve mobilde korur", async (
   );
 
   await page.goto("/topluluk");
-  await expect(page.getByRole("heading", { name: "Topluluk", exact: true })).toBeVisible();
+  // The hub dropped its own page-title heading — the featured thread's own quote leads the page
+  // instead, so that's what proves the hub actually loaded.
+  await expect(
+    page.getByRole("region", { name: "Öne çıkan gönderi" }),
+  ).toBeVisible();
   const featuredImage = page.getByRole("img", {
     name: "Birlikte konuşmayı ve paylaşmayı anlatan topluluk görseli",
   });
@@ -67,13 +71,15 @@ test("topluluk hub redesign sözleşmesini masaüstü ve mobilde korur", async (
     )
     .toBe(true);
   await expect(page.getByText(featured.title, { exact: true })).toBeVisible();
-  await expect(page.getByText("Emek Panon", { exact: true })).toBeVisible();
+  // The effort board ("Emek Panosu") moved off the hub entirely — it's part of the feed route's
+  // right rail (`community-right-rail.tsx`) now, not this landing page.
   await expect(page.getByText("Etiketler konuşmalar büyüdükçe burada belirecek.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Katıl" })).toHaveCount(2);
   await expect(page.getByText(/\bXP\b/)).toHaveCount(0);
 
   if (testInfo.project.name.startsWith("desktop")) {
-    await expect(page.locator(".community-header__wordmark")).toHaveText("Mentor");
+    // Two wordmarks exist in the DOM at once now (one per breakpoint, CSS-hidden either way).
+    await expect(page.locator(".community-header__wordmark").first()).toHaveText("Mentor");
     await expect(
       page
         .locator(".community-workspace__sidebar")

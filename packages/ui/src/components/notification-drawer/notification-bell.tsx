@@ -32,7 +32,7 @@ export function NotificationBell({
       }
       aria-haspopup="dialog"
       onClick={() => toggle(desktopSide)}
-      className="relative flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-black/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 active:scale-95"
+      className="relative flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 active:scale-95"
     >
       <Bell size={24} color="var(--color-main)" strokeWidth={2} aria-hidden />
 

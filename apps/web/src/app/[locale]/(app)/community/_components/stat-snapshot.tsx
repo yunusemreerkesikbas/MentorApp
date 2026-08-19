@@ -75,7 +75,7 @@ export function StatSnapshot({
           value={t("stat_streak_days", { count: streak })}
           iconBg="var(--color-star)"
           iconFg="var(--color-main)"
-          tint="color-mix(in srgb, var(--color-star) 9%, white)"
+          tint="color-mix(in srgb, var(--color-star) 9%, var(--color-surface))"
         />
         {hasXp && (
           <Cell
@@ -84,7 +84,7 @@ export function StatSnapshot({
             value={xp!.toLocaleString(locale)}
             iconBg="var(--color-progress)"
             iconFg="var(--color-main)"
-            tint="color-mix(in srgb, var(--color-progress) 9%, white)"
+            tint="color-mix(in srgb, var(--color-progress) 9%, var(--color-surface))"
           />
         )}
       </div>
@@ -104,7 +104,7 @@ export function StatSnapshot({
               </span>
             )}
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "#ececec" }}>
+          <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "var(--color-soft)" }}>
             <div
               className="h-full rounded-full"
               style={{ width: `${pct}%`, background: "var(--color-progress)" }}

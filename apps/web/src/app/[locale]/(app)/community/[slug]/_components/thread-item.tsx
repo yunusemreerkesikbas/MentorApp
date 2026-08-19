@@ -143,7 +143,7 @@ export function ThreadItem({
               <span
                 className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
                 style={{
-                  background: "color-mix(in srgb, var(--color-chip) 20%, white)",
+                  background: "color-mix(in srgb, var(--color-chip) 20%, var(--color-surface))",
                   color: "var(--color-chip-text)",
                 }}
               >
@@ -174,7 +174,7 @@ export function ThreadItem({
         {editing ? (
           <div className="mt-3 grid gap-3" onClick={(event) => event.stopPropagation()}>
             {thread.title !== null ? (
-              <label className="grid gap-1.5 text-sm font-bold text-[#2c3039]">
+              <label className="grid gap-1.5 text-sm font-bold text-[var(--color-main)]">
                 {t("composer_title")}
                 <input
                   value={draftTitle}

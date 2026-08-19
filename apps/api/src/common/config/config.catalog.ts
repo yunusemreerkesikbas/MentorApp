@@ -171,6 +171,10 @@ export const CONFIG_CATALOG = {
     false,
     "Gate for the forum/community module (zones, threads, moderation).",
   ),
+  "community.achievements.enabled": flag(
+    false,
+    "Expose permanent achievements, celebrations, and achievement notifications.",
+  ),
   "forum.coach_bridge.enabled": flag(
     false,
     "Gate for the public-safe community thread to personal AI coach pilot.",
@@ -510,6 +514,7 @@ export const FeatureFlag = {
   AI_ENABLED: "ai.enabled",
   ECONOMY_ENABLED: "economy.enabled",
   FORUM_ENABLED: "forum.enabled",
+  COMMUNITY_ACHIEVEMENTS_ENABLED: "community.achievements.enabled",
   FORUM_COACH_BRIDGE_ENABLED: "forum.coach_bridge.enabled",
   GOOGLE_OAUTH_ENABLED: "identity.google_oauth.enabled",
   SIGNUP_ENABLED: "signup.enabled",

@@ -75,9 +75,9 @@ export function CommentRow({
       tabIndex={0}
       onClick={open}
       onKeyDown={onKeyDown}
-      className="group flex cursor-pointer touch-manipulation items-start gap-3 py-4 pl-3 pr-4 transition-colors hover:bg-black/[0.015] focus-visible:outline-none focus-visible:bg-black/[0.02]"
+      className="group flex cursor-pointer touch-manipulation items-start gap-3 py-4 pl-3 pr-4 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_1.5%,transparent)] focus-visible:outline-none focus-visible:bg-[color-mix(in_srgb,var(--color-main)_2%,transparent)]"
       // ponytail: persistent tint marks the highlighted reply — no fade timer; add one if it reads as sticky.
-      style={highlighted ? { background: "color-mix(in srgb, var(--color-chip) 14%, white)" } : undefined}
+      style={highlighted ? { background: "color-mix(in srgb, var(--color-chip) 14%, var(--color-surface))" } : undefined}
     >
       <AuthorLink username={comment.authorUsername}>
         <AuthorAvatar name={comment.authorName} size={36} src={comment.authorAvatarUrl} />
@@ -143,7 +143,7 @@ export function CommentRow({
                 onCreated: onReplyCreated,
               });
             }}
-            className="flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full px-2 transition-colors hover:bg-black/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            className="flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full px-2 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             style={{ color: "var(--color-main)" }}
           >
             <CommentIcon />

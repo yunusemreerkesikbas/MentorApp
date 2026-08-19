@@ -8,6 +8,7 @@ import type {
   VisionBoardImageUploadUrlDto,
   VisionDto,
   WeeklyReviewDto,
+  WeeklyReviewCompletionDto,
   PreferenceSimulationAccessDto,
   PreferenceSimulationDto,
   PreferenceSimulationRefreshResultDto,
@@ -19,6 +20,7 @@ import { TodayService } from "../application/today.service";
 import { VisionService } from "../application/vision.service";
 import { VisionBoardImageService } from "../application/vision-board-image.service";
 import { WeeklyReviewService } from "../application/weekly-review.service";
+import { WeeklyReviewCompletionService } from "../application/weekly-review-completion.service";
 import { PreferenceSimulationService } from "../application/preference-simulation.service";
 import {
   AnalysisQueryDto,
@@ -28,6 +30,7 @@ import {
   PutVisionBoardDto,
   CreateVisionBoardImageUploadUrlDto,
   WeeklyReviewQueryDto,
+  CompleteWeeklyReviewDto,
   PutPreferenceSimulationDto,
   RefreshPreferenceSimulationDto,
 } from "./coaching.dto";
@@ -44,6 +47,7 @@ export class CoachingController {
     private readonly vision: VisionService,
     private readonly visionBoardImages: VisionBoardImageService,
     private readonly weeklyReview: WeeklyReviewService,
+    private readonly weeklyReviewCompletion: WeeklyReviewCompletionService,
     private readonly preferenceSimulation: PreferenceSimulationService,
   ) {}
 
@@ -71,6 +75,15 @@ export class CoachingController {
     @Query() query: WeeklyReviewQueryDto,
   ): Promise<WeeklyReviewDto> {
     return this.weeklyReview.getReview(user.id, query.examId);
+  }
+
+  @Put("weekly-review/completion")
+  @HttpCode(200)
+  completeWeeklyReview(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: CompleteWeeklyReviewDto,
+  ): Promise<WeeklyReviewCompletionDto> {
+    return this.weeklyReviewCompletion.complete(user.id, dto);
   }
 
   /** Upsert today's mood → returns the rule-based, localized encouragement. */

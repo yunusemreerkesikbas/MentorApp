@@ -36,10 +36,12 @@ test("dil değiştirirken analiz sekmesi query değerini korur", async (
   await mockAnalysisApi(page);
   await page.goto("/analiz?tab=progress");
 
-  await page.getByRole("button", { name: "EN" }).click();
+  // `exact` matters: role-name matching is a substring match by default, and the desktop sidebar's
+  // collapse button ("Menüyü daralt") happens to contain "en" as a literal substring.
+  await page.getByRole("button", { name: "EN", exact: true }).click();
   await expect(page).toHaveURL(/\/en\/analysis\?tab=progress$/);
 
-  await page.getByRole("button", { name: "TR" }).click();
+  await page.getByRole("button", { name: "TR", exact: true }).click();
   await expect(page).toHaveURL(/\/analiz\?tab=progress$/);
 });
 

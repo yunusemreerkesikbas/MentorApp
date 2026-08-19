@@ -36,6 +36,7 @@ import { PlanTaskRepository } from "../infrastructure/plan-task.repository";
 import { StudySessionRepository } from "../infrastructure/study-session.repository";
 import { toStudySessionDto } from "./coaching.mappers";
 import type { CoachRhythmEvidence } from "../domain/coach-evidence";
+import { hasSevenFullIstanbulDaysBetween } from "../domain/achievement-evidence";
 
 /**
  * Study (Pomodoro) sessions: start → complete/abandon. Finalizing a session recomputes
@@ -148,6 +149,14 @@ export class SessionService {
       const seconds = await this.sessions.sumCompletedFocusSecondsOnDate(tx, userId, todayIso());
       return Math.round(seconds / 60);
     });
+  }
+
+  async qualifiesForReturnAchievement(userId: string, currentStartedAt: Date): Promise<boolean> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
+    const previous = await withUserContext(this.db, { userId }, (tx) =>
+      this.sessions.findLatestQualifiedBefore(tx, userId, currentStartedAt, minFocusSeconds),
+    );
+    return previous !== null && hasSevenFullIstanbulDaysBetween(previous, currentStartedAt);
   }
 
   /** Aggregate-only mentor context. No struggle note or per-session title leaves coaching. */
@@ -345,7 +354,10 @@ export class SessionService {
       input.status === "COMPLETED" &&
       qualifiesAsFocusSession(input.actualFocusSeconds, minFocusSeconds)
     ) {
-      this.events.emit(CoachingEventTopic.SESSION_COMPLETED, new StudySessionCompleted(userId));
+      this.events.emit(
+        CoachingEventTopic.SESSION_COMPLETED,
+        new StudySessionCompleted(userId, new Date(result.startedAt)),
+      );
     }
     return result;
   }

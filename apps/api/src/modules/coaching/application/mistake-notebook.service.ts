@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import type {
   NotebookEntryDto,
   NotebookImageUploadUrlDto,
@@ -25,6 +26,7 @@ import { withServiceContext, withUserContext } from "../../../database/rls";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import { ContentService } from "../../content/application/content.service";
 import { advanceReview, firstReviewAt } from "../domain/notebook-review.policy";
+import { CoachingEventTopic, NotebookEntryReviewed } from "../domain/coaching.events";
 import {
   MistakeNotebookRepository,
   type MistakeNotebookEntryRow,
@@ -84,6 +86,7 @@ export class MistakeNotebookService {
     private readonly notebook: MistakeNotebookRepository,
     private readonly content: ContentService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    @Optional() private readonly events?: EventEmitter2,
   ) {}
 
   async getOverview(userId: string): Promise<NotebookOverviewDto> {
@@ -289,6 +292,10 @@ export class MistakeNotebookService {
       return updated;
     });
     const [dto] = await this.toEntryDtos([row]);
+    this.events?.emit(
+      CoachingEventTopic.NOTEBOOK_ENTRY_REVIEWED,
+      new NotebookEntryReviewed(userId, now),
+    );
     return dto!;
   }
 

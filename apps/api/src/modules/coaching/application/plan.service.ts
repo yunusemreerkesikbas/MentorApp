@@ -33,7 +33,9 @@ import {
 import {
   CoachingEventTopic,
   DailyPlanCompleted,
+  PlanAdapted,
   PlanTaskCompleted,
+  PlanTaskCreated,
 } from "../domain/coaching.events";
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
 import { PlanTaskRepository } from "../infrastructure/plan-task.repository";
@@ -122,7 +124,7 @@ export class PlanService {
   async create(userId: string, input: CreatePlanTaskInput): Promise<PlanTaskDto> {
     const taskDate = input.taskDate ?? todayIso();
     this.assertTaskDateMutable(taskDate);
-    return withUserContext(this.db, { userId }, async (tx) => {
+    const result = await withUserContext(this.db, { userId }, async (tx) => {
       await this.tasks.acquireUserLock(tx, userId);
       const row = await this.tasks.create(tx, {
         userId,
@@ -136,6 +138,8 @@ export class PlanService {
       });
       return toPlanTaskDto(row);
     });
+    this.events.emit(CoachingEventTopic.PLAN_TASK_CREATED, new PlanTaskCreated(userId));
+    return result;
   }
 
   getAiCoachOutcomeSummary(userId: string) {
@@ -155,7 +159,7 @@ export class PlanService {
   ): Promise<PlanTaskDto> {
     const taskDate = input.taskDate ?? todayIso();
     this.assertTaskDateMutable(taskDate);
-    return withUserContext(this.db, { userId }, async (tx) => {
+    const result = await withUserContext(this.db, { userId }, async (tx) => {
       await this.tasks.acquireUserLock(tx, userId);
       const row = await this.tasks.create(tx, {
         userId,
@@ -176,6 +180,8 @@ export class PlanService {
       });
       return toPlanTaskDto(row);
     });
+    this.events.emit(CoachingEventTopic.PLAN_TASK_CREATED, new PlanTaskCreated(userId));
+    return result;
   }
 
   /** W3 public seam: persist one explicitly user-approved AI mentor task, idempotent per message. */
@@ -186,7 +192,7 @@ export class PlanService {
   ): Promise<PlanTaskDto> {
     const taskDate = input.taskDate ?? todayIso();
     this.assertTaskDateMutable(taskDate);
-    return withUserContext(this.db, { userId }, async (tx) => {
+    const result = await withUserContext(this.db, { userId }, async (tx) => {
       await this.tasks.acquireUserLock(tx, userId);
       const row = await this.tasks.createFromAiCoach(tx, {
         userId,
@@ -203,6 +209,8 @@ export class PlanService {
       });
       return toPlanTaskDto(row);
     });
+    this.events.emit(CoachingEventTopic.PLAN_TASK_CREATED, new PlanTaskCreated(userId));
+    return result;
   }
 
   /**
@@ -212,7 +220,7 @@ export class PlanService {
   async createMany(userId: string, inputs: CreatePlanTaskInput[]): Promise<PlanTaskDto[]> {
     const withDates = inputs.map((input) => ({ ...input, taskDate: input.taskDate ?? todayIso() }));
     for (const input of withDates) this.assertTaskDateMutable(input.taskDate);
-    return withUserContext(this.db, { userId }, async (tx) => {
+    const result = await withUserContext(this.db, { userId }, async (tx) => {
       const rows = [];
       await this.tasks.acquireUserLock(tx, userId);
       for (const input of withDates) {
@@ -231,6 +239,10 @@ export class PlanService {
       }
       return rows.map(toPlanTaskDto);
     });
+    if (result.length > 0) {
+      this.events.emit(CoachingEventTopic.PLAN_TASK_CREATED, new PlanTaskCreated(userId));
+    }
+    return result;
   }
 
   getAdaptationSnapshot(userId: string): Promise<PlanAdaptationSnapshot> {
@@ -259,7 +271,7 @@ export class PlanService {
   ): Promise<ApplyPlanAdaptationResultDto> {
     const from = todayIso();
     const to = addDays(from, PLAN_ADAPTATION_WINDOW_DAYS - 1);
-    return withUserContext(this.db, { userId }, async (tx) => {
+    const result = await withUserContext(this.db, { userId }, async (tx) => {
       await this.tasks.acquireUserLock(tx, userId);
       const rows = await this.tasks.listByDateRange(tx, userId, from, to);
       if (buildPlanRevision(rows) !== input.planRevision) {
@@ -383,6 +395,10 @@ export class PlanService {
       }
       return { moved, added };
     });
+    if (result.moved.length > 0 || result.added.length > 0) {
+      this.events.emit(CoachingEventTopic.PLAN_ADAPTED, new PlanAdapted(userId));
+    }
+    return result;
   }
 
   async update(userId: string, id: string, input: UpdatePlanTaskInput): Promise<PlanTaskDto> {

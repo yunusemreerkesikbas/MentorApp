@@ -83,7 +83,7 @@ export function PendingMembers({ zoneId }: { zoneId: string }) {
             onClick={() => setTab(t2)}
             className="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
             style={{
-              background: tab === t2 ? "color-mix(in srgb, var(--color-chip) 20%, white)" : "rgba(0,0,0,0.05)",
+              background: tab === t2 ? "color-mix(in srgb, var(--color-chip) 20%, var(--color-surface))" : "color-mix(in srgb, var(--color-main) 5%, transparent)",
               color: tab === t2 ? "var(--color-main)" : "var(--color-secondary)",
               fontWeight: tab === t2 ? 600 : 400,
             }}
@@ -146,7 +146,7 @@ export function PendingMembers({ zoneId }: { zoneId: string }) {
                       <span
                         className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
                         style={{
-                          background: "color-mix(in srgb, var(--color-chip) 14%, white)",
+                          background: "color-mix(in srgb, var(--color-chip) 14%, var(--color-surface))",
                           color: "var(--color-secondary)",
                         }}
                       >

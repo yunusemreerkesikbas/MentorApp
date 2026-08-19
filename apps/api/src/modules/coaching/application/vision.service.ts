@@ -1,4 +1,5 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { VisionBoardDoc, VisionDto } from "@mentor/types";
 import type { UpsertVisionInput, VisionBoardDocInput } from "@mentor/validation";
 import {
@@ -12,6 +13,7 @@ import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.po
 import { GeoService } from "../../content/application/geo.service";
 import { KpssService } from "../../content/application/kpss.service";
 import { VisionBoardRepository } from "../infrastructure/vision-board.repository";
+import { CoachingEventTopic, VisionBoardSaved } from "../domain/coaching.events";
 import { toVisionDto } from "./coaching.mappers";
 
 /** Public prefix all board photos live under; the sweep lists exactly this. */
@@ -44,6 +46,7 @@ export class VisionService {
     private readonly geo: GeoService,
     private readonly kpss: KpssService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    @Optional() private readonly events?: EventEmitter2,
   ) {}
 
   async getMine(userId: string): Promise<VisionDto | null> {
@@ -219,6 +222,12 @@ export class VisionService {
           `Vision board: ${failed}/${removedKeys.length} removed image objects could not be deleted for user ${userId}`,
         );
       }
+    }
+    if (board.items.length > 0) {
+      this.events?.emit(
+        CoachingEventTopic.VISION_BOARD_SAVED,
+        new VisionBoardSaved(userId),
+      );
     }
     return this.enrich(dto);
   }

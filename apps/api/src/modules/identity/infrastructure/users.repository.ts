@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
@@ -89,6 +89,18 @@ export class UsersRepository {
         .orderBy(desc(users.createdAt))
         .limit(limit);
     });
+  }
+
+  async listActiveAchievementCandidates(
+    afterId: string | null,
+    limit: number,
+  ): Promise<Array<{ id: string; orgId: string | null }>> {
+    return withServiceContext(this.db, (tx) => tx
+      .select({ id: users.id, orgId: users.organizationId })
+      .from(users)
+      .where(and(eq(users.status, "ACTIVE"), afterId ? gt(users.id, afterId) : undefined))
+      .orderBy(asc(users.id))
+      .limit(limit));
   }
 
   /** Public-safe identity search consumed by forum discovery; never selects email or other PII. */

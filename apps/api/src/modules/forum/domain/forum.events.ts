@@ -17,6 +17,7 @@ export const ForumEventTopic = {
   COMMENT_REPLIED: "forum.comment.replied",
   /** Someone @mentioned a user in a post/comment → the mentioned user is notified. */
   USER_MENTIONED: "forum.user.mentioned",
+  HELPFUL_VOTE_ADDED: "forum.helpful-vote.added",
 } as const;
 
 export interface MemberRequested {
@@ -70,4 +71,10 @@ export interface UserMentioned {
   recipientId: string;
   actorId: string;
   link: string;
+}
+
+export interface HelpfulVoteAdded {
+  recipientId: string;
+  actorId: string;
+  targetId: string;
 }

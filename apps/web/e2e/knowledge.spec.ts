@@ -318,6 +318,17 @@ async function mockKnowledgeApi(
     if (method === "GET" && path.startsWith("/v1/coach/conversations?")) {
       return json(route, { items: [], total: 0, page: 1, pageSize: 20 });
     }
+    // The composer now reads calibration/memory state on mount to decide what to show before the
+    // first message — reached the same way `/v1/coach/access` is, via the "makaleyi taşı" hand-off.
+    if (method === "GET" && path === "/v1/coach/profile") {
+      return json(route, {
+        calibrationStatus: "COMPLETED",
+        memoryConsent: "GRANTED",
+        supportPreference: "BALANCED",
+        directnessPreference: "BALANCED",
+        updatedAt: "2026-08-01T00:00:00.000Z",
+      });
+    }
     // The app shell nav reads the coin pill + premium state on every authenticated route,
     // including /bilgi — not "unexpected", just not this suite's subject.
     if (method === "GET" && path.startsWith("/v1/economy/")) {

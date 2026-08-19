@@ -27,6 +27,7 @@ import {
   putVisionBoardSchema,
   visionBoardImageUploadUrlSchema,
   weeklyReviewQuerySchema,
+  completeWeeklyReviewSchema,
 } from "@mentor/validation";
 import { createZodDto } from "../../../common/validation/zod-dto";
 
@@ -45,6 +46,7 @@ export class CreateMoodCheckinDto extends createZodDto(createMoodCheckinSchema) 
 export class ListMoodCheckinsQueryDto extends createZodDto(listMoodCheckinsQuerySchema) {}
 export class AnalysisQueryDto extends createZodDto(analysisQuerySchema) {}
 export class WeeklyReviewQueryDto extends createZodDto(weeklyReviewQuerySchema) {}
+export class CompleteWeeklyReviewDto extends createZodDto(completeWeeklyReviewSchema) {}
 export class CreateMockExamDto extends createZodDto(createMockExamSchema) {}
 export class UpdateMockExamDto extends createZodDto(updateMockExamSchema) {}
 export class ListMockExamsQueryDto extends createZodDto(listMockExamsQuerySchema) {}

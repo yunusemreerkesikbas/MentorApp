@@ -100,7 +100,7 @@ export function NotificationDrawerItem({
   return (
     <div
       className="relative overflow-hidden border-b"
-      style={{ borderColor: "var(--color-surface-high, #ebe7e7)" }}
+      style={{ borderColor: "var(--color-border)" }}
     >
       {/* ── Left action (swipe right → mark read/unread) ── */}
       <div
@@ -131,7 +131,7 @@ export function NotificationDrawerItem({
         aria-hidden
         className="absolute inset-y-0 right-0 flex w-[60px] items-center justify-center"
         style={{
-          backgroundColor: "#ef4444",
+          backgroundColor: "var(--color-danger)",
           opacity: revealingRight ? 1 : 0,
           transition: "opacity 150ms ease",
         }}
@@ -150,7 +150,7 @@ export function NotificationDrawerItem({
       <div
         className="group relative flex cursor-pointer gap-3 px-4 py-3 focus-visible:outline-none"
         style={{
-          backgroundColor: isUnread ? "#ffffff" : "transparent",
+          backgroundColor: isUnread ? "var(--color-surface)" : "transparent",
           transform: `translateX(${offsetX}px)`,
           willChange: "transform",
           transition:
@@ -209,7 +209,7 @@ export function NotificationDrawerItem({
 
         {/* Category icon */}
         <div
-          className="ml-3 mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white"
+          className="ml-3 mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)]"
           style={{
             backgroundColor: isUnread
               ? "color-mix(in srgb, var(--color-chip) 30%, transparent)"
@@ -275,7 +275,7 @@ export function NotificationDrawerItem({
               e.stopPropagation();
               handleMarkToggle();
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-black/8 focus-visible:outline-none focus-visible:ring-2"
+            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2"
             style={{ color: "var(--color-progress)" }}
           >
             {isUnread ? (
@@ -291,8 +291,8 @@ export function NotificationDrawerItem({
               e.stopPropagation();
               handleDelete();
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2"
-            style={{ color: "#ef4444" }}
+            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,transparent)] focus-visible:outline-none focus-visible:ring-2"
+            style={{ color: "var(--color-danger)" }}
           >
             <Trash2 size={15} strokeWidth={2} />
           </button>

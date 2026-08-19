@@ -62,7 +62,7 @@ export function AttachmentPreviewStrip({
                   ? "relative aspect-square overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface-container)]"
                   : "relative h-16 w-16 overflow-hidden rounded-[var(--radius-card)]"
             }
-            style={{ border: "1px solid rgba(0,0,0,0.08)" }}
+            style={{ border: "1px solid var(--color-border)" }}
           >
             {onPreviewImage ? (
               <button
@@ -91,7 +91,7 @@ export function AttachmentPreviewStrip({
           <div
             key={`file-${i}`}
             className={`${layout === "compact" ? "col-span-3 sm:col-span-4" : ""} flex max-w-full items-center gap-2 rounded-[var(--radius-card)] px-2.5 py-2`}
-            style={{ border: "1px solid rgba(0,0,0,0.08)", background: "rgba(0,0,0,0.02)" }}
+            style={{ border: "1px solid var(--color-border)", background: "color-mix(in srgb, var(--color-main) 2%, transparent)" }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />

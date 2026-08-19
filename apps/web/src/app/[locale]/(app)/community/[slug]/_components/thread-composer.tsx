@@ -201,7 +201,7 @@ export function ThreadComposer({
           >
             {busy && !reduceMotion && (
               <motion.span
-                className="absolute inset-y-0 left-0 w-12 bg-white/45"
+                className="absolute inset-y-0 left-0 w-12 bg-[color-mix(in_srgb,var(--color-surface)_45%,transparent)]"
                 animate={{ x: ["-100%", "700%"] }}
                 transition={{ duration: 1.1, ease: "linear", repeat: Infinity }}
                 aria-hidden="true"
@@ -264,7 +264,7 @@ export function ThreadComposer({
                   aria-pressed={Boolean(poll)}
                   disabled={busy || Boolean(poll)}
                   onClick={() => void addPoll()}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-secondary)] transition-colors hover:bg-black/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-secondary)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <ListChecks size={18} aria-hidden />
                 </button>
@@ -274,7 +274,7 @@ export function ThreadComposer({
                 aria-label={t("attach")}
                 disabled={busy || atLimit}
                 onClick={() => void openAttachmentPicker()}
-                className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[rgba(0,0,0,0.06)] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 style={{ color: "var(--color-secondary)" }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -14,9 +14,11 @@ import { VisionService } from "./application/vision.service";
 import { VisionBoardImageService } from "./application/vision-board-image.service";
 import { VisionBoardMaintenanceService } from "./application/vision-board-maintenance.service";
 import { WeeklyReviewService } from "./application/weekly-review.service";
+import { WeeklyReviewCompletionService } from "./application/weekly-review-completion.service";
 import { PreferenceSimulationService } from "./application/preference-simulation.service";
 import { CoachingErasureService } from "./application/coaching-erasure.service";
 import { CoachEvidenceService } from "./application/coach-evidence.service";
+import { CoachingAchievementEvidenceService } from "./application/coaching-achievement-evidence.service";
 import { CONTENT_PORT } from "./domain/content.port";
 import { CoachingQueryAdapter } from "./infrastructure/coaching-query.adapter";
 import { ContentServiceAdapter } from "./infrastructure/content-service.adapter";
@@ -32,6 +34,7 @@ import { MockExamRepository } from "./infrastructure/mock-exam.repository";
 import { MockExamPhotoRepository } from "./infrastructure/mock-exam-photo.repository";
 import { VisionBoardRepository } from "./infrastructure/vision-board.repository";
 import { WeeklyReviewRepository } from "./infrastructure/weekly-review.repository";
+import { WeeklyReviewCompletionRepository } from "./infrastructure/weekly-review-completion.repository";
 import { PreferenceScenarioRepository } from "./infrastructure/preference-scenario.repository";
 import { CoachingErasureRepository } from "./infrastructure/coaching-erasure.repository";
 import { CoachingController } from "./presentation/coaching.controller";
@@ -70,9 +73,11 @@ import { StudySessionController } from "./presentation/study-session.controller"
     VisionBoardImageService,
     VisionBoardMaintenanceService,
     WeeklyReviewService,
+    WeeklyReviewCompletionService,
     PreferenceSimulationService,
     CoachingErasureService,
     CoachEvidenceService,
+    CoachingAchievementEvidenceService,
     CoachingErasureRepository,
     PlanTaskRepository,
     StudySessionRepository,
@@ -85,6 +90,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     MoodCheckinRepository,
     VisionBoardRepository,
     WeeklyReviewRepository,
+    WeeklyReviewCompletionRepository,
     PreferenceScenarioRepository,
     // W1 ContentService adapter (ContentPort → editorial calendar).
     { provide: CONTENT_PORT, useClass: ContentServiceAdapter },
@@ -95,6 +101,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     COACHING_QUERY_PORT,
     CoachingErasureService,
     CoachEvidenceService,
+    CoachingAchievementEvidenceService,
     DailyQuestSignalService,
     MistakeNotebookService,
     MockExamService,

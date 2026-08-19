@@ -23,6 +23,7 @@ const profile: PublicProfile = {
   userId: "member-1",
   displayName: "Ayşe Yılmaz",
   username: "ayse",
+  achievementsEnabled: false,
   avatarUrl: "https://cdn.test/ayse.svg",
   examType: "KPSS",
   createdAt: "2026-01-01T00:00:00.000Z",

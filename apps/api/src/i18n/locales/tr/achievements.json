@@ -1,0 +1,22 @@
+{
+  "items": {
+    "first_step": { "title": "İlk Adım", "description": "İlk geçerli odak oturumunu tamamladın." },
+    "route_drawn": { "title": "Rotanı Çizdin", "description": "Çalışma yolculuğunun ilk plan görevini oluşturdun." },
+    "dream_space_created": { "title": "Hayaline Yer Açtın", "description": "Hedef panona ilk anlamlı parçanı ekledin." },
+    "rhythm_found": { "title": "Ritmi Yakaladın", "description": "Yedi günlük çalışma ritmini yakaladın." },
+    "rhythm_kept": { "title": "Ritmi Korudun", "description": "Otuz günlük çalışma ritmini korudun." },
+    "returned_to_path": { "title": "Kaldığın Yerden", "description": "Bir aradan sonra yeniden odaklanmayı seçtin." },
+    "route_renewed": { "title": "Rotayı Yeniledin", "description": "Planını değişen ihtiyaçlarına göre yeniledin." },
+    "starting_point_set": { "title": "Başlangıç Noktan", "description": "İlk denemeni kaydederek başlangıç noktanı belirledin." },
+    "mistake_revisited": { "title": "Bir Daha Baktın", "description": "Yanlış defterindeki bir kaydı yeniden değerlendirdin." },
+    "week_reflected": { "title": "Haftana Kulak Verdin", "description": "Haftalık değerlendirmene bilinçli biçimde geri döndün." },
+    "first_hello": { "title": "İlk Merhaba", "description": "Toplulukta ilk katkını paylaştın." },
+    "helped_someone": { "title": "Birine İyi Geldin", "description": "Bir katkın başka bir öğrenciye yardımcı oldu." }
+  },
+  "notification": {
+    "title": "Yeni bir başarı kazandın",
+    "body": "{title} artık başarı koleksiyonunda.",
+    "backfillTitle": "Geçmiş emeklerin de burada",
+    "backfillBody": "Daha önce tamamladığın {count} başarı koleksiyonuna eklendi."
+  }
+}

@@ -478,13 +478,15 @@ export class ForumDiscoveryRepository {
     targetType: ModerationTargetType,
     targetId: string,
     userId: string,
-  ): Promise<void> {
-    await withServiceContext(this.db, (tx) =>
-      tx
+  ): Promise<boolean> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
         .insert(forumHelpfulVotes)
         .values({ targetType, targetId, userId, value: 1 })
-        .onConflictDoNothing(),
-    );
+        .onConflictDoNothing()
+        .returning({ id: forumHelpfulVotes.id });
+      return rows.length > 0;
+    });
   }
 
   async removeHelpfulVote(

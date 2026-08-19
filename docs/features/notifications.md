@@ -93,6 +93,19 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **Achievement bildirimi (2026-08-18)** — `ACHIEVEMENT` kategorisi, JSON metadata ve kısmi unique
+  dedupe anahtarı eklendi. Yalnız yeni LIVE award tek bildirim ve tek `achievement_awarded` SSE üretir;
+  metinler istek dilinde TR/EN çözülür ve link profil Başarılar sekmesine gider. BACKFILL sonuçları
+  bildirim yağmuru oluşturmaz; unseen API üzerinden tek geçmiş-emek kutlamasında gruplanır. İlgili:
+  `achievement-events.listener.ts`, `notifications.service.ts`, `user-notification.repository.ts`.
+
+- **Drawer + toast light/dark surfaces (2026-08-18)** — Notification panel, unread
+  rows, and toast cards use `--color-surface` / `--color-border`. Bell/close
+  hovers mix `--color-main`. Unread count on `--color-progress` stays white.
+  Swipe-delete uses `--color-danger`. Usage: bell in AppNav; any success/error
+  toast. Related: `notification-drawer-panel.tsx`, `notification-drawer-item.tsx`,
+  `toast-item.tsx`, `docs/features/web-shell.md`.
+
 - **KVKK silme: bildirim verisi (WP-K, 2026-07-22)** — `NotificationsErasureService` hesap silmede
   `push_subscriptions`, `notification_preferences`, `notification_deliveries` ve `user_notifications`
   satırlarını tek SERVICE-ctx tx'te hard delete eder; `AccountErasureService` zincirinin son adımı.

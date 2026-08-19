@@ -116,6 +116,13 @@ Errors use `danger` — not `like-active`. Countdown is calm (not alarm-red).
 
 Blob hues stay (`#FF2DAB` / `#9BC1FB` / `#BDEBFF`). Dark opacities: pink 0.14 · blue 0.20 · cyan 0.18.
 
+**The toggle itself.** In the desktop sidebar footer the switch is a pendant lamp with Puhu
+reaching for its pull cord (`ThemeLamp`). **Dark is the lit state** — the warm cone only paints on
+the charcoal canvas; light mode leaves the shade matte. Its palette is a scoped `--lamp-*` family
+(`shade`, `shade-rim`, `glow`, `cord`) declared on `.mentor-theme-lamp` in `globals.css`, because
+lamp hardware is not a product surface and must never leak into the token set above. Every other
+toggle slot keeps the plain Sun/Moon icon button.
+
 **Runtime:** `html.dark` overrides the same `--color-*` CSS variables. New UI must use those tokens — never `bg-white`, `#fff`, or `dark:bg-black`. Tailwind `dark:` is an escape hatch only when a value cannot be a token.
 
 **Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage).

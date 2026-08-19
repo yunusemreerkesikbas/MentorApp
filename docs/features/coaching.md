@@ -145,6 +145,14 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Achievement kanıtları ve haftalık tamamlama (2026-08-18)** — Geçerli oturum, plan, hedef panosu,
+  streak, deneme ve yanlış-defteri eylemleri domain event üretir. `PUT /v1/coaching/weekly-review/completion`
+  yalnız READY ve doğru İstanbul haftası için idempotent kayıt/event oluşturur. Toplu
+  `CoachingAchievementEvidenceService` backfill'in coaching tablolarına dışarıdan erişmeden çalışmasını
+  sağlar. “Kaldığın Yerden” iki çalışma tarihi arasında yedi tam İstanbul takvim günü arar; sayaç UI'a
+  çıkmaz. İlgili: `coaching.events.ts`, `coaching-achievement-evidence.service.ts`,
+  `weekly-review-completion.*`, `achievement-evidence.ts`.
+
 - **Study-session light/dark surfaces (2026-08-15)** — `/seans` history lists, buddy
   invite field, done-state note, and circular controls use `--color-surface` /
   `--color-border`. Pause stays white-on-`--color-progress`. Usage: sidebar
@@ -2296,3 +2304,74 @@ pnpm --filter @mentor/api test
   server-side bir migration ile ele alınmalı — istemci tarafında sessizce çalışan bir kelepçe daha
   eklemek yerine.
   İlgili: `notebook-shell.tsx`, `notebook-page-stage.tsx`, `notebook-entry-card.tsx`.
+
+- **Defterde çizim: kalem katmanı, sekiz araç, kayan tepsi (2026-08-18, APP-042)** — Kullanıcı iki
+  referans görsel verdi (benji.org/drawesome'un araç çubuğu) ve isteği netti: "görsel üzerinde veya
+  defter üzerinde kullanıcı çizimler yapabilecek". Dört karar birlikte alındı; kapsam **sayfa
+  katmanı** (foto anotasyonu değil), motor **`perfect-freehand`**, sekiz araç (kurşun kalem, tükenmez,
+  ince uçlu, marker, fosforlu, fırça, dolma kalem, silgi), cilt payını geçen çizgi orada biter.
+
+  **`ink`, `items`'ın kardeşi — item türü DEĞİL.** İlk akla gelen tasarım her strok'u bir
+  `NotebookPageItem` yapmaktı; üçü birden yanlış çıkıyordu: sayfanın kırk item slotundan birini
+  yakardı, hiç kullanmadığı `VisionBoardItemBase` geometrisini (x/y/w/h/rotation) taşırdı ve sahne
+  her item'ı jest katmanına verdiği için **sürüklenebilir** olurdu — kağıttaki mürekkep sürüklenmez.
+  Bunun yerine `NotebookPageDoc.ink: NotebookInkStroke[]`, tek bir SVG katmanı olarak render ediliyor.
+  **Bedeli, bilerek kabul edildi:** tek katmanın tek derinliği var ve her zaman item'ların üstünde —
+  çizdiğin mürekkebin üzerine sticker kaydıramazsın. Gerçek kağıtta da kaydıramazsın.
+
+  **Migration yok, ama `.default([])` tek başına yetmedi.** `doc` zaten jsonb olduğu için yazma
+  şemasına alan eklemek yetiyor sanılabilir; **yetmiyor**. `.default([])` sadece *girişte* çalışır.
+  `getPage` depodaki değeri doğrudan `as NotebookPageDoc` ile geçiriyordu, yani çizimden önce
+  kaydedilmiş her sayfa istemciye `ink: undefined` dönerdi ve defter mevcut tüm kullanıcılarda
+  patlardı. Düzeltme okuma tarafında: `{ ...EMPTY_PAGE, ...stored }`. Bunu **typecheck değil, akıl
+  yürütme yakaladı** — tipler mutluydu, çünkü yalan söyleyen zaten `as` idi. İki test bunu kilitliyor
+  (`mistake-notebook.service.spec.ts`). Kalıcı not: jsonb'ye alan eklerken okuma tarafını doldur,
+  yazma şemasının default'una güvenme.
+
+  **Dolma kalem `perfect-freehand`'in yapamadığı tek şey.** Kütüphanenin `thinning`'i basınç ve hız
+  tabanlı; kaligrafi ucunun kalınlığı ise **çizgi ile ucun açısı arasındaki farktan** gelir. Bu tek
+  kalem için `nibOutline` yazıldı: polyline'ı sabit açılı bir vektörle ±ötele, git-gel kapat — ~15
+  satır ve o iş için `perfect-freehand`'den basit. Çizgi ucun yönüne paralel gittiğinde iki kenar
+  üst üste biner ve çizgi kıl gibi incelir; bir dolma kalemi dolma kalem yapan davranış bu.
+
+  **Şema tarafında iki gerçek sınır.** `max(200 strok)` tek başına 200×400 örneğe izin verir, ki bu
+  autosave'in taşıyacağından bir kat büyük — asıl muhafız `NOTEBOOK_INK_MAX_TOTAL_POINTS = 12_000`
+  (~200KB döküman). Ayrıca `points` düz bir dizi (`[x,y,pressure,…]`) ve **her üçüncü eleman 0..1'e
+  kelepçeli**: `coordSchema` x/y için ±5000'e izin veriyor, aynı aralık basınca da uygulansaydı
+  uydurma bir 5000 render'dan şehir büyüklüğünde bir poligon isteyebilirdi.
+
+  **Diğer notlar.** İstemci her strok'u kaydetmeden önce RDP ile sadeleştirip yuvarlıyor
+  (`finalizeStroke`) — 200 örneklik düz bir çizgi 2 örneğe iniyor; canlı çizgi ise sadeleştirilmemiş,
+  yani el tam çözünürlükte takip ediliyor, kaydedilen onun temizlenmiş hâli. `getCoalescedEvents`
+  kullanılıyor: kalem ekranın tazelenmesinden hızlı örnekliyor, sadece dispatch edilen olayı okumak
+  hızlı çizgileri gözle görülür köşeli yapıyordu. `use-notebook-page.ts`'e **redo eklendi** — dosyanın
+  "redo would be a button nobody presses" gerekçesi düzenleme için doğruydu, çizim için değil: dakikada
+  onlarca strok atılıyor ve birini kurtarmak için üçünü geri almak sıradan bir istek.
+  **E2E'nin yakaladığı gerçek hata:** tepsi `z-20` ile masaüstü koç FAB'ının (`fixed bottom-6
+  right-6 z-30`) altında kalıyordu; koçun balonu tepsinin sağ ucundaki renk ve gizle butonlarının
+  tam üstüne düşüyor ve gerçek bir tıklama hedefi olduğu için onları yutuyordu. Gözle bakınca
+  "renk butonu bazen çalışmıyor" gibi görünür — üstelik sadece koçun söyleyecek bir şeyi olduğunda.
+  Tepsi `z-[35]`'e alındı: app krom bandı (20–30) ile overlay bandının (40+) arasına bilerek
+  yerleştirildi. Vision board aynı çakışmayı FAB'ı tamamen gizleyerek çözüyor
+  (`isBoardEditorPath`) ama o koruma rota bazlı, çizim modu ise sayfa içi durum — aynısını yapmak
+  koçu defterin tamamından kaldırırdı.
+  **E2E'nin yakaladığı ikinci ve daha ciddi hata — paylaşılan jest katmanında.**
+  `use-item-gesture.begin()` işaretçiyi `pointerdown` anında `setPointerCapture` ile yakalıyordu.
+  Yakalama yapıldığı anda o işaretçinin sonraki tüm olayları yakalayan elemana yönlendirilir, yani
+  `pointerup` basılan çocuk yerine **öğe sarmalayıcısına** düşer; tarayıcı da `click`'i iki hedefin
+  en yakın ortak atasında ateşler. Sonuç: bir sahne öğesinin **hiçbir çocuğundaki `onClick`
+  fare veya parmakla asla çalışamaz**. Fotoğraf kartlarının "Fotoğrafı büyüt" butonu bu yüzden
+  sadece klavyeyle açılabiliyordu — ne birinci ne ikinci tıklama işe yarıyordu, `dispatchEvent`
+  ise çalışıyordu (olay yolu izlenerek kanıtlandı: `pointerdown=IMG`, `pointerup=DIV`, `click=DIV`).
+  Yakalama artık **ilk gerçek harekete** ertelendi (`move` içinde, checkpoint ile aynı yerde) ve
+  `end` yalnızca gerçekten alınmışsa bırakıyor. Bedeli yok: yakalama, hızlı bir sürükleme elemandan
+  çıktığında izlemeyi sürdürmek için var, işaretçi hareket etmeden kaybedilecek bir sürükleme yok.
+  Vision board da aynı katmanı kullanıyor; onun 11 e2e senaryosu değişiklikten sonra da geçiyor.
+  Araç çubuğu **koyu** ve uygulamada `--color-surface` almayan tek yer: kalemler tepside duran fiziksel
+  nesneler olarak çizildi, beyaz mürekkepli kalem beyaz tepside görünmez olurdu. Kalem gövdeleri
+  `INK_PALETTE` gibi literal hex — bunlar temanın sahip olduğu yüzeyler değil, kullanıcının seçtiği
+  içerik; karanlık modda dönen bir palet, birinin çizdiği mürekkebi yeniden boyardı.
+  İlgili: `notebook-ink.ts` (+spec), `notebook-ink-layer.tsx`, `use-ink-draw.ts`,
+  `notebook-ink-pens.tsx`, `notebook-ink-toolbar.tsx`, `use-notebook-page.ts`, `notebook-shell.tsx`,
+  `notebook-side-panel.tsx`, `packages/types/src/coaching.ts`, `packages/validation/src/coaching.ts`,
+  `mistake-notebook.service.ts`.

@@ -83,10 +83,13 @@ test("READY hikâyesi mobilde swipe ve klavyeyle, otomatik ilerlemeden gezilir",
     `/analiz/haftanin-hikayesi?examId=${exam.id}&source=analysis`,
   );
 
+  // The current names, in the READY deck's own fixed order (`READY_STORY` in
+  // src/lib/weekly-recap.ts): welcome, week_map, focus, weekly_run, weekly_best, performance,
+  // weekly_title, final. The old "cover"/"rhythm"/"subject" kinds no longer exist.
   const slide = page.getByTestId("weekly-recap-slide");
-  await expect(slide).toHaveAttribute("data-slide-kind", "cover");
+  await expect(slide).toHaveAttribute("data-slide-kind", "welcome");
   await page.waitForTimeout(700);
-  await expect(slide).toHaveAttribute("data-slide-kind", "cover");
+  await expect(slide).toHaveAttribute("data-slide-kind", "welcome");
 
   const box = await slide.boundingBox();
   expect(box).not.toBeNull();
@@ -96,16 +99,99 @@ test("READY hikâyesi mobilde swipe ve klavyeyle, otomatik ilerlemeden gezilir",
     steps: 8,
   });
   await page.mouse.up();
-  await expect(slide).toHaveAttribute("data-slide-kind", "rhythm");
+  await expect(slide).toHaveAttribute("data-slide-kind", "week_map");
 
   await page.keyboard.press("ArrowRight");
-  await expect(slide).toHaveAttribute("data-slide-kind", "subject");
+  await expect(slide).toHaveAttribute("data-slide-kind", "focus");
   await page.keyboard.press("ArrowRight");
-  await expect(slide).toHaveAttribute("data-slide-kind", "performance");
+  await expect(slide).toHaveAttribute("data-slide-kind", "weekly_run");
   await page.keyboard.press("ArrowLeft");
-  await expect(slide).toHaveAttribute("data-slide-kind", "subject");
+  await expect(slide).toHaveAttribute("data-slide-kind", "focus");
   await expect(page.locator("html")).not.toHaveCSS("overflow-x", "scroll");
   expect(api.unexpected).toEqual([]);
+});
+
+test("haftanın hikâyesi yüklenemeyince tekrar dene ile döner", async ({
+  page,
+}) => {
+  const api = await mockAnalysisApi(page, { weekly: ["error", readyWeekly] });
+
+  await page.goto(
+    `/analiz/haftanin-hikayesi?examId=${exam.id}&source=analysis`,
+  );
+
+  await expect(
+    page.getByRole("heading", { name: "Hikâyeyi şimdilik açamadım" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Tekrar dene" }).click();
+
+  await expect(page.getByTestId("weekly-recap-slide")).toHaveAttribute(
+    "data-slide-kind",
+    "welcome",
+  );
+  expect(api.weeklyCalls).toBe(2);
+  expect(api.unexpected).toEqual([]);
+});
+
+test("AI Puhu notunu arka planda hazırlar ve öneriyi yalnız plan formuna taşır", async ({
+  page,
+}) => {
+  const api = await mockAnalysisApi(page, {
+    weekly: [readyWeekly],
+    deepAnalysis: {
+      eligible: true,
+      weekStart: readyWeekly.period.startDate,
+      cost: 25,
+      coinConfirmed: 0,
+      canAfford: false,
+      unlocked: true,
+      premium: true,
+    },
+    weeklyNarration: {
+      narration: "Bu hafta ritmini korudun.",
+      model: "fake",
+      suggestedTask: {
+        title: "Türkçe haftalık tekrar",
+        subjectRef: "turkce",
+      },
+    },
+  });
+
+  await page.goto(`/analiz/haftanin-hikayesi?examId=${exam.id}`);
+  await expect(page.getByTestId("weekly-recap-slide")).toHaveAttribute(
+    "data-slide-kind",
+    "welcome",
+  );
+
+  // The 8-slide READY deck (welcome…final) — reach the last one, where the AI narration and the
+  // suggested-task link now live, in a floating dock rather than as slide content of their own.
+  // Two "İleri" controls exist at this width — a floating arrow and the slide's own tap zone.
+  const next = page.getByRole("button", { name: "İleri" }).first();
+  for (let step = 0; step < 7; step += 1) {
+    await next.click();
+  }
+  await expect(page.getByTestId("weekly-recap-slide")).toHaveAttribute(
+    "data-slide-kind",
+    "final",
+  );
+
+  // The narration is behind the "Puhu notu" sheet, not shown inline on the final slide.
+  await page.getByRole("button", { name: "Puhu notu" }).click();
+  await expect(page.getByText("Bu hafta ritmini korudun.")).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  // "Plan" also names the app's own sidebar nav link — scope to the dock's, by its href.
+  const suggested = page.locator('a[href*="/plan?add=1"]');
+  await expect(suggested).toHaveAttribute(
+    "href",
+    /\/plan\?add=1&title=T%C3%BCrk%C3%A7e\+haftal%C4%B1k\+tekrar&subject=turkce|\/plan\?add=1&subject=turkce&title=T%C3%BCrk%C3%A7e\+haftal%C4%B1k\+tekrar/,
+  );
+  expect(
+    api.requests.filter(
+      ({ method, path }) =>
+        method === "POST" && path === "/v1/coach/weekly-review",
+    ),
+  ).toHaveLength(1);
 });
 
 test("PARTIAL yalnız mevcut kanıtları gösterir ve AI/satış çağrısı yapmaz", async ({
@@ -114,27 +200,46 @@ test("PARTIAL yalnız mevcut kanıtları gösterir ve AI/satış çağrısı yap
   const api = await mockAnalysisApi(page, { weekly: [partialWeekly] });
 
   await page.goto(`/analiz/haftanin-hikayesi?examId=${exam.id}`);
+  // The cover slide's live copy is `recap.welcome.*`, not the `recap.cover.*` key this used to
+  // check — same kind of superseded string as `analysis.summary.empty`.
   await expect(
-    page.getByText("Geçen haftadan kalan güzel izler"),
+    page.getByText("Geçen hafta senden iz bıraktı."),
   ).toBeVisible();
   await page.keyboard.press("ArrowRight");
   await expect(page.getByTestId("weekly-recap-slide")).toHaveAttribute(
     "data-slide-kind",
-    "rhythm",
+    "week_map",
   );
   await expect(page.getByText("0", { exact: true })).toHaveCount(0);
 
+  /*
+   * `composeWeeklyRecapSlides` skips "focus" and "weekly_run" for this fixture (zero qualifying
+   * sessions, longest active run of 1 day), so week_map's very next slide is "spark" — the
+   * conditional skip is the deck's own logic under test just as much as the slide order is.
+   */
   await page.keyboard.press("ArrowRight");
   await expect(page.getByTestId("weekly-recap-slide")).toHaveAttribute(
     "data-slide-kind",
     "spark",
   );
-  await expect(page.getByText("1 görev")).toBeVisible();
+  // The spark slide shows the first highlight's own message verbatim, not a "{count} görev"
+  // chip — `partialWeekly.highlights[0].message` is what actually renders here.
+  await expect(
+    page.getByText("Planındaki bir küçük adımı tamamladın."),
+  ).toBeVisible();
 
   await page.keyboard.press("ArrowRight");
   await expect(page.getByTestId("weekly-recap-slide")).toHaveAttribute(
     "data-slide-kind",
-    "closing",
+    "partial_unlocks",
+  );
+
+  // The closing beat — "no upsell" is the whole point of this test, and it is the LAST slide,
+  // not the one right after the evidence recap.
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByTestId("weekly-recap-slide")).toHaveAttribute(
+    "data-slide-kind",
+    "partial_final",
   );
   await expect(page.getByRole("button", { name: /coin ile/i })).toHaveCount(0);
   expect(
@@ -218,12 +323,19 @@ test("AI gecikmesi veya hatası hikâyeyi engellemez ve deterministik nota düş
   await page.goto(`/analiz/haftanin-hikayesi?examId=${exam.id}`);
   await expect(page.getByTestId("weekly-recap-slide")).toHaveAttribute(
     "data-slide-kind",
-    "cover",
+    "welcome",
   );
-  for (let step = 0; step < 6; step += 1) {
+  for (let step = 0; step < 7; step += 1) {
     await page.keyboard.press("ArrowRight");
   }
+  await expect(page.getByTestId("weekly-recap-slide")).toHaveAttribute(
+    "data-slide-kind",
+    "final",
+  );
 
+  // Narration is behind the "Puhu notu" sheet — a failed fetch falls back to the deterministic
+  // closing message there instead of blocking the story.
+  await page.getByRole("button", { name: "Puhu notu" }).click();
   await expect(page.getByText(readyWeekly.recap.closingMessage)).toBeVisible();
   expect(
     api.requests.filter(
@@ -262,13 +374,19 @@ test("AI Puhu coin açma yalnız finalde ve iki dokunuşla çalışır", async (
   await page.goto(`/analiz/haftanin-hikayesi?examId=${exam.id}`);
   await expect(page.getByTestId("weekly-recap-slide")).toHaveAttribute(
     "data-slide-kind",
-    "cover",
+    "welcome",
   );
   await expect(page.getByRole("button", { name: /coin ile/i })).toHaveCount(0);
   for (let step = 0; step < 7; step += 1) {
     await page.keyboard.press("ArrowRight");
   }
+  await expect(page.getByTestId("weekly-recap-slide")).toHaveAttribute(
+    "data-slide-kind",
+    "final",
+  );
 
+  // The coin CTA is inside the "Puhu notu" sheet, not on the final slide directly.
+  await page.getByRole("button", { name: "Puhu notu" }).click();
   const unlock = page.getByRole("button", {
     name: "25 coin ile AI Puhu notunu aç",
   });
@@ -307,8 +425,10 @@ test("TR/EN route sözleşmesi ve Escape kaynak dönüşü korunur", async ({
   await mockAnalysisApi(page, { weekly: [readyWeekly, readyWeekly] });
 
   await page.goto(`/en/analysis/weekly-story?examId=${exam.id}`);
+  // `recap.welcome.title`, the live cover copy — `recap.cover.*` (the string this used to check)
+  // is superseded, same story as the Turkish welcome-slide fix above.
   await expect(
-    page.getByText("The meaningful traces from last week"),
+    page.getByText("Last week has your fingerprints on it."),
   ).toBeVisible();
 
   await page.goto(
@@ -316,7 +436,7 @@ test("TR/EN route sözleşmesi ve Escape kaynak dönüşü korunur", async ({
   );
   await expect(page.getByTestId("weekly-recap-slide")).toHaveAttribute(
     "data-slide-kind",
-    "cover",
+    "welcome",
   );
   await page.keyboard.press("Escape");
   await expect(page).toHaveURL(/\/analiz\?tab=progress$/);

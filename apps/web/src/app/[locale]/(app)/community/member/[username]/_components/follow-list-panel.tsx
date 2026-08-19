@@ -70,7 +70,7 @@ export function FollowListPanel({
 
   return (
     <div>
-      <div className="flex items-center gap-2 border-b px-4 py-3 lg:px-6" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+      <div className="flex items-center gap-2 border-b px-4 py-3 lg:px-6" style={{ borderColor: "var(--color-border)" }}>
         <button
           type="button"
           onClick={onBack}
@@ -93,11 +93,11 @@ export function FollowListPanel({
         <p className="px-4 py-12 text-center text-sm" style={{ color: "var(--color-secondary)" }}>{t("follow_list_empty")}</p>
       ) : (
         <>
-          <ul className="divide-y divide-[rgba(0,0,0,0.06)]">
+          <ul className="divide-y divide-[var(--color-border)]">
             {state.items.map((u) => (
               <li
                 key={u.userId}
-                className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[rgba(0,0,0,0.03)] lg:px-6"
+                className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] lg:px-6"
               >
                 <Link
                   href={{

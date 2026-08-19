@@ -65,7 +65,7 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
                 e.stopPropagation();
                 setActiveIndex(i);
               }}
-              className={`relative block min-h-0 cursor-pointer overflow-hidden rounded-[30px] border border-black/20 bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${single ? "w-full" : "h-full aspect-[16/9] w-4/5 shrink-0 snap-start md:aspect-auto md:w-full md:shrink md:[scroll-snap-align:none]"} ${span}`}
+              className={`relative block min-h-0 cursor-pointer overflow-hidden rounded-[30px] border border-[color-mix(in_srgb,var(--color-main)_20%,transparent)] bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${single ? "w-full" : "h-full aspect-[16/9] w-4/5 shrink-0 snap-start md:aspect-auto md:w-full md:shrink md:[scroll-snap-align:none]"} ${span}`}
             >
               {/* Storage URL (not next/image — dev fake endpoint + R2 aren't in the image config). */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -90,8 +90,8 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-2.5 rounded-[var(--radius-card)] px-3 py-2 transition-colors hover:bg-black/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-              style={{ border: "1px solid rgba(0,0,0,0.08)" }}
+              className="flex items-center gap-2.5 rounded-[var(--radius-card)] px-3 py-2 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              style={{ border: "1px solid var(--color-border)" }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />

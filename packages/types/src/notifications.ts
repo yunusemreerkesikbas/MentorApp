@@ -16,7 +16,7 @@ export interface PushSubscriptionInput {
 
 // --- In-app notification inbox (W5 extension) ---
 
-export type NotificationCategory = "COACH" | "PLAN" | "CONTENT" | "FORUM";
+export type NotificationCategory = "COACH" | "PLAN" | "CONTENT" | "FORUM" | "ACHIEVEMENT";
 
 export interface UserNotificationDto {
   id: string;

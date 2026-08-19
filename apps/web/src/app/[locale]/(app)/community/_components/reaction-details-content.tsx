@@ -193,7 +193,7 @@ export function ReactionDetailsContent({
                     setStatus("loading");
                     setRetryKey((current) => current + 1);
                   }}
-                  className="min-h-11 rounded-[var(--radius-card)] px-5 text-sm font-semibold transition-colors hover:bg-black/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+                  className="min-h-11 rounded-[var(--radius-card)] px-5 text-sm font-semibold transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
                   style={{ background: "var(--color-surface-container)", color: "var(--color-main)" }}
                 >
                   {t("refresh")}

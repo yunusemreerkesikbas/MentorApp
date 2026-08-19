@@ -67,6 +67,27 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Achievement Sistemi V1 (2026-08-18)** — Kod sahipliğindeki 12 kalıcı başarı, versiyonlu katalog,
+  immutable/RLS korumalı `user_achievements`, owner/public görünürlük API'leri, idempotent kutlama
+  onayı ve cursor-paged backfill eklendi. Community yalnız kendi tablosunu yazar; coaching/forum
+  event ve toplu kanıt servisleri sunar. Profilde flag açıkken Başarılar sekmesi görünür; owner 12
+  kartı ve anlamlı ilerlemeyi, ziyaretçi yalnız kazanılanları görür. Kullanım: migration sonrası
+  `pnpm --filter @mentor/api achievements:backfill`, final asset kontrolü, ardından
+  `community.achievements.enabled=true`. Gotcha: `route_renewed` ve `week_reflected` güvenilir eski
+  event olmadığı için backfill edilmez. İlgili: `modules/community/**`, `community/member/**`,
+  `components/achievements/**`, `docs/plans/2026-08-18-achievement-system-design.md`.
+
+- **Community leftover chrome tokens (2026-08-18)** — Inner community chrome that still
+  mixed against `white` / `#f5f5f5` / `hover:bg-black` now uses `--color-surface`,
+  `--color-soft`, `--color-border`, and `color-mix` with `--color-main`. Leaderboard
+  chips/podium fade, mini-leaderboard, thread/composer/comment rows, coach bridge,
+  zone drawer canvas, and profile/saved dividers follow the theme. Photo lightbox,
+  composer overlay, and attachment remove-on-image stay white-on-dark. Usage: flip
+  the community header theme toggle; leftover chips and hover wells should invert
+  with `html.dark`. Gotcha: `--community-blue` CTAs keep `text-white` (progress
+  exception). Related: `leaderboard-screen.tsx`, `mini-leaderboard.tsx`,
+  `community-coach-bridge.tsx`, `docs/features/web-shell.md`.
+
 - **Theme token pass (2026-08-15)** — Community workspace no longer locks light hex on
   `--color-*`. Surfaces inherit `html` / `html.dark` (`--color-surface`, `--color-border`,
   `--color-btn-label`). Soft community wells (blue/coral/green) mix against surface.
