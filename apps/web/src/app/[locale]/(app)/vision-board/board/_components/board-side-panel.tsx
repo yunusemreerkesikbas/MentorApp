@@ -13,7 +13,11 @@ import {
 } from "@mentor/types";
 import { useTranslations } from "next-intl";
 import { ProgressBar } from "@mentor/ui";
-import { FONT_DISPLAY_NAMES, FONT_STACKS } from "@/components/vision-board/board-item-view";
+import { RangeSlider } from "@/components/range-slider";
+import {
+  FONT_DISPLAY_NAMES,
+  FONT_STACKS,
+} from "@/components/vision-board/board-item-view";
 import { STICKER_ART } from "@/components/vision-board/board-stickers";
 import { BOARD_COLORS, PLATE_COLORS } from "./board-palettes";
 import { Swatch } from "./board-swatch";
@@ -30,7 +34,12 @@ import {
  * the denser controls that need vertical space.
  */
 
-export type BoardPanelCategory = "image" | "text" | "sticker" | "template" | "board";
+export type BoardPanelCategory =
+  | "image"
+  | "text"
+  | "sticker"
+  | "template"
+  | "board";
 
 export interface BoardSidePanelProps {
   category: BoardPanelCategory;
@@ -72,14 +81,18 @@ export function BoardSidePanel({
       <Panel>
         <Field label={t("board_frame")}>
           <Row>
-            {VISION_BOARD_FRAMES.filter((frame) => frame !== "none").map((frame) => (
-              <Pill
-                key={frame}
-                active={doc.frame === frame}
-                label={t(`frame_${frame}`)}
-                onClick={() => onSetFrame(doc.frame === frame ? "none" : frame)}
-              />
-            ))}
+            {VISION_BOARD_FRAMES.filter((frame) => frame !== "none").map(
+              (frame) => (
+                <Pill
+                  key={frame}
+                  active={doc.frame === frame}
+                  label={t(`frame_${frame}`)}
+                  onClick={() =>
+                    onSetFrame(doc.frame === frame ? "none" : frame)
+                  }
+                />
+              ),
+            )}
           </Row>
         </Field>
         <Field label={t("background")}>
@@ -87,9 +100,14 @@ export function BoardSidePanel({
             {VISION_BOARD_TEXTURES.map((texture) => (
               <Pill
                 key={texture}
-                active={doc.background.kind === "texture" && doc.background.value === texture}
+                active={
+                  doc.background.kind === "texture" &&
+                  doc.background.value === texture
+                }
                 label={t(`texture_${texture}`)}
-                onClick={() => onSetBackground({ kind: "texture", value: texture })}
+                onClick={() =>
+                  onSetBackground({ kind: "texture", value: texture })
+                }
               />
             ))}
           </Row>
@@ -99,7 +117,10 @@ export function BoardSidePanel({
                 key={color}
                 color={color}
                 label={t("background")}
-                active={doc.background.kind === "color" && doc.background.value === color}
+                active={
+                  doc.background.kind === "color" &&
+                  doc.background.value === color
+                }
                 onClick={() => onSetBackground({ kind: "color", value: color })}
               />
             ))}
@@ -118,7 +139,9 @@ export function BoardSidePanel({
           onClick={onUploadImage}
         />
         {uploadProgress && uploadProgress.total > 1 ? (
-          <ProgressBar value={(uploadProgress.done / uploadProgress.total) * 100} />
+          <ProgressBar
+            value={(uploadProgress.done / uploadProgress.total) * 100}
+          />
         ) : null}
         {doc.items.some((item) => item.kind === "image") ? (
           <div className="grid grid-cols-2 gap-2">
@@ -145,11 +168,17 @@ export function BoardSidePanel({
                 >
                   {item.url ? (
                     // eslint-disable-next-line @next/next/no-img-element -- small panel thumbnail, not an export target
-                    <img src={item.url} alt="" className="h-full w-full object-cover" />
+                    <img
+                      src={item.url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <div
                       className="h-full w-full"
-                      style={{ backgroundColor: "var(--color-surface-container)" }}
+                      style={{
+                        backgroundColor: "var(--color-surface-container)",
+                      }}
                     />
                   )}
                 </button>
@@ -160,18 +189,24 @@ export function BoardSidePanel({
           <>
             <Field label={t("image_frame")}>
               <Row>
-                {VISION_IMAGE_FRAMES.filter((frame) => frame !== "none").map((frame) => (
-                  <Pill
-                    key={frame}
-                    active={selected.frame === frame}
-                    label={t(`image_frame_${frame}`)}
-                    onClick={() => onPatch({ frame: selected.frame === frame ? "none" : frame })}
-                  />
-                ))}
+                {VISION_IMAGE_FRAMES.filter((frame) => frame !== "none").map(
+                  (frame) => (
+                    <Pill
+                      key={frame}
+                      active={selected.frame === frame}
+                      label={t(`image_frame_${frame}`)}
+                      onClick={() =>
+                        onPatch({
+                          frame: selected.frame === frame ? "none" : frame,
+                        })
+                      }
+                    />
+                  ),
+                )}
               </Row>
             </Field>
             <Field label={t("rotation")}>
-              <Range
+              <RangeSlider
                 min={-180}
                 max={180}
                 value={selected.rotation}
@@ -182,7 +217,7 @@ export function BoardSidePanel({
               />
             </Field>
             <Field label={t("opacity")}>
-              <Range
+              <RangeSlider
                 min={0}
                 max={100}
                 step={5}
@@ -190,7 +225,9 @@ export function BoardSidePanel({
                 label={t("opacity")}
                 unit="%"
                 onCommit={onCheckpoint}
-                onChange={(opacity) => onPatch({ opacity: opacity / 100 }, true)}
+                onChange={(opacity) =>
+                  onPatch({ opacity: opacity / 100 }, true)
+                }
               />
             </Field>
           </>
@@ -219,7 +256,7 @@ export function BoardSidePanel({
               </div>
             </Field>
             <Field label={t("size")}>
-              <Range
+              <RangeSlider
                 min={12}
                 max={160}
                 value={selected.size}
@@ -252,7 +289,7 @@ export function BoardSidePanel({
               </Row>
             </Field>
             <Field label={t("line_height")}>
-              <Range
+              <RangeSlider
                 min={0.8}
                 max={3}
                 step={0.1}
@@ -264,7 +301,7 @@ export function BoardSidePanel({
               />
             </Field>
             <Field label={t("letter_spacing")}>
-              <Range
+              <RangeSlider
                 min={-10}
                 max={40}
                 value={selected.letterSpacing}
@@ -275,7 +312,7 @@ export function BoardSidePanel({
               />
             </Field>
             <Field label={t("rotation")}>
-              <Range
+              <RangeSlider
                 min={-180}
                 max={180}
                 value={selected.rotation}
@@ -310,10 +347,18 @@ export function BoardSidePanel({
               >
                 {art.kind === "image" ? (
                   // eslint-disable-next-line @next/next/no-img-element -- same-origin mascot PNG
-                  <img src={art.src} alt="" className="h-8 w-8 object-contain" />
+                  <img
+                    src={art.src}
+                    alt=""
+                    className="h-8 w-8 object-contain"
+                  />
                 ) : (
                   <svg viewBox="0 0 100 100" className="h-7 w-7" aria-hidden>
-                    <path d={art.path} fill={art.fill} fillRule={art.fillRule} />
+                    <path
+                      d={art.path}
+                      fill={art.fill}
+                      fillRule={art.fillRule}
+                    />
                   </svg>
                 )}
               </button>
@@ -335,7 +380,10 @@ export function BoardSidePanel({
             className="flex flex-col gap-1.5 rounded-[var(--radius-card)] p-1.5 text-left hover:bg-[var(--color-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           >
             <TemplatePreview id={id} />
-            <span className="text-xs font-semibold" style={{ color: "var(--color-main)" }}>
+            <span
+              className="text-xs font-semibold"
+              style={{ color: "var(--color-main)" }}
+            >
               {t(`template_${id}`)}
             </span>
           </button>
@@ -464,79 +512,5 @@ function Pill({
     >
       {label}
     </button>
-  );
-}
-
-
-function Range({
-  min,
-  max,
-  step = 1,
-  value,
-  label,
-  unit = "",
-  decimals = 0,
-  onChange,
-  onCommit,
-}: {
-  min: number;
-  max: number;
-  step?: number;
-  value: number;
-  label: string;
-  /** Appended to the value chip — "px", "°", "%", or left blank for a plain ratio. */
-  unit?: string;
-  decimals?: number;
-  onChange: (value: number) => void;
-  onCommit: () => void;
-}) {
-  const pct = ((value - min) / (max - min)) * 100;
-  return (
-    <div className="flex items-center gap-2">
-      <input
-        type="range"
-        aria-label={label}
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onPointerDown={onCommit}
-        onKeyDown={onCommit}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className="mentor-range h-1.5 w-full flex-1"
-        style={{
-          background: `linear-gradient(to right, var(--color-accent) ${pct}%, var(--color-surface-container) ${pct}%)`,
-        }}
-      />
-      <span
-        className="flex h-9 min-w-16 shrink-0 items-center justify-center gap-0.5 rounded-[var(--radius-card)] border px-1.5"
-        style={{ borderColor: "rgba(17, 17, 17, 0.12)" }}
-      >
-        <input
-          type="number"
-          aria-label={label}
-          min={min}
-          max={max}
-          step={step}
-          value={value.toFixed(decimals)}
-          onFocus={onCommit}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") event.currentTarget.blur();
-          }}
-          onChange={(event) => {
-            const next = Number(event.target.value);
-            if (Number.isNaN(next)) return;
-            onChange(Math.min(max, Math.max(min, next)));
-          }}
-          className="w-full min-w-0 bg-transparent text-center text-xs font-semibold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-          style={{ color: "var(--color-body)" }}
-        />
-        {unit ? (
-          <span className="shrink-0 text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
-            {unit}
-          </span>
-        ) : null}
-      </span>
-    </div>
   );
 }

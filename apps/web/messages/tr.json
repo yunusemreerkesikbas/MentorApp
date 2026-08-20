@@ -2414,7 +2414,35 @@
     "history_eyebrow": "Geçmiş emeklerin",
     "history_title": "Geçmiş emeklerin de burada",
     "history_body": "Daha önce verdiğin emeğin karşılığı olan {count} başarı koleksiyonuna eklendi.",
-    "continue": "Harika, devam et"
+    "continue": "Yoluma devam et",
+    "celebration_items": {
+      "first_step": { "eyebrow": "Yolculuğun başladı", "body": "Hazır olmayı beklemedin; ilk adımı attın. Yol şimdi senin." },
+      "route_drawn": { "eyebrow": "Yolun belirginleşiyor", "body": "Nereye gideceğini düşünmekle kalmadın; kendine ilerleyeceğin bir rota çizdin." },
+      "dream_space_created": { "eyebrow": "Hayalin görünür oldu", "body": "Aklındaki hayale hayatında bir yer açtın. Artık dönüp bakabileceğin bir yönün var." },
+      "rhythm_found": { "eyebrow": "Ritmin oluşuyor", "body": "Yedi gündür kendin için geri dönüyorsun. Bu artık tek bir gün değil, senin ritmin." },
+      "rhythm_kept": { "eyebrow": "Ritmin seninle", "body": "Otuz gün boyunca yolundan kopmadın. Kurduğun bu ritim artık güçlü bir parçan." },
+      "returned_to_path": { "eyebrow": "Yol seni bekliyordu", "body": "Ara vermek yolculuğu bitirmedi. Bugün kaldığın yerden yeniden kendine döndün." },
+      "route_renewed": { "eyebrow": "Rotan sana uydu", "body": "Planına tutunmak yerine onu ihtiyacına göre yeniledin. Yolunu sahiplenmek tam da bu." },
+      "starting_point_set": { "eyebrow": "Nerede olduğunu gördün", "body": "İlk denemeni kaydettin. Şimdi ilerledikçe ne kadar yol aldığını görebileceksin." },
+      "mistake_revisited": { "eyebrow": "Bir kez daha baktın", "body": "Bir yanlışa dönüp yeniden baktın. Öğrenmek, bazen tam da burada derinleşir." },
+      "week_reflected": { "eyebrow": "Kendini dinledin", "body": "Haftanın sesini duymak için durdun. Şimdi bir sonraki adımın sana daha yakın." },
+      "first_hello": { "eyebrow": "Artık burada bir izin var", "body": "İlk sözünü toplulukla paylaştın. Bu yolculukta artık yalnız yürümüyorsun." },
+      "helped_someone": { "eyebrow": "Sözün birine ulaştı", "body": "Paylaştığın bir şey başka bir öğrenciye iyi geldi. Bazen küçük bir destek çok yol aldırır." }
+    },
+    "preview_items": {
+      "first_step": { "title": "İlk Adım", "description": "İlk geçerli odak oturumunu tamamladın." },
+      "route_drawn": { "title": "Rotanı Çizdin", "description": "Çalışma yolculuğunun ilk plan görevini oluşturdun." },
+      "dream_space_created": { "title": "Hayaline Yer Açtın", "description": "Hedef panona ilk anlamlı parçanı ekledin." },
+      "rhythm_found": { "title": "Ritmi Yakaladın", "description": "Yedi günlük çalışma ritmini yakaladın." },
+      "rhythm_kept": { "title": "Ritmi Korudun", "description": "Otuz günlük çalışma ritmini korudun." },
+      "returned_to_path": { "title": "Kaldığın Yerden", "description": "Bir aradan sonra yeniden odaklanmayı seçtin." },
+      "route_renewed": { "title": "Rotayı Yeniledin", "description": "Planını değişen ihtiyaçlarına göre yeniledin." },
+      "starting_point_set": { "title": "Başlangıç Noktan", "description": "İlk denemeni kaydederek başlangıç noktanı belirledin." },
+      "mistake_revisited": { "title": "Bir Daha Baktın", "description": "Yanlış defterindeki bir kaydı yeniden değerlendirdin." },
+      "week_reflected": { "title": "Haftana Kulak Verdin", "description": "Haftalık değerlendirmene bilinçli biçimde geri döndün." },
+      "first_hello": { "title": "İlk Merhaba", "description": "Toplulukta ilk katkını paylaştın." },
+      "helped_someone": { "title": "Birine İyi Geldin", "description": "Bir katkın başka bir öğrenciye yardımcı oldu." }
+    }
   },
   "notifications": {
     "title": "Bildirimler",

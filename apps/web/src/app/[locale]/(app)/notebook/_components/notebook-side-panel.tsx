@@ -10,9 +10,17 @@ import type {
   VisionBoardTextItem,
   VisionSticker,
 } from "@mentor/types";
-import { NOTEBOOK_PAPERS, VISION_STICKERS, VISION_TEXT_FONTS } from "@mentor/types";
+import {
+  NOTEBOOK_PAPERS,
+  VISION_STICKERS,
+  VISION_TEXT_FONTS,
+} from "@mentor/types";
+import { RangeSlider } from "@/components/range-slider";
 import { STICKER_ART } from "@/components/vision-board/board-stickers";
-import { FONT_DISPLAY_NAMES, FONT_STACKS } from "@/components/vision-board/board-item-view";
+import {
+  FONT_DISPLAY_NAMES,
+  FONT_STACKS,
+} from "@/components/vision-board/board-item-view";
 import { PAPERS } from "@/components/notebook/notebook-surface";
 import { NotebookAddPanel } from "./notebook-add-panel";
 
@@ -57,12 +65,21 @@ const NOTE_PLATE_COLORS = [
  * have meant reaching across the page you are drawing on to change pens, and would have cost the
  * notebook the panel's width at exactly the moment it needs to be as large as possible.
  */
-export type NotebookPanelCategory = "add" | "sticker" | "paper" | "text" | "draw";
+export type NotebookPanelCategory =
+  | "add"
+  | "sticker"
+  | "paper"
+  | "text"
+  | "draw";
 
 export interface NotebookSidePanelProps {
   category: NotebookPanelCategory;
   paper: NotebookPaper;
-  exam: { id: string; subjects: ExamSubjectDto[]; topics: ExamTopicDto[] } | null;
+  exam: {
+    id: string;
+    subjects: ExamSubjectDto[];
+    topics: ExamTopicDto[];
+  } | null;
   /** The focused page's selected note, when there is one — drives the "text" category's controls. */
   selectedText: VisionBoardTextItem | null;
   onCreated: (entry: NotebookEntryDto, aspect: number | null) => void;
@@ -134,7 +151,7 @@ export function NotebookSidePanel({
               </div>
             </Field>
             <Field label={boardT("size")}>
-              <Range
+              <RangeSlider
                 min={12}
                 max={160}
                 value={selectedText.size}
@@ -167,7 +184,7 @@ export function NotebookSidePanel({
               </Row>
             </Field>
             <Field label={boardT("line_height")}>
-              <Range
+              <RangeSlider
                 min={0.8}
                 max={3}
                 step={0.1}
@@ -179,7 +196,7 @@ export function NotebookSidePanel({
               />
             </Field>
             <Field label={boardT("letter_spacing")}>
-              <Range
+              <RangeSlider
                 min={-10}
                 max={40}
                 value={selectedText.letterSpacing}
@@ -190,7 +207,7 @@ export function NotebookSidePanel({
               />
             </Field>
             <Field label={boardT("rotation")}>
-              <Range
+              <RangeSlider
                 min={-180}
                 max={180}
                 value={selectedText.rotation}
@@ -282,11 +299,15 @@ export function NotebookSidePanel({
                 className="size-9 shrink-0 rounded"
                 style={{
                   backgroundColor: "var(--notebook-paper)",
-                  border: "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
+                  border:
+                    "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
                   ...PAPERS[value],
                 }}
               />
-              <span className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+              <span
+                className="text-sm font-semibold"
+                style={{ color: "var(--color-main)" }}
+              >
                 {t(`paper.${value}`)}
               </span>
             </button>
@@ -342,8 +363,8 @@ function Pill({
       onClick={onClick}
       className="min-h-9 rounded-full px-2.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       style={{
-        backgroundColor: active ? "var(--color-main)" : "var(--color-surface)",
-        color: active ? "#ffffff" : "var(--color-body)",
+        backgroundColor: active ? "var(--color-btn)" : "var(--color-surface)",
+        color: active ? "var(--color-btn-label)" : "var(--color-body)",
         fontFamily,
       }}
     >
@@ -377,83 +398,12 @@ function Swatch({
         className="block h-5 w-5 rounded-full"
         style={{
           backgroundColor: color,
-          outline: active ? "2px solid var(--color-accent)" : "1px solid rgba(0,0,0,0.12)",
+          outline: active
+            ? "2px solid var(--color-accent)"
+            : "1px solid color-mix(in srgb, var(--color-main) 12%, transparent)",
           outlineOffset: "2px",
         }}
       />
     </button>
-  );
-}
-
-function Range({
-  min,
-  max,
-  step = 1,
-  value,
-  label,
-  unit = "",
-  decimals = 0,
-  onChange,
-  onCommit,
-}: {
-  min: number;
-  max: number;
-  step?: number;
-  value: number;
-  label: string;
-  /** Appended to the value chip — "px", "°", or left blank for a plain ratio. */
-  unit?: string;
-  decimals?: number;
-  onChange: (value: number) => void;
-  onCommit: () => void;
-}) {
-  const pct = ((value - min) / (max - min)) * 100;
-  return (
-    <div className="flex items-center gap-2">
-      <input
-        type="range"
-        aria-label={label}
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onPointerDown={onCommit}
-        onKeyDown={onCommit}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className="mentor-range h-1.5 w-full flex-1"
-        style={{
-          background: `linear-gradient(to right, var(--color-accent) ${pct}%, var(--color-surface-container) ${pct}%)`,
-        }}
-      />
-      <span
-        className="flex h-9 min-w-16 shrink-0 items-center justify-center gap-0.5 rounded-[var(--radius-card)] border px-1.5"
-        style={{ borderColor: "rgba(17, 17, 17, 0.12)" }}
-      >
-        <input
-          type="number"
-          aria-label={label}
-          min={min}
-          max={max}
-          step={step}
-          value={value.toFixed(decimals)}
-          onFocus={onCommit}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") event.currentTarget.blur();
-          }}
-          onChange={(event) => {
-            const next = Number(event.target.value);
-            if (Number.isNaN(next)) return;
-            onChange(Math.min(max, Math.max(min, next)));
-          }}
-          className="w-full min-w-0 bg-transparent text-center text-xs font-semibold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-          style={{ color: "var(--color-body)" }}
-        />
-        {unit ? (
-          <span className="shrink-0 text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
-            {unit}
-          </span>
-        ) : null}
-      </span>
-    </div>
   );
 }

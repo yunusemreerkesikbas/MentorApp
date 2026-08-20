@@ -9,14 +9,17 @@ import {
   DOUBLE_BLINK_GAP_MS,
   type LampInteraction,
   type LeanOffset,
+  type OwlGaze,
   type PullReaction,
   computeLean,
+  gazeFromLean,
   isDoubleBlink,
   nextBlinkDelay,
+  nextIdleGaze,
   pullReaction,
 } from "./lamp-choreography";
 
-const CENTRED: LeanOffset = { x: 0, y: 0 };
+const CENTRED: LeanOffset = { x: 0, y: 0, tilt: 0 };
 /** Long enough to read the squint, short enough that the wing is already on its way back. */
 const REACTION_MS = 220;
 
@@ -30,10 +33,17 @@ export function useLampChoreography() {
   const [interaction, setInteraction] = useState<LampInteraction>("idle");
   const [pointerLean, setPointerLean] = useState<LeanOffset>(CENTRED);
   const [blinking, setBlinking] = useState(false);
+  const [gaze, setGaze] = useState<OwlGaze>("centre");
   const [reaction, setReaction] = useState<PullReaction | null>(null);
   /** Read once on enter — sampling it per pointermove would be a layout read every frame. */
   const centreRef = useRef<{ x: number; y: number } | null>(null);
+  /** The painted scene, not the tracking dock — gaze is relative to Puhu, not the footer. */
+  const sceneRef = useRef<HTMLButtonElement | null>(null);
   const reactionTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  /** Where he *wants* to look. It only reaches the screen once a blink covers the change. */
+  const gazeTarget = useRef<OwlGaze>("centre");
+  const pointerNear = useRef(false);
+  const blinkNow = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -43,6 +53,9 @@ export function useLampChoreography() {
     const blink = (remaining: number) => {
       if (cancelled) return;
       setBlinking(true);
+      // The eyes are shut for the whole crossfade, so this is where the pupils may jump without
+      // anyone seeing them travel — the trick real animation uses to hide a saccade.
+      setGaze(gazeTarget.current);
       timer = setTimeout(() => {
         if (cancelled) return;
         setBlinking(false);
@@ -62,38 +75,62 @@ export function useLampChoreography() {
           schedule();
           return;
         }
+        // Glances ride the blink cadence instead of running their own timer — which is both
+        // simpler and the only way they stay masked. The pointer owns his eyes while it is here.
+        if (!pointerNear.current) {
+          gazeTarget.current = nextIdleGaze(gazeTarget.current, Math.random());
+        }
         blink(isDoubleBlink(Math.random()) ? 1 : 0);
       }, nextBlinkDelay(Math.random()));
+    };
+
+    blinkNow.current = () => {
+      clearTimeout(timer);
+      blink(0);
     };
 
     schedule();
     return () => {
       cancelled = true;
+      blinkNow.current = null;
       clearTimeout(timer);
     };
   }, [reduceMotion]);
 
+  /** Aims his eyes somewhere new, letting a blink carry the change rather than sliding pupils. */
+  const lookAt = useCallback((next: OwlGaze) => {
+    if (next === gazeTarget.current) return;
+    gazeTarget.current = next;
+    blinkNow.current?.();
+  }, []);
+
   useEffect(() => () => clearTimeout(reactionTimer.current), []);
 
   const handlePointerEnter = useCallback((event: React.PointerEvent<HTMLElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
+    const box = sceneRef.current ?? event.currentTarget;
+    const rect = box.getBoundingClientRect();
     centreRef.current = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    pointerNear.current = true;
     setInteraction((current) => (current === "idle" ? "near" : current));
   }, []);
 
   const handlePointerMove = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
       if (reduceMotion || !centreRef.current) return;
-      setPointerLean(computeLean({ x: event.clientX, y: event.clientY }, centreRef.current));
+      const lean = computeLean({ x: event.clientX, y: event.clientY }, centreRef.current);
+      setPointerLean(lean);
+      lookAt(gazeFromLean(lean, gazeTarget.current));
     },
-    [reduceMotion],
+    [lookAt, reduceMotion],
   );
 
   const handlePointerLeave = useCallback(() => {
     centreRef.current = null;
+    pointerNear.current = false;
     setPointerLean(CENTRED);
     setInteraction("idle");
-  }, []);
+    lookAt("centre");
+  }, [lookAt]);
 
   const reach = useCallback(() => setInteraction("hover"), []);
 
@@ -123,9 +160,11 @@ export function useLampChoreography() {
     interaction,
     pointerLean,
     blinking,
+    gaze,
     reaction,
     reduceMotion,
     playPull,
+    sceneRef,
     sceneHandlers: {
       onPointerEnter: handlePointerEnter,
       onPointerMove: handlePointerMove,

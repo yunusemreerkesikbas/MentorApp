@@ -12,15 +12,20 @@ export type LampInteraction = "idle" | "near" | "hover" | "pulling";
 export type PullReaction = "squint" | "widen";
 
 /**
- * Which owl sprite is on screen. The art is three whole-body exports rather than cut-out layers:
- * an image generator cannot hold a shared canvas across runs, so the wing is crossfaded instead
- * of rotated. `reach` already carries the squint, which is why a pull needs no fourth sprite.
+ * Which owl sprite is on screen. The art is whole-body exports rather than cut-out layers: an
+ * image generator cannot hold a shared canvas across runs, so the wing and the pupils are
+ * crossfaded instead of moved. Gaze changes hide behind a blink so two pupil positions never
+ * dissolve through each other. `reach` already carries its own eyes, which is why a pull needs
+ * no extra sprite.
  */
-export type OwlPose = "rest" | "reach" | "blink";
+export type OwlPose = "rest" | "reach" | "blink" | "gazeLeft" | "gazeRight";
 
-export type LeanOffset = { x: number; y: number };
+/** Where the pupils point. Changes are hidden behind a blink — see `nextIdleGaze`. */
+export type OwlGaze = "centre" | "left" | "right";
 
-export type LampVariant = "rail" | "panel";
+export type LeanOffset = { x: number; y: number; tilt: number };
+
+export type LampVariant = "rail" | "panel" | "header";
 
 /* Idle blink cadence — slow enough to read as breathing, not as a nervous tic. */
 export const BLINK_MIN_MS = 4000;
@@ -35,10 +40,20 @@ export const DOUBLE_BLINK_GAP_MS = 180;
  */
 export const LEAN_MAX_X = 2;
 export const LEAN_MAX_Y = 1.2;
+/**
+ * Cocking the head is the other half of the lean, and the half that actually sells it: the shift
+ * alone slides a sticker sideways, while a few degrees around his feet reads as a body turning to
+ * look. Pupils cannot do this work for us, so the whole owl does it.
+ */
+export const LEAN_MAX_TILT = 3;
 /** Pointer distance from the scene centre at which the lean reaches its limit. */
-export const LEAN_REACH_PX = 90;
+export const LEAN_REACH_PX = 120;
 /** Where he settles while the wing is up — leaning toward the cord, above and to his right. */
-export const LEAN_AT_CORD: LeanOffset = { x: LEAN_MAX_X, y: -LEAN_MAX_Y };
+export const LEAN_AT_CORD: LeanOffset = {
+  x: LEAN_MAX_X,
+  y: -LEAN_MAX_Y,
+  tilt: LEAN_MAX_TILT,
+};
 
 /** Crossfade between owl sprites. Short enough that the wing reads as one move, not a dissolve. */
 export const POSE_FADE_MS = 130;
@@ -83,11 +98,29 @@ export const OWL_ART: ArtBounds = {
   painted: { left: 27 / 320, top: 17 / 320, width: 265 / 320, height: 274 / 320 },
 };
 
+/**
+ * Tip of the raised wing in the `reach` sprite, as fractions of the *resting body* box — so `x`
+ * is past 1, that being the whole point of the wing. The knob has to land here or the reach stops
+ * reading as a reach, which is why the spec ties `pullCordLength` to it.
+ */
+export const OWL_WINGTIP = { x: 283 / 265, y: (84 - 17) / 274 } as const;
+
+/**
+ * Pivot for the tilt: his feet, which sit above the bottom of the box because the sprite is padded
+ * with air. Spinning around the box centre instead would swing his feet out from under him.
+ */
+export const OWL_PIVOT = `50% ${(
+  (OWL_ART.painted.top + OWL_ART.painted.height) * 100
+).toFixed(1)}%`;
+
 export type LampLayout = {
   width: number;
   height: number;
-  /** Ring around the scene where the pupils start tracking before the wing reacts. */
-  approachPadding: number;
+  /**
+   * Invisible ring around the scene that tracks the pointer. Applied as padding + matching
+   * negative margin so the footer layout does not grow, and so LanguageToggle is not shoved.
+   */
+  trackPadding: { top: number; right: number; bottom: number; left: number };
   shadeWidth: number;
   shadeCentreX: number;
   shadeTopY: number;
@@ -104,11 +137,13 @@ export const LAMP_LAYOUT = {
   rail: {
     width: 44,
     height: 62,
-    approachPadding: 4,
+    trackPadding: { top: 20, right: 36, bottom: 8, left: 8 },
     shadeWidth: 30,
     shadeCentreX: 22,
     shadeTopY: 12,
-    pullCordX: 28,
+    // Dead centre, unlike the panel: the offset there exists only so the owl's wingtip can meet
+    // the knob, and with no owl on the rail it just reads as a crooked lamp.
+    pullCordX: 22,
     pullCordLength: 14,
     owl: null,
   },
@@ -117,16 +152,53 @@ export const LAMP_LAYOUT = {
     // overhang him because it ends well above his head (asserted in the spec); that overlap is
     // what lets the cord hang close enough for his raised wingtip to land on the knob.
     width: 92,
-    height: 122,
-    approachPadding: 12,
+    height: 130,
+    // The dock (whole footer + the empty column above it) is the gaze field; left is 0 because
+    // LanguageToggle already sits on that side and bubbling covers it without stealing clicks.
+    trackPadding: { top: 88, right: 32, bottom: 16, left: 0 },
     shadeWidth: 44,
     shadeCentreX: 64,
     shadeTopY: 10,
     pullCordX: 62,
-    pullCordLength: 26,
+    pullCordLength: 34,
     owl: { width: 60, left: 0 },
   },
+  header: {
+    // Compact panel hung from the *top* of the mobile header: the shade sits in the 64px bar,
+    // Puhu hangs into the page below it. Smaller than the sidebar so he does not cover the
+    // greeting. The in-flow slot stays `size-11`.
+    width: 74,
+    height: 104,
+    trackPadding: { top: 0, right: 8, bottom: 12, left: 12 },
+    shadeWidth: 35,
+    shadeCentreX: 51,
+    shadeTopY: 6,
+    pullCordX: 51,
+    pullCordLength: 28,
+    owl: { width: 48, left: 0 },
+  },
 } as const satisfies Record<LampVariant, LampLayout>;
+
+/**
+ * The mobile header is `h-16` and the in-flow slot is `size-11`, both centered. Used as a
+ * negative `top` so the hanging scene's ceiling is the header's top edge — the shade lives
+ * in the bar, Puhu is what crosses the border.
+ */
+export const HEADER_HANG_OFFSET_PX = (64 - 44) / 2;
+
+/** Padding + matching negative margin: hit area grows, layout box stays put. */
+export function trackRingStyle(pad: LampLayout["trackPadding"]) {
+  return {
+    paddingTop: pad.top,
+    paddingRight: pad.right,
+    paddingBottom: pad.bottom,
+    paddingLeft: pad.left,
+    marginTop: -pad.top,
+    marginRight: -pad.right,
+    marginBottom: -pad.bottom,
+    marginLeft: -pad.left,
+  };
+}
 
 export const LAMP_ART = {
   shade: "/mascot/puhu/lamp/lamp-shade.png",
@@ -136,6 +208,8 @@ export const OWL_SPRITES: Record<OwlPose, string> = {
   rest: "/mascot/puhu/lamp/puhu-lamp-rest.png",
   reach: "/mascot/puhu/lamp/puhu-lamp-reach.png",
   blink: "/mascot/puhu/lamp/puhu-lamp-blink.png",
+  gazeLeft: "/mascot/puhu/lamp/puhu-lamp-gaze-left.png",
+  gazeRight: "/mascot/puhu/lamp/puhu-lamp-gaze-right.png",
 };
 
 export type ArtFit = {
@@ -240,9 +314,13 @@ export function computeLean(
   pointer: { x: number; y: number },
   centre: { x: number; y: number },
 ): LeanOffset {
+  const horizontal = clamp((pointer.x - centre.x) / LEAN_REACH_PX, -1, 1);
+
   return {
-    x: clamp((pointer.x - centre.x) / LEAN_REACH_PX, -1, 1) * LEAN_MAX_X,
+    x: horizontal * LEAN_MAX_X,
     y: clamp((pointer.y - centre.y) / LEAN_REACH_PX, -1, 1) * LEAN_MAX_Y,
+    // Tilt follows the horizontal axis only: nodding at a pointer that merely moved up is noise.
+    tilt: horizontal * LEAN_MAX_TILT,
   };
 }
 
@@ -251,19 +329,51 @@ export function resolveLean(
   interaction: LampInteraction,
   pointerLean: LeanOffset,
 ): LeanOffset {
-  return interaction === "idle" ? { x: 0, y: 0 }
+  return interaction === "idle" ? { x: 0, y: 0, tilt: 0 }
     : interaction === "near" ? pointerLean
     : LEAN_AT_CORD;
 }
 
 /**
  * The wing outranks a blink: if the pointer asked for a reach, showing closed eyes instead would
- * swallow the one frame the interaction exists for.
+ * swallow the one frame the interaction exists for. The reach sprite carries its own eyes, so a
+ * gaze cannot survive it either.
  */
 export function owlPose(
   interaction: LampInteraction,
   blinking: boolean,
+  gaze: OwlGaze = "centre",
 ): OwlPose {
   if (interaction === "hover" || interaction === "pulling") return "reach";
-  return blinking ? "blink" : "rest";
+  if (blinking) return "blink";
+  return gaze === "left" ? "gazeLeft" : gaze === "right" ? "gazeRight" : "rest";
+}
+
+/**
+ * Pointer horizontal, as a fraction of the lean limit, at which he commits to looking that way —
+ * and the lower mark at which he gives up. The two differ on purpose: one threshold would make him
+ * flick his eyes every time the pointer jittered across it.
+ */
+export const GAZE_ENTER = 0.32;
+export const GAZE_EXIT = 0.16;
+
+export function gazeFromLean(lean: LeanOffset, current: OwlGaze): OwlGaze {
+  const ratio = lean.x / LEAN_MAX_X;
+  const magnitude = Math.abs(ratio);
+
+  if (magnitude >= GAZE_ENTER) return ratio < 0 ? "left" : "right";
+  return magnitude < GAZE_EXIT ? "centre" : current;
+}
+
+/** How often an idle blink also carries a glance. Every blink would read as shifty, not alive. */
+export const GLANCE_CHANCE = 0.4;
+
+/**
+ * Picks what he looks at on the next idle blink. From a side he always comes back to centre, so a
+ * glance is a there-and-back beat rather than a wander.
+ */
+export function nextIdleGaze(current: OwlGaze, random: number): OwlGaze {
+  if (random >= GLANCE_CHANCE) return current;
+  if (current !== "centre") return "centre";
+  return random < GLANCE_CHANCE / 2 ? "left" : "right";
 }

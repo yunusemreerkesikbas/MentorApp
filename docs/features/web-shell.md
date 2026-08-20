@@ -423,37 +423,95 @@ http://localhost:3000/panel               # daily ritual hub
   altında Puhu, ucu toplu çekme ipine uzanıyor. **Koyu tema = yanık durum** (`isLit`): sıcak koni
   ve abajur ağzındaki parıltı yalnız `html.dark` iken boyanır, açık temada abajur mat kalır.
   Sahne iki ip çizer — tavandan abajura giden asma ipi ve tıklamada aşağı düşüp yayla geri
-  toparlanan çekme ipi. Puhu üç şeyle tepki verir: imleç sahnenin yakınına gelince ona doğru
-  birkaç px yaslanır (`approachPadding` halkası), düğmeye gelince/odaklanınca kanadını ipe
-  uzatır, tıklamadan sonra ışığa göre bir an büzülür (koyuya geçiş) veya kabarır (açığa geçiş).
-  Boşta 4–7 sn'de bir kırpar; sekme gizliyken kırpma yeniden kuyruğa alınır, hiçbir şey ekran
-  dışında oynamaz. **Kullanım:** `<ThemeLamp variant="rail" />` (52px dar sidebar, yalnız lamba)
-  ve `<ThemeLamp variant="panel" />` (açık panel, Puhu dahil); diğer dört toggle noktası sade
-  `ThemeToggle` ile kaldı, mobil başlıkta bu boyda sahnenin yeri yok. Tema `toggleTheme()` ile
+  toparlanan çekme ipi. Puhu dört şeyle tepki verir: imleç sahnenin yakınına gelince ona doğru
+  birkaç px yaslanır ve kafasını eğer, bakışını o yöne kırpmanın
+  arkasında kaydırır, düğmeye gelince/odaklanınca kanadını ipe uzatır, tıklamadan sonra ışığa
+  göre bir an büzülür (koyuya geçiş) veya kabarır (açığa geçiş).
+  Bakış alanı boyalı sahne değil: açık panelde `ThemeLampFooter` tüm footer satırını (TR|EN
+  dahil) ve üstündeki boş sütunu izler — dil düğmesinin tıklanması çalınmaz, pointer olayları
+  kabarcıklanır. Dar rail kendi `trackPadding` halkasını kullanır. Halka padding + negatif
+  margin olduğu için layout büyümez; `mt-auto` ayrı bir sarmalayıcıda kalmak zorunda, yoksa
+  inline `marginTop` flex'teki alta yapışmayı ezer ve lamba sütunda yukarı kaçar. Merkez
+  Puhu'nun kutusudur (`sceneRef`), dock'un değil.
+  Boşta 4–7 sn'de bir kırpar; kırpmanın bir kısmı rastgele sağa/sola bakış taşır. Sekme gizliyken
+  kırpma yeniden kuyruğa alınır, hiçbir şey ekran dışında oynamaz. **Kullanım:** `<ThemeLamp variant="rail" />` (52px dar sidebar, yalnız lamba)
+  ve `<ThemeLampFooter>` (açık panel, Puhu + bakış alanı tüm footer); diğer dört toggle noktası sade
+  `ThemeToggle` ile kaldı (auth/onboarding/community). Mobil `(app)` başlığı `MobileThemeLamp`
+  kullanır: in-flow slot `size-11` (eski güneş/ay ile aynı), sahne header'ın üst kenarına
+  hizalanır — abajur 64px barın içinde, Puhu (~48px) alt kenardan içeri sarkar. Dokunma
+  hover yerine geçer: basılı tutunca kanat kalkar, bırakınca ip çekilir. Idle kırpma/bakış
+  çalışır. Tema `toggleTheme()` ile
   koreografiden **önce** ve koşulsuz çevrilir — animasyon hiçbir zaman sonucu geciktirmez;
   reduced-motion'da tüm hareket sıfırlanır, düğme aynen çalışır. Renkler `--lamp-*` token
   ailesinden gelir (`globals.css`, `.mentor-theme-lamp` scope'u).
-  **Gotcha 1:** Puhu üç **tam gövde sprite**'ı (`rest`/`reach`/`blink`) ile çalışır, kesilmiş
-  katmanlarla değil — görsel üreteci çalıştırmalar arası ortak canvas tutamadığı için kanat
-  döndürülmez, sprite'lar crossfade edilir. Bu üç dosya ortak 320px canvas'ı paylaşır ve **tek tek
-  trim edilmemeli**; trim her birini farklı kırpar ve geçişte zıplama olur. `reach` kutusu `rest`
-  ile aynıdır, sadece sağda 18px kalkık kanat fazlası vardır — bu yüzden `OWL_ART` **duran gövdeyi**
-  ölçer; `reach`'i ölçmek kanat her kalktığında gövdeyi sola kaydırırdı. Bedeli: göz bebekleri ayrı
-  hareket edemediği için bakış takibi yerine tüm gövdenin imlece yaslanması (`computeLean`, ±2px).
+  **Gotcha 1:** Puhu beş **tam gövde sprite**'ı (`rest`/`reach`/`blink`/`gazeLeft`/`gazeRight`)
+  ile çalışır, kesilmiş katmanlarla değil — görsel üreteci çalıştırmalar arası ortak canvas
+  tutamadığı için kanat döndürülmez, göz bebekleri kaydırılmaz, sprite'lar crossfade edilir. Bu
+  dosyalar ortak 320px canvas'ı paylaşır ve **tek tek trim edilmemeli**; trim her birini farklı
+  kırpar ve geçişte zıplama olur. `reach` kutusu `rest` ile aynıdır, sadece sağda 18px kalkık kanat
+  fazlası vardır — bu yüzden `OWL_ART` **duran gövdeyi** ölçer. Bakış değişimi bir kırpmanın
+  arkasında yapılır (`setGaze` gözler kapalıyken); aksi halde iki bebek konumu birbirinin içinden
+  erir. İmleç sahneye yaklaşınca `gazeFromLean` (histerezis: `GAZE_ENTER`/`GAZE_EXIT`) o yöne
+  bakmasını ister; boştayken kırpma ritminin %40'ı rastgele bir bakış taşır ve her bakıştan sonra
+  merkeze döner. Gövde ayrıca imlece yaslanır — ±2px kayma **artı ±3° baş eğme** (`computeLean`).
+  Eğmenin ekseni `OWL_PIVOT` ile Puhu'nun **ayaklarına** sabitli.
   **Gotcha 2:** Layout *görünür* sanat px'iyle konuşur; `fitArt` görsel kutusunu `OWL_ART` /
   `SHADE_ART` tanımına göre ölçekleyip kaydırır (`owlArtBox` gövdeyi sahne tabanına bastırır,
   `shadeArtBox` abajuru asma ipine hizalar). Sanat yenilenirse **tek yapılacak iş** bu iki sabiti
   `inspect-png.mjs` çıktısından tazelemek — bileşende değişiklik gerekmez.
   **Gotcha 3:** Üretilen görseller magenta (`#FF00FF`) zeminde isteniyor ve `key-alpha.mjs` ile
   şeffaflaştırılıyor; magenta Puhu'nun paletinde yok, siyah zemin denendiğinde göz bebekleri de
-  silinmişti. Boru hattının tamamı ve komutlar `public/mascot/puhu/README.md`'de. `--max=320`
-  üç baykuşta da aynı olmalı, yoksa hizalama bozulur.
+  silinmişti.   Boru hattının tamamı ve komutlar `public/mascot/puhu/README.md`'de. `--max=320`
+  üç baykuşta da aynı olmalı, yoksa hizalama bozulur. Bir asset **aynı isimle** yenilenirse
+  `next/image` önbelleği URL'e göre anahtarlandığı için eskisini servis etmeye devam eder —
+  `apps/web/.next/cache/images` silinip sayfa hard refresh edilmeli. Abajurun arkasında açık gri
+  bir kare görünmesi tam olarak bu: eski export'un boyalı damalı zemini 44px'e inince düz kareye
+  bulanıyordu.
   **Gotcha 4:** Puhu'ya düşen sıcak ışık, `rest` sprite'ıyla `mask-image` üzerinden maskeleniyor;
   maskesiz `soft-light` sidebar zemininde dikdörtgen boyar. Maske hep `rest`'tir — kalkık kanat
   ışığı da beraberinde sürüklemesin diye. İlgili dosyalar:
   `components/theme-lamp/{theme-lamp,lamp-cord}.tsx`,
   `{lamp-choreography,use-lamp-choreography}.ts`, `components/app-nav.tsx`, `app/globals.css`,
   `public/mascot/puhu/lamp/`, `scripts/{key-alpha,inspect-png,to-png}.*`, `e2e/theme.spec.ts`.
+
+- **Achievement Puhu varlıkları tamamlandı (2026-08-20)** — Tasarım kaynakları
+  `public/img/achievements/mentor-*-badge.png` altında korunuyor; runtime için 12 sabit achievement
+  ID'sine karşılık gelen 1024×1024, alpha kanallı WebP dosyaları
+  `public/achievements/puhu/<achievement-id>.webp` altında üretildi. Dönüşüm WebP quality 95 ve
+  alpha quality 100 ile yapıldı; `next/image` bu final dosyaları servis ediyor. **Kullanım:** yeni
+  görsel aynı ID ile değiştirildiğinde final WebP yeniden üretilmeli ve
+  `pnpm --filter @mentor/web assets:check:achievements` çalıştırılmalı. Kontrol 12 dosyanın adını,
+  WebP yapısını, 1024×1024 ölçüsünü ve alpha kanalını doğrular. Kaynak PNG'ler palet tabanlı
+  şeffaflık (`P` mode + transparency table) taşıdığı için dönüştürmeden önce RGBA'ya açılmalıdır;
+  yalnız kanal adına bakmak yanlış biçimde "alpha yok" sonucu verir. İlgili dosyalar:
+  `public/img/achievements/`, `public/achievements/puhu/`,
+  `scripts/validate-achievement-assets.mjs`, `components/achievements/achievement-art.tsx`.
+
+- **Achievement badge alpha kenarları temizlendi (2026-08-20)** — Kaynak PNG export'larında dış
+  çerçevenin altında opak/yarı opak kalmış açık renkli dama pikselleri koyu modal zemininde beyaz
+  bir şerit gibi görünüyordu. Runtime'daki 12 WebP, ortak badge silüetini izleyen yumuşak bir alt
+  alpha sınırıyla kayıpsız olarak yeniden üretildi; badge içeriği ve krem dış çerçeve korundu.
+  **Gotcha:** WebP kalite değerini artırmak bu kusuru çözmez; sorun sıkıştırma değil kaynak alpha
+  maskesidir. Yeni export'lar koyu ve açık zemin üzerinde gerçek görüntüleme boyutunda kontrol
+  edilmeli, ardından `pnpm --filter @mentor/web assets:check:achievements` çalıştırılmalıdır.
+  İlgili dosyalar: `public/img/achievements/`, `public/achievements/puhu/`.
+
+- **Achievement kutlama efekti badge silüetine uyarlandı (2026-08-21)** — Açılıştaki glow ve iki
+  aşamalı ışık geçişi kare görsel alanına yayılmak yerine beşgen badge maskesi içinde çalışıyor.
+  İlk güçlü geçiş, gecikmeli hafif ikinci geçiş ve reduced-motion davranışı korunuyor. İlgili
+  dosyalar: `components/achievements/achievement-celebration.tsx`,
+  `lib/achievement-celebration-sequence.ts`.
+
+- **Achievement kutlamasına Puhu ses imzası eklendi (2026-08-21)** — Badge görünürken en fazla bir
+  kez çalan, yaklaşık bir saniyelik üç notalı yumuşak Web Audio tınısı eklendi. Modal içi ses
+  kontrolü kaldırıldı; tını tarayıcı izin verdiğinde otomatik çalıyor ve sistem/tarayıcı ses
+  seviyesiyle birlikte çalışıyor. Çıkış kazancı duyulabilir seviyeye yükseltildi ve üst üste binen
+  notaların sertleşmesini önlemek için dinamik sıkıştırıcı eklendi. Tarayıcının autoplay engeli
+  veya Web Audio eksikliği görsel kutlamayı etkilemez. Autoplay denemesi engellenirse başarısız
+  deneme oynatılmış sayılmaz; kutlama açıkken ilk pointer/klavye etkileşimi AudioContext'i açar ve
+  badge görünür durumdaysa tınıyı yeniden dener.
+  İlgili dosyalar: `components/achievements/achievement-celebration.tsx`,
+  `lib/achievement-sound.ts`, `messages/{tr,en}.json`.
 
 ## Gotchas / Known issues
 
@@ -497,3 +555,24 @@ http://localhost:3000/panel               # daily ritual hub
   (`@mentor/ui` tokens)
 - Composes: every feature doc's "Web:" section
 - Status: [core/mvp-status.md](../core/mvp-status.md) (cross-cutting)
+### 2026-08-20 — Achievement celebration panel preview
+
+- The panel accepts `?mockAchievement=<achievement-id>` for a UI-only preview of the real
+  achievement celebration. It never calls the award or acknowledgement APIs.
+- The celebration now blurs the app, plays `/lottie/confetti.lottie` once across the full viewport,
+  and reveals the achievement badge at 3.5 seconds while the final ~1.5 seconds of confetti keep
+  playing above it. The badge receives a strong glow/light sweep followed by a shorter, lower-
+  opacity finishing glint and subtle second glow pulse; neither effect loops. The player is
+  lazy-loaded and advances on `complete`; player errors use a bounded fallback so the user is never
+  trapped. Reduced-motion users skip confetti and receive a short badge crossfade.
+- Usage: `/tr/panel?mockAchievement=first_step` (all 12 locked V1 ids are accepted).
+- Related files: `dashboard/_components/panel-shell.tsx`,
+  `components/achievements/achievement-celebration.tsx`, `lib/achievement-preview.ts`.
+
+### 2026-08-21 — Achievement celebration companion copy
+
+- Live celebration modals now use achievement-specific TR/EN eyebrow and body copy in Mentor's
+  calm companion voice; profile descriptions remain factual so earning conditions stay clear.
+- The shared action now reads “Yoluma devam et” / “Continue my journey”. Backfill summary copy is
+  unchanged.
+- Related files: `components/achievements/achievement-celebration.tsx`, `messages/{tr,en}.json`.

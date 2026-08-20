@@ -16,6 +16,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type {
   PlanTaskDto,
   PlanTaskStatus,
+  AchievementCelebrationDto,
   QuestProgressView,
   SessionPresetDto,
   StreakRescueView,
@@ -59,6 +60,8 @@ import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { useDailyGreeting } from "@/lib/use-daily-greeting";
 import { useStreakCelebration } from "@/components/streak-celebration";
 import { StreakRescueSuccess } from "@/components/streak-rescue-success";
+import { AchievementCelebration } from "@/components/achievements/achievement-celebration";
+import { parseAchievementPreviewId } from "@/lib/achievement-preview";
 import {
   getWeeklyRecapTeaserState,
   type WeeklyRecapTeaserState,
@@ -91,6 +94,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
   const t = useTranslations("panel");
   const economyT = useTranslations("economy");
   const countdownT = useTranslations("countdown");
+  const achievementItemsT = useTranslations("achievements.preview_items");
   const toast = useMentorToast();
   const { promo } = useMentorDialog();
   const sheet = useMentorBottomSheet();
@@ -99,6 +103,9 @@ export function PanelShell({ initialData }: PanelShellProps) {
   const searchParams = useSearchParams();
   const mockCelebrationPreviewed = useRef(false);
   const mockRescueSuccessPreviewed = useRef(false);
+  const mockAchievementPreviewed = useRef(false);
+  const [achievementPreview, setAchievementPreview] =
+    useState<AchievementCelebrationDto | null>(null);
   const [rescueSuccessDays, setRescueSuccessDays] = useState<number | null>(
     null,
   );
@@ -302,6 +309,29 @@ export function PanelShell({ initialData }: PanelShellProps) {
         : Math.max(data?.streak.currentStreak ?? 0, 1);
     setRescueSuccessDays(days);
   }, [data?.streak.currentStreak, searchParams]);
+
+  // Dev/QA: `?mockAchievement=first_step` previews the real celebration without an award write.
+  useEffect(() => {
+    if (mockAchievementPreviewed.current) return;
+    const achievementId = parseAchievementPreviewId(
+      searchParams.get("mockAchievement"),
+    );
+    if (achievementId == null) return;
+
+    mockAchievementPreviewed.current = true;
+    setAchievementPreview({
+      kind: "ACHIEVEMENT",
+      items: [{
+        id: achievementId,
+        title: achievementItemsT(`${achievementId}.title`),
+        description: achievementItemsT(`${achievementId}.description`),
+        artKey: achievementId,
+        status: "EARNED",
+        earnedAt: new Date().toISOString(),
+        progress: null,
+      }],
+    });
+  }, [achievementItemsT, searchParams]);
 
   useEffect(() => {
     let active = true;
@@ -567,6 +597,13 @@ export function PanelShell({ initialData }: PanelShellProps) {
       {loading ? <p className="sr-only">{t("loading")}</p> : null}
       {error ? <FormError message={error} /> : null}
       {celebration}
+      {achievementPreview ? (
+        <AchievementCelebration
+          celebration={achievementPreview}
+          busy={false}
+          onClose={() => setAchievementPreview(null)}
+        />
+      ) : null}
       {rescueSuccessDays != null ? (
         <StreakRescueSuccess
           days={rescueSuccessDays}

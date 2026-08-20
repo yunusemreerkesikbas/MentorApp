@@ -1,170 +1,218 @@
+import { useId } from "react";
 import type { InkToolId } from "@/lib/notebook-ink";
 
 /**
- * The pens themselves, drawn rather than iconified.
+ * The pens themselves, drawn rather than iconified — a second pass after the first draft read as
+ * thin, flat sticks lost in a lot of empty padding. Two things changed:
  *
- * Procedural SVG with no raster asset, the same rule `notebook-surface.tsx` follows for the paper,
- * the spiral and the cover — the notebook's whole look is drawn in the browser, and a set of PNG
- * pens would be the one thing in it that could not follow the colour it is currently loaded with.
+ * 1. **Tip up, not tip down.** The first draft drew every pen tip-first toward the bottom of its
+ *    box, which buried the interesting, chunky part (the barrel) and left the thin, uninteresting
+ *    part (the point) as the only thing with room to read. A pen standing in a cup — the reference
+ *    the design was built against — plants its barrel on the tray floor and lets the tip rise. That
+ *    single flip is most of why the second pass reads as heavier and more present than the first.
+ * 2. **The barrel fills most of its box width**, not a third of it, and carries a two-stop gradient
+ *    plus a thin glass-like highlight strip instead of one flat fill — enough dimensionality to read
+ *    as a rounded cylinder at 44px without building a full faceted-gradient system for eight icons
+ *    that mostly get glanced at, not studied.
  *
- * That is the point of the artwork over a line icon: each pen shows the ink it will lay down, so
- * the toolbar answers "what happens if I draw now" without a legend. `lucide` has a `Pencil` and a
- * `Highlighter` and nothing that distinguishes a marker from a fineliner from a fountain nib.
- *
- * Every pen is drawn tip-down in a 28×88 box so the row can lift the selected one straight up.
- * Body colours are literal, like `INK_PALETTE`: these are objects lying on a dark tray, not themed
- * surfaces — a barrel that inverted in dark mode would stop reading as a pen.
+ * Procedural SVG with no raster asset, same rule `notebook-surface.tsx` follows for the paper, the
+ * spiral and the cover. Every pen shares one barrel silhouette (rounded shoulders, flat foot) so the
+ * row reads as one family; only the top ~third — the tip, cap or nib — is tool-specific, and that is
+ * also the one part that shows the current ink colour. The barrel stays a neutral material (wood,
+ * cream plastic, dark plastic, steel, gold) exactly like a real pen's barrel does regardless of what
+ * colour is loaded in it — recolouring the whole body would make the tray look like it changes
+ * material every time the student picks a different colour, not just ink.
  */
 
-const BODY = "#3f434c";
-const BODY_LIGHT = "#585d69";
-const BODY_DARK = "#2a2d34";
-const METAL = "#b9bec9";
-const METAL_DARK = "#8d94a1";
-const WOOD = "#d9b98a";
-const WOOD_DARK = "#bd9a68";
-const GOLD = "#d8a441";
+const VIEW_W = 30;
+const VIEW_H = 64;
+
+/** Shared by every barrelled tool; the eraser is its own single block and skips this. */
+const BARREL_X0 = 5;
+const BARREL_X1 = 25;
+const BARREL_Y0 = 25;
+const BARREL_Y1 = 64;
+const BARREL_RX = 4;
+
+interface BarrelTone {
+  dark: string;
+  base: string;
+  light: string;
+  /** The thin ferrule band just under the tip. Defaults to a shade of `dark`. */
+  collar?: string;
+}
+
+const TONE = {
+  wood: { dark: "#a9793f", base: "#c9944f", light: "#f0c07a" },
+  cream: { dark: "#c9c6bd", base: "#e9e6de", light: "#ffffff" },
+  charcoal: { dark: "#1c1e22", base: "#33363c", light: "#53565f" },
+  steel: { dark: "#7d838f", base: "#a6acb8", light: "#e3e7ee" },
+} as const satisfies Record<string, BarrelTone>;
+
+/** The gold a nib is made of — fixed, not ink-tinted: the metal doesn't change colour, the ink does. */
+const NIB_GOLD = { dark: "#8a651c", base: "#c99a3a", light: "#f3d885" };
+
+/**
+ * A pen's lower body: gradient-filled barrel, a glassy highlight strip, and a darker collar band
+ * where the tip/cap meets it. `uid` keeps this instance's gradient ids from colliding with the
+ * seven other pens rendered alongside it in the open tray.
+ */
+function Barrel({ uid, tone }: { uid: string; tone: BarrelTone }) {
+  const gradId = `barrel-${uid}`;
+  return (
+    <>
+      <defs>
+        <linearGradient id={gradId} x1={BARREL_X0} x2={BARREL_X1} y1="0" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor={tone.dark} />
+          <stop offset="0.42" stopColor={tone.base} />
+          <stop offset="0.58" stopColor={tone.light} />
+          <stop offset="1" stopColor={tone.dark} />
+        </linearGradient>
+      </defs>
+      <path
+        d={`M${BARREL_X0} ${BARREL_Y0 + BARREL_RX}
+            a${BARREL_RX} ${BARREL_RX} 0 0 1 ${BARREL_RX} -${BARREL_RX}
+            h${BARREL_X1 - BARREL_X0 - BARREL_RX * 2}
+            a${BARREL_RX} ${BARREL_RX} 0 0 1 ${BARREL_RX} ${BARREL_RX}
+            V${BARREL_Y1} H${BARREL_X0} Z`}
+        fill={`url(#${gradId})`}
+      />
+      {/* Glassy highlight — the one cue that sells "rounded plastic" over "flat card". */}
+      <rect
+        x={BARREL_X0 + 3.5}
+        y={BARREL_Y0 + 5}
+        width={2.2}
+        height={BARREL_Y1 - BARREL_Y0 - 9}
+        rx={1.1}
+        fill="#ffffff"
+        opacity={0.32}
+      />
+      {/* Collar: the ferrule where the tip/cap seats into the barrel. */}
+      <rect
+        x={BARREL_X0}
+        y={BARREL_Y0}
+        width={BARREL_X1 - BARREL_X0}
+        height={3.5}
+        fill={tone.collar ?? tone.dark}
+        opacity={0.85}
+      />
+    </>
+  );
+}
 
 export interface PenArtProps {
-  /** The ink this pen is currently loaded with — tips and bands pick it up. */
+  /** The ink this pen is currently loaded with — the tip/cap/nib picks it up, the barrel does not. */
   color: string;
+  uid: string;
 }
 
-/** The lengthwise highlight every barrel shares. Sells the round body more than shading does. */
-function Gloss({ x, y, height, width = 2.5 }: { x: number; y: number; height: number; width?: number }) {
-  return <rect x={x} y={y} width={width} height={height} rx={width / 2} fill={BODY_LIGHT} opacity={0.75} />;
-}
-
-function Pencil({ color }: PenArtProps) {
+function Pencil({ color, uid }: PenArtProps) {
+  // A hexagonal cone: three facets (dark/light/mid) so it reads as faceted wood, not a flat triangle.
   return (
     <>
-      {/* Hexagonal barrel, faceted with two tone bands rather than a gradient. */}
-      <path d="M8 6h12v58H8z" fill={BODY} />
-      <path d="M17 6h3v58h-3z" fill={BODY_DARK} />
-      <Gloss x={9.5} y={9} height={52} />
-      {/* Sharpened wood cone, then the graphite point in the current ink. */}
-      <path d="M8 64h12l-6 12z" fill={WOOD} />
-      <path d="M14 64h6l-6 12z" fill={WOOD_DARK} />
-      <path d="M11.6 70.8h4.8L14 76z" fill={color} />
-      {/* Ferrule and eraser cap — what makes it read as a pencil at a glance. */}
-      <rect x="8" y="6" width="12" height="5" fill={METAL} />
-      <path d="M8 2.5A2.5 2.5 0 0 1 10.5 0h7A2.5 2.5 0 0 1 20 2.5V6H8z" fill="#e8877f" />
+      <Barrel uid={uid} tone={TONE.wood} />
+      <path d={`M${BARREL_X0} ${BARREL_Y0} L15 4 L12 ${BARREL_Y0} Z`} fill={TONE.wood.dark} />
+      <path d={`M12 ${BARREL_Y0} L15 4 L18 ${BARREL_Y0} Z`} fill={TONE.wood.light} />
+      <path d={`M18 ${BARREL_Y0} L15 4 L${BARREL_X1} ${BARREL_Y0} Z`} fill={TONE.wood.base} />
+      {/* Graphite point, in the loaded ink colour. */}
+      <path d="M13 9 L15 1 L17 9 Z" fill={color} />
     </>
   );
 }
 
-function Pen({ color }: PenArtProps) {
+function Pen({ color, uid }: PenArtProps) {
   return (
     <>
-      <path d="M8.5 4h11v56h-11z" fill={BODY} />
-      <path d="M16.5 4h3v56h-3z" fill={BODY_DARK} />
-      <Gloss x={10} y={7} height={50} />
-      {/* Clip. */}
-      <path d="M19.5 8h2.5v16a1.2 1.2 0 0 1-2.5 0z" fill={METAL_DARK} />
-      <rect x="8.5" y="0" width="11" height="4" rx="1.5" fill={BODY_DARK} />
-      {/* Metal cone down to the ball, which carries the ink colour. */}
-      <path d="M8.5 60h11l-4 12h-3z" fill={METAL} />
-      <path d="M15 60h4.5l-4 12h-1.5z" fill={METAL_DARK} />
-      <path d="M12.5 72h3l-1.5 4z" fill={color} />
+      <Barrel uid={uid} tone={TONE.cream} />
+      <path d={`M${BARREL_X0} ${BARREL_Y0} L15 6 L${BARREL_X1} ${BARREL_Y0} Z`} fill={TONE.cream.base} />
+      <path d={`M11 ${BARREL_Y0} L15 6 L15 ${BARREL_Y0} Z`} fill={TONE.cream.light} opacity={0.7} />
+      {/* Ball tip. */}
+      <circle cx="15" cy="7" r="2.3" fill={color} />
     </>
   );
 }
 
-function Fineliner({ color }: PenArtProps) {
+function Fineliner({ color, uid }: PenArtProps) {
+  // The thinnest silhouette of the set on purpose — a fineliner's whole identity is "not fat".
   return (
     <>
-      {/* Slimmest barrel of the set — the silhouette is the whole tell. */}
-      <path d="M10 4h8v58h-8z" fill={BODY} />
-      <path d="M15.5 4h2.5v58h-2.5z" fill={BODY_DARK} />
-      <Gloss x={11} y={7} height={52} width={2} />
-      <rect x="10" y="0" width="8" height="4" rx="1.2" fill={color} />
-      {/* Stepped plastic collar, then a needle tip of constant width. */}
-      <path d="M10 62h8l-1.5 6h-5z" fill={BODY_DARK} />
-      <rect x="12.8" y="68" width="2.4" height="9" rx="1.2" fill={color} />
+      <Barrel uid={uid} tone={TONE.charcoal} />
+      <rect x="13.2" y="6" width="3.6" height={BARREL_Y0 - 6} fill={TONE.charcoal.base} />
+      <rect x="13.2" y="6" width="1.4" height={BARREL_Y0 - 6} fill={TONE.charcoal.light} opacity={0.6} />
+      <path d="M13.2 6 L15 1.5 L16.8 6 Z" fill={TONE.charcoal.dark} />
+      {/* The ink cartridge collar — this pen's stand-in for a coloured tip. */}
+      <rect x="11.5" y={BARREL_Y0 - 4} width="7" height="4" fill={color} />
     </>
   );
 }
 
-function Marker({ color }: PenArtProps) {
+function Marker({ color, uid }: PenArtProps) {
   return (
     <>
-      {/* Fattest barrel, squared shoulders. */}
-      <path d="M5.5 6h17v52h-17z" fill={BODY} />
-      <path d="M17 6h5.5v52H17z" fill={BODY_DARK} />
-      <Gloss x={7.5} y={9} height={46} width={3} />
-      <rect x="5.5" y="1" width="17" height="5" rx="1.5" fill={color} />
-      {/* Shoulder into a broad chisel — cut on the slant, which is what a marker leaves. */}
-      <path d="M5.5 58h17l-2.5 6h-12z" fill={BODY_DARK} />
-      <path d="M8 64h12l1.5 12H9z" fill={color} />
-      <path d="M9 76h12.5l-1-8H9z" fill={color} opacity={0.55} />
+      <Barrel uid={uid} tone={TONE.charcoal} />
+      <path
+        d={`M7 ${BARREL_Y0} L${BARREL_X1 - 2} ${BARREL_Y0} L21 11 L9 11 Z`}
+        fill={TONE.charcoal.base}
+      />
+      {/* The chisel nib, just visible above the cap — this is where ink colour shows. */}
+      <path d="M9 11 L21 11 L19.5 8 L10.5 8 Z" fill={color} />
     </>
   );
 }
 
-function Highlighter({ color }: PenArtProps) {
+function Highlighter({ color, uid }: PenArtProps) {
+  // The one tool whose whole cap is the ink colour: a highlighter's chisel is most of what you see
+  // of it, so colouring only a sliver (like the marker's nib) would make it look uncoloured.
   return (
     <>
-      {/* The one pen whose whole body is the ink — a highlighter is bought by its colour. */}
-      <path d="M5.5 8h17v50h-17z" fill={color} />
-      <path d="M17 8h5.5v50H17z" fill="#000000" opacity={0.16} />
-      <rect x="7.5" y="11" width="3" height="44" rx="1.5" fill="#ffffff" opacity={0.45} />
-      {/* Translucent cap ring — the see-through window real highlighters have. */}
-      <rect x="5.5" y="2" width="17" height="6" rx="2" fill="#ffffff" opacity={0.35} />
-      <path d="M5.5 58h17l-2 6h-13z" fill="#000000" opacity={0.22} />
-      {/* Broad chisel, wider than the marker's: this one is meant to cover a whole line. */}
-      <path d="M7 64h14l2 13H5z" fill={color} />
-      <path d="M5 77h18l-1.5-6H6.5z" fill="#000000" opacity={0.12} />
+      <Barrel uid={uid} tone={TONE.charcoal} />
+      <path d={`M6 ${BARREL_Y0} L${BARREL_X1} ${BARREL_Y0} L22 6 L9 10 Z`} fill={color} />
+      <path d={`M6 ${BARREL_Y0} L${BARREL_X1} ${BARREL_Y0} L24 ${BARREL_Y0 - 4} L5 ${BARREL_Y0 - 4} Z`} fill="#ffffff" opacity={0.18} />
     </>
   );
 }
 
-function Brush({ color }: PenArtProps) {
+function Brush({ color, uid }: PenArtProps) {
   return (
     <>
-      <path d="M9 2h10v52H9z" fill={BODY} />
-      <path d="M16 2h3v52h-3z" fill={BODY_DARK} />
-      <Gloss x={10.5} y={5} height={46} />
-      {/* Crimped metal ferrule holding the bristles. */}
-      <path d="M8 54h12v8H8z" fill={METAL} />
-      <path d="M15 54h5v8h-5z" fill={METAL_DARK} />
-      <rect x="8" y="56.5" width="12" height="1.4" fill={METAL_DARK} opacity={0.7} />
-      {/* Bristles: a belly that comes to a point, the shape that makes the stroke taper. */}
-      <path d="M9.5 62c0 6 1 11 4.5 16 3.5-5 4.5-10 4.5-16z" fill={color} />
-      <path d="M14 62c0 6 0 11 0 16 3.5-5 4.5-10 4.5-16z" fill="#000000" opacity={0.18} />
+      <Barrel uid={uid} tone={TONE.cream} />
+      <rect x="8" y="18" width="14" height="7" rx="1" fill={`url(#barrel-${uid})`} />
+      <rect x="8" y="18" width="14" height="1.4" fill={TONE.steel.light} opacity={0.7} />
+      {/* Bristle cone: a soft, slightly uneven taper rather than a sharp point. */}
+      <path d="M8.5 19 C9 12 12 6 15 2 C18 6 21 12 21.5 19 Z" fill={color} />
+      <path d="M15 2 C13.5 7 12.5 13 12.5 19 L15 19 Z" fill="#000000" opacity={0.14} />
     </>
   );
 }
 
-function Fountain({ color }: PenArtProps) {
+function Fountain({ color, uid }: PenArtProps) {
   return (
     <>
-      <path d="M8.5 2h11v50h-11z" fill={BODY} />
-      <path d="M16.5 2h3v50h-3z" fill={BODY_DARK} />
-      <Gloss x={10} y={5} height={44} />
-      <path d="M19.5 6h2.5v15a1.2 1.2 0 0 1-2.5 0z" fill={GOLD} />
-      {/* Gold band at the section joint. */}
-      <rect x="8.5" y="52" width="11" height="5" fill={GOLD} />
-      <rect x="8.5" y="54.6" width="11" height="1.2" fill="#000000" opacity={0.2} />
-      {/* The nib: shoulders, a breather hole, and the slit that splits the tines. */}
-      <path d="M9.5 57h9l-1 11-3.5 8-3.5-8z" fill={GOLD} />
-      <path d="M14 57h4.5l-1 11-3.5 8z" fill="#000000" opacity={0.18} />
-      <circle cx="14" cy="62" r="1.6" fill={BODY_DARK} />
-      <path d="M13.4 64h1.2l.4 12h-2z" fill={color} />
+      <Barrel uid={uid} tone={TONE.charcoal} />
+      <path d={`M${BARREL_X0} ${BARREL_Y0} L15 6 L${BARREL_X1} ${BARREL_Y0} Z`} fill={TONE.charcoal.base} />
+      {/* The nib — fixed gold, the one thing on this pen that never takes the ink colour. */}
+      <path d="M12 15 L15 2 L18 15 L15 21 Z" fill={NIB_GOLD.base} />
+      <path d="M12 15 L15 2 L15 21 Z" fill={NIB_GOLD.light} opacity={0.6} />
+      <line x1="15" y1="7" x2="15" y2="17" stroke={NIB_GOLD.dark} strokeWidth="0.6" />
+      <circle cx="15" cy="9.5" r="0.9" fill={NIB_GOLD.dark} />
+      {/* Section/grip ring: the one place ink colour peeks through on this tool. */}
+      <rect x="11.5" y={BARREL_Y0 - 4.5} width="7" height="4.5" fill={color} />
     </>
   );
 }
 
 function Eraser() {
+  // No `color` — an eraser leaves no ink, so there is nothing for it to preview.
   return (
     <>
-      {/* No ink, so no colour prop: an eraser that tinted itself would promise something it
-          cannot do. Bevelled corner and a paper sleeve, which is the whole silhouette. */}
-      <path d="M6 26h16v42a4 4 0 0 1-4 4h-8a4 4 0 0 1-4-4z" fill="#f0a8a0" />
-      <path d="M16 26h6v42a4 4 0 0 1-4 4h-2z" fill="#d98d85" />
-      <path d="M6 26l5-9a3 3 0 0 1 2.4-1.2h1.2A3 3 0 0 1 17 17l5 9z" fill="#f6c2bc" />
-      <rect x="5" y="34" width="18" height="13" rx="1.5" fill="#e9edf2" />
-      <rect x="5" y="34" width="18" height="3" fill="#cdd4de" />
-      <rect x="16" y="34" width="7" height="13" fill="#000000" opacity={0.08} />
+      <path
+        d={`M6 18 a4 4 0 0 1 4 -4 h10 a4 4 0 0 1 4 4 V${VIEW_H} H6 Z`}
+        fill="#f0a8a0"
+      />
+      <rect x="6" y="18" width="18" height="2.4" fill="#ffffff" opacity={0.3} />
+      <rect x="6" y="30" width="18" height="9" fill="#e9edf2" />
+      <rect x="6" y="30" width="18" height="2" fill="#cdd4de" />
+      <rect x="9" y="21" width="1.8" height="34" fill="#ffffff" opacity={0.25} />
     </>
   );
 }
@@ -187,20 +235,21 @@ export function InkPenArt({
 }: {
   tool: InkToolId;
   color: string;
-  /** Rendered height in px; the box is 28×88, so width follows at roughly a third. */
+  /** Rendered height in px; the box is 30×64, so width follows at just under half that. */
   size?: number;
 }) {
+  const uid = useId();
   const Art = PENS[tool];
   return (
     <svg
-      viewBox="0 0 28 88"
+      viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
       height={size}
-      width={(size * 28) / 88}
+      width={(size * VIEW_W) / VIEW_H}
       // The button around it carries the accessible name; the drawing itself says nothing extra.
       aria-hidden
       focusable="false"
     >
-      <Art color={color} />
+      <Art color={color} uid={uid} />
     </svg>
   );
 }

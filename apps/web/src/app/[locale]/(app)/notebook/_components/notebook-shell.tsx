@@ -1,9 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  History,
   LoaderCircle,
   PanelTop,
   Pen,
@@ -13,7 +20,12 @@ import {
   Trash2,
   Undo2,
 } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  AnimatePresence,
+  LayoutGroup,
+  motion,
+  useReducedMotion,
+} from "framer-motion";
 import { useTranslations } from "next-intl";
 import type {
   ExamCalendarDto,
@@ -33,7 +45,6 @@ import {
   usersControllerMe,
 } from "@mentor/api-client";
 import type { AuthUser } from "@mentor/types";
-import { Chip } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import {
   NotebookCover,
@@ -53,6 +64,10 @@ import {
 } from "@/lib/notebook-ink";
 import { NotebookInkToolbar } from "./notebook-ink-toolbar";
 import {
+  boardChromeFastTransition,
+  boardChromeTransition,
+} from "../../vision-board/board/_components/board-chrome-motion";
+import {
   NotebookPageTurn,
   PAGE_TURN_SECONDS,
 } from "@/components/notebook/notebook-page-turn";
@@ -65,7 +80,11 @@ import {
   fetchNotebookPage,
   saveNotebookPage,
 } from "@/lib/notebook";
-import { createNoteItem, createStickerItem, nextEntrySlot } from "@/lib/notebook-layout";
+import {
+  createNoteItem,
+  createStickerItem,
+  nextEntrySlot,
+} from "@/lib/notebook-layout";
 import { useItemGesture } from "@/components/stage/use-item-gesture";
 import { SelectionOverlay } from "@/components/stage/selection-overlay";
 import {
@@ -144,7 +163,10 @@ function fitWithin(
   maxWidthPx: number,
 ): { width: number; height: number } {
   const byHeight = { width: outer.height * ratio, height: outer.height };
-  const fit = byHeight.width <= outer.width ? byHeight : { width: outer.width, height: outer.width / ratio };
+  const fit =
+    byHeight.width <= outer.width
+      ? byHeight
+      : { width: outer.width, height: outer.width / ratio };
   const width = Math.min(fit.width, maxWidthPx);
   return { width, height: width / ratio };
 }
@@ -172,6 +194,37 @@ const RAIL_CATEGORIES: {
   // the pages stop being arrangeable and start taking ink.
   { id: "draw", icon: Pen, labelKey: "sidebar_draw" },
 ];
+
+/**
+ * Shared active fill for the notebook rail. `layoutId` morphs the pill between neighbours the
+ * same way the vision board's editor nav does; reduced-motion skips the travel and snaps.
+ * Only one rail item may own it at a time — overlapping fills (e.g. "Not" while another
+ * category panel is open) would give Framer two elements with the same id.
+ */
+function NotebookRailActiveFill({
+  reduceMotion,
+}: {
+  reduceMotion: boolean | null;
+}) {
+  if (reduceMotion) {
+    return (
+      <span
+        aria-hidden
+        className="absolute inset-0 rounded-[var(--radius-card)]"
+        style={{ backgroundColor: "var(--color-btn)" }}
+      />
+    );
+  }
+  return (
+    <motion.span
+      layoutId="notebook-rail-active"
+      aria-hidden
+      className="absolute inset-0 rounded-[var(--radius-card)]"
+      style={{ backgroundColor: "var(--color-btn)" }}
+      transition={boardChromeTransition}
+    />
+  );
+}
 
 interface ExamContext {
   id: string;
@@ -207,8 +260,13 @@ export function NotebookShell() {
   const [activePanel, setActivePanel] = useState<NotebookPanelCategory>("add");
   const [detailCollapsed, setDetailCollapsed] = useState(true);
   /** The one text item currently being typed into, in place, on whichever side it lives. */
-  const [editingText, setEditingText] = useState<{ id: string; side: Side } | null>(null);
-  const [previewEntry, setPreviewEntry] = useState<NotebookEntryDto | null>(null);
+  const [editingText, setEditingText] = useState<{
+    id: string;
+    side: Side;
+  } | null>(null);
+  const [previewEntry, setPreviewEntry] = useState<NotebookEntryDto | null>(
+    null,
+  );
 
   const leftPage = useNotebookPage(EMPTY_PAGE);
   const rightPage = useNotebookPage(EMPTY_PAGE);
@@ -234,7 +292,9 @@ export function NotebookShell() {
   const [inkTool, setInkTool] = useState<InkToolId>(INK_DEFAULT_TOOL);
   const [inkColor, setInkColor] = useState<string>(INK_DEFAULT_COLOR);
   const [inkSize, setInkSize] = useState(INK_TOOLS[INK_DEFAULT_TOOL].size);
-  const [inkOpacity, setInkOpacity] = useState(INK_TOOLS[INK_DEFAULT_TOOL].opacity);
+  const [inkOpacity, setInkOpacity] = useState(
+    INK_TOOLS[INK_DEFAULT_TOOL].opacity,
+  );
 
   /**
    * Switching pens loads that pen's own width and opacity.
@@ -285,14 +345,17 @@ export function NotebookShell() {
   // The toolbar (undo/delete/save) and rail actions (Ekle/Sticker/Not) all act on `focused` — on
   // mobile that must always be the one leaf actually on screen (`mobileSide`), not whichever side
   // was last explicitly selected, so it takes over from `focusedSide` there rather than syncing it.
-  const focused = (isMobile ? mobileSide : focusedSide) === "left" ? leftPage : rightPage;
+  const focused =
+    (isMobile ? mobileSide : focusedSide) === "left" ? leftPage : rightPage;
 
   const [fitRef, fitBox] = useFitSize<HTMLDivElement>();
 
   const [due, setDue] = useState<NotebookEntryDto[]>([]);
   const [reviewing, setReviewing] = useState(false);
   /** A single card opened by double-click — a separate flow from the due-strip's list. */
-  const [singleReview, setSingleReview] = useState<NotebookEntryDto | null>(null);
+  const [singleReview, setSingleReview] = useState<NotebookEntryDto | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   /**
    * The leaf currently in flight, if any. `seq` only exists to remount the animation when two turns
@@ -340,7 +403,8 @@ export function NotebookShell() {
       ]);
       if (cancelled) return;
 
-      if (overviewResult.status === "fulfilled") setOverview(overviewResult.value);
+      if (overviewResult.status === "fulfilled")
+        setOverview(overviewResult.value);
       else setError(t("error_load"));
 
       if (dueResult.status === "fulfilled") {
@@ -455,7 +519,13 @@ export function NotebookShell() {
       setSaving(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- dispatch identities are stable
-  }, [view, leftPage.state.dirty, leftPage.state.doc, rightPage.state.dirty, rightPage.state.doc]);
+  }, [
+    view,
+    leftPage.state.dirty,
+    leftPage.state.doc,
+    rightPage.state.dirty,
+    rightPage.state.doc,
+  ]);
 
   /* Read off the hooks up front: `turn` needs only the two papers, and depending on the hook objects
      themselves would rebuild it every render — and with it the keydown listener it feeds. */
@@ -472,7 +542,11 @@ export function NotebookShell() {
        * leaf we are lifting — right side going forward, left side going back — travels with it, so
        * the flying sheet is ruled like the book it came out of.
        */
-      if (view.kind === "spread" && !reduceMotion && view.left + delta * 2 >= 0) {
+      if (
+        view.kind === "spread" &&
+        !reduceMotion &&
+        view.left + delta * 2 >= 0
+      ) {
         flipSeq.current += 1;
         setFlip({
           seq: flipSeq.current,
@@ -505,7 +579,8 @@ export function NotebookShell() {
   const goPage = useCallback(
     (dir: 1 | -1) => {
       if (isMobile && view.kind === "spread") {
-        const atSpreadEdge = dir > 0 ? mobileSide === "right" : mobileSide === "left";
+        const atSpreadEdge =
+          dir > 0 ? mobileSide === "right" : mobileSide === "left";
         if (!atSpreadEdge) {
           if (!reduceMotion) {
             flipSeq.current += 1;
@@ -605,7 +680,9 @@ export function NotebookShell() {
       setFocusedSide(side);
       const hook = side === "left" ? leftPage : rightPage;
       hook.dispatch({ type: "select", id });
-      const item = id ? hook.state.doc.items.find((candidate) => candidate.id === id) : null;
+      const item = id
+        ? hook.state.doc.items.find((candidate) => candidate.id === id)
+        : null;
       if (item?.kind === "text") {
         setActivePanel("text");
         setDetailCollapsed(false);
@@ -616,7 +693,8 @@ export function NotebookShell() {
 
   const handleTextPatch = useCallback(
     (patch: Partial<VisionBoardTextItem>) => {
-      if (focused.selected?.kind === "text") focused.patch(focused.selected.id, patch);
+      if (focused.selected?.kind === "text")
+        focused.patch(focused.selected.id, patch);
     },
     [focused],
   );
@@ -625,7 +703,9 @@ export function NotebookShell() {
     setEditingText((current) => {
       if (!current) return current;
       const hook = current.side === "left" ? leftPage : rightPage;
-      const item = hook.state.doc.items.find((candidate) => candidate.id === current.id);
+      const item = hook.state.doc.items.find(
+        (candidate) => candidate.id === current.id,
+      );
       if (item && item.kind === "text" && !item.text.trim()) {
         hook.dispatch({ type: "remove", id: current.id });
       }
@@ -665,11 +745,19 @@ export function NotebookShell() {
       }
       focused.dispatch({
         type: "add",
-        item: { ...slot, id: crypto.randomUUID(), kind: "entry", entryId: entry.id, opacity: 1 },
+        item: {
+          ...slot,
+          id: crypto.randomUUID(),
+          kind: "entry",
+          entryId: entry.id,
+          opacity: 1,
+        },
       });
       const setMeta = focusedSide === "left" ? setLeftMeta : setRightMeta;
       setMeta((current) =>
-        current ? { ...current, entries: [...current.entries, entry] } : current,
+        current
+          ? { ...current, entries: [...current.entries, entry] }
+          : current,
       );
       setDetailCollapsed(true);
     },
@@ -719,6 +807,22 @@ export function NotebookShell() {
    * sites: the mobile leaf and the two pages of a spread.
    */
   const drawing = isSpread && activePanel === "draw";
+  const notingHere =
+    editingText != null &&
+    editingText.side === (isMobile ? mobileSide : focusedSide);
+  /**
+   * One rail highlight at a time so the layoutId pill can travel. "Not" is not a category — it
+   * only owns the pill while its inline editor is open AND no other category panel is showing
+   * (the text panel has no rail icon of its own). Draw always wins: it is a mode, not a panel.
+   */
+  const activeRail: NotebookPanelCategory | "note" | null =
+    activePanel === "draw"
+      ? "draw"
+      : notingHere && (detailCollapsed || activePanel === "text")
+        ? "note"
+        : !detailCollapsed && activePanel !== "text"
+          ? activePanel
+          : null;
   /*
    * The spread itself no longer moves — `NotebookPageTurn` is what the eye follows, and a page that
    * also slid underneath its own turning leaf would read as two animations fighting.
@@ -750,7 +854,8 @@ export function NotebookShell() {
 
   const notebookRatio =
     isSpread && !isMobile
-      ? (NOTEBOOK_PAGE_CANVAS.width * 2 + SPINE_GUTTER) / NOTEBOOK_PAGE_CANVAS.height
+      ? (NOTEBOOK_PAGE_CANVAS.width * 2 + SPINE_GUTTER) /
+        NOTEBOOK_PAGE_CANVAS.height
       : NOTEBOOK_PAGE_CANVAS.width / NOTEBOOK_PAGE_CANVAS.height;
   const notebookMaxWidthPx = isSpread
     ? isMobile
@@ -768,18 +873,27 @@ export function NotebookShell() {
     <div className="flex min-h-[100dvh] flex-col gap-3 px-1 pb-4 pt-2 sm:px-2 sm:pb-6 sm:pt-3 lg:pb-8 lg:pt-3">
       <FormError message={error} />
 
-      {/* The strip: the whole reason the notebook is a habit and not an archive. */}
+      {/* The strip: the whole reason the notebook is a habit and not an archive. A compact pill,
+          not a full-width card — this is a one-tap shortcut into review, not a status report, and
+          a slim shape keeps it reading as an action rather than a block to skim past. */}
       {overview && overview.dueCount > 0 ? (
         <button
           type="button"
           onClick={() => setReviewing(true)}
-          className="flex cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-card)] px-4 py-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="inline-flex w-fit cursor-pointer items-center gap-2 self-start rounded-full px-3.5 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           style={{ backgroundColor: "var(--color-accent-soft)" }}
         >
-          <span className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+          <History
+            aria-hidden
+            size={16}
+            style={{ color: "var(--color-accent)" }}
+          />
+          <span
+            className="text-sm font-bold"
+            style={{ color: "var(--color-main)" }}
+          >
             {t("due_strip", { count: overview.dueCount })}
           </span>
-          <Chip>{overview.dueCount}</Chip>
         </button>
       ) : null}
 
@@ -800,7 +914,10 @@ export function NotebookShell() {
         />
       ) : null}
 
-      <NotebookImageLightbox entry={previewEntry} onClose={() => setPreviewEntry(null)} />
+      <NotebookImageLightbox
+        entry={previewEntry}
+        onClose={() => setPreviewEntry(null)}
+      />
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
         {/*
@@ -810,22 +927,21 @@ export function NotebookShell() {
         */}
         {isSpread ? (
           <>
-            <nav
+            <LayoutGroup id="notebook-rail">
+              <nav
               aria-label={t("sidebar_nav")}
               className="mentor-scrollarea flex shrink-0 gap-1 overflow-x-auto rounded-[var(--radius-card)] border px-2 py-2 lg:w-16 lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:px-1 lg:py-3"
               style={{
                 backgroundColor: "var(--color-surface)",
-                borderColor: "color-mix(in srgb, var(--color-main) 10%, transparent)",
+                borderColor:
+                  "color-mix(in srgb, var(--color-main) 10%, transparent)",
               }}
             >
               {RAIL_CATEGORIES.map(({ id, icon: Icon, labelKey }) => {
                 // "Çiz" has no panel to expand — `openCategory` always collapses the side panel
                 // for it — so its pressed state can't depend on `detailCollapsed` the way every
                 // other rail button's does, or it would never look pressed at all.
-                const active =
-                  id === "draw"
-                    ? activePanel === "draw"
-                    : activePanel === id && !detailCollapsed;
+                const active = activeRail === id;
                 return (
                   <button
                     key={id}
@@ -834,12 +950,18 @@ export function NotebookShell() {
                     onClick={() => openCategory(id)}
                     className="relative flex min-h-11 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] px-1 py-1.5 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:min-w-0"
                     style={{
-                      color: active ? "#ffffff" : "var(--color-secondary)",
-                      backgroundColor: active ? "var(--color-main)" : "transparent",
+                      color: active
+                        ? "var(--color-btn-label)"
+                        : "var(--color-secondary)",
                     }}
                   >
-                    <Icon aria-hidden size={20} />
-                    <span className="leading-tight">{t(labelKey)}</span>
+                    {active ? (
+                      <NotebookRailActiveFill reduceMotion={reduceMotion} />
+                    ) : null}
+                    <Icon aria-hidden size={20} className="relative z-[1]" />
+                    <span className="relative z-[1] leading-tight">
+                      {t(labelKey)}
+                    </span>
                   </button>
                 );
               })}
@@ -849,40 +971,44 @@ export function NotebookShell() {
                 inline editor is open — otherwise this button is the one rail icon that never
                 visibly reacts to being clicked, which reads as broken next to Sticker/Kağıt/Çiz.
               */}
-              {(() => {
-                const notingHere =
-                  editingText != null &&
-                  editingText.side === (isMobile ? mobileSide : focusedSide);
-                return (
-                  <button
-                    type="button"
-                    aria-pressed={notingHere}
-                    onClick={handleAddNote}
-                    className="relative flex min-h-11 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] px-1 py-1.5 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:min-w-0"
-                    style={{
-                      color: notingHere ? "#ffffff" : "var(--color-secondary)",
-                      backgroundColor: notingHere ? "var(--color-main)" : "transparent",
-                    }}
-                  >
-                    <StickyNote aria-hidden size={20} />
-                    <span className="leading-tight">{t("sidebar_note")}</span>
-                  </button>
-                );
-              })()}
-            </nav>
+              <button
+                type="button"
+                aria-pressed={activeRail === "note"}
+                onClick={handleAddNote}
+                className="relative flex min-h-11 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] px-1 py-1.5 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:min-w-0"
+                style={{
+                  color:
+                    activeRail === "note"
+                      ? "var(--color-btn-label)"
+                      : "var(--color-secondary)",
+                }}
+              >
+                {activeRail === "note" ? (
+                  <NotebookRailActiveFill reduceMotion={reduceMotion} />
+                ) : null}
+                <StickyNote aria-hidden size={20} className="relative z-[1]" />
+                <span className="relative z-[1] leading-tight">
+                  {t("sidebar_note")}
+                </span>
+              </button>
+              </nav>
+            </LayoutGroup>
 
             <AnimatePresence initial={false}>
               {!detailCollapsed ? (
                 <motion.aside
                   key="notebook-detail-panel"
-                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -12 }}
+                  initial={
+                    reduceMotion ? { opacity: 0 } : { opacity: 0, x: -12 }
+                  }
                   animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
                   exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -8 }}
-                  transition={{ duration: 0.18, ease: "easeOut" }}
+                  transition={boardChromeTransition}
                   className="relative flex min-h-0 max-h-[50vh] w-full shrink-0 flex-col rounded-[var(--radius-card)] border lg:max-h-none lg:w-96"
                   style={{
                     backgroundColor: "var(--color-surface)",
-                    borderColor: "color-mix(in srgb, var(--color-main) 10%, transparent)",
+                    borderColor:
+                      "color-mix(in srgb, var(--color-main) 10%, transparent)",
                   }}
                 >
                   <button
@@ -899,23 +1025,49 @@ export function NotebookShell() {
                     <ChevronLeft aria-hidden size={14} />
                   </button>
                   <div className="min-h-0 flex-1 overflow-hidden">
-                    <NotebookSidePanel
-                      category={activePanel}
-                      paper={focused.state.doc.paper}
-                      exam={exam}
-                      selectedText={focused.selected?.kind === "text" ? focused.selected : null}
-                      onCreated={handleCreated}
-                      onAddSticker={(asset) =>
-                        focused.dispatch({
-                          type: "add",
-                          item: createStickerItem(asset, focused.state.doc.items),
-                        })
-                      }
-                      onSetPaper={(paper) => focused.dispatch({ type: "setPaper", paper })}
-                      onPatchText={handleTextPatch}
-                      onCheckpoint={focused.checkpoint}
-                      onCollapse={() => setDetailCollapsed(true)}
-                    />
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.div
+                        key={activePanel}
+                        initial={
+                          reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6 }
+                        }
+                        animate={
+                          reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }
+                        }
+                        exit={
+                          reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }
+                        }
+                        transition={boardChromeFastTransition}
+                        className="h-full"
+                      >
+                        <NotebookSidePanel
+                          category={activePanel}
+                          paper={focused.state.doc.paper}
+                          exam={exam}
+                          selectedText={
+                            focused.selected?.kind === "text"
+                              ? focused.selected
+                              : null
+                          }
+                          onCreated={handleCreated}
+                          onAddSticker={(asset) =>
+                            focused.dispatch({
+                              type: "add",
+                              item: createStickerItem(
+                                asset,
+                                focused.state.doc.items,
+                              ),
+                            })
+                          }
+                          onSetPaper={(paper) =>
+                            focused.dispatch({ type: "setPaper", paper })
+                          }
+                          onPatchText={handleTextPatch}
+                          onCheckpoint={focused.checkpoint}
+                          onCollapse={() => setDetailCollapsed(true)}
+                        />
+                      </motion.div>
+                    </AnimatePresence>
                   </div>
                 </motion.aside>
               ) : null}
@@ -960,16 +1112,21 @@ export function NotebookShell() {
                   autosave effects above), and "Kaydet" is the visible, immediate retry. */}
               <div className="ms-auto flex items-center gap-2">
                 {leftPage.state.dirty || rightPage.state.dirty ? (
-                  <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
+                  <span
+                    className="text-xs"
+                    style={{ color: "var(--color-secondary)" }}
+                  >
                     {t("unsaved")}
                   </span>
                 ) : null}
                 <button
                   type="button"
-                  disabled={saving || (!leftPage.state.dirty && !rightPage.state.dirty)}
+                  disabled={
+                    saving || (!leftPage.state.dirty && !rightPage.state.dirty)
+                  }
                   aria-busy={saving || undefined}
                   onClick={() => void saveNow()}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-white outline-none disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-[var(--color-btn-label)] outline-none disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                   style={{ backgroundColor: "var(--color-btn)" }}
                 >
                   {saving ? (
@@ -998,20 +1155,23 @@ export function NotebookShell() {
             measurement exists. `aspectRatio` then derives the height from that width, never the
             other way — see the comment on `useFitSize` for why that direction matters.
           */}
-          <div ref={fitRef} className="flex w-full min-h-0 flex-1 items-center justify-center">
           <div
-            className="relative w-full select-none"
-            style={{
-              // `width: 100%` of the OUTER box, capped at the measured-fit value — never `auto`,
-              // so this can never collapse to 0 the way two `auto` dimensions did. `aspectRatio`
-              // only ever derives the HEIGHT from that already-definite width.
-              maxWidth: fitted.width || notebookMaxWidthPx,
-              aspectRatio: notebookRatio,
-              // The depth the cover swings through. The turning leaf carries its own, tighter one.
-              perspective: reduceMotion ? undefined : 1800,
-            }}
+            ref={fitRef}
+            className="flex w-full min-h-0 flex-1 items-center justify-center"
           >
-            {/*
+            <div
+              className="relative w-full select-none"
+              style={{
+                // `width: 100%` of the OUTER box, capped at the measured-fit value — never `auto`,
+                // so this can never collapse to 0 the way two `auto` dimensions did. `aspectRatio`
+                // only ever derives the HEIGHT from that already-definite width.
+                maxWidth: fitted.width || notebookMaxWidthPx,
+                aspectRatio: notebookRatio,
+                // The depth the cover swings through. The turning leaf carries its own, tighter one.
+                perspective: reduceMotion ? undefined : 1800,
+              }}
+            >
+              {/*
               Floats over the notebook's own top edge rather than sitting in flow above it (pushed
               the whole book down and shrank it — `useFitSize` measures the OUTER box, so a taller
               toolbar row meant a shorter notebook the instant draw mode turned on) or pinned over
@@ -1020,33 +1180,33 @@ export function NotebookShell() {
               can overlap it for free. `pointer-events-none` on the wrapper keeps the empty space
               either side of the tray from stealing taps meant for the page underneath.
             */}
-            <AnimatePresence>
-              {drawing ? (
-                <div
-                  key="ink-toolbar"
-                  className="pointer-events-none absolute inset-x-0 top-2 z-[35] flex justify-center px-2 sm:top-3"
-                >
-                  <NotebookInkToolbar
-                    tool={inkTool}
-                    color={inkColor}
-                    size={inkSize}
-                    opacity={inkOpacity}
-                    canUndo={focused.canUndo}
-                    canRedo={focused.canRedo}
-                    hasInk={focused.state.doc.ink.length > 0}
-                    onToolChange={handleToolChange}
-                    onColorChange={setInkColor}
-                    onSizeChange={setInkSize}
-                    onOpacityChange={setInkOpacity}
-                    onUndo={() => focused.dispatch({ type: "undo" })}
-                    onRedo={() => focused.dispatch({ type: "redo" })}
-                    onClear={() => focused.dispatch({ type: "clearInk" })}
-                  />
-                </div>
-              ) : null}
-            </AnimatePresence>
+              <AnimatePresence>
+                {drawing ? (
+                  <div
+                    key="ink-toolbar"
+                    className="pointer-events-none absolute inset-x-0 top-2 z-[35] flex justify-center px-2 sm:top-3"
+                  >
+                    <NotebookInkToolbar
+                      tool={inkTool}
+                      color={inkColor}
+                      size={inkSize}
+                      opacity={inkOpacity}
+                      canUndo={focused.canUndo}
+                      canRedo={focused.canRedo}
+                      hasInk={focused.state.doc.ink.length > 0}
+                      onToolChange={handleToolChange}
+                      onColorChange={setInkColor}
+                      onSizeChange={setInkSize}
+                      onOpacityChange={setInkOpacity}
+                      onUndo={() => focused.dispatch({ type: "undo" })}
+                      onRedo={() => focused.dispatch({ type: "redo" })}
+                      onClear={() => focused.dispatch({ type: "clearInk" })}
+                    />
+                  </div>
+                ) : null}
+              </AnimatePresence>
 
-            {/*
+              {/*
               Two nested regions on purpose. The outer one, here, only ever swaps cover↔spread — a
               structural change, so `mode="wait"` holds the incoming half back until the outgoing
               one has left, rather than letting them overlap while the aspect ratio jumps from one
@@ -1057,267 +1217,365 @@ export function NotebookShell() {
               the same axis the leaves do, so opening the book and turning a page read as one object.
               Closing runs the identical arc backwards.
             */}
-            <AnimatePresence initial={false} mode="wait">
-              {view.kind === "cover" ? (
-                <motion.div
-                  key="cover"
-                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, rotateY: -105 }}
-                  animate={{ opacity: 1, rotateY: 0 }}
-                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, rotateY: -105 }}
-                  transition={{
-                    duration: reduceMotion ? 0.15 : 0.45,
-                    ease: [0.45, 0.05, 0.25, 1],
-                  }}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    transformOrigin: "left center",
-                    transformStyle: reduceMotion ? undefined : "preserve-3d",
-                  }}
-                >
-                  <NotebookCover
-                    title={t("cover_title")}
-                    subtitle={t("cover_subtitle", {
-                      entries: overview?.entryCount ?? 0,
-                      healed: overview?.healedCount ?? 0,
-                    })}
-                    onOpen={() => goPage(1)}
-                    openLabel={t("cover_open")}
-                  />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="spread-container"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: reduceMotion ? 0.15 : 0.2 }}
-                  // Clips both the drag-turn spread and the flying leaf to the notebook's own box.
-                  // The leaf's 3D rotation (`NotebookPageTurn`) has no clip of its own — without this,
-                  // its mid-turn ink overflow reads as oversized and can even push the page to scroll.
-                  style={{ position: "absolute", inset: 0, overflow: "hidden" }}
-                >
-                  <AnimatePresence initial={false}>
-                    <motion.div
-                      // Mobile's key also carries `mobileSide`: flipping within a spread has no
-                      // `view` change of its own to key off, so without it the crossfade would
-                      // never retrigger for that move.
-                      key={isMobile ? `spread-${view.left}-${mobileSide}` : `spread-${view.left}`}
-                      variants={spreadVariants}
-                      initial="enter"
-                      animate="center"
-                      exit="exit"
-                      transition={spreadFade}
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        display: "flex",
-                      }}
-                    >
-                      {isMobile ? (
-                        <div className="h-full w-full">
-                          <NotebookPageSurface paper={mobilePage.state.doc.paper}>
-                            <NotebookPageStage
-                              items={mobilePage.state.doc.items}
-                              entries={mobileMeta?.entries ?? []}
-                              dueIds={dueIds}
-                              selectedId={mobilePage.state.selectedId}
-                              contentHiddenId={
-                                editingText?.side === mobileSide ? editingText.id : null
-                              }
-                              onSelect={drawing ? undefined : (id) => handleSelect(mobileSide, id)}
-                              onItemPointerDown={
-                                drawing
-                                  ? undefined
-                                  : (event, item) =>
-                                      mobileGesture.begin(event, item, { kind: "move" })
-                              }
-                              onItemDoubleClick={(item) => handleItemDoubleClick(mobileSide, item)}
-                              onPreviewImage={setPreviewEntry}
-                              onPointerMove={mobileGesture.move}
-                              onPointerUp={mobileGesture.end}
-                              renderOverlay={(item) =>
-                                item.kind === "text" &&
-                                editingText?.side === mobileSide &&
-                                editingText.id === item.id ? (
-                                  <NotebookTextInlineEditor
-                                    item={item}
-                                    label={t("edit_note_label")}
-                                    onChange={(text) => mobilePage.patch(item.id, { text })}
-                                    onDone={handleTextEditDone}
-                                  />
-                                ) : (
-                                  <SelectionOverlay
-                                    resizeHandlers={(corner) =>
-                                      mobileGesture.handlersFor(item, { kind: "resize", corner })
-                                    }
-                                    rotateHandlers={mobileGesture.handlersFor(item, {
-                                      kind: "rotate",
-                                    })}
-                                    resizeLabel={t("edit_resize")}
-                                    rotateLabel={t("edit_rotate")}
-                                  />
-                                )
-                              }
-                            />
-                            {/* Above the stage: ink annotates what is on the page, so it draws
-                                over the cards rather than under them. */}
-                            <NotebookInkLayer
-                              strokes={mobilePage.state.doc.ink}
-                              liveStroke={mobileInk.liveStroke}
-                              erasing={mobileInk.erasing}
-                              onPointerDown={drawing ? mobileInk.begin : undefined}
-                              onPointerMove={drawing ? mobileInk.move : undefined}
-                              onPointerUp={drawing ? mobileInk.end : undefined}
-                            />
-                          </NotebookPageSurface>
-                        </div>
-                      ) : (
-                        <>
-                      {/* Bound on its right edge: this page's punched margin faces the spine. */}
-                      <div className="h-full" style={{ width: `${PAGE_PERCENT}%` }}>
-                        <NotebookPageSurface
-                          paper={leftPage.state.doc.paper}
-                          binding="right"
-                          coil={false}
-                        >
-                          <NotebookPageStage
-                            items={leftPage.state.doc.items}
-                            entries={leftMeta?.entries ?? []}
-                            dueIds={dueIds}
-                            selectedId={leftPage.state.selectedId}
-                            contentHiddenId={
-                              editingText?.side === "left" ? editingText.id : null
-                            }
-                            onSelect={drawing ? undefined : (id) => handleSelect("left", id)}
-                            onItemPointerDown={
-                              drawing
-                                ? undefined
-                                : (event, item) =>
-                                    leftGesture.begin(event, item, { kind: "move" })
-                            }
-                            onItemDoubleClick={(item) => handleItemDoubleClick("left", item)}
-                            onPreviewImage={setPreviewEntry}
-                            onPointerMove={leftGesture.move}
-                            onPointerUp={leftGesture.end}
-                            renderOverlay={(item) =>
-                              item.kind === "text" &&
-                              editingText?.side === "left" &&
-                              editingText.id === item.id ? (
-                                <NotebookTextInlineEditor
-                                  item={item}
-                                  label={t("edit_note_label")}
-                                  onChange={(text) => leftPage.patch(item.id, { text })}
-                                  onDone={handleTextEditDone}
-                                />
-                              ) : (
-                                <SelectionOverlay
-                                  resizeHandlers={(corner) =>
-                                    leftGesture.handlersFor(item, { kind: "resize", corner })
-                                  }
-                                  rotateHandlers={leftGesture.handlersFor(item, {
-                                    kind: "rotate",
-                                  })}
-                                  resizeLabel={t("edit_resize")}
-                                  rotateLabel={t("edit_rotate")}
-                                />
-                              )
-                            }
-                          />
-                          <NotebookInkLayer
-                            strokes={leftPage.state.doc.ink}
-                            liveStroke={leftInk.liveStroke}
-                            erasing={leftInk.erasing}
-                            onPointerDown={drawing ? leftInk.begin : undefined}
-                            onPointerMove={drawing ? leftInk.move : undefined}
-                            onPointerUp={drawing ? leftInk.end : undefined}
-                          />
-                        </NotebookPageSurface>
-                      </div>
-
-                      {/* One coil across both pages — what actually makes this an open book. */}
-                      <NotebookSpine />
-
-                      <div className="h-full" style={{ width: `${PAGE_PERCENT}%` }}>
-                        <NotebookPageSurface
-                          paper={rightPage.state.doc.paper}
-                          coil={false}
-                        >
-                          <NotebookPageStage
-                            items={rightPage.state.doc.items}
-                            entries={rightMeta?.entries ?? []}
-                            dueIds={dueIds}
-                            selectedId={rightPage.state.selectedId}
-                            contentHiddenId={
-                              editingText?.side === "right" ? editingText.id : null
-                            }
-                            onSelect={drawing ? undefined : (id) => handleSelect("right", id)}
-                            onItemPointerDown={
-                              drawing
-                                ? undefined
-                                : (event, item) =>
-                                    rightGesture.begin(event, item, { kind: "move" })
-                            }
-                            onItemDoubleClick={(item) => handleItemDoubleClick("right", item)}
-                            onPreviewImage={setPreviewEntry}
-                            onPointerMove={rightGesture.move}
-                            onPointerUp={rightGesture.end}
-                            renderOverlay={(item) =>
-                              item.kind === "text" &&
-                              editingText?.side === "right" &&
-                              editingText.id === item.id ? (
-                                <NotebookTextInlineEditor
-                                  item={item}
-                                  label={t("edit_note_label")}
-                                  onChange={(text) => rightPage.patch(item.id, { text })}
-                                  onDone={handleTextEditDone}
-                                />
-                              ) : (
-                                <SelectionOverlay
-                                  resizeHandlers={(corner) =>
-                                    rightGesture.handlersFor(item, { kind: "resize", corner })
-                                  }
-                                  rotateHandlers={rightGesture.handlersFor(item, {
-                                    kind: "rotate",
-                                  })}
-                                  resizeLabel={t("edit_resize")}
-                                  rotateLabel={t("edit_rotate")}
-                                />
-                              )
-                            }
-                          />
-                          <NotebookInkLayer
-                            strokes={rightPage.state.doc.ink}
-                            liveStroke={rightInk.liveStroke}
-                            erasing={rightInk.erasing}
-                            onPointerDown={drawing ? rightInk.begin : undefined}
-                            onPointerMove={drawing ? rightInk.move : undefined}
-                            onPointerUp={drawing ? rightInk.end : undefined}
-                          />
-                        </NotebookPageSurface>
-                      </div>
-                        </>
-                      )}
-                    </motion.div>
-                  </AnimatePresence>
-
-                  {/* The leaf itself, flying over both stages. Keyed on `seq` so a second turn
-                      restarts it rather than inheriting the first one's half-finished rotation. */}
-                  {flip ? (
-                    <NotebookPageTurn
-                      key={flip.seq}
-                      dir={flip.dir}
-                      paper={flip.paper}
-                      single={flip.single}
-                      onDone={() =>
-                        setFlip((current) => (current?.seq === flip.seq ? null : current))
-                      }
+              <AnimatePresence initial={false} mode="wait">
+                {view.kind === "cover" ? (
+                  <motion.div
+                    key="cover"
+                    initial={
+                      reduceMotion
+                        ? { opacity: 0 }
+                        : { opacity: 0, rotateY: -105 }
+                    }
+                    animate={{ opacity: 1, rotateY: 0 }}
+                    exit={
+                      reduceMotion
+                        ? { opacity: 0 }
+                        : { opacity: 0, rotateY: -105 }
+                    }
+                    transition={{
+                      duration: reduceMotion ? 0.15 : 0.45,
+                      ease: [0.45, 0.05, 0.25, 1],
+                    }}
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      transformOrigin: "left center",
+                      transformStyle: reduceMotion ? undefined : "preserve-3d",
+                    }}
+                  >
+                    <NotebookCover
+                      title={t("cover_title")}
+                      subtitle={t("cover_subtitle", {
+                        entries: overview?.entryCount ?? 0,
+                        healed: overview?.healedCount ?? 0,
+                      })}
+                      onOpen={() => goPage(1)}
+                      openLabel={t("cover_open")}
                     />
-                  ) : null}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="spread-container"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: reduceMotion ? 0.15 : 0.2 }}
+                    // Clips both the drag-turn spread and the flying leaf to the notebook's own box.
+                    // The leaf's 3D rotation (`NotebookPageTurn`) has no clip of its own — without this,
+                    // its mid-turn ink overflow reads as oversized and can even push the page to scroll.
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <AnimatePresence initial={false}>
+                      <motion.div
+                        // Mobile's key also carries `mobileSide`: flipping within a spread has no
+                        // `view` change of its own to key off, so without it the crossfade would
+                        // never retrigger for that move.
+                        key={
+                          isMobile
+                            ? `spread-${view.left}-${mobileSide}`
+                            : `spread-${view.left}`
+                        }
+                        variants={spreadVariants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={spreadFade}
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          display: "flex",
+                        }}
+                      >
+                        {isMobile ? (
+                          <div className="h-full w-full">
+                            <NotebookPageSurface
+                              paper={mobilePage.state.doc.paper}
+                            >
+                              <NotebookPageStage
+                                items={mobilePage.state.doc.items}
+                                entries={mobileMeta?.entries ?? []}
+                                dueIds={dueIds}
+                                selectedId={mobilePage.state.selectedId}
+                                contentHiddenId={
+                                  editingText?.side === mobileSide
+                                    ? editingText.id
+                                    : null
+                                }
+                                onSelect={
+                                  drawing
+                                    ? undefined
+                                    : (id) => handleSelect(mobileSide, id)
+                                }
+                                onItemPointerDown={
+                                  drawing
+                                    ? undefined
+                                    : (event, item) =>
+                                        mobileGesture.begin(event, item, {
+                                          kind: "move",
+                                        })
+                                }
+                                onItemDoubleClick={(item) =>
+                                  handleItemDoubleClick(mobileSide, item)
+                                }
+                                onPreviewImage={setPreviewEntry}
+                                onPointerMove={mobileGesture.move}
+                                onPointerUp={mobileGesture.end}
+                                renderOverlay={(item) =>
+                                  item.kind === "text" &&
+                                  editingText?.side === mobileSide &&
+                                  editingText.id === item.id ? (
+                                    <NotebookTextInlineEditor
+                                      item={item}
+                                      label={t("edit_note_label")}
+                                      onChange={(text) =>
+                                        mobilePage.patch(item.id, { text })
+                                      }
+                                      onDone={handleTextEditDone}
+                                    />
+                                  ) : (
+                                    <SelectionOverlay
+                                      resizeHandlers={(corner) =>
+                                        mobileGesture.handlersFor(item, {
+                                          kind: "resize",
+                                          corner,
+                                        })
+                                      }
+                                      rotateHandlers={mobileGesture.handlersFor(
+                                        item,
+                                        {
+                                          kind: "rotate",
+                                        },
+                                      )}
+                                      resizeLabel={t("edit_resize")}
+                                      rotateLabel={t("edit_rotate")}
+                                    />
+                                  )
+                                }
+                              />
+                              {/* Above the stage: ink annotates what is on the page, so it draws
+                                over the cards rather than under them. */}
+                              <NotebookInkLayer
+                                strokes={mobilePage.state.doc.ink}
+                                liveStroke={mobileInk.liveStroke}
+                                erasing={mobileInk.erasing}
+                                onPointerDown={
+                                  drawing ? mobileInk.begin : undefined
+                                }
+                                onPointerMove={
+                                  drawing ? mobileInk.move : undefined
+                                }
+                                onPointerUp={
+                                  drawing ? mobileInk.end : undefined
+                                }
+                              />
+                            </NotebookPageSurface>
+                          </div>
+                        ) : (
+                          <>
+                            {/* Bound on its right edge: this page's punched margin faces the spine. */}
+                            <div
+                              className="h-full"
+                              style={{ width: `${PAGE_PERCENT}%` }}
+                            >
+                              <NotebookPageSurface
+                                paper={leftPage.state.doc.paper}
+                                binding="right"
+                                coil={false}
+                              >
+                                <NotebookPageStage
+                                  items={leftPage.state.doc.items}
+                                  entries={leftMeta?.entries ?? []}
+                                  dueIds={dueIds}
+                                  selectedId={leftPage.state.selectedId}
+                                  contentHiddenId={
+                                    editingText?.side === "left"
+                                      ? editingText.id
+                                      : null
+                                  }
+                                  onSelect={
+                                    drawing
+                                      ? undefined
+                                      : (id) => handleSelect("left", id)
+                                  }
+                                  onItemPointerDown={
+                                    drawing
+                                      ? undefined
+                                      : (event, item) =>
+                                          leftGesture.begin(event, item, {
+                                            kind: "move",
+                                          })
+                                  }
+                                  onItemDoubleClick={(item) =>
+                                    handleItemDoubleClick("left", item)
+                                  }
+                                  onPreviewImage={setPreviewEntry}
+                                  onPointerMove={leftGesture.move}
+                                  onPointerUp={leftGesture.end}
+                                  renderOverlay={(item) =>
+                                    item.kind === "text" &&
+                                    editingText?.side === "left" &&
+                                    editingText.id === item.id ? (
+                                      <NotebookTextInlineEditor
+                                        item={item}
+                                        label={t("edit_note_label")}
+                                        onChange={(text) =>
+                                          leftPage.patch(item.id, { text })
+                                        }
+                                        onDone={handleTextEditDone}
+                                      />
+                                    ) : (
+                                      <SelectionOverlay
+                                        resizeHandlers={(corner) =>
+                                          leftGesture.handlersFor(item, {
+                                            kind: "resize",
+                                            corner,
+                                          })
+                                        }
+                                        rotateHandlers={leftGesture.handlersFor(
+                                          item,
+                                          {
+                                            kind: "rotate",
+                                          },
+                                        )}
+                                        resizeLabel={t("edit_resize")}
+                                        rotateLabel={t("edit_rotate")}
+                                      />
+                                    )
+                                  }
+                                />
+                                <NotebookInkLayer
+                                  strokes={leftPage.state.doc.ink}
+                                  liveStroke={leftInk.liveStroke}
+                                  erasing={leftInk.erasing}
+                                  onPointerDown={
+                                    drawing ? leftInk.begin : undefined
+                                  }
+                                  onPointerMove={
+                                    drawing ? leftInk.move : undefined
+                                  }
+                                  onPointerUp={
+                                    drawing ? leftInk.end : undefined
+                                  }
+                                />
+                              </NotebookPageSurface>
+                            </div>
+
+                            {/* One coil across both pages — what actually makes this an open book. */}
+                            <NotebookSpine />
+
+                            <div
+                              className="h-full"
+                              style={{ width: `${PAGE_PERCENT}%` }}
+                            >
+                              <NotebookPageSurface
+                                paper={rightPage.state.doc.paper}
+                                coil={false}
+                              >
+                                <NotebookPageStage
+                                  items={rightPage.state.doc.items}
+                                  entries={rightMeta?.entries ?? []}
+                                  dueIds={dueIds}
+                                  selectedId={rightPage.state.selectedId}
+                                  contentHiddenId={
+                                    editingText?.side === "right"
+                                      ? editingText.id
+                                      : null
+                                  }
+                                  onSelect={
+                                    drawing
+                                      ? undefined
+                                      : (id) => handleSelect("right", id)
+                                  }
+                                  onItemPointerDown={
+                                    drawing
+                                      ? undefined
+                                      : (event, item) =>
+                                          rightGesture.begin(event, item, {
+                                            kind: "move",
+                                          })
+                                  }
+                                  onItemDoubleClick={(item) =>
+                                    handleItemDoubleClick("right", item)
+                                  }
+                                  onPreviewImage={setPreviewEntry}
+                                  onPointerMove={rightGesture.move}
+                                  onPointerUp={rightGesture.end}
+                                  renderOverlay={(item) =>
+                                    item.kind === "text" &&
+                                    editingText?.side === "right" &&
+                                    editingText.id === item.id ? (
+                                      <NotebookTextInlineEditor
+                                        item={item}
+                                        label={t("edit_note_label")}
+                                        onChange={(text) =>
+                                          rightPage.patch(item.id, { text })
+                                        }
+                                        onDone={handleTextEditDone}
+                                      />
+                                    ) : (
+                                      <SelectionOverlay
+                                        resizeHandlers={(corner) =>
+                                          rightGesture.handlersFor(item, {
+                                            kind: "resize",
+                                            corner,
+                                          })
+                                        }
+                                        rotateHandlers={rightGesture.handlersFor(
+                                          item,
+                                          {
+                                            kind: "rotate",
+                                          },
+                                        )}
+                                        resizeLabel={t("edit_resize")}
+                                        rotateLabel={t("edit_rotate")}
+                                      />
+                                    )
+                                  }
+                                />
+                                <NotebookInkLayer
+                                  strokes={rightPage.state.doc.ink}
+                                  liveStroke={rightInk.liveStroke}
+                                  erasing={rightInk.erasing}
+                                  onPointerDown={
+                                    drawing ? rightInk.begin : undefined
+                                  }
+                                  onPointerMove={
+                                    drawing ? rightInk.move : undefined
+                                  }
+                                  onPointerUp={
+                                    drawing ? rightInk.end : undefined
+                                  }
+                                />
+                              </NotebookPageSurface>
+                            </div>
+                          </>
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
+
+                    {/* The leaf itself, flying over both stages. Keyed on `seq` so a second turn
+                      restarts it rather than inheriting the first one's half-finished rotation. */}
+                    {flip ? (
+                      <NotebookPageTurn
+                        key={flip.seq}
+                        dir={flip.dir}
+                        paper={flip.paper}
+                        single={flip.single}
+                        onDone={() =>
+                          setFlip((current) =>
+                            current?.seq === flip.seq ? null : current,
+                          )
+                        }
+                      />
+                    ) : null}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           {/*
@@ -1349,14 +1607,18 @@ export function NotebookShell() {
               onClick={() => goPage(-1)}
               className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full border outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
               style={{
-                borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",
+                borderColor:
+                  "color-mix(in srgb, var(--color-main) 15%, transparent)",
                 color: "var(--color-main)",
                 backgroundColor: "var(--color-surface)",
               }}
             >
               <ChevronLeft aria-hidden size={18} />
             </button>
-            <span className="text-sm tabular-nums" style={{ color: "var(--color-secondary)" }}>
+            <span
+              className="text-sm tabular-nums"
+              style={{ color: "var(--color-secondary)" }}
+            >
               {pageLabel}
             </span>
             <button
@@ -1365,7 +1627,8 @@ export function NotebookShell() {
               onClick={() => goPage(1)}
               className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full border outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
               style={{
-                borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",
+                borderColor:
+                  "color-mix(in srgb, var(--color-main) 15%, transparent)",
                 color: "var(--color-main)",
                 backgroundColor: "var(--color-surface)",
               }}
