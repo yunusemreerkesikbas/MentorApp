@@ -20,6 +20,7 @@ import {
   type VisionBoardItem,
   type VisionTextAlign,
 } from "@mentor/types";
+import { RangeSlider } from "@/components/range-slider";
 import { boardChromeTransition } from "./board-chrome-motion";
 import type { ColorPanelTarget } from "./board-palettes";
 
@@ -117,30 +118,30 @@ export function BoardContextToolbar({
         label={t("rotate_90")}
         onClick={() => {
           onCheckpoint();
-          onPatch({ rotation: normalizeRotation(selected.rotation + 90) }, true);
+          onPatch(
+            { rotation: normalizeRotation(selected.rotation + 90) },
+            true,
+          );
         }}
       >
         <RotateCw aria-hidden size={16} />
       </ToolBtn>
 
-      <label className="ms-1 flex h-11 shrink-0 items-center gap-1.5 px-2 text-xs font-semibold"
+      <label
+        className="ms-1 flex h-11 shrink-0 items-center gap-1.5 px-2 text-xs font-semibold"
         style={{ color: "var(--color-secondary)" }}
       >
         <span className="sr-only">{t("opacity")}</span>
-        <input
-          type="range"
-          aria-label={t("opacity")}
+        <RangeSlider
           min={0}
           max={1}
           step={0.05}
           value={selected.opacity}
-          onPointerDown={onCheckpoint}
-          onKeyDown={onCheckpoint}
-          onChange={(event) => onPatch({ opacity: Number(event.target.value) }, true)}
-          className="mentor-range h-1.5 w-16"
-          style={{
-            background: `linear-gradient(to right, var(--color-accent) ${selected.opacity * 100}%, var(--color-surface-container) ${selected.opacity * 100}%)`,
-          }}
+          label={t("opacity")}
+          onCommit={onCheckpoint}
+          onChange={(opacity) => onPatch({ opacity }, true)}
+          showValue={false}
+          className="w-16"
         />
       </label>
 
@@ -172,7 +173,13 @@ function Divider() {
   );
 }
 
-function FrameTrigger({ label, onClick }: { label: string; onClick: () => void }) {
+function FrameTrigger({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
@@ -235,7 +242,9 @@ function ToolBtn({
       onClick={onClick}
       className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       style={{
-        backgroundColor: pressed ? "var(--color-surface-container)" : "transparent",
+        backgroundColor: pressed
+          ? "var(--color-surface-container)"
+          : "transparent",
         color: "var(--color-main)",
       }}
     >

@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { and, asc, count, desc, eq, gte, isNotNull, lte, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNotNull, lte, sql } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
 import {
   mistakeNotebookEntries,
@@ -87,7 +87,7 @@ export class MistakeNotebookRepository {
       .where(
         and(
           eq(mistakeNotebookEntries.userId, userId),
-          sql`${mistakeNotebookEntries.id} = ANY(${entryIds})`,
+          inArray(mistakeNotebookEntries.id, entryIds),
         ),
       );
   }

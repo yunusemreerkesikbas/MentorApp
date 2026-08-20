@@ -47,16 +47,33 @@ describe("theme lamp presentation", () => {
     const hook = read("use-lamp-choreography.ts");
 
     expect(lamp).toContain("reduceMotion ? { duration: 0 } : LEAN_SPRING");
-    expect(lamp).toContain("x: reduceMotion ? 0 : leanX, y: reduceMotion ? 0 : leanY");
+    // One assertion per animated value rather than one for the whole block, so re-wrapping the
+    // object does not read as a regression.
+    for (const gated of ["x: reduceMotion ? 0 : leanX", "y: reduceMotion ? 0 : leanY", "rotate: reduceMotion ? 0 : tilt"]) {
+      expect(lamp).toContain(gated);
+    }
     expect(cord).toContain("reduceMotion");
     expect(hook).toContain("if (reduceMotion) return;");
   });
 
-  it("stacks all three owl sprites and crossfades to the active pose", () => {
+  it("stacks every owl sprite and crossfades to the active pose", () => {
     const lamp = read("theme-lamp.tsx");
 
     expect(lamp).toContain("POSES.map((candidate)");
     expect(lamp).toContain("opacity: candidate === pose ? 1 : 0");
+    expect(lamp).toContain("gazeLeft");
+    expect(lamp).toContain("gazeRight");
+    expect(lamp).toContain("owlPose(interaction, blinking, gaze)");
+    expect(lamp).toContain("ThemeLampFooter");
+    expect(lamp).toContain("trackRingStyle");
+    expect(lamp).toContain("sceneRef");
+    expect(lamp).toContain("MobileThemeLamp");
+    expect(lamp).toContain("HEADER_HANG_OFFSET_PX");
+    expect(lamp).toContain('variant="header"');
+    // `mt-auto` and the track ring's `marginTop` must not share a node — inline margin
+    // would overwrite the auto and the lamp would float up the sidebar.
+    expect(lamp).toContain('className="mt-auto border-t"');
+    expect(lamp).not.toMatch(/mt-auto[^>]*(?:trackRingStyle|marginTop)/);
   });
 
   it("binds pointer tracking to the scene instead of the window", () => {
@@ -65,6 +82,8 @@ describe("theme lamp presentation", () => {
     expect(hook).toContain("sceneHandlers");
     expect(hook).toContain("onPointerLeave");
     expect(hook).not.toContain("window.addEventListener");
+    expect(hook).toContain("sceneRef");
+    expect(hook).toContain("sceneRef.current ?? event.currentTarget");
     expect(hook).toContain('document.visibilityState !== "visible"');
   });
 

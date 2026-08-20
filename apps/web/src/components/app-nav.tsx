@@ -10,8 +10,7 @@ import { NotificationBell } from "@mentor/ui";
 import { subscriptionsControllerGetMine } from "@mentor/api-client";
 
 import { LanguageToggle } from "@/components/language-toggle";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { ThemeLamp } from "@/components/theme-lamp/theme-lamp";
+import { ThemeLamp, ThemeLampFooter, MobileThemeLamp } from "@/components/theme-lamp/theme-lamp";
 import { DesktopCoachFab } from "@/components/desktop-coach-fab";
 import { UserAvatar } from "@/components/user-avatar";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -122,7 +121,7 @@ export function AppNav() {
       />
 
       {isBoardEditor ? null : (
-        <header className="fixed inset-x-0 top-0 z-20 flex h-16 items-center gap-3 border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] px-4 backdrop-blur transition-colors duration-200 motion-reduce:transition-none lg:hidden">
+        <header className="fixed inset-x-0 top-0 z-20 flex h-16 items-center gap-3 overflow-visible border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] px-4 backdrop-blur transition-colors duration-200 motion-reduce:transition-none lg:hidden">
           {user ? (
             <MobileIdentity premium={premium} user={user} />
           ) : (
@@ -136,7 +135,7 @@ export function AppNav() {
           )}
           <div className="ml-auto flex shrink-0 items-center gap-1">
             <EconomyPills balance={balance} />
-            <ThemeToggle />
+            <MobileThemeLamp />
             <NotificationBell
               label={ui("notifications_label")}
               unreadLabel={ui("notifications_unread_label")}
@@ -228,7 +227,7 @@ function DesktopSidebar({
       </div>
 
       <div
-        className="mentor-app-sidebar-expanded absolute inset-0 flex flex-col gap-1 overflow-hidden p-5"
+        className="mentor-app-sidebar-expanded absolute inset-0 flex flex-col gap-1 overflow-visible p-5"
         aria-hidden={!open}
         inert={!open}
       >
@@ -274,15 +273,9 @@ function DesktopSidebar({
           ))}
         </div>
 
-        <div
-          className="mt-auto flex items-end justify-between gap-2 border-t"
-          style={{
-            borderColor: "color-mix(in srgb, var(--color-secondary) 24%, transparent)",
-          }}
-        >
+        <ThemeLampFooter>
           <LanguageToggle />
-          <ThemeLamp variant="panel" />
-        </div>
+        </ThemeLampFooter>
       </div>
     </aside>
   );

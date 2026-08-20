@@ -45,7 +45,7 @@ test("dar rail'deki lamba da aynı düğmedir", async ({ page }, testInfo) => {
   await expect(page.locator("html")).toHaveClass(DARK);
 });
 
-test("mobil başlıktaki sade düğme aynı temayı çevirir", async ({ page }, testInfo) => {
+test("mobil başlıktaki lamba aynı temayı çevirir", async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.startsWith("mobile"));
   await mockAnalysisApi(page);
   await page.goto("/analiz");

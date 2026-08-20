@@ -141,6 +141,27 @@ test("dashboard ve koç landing aynı aksiyonu gösterir; dashboard bugün veris
   expect(coachApi.dailyGreetingCalls).toBe(0);
 });
 
+test("dashboard achievement kutlamasını veri yazmadan önizler", async ({ page }) => {
+  await mockCoachApi(page, { today: pendingToday });
+  await page.goto("/panel?mockAchievement=first_step");
+
+  await expect(
+    page.getByRole("status", { name: "Yeni başarı" }),
+  ).toBeVisible();
+  const celebration = page.getByRole("dialog", { name: "İlk Adım" });
+  await expect(celebration).toBeVisible({ timeout: 8_000 });
+  await expect(celebration.getByText("Yeni başarı")).toBeVisible();
+  await expect(
+    celebration.locator('img[src*="first_step.webp"]'),
+  ).toBeVisible();
+  await expect(
+    celebration.getByRole("button", { name: /Kutlama sesini/ }),
+  ).toHaveCount(0);
+
+  await page.keyboard.press("Escape");
+  await expect(celebration).toBeHidden();
+});
+
 test("dashboard recap teaser'ı açıldıktan sonra tekrar-izle kartına döner, kaybolmaz", async ({
   page,
 }) => {

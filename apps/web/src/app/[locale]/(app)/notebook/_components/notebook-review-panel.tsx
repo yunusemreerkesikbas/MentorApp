@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
-import { X } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCw, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { NotebookEntryDto } from "@mentor/types";
@@ -24,10 +23,11 @@ interface NotebookReviewPanelProps {
  * A full-screen preview, not an inline card pushed into the page's own flow — the same shell
  * `NotebookImageLightbox` uses (fixed backdrop, Escape, click-away), because the question photo is
  * the whole point of this screen and an inline card was giving it a few hundred px in a sidebar-
- * width column with the rest of the page still visible around it. `object-contain` inside a box
- * that's `h-[85vh]` and nothing narrower — no forced aspect ratio — the same reason
- * `NotebookImageLightbox` never had one: an exam page is almost always portrait, and a landscape
- * box around a portrait photo is what put the black bars either side of it.
+ * width column with the rest of the page still visible around it. The photo box shrinks to the
+ * image's own natural aspect ratio (a plain `<img>` capped by `max-height`/`max-width`, no `fill`)
+ * rather than a fixed portrait box — a fixed box let a square or landscape photo letterbox inside
+ * it, which is exactly the "black bars" problem `NotebookImageLightbox` avoids by never forcing an
+ * aspect ratio either.
  *
  * Everything that used to sit *below* the photo in its own panel — the chip/topic/note info, the
  * question, the three answer buttons — now overlays it instead: info top-left, progress top-right,
@@ -54,6 +54,8 @@ export function NotebookReviewPanel({
   const t = useTranslations("notebook");
   const reduceMotion = useReducedMotion();
   const [index, setIndex] = useState(0);
+  /** Which way the card slid in — drives the enter/exit side of the transition below. */
+  const [direction, setDirection] = useState(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /**
@@ -85,6 +87,7 @@ export function NotebookReviewPanel({
         setStuck(updated);
         return;
       }
+      setDirection(1);
       setIndex((current) => current + 1);
     } catch {
       setError(t("error_review"));
@@ -94,6 +97,16 @@ export function NotebookReviewPanel({
   }
 
   const bounded = stuck != null || !entry || !entry.url;
+
+  /** Slide direction lives on `custom` so an already-exiting card picks up the latest value too —
+   *  framer-motion's documented pattern for a carousel, not a per-card prop. */
+  const slideVariants = {
+    enter: (dir: number) =>
+      reduceMotion ? { opacity: 0 } : { opacity: 0, x: dir > 0 ? 48 : -48 },
+    center: { opacity: 1, x: 0 },
+    exit: (dir: number) =>
+      reduceMotion ? { opacity: 0 } : { opacity: 0, x: dir > 0 ? -48 : 48 },
+  };
 
   return (
     <AnimatePresence>
@@ -117,11 +130,47 @@ export function NotebookReviewPanel({
             event.stopPropagation();
             onClose();
           }}
-          className="absolute right-4 top-4 z-10 flex size-9 items-center justify-center rounded-full text-white outline-none focus-visible:ring-2 focus-visible:ring-white"
+          className="absolute right-4 top-4 z-10 flex size-9 cursor-pointer items-center justify-center rounded-full text-white outline-none focus-visible:ring-2 focus-visible:ring-white"
           style={{ background: "rgba(255,255,255,0.15)" }}
         >
           <X aria-hidden size={18} />
         </button>
+
+        {/* Browsing, not answering — these just move the pointer, they never call `answer()`.
+            Hidden once the deck has produced a stuck/done screen, since there is nothing left to
+            page between at that point. */}
+        {!stuck && entry && entries.length > 1 ? (
+          <>
+            <button
+              type="button"
+              aria-label={t("previous_page")}
+              disabled={index === 0}
+              onClick={(event) => {
+                event.stopPropagation();
+                setDirection(-1);
+                setIndex((current) => current - 1);
+              }}
+              className="absolute left-4 top-1/2 z-10 flex size-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-white outline-none focus-visible:ring-2 focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-30"
+              style={{ background: "rgba(255,255,255,0.15)" }}
+            >
+              <ChevronLeft aria-hidden size={20} />
+            </button>
+            <button
+              type="button"
+              aria-label={t("next_page")}
+              disabled={index === entries.length - 1}
+              onClick={(event) => {
+                event.stopPropagation();
+                setDirection(1);
+                setIndex((current) => current + 1);
+              }}
+              className="absolute right-4 top-1/2 z-10 flex size-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-white outline-none focus-visible:ring-2 focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-30"
+              style={{ background: "rgba(255,255,255,0.15)" }}
+            >
+              <ChevronRight aria-hidden size={20} />
+            </button>
+          </>
+        ) : null}
 
         {/*
           Two shells: a photo gets the full, borderless preview box (`h-[85vh]`, no rounded card
@@ -145,39 +194,75 @@ export function NotebookReviewPanel({
             ) : !entry ? (
               <DonePanel onClose={onClose} />
             ) : (
-              <TextOnlyReviewCard
-                entry={entry}
-                busy={busy}
-                error={error}
-                progress={
-                  entries.length > 1 ? { current: index + 1, total: entries.length } : null
-                }
-                onSolved={() => void answer(true)}
-                onMissed={() => void answer(false)}
-                onLater={onClose}
-              />
+              <AnimatePresence mode="wait" custom={direction} initial={false}>
+                <motion.div
+                  key={entry.id}
+                  custom={direction}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{
+                    duration: reduceMotion ? 0 : 0.22,
+                    ease: "easeOut",
+                  }}
+                >
+                  <TextOnlyReviewCard
+                    entry={entry}
+                    busy={busy}
+                    error={error}
+                    progress={
+                      entries.length > 1
+                        ? { current: index + 1, total: entries.length }
+                        : null
+                    }
+                    onSolved={() => void answer(true)}
+                    onMissed={() => void answer(false)}
+                    onLater={onClose}
+                  />
+                </motion.div>
+              </AnimatePresence>
             )}
           </div>
         ) : (
           <div
-            // `object-contain` almost never fills this box exactly — a portrait exam photo leaves
-            // the box wider than it is, a landscape one leaves it taller. Without a background of
-            // its own the box was fully transparent there, so the overlaid info/buttons (positioned
-            // against the BOX, not the photo inside it) looked like they'd come unstuck, floating
-            // over the raw black backdrop rather than sitting on a photo card.
-            className="relative h-[85vh] w-full max-w-3xl overflow-hidden rounded-[var(--radius-card)]"
+            // Shrinks to the photo's own rendered box (`w-fit`, capped by the `<img>`'s own
+            // max-height/max-width) instead of a fixed portrait box the photo then letterboxes
+            // inside. A background of its own is what keeps the rounded corners looking like a
+            // card edge rather than a raw image edge.
+            className="relative w-fit max-w-[calc(100vw-2rem)] overflow-hidden rounded-[var(--radius-card)]"
             style={{ backgroundColor: "var(--color-bg)" }}
             onClick={(event) => event.stopPropagation()}
           >
-            <PhotoReviewCard
-              entry={entry}
-              busy={busy}
-              error={error}
-              progress={entries.length > 1 ? { current: index + 1, total: entries.length } : null}
-              onSolved={() => void answer(true)}
-              onMissed={() => void answer(false)}
-              onLater={onClose}
-            />
+            <AnimatePresence mode="wait" custom={direction} initial={false}>
+              <motion.div
+                key={entry.id}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                  duration: reduceMotion ? 0 : 0.22,
+                  ease: "easeOut",
+                }}
+                className="relative"
+              >
+                <PhotoReviewCard
+                  entry={entry}
+                  busy={busy}
+                  error={error}
+                  progress={
+                    entries.length > 1
+                      ? { current: index + 1, total: entries.length }
+                      : null
+                  }
+                  onSolved={() => void answer(true)}
+                  onMissed={() => void answer(false)}
+                  onLater={onClose}
+                />
+              </motion.div>
+            </AnimatePresence>
           </div>
         )}
       </motion.div>
@@ -203,7 +288,7 @@ function StuckPanel({ onSkip }: { onSkip: () => void }) {
       <div className="flex flex-wrap gap-2">
         <Link
           href="/community"
-          className="flex min-h-9 items-center justify-center rounded-[var(--radius-card)] px-4 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="flex min-h-9 items-center justify-center rounded-[var(--radius-card)] px-4 text-sm font-bold text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           style={{ backgroundColor: "var(--color-btn)" }}
         >
           {t("stuck_ask")}
@@ -244,17 +329,29 @@ function ReviewActions({
   onMissed,
   onLater,
   onDark,
-}: Pick<ReviewCardProps, "busy" | "onSolved" | "onMissed" | "onLater"> & { onDark?: boolean }) {
+}: Pick<ReviewCardProps, "busy" | "onSolved" | "onMissed" | "onLater"> & {
+  onDark?: boolean;
+}) {
   const t = useTranslations("notebook");
   return (
     <div className="flex gap-2">
       <NotebookCompactButton busy={busy} onClick={onSolved}>
         {t("review_solved")}
       </NotebookCompactButton>
-      <NotebookCompactButton variant="secondary" onDark={onDark} disabled={busy} onClick={onMissed}>
+      <NotebookCompactButton
+        variant="secondary"
+        onDark={onDark}
+        disabled={busy}
+        onClick={onMissed}
+      >
         {t("review_missed")}
       </NotebookCompactButton>
-      <NotebookCompactButton variant="ghost" onDark={onDark} disabled={busy} onClick={onLater}>
+      <NotebookCompactButton
+        variant="ghost"
+        onDark={onDark}
+        disabled={busy}
+        onClick={onLater}
+      >
         {t("review_later")}
       </NotebookCompactButton>
     </div>
@@ -262,34 +359,74 @@ function ReviewActions({
 }
 
 /** The full-preview shell: photo edge to edge, everything else floating on top of it. */
-function PhotoReviewCard({ entry, busy, error, progress, onSolved, onMissed, onLater }: ReviewCardProps) {
+function PhotoReviewCard({
+  entry,
+  busy,
+  error,
+  progress,
+  onSolved,
+  onMissed,
+  onLater,
+}: ReviewCardProps) {
   const t = useTranslations("notebook");
   const label = entry.topicName ?? entry.subjectName;
 
   return (
     <>
-      <Image src={entry.url!} alt="" fill className="object-contain" unoptimized />
+      {/* A plain `<img>`, not `next/image fill` in a fixed-height box: the box below sizes itself
+          to the image's own natural aspect ratio (`w-fit` + this element's intrinsic size), so a
+          square or landscape photo no longer letterboxes inside a tall, portrait-shaped box. */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- sizes to its own intrinsic aspect
+          ratio; next/image's `fill` mode forces a caller-defined box shape instead. */}
+      <img
+        src={entry.url!}
+        alt=""
+        className="block max-h-[85vh] max-w-[min(92vw,900px)] w-auto"
+      />
 
-      {/* Same visual language as `NotebookEntryCard`'s own hover overlay — one way this information
-          looks, wherever a mistake shows up. A thin tint is what keeps it readable over whatever
-          part of the photo happens to sit behind it. */}
+      {/* A small stats card, not a caption strip: a title row (what this mistake is) over a row of
+          stat pills (why it was missed, how many times it's been reviewed) — the same tint the
+          entry card's own hover overlay uses, just organised as data instead of one label. */}
       <div
-        className="absolute left-3 top-3 flex max-w-[70%] flex-col gap-1 rounded-[var(--radius-card)] px-2.5 py-2"
+        className="absolute left-3 top-3 flex max-w-[70%] flex-col gap-1.5 rounded-[var(--radius-card)] px-3 py-2.5"
         style={{ background: "rgba(17,17,17,0.6)" }}
       >
-        <span
-          className="self-start rounded-full px-2 py-0.5 text-xs font-semibold"
-          style={{ color: "#ffffff", backgroundColor: "rgba(255,255,255,0.2)" }}
-        >
-          {t(`error_type.${entry.errorType}`)}
-        </span>
         {label ? (
-          <span className="truncate text-xs font-bold" style={{ color: "#ffffff" }}>
+          <span
+            className="truncate text-sm font-bold"
+            style={{ color: "#ffffff" }}
+          >
             {label}
           </span>
         ) : null}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span
+            className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold"
+            style={{
+              color: "#ffffff",
+              backgroundColor: "rgba(255,255,255,0.2)",
+            }}
+          >
+            {t(`error_type.${entry.errorType}`)}
+          </span>
+          {entry.reviewCount > 0 ? (
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
+              style={{
+                color: "#ffffff",
+                backgroundColor: "rgba(255,255,255,0.2)",
+              }}
+            >
+              <RotateCw aria-hidden size={11} />
+              {t("card_review_count", { count: entry.reviewCount })}
+            </span>
+          ) : null}
+        </div>
         {entry.note ? (
-          <span className="line-clamp-2 text-xs" style={{ color: "rgba(255,255,255,0.85)" }}>
+          <span
+            className="line-clamp-2 text-xs"
+            style={{ color: "rgba(255,255,255,0.85)" }}
+          >
             {entry.note}
           </span>
         ) : null}
@@ -300,7 +437,10 @@ function PhotoReviewCard({ entry, busy, error, progress, onSolved, onMissed, onL
           className="absolute right-14 top-3 rounded-full px-2.5 py-1 text-xs font-semibold"
           style={{ color: "#ffffff", backgroundColor: "rgba(17,17,17,0.6)" }}
         >
-          {t("review_progress", { current: progress.current, total: progress.total })}
+          {t("review_progress", {
+            current: progress.current,
+            total: progress.total,
+          })}
         </span>
       ) : null}
 
@@ -308,20 +448,37 @@ function PhotoReviewCard({ entry, busy, error, progress, onSolved, onMissed, onL
           just holding the review question and its buttons instead of a caption. */}
       <div
         className="absolute inset-x-0 bottom-0 flex flex-col gap-2 rounded-b-[var(--radius-card)] p-3"
-        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.5) 65%, transparent)" }}
+        style={{
+          background:
+            "linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.5) 65%, transparent)",
+        }}
       >
         <FormError message={error} />
         <p className="text-sm font-semibold" style={{ color: "#ffffff" }}>
           {t("review_question")}
         </p>
-        <ReviewActions busy={busy} onSolved={onSolved} onMissed={onMissed} onLater={onLater} onDark />
+        <ReviewActions
+          busy={busy}
+          onSolved={onSolved}
+          onMissed={onMissed}
+          onLater={onLater}
+          onDark
+        />
       </div>
     </>
   );
 }
 
 /** No photo to overlay controls onto, so this stays a plain bounded block, like before. */
-function TextOnlyReviewCard({ entry, busy, error, progress, onSolved, onMissed, onLater }: ReviewCardProps) {
+function TextOnlyReviewCard({
+  entry,
+  busy,
+  error,
+  progress,
+  onSolved,
+  onMissed,
+  onLater,
+}: ReviewCardProps) {
   const t = useTranslations("notebook");
   const label = entry.topicName ?? entry.subjectName;
 
@@ -334,9 +491,15 @@ function TextOnlyReviewCard({ entry, busy, error, progress, onSolved, onMissed, 
         {progress ? (
           <span
             className="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold"
-            style={{ color: "var(--color-chip-text)", backgroundColor: "var(--color-chip)" }}
+            style={{
+              color: "var(--color-chip-text)",
+              backgroundColor: "var(--color-chip)",
+            }}
           >
-            {t("review_progress", { current: progress.current, total: progress.total })}
+            {t("review_progress", {
+              current: progress.current,
+              total: progress.total,
+            })}
           </span>
         ) : null}
       </div>
@@ -346,7 +509,10 @@ function TextOnlyReviewCard({ entry, busy, error, progress, onSolved, onMissed, 
       <div className="flex flex-wrap items-center gap-2">
         <span
           className="self-start rounded-full px-2.5 py-1 text-xs font-semibold"
-          style={{ color: "var(--color-chip-text)", backgroundColor: "var(--color-chip)" }}
+          style={{
+            color: "var(--color-chip-text)",
+            backgroundColor: "var(--color-chip)",
+          }}
         >
           {t(`error_type.${entry.errorType}`)}
         </span>
@@ -363,11 +529,19 @@ function TextOnlyReviewCard({ entry, busy, error, progress, onSolved, onMissed, 
         </p>
       ) : null}
 
-      <p className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+      <p
+        className="text-sm font-semibold"
+        style={{ color: "var(--color-main)" }}
+      >
         {t("review_question")}
       </p>
 
-      <ReviewActions busy={busy} onSolved={onSolved} onMissed={onMissed} onLater={onLater} />
+      <ReviewActions
+        busy={busy}
+        onSolved={onSolved}
+        onMissed={onMissed}
+        onLater={onLater}
+      />
     </div>
   );
 }

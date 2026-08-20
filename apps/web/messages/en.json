@@ -2414,7 +2414,35 @@
     "history_eyebrow": "Your past effort",
     "history_title": "Your past effort is here too",
     "history_body": "{count} achievements reflecting your earlier effort were added to your collection.",
-    "continue": "Great, keep going"
+    "continue": "Continue my journey",
+    "celebration_items": {
+      "first_step": { "eyebrow": "Your journey has begun", "body": "You didn't wait to feel ready; you took the first step. The path is yours now." },
+      "route_drawn": { "eyebrow": "Your path is taking shape", "body": "You did more than think about where to go; you drew yourself a route forward." },
+      "dream_space_created": { "eyebrow": "Your dream is in sight", "body": "You made room in your life for the dream in your mind. Now you have a direction to return to." },
+      "rhythm_found": { "eyebrow": "Your rhythm is forming", "body": "For seven days, you kept coming back for yourself. This is more than one day now; it's your rhythm." },
+      "rhythm_kept": { "eyebrow": "Your rhythm is with you", "body": "You stayed with your path for thirty days. The rhythm you built is now a strong part of you." },
+      "returned_to_path": { "eyebrow": "Your path was waiting", "body": "A pause didn't end your journey. Today, you returned to yourself right where you left off." },
+      "route_renewed": { "eyebrow": "Your route fits you", "body": "Instead of clinging to the plan, you renewed it around what you need. That's how you own your path." },
+      "starting_point_set": { "eyebrow": "You saw where you stand", "body": "You recorded your first mock exam. Now you'll be able to see how far you travel." },
+      "mistake_revisited": { "eyebrow": "You looked once more", "body": "You returned to a mistake and looked again. Sometimes, that's exactly where learning deepens." },
+      "week_reflected": { "eyebrow": "You listened to yourself", "body": "You paused to hear what your week was telling you. Your next step is a little clearer now." },
+      "first_hello": { "eyebrow": "You left your first mark here", "body": "You shared your first words with the community. You no longer have to walk this path alone." },
+      "helped_someone": { "eyebrow": "Your words reached someone", "body": "Something you shared helped another learner. Sometimes a little support carries us a long way." }
+    },
+    "preview_items": {
+      "first_step": { "title": "First Step", "description": "You completed your first qualifying focus session." },
+      "route_drawn": { "title": "Route Drawn", "description": "You created the first task on your study route." },
+      "dream_space_created": { "title": "Room for Your Dream", "description": "You added the first meaningful piece to your vision board." },
+      "rhythm_found": { "title": "Rhythm Found", "description": "You found a seven-day study rhythm." },
+      "rhythm_kept": { "title": "Rhythm Kept", "description": "You kept your study rhythm for thirty days." },
+      "returned_to_path": { "title": "Right Where You Left Off", "description": "You chose to focus again after some time away." },
+      "route_renewed": { "title": "Route Renewed", "description": "You renewed your plan around your changing needs." },
+      "starting_point_set": { "title": "Your Starting Point", "description": "You recorded your first mock exam and set a starting point." },
+      "mistake_revisited": { "title": "Looked Again", "description": "You revisited an entry in your mistake notebook." },
+      "week_reflected": { "title": "Listened to Your Week", "description": "You intentionally completed your weekly reflection." },
+      "first_hello": { "title": "First Hello", "description": "You shared your first contribution with the community." },
+      "helped_someone": { "title": "You Helped Someone", "description": "One of your contributions helped another learner." }
+    }
   },
   "notifications": {
     "title": "Notifications",

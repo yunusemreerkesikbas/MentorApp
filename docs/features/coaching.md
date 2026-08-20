@@ -145,6 +145,34 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **`PUT /coaching/notebook/pages/:index` "Geçersiz istek" 400 fix (2026-08-21)** — bir sayfa
+  `entry` item'ı içerdiğinde her zaman `BAD_REQUEST` ile başarısız oluyordu, `details` alanı yok
+  (yani bir `DomainError` değildi). Kök neden `mistake-notebook.repository.ts`'deki
+  `listEntriesByIds`: `sql\`${entries.id} = ANY(${entryIds})\`` ham SQL'i, drizzle'ın bir JS
+  dizisini Postgres array literal'ına serileştirmemesi yüzünden `22P02 malformed array literal`
+  atıyordu — bu SQLSTATE `mapPostgresError`'da genel `BAD_REQUEST`'e eşleniyor, o yüzden hata hem
+  Zod şemasını hem ownership kontrolünü geçmiş gibi görünüyordu (ikisi de gerçekten geçiyordu).
+  Fix: `sql\`ANY(...)\`` yerine drizzle'ın `inArray()` helper'ı — doğru parametrelenmiş `IN (...)`
+  üretiyor. Gerçek DB'ye karşı (drizzle repository'si doğrudan import edilerek) doğrulandı. Usage:
+  deftere fotoğraflı bir yanlış eklenip sayfaya yerleştirildiğinde tetiklenir. Related:
+  `mistake-notebook.repository.ts`.
+
+- **Yanlış defteri rail chrome motion (2026-08-21)** — Category/Not pills share a
+  `layoutId` so the active fill travels between neighbours (vision-board editor nav).
+  The detail panel keeps its enter/exit slide; switching Ekle/Sticker/Kağıt crossfades
+  the body (`mode="wait"`). Reduced-motion snaps the pill and fades only. Usage: open
+  a spread, tap rail icons. Related: `notebook-shell.tsx`, `board-chrome-motion.ts`.
+
+- **Yanlış defteri light/dark chrome (2026-08-21)** — `/yanlis-defteri` rail, side-panel pills,
+  error-type chips, save, and the community handoff CTA pair `--color-btn` with
+  `--color-btn-label` so filled chrome stays readable when those tokens invert. Inactive
+  plate swatches outline with a `--color-main` mix instead of `rgba(0,0,0,0.12)` (hairline
+  vanished on charcoal). Paper, cover, rules, and spiral stay `--notebook-*`; the ink tray
+  stays a dark physical object (white tray would hide a white pen). Photo overlays and
+  lightbox remain photo-native whites. Usage: sidebar lamp on `/yanlis-defteri`. Related:
+  `notebook-shell.tsx`, `notebook-side-panel.tsx`, `notebook-add-panel.tsx`,
+  `notebook-review-panel.tsx`.
+
 - **Achievement kanıtları ve haftalık tamamlama (2026-08-18)** — Geçerli oturum, plan, hedef panosu,
   streak, deneme ve yanlış-defteri eylemleri domain event üretir. `PUT /v1/coaching/weekly-review/completion`
   yalnız READY ve doğru İstanbul haftası için idempotent kayıt/event oluşturur. Toplu

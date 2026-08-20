@@ -191,7 +191,7 @@ export function NotebookAddPanel({
                 onClick={() => setErrorType(type)}
                 className="inline-flex min-h-9 cursor-pointer items-center rounded-full px-3 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
                 style={{
-                  color: selected ? "#ffffff" : "var(--color-main)",
+                  color: selected ? "var(--color-btn-label)" : "var(--color-main)",
                   backgroundColor: selected ? "var(--color-btn)" : "transparent",
                   border: selected
                     ? "1px solid var(--color-btn)"
