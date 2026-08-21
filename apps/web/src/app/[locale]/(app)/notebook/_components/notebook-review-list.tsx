@@ -59,7 +59,10 @@ export function NotebookReviewList({
       // first heading and the last row for no reason.
       className={`flex max-h-[70vh] ${REVIEW_CARD_WIDTH} flex-col overflow-y-auto rounded-[var(--radius-card)] p-2`}
       style={{
-        backgroundColor: "var(--color-bg)",
+        // Matches the card it replaces: on the dark theme `--color-bg` is a shade off the 85%-black
+        // scrim, so the list had no edge at all and read as text floating on the backdrop.
+        backgroundColor: "var(--color-surface)",
+        border: "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
         boxShadow: "var(--shadow-card)",
       }}
     >

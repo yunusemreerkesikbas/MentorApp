@@ -769,8 +769,7 @@ export function NotebookShell() {
    * card already knows it, and the server's answer is the whole new state of it. This is what
    * makes a healed card fade on the wall the moment it heals, on whichever side it sits.
    */
-  const handleReviewed = useCallback((updated: NotebookEntryDto) => {
-    setDue((current) => current.filter((entry) => entry.id !== updated.id));
+  const handleEntryPatched = useCallback((updated: NotebookEntryDto) => {
     const patchMeta = (meta: NotebookPageDto | null) =>
       meta && meta.entries.some((entry) => entry.id === updated.id)
         ? {
@@ -782,6 +781,11 @@ export function NotebookShell() {
         : meta;
     setLeftMeta(patchMeta);
     setRightMeta(patchMeta);
+  }, []);
+
+  const handleReviewed = useCallback((updated: NotebookEntryDto) => {
+    setDue((current) => current.filter((entry) => entry.id !== updated.id));
+    handleEntryPatched(updated);
     setOverview((current) =>
       current
         ? {
@@ -794,7 +798,7 @@ export function NotebookShell() {
           }
         : current,
     );
-  }, []);
+  }, [handleEntryPatched]);
 
   if (!overview && !error) return <NotebookContentSkeleton />;
 
@@ -901,6 +905,7 @@ export function NotebookShell() {
         <NotebookReviewPanel
           entries={due}
           onReviewed={handleReviewed}
+          onEntryUpdated={handleEntryPatched}
           onClose={() => setReviewing(false)}
         />
       ) : singleReview ? (
@@ -910,6 +915,7 @@ export function NotebookShell() {
             handleReviewed(updated);
             setSingleReview(null);
           }}
+          onEntryUpdated={handleEntryPatched}
           onClose={() => setSingleReview(null)}
         />
       ) : null}

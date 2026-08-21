@@ -135,6 +135,7 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
   const savedPages: Array<{ index: number; doc: unknown }> = [];
   const createdEntries: Record<string, unknown>[] = [];
   const reviews: Array<{ id: string; solved: boolean }> = [];
+  const patches: Array<{ id: string; body: Record<string, unknown> }> = [];
 
   const overview: NotebookOverviewDto = {
     pageCount: 1,
@@ -226,6 +227,16 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
         }),
       );
     }
+    const entryMatch = path.match(/\/v1\/coaching\/notebook\/entries\/([^/]+)$/);
+    if (method === "PATCH" && entryMatch) {
+      const id = entryMatch[1]!;
+      const body = request.postDataJSON() as Record<string, unknown>;
+      patches.push({ id, body });
+      const source = [...(options.due ?? []), ...allSeededEntries].find(
+        (entry) => entry.id === id,
+      );
+      return json(route, makeEntry({ ...source, id, ...body }));
+    }
     if (method === "POST" && /\/entries\/[^/]+\/review$/.test(path)) {
       const id = path.split("/").at(-2)!;
       const body = request.postDataJSON() as { solved: boolean };
@@ -249,7 +260,7 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
     return json(route, null, 204);
   });
 
-  return { savedPages, createdEntries, reviews, pageErrors };
+  return { savedPages, createdEntries, reviews, patches, pageErrors };
 }
 
 test("kapak açılır, sağ ve sol sayfalar birlikte gösterilir, kapaktan geriye gidilemez", async ({
@@ -753,3 +764,75 @@ test("liste ders başlıklarıyla gruplar, karta atlar ve cevaplananı kilitler"
   await expect(page.getByText("2 kart kaldı")).toBeVisible();
   await expect(page.getByRole("button", { name: /Kümeler/ })).toBeDisabled();
 });
+
+test("takılan kart topluluğa devredilirken kayıt kimliğini taşır", async ({
+  page,
+}) => {
+  const due = [makeEntry({ reviewCount: 2 })];
+  await mockNotebookApi(page, { due, overview: { dueCount: 1, entryCount: 1 } });
+
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: /1 soru tekrar zamanı/ }).click();
+  await page.getByRole("button", { name: "Yine çözemedim" }).click();
+
+  // Without the id the handoff is one-way: the student asks, the thread is never attached, and the
+  // card's "answered in the community" state can never happen.
+  await expect(page.getByRole("link", { name: "Toplulukta sor" })).toHaveAttribute(
+    "href",
+    `/topluluk/akis?notebookEntry=${due[0]!.id}`,
+  );
+});
+
+test("not kart arkasında düzenlenir; düzenlerken karta tıklamak çevirmez", async ({
+  page,
+}) => {
+  const due = [makeEntry({ reviewCount: 2, note: "Eski not" })];
+  const api = await mockNotebookApi(page, {
+    due,
+    overview: { dueCount: 1, entryCount: 1 },
+  });
+
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: /1 soru tekrar zamanı/ }).click();
+  await page.getByRole("button", { name: "Çevir" }).click();
+
+  await page.getByRole("button", { name: /Eski not/ }).click();
+  const field = page.getByLabel("Notu düzenle");
+  await field.fill("İşlem sırasını karıştırdım");
+
+  // The card is a swipeable, tappable surface; a click that lands on it while the caret is in the
+  // note must not turn the note face-away mid-sentence.
+  await page.getByText("Biliyordum, dikkat hatası").click();
+  await expect(field).toBeVisible();
+
+  await page.getByRole("button", { name: "Notu kaydet" }).click();
+  await expect.poll(() => api.patches.length).toBe(1);
+  expect(api.patches[0]).toEqual({
+    id: due[0]!.id,
+    body: { note: "İşlem sırasını karıştırdım" },
+  });
+  await expect(page.getByText("İşlem sırasını karıştırdım")).toBeVisible();
+});
+
+test("deste sonu ne yapıldığını özetler", async ({ page }) => {
+  const due = [
+    makeEntry({ id: "aaaaaaaa-1111-4111-8111-111111111111", topicName: "Bir" }),
+    makeEntry({ id: "bbbbbbbb-1111-4111-8111-111111111111", topicName: "İki" }),
+    makeEntry({ id: "cccccccc-1111-4111-8111-111111111111", topicName: "Üç" }),
+  ];
+  await mockNotebookApi(page, { due, overview: { dueCount: 3, entryCount: 3 } });
+
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: /3 soru tekrar zamanı/ }).click();
+
+  await page.getByRole("button", { name: "Çözebildim" }).click();
+  await page.getByRole("button", { name: "Çözebildim" }).click();
+  // reviewCount 1 > 0, so the third card's miss detours through the stuck screen first.
+  await page.getByRole("button", { name: "Yine çözemedim" }).click();
+  await page.getByRole("button", { name: "Şimdilik geç" }).click();
+
+  await expect(page.getByText("3 karttan 2 tanesini çözdün.")).toBeVisible();
+  // The missed card is described as still in the rotation, never counted as a wrong answer.
+  await expect(page.getByText(/Kalan 1 kart tekrar döngüsünde/)).toBeVisible();
+});
+

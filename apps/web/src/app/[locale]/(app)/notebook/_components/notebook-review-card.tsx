@@ -2,7 +2,13 @@
 
 import { useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
-import { Maximize2, MessageCircleQuestion, RotateCw, Undo2 } from "lucide-react";
+import {
+  Maximize2,
+  MessageCircleQuestion,
+  Pencil,
+  RotateCw,
+  Undo2,
+} from "lucide-react";
 import {
   AnimatePresence,
   motion,
@@ -12,7 +18,10 @@ import {
 } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { NotebookEntryDto } from "@mentor/types";
+import { NOTEBOOK_NOTE_MAX_LENGTH } from "@mentor/validation";
 import { Link } from "@/i18n/navigation";
+import { FormError } from "@/components/form";
+import { NotebookCompactButton } from "@/components/notebook/notebook-compact-button";
 import {
   SWIPE_THRESHOLD_PX,
   swipeVerdict,
@@ -50,6 +59,8 @@ export interface NotebookReviewCardProps {
   onMissed: () => void;
   /** Full-size preview; null for a text-only entry, which has no photo to open. */
   onZoom: (() => void) | null;
+  /** Persists the note edited on the back; rejects so the field can show its own failure. */
+  onNoteSave: (note: string | null) => Promise<void>;
 }
 
 /**
@@ -83,10 +94,13 @@ export function NotebookReviewCard({
   onSolved,
   onMissed,
   onZoom,
+  onNoteSave,
 }: NotebookReviewCardProps) {
   const t = useTranslations("notebook");
   const reduceMotion = useReducedMotion();
   const [flipped, setFlipped] = useState(false);
+  /** A caret is in the note field: the card must stop answering and stop turning under it. */
+  const [editing, setEditing] = useState(false);
 
   /**
    * A drag ends with a click on the same element, which would flip the card the student just
@@ -107,7 +121,7 @@ export function NotebookReviewCard({
     [0, 1],
   );
 
-  const draggable = !reduceMotion && !busy;
+  const draggable = !reduceMotion && !busy && !editing;
 
   return (
     <motion.div
@@ -115,7 +129,12 @@ export function NotebookReviewCard({
       style={{
         x,
         rotate,
-        backgroundColor: "var(--color-bg)",
+        // `--color-surface`, not `--color-bg`: on the dark theme the two are #1a1d24 and #12141a,
+        // and the card sits on an 85%-black scrim — at `bg` it dissolves into the backdrop with no
+        // edge at all. The hairline is the same one `NotebookEntryCard` draws, and it is what gives
+        // the card a border in the dark theme where the shadow cannot.
+        backgroundColor: "var(--color-surface)",
+        border: "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
         boxShadow: "var(--shadow-card)",
         perspective: reduceMotion ? undefined : FLIP_PERSPECTIVE_PX,
         cursor: draggable ? "grab" : "default",
@@ -137,7 +156,7 @@ export function NotebookReviewCard({
         if (verdict === "missed") onMissed();
       }}
       onClick={() => {
-        if (dragMoved.current || busy) return;
+        if (dragMoved.current || busy || editing) return;
         setFlipped((current) => !current);
       }}
     >
@@ -154,7 +173,11 @@ export function NotebookReviewCard({
             transition={{ duration: 0.15 }}
           >
             {flipped ? (
-              <CardBack entry={entry} />
+              <CardBack
+                entry={entry}
+                onNoteSave={onNoteSave}
+                onEditing={setEditing}
+              />
             ) : (
               <CardFront entry={entry} />
             )}
@@ -184,7 +207,11 @@ export function NotebookReviewCard({
             }}
             inert={!flipped}
           >
-            <CardBack entry={entry} />
+            <CardBack
+              entry={entry}
+              onNoteSave={onNoteSave}
+              onEditing={setEditing}
+            />
           </div>
         </motion.div>
       )}
@@ -229,7 +256,7 @@ export function NotebookReviewCard({
               color: "var(--color-main)",
               borderColor:
                 "color-mix(in srgb, var(--color-main) 35%, transparent)",
-              backgroundColor: "var(--color-bg)",
+              backgroundColor: "var(--color-surface)",
             }}
             className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 -rotate-6 rounded-[var(--radius-card)] border-2 px-3 py-1.5 text-sm font-bold"
           >
@@ -240,7 +267,8 @@ export function NotebookReviewCard({
             style={{
               opacity: solvedOpacity,
               backgroundColor: "var(--color-success)",
-              color: "#ffffff",
+              // Same inversion problem as the button it mirrors — the green flips between themes.
+              color: "var(--color-btn-label)",
             }}
             className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rotate-6 rounded-[var(--radius-card)] px-3 py-1.5 text-sm font-bold"
           >
@@ -275,7 +303,7 @@ function CardControl({
       }}
       className="flex size-11 cursor-pointer items-center justify-center rounded-full outline-none transition-opacity duration-150 hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       style={{
-        backgroundColor: "color-mix(in srgb, var(--color-bg) 78%, transparent)",
+        backgroundColor: "color-mix(in srgb, var(--color-surface) 80%, transparent)",
         color: "var(--color-main)",
         boxShadow: "var(--shadow-card)",
       }}
@@ -333,47 +361,66 @@ function CardFront({ entry }: { entry: NotebookEntryDto }) {
  * What this mistake was: the labels the student wrote when they filed it, plus the community
  * answer if one is waiting. The answer link is the only thing on either face they can act on
  * right now, so it gets the accent and the bottom of the card to itself.
+ *
+ * Three bands, not a top-aligned stack. The labels are four short lines and the card is a fixed
+ * 4:5 box, so stacking everything at the top left roughly seventy percent of the face empty and
+ * made the note — the one thing here the student writes — a thin row lost in it. The note now takes
+ * the space instead: a well that grows to fill whatever the header does not use, which is also what
+ * makes "add a note" read as somewhere to write rather than a link someone forgot to style.
  */
-function CardBack({ entry }: { entry: NotebookEntryDto }) {
+function CardBack({
+  entry,
+  onNoteSave,
+  onEditing,
+}: {
+  entry: NotebookEntryDto;
+  onNoteSave: (note: string | null) => Promise<void>;
+  onEditing: (editing: boolean) => void;
+}) {
   const t = useTranslations("notebook");
   const label = entry.topicName ?? entry.subjectName;
   const answered = entry.communityAnsweredAt && entry.communityThreadId;
 
   return (
-    <div className="flex size-full flex-col gap-3 overflow-y-auto p-5">
-      <span className="text-lg font-bold" style={{ color: "var(--color-main)" }}>
-        {label ?? t("card_unlabelled")}
-      </span>
-
-      <div className="flex flex-wrap items-center gap-1.5">
+    <div className="flex size-full flex-col gap-4 p-5">
+      <div className="flex flex-col gap-2">
         <span
-          className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
-          style={{
-            color: "var(--color-chip-text)",
-            backgroundColor: "var(--color-chip)",
-          }}
+          className="text-lg font-bold text-balance"
+          style={{ color: "var(--color-main)" }}
         >
-          {t(`error_type.${entry.errorType}`)}
+          {label ?? t("card_unlabelled")}
         </span>
-        {entry.reviewCount > 0 ? (
+
+        {/* One pill shape for both, so the row reads as one band of metadata. Only the error type
+            is tinted — it is the classification the student chose; the review count is a fact
+            about the card, and giving it the same colour would make two things look equally
+            meaningful when they are not. */}
+        <div className="flex flex-wrap items-center gap-1.5">
           <span
-            className="inline-flex items-center gap-1 text-xs"
-            style={{ color: "var(--color-secondary)" }}
+            className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
+            style={{
+              color: "var(--color-chip-text)",
+              backgroundColor: "var(--color-chip)",
+            }}
           >
-            <RotateCw aria-hidden size={12} />
-            {t("card_review_count", { count: entry.reviewCount })}
+            {t(`error_type.${entry.errorType}`)}
           </span>
-        ) : null}
+          {entry.reviewCount > 0 ? (
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold"
+              style={{
+                color: "var(--color-secondary)",
+                backgroundColor: "var(--color-surface-container)",
+              }}
+            >
+              <RotateCw aria-hidden size={12} />
+              {t("card_review_count", { count: entry.reviewCount })}
+            </span>
+          ) : null}
+        </div>
       </div>
 
-      {entry.note ? (
-        <p
-          className="text-sm text-pretty"
-          style={{ color: "var(--color-body)" }}
-        >
-          {entry.note}
-        </p>
-      ) : null}
+      <NoteField entry={entry} onSave={onNoteSave} onEditing={onEditing} />
 
       {answered ? (
         <Link
@@ -391,6 +438,127 @@ function CardBack({ entry }: { entry: NotebookEntryDto }) {
           {t("review_community_answer")}
         </Link>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * The student's own note about the mistake, editable right here.
+ *
+ * The note used to be write-once, filled in when the card was filed. But the moment a card catches
+ * you a second time is the moment you actually learn what went wrong — and until now there was
+ * nowhere to put that. Review is when the note is born, not when the entry is.
+ *
+ * ponytail: explicit save, not save-on-blur. This sits on a card that can be swiped away or flipped
+ * out from under it; blurring is one of the ways the text disappears, so it cannot also be the way
+ * it is committed.
+ */
+function NoteField({
+  entry,
+  onSave,
+  onEditing,
+}: {
+  entry: NotebookEntryDto;
+  onSave: (note: string | null) => Promise<void>;
+  onEditing: (editing: boolean) => void;
+}) {
+  const t = useTranslations("notebook");
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(entry.note ?? "");
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  function open() {
+    setDraft(entry.note ?? "");
+    setFailed(false);
+    setEditing(true);
+    // The card owns drag and flip; both have to stand down while a caret is in here, or the first
+    // gesture inside the textarea answers the card or turns it face-away mid-sentence.
+    onEditing(true);
+  }
+
+  function close() {
+    setEditing(false);
+    onEditing(false);
+  }
+
+  /** The well both states share, so opening the editor does not resize or move the note area. */
+  const wellClass =
+    "flex min-h-0 flex-1 flex-col rounded-[var(--radius-card)] p-3";
+  const wellStyle = {
+    backgroundColor: "var(--color-surface-container)",
+    border: "1px solid color-mix(in srgb, var(--color-main) 8%, transparent)",
+  } as const;
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          open();
+        }}
+        className={`${wellClass} group w-full cursor-pointer gap-2 text-left outline-none transition-colors duration-150 hover:border-[color-mix(in_srgb,var(--color-main)_20%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none`}
+        style={wellStyle}
+      >
+        <span
+          className="inline-flex items-center gap-1.5 text-xs font-semibold"
+          style={{ color: "var(--color-secondary)" }}
+        >
+          <Pencil aria-hidden size={12} />
+          {entry.note ? t("review_note_edit") : t("review_note_add")}
+        </span>
+        <span
+          className="overflow-y-auto text-sm text-pretty"
+          style={{
+            color: entry.note ? "var(--color-body)" : "var(--color-secondary)",
+          }}
+        >
+          {entry.note ?? t("review_note_placeholder")}
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className="flex min-h-0 flex-1 flex-col gap-2"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <textarea
+        autoFocus
+        maxLength={NOTEBOOK_NOTE_MAX_LENGTH}
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        aria-label={t("review_note_edit")}
+        placeholder={t("review_note_placeholder")}
+        className={`${wellClass} resize-none text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]`}
+        style={{ ...wellStyle, color: "var(--color-main)" }}
+      />
+      {failed ? <FormError message={t("error_note_save")} /> : null}
+      <div className="flex gap-2">
+        <NotebookCompactButton
+          busy={busy}
+          onClick={() => {
+            setBusy(true);
+            setFailed(false);
+            const trimmed = draft.trim();
+            void onSave(trimmed.length > 0 ? trimmed : null)
+              .then(close)
+              .catch(() => setFailed(true))
+              .finally(() => setBusy(false));
+          }}
+        >
+          {t("review_note_save")}
+        </NotebookCompactButton>
+        <NotebookCompactButton
+          variant="secondary"
+          disabled={busy}
+          onClick={close}
+        >
+          {t("review_note_cancel")}
+        </NotebookCompactButton>
+      </div>
     </div>
   );
 }

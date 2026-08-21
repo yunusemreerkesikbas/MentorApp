@@ -145,6 +145,77 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Tekrar destesi tasarım geçişi + uygulama genelinde çip kontrast hatası (2026-08-21)** — Deste
+  her ekran, iki tema ve iki viewport için ekran görüntüsüyle tarandı; çıkan dört sorunun ikisi
+  erişilebilirlik hatasıydı.
+  **(1) Karanlık temada kart yok oluyordu:** yüzeyler `--color-bg` kullanıyordu, ki dark'ta `#12141a`
+  — %85 siyah scrim'den neredeyse ayırt edilemiyor, kenar hiç yok. Kart, liste, yığın kartı ve
+  Stuck/Done panelleri `--color-surface` + `NotebookEntryCard`'ın kullandığı hairline'a geçti;
+  light'ta ikisi de beyaz olduğu için görsel fark sıfır.
+  **(2) "Çözebildim" butonunun etiketi `#ffffff` sabitiydi.** `--color-success` temalar arasında
+  ters çevriliyor (light'ta koyu `#2e7d54`, dark'ta açık `#6bc49a`), yani dark'ta beyaz etiket
+  ~2:1'e düşüyordu. `--color-btn-label` zaten tam bunun için var — light'ta beyaz, dark'ta koyu ink.
+  Kaydırma sırasında çıkan doğrulama etiketi de aynı düzeltmeyi aldı.
+  **(3) Kart arkasının %70'i boştu:** dört kısa satır sabit 4:5 kutunun tepesine yığılıyor, öğrencinin
+  *yazdığı* tek şey olan not ise o boşlukta kaybolan ince bir satır oluyordu. Artık üç bant var —
+  başlık, meta çipleri, ve kalan yüksekliği dolduran bir not kuyusu; "Not ekle" de böylece yazı alanı
+  gibi okunuyor. Tekrar sayısı da hata tipiyle aynı pill biçimini aldı ama nötr dolguyla: renkli olan
+  öğrencinin seçtiği sınıflandırma, diğeri karta dair bir olgu.
+  **(4) Modal iki noktada genişlik değiştiriyordu:** Stuck ve Done panelleri `max-w-xl` ile desteden
+  160px genişti — yani modal, tam da öğrenciye bir şey söylenen iki anda şekil değiştiriyordu. İkisi
+  de `REVIEW_CARD_WIDTH`'e alındı. Done paneli ayrıca kopyasını tekrar ediyordu ("soru kalmadı" +
+  "2 tanesini çözdün"); sayım artık subtitle'ın kendisi, `review_done_subtitle` silindi.
+
+  **Bulunan ama bu özelliğe ait olmayan hata:** `packages/ui/src/theme.css` dark bloğu
+  `--color-chip-text`'i açık mora (`#c4b8e0`) çeviriyor ama `--color-chip` fillini light'ın
+  `#bea1fe`'sinde bırakıyordu — **açık mor üstüne açık mor, ~1.3:1**, uygulamadaki 39 çip kullanımının
+  hepsinde okunamaz. Dark'a `--color-chip: #332c47` eklendi (`accent-soft`'un dark kuyusuyla aynı
+  kurulum, çipin kendi tonunda; `#c4b8e0` ile ~7:1). **Bu paylaşılan bir token, etkisi defterle
+  sınırlı değil — dark temadaki diğer çip yüzeyleri gözle kontrol edilmeli.**
+  İlgili: `notebook-review-{card,list,panel}.tsx`, `notebook-compact-button.tsx`,
+  `packages/ui/src/theme.css`.
+
+- **Defter ↔ topluluk köprüsü kapandı; tekrar sırasında not; deste sonu özeti (2026-08-21)** —
+  `POST /entries/{id}/community-thread` **iki hafta boyunca çağrısız durdu**: uç hazırdı, testliydi,
+  `lib/notebook.ts`'te `linkNotebookThread` sarmalayıcısı bile vardı, ama hiçbir bileşen çağırmıyordu.
+  Sonuç: takılan öğrenci `/community`'ye bırakılıyor, sorduğu thread karta bağlanmıyor,
+  `community_answered_at` hiç dolmuyordu — yani `card_community_answered` rozeti de, kart arkasındaki
+  "Çözümü gör" linki de **hiç görünemeyen ölü koddu**. Artık `StuckPanel`
+  `/topluluk/akis?notebookEntry=<id>`'ye devrediyor (composer hub'da değil akış sayfasında),
+  `GlobalComposer` parametreyi görünce soru dialogunu açıyor ve thread oluşunca kartla bağlıyor.
+  `QuestionComposerDialog.onCreated` artık `(thread: ThreadView) => void` — composer defterin
+  varlığını öğrenmiyor, sadece ne yarattığını söylüyor; defter mantığı bir üst katmanda.
+  **Ön doldurma yok, fotoğraf otomatik eklenmiyor:** `stuck_copyright` zaten "kendi denemeni anlat"
+  diyor, gövdeyi bizim doldurmamız o tavsiyeyi baltalar, fotoğrafı eklememiz telif uyarısını
+  anlamsızlaştırırdı. Bağlama **thread'i bloklamıyor** — soru zaten yayında; başarısızlık toast ile
+  söyleniyor, akış devam ediyor.
+  **Gotcha:** parametre `router.replace` ile temizlenmiyor, `window.history.replaceState` ile.
+  Adres çubuğundaki yol next-intl'in yerelleştirilmiş hâli (`/topluluk/akis`) ve istemci yönlendiricisi
+  onu bu rotaya geri çözmüyor — çağrı sessizce geçiyor, parametre yerinde kalıyordu. Ayrıca dialog'un
+  açıklığı state'e **kopyalanmıyor**, parametreden türetiliyor (`handoffSpent` + `manualQuestionOpen`);
+  effect içinde setState repo lint'inde hata.
+
+  **Not artık tekrar sırasında yazılabiliyor.** Not yalnız kayıt eklenirken giriliyordu; oysa bir kartın
+  seni ikinci kez yakaladığı an, "neden yanlış yaptım"ın **öğrenildiği** an. Kart arkasında kalem
+  satırı → `<textarea>` + açık Kaydet/Vazgeç (blur'da kaydetme yok: kart kaydırılıp gidebilen bir
+  yüzey, blur zaten metnin kaybolma yollarından biri). **Gotcha:** düzenlerken `drag` ve tıkla-çevir
+  kapanıyor; yoksa textarea'da başlayan sürükleme kartı cevaplıyor, tıklama da notu arka yüze atıyor.
+  `NOTEBOOK_NOTE_MAX_LENGTH` validation'dan export edildi — textarea'nın `maxLength`'i şemayla
+  ayrışırsa sunucunun reddedeceği metni yazdıran bir form olur. Shell'de `handleReviewed`'ın
+  `patchMeta` bloğu `handleEntryPatched` olarak ayrıldı: not güncellemesi açık sayfadaki kartı
+  tazeliyor ama kaydı due listesinden **düşürmüyor**.
+
+  **Deste sonu özeti:** "3 karttan 2 tanesini çözdün" + kalan varsa "tekrar döngüsünde". Deste
+  *sırasında* sayaç olmaması kararı duruyor (AGENTS.md §0) — bitişteki tek seferlik özet her dürüst
+  "çözemedim"i fiyatlandırmıyor, kaçırılanlar da yanlış olarak değil rotasyonda kalan kart olarak
+  anlatılıyor.
+  **Yeni e2e dosyası** `notebook-community-bridge.spec.ts` köprünün topluluk yarısını sürüyor (defter
+  mock'una forum zone'u öğretmemek için ayrı dosya). Yazarken app-shell'in
+  `/v1/community/achievements/unseen` ucunun mock'lanmaması yine tüm sayfayı düşürdü — catch-all 204
+  üzerinde `.length` — `notebook.spec.ts`'in bildirim zilinde öğrendiği dersin aynısı.
+  İlgili: `global-composer.tsx`, `question-composer-dialog.tsx`, `notebook-review-{panel,card}.tsx`,
+  `notebook-shell.tsx`, `packages/validation/src/coaching.ts`, `e2e/notebook{,-community-bridge}.spec.ts`.
+
 - **Yanlış defteri tekrar destesi flashcard oldu (2026-08-21)** — "N soru tekrar zamanı" çipinin
   açtığı `NotebookReviewPanel` tek yüzlü bir foto önizlemesiydi: ders/konu, hata tipi, tekrar sayısı
   ve not fotoğrafın sol üstünde **sürekli** duruyordu, aksiyonlar da alt gradient barda fotoğrafın

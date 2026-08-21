@@ -58,10 +58,11 @@ export function NotebookCompactButton({
       className={`inline-flex ${large ? "min-h-11" : "min-h-9"} cursor-pointer items-center justify-center gap-1.5 rounded-[var(--radius-card)] border px-3 text-sm font-semibold outline-none transition-[opacity,background-color] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 motion-reduce:transition-none motion-reduce:active:scale-100 ${primary ? "hover:opacity-90" : onDark ? "hover:bg-white/10" : "hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)]"} ${fullWidth ? "w-full" : "flex-1"}`}
       style={{
         backgroundColor: primary ? primaryFill : onDark ? "rgba(255,255,255,0.08)" : "transparent",
+        // `--color-btn-label` is the right label for either fill, and specifically for `success`:
+        // the green inverts between themes (deep in light, pale in dark), so a hardcoded white
+        // label reads at ~2:1 on the dark theme's `#6bc49a`. The token flips with it.
         color: primary
-          ? tone === "success"
-            ? "#ffffff"
-            : "var(--color-btn-label)"
+          ? "var(--color-btn-label)"
           : onDark
             ? "#ffffff"
             : "var(--color-main)",

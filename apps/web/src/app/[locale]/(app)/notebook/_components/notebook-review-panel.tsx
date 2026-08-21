@@ -10,7 +10,7 @@ import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { NotebookCompactButton } from "@/components/notebook/notebook-compact-button";
 import { NotebookImageLightbox } from "@/components/notebook/notebook-image-lightbox";
-import { reviewNotebookEntry } from "@/lib/notebook";
+import { reviewNotebookEntry, updateNotebookEntry } from "@/lib/notebook";
 import { nextUnansweredIndex } from "@/lib/notebook-review-deck";
 import {
   NotebookReviewCard,
@@ -22,6 +22,12 @@ import { NotebookReviewList } from "./notebook-review-list";
 interface NotebookReviewPanelProps {
   entries: NotebookEntryDto[];
   onReviewed: (entry: NotebookEntryDto) => void;
+  /**
+   * An entry changed without being reviewed (the note edited on a card back). Separate from
+   * `onReviewed` on purpose: that one also drops the card from the due list, which a note edit
+   * must not do.
+   */
+  onEntryUpdated?: (entry: NotebookEntryDto) => void;
   onClose: () => void;
 }
 
@@ -52,6 +58,7 @@ interface NotebookReviewPanelProps {
 export function NotebookReviewPanel({
   entries,
   onReviewed,
+  onEntryUpdated,
   onClose,
 }: NotebookReviewPanelProps) {
   const t = useTranslations("notebook");
@@ -65,12 +72,14 @@ export function NotebookReviewPanel({
    * deck skipped the card after each one. A session is a fixed set of cards; which of them still
    * count as due is the shell's business, and it keeps that in its own state.
    */
-  const [deck] = useState(entries);
+  const [deck, setDeck] = useState(entries);
   const [index, setIndex] = useState(0);
   /** Answered in *this* session — what stops the list offering a second review of the same card. */
   const [answered, setAnswered] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
   );
+  /** Only the solved tally is kept — enough for the closing summary, and nothing is shown mid-deck. */
+  const [solvedCount, setSolvedCount] = useState(0);
   /** Which way the answered card flies out — +1 solved (right), -1 missed (left). */
   const [direction, setDirection] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -114,6 +123,7 @@ export function NotebookReviewPanel({
         const wasProgressing = entry.reviewCount > 0;
         const updated = await reviewNotebookEntry(entry.id, solved);
         onReviewed(updated);
+        if (solved) setSolvedCount((current) => current + 1);
         // The answer landed either way, so the card is done for this session before the stuck
         // screen takes over — otherwise skipping past it would offer the same card again.
         advance(entry.id);
@@ -127,6 +137,22 @@ export function NotebookReviewPanel({
       }
     },
     [advance, entry, onReviewed, t],
+  );
+
+  /**
+   * The note the student writes *during* review — the moment they actually work out what went
+   * wrong. Rejects on failure so the field can say so without the card losing what was typed.
+   */
+  const saveNote = useCallback(
+    async (note: string | null) => {
+      if (!entry) return;
+      const updated = await updateNotebookEntry(entry.id, { note });
+      setDeck((current) =>
+        current.map((card) => (card.id === updated.id ? updated : card)),
+      );
+      onEntryUpdated?.(updated);
+    },
+    [entry, onEntryUpdated],
   );
 
   useEffect(() => {
@@ -194,14 +220,26 @@ export function NotebookReviewPanel({
 
         {stuck || !entry ? (
           <div
-            className="flex w-full max-w-xl flex-col overflow-hidden rounded-[var(--radius-card)]"
-            style={{ background: "var(--color-bg)" }}
+            // Same column as the cards. At `max-w-xl` these two screens were 160px wider than the
+            // deck they interrupt, so the modal visibly changed shape at exactly the two moments
+            // the student is being told something.
+            className={`flex ${REVIEW_CARD_WIDTH} flex-col overflow-hidden rounded-[var(--radius-card)]`}
+            style={{
+              background: "var(--color-surface)",
+              border:
+                "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
+              boxShadow: "var(--shadow-card)",
+            }}
             onClick={(event) => event.stopPropagation()}
           >
             {stuck ? (
-              <StuckPanel onSkip={() => setStuck(null)} />
+              <StuckPanel entry={stuck} onSkip={() => setStuck(null)} />
             ) : (
-              <DonePanel onClose={onClose} />
+              <DonePanel
+                total={deck.length}
+                solved={solvedCount}
+                onClose={onClose}
+              />
             )}
           </div>
         ) : (
@@ -246,7 +284,9 @@ export function NotebookReviewPanel({
                       aria-hidden
                       className={`pointer-events-none absolute ${REVIEW_CARD_BOX} rounded-[var(--radius-card)]`}
                       style={{
-                        backgroundColor: "var(--color-bg)",
+                        backgroundColor: "var(--color-surface)",
+                        border:
+                          "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
                         opacity: 0.55,
                         // Scale first, then push down (CSS applies these right to left), so the
                         // offset is not eaten by the shrink — at 0.95 the card loses ~11px of
@@ -277,6 +317,7 @@ export function NotebookReviewPanel({
                         onSolved={() => void answer(true)}
                         onMissed={() => void answer(false)}
                         onZoom={entry.url ? () => setZoomed(entry) : null}
+                        onNoteSave={saveNote}
                       />
                     </motion.div>
                   </AnimatePresence>
@@ -356,10 +397,16 @@ function OverlayControl({
   );
 }
 
-function StuckPanel({ onSkip }: { onSkip: () => void }) {
+function StuckPanel({
+  entry,
+  onSkip,
+}: {
+  entry: NotebookEntryDto;
+  onSkip: () => void;
+}) {
   const t = useTranslations("notebook");
   return (
-    <div className="flex flex-col items-start gap-3 p-5">
+    <div className="flex flex-col gap-4 p-6">
       <SectionHeading as="h2" subtitle={t("stuck_subtitle")}>
         {t("stuck_title")}
       </SectionHeading>
@@ -372,8 +419,18 @@ function StuckPanel({ onSkip }: { onSkip: () => void }) {
         {t("stuck_copyright")}
       </p>
       <div className="flex flex-wrap gap-2">
+        {/*
+          The entry id rides along so the question the student is about to ask can be linked back
+          to this card. Until now the handoff dropped them at the community with nothing carried
+          over: they asked, the thread was never attached, and the card's own "answered in the
+          community" state could never happen. The feed is the destination rather than the hub
+          because that is where the question composer lives.
+        */}
         <Link
-          href="/community"
+          href={{
+            pathname: "/community/feed",
+            query: { notebookEntry: entry.id },
+          }}
           className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-4 text-sm font-bold text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           style={{ backgroundColor: "var(--color-btn)" }}
         >
@@ -387,14 +444,44 @@ function StuckPanel({ onSkip }: { onSkip: () => void }) {
   );
 }
 
-function DonePanel({ onClose }: { onClose: () => void }) {
+/**
+ * The closing screen, with what the session actually came to.
+ *
+ * A tally at the *end* is not the running scoreboard the deck deliberately refuses: mid-deck it
+ * would price every honest "çözemedim", here it is just what happened. Which is also why the cards
+ * that were missed are described as still being in the rotation rather than counted as wrong — they
+ * come back in a couple of days, and that is the whole design, not a penalty.
+ */
+function DonePanel({
+  total,
+  solved,
+  onClose,
+}: {
+  total: number;
+  solved: number;
+  onClose: () => void;
+}) {
   const t = useTranslations("notebook");
+  const remaining = total - solved;
   return (
-    <div className="flex flex-col items-start gap-3 p-5">
-      <SectionHeading as="h2" subtitle={t("review_done_subtitle")}>
+    <div className="flex flex-col gap-4 p-6">
+      {/* The count *is* the subtitle. "Tekrar edilecek soru kalmadı" said the same thing one line
+          above "3 karttan 2 tanesini çözdün", so the screen opened by telling the student the same
+          news twice — once vaguely, once with the numbers. */}
+      <SectionHeading
+        as="h2"
+        subtitle={t("review_done_summary", { total, solved })}
+      >
         {t("review_done_title")}
       </SectionHeading>
-      <Button onClick={onClose}>{t("review_close")}</Button>
+      {remaining > 0 ? (
+        <p className="text-sm text-pretty" style={{ color: "var(--color-body)" }}>
+          {t("review_done_remaining", { count: remaining })}
+        </p>
+      ) : null}
+      <Button fullWidth onClick={onClose}>
+        {t("review_close")}
+      </Button>
     </div>
   );
 }
