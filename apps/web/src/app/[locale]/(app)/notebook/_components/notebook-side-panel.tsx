@@ -23,6 +23,7 @@ import {
 } from "@/components/vision-board/board-item-view";
 import { PAPERS } from "@/components/notebook/notebook-surface";
 import { NotebookAddPanel } from "./notebook-add-panel";
+import { NotebookIndexPanel } from "./notebook-index-panel";
 
 /**
  * The note's own plate colours. A short, local copy of the vision board's `PLATE_COLORS` rather
@@ -67,6 +68,7 @@ const NOTE_PLATE_COLORS = [
  */
 export type NotebookPanelCategory =
   | "add"
+  | "index"
   | "sticker"
   | "paper"
   | "text"
@@ -86,6 +88,12 @@ export interface NotebookSidePanelProps {
   onAddSticker: (asset: VisionSticker) => void;
   /** Set when the student arrived from a just-saved mock exam; stamped onto entries they file. */
   mockExamId: string | null;
+  /** Entries already arranged on one of the open pages — the index will not offer to place them. */
+  placedEntryIds: ReadonlySet<string>;
+  /** Bumped when an entry is edited or deleted elsewhere, so the index reloads instead of lying. */
+  indexRefreshKey: number;
+  onOpenEntry: (entry: NotebookEntryDto) => void;
+  onPlaceEntry: (entry: NotebookEntryDto) => void;
   onSetPaper: (paper: NotebookPaper) => void;
   onPatchText: (patch: Partial<VisionBoardTextItem>) => void;
   onCheckpoint: () => void;
@@ -123,6 +131,10 @@ export function NotebookSidePanel({
   onCreated,
   onAddSticker,
   mockExamId,
+  placedEntryIds,
+  indexRefreshKey,
+  onOpenEntry,
+  onPlaceEntry,
   onSetPaper,
   onPatchText,
   onCheckpoint,
@@ -249,6 +261,29 @@ export function NotebookSidePanel({
           topics={exam.topics}
           onCreated={onCreated}
           onCancel={onCollapse}
+        />
+      </Panel>
+    );
+  }
+
+  if (category === "index") {
+    if (!exam) {
+      return (
+        <Panel>
+          <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+            {t("add_requires_exam")}
+          </p>
+        </Panel>
+      );
+    }
+    return (
+      <Panel>
+        <NotebookIndexPanel
+          subjects={exam.subjects}
+          placedEntryIds={placedEntryIds}
+          refreshKey={indexRefreshKey}
+          onOpen={onOpenEntry}
+          onPlace={onPlaceEntry}
         />
       </Panel>
     );

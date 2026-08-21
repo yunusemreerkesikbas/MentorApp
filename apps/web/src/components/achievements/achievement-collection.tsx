@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Info, Lock, X } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { AchievementCollectionDto, AchievementView } from "@mentor/types";
 import { AchievementArt } from "./achievement-art";
 
@@ -16,8 +17,19 @@ export function AchievementCollection({
   const [selected, setSelected] = useState<AchievementView | null>(null);
   const selectedTriggerRef = useRef<HTMLButtonElement | null>(null);
 
+  const handleOpen = (
+    achievement: AchievementView,
+    trigger: HTMLButtonElement,
+  ) => {
+    selectedTriggerRef.current = trigger;
+    setSelected(achievement);
+  };
+
   const handleClose = () => {
     setSelected(null);
+  };
+
+  const handleExitComplete = () => {
     window.requestAnimationFrame(() => selectedTriggerRef.current?.focus());
   };
 
@@ -31,6 +43,12 @@ export function AchievementCollection({
 
   return (
     <>
+      {collection.ownerView && collection.summary ? (
+        <AchievementCollectionGuide
+          collection={collection}
+          onOpen={handleOpen}
+        />
+      ) : null}
       <div className="grid grid-cols-2 gap-3 px-4 py-6 sm:grid-cols-3 lg:px-6">
         {collection.items.map((achievement) => {
           const earned = achievement.status === "EARNED";
@@ -38,10 +56,7 @@ export function AchievementCollection({
             <button
               key={achievement.id}
               type="button"
-              onClick={(event) => {
-                selectedTriggerRef.current = event.currentTarget;
-                setSelected(achievement);
-              }}
+              onClick={(event) => handleOpen(achievement, event.currentTarget)}
               aria-label={
                 earned
                   ? achievement.title
@@ -91,14 +106,129 @@ export function AchievementCollection({
           );
         })}
       </div>
-      {selected && (
-        <AchievementDetail
-          achievement={selected}
-          locale={locale}
-          onClose={handleClose}
-        />
-      )}
+      <AnimatePresence onExitComplete={handleExitComplete}>
+        {selected ? (
+          <AchievementDetail
+            key={selected.id}
+            achievement={selected}
+            locale={locale}
+            onClose={handleClose}
+          />
+        ) : null}
+      </AnimatePresence>
     </>
+  );
+}
+
+function AchievementCollectionGuide({
+  collection,
+  onOpen,
+}: {
+  collection: AchievementCollectionDto;
+  onOpen: (achievement: AchievementView, trigger: HTMLButtonElement) => void;
+}) {
+  const t = useTranslations("achievements");
+  const summary = collection.summary;
+
+  if (!summary) return null;
+
+  const suggestedAchievement = summary.suggestedAchievementId
+    ? collection.items.find(
+        (achievement) => achievement.id === summary.suggestedAchievementId,
+      )
+    : null;
+  const completionPercent = Math.round(
+    (summary.earnedCount / summary.totalCount) * 100,
+  );
+
+  return (
+    <section
+      aria-labelledby="achievement-collection-guide-title"
+      className="mx-4 mt-6 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-soft)] lg:mx-6"
+    >
+      <div className="p-4">
+        <div className="flex items-center justify-between gap-4">
+          <h2
+            id="achievement-collection-guide-title"
+            className="text-base font-bold text-[var(--color-main)]"
+          >
+            {t("collection_title")}
+          </h2>
+          <span className="shrink-0 text-sm font-bold tabular-nums text-[var(--color-main)]">
+            {t("collection_count", {
+              earned: summary.earnedCount,
+              total: summary.totalCount,
+            })}
+          </span>
+        </div>
+        <div
+          role="progressbar"
+          aria-label={t("collection_progress_aria")}
+          aria-valuemin={0}
+          aria-valuemax={summary.totalCount}
+          aria-valuenow={summary.earnedCount}
+          aria-valuetext={t("collection_progress_value", {
+            earned: summary.earnedCount,
+            total: summary.totalCount,
+          })}
+          className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--color-progress-track)]"
+        >
+          <span
+            className="block h-full rounded-full bg-[var(--color-progress)]"
+            style={{ width: `${completionPercent}%` }}
+          />
+        </div>
+      </div>
+
+      {suggestedAchievement ? (
+        <button
+          type="button"
+          aria-label={t("suggestion_aria", {
+            title: suggestedAchievement.title,
+          })}
+          onClick={(event) => onOpen(suggestedAchievement, event.currentTarget)}
+          className="flex min-h-14 w-full items-center gap-3 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)]"
+        >
+          <span className="relative size-16 shrink-0" aria-hidden="true">
+            <AchievementArt
+              artKey={suggestedAchievement.artKey}
+              alt=""
+              className="size-full object-contain grayscale opacity-45"
+            />
+            <span className="absolute inset-0 grid place-items-center">
+              <span className="rounded-full bg-[var(--color-surface)] p-1.5 text-[var(--color-secondary)] shadow-[var(--shadow-card)]">
+                <Lock size={16} />
+              </span>
+            </span>
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-bold uppercase tracking-wide text-[var(--color-accent)]">
+              {t("next_discovery")}
+            </span>
+            <span className="mt-0.5 block truncate text-sm font-bold text-[var(--color-main)]">
+              {suggestedAchievement.title}
+            </span>
+            <span className="mt-1 block text-xs text-[var(--color-secondary)]">
+              {t("how_to_earn")}
+            </span>
+          </span>
+          <Info
+            size={18}
+            aria-hidden="true"
+            className="shrink-0 text-[var(--color-secondary)]"
+          />
+        </button>
+      ) : (
+        <div className="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4">
+          <p className="text-sm font-bold text-[var(--color-main)]">
+            {t("collection_complete_title")}
+          </p>
+          <p className="mt-1 text-sm leading-6 text-[var(--color-secondary)]">
+            {t("collection_complete_body")}
+          </p>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -113,6 +243,7 @@ function AchievementDetail({
 }) {
   const t = useTranslations("achievements");
   const earned = achievement.status === "EARNED";
+  const shouldReduceMotion = Boolean(useReducedMotion());
   const dialogRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -162,13 +293,18 @@ function AchievementDetail({
   }, [onClose]);
 
   return (
-    <div
+    <motion.div
       data-achievement-detail-backdrop
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center"
       role="presentation"
       onMouseDown={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: shouldReduceMotion ? 0.1 : 0.2 }}
     >
-      <section
+      <motion.section
+        data-achievement-detail-surface
         ref={dialogRef}
         role="dialog"
         tabIndex={-1}
@@ -177,6 +313,21 @@ function AchievementDetail({
         aria-describedby="achievement-detail-description"
         className="relative w-full max-w-md rounded-[var(--radius-card)] bg-[var(--color-surface)] p-6 text-center shadow-[var(--shadow-card)]"
         onMouseDown={(event) => event.stopPropagation()}
+        initial={{
+          opacity: 0,
+          y: shouldReduceMotion ? 0 : 20,
+          scale: shouldReduceMotion ? 1 : 0.98,
+        }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{
+          opacity: 0,
+          y: shouldReduceMotion ? 0 : 12,
+          scale: shouldReduceMotion ? 1 : 0.985,
+        }}
+        transition={{
+          duration: shouldReduceMotion ? 0.1 : 0.2,
+          ease: [0.22, 1, 0.36, 1],
+        }}
       >
         <button
           ref={closeButtonRef}
@@ -244,7 +395,7 @@ function AchievementDetail({
             })}
           </p>
         )}
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }

@@ -16,17 +16,7 @@ import {
   prelabelNotebookPhoto,
   uploadNotebookImage,
 } from "@/lib/notebook";
-
-/** width/height of the uploaded file itself — what the placed card on the page is sized from
- *  (`nextEntrySlot`), so a portrait exam photo lands in a portrait slot, not a letterboxed one. */
-function measureImageAspect(url: string): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const img = new window.Image();
-    img.onload = () => resolve(img.naturalWidth / img.naturalHeight);
-    img.onerror = reject;
-    img.src = url;
-  });
-}
+import { measureImageAspect } from "@/lib/notebook-image-aspect";
 
 interface NotebookAddPanelProps {
   examId: string;

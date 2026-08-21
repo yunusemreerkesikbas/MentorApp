@@ -7,6 +7,7 @@ import {
   createNotebookEntrySchema,
   createPlanTaskSchema,
   linkNotebookThreadSchema,
+  listNotebookEntriesQuerySchema,
   notebookImageUploadUrlSchema,
   putNotebookPageSchema,
   reviewNotebookEntrySchema,
@@ -66,6 +67,9 @@ export class RefreshPreferenceSimulationDto extends createZodDto(
 
 export class CreateNotebookEntryDto extends createZodDto(
   createNotebookEntrySchema,
+) {}
+export class ListNotebookEntriesQueryDto extends createZodDto(
+  listNotebookEntriesQuerySchema,
 ) {}
 export class UpdateNotebookEntryDto extends createZodDto(
   updateNotebookEntrySchema,

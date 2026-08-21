@@ -170,6 +170,7 @@ function ListRow({
             fill
             sizes="40px"
             className="object-cover"
+            unoptimized
           />
         ) : (
           // A text-only entry, not a broken image — `ImageOff`'s struck-through icon read as an

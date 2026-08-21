@@ -198,6 +198,49 @@ export class MistakeNotebookRepository {
   }
 
   /** Cover-screen numbers in one round-trip; the cover renders nothing else. */
+  /**
+   * The index: a user's entries, newest first, with the two filters the table is indexed for.
+   *
+   * `desc(createdAt)` rides `mistake_notebook_user_created_idx` and the subject filter rides
+   * `mistake_notebook_user_subject_idx` — both were created with `0077` and had no query until now.
+   */
+  async listEntries(
+    tx: DatabaseTx,
+    userId: string,
+    filters: {
+      subjectRef?: string;
+      errorType?: string;
+      status?: string;
+      page: number;
+      pageSize: number;
+    },
+  ): Promise<{ items: MistakeNotebookEntryRow[]; total: number }> {
+    const where = and(
+      eq(mistakeNotebookEntries.userId, userId),
+      ...(filters.subjectRef
+        ? [eq(mistakeNotebookEntries.subjectRef, filters.subjectRef)]
+        : []),
+      ...(filters.errorType
+        ? [eq(mistakeNotebookEntries.errorType, filters.errorType)]
+        : []),
+      ...(filters.status ? [eq(mistakeNotebookEntries.status, filters.status)] : []),
+    );
+    const [items, totalRow] = await Promise.all([
+      tx
+        .select()
+        .from(mistakeNotebookEntries)
+        .where(where)
+        .orderBy(desc(mistakeNotebookEntries.createdAt))
+        .limit(filters.pageSize)
+        .offset((filters.page - 1) * filters.pageSize),
+      tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(mistakeNotebookEntries)
+        .where(where),
+    ]);
+    return { items, total: totalRow[0]?.count ?? 0 };
+  }
+
   async countsFor(
     tx: DatabaseTx,
     userId: string,

@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type {
@@ -18,11 +19,13 @@ import type {
   NotebookImageUploadUrlDto as NotebookImageUploadUrlResponse,
   NotebookOverviewDto,
   NotebookPageDto,
+  Paginated,
 } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { MistakeNotebookService } from "../application/mistake-notebook.service";
 import {
   CreateNotebookEntryDto,
+  ListNotebookEntriesQueryDto,
   LinkNotebookThreadDto,
   NotebookImageUploadUrlDto,
   PutNotebookPageDto,
@@ -52,6 +55,20 @@ export class MistakeNotebookController {
   @Get("reviews/due")
   listDue(@CurrentUser() user: RequestUser): Promise<NotebookEntryDto[]> {
     return this.notebook.listDue(user.id);
+  }
+
+  /**
+   * The notebook's index: every entry, newest first, filtered by subject / error type / status.
+   *
+   * Neither existing read reaches an entry that is not on a page and not due today — the book shows
+   * what was arranged and `reviews/due` shows what is scheduled. This is the one that always can.
+   */
+  @Get("entries")
+  listEntries(
+    @CurrentUser() user: RequestUser,
+    @Query() query: ListNotebookEntriesQueryDto,
+  ): Promise<Paginated<NotebookEntryDto>> {
+    return this.notebook.listEntries(user.id, query);
   }
 
   @Post("entries/image-upload-url")

@@ -764,6 +764,24 @@ export type UpdateNotebookEntryInput = z.infer<
 >;
 
 /**
+ * The notebook's index: every entry the user has filed, newest first.
+ *
+ * The book itself only ever shows what has been arranged onto a page, and the review deck only what
+ * is due today — so an entry taken off a page, or never placed because the page was full, had no
+ * screen that could reach it. The two filters here are the two the entry table is already indexed
+ * for; text search over notes would need a trigram index of its own and is deliberately left out.
+ */
+export const listNotebookEntriesQuerySchema = paginationQuerySchema.extend({
+  subjectRef: z.string().trim().min(1).max(120).optional(),
+  errorType: z.enum(NOTEBOOK_ERROR_TYPES).optional(),
+  /** ARCHIVED is not offered: nothing in the product writes it yet. */
+  status: z.enum(["ACTIVE", "HEALED"]).optional(),
+});
+export type ListNotebookEntriesQuery = z.infer<
+  typeof listNotebookEntriesQuerySchema
+>;
+
+/**
  * Link an existing entry to the forum thread the user just asked it in.
  *
  * The client creates the thread through the forum's own API and posts the id here, rather than

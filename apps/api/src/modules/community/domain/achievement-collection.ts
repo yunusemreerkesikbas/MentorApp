@@ -48,7 +48,35 @@ export function buildAchievementCollection(
     });
   }
 
-  return { ownerView: input.ownerView, items };
+  if (!input.ownerView) {
+    return { ownerView: false, items, summary: null };
+  }
+
+  const lockedItems = items.filter((item) => item.status === "LOCKED");
+  let suggestedAchievementId: AchievementId | null = null;
+  let bestProgressRatio = 0;
+
+  for (const item of lockedItems) {
+    if (!item.progress || item.progress.current <= 0) continue;
+
+    const progressRatio = item.progress.current / item.progress.target;
+    if (progressRatio > bestProgressRatio) {
+      suggestedAchievementId = item.id;
+      bestProgressRatio = progressRatio;
+    }
+  }
+
+  suggestedAchievementId ??= lockedItems[0]?.id ?? null;
+
+  return {
+    ownerView: true,
+    items,
+    summary: {
+      earnedCount: items.length - lockedItems.length,
+      totalCount: items.length,
+      suggestedAchievementId,
+    },
+  };
 }
 
 export function groupAchievementCelebrations(
