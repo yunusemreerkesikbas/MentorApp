@@ -388,6 +388,36 @@ test("ikinci kez kaçırılan soruda topluluk teklif edilir, telif uyarısıyla"
   await expect(page.getByRole("link", { name: "Toplulukta sor" })).toBeVisible();
 });
 
+test("tekrar kartı çevrilir: soru önde, hata tipi ve not arkada", async ({
+  page,
+}) => {
+  const due = [makeEntry({ reviewCount: 2, note: "İşlem hatası yaptım" })];
+  await mockNotebookApi(page, { due, overview: { dueCount: 1, entryCount: 1 } });
+
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: /1 soru tekrar zamanı/ }).click();
+
+  // Front: the question, nothing that gives it away.
+  const question = page.getByText("Bu sefer çözebildin mi?");
+  await expect(question).toBeVisible();
+  await expect(page.getByRole("button", { name: "Çevir" })).toBeVisible();
+
+  // Both faces are mounted so the turn has something to show, so "is the back visible" is not a
+  // question Playwright can answer honestly here — the control's own state is. Tapping the card is
+  // the headline gesture; the button beside it is the keyboard path to the same toggle.
+  await question.click();
+
+  const back = page.getByRole("button", { name: "Soruya dön" });
+  await expect(back).toBeVisible();
+  await expect(back).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("İşlem hatası yaptım")).toHaveCount(1);
+  await expect(page.getByText("2 kez tekrar ettin")).toHaveCount(1);
+
+  // Answering still works from the flipped side — flipping is never a step you have to undo.
+  await page.getByRole("button", { name: "Çözebildim" }).click();
+  await expect(page.getByText("Bugünlük bu kadar")).toBeVisible();
+});
+
 test("çift tıkla kart açılır ve sol sayfadaki bir kart sağ sayfayı etkilemez", async ({
   page,
 }) => {
@@ -653,3 +683,73 @@ async function json(route: Route, body: unknown, status = 200): Promise<void> {
     body: body == null ? "" : JSON.stringify(body),
   });
 }
+
+
+test("deste her kartı sırayla sorar, hiçbirini atlamaz", async ({ page }) => {
+  const due = [
+    makeEntry({ id: "aaaaaaaa-1111-4111-8111-111111111111", topicName: "Bir" }),
+    makeEntry({ id: "bbbbbbbb-1111-4111-8111-111111111111", topicName: "İki" }),
+    makeEntry({ id: "cccccccc-1111-4111-8111-111111111111", topicName: "Üç" }),
+  ];
+  const api = await mockNotebookApi(page, {
+    due,
+    overview: { dueCount: 3, entryCount: 3 },
+  });
+
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: /3 soru tekrar zamanı/ }).click();
+
+  for (const label of ["Bir", "İki", "Üç"]) {
+    // Both faces are mounted, so the label is in the DOM twice — one card at a time is
+    // what matters here, not which face it came from.
+    await expect(page.getByText(label, { exact: true }).first()).toBeVisible();
+    await page.getByRole("button", { name: "Çözebildim" }).click();
+  }
+
+  await expect(page.getByText("Bugünlük bu kadar")).toBeVisible();
+  expect(api.reviews.map((r) => r.id)).toEqual(due.map((e) => e.id));
+});
+
+test("liste ders başlıklarıyla gruplar, karta atlar ve cevaplananı kilitler", async ({
+  page,
+}) => {
+  const due = [
+    makeEntry({
+      id: "aaaaaaaa-1111-4111-8111-111111111111",
+      topicName: "Problemler",
+    }),
+    makeEntry({
+      id: "bbbbbbbb-1111-4111-8111-111111111111",
+      subjectName: "Tarih",
+      topicName: "Kurtuluş Savaşı",
+    }),
+    makeEntry({
+      id: "cccccccc-1111-4111-8111-111111111111",
+      topicName: "Kümeler",
+    }),
+  ];
+  await mockNotebookApi(page, { due, overview: { dueCount: 3, entryCount: 3 } });
+
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: /3 soru tekrar zamanı/ }).click();
+  await page.getByRole("button", { name: "Listeyi aç" }).click();
+
+  // Grouped by subject, in the order the deck introduces them — not alphabetised behind the
+  // student's back.
+  await expect(page.getByText("Matematik", { exact: true })).toBeVisible();
+  await expect(page.getByText("Tarih", { exact: true })).toBeVisible();
+  await expect(page.getByText("3 kart kaldı")).toBeVisible();
+  // Navigation only: the list never offers a verdict.
+  await expect(page.getByRole("button", { name: "Çözebildim" })).toHaveCount(0);
+
+  // Jumping lands on that card, not the one after it.
+  await page.getByRole("button", { name: /Kümeler/ }).click();
+  await expect(page.getByText("3 / 3")).toBeVisible();
+  await page.getByRole("button", { name: "Çözebildim" }).click();
+
+  // An answered card is shown as done and cannot be reviewed twice — a second answer would reset
+  // its interval ladder and quietly undo the student's own progress.
+  await page.getByRole("button", { name: "Listeyi aç" }).click();
+  await expect(page.getByText("2 kart kaldı")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Kümeler/ })).toBeDisabled();
+});

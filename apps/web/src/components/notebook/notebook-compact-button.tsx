@@ -17,6 +17,8 @@ import type { ReactNode } from "react";
  */
 export function NotebookCompactButton({
   variant = "primary",
+  tone,
+  large,
   busy,
   disabled,
   fullWidth,
@@ -29,6 +31,14 @@ export function NotebookCompactButton({
 }: {
   /** `ghost` has no fill or border — for a third, lower-priority action beside two real choices. */
   variant?: "primary" | "secondary" | "ghost";
+  /**
+   * Repaints a `primary` fill. Only `success` so far, for the review deck's "çözebildim": the
+   * default `--color-btn` is pure black in the light theme and the deck's primary action sits on a
+   * near-black backdrop, where it vanishes. Green also matches the label the swipe gesture reveals.
+   */
+  tone?: "success";
+  /** 44px tall instead of 36px — for a primary action that is the whole point of its screen. */
+  large?: boolean;
   busy?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
@@ -38,18 +48,25 @@ export function NotebookCompactButton({
 }) {
   const primary = variant === "primary";
   const ghost = variant === "ghost";
+  const primaryFill = tone === "success" ? "var(--color-success)" : "var(--color-btn)";
   return (
     <button
       type="button"
       disabled={disabled || busy}
       aria-busy={busy || undefined}
       onClick={onClick}
-      className={`inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-[var(--radius-card)] border px-3 text-sm font-semibold outline-none transition-[opacity,background-color] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 motion-reduce:transition-none motion-reduce:active:scale-100 ${primary ? "hover:opacity-90" : onDark ? "hover:bg-white/10" : "hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)]"} ${fullWidth ? "w-full" : "flex-1"}`}
+      className={`inline-flex ${large ? "min-h-11" : "min-h-9"} cursor-pointer items-center justify-center gap-1.5 rounded-[var(--radius-card)] border px-3 text-sm font-semibold outline-none transition-[opacity,background-color] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 motion-reduce:transition-none motion-reduce:active:scale-100 ${primary ? "hover:opacity-90" : onDark ? "hover:bg-white/10" : "hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)]"} ${fullWidth ? "w-full" : "flex-1"}`}
       style={{
-        backgroundColor: primary ? "var(--color-btn)" : onDark ? "rgba(255,255,255,0.08)" : "transparent",
-        color: primary ? "var(--color-btn-label)" : onDark ? "#ffffff" : "var(--color-main)",
+        backgroundColor: primary ? primaryFill : onDark ? "rgba(255,255,255,0.08)" : "transparent",
+        color: primary
+          ? tone === "success"
+            ? "#ffffff"
+            : "var(--color-btn-label)"
+          : onDark
+            ? "#ffffff"
+            : "var(--color-main)",
         borderColor: primary
-          ? "var(--color-btn)"
+          ? primaryFill
           : ghost
             ? "transparent"
             : onDark

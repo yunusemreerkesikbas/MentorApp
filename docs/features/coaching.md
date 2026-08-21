@@ -145,6 +145,72 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Yanlış defteri tekrar destesi flashcard oldu (2026-08-21)** — "N soru tekrar zamanı" çipinin
+  açtığı `NotebookReviewPanel` tek yüzlü bir foto önizlemesiydi: ders/konu, hata tipi, tekrar sayısı
+  ve not fotoğrafın sol üstünde **sürekli** duruyordu, aksiyonlar da alt gradient barda fotoğrafın
+  üstüne biniyordu. İkisi de somut zarar veriyordu — etiketler öğrenci soruya bakmadan yarı cevabı
+  veriyor (bu ekranın tek işi ipuçsuz hatırlama; ipucu veren tekrar *tanımayı* ölçer), gradient bar
+  da okunması gereken alanı kapatıyordu.
+
+  **Yeni model:** ön yüz sadece soru, tıklayınca kart çevriliyor, bağlam arkada. Sağa/sola kaydırma
+  = çözebildim/çözemedim; ok tuşları aynı eşleşmede (gezinme okları kaldırıldı — cevaplamadan deste
+  gezmek kendi başına bir amaç değildi, "sonra" zaten köşedeki X). Aksiyonlar kartın **dışına**
+  taşındı, böylece hem fotoğrafın altı açıldı hem de butonlar yüz başına tekrarlanmadı.
+
+  **Kutu bilerek sabit 4:5** (`REVIEW_CARD_BOX`, genişlik `min(92vw,26rem,60vh)` ile yükseklikten de
+  sınırlı): flip'in iki yüzü aynı ayak izini paylaşmak zorunda, yoksa kart dönerken boyut değiştirir;
+  ayrıca her kart aynı boyda olmadan arkadaki yığın kartı hizalanamaz. Foto `object-contain`, artan
+  alan kartın kendi zemini (`--color-bg`) — eski sabit dikey kutunun "siyah bant" sorunu geri
+  gelmiyor — ve büyüteç tam boy görüntüyü mevcut `NotebookImageLightbox`'a devrediyor.
+  **Gotcha:** yığın kartında `translateY(22px) scale(0.95)` — CSS transform'ları sağdan sola uygulanır,
+  önceki `translateY(10px) scale(0.96)` denemesinde ofset küçülmenin içinde eriyip 1.5px'lik görünmez
+  bir çizgiye dönüşmüştü.
+
+  **Gotcha:** sürükleme bitişini bir `click` izliyor; `dragMoved` ref'i olmadan her cevaplama kartı
+  bir de çeviriyor. **Gotcha:** 3D yolda iki yüz de DOM'da duruyor (dönüşün gösterecek bir şeyi olsun
+  diye) — arkadaki yüz `inert`, yoksa odak ve ekran okuyucu görünmeyen yüze giriyor;
+  `prefers-reduced-motion`'da hiç 3D yok, tek yüz mount ediliyor ve çapraz geçişle değişiyor.
+  Lightbox panelin **içinde** render ediliyor, panelin klavye kancası açıkken erken dönüyor — yoksa
+  tek Escape ikisini birden kapatıyor.
+
+  `NotebookCompactButton`'a `large` (44px dokunma hedefi) ve `tone="success"` eklendi: karanlık
+  zeminde `primary`'nin `--color-btn`'i açık temada saf siyah, yani kayboluyordu; yeşil aynı zamanda
+  kaydırınca çıkan etiketle eşleşiyor. Sayaç çipi bilerek **yok** (AGENTS.md §0: sıralama/utandırma
+  yok) — sadece `3 / 7`. Swipe eşiği saf fonksiyonda (`swipeVerdict`), çünkü Playwright dürüst bir
+  flick üretemiyor; e2e flip kontrolünün `aria-pressed`'ini doğruluyor.
+  Kapsam dışı bırakılanlar: çözüm foto/metin alanı (backend + migration), swipe geri alma, ders
+  başlıklı liste görünümü (aşama 2), deste bitirme achievement'ı.
+  İlgili: `notebook-review-card.tsx` (yeni), `notebook-review-panel.tsx`, `lib/notebook-review-deck.ts`
+  (+spec), `notebook-compact-button.tsx`, `e2e/notebook.spec.ts`, `messages/{tr,en}.json`.
+
+- **Tekrar destesi: ders başlıklı liste görünümü + kart atlama hatası (2026-08-21)** — destenin
+  üstüne, X'in yanına bir liste düğmesi geldi; aynı modal içinde kartın yerini `subjectName`'e göre
+  gruplanmış bir liste alıyor (satır: küçük görsel/metin ikonu, konu adı, hata tipi). Satıra
+  tıklamak o karta atlıyor, liste kapanıyor. Listede **cevaplama yok** — kart görünümünün var olma
+  sebebi "liste göz gezdirip tiklemeye davet eder"di, o karar bozulmadı; listenin gerçekten iyi
+  yaptığı şey yönelim ("yedi kart, dördü Matematik"), tek kartlık deste bunu asla gösteremez.
+
+  Bunu yazarken **gerçek bir hata çıktı ve önce e2e ile kanıtlandı**: panel `entries` prop'unu, yani
+  shell'in *canlı* due listesini geziyordu; `handleReviewed` cevaplanan kaydı o diziden çıkarırken
+  panel bağımsız olarak `index + 1` yapıyordu, dolayısıyla **her cevap bir sonraki kartı atlıyordu**
+  (3 kartta "Bir" cevaplanınca doğrudan "Üç" geliyor, "İki" hiç sorulmuyordu). Düzeltme: deste
+  panel açılırken bir kez anlık görüntüleniyor (`useState(entries)`) ve bir daha karıştırılmıyor;
+  hangi kartların hâlâ due olduğu shell'in kendi meselesi. İmleç artık `index + 1` değil
+  `nextUnansweredIndex(...)` — listeden atlama serbest olduğu için "sıradaki" ancak "henüz
+  cevaplanmamış sıradaki" olabilir, ve deste sonuna gelince başa sarıp atlanmışları topluyor.
+  Deste ancak `-1` dönünce bitiyor; cevap *sayısına* bakmak, bir kart iki kez cevaplandığında
+  günü erken bitirirdi.
+
+  Bu yüzden liste, bu oturumda cevaplanmış kartları çek işaretiyle gösterip **tıklanamaz** yapıyor:
+  aksi hâlde liste, aynı kartı ikinci kez cevaplatarak öğrencinin kendi aralık merdivenini
+  sıfırlamanın yolu olurdu. Escape artık katman katman geri gidiyor (önce liste, sonra panel).
+  `lib/notebook-review-swipe.ts` → `lib/notebook-review-deck.ts` olarak yeniden adlandırıldı
+  (artık sadece jest değil, deste imleci de orada). **Gotcha:** liste kenarlarındaki fade mask
+  kaldırıldı — `mask-image` listenin gerçekten taşıp taşmadığını bilemiyor, üç kartlık destede
+  ilk başlığı ve son satırı sebepsiz soluklaştırıyordu.
+  İlgili: `notebook-review-list.tsx` (yeni), `notebook-review-panel.tsx`, `notebook-review-deck.ts`
+  (+spec), `e2e/notebook.spec.ts`, `messages/{tr,en}.json`.
+
 - **`PUT /coaching/notebook/pages/:index` "Geçersiz istek" 400 fix (2026-08-21)** — bir sayfa
   `entry` item'ı içerdiğinde her zaman `BAD_REQUEST` ile başarısız oluyordu, `details` alanı yok
   (yani bir `DomainError` değildi). Kök neden `mistake-notebook.repository.ts`'deki
