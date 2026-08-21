@@ -5,6 +5,7 @@ import {
   groupAchievementCelebrations,
   type EarnedAchievement,
 } from "./achievement-collection";
+import { ACHIEVEMENT_IDS } from "./achievement-definitions";
 
 const translate = (key: string) => key;
 
@@ -44,6 +45,48 @@ describe("achievement collection", () => {
       target: 30,
     });
     expect(collection.items.find((item) => item.id === "returned_to_path")?.progress).toBeNull();
+    expect(collection.summary).toEqual({
+      earnedCount: 1,
+      totalCount: 12,
+      suggestedAchievementId: "rhythm_found",
+    });
+  });
+
+  it("uses catalog order when measurable progress ratios are equal", () => {
+    const collection = buildAchievementCollection({
+      ownerView: true,
+      earned: [],
+      longestStreak: 30,
+      translate,
+    });
+
+    expect(collection.summary?.suggestedAchievementId).toBe("rhythm_found");
+  });
+
+  it("falls back to the first locked catalog item when no measurable progress exists", () => {
+    const collection = buildAchievementCollection({
+      ownerView: true,
+      earned: [earned("first_step")],
+      longestStreak: 0,
+      translate,
+    });
+
+    expect(collection.summary?.suggestedAchievementId).toBe("route_drawn");
+  });
+
+  it("returns no suggestion when the owner has completed the collection", () => {
+    const collection = buildAchievementCollection({
+      ownerView: true,
+      earned: ACHIEVEMENT_IDS.map((id) => earned(id)),
+      longestStreak: 30,
+      translate,
+    });
+
+    expect(collection.summary).toEqual({
+      earnedCount: 12,
+      totalCount: 12,
+      suggestedAchievementId: null,
+    });
   });
 
   it("returns only earned achievements to a visitor and never exposes progress", () => {
@@ -56,6 +99,7 @@ describe("achievement collection", () => {
 
     expect(collection.items.map((item) => item.id)).toEqual(["first_step", "route_drawn"]);
     expect(collection.items.every((item) => item.progress === null)).toBe(true);
+    expect(collection.summary).toBeNull();
   });
 
   it("groups unseen backfill rows once while keeping live awards individual", () => {

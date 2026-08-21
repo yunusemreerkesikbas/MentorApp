@@ -47,6 +47,11 @@ const profile: PublicProfile = {
 
 const achievementCollection: AchievementCollectionDto = {
   ownerView: true,
+  summary: {
+    earnedCount: 0,
+    totalCount: 12,
+    suggestedAchievementId: "rhythm_found",
+  },
   items: [
     {
       id: "first_step",
@@ -69,6 +74,52 @@ const achievementCollection: AchievementCollectionDto = {
       progress: { current: 3, target: 7 },
     },
   ],
+};
+
+const publicAchievementCollection: AchievementCollectionDto = {
+  ownerView: false,
+  summary: null,
+  items: [
+    {
+      ...achievementCollection.items[0],
+      status: "EARNED",
+      earnedAt: "2026-08-18T10:00:00.000Z",
+    },
+  ],
+};
+
+const completeAchievementIds = [
+  "first_step",
+  "route_drawn",
+  "dream_space_created",
+  "rhythm_found",
+  "rhythm_kept",
+  "returned_to_path",
+  "route_renewed",
+  "starting_point_set",
+  "mistake_revisited",
+  "week_reflected",
+  "first_hello",
+  "helped_someone",
+] as const;
+
+const completeAchievementCollection: AchievementCollectionDto = {
+  ownerView: true,
+  summary: {
+    earnedCount: 12,
+    totalCount: 12,
+    suggestedAchievementId: null,
+  },
+  items: completeAchievementIds.map((id) => ({
+    id,
+    title: id,
+    description: id,
+    unlockHint: id,
+    artKey: id,
+    status: "EARNED",
+    earnedAt: "2026-08-18T10:00:00.000Z",
+    progress: null,
+  })),
 };
 
 test("üye profili responsive hero, aksiyonlar ve seviye panelini korur", async ({
@@ -429,6 +480,69 @@ test("kilitli başarılar gridde sade kalır ve ilerlemeyi bilgi kartında açı
   await expect(detail.getByText("3 / 7 gün", { exact: true })).toBeVisible();
 });
 
+test("profil sahibi koleksiyon özetini görür ve sıradaki keşiften bilgi kartını açar", async ({
+  page,
+}) => {
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.goto("/topluluk/uye/yunus_emre?tab=achievements");
+
+  await expect(page.getByRole("heading", { name: "Koleksiyonun" })).toBeVisible();
+  await expect(page.getByText("0 / 12", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("progressbar", { name: "Koleksiyon ilerlemesi" }),
+  ).toHaveAttribute("aria-valuenow", "0");
+
+  const suggestion = page.getByRole("button", {
+    name: /Sıradaki keşif.*Ritmi Yakaladın.*Nasıl kazanılır?/,
+  });
+  await suggestion.click();
+  const detail = page.getByRole("dialog", { name: "Ritmi Yakaladın" });
+  await expect(detail).toBeVisible();
+  await detail.getByRole("button", { name: "Kapat" }).click();
+  await expect(suggestion).toBeFocused();
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    )
+    .toBe(true);
+});
+
+test("ziyaretçi görünümünde koleksiyon rehberi gösterilmez", async ({ page }) => {
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.goto("/topluluk/uye/public_learner?tab=achievements");
+
+  await expect(page.getByRole("heading", { name: "Koleksiyonun" })).toHaveCount(0);
+  await expect(
+    page.getByRole("progressbar", { name: "Koleksiyon ilerlemesi" }),
+  ).toHaveCount(0);
+  await expect(page.getByText("İlk Adım", { exact: true })).toBeVisible();
+});
+
+test("tamamlanan koleksiyon sakin kutlama durumunu gösterir", async ({ page }) => {
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.goto("/topluluk/uye/complete_user?tab=achievements");
+
+  await expect(page.getByText("12 / 12", { exact: true })).toBeVisible();
+  await expect(page.getByText("Koleksiyon tamamlandı.", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Bütün rozetler seninle; yolculuğun devam ediyor.", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Sıradaki keşif", { exact: true })).toHaveCount(0);
+});
+
 test("başarı bilgi kartı odağı içeride tutar ve kapandığında tetikleyiciye döndürür", async ({
   page,
 }) => {
@@ -456,6 +570,7 @@ test("başarı bilgi kartı odağı içeride tutar ve kapandığında tetikleyic
   await expect(closeButton).toBeFocused();
 
   await page.keyboard.press("Escape");
+  expect(await detail.count()).toBe(1);
   await expect(detail).toBeHidden();
   await expect(trigger).toBeFocused();
   await expect
@@ -534,11 +649,40 @@ async function mockProfileApi(page: Page) {
         isPremium: false,
       });
     }
+    if (method === "GET" && path === "/v1/community/profile/public_learner") {
+      return json(route, {
+        ...profile,
+        userId: "public-member",
+        username: "public_learner",
+        achievementsEnabled: true,
+      });
+    }
+    if (method === "GET" && path === "/v1/community/profile/complete_user") {
+      return json(route, {
+        ...profile,
+        userId: viewer.id,
+        displayName: viewer.displayName,
+        username: viewer.username,
+        achievementsEnabled: true,
+      });
+    }
     if (
       method === "GET" &&
       path === "/v1/community/profile/yunus_emre/achievements"
     ) {
       return json(route, achievementCollection);
+    }
+    if (
+      method === "GET" &&
+      path === "/v1/community/profile/public_learner/achievements"
+    ) {
+      return json(route, publicAchievementCollection);
+    }
+    if (
+      method === "GET" &&
+      path === "/v1/community/profile/complete_user/achievements"
+    ) {
+      return json(route, completeAchievementCollection);
     }
     if (method === "GET" && path.startsWith("/v1/forum/users/")) {
       return json(route, { items: [], nextCursor: null });

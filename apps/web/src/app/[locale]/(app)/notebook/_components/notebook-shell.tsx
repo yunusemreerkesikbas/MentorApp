@@ -3,7 +3,6 @@
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -12,10 +11,6 @@ import {
   ChevronRight,
   History,
   LoaderCircle,
-  PanelTop,
-  Pen,
-  Plus,
-  Smile,
   StickyNote,
   Trash2,
   Undo2,
@@ -33,7 +28,6 @@ import type {
   ExamTopicDto,
   NotebookEntryDto,
   NotebookOverviewDto,
-  NotebookPageDoc,
   NotebookPageDto,
   NotebookPaper,
   VisionBoardTextItem,
@@ -57,12 +51,25 @@ import { NotebookPageStage } from "@/components/notebook/notebook-page-stage";
 import { NotebookInkLayer } from "@/components/notebook/notebook-ink-layer";
 import { useInkDraw } from "@/components/notebook/use-ink-draw";
 import {
-  INK_DEFAULT_COLOR,
-  INK_DEFAULT_TOOL,
-  INK_TOOLS,
-  type InkToolId,
 } from "@/lib/notebook-ink";
 import { NotebookInkToolbar } from "./notebook-ink-toolbar";
+import { useNotebookInkSettings } from "./use-notebook-ink-settings";
+import {
+  NotebookRailActiveFill,
+  RAIL_CATEGORIES,
+} from "./notebook-rail-items";
+import {
+  AUTOSAVE_DELAY_MS,
+  COVER_MAX_WIDTH_PX,
+  EMPTY_PAGE,
+  fitWithin,
+  MOBILE_LEAF_MAX_WIDTH_PX,
+  MOBILE_QUERY,
+  NOTEBOOK_MAX_WIDTH_PX,
+  useFitSize,
+  type Side,
+  type View,
+} from "./notebook-shell-layout";
 import {
   boardChromeFastTransition,
   boardChromeTransition,
@@ -74,6 +81,7 @@ import {
 import { NotebookTextInlineEditor } from "@/components/notebook/notebook-text-inline-editor";
 import { NotebookImageLightbox } from "@/components/notebook/notebook-image-lightbox";
 import { fetchExamTopics } from "@/lib/content-topics";
+import { measureImageAspect } from "@/lib/notebook-image-aspect";
 import {
   deleteNotebookEntry,
   fetchDueEntries,
@@ -97,137 +105,6 @@ import { NotebookContentSkeleton } from "./notebook-content-skeleton";
 import { NotebookReviewPanel } from "./notebook-review-panel";
 import { NotebookEntryEditDialog } from "./notebook-entry-edit-dialog";
 import { NotebookRemoveChoiceDialog } from "./notebook-remove-choice-dialog";
-
-/**
- * A spread shows two facing pages, `left` and `left + 1` — a real notebook has no odd page on its
- * own. Turning moves by two, and turning back past page 0 closes the book: a spread you cannot
- * turn out of would read as broken, and "no visible response" is the worst answer to a swipe.
- */
-type View = { kind: "cover" } | { kind: "spread"; left: number };
-type Side = "left" | "right";
-
-/** Matches the server's blank page, so an unsaved page and a fetched empty one render alike. */
-const EMPTY_PAGE: NotebookPageDoc = {
-  version: 1,
-  paper: "ruled",
-  items: [],
-  ink: [],
-};
-
-/** Long enough that a drag settles first, short enough that a closed tab loses nothing. */
-const AUTOSAVE_DELAY_MS = 900;
-
-/*
- * Six rounds of guessing how big the notebook can be without forcing the page to scroll, each one
- * wrong in a new way: four were a viewport-height *budget* (`calc(Ndvh * ratio)`) for the wrapper's
- * `maxWidth` — approximating how much of the screen the toolbar row, pagination row, rail and
- * padding leave behind (88%/92%, then 84%/90%, then mobile's own 80%dvh missing the rail row
- * entirely once it moved from beside the spread to above it, then 70%dvh still short). The fifth
- * tried making the wrapper itself a flex item and setting BOTH its width and height from
- * `aspectRatio` with both dimensions `auto` — worse: tested in isolation, that collapses an empty
- * box to 0×0 (a box with no content has no `auto` size to derive a ratio from), which is exactly
- * why the whole notebook went blank rather than just overflowing.
- *
- * The sixth keeps what was actually right about the very first approach — CSS `aspect-ratio`
- * deriving a HEIGHT from a WIDTH that's already definite never has this collapse-to-0 problem,
- * because only one dimension is ever `auto` — and fixes the one thing that was ever really wrong
- * with it: the WIDTH was a guessed `dvh` number instead of a measured one. `useFitSize` below
- * measures the OUTER box (a flex item, `flex: 1 1 0%`, that gets its real, definite size from the
- * toolbar row and pagination row around it, computed by the browser's own layout) with a
- * `ResizeObserver`, synchronously on first layout too (`useLayoutEffect` + an immediate
- * `getBoundingClientRect()`, so there's no blank first frame while waiting for the observer's first
- * callback). `fitWithin` then does the arithmetic `calc(Ndvh * ratio)` was trying to approximate —
- * the width that keeps the ratio's height inside the outer box — from the real measured height, not
- * a guess. The result only ever feeds `maxWidth` (never `width`/`height` directly), with a safe,
- * always-nonzero pixel-ceiling fallback for the one frame before any measurement exists.
- */
-function useFitSize<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  const [box, setBox] = useState({ width: 0, height: 0 });
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const measure = () => {
-      const rect = el.getBoundingClientRect();
-      setBox({ width: rect.width, height: rect.height });
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-  return [ref, box] as const;
-}
-
-/** The width that keeps a box of `ratio` (width/height) inside `outer`, capped at `maxWidthPx`. */
-function fitWithin(
-  outer: { width: number; height: number },
-  ratio: number,
-  maxWidthPx: number,
-): { width: number; height: number } {
-  const byHeight = { width: outer.height * ratio, height: outer.height };
-  const fit =
-    byHeight.width <= outer.width
-      ? byHeight
-      : { width: outer.width, height: outer.width / ratio };
-  const width = Math.min(fit.width, maxWidthPx);
-  return { width, height: width / ratio };
-}
-
-const NOTEBOOK_MAX_WIDTH_PX = 1680;
-const COVER_MAX_WIDTH_PX = 760;
-/** A single leaf, shown below `MOBILE_QUERY` instead of a two-page spread — the cover's own page
- *  ratio (one page, no gutter), just a tighter pixel ceiling for a phone-sized screen. */
-const MOBILE_LEAF_MAX_WIDTH_PX = 480;
-/** Tailwind's own `sm` breakpoint — below it a spread has no room to show two pages side by side. */
-const MOBILE_QUERY = "(max-width: 639px)";
-
-/** Rail buttons that open a category panel. "Not" is a quick action, not a category — it is inlined
- *  in the rail's JSX below rather than listed here, so it has no panel body to switch to. */
-const RAIL_CATEGORIES: {
-  id: NotebookPanelCategory;
-  icon: typeof Plus;
-  labelKey: "sidebar_add" | "sidebar_sticker" | "edit_paper" | "sidebar_draw";
-}[] = [
-  { id: "add", icon: Plus, labelKey: "sidebar_add" },
-  { id: "sticker", icon: Smile, labelKey: "sidebar_sticker" },
-  { id: "paper", icon: PanelTop, labelKey: "edit_paper" },
-  // "draw" has no panel body of its own — its controls are the tray over the notebook. It is
-  // still a category rather than an action like "Not", because it is a *mode*: while it is on,
-  // the pages stop being arrangeable and start taking ink.
-  { id: "draw", icon: Pen, labelKey: "sidebar_draw" },
-];
-
-/**
- * Shared active fill for the notebook rail. `layoutId` morphs the pill between neighbours the
- * same way the vision board's editor nav does; reduced-motion skips the travel and snaps.
- * Only one rail item may own it at a time — overlapping fills (e.g. "Not" while another
- * category panel is open) would give Framer two elements with the same id.
- */
-function NotebookRailActiveFill({
-  reduceMotion,
-}: {
-  reduceMotion: boolean | null;
-}) {
-  if (reduceMotion) {
-    return (
-      <span
-        aria-hidden
-        className="absolute inset-0 rounded-[var(--radius-card)]"
-        style={{ backgroundColor: "var(--color-btn)" }}
-      />
-    );
-  }
-  return (
-    <motion.span
-      layoutId="notebook-rail-active"
-      aria-hidden
-      className="absolute inset-0 rounded-[var(--radius-card)]"
-      style={{ backgroundColor: "var(--color-btn)" }}
-      transition={boardChromeTransition}
-    />
-  );
-}
 
 interface ExamContext {
   id: string;
@@ -298,43 +175,22 @@ export function NotebookShell() {
    * when you turn to a spread, while a stroke has to land in the document of the page it was
    * drawn on, and each page autosaves separately.
    */
-  const [inkTool, setInkTool] = useState<InkToolId>(INK_DEFAULT_TOOL);
-  const [inkColor, setInkColor] = useState<string>(INK_DEFAULT_COLOR);
-  const [inkSize, setInkSize] = useState(INK_TOOLS[INK_DEFAULT_TOOL].size);
-  const [inkOpacity, setInkOpacity] = useState(
-    INK_TOOLS[INK_DEFAULT_TOOL].opacity,
-  );
-
-  /**
-   * Switching pens loads that pen's own width and opacity.
-   *
-   * A highlighter left at the fineliner's 4px is not a highlighter, and having to fix the sliders
-   * after every switch is the kind of chore that makes people use one pen. Deliberate overrides
-   * are lost on switching — the alternative is remembering a setting per tool, which is state that
-   * has to be explained the first time it surprises somebody.
-   */
-  const handleToolChange = useCallback((next: InkToolId) => {
-    setInkTool(next);
-    if (next !== "eraser") {
-      setInkSize(INK_TOOLS[next].size);
-      setInkOpacity(INK_TOOLS[next].opacity);
-    }
-  }, []);
+  const ink = useNotebookInkSettings();
 
   const leftInk = useInkDraw({
-    tool: inkTool,
-    color: inkColor,
-    size: inkSize,
-    opacity: inkOpacity,
+    tool: ink.tool,
+    color: ink.color,
+    size: ink.size,
+    opacity: ink.opacity,
     onStroke: leftPage.addStroke,
     onErase: leftPage.eraseStrokes,
     getStrokes: () => leftPage.state.doc.ink,
   });
   const rightInk = useInkDraw({
-    tool: inkTool,
-    color: inkColor,
-    size: inkSize,
-    opacity: inkOpacity,
+    tool: ink.tool,
+    color: ink.color,
+    size: ink.size,
+    opacity: ink.opacity,
     onStroke: rightPage.addStroke,
     onErase: rightPage.eraseStrokes,
     getStrokes: () => rightPage.state.doc.ink,
@@ -362,6 +218,12 @@ export function NotebookShell() {
   const [due, setDue] = useState<NotebookEntryDto[]>([]);
   const [reviewing, setReviewing] = useState(false);
   /** A single card opened by double-click — a separate flow from the due-strip's list. */
+  /**
+   * Bumped whenever an entry is edited or deleted. The index panel lists rows the server owns, and
+   * both of those happen outside it — without this a deleted card stays in the list and opens an
+   * empty preview.
+   */
+  const [indexRefreshKey, setIndexRefreshKey] = useState(0);
   /** The card whose labels are being corrected, or which is about to be deleted for good. */
   const [editingEntry, setEditingEntry] = useState<NotebookEntryDto | null>(null);
   /**
@@ -768,7 +630,8 @@ export function NotebookShell() {
    * the autosave effect persists that. If the focused page is full we say so rather than stacking a
    * card off the bottom edge where nobody would find it.
    */
-  const handleCreated = useCallback(
+  /** The placement itself, without deciding what the side panel should do afterwards. */
+  const placeEntryOnPage = useCallback(
     (entry: NotebookEntryDto, aspect: number | null) => {
       const slot = nextEntrySlot(focused.state.doc.items, aspect);
       if (!slot) {
@@ -791,9 +654,19 @@ export function NotebookShell() {
           ? { ...current, entries: [...current.entries, entry] }
           : current,
       );
-      setDetailCollapsed(true);
     },
     [focused, focusedSide, t],
+  );
+
+  const handleCreated = useCallback(
+    (entry: NotebookEntryDto, aspect: number | null) => {
+      placeEntryOnPage(entry, aspect);
+      // The add form is finished with, so get out of the way and show the card that just landed.
+      // Placing from the index is the opposite: the student is browsing a list and may well place
+      // another, so that path deliberately leaves the panel open.
+      setDetailCollapsed(true);
+    },
+    [placeEntryOnPage],
   );
 
   /**
@@ -802,6 +675,7 @@ export function NotebookShell() {
    * makes a healed card fade on the wall the moment it heals, on whichever side it sits.
    */
   const handleEntryPatched = useCallback((updated: NotebookEntryDto) => {
+    setIndexRefreshKey((key) => key + 1);
     const patchMeta = (meta: NotebookPageDto | null) =>
       meta && meta.entries.some((entry) => entry.id === updated.id)
         ? {
@@ -864,8 +738,34 @@ export function NotebookShell() {
       );
       setSingleReview(null);
       setEditingEntry(null);
+      setIndexRefreshKey((key) => key + 1);
     },
     [leftPage, rightPage],
+  );
+
+  /** Ids already on one of the two open pages — what the index checks before offering to place. */
+  const placedEntryIds = new Set(
+    [...leftPage.state.doc.items, ...rightPage.state.doc.items].flatMap((item) =>
+      item.kind === "entry" ? [item.entryId] : [],
+    ),
+  );
+
+  /**
+   * Put an already-filed entry onto the focused page from the index.
+   *
+   * Same landing as a freshly created one — `handleCreated` owns slot choice and the page-full
+   * message — but the aspect has to be measured from the stored photo rather than the upload that
+   * is no longer happening. A failed measurement is not an error: `nextEntrySlot` falls back to its
+   * own default height, which is exactly what a text-only entry gets.
+   */
+  const handlePlaceEntry = useCallback(
+    async (entry: NotebookEntryDto) => {
+      const aspect = entry.url
+        ? await measureImageAspect(entry.url).catch(() => null)
+        : null;
+      placeEntryOnPage(entry, aspect);
+    },
+    [placeEntryOnPage],
   );
 
   const handleReviewed = useCallback((updated: NotebookEntryDto) => {
@@ -1176,6 +1076,10 @@ export function NotebookShell() {
                           paper={focused.state.doc.paper}
                           exam={exam}
                           mockExamId={mockExamId}
+                          placedEntryIds={placedEntryIds}
+                          indexRefreshKey={indexRefreshKey}
+                          onOpenEntry={setSingleReview}
+                          onPlaceEntry={(entry) => void handlePlaceEntry(entry)}
                           selectedText={
                             focused.selected?.kind === "text"
                               ? focused.selected
@@ -1334,17 +1238,17 @@ export function NotebookShell() {
                     className="pointer-events-none absolute inset-x-0 top-2 z-[35] flex justify-center px-2 sm:top-3"
                   >
                     <NotebookInkToolbar
-                      tool={inkTool}
-                      color={inkColor}
-                      size={inkSize}
-                      opacity={inkOpacity}
+                      tool={ink.tool}
+                      color={ink.color}
+                      size={ink.size}
+                      opacity={ink.opacity}
                       canUndo={focused.canUndo}
                       canRedo={focused.canRedo}
                       hasInk={focused.state.doc.ink.length > 0}
-                      onToolChange={handleToolChange}
-                      onColorChange={setInkColor}
-                      onSizeChange={setInkSize}
-                      onOpacityChange={setInkOpacity}
+                      onToolChange={ink.changeTool}
+                      onColorChange={ink.setColor}
+                      onSizeChange={ink.setSize}
+                      onOpacityChange={ink.setOpacity}
                       onUndo={() => focused.dispatch({ type: "undo" })}
                       onRedo={() => focused.dispatch({ type: "redo" })}
                       onClear={() => focused.dispatch({ type: "clearInk" })}

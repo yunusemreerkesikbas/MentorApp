@@ -343,6 +343,11 @@ function CardFront({ entry }: { entry: NotebookEntryDto }) {
         sizes="(max-width: 640px) 92vw, 26rem"
         className="object-contain"
         priority
+        // The bucket host is not in `images.remotePatterns` — the app configures none — so the
+        // optimizer refuses it and `next/image` throws on render. Every other notebook photo
+        // (entry card, lightbox, add panel) has always passed `unoptimized` for this reason;
+        // this one was rewritten from a plain `<img>` and lost it.
+        unoptimized
       />
     );
   }
@@ -654,6 +659,7 @@ function SolutionBand({
             fill
             sizes="26rem"
             className="object-cover"
+            unoptimized
           />
           <span
             aria-hidden

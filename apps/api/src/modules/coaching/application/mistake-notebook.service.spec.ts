@@ -102,6 +102,26 @@ function makeRepoFake() {
       pages.set(index, doc);
       return { doc };
     },
+    listEntries: async (
+      _tx: unknown,
+      userId: string,
+      filters: {
+        subjectRef?: string;
+        errorType?: string;
+        status?: string;
+        page: number;
+        pageSize: number;
+      },
+    ) => {
+      const all = [...entries.values()]
+        .filter((row) => row.userId === userId)
+        .filter((row) => !filters.subjectRef || row.subjectRef === filters.subjectRef)
+        .filter((row) => !filters.errorType || row.errorType === filters.errorType)
+        .filter((row) => !filters.status || row.status === filters.status)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      const start = (filters.page - 1) * filters.pageSize;
+      return { items: all.slice(start, start + filters.pageSize), total: all.length };
+    },
     listAllReferencedImageKeys: async () =>
       [...entries.values()].flatMap((row) =>
         [row.storageKey, row.solutionStorageKey].filter(
@@ -437,6 +457,85 @@ describe("MistakeNotebookService", () => {
       });
 
       expect(dto.solutionNote).toBe("Kökü içeri alırken işaret değişiyor.");
+    });
+  });
+
+  describe("listEntries", () => {
+    /** Three of the caller's own, plus one belonging to somebody else. */
+    function seedIndex() {
+      ctx.repo.entries.set(
+        "e1",
+        makeEntryRow({
+          id: "e1",
+          subjectRef: "matematik",
+          errorType: "CARELESS",
+          createdAt: new Date("2026-08-01T09:00:00.000Z"),
+        }),
+      );
+      ctx.repo.entries.set(
+        "e2",
+        makeEntryRow({
+          id: "e2",
+          subjectRef: "tarih",
+          errorType: "TIME",
+          status: "HEALED",
+          createdAt: new Date("2026-08-02T09:00:00.000Z"),
+        }),
+      );
+      ctx.repo.entries.set(
+        "e3",
+        makeEntryRow({
+          id: "e3",
+          subjectRef: "matematik",
+          errorType: "TIME",
+          createdAt: new Date("2026-08-03T09:00:00.000Z"),
+        }),
+      );
+      ctx.repo.entries.set("e4", makeEntryRow({ id: "e4", userId: OTHER }));
+    }
+
+    it("returns the caller's own entries, newest first", async () => {
+      seedIndex();
+      const result = await ctx.service.listEntries(USER, { page: 1, pageSize: 20 });
+
+      expect(result.items.map((entry) => entry.id)).toEqual(["e3", "e2", "e1"]);
+      expect(result.total).toBe(3);
+    });
+
+    it("filters by subject, error type and status independently", async () => {
+      seedIndex();
+
+      const bySubject = await ctx.service.listEntries(USER, {
+        page: 1,
+        pageSize: 20,
+        subjectRef: "matematik",
+      });
+      expect(bySubject.items.map((entry) => entry.id)).toEqual(["e3", "e1"]);
+
+      const byError = await ctx.service.listEntries(USER, {
+        page: 1,
+        pageSize: 20,
+        errorType: "TIME",
+      });
+      expect(byError.items.map((entry) => entry.id)).toEqual(["e3", "e2"]);
+
+      const byStatus = await ctx.service.listEntries(USER, {
+        page: 1,
+        pageSize: 20,
+        status: "HEALED",
+      });
+      expect(byStatus.items.map((entry) => entry.id)).toEqual(["e2"]);
+    });
+
+    it("pages without losing the total", async () => {
+      seedIndex();
+      const page2 = await ctx.service.listEntries(USER, { page: 2, pageSize: 2 });
+
+      expect(page2.items.map((entry) => entry.id)).toEqual(["e1"]);
+      // The count is of everything that matches, not of the slice — the caller needs it to know
+      // whether asking for another page is worth it.
+      expect(page2.total).toBe(3);
+      expect(page2.page).toBe(2);
     });
   });
 

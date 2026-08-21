@@ -67,6 +67,25 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Achievement bilgi kartı hareket düzenlemesi (2026-08-22)** — Bilgi kartına Framer Motion ile
+  sakin bir arka plan kararması ve hafif yükselme/ölçeklenme giriş-çıkış efekti eklendi. Kullanım
+  değişmedi: achievement kartı veya “Sıradaki keşif” satırı aynı detayı açar. Çıkış tamamlanana kadar
+  focus trap ve scroll kilidi korunur; ardından odak tetikleyiciye döner. Sistem hareketi azaltma
+  tercihini bildirirse konum ve ölçek hareketleri uygulanmaz, yalnız kısa opacity geçişi kalır.
+  Gotcha: efekt bilgi verme tonunda ve 200 ms motion bütçesi içindedir; kutlama animasyonu değildir.
+  İlgili: `achievement-collection.tsx`, `community-member-profile.spec.ts`.
+
+- **Achievement koleksiyon rehberi (2026-08-22)** — Profil sahibinin Başarılar sekmesine
+  kazanılan/toplam sayısını ve erişilebilir tek koleksiyon progress'ini gösteren sakin bir özet eklendi.
+  Community backend'i önerilecek kilitli achievement'ı belirler: sayısal ilerlemesi olanlarda en yüksek
+  tamamlanma oranı, eşitlikte katalog sırası; ölçülebilir ilerleme yoksa ilk kilitli kart kullanılır.
+  Öneri mevcut bilgi kartını açar ve kapanınca odağı rehbere geri verir; 12/12 durumunda yönlendirme
+  yerine tamamlanma mesajı gösterilir. Ziyaretçiye `summary: null` döndüğü için kilitli hedef veya
+  koleksiyon rehberi açılmaz. Kullanım: kendi profilinde Başarılar sekmesini aç ve “Sıradaki keşif”
+  satırına dokun. Gotcha: kart gridinin sırası ve kart altı progress davranışı değişmedi; yeni özet
+  yalnız koleksiyon bütününü ölçer. İlgili: `community.ts`, `achievement-collection.ts`,
+  `achievement-collection.tsx`, `community-member-profile.spec.ts`, web `messages/{tr,en}.json`.
+
 - **Kilitli achievement bilgi kartı (2026-08-21)** — Profil koleksiyonundaki sabit katalog sırası
   korundu; kilitli kartların altındaki inline progress kaldırılarak grid sadeleştirildi. Tüm kilitli
   kartlar artık info göstergesi taşır ve mevcut detay yüzeyi backend-lokalize `unlockHint` üzerinden

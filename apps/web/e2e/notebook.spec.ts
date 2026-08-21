@@ -132,6 +132,8 @@ interface NotebookApiOptions {
   due?: NotebookEntryDto[];
   /** Seed specific page indices; anything unlisted comes back as a fresh empty page. */
   pages?: Record<number, NotebookPageDto>;
+  /** What the index panel lists. Defaults to the due list plus whatever the pages hold. */
+  indexEntries?: NotebookEntryDto[];
 }
 
 async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
@@ -140,6 +142,7 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
   const reviews: Array<{ id: string; solved: boolean }> = [];
   const patches: Array<{ id: string; body: Record<string, unknown> }> = [];
   const deletes: string[] = [];
+  const indexQueries: Array<Record<string, string | null>> = [];
 
   const overview: NotebookOverviewDto = {
     pageCount: 1,
@@ -206,6 +209,32 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
     if (method === "GET" && path === "/v1/coaching/notebook/reviews/due") {
       return json(route, options.due ?? []);
     }
+    // The index: every entry, whether or not it is on a page or due today.
+    if (method === "GET" && path === "/v1/coaching/notebook/entries") {
+      const url = new URL(request.url());
+      const pool = options.indexEntries ?? [
+        ...(options.due ?? []),
+        ...allSeededEntries,
+      ];
+      const subject = url.searchParams.get("subjectRef");
+      const errorType = url.searchParams.get("errorType");
+      const status = url.searchParams.get("status");
+      const items = pool
+        .filter((entry) => !subject || entry.subjectRef === subject)
+        .filter((entry) => !errorType || entry.errorType === errorType)
+        .filter((entry) => !status || entry.status === status);
+      indexQueries.push({
+        subjectRef: subject,
+        errorType,
+        status,
+      });
+      return json(route, {
+        items,
+        total: items.length,
+        page: Number(url.searchParams.get("page") ?? 1),
+        pageSize: Number(url.searchParams.get("pageSize") ?? 20),
+      });
+    }
     const pageMatch = path.match(/\/v1\/coaching\/notebook\/pages\/(\d+)$/);
     if (method === "GET" && pageMatch) {
       const index = Number(pageMatch[1]);
@@ -268,7 +297,15 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
     return json(route, null, 204);
   });
 
-  return { savedPages, createdEntries, reviews, patches, deletes, pageErrors };
+  return {
+    savedPages,
+    createdEntries,
+    reviews,
+    patches,
+    deletes,
+    indexQueries,
+    pageErrors,
+  };
 }
 
 test("kapak açılır, sağ ve sol sayfalar birlikte gösterilir, kapaktan geriye gidilemez", async ({
@@ -1047,4 +1084,101 @@ test("denemeden gelen öğrenci ekleme formunu deneme bağlı bulur", async ({
   await expect.poll(() => api.createdEntries.length).toBe(1);
   // The column has existed since the table was created with nothing ever filling it.
   expect(api.createdEntries[0]).toMatchObject({ mockExamId, source: "OWN" });
+});
+
+test("dizin kayıtları listeler, derse göre daraltır ve sayfaya yerleştirir", async ({
+  page,
+}) => {
+  const onPage = makeEntry({
+    id: "aaaaaaaa-1111-4111-8111-111111111111",
+    topicName: "Problemler",
+  });
+  const offPage = makeEntry({
+    id: "bbbbbbbb-1111-4111-8111-111111111111",
+    subjectName: "Tarih",
+    subjectRef: "tarih",
+    topicName: "Kurtuluş Savaşı",
+  });
+  const api = await mockNotebookApi(page, {
+    pages: { 0: seededEntryPage(onPage) },
+    indexEntries: [onPage, offPage],
+  });
+
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await page.getByRole("button", { name: "Ara", exact: true }).click();
+
+  // Both are listed — including the one that is on no page, which neither the book nor the deck
+  // could show.
+  await expect(page.getByText("Kurtuluş Savaşı")).toBeVisible();
+
+  await pickOption(page, "Ders", "Tarih");
+  await expect.poll(() => api.indexQueries.at(-1)?.subjectRef).toBe("tarih");
+
+  // Placing it puts a card on the open page; the entry already arranged there cannot be placed
+  // twice, because `handleCreated` would happily add a second identical card.
+  await page.getByRole("button", { name: "Sayfaya yerleştir" }).click();
+  await expect
+    .poll(() => {
+      const last = [...api.savedPages].reverse().find((p) => p.index === 0);
+      const doc = last?.doc as { items: Array<{ kind: string }> } | undefined;
+      return doc?.items.filter((item) => item.kind === "entry").length ?? -1;
+    }, { timeout: 5_000 })
+    .toBe(2);
+  await expect(
+    page.getByRole("button", { name: "Zaten sayfada" }),
+  ).toBeDisabled();
+});
+
+test("sayfadan kaldırılan kayıt dizinden bulunup silinebilir", async ({
+  page,
+}) => {
+  // The hole the "only take it off the page" choice opened: the entry was reachable from nowhere
+  // until its review fell due, so it could be neither corrected nor deleted.
+  const entry = makeEntry({ reviewCount: 2 });
+  const api = await mockNotebookApi(page, {
+    pages: { 0: seededEntryPage(entry) },
+    indexEntries: [entry],
+  });
+
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await page.getByText("Problemler").click();
+  await page.getByRole("button", { name: "Seçileni sil" }).click();
+  await page.getByRole("button", { name: "Sadece sayfadan kaldır" }).click();
+
+  await page.getByRole("button", { name: "Ara", exact: true }).click();
+  await page.getByText("Problemler").click();
+
+  await page.getByRole("button", { name: "Kartı düzenle" }).click();
+  await page.getByRole("button", { name: "Defterden sil" }).click();
+  await page.getByRole("button", { name: "Defterden sil" }).click();
+
+  await expect.poll(() => api.deletes).toEqual([entry.id]);
+});
+
+
+test("uzak barındırıcıdaki foto dizinde render edilebiliyor", async ({ page }) => {
+  /*
+   * Production photos come from the R2 public bucket. The app configures no
+   * `images.remotePatterns`, so `next/image` refuses that host unless the call passes
+   * `unoptimized` — which every notebook photo had always done, until the review card was
+   * rewritten from a plain `<img>` and three more call sites copied the omission.
+   *
+   * This cannot reproduce the crash itself: it is thrown by the dev overlay and this suite runs
+   * against `next start`. What it does is stop the fixtures from being local-path-only, which is
+   * why the whole class of bug was invisible here in the first place.
+   */
+  const entry = makeEntry({
+    storageKey: "notebook/u/q.jpg",
+    url: "https://pub-test.r2.dev/notebook/u/q.jpg",
+  });
+  const api = await mockNotebookApi(page, { indexEntries: [entry] });
+
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await page.getByRole("button", { name: "Ara", exact: true }).click();
+
+  await expect(page.getByText("Problemler")).toBeVisible();
+  expect(api.pageErrors).toEqual([]);
 });

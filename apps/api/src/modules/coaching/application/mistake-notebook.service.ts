@@ -4,6 +4,7 @@ import { EventEmitter2 } from "@nestjs/event-emitter";
 import type {
   NotebookEntryDto,
   NotebookImageUploadUrlDto,
+  Paginated,
   NotebookOverviewDto,
   NotebookPageDoc,
   NotebookPageDto,
@@ -13,6 +14,7 @@ import {
   NOTEBOOK_IMAGE_MIMES,
   notebookPageIndexSchema,
   type CreateNotebookEntryInput,
+  type ListNotebookEntriesQuery,
   type NotebookPageDocInput,
   type UpdateNotebookEntryInput,
 } from "@mentor/validation";
@@ -215,6 +217,28 @@ export class MistakeNotebookService {
     );
     const [dto] = await this.toEntryDtos([row]);
     return dto!;
+  }
+
+  /**
+   * The notebook's index — every entry, newest first, regardless of whether it sits on a page.
+   *
+   * The book shows what has been arranged and the deck shows what is due; an entry taken off a page
+   * (or never placed, because the page was full) fell through both. This is the screen that can
+   * reach it, which also makes it the screen from which it can finally be corrected or deleted.
+   */
+  async listEntries(
+    userId: string,
+    query: ListNotebookEntriesQuery,
+  ): Promise<Paginated<NotebookEntryDto>> {
+    const { items, total } = await withUserContext(this.db, { userId }, (tx) =>
+      this.notebook.listEntries(tx, userId, query),
+    );
+    return {
+      items: await this.toEntryDtos(items),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
   }
 
   async updateEntry(

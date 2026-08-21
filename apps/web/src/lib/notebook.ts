@@ -1,5 +1,6 @@
 import type {
   NotebookEntryDto,
+  Paginated,
   NotebookImageUploadUrlDto,
   NotebookOverviewDto,
   NotebookPageDoc,
@@ -10,6 +11,7 @@ import {
   NOTEBOOK_IMAGE_MAX_BYTES,
   NOTEBOOK_IMAGE_MIMES,
   type CreateNotebookEntryInput,
+  type ListNotebookEntriesQuery,
   type UpdateNotebookEntryInput,
 } from "@mentor/validation";
 import { http } from "@mentor/api-client";
@@ -58,6 +60,25 @@ export async function fetchDueEntries(): Promise<NotebookEntryDto[]> {
   return (await http<NotebookEntryDto[]>(
     "/v1/coaching/notebook/reviews/due",
   )) as NotebookEntryDto[];
+}
+
+/**
+ * The notebook's index. Neither the pages nor the due list can reach an entry that is not arranged
+ * on a page and not scheduled for today; this is the read that always can.
+ */
+export async function fetchNotebookEntries(
+  query: ListNotebookEntriesQuery,
+): Promise<Paginated<NotebookEntryDto>> {
+  const qs = new URLSearchParams({
+    page: String(query.page),
+    pageSize: String(query.pageSize),
+  });
+  if (query.subjectRef) qs.set("subjectRef", query.subjectRef);
+  if (query.errorType) qs.set("errorType", query.errorType);
+  if (query.status) qs.set("status", query.status);
+  return (await http<Paginated<NotebookEntryDto>>(
+    `/v1/coaching/notebook/entries?${qs.toString()}`,
+  )) as Paginated<NotebookEntryDto>;
 }
 
 export async function createNotebookEntry(

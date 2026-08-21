@@ -145,6 +145,93 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **`notebook-shell.tsx` bölündü — ve nerede durulduğu (2026-08-22)** — Dosya 1846 satıra çıkmıştı.
+  Bölmenin kuralı şuydu: *taşınan her parça kendi durumunu da götürmeli; bir parçayı ayırmak on yeni
+  prop gerektiriyorsa dikiş orada değildir.* Kural uygulanınca çıkan sonuç, planlanandan **daha
+  küçük** oldu ve bu kayda değer.
+
+  **Çıkanlar (üçü de bileşen durumuna sıfır bağımlı):**
+  `notebook-shell-layout.ts` — `View`/`Side` tipleri, `EMPTY_PAGE`, `AUTOSAVE_DELAY_MS`, boyut
+  sabitleri, `MOBILE_QUERY`, `useFitSize`, `fitWithin` (defterin ne kadar büyüyebileceğini altı
+  denemede bulan uzun gerekçe dahil).
+  `notebook-rail-items.tsx` — `RAIL_CATEGORIES` ve `NotebookRailActiveFill`.
+  `use-notebook-ink-settings.ts` — kalem durumu (tool/renk/kalınlık/opaklık) ve tool değişince o
+  kalemin kendi ayarlarını yükleyen `changeTool`. İki sayfanın `useInkDraw`'u ve üstteki tepsi aynı
+  dört değeri okuyor, yani hangi yaprağa çizilirse çizilsin tek bir kalem var.
+  **1846 → 1694 satır.**
+
+  **Çıkmayanlar, ölçülmüş gerekçesiyle:**
+  *Ray JSX'i* (~235 satır) ayrılırsa 20'den fazla prop ister — `activeRail`, `openCategory`,
+  `focused`in tamamı, `saving`/`saveNow`, iki sayfanın dirty bayrakları, yan panelin kendi props'ları.
+  Bu ayırma değil, prop taşımacılığı olurdu.
+  *Veri yükleme efekti* dokuz setter'a dokunuyor ve beşi UI durumu (`setView`, `setActivePanel`,
+  `setDetailCollapsed`, `setReviewing`, `setMockExamId`). Temiz bir `useNotebookData` ancak URL
+  niyetini *döndürüp* UI sonucunu kabuğa bırakarak olurdu — ki o da URL'i mount'ta senkron okumayı
+  gerektirir, yani **davranış değişikliği**. Saf bir refactor turunda bunu yapmak, "davranış
+  değişmedi, kanıtı e2e" cümlesini yalan yapardı.
+  *Diyalog bloğu* (~62 satır) on beş prop ister; hepsi kabuğun kendi durumu.
+
+  Kalan 1694 satır hâlâ büyük, ama bir tuval editörünün kabuğu gerçekten çok sayıda birbirine bağlı
+  durum tutuyor; onu zorla bölmek dosyayı küçültüp kodu kötüleştirirdi. Davranışın değişmediğinin
+  kanıtı 36 e2e senaryosunun yeşil kalması.
+
+
+- **Fix: tekrar destesi uzak barındırıcıdaki fotoğrafta çöküyordu (2026-08-22)** — "Tekrar zamanı"
+  çipine basınca dev'de runtime hata: *"Invalid src prop … hostname pub-….r2.dev is not configured
+  under images"*. Sebep bende: flashcard'a geçerken soru fotoğrafını düz bir `<img>`'den
+  `next/image`'a çevirmiştim ve `unoptimized`'ı düşürmüştüm. Uygulama `images.remotePatterns`
+  **hiç tanımlamıyor**, bu yüzden defterdeki her R2 görseli (`notebook-entry-card`,
+  `notebook-image-lightbox`, `notebook-add-panel`) baştan beri `unoptimized` geçiyor; kart yeniden
+  yazılırken bu kayboldu ve sonraki üç çağrı yeri (çözüm bandı, deste listesi satırı, dizin satırı)
+  eksiği kopyaladı. Dördüne de `unoptimized` eklendi.
+
+  **Testler neden yakalamadı:** e2e fixture'ları fotoğraf için yerel `/img/...` yolu kullanıyordu,
+  yani optimizer hiç yabancı bir host görmedi. Üstelik kontrol dev overlay'inde patlıyor ve suite
+  `next start`'a karşı koşuyor — yani bu sınıf hata bu pakette **zaten görünmez**. Fixture artık
+  gerçek bir R2 URL'i kullanıyor (`uzak barındırıcıdaki foto dizinde render edilebiliyor`); bu,
+  çökmeyi yeniden üretemez ama yerel-yol körlüğünü kapatır ve niyeti kayda geçirir.
+  **Ders:** R2'den gelen bir görseli `next/image` ile render eden her yeni çağrı yeri `unoptimized`
+  taşımak zorunda; `remotePatterns` eklemek ayrı ve bilinçli bir karar olurdu (bucket host'u
+  ortamdan ortama değişiyor).
+
+
+- **Defter dizini: "Ara" paneli (2026-08-22)** — Defterde **hiçbir listeleme yoktu.** Repository'de
+  `listEntriesByIds` (sayfalar), `listDueEntries` (deste) ve analiz için toplu sinyaller vardı;
+  kullanıcının kayıtlarını listeleyen sorgu da uç da yoktu. Buna karşılık `0077` ile gelen iki
+  indeks — `(userId, createdAt)` ve `(userId, subjectRef)` — **hiçbir sorgu tarafından
+  kullanılmıyordu**; yazılmamış bir listeleme için kurulmuşlardı.
+
+  Bir önceki turda eklediğim "Sadece sayfadan kaldır" seçeneği bu boşluğu görünür yaptı: o seçeneği
+  kullanan öğrenci kaydı bir daha hiçbir yerden göremiyordu. Düzenleme/silme yalnız sayfadaki karta
+  çift tıklayarak açıldığı için, kayıt tekrar zamanı gelene kadar ne düzeltilebiliyor ne
+  silinebiliyordu. Sayfa dolduğu için hiç yerleştirilememiş kayıt da aynı durumdaydı.
+
+  `GET /entries` (ders + hata tipi + durum filtreleri, sayfalı) ve ray'da "Ara" paneli geldi.
+  Satıra dokunmak tek kart önizlemesini açıyor — düzenleme ve silme oradan zaten çalışıyordu, dizin
+  onları yeniden yazmıyor, sadece **ulaşılır** kılıyor. Metin araması bilerek yok: `ILIKE` taraması
+  indekssiz kalır ve kendi gerekçeleri olan bir trigram migration'ı ister.
+
+  **Gotcha — çift kart.** `handleCreated` yerleştirmeyi sorgusuz yapıyor; dizinden zaten sayfadaki
+  bir kaydı yerleştirmek aynı `entryId` ile ikinci bir kart üretiyordu. Panel açık sayfalardaki
+  id'leri alıp o satırın düğmesini kapatıyor.
+  **Gotcha — panel kapanması.** `handleCreated` yerleştirdikten sonra `setDetailCollapsed(true)`
+  yapıyordu; ekleme formu için doğru (iş bitti, kartı göster) ama dizinde gezinen öğrencinin
+  panelini kapatmak düşmanca. Yerleştirme `placeEntryOnPage` olarak ayrıldı; kapanma kararı
+  çağırana ait.
+  **Gotcha — yarış koşulu.** Panelin ilk sayfa efekti iki filtreyi hızlıca değiştirince iki istek
+  başlatıyor ve yavaş olan sonra dönüp kimsenin bakmadığı filtrenin sonucunu boyayabiliyordu;
+  `cancelled` bayrağı eklendi. Aynı düzenleme lint'in "efekt içinde senkron setState" hatasını da
+  çözdü: önceki satırlar yeni sonuç gelene kadar ekranda kalıyor, ki bu her filtre dokunuşunda
+  listeyi boşaltmaktan iyi okunuyor.
+  **Gotcha — bayat liste.** Silme ve düzenleme dizinin dışında oluyor; `indexRefreshKey` olmadan
+  silinen kayıt listede kalıp boş bir önizleme açıyordu.
+  `measureImageAspect` add panel'den `lib/notebook-image-aspect.ts`'e çıkarıldı — iki yol da aynı
+  `nextEntrySlot`'u besliyor, "bu kart ne kadar uzun" sorusunun iki cevabı olmamalı.
+  İlgili: `notebook-index-panel.tsx` (yeni), `mistake-notebook.{controller,service,repository}.ts`
+  (+spec), `packages/validation/src/coaching.ts`, `notebook-{shell,side-panel,add-panel}.tsx`,
+  `lib/notebook{,-image-aspect}.ts`, `e2e/notebook.spec.ts`.
+
+
 - **Kaydı silme/düzenleme, deneme→defter köprüsü, push deep-link ölçümü (2026-08-22)** —
   Uçları çağıranlarla karşılaştırınca **üçüncü kez** aynı kalıp çıktı: `DELETE /entries/:id`, istemci
   sarmalayıcısı, R2 fotoğraf temizliği ve testi hazırdı, **hiçbir UI çağırmıyordu.** Üç ayrı yüzü

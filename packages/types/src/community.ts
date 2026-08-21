@@ -53,9 +53,16 @@ export interface AchievementView {
   progress: AchievementProgress | null;
 }
 
+export interface AchievementCollectionSummary {
+  earnedCount: number;
+  totalCount: number;
+  suggestedAchievementId: AchievementId | null;
+}
+
 export interface AchievementCollectionDto {
   ownerView: boolean;
   items: AchievementView[];
+  summary: AchievementCollectionSummary | null;
 }
 
 export type AchievementCelebrationDto =
