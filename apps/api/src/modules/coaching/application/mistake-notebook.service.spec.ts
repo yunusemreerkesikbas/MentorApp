@@ -28,6 +28,8 @@ function makeEntryRow(patch: Partial<MistakeNotebookEntryRow> = {}) {
     topicRef: null,
     errorType: "CARELESS",
     note: null,
+    solutionStorageKey: null,
+    solutionNote: null,
     status: "ACTIVE",
     source: "OWN",
     communityThreadId: null,
@@ -100,7 +102,12 @@ function makeRepoFake() {
       pages.set(index, doc);
       return { doc };
     },
-    listAllReferencedImageKeys: async () => [],
+    listAllReferencedImageKeys: async () =>
+      [...entries.values()].flatMap((row) =>
+        [row.storageKey, row.solutionStorageKey].filter(
+          (key): key is string => key != null,
+        ),
+      ),
     linkThread: async (
       _tx: unknown,
       userId: string,
@@ -139,8 +146,11 @@ function makeContentFake() {
 
 function makeStorageFake() {
   const deleted: string[] = [];
-  return {
+  const fake = {
     deleted,
+    /** What the sweep sees in the bucket; set per test. */
+    objects: [] as Array<{ key: string; lastModified: Date }>,
+    listObjects: async () => fake.objects,
     getPublicUrl: (key: string) => `https://cdn.test/${key}`,
     createUploadUrl: async ({ key }: { key: string }) => ({
       url: `https://upload.test/${key}`,
@@ -151,6 +161,7 @@ function makeStorageFake() {
       deleted.push(key);
     },
   };
+  return fake;
 }
 
 function makeService() {
@@ -385,6 +396,71 @@ describe("MistakeNotebookService", () => {
       const result = await ctx.service.createUploadUrl(USER, "image/jpeg");
       expect(result.key.startsWith(`notebook/${USER}/`)).toBe(true);
       expect(result.key.endsWith(".jpg")).toBe(true);
+    });
+  });
+
+  describe("solution", () => {
+    it("stores both halves and reads the photo back as a URL", async () => {
+      const key = `notebook/${USER}/solution.jpg`;
+      const dto = await ctx.service.createEntry(USER, {
+        examId: EXAM,
+        errorType: "CARELESS",
+        source: "OWN",
+        solutionStorageKey: key,
+        solutionNote: "  Payda eşitlemem gerekiyordu.  ",
+      });
+
+      expect(dto.solutionStorageKey).toBe(key);
+      expect(dto.solutionUrl).toBe(`https://cdn.test/${key}`);
+      // Trimmed on the way in, like `note` — the same field on the same card.
+      expect(dto.solutionNote).toBe("Payda eşitlemem gerekiyordu.");
+    });
+
+    it("rejects a solution key under another user's prefix", async () => {
+      // The presigned PUT is minted per upload, but the key that lands in the row comes from the
+      // body — without the guard an entry could point at somebody else's object and serve it.
+      await expect(
+        ctx.service.createEntry(USER, {
+          examId: EXAM,
+          errorType: "CARELESS",
+          source: "OWN",
+          solutionStorageKey: `notebook/${OTHER}/${ITEM}.jpg`,
+        }),
+      ).rejects.toThrow();
+    });
+
+    it("is patchable during review, which is when the answer is usually learned", async () => {
+      ctx.repo.entries.set(ENTRY, makeEntryRow({}));
+
+      const dto = await ctx.service.updateEntry(USER, ENTRY, {
+        solutionNote: "Kökü içeri alırken işaret değişiyor.",
+      });
+
+      expect(dto.solutionNote).toBe("Kökü içeri alırken işaret değişiyor.");
+    });
+  });
+
+  describe("orphan sweep", () => {
+    it("keeps a solution photo, which nothing else in the row references", async () => {
+      // The sweep deletes every object the repository does not name. A solution photo lives under
+      // the same `notebook/` prefix as the question photo, so leaving its column out of that query
+      // would delete every stored answer a day after it was saved.
+      const solution = `notebook/${USER}/solution.jpg`;
+      const stale = `notebook/${USER}/abandoned.jpg`;
+      ctx.repo.entries.set(
+        ENTRY,
+        makeEntryRow({ storageKey: null, solutionStorageKey: solution }),
+      );
+      const old = new Date(Date.now() - 48 * 60 * 60 * 1000);
+      ctx.storage.objects = [
+        { key: solution, lastModified: old },
+        { key: stale, lastModified: old },
+      ];
+
+      const result = await ctx.service.cleanupOrphanImages();
+
+      expect(ctx.storage.deleted).toEqual([stale]);
+      expect(result.deleted).toBe(1);
     });
   });
 });

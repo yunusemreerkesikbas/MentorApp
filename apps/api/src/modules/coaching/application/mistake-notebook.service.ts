@@ -173,13 +173,26 @@ export class MistakeNotebookService {
    * The first review is scheduled here, not on first open: an entry that sits unscheduled is the
    * paper notebook's failure mode — written down once and never returned to.
    */
+  /**
+   * A stored key must live under the caller's own R2 prefix.
+   *
+   * The presigned PUT is minted per upload, but the key that finally lands in the row comes from
+   * the request body — so without this an entry could be made to point at someone else's object,
+   * and `getPublicUrl` would happily hand it back on every read. Both photo columns go through it;
+   * the solution key was the one added later, which is how a check like this gets skipped.
+   */
+  private assertOwnStorageKey(userId: string, key: string | null | undefined): void {
+    if (key && !key.startsWith(`${NOTEBOOK_PREFIX}${userId}/`)) {
+      throw new ValidationFailedError({ reason: "foreign_storage_key" });
+    }
+  }
+
   async createEntry(
     userId: string,
     input: CreateNotebookEntryInput,
   ): Promise<NotebookEntryDto> {
-    if (input.storageKey && !input.storageKey.startsWith(`${NOTEBOOK_PREFIX}${userId}/`)) {
-      throw new ValidationFailedError({ reason: "foreign_storage_key" });
-    }
+    this.assertOwnStorageKey(userId, input.storageKey);
+    this.assertOwnStorageKey(userId, input.solutionStorageKey);
     await this.assertLabelsBelongToExam(input.examId, input.subjectRef, input.topicRef);
 
     const row = await withUserContext(this.db, { userId }, (tx) =>
@@ -191,6 +204,10 @@ export class MistakeNotebookService {
         topicRef: input.topicRef ?? null,
         errorType: input.errorType,
         note: input.note?.trim() ? input.note.trim() : null,
+        solutionStorageKey: input.solutionStorageKey ?? null,
+        solutionNote: input.solutionNote?.trim()
+          ? input.solutionNote.trim()
+          : null,
         source: input.source,
         communityThreadId: input.communityThreadId ?? null,
         nextReviewAt: firstReviewAt(),
@@ -219,12 +236,24 @@ export class MistakeNotebookService {
         );
       }
 
+      this.assertOwnStorageKey(userId, patch.solutionStorageKey);
+
       const updated = await this.notebook.updateEntry(tx, userId, entryId, {
         ...(patch.subjectRef !== undefined ? { subjectRef: patch.subjectRef ?? null } : {}),
         ...(patch.topicRef !== undefined ? { topicRef: patch.topicRef ?? null } : {}),
         ...(patch.errorType !== undefined ? { errorType: patch.errorType } : {}),
         ...(patch.note !== undefined
           ? { note: patch.note?.trim() ? patch.note.trim() : null }
+          : {}),
+        ...(patch.solutionStorageKey !== undefined
+          ? { solutionStorageKey: patch.solutionStorageKey ?? null }
+          : {}),
+        ...(patch.solutionNote !== undefined
+          ? {
+              solutionNote: patch.solutionNote?.trim()
+                ? patch.solutionNote.trim()
+                : null,
+            }
           : {}),
         ...(patch.status !== undefined ? { status: patch.status } : {}),
       });
@@ -461,6 +490,11 @@ export class MistakeNotebookService {
         topicName: topic?.name ?? row.topicRef,
         errorType: row.errorType as NotebookEntryDto["errorType"],
         note: row.note,
+        solutionStorageKey: row.solutionStorageKey,
+        solutionUrl: row.solutionStorageKey
+          ? this.storage.getPublicUrl(row.solutionStorageKey)
+          : null,
+        solutionNote: row.solutionNote,
         status: row.status as NotebookEntryDto["status"],
         reviewCount: row.reviewCount,
         source: row.source as NotebookEntryDto["source"],

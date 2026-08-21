@@ -342,6 +342,8 @@ export interface MockApiLog {
   unexpected: string[];
   weeklyCalls: number;
   photoAccessCalls: number;
+  /** Mock exams saved through the form — what the notebook handoff hangs off. */
+  createdMockExams: Record<string, unknown>[];
 }
 
 export async function mockAnalysisApi(
@@ -356,6 +358,7 @@ export async function mockAnalysisApi(
     unexpected: [],
     weeklyCalls: 0,
     photoAccessCalls: 0,
+    createdMockExams: [],
   };
 
   await page.addInitScript(() => {
@@ -467,6 +470,16 @@ export async function mockAnalysisApi(
             503,
           )
         : json(route, options.weeklyNarration);
+    }
+
+    // Saving a mock exam is what hands the student over to the notebook, so this fixture has to be
+    // able to accept one.
+    if (method === "POST" && path === "/v1/mock-exams") {
+      log.createdMockExams.push(request.postDataJSON() as Record<string, unknown>);
+      return json(route, {
+        id: "12121212-1212-4121-8121-121212121212",
+        totalNet: 42,
+      });
     }
 
     if (/^\/v1\/(coaching|mock-exams|coach|plan-tasks)/.test(path)) {

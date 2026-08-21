@@ -33,6 +33,7 @@ describe("achievement collection", () => {
       id: "first_step",
       status: "EARNED",
       earnedAt: "2026-08-18T10:00:00.000Z",
+      unlockHint: "achievements.items.first_step.unlockHint",
     });
     expect(collection.items.find((item) => item.id === "rhythm_found")?.progress).toEqual({
       current: 7,
@@ -88,6 +89,7 @@ function view(id: AchievementId): AchievementView {
     id,
     title: id,
     description: id,
+    unlockHint: id,
     artKey: id,
     status: "EARNED",
     earnedAt: "2026-08-18T10:00:00.000Z",

@@ -95,6 +95,16 @@ export function AnalysisShell() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  /**
+   * Set right after a mock exam is saved, when the wrong count is still on screen and still means
+   * something. The notebook is where those numbers become cards the student actually revisits, and
+   * until now nothing connected the two — `mockExamId` has been on the notebook entry since the
+   * table was created with no flow that ever filled it.
+   */
+  const [notebookHandoff, setNotebookHandoff] = useState<{
+    mockExamId: string;
+    wrongTotal: number;
+  } | null>(null);
   const [publisherName, setPublisherName] = useState("");
   const [takenAtDate, setTakenAtDate] = useState(() =>
     new Date().toISOString().slice(0, 10),
@@ -285,6 +295,16 @@ export function AnalysisShell() {
         title: t("saved_toast_title"),
         message: t("saved_toast_message", { net: result.totalNet }),
       });
+      // Hand the mistakes over before the form is cleared: this is the only moment the student
+      // knows how many they missed and in which subject, and the notebook is where that stops
+      // being a number and starts being something they can review.
+      const wrongTotal = payload.subjects.reduce(
+        (sum, subject) => sum + subject.wrong,
+        0,
+      );
+      setNotebookHandoff(
+        wrongTotal > 0 ? { mockExamId: result.id, wrongTotal } : null,
+      );
       await refreshAnalysis();
       setHistoryRefreshKey((key) => key + 1);
       setScores(emptyScores(subjects));
@@ -439,6 +459,8 @@ export function AnalysisShell() {
                     onScoreChange={updateScore}
                     onSubmit={(event) => void submit(event)}
                     onCopyLast={handleCopyLast}
+                    notebookHandoff={notebookHandoff}
+                    onDismissNotebookHandoff={() => setNotebookHandoff(null)}
                   />
                 ) : null}
 

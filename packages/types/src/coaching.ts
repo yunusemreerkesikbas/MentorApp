@@ -990,6 +990,15 @@ export interface NotebookEntryDto {
   topicName: string | null;
   errorType: NotebookErrorType;
   note: string | null;
+  /**
+   * The answer the student recorded for this mistake — the back of the flashcard. Both halves are
+   * optional and independent: a photographed answer key with no words, a one-line "should have used
+   * the other formula" with no photo, or neither.
+   */
+  solutionStorageKey: string | null;
+  /** Read-only, server-added on every read and dropped by the write schema — never stored. */
+  solutionUrl: string | null;
+  solutionNote: string | null;
   status: NotebookEntryStatus;
   reviewCount: number;
   lastReviewedAt: string | null;

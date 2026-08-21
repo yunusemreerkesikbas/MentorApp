@@ -1216,6 +1216,13 @@ export const mistakeNotebookEntries = pgTable(
     /** `NOTEBOOK_ERROR_TYPES`. Text, not a pg enum — the list is append-only and config-like. */
     errorType: text("error_type").notNull(),
     note: text("note"),
+    /**
+     * The answer, as the student recorded it — never generated, and the photo still only ever
+     * categorises (AGENTS.md §4). Same `notebook/{userId}/` R2 prefix as `storageKey`, which is why
+     * `listAllReferencedImageKeys` has to return this column too or the orphan sweep deletes it.
+     */
+    solutionStorageKey: text("solution_storage_key"),
+    solutionNote: text("solution_note"),
     /** ACTIVE | HEALED | ARCHIVED. */
     status: text("status").notNull().default("ACTIVE"),
     reviewCount: integer("review_count").notNull().default(0),

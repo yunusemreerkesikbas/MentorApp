@@ -570,6 +570,13 @@ export const NOTEBOOK_IMAGE_MIMES = [
 ] as const;
 export const NOTEBOOK_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
+/**
+ * Cap on the student's own note about a mistake. Exported because the note is now editable from the
+ * review card too, and a `maxLength` on that textarea that disagrees with the schema is a form that
+ * lets you type text the server will refuse.
+ */
+export const NOTEBOOK_NOTE_MAX_LENGTH = 500;
+
 export const notebookImageUploadUrlSchema = z.object({
   contentType: z.enum(NOTEBOOK_IMAGE_MIMES),
 });
@@ -731,7 +738,10 @@ export const createNotebookEntrySchema = z.object({
   subjectRef: z.string().trim().min(1).max(120).nullish(),
   topicRef: z.string().trim().min(1).max(120).nullish(),
   errorType: z.enum(NOTEBOOK_ERROR_TYPES),
-  note: z.string().trim().max(500).nullish(),
+  note: z.string().trim().max(NOTEBOOK_NOTE_MAX_LENGTH).nullish(),
+  /** The answer, as the student recorded it. Both halves optional and independent of each other. */
+  solutionStorageKey: notebookStorageKeySchema.nullish(),
+  solutionNote: z.string().trim().max(NOTEBOOK_NOTE_MAX_LENGTH).nullish(),
 });
 export type CreateNotebookEntryInput = z.infer<
   typeof createNotebookEntrySchema
@@ -742,7 +752,10 @@ export const updateNotebookEntrySchema = z
     subjectRef: z.string().trim().min(1).max(120).nullish(),
     topicRef: z.string().trim().min(1).max(120).nullish(),
     errorType: z.enum(NOTEBOOK_ERROR_TYPES).optional(),
-    note: z.string().trim().max(500).nullish(),
+    note: z.string().trim().max(NOTEBOOK_NOTE_MAX_LENGTH).nullish(),
+    /** Patchable during review: the answer is usually learned at the moment the card catches you. */
+    solutionStorageKey: notebookStorageKeySchema.nullish(),
+    solutionNote: z.string().trim().max(NOTEBOOK_NOTE_MAX_LENGTH).nullish(),
     status: z.enum(["ACTIVE", "ARCHIVED"]).optional(),
   })
   .refine((value) => Object.keys(value).length > 0, { message: "empty_patch" });

@@ -145,6 +145,246 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Kaydı silme/düzenleme, deneme→defter köprüsü, push deep-link ölçümü (2026-08-22)** —
+  Uçları çağıranlarla karşılaştırınca **üçüncü kez** aynı kalıp çıktı: `DELETE /entries/:id`, istemci
+  sarmalayıcısı, R2 fotoğraf temizliği ve testi hazırdı, **hiçbir UI çağırmıyordu.** Üç ayrı yüzü
+  vardı: (1) sayfadaki çöp kutusu `dispatch({type:"remove"})` yapıyor, yani sadece `doc.items`'tan
+  çıkarıyordu — kayıt yaşamaya devam ediyor ve ertesi gün destede geri geliyordu, öğrenci sildiğini
+  sanarak; (2) fotoğraf public URL'de kalıyordu ve kaldırmanın hiçbir yolu yoktu (KVKK — servisin
+  kendi testi bunu "a deleted mistake stops living at a public URL" diye anlatıyor); (3) hata tipi
+  ve ders sonradan düzeltilemiyordu, yani yanlış etiket zayıflık haritasını kalıcı bozuyordu.
+
+  Çöp kutusu artık **soruyor**: "Sadece sayfadan kaldır" / "Defterden sil". Sticker ve notlarda soru
+  yok, onlar bugünkü gibi anında gidiyor. Yeni `notebook-entry-edit-dialog.tsx` hata tipi + ders/konu
+  düzeltmesi ve onaylı silmeyi taşıyor; **yalnız tek kart önizlemesinden** açılıyor (`onEdit` sadece
+  `singleReview` çağrı yerinden geçiliyor) — tekrar destesine yıkıcı bir eylem girmiyor.
+  **Gotcha:** silme dört yerden birden düşürmeli — due listesi, sayaçlar, iki sayfa metası ve
+  **sayfa dokümanındaki kart item'ı**. Sonuncusu atlanırsa `StageItem` silinmiş kaydı "renders as
+  nothing" diye tolere ettiği için sayfada **görünmez ama seçilebilir ve sürüklenebilir** bir kutu
+  kalıyor, ki bu kırık karttan beter: kimse neyi tuttuğunu göremiyor.
+
+  **Deneme→defter:** kayıttaki `mockExamId` tablo yaratıldığından beri boştu. Deneme kaydedildikten
+  sonra analiz ekranı yanlış sayısını gösterip deftere kapı açıyor (`?mockExam=<id>`), defter de o
+  parametreyle kapak yerine ekleme formunu açıp kaydı denemeye bağlıyor. **Otomatik aktarım
+  bilerek yok:** deneme kaydı soru bazında değil sayı bazında, ve 12 otomatik kayıt öğrencinin
+  bakmadığı 12 kart demek olurdu — destenin güvenilir olmasının tek sebebi bunun tersi.
+  **Gotcha:** kart mobilde tek satırlık flex olarak kelime kelime sarıyordu (`flex-1` + `min-w-0`
+  metni kardeşlerini sarmadan önce daraltıyor); telefonda iki satır, geniş ekranda tek satır oldu.
+
+  **Push deep-link: ölçüldü, hata yok.** Tüm push URL'leri ham iç yol (`/notebook?review=due`,
+  `/dashboard`) ve service worker `clients.openWindow` ile ham yolu açıyor — kırık görünüyordu.
+  Ölçüm: `/notebook?review=due` → `/yanlis-defteri?review=due`, `/dashboard` → `/panel`; next-intl
+  middleware'i query string'i koruyarak yönlendiriyor. **Düzeltilecek bir şey yok** — ölçmeden
+  "düzeltilseydi" var olmayan bir soruna karmaşıklık eklenmiş olacaktı.
+  İlgili: `notebook-entry-edit-dialog.tsx` + `notebook-remove-choice-dialog.tsx` (yeni),
+  `notebook-shell.tsx`, `notebook-{add,side}-panel.tsx`, `notebook-review-panel.tsx`,
+  `analysis-{shell,tab-entry}.tsx`, `e2e/{notebook,analysis}.spec.ts`, `analysis.fixture.ts`.
+
+
+- **Ders bazlı deste + topluluktaki soruyu deftere alma (2026-08-21)** — Destede filtre: liste
+  başlıklarındaki "Sadece bunu çalış" desteyi tek derse indiriyor, "Tüm dersler" geri alıyor.
+  Filtre **türetiliyor, kopyalanmıyor** (`fullDeck` state + `subjectFilter` → `deck`); kopyalansa
+  not düzenleme yaması ikisinden öğrencinin bakmadığına yazardı. `answered` id bazlı olduğu için
+  filtre boyunca korunuyor.
+  **Gotcha:** liste artık *tüm* desteyi gösteriyor (ders değiştirmenin yolu o), ama deste filtreli
+  olabiliyor — yani indeks iki tarafta farklı kartı işaret ediyordu. `onPick` id alıyor;
+  filtre dışındaki bir karta atlamak filtreyi kaldırıyor, çünkü öğrenci onu işaret etti.
+  **İkinci gotcha:** filtreli deste bitince `index` -1 oluyor ve eski kod "Bugünlük bu kadar"
+  diyecekti — başka derslerde kart dururken. Ayrı bir `SubjectDonePanel` geldi: "Matematik bitti,
+  başka derslerde 1 kart daha var" + "Diğerlerine geç". Filtrelenmemiş desteyle davranış aynı.
+  "Ders seçilmemiş" grubuna filtre düğmesi **bilerek konmadı** — filtrenin ifade edemediği tek
+  değer o, ve "sadece etiketsizleri çalış" kimsenin istediği bir deste değil.
+
+  **Köprünün diğer yönü de bağlandı:** `source: "COMMUNITY"` şemada ve enum'da baştan beri vardı,
+  hiçbir yer kullanmıyordu. Soru sayfasında bookmark'ın yanına "Ben de çözemedim" düğmesi ve küçük
+  bir dialog geldi (hata tipi zorunlu — defterin add panel'iyle aynı çipler, aynı tek zorunlu alan).
+  **Tek tık değil, bilerek:** şema yorumunun kendi ifadesiyle, topluluk sorusu deftere ancak
+  kullanıcının kendi "ben de çözemedim" beyanıyla girer ve zayıflık haritasına `OWN` gibi sayılır;
+  sadece ilginç bulduğu şey forum'un bookmark'ına aittir. Kopya da bu yüzden "kaydet" değil.
+  `examId` dialog açılınca çekiliyor — her thread'in her okuyucusu, yalnız bu düğmeye basanların
+  önemsediği bir isteği peşin ödemesin diye.
+  **Gotcha:** soru sayfasının e2e mock'u `/v1/forum/zones` olmadan boş `main` ile takılıyor;
+  `notebook-community-bridge.spec.ts` bu yüzden zone listesini de mock'luyor.
+  İlgili: `notebook-review-{panel,list}.tsx`, `question-shell.tsx`, `notebook-add-dialog.tsx` (yeni),
+  `e2e/notebook{,-community-bridge}.spec.ts`, `messages/{tr,en}.json`.
+
+
+- **Flashcard'ın arkasına çözüm alanı (2026-08-21)** — Kart arkası hata tipini, tekrar sayısını ve
+  öğrencinin notunu taşıyordu ama **sorunun cevabını taşımıyordu**; bir flashcard'ın arkası tanımı
+  gereği cevaptır. İlk beyin fırtınasında "ayrı PR" diye ertelenmişti, kart arkası da o alana yer
+  açacak şekilde tasarlanmıştı. İki kolon geldi: `solution_storage_key` + `solution_note`
+  (migration `0082`, el yazımı — `drizzle-kit generate` 0074 öncesi snapshot'a diff attığı için
+  0074/0075/0077/0078'in kaydettiği sebeple). İkisi de isteğe bağlı ve birbirinden bağımsız:
+  fotoğraflanmış cevap anahtarı, tek satırlık "paydayı eşitlemem gerekiyordu", ya da ikisi.
+  Hem ekleme panelinde hem tekrar sırasında kart arkasında girilebiliyor — cevap çoğu zaman kartın
+  seni ikinci kez yakaladığı anda öğrenilir.
+
+  **En kritik gotcha, sessiz veri kaybıydı:** `listAllReferencedImageKeys` orphan süpürgesinin
+  *whitelist*'i — `cleanupOrphanImages` `notebook/` altında bu sorgunun saymadığı ne varsa siliyor.
+  Çözüm fotoğrafı aynı prefix'i paylaştığı için, kolon o sorguya eklenmese her kayıtlı cevap grace
+  süresi dolunca silinecekti. Anahtar toplama saf bir fonksiyona (`notebookEntryImageKeys`) çıkarıldı
+  ve kendi spec'i var; süpürgenin çözüm fotoğrafını koruduğu service seviyesinde de test ediliyor.
+  Sorgunun `SELECT`'i bu suite'te DB olmadığı için kapsanamıyor — bu yüzden kolonun yanında da,
+  sorgunun başında da uyarı duruyor.
+
+  **İkinci gotcha, güvenlik:** `foreign_storage_key` guard'ı sadece soru fotoğrafına uygulanıyordu.
+  Presigned PUT her yükleme için ayrı üretiliyor ama satıra düşen anahtar istek gövdesinden geliyor —
+  yani guard'sız bir kayıt başkasının R2 objesini gösterebilir ve `getPublicUrl` onu her okumada geri
+  verirdi. `assertOwnStorageKey` olarak ayrıldı, iki foto kolonu da ondan geçiyor.
+
+  **Guardrail (§4):** çözüm öğrencinin *kendi* kaydı; AI çözüm üretmiyor ve çözüm fotoğrafına
+  pre-label vision pass'i **bilerek koşulmuyor** — vision bir *soruyu* okuyup dersini tahmin eder,
+  cevap anahtarına koşmak ona "çözüm ne diyor" diye sormak olurdu.
+
+  **Tasarım:** `NoteField` iki alanın paylaştığı `EditableField`'a genelleşti (aynı kuyu, aynı açık
+  Kaydet/Vazgeç, aynı drag+flip kilidi). Arka yüz artık `overflow-y-auto` ve yalnız not kuyusu
+  `flex-1` alıyor — iki alan birden büyümeye çalışırsa çözüm bandı eziliyor. Çözüm fotoğrafı kısa
+  bir şerit + büyüteç (tam boyu `NotebookImageLightbox` gösteriyor), çünkü kutu sabit 4:5 ve
+  contained bir kare not alanını kartın dışına itiyordu. Bandın üstündeki "ÇÖZÜM" başlığı yazıldıktan
+  sonra silindi: alttaki kuyu zaten "çözümü düzenle" diyordu, ve tracked-uppercase kicker bu kartın
+  ihtiyacı olmayan tek şeydi.
+  İlgili: `0082_notebook_solution.sql`, `database/schema.ts`, `mistake-notebook.{service,repository}.ts`
+  (+specler), `packages/{types,validation}`, `notebook-add-panel.tsx`, `notebook-review-{card,panel}.tsx`,
+  `e2e/notebook.spec.ts`, `messages/{tr,en}.json`.
+
+
+- **Tekrar destesi tasarım geçişi + uygulama genelinde çip kontrast hatası (2026-08-21)** — Deste
+  her ekran, iki tema ve iki viewport için ekran görüntüsüyle tarandı; çıkan dört sorunun ikisi
+  erişilebilirlik hatasıydı.
+  **(1) Karanlık temada kart yok oluyordu:** yüzeyler `--color-bg` kullanıyordu, ki dark'ta `#12141a`
+  — %85 siyah scrim'den neredeyse ayırt edilemiyor, kenar hiç yok. Kart, liste, yığın kartı ve
+  Stuck/Done panelleri `--color-surface` + `NotebookEntryCard`'ın kullandığı hairline'a geçti;
+  light'ta ikisi de beyaz olduğu için görsel fark sıfır.
+  **(2) "Çözebildim" butonunun etiketi `#ffffff` sabitiydi.** `--color-success` temalar arasında
+  ters çevriliyor (light'ta koyu `#2e7d54`, dark'ta açık `#6bc49a`), yani dark'ta beyaz etiket
+  ~2:1'e düşüyordu. `--color-btn-label` zaten tam bunun için var — light'ta beyaz, dark'ta koyu ink.
+  Kaydırma sırasında çıkan doğrulama etiketi de aynı düzeltmeyi aldı.
+  **(3) Kart arkasının %70'i boştu:** dört kısa satır sabit 4:5 kutunun tepesine yığılıyor, öğrencinin
+  *yazdığı* tek şey olan not ise o boşlukta kaybolan ince bir satır oluyordu. Artık üç bant var —
+  başlık, meta çipleri, ve kalan yüksekliği dolduran bir not kuyusu; "Not ekle" de böylece yazı alanı
+  gibi okunuyor. Tekrar sayısı da hata tipiyle aynı pill biçimini aldı ama nötr dolguyla: renkli olan
+  öğrencinin seçtiği sınıflandırma, diğeri karta dair bir olgu.
+  **(4) Modal iki noktada genişlik değiştiriyordu:** Stuck ve Done panelleri `max-w-xl` ile desteden
+  160px genişti — yani modal, tam da öğrenciye bir şey söylenen iki anda şekil değiştiriyordu. İkisi
+  de `REVIEW_CARD_WIDTH`'e alındı. Done paneli ayrıca kopyasını tekrar ediyordu ("soru kalmadı" +
+  "2 tanesini çözdün"); sayım artık subtitle'ın kendisi, `review_done_subtitle` silindi.
+
+  **Bulunan ama bu özelliğe ait olmayan hata:** `packages/ui/src/theme.css` dark bloğu
+  `--color-chip-text`'i açık mora (`#c4b8e0`) çeviriyor ama `--color-chip` fillini light'ın
+  `#bea1fe`'sinde bırakıyordu — **açık mor üstüne açık mor, ~1.3:1**, uygulamadaki 39 çip kullanımının
+  hepsinde okunamaz. Dark'a `--color-chip: #332c47` eklendi (`accent-soft`'un dark kuyusuyla aynı
+  kurulum, çipin kendi tonunda; `#c4b8e0` ile ~7:1). **Bu paylaşılan bir token, etkisi defterle
+  sınırlı değil — dark temadaki diğer çip yüzeyleri gözle kontrol edilmeli.**
+  İlgili: `notebook-review-{card,list,panel}.tsx`, `notebook-compact-button.tsx`,
+  `packages/ui/src/theme.css`.
+
+- **Defter ↔ topluluk köprüsü kapandı; tekrar sırasında not; deste sonu özeti (2026-08-21)** —
+  `POST /entries/{id}/community-thread` **iki hafta boyunca çağrısız durdu**: uç hazırdı, testliydi,
+  `lib/notebook.ts`'te `linkNotebookThread` sarmalayıcısı bile vardı, ama hiçbir bileşen çağırmıyordu.
+  Sonuç: takılan öğrenci `/community`'ye bırakılıyor, sorduğu thread karta bağlanmıyor,
+  `community_answered_at` hiç dolmuyordu — yani `card_community_answered` rozeti de, kart arkasındaki
+  "Çözümü gör" linki de **hiç görünemeyen ölü koddu**. Artık `StuckPanel`
+  `/topluluk/akis?notebookEntry=<id>`'ye devrediyor (composer hub'da değil akış sayfasında),
+  `GlobalComposer` parametreyi görünce soru dialogunu açıyor ve thread oluşunca kartla bağlıyor.
+  `QuestionComposerDialog.onCreated` artık `(thread: ThreadView) => void` — composer defterin
+  varlığını öğrenmiyor, sadece ne yarattığını söylüyor; defter mantığı bir üst katmanda.
+  **Ön doldurma yok, fotoğraf otomatik eklenmiyor:** `stuck_copyright` zaten "kendi denemeni anlat"
+  diyor, gövdeyi bizim doldurmamız o tavsiyeyi baltalar, fotoğrafı eklememiz telif uyarısını
+  anlamsızlaştırırdı. Bağlama **thread'i bloklamıyor** — soru zaten yayında; başarısızlık toast ile
+  söyleniyor, akış devam ediyor.
+  **Gotcha:** parametre `router.replace` ile temizlenmiyor, `window.history.replaceState` ile.
+  Adres çubuğundaki yol next-intl'in yerelleştirilmiş hâli (`/topluluk/akis`) ve istemci yönlendiricisi
+  onu bu rotaya geri çözmüyor — çağrı sessizce geçiyor, parametre yerinde kalıyordu. Ayrıca dialog'un
+  açıklığı state'e **kopyalanmıyor**, parametreden türetiliyor (`handoffSpent` + `manualQuestionOpen`);
+  effect içinde setState repo lint'inde hata.
+
+  **Not artık tekrar sırasında yazılabiliyor.** Not yalnız kayıt eklenirken giriliyordu; oysa bir kartın
+  seni ikinci kez yakaladığı an, "neden yanlış yaptım"ın **öğrenildiği** an. Kart arkasında kalem
+  satırı → `<textarea>` + açık Kaydet/Vazgeç (blur'da kaydetme yok: kart kaydırılıp gidebilen bir
+  yüzey, blur zaten metnin kaybolma yollarından biri). **Gotcha:** düzenlerken `drag` ve tıkla-çevir
+  kapanıyor; yoksa textarea'da başlayan sürükleme kartı cevaplıyor, tıklama da notu arka yüze atıyor.
+  `NOTEBOOK_NOTE_MAX_LENGTH` validation'dan export edildi — textarea'nın `maxLength`'i şemayla
+  ayrışırsa sunucunun reddedeceği metni yazdıran bir form olur. Shell'de `handleReviewed`'ın
+  `patchMeta` bloğu `handleEntryPatched` olarak ayrıldı: not güncellemesi açık sayfadaki kartı
+  tazeliyor ama kaydı due listesinden **düşürmüyor**.
+
+  **Deste sonu özeti:** "3 karttan 2 tanesini çözdün" + kalan varsa "tekrar döngüsünde". Deste
+  *sırasında* sayaç olmaması kararı duruyor (AGENTS.md §0) — bitişteki tek seferlik özet her dürüst
+  "çözemedim"i fiyatlandırmıyor, kaçırılanlar da yanlış olarak değil rotasyonda kalan kart olarak
+  anlatılıyor.
+  **Yeni e2e dosyası** `notebook-community-bridge.spec.ts` köprünün topluluk yarısını sürüyor (defter
+  mock'una forum zone'u öğretmemek için ayrı dosya). Yazarken app-shell'in
+  `/v1/community/achievements/unseen` ucunun mock'lanmaması yine tüm sayfayı düşürdü — catch-all 204
+  üzerinde `.length` — `notebook.spec.ts`'in bildirim zilinde öğrendiği dersin aynısı.
+  İlgili: `global-composer.tsx`, `question-composer-dialog.tsx`, `notebook-review-{panel,card}.tsx`,
+  `notebook-shell.tsx`, `packages/validation/src/coaching.ts`, `e2e/notebook{,-community-bridge}.spec.ts`.
+
+- **Yanlış defteri tekrar destesi flashcard oldu (2026-08-21)** — "N soru tekrar zamanı" çipinin
+  açtığı `NotebookReviewPanel` tek yüzlü bir foto önizlemesiydi: ders/konu, hata tipi, tekrar sayısı
+  ve not fotoğrafın sol üstünde **sürekli** duruyordu, aksiyonlar da alt gradient barda fotoğrafın
+  üstüne biniyordu. İkisi de somut zarar veriyordu — etiketler öğrenci soruya bakmadan yarı cevabı
+  veriyor (bu ekranın tek işi ipuçsuz hatırlama; ipucu veren tekrar *tanımayı* ölçer), gradient bar
+  da okunması gereken alanı kapatıyordu.
+
+  **Yeni model:** ön yüz sadece soru, tıklayınca kart çevriliyor, bağlam arkada. Sağa/sola kaydırma
+  = çözebildim/çözemedim; ok tuşları aynı eşleşmede (gezinme okları kaldırıldı — cevaplamadan deste
+  gezmek kendi başına bir amaç değildi, "sonra" zaten köşedeki X). Aksiyonlar kartın **dışına**
+  taşındı, böylece hem fotoğrafın altı açıldı hem de butonlar yüz başına tekrarlanmadı.
+
+  **Kutu bilerek sabit 4:5** (`REVIEW_CARD_BOX`, genişlik `min(92vw,26rem,60vh)` ile yükseklikten de
+  sınırlı): flip'in iki yüzü aynı ayak izini paylaşmak zorunda, yoksa kart dönerken boyut değiştirir;
+  ayrıca her kart aynı boyda olmadan arkadaki yığın kartı hizalanamaz. Foto `object-contain`, artan
+  alan kartın kendi zemini (`--color-bg`) — eski sabit dikey kutunun "siyah bant" sorunu geri
+  gelmiyor — ve büyüteç tam boy görüntüyü mevcut `NotebookImageLightbox`'a devrediyor.
+  **Gotcha:** yığın kartında `translateY(22px) scale(0.95)` — CSS transform'ları sağdan sola uygulanır,
+  önceki `translateY(10px) scale(0.96)` denemesinde ofset küçülmenin içinde eriyip 1.5px'lik görünmez
+  bir çizgiye dönüşmüştü.
+
+  **Gotcha:** sürükleme bitişini bir `click` izliyor; `dragMoved` ref'i olmadan her cevaplama kartı
+  bir de çeviriyor. **Gotcha:** 3D yolda iki yüz de DOM'da duruyor (dönüşün gösterecek bir şeyi olsun
+  diye) — arkadaki yüz `inert`, yoksa odak ve ekran okuyucu görünmeyen yüze giriyor;
+  `prefers-reduced-motion`'da hiç 3D yok, tek yüz mount ediliyor ve çapraz geçişle değişiyor.
+  Lightbox panelin **içinde** render ediliyor, panelin klavye kancası açıkken erken dönüyor — yoksa
+  tek Escape ikisini birden kapatıyor.
+
+  `NotebookCompactButton`'a `large` (44px dokunma hedefi) ve `tone="success"` eklendi: karanlık
+  zeminde `primary`'nin `--color-btn`'i açık temada saf siyah, yani kayboluyordu; yeşil aynı zamanda
+  kaydırınca çıkan etiketle eşleşiyor. Sayaç çipi bilerek **yok** (AGENTS.md §0: sıralama/utandırma
+  yok) — sadece `3 / 7`. Swipe eşiği saf fonksiyonda (`swipeVerdict`), çünkü Playwright dürüst bir
+  flick üretemiyor; e2e flip kontrolünün `aria-pressed`'ini doğruluyor.
+  Kapsam dışı bırakılanlar: çözüm foto/metin alanı (backend + migration), swipe geri alma, ders
+  başlıklı liste görünümü (aşama 2), deste bitirme achievement'ı.
+  İlgili: `notebook-review-card.tsx` (yeni), `notebook-review-panel.tsx`, `lib/notebook-review-deck.ts`
+  (+spec), `notebook-compact-button.tsx`, `e2e/notebook.spec.ts`, `messages/{tr,en}.json`.
+
+- **Tekrar destesi: ders başlıklı liste görünümü + kart atlama hatası (2026-08-21)** — destenin
+  üstüne, X'in yanına bir liste düğmesi geldi; aynı modal içinde kartın yerini `subjectName`'e göre
+  gruplanmış bir liste alıyor (satır: küçük görsel/metin ikonu, konu adı, hata tipi). Satıra
+  tıklamak o karta atlıyor, liste kapanıyor. Listede **cevaplama yok** — kart görünümünün var olma
+  sebebi "liste göz gezdirip tiklemeye davet eder"di, o karar bozulmadı; listenin gerçekten iyi
+  yaptığı şey yönelim ("yedi kart, dördü Matematik"), tek kartlık deste bunu asla gösteremez.
+
+  Bunu yazarken **gerçek bir hata çıktı ve önce e2e ile kanıtlandı**: panel `entries` prop'unu, yani
+  shell'in *canlı* due listesini geziyordu; `handleReviewed` cevaplanan kaydı o diziden çıkarırken
+  panel bağımsız olarak `index + 1` yapıyordu, dolayısıyla **her cevap bir sonraki kartı atlıyordu**
+  (3 kartta "Bir" cevaplanınca doğrudan "Üç" geliyor, "İki" hiç sorulmuyordu). Düzeltme: deste
+  panel açılırken bir kez anlık görüntüleniyor (`useState(entries)`) ve bir daha karıştırılmıyor;
+  hangi kartların hâlâ due olduğu shell'in kendi meselesi. İmleç artık `index + 1` değil
+  `nextUnansweredIndex(...)` — listeden atlama serbest olduğu için "sıradaki" ancak "henüz
+  cevaplanmamış sıradaki" olabilir, ve deste sonuna gelince başa sarıp atlanmışları topluyor.
+  Deste ancak `-1` dönünce bitiyor; cevap *sayısına* bakmak, bir kart iki kez cevaplandığında
+  günü erken bitirirdi.
+
+  Bu yüzden liste, bu oturumda cevaplanmış kartları çek işaretiyle gösterip **tıklanamaz** yapıyor:
+  aksi hâlde liste, aynı kartı ikinci kez cevaplatarak öğrencinin kendi aralık merdivenini
+  sıfırlamanın yolu olurdu. Escape artık katman katman geri gidiyor (önce liste, sonra panel).
+  `lib/notebook-review-swipe.ts` → `lib/notebook-review-deck.ts` olarak yeniden adlandırıldı
+  (artık sadece jest değil, deste imleci de orada). **Gotcha:** liste kenarlarındaki fade mask
+  kaldırıldı — `mask-image` listenin gerçekten taşıp taşmadığını bilemiyor, üç kartlık destede
+  ilk başlığı ve son satırı sebepsiz soluklaştırıyordu.
+  İlgili: `notebook-review-list.tsx` (yeni), `notebook-review-panel.tsx`, `notebook-review-deck.ts`
+  (+spec), `e2e/notebook.spec.ts`, `messages/{tr,en}.json`.
+
 - **`PUT /coaching/notebook/pages/:index` "Geçersiz istek" 400 fix (2026-08-21)** — bir sayfa
   `entry` item'ı içerdiğinde her zaman `BAD_REQUEST` ile başarısız oluyordu, `details` alanı yok
   (yani bir `DomainError` değildi). Kök neden `mistake-notebook.repository.ts`'deki

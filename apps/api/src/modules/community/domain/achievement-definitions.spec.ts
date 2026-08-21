@@ -32,6 +32,9 @@ describe("achievement definitions", () => {
       expect(definition.descriptionKey).toBe(
         `achievements.items.${definition.id}.description`,
       );
+      expect(definition.unlockHintKey).toBe(
+        `achievements.items.${definition.id}.unlockHint`,
+      );
     }
   });
 

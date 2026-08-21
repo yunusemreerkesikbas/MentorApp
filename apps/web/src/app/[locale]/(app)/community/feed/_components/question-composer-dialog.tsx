@@ -6,7 +6,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
-import type { ForumTagView, ZoneView } from "@mentor/types";
+import type { ForumTagView, ThreadView, ZoneView } from "@mentor/types";
 import { createThreadSchema } from "@mentor/validation";
 import { trackCommunityEvent } from "@/lib/analytics";
 import { postThread, suggestForumTag } from "@/lib/forum";
@@ -45,7 +45,12 @@ export function QuestionComposerDialog({
   zones: ZoneView[];
   tags: ForumTagView[];
   onClose: () => void;
-  onCreated: () => void;
+  /**
+   * Reports the thread that was just created, not merely that one was. The mistake notebook hands a
+   * stuck question over to this composer and needs the new thread's id to link it back to the card;
+   * the composer itself stays unaware of any of that — it only says what it made.
+   */
+  onCreated: (thread: ThreadView) => void;
 }) {
   const t = useTranslations("community");
   const titleId = useId();
@@ -143,7 +148,7 @@ export function QuestionComposerDialog({
     setAttachmentError(null);
     try {
       const attachments = await uploadAll();
-      await postThread(
+      const thread = await postThread(
         selectedZone.id,
         parsed.data.body,
         parsed.data.title,
@@ -160,7 +165,7 @@ export function QuestionComposerDialog({
       setBody("");
       setSelectedTagIds([]);
       reset();
-      onCreated();
+      onCreated(thread);
     } catch (submitError) {
       setError(
         submitError instanceof ApiClientError

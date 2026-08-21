@@ -75,6 +75,7 @@ import { NotebookTextInlineEditor } from "@/components/notebook/notebook-text-in
 import { NotebookImageLightbox } from "@/components/notebook/notebook-image-lightbox";
 import { fetchExamTopics } from "@/lib/content-topics";
 import {
+  deleteNotebookEntry,
   fetchDueEntries,
   fetchNotebookOverview,
   fetchNotebookPage,
@@ -94,6 +95,8 @@ import {
 import { useNotebookPage } from "./use-notebook-page";
 import { NotebookContentSkeleton } from "./notebook-content-skeleton";
 import { NotebookReviewPanel } from "./notebook-review-panel";
+import { NotebookEntryEditDialog } from "./notebook-entry-edit-dialog";
+import { NotebookRemoveChoiceDialog } from "./notebook-remove-choice-dialog";
 
 /**
  * A spread shows two facing pages, `left` and `left + 1` — a real notebook has no odd page on its
@@ -256,6 +259,12 @@ export function NotebookShell() {
   const [rightMeta, setRightMeta] = useState<NotebookPageDto | null>(null);
   /** Which side the rail's tools (sticker, note, paper, undo, delete) act on. */
   const [focusedSide, setFocusedSide] = useState<Side>("left");
+  /**
+   * The mock exam whose mistakes are being filed, carried in from the analysis screen. Stamped onto
+   * every entry created in this visit so a card can later say which exam it came out of — the
+   * column has existed since the table was created with nothing ever filling it.
+   */
+  const [mockExamId, setMockExamId] = useState<string | null>(null);
   /** The rail always has a "current" category; whether its panel is showing is separate. */
   const [activePanel, setActivePanel] = useState<NotebookPanelCategory>("add");
   const [detailCollapsed, setDetailCollapsed] = useState(true);
@@ -353,6 +362,17 @@ export function NotebookShell() {
   const [due, setDue] = useState<NotebookEntryDto[]>([]);
   const [reviewing, setReviewing] = useState(false);
   /** A single card opened by double-click — a separate flow from the due-strip's list. */
+  /** The card whose labels are being corrected, or which is about to be deleted for good. */
+  const [editingEntry, setEditingEntry] = useState<NotebookEntryDto | null>(null);
+  /**
+   * A card selected on the page with the trash pressed: the student has to say which "delete" they
+   * meant, because until now the button silently meant the weaker one and the card came back the
+   * next day.
+   */
+  const [removingItem, setRemovingItem] = useState<{
+    itemId: string;
+    entry: NotebookEntryDto;
+  } | null>(null);
   const [singleReview, setSingleReview] = useState<NotebookEntryDto | null>(
     null,
   );
@@ -417,6 +437,18 @@ export function NotebookShell() {
         ) {
           setReviewing(true);
         }
+      }
+
+      // Handed over from the analysis screen right after a mock exam was saved: they came here to
+      // file the mistakes they just counted, so open the form rather than the cover.
+      const handedOverMock = new URLSearchParams(window.location.search).get(
+        "mockExam",
+      );
+      if (handedOverMock) {
+        setMockExamId(handedOverMock);
+        setView({ kind: "spread", left: 0 });
+        setActivePanel("add");
+        setDetailCollapsed(false);
       }
       // A missing exam only disables *adding*, so it is not an error banner — the user can still
       // read the notebook they already have.
@@ -769,8 +801,7 @@ export function NotebookShell() {
    * card already knows it, and the server's answer is the whole new state of it. This is what
    * makes a healed card fade on the wall the moment it heals, on whichever side it sits.
    */
-  const handleReviewed = useCallback((updated: NotebookEntryDto) => {
-    setDue((current) => current.filter((entry) => entry.id !== updated.id));
+  const handleEntryPatched = useCallback((updated: NotebookEntryDto) => {
     const patchMeta = (meta: NotebookPageDto | null) =>
       meta && meta.entries.some((entry) => entry.id === updated.id)
         ? {
@@ -782,6 +813,64 @@ export function NotebookShell() {
         : meta;
     setLeftMeta(patchMeta);
     setRightMeta(patchMeta);
+  }, []);
+
+  /**
+   * A card the student removed from the book for good.
+   *
+   * Four places hold a copy of it and every one has to let go, or the deletion is only half real:
+   * the due list would keep offering it, the counters would keep counting it, the page metas would
+   * keep resolving it — and the page document would keep a card item pointing at an entry that no
+   * longer exists. `StageItem` renders that item as nothing, so it does not break the page; it
+   * leaves an invisible box that still selects and drags, which is worse than a broken card because
+   * nobody can see what they are grabbing.
+   */
+  const handleEntryDeleted = useCallback(
+    (entryId: string) => {
+      let wasDue = false;
+      setDue((current) => {
+        wasDue = current.some((entry) => entry.id === entryId);
+        return current.filter((entry) => entry.id !== entryId);
+      });
+
+      const dropFromMeta = (meta: NotebookPageDto | null) =>
+        meta && meta.entries.some((entry) => entry.id === entryId)
+          ? {
+              ...meta,
+              entries: meta.entries.filter((entry) => entry.id !== entryId),
+            }
+          : meta;
+      setLeftMeta(dropFromMeta);
+      setRightMeta(dropFromMeta);
+
+      for (const hook of [leftPage, rightPage]) {
+        const item = hook.state.doc.items.find(
+          (candidate) =>
+            candidate.kind === "entry" && candidate.entryId === entryId,
+        );
+        if (item) hook.dispatch({ type: "remove", id: item.id });
+      }
+
+      setOverview((current) =>
+        current
+          ? {
+              ...current,
+              entryCount: Math.max(0, current.entryCount - 1),
+              dueCount: wasDue
+                ? Math.max(0, current.dueCount - 1)
+                : current.dueCount,
+            }
+          : current,
+      );
+      setSingleReview(null);
+      setEditingEntry(null);
+    },
+    [leftPage, rightPage],
+  );
+
+  const handleReviewed = useCallback((updated: NotebookEntryDto) => {
+    setDue((current) => current.filter((entry) => entry.id !== updated.id));
+    handleEntryPatched(updated);
     setOverview((current) =>
       current
         ? {
@@ -794,7 +883,7 @@ export function NotebookShell() {
           }
         : current,
     );
-  }, []);
+  }, [handleEntryPatched]);
 
   if (!overview && !error) return <NotebookContentSkeleton />;
 
@@ -901,6 +990,7 @@ export function NotebookShell() {
         <NotebookReviewPanel
           entries={due}
           onReviewed={handleReviewed}
+          onEntryUpdated={handleEntryPatched}
           onClose={() => setReviewing(false)}
         />
       ) : singleReview ? (
@@ -910,7 +1000,48 @@ export function NotebookShell() {
             handleReviewed(updated);
             setSingleReview(null);
           }}
+          onEntryUpdated={handleEntryPatched}
+          // Only here, never on the due deck: correcting a card's filing belongs to looking at that
+          // one card, and a destructive action has no business in a review session.
+          onEdit={setEditingEntry}
           onClose={() => setSingleReview(null)}
+        />
+      ) : null}
+
+      {editingEntry && exam ? (
+        <NotebookEntryEditDialog
+          entry={editingEntry}
+          subjects={exam.subjects}
+          topics={exam.topics}
+          onSaved={(updated) => {
+            handleEntryPatched(updated);
+            setSingleReview((current) =>
+              current && current.id === updated.id ? updated : current,
+            );
+            setEditingEntry(null);
+          }}
+          onDeleted={handleEntryDeleted}
+          onClose={() => setEditingEntry(null)}
+        />
+      ) : null}
+
+      {removingItem ? (
+        <NotebookRemoveChoiceDialog
+          onRemoveFromPage={() => {
+            const hook = leftPage.state.doc.items.some(
+              (item) => item.id === removingItem.itemId,
+            )
+              ? leftPage
+              : rightPage;
+            hook.dispatch({ type: "remove", id: removingItem.itemId });
+            setRemovingItem(null);
+          }}
+          onDeleteEntry={async () => {
+            await deleteNotebookEntry(removingItem.entry.id);
+            handleEntryDeleted(removingItem.entry.id);
+            setRemovingItem(null);
+          }}
+          onClose={() => setRemovingItem(null)}
         />
       ) : null}
 
@@ -1044,6 +1175,7 @@ export function NotebookShell() {
                           category={activePanel}
                           paper={focused.state.doc.paper}
                           exam={exam}
+                          mockExamId={mockExamId}
                           selectedText={
                             focused.selected?.kind === "text"
                               ? focused.selected
@@ -1097,10 +1229,25 @@ export function NotebookShell() {
                 type="button"
                 aria-label={t("edit_delete")}
                 disabled={focused.selected == null}
-                onClick={() =>
-                  focused.selected &&
-                  focused.dispatch({ type: "remove", id: focused.selected.id })
-                }
+                onClick={() => {
+                  const item = focused.selected;
+                  if (!item) return;
+                  // Stickers and notes live only on the page — there is no second meaning of
+                  // "delete" for them, so they go straight away as they always have.
+                  if (item.kind !== "entry") {
+                    focused.dispatch({ type: "remove", id: item.id });
+                    return;
+                  }
+                  const meta = focused === leftPage ? leftMeta : rightMeta;
+                  const entry = meta?.entries.find(
+                    (candidate) => candidate.id === item.entryId,
+                  );
+                  if (!entry) {
+                    focused.dispatch({ type: "remove", id: item.id });
+                    return;
+                  }
+                  setRemovingItem({ itemId: item.id, entry });
+                }}
                 className="inline-flex size-10 cursor-pointer items-center justify-center rounded-full outline-none transition-colors hover:bg-[var(--color-surface-container)] disabled:cursor-not-allowed disabled:opacity-35 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
                 style={{ color: "var(--color-main)" }}
               >

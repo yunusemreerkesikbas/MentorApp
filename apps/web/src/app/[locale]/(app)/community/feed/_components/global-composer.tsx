@@ -1,9 +1,10 @@
 "use client";
 
 import { Check, ChevronDown, ListChecks, Paperclip } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { ForumTagView, ZoneView } from "@mentor/types";
+import type { ForumTagView, ThreadView, ZoneView } from "@mentor/types";
 import { forumPollInputSchema, type ForumPollInput } from "@mentor/validation";
 import { ApiClientError } from "@mentor/api-client";
 import { useDialog } from "@mentor/ui";
@@ -11,6 +12,8 @@ import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 import { trackCommunityEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
 import { getForumTrends, listForumTags, listZones, postThread } from "@/lib/forum";
+import { useMentorToast } from "@/lib/mentor-toast";
+import { linkNotebookThread } from "@/lib/notebook";
 import { AttachmentPreviewStrip } from "../../_components/attachment-preview-strip";
 import { AudienceSelector } from "../../_components/audience-selector";
 import { AuthorAvatar } from "../../_components/author-avatar";
@@ -36,6 +39,12 @@ import { rankQuestionTags } from "./question-composer-state";
 
 type ComposerMode = ComposerAudienceMode;
 
+/**
+ * The query parameter the mistake notebook hands over on, carrying the entry whose question the
+ * student is about to ask. See `NotebookReviewPanel`'s stuck screen.
+ */
+const NOTEBOOK_ENTRY_PARAM = "notebookEntry";
+
 export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
   const t = useTranslations("community");
   const { user } = useAuth();
@@ -59,7 +68,68 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
   const [poll, setPoll] = useState<ForumPollInput | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [questionDialogOpen, setQuestionDialogOpen] = useState(false);
+  const [manualQuestionOpen, setManualQuestionOpen] = useState(false);
+
+  /*
+   * Handoff from the mistake notebook: a card the student missed twice, whose question they are
+   * being offered the community for. The notebook cannot create the thread itself — which zone a
+   * question belongs in depends on what the user has joined — so it sends them here with the entry
+   * id, and the link back to the card is made once the thread exists.
+   */
+  const toast = useMentorToast();
+  const searchParams = useSearchParams();
+  /**
+   * Spent once, and derived rather than mirrored into state by an effect: with the handoff open the
+   * dialog is open, and consuming it is what closes it. A second question in the same visit is just
+   * a question — it must not link itself to the same card.
+   */
+  const [handoffSpent, setHandoffSpent] = useState(false);
+  const handoffEntryId = handoffSpent
+    ? null
+    : searchParams.get(NOTEBOOK_ENTRY_PARAM);
+  // They already pressed "ask in the community"; making them pick question mode again here would
+  // be asking the same thing twice.
+  const questionDialogOpen = manualQuestionOpen || Boolean(handoffEntryId);
+
+  /**
+   * `history.replaceState`, not `router.replace`: the URL here is next-intl's localized pathname
+   * (`/topluluk/akis`), which the client router does not resolve back to this route — the call went
+   * through and the address bar kept the spent parameter. Nothing about the page is changing, only
+   * a query string that has been used up, so editing the address directly is also the honest
+   * description of what is happening.
+   */
+  const spendHandoff = useCallback(() => {
+    setHandoffSpent(true);
+    const next = new URLSearchParams(window.location.search);
+    if (!next.has(NOTEBOOK_ENTRY_PARAM)) return;
+    next.delete(NOTEBOOK_ENTRY_PARAM);
+    const query = next.toString();
+    window.history.replaceState(
+      null,
+      "",
+      query ? `${window.location.pathname}?${query}` : window.location.pathname,
+    );
+  }, []);
+
+  const handleQuestionCreated = useCallback(
+    async (thread: ThreadView) => {
+      setManualQuestionOpen(false);
+      if (handoffEntryId) {
+        // Never blocks the question: the thread is already posted and public. A failed link is
+        // worth telling the student about (the card just will not show the answer badge), not
+        // worth pretending the whole thing failed.
+        try {
+          await linkNotebookThread(handoffEntryId, thread.id);
+          toast.success({ title: t("notebook_linked") });
+        } catch {
+          toast.error({ title: t("notebook_link_failed") });
+        }
+        spendHandoff();
+      }
+      onCreated();
+    },
+    [handoffEntryId, onCreated, spendHandoff, t, toast],
+  );
 
   useEffect(() => {
     let active = true;
@@ -108,7 +178,7 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
 
   const changeMode = (nextMode: ComposerMode) => {
     if (nextMode === "question") {
-      setQuestionDialogOpen(true);
+      setManualQuestionOpen(true);
       trackCommunityEvent("forum_composer_open", { mode: "question" });
       return;
     }
@@ -274,11 +344,11 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
       open={questionDialogOpen}
       zones={questionZones}
       tags={questionTags}
-      onClose={() => setQuestionDialogOpen(false)}
-      onCreated={() => {
-        setQuestionDialogOpen(false);
-        onCreated();
+      onClose={() => {
+        setManualQuestionOpen(false);
+        spendHandoff();
       }}
+      onCreated={(thread) => void handleQuestionCreated(thread)}
     />
     </>
   );
