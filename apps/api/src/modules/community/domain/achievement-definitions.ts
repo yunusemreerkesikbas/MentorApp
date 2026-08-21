@@ -21,6 +21,7 @@ export interface AchievementDefinition {
   artKey: AchievementId;
   titleKey: `achievements.items.${AchievementId}.title`;
   descriptionKey: `achievements.items.${AchievementId}.description`;
+  unlockHintKey: `achievements.items.${AchievementId}.unlockHint`;
   progressTarget: number | null;
 }
 
@@ -34,6 +35,7 @@ function define(
     artKey: id,
     titleKey: `achievements.items.${id}.title`,
     descriptionKey: `achievements.items.${id}.description`,
+    unlockHintKey: `achievements.items.${id}.unlockHint`,
     progressTarget,
   };
 }

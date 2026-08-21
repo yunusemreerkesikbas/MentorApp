@@ -1,17 +1,17 @@
 {
   "items": {
-    "first_step": { "title": "First Step", "description": "You completed your first qualifying focus session." },
-    "route_drawn": { "title": "Route Drawn", "description": "You created the first task on your study route." },
-    "dream_space_created": { "title": "Room for Your Dream", "description": "You added the first meaningful piece to your vision board." },
-    "rhythm_found": { "title": "Rhythm Found", "description": "You found a seven-day study rhythm." },
-    "rhythm_kept": { "title": "Rhythm Kept", "description": "You kept your study rhythm for thirty days." },
-    "returned_to_path": { "title": "Right Where You Left Off", "description": "You chose to focus again after some time away." },
-    "route_renewed": { "title": "Route Renewed", "description": "You renewed your plan around your changing needs." },
-    "starting_point_set": { "title": "Your Starting Point", "description": "You recorded your first mock exam and set a starting point." },
-    "mistake_revisited": { "title": "Looked Again", "description": "You revisited an entry in your mistake notebook." },
-    "week_reflected": { "title": "Listened to Your Week", "description": "You intentionally completed your weekly reflection." },
-    "first_hello": { "title": "First Hello", "description": "You shared your first contribution with the community." },
-    "helped_someone": { "title": "You Helped Someone", "description": "One of your contributions helped another learner." }
+    "first_step": { "title": "First Step", "description": "You completed your first qualifying focus session.", "unlockHint": "Complete your first qualifying focus session." },
+    "route_drawn": { "title": "Route Drawn", "description": "You created the first task on your study route.", "unlockHint": "Create the first task on your study route." },
+    "dream_space_created": { "title": "Room for Your Dream", "description": "You added the first meaningful piece to your vision board.", "unlockHint": "Add a meaningful piece to your vision board." },
+    "rhythm_found": { "title": "Rhythm Found", "description": "You found a seven-day study rhythm.", "unlockHint": "Reach a seven-day study rhythm." },
+    "rhythm_kept": { "title": "Rhythm Kept", "description": "You kept your study rhythm for thirty days.", "unlockHint": "Reach a thirty-day study rhythm." },
+    "returned_to_path": { "title": "Right Where You Left Off", "description": "You chose to focus again after some time away.", "unlockHint": "Return to focus after a break of at least seven days." },
+    "route_renewed": { "title": "Route Renewed", "description": "You renewed your plan around your changing needs.", "unlockHint": "Renew your existing plan around your changing needs." },
+    "starting_point_set": { "title": "Your Starting Point", "description": "You recorded your first mock exam and set a starting point.", "unlockHint": "Record your first mock exam result." },
+    "mistake_revisited": { "title": "Looked Again", "description": "You revisited an entry in your mistake notebook.", "unlockHint": "Revisit an entry in your mistake notebook." },
+    "week_reflected": { "title": "Listened to Your Week", "description": "You intentionally completed your weekly reflection.", "unlockHint": "Complete your first weekly reflection." },
+    "first_hello": { "title": "First Hello", "description": "You shared your first contribution with the community.", "unlockHint": "Share your first contribution with the community." },
+    "helped_someone": { "title": "You Helped Someone", "description": "One of your contributions helped another learner.", "unlockHint": "Have one of your contributions marked as helpful by another learner." }
   },
   "notification": {
     "title": "You earned a new achievement",

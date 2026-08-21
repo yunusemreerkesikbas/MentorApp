@@ -555,19 +555,16 @@ http://localhost:3000/panel               # daily ritual hub
   (`@mentor/ui` tokens)
 - Composes: every feature doc's "Web:" section
 - Status: [core/mvp-status.md](../core/mvp-status.md) (cross-cutting)
-### 2026-08-20 — Achievement celebration panel preview
+### 2026-08-20 — Achievement celebration experience
 
-- The panel accepts `?mockAchievement=<achievement-id>` for a UI-only preview of the real
-  achievement celebration. It never calls the award or acknowledgement APIs.
-- The celebration now blurs the app, plays `/lottie/confetti.lottie` once across the full viewport,
+- The celebration blurs the app, plays `/lottie/confetti.lottie` once across the full viewport,
   and reveals the achievement badge at 3.5 seconds while the final ~1.5 seconds of confetti keep
   playing above it. The badge receives a strong glow/light sweep followed by a shorter, lower-
   opacity finishing glint and subtle second glow pulse; neither effect loops. The player is
   lazy-loaded and advances on `complete`; player errors use a bounded fallback so the user is never
   trapped. Reduced-motion users skip confetti and receive a short badge crossfade.
-- Usage: `/tr/panel?mockAchievement=first_step` (all 12 locked V1 ids are accepted).
-- Related files: `dashboard/_components/panel-shell.tsx`,
-  `components/achievements/achievement-celebration.tsx`, `lib/achievement-preview.ts`.
+- Related files: `components/achievements/achievement-celebration.tsx`,
+  `lib/achievement-celebration-sequence.ts`.
 
 ### 2026-08-21 — Achievement celebration companion copy
 
@@ -576,3 +573,9 @@ http://localhost:3000/panel               # daily ritual hub
 - The shared action now reads “Yoluma devam et” / “Continue my journey”. Backfill summary copy is
   unchanged.
 - Related files: `components/achievements/achievement-celebration.tsx`, `messages/{tr,en}.json`.
+
+### 2026-08-21 — Achievement mock preview removed
+
+- The dashboard-only achievement preview trigger and its synthetic data were removed. Celebration
+  modals are now opened only by the real unseen-achievement API and live SSE flow.
+- Related files: `dashboard/_components/panel-shell.tsx`, `lib/notification-drawer-shell.tsx`.

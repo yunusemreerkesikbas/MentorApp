@@ -1,17 +1,17 @@
 {
   "items": {
-    "first_step": { "title": "İlk Adım", "description": "İlk geçerli odak oturumunu tamamladın." },
-    "route_drawn": { "title": "Rotanı Çizdin", "description": "Çalışma yolculuğunun ilk plan görevini oluşturdun." },
-    "dream_space_created": { "title": "Hayaline Yer Açtın", "description": "Hedef panona ilk anlamlı parçanı ekledin." },
-    "rhythm_found": { "title": "Ritmi Yakaladın", "description": "Yedi günlük çalışma ritmini yakaladın." },
-    "rhythm_kept": { "title": "Ritmi Korudun", "description": "Otuz günlük çalışma ritmini korudun." },
-    "returned_to_path": { "title": "Kaldığın Yerden", "description": "Bir aradan sonra yeniden odaklanmayı seçtin." },
-    "route_renewed": { "title": "Rotayı Yeniledin", "description": "Planını değişen ihtiyaçlarına göre yeniledin." },
-    "starting_point_set": { "title": "Başlangıç Noktan", "description": "İlk denemeni kaydederek başlangıç noktanı belirledin." },
-    "mistake_revisited": { "title": "Bir Daha Baktın", "description": "Yanlış defterindeki bir kaydı yeniden değerlendirdin." },
-    "week_reflected": { "title": "Haftana Kulak Verdin", "description": "Haftalık değerlendirmene bilinçli biçimde geri döndün." },
-    "first_hello": { "title": "İlk Merhaba", "description": "Toplulukta ilk katkını paylaştın." },
-    "helped_someone": { "title": "Birine İyi Geldin", "description": "Bir katkın başka bir öğrenciye yardımcı oldu." }
+    "first_step": { "title": "İlk Adım", "description": "İlk geçerli odak oturumunu tamamladın.", "unlockHint": "İlk geçerli odak oturumunu tamamla." },
+    "route_drawn": { "title": "Rotanı Çizdin", "description": "Çalışma yolculuğunun ilk plan görevini oluşturdun.", "unlockHint": "Çalışma yolculuğunun ilk plan görevini oluştur." },
+    "dream_space_created": { "title": "Hayaline Yer Açtın", "description": "Hedef panona ilk anlamlı parçanı ekledin.", "unlockHint": "Hedef panona anlamlı bir parça ekle." },
+    "rhythm_found": { "title": "Ritmi Yakaladın", "description": "Yedi günlük çalışma ritmini yakaladın.", "unlockHint": "Yedi günlük çalışma ritmine ulaş." },
+    "rhythm_kept": { "title": "Ritmi Korudun", "description": "Otuz günlük çalışma ritmini korudun.", "unlockHint": "Otuz günlük çalışma ritmine ulaş." },
+    "returned_to_path": { "title": "Kaldığın Yerden", "description": "Bir aradan sonra yeniden odaklanmayı seçtin.", "unlockHint": "En az yedi günlük bir aradan sonra yeniden odaklan." },
+    "route_renewed": { "title": "Rotayı Yeniledin", "description": "Planını değişen ihtiyaçlarına göre yeniledin.", "unlockHint": "Mevcut planını değişen ihtiyaçlarına göre yenile." },
+    "starting_point_set": { "title": "Başlangıç Noktan", "description": "İlk denemeni kaydederek başlangıç noktanı belirledin.", "unlockHint": "İlk deneme sonucunu kaydet." },
+    "mistake_revisited": { "title": "Bir Daha Baktın", "description": "Yanlış defterindeki bir kaydı yeniden değerlendirdin.", "unlockHint": "Yanlış defterindeki bir kaydı yeniden değerlendir." },
+    "week_reflected": { "title": "Haftana Kulak Verdin", "description": "Haftalık değerlendirmene bilinçli biçimde geri döndün.", "unlockHint": "İlk haftalık değerlendirmeni tamamla." },
+    "first_hello": { "title": "İlk Merhaba", "description": "Toplulukta ilk katkını paylaştın.", "unlockHint": "Toplulukta ilk katkını paylaş." },
+    "helped_someone": { "title": "Birine İyi Geldin", "description": "Bir katkın başka bir öğrenciye yardımcı oldu.", "unlockHint": "Bir katkın başka bir öğrenci tarafından faydalı bulunsun." }
   },
   "notification": {
     "title": "Yeni bir başarı kazandın",

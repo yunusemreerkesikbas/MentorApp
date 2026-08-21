@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { and, asc, count, desc, eq, gte, inArray, isNotNull, lte, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNotNull, lte, or, sql } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
 import {
   mistakeNotebookEntries,
@@ -19,7 +19,26 @@ export interface CreateNotebookEntryRow {
   topicRef: string | null;
   errorType: string;
   note: string | null;
+  solutionStorageKey: string | null;
+  solutionNote: string | null;
   nextReviewAt: Date;
+}
+
+/**
+ * Every R2 key one entry row holds, in the shape the orphan sweep wants: a flat list with the
+ * nulls already gone.
+ *
+ * Its own function so the "did we remember every photo column?" question has one answer with a
+ * test on it — the sweep deletes whatever these keys do not name, so a column forgotten here is a
+ * column whose photos disappear a day later.
+ */
+export function notebookEntryImageKeys(row: {
+  storageKey: string | null;
+  solutionStorageKey: string | null;
+}): string[] {
+  return [row.storageKey, row.solutionStorageKey].filter(
+    (key): key is string => key != null,
+  );
 }
 
 export interface UpdateNotebookEntryRow {
@@ -27,6 +46,8 @@ export interface UpdateNotebookEntryRow {
   topicRef?: string | null;
   errorType?: string;
   note?: string | null;
+  solutionStorageKey?: string | null;
+  solutionNote?: string | null;
   status?: string;
 }
 
@@ -389,13 +410,26 @@ export class MistakeNotebookRepository {
   /**
    * Every photo key referenced by any notebook entry, across all users — the orphan sweep's input.
    *
-   * Entries own their key as a column, so unlike the vision board this needs no jsonb unfolding.
+   * Entries own their keys as columns, so unlike the vision board this needs no jsonb unfolding.
+   *
+   * BOTH photo columns have to be here. The sweep deletes every object under `notebook/` that this
+   * method does not name, so a column missing from this select is a column whose photos vanish once
+   * the grace period passes. `solution_storage_key` shares the prefix, and was added later than
+   * `storage_key` — that is exactly how one gets left out.
    */
   async listAllReferencedImageKeys(tx: DatabaseTx): Promise<string[]> {
     const rows = await tx
-      .select({ storageKey: mistakeNotebookEntries.storageKey })
+      .select({
+        storageKey: mistakeNotebookEntries.storageKey,
+        solutionStorageKey: mistakeNotebookEntries.solutionStorageKey,
+      })
       .from(mistakeNotebookEntries)
-      .where(isNotNull(mistakeNotebookEntries.storageKey));
-    return rows.flatMap((row) => (row.storageKey ? [row.storageKey] : []));
+      .where(
+        or(
+          isNotNull(mistakeNotebookEntries.storageKey),
+          isNotNull(mistakeNotebookEntries.solutionStorageKey),
+        ),
+      );
+    return rows.flatMap(notebookEntryImageKeys);
   }
 }

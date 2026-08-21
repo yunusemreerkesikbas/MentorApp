@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { LayoutList, X } from "lucide-react";
+import { LayoutList, Settings2, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { NotebookEntryDto } from "@mentor/types";
@@ -28,6 +28,12 @@ interface NotebookReviewPanelProps {
    * must not do.
    */
   onEntryUpdated?: (entry: NotebookEntryDto) => void;
+  /**
+   * Opens the card's settings — labels and deletion. Passed only when the panel is showing a single
+   * card the student opened deliberately, never for the due deck: a review session is not a place
+   * where a card should be able to disappear.
+   */
+  onEdit?: (entry: NotebookEntryDto) => void;
   onClose: () => void;
 }
 
@@ -59,6 +65,7 @@ export function NotebookReviewPanel({
   entries,
   onReviewed,
   onEntryUpdated,
+  onEdit,
   onClose,
 }: NotebookReviewPanelProps) {
   const t = useTranslations("notebook");
@@ -72,8 +79,17 @@ export function NotebookReviewPanel({
    * deck skipped the card after each one. A session is a fixed set of cards; which of them still
    * count as due is the shell's business, and it keeps that in its own state.
    */
-  const [deck, setDeck] = useState(entries);
+  const [fullDeck, setFullDeck] = useState(entries);
   const [index, setIndex] = useState(0);
+  /**
+   * Study one subject at a time. A twenty-card deck that jumps between Matematik and Tarih on every
+   * turn is worse than eight cards of one thing, and the list already knows how to group them.
+   *
+   * ponytail: the filter is a subject *name*, and the "no subject yet" group is not offered as one.
+   * Wrapping the value just to distinguish "no filter" from "filter to the unlabelled ones" would
+   * be machinery for a deck nobody asks to study.
+   */
+  const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
   /** Answered in *this* session — what stops the list offering a second review of the same card. */
   const [answered, setAnswered] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
@@ -94,7 +110,14 @@ export function NotebookReviewPanel({
    */
   const [stuck, setStuck] = useState<NotebookEntryDto | null>(null);
 
+  // Derived, not copied: one deck in state, and the filter is a view of it. Copying would leave the
+  // note-edit patch writing into whichever of the two the student is not looking at.
+  const deck = subjectFilter
+    ? fullDeck.filter((card) => card.subjectName === subjectFilter)
+    : fullDeck;
   const entry = index >= 0 ? deck[index] : undefined;
+  /** Across the whole session, not the filtered view — what decides whether the day is really over. */
+  const remainingAll = fullDeck.filter((card) => !answered.has(card.id)).length;
 
   /** Where the deck goes once `id` is answered — wraps back for anything jumped over. */
   const advance = useCallback(
@@ -111,6 +134,44 @@ export function NotebookReviewPanel({
       );
     },
     [answered, deck, index],
+  );
+
+  /** Switching subject restarts the cursor at the first card of the new view still unanswered. */
+  const applyFilter = useCallback(
+    (next: string | null) => {
+      const nextDeck = next
+        ? fullDeck.filter((card) => card.subjectName === next)
+        : fullDeck;
+      setSubjectFilter(next);
+      setIndex(
+        nextUnansweredIndex(
+          nextDeck.map((card) => card.id),
+          answered,
+          -1,
+        ),
+      );
+      setListOpen(false);
+    },
+    [answered, fullDeck],
+  );
+
+  /**
+   * Jump to a card by id rather than by position: the list shows the whole deck while the deck
+   * itself may be filtered, so an index would mean different cards on the two sides. Picking a card
+   * outside the active filter clears the filter — the student pointed at it, so it wins.
+   */
+  const pickCard = useCallback(
+    (id: string) => {
+      const inView = deck.findIndex((card) => card.id === id);
+      if (inView >= 0) {
+        setIndex(inView);
+      } else {
+        setSubjectFilter(null);
+        setIndex(fullDeck.findIndex((card) => card.id === id));
+      }
+      setListOpen(false);
+    },
+    [deck, fullDeck],
   );
 
   const answer = useCallback(
@@ -143,16 +204,27 @@ export function NotebookReviewPanel({
    * The note the student writes *during* review — the moment they actually work out what went
    * wrong. Rejects on failure so the field can say so without the card losing what was typed.
    */
-  const saveNote = useCallback(
-    async (note: string | null) => {
+  const patchEntry = useCallback(
+    async (patch: Parameters<typeof updateNotebookEntry>[1]) => {
       if (!entry) return;
-      const updated = await updateNotebookEntry(entry.id, { note });
-      setDeck((current) =>
+      const updated = await updateNotebookEntry(entry.id, patch);
+      setFullDeck((current) =>
         current.map((card) => (card.id === updated.id ? updated : card)),
       );
       onEntryUpdated?.(updated);
     },
     [entry, onEntryUpdated],
+  );
+
+  const saveNote = useCallback(
+    (note: string | null) => patchEntry({ note }),
+    [patchEntry],
+  );
+
+  /** The answer is usually learned at the moment the card catches you — same path as the note. */
+  const saveSolutionNote = useCallback(
+    (solutionNote: string | null) => patchEntry({ solutionNote }),
+    [patchEntry],
   );
 
   useEffect(() => {
@@ -213,6 +285,14 @@ export function NotebookReviewPanel({
               <LayoutList aria-hidden size={18} />
             </OverlayControl>
           ) : null}
+          {onEdit && entry ? (
+            <OverlayControl
+              label={t("entry_edit_title")}
+              onClick={() => onEdit(entry)}
+            >
+              <Settings2 aria-hidden size={18} />
+            </OverlayControl>
+          ) : null}
           <OverlayControl label={t("card_preview_close")} onClick={onClose}>
             <X aria-hidden size={18} />
           </OverlayControl>
@@ -234,9 +314,18 @@ export function NotebookReviewPanel({
           >
             {stuck ? (
               <StuckPanel entry={stuck} onSkip={() => setStuck(null)} />
+            ) : subjectFilter && remainingAll > 0 ? (
+              // The filtered view ran out, the day did not. Saying "bugünlük bu kadar" here would
+              // be telling the student they are done while cards from other subjects are still due.
+              <SubjectDonePanel
+                subject={subjectFilter}
+                remaining={remainingAll}
+                onContinue={() => applyFilter(null)}
+                onClose={onClose}
+              />
             ) : (
               <DonePanel
-                total={deck.length}
+                total={fullDeck.length}
                 solved={solvedCount}
                 onClose={onClose}
               />
@@ -247,7 +336,7 @@ export function NotebookReviewPanel({
             className="flex flex-col items-center gap-4"
             onClick={(event) => event.stopPropagation()}
           >
-            {listOpen || deck.length > 1 ? (
+            {listOpen || deck.length > 1 || subjectFilter ? (
               <span
                 className="rounded-full px-2.5 py-1 text-xs font-semibold"
                 style={{
@@ -257,22 +346,26 @@ export function NotebookReviewPanel({
               >
                 {listOpen
                   ? t("review_list_remaining", { count: remaining })
-                  : t("review_progress", {
-                      current: index + 1,
-                      total: deck.length,
-                    })}
+                  : subjectFilter
+                    ? `${subjectFilter} · ${t("review_progress", {
+                        current: index + 1,
+                        total: deck.length,
+                      })}`
+                    : t("review_progress", {
+                        current: index + 1,
+                        total: deck.length,
+                      })}
               </span>
             ) : null}
 
             {listOpen ? (
               <NotebookReviewList
-                entries={deck}
-                currentIndex={index}
+                entries={fullDeck}
+                currentId={entry?.id ?? null}
                 answered={answered}
-                onPick={(picked) => {
-                  setIndex(picked);
-                  setListOpen(false);
-                }}
+                subjectFilter={subjectFilter}
+                onFilter={applyFilter}
+                onPick={pickCard}
               />
             ) : (
               <>
@@ -318,6 +411,12 @@ export function NotebookReviewPanel({
                         onMissed={() => void answer(false)}
                         onZoom={entry.url ? () => setZoomed(entry) : null}
                         onNoteSave={saveNote}
+                        onSolutionNoteSave={saveSolutionNote}
+                        onSolutionZoom={
+                          entry.solutionUrl
+                            ? () => setZoomed({ ...entry, url: entry.solutionUrl })
+                            : null
+                        }
                       />
                     </motion.div>
                   </AnimatePresence>
@@ -482,6 +581,45 @@ function DonePanel({
       <Button fullWidth onClick={onClose}>
         {t("review_close")}
       </Button>
+    </div>
+  );
+}
+
+/**
+ * One subject's cards are done while others are still waiting.
+ *
+ * Its own screen rather than the closing summary: `DonePanel` says the day is over, and saying that
+ * with four Tarih cards still due would be the review flow telling the student a comfortable lie.
+ * The way out is the same one they came in by — drop the filter and keep going.
+ */
+function SubjectDonePanel({
+  subject,
+  remaining,
+  onContinue,
+  onClose,
+}: {
+  subject: string;
+  remaining: number;
+  onContinue: () => void;
+  onClose: () => void;
+}) {
+  const t = useTranslations("notebook");
+  return (
+    <div className="flex flex-col gap-4 p-6">
+      <SectionHeading
+        as="h2"
+        subtitle={t("review_subject_done_subtitle", { count: remaining })}
+      >
+        {t("review_subject_done_title", { subject })}
+      </SectionHeading>
+      <div className="flex flex-wrap gap-2">
+        <NotebookCompactButton tone="success" large onClick={onContinue}>
+          {t("review_subject_done_continue")}
+        </NotebookCompactButton>
+        <NotebookCompactButton variant="secondary" large onClick={onClose}>
+          {t("review_close")}
+        </NotebookCompactButton>
+      </div>
     </div>
   );
 }

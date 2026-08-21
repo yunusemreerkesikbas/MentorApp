@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Check, FileText } from "lucide-react";
+import { Check, FileText, Undo2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { NotebookEntryDto } from "@mentor/types";
 import { REVIEW_CARD_WIDTH } from "./notebook-review-card";
@@ -22,34 +22,50 @@ import { REVIEW_CARD_WIDTH } from "./notebook-review-card";
  */
 
 export interface NotebookReviewListProps {
-  /** The deck as it was when the panel opened — same order the cards are shown in. */
+  /**
+   * The whole deck as it was when the panel opened, never the filtered view: the list is how a
+   * student switches subjects, so it has to show the subject they are not currently studying.
+   */
   entries: NotebookEntryDto[];
-  currentIndex: number;
+  /** By id, not position — the deck may be filtered, so an index means two different cards. */
+  currentId: string | null;
   answered: ReadonlySet<string>;
-  onPick: (index: number) => void;
+  subjectFilter: string | null;
+  onFilter: (subject: string | null) => void;
+  onPick: (entryId: string) => void;
 }
 
-interface Row {
-  entry: NotebookEntryDto;
-  index: number;
+interface Group {
+  /** Raw subject name, or null for the entries nobody has labelled yet. */
+  subject: string | null;
+  label: string;
+  rows: NotebookEntryDto[];
 }
 
 export function NotebookReviewList({
   entries,
-  currentIndex,
+  currentId,
   answered,
+  subjectFilter,
+  onFilter,
   onPick,
 }: NotebookReviewListProps) {
   const t = useTranslations("notebook");
 
   // Derived during render, not held in state: the deck never changes while the panel is open, and a
   // memo of a seven-item group-by would cost more to read than it saves.
-  const groups: Array<{ subject: string; rows: Row[] }> = [];
-  entries.forEach((entry, index) => {
-    const subject = entry.subjectName ?? t("review_list_ungrouped");
+  const groups: Group[] = [];
+  entries.forEach((entry) => {
+    const subject = entry.subjectName ?? null;
     const group = groups.find((candidate) => candidate.subject === subject);
-    if (group) group.rows.push({ entry, index });
-    else groups.push({ subject, rows: [{ entry, index }] });
+    if (group) group.rows.push(entry);
+    else {
+      groups.push({
+        subject,
+        label: subject ?? t("review_list_ungrouped"),
+        rows: [entry],
+      });
+    }
   });
 
   return (
@@ -66,21 +82,48 @@ export function NotebookReviewList({
         boxShadow: "var(--shadow-card)",
       }}
     >
+      {subjectFilter ? (
+        // Only shown while a filter is on: the way back has to be in the same place the way in was.
+        <button
+          type="button"
+          onClick={() => onFilter(null)}
+          className="mb-1 flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-[var(--radius-card)] px-2 text-left text-sm font-semibold outline-none transition-colors duration-150 hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+          style={{ color: "var(--color-main)" }}
+        >
+          <Undo2 aria-hidden size={14} />
+          {t("review_list_all_subjects")}
+        </button>
+      ) : null}
+
       {groups.map((group) => (
-        <div key={group.subject} className="flex flex-col">
-          <span
-            className="px-2 pb-1 pt-3 text-xs font-bold"
-            style={{ color: "var(--color-secondary)" }}
-          >
-            {group.subject}
-          </span>
-          {group.rows.map(({ entry, index }) => (
+        <div key={group.label} className="flex flex-col">
+          <div className="flex items-center justify-between gap-2 px-2 pb-1 pt-3">
+            <span
+              className="text-xs font-bold"
+              style={{ color: "var(--color-secondary)" }}
+            >
+              {group.label}
+            </span>
+            {/* Not offered for the unlabelled group: "study only the ones with no subject" is not
+                a deck anybody asks for, and it is the one value the filter cannot express. */}
+            {group.subject && group.subject !== subjectFilter ? (
+              <button
+                type="button"
+                onClick={() => onFilter(group.subject)}
+                className="shrink-0 cursor-pointer rounded-[var(--radius-card)] px-1.5 py-1 text-xs font-semibold outline-none transition-colors duration-150 hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+                style={{ color: "var(--color-accent)" }}
+              >
+                {t("review_list_only_this")}
+              </button>
+            ) : null}
+          </div>
+          {group.rows.map((entry) => (
             <ListRow
               key={entry.id}
               entry={entry}
-              current={index === currentIndex}
+              current={entry.id === currentId}
               done={answered.has(entry.id)}
-              onPick={() => onPick(index)}
+              onPick={() => onPick(entry.id)}
             />
           ))}
         </div>

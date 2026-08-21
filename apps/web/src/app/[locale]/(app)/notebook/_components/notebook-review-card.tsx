@@ -61,6 +61,10 @@ export interface NotebookReviewCardProps {
   onZoom: (() => void) | null;
   /** Persists the note edited on the back; rejects so the field can show its own failure. */
   onNoteSave: (note: string | null) => Promise<void>;
+  /** Same contract for the answer the student recorded. */
+  onSolutionNoteSave: (note: string | null) => Promise<void>;
+  /** Full-size answer photo; null when this card has no solution photo. */
+  onSolutionZoom: (() => void) | null;
 }
 
 /**
@@ -95,6 +99,8 @@ export function NotebookReviewCard({
   onMissed,
   onZoom,
   onNoteSave,
+  onSolutionNoteSave,
+  onSolutionZoom,
 }: NotebookReviewCardProps) {
   const t = useTranslations("notebook");
   const reduceMotion = useReducedMotion();
@@ -176,6 +182,8 @@ export function NotebookReviewCard({
               <CardBack
                 entry={entry}
                 onNoteSave={onNoteSave}
+                onSolutionNoteSave={onSolutionNoteSave}
+                onSolutionZoom={onSolutionZoom}
                 onEditing={setEditing}
               />
             ) : (
@@ -210,6 +218,8 @@ export function NotebookReviewCard({
             <CardBack
               entry={entry}
               onNoteSave={onNoteSave}
+              onSolutionNoteSave={onSolutionNoteSave}
+              onSolutionZoom={onSolutionZoom}
               onEditing={setEditing}
             />
           </div>
@@ -371,10 +381,14 @@ function CardFront({ entry }: { entry: NotebookEntryDto }) {
 function CardBack({
   entry,
   onNoteSave,
+  onSolutionNoteSave,
+  onSolutionZoom,
   onEditing,
 }: {
   entry: NotebookEntryDto;
   onNoteSave: (note: string | null) => Promise<void>;
+  onSolutionNoteSave: (note: string | null) => Promise<void>;
+  onSolutionZoom: (() => void) | null;
   onEditing: (editing: boolean) => void;
 }) {
   const t = useTranslations("notebook");
@@ -382,7 +396,7 @@ function CardBack({
   const answered = entry.communityAnsweredAt && entry.communityThreadId;
 
   return (
-    <div className="flex size-full flex-col gap-4 p-5">
+    <div className="flex size-full flex-col gap-4 overflow-y-auto p-5">
       <div className="flex flex-col gap-2">
         <span
           className="text-lg font-bold text-balance"
@@ -420,7 +434,25 @@ function CardBack({
         </div>
       </div>
 
-      <NoteField entry={entry} onSave={onNoteSave} onEditing={onEditing} />
+      {/* The answer, above the note: it is what the student came to the back of the card for, and
+          the note is their commentary on it. Absent entirely when there is no solution — a card
+          filed without the answer key is the normal case, not a card missing something. */}
+      <SolutionBand
+        entry={entry}
+        onZoom={onSolutionZoom}
+        onSave={onSolutionNoteSave}
+        onEditing={onEditing}
+      />
+
+      <EditableField
+        value={entry.note}
+        addLabel={t("review_note_add")}
+        editLabel={t("review_note_edit")}
+        placeholder={t("review_note_placeholder")}
+        grow
+        onSave={onNoteSave}
+        onEditing={onEditing}
+      />
 
       {answered ? (
         <Link
@@ -443,33 +475,43 @@ function CardBack({
 }
 
 /**
- * The student's own note about the mistake, editable right here.
+ * An editable block of the student's own writing on the card back — the note, and the solution.
  *
  * The note used to be write-once, filled in when the card was filed. But the moment a card catches
  * you a second time is the moment you actually learn what went wrong — and until now there was
- * nowhere to put that. Review is when the note is born, not when the entry is.
+ * nowhere to put that. Review is when the note is born, not when the entry is; the same is true of
+ * the answer, which is why one component serves both.
  *
  * ponytail: explicit save, not save-on-blur. This sits on a card that can be swiped away or flipped
  * out from under it; blurring is one of the ways the text disappears, so it cannot also be the way
  * it is committed.
  */
-function NoteField({
-  entry,
+function EditableField({
+  value,
+  addLabel,
+  editLabel,
+  placeholder,
+  grow,
   onSave,
   onEditing,
 }: {
-  entry: NotebookEntryDto;
-  onSave: (note: string | null) => Promise<void>;
+  value: string | null;
+  addLabel: string;
+  editLabel: string;
+  placeholder: string;
+  /** Only one field per face may take the leftover height, or they fight over it. */
+  grow?: boolean;
+  onSave: (next: string | null) => Promise<void>;
   onEditing: (editing: boolean) => void;
 }) {
   const t = useTranslations("notebook");
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(entry.note ?? "");
+  const [draft, setDraft] = useState(value ?? "");
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
   function open() {
-    setDraft(entry.note ?? "");
+    setDraft(value ?? "");
     setFailed(false);
     setEditing(true);
     // The card owns drag and flip; both have to stand down while a caret is in here, or the first
@@ -482,9 +524,10 @@ function NoteField({
     onEditing(false);
   }
 
-  /** The well both states share, so opening the editor does not resize or move the note area. */
-  const wellClass =
-    "flex min-h-0 flex-1 flex-col rounded-[var(--radius-card)] p-3";
+  /** The well both states share, so opening the editor does not resize or move the field. */
+  const wellClass = `flex min-h-0 flex-col rounded-[var(--radius-card)] p-3 ${
+    grow ? "flex-1" : ""
+  }`;
   const wellStyle = {
     backgroundColor: "var(--color-surface-container)",
     border: "1px solid color-mix(in srgb, var(--color-main) 8%, transparent)",
@@ -506,15 +549,15 @@ function NoteField({
           style={{ color: "var(--color-secondary)" }}
         >
           <Pencil aria-hidden size={12} />
-          {entry.note ? t("review_note_edit") : t("review_note_add")}
+          {value ? editLabel : addLabel}
         </span>
         <span
           className="overflow-y-auto text-sm text-pretty"
           style={{
-            color: entry.note ? "var(--color-body)" : "var(--color-secondary)",
+            color: value ? "var(--color-body)" : "var(--color-secondary)",
           }}
         >
-          {entry.note ?? t("review_note_placeholder")}
+          {value ?? placeholder}
         </span>
       </button>
     );
@@ -522,7 +565,7 @@ function NoteField({
 
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col gap-2"
+      className={`flex min-h-0 flex-col gap-2 ${grow ? "flex-1" : ""}`}
       onClick={(event) => event.stopPropagation()}
     >
       <textarea
@@ -530,8 +573,8 @@ function NoteField({
         maxLength={NOTEBOOK_NOTE_MAX_LENGTH}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
-        aria-label={t("review_note_edit")}
-        placeholder={t("review_note_placeholder")}
+        aria-label={editLabel}
+        placeholder={placeholder}
         className={`${wellClass} resize-none text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]`}
         style={{ ...wellStyle, color: "var(--color-main)" }}
       />
@@ -559,6 +602,81 @@ function NoteField({
           {t("review_note_cancel")}
         </NotebookCompactButton>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The answer the student recorded, on the back of the card where a flashcard's answer belongs.
+ *
+ * Both halves are optional and shown independently: a photographed answer key with no words, a
+ * one-line "should have equalised the denominators" with no photo, or a photo the student later
+ * annotates. Nothing here is generated — the notebook's photo categorises, it never solves
+ * (AGENTS.md §4) — so an empty band is an invitation to write, not a gap waiting on a model.
+ *
+ * The photo is a short strip rather than a contained square: the card back also has to hold the
+ * note, and a solution photo that takes half the face pushes the writing area off the bottom. The
+ * zoom control hands the readable version to `NotebookImageLightbox`, which is where anyone
+ * actually reads an answer key.
+ */
+function SolutionBand({
+  entry,
+  onZoom,
+  onSave,
+  onEditing,
+}: {
+  entry: NotebookEntryDto;
+  onZoom: (() => void) | null;
+  onSave: (note: string | null) => Promise<void>;
+  onEditing: (editing: boolean) => void;
+}) {
+  const t = useTranslations("notebook");
+
+  return (
+    // ponytail: no "ÇÖZÜM" heading over this. The well below already says "çözümü düzenle", so the
+    // label repeated it — and a tiny tracked-uppercase kicker is the one piece of chrome this card
+    // does not need, on a face that is already fighting for vertical room.
+    <div className="flex shrink-0 flex-col gap-2">
+      {entry.solutionUrl && onZoom ? (
+        <button
+          type="button"
+          aria-label={t("review_solution_zoom")}
+          onClick={(event) => {
+            event.stopPropagation();
+            onZoom();
+          }}
+          className="relative h-24 w-full cursor-pointer overflow-hidden rounded-[var(--radius-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{ backgroundColor: "var(--color-surface-container)" }}
+        >
+          <Image
+            src={entry.solutionUrl}
+            alt=""
+            fill
+            sizes="26rem"
+            className="object-cover"
+          />
+          <span
+            aria-hidden
+            className="absolute bottom-1.5 right-1.5 flex size-7 items-center justify-center rounded-full"
+            style={{
+              backgroundColor:
+                "color-mix(in srgb, var(--color-surface) 80%, transparent)",
+              color: "var(--color-main)",
+            }}
+          >
+            <Maximize2 size={13} />
+          </span>
+        </button>
+      ) : null}
+
+      <EditableField
+        value={entry.solutionNote}
+        addLabel={t("review_solution_add")}
+        editLabel={t("review_solution_edit")}
+        placeholder={t("review_solution_placeholder")}
+        onSave={onSave}
+        onEditing={onEditing}
+      />
     </div>
   );
 }

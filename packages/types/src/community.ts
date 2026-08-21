@@ -45,6 +45,8 @@ export interface AchievementView {
   id: AchievementId;
   title: string;
   description: string;
+  /** Localized, action-oriented guidance shown only while the achievement is locked. */
+  unlockHint: string;
   artKey: AchievementId;
   status: AchievementStatus;
   earnedAt: string | null;

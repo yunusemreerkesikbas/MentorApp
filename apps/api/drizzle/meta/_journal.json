@@ -575,6 +575,13 @@
       "when": 1787004367671,
       "tag": "0081_little_black_widow",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1787090767671,
+      "tag": "0082_notebook_solution",
+      "breakpoints": true
     }
   ]
 }

@@ -30,6 +30,8 @@ function measureImageAspect(url: string): Promise<number> {
 
 interface NotebookAddPanelProps {
   examId: string;
+  /** The mock exam these mistakes came out of, when the student arrived from the analysis screen. */
+  mockExamId: string | null;
   subjects: ExamSubjectDto[];
   topics: ExamTopicDto[];
   /** `aspect` is the uploaded photo's own width/height, null for a text-only mistake. */
@@ -50,6 +52,7 @@ interface NotebookAddPanelProps {
  */
 export function NotebookAddPanel({
   examId,
+  mockExamId,
   subjects,
   topics,
   onCreated,
@@ -57,6 +60,7 @@ export function NotebookAddPanel({
 }: NotebookAddPanelProps) {
   const t = useTranslations("notebook");
   const fileRef = useRef<HTMLInputElement>(null);
+  const solutionFileRef = useRef<HTMLInputElement>(null);
   const reactId = useId();
   const subjectLabelId = `notebook-add-subject-${reactId}`;
   const topicLabelId = `notebook-add-topic-${reactId}`;
@@ -68,6 +72,8 @@ export function NotebookAddPanel({
   const [photo, setPhoto] = useState<{ key: string; url: string; aspect: number | null } | null>(
     null,
   );
+  const [solutionNote, setSolutionNote] = useState("");
+  const [solutionPhoto, setSolutionPhoto] = useState<{ key: string; url: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [prelabelling, setPrelabelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +114,28 @@ export function NotebookAddPanel({
     }
   }
 
+  /**
+   * The answer photo. No pre-labelling pass on this one: vision reads a *question* to guess its
+   * subject, and running it over an answer key would be asking it what the solution says — which
+   * is the line the notebook does not cross (AGENTS.md §4, photo categorises, never solves).
+   */
+  async function handleSolutionFile(file: File | null) {
+    if (!file) return;
+    if (!isSupportedNotebookImage(file)) return setError(t("error_type_unsupported"));
+    if (!isWithinNotebookImageLimit(file)) return setError(t("error_too_big"));
+
+    setError(null);
+    setBusy(true);
+    try {
+      const uploaded = await uploadNotebookImage(file);
+      setSolutionPhoto({ key: uploaded.key, url: uploaded.url });
+    } catch {
+      setError(t("error_upload"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleSubmit() {
     if (!errorType) return;
     setBusy(true);
@@ -115,6 +143,7 @@ export function NotebookAddPanel({
     try {
       const entry = await createNotebookEntry({
         examId,
+        mockExamId,
         source: "OWN",
         storageKey: photo?.key ?? null,
         subjectRef: subjectRef || null,
@@ -122,6 +151,8 @@ export function NotebookAddPanel({
         topicRef: subjectRef ? topicRef : null,
         errorType,
         note: note.trim() || null,
+        solutionStorageKey: solutionPhoto?.key ?? null,
+        solutionNote: solutionNote.trim() || null,
       });
       onCreated(entry, photo?.aspect ?? null);
     } catch {
@@ -262,6 +293,47 @@ export function NotebookAddPanel({
         maxLength={500}
         rows={3}
       />
+
+      {/* The answer, both halves optional. Last on the form on purpose: `errorType` stays the only
+          required field, and a student who does not have the answer key in front of them should be
+          able to file the mistake and walk away. */}
+      <div className="flex flex-col gap-2">
+        {solutionPhoto ? (
+          <div
+            className="relative mx-auto w-full max-w-xs overflow-hidden rounded-[var(--radius-card)]"
+            style={{ aspectRatio: 4 / 3, backgroundColor: "var(--color-surface-container)" }}
+          >
+            <Image src={solutionPhoto.url} alt="" fill className="object-contain" unoptimized />
+          </div>
+        ) : (
+          <NotebookCompactButton
+            variant="secondary"
+            fullWidth
+            disabled={busy}
+            onClick={() => solutionFileRef.current?.click()}
+          >
+            {t("add_solution_photo")}
+          </NotebookCompactButton>
+        )}
+        <input
+          ref={solutionFileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          capture="environment"
+          className="sr-only"
+          onChange={(event) => {
+            void handleSolutionFile(event.target.files?.[0] ?? null);
+            event.target.value = "";
+          }}
+        />
+        <TextAreaField
+          label={t("add_solution_note_label")}
+          value={solutionNote}
+          onChange={(event) => setSolutionNote(event.target.value)}
+          maxLength={500}
+          rows={2}
+        />
+      </div>
 
       <div className="flex gap-2">
         <NotebookCompactButton busy={busy} disabled={!errorType} onClick={() => void handleSubmit()}>

@@ -1,5 +1,5 @@
 "use client";
-import { Users } from "lucide-react";
+import { NotebookPen, Users } from "lucide-react";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -38,6 +38,7 @@ import { ForumImagePicker } from "../../../_components/forum-image-picker";
 import { useForumImagePicker } from "../../../_components/use-forum-image-picker";
 import { SendButton } from "../../../_components/send-button";
 import { BookmarkButton } from "../../../_components/bookmark-button";
+import { NotebookAddDialog } from "./notebook-add-dialog";
 import { useMentionAutocomplete } from "../../../_components/use-mention-autocomplete";
 import { MentionSuggestions } from "../../../_components/mention-suggestions";
 import { EmojiPickerButton } from "../../../_components/EmojiPickerButton";
@@ -62,6 +63,14 @@ export function QuestionShell({ threadId }: { threadId: string }) {
   });
   const { user } = useAuth();
   const [state, setState] = useState<State>({ status: "loading" });
+  /**
+   * "I could not solve this either" — the community end of the notebook bridge. Kept as local
+   * session state rather than read back from the server: the entry the dialog creates is the
+   * student's own row in another bounded context, and re-fetching the whole thread to learn that
+   * they just pressed a button they were standing in front of would be a round trip for nothing.
+   */
+  const [notebookOpen, setNotebookOpen] = useState(false);
+  const [notebookAdded, setNotebookAdded] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -257,6 +266,22 @@ export function QuestionShell({ threadId }: { threadId: string }) {
             publicUrl={sharePublicUrl}
           />
           <BookmarkButton bookmarked={question.myBookmarked} onToggle={onToggleQuestionBookmark} />
+          {/* Beside the bookmark on purpose, and clearly not the same thing: bookmarking keeps a
+              question you liked, this one is the student saying they could not solve it either —
+              which is what puts it on their own weakness map. */}
+          <button
+            type="button"
+            disabled={notebookAdded}
+            onClick={() => setNotebookOpen(true)}
+            className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full px-3 text-xs font-semibold outline-none transition-colors duration-150 hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-default disabled:opacity-60 disabled:hover:bg-transparent motion-reduce:transition-none"
+            style={{
+              color: "var(--color-main)",
+              border: "1px solid color-mix(in srgb, var(--color-main) 15%, transparent)",
+            }}
+          >
+            <NotebookPen aria-hidden size={13} />
+            {notebookAdded ? t("notebook_added") : t("notebook_add_action")}
+          </button>
           <HelpfulButton
             count={question.helpfulVoteCount ?? 0}
             selected={question.myHelpfulVote ?? false}
@@ -330,6 +355,17 @@ export function QuestionShell({ threadId }: { threadId: string }) {
         </div>
       </aside>
       </div>
+
+      {notebookOpen ? (
+        <NotebookAddDialog
+          threadId={threadId}
+          onAdded={() => {
+            setNotebookAdded(true);
+            setNotebookOpen(false);
+          }}
+          onClose={() => setNotebookOpen(false)}
+        />
+      ) : null}
     </main>
   );
 }

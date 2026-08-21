@@ -34,6 +34,7 @@ export function buildAchievementCollection(
       id: definition.id,
       title: input.translate(definition.titleKey),
       description: input.translate(definition.descriptionKey),
+      unlockHint: input.translate(definition.unlockHintKey),
       artKey: definition.artKey,
       status: award ? "EARNED" : "LOCKED",
       earnedAt: award?.earnedAt.toISOString() ?? null,

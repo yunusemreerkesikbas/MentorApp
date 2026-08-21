@@ -261,3 +261,31 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   }));
   expect(sizes.scrollWidth).toBeLessThanOrEqual(sizes.clientWidth);
 }
+
+test("deneme kaydedilince yanlışları deftere taşımayı önerir", async ({
+  page,
+}) => {
+  const api = await mockAnalysisApi(page, {});
+
+  await page.goto("/analiz");
+  await page.getByRole("tab", { name: "Gir" }).click();
+
+  // One subject with wrong answers is enough — the handoff counts them, it does not import them.
+  // `exact` matters: the app sidebar has a "Yanlış defteri" link, and label matching is a
+  // substring match by default.
+  const wrongFields = page.getByLabel("Yanlış", { exact: true });
+  await wrongFields.first().fill("12");
+  await page.getByRole("button", { name: "Kaydet" }).click();
+
+  await expect.poll(() => api.createdMockExams.length).toBe(1);
+
+  // A count and a door, never twelve auto-created cards: the student picks which mistakes are
+  // worth filing, which is the whole reason the review deck can be trusted.
+  await expect(page.getByText(/12 yanlış var/)).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Deftere geç" }),
+  ).toHaveAttribute(
+    "href",
+    "/yanlis-defteri?mockExam=12121212-1212-4121-8121-121212121212",
+  );
+});

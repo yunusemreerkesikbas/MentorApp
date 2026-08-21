@@ -22,8 +22,8 @@ ranked or shown (§3, anti-demoralization).
   `StreakService`, post signals ← forum `ForumService`, XP/leaderboard ← economy `EconomyService`.
 - **Leaderboard = SQL aggregate in economy (owns the ledger), no Redis.** `SUM(amount) WHERE unit='XP'`,
   grouped by user, scoped to the viewer's `examType` cohort, weekly window (Monday 00:00 UTC), top-10
-  + the viewer's own rank. `unit` is hard-filtered to XP so coin/net can never leak into the ranking.
-  *(Redis sorted-set is the Phase-2 real-time upgrade.)*
+  - the viewer's own rank. `unit` is hard-filtered to XP so coin/net can never leak into the ranking.
+    _(Redis sorted-set is the Phase-2 real-time upgrade.)_
 - **Badges = derived read-time, no `Badge` table.** `domain/badges.ts` is a pure function over
   existing signals (streak, forum-post hours, reactions received, join date); the signals are fetched
   through each owner service. Positive framing only.
@@ -59,13 +59,29 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## API
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /v1/community/summary` | Effort board: streak, badges, and (economy-gated) xp/level/weekly leaderboard |
-| `GET /v1/community/leaderboard?window=` | Effort ranking (today / weekly / all_time) |
-| `GET /v1/community/profile/:username` | Public profile header — identity + gamification, no PII (APP-018) |
+| Endpoint                                | Purpose                                                                       |
+| --------------------------------------- | ----------------------------------------------------------------------------- |
+| `GET /v1/community/summary`             | Effort board: streak, badges, and (economy-gated) xp/level/weekly leaderboard |
+| `GET /v1/community/leaderboard?window=` | Effort ranking (today / weekly / all_time)                                    |
+| `GET /v1/community/profile/:username`   | Public profile header — identity + gamification, no PII (APP-018)             |
 
 ## Geliştirmeler (timeline)
+
+- **Kilitli achievement bilgi kartı (2026-08-21)** — Profil koleksiyonundaki sabit katalog sırası
+  korundu; kilitli kartların altındaki inline progress kaldırılarak grid sadeleştirildi. Tüm kilitli
+  kartlar artık info göstergesi taşır ve mevcut detay yüzeyi backend-lokalize `unlockHint` üzerinden
+  “Nasıl kazanılır?” açıklamasını açar; sayısal ilerlemesi olan ritim başarılarında sayaç ve progress
+  yalnız bu detayda gösterilir. Detay yüzeyi odağı içeride tutar, arka sayfa scroll'unu kilitler;
+  `Escape`, dış alan ve kapatma düğmesiyle kapanınca odağı tetikleyici karta geri verir. Asset release
+  gate'i `sharp` ile gerçek piksel alpha'sını, 1024×1024 ölçüyü, 600 KiB bütçeyi ve tam 12 kanonik
+  dosyayı doğrular; alpha bayrağı taşısa bile opak dış zemini reddeder. `first_step` referansı
+  korunarak diğer 11 kanonik asset 1024×1024 şeffaf WebP'e normalize edildi; açık/koyu zeminde
+  incelendi ve kullanılmayan tireli iki eski kopya kaldırıldı.
+  Kullanım: kilitli bir achievement kartına dokun/tıkla. Gotcha: info işareti ayrı bir iç içe buton
+  değildir; kartın tamamı klavye ve dokunma hedefi olarak kalır. İlgili:
+  `achievement-{definitions,collection}.ts`, API `achievements.json`, `packages/types/community.ts`,
+  `achievement-collection.tsx`, `achievement-asset-validator.mjs`, web `messages/{tr,en}.json`,
+  `community-member-profile.spec.ts`.
 
 - **Achievement Sistemi V1 (2026-08-18)** — Kod sahipliğindeki 12 kalıcı başarı, versiyonlu katalog,
   immutable/RLS korumalı `user_achievements`, owner/public görünürlük API'leri, idempotent kutlama
@@ -211,7 +227,7 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   ama 44 px dokunma alanlı kompakt kaldı. Reaction UI tek seçimi boş/dolu kalp ve kutusuz sayaçlarla
   gösterir; seçim değişimi optimistic olarak eski sayıyı azaltıp yenisini artırır. İlgili:
   `community/{[slug],trends}/`, `_components/{community-trend-rail,trend-topic-list,reaction-bar,
-  zone-sidebar}.tsx`, `lib/{forum,forum-reactions}.ts`, `messages/{tr,en}.json`.
+zone-sidebar}.tsx`, `lib/{forum,forum-reactions}.ts`, `messages/{tr,en}.json`.
 
 - **Enerjik kampüs görsel katmanı (2026-07-31)** — İlk parity turundaki sakin/editoryal görünüm,
   öğrenci topluluğunun sosyal enerjisini daha iyi taşıyan içerik-temelli bir dile geliştirildi. Mentor
@@ -251,7 +267,7 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   Upcoming Event, presence/typing/websocket ve forum metnini LLM'e gönderme özellikle eklenmedi.
   Analitik yalnız onay sonrası kimliksiz yapısal enum/count alanları gönderir. İlgili:
   `community/_components/hub-shell.tsx`, `feed/_components/{feed-shell,discovery-feed-card,
-  global-composer}.tsx`, `lib/{forum,analytics}.ts`, `messages/{tr,en}.json`.
+global-composer}.tsx`, `lib/{forum,analytics}.ts`, `messages/{tr,en}.json`.
 - **KVKK silme: sosyal graf (WP-K, 2026-07-22)** — Hesap silmede `user_follows` (iki yön) ve
   `buddy_pairs` (her status, iki taraf) hard delete edilir — kimin kiminle çalıştığı ilişkisel PII.
   `SocialErasureService` identity modülünde yaşar (tabloların sahibi orası); `FollowRepository` /
@@ -269,20 +285,20 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   `t(level_{tier})` ile dinamik okuduğundan kod değişikliği gerekmedi.
 - **Profil bio + web sitesi — `getPublicProfile` enrich (APP-024)** — `PublicProfile` + `getPublicProfile`
   artık `bio`/`website` taşıyor (public-safe kimlik; email yok). Şema/`updateMe`/`AuthUser`/düzenleme formu
-  + community profil header/`ProfileCard` gösterimi identity tarafında: [`identity.md`](./identity.md) *(APP-024)*. *(APP-024)*
+  - community profil header/`ProfileCard` gösterimi identity tarafında: [`identity.md`](./identity.md) _(APP-024)_. _(APP-024)_
 - **Profil header takip alanları — `getPublicProfile` enrich (APP-022)** — Public profil başlığı artık
   `followerCount`/`followingCount`/`isFollowing` taşıyor. `getPublicProfile` `viewerId` alıp identity
   `FollowService`'ten okur (`isSelf` → `isFollowing:false`); sayaçlar okuma-anında COUNT. Takip **grafı
   identity'de** yaşar (community→forum importu var → grafı community'ye koymak Akış feed'i için forum→community
   döngüsü yaratırdı); community yalnız tüketici, saf orkestrasyon korunur. Takip sistemi + Akış feed'i +
-  bildirim forum tarafında: [`forum.md`](./forum.md) *(APP-022)*. *(APP-022)*
+  bildirim forum tarafında: [`forum.md`](./forum.md) _(APP-022)_. _(APP-022)_
 - **Public profil başlığı — `getPublicProfile` (APP-018)** — Forum kullanıcı profil sayfası
   (`/topluluk/uye/[username]`) için `CommunityService.getPublicProfile(username)` +
   `GET /v1/community/profile/:username`. `getSummary`'nin özünü (streak/badges/level/xp) **hedef
   kullanıcı** için, **leaderboard hariç**, + public kimlik (displayName/username/avatar/examType/
   memberSince — **email/PII YOK**) döndürür; banlı/askıya-alınmış/olmayan → 404. Yeni tip `PublicProfile`.
   Kimlik+gamification zaten leaderboard'da public olduğundan tutarlı; §3 effort-only korunur.
-  Aktivite feed'i forum tarafında (bkz. [`forum.md`](./forum.md)). *(APP-018)*
+  Aktivite feed'i forum tarafında (bkz. [`forum.md`](./forum.md)). _(APP-018)_
 - **Leaderboard UX rötuş — "yeni" gürültüsü + boş durum + streak/xp kaldırma (APP-018)** — (1) İlk
   hafta önceki dönem verisi olmadığında her satırda "YENİ" gösterilmesi gürültüydü; yeni domain helper
   `resolveMovement` (null/boş baseline → `movement` null, "new" değil) bunu bastırır — gerçek geçmiş
@@ -290,7 +306,7 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   kaldırıldı (Profil/Panel'de zaten var; sayfada tekrar etmiyor) — rozetler yalnız varsa render olur.
   (3) Boş leaderboard (örn. "Bugün" sekmesi) düz metin yerine sıcak ikonlu boş durum (Trophy + mesaj).
   Test: `resolveMovement` unit (null/boş/gerçek baseline) + e2e movement yapısal kontrole çevrildi
-  (paylaşılan test DB'sinde komşu-pencere verisi deterministik değil). *(APP-018)*
+  (paylaşılan test DB'sinde komşu-pencere verisi deterministik değil). _(APP-018)_
 - **Leaderboard Faz 3 tamamlandı — ▲▼ hareket okları (APP-018)** — Fast-follow kapatıldı. **Snapshot
   tablosu/cron GEREKMEDİ (ponytail):** kapanmış bir dönem sabittir, o yüzden önceki dönemin sıralaması
   **okuma anında** ledger'dan hesaplanır. Yeni `LedgerRepository.xpRanksBetween(examType, since, until)`
@@ -300,7 +316,7 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   (anlamsız). Tip: `RankMovement` + `LeaderboardEntry.movement`. Frontend `MovementIndicator`: ▲ sakin
   yeşil (yeni `--color-success` token), ▼ **mat gri (kırmızı DEĞİL — §4 anti-shaming)**, "yeni" chip,
   "aynı" tire; podyum/senin-durumun/liste. İlk hafta veri yokken herkes "yeni". Test: unit 7/7
-  (`computeMovement`/`previousWindowStart` dahil) + e2e 3/3 (all_time→null, weekly→"new"). *(APP-018)*
+  (`computeMovement`/`previousWindowStart` dahil) + e2e 3/3 (all*time→null, weekly→"new"). *(APP-018)\_
 - **UI/UX polish — badge'ler + creative podyum + token bug fix (APP-018)** — Referans leaderboard'lardan
   ilham. (1) **Seri/XP badge'leri** (`StatSnapshot`, hem sayfa hem drawer): renkli dolu ikon-çipi
   (Seri → altın `--color-star`, XP → mavi `--color-progress`), her ikisinde de koyu ikon (kontrast ≈7:1,
@@ -310,7 +326,7 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   saygılı); mini podyumda statik kompakt kaide. (3) **Bug:** `--color-cta` token'ı hiç tanımlı değildi →
   `color-mix(... var(--color-cta) ...)` geçersiz → senin-durumun/isMe highlight'ları render OLMUYORDU;
   tanımlı `--color-accent` (mavi) ile değiştirildi. Not: `zone-sidebar.tsx` de aynı tanımsız token'ı
-  kullanıyor (pre-existing, ayrı follow-up). Dokunulan dosyalar lint-temiz. *(APP-018)*
+  kullanıyor (pre-existing, ayrı follow-up). Dokunulan dosyalar lint-temiz. _(APP-018)_
 - **UI/UX polish — duplikasyon kaldırma + animasyon (APP-018)** — impeccable + ui-ux-pro-max +
   web-design-guidelines geçişi. (1) **Duplikasyon:** `/topluluk/siralama` sayfası zaten tam leaderboard
   olduğu için sağ companion (EffortBoard aside + `EffortBoardDrawer` trigger) o rotada gizlendi — yeni
@@ -320,7 +336,7 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   (ease-out-quart, `tabular-nums` ile jitter'sız); sekme göstergesi framer-motion `layoutId` ile kayar
   (reduced-motion'da crossfade); sekme değişiminde board `key={activeWindow}` ile fade+stagger replay.
   Lint: dokunulan dosyalar temiz (`useCountUp` setState'i yalnız rAF içinde — `set-state-in-effect`
-  kuralına uygun). *(APP-018)*
+  kuralına uygun). _(APP-018)_
 - **Code-review fix'leri — leaderboard error state'leri (APP-018)** — `/code-review` (code-reviewer +
   senior-architect + ponytail) bulguları kapatıldı: (1) `LeaderboardScreen` summary fetch fail olunca
   "Yükleniyor…" yerine artık `t("error")` gösterir; (2) sekme (Bugün/Tüm zamanlar) fetch'i fail olursa
@@ -329,22 +345,22 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   endpoint'iyle güncellendi. Devnote: repo `docs/devnotes/` kullanmıyor → feature-timeline konvansiyonu
   (bu dosya) geçerli. Açık kalan düşük-öncelik follow-up'lar: `wait-for-port.mjs` soket timeout'u,
   `WindowTabs` klavye ok-navigasyonu (roving tabindex), `MEDAL` sabiti dup'ı, FE yüzdelik hesabının
-  backend'e taşınması. *(APP-018)*
+  backend'e taşınması. _(APP-018)_
 - **Leaderboard Faz 3 — zaman sekmeleri + Europe/Istanbul (APP-018)** — Tam sayfaya Bugün/Hafta/Tüm zamanlar
   sekmeleri. `LeaderboardView.window` tipi `today|weekly|all_time` olarak genişledi. Yeni
   `GET /v1/community/leaderboard?window=` endpoint'i (`CommunityService.getLeaderboard` + paylaşılan
   `buildLeaderboard`); `getSummary` haftalık board'u aynı builder'dan üretir. Pencere sınırları
   `domain/leaderboard-window.ts` → **Europe/Istanbul** (sabit +03:00, DST yok): `windowStart`
-  (today=Istanbul gün başı, weekly=Istanbul Pazartesi, all_time=epoch) + `toWindow` (bilinmeyen→weekly).
+  (today=Istanbul gün başı, weekly=Istanbul Pazartesi, all*time=epoch) + `toWindow` (bilinmeyen→weekly).
   Frontend: segmented `WindowTabs`, pencere-başına lazy fetch + cache (weekly summary'den seed), Istanbul
   reset geri sayımı (all_time'da gizli). Çekmece haftalık kalır (sekme yok). ▲▼ okları hâlâ ertelendi
   (mat gri ▼ tonuyla, fast-follow). Testler: `leaderboard-window.spec` 5/5 (Istanbul gece-yarısı kenar
-  durumu dahil) + community e2e 3/3 (windowed endpoint + garbage→weekly). Orval regen gerekmez. *(APP-018)*
+  durumu dahil) + community e2e 3/3 (windowed endpoint + garbage→weekly). Orval regen gerekmez. *(APP-018)\_
 - **Çekmece mini-podyum + podium arka planı (APP-018)** — Sağ panel/çekmece artık düz liste (`LeaderboardCard`,
   silindi) yerine kompakt `MiniLeaderboard`: top-3 mini podyum + senin-sıran kartı + "Tümünü gör →". Yeni
   tasarım artık tıklamadan panelde görünür. Tam sayfada podyum arkasına AI görseli bağlandı
   (`public/leaderboard/podium-bg.png`, beyaza feather'lı, sakin ton korunur); çekmece hafif kalsın diye
-  sadece CSS gradient kullanır (1.3MB görsel yüklenmez). Follow-up: görseli webp'e çevir. *(APP-018)*
+  sadece CSS gradient kullanır (1.3MB görsel yüklenmez). Follow-up: görseli webp'e çevir. _(APP-018)_
 - **Leaderboard redesign Faz 2 — avatarlar + yüzdelik (APP-018)** — `LeaderboardEntry.avatarUrl` ve
   `LeaderboardView.totalParticipants` eklendi (`packages/types/src/community.ts`). Ledger
   `xpLeaderboardSince` artık `users.avatar_storage_key`'i de join eder (`XpLeaderRow.avatarStorageKey`);
@@ -353,7 +369,7 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   çözer (economy saf kalır; community yalnızca orkestrasyon — tablo dokunmaz). Frontend: podyum/senin-durumun/
   liste gerçek avatar; cesaret bandı "Katılımcıların %X'inden öndesin" (yalnızca ≥%1 → asla "%0"; top-1/3
   kutlama mesajları öncelikli). Orval regen gerekmez (community raw `http<CommunitySummary>` kullanır).
-  Test: community e2e'ye `totalParticipants` + `avatarUrl` assertion'ları (2/2 geçti). *(APP-018)*
+  Test: community e2e'ye `totalParticipants` + `avatarUrl` assertion'ları (2/2 geçti). _(APP-018)_
 - **Leaderboard redesign — tam sayfa `/topluluk/siralama` (Faz 1, APP-018)** — Referans-tabanlı redesign;
   guardrail: efor/XP only, sakin, anti-shaming (koyu gaming DEĞİL, açık marka). Yeni route
   `topluluk/siralama` → `LeaderboardScreen`: haftalık reset geri sayımı (client'ta Pazartesi 00:00 UTC'den
@@ -362,7 +378,7 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   (StatSnapshot/BadgeStrip reuse). Hareket: framer-motion kademeli giriş, `prefers-reduced-motion` saygılı.
   Kompakt panoya (`EffortBoard`) "Tümünü gör →" linki. i18n: `topluluk.rank_*`. Backend YOK (mevcut
   `/community/summary`). Plan: `docs/plans/2026-07-04-leaderboard-redesign-design.md`. Faz 2 (avatar +
-  yüzdelik) ve Faz 3 (sekmeler + ▲▼) ertelendi. *(APP-018)*
+  yüzdelik) ve Faz 3 (sekmeler + ▲▼) ertelendi. _(APP-018)_
 - **Emek Panosu mobil erişimi — sağ çekmece (APP-018)** — Sağ kolon (`EffortBoard`) yalnızca `xl+`'de
   görünüyordu; mobil/tablette hiç erişilemiyordu. Yeni `EffortBoardDrawer` (`xl:hidden`) sol `ZoneDrawer`
   desenini yansıtır: sağ üstte "Sıralama" (Trophy) pill'i, dokununca sağdan kayan panelde profil + XP +
@@ -371,7 +387,7 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   Not: `EmekPanosu`/`EmekDrawer` bileşenleri `EffortBoard`/`EffortBoardDrawer` olarak İngilizceye
   çevrildi (route slug'ları — `topluluk` vb. — Türkçe kalır, onlar URL).
   Gotcha: trigger `fixed top-[3.75rem]` global header altına hizalı, `z-20` (backdrop z-[29], panel
-  z-30). *(APP-018)*
+  z-30). _(APP-018)_
 - **Emek Panosu — sağ kolon efor panosu (APP-017)** — `/topluluk` sağ kolonu statik profil kartından
   canlı bir "emek panosu"na çevrildi. Yeni `community` modülü (`GET /v1/community/summary`): haftalık,
   sınav-tipi bazlı XP leaderboard (SQL toplama, Redis yok — `ledger_entries` üzerinde `unit='XP'`
@@ -382,7 +398,7 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   yazımına XP eklendi (`ThreadPostedListener`, `forum.xp.thread_posted` + günlük cap; idempotent,
   best-effort). Web: `EmekPanosu`/`StatSnapshot`/`BadgeStrip`/`LeaderboardCard` + `lib/community.ts` +
   tr/en i18n. DB migration yok. Testler: badges/level saf fonksiyon specleri, listener spec (cap +
-  idempotent + economy-off), community e2e (zarif küçülme + haftalık sıralama). *(APP-017)*
+  idempotent + economy-off), community e2e (zarif küçülme + haftalık sıralama). _(APP-017)_
 - **Code-review fix — cross-module table access kaldırıldı (APP-017)** — İlk sürümde `community` repo'su
   başka modüllerin tablolarını (`ledger_entries`, `streak_state`, `forum_posts`) doğrudan okuyordu
   (blocking, senior-backend §Modules). Düzeltildi: leaderboard aggregate'i **economy**'ye taşındı
@@ -390,7 +406,7 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   (`StreakService.getCurrentStreak`, yan-etkisiz snapshot), rozet sinyalleri **forum**'a
   (`ForumService.getAuthorActivity`), profil **identity** `UsersService.getMe`. `community.repository.ts`
   silindi; modül artık tablo sahibi değil, sadece public servisleri orkestre ediyor. Service catalog
-  (`api.md §6`) güncellendi. *(APP-017)*
+  (`api.md §6`) güncellendi. _(APP-017)_
 
 - **Yol arkadaşı v1 (2026-07-17)** — Karşılıklı onaylı 1-1 accountability partner: profil sayfasından
   kullanıcı adına istek → karşı taraf /seans'taki buddy kartından kabul eder; tek aktif buddy/kullanıcı.
@@ -480,7 +496,7 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   Kullanım: `/topluluk`; masaüstünde iki kolon, mobilde
   sıralı tek kolon. Gotcha: coin/XP topluluk keşif yüzeyine geri eklenmemeli; kişisel ekonomi kendi
   yüzeyinde kalır. İlgili: `community/{community-parity.css,_components/{hub-shell,zone-sidebar,
-  community-header}.tsx}`, `feed/_components/global-composer.tsx`, `messages/{tr,en}.json`,
+community-header}.tsx}`, `feed/_components/global-composer.tsx`, `messages/{tr,en}.json`,
   `e2e/community-hub.spec.ts`.
   **Ek (2026-08-09):** Hub keşif yüzeyi olarak sadeleştirildi; üstteki yinelenen “Topluluk” başlığı
   ve bağlamsız global “Yeni gönderi” aksiyonu kaldırıldı. Gönderi oluşturma oda/Q&A bağlamında kalır;

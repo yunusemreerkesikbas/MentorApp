@@ -235,3 +235,128 @@ test("parametresiz akışta soru composer'ı kendiliğinden açılmaz", async ({
 
   await expect(page.getByRole("dialog", { name: "Soru paylaş" })).toHaveCount(0);
 });
+
+/**
+ * The other direction of the same bridge: a community question the student also could not solve,
+ * taken into their own notebook. `source: "COMMUNITY"` existed in the schema and the validation
+ * enum from the start and had no caller either — this is the one that gives it one.
+ */
+const QUESTION_THREAD_ID = "88888888-8888-4888-8888-888888888888";
+
+async function mockQuestionApi(page: Page) {
+  const created: Record<string, unknown>[] = [];
+  const pageErrors: string[] = [];
+  page.on("pageerror", (err) => pageErrors.push(err.message));
+
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.route("http://localhost:3001/v1/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    const method = request.method();
+
+    if (method === "OPTIONS") return json(route, null, 204);
+    if (method === "POST" && path === "/v1/auth/refresh") {
+      return json(route, { accessToken: "test-token", expiresIn: 3600, user });
+    }
+    if (method === "GET" && path === "/v1/users/me") return json(route, user);
+    if (method === "GET" && path === "/v1/notifications") {
+      return json(route, {
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 20,
+        unreadCount: 0,
+      });
+    }
+    if (method === "POST" && path === "/v1/notifications/stream-token") {
+      return json(route, { token: "test-stream" });
+    }
+    if (method === "GET" && path === "/v1/notifications/stream") {
+      return route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        headers: corsHeaders,
+        body: "",
+      });
+    }
+    if (method === "GET" && path === "/v1/community/achievements/unseen") {
+      return json(route, { celebrations: [] });
+    }
+
+    // The dialog resolves the current exam only when it opens — this is that pair of requests.
+    if (method === "GET" && path === "/v1/content/exams/by-type/KPSS/calendar") {
+      return json(route, {
+        exam: {
+          id: "11111111-1111-4111-8111-111111111111",
+          slug: "kpss-lisans-2026",
+          name: "KPSS Lisans 2026",
+          family: "KPSS",
+          variant: "LISANS",
+          isCurrent: true,
+        },
+        events: [],
+        daysToExam: 120,
+      });
+    }
+
+    if (method === "GET" && path === `/v1/forum/threads/${QUESTION_THREAD_ID}`) {
+      return json(route, {
+        question: {
+          ...createdThread,
+          id: QUESTION_THREAD_ID,
+          title: "Bu soruda takıldım",
+          body: "Kendi denemem şöyleydi ama sonuca ulaşamadım.",
+          type: "QUESTION",
+          myBookmarked: false,
+          createdAt: "2026-08-20T09:00:00.000Z",
+          attachments: [],
+          tags: [],
+        },
+        answers: [],
+      });
+    }
+    if (method === "GET" && path === "/v1/forum/zones") {
+      return json(route, { items: [qaZone], total: 1, page: 1, pageSize: 100 });
+    }
+    if (method === "GET" && path === `/v1/forum/zones/${qaZone.slug}`) {
+      return json(route, qaZone);
+    }
+
+    if (method === "POST" && path === "/v1/coaching/notebook/entries") {
+      created.push(request.postDataJSON() as Record<string, unknown>);
+      return json(route, { id: "99999999-9999-4999-8999-999999999999" });
+    }
+
+    return json(route, null, 204);
+  });
+
+  return { created, pageErrors };
+}
+
+test("topluluktaki soru 'ben de çözemedim' beyanıyla deftere girer", async ({
+  page,
+}) => {
+  const api = await mockQuestionApi(page);
+
+  await page.goto(`/topluluk/soru/${QUESTION_THREAD_ID}`);
+
+  // Deliberately not one tap: the error type is a real answer, and the copy asks whether they
+  // could solve it rather than offering a filing cabinet — the notebook maps their own gaps.
+  await page.getByRole("button", { name: "Ben de çözemedim" }).click();
+  await page.getByRole("button", { name: "Biliyordum, dikkat hatası" }).click();
+  await page.getByRole("button", { name: "Deftere ekle" }).click();
+
+  await expect.poll(() => api.created.length).toBe(1);
+  expect(api.created[0]).toMatchObject({
+    source: "COMMUNITY",
+    communityThreadId: QUESTION_THREAD_ID,
+    errorType: "CARELESS",
+  });
+
+  // The button stops offering a second copy of the same card.
+  await expect(page.getByRole("button", { name: "Defterinde" })).toBeDisabled();
+  expect(api.pageErrors).toEqual([]);
+});

@@ -84,6 +84,8 @@ export interface NotebookSidePanelProps {
   selectedText: VisionBoardTextItem | null;
   onCreated: (entry: NotebookEntryDto, aspect: number | null) => void;
   onAddSticker: (asset: VisionSticker) => void;
+  /** Set when the student arrived from a just-saved mock exam; stamped onto entries they file. */
+  mockExamId: string | null;
   onSetPaper: (paper: NotebookPaper) => void;
   onPatchText: (patch: Partial<VisionBoardTextItem>) => void;
   onCheckpoint: () => void;
@@ -120,6 +122,7 @@ export function NotebookSidePanel({
   selectedText,
   onCreated,
   onAddSticker,
+  mockExamId,
   onSetPaper,
   onPatchText,
   onCheckpoint,
@@ -241,6 +244,7 @@ export function NotebookSidePanel({
       <Panel>
         <NotebookAddPanel
           examId={exam.id}
+          mockExamId={mockExamId}
           subjects={exam.subjects}
           topics={exam.topics}
           onCreated={onCreated}

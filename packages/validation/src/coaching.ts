@@ -739,6 +739,9 @@ export const createNotebookEntrySchema = z.object({
   topicRef: z.string().trim().min(1).max(120).nullish(),
   errorType: z.enum(NOTEBOOK_ERROR_TYPES),
   note: z.string().trim().max(NOTEBOOK_NOTE_MAX_LENGTH).nullish(),
+  /** The answer, as the student recorded it. Both halves optional and independent of each other. */
+  solutionStorageKey: notebookStorageKeySchema.nullish(),
+  solutionNote: z.string().trim().max(NOTEBOOK_NOTE_MAX_LENGTH).nullish(),
 });
 export type CreateNotebookEntryInput = z.infer<
   typeof createNotebookEntrySchema
@@ -750,6 +753,9 @@ export const updateNotebookEntrySchema = z
     topicRef: z.string().trim().min(1).max(120).nullish(),
     errorType: z.enum(NOTEBOOK_ERROR_TYPES).optional(),
     note: z.string().trim().max(NOTEBOOK_NOTE_MAX_LENGTH).nullish(),
+    /** Patchable during review: the answer is usually learned at the moment the card catches you. */
+    solutionStorageKey: notebookStorageKeySchema.nullish(),
+    solutionNote: z.string().trim().max(NOTEBOOK_NOTE_MAX_LENGTH).nullish(),
     status: z.enum(["ACTIVE", "ARCHIVED"]).optional(),
   })
   .refine((value) => Object.keys(value).length > 0, { message: "empty_patch" });
