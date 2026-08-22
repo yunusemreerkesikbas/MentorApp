@@ -10,6 +10,10 @@ import type { ForumTagView, ThreadView, ZoneView } from "@mentor/types";
 import { createThreadSchema } from "@mentor/validation";
 import { trackCommunityEvent } from "@/lib/analytics";
 import { postThread, suggestForumTag } from "@/lib/forum";
+import {
+  copyForumAttachment,
+  readDisplayedImageSize,
+} from "@/lib/forum-attachments";
 import { AttachmentPreviewStrip } from "../../_components/attachment-preview-strip";
 import { AudienceSelector } from "../../_components/audience-selector";
 import {
@@ -38,12 +42,25 @@ export function QuestionComposerDialog({
   open,
   zones,
   tags,
+  handoff,
   onClose,
   onCreated,
 }: {
   open: boolean;
   zones: ZoneView[];
   tags: ForumTagView[];
+  /**
+   * Set when the student arrived from a card in their mistake notebook.
+   *
+   * The composer knows nothing about notebooks and is not about to learn: it takes two finished
+   * strings and shows them. Where they came from, and the linking that happens after the thread
+   * exists, stay entirely on the caller's side.
+   */
+  handoff?: {
+    label: string;
+    errorTypeLabel: string;
+    photo?: { storageKey: string; url: string };
+  } | null;
   onClose: () => void;
   /**
    * Reports the thread that was just created, not merely that one was. The mistake notebook hands a
@@ -62,6 +79,7 @@ export function QuestionComposerDialog({
     error: attachmentError,
     setError: setAttachmentError,
     addFiles,
+    addReady,
     removeAt,
     uploadAll,
     reset,
@@ -69,12 +87,47 @@ export function QuestionComposerDialog({
     atLimit,
   } = useForumImagePicker();
   const [zoneId, setZoneId] = useState("");
-  const [title, setTitle] = useState("");
+  /**
+   * Seeded from the card the student came in on.
+   *
+   * The handoff used to carry nothing but an id, so pressing "topluluğa sor" landed them on an empty
+   * form with no sign of which card they were asking about. `handoff.label` is already "Ders · Konu"
+   * — a start, not a question, which is why only the title is seeded and the body is left alone: a
+   * pre-written body is a body that gets published unread. Initial state rather than an effect; the
+   * caller remounts this dialog when a handoff arrives.
+   */
+  const [title, setTitle] = useState(handoff?.label ?? "");
   const [body, setBody] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  /**
+   * The notebook photo, once. Copied server-side rather than uploaded: the bytes are already in the
+   * store, and the browser cannot read them from the source origin anyway.
+   */
+  const [photoAdded, setPhotoAdded] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+
+  const attachNotebookPhoto = async () => {
+    const photo = handoff?.photo;
+    if (!photo || photoBusy) return;
+    setPhotoBusy(true);
+    setAttachmentError(null);
+    try {
+      const size = await readDisplayedImageSize(photo.url);
+      const attachment = await copyForumAttachment({
+        sourceKey: photo.storageKey,
+        ...size,
+      });
+      // Marked added only if the picker took it — at the limit it refuses and says why.
+      if (addReady(attachment, photo.url)) setPhotoAdded(true);
+    } catch {
+      setAttachmentError(t("attach_failed"));
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -90,13 +143,17 @@ export function QuestionComposerDialog({
           setPreviewImageUrl(null);
           return;
         }
-        if ((event.target as Element | null)?.closest("[role='listbox']")) return;
+        if ((event.target as Element | null)?.closest("[role='listbox']"))
+          return;
         event.preventDefault();
         onClose();
       }
       if (event.key !== "Tab") return;
       const focusable = Array.from(
-        (previewImageUrl ? previewRef.current : panelRef.current)?.querySelectorAll<HTMLElement>(
+        (previewImageUrl
+          ? previewRef.current
+          : panelRef.current
+        )?.querySelectorAll<HTMLElement>(
           "button:not([disabled]), input:not([disabled]), [contenteditable='true'], a[href]",
         ) ?? [],
       );
@@ -193,9 +250,15 @@ export function QuestionComposerDialog({
         aria-labelledby={titleId}
         className="flex max-h-[94dvh] w-full flex-col overflow-hidden rounded-t-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] sm:max-w-2xl sm:rounded-[var(--radius-card)]"
       >
-        <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-[var(--color-border)] sm:hidden" aria-hidden />
+        <div
+          className="mx-auto mt-2 h-1 w-10 rounded-full bg-[var(--color-border)] sm:hidden"
+          aria-hidden
+        />
         <header className="flex min-h-14 items-center justify-between border-b border-[var(--color-border)] px-4 sm:px-5">
-          <h2 id={titleId} className="text-lg font-extrabold text-[var(--color-main)]">
+          <h2
+            id={titleId}
+            className="text-lg font-extrabold text-[var(--color-main)]"
+          >
             {t("question_dialog_title")}
           </h2>
           <button
@@ -211,6 +274,55 @@ export function QuestionComposerDialog({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
           <div className="space-y-5">
+            {/* Above the audience picker, because it answers the question the student is asking
+                themselves at that moment: why am I looking at this form? The second line is the
+                part that was genuinely missing — the link to the card is made after the thread is
+                posted, and until now the only sign of it was a toast that arrived afterwards. */}
+            {handoff ? (
+              <div
+                className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-soft)] px-3 py-2.5"
+                style={{ borderLeft: "3px solid var(--color-accent)" }}
+              >
+                <p className="text-xs font-bold text-[var(--color-secondary)]">
+                  {t("notebook_handoff_title")}
+                </p>
+                <p className="text-sm font-bold text-[var(--color-main)]">
+                  {handoff.label}
+                  <span className="font-semibold text-[var(--color-secondary)]">
+                    {" · "}
+                    {handoff.errorTypeLabel}
+                  </span>
+                </p>
+                <p className="mt-0.5 text-xs text-[var(--color-secondary)]">
+                  {t("notebook_handoff_hint")}
+                </p>
+
+                {/* A button, not an automatic attachment. The photo on a notebook card is usually a
+                    page out of somebody's book — the notebook warns about exactly that before it
+                    sends anyone here — and putting copyrighted material into a public post by
+                    default is not a decision this dialog gets to make on the student's behalf.
+                    The thumbnail is there so they can see what they are about to publish. */}
+                {handoff.photo && !photoAdded ? (
+                  <button
+                    type="button"
+                    disabled={busy || photoBusy || atLimit}
+                    onClick={() => void attachNotebookPhoto()}
+                    className="mt-2 flex items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] py-1.5 pl-1.5 pr-3 text-xs font-bold text-[var(--color-main)] transition-colors duration-150 hover:bg-[var(--color-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-50 motion-reduce:transition-none"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={handoff.photo.url}
+                      alt=""
+                      className="size-8 rounded-[calc(var(--radius-card)-4px)] object-cover"
+                    />
+                    {photoBusy
+                      ? t("notebook_handoff_photo_busy")
+                      : t("notebook_handoff_photo_add")}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
             <div>
               <p className="mb-1.5 text-sm font-bold text-[var(--color-main)]">
                 {t("question_audience")}
@@ -244,7 +356,11 @@ export function QuestionComposerDialog({
               <p className="mb-1.5 text-sm font-bold text-[var(--color-main)]">
                 {t("question_content_label")}
               </p>
-              <QuestionRichTextEditor value={body} onChange={setBody} disabled={busy} />
+              <QuestionRichTextEditor
+                value={body}
+                onChange={setBody}
+                disabled={busy}
+              />
               <p className="mt-1 text-right text-xs text-[var(--color-secondary)]">
                 {body.length}/4000
               </p>
@@ -284,7 +400,10 @@ export function QuestionComposerDialog({
             </div>
 
             {error || attachmentError ? (
-              <p role="alert" className="text-sm font-medium text-[var(--color-error)]">
+              <p
+                role="alert"
+                className="text-sm font-medium text-[var(--color-error)]"
+              >
                 {error ?? attachmentError}
               </p>
             ) : null}
@@ -294,7 +413,9 @@ export function QuestionComposerDialog({
         <footer className="flex justify-end border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 sm:px-5">
           <button
             type="button"
-            disabled={busy || !selectedZone || title.trim().length < 5 || !plainBody}
+            disabled={
+              busy || !selectedZone || title.trim().length < 5 || !plainBody
+            }
             onClick={() => void submit()}
             className="min-h-11 rounded-full bg-[var(--color-btn)] px-6 text-sm font-bold text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -352,7 +473,9 @@ function QuestionTagSelector({
   const t = useTranslations("community");
   const [query, setQuery] = useState("");
   const [suggesting, setSuggesting] = useState(false);
-  const [suggestionMessage, setSuggestionMessage] = useState<string | null>(null);
+  const [suggestionMessage, setSuggestionMessage] = useState<string | null>(
+    null,
+  );
   const filteredTags = useMemo(() => {
     const selected = new Set(selectedIds);
     const selectedFirst = [
@@ -369,7 +492,9 @@ function QuestionTagSelector({
     setSuggestionMessage(null);
     try {
       const suggestion = await suggestForumTag(suggestionName);
-      setSuggestionMessage(t("question_tag_suggested", { tag: suggestion.normalizedSlug }));
+      setSuggestionMessage(
+        t("question_tag_suggested", { tag: suggestion.normalizedSlug }),
+      );
     } catch (suggestionError) {
       setSuggestionMessage(
         suggestionError instanceof ApiClientError
@@ -390,7 +515,11 @@ function QuestionTagSelector({
         {t("question_tags_hint")}
       </p>
       <label className="mt-2 flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] px-3 focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)]">
-        <Search size={16} className="shrink-0 text-[var(--color-secondary)]" aria-hidden />
+        <Search
+          size={16}
+          className="shrink-0 text-[var(--color-secondary)]"
+          aria-hidden
+        />
         <span className="sr-only">{t("question_tag_search")}</span>
         <input
           value={query}
@@ -399,7 +528,10 @@ function QuestionTagSelector({
           className="min-w-0 flex-1 bg-transparent text-sm text-[var(--color-main)] outline-none placeholder:text-[var(--color-secondary)]"
         />
       </label>
-      <div className="mt-2 flex max-h-32 flex-wrap gap-2 overflow-y-auto" aria-live="polite">
+      <div
+        className="mt-2 flex max-h-32 flex-wrap gap-2 overflow-y-auto"
+        aria-live="polite"
+      >
         {filteredTags.map((tag) => {
           const selected = selectedIds.includes(tag.id);
           const limitReached = selectedIds.length >= QUESTION_TAG_LIMIT;

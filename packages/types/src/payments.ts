@@ -33,7 +33,10 @@ export interface SubscriptionDto {
   id: string;
   planId: string;
   status: SubscriptionStatus;
+  /** Subscription row createdAt — first checkout. */
+  startedAt: string;
   trialEndsAt: string | null;
+  currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
 }

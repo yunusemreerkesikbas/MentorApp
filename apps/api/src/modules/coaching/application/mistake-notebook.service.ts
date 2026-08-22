@@ -25,10 +25,16 @@ import {
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
+import {
+  STORAGE_PORT,
+  type StoragePort,
+} from "../../../shared/ports/storage.port";
 import { ContentService } from "../../content/application/content.service";
 import { advanceReview, firstReviewAt } from "../domain/notebook-review.policy";
-import { CoachingEventTopic, NotebookEntryReviewed } from "../domain/coaching.events";
+import {
+  CoachingEventTopic,
+  NotebookEntryReviewed,
+} from "../domain/coaching.events";
 import {
   MistakeNotebookRepository,
   type MistakeNotebookEntryRow,
@@ -183,7 +189,10 @@ export class MistakeNotebookService {
    * and `getPublicUrl` would happily hand it back on every read. Both photo columns go through it;
    * the solution key was the one added later, which is how a check like this gets skipped.
    */
-  private assertOwnStorageKey(userId: string, key: string | null | undefined): void {
+  private assertOwnStorageKey(
+    userId: string,
+    key: string | null | undefined,
+  ): void {
     if (key && !key.startsWith(`${NOTEBOOK_PREFIX}${userId}/`)) {
       throw new ValidationFailedError({ reason: "foreign_storage_key" });
     }
@@ -195,7 +204,11 @@ export class MistakeNotebookService {
   ): Promise<NotebookEntryDto> {
     this.assertOwnStorageKey(userId, input.storageKey);
     this.assertOwnStorageKey(userId, input.solutionStorageKey);
-    await this.assertLabelsBelongToExam(input.examId, input.subjectRef, input.topicRef);
+    await this.assertLabelsBelongToExam(
+      input.examId,
+      input.subjectRef,
+      input.topicRef,
+    );
 
     const row = await withUserContext(this.db, { userId }, (tx) =>
       this.notebook.createEntry(tx, userId, {
@@ -248,7 +261,8 @@ export class MistakeNotebookService {
   ): Promise<NotebookEntryDto> {
     const row = await withUserContext(this.db, { userId }, async (tx) => {
       const existing = await this.notebook.findEntry(tx, userId, entryId);
-      if (!existing) throw new NotFoundError({ reason: "notebook_entry_missing" });
+      if (!existing)
+        throw new NotFoundError({ reason: "notebook_entry_missing" });
 
       // Labels are validated against the entry's own exam, not the request's: a patch never moves
       // an entry between exams, so the taxonomy it must satisfy is already fixed.
@@ -263,9 +277,15 @@ export class MistakeNotebookService {
       this.assertOwnStorageKey(userId, patch.solutionStorageKey);
 
       const updated = await this.notebook.updateEntry(tx, userId, entryId, {
-        ...(patch.subjectRef !== undefined ? { subjectRef: patch.subjectRef ?? null } : {}),
-        ...(patch.topicRef !== undefined ? { topicRef: patch.topicRef ?? null } : {}),
-        ...(patch.errorType !== undefined ? { errorType: patch.errorType } : {}),
+        ...(patch.subjectRef !== undefined
+          ? { subjectRef: patch.subjectRef ?? null }
+          : {}),
+        ...(patch.topicRef !== undefined
+          ? { topicRef: patch.topicRef ?? null }
+          : {}),
+        ...(patch.errorType !== undefined
+          ? { errorType: patch.errorType }
+          : {}),
         ...(patch.note !== undefined
           ? { note: patch.note?.trim() ? patch.note.trim() : null }
           : {}),
@@ -279,9 +299,32 @@ export class MistakeNotebookService {
                 : null,
             }
           : {}),
-        ...(patch.status !== undefined ? { status: patch.status } : {}),
+        ...(patch.status !== undefined && patch.status !== existing.status
+          ? {
+              status: patch.status,
+              /*
+               * Status and schedule move together, or neither means anything.
+               *
+               * The write schema has always accepted this field and the service has always written
+               * it straight through, leaving `nextReviewAt` alone — so archiving a card left it in
+               * the due scan (which reads the date, never the status) and reactivating a healed one
+               * left it with no date at all, quietly doing nothing. The DTO's own comment promised
+               * the opposite. This is that promise, kept.
+               *
+               * Coming back starts the ladder over rather than resuming it: the ladder's whole
+               * premise is uninterrupted spacing, and a card that sat outside the rotation for an
+               * unknown stretch has none. A student re-adding a healed card is saying they no
+               * longer trust it — with the count left at three, their first correct answer would
+               * heal it again on the spot.
+               */
+              ...(patch.status === "ARCHIVED"
+                ? { nextReviewAt: null }
+                : { nextReviewAt: firstReviewAt(), reviewCount: 0 }),
+            }
+          : {}),
       });
-      if (!updated) throw new NotFoundError({ reason: "notebook_entry_missing" });
+      if (!updated)
+        throw new NotFoundError({ reason: "notebook_entry_missing" });
       return updated;
     });
     const [dto] = await this.toEntryDtos([row]);
@@ -305,8 +348,14 @@ export class MistakeNotebookService {
     threadId: string,
   ): Promise<NotebookEntryDto> {
     const row = await withUserContext(this.db, { userId }, async (tx) => {
-      const linked = await this.notebook.linkThread(tx, userId, entryId, threadId);
-      if (!linked) throw new NotFoundError({ reason: "notebook_entry_missing" });
+      const linked = await this.notebook.linkThread(
+        tx,
+        userId,
+        entryId,
+        threadId,
+      );
+      if (!linked)
+        throw new NotFoundError({ reason: "notebook_entry_missing" });
       return linked;
     });
     const [dto] = await this.toEntryDtos([row]);
@@ -317,7 +366,10 @@ export class MistakeNotebookService {
    * An answer was accepted on a thread somebody linked. Called by the forum-event listener, which
    * knows a thread but not whose notebook it belongs to — so this runs in SERVICE context.
    */
-  async markCommunityAnswered(threadId: string, answeredAt: Date): Promise<number> {
+  async markCommunityAnswered(
+    threadId: string,
+    answeredAt: Date,
+  ): Promise<number> {
     return withServiceContext(this.db, (tx) =>
       this.notebook.markThreadAnswered(tx, threadId, answeredAt),
     );
@@ -332,7 +384,8 @@ export class MistakeNotebookService {
     const now = new Date();
     const row = await withUserContext(this.db, { userId }, async (tx) => {
       const existing = await this.notebook.findEntry(tx, userId, entryId);
-      if (!existing) throw new NotFoundError({ reason: "notebook_entry_missing" });
+      if (!existing)
+        throw new NotFoundError({ reason: "notebook_entry_missing" });
       const outcome = advanceReview(existing.reviewCount, solved, now);
       const updated = await this.notebook.recordReview(
         tx,
@@ -341,7 +394,8 @@ export class MistakeNotebookService {
         outcome,
         now,
       );
-      if (!updated) throw new NotFoundError({ reason: "notebook_entry_missing" });
+      if (!updated)
+        throw new NotFoundError({ reason: "notebook_entry_missing" });
       return updated;
     });
     const [dto] = await this.toEntryDtos([row]);
@@ -449,7 +503,8 @@ export class MistakeNotebookService {
   ): Promise<void> {
     if (!subjectRef) {
       // A topic without its subject has nothing to hang from; the pair is set together or not set.
-      if (topicRef) throw new ValidationFailedError({ reason: "topic_without_subject" });
+      if (topicRef)
+        throw new ValidationFailedError({ reason: "topic_without_subject" });
       return;
     }
     const subjects = await this.content.getValidSubjectSlugsForExam(examId);
@@ -461,7 +516,8 @@ export class MistakeNotebookService {
     const known = topics.some(
       (topic) => topic.subjectSlug === subjectRef && topic.slug === topicRef,
     );
-    if (!known) throw new ValidationFailedError({ reason: "unknown_topic_ref" });
+    if (!known)
+      throw new ValidationFailedError({ reason: "unknown_topic_ref" });
   }
 
   /**
@@ -500,7 +556,8 @@ export class MistakeNotebookService {
         row.subjectRef && row.topicRef
           ? taxonomy?.topics.find(
               (item) =>
-                item.subjectSlug === row.subjectRef && item.slug === row.topicRef,
+                item.subjectSlug === row.subjectRef &&
+                item.slug === row.topicRef,
             )
           : undefined;
       return {

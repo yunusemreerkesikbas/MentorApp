@@ -19,7 +19,17 @@ const RemoveButton = ({
     onClick={onClick}
     className={`${prominent ? "h-8 w-8 bg-black/70 hover:bg-black/85" : "h-5 w-5 bg-black/55 hover:bg-black/70"} flex flex-shrink-0 items-center justify-center rounded-full text-white transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black/70 motion-reduce:transition-none`}
   >
-    <svg width={prominent ? 16 : 12} height={prominent ? 16 : 12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width={prominent ? 16 : 12}
+      height={prominent ? 16 : 12}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
@@ -35,7 +45,8 @@ export function AttachmentPreviewStrip({
 }: {
   items: PickedAttachment[];
   onRemove: (idx: number) => void;
-  onPreviewImage?: (image: Extract<PickedAttachment, { kind: "image" }>) => void;
+  /** Any attachment with a preview URL — a locally picked image, or one already in storage. */
+  onPreviewImage?: (image: Extract<PickedAttachment, { url: string }>) => void;
   layout?: "strip" | "compact" | "media";
 }) {
   const t = useTranslations("community");
@@ -51,13 +62,15 @@ export function AttachmentPreviewStrip({
             : "mt-2 flex flex-wrap gap-2"
       }
     >
+      {/* `!== "file"` rather than `=== "image"`: an attachment copied from the notebook has a URL
+          and no `File`, and the branch below reads `p.file` — it would render a crash, not a chip. */}
       {items.map((p, i) =>
-        p.kind === "image" ? (
+        p.kind !== "file" ? (
           <div
             key={p.url}
             className={
               layout === "media"
-                ? `relative min-h-48 overflow-hidden bg-[var(--color-surface-container)] ${items.filter((item) => item.kind === "image").length === 1 ? "col-span-2 aspect-[16/9]" : "aspect-square"}`
+                ? `relative min-h-48 overflow-hidden bg-[var(--color-surface-container)] ${items.filter((item) => item.kind !== "file").length === 1 ? "col-span-2 aspect-[16/9]" : "aspect-square"}`
                 : layout === "compact"
                   ? "relative aspect-square overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface-container)]"
                   : "relative h-16 w-16 overflow-hidden rounded-[var(--radius-card)]"
@@ -73,13 +86,19 @@ export function AttachmentPreviewStrip({
               >
                 {/* Local object-URL preview (not next/image — it's a client blob). */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.url} alt="" className="h-full w-full object-cover" />
+                <img
+                  src={p.url}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
               </button>
             ) : (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={p.url} alt="" className="h-full w-full object-cover" />
             )}
-            <span className={`${layout === "media" ? "right-2 top-2" : layout === "compact" ? "right-1 top-1" : "right-0.5 top-0.5"} absolute z-10`}>
+            <span
+              className={`${layout === "media" ? "right-2 top-2" : layout === "compact" ? "right-1 top-1" : "right-0.5 top-0.5"} absolute z-10`}
+            >
               <RemoveButton
                 label={t("attach_remove")}
                 onClick={() => onRemove(i)}
@@ -91,21 +110,44 @@ export function AttachmentPreviewStrip({
           <div
             key={`file-${i}`}
             className={`${layout === "compact" ? "col-span-3 sm:col-span-4" : ""} flex max-w-full items-center gap-2 rounded-[var(--radius-card)] px-2.5 py-2`}
-            style={{ border: "1px solid var(--color-border)", background: "color-mix(in srgb, var(--color-main) 2%, transparent)" }}
+            style={{
+              border: "1px solid var(--color-border)",
+              background:
+                "color-mix(in srgb, var(--color-main) 2%, transparent)",
+            }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--color-secondary)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
             </svg>
             <span className="min-w-0">
-              <span className="block max-w-[160px] truncate text-[12px] font-medium" style={{ color: "var(--color-main)" }}>
+              <span
+                className="block max-w-[160px] truncate text-[12px] font-medium"
+                style={{ color: "var(--color-main)" }}
+              >
                 {p.file.name}
               </span>
-              <span className="block text-[11px]" style={{ color: "var(--color-secondary)" }}>
+              <span
+                className="block text-[11px]"
+                style={{ color: "var(--color-secondary)" }}
+              >
                 {formatBytes(p.file.size)}
               </span>
             </span>
-            <RemoveButton label={t("attach_remove")} onClick={() => onRemove(i)} />
+            <RemoveButton
+              label={t("attach_remove")}
+              onClick={() => onRemove(i)}
+            />
           </div>
         ),
       )}

@@ -48,7 +48,9 @@ export function NotebookEntryEditDialog({
   const subjectLabelId = `notebook-edit-subject-${reactId}`;
   const topicLabelId = `notebook-edit-topic-${reactId}`;
 
-  const [errorType, setErrorType] = useState<NotebookErrorType>(entry.errorType);
+  const [errorType, setErrorType] = useState<NotebookErrorType>(
+    entry.errorType,
+  );
   const [subjectRef, setSubjectRef] = useState(entry.subjectRef ?? "");
   const [topicRef, setTopicRef] = useState<string | null>(entry.topicRef);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -69,6 +71,28 @@ export function NotebookEntryEditDialog({
         // A topic is meaningless without its subject, and the service validates the pair against
         // the entry's own exam — sending one alone is a guaranteed rejection.
         topicRef: subjectRef ? topicRef : null,
+      });
+      onSaved(updated);
+    } catch {
+      setError(t("error_save"));
+      setBusy(false);
+    }
+  }
+
+  /**
+   * Put the card into the review rotation, or take it out — without touching anything else about it.
+   *
+   * A separate call from `save()` on purpose: this one is not a form the student is filling in, it
+   * is a switch with an immediate consequence, and rolling it into "kaydet" would make an unrelated
+   * label edit silently reschedule the card. The server owns what the schedule becomes; sending the
+   * status is the whole request.
+   */
+  async function setInRotation(inRotation: boolean) {
+    setBusy(true);
+    setError(null);
+    try {
+      const updated = await updateNotebookEntry(entry.id, {
+        status: inRotation ? "ACTIVE" : "ARCHIVED",
       });
       onSaved(updated);
     } catch {
@@ -102,7 +126,8 @@ export function NotebookEntryEditDialog({
         style={{
           maxHeight: "85vh",
           background: "var(--color-surface)",
-          border: "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
+          border:
+            "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
           boxShadow: "var(--shadow-card)",
         }}
         onClick={(event) => event.stopPropagation()}
@@ -129,8 +154,12 @@ export function NotebookEntryEditDialog({
                   onClick={() => setErrorType(type)}
                   className="inline-flex min-h-9 cursor-pointer items-center rounded-full px-3 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
                   style={{
-                    color: selected ? "var(--color-btn-label)" : "var(--color-main)",
-                    backgroundColor: selected ? "var(--color-btn)" : "transparent",
+                    color: selected
+                      ? "var(--color-btn-label)"
+                      : "var(--color-main)",
+                    backgroundColor: selected
+                      ? "var(--color-btn)"
+                      : "transparent",
                     border: selected
                       ? "1px solid var(--color-btn)"
                       : "1px solid color-mix(in srgb, var(--color-main) 15%, transparent)",
@@ -206,6 +235,45 @@ export function NotebookEntryEditDialog({
           </NotebookCompactButton>
         </div>
 
+        {/* Between saving and deleting, because that is what it is between: an edit that changes
+            nothing about the card, and one that ends it. Taking a card out of the rotation keeps
+            everything — photo, notes, solution, the thread it was asked in — it only stops the
+            card coming round. */}
+        <div
+          className="flex flex-col gap-2 pt-2"
+          style={{
+            borderTop:
+              "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
+          }}
+        >
+          <span
+            className="text-xs font-bold"
+            style={{ color: "var(--color-secondary)" }}
+          >
+            {t("entry_rotation_title")}
+          </span>
+          <p className="text-sm" style={{ color: "var(--color-body)" }}>
+            {entry.status === "ACTIVE"
+              ? t("entry_rotation_in")
+              : entry.status === "HEALED"
+                ? t("entry_rotation_healed")
+                : t("entry_rotation_out")}
+          </p>
+          <NotebookCompactButton
+            variant="secondary"
+            busy={busy}
+            onClick={() => void setInRotation(entry.status !== "ACTIVE")}
+          >
+            {entry.status === "ACTIVE"
+              ? t("entry_rotation_remove")
+              : entry.status === "HEALED"
+                ? // Not "geri ekle": nothing is being undone. A healed card comes back at the
+                  // bottom of the ladder, which is a decision to study it again.
+                  t("entry_rotation_restudy")
+                : t("entry_rotation_add")}
+          </NotebookCompactButton>
+        </div>
+
         {/* Below the save row and behind a confirm: deleting takes the photo down with the entry,
             and there is no undo for either. */}
         <div
@@ -221,7 +289,10 @@ export function NotebookEntryEditDialog({
                 {t("entry_delete_confirm")}
               </p>
               <div className="flex gap-2">
-                <NotebookCompactButton busy={busy} onClick={() => void remove()}>
+                <NotebookCompactButton
+                  busy={busy}
+                  onClick={() => void remove()}
+                >
                   {t("entry_delete")}
                 </NotebookCompactButton>
                 <NotebookCompactButton

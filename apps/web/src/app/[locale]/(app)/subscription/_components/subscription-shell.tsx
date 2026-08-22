@@ -12,8 +12,7 @@ import {
   subscriptionsControllerGetMine,
   subscriptionsControllerListPlans,
 } from "@mentor/api-client";
-import { Button, Card, Chip, SectionHeading } from "@mentor/ui";
-import { Link } from "@/i18n/navigation";
+import { Button, Card, Chip } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
 import { useMentorDialog } from "@/lib/mentor-dialog";
@@ -22,6 +21,36 @@ import {
   COACH_RETURN_TO_STORAGE_KEY,
   safeInternalReturnTo,
 } from "@/lib/community-coach-bridge";
+import { SubscriptionContentSkeleton } from "./subscription-content-skeleton";
+import {
+  listSubscriptionFacts,
+  subscriptionStatusKey,
+  type SubscriptionFact,
+  type SubscriptionFactId,
+} from "./subscription-facts";
+
+const FACT_LABEL: Record<
+  SubscriptionFactId,
+  | "row_price"
+  | "row_billing"
+  | "row_started"
+  | "row_trial_ends"
+  | "row_period_start"
+  | "row_next_renewal"
+  | "row_access_ends"
+  | "row_renewal"
+> = {
+  price: "row_price",
+  billing: "row_billing",
+  started: "row_started",
+  trial_ends: "row_trial_ends",
+  period_start: "row_period_start",
+  next_renewal: "row_next_renewal",
+  access_ends: "row_access_ends",
+  renewal: "row_renewal",
+};
+
+const compactButtonClass = "!min-h-11 !px-4 !py-2 !text-sm";
 
 /** VAT-inclusive display (server sends minor units; this is pure display shaping). */
 function formatPrice(minor: number, locale: string): string {
@@ -31,12 +60,18 @@ function formatPrice(minor: number, locale: string): string {
   });
 }
 
+function formatDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale === "en" ? "en-GB" : "tr-TR", {
+    dateStyle: "long",
+  });
+}
+
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "ready"; plans: PlanDto[]; view: SubscriptionView };
 
-/** Subscription hub — status, trial consent (§7), plan catalog, cancel. */
+/** Subscription hub — facts list, trial consent (§7), plan catalog, cancel. */
 export function SubscriptionShell() {
   const reduceMotion = useReducedMotion();
   const t = useTranslations("subscription");
@@ -171,11 +206,7 @@ export function SubscriptionShell() {
       };
 
   if (loadState.status === "loading") {
-    return (
-      <main className="mx-auto flex min-h-[40vh] w-full max-w-2xl items-center justify-center px-5 py-10">
-        <p style={{ color: "var(--color-secondary)" }}>{t("loading")}</p>
-      </main>
-    );
+    return <SubscriptionContentSkeleton label={t("loading")} />;
   }
 
   if (loadState.status === "error") {
@@ -191,78 +222,112 @@ export function SubscriptionShell() {
   const ent = view?.entitlement;
   const sub = view?.subscription;
   const hasOpenSub = Boolean(sub);
+  const plan = sub ? (plans.find((item) => item.id === sub.planId) ?? null) : null;
+  const facts = listSubscriptionFacts({
+    entitlement: ent,
+    subscription: sub,
+    plan,
+  });
+  const reason = ent?.reason ?? "NONE";
+  const heroTitle = plan?.name ?? (ent?.isPremium ? t("chip_premium") : t("chip_free"));
+  const canCancel = hasOpenSub && !sub?.cancelAtPeriodEnd;
+  const showSummary = facts.length > 0 || canCancel || reason !== "NONE";
+
+  function factValue(fact: SubscriptionFact): string {
+    switch (fact.id) {
+      case "price":
+        return fact.priceMinor == null ? "—" : formatPrice(fact.priceMinor, locale);
+      case "billing":
+        return fact.periodMonths === 1
+          ? t("billing_monthly")
+          : t("billing_months", { months: fact.periodMonths ?? 0 });
+      case "started":
+      case "trial_ends":
+      case "period_start":
+      case "next_renewal":
+      case "access_ends":
+        return fact.iso ? formatDate(fact.iso, locale) : "—";
+      case "renewal":
+        return fact.renewal === "stops" ? t("renewal_stops") : t("renewal_auto");
+    }
+  }
 
   return (
     <main className="mx-auto w-full max-w-2xl px-5 py-8 lg:px-8 lg:py-10">
-      <motion.header className="mb-6" {...headerMotion}>
-        <h1
-          className="text-3xl font-bold"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          {t("title")}
-        </h1>
-        <p
-          className="mt-1 text-base"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {t(purchaseEnabled ? "subtitle" : "subtitle_disabled")}
-        </p>
-      </motion.header>
+      <h1 className="sr-only">{t("title")}</h1>
 
-      <motion.div className="flex flex-col gap-6" {...gridMotion}>
+      <motion.div className="flex flex-col gap-6" {...headerMotion} {...gridMotion}>
+        {showSummary ? (
         <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
           <Card>
-            <SectionHeading
-              as="h2"
-              subtitle={ent?.isPremium ? t("status_premium") : t("status_free")}
-            >
-              {t("status_title")}
-            </SectionHeading>
-            <div className="mt-4 flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <Chip>
-                  {ent?.isPremium ? t("chip_premium") : t("chip_free")}
-                </Chip>
-                {sub?.cancelAtPeriodEnd ? (
-                  <Chip>{t("chip_cancel")}</Chip>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p
+                  className="text-balance text-lg font-bold"
+                  style={{
+                    color: "var(--color-main)",
+                    fontFamily: "var(--font-heading)",
+                  }}
+                >
+                  {heroTitle}
+                </p>
+                {plan ? (
+                  <p
+                    className="mt-1 text-2xl font-bold tabular-nums"
+                    style={{ color: "var(--color-main)" }}
+                  >
+                    {formatPrice(plan.priceMinor, locale)}
+                    <span
+                      className="text-sm font-normal"
+                      style={{ color: "var(--color-secondary)" }}
+                    >
+                      {" "}
+                      {t("period_suffix", { months: plan.periodMonths })}
+                    </span>
+                  </p>
                 ) : null}
               </div>
-              {ent?.isPremium && ent.validUntil ? (
-                <p
-                  className="text-sm"
-                  style={{ color: "var(--color-secondary)" }}
-                >
-                  {t("valid_until", {
-                    date: new Date(ent.validUntil).toLocaleDateString(
-                      locale === "en" ? "en-GB" : "tr-TR",
-                      { dateStyle: "long" },
-                    ),
-                  })}
-                </p>
+              {reason !== "NONE" ? (
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <Chip size="sm" className="!normal-case">
+                    {t(subscriptionStatusKey(reason))}
+                  </Chip>
+                  {sub?.cancelAtPeriodEnd ? (
+                    <Chip size="sm" className="!normal-case">
+                      {t("chip_cancel")}
+                    </Chip>
+                  ) : null}
+                </div>
               ) : null}
-              {!ent?.isPremium ? (
-                <p
-                  className="text-sm"
-                  style={{ color: "var(--color-secondary)" }}
-                >
-                  {t("upgrade_prompt")}
-                </p>
-              ) : null}
-              {hasOpenSub && !sub?.cancelAtPeriodEnd ? (
+            </div>
+
+            {facts.length > 0 ? (
+              <dl className="mt-6 flex flex-col">
+                {facts.map((fact) => (
+                  <FactRow
+                    key={fact.id}
+                    label={t(FACT_LABEL[fact.id])}
+                    value={factValue(fact)}
+                  />
+                ))}
+              </dl>
+            ) : null}
+
+            {canCancel ? (
+              <div className="mt-5">
                 <Button
+                  variant="secondary"
                   onClick={() => void cancel()}
                   busy={busy}
-                  className="!bg-white/60 !text-[var(--color-main)]"
+                  className={compactButtonClass}
                 >
                   {t("cancel_button")}
                 </Button>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
           </Card>
         </motion.div>
+        ) : null}
 
         <FormError message={error} />
 
@@ -302,7 +367,7 @@ export function SubscriptionShell() {
               ) : (
                 <Card>
                   <div className="flex flex-col items-start gap-3">
-                    <Chip>{t("chip_unavailable")}</Chip>
+                    <Chip className="!normal-case">{t("chip_unavailable")}</Chip>
                     <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
                       {t("payments_coming_soon")}
                     </p>
@@ -315,9 +380,9 @@ export function SubscriptionShell() {
               className="grid gap-4 sm:grid-cols-2"
               variants={reduceMotion ? undefined : staggerItemVariants}
             >
-              {plans.map((plan) => (
+              {plans.map((catalogPlan) => (
                 <motion.div
-                  key={plan.id}
+                  key={catalogPlan.id}
                   variants={reduceMotion ? undefined : staggerItemVariants}
                 >
                   <Card className="flex h-full flex-col gap-3">
@@ -328,34 +393,34 @@ export function SubscriptionShell() {
                         fontFamily: "var(--font-heading)",
                       }}
                     >
-                      {plan.name}
+                      {catalogPlan.name}
                     </p>
                     <p
                       className="text-2xl font-bold tabular-nums"
                       style={{ color: "var(--color-main)" }}
                     >
-                      {formatPrice(plan.priceMinor, locale)}
+                      {formatPrice(catalogPlan.priceMinor, locale)}
                       <span
                         className="text-sm font-normal"
                         style={{ color: "var(--color-secondary)" }}
                       >
                         {" "}
-                        {t("period_suffix", { months: plan.periodMonths })}
+                        {t("period_suffix", { months: catalogPlan.periodMonths })}
                       </span>
                     </p>
                     <p
                       className="text-sm"
                       style={{ color: "var(--color-secondary)" }}
                     >
-                      {t("trial_days", { days: plan.trialDays })}
+                      {t("trial_days", { days: catalogPlan.trialDays })}
                     </p>
                     <Button
-                      fullWidth
-                      disabled={!plan.purchaseEnabled || !consent}
+                      disabled={!catalogPlan.purchaseEnabled || !consent}
                       busy={busy}
-                      onClick={() => void checkout(plan)}
+                      onClick={() => void checkout(catalogPlan)}
+                      className={compactButtonClass}
                     >
-                      {t(plan.purchaseEnabled ? "start_trial" : "coming_soon")}
+                      {t(catalogPlan.purchaseEnabled ? "start_trial" : "coming_soon")}
                     </Button>
                   </Card>
                 </motion.div>
@@ -363,20 +428,28 @@ export function SubscriptionShell() {
             </motion.div>
           </>
         ) : null}
-
-        <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-          <Link
-            href="/dashboard"
-            className="flex min-h-[44px] items-center justify-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            style={{
-              color: "var(--color-main)",
-              fontFamily: "var(--font-heading)",
-            }}
-          >
-            {t("back_panel")}
-          </Link>
-        </motion.div>
       </motion.div>
     </main>
+  );
+}
+
+function FactRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      className="flex items-center justify-between gap-4 border-b py-3 last:border-b-0"
+      style={{
+        borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)",
+      }}
+    >
+      <dt className="shrink-0 text-sm" style={{ color: "var(--color-secondary)" }}>
+        {label}
+      </dt>
+      <dd
+        className="min-w-0 truncate text-right text-sm font-medium tabular-nums"
+        style={{ color: "var(--color-main)" }}
+      >
+        {value}
+      </dd>
+    </div>
   );
 }

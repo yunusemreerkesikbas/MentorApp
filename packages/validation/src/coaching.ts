@@ -5,6 +5,7 @@
 import { z } from "zod";
 import {
   CAREER_GROUPS,
+  NOTEBOOK_ENTRY_STATUSES,
   NOTEBOOK_ERROR_TYPES,
   NOTEBOOK_INK_TOOLS,
   NOTEBOOK_PAPERS,
@@ -34,7 +35,11 @@ export const isoDateSchema = z
 
 export const PLAN_TASK_STATUSES = ["PENDING", "DONE"] as const;
 export const SESSION_PRESETS = ["25_5", "50_10", "custom"] as const;
-export const STUDY_SESSION_STATUSES = ["IN_PROGRESS", "COMPLETED", "ABANDONED"] as const;
+export const STUDY_SESSION_STATUSES = [
+  "IN_PROGRESS",
+  "COMPLETED",
+  "ABANDONED",
+] as const;
 /** Status values allowed when finalizing a session (complete / abandon). */
 export const FINAL_STUDY_SESSION_STATUSES = ["COMPLETED", "ABANDONED"] as const;
 
@@ -57,11 +62,19 @@ function refinePlanTaskTimes(
   const { startTime, endTime } = value;
   if (endTime === undefined || endTime === null) return;
   if (startTime === undefined || startTime === null) {
-    ctx.addIssue({ code: "custom", message: "end_without_start", path: ["endTime"] });
+    ctx.addIssue({
+      code: "custom",
+      message: "end_without_start",
+      path: ["endTime"],
+    });
     return;
   }
   if (endTime <= startTime) {
-    ctx.addIssue({ code: "custom", message: "end_before_start", path: ["endTime"] });
+    ctx.addIssue({
+      code: "custom",
+      message: "end_before_start",
+      path: ["endTime"],
+    });
   }
 }
 
@@ -84,7 +97,9 @@ export type CreatePlanTaskInput = z.infer<typeof createPlanTaskSchema>;
 export const bulkCreatePlanTasksSchema = z.object({
   tasks: createPlanTaskSchema.array().min(1).max(21),
 });
-export type BulkCreatePlanTasksInput = z.infer<typeof bulkCreatePlanTasksSchema>;
+export type BulkCreatePlanTasksInput = z.infer<
+  typeof bulkCreatePlanTasksSchema
+>;
 
 const planAdaptationMoveSchema = z.object({
   kind: z.literal("MOVE"),
@@ -111,7 +126,9 @@ export const applyPlanAdaptationSchema = z.object({
   planRevision: z.string().regex(/^[a-f0-9]{64}$/),
   changes: planAdaptationChangeSchema.array().min(1).max(5),
 });
-export type ApplyPlanAdaptationInput = z.infer<typeof applyPlanAdaptationSchema>;
+export type ApplyPlanAdaptationInput = z.infer<
+  typeof applyPlanAdaptationSchema
+>;
 
 /**
  * Times are patched as a PAIR: sending `endTime` without `startTime` in the same payload is
@@ -147,7 +164,11 @@ export const listPlanTasksQuerySchema = paginationQuerySchema
     const hasTo = data.to !== undefined;
 
     if (hasDate && (hasFrom || hasTo)) {
-      ctx.addIssue({ code: "custom", message: "date_or_range", path: ["date"] });
+      ctx.addIssue({
+        code: "custom",
+        message: "date_or_range",
+        path: ["date"],
+      });
       return;
     }
 
@@ -162,14 +183,22 @@ export const listPlanTasksQuerySchema = paginationQuerySchema
 
     if (hasFrom && hasTo) {
       if (data.from! > data.to!) {
-        ctx.addIssue({ code: "custom", message: "invalid_range", path: ["to"] });
+        ctx.addIssue({
+          code: "custom",
+          message: "invalid_range",
+          path: ["to"],
+        });
         return;
       }
       const fromMs = new Date(`${data.from}T12:00:00`).getTime();
       const toMs = new Date(`${data.to}T12:00:00`).getTime();
       const dayCount = Math.floor((toMs - fromMs) / 86_400_000) + 1;
       if (dayCount > 62) {
-        ctx.addIssue({ code: "custom", message: "range_too_large", path: ["to"] });
+        ctx.addIssue({
+          code: "custom",
+          message: "range_too_large",
+          path: ["to"],
+        });
       }
     }
   });
@@ -190,7 +219,11 @@ export const planTaskCalendarQuerySchema = z
     const toMs = new Date(`${data.to}T12:00:00`).getTime();
     const dayCount = Math.floor((toMs - fromMs) / 86_400_000) + 1;
     if (dayCount > 62) {
-      ctx.addIssue({ code: "custom", message: "range_too_large", path: ["to"] });
+      ctx.addIssue({
+        code: "custom",
+        message: "range_too_large",
+        path: ["to"],
+      });
     }
   });
 export type PlanTaskCalendarQuery = z.infer<typeof planTaskCalendarQuerySchema>;
@@ -261,7 +294,9 @@ export const listStudySessionsQuerySchema = paginationQuerySchema
     message: "invalid_date_range",
     path: ["from"],
   });
-export type ListStudySessionsQuery = z.infer<typeof listStudySessionsQuerySchema>;
+export type ListStudySessionsQuery = z.infer<
+  typeof listStudySessionsQuerySchema
+>;
 
 /* ---------------------------------- mood -------------------------------------- */
 
@@ -402,7 +437,10 @@ export const visionBoardDocSchema = z
     frame: z.enum(VISION_BOARD_FRAMES),
     background: z.discriminatedUnion("kind", [
       z.object({ kind: z.literal("color"), value: hexColorSchema }),
-      z.object({ kind: z.literal("texture"), value: z.enum(VISION_BOARD_TEXTURES) }),
+      z.object({
+        kind: z.literal("texture"),
+        value: z.enum(VISION_BOARD_TEXTURES),
+      }),
     ]),
     items: z.array(boardItemSchema).max(VISION_BOARD_MAX_ITEMS),
   })
@@ -503,7 +541,9 @@ export const createMockExamSchema = z
     subjects: z.array(mockExamSubjectInputSchema).min(1).max(20),
   })
   .refine(
-    (data) => new Set(data.subjects.map((s) => s.subjectRef)).size === data.subjects.length,
+    (data) =>
+      new Set(data.subjects.map((s) => s.subjectRef)).size ===
+      data.subjects.length,
     { message: "duplicate_subject_ref" },
   );
 export type CreateMockExamInput = z.infer<typeof createMockExamSchema>;
@@ -515,7 +555,9 @@ export const updateMockExamSchema = z
     subjects: z.array(mockExamSubjectInputSchema).min(1).max(20),
   })
   .refine(
-    (data) => new Set(data.subjects.map((subject) => subject.subjectRef)).size === data.subjects.length,
+    (data) =>
+      new Set(data.subjects.map((subject) => subject.subjectRef)).size ===
+      data.subjects.length,
     { message: "duplicate_subject_ref" },
   );
 export type UpdateMockExamInput = z.infer<typeof updateMockExamSchema>;
@@ -530,7 +572,6 @@ export const listMockExamsQuerySchema = paginationQuerySchema.extend({
 });
 export type ListMockExamsQuery = z.infer<typeof listMockExamsQuerySchema>;
 
-
 /** Active-exam scope for the completed weekly review. */
 export const weeklyReviewQuerySchema = z.object({
   examId: z.string().uuid(),
@@ -541,7 +582,9 @@ export const completeWeeklyReviewSchema = z.object({
   examId: z.string().uuid(),
   weekStart: z.string().date(),
 });
-export type CompleteWeeklyReviewInput = z.infer<typeof completeWeeklyReviewSchema>;
+export type CompleteWeeklyReviewInput = z.infer<
+  typeof completeWeeklyReviewSchema
+>;
 
 /* ------------------------------- mistake notebook ------------------------------- */
 
@@ -692,7 +735,8 @@ export const notebookPageDocSchema = z
      * through, which is an order of magnitude more document than the autosave should be shipping.
      */
     const points = doc.ink.reduce(
-      (total, stroke) => total + stroke.points.length / NOTEBOOK_INK_POINT_STRIDE,
+      (total, stroke) =>
+        total + stroke.points.length / NOTEBOOK_INK_POINT_STRIDE,
       0,
     );
     if (points > NOTEBOOK_INK_MAX_TOTAL_POINTS) {
@@ -774,8 +818,7 @@ export type UpdateNotebookEntryInput = z.infer<
 export const listNotebookEntriesQuerySchema = paginationQuerySchema.extend({
   subjectRef: z.string().trim().min(1).max(120).optional(),
   errorType: z.enum(NOTEBOOK_ERROR_TYPES).optional(),
-  /** ARCHIVED is not offered: nothing in the product writes it yet. */
-  status: z.enum(["ACTIVE", "HEALED"]).optional(),
+  status: z.enum(NOTEBOOK_ENTRY_STATUSES).optional(),
 });
 export type ListNotebookEntriesQuery = z.infer<
   typeof listNotebookEntriesQuerySchema
@@ -811,4 +854,3 @@ export const prelabelNotebookEntrySchema = z.object({
 export type PrelabelNotebookEntryInput = z.infer<
   typeof prelabelNotebookEntrySchema
 >;
-

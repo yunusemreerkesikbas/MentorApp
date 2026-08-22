@@ -67,16 +67,40 @@ export const attachmentInputSchema = z.object({
 });
 export type AttachmentInput = z.infer<typeof attachmentInputSchema>;
 
-const attachmentsField = z.array(attachmentInputSchema).max(FORUM_MAX_ATTACHMENTS).optional();
+/**
+ * Reuse an image the user already uploaded elsewhere (a mistake-notebook photo) as a post
+ * attachment. The server copies the object; the client sends only a key it owns.
+ *
+ * `width`/`height` come from the client because it is already displaying the image and can read
+ * `naturalWidth` — no CORS grant needed for that, unlike reading the bytes. They are optional and
+ * only spare the post a layout shift; the server does not decode images to find out.
+ */
+export const copyAttachmentSchema = z.object({
+  sourceKey: z.string().trim().min(1).max(300),
+  width: z.number().int().positive().max(20000).optional(),
+  height: z.number().int().positive().max(20000).optional(),
+});
+export type CopyAttachmentInput = z.infer<typeof copyAttachmentSchema>;
+
+const attachmentsField = z
+  .array(attachmentInputSchema)
+  .max(FORUM_MAX_ATTACHMENTS)
+  .optional();
 const forumTagIdsField = z.array(z.string().uuid()).max(3).optional();
 
 export const forumPollInputSchema = z
   .object({
     options: z.array(z.string().trim().min(1).max(25)).min(2).max(4),
-    durationMinutes: z.number().int().min(5).max(7 * 24 * 60),
+    durationMinutes: z
+      .number()
+      .int()
+      .min(5)
+      .max(7 * 24 * 60),
   })
   .superRefine((value, ctx) => {
-    const normalized = value.options.map((option) => option.toLocaleLowerCase("tr-TR"));
+    const normalized = value.options.map((option) =>
+      option.toLocaleLowerCase("tr-TR"),
+    );
     if (new Set(normalized).size !== normalized.length) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -154,7 +178,13 @@ export const forumFeedQuerySchema = z.object({
   scope: z.enum(["relevant", "following"]).default("relevant"),
   sort: z.enum(["trending", "recent", "top"]).default("trending"),
   contentType: z.enum(["posts", "questions"]).optional(),
-  tag: z.string().trim().min(1).max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
+  tag: z
+    .string()
+    .trim()
+    .min(1)
+    .max(80)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    .optional(),
   zoneType: z.nativeEnum(ZoneType).optional(),
   cursor: z.string().trim().min(1).max(1000).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
@@ -181,7 +211,9 @@ export const updateForumThreadSchema = z
   })
   .refine(
     (value) =>
-      value.body !== undefined || value.title !== undefined || value.tagIds !== undefined,
+      value.body !== undefined ||
+      value.title !== undefined ||
+      value.tagIds !== undefined,
     { message: "At least one field is required" },
   );
 export type UpdateForumThread = z.infer<typeof updateForumThreadSchema>;
@@ -211,13 +243,17 @@ export type AdminForumTagCreate = z.infer<typeof adminForumTagCreateSchema>;
 
 export const adminForumTagUpdateSchema = adminForumTagCreateSchema
   .partial()
-  .refine((value) => Object.keys(value).length > 0, { message: "At least one field is required" });
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "At least one field is required",
+  });
 export type AdminForumTagUpdate = z.infer<typeof adminForumTagUpdateSchema>;
 
 export const createForumTagSuggestionSchema = z.object({
   name: z.string().trim().min(2).max(80),
 });
-export type CreateForumTagSuggestion = z.infer<typeof createForumTagSuggestionSchema>;
+export type CreateForumTagSuggestion = z.infer<
+  typeof createForumTagSuggestionSchema
+>;
 
 export const reviewForumTagSuggestionSchema = z.discriminatedUnion("action", [
   z.object({
@@ -228,7 +264,9 @@ export const reviewForumTagSuggestionSchema = z.discriminatedUnion("action", [
   }),
   z.object({ action: z.literal("REJECT") }),
 ]);
-export type ReviewForumTagSuggestion = z.infer<typeof reviewForumTagSuggestionSchema>;
+export type ReviewForumTagSuggestion = z.infer<
+  typeof reviewForumTagSuggestionSchema
+>;
 
 /** Object-shaped equivalent for Nest's class-based DTO adapter. */
 export const reviewForumTagSuggestionDtoSchema = z
@@ -240,7 +278,10 @@ export const reviewForumTagSuggestionDtoSchema = z
   })
   .superRefine((value, ctx) => {
     if (value.action === "APPROVE" && (!value.nameTr || !value.nameEn)) {
-      ctx.addIssue({ code: "custom", message: "Approved tags require Turkish and English names" });
+      ctx.addIssue({
+        code: "custom",
+        message: "Approved tags require Turkish and English names",
+      });
     }
   });
 

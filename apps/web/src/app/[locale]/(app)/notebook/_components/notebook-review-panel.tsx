@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import Image from "next/image";
 import {
   CalendarClock,
   Check,
+  FileText,
   ChevronLeft,
   ChevronRight,
   LayoutList,
@@ -22,6 +24,7 @@ import { FormError } from "@/components/form";
 import { NotebookCompactButton } from "@/components/notebook/notebook-compact-button";
 import { NotebookImageLightbox } from "@/components/notebook/notebook-image-lightbox";
 import { reviewNotebookEntry, updateNotebookEntry } from "@/lib/notebook";
+import { putNotebookHandoff } from "@/lib/notebook-handoff";
 import {
   bySubject,
   nextUnansweredIndex,
@@ -742,6 +745,22 @@ function StuckPanel({
             pathname: "/community/feed",
             query: { notebookEntry: entry.id },
           }}
+          // The other door into the same composer — it has to leave the same note behind, or the
+          // banner appears for one route and not the other.
+          onClick={() =>
+            putNotebookHandoff({
+              entryId: entry.id,
+              label:
+                [entry.subjectName, entry.topicName]
+                  .filter(Boolean)
+                  .join(" · ") || t("card_unlabelled"),
+              errorTypeLabel: t(`error_type.${entry.errorType}`),
+              photo:
+                entry.storageKey && entry.url
+                  ? { storageKey: entry.storageKey, url: entry.url }
+                  : undefined,
+            })
+          }
           className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-4 text-sm font-bold text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           style={{ backgroundColor: "var(--color-btn)" }}
         >
@@ -796,23 +815,38 @@ function DonePanel({
       {/* The count *is* the subtitle. "Tekrar edilecek soru kalmadı" said the same thing one line
           above "3 karttan 2 tanesini çözdün", so the screen opened by telling the student the same
           news twice — once vaguely, once with the numbers. */}
+      {/* The subtitle is a count only while a count is good news. "1 karttan 0 tanesini çözdün"
+          is a scoreline read out to someone who just told the truth about a card they missed — and
+          on a one-card deck it is the entire screen. With nothing solved it says what happens next
+          instead, which is the honest half of the same fact and the half that is actually useful. */}
       <SectionHeading
         as="h2"
         subtitle={
           unfinished
             ? t("review_exit_summary", { answered: outcomes.length, skipped })
-            : t("review_done_summary", { total, solved })
+            : solved > 0
+              ? t("review_done_summary", { total, solved })
+              : t("review_done_none", { count: outcomes.length })
         }
       >
         {unfinished ? t("review_exit_title") : t("review_done_title")}
       </SectionHeading>
 
+      {/* Its own band, not a line of text. A card leaving the rotation is the rarest thing that
+          happens in this feature — three correct answers spread over a month — and it is the only
+          event here worth marking rather than reporting. */}
       {healed > 0 ? (
         <p
-          className="inline-flex items-center gap-1.5 text-sm font-semibold"
-          style={{ color: "var(--color-success)" }}
+          className="flex items-center gap-2 rounded-[var(--radius-card)] px-3 py-2.5 text-sm font-bold"
+          style={{
+            color: "var(--color-success)",
+            backgroundColor:
+              "color-mix(in srgb, var(--color-success) 14%, transparent)",
+            border:
+              "1px solid color-mix(in srgb, var(--color-success) 30%, transparent)",
+          }}
         >
-          <Sparkles aria-hidden size={14} />
+          <Sparkles aria-hidden size={16} />
           {t("review_done_healed", { count: healed })}
         </p>
       ) : null}
@@ -839,21 +873,52 @@ function DonePanel({
 }
 
 /**
- * One card that caught the student again — what it was, and the way out if they are stuck on it.
+ * One card that caught the student again — what it was, when it comes back, and the way out.
  *
  * The row *is* the link, for a card nobody has asked about yet. `StuckPanel` already offers this
  * mid-deck on a second miss, but only for the one card and only in the moment; here it is the whole
  * list, at the point where the student has stopped answering and can actually consider it. A card
  * that already has a thread is not offered again — it is waiting on an answer, not on them.
+ *
+ * The photo carries the identity. Half these rows say "Etiketsiz" — a card filed in a hurry with no
+ * subject — and a list of identical labels is a list of nothing; the thumbnail is what makes it
+ * *that* question. The return day is here for the same reason it is on the deck: the card is
+ * scheduled, not spent, and the summary is the last chance to say so.
  */
 function MissedRow({ entry }: { entry: NotebookEntryDto }) {
   const t = useTranslations("notebook");
+  const errorTypeLabel = t(`error_type.${entry.errorType}`);
   const label =
     [entry.subjectName, entry.topicName].filter(Boolean).join(" · ") ||
     t("card_unlabelled");
+  const feedback = reviewFeedback(entry);
 
   const body = (
     <>
+      <span
+        className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius-card)]"
+        style={{ backgroundColor: "var(--color-surface)" }}
+      >
+        {entry.url ? (
+          <Image
+            src={entry.url}
+            alt=""
+            fill
+            sizes="40px"
+            className="object-cover"
+            unoptimized
+          />
+        ) : (
+          // A text-only entry, not a broken image — a struck-through icon would read as an error on
+          // a card where having no photo is perfectly normal.
+          <FileText
+            aria-hidden
+            size={15}
+            style={{ color: "var(--color-secondary)" }}
+          />
+        )}
+      </span>
+
       <span className="flex min-w-0 flex-1 flex-col text-left">
         <span
           className="truncate text-sm font-semibold"
@@ -861,10 +926,16 @@ function MissedRow({ entry }: { entry: NotebookEntryDto }) {
         >
           {label}
         </span>
-        <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-          {t(`error_type.${entry.errorType}`)}
+        <span
+          className="truncate text-xs"
+          style={{ color: "var(--color-secondary)" }}
+        >
+          {feedback?.kind === "due"
+            ? `${errorTypeLabel} · ${t("review_done_returns", { days: feedback.days })}`
+            : errorTypeLabel}
         </span>
       </span>
+
       {!entry.communityThreadId ? (
         <span
           className="shrink-0 text-xs font-bold"
@@ -891,6 +962,21 @@ function MissedRow({ entry }: { entry: NotebookEntryDto }) {
   return (
     <Link
       href={{ pathname: "/community/feed", query: { notebookEntry: entry.id } }}
+      // Left on the way out, read on arrival. The composer has no way to look this card up — there
+      // is no endpoint for a single entry — and this screen is holding it already.
+      onClick={() =>
+        putNotebookHandoff({
+          entryId: entry.id,
+          label,
+          errorTypeLabel,
+          // Only the question. The solution photo stays in the notebook: posting the answer key
+          // alongside the question is not asking for help, it is answering yourself in public.
+          photo:
+            entry.storageKey && entry.url
+              ? { storageKey: entry.storageKey, url: entry.url }
+              : undefined,
+        })
+      }
       className={`${shell} outline-none transition-colors duration-150 hover:bg-[var(--color-accent-soft)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none`}
       style={style}
     >

@@ -1,6 +1,7 @@
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
@@ -17,10 +18,7 @@ import type {
   StoragePort,
   StorageUploadUrlResult,
 } from "../../ports/storage.port";
-import {
-  PRIVATE_PREFIX,
-  isPublicKey,
-} from "../../storage/storage-prefixes";
+import { PRIVATE_PREFIX, isPublicKey } from "../../storage/storage-prefixes";
 
 const UPLOAD_EXPIRY_SEC = 900;
 
@@ -41,10 +39,14 @@ export class R2StorageAdapter implements StoragePort {
     if (this.client) return;
     const accountId = this.config.get("R2_ACCOUNT_ID", { infer: true });
     const accessKeyId = this.config.get("R2_ACCESS_KEY_ID", { infer: true });
-    const secretAccessKey = this.config.get("R2_SECRET_ACCESS_KEY", { infer: true });
+    const secretAccessKey = this.config.get("R2_SECRET_ACCESS_KEY", {
+      infer: true,
+    });
     const publicBucket = this.config.get("R2_PUBLIC_BUCKET", { infer: true });
     const privateBucket = this.config.get("R2_PRIVATE_BUCKET", { infer: true });
-    const publicBaseUrl = this.config.get("R2_PUBLIC_BASE_URL", { infer: true });
+    const publicBaseUrl = this.config.get("R2_PUBLIC_BASE_URL", {
+      infer: true,
+    });
     if (
       !accountId ||
       !accessKeyId ||
@@ -53,7 +55,10 @@ export class R2StorageAdapter implements StoragePort {
       !privateBucket ||
       !publicBaseUrl
     ) {
-      throw new DomainError(ErrorCode.SERVICE_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE);
+      throw new DomainError(
+        ErrorCode.SERVICE_UNAVAILABLE,
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
     this.publicBucket = publicBucket;
     this.privateBucket = privateBucket;
@@ -75,7 +80,10 @@ export class R2StorageAdapter implements StoragePort {
     throw new DomainError(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST);
   }
 
-  async createUploadUrl(input: { key: string; contentType: string }): Promise<StorageUploadUrlResult> {
+  async createUploadUrl(input: {
+    key: string;
+    contentType: string;
+  }): Promise<StorageUploadUrlResult> {
     this.ensureReady();
     const bucket = this.bucketForKey(input.key);
     try {
@@ -84,12 +92,19 @@ export class R2StorageAdapter implements StoragePort {
         Key: input.key,
         ContentType: input.contentType,
       });
-      const url = await getSignedUrl(this.client!, command, { expiresIn: UPLOAD_EXPIRY_SEC });
-      const expiresAt = new Date(Date.now() + UPLOAD_EXPIRY_SEC * 1000).toISOString();
+      const url = await getSignedUrl(this.client!, command, {
+        expiresIn: UPLOAD_EXPIRY_SEC,
+      });
+      const expiresAt = new Date(
+        Date.now() + UPLOAD_EXPIRY_SEC * 1000,
+      ).toISOString();
       return { url, key: input.key, expiresAt };
     } catch (err) {
       this.logger.error(`R2 presign failed: ${String(err)}`);
-      throw new DomainError(ErrorCode.SERVICE_UNAVAILABLE, HttpStatus.SERVICE_UNAVAILABLE);
+      throw new DomainError(
+        ErrorCode.SERVICE_UNAVAILABLE,
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
   }
 
@@ -107,10 +122,15 @@ export class R2StorageAdapter implements StoragePort {
     const bucket = this.bucketForKey(key);
     try {
       if (maxBytes !== undefined) {
-        const head = await this.client!.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
-        if (head.ContentLength == null || head.ContentLength > maxBytes) return null;
+        const head = await this.client!.send(
+          new HeadObjectCommand({ Bucket: bucket, Key: key }),
+        );
+        if (head.ContentLength == null || head.ContentLength > maxBytes)
+          return null;
       }
-      const res = await this.client!.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+      const res = await this.client!.send(
+        new GetObjectCommand({ Bucket: bucket, Key: key }),
+      );
       const body = res.Body;
       if (!body) return null;
       const bytes = await body.transformToByteArray();
@@ -122,15 +142,24 @@ export class R2StorageAdapter implements StoragePort {
     }
   }
 
-  async listObjects(prefix: string, limit: number): Promise<StorageObjectSummary[]> {
+  async listObjects(
+    prefix: string,
+    limit: number,
+  ): Promise<StorageObjectSummary[]> {
     this.ensureReady();
     const bucket = this.bucketForKey(prefix);
     try {
       const res = await this.client!.send(
-        new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, MaxKeys: limit }),
+        new ListObjectsV2Command({
+          Bucket: bucket,
+          Prefix: prefix,
+          MaxKeys: limit,
+        }),
       );
       return (res.Contents ?? []).flatMap((item) =>
-        item.Key ? [{ key: item.Key, lastModified: item.LastModified ?? null }] : [],
+        item.Key
+          ? [{ key: item.Key, lastModified: item.LastModified ?? null }]
+          : [],
       );
     } catch (err) {
       // A sweep must never take the caller down; an empty page just means "nothing to do now".
@@ -139,11 +168,28 @@ export class R2StorageAdapter implements StoragePort {
     }
   }
 
+  async copyObject(sourceKey: string, destinationKey: string): Promise<void> {
+    this.ensureReady();
+    const sourceBucket = this.bucketForKey(sourceKey);
+    const destinationBucket = this.bucketForKey(destinationKey);
+    // Not best-effort, unlike `deleteObject`: the caller is about to hand the destination key back
+    // as an attachment, and a silently skipped copy would produce a post pointing at nothing.
+    await this.client!.send(
+      new CopyObjectCommand({
+        Bucket: destinationBucket,
+        Key: destinationKey,
+        CopySource: `${sourceBucket}/${sourceKey}`,
+      }),
+    );
+  }
+
   async deleteObject(key: string): Promise<void> {
     this.ensureReady();
     const bucket = this.bucketForKey(key);
     try {
-      await this.client!.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+      await this.client!.send(
+        new DeleteObjectCommand({ Bucket: bucket, Key: key }),
+      );
     } catch (err) {
       this.logger.warn(`R2 deleteObject failed for ${key}: ${String(err)}`);
     }

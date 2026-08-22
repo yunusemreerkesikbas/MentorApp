@@ -1,4 +1,11 @@
-import { mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
 import { Injectable } from "@nestjs/common";
 import type {
@@ -25,7 +32,10 @@ function metaPath(key: string): string {
  */
 @Injectable()
 export class FakeStorageAdapter implements StoragePort {
-  async createUploadUrl(input: { key: string; contentType: string }): Promise<StorageUploadUrlResult> {
+  async createUploadUrl(input: {
+    key: string;
+    contentType: string;
+  }): Promise<StorageUploadUrlResult> {
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
     const url = `/v1/storage/fake-upload?key=${encodeURIComponent(input.key)}&contentType=${encodeURIComponent(input.contentType)}`;
     return { url, key: input.key, expiresAt };
@@ -56,7 +66,10 @@ export class FakeStorageAdapter implements StoragePort {
     return row.bytes;
   }
 
-  async listObjects(prefix: string, limit: number): Promise<StorageObjectSummary[]> {
+  async listObjects(
+    prefix: string,
+    limit: number,
+  ): Promise<StorageObjectSummary[]> {
     const seen = new Map<string, Date | null>();
     // Disk first, then the in-process map, so an object written this run is listed even before it
     // has been read back from disk.
@@ -88,7 +101,21 @@ export class FakeStorageAdapter implements StoragePort {
     ]);
   }
 
-  async putObject(key: string, bytes: Buffer, contentType: string): Promise<void> {
+  async copyObject(sourceKey: string, destinationKey: string): Promise<void> {
+    const bytes = await this.readObject(sourceKey);
+    if (!bytes)
+      throw new Error(`Fake storage: nothing to copy at ${sourceKey}`);
+    const contentType =
+      this.getContentType(sourceKey) ?? "application/octet-stream";
+    memoryStore.set(destinationKey, { bytes, contentType });
+    await this.putObject(destinationKey, bytes, contentType);
+  }
+
+  async putObject(
+    key: string,
+    bytes: Buffer,
+    contentType: string,
+  ): Promise<void> {
     await mkdir(storageRoot, { recursive: true });
     await Promise.all([
       writeFile(objectPath(key), bytes),

@@ -69,6 +69,27 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+- **`/abonelik` yönetim kartı (2026-08-22)** — Sayfa başlığı, alt başlık ve “Panele dön”
+  kalktı. Üstte plan adı + ücret + durum çipi; altında sol etiket / sağ değer satırları
+  (`<dl>`): ücret, dönem, başlangıç, deneme bitiş, dönem başlangıcı, sonraki yenileme **veya**
+  erişim bitiş, yenileme (otomatik / dönem sonunda durur). Figma cam kartı ve ödeme geçmişi yok —
+  public ledger yok, uydurulmaz. İptal butonu `secondary` ve kompakt. `GET /v1/subscription`
+  artık `startedAt` + `currentPeriodStart` döner. Kullanım: ücretsizde katalog + (ödeme kapalıysa)
+  “çok yakında”; açık abonelikte katalog gizlenir. Gotcha: STAFF premium satır olmadan da
+  premium olabilir — o durumda sadece hero. İlgili: `subscription-shell.tsx`,
+  `subscription-facts.ts`, `toSubscriptionDto`.
+
+- **Checkout başarı overlay (2026-08-22)** —   `/abonelik/sonuc` artık kartlı sayfa değil; tam
+  ekran modal (yeşil→canvas linear wash, `success.svg`, tek seferlik `confetti.lottie`).
+  Puhu dans videosu yok — ödeme teyidi evrensel tik. Tek CTA “Panele dön” (metnin altında,
+  dipte değil). Fiş /
+  tutar / kart sonu yok: iyzico bu veriyi dönüş URL’sinde vermez, e-arşiv ayrı. Hata halinde
+  konfeti yok, aboneliğe dönüş. `prefers-reduced-motion` konfetiyi ve SVG SMIL’i atlar.
+  Kullanım: checkout `returnUrl` aynı kalır (`?status=success`). Gotcha: overlay `fixed inset-0`
+  ile nav/tab bar’ın üstünü kaplar; X yok, çıkış “Panele dön” veya Escape (başarı → panel,
+  hata → `/abonelik`). İlgili:
+  `checkout-result-content.tsx`, `confetti-burst.tsx`.
+
 - **Premium kimlik işareti (2026-08-22)** — Premium, avatar overlay değil; ismin yanında
   `--color-star` taç. “Premium” yazısı chrome’da yok. Mavi tik ve ödül kurdelesi yok. Nav,
   ayarlar ve topluluk profilinde aynı bileşen (`PremiumIdentityMark`). Feed'e basılmaz. İlgili:

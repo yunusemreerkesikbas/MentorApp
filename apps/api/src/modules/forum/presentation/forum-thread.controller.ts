@@ -23,10 +23,15 @@ import type {
   ThreadFeed,
   ThreadView,
 } from "@mentor/types";
-import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
+import type { AttachmentInput } from "@mentor/validation";
+import {
+  CurrentUser,
+  type RequestUser,
+} from "../../../common/auth/current-user";
 import { ForumThreadService } from "../application/forum-thread.service";
 import {
   AttachmentUploadUrlDto,
+  CopyAttachmentDto,
   BookmarkQueryDto,
   CreateAnswerDto,
   CreateThreadDto,
@@ -56,6 +61,22 @@ export class ForumThreadController {
     return this.threads.createAttachmentUploadUrl(user.id, dto.contentType);
   }
 
+  /**
+   * Reuse an image the caller already uploaded elsewhere (a mistake-notebook photo) as an
+   * attachment — the server copies the object, so no second upload and no CORS read.
+   *
+   * Throttled harder than minting an upload URL: that one still costs the caller a full upload
+   * before anything lands, while this one writes an object per call.
+   */
+  @Post("attachments/copy")
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  copyAttachment(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: CopyAttachmentDto,
+  ): Promise<AttachmentInput> {
+    return this.threads.copyOwnUploadToAttachment(user.id, dto);
+  }
+
   // ponytail: static rate-limit; make config-driven (forum.post.rate_per_min) once abuse data warrants.
   @Post("zones/:id/threads")
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
@@ -64,7 +85,11 @@ export class ForumThreadController {
     @Param("id") zoneId: string,
     @Body() dto: CreateThreadDto,
   ): Promise<ThreadView> {
-    return this.threads.postThread({ id: user.id, roles: user.roles }, zoneId, dto);
+    return this.threads.postThread(
+      { id: user.id, roles: user.roles },
+      zoneId,
+      dto,
+    );
   }
 
   @Get("zones/:id/threads")
@@ -87,7 +112,9 @@ export class ForumThreadController {
 
   /** "Kimi takip et" — people to follow (active authors in your zones + cohort fallback). */
   @Get("follow-suggestions")
-  followSuggestions(@CurrentUser() user: RequestUser): Promise<FollowUserRef[]> {
+  followSuggestions(
+    @CurrentUser() user: RequestUser,
+  ): Promise<FollowUserRef[]> {
     return this.threads.getFollowSuggestions(user.id);
   }
 
@@ -107,7 +134,11 @@ export class ForumThreadController {
     @Param("threadId") threadId: string,
     @Body() dto: CreateAnswerDto,
   ): Promise<CommentView> {
-    return this.threads.comment({ id: user.id, roles: user.roles }, threadId, dto);
+    return this.threads.comment(
+      { id: user.id, roles: user.roles },
+      threadId,
+      dto,
+    );
   }
 
   @Get("posts/:postId")
@@ -125,7 +156,11 @@ export class ForumThreadController {
     @Param("postId") postId: string,
     @Body() dto: CreateAnswerDto,
   ): Promise<CommentView> {
-    return this.threads.replyToComment({ id: user.id, roles: user.roles }, postId, dto);
+    return this.threads.replyToComment(
+      { id: user.id, roles: user.roles },
+      postId,
+      dto,
+    );
   }
 
   @Put("posts/:postId/reactions")
@@ -163,7 +198,11 @@ export class ForumThreadController {
     @Param("threadId") threadId: string,
     @Body() dto: PinThreadDto,
   ): Promise<{ status: string }> {
-    await this.threads.pin({ id: user.id, roles: user.roles }, threadId, dto.pinned);
+    await this.threads.pin(
+      { id: user.id, roles: user.roles },
+      threadId,
+      dto.pinned,
+    );
     return { status: "ok" };
   }
 
@@ -207,7 +246,10 @@ export class ForumThreadController {
 
   /** The viewer's saved feed (threads + posts interleaved, newest-saved first). */
   @Get("bookmarks")
-  bookmarks(@CurrentUser() user: RequestUser, @Query() q: BookmarkQueryDto): Promise<SavedFeed> {
+  bookmarks(
+    @CurrentUser() user: RequestUser,
+    @Query() q: BookmarkQueryDto,
+  ): Promise<SavedFeed> {
     return this.threads.getMyBookmarks(user.id, q.before, user.roles);
   }
 
@@ -218,7 +260,12 @@ export class ForumThreadController {
     @Param("username") username: string,
     @Query() q: BookmarkQueryDto,
   ): Promise<ForumActivityFeed> {
-    return this.threads.getUserActivity(user.id, username, q.before, user.roles);
+    return this.threads.getUserActivity(
+      user.id,
+      username,
+      q.before,
+      user.roles,
+    );
   }
 
   @Put("threads/:threadId/bookmark")
