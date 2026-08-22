@@ -1,7 +1,8 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
-import type {
-  CoachPlanAdaptationDto,
-  CoachPlanAdaptationStatus,
+import {
+  PremiumFeatureId,
+  type CoachPlanAdaptationDto,
+  type CoachPlanAdaptationStatus,
 } from "@mentor/types";
 import type { CoachPlanAdaptationInput } from "@mentor/validation";
 import { I18nContext, I18nService } from "nestjs-i18n";
@@ -13,7 +14,6 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { MoodService } from "../../coaching/application/mood.service";
 import { PlanService } from "../../coaching/application/plan.service";
 import { SessionService } from "../../coaching/application/session.service";
-import { EntitlementService } from "../../payments/application/entitlement.service";
 import { AiUsageFeature, estimateCostMicros } from "../domain/ai.constants";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
 import {
@@ -26,6 +26,7 @@ import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { ContextBuilder } from "./context-builder.service";
 import { promptLocale } from "../domain/prompt-locale";
+import { PremiumFeatureGateService } from "./premium-feature-gate.service";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -40,7 +41,7 @@ export class PlanAdaptationService {
     private readonly context: ContextBuilder,
     private readonly usage: AiUsageRepository,
     private readonly config: ConfigRegistryService,
-    private readonly entitlement: EntitlementService,
+    private readonly featureGate: PremiumFeatureGateService,
     private readonly budget: AiBudgetGuard,
     private readonly i18n: I18nService,
   ) {}
@@ -52,16 +53,11 @@ export class PlanAdaptationService {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
-    const entitlement = await this.entitlement.getEntitlement(
+    await this.featureGate.assertAllowed(
       user.id,
       user.roles,
+      PremiumFeatureId.PLAN_AI,
     );
-    if (!entitlement.isPremium) {
-      throw new DomainError(
-        ErrorCode.PAYMENT_PREMIUM_REQUIRED,
-        HttpStatus.FORBIDDEN,
-      );
-    }
 
     const snapshot = await this.plans.getAdaptationSnapshot(user.id);
     await this.assertSourceApplicable(user.id, input);

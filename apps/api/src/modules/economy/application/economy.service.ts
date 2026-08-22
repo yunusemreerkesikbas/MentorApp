@@ -1,10 +1,12 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Currency, LedgerStatus, type EconomyBalance } from "@mentor/types";
 import { deriveLevel } from "@mentor/core";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import type { DatabaseTx } from "../../../database/drizzle";
+import { EconomyEventTopic, type EconomyXpChanged } from "../domain/economy.events";
 import {
   LedgerRepository,
   type Balance,
@@ -58,12 +60,15 @@ export class EconomyService {
   constructor(
     private readonly repo: LedgerRepository,
     private readonly config: ConfigRegistryService,
+    private readonly events: EventEmitter2,
   ) {}
 
   /** Append a ledger entry (idempotent on refType/refId). Returns the user's fresh balance. */
   async grant(userId: string, unit: Currency, amount: number, opts: GrantOptions): Promise<Balance> {
-    await this.grantInTx(userId, unit, amount, opts);
-    return this.repo.balanceService(userId);
+    const inserted = await this.grantInTx(userId, unit, amount, opts);
+    const balance = await this.repo.balanceService(userId);
+    if (inserted && unit === Currency.XP) this.emitXpChanged(userId, balance.xp);
+    return balance;
   }
 
   /** Append a ledger entry inside an existing SERVICE tx. Used when reward and source row must commit together. */
@@ -73,8 +78,8 @@ export class EconomyService {
     amount: number,
     opts: GrantOptions,
     tx: DatabaseTx,
-  ): Promise<void> {
-    await this.grantInTx(userId, unit, amount, opts, tx);
+  ): Promise<boolean> {
+    return this.grantInTx(userId, unit, amount, opts, tx);
   }
 
   private async grantInTx(
@@ -83,7 +88,7 @@ export class EconomyService {
     amount: number,
     opts: GrantOptions,
     exec?: DatabaseTx,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const entry = {
       userId,
       unit,
@@ -103,7 +108,7 @@ export class EconomyService {
       const dailyCap = await this.config.get("economy.coin.daily_cap");
       const weeklyCap = await this.config.get("economy.coin.weekly_cap");
       const now = Date.now();
-      const run = async (tx: DatabaseTx) => {
+      const run = async (tx: DatabaseTx): Promise<boolean> => {
         // F1: per-user advisory lock — serializes concurrent capped grants beyond tx isolation.
         await this.repo.acquireUserLock(userId, tx);
         if (minXp > 0 && (await this.repo.balanceService(userId, tx)).xp < minXp) {
@@ -117,13 +122,26 @@ export class EconomyService {
         if (earnedWeek + amount > weeklyCap) {
           throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
         }
-        await this.repo.append(entry, tx);
+        return this.repo.append(entry, tx);
       };
-      if (exec) await run(exec);
-      else await this.repo.withServiceTx(run);
-    } else {
-      await this.repo.append(entry, exec);
+      return exec ? run(exec) : this.repo.withServiceTx(run);
     }
+    return this.repo.append(entry, exec);
+  }
+
+  /** Publish only after a caller-owned transaction has committed its XP ledger row. */
+  async publishXpChanged(userId: string): Promise<void> {
+    const balance = await this.repo.balanceService(userId);
+    this.emitXpChanged(userId, balance.xp);
+  }
+
+  private emitXpChanged(userId: string, xp: number): void {
+    const event: EconomyXpChanged = {
+      userId,
+      level: deriveLevel(xp),
+      occurredAt: new Date(),
+    };
+    this.events.emit(EconomyEventTopic.XP_CHANGED, event);
   }
 
   /** Self balance + the XP tier derived from the shared curve (admin reads stay on raw sums). */

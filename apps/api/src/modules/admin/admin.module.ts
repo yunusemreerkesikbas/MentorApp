@@ -17,6 +17,7 @@ import { AdminContentController } from "./presentation/admin-content.controller"
 import { AdminEconomyController } from "./presentation/admin-economy.controller";
 import { AdminExamCalendarController } from "./presentation/admin-exam-calendar.controller";
 import { AdminMetricsController } from "./presentation/admin-metrics.controller";
+import { AdminPlansController } from "./presentation/admin-plans.controller";
 import { AdminSubscriptionController } from "./presentation/admin-subscription.controller";
 import { AdminUsersController } from "./presentation/admin-users.controller";
 import { AdminForumController } from "./presentation/admin-forum.controller";
@@ -47,6 +48,7 @@ import { AdminForumController } from "./presentation/admin-forum.controller";
     AdminContentController,
     AdminExamCalendarController,
     AdminSubscriptionController,
+    AdminPlansController,
     AdminMetricsController,
     AdminForumController,
   ],

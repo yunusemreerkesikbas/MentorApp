@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Currency, LedgerStatus } from "@mentor/types";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -37,9 +37,10 @@ function makeRepoFake() {
     append: async (entry: NewLedgerEntry) => {
       trace.push("append");
       if (entry.refId && rows.some((r) => r.refType === entry.refType && r.refId === entry.refId)) {
-        return; // idempotent no-op
+        return false; // idempotent no-op
       }
       rows.push({ ...entry, createdAt: new Date() } as Row);
+      return true;
     },
     balanceService: async (userId: string) => balance(userId),
     balanceSelf: async (userId: string) => balance(userId),
@@ -83,17 +84,79 @@ const CAPS = {
 
 describe("EconomyService", () => {
   let repo: ReturnType<typeof makeRepoFake>;
+  let events: { emit: ReturnType<typeof vi.fn> };
 
   const service = (caps: Record<string, number> = CAPS) =>
-    new EconomyService(repo as never, makeConfigFake(caps) as never);
+    new EconomyService(repo as never, makeConfigFake(caps) as never, events as never);
 
   beforeEach(() => {
     repo = makeRepoFake();
+    events = { emit: vi.fn() };
   });
 
   it("grants XP (always confirmed) and reflects it in balance", async () => {
     const bal = await service().grant("u1", Currency.XP, 30, { reason: "test" });
     expect(bal.xp).toBe(30);
+  });
+
+  it("emits the ready-to-render level only after a new XP grant is persisted", async () => {
+    const svc = service();
+
+    await svc.grant("u1", Currency.XP, 100, {
+      reason: "quest.daily",
+      refType: "quest",
+      refId: "q1",
+    });
+    await svc.grant("u1", Currency.XP, 100, {
+      reason: "quest.daily",
+      refType: "quest",
+      refId: "q1",
+    });
+    await svc.grant("u1", Currency.COIN, 5, { reason: "coin", enforceLimits: false });
+
+    expect(events.emit).toHaveBeenCalledTimes(1);
+    expect(events.emit).toHaveBeenCalledWith(
+      "economy.xp.changed",
+      expect.objectContaining({
+        userId: "u1",
+        level: expect.objectContaining({ tier: 2, key: "trail" }),
+      }),
+    );
+  });
+
+  it("defers an XP grant inside a caller-owned transaction until publishXpChanged is called", async () => {
+    const svc = service();
+
+    const inserted = await svc.grantInServiceTx(
+      "u1",
+      Currency.XP,
+      100,
+      { reason: "quest.daily", refType: "quest", refId: "q2" },
+      {} as never,
+    );
+
+    expect(inserted).toBe(true);
+    expect(events.emit).not.toHaveBeenCalled();
+
+    await svc.publishXpChanged("u1");
+    expect(events.emit).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns a ready-to-render journey level with self balance", async () => {
+    const svc = service();
+    await svc.grant("u1", Currency.XP, 411, { reason: "test" });
+
+    const balance = await svc.getSelfBalance("u1");
+
+    expect(balance.level).toMatchObject({
+      tier: 3,
+      key: "compass",
+      chapter: "awakening",
+      currentAt: 300,
+      nextAt: 600,
+      nextKey: "cycle",
+      progress: { current: 111, target: 300, remaining: 189, percent: 37 },
+    });
   });
 
   it("separates confirmed vs pending coin in the balance", async () => {

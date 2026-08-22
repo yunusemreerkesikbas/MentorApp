@@ -23,6 +23,8 @@ import { trackWeeklyRecapEvent } from "@/lib/analytics";
 import { narrateWeeklyReview } from "@/lib/coach";
 import { fetchDeepAnalysis, purchaseDeepAnalysis } from "@/lib/economy";
 import { useMentorToast } from "@/lib/mentor-toast";
+import { usePremiumPaywall } from "@/lib/premium-paywall";
+import { isPremiumRequiredError } from "@/lib/premium-required";
 import {
   buildWeeklyRecapShareCardModel,
   buildWeeklyRecapShareText,
@@ -60,6 +62,7 @@ export function WeeklyRecapShell() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useMentorToast();
+  const { openPaywall } = usePremiumPaywall();
   const reducedMotion = useReducedMotion() ?? false;
   const requestedExamId = searchParams.get("examId");
   const requestedExamType = searchParams.get("examType");
@@ -83,10 +86,15 @@ export function WeeklyRecapShell() {
     try {
       const data = await narrateWeeklyReview(examId);
       setNarration({ status: "ready", data });
-    } catch {
+    } catch (error) {
+      if (isPremiumRequiredError(error)) {
+        setNarration({ status: "fallback" });
+        openPaywall({ sourceFeature: "weekly.narration" });
+        return;
+      }
       setNarration({ status: "fallback" });
     }
-  }, []);
+  }, [openPaywall]);
 
   useEffect(() => {
     let cancelled = false;
@@ -300,13 +308,17 @@ export function WeeklyRecapShell() {
         });
         void loadNarration(state.examId);
       }
-    } catch {
-      toast.error({ title: t("unlock.error") });
+    } catch (error) {
+      if (isPremiumRequiredError(error)) {
+        openPaywall({ sourceFeature: "deep.analysis" });
+      } else {
+        toast.error({ title: t("unlock.error") });
+      }
     } finally {
       setUnlockBusy(false);
       setUnlockArmed(false);
     }
-  }, [access, loadNarration, state, t, toast, unlockArmed]);
+  }, [access, loadNarration, openPaywall, state, t, toast, unlockArmed]);
 
   if (state.status === "loading") {
     return (
@@ -426,6 +438,9 @@ export function WeeklyRecapShell() {
             unlockArmed={unlockArmed}
             unlockBusy={unlockBusy}
             onUnlock={() => void handleUnlock()}
+            onOpenPaywall={() =>
+              openPaywall({ sourceFeature: "deep.analysis" })
+            }
             onClose={() => {
               setNoteOpen(false);
               setUnlockArmed(false);
@@ -509,6 +524,7 @@ function PuhuNoteSheet({
   unlockArmed,
   unlockBusy,
   onUnlock,
+  onOpenPaywall,
   onClose,
   reducedMotion,
   t,
@@ -519,6 +535,7 @@ function PuhuNoteSheet({
   unlockArmed: boolean;
   unlockBusy: boolean;
   onUnlock: () => void;
+  onOpenPaywall: () => void;
   onClose: () => void;
   reducedMotion: boolean;
   t: RecapTranslate;
@@ -618,6 +635,15 @@ function PuhuNoteSheet({
               balance: lockedView.coinConfirmed,
             })}
           </Link>
+        ) : null}
+        {lockedView ? (
+          <button
+            type="button"
+            onClick={onOpenPaywall}
+            className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] px-5 py-3 text-sm font-bold text-[var(--color-main)] underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          >
+            {t("unlock.premium")}
+          </button>
         ) : null}
       </motion.section>
     </motion.div>

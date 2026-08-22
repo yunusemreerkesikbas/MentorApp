@@ -82,6 +82,7 @@ import { NotebookTextInlineEditor } from "@/components/notebook/notebook-text-in
 import { NotebookImageLightbox } from "@/components/notebook/notebook-image-lightbox";
 import { fetchExamTopics } from "@/lib/content-topics";
 import { measureImageAspect } from "@/lib/notebook-image-aspect";
+import { clearSpentQueryParam } from "@/lib/spent-query-param";
 import {
   deleteNotebookEntry,
   fetchDueEntries,
@@ -298,6 +299,7 @@ export function NotebookShell() {
           new URLSearchParams(window.location.search).get("review") === "due"
         ) {
           setReviewing(true);
+          clearSpentQueryParam("review");
         }
       }
 
@@ -311,6 +313,9 @@ export function NotebookShell() {
         setView({ kind: "spread", left: 0 });
         setActivePanel("add");
         setDetailCollapsed(false);
+        // Spent: a refresh would otherwise reopen the form and stamp this exam onto whatever the
+        // student files next, quietly attributing later mistakes to an old sitting.
+        clearSpentQueryParam("mockExam");
       }
       // A missing exam only disables *adding*, so it is not an error banner — the user can still
       // read the notebook they already have.

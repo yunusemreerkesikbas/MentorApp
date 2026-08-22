@@ -24,6 +24,7 @@ describe("CoachAccessService", () => {
       { get: configGet } as never,
       { isWithinBudget: vi.fn(async () => true) } as never,
       { countFeatureSince: countSince } as never,
+      { isAllowed: vi.fn(async () => false) } as never,
     );
   });
 

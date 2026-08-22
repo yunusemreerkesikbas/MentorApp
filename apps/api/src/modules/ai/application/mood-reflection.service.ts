@@ -7,7 +7,7 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { MoodService } from "../../coaching/application/mood.service";
-import { EntitlementService } from "../../payments/application/entitlement.service";
+import { PremiumFeatureId } from "@mentor/types";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
 import { hasSeriousDistressSignal } from "../domain/serious-distress";
 import { AiUsageFeature, buildMoodReflectionPrompt, estimateCostMicros } from "../domain/ai.constants";
@@ -15,6 +15,7 @@ import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { promptLocale } from "../domain/prompt-locale";
+import { PremiumFeatureGateService } from "./premium-feature-gate.service";
 
 /**
  * Premium AI-adaptive reflection on today's mood check-in (W3 · §4 #5 premium-only — free tier
@@ -32,7 +33,7 @@ export class MoodReflectionService {
     private readonly context: ContextBuilder,
     private readonly usage: AiUsageRepository,
     private readonly config: ConfigRegistryService,
-    private readonly entitlement: EntitlementService,
+    private readonly featureGate: PremiumFeatureGateService,
     private readonly mood: MoodService,
     private readonly budget: AiBudgetGuard,
     private readonly i18n: I18nService,
@@ -43,10 +44,11 @@ export class MoodReflectionService {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
 
-    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
-    if (!ent.isPremium) {
-      throw new DomainError(ErrorCode.PAYMENT_PREMIUM_REQUIRED, HttpStatus.FORBIDDEN);
-    }
+    await this.featureGate.assertAllowed(
+      user.id,
+      user.roles,
+      PremiumFeatureId.MOOD_REFLECTION,
+    );
 
     const today = await this.mood.getToday(user.id);
     if (!today) {

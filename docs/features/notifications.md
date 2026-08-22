@@ -93,6 +93,14 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **Gece Yolculuğu canlı kutlama sinyali (2026-08-22)** — Community yeni bir kalıcı `LEVEL_UP`
+  kaydı oluşturduğunda Notifications yalnız SSE üzerinden `journey_level_unlocked` sinyali
+  yayınlar. Zil/bildirim merkezi satırı oluşturulmaz; istemci sinyali alınca kalıcı unseen
+  kaynaklarını yeniden okur. Kullanım: mevcut notification stream bağlantısı yeterlidir. Gotcha:
+  bu sinyal teslim garantili değildir ve kullanıcıya gösterilecek seviye bilgisini taşımaz; bağlantı
+  kaçırılırsa sonraki görünürlük/açılış senkronu kutlamayı toparlar. İlgili:
+  `journey-level-events.listener.ts`, `notification-drawer-shell.tsx`.
+
 - **Achievement bildirimi (2026-08-18)** — `ACHIEVEMENT` kategorisi, JSON metadata ve kısmi unique
   dedupe anahtarı eklendi. Yalnız yeni LIVE award tek bildirim ve tek `achievement_awarded` SSE üretir;
   metinler istek dilinde TR/EN çözülür ve link profil Başarılar sekmesine gider. BACKFILL sonuçları

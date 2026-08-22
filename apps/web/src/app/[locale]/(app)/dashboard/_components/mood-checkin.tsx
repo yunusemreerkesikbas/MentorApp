@@ -2,19 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import type {
-  CoachAccessDto,
-  MoodCheckinDto,
-  MoodReflectionDto,
-} from "@mentor/types";
+import type { MoodCheckinDto, MoodReflectionDto } from "@mentor/types";
 import {
-  aiChatControllerGetAccess,
   aiMoodControllerReflect,
   ApiClientError,
   coachingControllerUpsertMood,
 } from "@mentor/api-client";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
+import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
+import { fetchSubscriptionView } from "@/lib/subscription-view";
 import { MOOD_WHEEL_OPTIONS } from "./mood-assets";
 import {
   deferMoodPromptForToday,
@@ -43,7 +40,9 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
   const tCommon = useTranslations("common");
   const { error: showErrorToast } = useMentorToast();
   const dialog = useMentorDialog();
-  const [premium, setPremium] = useState<boolean | null>(null);
+  const [reflectionAvailable, setReflectionAvailable] = useState<boolean | null>(
+    null,
+  );
   const [mood, setMood] = useState<number | null>(initial?.mood ?? null);
   const [message, setMessage] = useState<string | null>(initial?.message ?? null);
   const [note, setNote] = useState<string>(initial?.struggleNote ?? "");
@@ -83,25 +82,14 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
 
   useEffect(() => {
     let active = true;
-    aiChatControllerGetAccess()
-      .then((res) => {
-        if (!active) return;
-        const access =
-          (res as unknown as { data?: CoachAccessDto }).data ??
-          (res as unknown as CoachAccessDto);
-        const isPremium = access?.mode === "PREMIUM";
-        setPremium(isPremium);
-        if (
-          isPremium &&
-          initial?.mood != null &&
-          initial.aiReflection == null
-        ) {
-          void generateReflection();
-        }
-      })
-      .catch(() => {
-        if (active) setPremium(false);
-      });
+    fetchSubscriptionView().then((view) => {
+      if (!active) return;
+      const available = isPremiumFeatureAvailable(view, "mood.reflection");
+      setReflectionAvailable(available);
+      if (available && initial?.mood != null && initial.aiReflection == null) {
+        void generateReflection();
+      }
+    });
     return () => {
       active = false;
     };
@@ -118,7 +106,7 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
         setMood(result.mood);
         setMessage(result.message);
         setReflection(null);
-        if (premium) await generateReflection();
+        if (reflectionAvailable) await generateReflection();
         onSaved?.(result);
         return true;
       } catch (err) {
@@ -137,7 +125,7 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
         setBusy(false);
       }
     },
-    [generateReflection, onSaved, premium, showErrorToast, tCommon],
+    [generateReflection, onSaved, reflectionAvailable, showErrorToast, tCommon],
   );
 
   const pickMood = useCallback(
@@ -216,6 +204,8 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
     message,
     reflection,
     reflecting,
+    reflectionLocked:
+      reflectionAvailable === false && mood != null && reflection == null,
     openMoodDialog: () => openMoodDialog(),
     needsMoodToday: mood == null,
   };

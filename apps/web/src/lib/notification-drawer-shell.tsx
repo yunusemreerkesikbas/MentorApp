@@ -1,13 +1,27 @@
 "use client";
 import { Award, Brain, FileText, ListCheck, MessageCircle } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import type { AchievementCelebrationDto, NotificationCategory, NotificationListDto, UserNotificationDto } from "@mentor/types";
+import type {
+  AchievementCelebrationDto,
+  JourneyLevelCelebrationView,
+  NotificationCategory,
+  NotificationListDto,
+  UserNotificationDto,
+} from "@mentor/types";
 import { NotificationDrawerProvider, useDialog } from "@mentor/ui";
 import { PuhuImage } from "@/components/puhu-image";
 import { AchievementCelebration } from "@/components/achievements/achievement-celebration";
-import { getUnseenAchievements, markAchievementsCelebrated } from "@/lib/community";
+import { JourneyLevelCelebration } from "@/components/journey-levels/journey-level-celebration";
+import {
+  getUnseenAchievements,
+  getUnseenJourneyLevelCelebrations,
+  markAchievementsCelebrated,
+  markJourneyLevelCelebrated,
+} from "@/lib/community";
+import { buildCelebrationQueue } from "@/lib/celebration-queue";
 import { useRouter } from "@/i18n/navigation";
 import {
   deleteNotification,
@@ -61,24 +75,50 @@ const CATEGORY_FALLBACK: Record<NotificationCategory, string> = {
 export function NotificationDrawerShell({ children }: NotificationDrawerShellProps) {
   const t = useTranslations("notifications");
   const tSession = useTranslations("session");
+  const tJourney = useTranslations("journey_levels");
   const router = useRouter();
   const dialog = useDialog();
   const [data, setData] = useState<NotificationListDto>(EMPTY);
-  const [celebrations, setCelebrations] = useState<AchievementCelebrationDto[]>([]);
+  const [achievementCelebrations, setAchievementCelebrations] = useState<AchievementCelebrationDto[]>([]);
+  const [journeyLevelCelebrations, setJourneyLevelCelebrations] = useState<JourneyLevelCelebrationView[]>([]);
   const [celebrationBusy, setCelebrationBusy] = useState(false);
+  const [journeyCelebrationError, setJourneyCelebrationError] = useState<string | null>(null);
 
-  const refreshCelebrationsRef = useRef<() => void>(() => {});
-  useEffect(() => {
-    refreshCelebrationsRef.current = () => {
-      getUnseenAchievements()
-        .then((result) => setCelebrations(result.celebrations))
-        .catch(() => {/* feature disabled or temporarily offline */});
-    };
-  });
+  const refreshCelebrations = useCallback(async () => {
+    const [achievementsResult, journeyResult] = await Promise.allSettled([
+      getUnseenAchievements(),
+      getUnseenJourneyLevelCelebrations(),
+    ]);
+    if (achievementsResult.status === "fulfilled") {
+      setAchievementCelebrations(achievementsResult.value.celebrations);
+    }
+    if (journeyResult.status === "fulfilled") {
+      setJourneyLevelCelebrations(journeyResult.value.celebrations);
+    }
+  }, []);
+
+  const celebrationQueue = useMemo(
+    () => buildCelebrationQueue(achievementCelebrations, journeyLevelCelebrations),
+    [achievementCelebrations, journeyLevelCelebrations],
+  );
+  const currentCelebration = celebrationQueue[0];
 
   useEffect(() => {
-    listNotifications().then(setData).catch(() => {/* non-blocking — drawer shows empty */});
-    refreshCelebrationsRef.current();
+    void Promise.allSettled([
+      listNotifications(),
+      getUnseenAchievements(),
+      getUnseenJourneyLevelCelebrations(),
+    ]).then(([notificationsResult, achievementsResult, journeyResult]) => {
+      if (notificationsResult.status === "fulfilled") {
+        setData(notificationsResult.value);
+      }
+      if (achievementsResult.status === "fulfilled") {
+        setAchievementCelebrations(achievementsResult.value.celebrations);
+      }
+      if (journeyResult.status === "fulfilled") {
+        setJourneyLevelCelebrations(journeyResult.value.celebrations);
+      }
+    });
   }, []);
 
   // Live "study together" invite → attention-grabbing modal. Kept in a ref so the SSE
@@ -127,8 +167,11 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
           if (payload.event === "study_invite" && payload.actorName) {
             showStudyInviteRef.current(payload.actorName);
           }
-          if (payload.event === "achievement_awarded") {
-            refreshCelebrationsRef.current();
+          if (
+            payload.event === "achievement_awarded" ||
+            payload.event === "journey_level_unlocked"
+          ) {
+            void refreshCelebrations();
           }
           listNotifications().then(setData).catch(() => {});
         };
@@ -145,7 +188,7 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
     function handleVisibility() {
       if (document.visibilityState === "visible") {
         listNotifications().then(setData).catch(() => {});
-        refreshCelebrationsRef.current();
+        void refreshCelebrations();
         if (!es || es.readyState === EventSource.CLOSED) connect();
       }
     }
@@ -158,7 +201,7 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
       if (reconnectTimer) clearTimeout(reconnectTimer);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, []);
+  }, [refreshCelebrations]);
 
   async function handleMarkRead(id: string): Promise<void> {
     await markNotificationRead(id);
@@ -223,12 +266,30 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
   }
 
   async function handleCelebrationClose(): Promise<void> {
-    const current = celebrations[0];
+    const current = currentCelebration;
     if (!current || celebrationBusy) return;
     setCelebrationBusy(true);
+    setJourneyCelebrationError(null);
     try {
-      await markAchievementsCelebrated(current.items.map((item) => item.id));
-      setCelebrations((items) => items.slice(1));
+      if (current.type === "achievement") {
+        await markAchievementsCelebrated(
+          current.celebration.items.map((item) => item.id),
+        );
+        setAchievementCelebrations((items) =>
+          items.filter((item) => item !== current.celebration),
+        );
+      } else {
+        await markJourneyLevelCelebrated(current.celebration.id);
+        setJourneyLevelCelebrations((items) =>
+          items.filter((item) => item.id !== current.celebration.id),
+        );
+      }
+    } catch {
+      if (current.type === "journey-level") {
+        setJourneyCelebrationError(
+          tJourney("celebration.acknowledge_error"),
+        );
+      }
     } finally {
       setCelebrationBusy(false);
     }
@@ -265,13 +326,24 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
       }}
     >
       {children}
-      {celebrations[0] && (
-        <AchievementCelebration
-          celebration={celebrations[0]}
-          busy={celebrationBusy}
-          onClose={() => void handleCelebrationClose()}
-        />
-      )}
+      <AnimatePresence initial={false} mode="wait">
+        {currentCelebration?.type === "achievement" ? (
+          <AchievementCelebration
+            key={`achievement:${currentCelebration.celebration.kind}:${currentCelebration.celebration.items.map((item) => item.id).join(":")}`}
+            celebration={currentCelebration.celebration}
+            busy={celebrationBusy}
+            onClose={() => void handleCelebrationClose()}
+          />
+        ) : currentCelebration?.type === "journey-level" ? (
+          <JourneyLevelCelebration
+            key={`journey-level:${currentCelebration.celebration.id}`}
+            celebration={currentCelebration.celebration}
+            busy={celebrationBusy}
+            error={journeyCelebrationError}
+            onClose={() => void handleCelebrationClose()}
+          />
+        ) : null}
+      </AnimatePresence>
     </NotificationDrawerProvider>
   );
 }

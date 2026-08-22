@@ -63,9 +63,14 @@ export class LedgerRepository {
   }
 
   /** Append one immutable entry. Idempotent on (refType,refId): a duplicate is a no-op. */
-  async append(entry: NewLedgerEntry, exec?: DatabaseTx): Promise<void> {
-    await this.onService(exec, async (tx) => {
-      await tx.insert(ledgerEntries).values(entry).onConflictDoNothing();
+  async append(entry: NewLedgerEntry, exec?: DatabaseTx): Promise<boolean> {
+    return this.onService(exec, async (tx) => {
+      const inserted = await tx
+        .insert(ledgerEntries)
+        .values(entry)
+        .onConflictDoNothing()
+        .returning({ id: ledgerEntries.id });
+      return inserted.length > 0;
     });
   }
 

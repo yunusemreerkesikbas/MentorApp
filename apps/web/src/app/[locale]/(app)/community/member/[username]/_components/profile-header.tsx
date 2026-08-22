@@ -6,7 +6,6 @@ import {
   Globe,
   MoreHorizontal,
   Share2,
-  Sparkles,
   Users,
   X,
 } from "lucide-react";
@@ -16,7 +15,9 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { PublicProfile } from "@mentor/types";
 
+import { JourneyLevelProfile } from "@/components/journey-levels/journey-level-profile";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
+import { PremiumIdentityMark } from "@/components/premium/premium-identity-mark";
 import { UserAvatar } from "@/components/user-avatar";
 import { getPathname, Link } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
@@ -24,9 +25,6 @@ import { resolveAvatarUrl } from "@/lib/avatar";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { AuthorAvatar } from "../../../_components/author-avatar";
 import { BadgeStrip } from "../../../_components/badge-strip";
-import { getProfileLevelWindow } from "./profile-level-window";
-
-const MAX_LEVEL = 12;
 
 interface ProfileHeaderProps {
   profile: PublicProfile;
@@ -206,16 +204,7 @@ export function ProfileHeader({
             <h1 className="truncate text-[22px] font-bold leading-tight tracking-[-0.025em] text-[var(--color-main)] sm:text-2xl">
               {profile.displayName}
             </h1>
-            {profile.isPremium ? (
-              <span
-                role="img"
-                aria-label={t("profile_premium_member")}
-                title={t("profile_premium_member")}
-                className="grid size-4 shrink-0 place-items-center bg-transparent text-[color-mix(in_srgb,var(--color-star)_62%,var(--color-main))]"
-              >
-                <Sparkles size={14} strokeWidth={2.2} aria-hidden />
-              </span>
-            ) : null}
+            {profile.isPremium ? <PremiumIdentityMark /> : null}
           </div>
           <p className="mt-1 text-[13px] font-medium text-[var(--color-secondary)]">@{profile.username}</p>
           <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-[var(--color-secondary)] xl:justify-start">
@@ -376,44 +365,25 @@ function BuddyAction({ status, onRequest }: { status: PublicProfile["buddyStatus
   );
 }
 
-export function ProfileProgressPanel({ profile }: { profile: PublicProfile }) {
+export function ProfileProgressPanel({
+  profile,
+  isOwner,
+}: {
+  profile: PublicProfile;
+  isOwner: boolean;
+}) {
   const t = useTranslations("community");
-  const locale = useLocale();
   const level = profile.level;
-  const percent = level?.nextAt ? Math.min(100, Math.round((level.xp / level.nextAt) * 100)) : 100;
-  const levels = level ? getProfileLevelWindow(level.tier, MAX_LEVEL) : [];
 
   return (
     <section className="profile-progress-panel overflow-hidden rounded-[var(--radius-card)] border border-[color-mix(in_srgb,var(--color-btn-label)_10%,transparent)] p-4 text-[var(--color-btn-label)] xl:p-5">
-      <h2 className="text-base font-bold">{t("profile_progress_title")}</h2>
-
       {level ? (
-        <>
-          <div className="mt-3 grid grid-cols-3 items-end gap-2 xl:mt-4" aria-label={t("level_label", { tier: level.tier })}>
-            {levels.map((tier, index) => (
-              <LevelMedallion
-                key={`${tier ?? "empty"}-${index}`}
-                tier={tier}
-                current={tier === level.tier}
-                future={tier === null || tier > level.tier}
-              />
-            ))}
-          </div>
-          <div className="mt-2 text-center xl:mt-4">
-            <p className="text-sm font-bold text-[var(--color-btn-label)]">{t("level_label", { tier: level.tier })} · {t(`level_${level.tier}` as "level_1")}</p>
-          </div>
-          <div className="mt-3 xl:mt-4">
-            <div className="flex items-center justify-between text-xs text-[color-mix(in_srgb,var(--color-btn-label)_70%,transparent)]">
-              <span>{t("stat_xp")}</span>
-              <span className="tabular-nums">{level.xp.toLocaleString(locale)}{level.nextAt ? ` / ${level.nextAt.toLocaleString(locale)}` : ""}</span>
-            </div>
-            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--color-btn-label)_15%,transparent)] xl:mt-2">
-              <div className="h-full rounded-full bg-[var(--color-progress)]" style={{ width: `${percent}%` }} />
-            </div>
-          </div>
-        </>
+        <JourneyLevelProfile level={level} isOwner={isOwner} />
       ) : (
-        <p className="mt-5 text-sm text-[color-mix(in_srgb,var(--color-btn-label)_70%,transparent)]">{t("profile_progress_unavailable")}</p>
+        <>
+          <h2 className="text-base font-bold">{t("profile_progress_title")}</h2>
+          <p className="mt-5 text-sm text-[color-mix(in_srgb,var(--color-btn-label)_70%,transparent)]">{t("profile_progress_unavailable")}</p>
+        </>
       )}
 
       <div className="mt-4 border-t border-[color-mix(in_srgb,var(--color-btn-label)_10%,transparent)] pt-3 xl:mt-5 xl:pt-4">
@@ -429,21 +399,5 @@ export function ProfileProgressPanel({ profile }: { profile: PublicProfile }) {
         </div>
       ) : null}
     </section>
-  );
-}
-
-function LevelMedallion({ tier, current, future }: { tier: number | null; current: boolean; future: boolean }) {
-  return (
-    <div className={`profile-level-medallion flex flex-col items-center transition-transform duration-200 motion-reduce:transition-none ${current ? "profile-level-medallion--current -translate-y-1" : ""}`}>
-      <div className={`relative grid aspect-square w-full max-w-16 place-items-center xl:max-w-[76px] ${future ? "opacity-45" : ""}`}>
-        <svg viewBox="0 0 80 80" className="absolute inset-0 h-full w-full" aria-hidden>
-          <path d="M40 3 70 20v40L40 77 10 60V20Z" fill={current ? "var(--color-progress)" : future ? "transparent" : "color-mix(in srgb, var(--color-progress-track) 55%, var(--color-btn))"} stroke={future ? "color-mix(in srgb, var(--color-btn-label) 72%, transparent)" : current ? "var(--color-progress-track)" : "var(--color-btn-label)"} strokeWidth={current ? "3" : "2"} />
-          <path d="M40 10 64 24v32L40 70 16 56V24Z" fill="none" stroke="color-mix(in srgb, var(--color-btn-label) 45%, transparent)" strokeWidth="1" />
-        </svg>
-        {tier === null ? null : (
-          <span className={`relative text-lg font-extrabold tabular-nums ${current ? "text-white" : "text-[var(--color-btn-label)]"}`}>{tier}</span>
-        )}
-      </div>
-    </div>
   );
 }

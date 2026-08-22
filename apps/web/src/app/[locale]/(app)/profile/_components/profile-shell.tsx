@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
-import type { AuthUser } from "@mentor/types";
-import { ApiClientError, usersControllerMe } from "@mentor/api-client";
+import type { AuthUser, SubscriptionView } from "@mentor/types";
+import { ApiClientError, subscriptionsControllerGetMine, usersControllerMe } from "@mentor/api-client";
 import { Card, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
@@ -20,7 +20,7 @@ import { getProfileLinks } from "@/lib/profile-links";
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; user: AuthUser };
+  | { status: "ready"; premium: boolean; user: AuthUser };
 
 /**
  * /settings orchestrator — account hub only; public identity lives under /community/member.
@@ -34,12 +34,20 @@ export function ProfileShell({ openProfileEditor = false }: { openProfileEditor?
 
   useEffect(() => {
     let active = true;
-    usersControllerMe()
-      .then((userRes) => {
+    Promise.all([
+      usersControllerMe(),
+      subscriptionsControllerGetMine().catch(() => null),
+    ])
+      .then(([userRes, subscription]) => {
         if (!active) return;
         const user = userRes as unknown as AuthUser;
         setUserFromServer(user);
-        setState({ status: "ready", user });
+        const view = subscription as unknown as SubscriptionView | null;
+        setState({
+          status: "ready",
+          premium: Boolean(view?.entitlement?.isPremium),
+          user,
+        });
       })
       .catch((err: unknown) => {
         if (!active) return;
@@ -70,11 +78,11 @@ export function ProfileShell({ openProfileEditor = false }: { openProfileEditor?
     );
   }
 
-  const { user } = state;
+  const { premium, user } = state;
   const hasSocialLinks = getProfileLinks().social.length > 0;
   const handleUserSaved = (next: AuthUser) => {
     setUserFromServer(next);
-    setState({ status: "ready", user: next });
+    setState({ status: "ready", premium, user: next });
   };
   const motionProps = reduceMotion
     ? {}
@@ -91,6 +99,7 @@ export function ProfileShell({ openProfileEditor = false }: { openProfileEditor?
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <ProfileHeader
               autoOpenEdit={openProfileEditor}
+              premium={premium}
               user={user}
               onSaved={(next) => {
                 handleUserSaved(next);

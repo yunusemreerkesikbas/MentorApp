@@ -10,7 +10,11 @@ import { Link } from "@/i18n/navigation";
 import { PuhuCoachBubble } from "@/components/puhu-coach-bubble";
 import { SuggestedTaskCard } from "@/components/suggested-task-card";
 import { useStreakCelebration } from "@/components/streak-celebration";
-import { fetchCoachAccess, requestSessionReflection } from "@/lib/coach";
+import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
+import { requestSessionReflection } from "@/lib/coach";
+import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
+import { usePremiumPaywall } from "@/lib/premium-paywall";
+import { fetchSubscriptionView } from "@/lib/subscription-view";
 import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
 import {
   findNewlyCompletedQuests,
@@ -92,6 +96,8 @@ export function SessionDoneState({
     subject: string | null;
   } | null>(null);
   const [reflecting, setReflecting] = useState(false);
+  const [reflectionLocked, setReflectionLocked] = useState(false);
+  const { openPaywall } = usePremiumPaywall();
   const [remindStatus, setRemindStatus] = useState<"idle" | "saving" | "done">("idle");
   const [streakFeedback, setStreakFeedback] = useState<StreakFeedback>(null);
   const [currentStreak, setCurrentStreak] = useState<number | null>(null);
@@ -157,8 +163,11 @@ export function SessionDoneState({
     if (!sessionId) return;
     setReflecting(true);
     try {
-      const access = await fetchCoachAccess();
-      if (access.mode !== "PREMIUM") return;
+      const view = await fetchSubscriptionView();
+      if (!isPremiumFeatureAvailable(view, "session.reflection")) {
+        setReflectionLocked(true);
+        return;
+      }
       const res = await requestSessionReflection(sessionId);
       if (res.reflection) setReflection(res.reflection);
       if (res.suggestedTask) setSuggestedTask(res.suggestedTask);
@@ -342,6 +351,12 @@ export function SessionDoneState({
               {t("reflection_loading")}
             </p>
           )}
+          {reflectionLocked && !reflecting && !reflection ? (
+            <PremiumLockNudge
+              label={t("premium_nudge")}
+              onClick={() => openPaywall({ sourceFeature: "session.reflection" })}
+            />
+          ) : null}
           {reflection && (
             <PuhuCoachBubble
               message={reflection}

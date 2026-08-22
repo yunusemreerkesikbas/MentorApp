@@ -1,7 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { LayoutList, Settings2, X } from "lucide-react";
+import {
+  CalendarClock,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  LayoutList,
+  LoaderCircle,
+  RotateCcw,
+  Settings2,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { NotebookEntryDto } from "@mentor/types";
@@ -11,7 +22,12 @@ import { FormError } from "@/components/form";
 import { NotebookCompactButton } from "@/components/notebook/notebook-compact-button";
 import { NotebookImageLightbox } from "@/components/notebook/notebook-image-lightbox";
 import { reviewNotebookEntry, updateNotebookEntry } from "@/lib/notebook";
-import { nextUnansweredIndex } from "@/lib/notebook-review-deck";
+import {
+  bySubject,
+  nextUnansweredIndex,
+  reviewFeedback,
+  type ReviewFeedback,
+} from "@/lib/notebook-review-deck";
 import {
   NotebookReviewCard,
   REVIEW_CARD_BOX,
@@ -57,9 +73,11 @@ interface NotebookReviewPanelProps {
  * bottom of the question, which is the one thing on screen that must stay readable, and buttons
  * that belong to the review rather than to a face do not need to be duplicated per side.
  *
- * ponytail: swipe answers, so the old prev/next arrows are gone and ←/→ answer instead. Browsing a
- * due deck without answering was navigation for its own sake; "sonra" is the X in the corner, and
- * jumping to a specific card is what the list is for.
+ * Swipe and the two buttons answer; the arrow pair beside them only moves the cursor. A student who
+ * cannot face a card right now has to be able to put it down without lying to the scheduler, and the
+ * list view only covers that on a deck big enough to show the list toggle. ←/→ drive the arrows,
+ * not the answers: the keys have to mean what the controls next to them mean, and answering stays
+ * reachable from the keyboard through the buttons themselves.
  */
 export function NotebookReviewPanel({
   entries,
@@ -79,23 +97,29 @@ export function NotebookReviewPanel({
    * deck skipped the card after each one. A session is a fixed set of cards; which of them still
    * count as due is the shell's business, and it keeps that in its own state.
    */
-  const [fullDeck, setFullDeck] = useState(entries);
+  const [deck, setDeck] = useState(() => bySubject(entries));
   const [index, setIndex] = useState(0);
-  /**
-   * Study one subject at a time. A twenty-card deck that jumps between Matematik and Tarih on every
-   * turn is worse than eight cards of one thing, and the list already knows how to group them.
-   *
-   * ponytail: the filter is a subject *name*, and the "no subject yet" group is not offered as one.
-   * Wrapping the value just to distinguish "no filter" from "filter to the unlabelled ones" would
-   * be machinery for a deck nobody asks to study.
-   */
-  const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
   /** Answered in *this* session — what stops the list offering a second review of the same card. */
   const [answered, setAnswered] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
   );
-  /** Only the solved tally is kept — enough for the closing summary, and nothing is shown mid-deck. */
-  const [solvedCount, setSolvedCount] = useState(0);
+  /**
+   * What this session actually did, in answer order — the closing screen's only source.
+   *
+   * A solved tally was enough while the summary was one sentence. It is not enough to say *which*
+   * cards caught the student again, and that list is the one part of the summary that tells them
+   * something they could not have counted themselves.
+   */
+  const [outcomes, setOutcomes] = useState<
+    readonly { entry: NotebookEntryDto; solved: boolean }[]
+  >([]);
+  /**
+   * The one line the deck says back after an answer, cleared on a timer.
+   *
+   * Held here rather than in the card: the card it describes is already flying off screen by the
+   * time it is read, and a message that unmounts with its subject is a message nobody sees.
+   */
+  const [feedback, setFeedback] = useState<ReviewFeedback>(null);
   /** Which way the answered card flies out — +1 solved (right), -1 missed (left). */
   const [direction, setDirection] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -109,15 +133,13 @@ export function NotebookReviewPanel({
    * community on the *first* miss would be offering it to everyone, every time, which is noise.
    */
   const [stuck, setStuck] = useState<NotebookEntryDto | null>(null);
+  /**
+   * Set when the student leaves with cards still in the deck — the summary then reports what they
+   * left rather than pretending the day is over.
+   */
+  const [exited, setExited] = useState(false);
 
-  // Derived, not copied: one deck in state, and the filter is a view of it. Copying would leave the
-  // note-edit patch writing into whichever of the two the student is not looking at.
-  const deck = subjectFilter
-    ? fullDeck.filter((card) => card.subjectName === subjectFilter)
-    : fullDeck;
   const entry = index >= 0 ? deck[index] : undefined;
-  /** Across the whole session, not the filtered view — what decides whether the day is really over. */
-  const remainingAll = fullDeck.filter((card) => !answered.has(card.id)).length;
 
   /** Where the deck goes once `id` is answered — wraps back for anything jumped over. */
   const advance = useCallback(
@@ -136,42 +158,48 @@ export function NotebookReviewPanel({
     [answered, deck, index],
   );
 
-  /** Switching subject restarts the cursor at the first card of the new view still unanswered. */
-  const applyFilter = useCallback(
-    (next: string | null) => {
-      const nextDeck = next
-        ? fullDeck.filter((card) => card.subjectName === next)
-        : fullDeck;
-      setSubjectFilter(next);
-      setIndex(
-        nextUnansweredIndex(
-          nextDeck.map((card) => card.id),
-          answered,
-          -1,
-        ),
-      );
+  /**
+   * Leaving. Shows the summary when there is something to report, closes outright when there is not.
+   *
+   * The guard matters more than the screen: putting a report in front of someone who opened the deck
+   * and immediately changed their mind is how a close button stops being a close button. One
+   * answered card is the whole bar — below it there is nothing to summarise anyway.
+   */
+  const leave = useCallback(() => {
+    if (outcomes.length > 0 && index >= 0) setExited(true);
+    else onClose();
+  }, [index, onClose, outcomes.length]);
+
+  /** Jump to a card by id rather than by position — the list and the deck are the same array. */
+  const pickCard = useCallback(
+    (id: string) => {
+      setIndex(deck.findIndex((card) => card.id === id));
       setListOpen(false);
     },
-    [answered, fullDeck],
+    [deck],
   );
 
   /**
-   * Jump to a card by id rather than by position: the list shows the whole deck while the deck
-   * itself may be filtered, so an index would mean different cards on the two sides. Picking a card
-   * outside the active filter clears the filter — the student pointed at it, so it wins.
+   * Move the cursor without answering, skipping anything already done and wrapping at both ends.
+   *
+   * ponytail: one function for both arrows. "Previous" on a deck that wraps is just `step(-1)`, and
+   * a second copy walking the other way is the same loop with two signs flipped.
    */
-  const pickCard = useCallback(
-    (id: string) => {
-      const inView = deck.findIndex((card) => card.id === id);
-      if (inView >= 0) {
-        setIndex(inView);
-      } else {
-        setSubjectFilter(null);
-        setIndex(fullDeck.findIndex((card) => card.id === id));
+  const step = useCallback(
+    (delta: number) => {
+      const ids = deck.map((card) => card.id);
+      if (ids.length === 0) return;
+      let cursor = index;
+      for (let n = 0; n < ids.length; n += 1) {
+        cursor = (cursor + delta + ids.length) % ids.length;
+        if (!answered.has(ids[cursor]!)) {
+          setDirection(delta);
+          setIndex(cursor);
+          return;
+        }
       }
-      setListOpen(false);
     },
-    [deck, fullDeck],
+    [answered, deck, index],
   );
 
   const answer = useCallback(
@@ -184,7 +212,10 @@ export function NotebookReviewPanel({
         const wasProgressing = entry.reviewCount > 0;
         const updated = await reviewNotebookEntry(entry.id, solved);
         onReviewed(updated);
-        if (solved) setSolvedCount((current) => current + 1);
+        setOutcomes((current) => [...current, { entry: updated, solved }]);
+        // The days come from the entry the server returned, never from a copy of the ladder here:
+        // two sources for one schedule is one that drifts on the next policy change.
+        setFeedback(reviewFeedback(updated));
         // The answer landed either way, so the card is done for this session before the stuck
         // screen takes over — otherwise skipping past it would offer the same card again.
         advance(entry.id);
@@ -208,7 +239,7 @@ export function NotebookReviewPanel({
     async (patch: Parameters<typeof updateNotebookEntry>[1]) => {
       if (!entry) return;
       const updated = await updateNotebookEntry(entry.id, patch);
-      setFullDeck((current) =>
+      setDeck((current) =>
         current.map((card) => (card.id === updated.id ? updated : card)),
       );
       onEntryUpdated?.(updated);
@@ -228,6 +259,12 @@ export function NotebookReviewPanel({
   );
 
   useEffect(() => {
+    if (!feedback) return;
+    const timer = setTimeout(() => setFeedback(null), FEEDBACK_MS);
+    return () => clearTimeout(timer);
+  }, [feedback]);
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       // The lightbox owns the keyboard while it is open — otherwise one Escape closes both, and an
       // arrow key answers a card the student is only looking at.
@@ -236,17 +273,16 @@ export function NotebookReviewPanel({
         // Escape backs out one layer at a time: the list first, the whole review only once the
         // student is looking at a card again.
         if (listOpen) setListOpen(false);
-        else onClose();
+        else leave();
         return;
       }
       if (listOpen || busy || stuck || !entry) return;
-      // Same mapping as the swipe, now that the arrows no longer browse the deck.
-      if (event.key === "ArrowRight") void answer(true);
-      if (event.key === "ArrowLeft") void answer(false);
+      if (event.key === "ArrowRight") step(1);
+      if (event.key === "ArrowLeft") step(-1);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [answer, busy, entry, listOpen, onClose, stuck, zoomed]);
+  }, [busy, entry, leave, listOpen, step, stuck, zoomed]);
 
   /** Answered cards fly out the way they were sent; the next one rises from the stack behind. */
   const cardVariants = {
@@ -268,9 +304,8 @@ export function NotebookReviewPanel({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: reduceMotion ? 0 : 0.2 }}
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 p-4"
-        style={{ background: "rgba(0,0,0,0.85)" }}
-        onClick={onClose}
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/70 p-4 backdrop-blur-md"
+        onClick={leave}
         role="dialog"
         aria-modal="true"
         aria-label={t("review_title")}
@@ -282,7 +317,7 @@ export function NotebookReviewPanel({
               pressed={listOpen}
               onClick={() => setListOpen((current) => !current)}
             >
-              <LayoutList aria-hidden size={18} />
+              <LayoutList aria-hidden size={19} strokeWidth={2.25} />
             </OverlayControl>
           ) : null}
           {onEdit && entry ? (
@@ -290,15 +325,15 @@ export function NotebookReviewPanel({
               label={t("entry_edit_title")}
               onClick={() => onEdit(entry)}
             >
-              <Settings2 aria-hidden size={18} />
+              <Settings2 aria-hidden size={19} strokeWidth={2.25} />
             </OverlayControl>
           ) : null}
-          <OverlayControl label={t("card_preview_close")} onClick={onClose}>
-            <X aria-hidden size={18} />
+          <OverlayControl label={t("card_preview_close")} onClick={leave}>
+            <X aria-hidden size={19} strokeWidth={2.25} />
           </OverlayControl>
         </div>
 
-        {stuck || !entry ? (
+        {stuck || exited || !entry ? (
           <div
             // Same column as the cards. At `max-w-xl` these two screens were 160px wider than the
             // deck they interrupt, so the modal visibly changed shape at exactly the two moments
@@ -314,19 +349,13 @@ export function NotebookReviewPanel({
           >
             {stuck ? (
               <StuckPanel entry={stuck} onSkip={() => setStuck(null)} />
-            ) : subjectFilter && remainingAll > 0 ? (
-              // The filtered view ran out, the day did not. Saying "bugünlük bu kadar" here would
-              // be telling the student they are done while cards from other subjects are still due.
-              <SubjectDonePanel
-                subject={subjectFilter}
-                remaining={remainingAll}
-                onContinue={() => applyFilter(null)}
-                onClose={onClose}
-              />
             ) : (
               <DonePanel
-                total={fullDeck.length}
-                solved={solvedCount}
+                total={deck.length}
+                outcomes={outcomes}
+                // Only ever non-zero on the way out: a deck that ended on its own has no card left
+                // to skip, so this is the number that makes "atlanan" mean anything at all.
+                skipped={deck.length - outcomes.length}
                 onClose={onClose}
               />
             )}
@@ -336,61 +365,76 @@ export function NotebookReviewPanel({
             className="flex flex-col items-center gap-4"
             onClick={(event) => event.stopPropagation()}
           >
-            {listOpen || deck.length > 1 || subjectFilter ? (
-              <span
-                className="rounded-full px-2.5 py-1 text-xs font-semibold"
-                style={{
-                  color: "#ffffff",
-                  backgroundColor: "rgba(255,255,255,0.15)",
-                }}
-              >
-                {listOpen
-                  ? t("review_list_remaining", { count: remaining })
-                  : subjectFilter
-                    ? `${subjectFilter} · ${t("review_progress", {
-                        current: index + 1,
-                        total: deck.length,
-                      })}`
-                    : t("review_progress", {
-                        current: index + 1,
-                        total: deck.length,
-                      })}
-              </span>
-            ) : null}
-
+            {/* No "N kart kaldı" chip over the list. The deck now *is* the count — nine slabs,
+                two of them checked off — so the line was a caption reading out what the picture
+                already shows, sitting where the filter chips need to be. */}
             {listOpen ? (
               <NotebookReviewList
-                entries={fullDeck}
+                entries={deck}
                 currentId={entry?.id ?? null}
                 answered={answered}
-                subjectFilter={subjectFilter}
-                onFilter={applyFilter}
                 onPick={pickCard}
               />
             ) : (
               <>
                 <div className="relative flex items-center justify-center">
-                  {/* The rest of the deck, as one card peeking out behind the live one. Cheaper
-                      than a real stack and says the same thing: there is more after this. */}
-                  {remaining > 1 ? (
-                    <div
-                      aria-hidden
-                      className={`pointer-events-none absolute ${REVIEW_CARD_BOX} rounded-[var(--radius-card)]`}
+                  {/* On the card's own top-left corner rather than a chip floating above the deck.
+                      The chip cost a whole row of vertical space on a screen whose card is already
+                      capped by viewport height, and a progress counter belongs to the card it is
+                      counting. It sits outside the turning element, so it does not flip with it. */}
+                  {deck.length > 1 ? (
+                    <span
+                      className="pointer-events-none absolute left-2 top-2 z-10 rounded-full px-2.5 py-1 text-xs font-semibold"
                       style={{
-                        backgroundColor: "var(--color-surface)",
-                        border:
-                          "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
-                        opacity: 0.55,
-                        // Scale first, then push down (CSS applies these right to left), so the
-                        // offset is not eaten by the shrink — at 0.95 the card loses ~11px of
-                        // height, and a 22px translate is what leaves a visible sliver rather
-                        // than a hairline.
-                        transform: "translateY(22px) scale(0.95)",
+                        color: "var(--color-main)",
+                        backgroundColor:
+                          "color-mix(in srgb, var(--color-surface) 80%, transparent)",
+                        boxShadow: "var(--shadow-card)",
                       }}
-                    />
+                    >
+                      {t("review_progress", {
+                        current: index + 1,
+                        total: deck.length,
+                      })}
+                    </span>
                   ) : null}
 
-                  <AnimatePresence mode="wait" custom={direction} initial={false}>
+                  {/* The rest of the deck, as one card peeking out behind the live one. Cheaper
+                      than a real stack and says the same thing: there is more after this. */}
+                  {/* The rest of the deck, as two cards fanned out behind the live one.
+                      Cheaper than a real stack and says the same thing — there is more after this —
+                      but *aligned* copies said it badly: a card squarely behind another reads as a
+                      drop shadow, not as a second card. The tilt is what makes it a pile. */}
+                  {STACK_LAYERS.filter((layer) => remaining > layer.after).map(
+                    (layer) => (
+                      <div
+                        key={layer.after}
+                        aria-hidden
+                        className={`pointer-events-none absolute ${REVIEW_CARD_BOX} rounded-[var(--radius-card)]`}
+                        style={{
+                          // Same surface as the live card. They were tinted while the front was
+                          // tinted too; once the photo front went back to plain surface, a coloured
+                          // pile behind a colourless card was just an inconsistency. What makes them
+                          // read as cards is the tilt, not a fill.
+                          backgroundColor: "var(--color-surface)",
+                          border:
+                            "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
+                          boxShadow: "var(--shadow-card)",
+                          opacity: layer.opacity,
+                          // Rotate last, scale first (CSS applies these right to left), so the
+                          // offset is not eaten by the shrink and the tilt pivots on the card's own
+                          // middle rather than swinging it sideways.
+                          transform: `translateY(${layer.y}px) rotate(${layer.rotate}deg) scale(${layer.scale})`,
+                        }}
+                      />
+                    ),
+                  )}
+
+                  <AnimatePresence
+                    mode="wait"
+                    custom={direction}
+                    initial={false}
+                  >
                     <motion.div
                       key={entry.id}
                       custom={direction}
@@ -414,7 +458,8 @@ export function NotebookReviewPanel({
                         onSolutionNoteSave={saveSolutionNote}
                         onSolutionZoom={
                           entry.solutionUrl
-                            ? () => setZoomed({ ...entry, url: entry.solutionUrl })
+                            ? () =>
+                                setZoomed({ ...entry, url: entry.solutionUrl })
                             : null
                         }
                       />
@@ -422,34 +467,88 @@ export function NotebookReviewPanel({
                   </AnimatePresence>
                 </div>
 
-                <div className={`flex ${REVIEW_CARD_WIDTH} flex-col gap-2`}>
+                <div className={`flex ${REVIEW_CARD_WIDTH} flex-col gap-3`}>
                   <FormError message={error} />
+
+                  {/* What the last answer actually did — the thing the deck used to be silent
+                      about. A fixed-height slot, empty or not: letting it collapse would bounce the
+                      button row on every answer, and the buttons are where the thumb is aiming.
+                      `aria-live` announces it without taking focus off the deck. */}
                   <p
-                    className="text-center text-xs"
-                    style={{ color: "rgba(255,255,255,0.75)" }}
+                    aria-live="polite"
+                    className="flex h-5 items-center justify-center gap-1.5 text-center text-xs font-semibold"
+                    style={{
+                      color:
+                        feedback?.kind === "healed"
+                          ? "var(--color-success)"
+                          : "rgba(255,255,255,0.75)",
+                    }}
                   >
-                    {reduceMotion
-                      ? t("review_flip_hint")
-                      : t("review_deck_hint")}
+                    {feedback?.kind === "healed" ? (
+                      <>
+                        <Sparkles aria-hidden size={13} />
+                        {t("review_feedback_healed")}
+                      </>
+                    ) : feedback?.kind === "due" ? (
+                      <>
+                        <CalendarClock aria-hidden size={13} />
+                        {t("review_feedback_due", { days: feedback.days })}
+                      </>
+                    ) : null}
                   </p>
-                  <div className="flex gap-2">
-                    <NotebookCompactButton
-                      variant="secondary"
-                      onDark
-                      large
-                      disabled={busy}
-                      onClick={() => void answer(false)}
+
+                  {/* Four glyphs and no prose. The words moved into the hover/focus tooltip each
+                      button carries: on the deck they were four labels competing with the card, and
+                      after the first card nobody reads them again — but a glyph nobody can name yet
+                      still has to be nameable, which is what the tooltip and the aria-label are for.
+                      Weight, not colour, is what separates the pair from the arrows: the verdicts
+                      are 60px and centred, the arrows 44px and pushed to the margins. */}
+                  <div className="flex items-center justify-center gap-3">
+                    <DeckButton
+                      label={t("review_prev")}
+                      variant="ghost"
+                      disabled={busy || remaining < 2}
+                      onClick={() => step(-1)}
                     >
-                      {t("review_missed")}
-                    </NotebookCompactButton>
-                    <NotebookCompactButton
-                      tone="success"
-                      large
-                      busy={busy}
-                      onClick={() => void answer(true)}
+                      <ChevronLeft aria-hidden size={22} strokeWidth={2.25} />
+                    </DeckButton>
+
+                    <div className="flex items-center gap-4 px-2">
+                      <DeckButton
+                        label={t("review_missed")}
+                        variant="missed"
+                        disabled={busy}
+                        onClick={() => void answer(false)}
+                      >
+                        <RotateCcw aria-hidden size={24} strokeWidth={2.25} />
+                      </DeckButton>
+                      <DeckButton
+                        label={t("review_solved")}
+                        variant="solved"
+                        disabled={busy}
+                        onClick={() => void answer(true)}
+                      >
+                        {busy ? (
+                          <LoaderCircle
+                            aria-hidden
+                            size={24}
+                            strokeWidth={2.5}
+                            className="animate-spin motion-reduce:animate-none"
+                          />
+                        ) : (
+                          <Check aria-hidden size={26} strokeWidth={2.75} />
+                        )}
+                      </DeckButton>
+                    </div>
+
+                    <DeckButton
+                      label={t("review_next")}
+                      variant="ghost"
+                      disabled={busy || remaining < 2}
+                      onClick={() => step(1)}
                     >
-                      {t("review_solved")}
-                    </NotebookCompactButton>
+                      <ChevronRight aria-hidden size={22} strokeWidth={2.25} />
+                    </DeckButton>
                   </div>
                 </div>
               </>
@@ -465,6 +564,106 @@ export function NotebookReviewPanel({
   );
 }
 
+/**
+ * Every control under the card: the two verdicts and the two arrows that move past one.
+ *
+ * One component because the four are one row and have to line up — same ring, same disabled
+ * treatment, same tooltip — and three near-identical button bodies is how a row drifts out of
+ * alignment on the next edit. What differs is only weight, which is the whole point: `solved` is a
+ * filled disc, `missed` an outlined one the same size, and `ghost` is smaller and quieter, because
+ * an arrow that looked like a verdict would invite walking the deck without grading a single card.
+ *
+ * ponytail: the tooltip is a sibling span on `group-hover` / `group-focus-visible`, not a floating
+ * library. It has one placement (above), never flips, and lives inside a fixed dialog with room
+ * over it — every reason to reach for a positioning engine is absent here. It is `aria-hidden`; the
+ * accessible name is the `aria-label`, so the two never disagree.
+ */
+function DeckButton({
+  label,
+  variant,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string;
+  variant: "solved" | "missed" | "ghost";
+  disabled: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  const verdict = variant !== "ghost";
+  const style =
+    variant === "solved"
+      ? {
+          // Same inversion the card's swipe cue handles: the success green flips between themes,
+          // so the glyph on top of it takes the button label colour rather than a literal white.
+          backgroundColor: "var(--color-success)",
+          color: "var(--color-btn-label)",
+          border: "1px solid transparent",
+          boxShadow:
+            "0 8px 24px color-mix(in srgb, var(--color-success) 35%, transparent)",
+        }
+      : variant === "missed"
+        ? {
+            // Outlined and never red. Missing a card costs a shorter interval, not a scolding —
+            // the same reasoning as the swipe cue it mirrors.
+            backgroundColor: "rgba(255,255,255,0.10)",
+            color: "#ffffff",
+            border: "1px solid rgba(255,255,255,0.45)",
+          }
+        : {
+            backgroundColor: "rgba(255,255,255,0.12)",
+            color: "#ffffff",
+            border: "1px solid transparent",
+          };
+
+  return (
+    <div className="group relative flex">
+      <button
+        type="button"
+        aria-label={label}
+        disabled={disabled}
+        onClick={onClick}
+        className={`flex ${
+          verdict ? "size-[60px]" : "size-11"
+        } shrink-0 cursor-pointer items-center justify-center rounded-full outline-none transition-transform duration-150 hover:scale-105 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:scale-100 motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100`}
+        style={style}
+      >
+        {children}
+      </button>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 motion-reduce:transition-none"
+        style={{ backgroundColor: "rgba(255,255,255,0.18)", color: "#ffffff" }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * The two cards drawn behind the live one, furthest first.
+ *
+ * Fixed values, not jitter: a random tilt per render is a pile that rearranges itself every time
+ * React re-runs, and "the deck moved on its own" is a bug report. `after` is how many cards must
+ * still be unanswered for that layer to be worth drawing — no point promising two more cards when
+ * there is one.
+ */
+/**
+ * How long the answer line stays up.
+ *
+ * Long enough to read six words after the eye has followed a card off screen, short enough that it
+ * is gone before the next answer needs the slot. It is not dismissible: nothing here is worth a
+ * close button, and a message that outlives its card is worse than one that leaves early.
+ */
+const FEEDBACK_MS = 2200;
+
+const STACK_LAYERS = [
+  { after: 2, y: 26, rotate: 3.5, scale: 0.93, opacity: 0.45 },
+  { after: 1, y: 14, rotate: -2.5, scale: 0.965, opacity: 0.7 },
+];
+
 /** Round control floating on the backdrop — close, and the list toggle beside it. */
 function OverlayControl({
   label,
@@ -478,21 +677,34 @@ function OverlayControl({
   children: ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      aria-pressed={pressed}
-      onClick={(event) => {
-        event.stopPropagation();
-        onClick();
-      }}
-      className="flex size-11 cursor-pointer items-center justify-center rounded-full text-white outline-none focus-visible:ring-2 focus-visible:ring-white"
-      style={{
-        background: pressed ? "rgba(255,255,255,0.32)" : "rgba(255,255,255,0.15)",
-      }}
-    >
-      {children}
-    </button>
+    <div className="group relative flex">
+      <button
+        type="button"
+        aria-label={label}
+        aria-pressed={pressed}
+        onClick={(event) => {
+          event.stopPropagation();
+          onClick();
+        }}
+        className="flex size-11 cursor-pointer items-center justify-center rounded-full text-white outline-none transition-transform duration-150 hover:scale-105 focus-visible:ring-2 focus-visible:ring-white active:scale-95 motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
+        style={{
+          background: pressed
+            ? "rgba(255,255,255,0.32)"
+            : "rgba(255,255,255,0.15)",
+        }}
+      >
+        {children}
+      </button>
+      {/* Below and right-aligned, for the same reason as the card's own controls: the row is pinned
+          to the top-right of the viewport, so a centred label on the last button runs off-screen. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute right-0 top-full mt-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 motion-reduce:transition-none"
+        style={{ backgroundColor: "rgba(255,255,255,0.18)", color: "#ffffff" }}
+      >
+        {label}
+      </span>
+    </div>
   );
 }
 
@@ -547,21 +759,38 @@ function StuckPanel({
  * The closing screen, with what the session actually came to.
  *
  * A tally at the *end* is not the running scoreboard the deck deliberately refuses: mid-deck it
- * would price every honest "çözemedim", here it is just what happened. Which is also why the cards
- * that were missed are described as still being in the rotation rather than counted as wrong — they
- * come back in a couple of days, and that is the whole design, not a penalty.
+ * would price every honest "çözemedim", here it is just what happened. Which is also why there is
+ * no percentage and no ring. The denominator here is the student's own mistakes, so a low number
+ * means the notebook is full, not that they failed — and a visible ratio driven by a self-reported
+ * button with no external grader teaches exactly one lesson: press the green one. That lie then
+ * rides the ladder to 21 days and out of the rotation, which is the disappearing card nobody wants.
+ *
+ * The cards that were missed are named rather than counted. "3 kart" is arithmetic the student
+ * could do themselves; "Matematik · Permütasyon, işlem hatası" is the only thing on this screen
+ * they could not have known without it.
  */
 function DonePanel({
   total,
-  solved,
+  outcomes,
+  skipped,
   onClose,
 }: {
   total: number;
-  solved: number;
+  outcomes: readonly { entry: NotebookEntryDto; solved: boolean }[];
+  /** Cards left in the deck — always 0 unless the student walked out mid-session. */
+  skipped: number;
   onClose: () => void;
 }) {
   const t = useTranslations("notebook");
-  const remaining = total - solved;
+  const solved = outcomes.filter((outcome) => outcome.solved).length;
+  const healed = outcomes.filter(
+    (outcome) => outcome.entry.status === "HEALED",
+  ).length;
+  const missed = outcomes
+    .filter((outcome) => !outcome.solved)
+    .map((outcome) => outcome.entry);
+  const unfinished = skipped > 0;
+
   return (
     <div className="flex flex-col gap-4 p-6">
       {/* The count *is* the subtitle. "Tekrar edilecek soru kalmadı" said the same thing one line
@@ -569,15 +798,39 @@ function DonePanel({
           news twice — once vaguely, once with the numbers. */}
       <SectionHeading
         as="h2"
-        subtitle={t("review_done_summary", { total, solved })}
+        subtitle={
+          unfinished
+            ? t("review_exit_summary", { answered: outcomes.length, skipped })
+            : t("review_done_summary", { total, solved })
+        }
       >
-        {t("review_done_title")}
+        {unfinished ? t("review_exit_title") : t("review_done_title")}
       </SectionHeading>
-      {remaining > 0 ? (
-        <p className="text-sm text-pretty" style={{ color: "var(--color-body)" }}>
-          {t("review_done_remaining", { count: remaining })}
+
+      {healed > 0 ? (
+        <p
+          className="inline-flex items-center gap-1.5 text-sm font-semibold"
+          style={{ color: "var(--color-success)" }}
+        >
+          <Sparkles aria-hidden size={14} />
+          {t("review_done_healed", { count: healed })}
         </p>
       ) : null}
+
+      {missed.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          <span
+            className="text-xs font-bold"
+            style={{ color: "var(--color-secondary)" }}
+          >
+            {t("review_done_missed_title")}
+          </span>
+          {missed.map((entry) => (
+            <MissedRow key={entry.id} entry={entry} />
+          ))}
+        </div>
+      ) : null}
+
       <Button fullWidth onClick={onClose}>
         {t("review_close")}
       </Button>
@@ -586,40 +839,62 @@ function DonePanel({
 }
 
 /**
- * One subject's cards are done while others are still waiting.
+ * One card that caught the student again — what it was, and the way out if they are stuck on it.
  *
- * Its own screen rather than the closing summary: `DonePanel` says the day is over, and saying that
- * with four Tarih cards still due would be the review flow telling the student a comfortable lie.
- * The way out is the same one they came in by — drop the filter and keep going.
+ * The row *is* the link, for a card nobody has asked about yet. `StuckPanel` already offers this
+ * mid-deck on a second miss, but only for the one card and only in the moment; here it is the whole
+ * list, at the point where the student has stopped answering and can actually consider it. A card
+ * that already has a thread is not offered again — it is waiting on an answer, not on them.
  */
-function SubjectDonePanel({
-  subject,
-  remaining,
-  onContinue,
-  onClose,
-}: {
-  subject: string;
-  remaining: number;
-  onContinue: () => void;
-  onClose: () => void;
-}) {
+function MissedRow({ entry }: { entry: NotebookEntryDto }) {
   const t = useTranslations("notebook");
-  return (
-    <div className="flex flex-col gap-4 p-6">
-      <SectionHeading
-        as="h2"
-        subtitle={t("review_subject_done_subtitle", { count: remaining })}
-      >
-        {t("review_subject_done_title", { subject })}
-      </SectionHeading>
-      <div className="flex flex-wrap gap-2">
-        <NotebookCompactButton tone="success" large onClick={onContinue}>
-          {t("review_subject_done_continue")}
-        </NotebookCompactButton>
-        <NotebookCompactButton variant="secondary" large onClick={onClose}>
-          {t("review_close")}
-        </NotebookCompactButton>
+  const label =
+    [entry.subjectName, entry.topicName].filter(Boolean).join(" · ") ||
+    t("card_unlabelled");
+
+  const body = (
+    <>
+      <span className="flex min-w-0 flex-1 flex-col text-left">
+        <span
+          className="truncate text-sm font-semibold"
+          style={{ color: "var(--color-main)" }}
+        >
+          {label}
+        </span>
+        <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
+          {t(`error_type.${entry.errorType}`)}
+        </span>
+      </span>
+      {!entry.communityThreadId ? (
+        <span
+          className="shrink-0 text-xs font-bold"
+          style={{ color: "var(--color-accent)" }}
+        >
+          {t("review_done_ask")}
+        </span>
+      ) : null}
+    </>
+  );
+
+  const shell =
+    "flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] px-3 py-2";
+  const style = { backgroundColor: "var(--color-surface-container)" } as const;
+
+  if (entry.communityThreadId) {
+    return (
+      <div className={shell} style={style}>
+        {body}
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <Link
+      href={{ pathname: "/community/feed", query: { notebookEntry: entry.id } }}
+      className={`${shell} outline-none transition-colors duration-150 hover:bg-[var(--color-accent-soft)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none`}
+      style={style}
+    >
+      {body}
+    </Link>
   );
 }

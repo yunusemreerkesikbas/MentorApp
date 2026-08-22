@@ -28,7 +28,19 @@ function createService({ premium = true, economyEnabled = true } = {}) {
     }),
   };
   const economy = {
-    getSelfBalance: vi.fn().mockResolvedValue({ xp: 411, level: null }),
+    getSelfBalance: vi.fn().mockResolvedValue({
+      xp: 411,
+      level: {
+        tier: 3,
+        xp: 411,
+        nextAt: 600,
+        key: "compass",
+        chapter: "awakening",
+        currentAt: 300,
+        nextKey: "cycle",
+        progress: { current: 111, target: 300, remaining: 189, percent: 37 },
+      },
+    }),
   };
   const follow = {
     countFollowers: vi.fn().mockResolvedValue(12),
@@ -63,6 +75,19 @@ describe("CommunityService public profile", () => {
     const profile = await service.getPublicProfile("ayse", "viewer-1");
 
     expect(profile.activityCount).toBe(7);
+  });
+
+  it("publishes the economy-derived journey level without recalculating it", async () => {
+    const { service } = createService();
+
+    const profile = await service.getPublicProfile("ayse", "viewer-1");
+
+    expect(profile.level).toMatchObject({
+      tier: 3,
+      key: "compass",
+      chapter: "awakening",
+      progress: { current: 111, target: 300, remaining: 189, percent: 37 },
+    });
   });
 
   it("publishes only the premium boolean from entitlement", async () => {

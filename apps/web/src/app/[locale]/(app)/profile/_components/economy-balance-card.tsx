@@ -6,6 +6,7 @@ import type { EconomyBalance, EconomyLedgerEntryView } from "@mentor/types";
 import { Button, Card, SectionHeading } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
+import { JourneyLevelCompact } from "@/components/journey-levels/journey-level-compact";
 import { fetchEconomyLedger } from "@/lib/economy";
 import { coachReturnHref } from "@/lib/community-coach-bridge";
 
@@ -26,11 +27,8 @@ export function EconomyBalanceCard({ balance }: EconomyBalanceCardProps) {
   const searchParams = useSearchParams();
   const locale = useLocale();
   const translate = useTranslations("economy");
-  // Tier names already exist for the community profile — reuse, don't duplicate the copy.
-  const community = useTranslations("community");
   const [ledger, setLedger] = useState<LedgerState>({ status: "loading" });
   const { level } = balance;
-  const levelPct = level.nextAt ? Math.min(100, Math.round((level.xp / level.nextAt) * 100)) : 100;
 
   useEffect(() => {
     let active = true;
@@ -85,35 +83,8 @@ export function EconomyBalanceCard({ balance }: EconomyBalanceCardProps) {
           ) : null}
         </div>
       </dl>
-      <div className="mt-4 flex flex-col gap-1.5">
-        <div
-          className="flex items-center justify-between text-xs"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          <span>
-            {community("level_label", { tier: level.tier })} —{" "}
-            {community(`level_${level.tier}` as "level_1")}
-          </span>
-          {level.nextAt ? (
-            <span className="tabular-nums">
-              {level.xp} / {level.nextAt}
-            </span>
-          ) : null}
-        </div>
-        <div
-          className="h-1.5 overflow-hidden rounded-full"
-          style={{ background: "var(--color-progress-track)" }}
-          role="progressbar"
-          aria-valuenow={levelPct}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={community("level_label", { tier: level.tier })}
-        >
-          <div
-            className="h-full rounded-full transition-[width] motion-reduce:transition-none"
-            style={{ width: `${levelPct}%`, background: "var(--color-progress)" }}
-          />
-        </div>
+      <div className="mt-4">
+        <JourneyLevelCompact level={level} />
       </div>
       <div className="mt-4">
         <Button

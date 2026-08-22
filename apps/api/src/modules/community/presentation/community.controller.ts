@@ -5,14 +5,17 @@ import type {
   AchievementCelebrationsDto,
   AchievementCollectionDto,
   CommunitySummary,
+  JourneyLevelCelebrationsDto,
   LeaderboardView,
   PublicProfile,
 } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { AchievementService } from "../application/achievement.service";
 import { CommunityService } from "../application/community.service";
+import { JourneyLevelCelebrationService } from "../application/journey-level-celebration.service";
 import { toWindow } from "../domain/leaderboard-window";
 import { CelebrateAchievementsDto } from "./achievement.dto";
+import { CelebrateJourneyLevelDto } from "./journey-level-celebration.dto";
 
 /**
  * Community right-column effort board. Self-scoped read; the whole payload is about the viewer's
@@ -25,6 +28,7 @@ export class CommunityController {
   constructor(
     private readonly community: CommunityService,
     private readonly achievements: AchievementService,
+    private readonly journeyLevelCelebrations: JourneyLevelCelebrationService,
   ) {}
 
   @Get("summary")
@@ -65,6 +69,22 @@ export class CommunityController {
     @Body() dto: CelebrateAchievementsDto,
   ): Promise<void> {
     await this.achievements.celebrate(user.id, dto.achievementIds);
+  }
+
+  @Get("journey-levels/unseen")
+  getUnseenJourneyLevels(
+    @CurrentUser() user: RequestUser,
+  ): Promise<JourneyLevelCelebrationsDto> {
+    return this.journeyLevelCelebrations.getUnseen(user.id);
+  }
+
+  @Post("journey-levels/celebrated")
+  @HttpCode(204)
+  async celebrateJourneyLevel(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: CelebrateJourneyLevelDto,
+  ): Promise<void> {
+    await this.journeyLevelCelebrations.markCelebrated(user.id, dto.celebrationId);
   }
 
   /** Effort ranking for a time window (full-page tabs). Unknown `window` → weekly (safe default). */

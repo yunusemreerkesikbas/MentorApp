@@ -9,6 +9,7 @@ import type { CoachAccessDto } from "@mentor/types";
 import { Button, Card, Chip, SectionHeading } from "@mentor/ui";
 import { PuhuCoachBubble } from "@/components/puhu-coach-bubble";
 import { safeInternalReturnTo } from "@/lib/community-coach-bridge";
+import { usePremiumPaywall } from "@/lib/premium-paywall";
 
 interface CoachAccessGateProps {
   access: CoachAccessDto;
@@ -26,6 +27,7 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const reduceMotion = useReducedMotion();
+  const { openPaywall } = usePremiumPaywall();
 
   const cardMotion = reduceMotion
     ? {}
@@ -147,7 +149,7 @@ export function CoachAccessGate({ access }: CoachAccessGateProps) {
               {t("go_profile")}
             </Button>
           ) : access.reason === "PAYMENT_PREMIUM_REQUIRED" ? (
-            <Button onClick={() => router.push({ pathname: "/subscription", query: { returnTo } })}>
+            <Button onClick={() => openPaywall({ sourceFeature: "coach.chat" })}>
               {t("upgrade")}
             </Button>
           ) : null}

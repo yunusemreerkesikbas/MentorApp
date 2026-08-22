@@ -3,10 +3,13 @@
 import { useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import {
+  Check,
+  FlipHorizontal2,
   Maximize2,
   MessageCircleQuestion,
   Pencil,
-  RotateCw,
+  Repeat,
+  RotateCcw,
   Undo2,
 } from "lucide-react";
 import {
@@ -15,6 +18,7 @@ import {
   useMotionValue,
   useReducedMotion,
   useTransform,
+  type MotionValue,
 } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { NotebookEntryDto } from "@mentor/types";
@@ -22,10 +26,7 @@ import { NOTEBOOK_NOTE_MAX_LENGTH } from "@mentor/validation";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { NotebookCompactButton } from "@/components/notebook/notebook-compact-button";
-import {
-  SWIPE_THRESHOLD_PX,
-  swipeVerdict,
-} from "@/lib/notebook-review-deck";
+import { SWIPE_THRESHOLD_PX, swipeVerdict } from "@/lib/notebook-review-deck";
 
 /**
  * One card in the review deck: question on the front, context on the back, answered by swiping it
@@ -140,7 +141,8 @@ export function NotebookReviewCard({
         // edge at all. The hairline is the same one `NotebookEntryCard` draws, and it is what gives
         // the card a border in the dark theme where the shadow cannot.
         backgroundColor: "var(--color-surface)",
-        border: "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
+        border:
+          "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
         boxShadow: "var(--shadow-card)",
         perspective: reduceMotion ? undefined : FLIP_PERSPECTIVE_PX,
         cursor: draggable ? "grab" : "default",
@@ -237,7 +239,7 @@ export function NotebookReviewCard({
               onZoom();
             }}
           >
-            <Maximize2 aria-hidden size={16} />
+            <Maximize2 aria-hidden size={17} strokeWidth={2.25} />
           </CardControl>
         ) : null}
         <CardControl
@@ -246,46 +248,91 @@ export function NotebookReviewCard({
           onClick={() => setFlipped((current) => !current)}
         >
           {flipped ? (
-            <Undo2 aria-hidden size={16} />
+            <Undo2 aria-hidden size={17} strokeWidth={2.25} />
           ) : (
-            <RotateCw aria-hidden size={16} />
+            <FlipHorizontal2 aria-hidden size={17} strokeWidth={2.25} />
           )}
         </CardControl>
       </div>
 
-      {/* The verdict a release would produce right now, styled as the button it maps to — that
-          pairing is the only thing teaching which way means what. */}
+      {/* The verdict a release would produce right now, as colour and a glyph. It used to be the
+          button's own words stamped on the card — but the words are already on the buttons two
+          inches below, and reading a label mid-flick is slower than seeing the card go green. The
+          icons are the same pair the buttons carry, which is what ties the gesture to them. */}
       {draggable ? (
         <>
-          <motion.span
-            aria-hidden
-            // Mirrors the secondary action underneath: outlined, never red. Missing a card costs a
-            // shorter interval, not a scolding.
-            style={{
-              opacity: missedOpacity,
-              color: "var(--color-main)",
-              borderColor:
-                "color-mix(in srgb, var(--color-main) 35%, transparent)",
-              backgroundColor: "var(--color-surface)",
-            }}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 -rotate-6 rounded-[var(--radius-card)] border-2 px-3 py-1.5 text-sm font-bold"
+          <SwipeCue
+            side="left"
+            opacity={missedOpacity}
+            tint="var(--color-main)"
+            fill="var(--color-surface)"
+            ink="var(--color-main)"
           >
-            {t("review_missed")}
-          </motion.span>
-          <motion.span
-            aria-hidden
-            style={{
-              opacity: solvedOpacity,
-              backgroundColor: "var(--color-success)",
-              // Same inversion problem as the button it mirrors — the green flips between themes.
-              color: "var(--color-btn-label)",
-            }}
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rotate-6 rounded-[var(--radius-card)] px-3 py-1.5 text-sm font-bold"
+            <RotateCcw aria-hidden size={30} strokeWidth={2.5} />
+          </SwipeCue>
+          <SwipeCue
+            side="right"
+            opacity={solvedOpacity}
+            tint="var(--color-success)"
+            fill="var(--color-success)"
+            ink="var(--color-btn-label)"
           >
-            {t("review_solved")}
-          </motion.span>
+            <Check aria-hidden size={32} strokeWidth={3} />
+          </SwipeCue>
         </>
       ) : null}
+    </motion.div>
+  );
+}
+
+/**
+ * One side's swipe feedback: the card washed in the verdict's colour with its icon on top, both
+ * fading in together as the drag crosses the hint zone.
+ *
+ * ponytail: the wash is a plain tinted overlay, not a gradient or a border animation. It reads at a
+ * glance from the corner of the eye, which is the only place anyone looks while flicking a card.
+ */
+function SwipeCue({
+  side,
+  opacity,
+  tint,
+  fill,
+  ink,
+  children,
+}: {
+  side: "left" | "right";
+  opacity: MotionValue<number>;
+  /** Colour washed over the whole card. */
+  tint: string;
+  /** Badge background — outlined for a miss, solid for a solve, same as the buttons. */
+  fill: string;
+  ink: string;
+  children: ReactNode;
+}) {
+  return (
+    <motion.div
+      aria-hidden
+      style={{ opacity }}
+      className="pointer-events-none absolute inset-0"
+    >
+      <div
+        className="absolute inset-0 rounded-[var(--radius-card)]"
+        style={{
+          backgroundColor: `color-mix(in srgb, ${tint} 22%, transparent)`,
+        }}
+      />
+      <div
+        className={`absolute top-1/2 flex size-16 -translate-y-1/2 items-center justify-center rounded-full ${
+          side === "left" ? "left-4 -rotate-6" : "right-4 rotate-6"
+        }`}
+        style={{
+          backgroundColor: fill,
+          color: ink,
+          border: `2px solid color-mix(in srgb, ${tint} 45%, transparent)`,
+        }}
+      >
+        {children}
+      </div>
     </motion.div>
   );
 }
@@ -303,23 +350,41 @@ function CardControl({
   children: ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      aria-pressed={pressed}
-      onClick={(event) => {
-        event.stopPropagation();
-        onClick();
-      }}
-      className="flex size-11 cursor-pointer items-center justify-center rounded-full outline-none transition-opacity duration-150 hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
-      style={{
-        backgroundColor: "color-mix(in srgb, var(--color-surface) 80%, transparent)",
-        color: "var(--color-main)",
-        boxShadow: "var(--shadow-card)",
-      }}
-    >
-      {children}
-    </button>
+    <div className="group relative flex">
+      <button
+        type="button"
+        aria-label={label}
+        aria-pressed={pressed}
+        onClick={(event) => {
+          event.stopPropagation();
+          onClick();
+        }}
+        className="flex size-11 cursor-pointer items-center justify-center rounded-full outline-none transition-transform duration-150 hover:scale-105 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] active:scale-95 motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
+        style={{
+          backgroundColor:
+            "color-mix(in srgb, var(--color-surface) 80%, transparent)",
+          color: "var(--color-main)",
+          boxShadow: "var(--shadow-card)",
+        }}
+      >
+        {children}
+      </button>
+      {/* Below and right-aligned. Above would hang off the card onto the backdrop; centred would
+          be clipped, because these sit in the top-*right* corner of a card that is `overflow-hidden`
+          and the label is wider than the 44px button it belongs to. Same contract as the deck
+          buttons' — the accessible name is the `aria-label`, this is decoration for pointer users. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute right-0 top-full z-10 mt-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 motion-reduce:transition-none"
+        style={{
+          backgroundColor: "var(--color-surface)",
+          color: "var(--color-main)",
+          boxShadow: "var(--shadow-card)",
+        }}
+      >
+        {label}
+      </span>
+    </div>
   );
 }
 
@@ -334,6 +399,11 @@ function CardFront({ entry }: { entry: NotebookEntryDto }) {
   const t = useTranslations("notebook");
   const label = entry.topicName ?? entry.subjectName;
 
+  // No tint behind a photo. The tint exists to answer "which face is up" before the text does — and
+  // on a photo card that question is already answered by the content: one face is a photograph, the
+  // other is writing. What it added instead was a coloured frame the photo has to fight, and a hard
+  // band where the photo's own white met it. Only the text-only front, where both faces are words
+  // and colour is the *only* thing telling them apart, keeps it.
   if (entry.url) {
     return (
       <Image
@@ -353,11 +423,19 @@ function CardFront({ entry }: { entry: NotebookEntryDto }) {
   }
 
   return (
-    <div className="flex size-full flex-col items-center justify-center gap-3 p-6 text-center">
+    <div
+      className="flex size-full flex-col items-center justify-center gap-3 p-6 text-center"
+      style={{ backgroundColor: "var(--color-accent-soft)" }}
+    >
+      {/* `secondary-text` is #666 and this face is now #C3D9FD: 3.9:1, under the 4.5 DESIGN.md
+          requires for readable copy. Mixed down from `main` instead, which lands well clear of it
+          on both themes and still reads as the quieter of the two lines. */}
       <MessageCircleQuestion
         aria-hidden
         size={28}
-        style={{ color: "var(--color-secondary)" }}
+        style={{
+          color: "color-mix(in srgb, var(--color-main) 72%, transparent)",
+        }}
       />
       <span
         className="text-lg font-bold text-balance"
@@ -365,7 +443,12 @@ function CardFront({ entry }: { entry: NotebookEntryDto }) {
       >
         {label ?? t("card_unlabelled")}
       </span>
-      <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+      <p
+        className="text-sm"
+        style={{
+          color: "color-mix(in srgb, var(--color-main) 72%, transparent)",
+        }}
+      >
         {t("review_question")}
       </p>
     </div>
@@ -397,11 +480,22 @@ function CardBack({
   onEditing: (editing: boolean) => void;
 }) {
   const t = useTranslations("notebook");
-  const label = entry.topicName ?? entry.subjectName;
+  // "Ders · Konu", not one or the other. The back used to show `topicName ?? subjectName`, which
+  // meant a labelled card said "Permütasyon" and never named the subject it belongs to — the one
+  // piece of context a student flips the card for when a topic name alone is ambiguous.
+  const label =
+    [entry.subjectName, entry.topicName].filter(Boolean).join(" · ") || null;
   const answered = entry.communityAnsweredAt && entry.communityThreadId;
 
   return (
-    <div className="flex size-full flex-col gap-4 overflow-y-auto p-5">
+    // Plain surface, against the front's tint. A flashcard whose two faces are the same colour
+    // gives the turn nothing to land on: mid-flip the card goes edge-on and the only way to know
+    // which side came up is to read it. Colour answers that before the text does — and it is the
+    // front that carries the tint, because the front is the one you are *asked* to look at.
+    <div
+      className="flex size-full flex-col gap-4 overflow-y-auto p-5"
+      style={{ backgroundColor: "var(--color-surface)" }}
+    >
       <div className="flex flex-col gap-2">
         <span
           className="text-lg font-bold text-balance"
@@ -432,7 +526,7 @@ function CardBack({
                 backgroundColor: "var(--color-surface-container)",
               }}
             >
-              <RotateCw aria-hidden size={12} />
+              <Repeat aria-hidden size={12} />
               {t("card_review_count", { count: entry.reviewCount })}
             </span>
           ) : null}

@@ -274,7 +274,7 @@ export function ProfileShell({ username }: { username: string }) {
 
       <div className="profile-progress-mobile px-4 pb-4 xl:hidden">
         <div className="relative z-10">
-          <ProfileProgressPanel profile={profile} />
+          <ProfileProgressPanel profile={profile} isOwner={isOwn} />
         </div>
       </div>
 
@@ -390,7 +390,7 @@ export function ProfileShell({ username }: { username: string }) {
       </section>
 
       <aside className="sticky top-20 hidden xl:block">
-        <ProfileProgressPanel profile={profile} />
+        <ProfileProgressPanel profile={profile} isOwner={isOwn} />
       </aside>
     </main>
   );

@@ -102,6 +102,15 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **Kilit rozetleri (2026-08-22)** — Mood / ghost / günlük selam / seans yansıması web'de kilit
+  CTA ile paywall'a bağlandı. API politikası değişmedi; `free_enabled` varsayılan kapalı.
+  İlgili: `premium-lock-nudge.tsx`, `use-daily-greeting.ts`.
+- **Özellik politikası (2026-08-22)** — Premium AI yüzeyleri `evaluateFeatureAccess` ile
+  `free_enabled` + `free_limit` tadına açılabilir. Varsayılan flag kapalı = önceki premium-only
+  davranış. Chat ve derin analizde coin yolu free tavanından sonra durur. İlgili:
+  `premium-feature-gate.service.ts`, `photo-access.service.ts`, `chat.service.ts`,
+  `deep-analysis.service.ts`.
+
 - **Kişiselleştirilmiş Mentor V2 (2026-08-02)** — Koç kimliği “mentor-yol arkadaşı” olarak TR/EN
   ayrı ve sürümlü prompt'a taşındı. Saf `CoachTurnPlanner`; niyet, `GENTLE/WARM/DIRECT/CELEBRATORY`
   tonu, en fazla üç doğrulanmış kanıt ve tek aksiyon belirler. Resmî bilgi ve ciddi sıkıntı yolları

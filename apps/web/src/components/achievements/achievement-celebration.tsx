@@ -165,6 +165,7 @@ function AchievementCelebrationDialog({
       className="fixed inset-0 z-[120] flex items-center justify-center overflow-hidden bg-black/70 p-4 backdrop-blur-md"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       transition={{ duration: reducedMotion ? 0.15 : 0.24, ease: "easeOut" }}
     >
       {showConfetti ? (

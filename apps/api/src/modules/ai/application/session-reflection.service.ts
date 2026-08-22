@@ -7,7 +7,7 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { SessionService } from "../../coaching/application/session.service";
-import { EntitlementService } from "../../payments/application/entitlement.service";
+import { PremiumFeatureId } from "@mentor/types";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
 import { AiUsageFeature, buildSessionReflectionPrompt, estimateCostMicros } from "../domain/ai.constants";
 import { extractSuggestedTask } from "../domain/suggested-task";
@@ -16,6 +16,7 @@ import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { promptLocale } from "../domain/prompt-locale";
 import { hasSeriousDistressSignal } from "../domain/serious-distress";
+import { PremiumFeatureGateService } from "./premium-feature-gate.service";
 
 /**
  * Premium AI reflection on a finalized study session after micro check-in (W3 · §4 #5).
@@ -30,7 +31,7 @@ export class SessionReflectionService {
     private readonly context: ContextBuilder,
     private readonly usage: AiUsageRepository,
     private readonly config: ConfigRegistryService,
-    private readonly entitlement: EntitlementService,
+    private readonly featureGate: PremiumFeatureGateService,
     private readonly sessions: SessionService,
     private readonly budget: AiBudgetGuard,
     private readonly i18n: I18nService,
@@ -41,10 +42,11 @@ export class SessionReflectionService {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
 
-    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
-    if (!ent.isPremium) {
-      throw new DomainError(ErrorCode.PAYMENT_PREMIUM_REQUIRED, HttpStatus.FORBIDDEN);
-    }
+    await this.featureGate.assertAllowed(
+      user.id,
+      user.roles,
+      PremiumFeatureId.SESSION_REFLECTION,
+    );
 
     const session = await this.sessions.getById(user.id, sessionId);
     if (!session || !session.endedAt) {

@@ -311,6 +311,7 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
       validUntil: options.premium === false ? null : "2026-08-21T00:00:00.000Z",
       reason: options.premium === false ? "NONE" : "ACTIVE",
     },
+    features: {} as SubscriptionView["features"],
   };
 
   await page.addInitScript((scale: string | null) => {

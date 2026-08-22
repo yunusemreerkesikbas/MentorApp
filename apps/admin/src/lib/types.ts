@@ -124,6 +124,16 @@ export interface AdminExamDetail {
     events: AdminExamEvent[];
 }
 
+export interface AdminPlan {
+    id: string;
+    name: string;
+    periodMonths: number;
+    priceMinor: number;
+    currency: string;
+    trialDays: number;
+    isActive: boolean;
+}
+
 export interface AdminSubscriptionTx {
     id: string;
     type: string;        // TRIAL_START | RENEWAL | REFUND

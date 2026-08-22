@@ -288,14 +288,14 @@ export function SubscriptionShell() {
                     {/* Distance-selling rules want the contract + pre-sale form reachable BEFORE
                         the charge, not buried in a footer. */}
                     <span className="mt-2 block" style={{ color: "var(--color-secondary)" }}>
-                      {tLegal("consent_prefix")}{" "}
                       <LegalLink slug="mesafeli-satis-sozlesmesi">
                         {tLegal("consent_distance_sales")}
                       </LegalLink>
                       {" · "}
                       <LegalLink slug="on-bilgilendirme-formu">
                         {tLegal("consent_pre_info")}
-                      </LegalLink>
+                      </LegalLink>{" "}
+                      {tLegal("consent_confirm")}
                     </span>
                   </span>
                 </label>

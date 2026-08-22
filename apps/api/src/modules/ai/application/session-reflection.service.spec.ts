@@ -1,6 +1,7 @@
 import { HttpStatus } from "@nestjs/common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { FeatureFlag } from "../../../common/config/config.catalog";
+import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { SessionReflectionService } from "./session-reflection.service";
 
@@ -67,7 +68,16 @@ describe("SessionReflectionService", () => {
       { build } as never,
       { append } as never,
       { get: configGet } as never,
-      { getEntitlement } as never,
+      {
+        assertAllowed: async () => {
+          if (!(await getEntitlement()).isPremium) {
+            throw new DomainError(
+              ErrorCode.PAYMENT_PREMIUM_REQUIRED,
+              HttpStatus.FORBIDDEN,
+            );
+          }
+        },
+      } as never,
       { getById, getAiReflectionLocale, setAiReflection } as never,
       { assertWithinBudget: vi.fn(async () => undefined) } as never,
       { translate } as never,

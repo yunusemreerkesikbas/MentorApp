@@ -5,6 +5,7 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { EntitlementService } from "../../payments/application/entitlement.service";
+import { evaluateFeatureAccess } from "../../payments/domain/feature-access";
 import { MockExamService } from "../../coaching/application/mock-exam.service";
 import { PHOTO_MONTHLY_WINDOW_MS } from "../domain/photo-classify.constants";
 import { AiBudgetGuard } from "./ai-budget.guard";
@@ -45,24 +46,41 @@ export class PhotoAccessService {
     }
 
     const ent = await this.entitlement.getEntitlement(userId, rolesHint);
-    if (!ent.isPremium) {
-      return { canCategorize: false, reason: ErrorCode.PAYMENT_PREMIUM_REQUIRED };
-    }
-
-    const monthlyLimit = await this.config.get("ai.photo.monthly_limit");
     const since = new Date(Date.now() - PHOTO_MONTHLY_WINDOW_MS);
     const used = await this.mockExams.countPhotoCategorizationsSince(userId, since);
-    const remaining = Math.max(0, monthlyLimit - used);
-    if (remaining <= 0) {
-      return {
-        canCategorize: false,
-        reason: ErrorCode.AI_PHOTO_RATE_LIMITED,
-        monthlyLimit,
-        remainingThisMonth: 0,
-      };
+
+    if (ent.isPremium) {
+      const monthlyLimit = await this.config.get("ai.photo.monthly_limit");
+      const remaining = Math.max(0, monthlyLimit - used);
+      if (remaining <= 0) {
+        return {
+          canCategorize: false,
+          reason: ErrorCode.AI_PHOTO_RATE_LIMITED,
+          monthlyLimit,
+          remainingThisMonth: 0,
+        };
+      }
+      return { canCategorize: true, monthlyLimit, remainingThisMonth: remaining };
     }
 
-    return { canCategorize: true, monthlyLimit, remainingThisMonth: remaining };
+    const [freeEnabled, freeLimit] = await Promise.all([
+      this.config.get("ai.features.photo.categorize.free_enabled"),
+      this.config.get("ai.features.photo.categorize.free_limit"),
+    ]);
+    const decision = evaluateFeatureAccess({
+      isPremium: false,
+      freeEnabled,
+      used,
+      freeLimit,
+    });
+    if (!decision.allowed) {
+      return { canCategorize: false, reason: ErrorCode.PAYMENT_PREMIUM_REQUIRED };
+    }
+    return {
+      canCategorize: true,
+      monthlyLimit: freeLimit,
+      remainingThisMonth: Math.max(0, freeLimit - used),
+    };
   }
 
   /** Throws localized `DomainError` when upload/categorize must be denied. */

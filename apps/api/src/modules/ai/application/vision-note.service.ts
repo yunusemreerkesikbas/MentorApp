@@ -7,13 +7,14 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { VisionService } from "../../coaching/application/vision.service";
-import { EntitlementService } from "../../payments/application/entitlement.service";
+import { PremiumFeatureId } from "@mentor/types";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
 import { AiUsageFeature, buildVisionNotePrompt, estimateCostMicros } from "../domain/ai.constants";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { promptLocale } from "../domain/prompt-locale";
+import { PremiumFeatureGateService } from "./premium-feature-gate.service";
 
 /**
  * Premium AI motivation note for the vision/goal board ("hayal/hedef panosu") — W3 · §4 #5
@@ -29,7 +30,7 @@ export class VisionNoteService {
     private readonly context: ContextBuilder,
     private readonly usage: AiUsageRepository,
     private readonly config: ConfigRegistryService,
-    private readonly entitlement: EntitlementService,
+    private readonly featureGate: PremiumFeatureGateService,
     private readonly vision: VisionService,
     private readonly budget: AiBudgetGuard,
     private readonly i18n: I18nService,
@@ -40,10 +41,11 @@ export class VisionNoteService {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
 
-    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
-    if (!ent.isPremium) {
-      throw new DomainError(ErrorCode.PAYMENT_PREMIUM_REQUIRED, HttpStatus.FORBIDDEN);
-    }
+    await this.featureGate.assertAllowed(
+      user.id,
+      user.roles,
+      PremiumFeatureId.VISION_NOTE,
+    );
 
     const board = await this.vision.getMine(user.id);
     if (!board) {

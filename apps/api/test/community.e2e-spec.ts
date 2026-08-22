@@ -148,4 +148,62 @@ describe("community summary (e2e)", () => {
     expect(bad.status).toBe(200);
     expect(bad.body.window).toBe("weekly");
   });
+
+  it("delivers and acknowledges the journey introduction only for its owner", async () => {
+    await setEconomyEnabled(true);
+    const unseen = await request(app.getHttpServer())
+      .get("/v1/community/journey-levels/unseen")
+      .set({ Authorization: `Bearer ${userToken}` });
+
+    expect(unseen.status).toBe(200);
+    expect(unseen.body.celebrations).toHaveLength(1);
+    expect(unseen.body.celebrations[0]).toMatchObject({
+      kind: "INTRODUCTION",
+      tier: 2,
+      key: "trail",
+      chapter: "awakening",
+    });
+    const celebrationId = unseen.body.celebrations[0].id as string;
+
+    const foreignAck = await request(app.getHttpServer())
+      .post("/v1/community/journey-levels/celebrated")
+      .set({ Authorization: `Bearer ${adminToken}` })
+      .send({ celebrationId });
+    expect(foreignAck.status).toBe(204);
+
+    const stillUnseen = await request(app.getHttpServer())
+      .get("/v1/community/journey-levels/unseen")
+      .set({ Authorization: `Bearer ${userToken}` });
+    expect(stillUnseen.body.celebrations.map((item: { id: string }) => item.id)).toContain(
+      celebrationId,
+    );
+
+    const ownerAck = await request(app.getHttpServer())
+      .post("/v1/community/journey-levels/celebrated")
+      .set({ Authorization: `Bearer ${userToken}` })
+      .send({ celebrationId });
+    expect(ownerAck.status).toBe(204);
+
+    const repeatAck = await request(app.getHttpServer())
+      .post("/v1/community/journey-levels/celebrated")
+      .set({ Authorization: `Bearer ${userToken}` })
+      .send({ celebrationId });
+    expect(repeatAck.status).toBe(204);
+
+    const resolved = await request(app.getHttpServer())
+      .get("/v1/community/journey-levels/unseen")
+      .set({ Authorization: `Bearer ${userToken}` });
+    expect(resolved.body).toEqual({ celebrations: [] });
+  });
+
+  it("returns an empty journey celebration collection while economy is disabled", async () => {
+    await setEconomyEnabled(false);
+
+    const response = await request(app.getHttpServer())
+      .get("/v1/community/journey-levels/unseen")
+      .set({ Authorization: `Bearer ${userToken}` });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ celebrations: [] });
+  });
 });

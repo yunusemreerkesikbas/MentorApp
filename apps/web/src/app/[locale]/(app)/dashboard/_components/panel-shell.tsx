@@ -26,7 +26,7 @@ import {
   coachingControllerGetToday,
   planTaskControllerUpdate,
 } from "@mentor/api-client";
-import { CountdownCard } from "@mentor/ui";
+import { Chip, CountdownCard } from "@mentor/ui";
 import {
   ArrowRight,
   BookOpen,
@@ -34,6 +34,7 @@ import {
   HeartPulse,
   ListChecks,
   Play,
+  Sparkles,
 } from "lucide-react";
 
 import { EconomyQuestsCard } from "@/components/economy-quests-card";
@@ -56,6 +57,8 @@ import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
+import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { useDailyGreeting } from "@/lib/use-daily-greeting";
 import { useStreakCelebration } from "@/components/streak-celebration";
 import { StreakRescueSuccess } from "@/components/streak-rescue-success";
@@ -476,6 +479,17 @@ export function PanelShell({ initialData }: PanelShellProps) {
               onMoodClick={moodCheckin.openMoodDialog}
             />
           </motion.div>
+          {moodCheckin.reflecting ||
+          moodCheckin.reflection ||
+          moodCheckin.reflectionLocked ? (
+            <motion.div variants={staggerItemVariants}>
+              <MoodCoachNote
+                reflecting={moodCheckin.reflecting}
+                reflection={moodCheckin.reflection}
+                locked={moodCheckin.reflectionLocked}
+              />
+            </motion.div>
+          ) : null}
           {moodCheckin.mood != null && moodCheckin.mood <= 2 ? (
             <motion.div variants={staggerItemVariants}>
               <Link
@@ -577,6 +591,52 @@ export function PanelShell({ initialData }: PanelShellProps) {
   );
 }
 
+function MoodCoachNote({
+  reflecting,
+  reflection,
+  locked,
+}: {
+  reflecting: boolean;
+  reflection: string | null;
+  locked: boolean;
+}) {
+  const t = useTranslations("mood");
+  const { openPaywall } = usePremiumPaywall();
+
+  if (reflecting) {
+    return (
+      <p className="text-sm" role="status" style={{ color: "var(--color-secondary)" }}>
+        {t("coach_thinking")}
+      </p>
+    );
+  }
+
+  if (reflection) {
+    return (
+      <div className="flex flex-col gap-2 rounded-[var(--radius-card)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)]">
+        <Chip size="sm" className="inline-flex w-fit items-center gap-1">
+          <Sparkles aria-hidden size={11} />
+          {t("coach_chip")}
+        </Chip>
+        <p className="text-sm" style={{ color: "var(--color-body)" }}>
+          {reflection}
+        </p>
+      </div>
+    );
+  }
+
+  if (locked) {
+    return (
+      <PremiumLockNudge
+        label={t("premium_nudge")}
+        onClick={() => openPaywall({ sourceFeature: "mood.reflection" })}
+      />
+    );
+  }
+
+  return null;
+}
+
 function DailyRhythmCard({
   tasks,
   mood,
@@ -595,7 +655,8 @@ function DailyRhythmCard({
   const t = useTranslations("panel");
   // Premium: the coach's daily greeting (cached per user+day) replaces the static line;
   // free / error keeps the calm fallback copy.
-  const dailyGreeting = useDailyGreeting();
+  const { openPaywall } = usePremiumPaywall();
+  const { greeting: dailyGreeting, locked: greetingLocked } = useDailyGreeting();
   const doneCount = tasks.filter((task) =>
     completedStatuses.includes(task.status),
   ).length;
@@ -610,6 +671,12 @@ function DailyRhythmCard({
             {t("rhythm_title")}
           </h2>
           <ExpandableRhythmCopy text={dailyGreeting ?? t("rhythm_copy")} />
+          {greetingLocked ? (
+            <PremiumLockNudge
+              label={t("premium_greeting_nudge")}
+              onClick={() => openPaywall({ sourceFeature: "daily.greeting" })}
+            />
+          ) : null}
           {hasEffort ? (
             <p className="text-sm font-semibold text-[var(--color-secondary)]">
               {t("rhythm_summary", {

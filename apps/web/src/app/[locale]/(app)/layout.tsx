@@ -8,6 +8,7 @@ import { isBoardEditorPath } from "@/lib/app-sidebar";
 import { MOBILE_TAB_BAR_PADDING_CLASS } from "@/lib/app-shell";
 import { useAuth } from "@/lib/auth-context";
 import { NotificationDrawerShell } from "@/lib/notification-drawer-shell";
+import { PremiumPaywallProvider } from "@/lib/premium-paywall";
 import { hasCompletedOnboarding } from "@/lib/post-auth-destination";
 
 /**
@@ -46,23 +47,25 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <NotificationDrawerShell>
-      <div
-        className="min-h-screen"
-        style={{ backgroundColor: "var(--color-bg)" }}
-      >
-        {hideAppChrome ? null : <AppNav />}
+      <PremiumPaywallProvider>
         <div
-          className={
-            hideAppChrome
-              ? "min-h-screen"
-              : isBoardEditorWorkspace
-                ? "mentor-app-shell min-h-screen"
-                : `mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`
-          }
+          className="min-h-screen"
+          style={{ backgroundColor: "var(--color-bg)" }}
         >
-          {children}
+          {hideAppChrome ? null : <AppNav />}
+          <div
+            className={
+              hideAppChrome
+                ? "min-h-screen"
+                : isBoardEditorWorkspace
+                  ? "mentor-app-shell min-h-screen"
+                  : `mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`
+            }
+          >
+            {children}
+          </div>
         </div>
-      </div>
+      </PremiumPaywallProvider>
     </NotificationDrawerShell>
   );
 }

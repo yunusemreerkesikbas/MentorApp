@@ -7,12 +7,13 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { MockExamService } from "../../coaching/application/mock-exam.service";
-import { EntitlementService } from "../../payments/application/entitlement.service";
+import { PremiumFeatureId } from "@mentor/types";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
 import { AiUsageFeature, buildGhostPrompt, estimateCostMicros } from "../domain/ai.constants";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { promptLocale } from "../domain/prompt-locale";
+import { PremiumFeatureGateService } from "./premium-feature-gate.service";
 
 /**
  * Premium AI narration of the user's "geçmiş-ben" progress (W3 · §4 #5 premium-only — free tier
@@ -27,7 +28,7 @@ export class GhostNarrationService {
     @Inject(LLM_PORT) private readonly llm: LlmPort,
     private readonly usage: AiUsageRepository,
     private readonly config: ConfigRegistryService,
-    private readonly entitlement: EntitlementService,
+    private readonly featureGate: PremiumFeatureGateService,
     private readonly mockExams: MockExamService,
     private readonly budget: AiBudgetGuard,
   ) {}
@@ -37,10 +38,11 @@ export class GhostNarrationService {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
 
-    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
-    if (!ent.isPremium) {
-      throw new DomainError(ErrorCode.PAYMENT_PREMIUM_REQUIRED, HttpStatus.FORBIDDEN);
-    }
+    await this.featureGate.assertAllowed(
+      user.id,
+      user.roles,
+      PremiumFeatureId.GHOST_NARRATION,
+    );
 
     const ghost = await this.mockExams.getGhostComparison(user.id, examId);
     if (!ghost) {

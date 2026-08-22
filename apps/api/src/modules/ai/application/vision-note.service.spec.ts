@@ -49,7 +49,9 @@ describe("VisionNoteService", () => {
       } as never,
       { append: vi.fn(async () => undefined) } as never,
       { get: vi.fn(async (key: string) => key === FeatureFlag.AI_ENABLED) } as never,
-      { getEntitlement: vi.fn(async () => ({ isPremium: true })) } as never,
+      {
+        assertAllowed: async () => undefined,
+      } as never,
       { getMine, getAiNoteLocale, setAiNote, resolveTargetNames } as never,
       { assertWithinBudget: vi.fn(async () => undefined) } as never,
       { translate: vi.fn((key: string) => key.split(".").at(-1)) } as never,

@@ -24,3 +24,9 @@ export const celebrateAchievementsSchema = z.object({
 });
 
 export type CelebrateAchievementsInput = z.infer<typeof celebrateAchievementsSchema>;
+
+export const celebrateJourneyLevelSchema = z.object({
+  celebrationId: z.string().uuid(),
+});
+
+export type CelebrateJourneyLevelInput = z.infer<typeof celebrateJourneyLevelSchema>;
