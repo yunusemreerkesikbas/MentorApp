@@ -49,8 +49,15 @@ function makeRepoFake() {
   return {
     entries,
     pages,
-    createEntry: async (_tx: unknown, userId: string, input: Record<string, unknown>) => {
-      const row = makeEntryRow({ userId, ...input } as Partial<MistakeNotebookEntryRow>);
+    createEntry: async (
+      _tx: unknown,
+      userId: string,
+      input: Record<string, unknown>,
+    ) => {
+      const row = makeEntryRow({
+        userId,
+        ...input,
+      } as Partial<MistakeNotebookEntryRow>);
       entries.set(row.id, row);
       return row;
     },
@@ -79,7 +86,11 @@ function makeRepoFake() {
       _tx: unknown,
       userId: string,
       id: string,
-      outcome: { nextReviewAt: Date | null; status: string; reviewCount: number },
+      outcome: {
+        nextReviewAt: Date | null;
+        status: string;
+        reviewCount: number;
+      },
       reviewedAt: Date,
     ) => {
       const row = entries.get(id);
@@ -93,12 +104,22 @@ function makeRepoFake() {
       entries.delete(id);
       return row;
     },
-    countsFor: async () => ({ entryCount: 0, dueCount: 0, healedCount: 0, pageCount: 0 }),
+    countsFor: async () => ({
+      entryCount: 0,
+      dueCount: 0,
+      healedCount: 0,
+      pageCount: 0,
+    }),
     findPage: async (_tx: unknown, _userId: string, index: number) => {
       const doc = pages.get(index);
       return doc ? { doc } : undefined;
     },
-    upsertPage: async (_tx: unknown, _userId: string, index: number, doc: unknown) => {
+    upsertPage: async (
+      _tx: unknown,
+      _userId: string,
+      index: number,
+      doc: unknown,
+    ) => {
       pages.set(index, doc);
       return { doc };
     },
@@ -115,12 +136,19 @@ function makeRepoFake() {
     ) => {
       const all = [...entries.values()]
         .filter((row) => row.userId === userId)
-        .filter((row) => !filters.subjectRef || row.subjectRef === filters.subjectRef)
-        .filter((row) => !filters.errorType || row.errorType === filters.errorType)
+        .filter(
+          (row) => !filters.subjectRef || row.subjectRef === filters.subjectRef,
+        )
+        .filter(
+          (row) => !filters.errorType || row.errorType === filters.errorType,
+        )
         .filter((row) => !filters.status || row.status === filters.status)
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       const start = (filters.page - 1) * filters.pageSize;
-      return { items: all.slice(start, start + filters.pageSize), total: all.length };
+      return {
+        items: all.slice(start, start + filters.pageSize),
+        total: all.length,
+      };
     },
     listAllReferencedImageKeys: async () =>
       [...entries.values()].flatMap((row) =>
@@ -214,7 +242,8 @@ describe("MistakeNotebookService", () => {
 
       expect(dto.nextReviewAt).not.toBeNull();
       const scheduled = new Date(dto.nextReviewAt!).getTime();
-      const expected = before + NOTEBOOK_REVIEW_LADDER_DAYS[0]! * 24 * 60 * 60 * 1000;
+      const expected =
+        before + NOTEBOOK_REVIEW_LADDER_DAYS[0]! * 24 * 60 * 60 * 1000;
       expect(scheduled).toBeGreaterThanOrEqual(expected - 5_000);
     });
 
@@ -293,7 +322,11 @@ describe("MistakeNotebookService", () => {
 
     it("rejects an out-of-range page index before touching the database", async () => {
       await expect(
-        ctx.service.putPage(USER, -1, { version: 1, paper: "ruled", items: [] }),
+        ctx.service.putPage(USER, -1, {
+          version: 1,
+          paper: "ruled",
+          items: [],
+        }),
       ).rejects.toThrow();
       expect(ctx.repo.pages.size).toBe(0);
     });
@@ -319,7 +352,12 @@ describe("MistakeNotebookService", () => {
 
       const page = await ctx.service.getPage(USER, 0);
 
-      expect(page.doc).toEqual({ version: 1, paper: "grid", items: [], ink: [] });
+      expect(page.doc).toEqual({
+        version: 1,
+        paper: "grid",
+        items: [],
+        ink: [],
+      });
     });
 
     it("keeps stored ink instead of defaulting over it", async () => {
@@ -331,7 +369,12 @@ describe("MistakeNotebookService", () => {
         opacity: 1,
         points: [10, 10, 0.5, 20, 20, 0.5],
       };
-      ctx.repo.pages.set(1, { version: 1, paper: "ruled", items: [], ink: [stroke] });
+      ctx.repo.pages.set(1, {
+        version: 1,
+        paper: "ruled",
+        items: [],
+        ink: [stroke],
+      });
 
       const page = await ctx.service.getPage(USER, 1);
 
@@ -360,7 +403,9 @@ describe("MistakeNotebookService", () => {
 
     it("does not review another user's entry", async () => {
       ctx.repo.entries.set(ENTRY, makeEntryRow({ userId: OTHER }));
-      await expect(ctx.service.reviewEntry(USER, ENTRY, true)).rejects.toThrow();
+      await expect(
+        ctx.service.reviewEntry(USER, ENTRY, true),
+      ).rejects.toThrow();
     });
   });
 
@@ -390,12 +435,16 @@ describe("MistakeNotebookService", () => {
         }),
       );
 
-      expect(await ctx.service.markCommunityAnswered(THREAD, new Date())).toBe(2);
+      expect(await ctx.service.markCommunityAnswered(THREAD, new Date())).toBe(
+        2,
+      );
     });
 
     it("ignores a thread nobody linked", async () => {
       ctx.repo.entries.set(ENTRY, makeEntryRow());
-      expect(await ctx.service.markCommunityAnswered(THREAD, new Date())).toBe(0);
+      expect(await ctx.service.markCommunityAnswered(THREAD, new Date())).toBe(
+        0,
+      );
     });
   });
 
@@ -458,6 +507,82 @@ describe("MistakeNotebookService", () => {
 
       expect(dto.solutionNote).toBe("Kökü içeri alırken işaret değişiyor.");
     });
+
+    /*
+     * Status and schedule are one move. The due scan reads `nextReviewAt` and never the status, so
+     * writing one without the other produced a card that was archived and still due, or reactivated
+     * and never due again.
+     */
+    describe("status", () => {
+      it("archiving takes the card out of the due scan", async () => {
+        ctx.repo.entries.set(ENTRY, makeEntryRow({}));
+
+        const dto = await ctx.service.updateEntry(USER, ENTRY, {
+          status: "ARCHIVED",
+        });
+
+        expect(dto.status).toBe("ARCHIVED");
+        expect(dto.nextReviewAt).toBeNull();
+      });
+
+      it("reactivating gives the card a date again and starts the ladder over", async () => {
+        ctx.repo.entries.set(
+          ENTRY,
+          makeEntryRow({
+            status: "ARCHIVED",
+            nextReviewAt: null,
+            reviewCount: 2,
+          }),
+        );
+
+        const dto = await ctx.service.updateEntry(USER, ENTRY, {
+          status: "ACTIVE",
+        });
+
+        expect(dto.status).toBe("ACTIVE");
+        expect(dto.nextReviewAt).not.toBeNull();
+        // Resuming at rung two would heal the card on its next correct answer, which is exactly
+        // what the student said they did not trust.
+        expect(dto.reviewCount).toBe(0);
+      });
+
+      it("brings a healed card back the same way", async () => {
+        ctx.repo.entries.set(
+          ENTRY,
+          makeEntryRow({
+            status: "HEALED",
+            nextReviewAt: null,
+            reviewCount: 3,
+          }),
+        );
+
+        const dto = await ctx.service.updateEntry(USER, ENTRY, {
+          status: "ACTIVE",
+        });
+
+        expect(dto.status).toBe("ACTIVE");
+        expect(dto.nextReviewAt).not.toBeNull();
+        expect(dto.reviewCount).toBe(0);
+      });
+
+      it("leaves the schedule alone when the status is not actually changing", async () => {
+        const due = new Date("2026-08-16T09:00:00.000Z");
+        ctx.repo.entries.set(
+          ENTRY,
+          makeEntryRow({ nextReviewAt: due, reviewCount: 2 }),
+        );
+
+        // An editor that always sends the whole form must not reset a card's place in the ladder
+        // just by saving a label.
+        const dto = await ctx.service.updateEntry(USER, ENTRY, {
+          status: "ACTIVE",
+          note: "aynı",
+        });
+
+        expect(dto.nextReviewAt).toBe(due.toISOString());
+        expect(dto.reviewCount).toBe(2);
+      });
+    });
   });
 
   describe("listEntries", () => {
@@ -496,7 +621,10 @@ describe("MistakeNotebookService", () => {
 
     it("returns the caller's own entries, newest first", async () => {
       seedIndex();
-      const result = await ctx.service.listEntries(USER, { page: 1, pageSize: 20 });
+      const result = await ctx.service.listEntries(USER, {
+        page: 1,
+        pageSize: 20,
+      });
 
       expect(result.items.map((entry) => entry.id)).toEqual(["e3", "e2", "e1"]);
       expect(result.total).toBe(3);
@@ -529,7 +657,10 @@ describe("MistakeNotebookService", () => {
 
     it("pages without losing the total", async () => {
       seedIndex();
-      const page2 = await ctx.service.listEntries(USER, { page: 2, pageSize: 2 });
+      const page2 = await ctx.service.listEntries(USER, {
+        page: 2,
+        pageSize: 2,
+      });
 
       expect(page2.items.map((entry) => entry.id)).toEqual(["e1"]);
       // The count is of everything that matches, not of the slice — the caller needs it to know

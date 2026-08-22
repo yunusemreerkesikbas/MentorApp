@@ -605,7 +605,9 @@ function toSubscriptionDto(row: SubscriptionRow): SubscriptionDto {
     id: row.id,
     planId: row.planId,
     status: row.status as SubscriptionDto["status"],
+    startedAt: row.createdAt.toISOString(),
     trialEndsAt: row.trialEndsAt?.toISOString() ?? null,
+    currentPeriodStart: row.currentPeriodStart?.toISOString() ?? null,
     currentPeriodEnd: row.currentPeriodEnd?.toISOString() ?? null,
     cancelAtPeriodEnd: row.cancelAtPeriodEnd,
   };

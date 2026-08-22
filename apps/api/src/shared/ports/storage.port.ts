@@ -13,12 +13,27 @@ export interface StorageUploadUrlResult {
 
 export interface StoragePort {
   /** Create a signed upload URL (client→R2 directly). */
-  createUploadUrl(input: { key: string; contentType: string }): Promise<StorageUploadUrlResult>;
+  createUploadUrl(input: {
+    key: string;
+    contentType: string;
+  }): Promise<StorageUploadUrlResult>;
   getPublicUrl(key: string): string;
   /** Server-side read for the vision pipeline (never exposed to clients). */
   readObject(key: string, maxBytes?: number): Promise<Buffer | null>;
   /** Best-effort cleanup for replaced user uploads. */
   deleteObject(key: string): Promise<void>;
+  /**
+   * Server-side copy within the store — the bytes never travel through a client.
+   *
+   * Exists for reusing an object the user already uploaded in one feature as an upload in another
+   * (a mistake-notebook photo becoming a forum attachment). The alternative is making the browser
+   * download the object and PUT it back, which needs a CORS grant on the read and moves the file
+   * twice for no reason.
+   *
+   * Always a copy, never a shared key: two features pointing at one object share its lifetime, so
+   * deleting the notebook card would silently break a community thread months later.
+   */
+  copyObject(sourceKey: string, destinationKey: string): Promise<void>;
   /**
    * One page of objects under a prefix, for orphan sweeps.
    *

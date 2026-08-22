@@ -170,6 +170,32 @@ html.dark {
   --paywall-plan-radius: 24px;
 }
 
+/*
+ * Checkout success canvas — green → canvas linear wash (DESIGN.md `--color-success` → `--color-bg`).
+ * Top is lifted with `--blob-cyan` so the band reads mint, not a dark forest slab.
+ */
+.checkout-result-success {
+  background-color: var(--color-bg);
+}
+
+.checkout-result-success::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-success) 82%, var(--blob-cyan)) 0%,
+    color-mix(in srgb, var(--color-success) 38%, var(--color-bg)) 32%,
+    var(--color-bg) 62%
+  );
+}
+
+.checkout-result-success canvas {
+  background-color: transparent;
+}
+
 /* --- Skeleton shimmer (surface-container gray; passive tab rail register) --- */
 
 @keyframes mentor-skeleton-shimmer {

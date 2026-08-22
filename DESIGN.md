@@ -281,6 +281,7 @@ Flat files under `public/visuals/`, WebP preferred, e.g. `plan-empty.webp`, `ana
 - Ease-out (quart/quint/expo). No elastic/bounce easing.
 - **`prefers-reduced-motion: reduce`:** crossfade or instant; never gate content visibility on entrance animation.
 - No orchestrated full-page load “shows.”
+- **Checkout success** shares the achievement confetti lottie (`/lottie/confetti.lottie`, play once) plus `/animation/success.svg`. Reduced-motion skips both and uses a static `--color-success` check.
 
 Shared helpers: `apps/web/src/lib/stagger-motion.ts`. Overlay enter/exit lives in web `globals.css`.
 

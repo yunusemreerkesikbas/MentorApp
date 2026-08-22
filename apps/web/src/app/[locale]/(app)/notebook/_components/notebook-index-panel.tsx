@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import Image from "next/image";
-import { Check, FileText, LayoutGrid } from "lucide-react";
+import { CalendarOff, Check, FileText, LayoutGrid } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type {
   ExamSubjectDto,
@@ -74,7 +74,9 @@ export function NotebookIndexPanel({
         pageSize: PAGE_SIZE,
         ...(subjectRef ? { subjectRef } : {}),
         ...(errorType ? { errorType: errorType as NotebookErrorType } : {}),
-        ...(status ? { status: status as "ACTIVE" | "HEALED" } : {}),
+        ...(status
+          ? { status: status as "ACTIVE" | "HEALED" | "ARCHIVED" }
+          : {}),
       }),
     [errorType, status, subjectRef],
   );
@@ -181,6 +183,7 @@ export function NotebookIndexPanel({
             { value: "", label: t("index_filter_all") },
             { value: "ACTIVE", label: t("index_status_active") },
             { value: "HEALED", label: t("index_status_healed") },
+            { value: "ARCHIVED", label: t("index_status_archived") },
           ]}
           onChange={setStatus}
         />
@@ -285,6 +288,15 @@ function IndexRow({
             className="shrink-0"
             style={{ color: "var(--color-success)" }}
           />
+        ) : entry.status === "ARCHIVED" ? (
+          // Only here. The page itself stays a page: whether a card is scheduled is a fact about
+          // the review deck, not something the paper should be marked up with.
+          <CalendarOff
+            aria-label={t("index_status_archived")}
+            size={16}
+            className="shrink-0"
+            style={{ color: "var(--color-secondary)" }}
+          />
         ) : null}
       </button>
 
@@ -293,7 +305,9 @@ function IndexRow({
       <button
         type="button"
         disabled={placed}
-        aria-label={placed ? t("index_already_placed") : t("index_place_on_page")}
+        aria-label={
+          placed ? t("index_already_placed") : t("index_place_on_page")
+        }
         onClick={onPlace}
         className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full outline-none transition-colors duration-150 hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-default disabled:opacity-35 disabled:hover:bg-transparent motion-reduce:transition-none"
         style={{ color: "var(--color-main)" }}

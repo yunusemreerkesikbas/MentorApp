@@ -1,7 +1,14 @@
 "use client";
 
 import { Check, ChevronDown, ListChecks, Paperclip } from "lucide-react";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ForumTagView, ThreadView, ZoneView } from "@mentor/types";
@@ -11,7 +18,12 @@ import { useDialog } from "@mentor/ui";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 import { trackCommunityEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
-import { getForumTrends, listForumTags, listZones, postThread } from "@/lib/forum";
+import {
+  getForumTrends,
+  listForumTags,
+  listZones,
+  postThread,
+} from "@/lib/forum";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { linkNotebookThread } from "@/lib/notebook";
 import { clearSpentQueryParam } from "@/lib/spent-query-param";
@@ -26,15 +38,28 @@ import {
   replaceHashtagToken,
   type HashtagToken,
 } from "../../_components/composer-hashtags";
-import { eligibleComposerZones, type ComposerAudienceMode } from "../../_components/composer-audience";
+import {
+  eligibleComposerZones,
+  type ComposerAudienceMode,
+} from "../../_components/composer-audience";
 import { resolveComposerThreadText } from "../../_components/composer-thread-text";
-import { DEFAULT_FORUM_POLL, ForumPollComposer } from "../../_components/forum-poll-composer";
+import {
+  DEFAULT_FORUM_POLL,
+  ForumPollComposer,
+} from "../../_components/forum-poll-composer";
 import { HashtagSuggestions } from "../../_components/hashtag-suggestions";
-import { FORUM_ATTACHMENT_ACCEPT, useForumImagePicker } from "../../_components/use-forum-image-picker";
+import {
+  FORUM_ATTACHMENT_ACCEPT,
+  useForumImagePicker,
+} from "../../_components/use-forum-image-picker";
 import {
   getComposerPresentation,
   shouldCollapseComposerOnOutside,
 } from "./composer-presentation";
+import {
+  clearNotebookHandoff,
+  readNotebookHandoff,
+} from "@/lib/notebook-handoff";
 import { QuestionComposerDialog } from "./question-composer-dialog";
 import { rankQuestionTags } from "./question-composer-state";
 
@@ -54,7 +79,16 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const dialog = useDialog();
   const picker = useForumImagePicker();
-  const { items, error: attachmentError, addFiles, removeAt, uploadAll, reset, fileRef, atLimit } = picker;
+  const {
+    items,
+    error: attachmentError,
+    addFiles,
+    removeAt,
+    uploadAll,
+    reset,
+    fileRef,
+    atLimit,
+  } = picker;
   const [expanded, setExpanded] = useState(false);
   const [mode, setMode] = useState<ComposerMode>("share");
   const [zones, setZones] = useState<ZoneView[]>([]);
@@ -92,9 +126,19 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
   // be asking the same thing twice.
   const questionDialogOpen = manualQuestionOpen || Boolean(handoffEntryId);
 
+  /**
+   * What the notebook left behind on its way here — the card's labels, for the banner and the title.
+   *
+   * Derived, not mirrored into state by an effect: the read is a pure lookup keyed by the id already
+   * in the URL, so there is nothing to synchronise. Only a payload matching *this* card is used; an
+   * older one belongs to a question that was already asked.
+   */
+  const handoff = handoffEntryId ? readNotebookHandoff(handoffEntryId) : null;
+
   /** Marks the handoff used up here, and takes the parameter out of the address bar with it. */
   const spendHandoff = useCallback(() => {
     setHandoffSpent(true);
+    clearNotebookHandoff();
     clearSpentQueryParam(NOTEBOOK_ENTRY_PARAM);
   }, []);
 
@@ -132,14 +176,18 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
         setTrendingTagIds(trendResult?.items.map((tag) => tag.id) ?? []);
       })
       .catch(() => active && setError(t("error")));
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [t]);
 
   useEffect(() => {
     if (!expanded) return;
     const handlePointerDown = (event: PointerEvent) => {
       if (composerRef.current?.contains(event.target as Node)) return;
-      if (shouldCollapseComposerOnOutside({ mode, hasPoll: Boolean(poll), busy })) {
+      if (
+        shouldCollapseComposerOnOutside({ mode, hasPoll: Boolean(poll), busy })
+      ) {
         setExpanded(false);
         setHashtagToken(null);
       }
@@ -148,20 +196,34 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [busy, expanded, mode, poll]);
 
-  const eligibleZones = useMemo(() => eligibleComposerZones(zones, mode), [mode, zones]);
-  const questionZones = useMemo(() => eligibleComposerZones(zones, "question"), [zones]);
+  const eligibleZones = useMemo(
+    () => eligibleComposerZones(zones, mode),
+    [mode, zones],
+  );
+  const questionZones = useMemo(
+    () => eligibleComposerZones(zones, "question"),
+    [zones],
+  );
   const questionTags = useMemo(
     () => rankQuestionTags(tags, trendingTagIds),
     [tags, trendingTagIds],
   );
   const selectedZone = eligibleZones.find((zone) => zone.id === zoneId) ?? null;
   const hashtagSuggestions = useMemo(
-    () => (hashtagToken ? filterHashtagSuggestions(tags, hashtagToken.query) : []),
+    () =>
+      hashtagToken ? filterHashtagSuggestions(tags, hashtagToken.query) : [],
     [hashtagToken, tags],
   );
   const composerBody = poll ? pollTitle : body;
-  const presentation = getComposerPresentation({ expanded, mode, hasPoll: Boolean(poll) });
-  const tagIds = useMemo(() => collectSuggestedTagIds(composerBody, tags), [composerBody, tags]);
+  const presentation = getComposerPresentation({
+    expanded,
+    mode,
+    hasPoll: Boolean(poll),
+  });
+  const tagIds = useMemo(
+    () => collectSuggestedTagIds(composerBody, tags),
+    [composerBody, tags],
+  );
 
   const changeMode = (nextMode: ComposerMode) => {
     if (nextMode === "question") {
@@ -182,7 +244,13 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
   const addPoll = async () => {
     setExpanded(true);
     if (items.length > 0) {
-      const confirmed = await dialog.confirm({ title: t("poll_media_conflict_title"), message: t("poll_media_conflict_message"), confirmLabel: t("poll_media_remove_confirm"), cancelLabel: t("cancel"), closeLabel: t("close") });
+      const confirmed = await dialog.confirm({
+        title: t("poll_media_conflict_title"),
+        message: t("poll_media_conflict_message"),
+        confirmLabel: t("poll_media_remove_confirm"),
+        cancelLabel: t("cancel"),
+        closeLabel: t("close"),
+      });
       if (!confirmed) return;
       reset();
     }
@@ -190,7 +258,10 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
     setBody("");
     setHashtagToken(null);
     setExpanded(true);
-    setPoll({ ...DEFAULT_FORUM_POLL, options: [...DEFAULT_FORUM_POLL.options] });
+    setPoll({
+      ...DEFAULT_FORUM_POLL,
+      options: [...DEFAULT_FORUM_POLL.options],
+    });
   };
 
   const removePoll = () => {
@@ -203,7 +274,13 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
   const chooseAttachment = async () => {
     setExpanded(true);
     if (poll) {
-      const confirmed = await dialog.confirm({ title: t("poll_media_conflict_title"), message: t("poll_remove_for_media_message"), confirmLabel: t("poll_remove"), cancelLabel: t("cancel"), closeLabel: t("close") });
+      const confirmed = await dialog.confirm({
+        title: t("poll_media_conflict_title"),
+        message: t("poll_remove_for_media_message"),
+        confirmLabel: t("poll_remove"),
+        cancelLabel: t("cancel"),
+        closeLabel: t("close"),
+      });
       if (!confirmed) return;
       removePoll();
     }
@@ -235,8 +312,19 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
     setError(null);
     try {
       const attachments = poll ? [] : await uploadAll();
-      await postThread(selectedZone.id, threadText.body, threadText.title, attachments, tagIds, parsedPoll?.success ? parsedPoll.data : undefined);
-      trackCommunityEvent("forum_thread_created", { mode, zone_type: selectedZone.type, tag_count: tagIds.length });
+      await postThread(
+        selectedZone.id,
+        threadText.body,
+        threadText.title,
+        attachments,
+        tagIds,
+        parsedPoll?.success ? parsedPoll.data : undefined,
+      );
+      trackCommunityEvent("forum_thread_created", {
+        mode,
+        zone_type: selectedZone.type,
+        tag_count: tagIds.length,
+      });
       setTitle("");
       setBody("");
       setPollTitle("");
@@ -246,7 +334,11 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
       setExpanded(false);
       onCreated();
     } catch (submitError) {
-      setError(submitError instanceof ApiClientError ? submitError.body.message : t("error"));
+      setError(
+        submitError instanceof ApiClientError
+          ? submitError.body.message
+          : t("error"),
+      );
     } finally {
       setBusy(false);
     }
@@ -268,20 +360,34 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
     });
   };
 
-  const handleHashtagKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>): boolean => {
+  const handleHashtagKeyDown = (
+    event: React.KeyboardEvent<HTMLTextAreaElement>,
+  ): boolean => {
     if (!hashtagToken) return false;
-    if ((event.key === "ArrowDown" || event.key === "ArrowUp") && hashtagSuggestions.length > 0) {
+    if (
+      (event.key === "ArrowDown" || event.key === "ArrowUp") &&
+      hashtagSuggestions.length > 0
+    ) {
       event.preventDefault();
       const direction = event.key === "ArrowDown" ? 1 : -1;
       setActiveHashtagIndex(
-        (current) => (current + direction + hashtagSuggestions.length) % hashtagSuggestions.length,
+        (current) =>
+          (current + direction + hashtagSuggestions.length) %
+          hashtagSuggestions.length,
       );
       return true;
     }
-    if ((event.key === "Enter" || event.key === "Tab") && hashtagSuggestions.length > 0) {
+    if (
+      (event.key === "Enter" || event.key === "Tab") &&
+      hashtagSuggestions.length > 0
+    ) {
       if (event.metaKey || event.ctrlKey) return false;
       event.preventDefault();
-      selectHashtag(hashtagSuggestions[Math.min(activeHashtagIndex, hashtagSuggestions.length - 1)]!);
+      selectHashtag(
+        hashtagSuggestions[
+          Math.min(activeHashtagIndex, hashtagSuggestions.length - 1)
+        ]!,
+      );
       return true;
     }
     if (event.key === "Escape") {
@@ -294,49 +400,190 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
 
   return (
     <>
-    <div ref={composerRef} className="mb-4 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)]">
-      <div className="flex items-start gap-3">
-        <AuthorAvatar
-          name={user?.displayName ?? "Mentor"}
-          src={user?.avatarUrl}
-          size={40}
-        />
-        <div className="min-w-0 flex-1">
-          {presentation.showAudience && presentation.showTypeSelector ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <AudienceSelector zones={eligibleZones} value={zoneId} onChange={(next) => { setZoneId(next); setError(null); setExpanded(true); }} disabled={busy} />
-              <ComposerTypeSelector value={mode} onChange={changeMode} disabled={busy} />
-            </div>
-          ) : null}
+      <div
+        ref={composerRef}
+        className="mb-4 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)]"
+      >
+        <div className="flex items-start gap-3">
+          <AuthorAvatar
+            name={user?.displayName ?? "Mentor"}
+            src={user?.avatarUrl}
+            size={40}
+          />
+          <div className="min-w-0 flex-1">
+            {presentation.showAudience && presentation.showTypeSelector ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <AudienceSelector
+                  zones={eligibleZones}
+                  value={zoneId}
+                  onChange={(next) => {
+                    setZoneId(next);
+                    setError(null);
+                    setExpanded(true);
+                  }}
+                  disabled={busy}
+                />
+                <ComposerTypeSelector
+                  value={mode}
+                  onChange={changeMode}
+                  disabled={busy}
+                />
+              </div>
+            ) : null}
 
-          {presentation.showQuestionTitle ? <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={200} placeholder={t("composer_question_title")} className="mt-2 min-h-11 w-full border-0 bg-transparent px-0 text-lg font-extrabold text-[var(--color-main)] outline-none placeholder:text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]" /> : null}
-          {presentation.showPollTitle ? <input value={pollTitle} onChange={(event) => setPollTitle(event.target.value)} maxLength={200} placeholder={t("composer_poll_title")} aria-label={t("composer_poll_title")} className="mt-2 min-h-11 w-full border-0 bg-transparent px-0 text-lg font-extrabold text-[var(--color-main)] outline-none placeholder:text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]" /> : null}
+            {presentation.showQuestionTitle ? (
+              <input
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                maxLength={200}
+                placeholder={t("composer_question_title")}
+                className="mt-2 min-h-11 w-full border-0 bg-transparent px-0 text-lg font-extrabold text-[var(--color-main)] outline-none placeholder:text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              />
+            ) : null}
+            {presentation.showPollTitle ? (
+              <input
+                value={pollTitle}
+                onChange={(event) => setPollTitle(event.target.value)}
+                maxLength={200}
+                placeholder={t("composer_poll_title")}
+                aria-label={t("composer_poll_title")}
+                className="mt-2 min-h-11 w-full border-0 bg-transparent px-0 text-lg font-extrabold text-[var(--color-main)] outline-none placeholder:text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              />
+            ) : null}
 
-          {presentation.showBody ? <div className="relative"><ComposerBodyField id="global-thread-body" label={t("composer_content")} value={body} onValueChange={setBody} placeholder={t("composer_content_placeholder")} disabled={busy} rows={expanded ? 3 : 1} compact hideLabel minimal textareaRef={bodyRef} onCaretChange={syncHashtag} onKeyDown={handleHashtagKeyDown} autocomplete={{ expanded: Boolean(hashtagToken), controls: hashtagListboxId, activeDescendant: hashtagSuggestions.length > 0 ? `${hashtagListboxId}-${Math.min(activeHashtagIndex, hashtagSuggestions.length - 1)}` : undefined }} onFocus={() => { setExpanded(true); trackCommunityEvent("forum_composer_open", { mode }); }} onBlur={() => setHashtagToken(null)} onSubmit={() => void submit()} toolbarActions={<>
-        {mode === "share" ? <button type="button" aria-label={t("poll_add")} aria-pressed={Boolean(poll)} disabled={busy || Boolean(poll)} onClick={() => void addPoll()} className="flex size-8 items-center justify-center rounded-full text-[var(--color-secondary)] hover:bg-[var(--color-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-40"><ListChecks size={18} aria-hidden /></button> : null}
-        <button type="button" aria-label={t("attach")} disabled={busy || atLimit} onClick={() => void chooseAttachment()} className="flex size-8 items-center justify-center rounded-full text-[var(--color-secondary)] hover:bg-[var(--color-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-40"><Paperclip size={18} aria-hidden /></button>
-      </>} footerAction={<button type="button" disabled={busy || !composerBody.trim() || !selectedZone} onClick={() => void submit()} className="min-h-10 rounded-full bg-[var(--color-btn)] px-5 text-sm font-bold text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-40">{t("composer_submit")}</button>} />
-          {hashtagToken ? <HashtagSuggestions id={hashtagListboxId} query={hashtagToken.query} suggestions={hashtagSuggestions} activeIndex={activeHashtagIndex} onActiveIndexChange={setActiveHashtagIndex} onSelect={selectHashtag} /> : null}</div> : null}
+            {presentation.showBody ? (
+              <div className="relative">
+                <ComposerBodyField
+                  id="global-thread-body"
+                  label={t("composer_content")}
+                  value={body}
+                  onValueChange={setBody}
+                  placeholder={t("composer_content_placeholder")}
+                  disabled={busy}
+                  rows={expanded ? 3 : 1}
+                  compact
+                  hideLabel
+                  minimal
+                  textareaRef={bodyRef}
+                  onCaretChange={syncHashtag}
+                  onKeyDown={handleHashtagKeyDown}
+                  autocomplete={{
+                    expanded: Boolean(hashtagToken),
+                    controls: hashtagListboxId,
+                    activeDescendant:
+                      hashtagSuggestions.length > 0
+                        ? `${hashtagListboxId}-${Math.min(activeHashtagIndex, hashtagSuggestions.length - 1)}`
+                        : undefined,
+                  }}
+                  onFocus={() => {
+                    setExpanded(true);
+                    trackCommunityEvent("forum_composer_open", { mode });
+                  }}
+                  onBlur={() => setHashtagToken(null)}
+                  onSubmit={() => void submit()}
+                  toolbarActions={
+                    <>
+                      {mode === "share" ? (
+                        <button
+                          type="button"
+                          aria-label={t("poll_add")}
+                          aria-pressed={Boolean(poll)}
+                          disabled={busy || Boolean(poll)}
+                          onClick={() => void addPoll()}
+                          className="flex size-8 items-center justify-center rounded-full text-[var(--color-secondary)] hover:bg-[var(--color-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-40"
+                        >
+                          <ListChecks size={18} aria-hidden />
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        aria-label={t("attach")}
+                        disabled={busy || atLimit}
+                        onClick={() => void chooseAttachment()}
+                        className="flex size-8 items-center justify-center rounded-full text-[var(--color-secondary)] hover:bg-[var(--color-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-40"
+                      >
+                        <Paperclip size={18} aria-hidden />
+                      </button>
+                    </>
+                  }
+                  footerAction={
+                    <button
+                      type="button"
+                      disabled={busy || !composerBody.trim() || !selectedZone}
+                      onClick={() => void submit()}
+                      className="min-h-10 rounded-full bg-[var(--color-btn)] px-5 text-sm font-bold text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {t("composer_submit")}
+                    </button>
+                  }
+                />
+                {hashtagToken ? (
+                  <HashtagSuggestions
+                    id={hashtagListboxId}
+                    query={hashtagToken.query}
+                    suggestions={hashtagSuggestions}
+                    activeIndex={activeHashtagIndex}
+                    onActiveIndexChange={setActiveHashtagIndex}
+                    onSelect={selectHashtag}
+                  />
+                ) : null}
+              </div>
+            ) : null}
 
-          <input ref={fileRef} type="file" accept={FORUM_ATTACHMENT_ACCEPT} multiple hidden onChange={(event) => addFiles(event.target.files)} />
-          {expanded ? <AttachmentPreviewStrip items={items} onRemove={removeAt} /> : null}
-          {expanded && poll ? <ForumPollComposer value={poll} onChange={setPoll} onRemove={removePoll} disabled={busy} /> : null}
+            <input
+              ref={fileRef}
+              type="file"
+              accept={FORUM_ATTACHMENT_ACCEPT}
+              multiple
+              hidden
+              onChange={(event) => addFiles(event.target.files)}
+            />
+            {expanded ? (
+              <AttachmentPreviewStrip items={items} onRemove={removeAt} />
+            ) : null}
+            {expanded && poll ? (
+              <ForumPollComposer
+                value={poll}
+                onChange={setPoll}
+                onRemove={removePoll}
+                disabled={busy}
+              />
+            ) : null}
 
-          {error || attachmentError ? <p role="alert" className="mt-3 text-sm text-[var(--color-error)]">{error ?? attachmentError}</p> : null}
-          {expanded && poll ? <div className="mt-3 flex justify-end"><button type="button" disabled={busy || !composerBody.trim() || !selectedZone} onClick={() => void submit()} className="min-h-10 rounded-full bg-[var(--color-btn)] px-5 text-sm font-bold text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-40">{t("composer_submit")}</button></div> : null}
+            {error || attachmentError ? (
+              <p
+                role="alert"
+                className="mt-3 text-sm text-[var(--color-error)]"
+              >
+                {error ?? attachmentError}
+              </p>
+            ) : null}
+            {expanded && poll ? (
+              <div className="mt-3 flex justify-end">
+                <button
+                  type="button"
+                  disabled={busy || !composerBody.trim() || !selectedZone}
+                  onClick={() => void submit()}
+                  className="min-h-10 rounded-full bg-[var(--color-btn)] px-5 text-sm font-bold text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {t("composer_submit")}
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
-    </div>
-    <QuestionComposerDialog
-      open={questionDialogOpen}
-      zones={questionZones}
-      tags={questionTags}
-      onClose={() => {
-        setManualQuestionOpen(false);
-        spendHandoff();
-      }}
-      onCreated={(thread) => void handleQuestionCreated(thread)}
-    />
+      <QuestionComposerDialog
+        open={questionDialogOpen}
+        zones={questionZones}
+        tags={questionTags}
+        handoff={handoff}
+        onClose={() => {
+          setManualQuestionOpen(false);
+          spendHandoff();
+        }}
+        onCreated={(thread) => void handleQuestionCreated(thread)}
+      />
     </>
   );
 }

@@ -4,6 +4,7 @@ import {
   adminForumTagUpdateSchema,
   assignOwnerSchema,
   attachmentUploadUrlSchema,
+  copyAttachmentSchema,
   bookmarkQuerySchema,
   createAnswerSchema,
   createReportSchema,
@@ -35,26 +36,43 @@ export class AssignOwnerDto extends createZodDto(assignOwnerSchema) {}
 export class ApproveMemberDto extends createZodDto(approveMemberSchema) {}
 export class ZoneListQueryDto extends createZodDto(zoneListQuerySchema) {}
 export class ZoneMembersQueryDto extends createZodDto(zoneMembersQuerySchema) {}
-export class MemberSearchQueryDto extends createZodDto(memberSearchQuerySchema) {}
+export class MemberSearchQueryDto extends createZodDto(
+  memberSearchQuerySchema,
+) {}
 export class CreateThreadDto extends createZodDto(createThreadSchema) {}
 export class FeedQueryDto extends createZodDto(feedQuerySchema) {}
 export class BookmarkQueryDto extends createZodDto(bookmarkQuerySchema) {}
 export class ReactionDto extends createZodDto(reactionSchema) {}
-export class ReactionListQueryDto extends createZodDto(reactionListQuerySchema) {}
+export class ReactionListQueryDto extends createZodDto(
+  reactionListQuerySchema,
+) {}
 export class PinThreadDto extends createZodDto(pinThreadSchema) {}
 export class PollVoteDto extends createZodDto(pollVoteSchema) {}
 export class CreateAnswerDto extends createZodDto(createAnswerSchema) {}
-export class AttachmentUploadUrlDto extends createZodDto(attachmentUploadUrlSchema) {}
+export class AttachmentUploadUrlDto extends createZodDto(
+  attachmentUploadUrlSchema,
+) {}
+export class CopyAttachmentDto extends createZodDto(copyAttachmentSchema) {}
 export class SearchQueryDto extends createZodDto(searchQuerySchema) {}
 export class CreateReportDto extends createZodDto(createReportSchema) {}
-export class CreateForumTagSuggestionDto extends createZodDto(createForumTagSuggestionSchema) {}
+export class CreateForumTagSuggestionDto extends createZodDto(
+  createForumTagSuggestionSchema,
+) {}
 export class ReportsQueryDto extends createZodDto(reportsQuerySchema) {}
 export class ResolveReportDto extends createZodDto(resolveReportSchema) {}
 export class ForumFeedQueryDto extends createZodDto(forumFeedQuerySchema) {}
 export class ForumSearchQueryDto extends createZodDto(forumSearchQuerySchema) {}
 export class ForumTrendsQueryDto extends createZodDto(forumTrendsQuerySchema) {}
-export class UpdateForumThreadDto extends createZodDto(updateForumThreadSchema) {}
+export class UpdateForumThreadDto extends createZodDto(
+  updateForumThreadSchema,
+) {}
 export class UpdateForumPostDto extends createZodDto(updateForumPostSchema) {}
-export class AdminForumTagCreateDto extends createZodDto(adminForumTagCreateSchema) {}
-export class AdminForumTagUpdateDto extends createZodDto(adminForumTagUpdateSchema) {}
-export class SetFeaturedThreadDto extends createZodDto(setFeaturedThreadSchema) {}
+export class AdminForumTagCreateDto extends createZodDto(
+  adminForumTagCreateSchema,
+) {}
+export class AdminForumTagUpdateDto extends createZodDto(
+  adminForumTagUpdateSchema,
+) {}
+export class SetFeaturedThreadDto extends createZodDto(
+  setFeaturedThreadSchema,
+) {}

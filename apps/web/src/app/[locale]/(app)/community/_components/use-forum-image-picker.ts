@@ -12,13 +12,24 @@ import {
 import type { AttachmentInput } from "@mentor/validation";
 import { uploadForumFile, uploadForumImage } from "@/lib/forum-attachments";
 
-/** One picked attachment: an image (with a local preview URL) or a file (name/size chip). */
+/**
+ * One picked attachment: an image (with a local preview URL), a file (name/size chip), or one that
+ * is already in storage and needs no upload at all.
+ *
+ * `ready` exists for images the user uploaded in another part of the app — a mistake-notebook photo
+ * copied server-side into an attachment key. There is no `File` behind it and there never will be:
+ * the browser cannot read those bytes without a cross-origin grant, and it has no reason to.
+ */
 export type PickedAttachment =
   | { kind: "image"; file: File; url: string }
-  | { kind: "file"; file: File };
+  | { kind: "file"; file: File }
+  | { kind: "ready"; attachment: AttachmentInput; url: string };
 
 /** All mimes the picker accepts, for the hidden `<input accept>`. */
-export const FORUM_ATTACHMENT_ACCEPT = [...FORUM_IMAGE_MIMES, ...FORUM_FILE_MIMES].join(",");
+export const FORUM_ATTACHMENT_ACCEPT = [
+  ...FORUM_IMAGE_MIMES,
+  ...FORUM_FILE_MIMES,
+].join(",");
 
 /**
  * Shared attachment-picker state for forum composers (chat thread, QA question, QA answer). Handles
@@ -63,6 +74,22 @@ export function useForumImagePicker() {
     if (fileRef.current) fileRef.current.value = "";
   };
 
+  /**
+   * Take an attachment that is already in storage, under the shared count limit.
+   *
+   * No size check: the object went through this app's own upload policy once already, and the
+   * server would not have copied it otherwise.
+   */
+  const addReady = (attachment: AttachmentInput, url: string) => {
+    setError(null);
+    if (items.length >= FORUM_MAX_ATTACHMENTS) {
+      setError(t("attach_too_many", { max: FORUM_MAX_ATTACHMENTS }));
+      return false;
+    }
+    setItems((prev) => [...prev, { kind: "ready", attachment, url }]);
+    return true;
+  };
+
   const removeAt = (idx: number) => {
     setItems((prev) => {
       const target = prev[idx];
@@ -71,10 +98,15 @@ export function useForumImagePicker() {
     });
   };
 
-  /** Upload all picked attachments and return the refs to send on create. */
+  /** Upload everything that still needs uploading, and pass through what does not. */
   const uploadAll = (): Promise<AttachmentInput[]> =>
     Promise.all(
-      items.map((p) => (p.kind === "image" ? uploadForumImage(p.file) : uploadForumFile(p.file))),
+      items.map((p) => {
+        if (p.kind === "ready") return Promise.resolve(p.attachment);
+        return p.kind === "image"
+          ? uploadForumImage(p.file)
+          : uploadForumFile(p.file);
+      }),
     );
 
   const reset = () => {
@@ -89,6 +121,7 @@ export function useForumImagePicker() {
     error,
     setError,
     addFiles,
+    addReady,
     removeAt,
     uploadAll,
     reset,

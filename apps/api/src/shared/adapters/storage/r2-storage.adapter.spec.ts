@@ -84,12 +84,17 @@ describe("R2StorageAdapter", () => {
     },
   ];
 
-  it.each(REAL_KEYS)("routes $key to $bucket (minted by $source)", async ({ key, bucket }) => {
-    await adapter().createUploadUrl({ key, contentType: "image/png" });
+  it.each(REAL_KEYS)(
+    "routes $key to $bucket (minted by $source)",
+    async ({ key, bucket }) => {
+      await adapter().createUploadUrl({ key, contentType: "image/png" });
 
-    const command = vi.mocked(getSignedUrl).mock.calls[0]?.[1] as { input: { Bucket: string } };
-    expect(command.input.Bucket).toBe(bucket);
-  });
+      const command = vi.mocked(getSignedUrl).mock.calls[0]?.[1] as {
+        input: { Bucket: string };
+      };
+      expect(command.input.Bucket).toBe(bucket);
+    },
+  );
 
   /*
    * Drift guard: every prefix declared in `storage-prefixes.ts` must be routable, and every public
@@ -98,15 +103,21 @@ describe("R2StorageAdapter", () => {
    */
   it.each(ALL_PREFIXES)("routes the declared prefix %s", async (prefix) => {
     await expect(
-      adapter().createUploadUrl({ key: `${prefix}user/object.bin`, contentType: "image/png" }),
+      adapter().createUploadUrl({
+        key: `${prefix}user/object.bin`,
+        contentType: "image/png",
+      }),
     ).resolves.toBeDefined();
   });
 
-  it.each(PUBLIC_PREFIXES)("exposes a public URL for the declared prefix %s", (prefix) => {
-    expect(adapter().getPublicUrl(`${prefix}user/object.bin`)).toBe(
-      `https://media.mentor.test/${prefix}user/object.bin`,
-    );
-  });
+  it.each(PUBLIC_PREFIXES)(
+    "exposes a public URL for the declared prefix %s",
+    (prefix) => {
+      expect(adapter().getPublicUrl(`${prefix}user/object.bin`)).toBe(
+        `https://media.mentor.test/${prefix}user/object.bin`,
+      );
+    },
+  );
 
   it("every real key is covered by a declared prefix", () => {
     for (const { key } of REAL_KEYS) {
@@ -122,9 +133,9 @@ describe("R2StorageAdapter", () => {
       Body: { transformToByteArray: async () => new Uint8Array([1, 2, 3]) },
     });
 
-    await expect(adapter().readObject("mock-exams/user-id/photo.jpg")).resolves.toEqual(
-      Buffer.from([1, 2, 3]),
-    );
+    await expect(
+      adapter().readObject("mock-exams/user-id/photo.jpg"),
+    ).resolves.toEqual(Buffer.from([1, 2, 3]));
     expect(send.mock.calls[0]?.[0].input.Bucket).toBe("mentor-private");
   });
 
@@ -134,12 +145,17 @@ describe("R2StorageAdapter", () => {
     expect(storage.getPublicUrl("avatars/user-id/avatar.png")).toBe(
       "https://media.mentor.test/avatars/user-id/avatar.png",
     );
-    expect(() => storage.getPublicUrl("mock-exams/user-id/photo.jpg")).toThrow();
+    expect(() =>
+      storage.getPublicUrl("mock-exams/user-id/photo.jpg"),
+    ).toThrow();
   });
 
   it("rejects unknown key prefixes instead of putting them in a public bucket", async () => {
     await expect(
-      adapter().createUploadUrl({ key: "unknown/private.txt", contentType: "text/plain" }),
+      adapter().createUploadUrl({
+        key: "unknown/private.txt",
+        contentType: "text/plain",
+      }),
     ).rejects.toThrow();
   });
 
@@ -147,7 +163,9 @@ describe("R2StorageAdapter", () => {
     adapter().getPublicUrl("avatars/user-id/avatar.png");
 
     expect(S3Client).toHaveBeenCalledWith(
-      expect.objectContaining({ endpoint: "https://account-id.eu.r2.cloudflarestorage.com" }),
+      expect.objectContaining({
+        endpoint: "https://account-id.eu.r2.cloudflarestorage.com",
+      }),
     );
   });
 });

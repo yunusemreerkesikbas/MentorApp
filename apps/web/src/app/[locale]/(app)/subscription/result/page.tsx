@@ -13,7 +13,10 @@ export default async function CheckoutResultPage({
   return (
     <Suspense
       fallback={
-        <main className="mx-auto flex min-h-[40vh] w-full max-w-md items-center justify-center px-5 py-16">
+        <main
+          className="fixed inset-0 z-[90] grid place-items-center bg-[var(--color-bg)] px-5"
+          aria-busy
+        >
           <p style={{ color: "var(--color-secondary)" }}>
             {translate("loading")}
           </p>

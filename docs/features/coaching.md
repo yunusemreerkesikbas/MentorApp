@@ -2912,3 +2912,89 @@ pnpm --filter @mentor/api test
   elimizle üretirdi. Silinen: `review_done_remaining` (per-cevap satırı aynı şeyi daha iyi söylüyor).
   İlgili: `notebook-review-deck.ts` (+spec, `reviewFeedback` 5 test), `notebook-review-panel.tsx`,
   `messages/{tr,en}.json`.
+
+- **Özet ekranı zenginleşti + topluluğa devir artık bir şey taşıyor (2026-08-22, APP-046)** —
+  Kullanıcı iki ekran görüntüsüyle geldi: özet satırı çıplaktı ("Etiketsiz · dikkat hatası") ve
+  "Topluluğa sor"a basınca composer **bomboş** açılıyordu. İkincinin sebebi: devir yalnızca
+  `?notebookEntry=<id>` taşıyor, composer o id ile sadece thread oluştuktan *sonra*
+  `linkNotebookThread` çağırıyor — açılışta doldurulacak veri yok, üstelik modal defterden gelindiğini
+  bile söylemiyor. Kartı çekemiyor da: **tek kayıt döndüren endpoint yok**, sadece sayfalı liste.
+  Çözüm `lib/notebook-handoff.ts`: defter, elindeki kaydın etiketlerini çıkarken `sessionStorage`'a
+  bırakıyor, composer varışta okuyor. Yeni endpoint yok, URL'e içerik girmiyor (öğrencinin notu
+  taşınmıyor — o onun), mevcut bağlama akışı aynen duruyor. Composer'da **banner** (hangi kart + hata
+  tipi + "yayınlanınca bu kartla ilişkilendirilecek") ve **başlık tohumu**; gövde bilerek boş —
+  hazır şablon, olduğu gibi yayınlanan içi boş sorular üretir. **Lint iki kez yön verdi:**
+  `react-hooks/set-state-in-effect` hem devri okuyan hem başlığı tohumlayan effect'i reddetti.
+  Okuma **yıkıcı olmaktan çıkarıldı** (`readNotebookHandoff` + ayrı `clearNotebookHandoff`, spendHandoff
+  içinde) — böylece render sırasında saf bir arama olarak çağrılabiliyor; silen bir okuma yan etkidir
+  ve React'in iki kez çalıştırmakta özgür olduğu bir yan etki ikinci turda boş döner, banner'ı
+  söndürürdü. Başlık ise effect yerine **initial state**, dialog `key={handoff.entryId}` ile
+  yeniden bağlanıyor: client-side navigasyonla `?notebookEntry=` sonradan gelirse lazy init tek başına
+  kaçırırdı. Özet tarafında dördü de yapıldı: satırda **küçük fotoğraf** (etiketsiz kartın kimliğini
+  fotoğraf veriyor; aynı metni taşıyan liste hiçbir şey taşımaz), satır başına **"2 gün sonra
+  dönecek"** (`reviewFeedback` yeniden kullanıldı), `HEALED` için **kendi success bandı**, ve
+  `solved === 0` iken sayı cümlesi yerine sonuç cümlesi — "1 karttan 0 tanesini çözdün", kaçırdığı
+  kart hakkında az önce doğruyu söylemiş birine okunan bir skordu. **Ertelendi:** fotoğrafın otomatik
+  iliştirilmesi — `uploadAll()` `File` istiyor, URL'den `File` üretmek bucket CORS'una bağlı ve
+  ölçmeden söz verilmedi.
+  İlgili: `lib/notebook-handoff.ts` (yeni), `notebook-review-panel.tsx`, `global-composer.tsx`,
+  `question-composer-dialog.tsx`, `messages/{tr,en}.json`.
+
+- **Defter fotoğrafı topluluğa: sunucu tarafı kopya (2026-08-22, APP-046)** — Önceki turda ertelenmişti,
+  gerekçe "URL'den `File` üretmek bucket CORS'una bağlı". Bakınca **CORS'a hiç girmemek** mümkün çıktı:
+  `NotebookEntryDto` zaten `storageKey` taşıyor ve defter fotoğrafı ile forum eki **aynı R2 bucket'ında**
+  (`storage.getPublicUrl` ikisinde de). Baytlar sunucunun elinin altındayken tarayıcıya 5 MB indirtip
+  geri yükletmek boşuna bir gidiş-dönüş. `StoragePort.copyObject` eklendi (R2 `CopyObjectCommand`, fake
+  adaptörde bellek kopyası) ve `POST /v1/forum/attachments/copy` açıldı. **Uç nokta forum modülünde:**
+  ek anahtar alanı, MIME/boyut limitleri ve pending defteri onun; coaching'e koysaydım defter forum'un
+  anahtar şemasını öğrenmek zorunda kalırdı. Sahiplik `isOwnUploadKey` ile **genel** kuralla doğrulanıyor
+  — `{feature}/{userId}/{uuid}.{ext}` her ön ekte aynı, yani forum "defter" diye bir şey bilmiyor. MIME
+  istemcinin beyanından değil **anahtarın uzantısından** türetiliyor; aksi halde `.pdf` bir anahtar
+  `image/png` diye eklenebilirdi. Kopyalanan anahtar da `markPending`'e yazılıyor: yoksa fotoğrafı
+  ekleyip soruyu yayınlamadan çıkan öğrenci **kalıcı olarak sızan** bir nesne bırakırdı, çünkü
+  `cleanupOrphanAttachments` yalnızca deftere yazılanları süpürüyor. Referans değil kopya, çünkü tek
+  nesneyi iki kayıt paylaşırsa kart silindiğinde thread'in görseli aylar sonra sessizce kırılır.
+  İki limit de 5 MB olduğu için `headObject` gerekmedi. **Bir güvenlik hatası yakalandı ve teste
+  bağlandı:** desen template literal içinde kurulduğu için `\.` tek ters bölüye düşmüştü ve regex'te
+  `.` *herhangi bir karakter* demek — `…f8Xpng` png diye geçerdi. Düzeltildi; düzeltmeyi geri alınca
+  kırmızıya dönen bir regresyon testi eklendi. **İstemci:** `useForumImagePicker` yeni bir öğe türü
+  aldı (`kind: "ready"` — yüklenmesi gereken bir `File`'ı olmayan, zaten depoda duran ek); `uploadAll`
+  onu geçiriyor, `AttachmentPreviewStrip` dosya dalına düşüp `p.file`'da çakılmasın diye
+  `p.kind !== "file"` ile ayırıyor. Ölçüler `naturalWidth` ile okunuyor — **gösterilen** bir görselin
+  boyutunu okumak CORS izni istemiyor, baytlarını okumak istiyor — böylece thread'de CLS olmuyor.
+  Fotoğraf **otomatik eklenmiyor, butonla**: defter fotoğrafı çoğu zaman telifli bir kitap sayfası
+  (`stuck_copyright` uyarısı tam bunun için var) ve onu herkese açık bir gönderiye varsayılan olarak
+  koymak bu dialogun öğrenci adına verebileceği bir karar değil. Yalnızca **soru** fotoğrafı —
+  çözüm fotoğrafını soruyla birlikte yayınlamak yardım istemek değil, kendi kendine cevap vermek olur.
+  İlgili (bir sonraki maddede devam): `storage.port.ts`, `r2-storage.adapter.ts`, `fake-storage.adapter.ts`,
+  `attachment.constants.ts`, `forum-thread.service.ts` (+spec, 4 test), `forum-thread.controller.ts`,
+  `forum.dto.ts`, `packages/validation/src/forum.ts`, `use-forum-image-picker.ts`,
+  `attachment-preview-strip.tsx`, `forum-attachments.ts`, `notebook-handoff.ts`,
+  `question-composer-dialog.tsx`, `notebook-review-panel.tsx`, `messages/{tr,en}.json`.
+
+- **Karta tekrar destesinden çıkma/geri girme köprüsü (2026-08-22, APP-046)** — Kullanıcı "eklenen
+  görseller ile tekrar zamanı arasında köprü kuralım; istediğinde ekleyebilsin, istediğinde
+  çıkarabilsin" dedi. İki taraf da hazırdı: sayfadaki her fotoğraf zaten `kind: "entry"` öğesi, yani
+  bir kayıt; yazma şeması da `status: "ACTIVE" | "ARCHIVED"` kabul ediyordu. **Ama arada kırık bir
+  söz vardı:** `updateEntry` statüyü düz geçiriyor, `nextReviewAt`'e dokunmuyordu; deste sorgusu ise
+  yalnızca `nextReviewAt <= now`'a bakıyor, statüye hiç bakmıyor. Sonuç: arşivlenen kart **destede
+  kalmaya devam ederdi**, iyileşmiş kartı aktifleştirmek ise `nextReviewAt` null kaldığı için
+  **sessizce hiçbir şey yapmazdı**. DTO'nun kendi yorumu ("`ARCHIVED` olunca null") kodun tutmadığı
+  bir vaatti. Hiçbir arayüz bu alanı kullanmadığı için kimse fark etmemişti. Köprü yeni alanla değil,
+  bu sözü tutturarak kuruldu: `ARCHIVED` → `nextReviewAt: null`; `ACTIVE` → `firstReviewAt()` +
+  `reviewCount: 0`. Yeni bir sayı uydurulmadı, kaydın rotasyona ilk girişi zaten `firstReviewAt()`.
+  **`reviewCount` sıfırlanıyor**, çünkü merdivenin tüm varsayımı aralıkların kesintisiz olması;
+  iyileşmiş kartı geri alan öğrenci ona güvenmediğini söylüyor, sayaç 3'te kalsaydı ilk doğru cevapta
+  anında yeniden iyileşirdi. Değişiklik yalnızca statü **gerçekten değişiyorsa** uygulanıyor — her
+  kaydetmede tüm formu gönderen bir editör, sırf etiket düzeltirken kartın merdivendeki yerini
+  sıfırlamamalı; bunun kendi testi var. UI kart ayarları diyaloğunda, kaydetme ile silme arasında:
+  değiştirmeyen bir düzenleme ile bitiren bir düzenlemenin arasına ait. `save()`'den ayrı bir çağrı,
+  yoksa alakasız bir etiket düzenlemesi kartı sessizce yeniden zamanlardı. İyileşmiş kartta buton
+  "Yeniden çalış" diyor — orada eylem geri almak değil, merdivenin dibinden başlatmak. Arşivlenmiş
+  kart yalnızca **indeks panelinde** rozet alıyor (`CalendarOff`) ve artık statü filtresinde
+  seçilebiliyor; defter sayfası bir pano değil, kartın zamanlanıp zamanlanmadığı kâğıdın meselesi
+  değil. `listNotebookEntriesQuerySchema`'daki "ARCHIVED sunulmuyor, ürün henüz yazmıyor" notu da
+  düştü — artık yazıyor.
+  İlgili: `mistake-notebook.service.ts` (+spec, 4 test), `mistake-notebook.repository.ts`,
+  `packages/validation/src/coaching.ts`, `notebook-entry-edit-dialog.tsx`, `notebook-index-panel.tsx`,
+  `messages/{tr,en}.json`.

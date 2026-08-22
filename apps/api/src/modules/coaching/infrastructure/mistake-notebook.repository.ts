@@ -1,12 +1,25 @@
 import { Injectable } from "@nestjs/common";
-import { and, asc, count, desc, eq, gte, inArray, isNotNull, lte, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
 import {
   mistakeNotebookEntries,
   mistakeNotebookPages,
 } from "../../../database/schema";
 
-export type MistakeNotebookEntryRow = typeof mistakeNotebookEntries.$inferSelect;
+export type MistakeNotebookEntryRow =
+  typeof mistakeNotebookEntries.$inferSelect;
 export type MistakeNotebookPageRow = typeof mistakeNotebookPages.$inferSelect;
 
 export interface CreateNotebookEntryRow {
@@ -49,6 +62,10 @@ export interface UpdateNotebookEntryRow {
   solutionStorageKey?: string | null;
   solutionNote?: string | null;
   status?: string;
+  /** Moves with `status`: the due scan reads this date, so archiving must clear it. */
+  nextReviewAt?: Date | null;
+  /** Reset when a card re-enters the rotation — the ladder assumes uninterrupted spacing. */
+  reviewCount?: number;
 }
 
 export interface NotebookCounts {
@@ -223,7 +240,9 @@ export class MistakeNotebookRepository {
       ...(filters.errorType
         ? [eq(mistakeNotebookEntries.errorType, filters.errorType)]
         : []),
-      ...(filters.status ? [eq(mistakeNotebookEntries.status, filters.status)] : []),
+      ...(filters.status
+        ? [eq(mistakeNotebookEntries.status, filters.status)]
+        : []),
     );
     const [items, totalRow] = await Promise.all([
       tx
@@ -249,12 +268,14 @@ export class MistakeNotebookRepository {
     const [entries] = await tx
       .select({
         entryCount: count(),
-        dueCount: sql<number>`count(*) FILTER (WHERE ${mistakeNotebookEntries.nextReviewAt} IS NOT NULL AND ${mistakeNotebookEntries.nextReviewAt} <= ${now})`.mapWith(
-          Number,
-        ),
-        healedCount: sql<number>`count(*) FILTER (WHERE ${mistakeNotebookEntries.status} = 'HEALED')`.mapWith(
-          Number,
-        ),
+        dueCount:
+          sql<number>`count(*) FILTER (WHERE ${mistakeNotebookEntries.nextReviewAt} IS NOT NULL AND ${mistakeNotebookEntries.nextReviewAt} <= ${now})`.mapWith(
+            Number,
+          ),
+        healedCount:
+          sql<number>`count(*) FILTER (WHERE ${mistakeNotebookEntries.status} = 'HEALED')`.mapWith(
+            Number,
+          ),
       })
       .from(mistakeNotebookEntries)
       .where(eq(mistakeNotebookEntries.userId, userId));
@@ -408,7 +429,10 @@ export class MistakeNotebookRepository {
           gte(mistakeNotebookEntries.createdAt, since),
         ),
       )
-      .groupBy(mistakeNotebookEntries.subjectRef, mistakeNotebookEntries.topicRef)
+      .groupBy(
+        mistakeNotebookEntries.subjectRef,
+        mistakeNotebookEntries.topicRef,
+      )
       .orderBy(
         desc(sql`count(*)`),
         desc(sql`max(${mistakeNotebookEntries.createdAt})`),

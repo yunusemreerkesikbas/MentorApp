@@ -113,6 +113,21 @@ test("ödeme kapalıyken fiyatı gösterir ve checkout kontrollerini kapatır", 
   await expect(page.getByText("Şu an kullanılamıyor")).toBeVisible();
   await expect(page.getByRole("checkbox")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Çok yakında" })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "Panele dön" })).toHaveCount(0);
+});
+
+test("açık abonelikte başlangıç ve yenileme satırlarını gösterir", async ({
+  page,
+}) => {
+  await mockSubscriptionApi(page, { subscribed: true });
+  await page.goto("/abonelik");
+
+  await expect(page.getByText("Başlangıç")).toBeVisible();
+  await expect(page.getByText("12 Nisan 2026")).toBeVisible();
+  await expect(page.getByText("Sonraki yenileme")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Aboneliği iptal et" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Çok yakında" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Panele dön" })).toHaveCount(0);
 });
 
 test("kilitli koç CTA paywall modalını açar", async ({ page }) => {
@@ -124,9 +139,54 @@ test("kilitli koç CTA paywall modalını açar", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Çok yakında" })).toBeDisabled();
 });
 
+test("ödeme dönüşü başarı overlay gösterir", async ({ page }) => {
+  await mockSubscriptionApi(page);
+  await page.goto("/abonelik/sonuc?status=success");
+
+  await expect(page.getByTestId("checkout-result")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Ödeme başarılı" }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Panele dön" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Koça git" })).toHaveCount(0);
+  await expect(page.getByText("₺249,00")).toHaveCount(0);
+});
+
+test("ödeme dönüşü hata overlay gösterir", async ({ page }) => {
+  await mockSubscriptionApi(page);
+  await page.goto("/abonelik/sonuc?status=failure");
+
+  await expect(
+    page.getByRole("heading", { name: "Bir sorun oluştu" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Abonelik sayfasına dön" }),
+  ).toBeVisible();
+});
+
+const activeSubscription: SubscriptionView = {
+  ...subscription,
+  subscription: {
+    id: "33333333-3333-4333-8333-333333333333",
+    planId: "premium-monthly",
+    status: "ACTIVE",
+    startedAt: "2026-04-12T12:00:00.000Z",
+    trialEndsAt: null,
+    currentPeriodStart: "2026-08-12T12:00:00.000Z",
+    currentPeriodEnd: "2026-09-12T12:00:00.000Z",
+    cancelAtPeriodEnd: false,
+  },
+  entitlement: {
+    tier: "PREMIUM",
+    isPremium: true,
+    validUntil: "2026-09-12T12:00:00.000Z",
+    reason: "ACTIVE",
+  },
+};
+
 async function mockSubscriptionApi(
   page: Page,
-  options: { premiumRequired?: boolean } = {},
+  options: { premiumRequired?: boolean; subscribed?: boolean } = {},
 ) {
   await page.addInitScript(() => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
@@ -143,7 +203,7 @@ async function mockSubscriptionApi(
     if (method === "GET" && path === "/v1/users/me") return json(route, user);
     if (method === "GET" && path === "/v1/plans") return json(route, plans);
     if (method === "GET" && path === "/v1/subscription") {
-      return json(route, subscription);
+      return json(route, options.subscribed ? activeSubscription : subscription);
     }
     if (method === "GET" && path === "/v1/coach/access") {
       return json(route, {

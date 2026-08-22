@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpStatus } from "@nestjs/common";
 import { UserRole, ZoneMemberStatus, ZoneRole, ZoneType } from "@mentor/types";
 import { ForumThreadService } from "./forum-thread.service";
+import { ErrorCode } from "../../../common/errors/error-code";
 
 const threadRow = (over: Partial<Record<string, unknown>> = {}) => ({
   id: "t1",
@@ -78,13 +79,19 @@ const makeBookmarkRepo = () => ({
   listForUser: vi.fn().mockResolvedValue([]),
 });
 
-const makeMentionService = () => ({ dispatch: vi.fn().mockResolvedValue(undefined) });
+const makeMentionService = () => ({
+  dispatch: vi.fn().mockResolvedValue(undefined),
+});
 const makeUsersService = () => ({
   findByUsername: vi.fn().mockResolvedValue(undefined),
   suggestCohortPeers: vi.fn().mockResolvedValue([]),
 });
-const makeFollowService = () => ({ getFolloweeIds: vi.fn().mockResolvedValue([]) });
-const makePollService = () => ({ viewsForThreads: vi.fn().mockResolvedValue(new Map()) });
+const makeFollowService = () => ({
+  getFolloweeIds: vi.fn().mockResolvedValue([]),
+});
+const makePollService = () => ({
+  viewsForThreads: vi.fn().mockResolvedValue(new Map()),
+});
 
 const makeZoneRepo = (
   zoneType: ZoneType = ZoneType.CHAT,
@@ -93,19 +100,27 @@ const makeZoneRepo = (
   findById: vi.fn().mockResolvedValue({ id: "z1", type: zoneType }),
   findMembership: vi
     .fn()
-    .mockResolvedValue(memberStatus ? { role: ZoneRole.MEMBER, status: memberStatus } : null),
-  findMembershipsByZone: vi.fn().mockResolvedValue(
-    new Map(
-      memberStatus
-        ? [["z1", { role: ZoneRole.MEMBER, status: memberStatus }]]
-        : [],
+    .mockResolvedValue(
+      memberStatus ? { role: ZoneRole.MEMBER, status: memberStatus } : null,
     ),
-  ),
+  findMembershipsByZone: vi
+    .fn()
+    .mockResolvedValue(
+      new Map(
+        memberStatus
+          ? [["z1", { role: ZoneRole.MEMBER, status: memberStatus }]]
+          : [],
+      ),
+    ),
 });
 
 const enabledConfig = { get: vi.fn().mockResolvedValue(true) };
 const events = { emit: vi.fn() };
-const storage = { getPublicUrl: vi.fn((key: string) => `/v1/storage/fake-object?key=${encodeURIComponent(key)}`) };
+const storage = {
+  getPublicUrl: vi.fn(
+    (key: string) => `/v1/storage/fake-object?key=${encodeURIComponent(key)}`,
+  ),
+};
 
 const actor = (roles: string[]) => ({ id: "u1", roles });
 
@@ -123,7 +138,10 @@ describe("ForumThreadService", () => {
   let usersService: ReturnType<typeof makeUsersService>;
   let follow: ReturnType<typeof makeFollowService>;
 
-  const svc = (zoneRepo: ReturnType<typeof makeZoneRepo>, pollService = makePollService()) => {
+  const svc = (
+    zoneRepo: ReturnType<typeof makeZoneRepo>,
+    pollService = makePollService(),
+  ) => {
     postRepo = makePostRepo();
     mentions = makeMentionService();
     usersService = makeUsersService();
@@ -156,7 +174,11 @@ describe("ForumThreadService", () => {
 
   it("lets an ACTIVE member post in CHAT and emits THREAD_POSTED", async () => {
     const zoneRepo = makeZoneRepo(ZoneType.CHAT, ZoneMemberStatus.ACTIVE);
-    const view = await svc(zoneRepo).postThread(actor([UserRole.STUDENT]), "z1", { body: "hi" });
+    const view = await svc(zoneRepo).postThread(
+      actor([UserRole.STUDENT]),
+      "z1",
+      { body: "hi" },
+    );
     expect(view.id).toBe("t1");
     expect(threadRepo.createThread).toHaveBeenCalledWith({
       zoneId: "z1",
@@ -164,36 +186,60 @@ describe("ForumThreadService", () => {
       body: "hi",
       title: null,
     });
-    expect(events.emit).toHaveBeenCalledWith("forum.thread.posted", expect.objectContaining({ threadId: "t1" }));
+    expect(events.emit).toHaveBeenCalledWith(
+      "forum.thread.posted",
+      expect.objectContaining({ threadId: "t1" }),
+    );
   });
 
   it("maps author avatar storage key to authorAvatarUrl", async () => {
     threadRepo.findById.mockResolvedValue(
       threadRow({ authorAvatarStorageKey: "avatars/u1/a.png" }),
     );
-    const view = await svc(makeZoneRepo()).postThread(actor([UserRole.STUDENT]), "z1", { body: "hi" });
-    expect(view.authorAvatarUrl).toBe("/v1/storage/fake-object?key=avatars%2Fu1%2Fa.png");
+    const view = await svc(makeZoneRepo()).postThread(
+      actor([UserRole.STUDENT]),
+      "z1",
+      { body: "hi" },
+    );
+    expect(view.authorAvatarUrl).toBe(
+      "/v1/storage/fake-object?key=avatars%2Fu1%2Fa.png",
+    );
   });
 
   it("rejects a plain member posting in an ANNOUNCEMENT zone", async () => {
-    const zoneRepo = makeZoneRepo(ZoneType.ANNOUNCEMENT, ZoneMemberStatus.ACTIVE);
+    const zoneRepo = makeZoneRepo(
+      ZoneType.ANNOUNCEMENT,
+      ZoneMemberStatus.ACTIVE,
+    );
     await expect(
-      svc(zoneRepo).postThread(actor([UserRole.STUDENT]), "z1", { body: "duyuru" }),
+      svc(zoneRepo).postThread(actor([UserRole.STUDENT]), "z1", {
+        body: "duyuru",
+      }),
     ).rejects.toMatchObject({ httpStatus: HttpStatus.FORBIDDEN });
   });
 
   it("lets staff post in an ANNOUNCEMENT zone even without membership", async () => {
     const zoneRepo = makeZoneRepo(ZoneType.ANNOUNCEMENT, null);
-    const view = await svc(zoneRepo).postThread(actor([UserRole.ADMIN]), "z1", { body: "duyuru" });
+    const view = await svc(zoneRepo).postThread(actor([UserRole.ADMIN]), "z1", {
+      body: "duyuru",
+    });
     expect(view.id).toBe("t1");
   });
 
   it("listFeed folds in reaction counts + my reactions and returns nextCursor when full", async () => {
     const zoneRepo = makeZoneRepo();
-    threadRepo.listFeed.mockResolvedValue([threadRow({ id: "t1" }), threadRow({ id: "t2" })]);
-    threadRepo.reactionCountsByThread.mockResolvedValue(new Map([["t1", { "👍": 3 }]]));
+    threadRepo.listFeed.mockResolvedValue([
+      threadRow({ id: "t1" }),
+      threadRow({ id: "t2" }),
+    ]);
+    threadRepo.reactionCountsByThread.mockResolvedValue(
+      new Map([["t1", { "👍": 3 }]]),
+    );
     threadRepo.myReactionsByThread.mockResolvedValue(new Map([["t1", ["👍"]]]));
-    const feed = await svc(zoneRepo).listFeed("u1", "z1", { limit: 2, sort: "recent" });
+    const feed = await svc(zoneRepo).listFeed("u1", "z1", {
+      limit: 2,
+      sort: "recent",
+    });
     expect(feed.items).toHaveLength(2);
     expect(feed.items[0]!.reactionCounts).toEqual({ "👍": 3 });
     expect(feed.items[0]!.myReactions).toEqual(["👍"]);
@@ -217,12 +263,19 @@ describe("ForumThreadService", () => {
 
   it("rejects polls in QA zones", async () => {
     await expect(
-      svc(makeZoneRepo(ZoneType.QA)).postThread(actor([UserRole.STUDENT]), "z1", {
-        title: "Ne zaman çalışalım?",
-        body: "Bir zaman seçelim.",
-        poll: { options: ["Sabah", "Akşam"], durationMinutes: 1_440 },
-      }),
-    ).rejects.toMatchObject({ code: "FORUM_POLL_NOT_ALLOWED", httpStatus: HttpStatus.BAD_REQUEST });
+      svc(makeZoneRepo(ZoneType.QA)).postThread(
+        actor([UserRole.STUDENT]),
+        "z1",
+        {
+          title: "Ne zaman çalışalım?",
+          body: "Bir zaman seçelim.",
+          poll: { options: ["Sabah", "Akşam"], durationMinutes: 1_440 },
+        },
+      ),
+    ).rejects.toMatchObject({
+      code: "FORUM_POLL_NOT_ALLOWED",
+      httpStatus: HttpStatus.BAD_REQUEST,
+    });
     expect(threadRepo.createThread).not.toHaveBeenCalled();
   });
 
@@ -232,7 +285,10 @@ describe("ForumThreadService", () => {
         body: "Ne zaman çalışalım?",
         poll: { options: ["Sabah", "sabah"], durationMinutes: 1 } as never,
       }),
-    ).rejects.toMatchObject({ code: "FORUM_POLL_NOT_ALLOWED", httpStatus: HttpStatus.BAD_REQUEST });
+    ).rejects.toMatchObject({
+      code: "FORUM_POLL_NOT_ALLOWED",
+      httpStatus: HttpStatus.BAD_REQUEST,
+    });
     expect(threadRepo.createThread).not.toHaveBeenCalled();
   });
 
@@ -244,9 +300,12 @@ describe("ForumThreadService", () => {
     ]);
     const service = svc(zoneRepo);
 
-    const feed = await service.listFeed("u1", "z1", { limit: 20, sort: "recent" }, [
-      UserRole.STUDENT,
-    ]);
+    const feed = await service.listFeed(
+      "u1",
+      "z1",
+      { limit: 20, sort: "recent" },
+      [UserRole.STUDENT],
+    );
 
     expect(feed.items[0]!.capabilities).toMatchObject({
       canEdit: true,
@@ -272,7 +331,9 @@ describe("ForumThreadService", () => {
 
   it("blocks delete by a non-author non-mod, allows the author", async () => {
     const zoneRepo = makeZoneRepo(ZoneType.CHAT, ZoneMemberStatus.ACTIVE);
-    threadRepo.findById.mockResolvedValue(threadRow({ authorId: "someoneElse" }));
+    threadRepo.findById.mockResolvedValue(
+      threadRow({ authorId: "someoneElse" }),
+    );
     await expect(
       svc(zoneRepo).remove(actor([UserRole.STUDENT]), "t1"),
     ).rejects.toMatchObject({ httpStatus: HttpStatus.FORBIDDEN });
@@ -284,7 +345,9 @@ describe("ForumThreadService", () => {
 
   it("lets an ACTIVE member comment on a CHAT thread", async () => {
     const zoneRepo = makeZoneRepo(ZoneType.CHAT, ZoneMemberStatus.ACTIVE);
-    const view = await svc(zoneRepo).comment(actor([UserRole.STUDENT]), "t1", { body: "yorum" });
+    const view = await svc(zoneRepo).comment(actor([UserRole.STUDENT]), "t1", {
+      body: "yorum",
+    });
     expect(view.id).toBe("p1");
     expect(postRepo.createAnswer).toHaveBeenCalledWith({
       threadId: "t1",
@@ -297,12 +360,22 @@ describe("ForumThreadService", () => {
       actorId: "u1",
     });
     // @mentions dispatched with the thread author excluded (already gets the comment notification).
-    expect(mentions.dispatch).toHaveBeenCalledWith("yorum", "u1", "/community/message/t1", ["author"]);
+    expect(mentions.dispatch).toHaveBeenCalledWith(
+      "yorum",
+      "u1",
+      "/community/message/t1",
+      ["author"],
+    );
   });
 
   it("lets an ACTIVE member comment on an ANNOUNCEMENT thread (discussion is open)", async () => {
-    const zoneRepo = makeZoneRepo(ZoneType.ANNOUNCEMENT, ZoneMemberStatus.ACTIVE);
-    const view = await svc(zoneRepo).comment(actor([UserRole.STUDENT]), "t1", { body: "yorum" });
+    const zoneRepo = makeZoneRepo(
+      ZoneType.ANNOUNCEMENT,
+      ZoneMemberStatus.ACTIVE,
+    );
+    const view = await svc(zoneRepo).comment(actor([UserRole.STUDENT]), "t1", {
+      body: "yorum",
+    });
     expect(view.id).toBe("p1");
   });
 
@@ -324,7 +397,11 @@ describe("ForumThreadService", () => {
   it("lets an ACTIVE member reply to a comment (nested), carrying the root thread id", async () => {
     const zoneRepo = makeZoneRepo(ZoneType.CHAT, ZoneMemberStatus.ACTIVE);
     const service = svc(zoneRepo);
-    const view = await service.replyToComment(actor([UserRole.STUDENT]), "parent-post", { body: "yanıt" });
+    const view = await service.replyToComment(
+      actor([UserRole.STUDENT]),
+      "parent-post",
+      { body: "yanıt" },
+    );
     expect(view.id).toBe("p1");
     expect(postRepo.createAnswer).toHaveBeenCalledWith({
       threadId: "t1",
@@ -342,7 +419,9 @@ describe("ForumThreadService", () => {
   it("rejects a non-member replying to a comment", async () => {
     const zoneRepo = makeZoneRepo(ZoneType.CHAT, null);
     await expect(
-      svc(zoneRepo).replyToComment(actor([UserRole.STUDENT]), "parent-post", { body: "yanıt" }),
+      svc(zoneRepo).replyToComment(actor([UserRole.STUDENT]), "parent-post", {
+        body: "yanıt",
+      }),
     ).rejects.toMatchObject({ httpStatus: HttpStatus.FORBIDDEN });
     expect(postRepo.createAnswer).not.toHaveBeenCalled();
   });
@@ -432,7 +511,11 @@ describe("ForumThreadService", () => {
     expect(postRepo.findById.mock.invocationCallOrder[0]).toBeLessThan(
       postRepo.listReactionUsers.mock.invocationCallOrder[0]!,
     );
-    expect(result.items[0]).toMatchObject({ userId: "u3", avatarUrl: null, emoji: "👍" });
+    expect(result.items[0]).toMatchObject({
+      userId: "u3",
+      avatarUrl: null,
+      emoji: "👍",
+    });
   });
 
   it("getCommentDetail returns the focused comment + its direct replies", async () => {
@@ -460,9 +543,11 @@ describe("ForumThreadService", () => {
     const attachments = makeAttachmentRepo();
     const storageMock = {
       getPublicUrl: vi.fn(),
-      createUploadUrl: vi
-        .fn()
-        .mockResolvedValue({ url: "signed", key: "forum-attachments/u1/x.png", expiresAt: "e" }),
+      createUploadUrl: vi.fn().mockResolvedValue({
+        url: "signed",
+        key: "forum-attachments/u1/x.png",
+        expiresAt: "e",
+      }),
     };
     const service = new ForumThreadService(
       makeThreadRepo() as never,
@@ -478,14 +563,107 @@ describe("ForumThreadService", () => {
     );
     const res = await service.createAttachmentUploadUrl("u1", "image/png");
     expect(res.key).toBe("forum-attachments/u1/x.png");
-    expect(attachments.markPending).toHaveBeenCalledWith("forum-attachments/u1/x.png", "u1");
+    expect(attachments.markPending).toHaveBeenCalledWith(
+      "forum-attachments/u1/x.png",
+      "u1",
+    );
+  });
+
+  describe("copyOwnUploadToAttachment", () => {
+    const makeService = (
+      attachments: ReturnType<typeof makeAttachmentRepo>,
+      storageMock: unknown,
+    ) =>
+      new ForumThreadService(
+        makeThreadRepo() as never,
+        makeZoneRepo() as never,
+        makePostRepo() as never,
+        attachments as never,
+        makeBookmarkRepo() as never,
+        enabledConfig as never,
+        events as never,
+        storageMock as never,
+        makeMentionService() as never,
+        makeUsersService() as never,
+      );
+
+    it("copies the object server-side and records the new key pending", async () => {
+      const attachments = makeAttachmentRepo();
+      const storageMock = {
+        getPublicUrl: vi.fn(),
+        copyObject: vi.fn().mockResolvedValue(undefined),
+      };
+      const service = makeService(attachments, storageMock);
+
+      const result = await service.copyOwnUploadToAttachment("u1", {
+        sourceKey: "notebook/u1/2f0b1a3c-4d5e-6f70-8192-a3b4c5d6e7f8.png",
+        width: 800,
+        height: 600,
+      });
+
+      expect(result.mimeType).toBe("image/png");
+      expect(result.key).toMatch(/^forum-attachments\/u1\/[0-9a-f-]+\.png$/);
+      expect(result).toMatchObject({ width: 800, height: 600 });
+      expect(storageMock.copyObject).toHaveBeenCalledWith(
+        "notebook/u1/2f0b1a3c-4d5e-6f70-8192-a3b4c5d6e7f8.png",
+        result.key,
+      );
+      // Without the ledger row an attachment that is copied and then abandoned is an object no
+      // sweep can ever find.
+      expect(attachments.markPending).toHaveBeenCalledWith(result.key, "u1");
+    });
+
+    it("refuses a key belonging to another user", async () => {
+      const attachments = makeAttachmentRepo();
+      const storageMock = { getPublicUrl: vi.fn(), copyObject: vi.fn() };
+      const service = makeService(attachments, storageMock);
+
+      await expect(
+        service.copyOwnUploadToAttachment("u1", {
+          sourceKey: "notebook/u2/2f0b1a3c-4d5e-6f70-8192-a3b4c5d6e7f8.png",
+        }),
+      ).rejects.toMatchObject({ code: ErrorCode.FORUM_ATTACHMENT_INVALID });
+      expect(storageMock.copyObject).not.toHaveBeenCalled();
+      expect(attachments.markPending).not.toHaveBeenCalled();
+    });
+
+    it("treats the dot before the extension as a literal, not a wildcard", async () => {
+      // Regression: the key pattern is built into a template literal, where `\.` collapses to `.`
+      // — which in a regex matches any character, so `…abcXpng` would have passed as a png.
+      const attachments = makeAttachmentRepo();
+      const storageMock = { getPublicUrl: vi.fn(), copyObject: vi.fn() };
+      const service = makeService(attachments, storageMock);
+
+      await expect(
+        service.copyOwnUploadToAttachment("u1", {
+          sourceKey: "notebook/u1/2f0b1a3c-4d5e-6f70-8192-a3b4c5d6e7f8Xpng",
+        }),
+      ).rejects.toMatchObject({ code: ErrorCode.FORUM_ATTACHMENT_INVALID });
+      expect(storageMock.copyObject).not.toHaveBeenCalled();
+    });
+
+    it("refuses anything that is not an image, whatever the caller calls it", async () => {
+      const attachments = makeAttachmentRepo();
+      const storageMock = { getPublicUrl: vi.fn(), copyObject: vi.fn() };
+      const service = makeService(attachments, storageMock);
+
+      await expect(
+        service.copyOwnUploadToAttachment("u1", {
+          sourceKey: "notebook/u1/2f0b1a3c-4d5e-6f70-8192-a3b4c5d6e7f8.pdf",
+        }),
+      ).rejects.toMatchObject({ code: ErrorCode.FORUM_ATTACHMENT_INVALID });
+      expect(storageMock.copyObject).not.toHaveBeenCalled();
+    });
   });
 
   it("cleanupOrphanAttachments deletes expired pending objects then drops their rows", async () => {
     const keys = ["forum-attachments/u1/a.png", "forum-attachments/u1/b.png"];
     const attachments = makeAttachmentRepo();
     attachments.listExpiredPending.mockResolvedValue(keys);
-    const storageMock = { getPublicUrl: vi.fn(), deleteObject: vi.fn().mockResolvedValue(undefined) };
+    const storageMock = {
+      getPublicUrl: vi.fn(),
+      deleteObject: vi.fn().mockResolvedValue(undefined),
+    };
     const service = new ForumThreadService(
       makeThreadRepo() as never,
       makeZoneRepo() as never,
@@ -569,17 +747,26 @@ describe("ForumThreadService", () => {
     );
     const res = await service.getMyBookmarks("u1");
     expect(res.items.map((i) => i.type)).toEqual(["thread", "comment"]);
-    expect(res.items[0]!.type === "thread" && res.items[0]!.thread.id).toBe("t1");
-    expect(res.items[1]!.type === "comment" && res.items[1]!.comment.id).toBe("p1");
+    expect(res.items[0]!.type === "thread" && res.items[0]!.thread.id).toBe(
+      "t1",
+    );
+    expect(res.items[1]!.type === "comment" && res.items[1]!.comment.id).toBe(
+      "p1",
+    );
   });
 
   it("getUserActivity interleaves a user's threads + posts newest-first (resolved by username)", async () => {
-    const users = { findByUsername: vi.fn().mockResolvedValue({ id: "uAuthor" }) };
+    const users = {
+      findByUsername: vi.fn().mockResolvedValue({ id: "uAuthor" }),
+    };
     const threadRepo = {
       ...makeThreadRepo(),
       listByAuthor: vi.fn().mockResolvedValue([
         {
-          ...threadRow({ id: "t1", createdAt: new Date("2026-07-02T10:00:00Z") }),
+          ...threadRow({
+            id: "t1",
+            createdAt: new Date("2026-07-02T10:00:00Z"),
+          }),
           zoneTitle: "KPSS Genel",
           zoneSlug: "kpss-genel",
         },
@@ -618,7 +805,11 @@ describe("ForumThreadService", () => {
     );
     const res = await service.getUserActivity("viewer", "author");
     expect(users.findByUsername).toHaveBeenCalledWith("author");
-    expect(threadRepo.listByAuthor).toHaveBeenCalledWith("uAuthor", "viewer", expect.any(Object));
+    expect(threadRepo.listByAuthor).toHaveBeenCalledWith(
+      "uAuthor",
+      "viewer",
+      expect.any(Object),
+    );
     expect(res.items.map((i) => i.type)).toEqual(["comment", "thread"]); // p1 (Jul 3) before t1 (Jul 2)
     expect(res.items[0]!.zone.title).toBe("KPSS Genel"); // zone context carried through
   });
@@ -636,7 +827,9 @@ describe("ForumThreadService", () => {
       makeMentionService() as never,
       { findByUsername: vi.fn().mockResolvedValue(undefined) } as never,
     );
-    await expect(service.getUserActivity("viewer", "nobody")).rejects.toMatchObject({
+    await expect(
+      service.getUserActivity("viewer", "nobody"),
+    ).rejects.toMatchObject({
       httpStatus: HttpStatus.NOT_FOUND,
     });
   });
@@ -645,18 +838,36 @@ describe("ForumThreadService", () => {
     const service = svc(makeZoneRepo());
     follow.getFolloweeIds.mockResolvedValue(["followed1"]);
     threadRepo.suggestAuthorsInMemberZones.mockResolvedValue([
-      { userId: "a1", displayName: "A1", username: "a1", avatarStorageKey: "avatars/a1.png" },
+      {
+        userId: "a1",
+        displayName: "A1",
+        username: "a1",
+        avatarStorageKey: "avatars/a1.png",
+      },
     ]);
     usersService.suggestCohortPeers.mockResolvedValue([
-      { userId: "c1", displayName: "C1", username: "c1", avatarStorageKey: null },
+      {
+        userId: "c1",
+        displayName: "C1",
+        username: "c1",
+        avatarStorageKey: null,
+      },
     ]);
 
     const res = await service.getFollowSuggestions("u1", 10);
 
     // Primary excludes self + already-followed.
-    expect(threadRepo.suggestAuthorsInMemberZones).toHaveBeenCalledWith("u1", ["u1", "followed1"], 10);
+    expect(threadRepo.suggestAuthorsInMemberZones).toHaveBeenCalledWith(
+      "u1",
+      ["u1", "followed1"],
+      10,
+    );
     // Fallback also excludes the primary results, asks only for the remaining slots.
-    expect(usersService.suggestCohortPeers).toHaveBeenCalledWith("u1", ["u1", "followed1", "a1"], 9);
+    expect(usersService.suggestCohortPeers).toHaveBeenCalledWith(
+      "u1",
+      ["u1", "followed1", "a1"],
+      9,
+    );
     expect(res).toEqual([
       {
         userId: "a1",
@@ -665,15 +876,31 @@ describe("ForumThreadService", () => {
         avatarUrl: "/v1/storage/fake-object?key=avatars%2Fa1.png",
         isFollowing: false,
       },
-      { userId: "c1", displayName: "C1", username: "c1", avatarUrl: null, isFollowing: false },
+      {
+        userId: "c1",
+        displayName: "C1",
+        username: "c1",
+        avatarUrl: null,
+        isFollowing: false,
+      },
     ]);
   });
 
   it("getFollowSuggestions: skips the cohort fallback when zone authors already fill the limit", async () => {
     const service = svc(makeZoneRepo());
     threadRepo.suggestAuthorsInMemberZones.mockResolvedValue([
-      { userId: "a1", displayName: "A1", username: "a1", avatarStorageKey: null },
-      { userId: "a2", displayName: "A2", username: "a2", avatarStorageKey: null },
+      {
+        userId: "a1",
+        displayName: "A1",
+        username: "a1",
+        avatarStorageKey: null,
+      },
+      {
+        userId: "a2",
+        displayName: "A2",
+        username: "a2",
+        avatarStorageKey: null,
+      },
     ]);
     const res = await service.getFollowSuggestions("u1", 2);
     expect(usersService.suggestCohortPeers).not.toHaveBeenCalled();
