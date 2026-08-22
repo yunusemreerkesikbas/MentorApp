@@ -6,7 +6,7 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { FeatureFlag } from "../../../common/config/config.catalog";
-import { EntitlementService } from "../../payments/application/entitlement.service";
+import { PremiumFeatureId } from "@mentor/types";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
 import { AiUsageFeature, buildDailyGreetingPrompt, estimateCostMicros } from "../domain/ai.constants";
 import { ContextBuilder } from "./context-builder.service";
@@ -14,6 +14,7 @@ import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { DailyGreetingRepository } from "../infrastructure/daily-greeting.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { promptLocale } from "../domain/prompt-locale";
+import { PremiumFeatureGateService } from "./premium-feature-gate.service";
 
 /**
  * Premium proactive daily greeting on the dashboard rhythm card (W3 · §4 #5 premium-only — free tier keeps the
@@ -28,7 +29,7 @@ export class DailyGreetingService {
     private readonly context: ContextBuilder,
     private readonly usage: AiUsageRepository,
     private readonly config: ConfigRegistryService,
-    private readonly entitlement: EntitlementService,
+    private readonly featureGate: PremiumFeatureGateService,
     private readonly greetings: DailyGreetingRepository,
     private readonly budget: AiBudgetGuard,
   ) {}
@@ -38,10 +39,11 @@ export class DailyGreetingService {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
 
-    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
-    if (!ent.isPremium) {
-      throw new DomainError(ErrorCode.PAYMENT_PREMIUM_REQUIRED, HttpStatus.FORBIDDEN);
-    }
+    await this.featureGate.assertAllowed(
+      user.id,
+      user.roles,
+      PremiumFeatureId.DAILY_GREETING,
+    );
 
     const today = new Date().toISOString().slice(0, 10); // UTC day — same day math as streak
     const locale = promptLocale(I18nContext.current()?.lang);

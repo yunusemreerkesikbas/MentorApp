@@ -20,7 +20,8 @@
     "bottom_sheet": {
       "cancel": "Vazgeç",
       "close": "Kapat"
-    }
+    },
+    "premium_member": "Premium üye"
   },
   "welcome": {
     "loading": "Yükleniyor…",
@@ -127,8 +128,6 @@
     "greeting_day": "İyi günler",
     "greeting_evening": "İyi geceler",
     "profile_link": "Profiline git",
-    "badge_premium": "Premium üye",
-    "badge_verified": "E-posta doğrulandı",
     "earned_rights_label": "Kazanılmış haklar",
     "sidebar_collapse": "Menüyü daralt",
     "sidebar_expand": "Menüyü genişlet"
@@ -144,6 +143,7 @@
     "earned_rights_label": "Kazanılmış haklar",
     "rhythm_title": "Bugünkü ritim",
     "rhythm_copy": "İyi gidiyorsun. Bugün tek küçük adım bile yeter.",
+    "premium_greeting_nudge": "Güne koçunla uyan",
     "rhythm_summary": "{done}/{total} görev · {streak} gün birlikte",
     "rhythm_show_more": "Daha fazla göster",
     "rhythm_show_less": "Daha az göster",
@@ -394,7 +394,6 @@
     "profile_tab_achievements": "Başarılar",
     "profile_photo_alt": "{name} profil fotoğrafı",
     "profile_activity_label": "aktivite",
-    "profile_premium_member": "Premium üye",
     "profile_share": "Profili paylaş",
     "profile_share_copied": "Profil bağlantısı kopyalandı",
     "profile_open_website": "Web sitesini aç",
@@ -425,19 +424,6 @@
     "stat_streak": "Seri",
     "stat_streak_days": "{count} gün",
     "stat_xp": "XP",
-    "level_label": "Seviye {tier}",
-    "level_1": "Başlangıç",
-    "level_2": "Hevesli",
-    "level_3": "Meraklı",
-    "level_4": "Azimli",
-    "level_5": "Kararlı",
-    "level_6": "Disiplinli",
-    "level_7": "Usta",
-    "level_8": "Bilge",
-    "level_9": "Öncü",
-    "level_10": "Şampiyon",
-    "level_11": "Zirve",
-    "level_12": "Efsane",
     "badges_title": "Rozetlerin",
     "badge_marathon": "Maraton",
     "badge_night_owl": "Gece Kuşu",
@@ -683,7 +669,7 @@
     "struggle_placeholder": "Örn. matematik problemleri, odaklanma…",
     "coach_thinking": "Koçun düşünüyor…",
     "coach_chip": "Koçun",
-    "premium_nudge": "Premium koç, ruh haline göre kişisel bir not bırakır →"
+    "premium_nudge": "Nasıl hissediyorsan, koçun duysun"
   },
   "coach": {
     "loading": "Yükleniyor…",
@@ -924,12 +910,37 @@
     "cancel_success_title": "İptal talebin alındı",
     "cancel_success_message": "Erişimin dönem sonuna kadar devam eder.",
     "cancel_success_ok": "Tamam",
-    "trial_consent": "7 gün ücretsiz deneme sonrası seçtiğim planın ücreti kartımdan otomatik tahsil edilir; istediğim an iptal edebilirim. Bunu anladım ve onaylıyorum.",
+    "trial_consent": "7 gün deneme sonrası plan ücreti otomatik alınır; istediğim an iptal edebilirim.",
     "period_suffix": "/ {months} ay · KDV dahil",
     "trial_days": "{days} gün ücretsiz deneme",
     "start_trial": "Denemeyi başlat",
     "coming_soon": "Çok yakında",
     "back_panel": "← Panele dön"
+  },
+  "paywall": {
+    "brand": "Mentor",
+    "badge_premium": "Premium",
+    "badge_value": "Önerilen",
+    "per_month": "/ay",
+    "per_months": "/{months} ay",
+    "headline": "Yalnız yolda yürüme",
+    "headline_coach": "Anlat, koçun yanında dursun",
+    "headline_photo": "Fotoğrafı göster, konuyu yakala",
+    "headline_plan": "Planını koçla toparla",
+    "headline_vision": "Hedefine bir koç notu bırak",
+    "headline_analysis": "Bu haftayı koçun anlatsın",
+    "headline_mood": "Nasıl hissediyorsan, koçun duysun",
+    "headline_ghost": "İlerlemen artık bir hikâye",
+    "headline_greeting": "Güne koçunla uyan",
+    "headline_session": "Seans bitti — koçun duruyor",
+    "subtitle": "Ücretsizde planın, süren ve ritüelin sende. Premium’da AI koç da yanına geliyor.",
+    "benefit_coach": "Her gün yanında bir koç — sohbet, selam, seans notu",
+    "benefit_analysis": "Haftalık hikâye, ghost anlatım ve derin analiz",
+    "benefit_photo": "Soru fotoğrafından konuyu yakala",
+    "benefit_plan": "Plan bozulunca koçla yenile; hedefe not bırak",
+    "subscribe": "Koçunu yanına al",
+    "close": "Kapat",
+    "loading": "Yükleniyor…"
   },
   "plan": {
     "title": "Çalışma Planı",
@@ -1376,7 +1387,8 @@
         "cta": "{cost} coin ile AI Puhu notunu aç",
         "confirm": "Emin misin? {cost} coin harcanacak",
         "insufficient": "AI notu için {cost} coin gerekiyor ({balance}/{cost}). Görevlere bak",
-        "error": "AI Puhu notu açılamadı"
+        "error": "AI Puhu notu açılamadı",
+        "premium": "Premium ile aç"
       },
       "teaser": {
         "title": "Senin Haftalık Özetin",
@@ -1464,6 +1476,7 @@
     "checkin_save": "Kaydet",
     "checkin_saved": "Teşekkürler, not aldım 🌱",
     "reflection_loading": "Koçun düşünüyor…",
+    "premium_nudge": "Seans bitti — koçun duruyor",
     "coach_adaptation_cta": "Bu zor seansın ardından planını koçla hafiflet",
     "reflection_dismiss": "Kapat",
     "mood_1": "Zorlandım",
@@ -1605,7 +1618,7 @@
     "record_delta": "Rekora {delta}",
     "narrating": "Koçun ilerlemeni yorumluyor…",
     "coach_chip": "Koçun",
-    "premium_nudge": "Premium koç, ilerlemeni kişisel bir hikayeyle anlatır →"
+    "premium_nudge": "İlerlemeni bir hikâyeye çevir"
   },
   "notebook": {
     "sidebar_index": "Ara",
@@ -1662,17 +1675,11 @@
     "review_flip": "Çevir",
     "review_flip_back": "Soruya dön",
     "review_zoom": "Fotoğrafı büyüt",
-    "review_deck_hint": "Karta dokun: çevir · Sağa/sola kaydır: cevapla",
-    "review_flip_hint": "Karta dokun: çevir",
+    "review_prev": "Önceki kart",
+    "review_next": "Sonraki kart",
     "review_community_answer": "Çözümü gör",
     "review_list": "Listeyi aç",
     "review_list_close": "Karta dön",
-    "review_list_remaining": "{count} kart kaldı",
-    "review_list_only_this": "Sadece bunu çalış",
-    "review_list_all_subjects": "Tüm dersler",
-    "review_subject_done_title": "{subject} bitti",
-    "review_subject_done_subtitle": "Başka derslerde {count} kart daha var.",
-    "review_subject_done_continue": "Diğerlerine geç",
     "review_list_ungrouped": "Ders seçilmemiş",
     "review_list_done": "Cevapladın",
     "review_done_title": "Bugünlük bu kadar",
@@ -1689,7 +1696,13 @@
     "review_note_cancel": "Vazgeç",
     "error_note_save": "Not kaydedilemedi.",
     "review_done_summary": "{total} karttan {solved} tanesini çözdün.",
-    "review_done_remaining": "Kalan {count} kart tekrar döngüsünde; birkaç gün sonra yeniden karşına çıkacak.",
+    "review_feedback_due": "{days} gün sonra tekrar",
+    "review_feedback_healed": "Bu kart iyileşti",
+    "review_done_healed": "{count} kart iyileşti ve tekrar döngüsünden çıktı.",
+    "review_done_missed_title": "Yine takıldıkların",
+    "review_done_ask": "Topluluğa sor",
+    "review_exit_title": "Deste yarıda kaldı",
+    "review_exit_summary": "{answered} kart cevapladın, {skipped} kart bugün için duruyor.",
     "review_close": "Deftere dön",
     "error_load": "Defter yüklenemedi.",
     "error_type_unsupported": "Yalnızca JPEG, PNG veya WebP yükleyebilirsin.",
@@ -1938,6 +1951,52 @@
     "unmute": "Müziği aç",
     "preview_hint": "Seçtiğin parça kısa önizlenir. Ses seviyesi cihazından ayarlanır."
   },
+  "journey_levels": {
+    "title": "Yolculuk seviyesi",
+    "level_label": "Seviye {tier}",
+    "level_title": "Seviye {tier} · {name}",
+    "progress_label": "Bu seviyedeki yolun",
+    "progress_aria": "{name} seviye ilerlemesi",
+    "progress_value": "{current} / {target} XP",
+    "next_remaining": "{destination} ulaşmak için {remaining} XP daha",
+    "complete_message": "Bütün ışıklar birbirine bağlandı; yolculuğun devam ediyor.",
+    "guide_open": "Gece Yolculuğu rehberini aç",
+    "guide_title": "Gece Yolculuğu",
+    "guide_description": "Her ışık, emek verdiğin yolun başka bir dönemini anlatıyor.",
+    "guide_level_aria": "Seviye {tier}, {name}, {state}",
+    "close": "Kapat",
+    "celebration": {
+      "introduction_eyebrow": "Gece Yolculuğu",
+      "level_up_eyebrow": "Yeni bir ışık yandı",
+      "continue": "Devam et",
+      "acknowledge_error": "Kutlamayı şimdilik kapatamadık. Tekrar deneyebilirsin."
+    },
+    "states": {
+      "completed": "tamamlandı",
+      "current": "şu anki seviye",
+      "future": "ileride"
+    },
+    "chapters": {
+      "awakening": { "name": "Uyanış", "label": "I. Bölüm · Uyanış" },
+      "harmony": { "name": "Ahenk", "label": "II. Bölüm · Ahenk" },
+      "deepening": { "name": "Derinleşme", "label": "III. Bölüm · Derinleşme" },
+      "shared_light": { "name": "Birlikte Işık", "label": "IV. Bölüm · Birlikte Işık" }
+    },
+    "levels": {
+      "spark": { "name": "Kıvılcım", "destination": "Kıvılcım’a", "story": "Yolculuğunda ilk ışık yandı." },
+      "trail": { "name": "İz", "destination": "İz’e", "story": "Attığın adımlar artık bir yol bırakıyor." },
+      "compass": { "name": "Pusula", "destination": "Pusula’ya", "story": "Kendi yönünü bulmaya başladın." },
+      "cycle": { "name": "Döngü", "destination": "Döngü’ye", "story": "Tekrarların sakin bir düzene dönüşüyor." },
+      "rhythm": { "name": "Ritim", "destination": "Ritim’e", "story": "Emek, günlerinin doğal bir parçası oluyor." },
+      "flow": { "name": "Akış", "destination": "Akış’a", "story": "Yolculuğunu daha güvenle sürdürüyorsun." },
+      "root": { "name": "Kök", "destination": "Kök’e", "story": "Emeğin geçici bir hevesten daha fazlası." },
+      "wing": { "name": "Kanat", "destination": "Kanat’a", "story": "Biriktirdiklerin sana hareket alanı açıyor." },
+      "horizon": { "name": "Ufuk", "destination": "Ufuk’a", "story": "Artık yalnız bugünü değil, önündeki yolu görüyorsun." },
+      "lantern": { "name": "Fener", "destination": "Fener’e", "story": "Kendi ışığın başkalarının yoluna da eşlik ediyor." },
+      "star": { "name": "Yıldız", "destination": "Yıldız’a", "story": "Varlığın yolculuğa yön ve cesaret katıyor." },
+      "constellation": { "name": "Takımyıldız", "destination": "Takımyıldız’a", "story": "Tek başına parlamaktan öte, birlikte anlam oluşturuyorsun." }
+    }
+  },
   "economy": {
     "balance_subtitle": "Kazanılmış hak — nakit değildir; koç sohbeti ve ilerideki özellikler için kullanılır.",
     "balance_title": "Bakiyen",
@@ -2000,7 +2059,7 @@
     "kvkk_link": "KVKK aydınlatma metnini",
     "consent_distance_sales": "Mesafeli Satış Sözleşmesi",
     "consent_pre_info": "Ön Bilgilendirme Formu",
-    "consent_prefix": "Satın almadan önce:"
+    "consent_confirm": " anladım ve onaylıyorum."
   },
   "article": {
     "not_found_title": "Makale bulunamadı | Mentor",
@@ -2091,7 +2150,7 @@
     "edit": "Düzenle",
     "coach_chip": "Koçun",
     "generating": "Koçun sana özel bir not hazırlıyor…",
-    "premium_nudge": "Premium koç, hedefine özel bir not bırakır →",
+    "premium_nudge": "Hedefine bir koç notu bırak",
     "page_title": "Hedef Panosu",
     "page_subtitle": "Hedefini, şehrini ve nedenini yaz; koçun ve panelin seni buna göre motive etsin.",
     "browse_open": "Hedef ve aramayı aç",

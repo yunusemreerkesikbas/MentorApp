@@ -11,9 +11,11 @@ import {
   coachingControllerGetVision,
 } from "@mentor/api-client";
 import { Card, Chip, SectionHeading } from "@mentor/ui";
-import { Link, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { BoardFrame } from "@/components/vision-board/board-frame";
 import { BoardStage } from "@/components/vision-board/board-stage";
+import { usePremiumPaywall } from "@/lib/premium-paywall";
+import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
 
 /**
  * Vision/goal board ("hayal/vision-board panosu") panel card. Self-fetches the goal; free tier sees the
@@ -23,7 +25,7 @@ import { BoardStage } from "@/components/vision-board/board-stage";
 export function VisionBoardCard() {
   const reduceMotion = useReducedMotion();
   const translate = useTranslations("vision");
-  const router = useRouter();
+  const { openPaywall } = usePremiumPaywall();
   const [vision, setVision] = useState<VisionDto | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [premium, setPremium] = useState<boolean | null>(null);
@@ -163,14 +165,10 @@ export function VisionBoardCard() {
                 </p>
               </motion.div>
             ) : premium === false ? (
-              <button
-                type="button"
-                onClick={() => router.push("/subscription")}
-                className="text-left text-sm underline"
-                style={{ color: "var(--color-secondary)" }}
-              >
-                {translate("premium_nudge")}
-              </button>
+              <PremiumLockNudge
+                label={translate("premium_nudge")}
+                onClick={() => openPaywall({ sourceFeature: "vision.note" })}
+              />
             ) : null}
 
             <div className="flex flex-wrap items-center gap-3">

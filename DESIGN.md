@@ -125,7 +125,7 @@ toggle slot keeps the plain Sun/Moon icon button.
 
 **Runtime:** `html.dark` overrides the same `--color-*` CSS variables. New UI must use those tokens — never `bg-white`, `#fff`, or `dark:bg-black`. Tailwind `dark:` is an escape hatch only when a value cannot be a token.
 
-**Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage).
+**Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`).
 
 ---
 
@@ -209,6 +209,7 @@ Other Nuton library symbols (course cards, list items, FAQ, etc.) remain referen
 - Thin line icons (Lucide / Feather-style): ~24–28 px nav box.
 - Active `#111`, inactive `#666`. Like/heart pink when active; star amber.
 - **No emoji as UI icons.** Soft-3D visuals are not substitutes for icons in chrome.
+- **Premium identity:** Lucide `Crown` in `--color-star` next to the display name. Do not overlay the avatar, do not put the word “Premium” in chrome, do not use a blue verification tick (that's email verified), and do not use prize-ribbon / saturated-gradient medals. Feed and comment avatars stay unmarked — membership is identity chrome, not a ranking stamp.
 
 ---
 

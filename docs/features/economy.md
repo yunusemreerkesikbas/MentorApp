@@ -74,6 +74,27 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+- **Commit-sonrası XP seviye sinyali (2026-08-22)** — Başarılı ve gerçekten yeni bir XP ledger
+  satırı, yeni bakiye hesaplandıktan sonra `economy.xp.changed` olayı yayınlar. İdempotent tekrarlar
+  ve Coin hareketleri olay üretmez. Quest grantleri dış transaction tamamlanmadan sinyal vermez;
+  commit sonrasında toplu olarak yayınlanır. Community bu sinyali kalıcı Gece Yolculuğu kutlama
+  kaydına çevirir. Kullanım: XP veren mevcut akışlar değişmeden çalışır. Gotcha: transaction içinden
+  `grantInServiceTx` kullanan yeni çağıranlar, başarılı commit sonrasında `publishXpChanged`
+  çağırmalıdır. İlgili: `economy.events.ts`, `economy.service.ts`, `quest.service.ts`,
+  `journey-level-events.listener.ts`.
+
+- **Backend-derived Gece Yolculuğu progress sözleşmesi (2026-08-22)** — `CommunityLevelView`
+  geriye uyumlu biçimde `key`, `chapter`, `currentAt`, `nextKey` ve hazır `progress` alanlarıyla
+  genişletildi. Böylece profil, topluluk özeti ve ekonomi kartı toplam `xp / nextAt` oranını
+  istemcide hesaplamayı bıraktı; progress her seviyenin kendi eşiğinde sıfırlanır ve üç yüzey aynı
+  değeri gösterir. Mevcut 12 eşik, ledger ve XP kazanma kuralları değişmedi. Negatif admin
+  düzeltmelerinde ham XP korunurken görsel yolculuk başlangıcı 0'a sıkıştırılır; Takımyıldız
+  seviyesinde sonraki seviye ve progress `null` olur. Gotcha: frontend eşik veya yüzde türetmemeli,
+  yalnız API alanlarını render etmelidir. Gelecekteki SVG ailesi için
+  `assets:check:journey-levels` tam 12 vektörü, 1024 kare viewBox'ı, 300 KiB bütçeyi, şeffaf
+  köşeleri ve raster/script/dış kaynak yokluğunu denetler. İlgili: `packages/core/src/index.ts`,
+  `packages/types/src/community.ts`, `economy.service.ts`, `journey-level-asset-validator.mjs`.
+
 - **Ekonomi gözlemlenebilirliği — musluk/sink dökümü (APP-031, 2026-07-31)** — APP-030'da tekrarlı
   coin musluğunu taktık ama sayacını takmamıştık: admin yalnızca iki toplam sayı görüyordu
   (`coinIssued`/`xpIssued`), kaynak bazında hiçbir kırılım yoktu. Roadmap §729 kazanç oranlarının

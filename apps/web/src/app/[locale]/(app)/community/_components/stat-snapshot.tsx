@@ -4,6 +4,7 @@ import { Flame, Zap } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import type { CommunityLevelView } from "@mentor/types";
+import { JourneyLevelCompact } from "@/components/journey-levels/journey-level-compact";
 
 /** One metric cell — filled icon chip + label above, big value below. */
 function Cell({
@@ -63,8 +64,6 @@ export function StatSnapshot({
   const t = useTranslations("community");
   const locale = useLocale();
   const hasXp = xp !== null;
-  const pct =
-    level && level.nextAt ? Math.min(100, Math.round((level.xp / level.nextAt) * 100)) : 100;
 
   return (
     <div className="flex flex-col gap-3">
@@ -89,29 +88,7 @@ export function StatSnapshot({
         )}
       </div>
 
-      {level && (
-        <div className="flex flex-col gap-1.5">
-          <div
-            className="flex items-center justify-between text-[12px]"
-            style={{ color: "var(--color-secondary)" }}
-          >
-            <span>
-              {t("level_label", { tier: level.tier })} — {t(`level_${level.tier}` as "level_1")}
-            </span>
-            {level.nextAt && (
-              <span>
-                {level.xp} / {level.nextAt}
-              </span>
-            )}
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full" style={{ background: "var(--color-soft)" }}>
-            <div
-              className="h-full rounded-full"
-              style={{ width: `${pct}%`, background: "var(--color-progress)" }}
-            />
-          </div>
-        </div>
-      )}
+      {level ? <JourneyLevelCompact level={level} /> : null}
     </div>
   );
 }

@@ -20,6 +20,7 @@ import {
 import { Button, TextAreaField, TextField, useDialog } from "@mentor/ui";
 import type { AuthUser } from "@mentor/types";
 import { FormError } from "@/components/form";
+import { PremiumIdentityMark } from "@/components/premium/premium-identity-mark";
 import { UserAvatar } from "@/components/user-avatar";
 import {
   createAvatarUploadUrl,
@@ -53,10 +54,12 @@ function ProfileAvatar({
 export function ProfileHeader({
   autoOpenEdit = false,
   onSaved,
+  premium = false,
   user,
 }: {
   autoOpenEdit?: boolean;
   onSaved: (user: AuthUser) => void;
+  premium?: boolean;
   user: AuthUser;
 }) {
   const t = useTranslations("profile");
@@ -171,15 +174,18 @@ export function ProfileHeader({
           </button>
         )}
       </div>
-      <h1
-        className="mt-3 max-w-full break-words text-4xl font-bold leading-none text-balance"
-        style={{
-          color: "var(--color-main)",
-          fontFamily: "var(--font-heading)",
-        }}
-      >
-        {user.displayName}
-      </h1>
+      <div className="mt-3 flex max-w-full flex-wrap items-center justify-center gap-2">
+        <h1
+          className="max-w-full break-words text-4xl font-bold leading-none text-balance"
+          style={{
+            color: "var(--color-main)",
+            fontFamily: "var(--font-heading)",
+          }}
+        >
+          {user.displayName}
+        </h1>
+        {premium ? <PremiumIdentityMark /> : null}
+      </div>
       <p className="mt-2 max-w-full truncate text-sm text-[var(--color-secondary)]">
         {user.username ? `@${user.username}` : user.email}
       </p>

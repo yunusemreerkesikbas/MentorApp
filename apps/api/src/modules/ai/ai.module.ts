@@ -4,6 +4,7 @@ import type { Env } from "../../config/env.validation";
 import { CoachingModule } from "../coaching/coaching.module";
 import { ForumModule } from "../forum/forum.module";
 import { CommunityCoachPlanTaskService } from "./application/community-coach-plan-task.service";
+import { PremiumFeatureGateService } from "./application/premium-feature-gate.service";
 import { ContentModule } from "../content/content.module";
 import { EconomyModule } from "../economy/economy.module";
 import { IdentityModule } from "../identity/identity.module";
@@ -105,6 +106,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     VisionNoteService,
     WeeklyReviewNarrationService,
     PhotoAccessService,
+    PremiumFeatureGateService,
     PhotoCategorizeService,
     PhotoUploadService,
     ContextBuilder,

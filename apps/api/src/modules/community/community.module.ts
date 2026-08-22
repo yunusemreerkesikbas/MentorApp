@@ -9,7 +9,10 @@ import { AchievementService } from "./application/achievement.service";
 import { AchievementEventsListener } from "./application/achievement-events.listener";
 import { AchievementBackfillService } from "./application/achievement-backfill.service";
 import { CommunityService } from "./application/community.service";
+import { JourneyLevelCelebrationService } from "./application/journey-level-celebration.service";
+import { JourneyLevelEventsListener } from "./application/journey-level-events.listener";
 import { AchievementRepository } from "./infrastructure/achievement.repository";
+import { JourneyLevelCelebrationRepository } from "./infrastructure/journey-level-celebration.repository";
 import { BuddyController } from "./presentation/buddy.controller";
 import { CommunityController } from "./presentation/community.controller";
 
@@ -29,6 +32,9 @@ import { CommunityController } from "./presentation/community.controller";
     AchievementEventsListener,
     AchievementBackfillService,
     AchievementRepository,
+    JourneyLevelCelebrationService,
+    JourneyLevelEventsListener,
+    JourneyLevelCelebrationRepository,
   ],
   exports: [AchievementService, AchievementBackfillService],
 })

@@ -12,6 +12,7 @@ import {
 } from "@mentor/types";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
+import type { AdminUpdatePlanInput } from "@mentor/validation";
 import { isUniqueViolation } from "../../../common/errors/postgres-error";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
@@ -39,6 +40,7 @@ import {
   type SubscriptionRow,
 } from "../infrastructure/payments.repositories";
 import { EntitlementService } from "./entitlement.service";
+import { FeaturePolicyService } from "./feature-policy.service";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -62,6 +64,16 @@ export interface PaymentTransactionDto {
   currency: string;
   status: string;
   createdAt: string;
+}
+
+export interface AdminPlanDto {
+  id: string;
+  name: string;
+  periodMonths: number;
+  priceMinor: number;
+  currency: "TRY";
+  trialDays: number;
+  isActive: boolean;
 }
 
 /** Admin-facing subscription overview for a user (W6: read state + refund history). */
@@ -107,6 +119,7 @@ export class SubscriptionsService {
     private readonly subsRepo: SubscriptionsRepository,
     private readonly eventsRepo: PaymentEventsRepository,
     private readonly entitlement: EntitlementService,
+    private readonly featurePolicy: FeaturePolicyService,
     private readonly events: EventEmitter2,
     private readonly config: ConfigService<Env, true>,
     @Inject(PAYMENTS_PORT) private readonly provider: PaymentsPort,
@@ -119,12 +132,35 @@ export class SubscriptionsService {
     return rows.map((row) => toPlanDto(row, purchaseEnabled));
   }
 
+  async listAllPlans(): Promise<AdminPlanDto[]> {
+    const rows = await this.plansRepo.findAll();
+    return rows.map(toAdminPlanDto);
+  }
+
+  async getAdminPlan(id: string): Promise<AdminPlanDto> {
+    const row = await this.plansRepo.findById(id);
+    if (!row) throw new NotFoundError("Plan");
+    return toAdminPlanDto(row);
+  }
+
+  async updatePlan(id: string, patch: AdminUpdatePlanInput): Promise<AdminPlanDto> {
+    const existing = await this.plansRepo.findById(id);
+    if (!existing) throw new NotFoundError("Plan");
+    const updated = await this.plansRepo.update(id, patch);
+    if (!updated) throw new NotFoundError("Plan");
+    return toAdminPlanDto(updated);
+  }
+
   async getView(userId: string, rolesHint?: string[]): Promise<SubscriptionView> {
-    const sub = await this.subsRepo.findOpenForUser(userId);
+    const [sub, entitlement, features] = await Promise.all([
+      this.subsRepo.findOpenForUser(userId),
+      this.entitlement.getEntitlement(userId, rolesHint),
+      this.featurePolicy.listPolicies(),
+    ]);
     return {
       subscription: sub ? toSubscriptionDto(sub) : null,
-      // EntitlementService owns the STAFF short-circuit + state machine.
-      entitlement: await this.entitlement.getEntitlement(userId, rolesHint),
+      entitlement,
+      features,
     };
   }
 
@@ -536,6 +572,18 @@ function toPlanDto(row: PlanRow, purchaseEnabled: boolean): PlanDto {
     currency: row.currency as "TRY",
     trialDays: row.trialDays,
     purchaseEnabled,
+  };
+}
+
+function toAdminPlanDto(row: PlanRow): AdminPlanDto {
+  return {
+    id: row.id,
+    name: row.name,
+    periodMonths: row.periodMonths,
+    priceMinor: row.priceMinor,
+    currency: row.currency as "TRY",
+    trialDays: row.trialDays,
+    isActive: row.isActive,
   };
 }
 

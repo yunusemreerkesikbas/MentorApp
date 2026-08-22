@@ -67,6 +67,37 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Premium kimlik işareti (2026-08-22)** — Üyelik, avatar köşesine rozet basmak yerine ismin
+  yanındaki amber taç ile gösterilir. “Premium” yazısı chrome’da yok (yalnız `aria-label`).
+  Mavi doğrulama tiki e-postaya aittir; ödül kurdelesi / doygun gradyan yok. Yüzeyler: sidebar /
+  mobil kimlik, ayarlar profili, topluluk üye profili. Feed ve yorum avatarları işaretlenmez.
+  Kullanım: `entitlement.isPremium` veya public `isPremium`. Gotcha: e-posta doğrulandı işareti
+  ayarlar avatarında kalır; premium ile karışmaz. İlgili: `premium-identity-mark.tsx`,
+  `app-nav.tsx`, `profile-header.tsx`.
+
+- **Sakin seviye atlama kutlaması (2026-08-22)** — Gece Yolculuğu tanışması ve gerçek seviye
+  geçişleri `user_journey_level_celebrations` tablosunda kalıcı, cihazlar arası tekilleştirilmiş
+  kayıtlar olarak tutulur. İlk senkron mevcut seviyeyi bir kez tanıtır; daha yüksek bir seviyeye
+  geçiş yalnız ulaşılan en yüksek seviye için kutlama üretir ve bekleyen eski kayıtları geçersiz
+  kılar. Web, achievement ve seviye kutlamalarını tek kronolojik kuyrukta sıraya alır; seviye kartı
+  sessiz, confettisiz, odak/scroll korumalı ve reduced-motion uyumludur. Kullanım: ekonomi açıkken
+  uygulamaya gir; görülmemiş kutlama otomatik açılır ve “Yolculuğa devam et” onayıyla tüm cihazlarda
+  kapanır. Gotcha: SSE yalnız hızlandırma sinyalidir; güvenilir kaynak unseen endpoint'idir. Onay
+  başarısızsa kart açık kalır. İlgili: `journey-level-celebration.*`, migration `0083`,
+  `celebration-queue.ts`, `notification-drawer-shell.tsx`, `journey-level-celebration.tsx`.
+
+- **Gece Yolculuğu seviye deneyimi (2026-08-22)** — Profildeki 12 XP seviyesi, dört bölümlü
+  şiirsel kimliğe geçirildi: Uyanış, Ahenk, Derinleşme ve Birlikte Işık. Profil kartı mevcut
+  madalyonu, seviye/bölüm adını ve kısa anlatıyı gösterir; profil sahibi ayrıca backend'in
+  hesapladığı seviye içi progress'i ve sonraki seviyeye kalan XP'yi görür. Ziyaretçide sayısal XP
+  gizlenir. Bilgi düğmesi mobil alt kart/masaüstü dialog olarak 12 seviyelik Gece Yolculuğu
+  rehberini açar; focus trap, Escape/backdrop/kapama, scroll lock, focus restoration ve
+  reduced-motion davranışları desteklenir. Seri ve topluluk rozetleri aynı panelin altında korunur.
+  Kullanım: üye profilindeki “Yolculuk seviyesi” kartından bilgi düğmesini aç. Gotcha: nihai 12 SVG
+  ailesi hazır olana kadar tüm seviyeler numaralı fallback madalyonla gösterilir; kısmi görsel aile
+  yayınlanmaz. İlgili: `journey-levels/*`, `profile-header.tsx`, `profile-shell.tsx`,
+  `community-member-profile.spec.ts`, web `messages/{tr,en}.json`.
+
 - **Achievement bilgi kartı hareket düzenlemesi (2026-08-22)** — Bilgi kartına Framer Motion ile
   sakin bir arka plan kararması ve hafif yükselme/ölçeklenme giriş-çıkış efekti eklendi. Kullanım
   değişmedi: achievement kartı veya “Sıradaki keşif” satırı aynı detayı açar. Çıkış tamamlanana kadar

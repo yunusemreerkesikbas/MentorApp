@@ -43,7 +43,13 @@ describe("DeepAnalysisService", () => {
         }),
       } as never,
       { getEntitlement: async () => ({ isPremium: premium }) } as never,
-      { get: async () => 25 } as never,
+      {
+        get: async (key: string) => {
+          if (key === "economy.coin.deep_analysis_cost") return 25;
+          if (key === "ai.features.deep.analysis.free_enabled") return false;
+          return 0;
+        },
+      } as never,
     );
   });
 

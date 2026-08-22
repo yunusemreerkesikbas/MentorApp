@@ -3,6 +3,7 @@ import type {
   AchievementCollectionDto,
   AchievementId,
   CommunitySummary,
+  JourneyLevelCelebrationsDto,
   LeaderboardView,
   LeaderboardWindow,
   PublicProfile,
@@ -45,6 +46,21 @@ export async function markAchievementsCelebrated(
   await http<void>("/v1/community/achievements/celebrated", {
     method: "POST",
     body: JSON.stringify({ achievementIds }),
+  });
+}
+
+export async function getUnseenJourneyLevelCelebrations(): Promise<JourneyLevelCelebrationsDto> {
+  return (await http<JourneyLevelCelebrationsDto>(
+    "/v1/community/journey-levels/unseen",
+  )) as JourneyLevelCelebrationsDto;
+}
+
+export async function markJourneyLevelCelebrated(
+  celebrationId: string,
+): Promise<void> {
+  await http<void>("/v1/community/journey-levels/celebrated", {
+    method: "POST",
+    body: JSON.stringify({ celebrationId }),
   });
 }
 

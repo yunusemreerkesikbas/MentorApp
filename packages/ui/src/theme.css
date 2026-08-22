@@ -135,6 +135,41 @@ html.dark {
   --blob-cyan-opacity: 0.18;
 }
 
+/*
+ * Paywall overlay — scoped dark moment (DESIGN.md §2.5). Charcoal tokens match
+ * `html.dark` so the sheet does not flip with the cookie. Blob opacities use the
+ * light-canvas values (§2.2) so the top glow reads on charcoal (dark 0.14–0.20
+ * washes out to a flat slab).
+ */
+.premium-paywall-theme {
+  color-scheme: dark;
+  --color-main: #f4f4f5;
+  --color-body: #d4d4d8;
+  --color-secondary: #a1a1aa;
+  --color-btn: #f4f4f5;
+  --color-btn-label: #12141a;
+  --color-bg: #12141a;
+  --color-surface: #1a1d24;
+  --color-surface-container: #242833;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-surface-translucent: rgba(26, 29, 36, 0.62);
+  --color-chip: #332c47;
+  --color-chip-text: #c4b8e0;
+  --color-progress-track: #2c3d56;
+  --color-accent-soft: #2c3d56;
+  --color-danger: #f28b82;
+  --color-success: #6bc49a;
+  --color-error-container: #3d2422;
+  --color-focus-ring: #7eb6e8;
+  --shadow-card: 0px 4px 12px rgba(37, 73, 150, 0.28);
+  --shadow-card-hover: 0px 6px 16px rgba(37, 73, 150, 0.32);
+  --blob-pink-opacity: 0.4;
+  --blob-blue-opacity: 0.6;
+  --blob-cyan-opacity: 0.6;
+  /** Plan tiles only — visual-parity exception to the 10px radius (DESIGN.md §5). */
+  --paywall-plan-radius: 24px;
+}
+
 /* --- Skeleton shimmer (surface-container gray; passive tab rail register) --- */
 
 @keyframes mentor-skeleton-shimmer {

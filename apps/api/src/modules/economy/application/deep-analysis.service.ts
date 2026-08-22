@@ -28,16 +28,18 @@ export class DeepAnalysisService {
 
   /** Unlock state for the gate UI: eligibility (review READY) + cost + balance + unlock. */
   async getState(userId: string, roles: string[], examId: string): Promise<DeepAnalysisView> {
-    const [review, cost, balance, entitlement] = await Promise.all([
+    const [review, cost, balance, entitlement, freeEnabled] = await Promise.all([
       this.weeklyReview.getReview(userId, examId),
       this.config.get("economy.coin.deep_analysis_cost"),
       this.economy.getSelfBalance(userId),
       this.entitlement.getEntitlement(userId, roles),
+      this.config.get("ai.features.deep.analysis.free_enabled"),
     ]);
     const eligible = review.status === "READY";
     const weekStart = eligible ? review.period.startDate : null;
     const unlocked =
       entitlement.isPremium ||
+      Boolean(freeEnabled) ||
       (weekStart != null && (await this.isUnlocked(userId, examId, weekStart)));
     return {
       eligible,

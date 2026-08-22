@@ -1,5 +1,5 @@
 "use client";
-import { BadgeCheck, BookOpen, Calendar, ChartColumn, Coins, Crown, Gem, House, MessageCircle, NotebookPen, PanelLeft, Settings, Users } from "lucide-react";
+import { BookOpen, Calendar, ChartColumn, Coins, Gem, House, MessageCircle, NotebookPen, PanelLeft, Settings, Users } from "lucide-react";
 
 import { useEffect, useLayoutEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
@@ -10,6 +10,7 @@ import { NotificationBell } from "@mentor/ui";
 import { subscriptionsControllerGetMine } from "@mentor/api-client";
 
 import { LanguageToggle } from "@/components/language-toggle";
+import { PremiumIdentityMark } from "@/components/premium/premium-identity-mark";
 import { ThemeLamp, ThemeLampFooter, MobileThemeLamp } from "@/components/theme-lamp/theme-lamp";
 import { DesktopCoachFab } from "@/components/desktop-coach-fab";
 import { UserAvatar } from "@/components/user-avatar";
@@ -400,7 +401,7 @@ function MobileIdentity({
 
   return (
     <>
-      <AvatarLink premium={premium} user={user} />
+      <AvatarLink user={user} />
       <div className="min-w-0 flex-1">
         <p
           className="truncate text-base font-bold leading-tight text-[var(--color-main)]"
@@ -408,9 +409,7 @@ function MobileIdentity({
         >
           {greeting}
         </p>
-        <p className="truncate text-sm leading-tight text-[var(--color-secondary)]">
-          {user.displayName}
-        </p>
+        <IdentityName name={user.displayName} premium={premium} />
       </div>
     </>
   );
@@ -433,7 +432,7 @@ function SidebarIdentity({
   return (
     <div className="mb-5">
       <div className="flex items-start justify-between gap-3">
-        <AvatarLink premium={premium} size="lg" user={user} />
+        <AvatarLink size="lg" user={user} />
         <NotificationBell
           label={ui("notifications_label")}
           unreadLabel={ui("notifications_unread_label")}
@@ -446,9 +445,7 @@ function SidebarIdentity({
         >
           {greeting}
         </p>
-        <p className="mt-1 line-clamp-2 text-sm leading-snug text-[var(--color-secondary)]">
-          {user.displayName}
-        </p>
+        <IdentityName className="mt-1" name={user.displayName} premium={premium} />
       </div>
       {balance ? (
         <div className="mt-3">
@@ -459,12 +456,29 @@ function SidebarIdentity({
   );
 }
 
-function AvatarLink({
+function IdentityName({
+  className = "",
+  name,
   premium,
+}: {
+  className?: string;
+  name: string;
+  premium: boolean;
+}) {
+  return (
+    <p className={`flex min-w-0 items-center gap-1.5 ${className}`.trim()}>
+      <span className="min-w-0 truncate text-sm leading-snug text-[var(--color-secondary)]">
+        {name}
+      </span>
+      {premium ? <PremiumIdentityMark /> : null}
+    </p>
+  );
+}
+
+function AvatarLink({
   size = "md",
   user,
 }: {
-  premium: boolean;
   size?: "md" | "lg";
   user: AuthUser;
 }) {
@@ -485,28 +499,7 @@ function AvatarLink({
       className="relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
     >
       <UserAvatar name={user.displayName} size={avatarSize} src={user.avatarUrl} />
-      <AvatarBadge premium={premium} verified={user.emailVerified} />
     </Link>
-  );
-}
-
-function AvatarBadge({ premium, verified }: { premium: boolean; verified: boolean }) {
-  const t = useTranslations("nav");
-  if (!premium && !verified) return null;
-
-  return (
-    <span
-      role="img"
-      aria-label={premium ? t("badge_premium") : t("badge_verified")}
-      title={premium ? t("badge_premium") : t("badge_verified")}
-      className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full border-2 border-[var(--color-bg)] bg-[var(--color-surface)] text-[var(--color-main)] shadow-[var(--shadow-card)]"
-    >
-      {premium ? (
-        <Crown className="size-3 text-[var(--color-progress)]" strokeWidth={2.4} aria-hidden />
-      ) : (
-        <BadgeCheck className="size-3.5 text-[var(--color-main)]" strokeWidth={2.2} aria-hidden />
-      )}
-    </span>
   );
 }
 

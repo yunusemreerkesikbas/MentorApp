@@ -31,6 +31,7 @@ import type { CoachEvidenceSnapshot } from "../../coaching/domain/coach-evidence
 import { EconomyService } from "../../economy/application/economy.service";
 import { EconomyLedger } from "../../economy/domain/economy.constants";
 import { EntitlementService } from "../../payments/application/entitlement.service";
+import { PremiumFeatureId } from "@mentor/types";
 import {
   LLM_PORT,
   type LlmHistoryMessage,
@@ -68,6 +69,7 @@ import {
   type CoachTurnPlan,
 } from "../domain/coach-turn-planner";
 import { ContextBuilder } from "./context-builder.service";
+import { PremiumFeatureGateService } from "./premium-feature-gate.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import {
   CoachMessageRepository,
@@ -121,6 +123,7 @@ export class ChatService {
     @Optional() private readonly evidence?: CoachEvidenceService,
     @Optional() private readonly profiles?: CoachProfileService,
     @Optional() private readonly turnPlanner?: CoachTurnPlanner,
+    @Optional() private readonly featureGate?: PremiumFeatureGateService,
   ) {}
 
   /** Keeps legacy repository test doubles/rolling deployments readable during the additive change. */
@@ -546,19 +549,9 @@ export class ChatService {
     }
     await this.budget.assertWithinBudget();
 
-    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
     const spendRefId = clientMessageId ?? randomUUID();
-    let coinCost = 0;
-    let shouldRefundOnFailure = false;
-
-    if (ent.isPremium) {
-      await this.assertPremiumRateLimit(user.id);
-    } else {
-      ({ cost: coinCost, shouldRefundOnFailure } = await this.prepareCoinSpend(
-        user.id,
-        spendRefId,
-      ));
-    }
+    const { isPremium, coinCost, shouldRefundOnFailure } =
+      await this.authorizeChatSpend(user, spendRefId);
 
     try {
       const mockExam = contextMockExamId
@@ -584,7 +577,7 @@ export class ChatService {
         },
       );
     } catch (err) {
-      if (!ent.isPremium && shouldRefundOnFailure && coinCost > 0) {
+      if (!isPremium && shouldRefundOnFailure && coinCost > 0) {
         await this.refundCoinSpend(user.id, coinCost, spendRefId).catch(
           (refundErr) => {
             this.logger.error(
@@ -595,6 +588,37 @@ export class ChatService {
       }
       throw err;
     }
+  }
+
+  private async authorizeChatSpend(
+    user: RequestUser,
+    spendRefId: string,
+  ): Promise<{
+    isPremium: boolean;
+    coinCost: number;
+    shouldRefundOnFailure: boolean;
+  }> {
+    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
+    if (ent.isPremium) {
+      await this.assertPremiumRateLimit(user.id);
+      return { isPremium: true, coinCost: 0, shouldRefundOnFailure: false };
+    }
+    if (
+      this.featureGate &&
+      (await this.featureGate.isAllowed(
+        user.id,
+        user.roles,
+        PremiumFeatureId.COACH_CHAT,
+      ))
+    ) {
+      return { isPremium: false, coinCost: 0, shouldRefundOnFailure: false };
+    }
+    const spend = await this.prepareCoinSpend(user.id, spendRefId);
+    return {
+      isPremium: false,
+      coinCost: spend.cost,
+      shouldRefundOnFailure: spend.shouldRefundOnFailure,
+    };
   }
 
   private async assertPremiumRateLimit(userId: string): Promise<void> {
@@ -980,20 +1004,10 @@ export class ChatService {
       return;
     }
 
-    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
     await this.budget.assertWithinBudget();
     const spendRefId = clientMessageId ?? randomUUID();
-    let coinCost = 0;
-    let shouldRefundOnFailure = false;
-
-    if (ent.isPremium) {
-      await this.assertPremiumRateLimit(user.id);
-    } else {
-      ({ cost: coinCost, shouldRefundOnFailure } = await this.prepareCoinSpend(
-        user.id,
-        spendRefId,
-      ));
-    }
+    const { isPremium, coinCost, shouldRefundOnFailure } =
+      await this.authorizeChatSpend(user, spendRefId);
 
     try {
       const mockExam = contextMockExamId
@@ -1072,7 +1086,7 @@ export class ChatService {
         },
       };
     } catch (err) {
-      if (!ent.isPremium && shouldRefundOnFailure && coinCost > 0) {
+      if (!isPremium && shouldRefundOnFailure && coinCost > 0) {
         await this.refundCoinSpend(user.id, coinCost, spendRefId).catch(
           (refundErr) => {
             this.logger.error(
@@ -1242,18 +1256,8 @@ export class ChatService {
 
     await this.budget.assertWithinBudget();
     const spendRefId = randomUUID();
-    let coinCost = 0;
-    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
-    let shouldRefundOnFailure = false;
-
-    if (ent.isPremium) {
-      await this.assertPremiumRateLimit(user.id);
-    } else {
-      ({ cost: coinCost, shouldRefundOnFailure } = await this.prepareCoinSpend(
-        user.id,
-        spendRefId,
-      ));
-    }
+    const { isPremium, coinCost, shouldRefundOnFailure } =
+      await this.authorizeChatSpend(user, spendRefId);
 
     try {
       const { llmInput, sources, personalization, locale } = await this.prepareChat(
@@ -1337,7 +1341,7 @@ export class ChatService {
         },
       };
     } catch (err) {
-      if (!ent.isPremium && shouldRefundOnFailure && coinCost > 0) {
+      if (!isPremium && shouldRefundOnFailure && coinCost > 0) {
         await this.refundCoinSpend(user.id, coinCost, spendRefId).catch(
           (refundErr) => {
             this.logger.error(

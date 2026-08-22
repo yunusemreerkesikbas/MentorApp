@@ -96,6 +96,11 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **Plan kataloğu (2026-08-22)** — `GET/PATCH /v1/admin/plans` (FINANCE). Bootstrap `/plans`
+  sayfası ad, kuruş fiyat, deneme günü ve aktifliği kaydeder. Fiyat yalnız yeni checkout'a yansır;
+  iyzico plan sync yok. Audit `plan.update`. İlgili: `admin-plans.controller.ts`,
+  `apps/admin/src/app/(general)/plans/page.tsx`.
+
 - **Featured tartışma arama seçicisi (2026-07-31)** — Topluluk yönetimindeki ham Thread ID/UUID
   alanı kaldırıldı. EDITOR en az iki karakter yazar; mevcut `/v1/forum/search` çağrısı 250 ms gecikmeyle
   çalışır ve başlık, oda, tür, son aktivite gösterir. Loading, boş, hata/yeniden dene, seçim, değiştirme

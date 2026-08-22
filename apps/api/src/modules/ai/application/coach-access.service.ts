@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { CoachAccessMode, type CoachAccessDto } from "@mentor/types";
+import { CoachAccessMode, PremiumFeatureId, type CoachAccessDto } from "@mentor/types";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { FeatureFlag } from "../../../common/config/config.catalog";
@@ -8,6 +8,7 @@ import { EntitlementService } from "../../payments/application/entitlement.servi
 import { AiUsageFeature } from "../domain/ai.constants";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
+import { PremiumFeatureGateService } from "./premium-feature-gate.service";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -23,6 +24,7 @@ export class CoachAccessService {
     private readonly config: ConfigRegistryService,
     private readonly budget: AiBudgetGuard,
     private readonly usage: AiUsageRepository,
+    private readonly featureGate: PremiumFeatureGateService,
   ) {}
 
   async getAccess(
@@ -56,6 +58,24 @@ export class CoachAccessService {
         ),
       ]);
       const remaining = Math.max(0, dailyLimit - usedToday);
+      return {
+        canChat: remaining > 0,
+        mode: CoachAccessMode.PREMIUM,
+        ...(remaining === 0 ? { reason: ErrorCode.AI_RATE_LIMITED } : {}),
+        dailyMessagesRemaining: remaining,
+      };
+    }
+
+    if (await this.featureGate.isAllowed(userId, rolesHint, PremiumFeatureId.COACH_CHAT)) {
+      const [freeLimit, usedToday] = await Promise.all([
+        this.config.get("ai.features.coach.chat.free_limit"),
+        this.usage.countFeatureSince(
+          userId,
+          AiUsageFeature.CHAT,
+          new Date(Date.now() - DAY_MS),
+        ),
+      ]);
+      const remaining = Math.max(0, freeLimit - usedToday);
       return {
         canChat: remaining > 0,
         mode: CoachAccessMode.PREMIUM,

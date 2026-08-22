@@ -14,6 +14,8 @@
  * a quick flick by speed; anything that is neither is a wobble and snaps back.
  */
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 /** Distance that counts as an answer on its own, however slowly it was dragged. */
 export const SWIPE_THRESHOLD_PX = 120;
 
@@ -74,4 +76,61 @@ export function nextUnansweredIndex(
     if (!answered.has(ids[i]!)) return i;
   }
   return -1;
+}
+
+/**
+ * The deck, ordered so one subject's cards sit together.
+ *
+ * This is what is left of the subject filter. A twenty-card deck that jumps between Matematik and
+ * Tarih every turn is worse than eight cards of one thing — that part was always true. The filter
+ * was one answer to it and an expensive one: a chip row, a piece of session state threaded through
+ * five call sites, and a whole extra "this subject is done, others are not" screen that existed
+ * only to clean up after the filter itself. Ordering buys the same thing for one line, and it
+ * cannot leave the student looking at a finished deck with cards still due in it.
+ *
+ * Stable within a subject, and first-seen order between them: the deck arrives in the order the
+ * scheduler chose, and re-sorting it alphabetically would be this function inventing a priority
+ * nobody asked for. Unlabelled cards keep their own group at whichever position the first one held.
+ */
+export function bySubject<T extends { subjectName: string | null }>(
+  entries: readonly T[],
+): T[] {
+  const groups = new Map<string, T[]>();
+  entries.forEach((entry) => {
+    const key = entry.subjectName ?? "";
+    const group = groups.get(key);
+    if (group) group.push(entry);
+    else groups.set(key, [entry]);
+  });
+  return [...groups.values()].flat();
+}
+
+/**
+ * What just happened to the card the student answered — the one line the deck says back to them.
+ *
+ * Answering used to be silent: the card flew off, the next one arrived, and nothing said the first
+ * one had been scheduled rather than spent. That silence is what "the card disappeared" actually
+ * describes — the interval ladder was working the whole time, it just never spoke.
+ *
+ * Reads the entry the API returned, so the days quoted are the ones the server actually stored; a
+ * copy of the ladder here would be a second source of truth that drifts on the first policy change.
+ */
+export type ReviewFeedback =
+  | { kind: "healed" }
+  | { kind: "due"; days: number }
+  | null;
+
+export function reviewFeedback(
+  entry: { status: string; nextReviewAt: string | null },
+  now: Date = new Date(),
+): ReviewFeedback {
+  if (entry.status === "HEALED") return { kind: "healed" };
+  if (!entry.nextReviewAt) return null;
+
+  const days = Math.round(
+    (new Date(entry.nextReviewAt).getTime() - now.getTime()) / MS_PER_DAY,
+  );
+  // A card scheduled for today or the past has nothing to promise — it is due again now, which the
+  // deck shows by simply having it in it. Guarding here rather than rendering "0 gün sonra".
+  return days >= 1 ? { kind: "due", days } : null;
 }

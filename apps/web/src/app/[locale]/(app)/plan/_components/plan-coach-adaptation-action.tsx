@@ -12,6 +12,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type {
   ApplyPlanAdaptationResultDto,
   CoachPlanAdaptationDto,
+  SubscriptionView,
 } from "@mentor/types";
 import {
   coachPlanAdaptationSchema,
@@ -22,13 +23,15 @@ import {
   subscriptionsControllerGetMine,
 } from "@mentor/api-client";
 import { Button, TextAreaField } from "@mentor/ui";
-import { useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { trackCoachEvent } from "@/lib/analytics";
 import { requestCoachPlanAdaptation } from "@/lib/coach";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { applyCoachPlanAdaptation } from "@/lib/plan-tasks";
+import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
+import { usePremiumPaywall } from "@/lib/premium-paywall";
+import { isPremiumRequiredError } from "@/lib/premium-required";
 import {
   flattenPlanAdaptationChanges,
   selectedPlanAdaptationChanges,
@@ -266,7 +269,7 @@ export const PlanCoachAdaptationAction = forwardRef<
 >(function PlanCoachAdaptationAction({ onApplied, onPlanChanged }, ref) {
   const t = useTranslations("plan");
   const tCommon = useTranslations("common");
-  const router = useRouter();
+  const { openPaywall } = usePremiumPaywall();
   const { filterSheet, dismissNow } = useMentorBottomSheet();
   const toast = useMentorToast();
   const noteRef = useRef<NoteFormHandle>(null);
@@ -350,6 +353,10 @@ export const PlanCoachAdaptationAction = forwardRef<
       const preview = await requestCoachPlanAdaptation(input);
       await openPreview(preview, input);
     } catch (error) {
+      if (isPremiumRequiredError(error)) {
+        openPaywall({ sourceFeature: "plan.ai" });
+        return;
+      }
       toast.error({
         title: tCommon("error_title"),
         message: readError(error, tCommon("error_unknown")),
@@ -367,13 +374,11 @@ export const PlanCoachAdaptationAction = forwardRef<
     setBusy(true);
     try {
       const subscription = await subscriptionsControllerGetMine();
-      const view = subscription as unknown as {
-        entitlement: { isPremium: boolean };
-      };
-      if (!view.entitlement.isPremium) {
+      const view = subscription as unknown as SubscriptionView;
+      if (!isPremiumFeatureAvailable(view, "plan.ai")) {
         busyRef.current = false;
         setBusy(false);
-        router.push("/subscription");
+        openPaywall({ sourceFeature: "plan.ai" });
         return;
       }
 

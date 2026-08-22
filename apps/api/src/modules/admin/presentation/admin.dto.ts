@@ -6,6 +6,7 @@ import {
   reviewForumTagSuggestionDtoSchema,
   articleImageUploadSchema,
   adminRefundSchema,
+  adminUpdatePlanSchema,
   auditLogQuerySchema,
   economyAdjustSchema,
   searchUsersQuerySchema,
@@ -30,6 +31,7 @@ export class AdminListExamsQueryDto extends createZodDto(adminListExamsQuerySche
 export class UpsertExamDto extends createZodDto(upsertExamSchema) {}
 export class UpsertExamEventDto extends createZodDto(upsertExamEventSchema) {}
 export class RefundSubscriptionDto extends createZodDto(adminRefundSchema) {}
+export class UpdatePlanDto extends createZodDto(adminUpdatePlanSchema) {}
 export class AdminForumTagCreateDto extends createZodDto(adminForumTagCreateSchema) {}
 export class AdminForumTagUpdateDto extends createZodDto(adminForumTagUpdateSchema) {}
 export class ReviewForumTagSuggestionDto extends createZodDto(reviewForumTagSuggestionDtoSchema) {}

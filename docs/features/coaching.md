@@ -145,6 +145,28 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Premium kilit rozetleri (2026-08-22)** — Panel günlük selamı ve mood yansıması, analiz ghost
+  teaser'ı ve seans sonrası yansıma kilitliyken paywall açar. İlgili: `premium-lock-nudge.tsx`,
+  `use-daily-greeting.ts`, `mood-checkin.tsx`, `session-done-state.tsx`.
+- **Derin bağlantı parametreleri tek kullanımlık oldu (2026-08-22)** — `?mockExam=` ve `?review=due`
+  tüketildikten sonra adres çubuğunda kalıyordu. `mockExam` için bu gerçek bir yanlış atıf:
+  yenilemede ekleme paneli tekrar açılıyor ve o sınavın id'si öğrencinin **sonra** kaydettiği
+  hatalara damgalanıyor, yani eski bir oturuma ait sayılıyorlar. `review=due` de kapatılan tekrarı
+  yenilemede geri açıyordu. İkisi de tüketildiği anda temizleniyor.
+
+  Temizleme mantığı `lib/spent-query-param.ts`'e çıkarıldı: topluluk composer'ındaki
+  `notebookEntry` için aynı şey zaten yazılmıştı ve **aynı tuzağı** taşıyor — `router.replace`
+  çalışmıyor, çünkü buradaki yollar next-intl'in yerelleştirilmiş hâlleri (`/yanlis-defteri`,
+  `/topluluk/akis`) ve istemci yönlendiricisi onları rotalara geri çözmüyor; `history.replaceState`
+  gerekiyor. Gerekçe artık tek yerde.
+
+  **Aranan ama bulunamayan:** `?mockExam=` ile gelirken kapağın bir an görünüp spread'e atladığını
+  iddia etmiştim. Kod okununca öyle olmadığı görüldü — `setOverview` ile `setView` arasında hiç
+  `await` yok, ikisi aynı senkron blokta, yani React tek commit'te birleştiriyor ve kabuk zaten
+  `!overview` iken iskelet gösteriyor. İskeletten doğrudan spread'e geçiyor. Düzeltilecek bir şey
+  yoktu; iddia doğrulanmadan yapılmıştı.
+
+
 - **`notebook-shell.tsx` bölündü — ve nerede durulduğu (2026-08-22)** — Dosya 1846 satıra çıkmıştı.
   Bölmenin kuralı şuydu: *taşınan her parça kendi durumunu da götürmeli; bir parçayı ayırmak on yeni
   prop gerektiriyorsa dikiş orada değildir.* Kural uygulanınca çıkan sonuç, planlanandan **daha
@@ -2730,3 +2752,163 @@ pnpm --filter @mentor/api test
   `notebook-ink-pens.tsx`, `notebook-ink-toolbar.tsx`, `use-notebook-page.ts`, `notebook-shell.tsx`,
   `notebook-side-panel.tsx`, `packages/types/src/coaching.ts`, `packages/validation/src/coaching.ts`,
   `mistake-notebook.service.ts`.
+
+- **Tekrar destesi flashcard'ı: UI/UX elden geçirme (2026-08-22, APP-046)** — Kullanıcının yedi
+  maddelik listesi üzerinden. **(1) Bulanık arkaplan:** defterin dört modali (`review-panel`,
+  `image-lightbox`, `entry-edit-dialog`, `remove-choice-dialog`) tek başına `rgba(0,0,0,0.85)`
+  kullanıyordu; uygulamanın geri kalanı (`achievement-celebration`, coach drawer, history drawer)
+  `bg-black/70 backdrop-blur-md`. Dördü de o değere çekildi — defter içinde iki farklı modal
+  görünümü bırakmamak için hepsi, sadece tekrar paneli değil. **(2) Jest ipucu metni kaldırıldı**
+  (`review_deck_hint` / `review_flip_hint` çevirileri de silindi): kaydırmayı kelimeyle anlatıyordu,
+  artık kaydırmanın kendisi renkle anlatıyor. **(3) Verdict butonlarına ikon eklendi** (`RotateCcw` /
+  `Check`) — *ikon-only'ye geçilmedi*: ✓/✗ tek başına "doğru cevap bu mu?" diye okunabilir, bu bir
+  değerlendirme seçimi. **(4) Prev/next okları geri geldi.** APP-044'te "cevapsız gezinme kendi
+  içinde amaçsız navigasyon" diye kaldırılmışlardı; pratikte kartı **dürüstçe erteleme** yolu
+  kalmamıştı (liste görünümü yalnızca deste büyükse açılıyor). Tek `step(delta)` iki oku da sürüyor,
+  cevaplanmışları atlıyor ve iki uçta sarıyor. **←/→ artık cevaplamıyor, geziniyor** — tuşlar yanındaki
+  kontrolün anlamını taşımak zorunda; klavyeyle cevaplama butonların kendisinden sürüyor. Oklar
+  kasten sessiz (yarı saydam beyaz daire), yoksa tüm desteyi hiç not vermeden yürümeye davet olurdu.
+  **(5) `1/10` sayacı** karta `absolute left-2 top-2` ile taşındı — üstte ayrı bir satır, yüksekliği
+  zaten viewport ile sınırlı bir kartta bedava değil; sayaç saydığı şeye ait. Dönen elemanın dışında,
+  yani kartla birlikte çevrilmiyor. Liste açıkken "N kart kaldı" çipi eski yerinde kalıyor (kart yok).
+  **(6) Kart arkası artık `Ders · Konu`** — `topicName ?? subjectName` idi, yani etiketli kart
+  "Permütasyon" deyip hangi derse ait olduğunu hiç söylemiyordu. **(7) Kaydırma geri bildirimi
+  kelimeden renge:** `SwipeCue` kartı verdict rengiyle yıkıyor (%22 tint) ve ortasına butonun kendi
+  ikonunu koyuyor; metin iki parmak aşağıdaki butonlarda zaten var ve flick sırasında etiket okumak
+  kartın yeşile döndüğünü görmekten yavaş.
+  **Takip (aynı gün): butonlar tamamen ikon oldu.** Metin `group-hover` / `group-focus-within` ile
+  açılan tooltip'e taşındı; erişilebilir ad `aria-label`'da, tooltip `aria-hidden` — ikisi asla
+  çelişmiyor. Dört kontrol (iki verdict + iki ok) tek `DeckButton`'a indi: aynı halka, aynı disabled
+  davranışı, aynı tooltip; üç ayrı buton gövdesi bir sonraki düzenlemede hizadan çıkardı. Ayrımı
+  **renk değil ağırlık** yapıyor — `solved` 60px dolu disk (yeşil + yumuşak glow), `missed` aynı
+  boyda outline (asla kırmızı değil), oklar 44px ve sessiz. `hover:scale-105` / `active:scale-95`,
+  `motion-reduce` altında ikisi de kapalı. Busy durumunda `Check` yerine `LoaderCircle` dönüyor.
+  Tooltip kayan bir konumlandırma motoru değil, kardeş `span`: tek yerleşim (üstte), flip yok, sabit
+  bir dialog'un içinde üstünde yer var.
+  **İkinci takip: ikon çakışması + üst kontrollerde tooltip.** Kullanıcı kartın sağ üstündeki çevirme
+  ikonuyla "yine çözemedim" ikonunun neredeyse aynı göründüğünü bildirdi — ikisi de `RotateCw`/`RotateCcw`
+  ailesindendi, yani aynı glif aynanmış haliyle iki *farklı* eylemi temsil ediyordu. Çevirme
+  `FlipHorizontal2` oldu (metafor zaten döndürme değil, çevirme), kart arkasındaki tekrar sayacı da
+  `Repeat` aldı; böylece `RotateCw` karttan tamamen kalktı ve "geri dön" ailesi yalnızca verdict'e ait.
+  `OverlayControl` (liste / ayarlar / kapat) ve `CardControl` (büyüt / çevir) `DeckButton` ile aynı
+  tooltip sözleşmesini aldı — fark: bunlar **alta ve sağa yaslı** açılıyor. Üste açılsa kart
+  `overflow-hidden` olduğu için kırpılırdı, ortalansa da etiket 44px butondan geniş olduğu için
+  sağdaki buton ekran/kart dışına taşardı. Tüm ikonlar `strokeWidth 2.25` ve bir punto büyüdü.
+  İlgili: `notebook-review-panel.tsx`, `notebook-review-card.tsx`, `notebook-image-lightbox.tsx`,
+  `notebook-entry-edit-dialog.tsx`, `notebook-remove-choice-dialog.tsx`, `messages/{tr,en}.json`.
+
+- **Liste görünümü desteye tepeden bakışa dönüştü (2026-08-22, APP-046)** — Kullanıcı bir referans
+  görselle geldi: liste satırları değil, üst üste binmiş kart dilimleri. Eski görünüm (küçük görsel +
+  başlık + hata tipi satırları, ders başlıkları altında gruplu) gayet iyi bir *liste*ydi ama yanlış
+  nesneydi: öğrenci elinde bir deste tutuyor ve destede kart, kenarları okunarak bulunur — dizinine
+  bakarak değil. **`STACK_OVERLAP_PX = 20`**: 64px dilim, 44px görünür bant (hâlâ geçerli dokunma
+  hedefi, tek satır başlık sığıyor). `zIndex` sırayla artıyor, yoksa tarayıcının boyama sırası tersini
+  yapıyor ve her dilim üstündekinin *arkasına* giriyor — bu da yığın değil sekme görüntüsü veriyor.
+  **Gölge yukarı bakıyor** (`0 -8px 18px -10px`): bir dilimin kanıtlaması gereken şey üstündeki kartın
+  onun üzerinde durduğu; aşağı bakan gölge örtüldüğü yere düşer, kimse görmez. Aktif kart sadece
+  renklendirilmiyor, `scale-[1.03]` + çift yönlü gölge ile **yığından kaldırılıyor** — dokuz benzer
+  dilimde "neredeyim" tek bakışta hayatta kalmak zorunda. Başlık kart arkasıyla aynı `Ders · Konu`.
+  Üstteki `maskImage` yığının kenardan devam ettiğini söylüyor; APP-042'de düz listeden kaldırılmıştı
+  çünkü maskenin altında kalan şey bir başlıktı, şimdi bir kart. **Ders grupları başlıktan çip
+  satırına taşındı** — dilimler arası başlık desteyi üç ayrı yığına böler, illüzyon ancak yığın
+  kesintisizken duruyor. `review_list_only_this` çevirisi (grup başlığındaki "sadece bunu çalış")
+  artık çipin kendisi olduğu için silindi. Cevaplanmış kartlar yığında kalıyor: %45 opaklık, tik,
+  tıklanamaz — aynı kartı iki kez cevaplamak aralık merdivenini sıfırlardı.
+  **Takip: yatay kayma + gerçek perspektif.** Kullanıcı ekran görüntüsünde destenin ayağında bir
+  **yatay kaydırma çubuğu** gösterdi. Sebep CSS'in az bilinen kuralı: `overflow-y:auto` tek başına x
+  eksenini `visible` bırakır, tarayıcı da onu `auto`'ya *hesaplar* — aktif kartın `scale-[1.03]`
+  taşması da bunu tetikliyordu. `overflow-x-clip` eklendi ve `scale` atıldı. Yerine **`translateZ(34px)`**:
+  kart iki boyutta büyütülmüyor, destenin eğildiği eksende okuyucuya doğru **kaldırılıyor**; bedava,
+  çünkü onu büyük gösteren perspektif zaten yığının içinde. Transform `li`'de, butonda değil — yoksa
+  butonun kendi hover kalkışını eziyordu. **Perspektif gerçek 3D oldu:** kaydırma kabında
+  `perspective:1100px` + `perspective-origin:50% 0%`, içindeki `ol`'da `rotateX(10deg)` /
+  `transform-origin:50% 0%` ve `preserve-3d`. Dönüşüm kaydırılan elemanın kendisine konamaz — ikisi
+  aynı kutuyu paylaşamaz. **10° tüm bütçe:** ~14°'den sonra başlıklar okunmaz biçimde eziliyor; bu
+  bir diorama değil, okunacak bir liste. Doğrulama için gerçek CSS'in birebir kopyası olan 9 kartlık
+  statik bir mockup üretildi (repoya girmedi).
+  **Takip: kaybolan filtre + kaldırılan sayaç.** Kullanıcı çiplerin hiç görünmediğini bildirdi.
+  Koşul `subjects.length > 1` idi; destesinde iki Türkçe + bir *etiketsiz* kart vardı, yani ders
+  sayısı 1 ve çipler hiç çizilmedi — oysa "Türkçe" filtresi orada anlamlı, etiketsiz kartı eliyor.
+  Koşul **grup** sayısına çevrildi: `subjects.length + (etiketsiz var mı ? 1 : 0) > 1`. Etiketsizler
+  hâlâ kendi çipini almıyor (filtre o değeri ifade edemiyor), ama artık *sayılıyor*. Listenin
+  üstündeki **"N kart kaldı" çipi kaldırıldı** (`review_list_remaining` çevirisi de silindi): deste
+  artık sayının kendisi — dokuz dilim, ikisi tikli — yani satır, resmin zaten gösterdiğini okuyan bir
+  altyazıydı ve tam olarak filtre çiplerinin durması gereken yerde duruyordu.
+  **Takip: ders filtresi tamamen kaldırıldı.** Kullanıcı "filtrelemeye gerek var mı?" diye sordu;
+  cevap hayır. Filtre 24 kod referansı, 5 çeviri anahtarı ve **tam bir ekran** (`SubjectDonePanel` —
+  "Türkçe bitti, başka derslerde 4 kart var") tutuyordu; o ekran tamamen filtrenin kendi yarattığı
+  sorunu temizlemek için vardı, filtre olmasa hiç doğmazdı. Karşılığında verdiği şey — "her turda
+  Matematik'ten Tarih'e zıplamayayım" — filtresiz de elde edilebilir: **`bySubject()`** desteyi panel
+  açılırken bir kez derse göre sıralıyor. Grup içinde sıra bozulmuyor, gruplar arasında ilk-görülme
+  sırası korunuyor (alfabetik sıralamak, fonksiyonun kimsenin istemediği bir öncelik icat etmesi
+  olurdu); etiketsizler ilk etiketsiz kartın konumunda kendi grubunu tutuyor. İki birim testi eklendi.
+  Ayrıca bu, filtrenin *asıl* riskini de siliyor: öğrenciyi hâlâ tekrarı gelmiş kartlar dururken
+  "bugünlük bitti" ekranına düşürebilme ihtimali. Silinenler: `subjectFilter` state'i, `applyFilter`,
+  `fullDeck`/`remainingAll` ikiliği, çip satırı, `FilterChip`, `SubjectDonePanel`, `review_progress`
+  önündeki ders adı ön eki ve `review_list_all_subjects` + `review_subject_done_*` çevirileri.
+  **Takip: hover artık Z ekseninde.** Dilimler `hover:-translate-y-1` ile sayfa düzleminde yukarı
+  kayıyordu; deste eğik olduğu için bu "kart yükseliyor" değil "satır kayıyor" gibi duruyordu. Artık
+  bu yığındaki *her* kalkış Z'de: hover `translate-z-[24px]`, aktif kart zaten 34px'te ve hover'da
+  50px'e **daha da yükseliyor** (hover değerine düşmüyor). Üç durum tek class dizisinde, çünkü
+  inline `transform` hover'ı ezerdi. Butonun kendi kalkışı kaldırıldı — yükselen kartın içinde ayrıca
+  kayan bir buton, tek kart değil iki hareket eden şey gibi okunuyor. Klavye için `focus-within`
+  hover ile aynı değerleri alıyor. **Tuzak:** Tailwind v4'te `translate-z-*` `transform` değil,
+  standalone **`translate`** özelliğini yazıyor — `transition-transform` hiç değişmeyen bir özelliği
+  izler ve kart yol almadan zıplardı; `transition-[translate]` oldu. Doğrulama: sınıfların gerçekten
+  üretildiği `@tailwindcss/cli` ile tek dosya taranarak çıktı CSS'inden kontrol edildi.
+  **Takip: deste kendini dağıtıyor.** Liste görünümüne geçiş sert bir kesmeydi — bir an önce tek kart
+  varken aniden dokuz dilim. Artık kartlar sırayla, `staggerChildren: 0.045` ile aşağıdan ve arkadan
+  (`y: 24, z: -90`) yığının *içine* kayarak giriyor; üstüne fade ile binmiyor, aynı Z ekseninden
+  geliyor. **45ms destenin kendi uzunluğundan seçildi:** dokuz kart 400ms'lik gecikmeyle iniyor, yani
+  bir dizinin tek hareket olmaktan çıkıp beklenen bir kuyruğa dönüştüğü ~500ms sınırının altında.
+  Elli kartlık deste bir üst sınır isterdi; elli kartlık tekrar günü ayrı bir problem. `reduceMotion`
+  altında **sıralama korunuyor** (bilgi taşıyor: bu bir deste ve sırayla dağıtılıyor), yol kaldırılıyor.
+  Framer `transform` yazıyor, hover `translate` yazıyor — CSS ikisini birleştirdiği için aynı eleman
+  üzerinde çakışmadan yaşıyorlar.
+  **Takip: dağınık deste + iki farklı yüz rengi (referans görsel).** Arkadaki deste tek, hizalı bir
+  kopyaydı — bir kartın tam arkasındaki kart, ikinci bir kart gibi değil **gölge** gibi okunuyor.
+  Artık `STACK_LAYERS` ile iki katman, hafif eğik: `-2.5°/0.965` ve `3.5°/0.93`, azalan opaklıkla.
+  Değerler sabit, rastgele değil — her render'da kendini yeniden dizen bir deste "kendiliğinden
+  oynadı" diye hata kaydı olur. Katmanlar `remaining`'e bakıyor, bir kart kalmışken iki kart daha
+  varmış gibi yapmıyor. **Ön yüz artık `accent-soft`, arka yüz `surface`:** iki yüzü aynı renk olan
+  bir flashcard'da dönüş inecek bir yer bulamıyor — kart 90°'de kenara geliyor ve hangi yüzün geldiğini
+  anlamanın tek yolu okumak oluyor. Rengi *ön* yüz taşıyor, çünkü bakman istenen yüz o. Arkadaki
+  deste katmanları da aynı tinti alıyor: onlar sıradaki kartların ön yüzü. **Yakalanan regresyon:**
+  `secondary-text` (#666) artık `accent-soft` (#C3D9FD) üstüne düşüyordu — 3.9:1, DESIGN.md'nin okunur
+  metin için istediği 4.5'in altında; `color-mix(main 72%)` ile değiştirildi, iki temada da rahat geçiyor.
+  **Takip: tint fotoğraflı karttan kaldırıldı.** Kullanıcı ekran görüntüsüyle sordu. Tintin işi
+  "hangi yüz yukarıda" sorusunu metinden önce cevaplamak; fotoğraflı kartta bu soru zaten içerikle
+  cevaplı (bir yüzde fotoğraf, diğerinde yazı), dolayısıyla orada renk bilgi taşımıyor — sadece
+  fotoğrafın dövüşmek zorunda kaldığı renkli bir çerçeve ve fotoğrafın kendi beyazıyla sert bir bant
+  üretiyordu. **Metin-only ön yüzde kalıyor:** orada iki yüz de yazı ve onları ayıran *tek* şey renk.
+  Arkadaki deste katmanları da `surface`'a döndü (renksiz kartın arkasında renkli bir yığın tutarsızlık
+  olurdu) ve opaklıkları 0.45 / 0.7'ye çıkarıldı — onları kart yapan şey dolgu değil, eğim.
+  İlgili: `notebook-review-list.tsx`, `notebook-review-panel.tsx`, `notebook-review-card.tsx`,
+  `notebook-review-deck.ts` (+spec), `messages/{tr,en}.json`.
+
+- **Tekrar oturumu artık ne olduğunu söylüyor (2026-08-22, APP-046)** — Kullanıcı "çözebildim
+  denince kart desteden çıkıyor ve bir daha göremiyoruz, doğru mu?" diye sordu. Koda bakınca premis
+  yanlış çıktı ve **asıl kusur başka yerdeydi**: kart silinmiyor, `advanceReview` merdiveni (2/7/21)
+  ilerliyor, kayıt defterde kalıyor, üç üst üste doğrudan sonra `HEALED` olup rozet alıyor. Yani
+  davranış zaten istenendi — eksik olan **geri bildirimdi**. Cevap anında sunucuya gidiyordu ama
+  ekranda hiçbir iz bırakmıyordu; "kart kayboldu" hissi veri kaybından değil bu sessizlikten geliyordu.
+  Dört parça eklendi. **(1) Cevaptan sonra tek satır:** `reviewFeedback()` sunucunun döndürdüğü
+  `nextReviewAt`/`status`'tan "{n} gün sonra tekrar" ya da "Bu kart iyileşti" üretiyor — merdivenin
+  ikinci bir kopyası burada tutulmuyor, yoksa politika değişince kayardı. Sabit yükseklikli slot
+  (yoksa her cevapta buton satırı zıplıyor), `aria-live="polite"`, 2200ms. **(2) Kapanış özeti**
+  `outcomes: {entry, solved}[]`den türüyor; kaçırılan kartlar **sayılmıyor, adlandırılıyor** —
+  "3 kart" öğrencinin kendi yapabileceği aritmetik, "Matematik · Permütasyon, işlem hatası" ise bu
+  ekranda bilemeyeceği tek şey. **(3) Kaçırılan satırın kendisi topluluk köprüsü**
+  (`/community/feed?notebookEntry=<id>`); zaten thread'i olan kart link olmuyor — o öğrenciyi değil
+  cevabı bekliyor. **(4) X/Escape ile yarıda çıkış** artık özet gösteriyor, ama yalnızca en az bir
+  kart cevaplanmışsa: açıp hemen vazgeçenin önüne ekran koymak, kapatma butonunun kapatma butonu
+  olmaktan çıkması demek. "Atlanan" istatistiği ancak burada gerçek — deste kendiliğinden bittiğinde
+  atlanmış kart matematiksel olarak sıfır, çünkü `nextUnansweredIndex` atlananı başa sarıyor.
+  **Yüzde/halka bilerek eklenmedi.** Üç sebep: payda öğrencinin kendi yanlışları (düşük sayı
+  başarısızlık değil, defterin dolu olması); özet ekranına ancak her kart cevaplanınca gelindiği için
+  "tamamlama yüzdesi" hep %100, değişen tek şey not; ve en önemlisi **dış hakem yok** — kararı
+  öğrenci veriyor, yeşile basınca yükselen görünür bir sayı yeşile basmayı öğretir, o yalan da
+  merdiveni tırmanıp kartı rotasyondan çıkarır. Yani yüzde, tam da korkulan "kayıp kart"ı kendi
+  elimizle üretirdi. Silinen: `review_done_remaining` (per-cevap satırı aynı şeyi daha iyi söylüyor).
+  İlgili: `notebook-review-deck.ts` (+spec, `reviewFeedback` 5 test), `notebook-review-panel.tsx`,
+  `messages/{tr,en}.json`.

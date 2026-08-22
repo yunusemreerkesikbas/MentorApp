@@ -203,6 +203,7 @@ const subscription: SubscriptionView = {
     validUntil: "2026-08-21T00:00:00.000Z",
     reason: "ACTIVE",
   },
+  features: {} as SubscriptionView["features"],
 };
 
 const today: TodayPanelResponse = {

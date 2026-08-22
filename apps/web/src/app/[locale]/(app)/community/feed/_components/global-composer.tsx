@@ -14,6 +14,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getForumTrends, listForumTags, listZones, postThread } from "@/lib/forum";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { linkNotebookThread } from "@/lib/notebook";
+import { clearSpentQueryParam } from "@/lib/spent-query-param";
 import { AttachmentPreviewStrip } from "../../_components/attachment-preview-strip";
 import { AudienceSelector } from "../../_components/audience-selector";
 import { AuthorAvatar } from "../../_components/author-avatar";
@@ -91,24 +92,10 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
   // be asking the same thing twice.
   const questionDialogOpen = manualQuestionOpen || Boolean(handoffEntryId);
 
-  /**
-   * `history.replaceState`, not `router.replace`: the URL here is next-intl's localized pathname
-   * (`/topluluk/akis`), which the client router does not resolve back to this route — the call went
-   * through and the address bar kept the spent parameter. Nothing about the page is changing, only
-   * a query string that has been used up, so editing the address directly is also the honest
-   * description of what is happening.
-   */
+  /** Marks the handoff used up here, and takes the parameter out of the address bar with it. */
   const spendHandoff = useCallback(() => {
     setHandoffSpent(true);
-    const next = new URLSearchParams(window.location.search);
-    if (!next.has(NOTEBOOK_ENTRY_PARAM)) return;
-    next.delete(NOTEBOOK_ENTRY_PARAM);
-    const query = next.toString();
-    window.history.replaceState(
-      null,
-      "",
-      query ? `${window.location.pathname}?${query}` : window.location.pathname,
-    );
+    clearSpentQueryParam(NOTEBOOK_ENTRY_PARAM);
   }, []);
 
   const handleQuestionCreated = useCallback(

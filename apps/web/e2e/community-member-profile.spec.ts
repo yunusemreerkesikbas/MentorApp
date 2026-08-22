@@ -36,7 +36,16 @@ const profile: PublicProfile = {
   streak: 8,
   badges: ["marathon", "motivator", "newcomer"],
   xp: 411,
-  level: { tier: 4, xp: 411, nextAt: 600 },
+  level: {
+    tier: 3,
+    xp: 411,
+    nextAt: 600,
+    key: "compass",
+    chapter: "awakening",
+    currentAt: 300,
+    nextKey: "cycle",
+    progress: { current: 111, target: 300, remaining: 189, percent: 37 },
+  },
   followerCount: 1130,
   followingCount: 475,
   activityCount: 12,
@@ -171,11 +180,8 @@ test("üye profili responsive hero, aksiyonlar ve seviye panelini korur", async 
     await expect(
       page.locator(".profile-hero").getByRole("link", { name: "Topluluk" }),
     ).toHaveCount(0);
+    await expect(page.getByTestId("premium-identity-mark")).toBeVisible();
     await expect(page.getByRole("img", { name: "Premium üye" })).toBeVisible();
-    await expect(page.getByRole("img", { name: "Premium üye" })).toHaveCSS(
-      "background-color",
-      "rgba(0, 0, 0, 0)",
-    );
     await expect(page.getByText("12", { exact: true }).first()).toBeVisible();
     await expect(
       page.getByRole("img", {
@@ -402,6 +408,135 @@ test("üye profili responsive hero, aksiyonlar ve seviye panelini korur", async 
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+});
+
+test("profil sahibi Gece Yolculuğu kimliğini ve seviye içi ilerlemeyi görür", async ({
+  page,
+}) => {
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.goto("/topluluk/uye/yunus_emre");
+
+  const panel = page.locator(".profile-progress-panel:visible");
+  await expect(panel.getByText("Seviye 3 · Pusula", { exact: true })).toBeVisible();
+  await expect(panel.getByText("I. Bölüm · Uyanış", { exact: true })).toBeVisible();
+  await expect(panel.getByText("Kendi yönünü bulmaya başladın.", { exact: true })).toBeVisible();
+  await expect(panel.getByText("Döngü’ye ulaşmak için 189 XP daha", { exact: true })).toBeVisible();
+  await expect(
+    panel.getByRole("progressbar", { name: "Pusula seviye ilerlemesi" }),
+  ).toHaveAttribute("aria-valuenow", "111");
+});
+
+test("ziyaretçi yolculuk kimliğini görür fakat sayısal XP ilerlemesini görmez", async ({
+  page,
+}) => {
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.goto("/topluluk/uye/ayse");
+
+  const panel = page.locator(".profile-progress-panel:visible");
+  await expect(panel.getByText("Seviye 3 · Pusula", { exact: true })).toBeVisible();
+  await expect(panel.getByText("Kendi yönünü bulmaya başladın.", { exact: true })).toBeVisible();
+  await expect(panel.getByRole("progressbar")).toHaveCount(0);
+  await expect(panel.getByText(/XP daha/)).toHaveCount(0);
+
+  await panel.getByRole("button", { name: "Gece Yolculuğu rehberini aç" }).click();
+  const dialog = page.getByRole("dialog", { name: "Gece Yolculuğu" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("progressbar")).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Kapat" }).click();
+});
+
+test("Gece Yolculuğu rehberi erişilebilir dialog davranışını korur", async ({
+  page,
+}) => {
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.goto("/topluluk/uye/yunus_emre");
+
+  const trigger = page
+    .locator(".profile-progress-panel:visible")
+    .getByRole("button", { name: "Gece Yolculuğu rehberini aç" });
+  await trigger.focus();
+  await trigger.press("Enter");
+
+  const dialog = page.getByRole("dialog", { name: "Gece Yolculuğu" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Uyanış" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Ahenk" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Derinleşme" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Birlikte Işık" })).toBeVisible();
+  const levelButtons = dialog.locator('button[aria-label^="Seviye "]');
+  await expect(levelButtons).toHaveCount(12);
+  const lastLevelButton = dialog.getByRole("button", { name: /Takımyıldız/ });
+  await expect(lastLevelButton).toBeVisible();
+
+  const closeButton = dialog.getByRole("button", { name: "Kapat" });
+  await expect(closeButton).toBeFocused();
+  await expect.poll(() => page.evaluate(() => document.body.style.overflow)).toBe("hidden");
+  await closeButton.press("Shift+Tab");
+  await expect(lastLevelButton).toBeFocused();
+  await lastLevelButton.press("Tab");
+  await expect(closeButton).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await expect.poll(() => page.evaluate(() => document.body.style.overflow)).toBe("");
+
+  await trigger.click();
+  await expect(dialog).toBeVisible();
+  await page
+    .locator("[data-journey-level-guide-backdrop]")
+    .click({ position: { x: 2, y: 2 } });
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
+test("Gece Yolculuğu rehberi azaltılmış hareket tercihinde kullanılabilir kalır", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.goto("/topluluk/uye/yunus_emre");
+  const trigger = page
+    .locator(".profile-progress-panel:visible")
+    .getByRole("button", { name: "Gece Yolculuğu rehberini aç" });
+  await trigger.click();
+  const dialog = page.getByRole("dialog", { name: "Gece Yolculuğu" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Kapat" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
+test("Takımyıldız seviyesinde yolculuğun devam ettiğini söyler", async ({ page }) => {
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.goto("/topluluk/uye/complete_user");
+
+  await expect(
+    page
+      .locator(".profile-progress-panel:visible")
+      .getByText("Bütün ışıklar birbirine bağlandı; yolculuğun devam ediyor.", {
+        exact: true,
+      }),
+  ).toBeVisible();
 });
 
 test("kendi profili ve bookmarks URL geçmişi doğru aksiyonları kullanır", async ({
@@ -664,6 +799,17 @@ async function mockProfileApi(page: Page) {
         displayName: viewer.displayName,
         username: viewer.username,
         achievementsEnabled: true,
+        xp: 10000,
+        level: {
+          tier: 12,
+          xp: 10000,
+          nextAt: null,
+          key: "constellation",
+          chapter: "shared_light",
+          currentAt: 10000,
+          nextKey: null,
+          progress: null,
+        },
       });
     }
     if (

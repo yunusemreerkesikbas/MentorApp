@@ -51,6 +51,14 @@ export const menuList: MenuItem[] = [
         roles: ["SUPER_ADMIN", "ADMIN", "EDITOR"],
     },
     {
+        id: 7,
+        name: "Planlar",
+        path: "/plans",
+        icon: "feather-credit-card",
+        dropdownMenu: false,
+        roles: ["FINANCE"],
+    },
+    {
         id: 2,
         name: "Audit Log",
         path: "/audit-log",

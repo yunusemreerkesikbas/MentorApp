@@ -17,6 +17,8 @@ import {
   uploadNotebookImage,
 } from "@/lib/notebook";
 import { measureImageAspect } from "@/lib/notebook-image-aspect";
+import { usePremiumPaywall } from "@/lib/premium-paywall";
+import { isPremiumRequiredError } from "@/lib/premium-required";
 
 interface NotebookAddPanelProps {
   examId: string;
@@ -49,6 +51,7 @@ export function NotebookAddPanel({
   onCancel,
 }: NotebookAddPanelProps) {
   const t = useTranslations("notebook");
+  const { openPaywall } = usePremiumPaywall();
   const fileRef = useRef<HTMLInputElement>(null);
   const solutionFileRef = useRef<HTMLInputElement>(null);
   const reactId = useId();
@@ -83,18 +86,20 @@ export function NotebookAddPanel({
     setBusy(true);
     try {
       const uploaded = await uploadNotebookImage(file);
-      // A failed measurement (rare — the same URL just loaded successfully via `uploadNotebookImage`)
-      // still leaves a usable entry: `nextEntrySlot` just falls back to its own default height.
       const aspect = await measureImageAspect(uploaded.url).catch(() => null);
       setPhoto({ ...uploaded, aspect });
 
-      // Premium nicety, never a gate: the form is already usable without it, so a failure here
-      // silently leaves the labels for the student to fill in.
       setPrelabelling(true);
-      const suggestion = await prelabelNotebookPhoto(uploaded.key, examId);
-      if (suggestion?.subjectRef) {
-        setSubjectRef(suggestion.subjectRef);
-        setTopicRef(suggestion.topicRef);
+      try {
+        const suggestion = await prelabelNotebookPhoto(uploaded.key, examId);
+        if (suggestion?.subjectRef) {
+          setSubjectRef(suggestion.subjectRef);
+          setTopicRef(suggestion.topicRef);
+        }
+      } catch (prelabelError) {
+        if (isPremiumRequiredError(prelabelError)) {
+          openPaywall({ sourceFeature: "photo.categorize" });
+        }
       }
     } catch {
       setError(t("error_upload"));

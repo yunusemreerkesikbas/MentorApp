@@ -104,6 +104,7 @@ export class QuestService {
       }
     };
 
+    let xpChanged = false;
     for (const q of pending) {
       if (!isMet(q)) continue;
       const periodKey = this.periodKey(q, signals);
@@ -114,11 +115,11 @@ export class QuestService {
             ? { unit: Currency.COIN, amount: coinReward(q, cfg) }
             : null;
       try {
-        await this.quests.withServiceTx(async (tx) => {
+        const committedXpGrant = await this.quests.withServiceTx(async (tx) => {
           const row = await this.quests.markCompleted(userId, q.id, periodKey, tx);
-          if (!row) return; // concurrent completion already recorded — idempotent
-          if (!reward || reward.amount <= 0) return;
-          await this.economy.grantInServiceTx(
+          if (!row) return false; // concurrent completion already recorded — idempotent
+          if (!reward || reward.amount <= 0) return false;
+          const inserted = await this.economy.grantInServiceTx(
             userId,
             reward.unit,
             reward.amount,
@@ -130,7 +131,9 @@ export class QuestService {
             },
             tx,
           );
+          return inserted && reward.unit === Currency.XP;
         });
+        if (committedXpGrant) xpChanged = true;
       } catch (err) {
         if (err instanceof DomainError && err.code === ErrorCode.ECONOMY_LIMIT_EXCEEDED) {
           this.logger.log({ userId, questId: q.id }, "quest reward skipped — user over coin cap");
@@ -138,6 +141,11 @@ export class QuestService {
           this.logger.error({ err, userId, questId: q.id }, "quest reward failed");
         }
       }
+    }
+    if (xpChanged) {
+      await this.economy.publishXpChanged(userId).catch((err: unknown) => {
+        this.logger.warn({ err, userId }, "journey-level realtime cue could not be published");
+      });
     }
   }
 

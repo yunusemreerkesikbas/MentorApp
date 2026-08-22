@@ -2,24 +2,30 @@
 
 import { useEffect, useRef, useState } from "react";
 import { fetchDailyGreeting } from "@/lib/coach";
+import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
+import { fetchSubscriptionView } from "@/lib/subscription-view";
 
-/**
- * The coach's proactive daily greeting (premium; cached per user+day on the backend).
- * Returns null until loaded AND for free users / any error — callers render their static
- * fallback copy in that case, so this can never break a page.
- * One request per mount (StrictMode-safe ref guard — the day's first call is billable).
- */
-export function useDailyGreeting(): string | null {
+export function useDailyGreeting(): {
+  greeting: string | null;
+  locked: boolean;
+} {
   const [greeting, setGreeting] = useState<string | null>(null);
+  const [locked, setLocked] = useState(false);
   const requestedRef = useRef(false);
 
   useEffect(() => {
     if (requestedRef.current) return;
     requestedRef.current = true;
-    fetchDailyGreeting()
-      .then((res) => setGreeting(res.greeting))
-      .catch(() => null); // free (403), budget, network — silently keep the fallback
+    void Promise.all([
+      fetchDailyGreeting()
+        .then((res) => res.greeting)
+        .catch(() => null),
+      fetchSubscriptionView(),
+    ]).then(([text, view]) => {
+      setGreeting(text);
+      setLocked(!text && !isPremiumFeatureAvailable(view, "daily.greeting"));
+    });
   }, []);
 
-  return greeting;
+  return { greeting, locked };
 }

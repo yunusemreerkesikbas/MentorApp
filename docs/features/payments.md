@@ -69,6 +69,34 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+- **Premium kimlik işareti (2026-08-22)** — Premium, avatar overlay değil; ismin yanında
+  `--color-star` taç. “Premium” yazısı chrome’da yok. Mavi tik ve ödül kurdelesi yok. Nav,
+  ayarlar ve topluluk profilinde aynı bileşen (`PremiumIdentityMark`). Feed'e basılmaz. İlgili:
+  `premium-identity-mark.tsx`, `app-nav.tsx`, DESIGN.md §7.
+
+- **Paywall görsel parity (2026-08-22)** — Overlay scoped dark token (`.premium-paywall-theme`),
+  `upgrade-premium.svg` hero, ikonlu fayda listesi, seçili plan çerçevesi ve uzun dönem rozeti.
+  Üst atmosfer: light-canvas blob opaklıkları + blob hue radial wash (düz charcoal slab değil).
+  Motion: sheet/dialog enter, blob drift, hero bob, fayda/plan stagger (`stagger-motion`).
+  Plan kartı: gölge yok, `--paywall-plan-radius: 24px`, flex ile aşağı itilir. Consent tek kutu
+  (kısa metin + yasal linkler); CTA hosted checkout’a gider. Desktop: 480px içerik-yükseklikli
+  sheet, tek sabit footer, blur’lu backdrop; iç scrollbar yok (`overflow-hidden`).
+  Kopya: ücretsiz = plan/süre/ritüel, premium = AI koç katmanı; fayda maddeleri sohbet+selam+seans,
+  haftalık hikâye/ghost/analiz, foto-konu, plan+vizyon. Utandırma ve uydurma indirim yok.
+  Restore Purchase yok. İlgili: `premium-paywall-modal.tsx`, `theme.css`.
+- **Kilit rozetleri (2026-08-22)** — Mood yansıması, ghost anlatımı, günlük selam ve seans
+  yansıması artık kilitliyken görünür kalır; tıklanınca paywall açılır. Politika
+  `isPremium || features[id].freeEnabled`. İlgili: `premium-lock-nudge.tsx`,
+  `use-daily-greeting.ts`, `mood-checkin.tsx`, `analysis-ghost-teaser.tsx`,
+  `session-done-state.tsx`.
+- **Premium paywall + özellik politikası (2026-08-22)** — `GET /v1/subscription` artık on özellik
+  için `features` politikasını döner (`freeEnabled` / `limit` / `window`). Kota `ai_usage`'a
+  payments dokunmadan action'da uygulanır: free tavan → `PAYMENT_PREMIUM_REQUIRED`, premium tavan →
+  mevcut `AI_RATE_LIMITED`. Checkout/webhook değişmedi. Admin `PATCH /v1/admin/plans/:id` (FINANCE,
+  audit `plan.update`) ad, fiyat, deneme günü ve aktifliği düzenler; `id`/`periodMonths` kilitli.
+  Kullanım: config `ai.features.<id>.free_enabled` + `free_limit` (varsayılan kapalı = bugünkü
+  davranış). Web kilit CTA `/abonelik` yerine paywall modal açar. İlgili: `feature-access.ts`,
+  `premium-paywall-modal.tsx`, `admin-plans.controller.ts`.
 - **`payments.payment.refunded` event'i (APP-025, 2026-07-19)** — `refundLastCharge` artık tx
   commit SONRASI `payments.payment.refunded` (`PaymentRefunded {userId, subscriptionId,
   amountMinor}`) emit eder (webhook side-effect disiplini: rollback hiçbir şey yayınlamaz).
@@ -108,6 +136,9 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Gotchas / Known issues
 
+- **`GET /v1/subscription` has no remaining quota** — payments must not read `ai_usage`. The
+  client treats a surface as unlocked when `isPremium || features[id].freeEnabled`; exhausted free
+  caps return `PAYMENT_PREMIUM_REQUIRED` on the action.
 - **iyzico adapter is UNVERIFIED** — fails loudly until Phase-0 sandbox keys. **Prod lock:** `fake`
   forbidden in production (env validation at boot). `createCheckout`/`cancel`/`verifyWebhook`/`refund`
   all `notVerified()` until the real HTTP + HMAC-SHA1 mapping lands with sandbox creds.

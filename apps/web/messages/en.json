@@ -20,7 +20,8 @@
     "bottom_sheet": {
       "cancel": "Cancel",
       "close": "Close"
-    }
+    },
+    "premium_member": "Premium member"
   },
   "welcome": {
     "loading": "Loading…",
@@ -127,8 +128,6 @@
     "greeting_day": "Good afternoon",
     "greeting_evening": "Good evening",
     "profile_link": "Go to your profile",
-    "badge_premium": "Premium member",
-    "badge_verified": "Email verified",
     "earned_rights_label": "Earned rights",
     "sidebar_collapse": "Collapse menu",
     "sidebar_expand": "Expand menu"
@@ -144,6 +143,7 @@
     "earned_rights_label": "Earned rights",
     "rhythm_title": "Today's rhythm",
     "rhythm_copy": "You're doing well. One small step is enough today.",
+    "premium_greeting_nudge": "Wake up with your coach",
     "rhythm_summary": "{done}/{total} tasks · {streak} days together",
     "rhythm_show_more": "Show more",
     "rhythm_show_less": "Show less",
@@ -394,7 +394,6 @@
     "profile_tab_achievements": "Achievements",
     "profile_photo_alt": "{name}'s profile photo",
     "profile_activity_label": "activities",
-    "profile_premium_member": "Premium member",
     "profile_share": "Share profile",
     "profile_share_copied": "Profile link copied",
     "profile_open_website": "Open website",
@@ -425,19 +424,6 @@
     "stat_streak": "Streak",
     "stat_streak_days": "{count} days",
     "stat_xp": "XP",
-    "level_label": "Level {tier}",
-    "level_1": "Starter",
-    "level_2": "Keen",
-    "level_3": "Curious",
-    "level_4": "Driven",
-    "level_5": "Determined",
-    "level_6": "Disciplined",
-    "level_7": "Master",
-    "level_8": "Sage",
-    "level_9": "Pioneer",
-    "level_10": "Champion",
-    "level_11": "Summit",
-    "level_12": "Legend",
     "badges_title": "Your badges",
     "badge_marathon": "Marathon",
     "badge_night_owl": "Night Owl",
@@ -683,7 +669,7 @@
     "struggle_placeholder": "e.g. math problems, focusing…",
     "coach_thinking": "Your coach is thinking…",
     "coach_chip": "Your coach",
-    "premium_nudge": "Premium coach leaves a personal note based on your mood →"
+    "premium_nudge": "However you feel, the coach hears it"
   },
   "coach": {
     "loading": "Loading…",
@@ -924,12 +910,37 @@
     "cancel_success_title": "Cancellation received",
     "cancel_success_message": "You keep access until the end of your billing period.",
     "cancel_success_ok": "OK",
-    "trial_consent": "After the 7-day free trial, the fee for my chosen plan will be automatically charged to my card; I can cancel at any time. I understand and agree.",
+    "trial_consent": "After the 7-day trial, the plan renews automatically. I can cancel anytime.",
     "period_suffix": "/ {months} mo · VAT incl.",
     "trial_days": "{days}-day free trial",
     "start_trial": "Start trial",
     "coming_soon": "Coming soon",
     "back_panel": "← Back to Dashboard"
+  },
+  "paywall": {
+    "brand": "Mentor",
+    "badge_premium": "Premium",
+    "badge_value": "Recommended",
+    "per_month": "/mo",
+    "per_months": "/{months} mo",
+    "headline": "Walk it with a coach",
+    "headline_coach": "Tell it — the coach stays",
+    "headline_photo": "Show the photo, catch the topic",
+    "headline_plan": "Rebuild the plan with the coach",
+    "headline_vision": "Leave a coach note on your goal",
+    "headline_analysis": "Let the coach tell your week",
+    "headline_mood": "However you feel, the coach hears it",
+    "headline_ghost": "Your progress becomes a story",
+    "headline_greeting": "Wake up with your coach",
+    "headline_session": "Session over — the coach stays",
+    "subtitle": "Free keeps your plan, timer, and ritual. Premium brings the AI coach to walk with you.",
+    "benefit_coach": "A coach every day — chat, greeting, session note",
+    "benefit_analysis": "Weekly story, ghost narration, and deep analysis",
+    "benefit_photo": "Catch the topic from a question photo",
+    "benefit_plan": "Adapt the plan when the week slips; note your goal",
+    "subscribe": "Bring the coach along",
+    "close": "Close",
+    "loading": "Loading…"
   },
   "plan": {
     "title": "Study Plan",
@@ -1376,7 +1387,8 @@
         "cta": "Unlock the AI Puhu note for {cost} coins",
         "confirm": "Are you sure? {cost} coins will be spent",
         "insufficient": "The AI note costs {cost} coins ({balance}/{cost}). View quests",
-        "error": "The AI Puhu note could not be unlocked"
+        "error": "The AI Puhu note could not be unlocked",
+        "premium": "Open with Premium"
       },
       "teaser": {
         "title": "Your Weekly Recap",
@@ -1464,6 +1476,7 @@
     "checkin_save": "Save",
     "checkin_saved": "Thanks, noted 🌱",
     "reflection_loading": "Your coach is thinking…",
+    "premium_nudge": "Session over — the coach stays",
     "coach_adaptation_cta": "Lighten your plan with your coach after this hard session",
     "reflection_dismiss": "Dismiss",
     "mood_1": "Struggled",
@@ -1605,7 +1618,7 @@
     "record_delta": "{delta} to record",
     "narrating": "Your coach is interpreting your progress…",
     "coach_chip": "Your coach",
-    "premium_nudge": "The Premium coach narrates your progress as a personal story →"
+    "premium_nudge": "Turn your progress into a story"
   },
   "notebook": {
     "sidebar_index": "Find",
@@ -1662,17 +1675,11 @@
     "review_flip": "Flip",
     "review_flip_back": "Back to the question",
     "review_zoom": "Enlarge photo",
-    "review_deck_hint": "Tap the card to flip · swipe right or left to answer",
-    "review_flip_hint": "Tap the card to flip",
+    "review_prev": "Previous card",
+    "review_next": "Next card",
     "review_community_answer": "See the solution",
     "review_list": "Open the list",
     "review_list_close": "Back to the card",
-    "review_list_remaining": "{count} cards left",
-    "review_list_only_this": "Study only this",
-    "review_list_all_subjects": "All subjects",
-    "review_subject_done_title": "{subject} is done",
-    "review_subject_done_subtitle": "{count} more cards are waiting in other subjects.",
-    "review_subject_done_continue": "Move on to the rest",
     "review_list_ungrouped": "No subject set",
     "review_list_done": "Answered",
     "review_done_title": "That's it for today",
@@ -1689,7 +1696,13 @@
     "review_note_cancel": "Cancel",
     "error_note_save": "The note could not be saved.",
     "review_done_summary": "You solved {solved} of {total} cards.",
-    "review_done_remaining": "The other {count} stay in the rotation and come back in a few days.",
+    "review_feedback_due": "Back in {days} days",
+    "review_feedback_healed": "This card has healed",
+    "review_done_healed": "{count} cards healed and left the rotation.",
+    "review_done_missed_title": "What caught you again",
+    "review_done_ask": "Ask the community",
+    "review_exit_title": "Deck left unfinished",
+    "review_exit_summary": "You answered {answered} cards; {skipped} are still waiting today.",
     "review_close": "Back to the notebook",
     "error_load": "The notebook could not be loaded.",
     "error_type_unsupported": "You can only upload JPEG, PNG or WebP.",
@@ -1938,6 +1951,52 @@
     "unmute": "Unmute music",
     "preview_hint": "Your selection plays a short preview. Adjust loudness with your device volume."
   },
+  "journey_levels": {
+    "title": "Journey level",
+    "level_label": "Level {tier}",
+    "level_title": "Level {tier} · {name}",
+    "progress_label": "Your path through this level",
+    "progress_aria": "{name} level progress",
+    "progress_value": "{current} / {target} XP",
+    "next_remaining": "Reach {destination} with {remaining} more XP",
+    "complete_message": "All the lights are connected; your journey continues.",
+    "guide_open": "Open the Night Journey guide",
+    "guide_title": "Night Journey",
+    "guide_description": "Each light tells the story of another season of your effort.",
+    "guide_level_aria": "Level {tier}, {name}, {state}",
+    "close": "Close",
+    "celebration": {
+      "introduction_eyebrow": "Night Journey",
+      "level_up_eyebrow": "A new light appeared",
+      "continue": "Continue",
+      "acknowledge_error": "We couldn't close the celebration just yet. Please try again."
+    },
+    "states": {
+      "completed": "completed",
+      "current": "current level",
+      "future": "ahead"
+    },
+    "chapters": {
+      "awakening": { "name": "Awakening", "label": "Chapter I · Awakening" },
+      "harmony": { "name": "Harmony", "label": "Chapter II · Harmony" },
+      "deepening": { "name": "Deepening", "label": "Chapter III · Deepening" },
+      "shared_light": { "name": "Shared Light", "label": "Chapter IV · Shared Light" }
+    },
+    "levels": {
+      "spark": { "name": "Spark", "destination": "Spark", "story": "The first light of your journey has appeared." },
+      "trail": { "name": "Trail", "destination": "Trail", "story": "Your steps are beginning to leave a path." },
+      "compass": { "name": "Compass", "destination": "Compass", "story": "You are beginning to find your own direction." },
+      "cycle": { "name": "Cycle", "destination": "Cycle", "story": "Your repetitions are settling into a calm order." },
+      "rhythm": { "name": "Rhythm", "destination": "Rhythm", "story": "Effort is becoming a natural part of your days." },
+      "flow": { "name": "Flow", "destination": "Flow", "story": "You are continuing your journey with greater confidence." },
+      "root": { "name": "Root", "destination": "Root", "story": "Your effort is more than a passing enthusiasm." },
+      "wing": { "name": "Wing", "destination": "Wing", "story": "What you have gathered is giving you room to move." },
+      "horizon": { "name": "Horizon", "destination": "Horizon", "story": "You can now see not only today, but the road ahead." },
+      "lantern": { "name": "Lantern", "destination": "Lantern", "story": "Your own light is accompanying others on their way." },
+      "star": { "name": "Star", "destination": "Star", "story": "Your presence brings direction and courage to the journey." },
+      "constellation": { "name": "Constellation", "destination": "Constellation", "story": "Beyond shining alone, you are creating meaning together." }
+    }
+  },
   "economy": {
     "balance_subtitle": "Earned credit — not cash; used for coach chat and upcoming features.",
     "balance_title": "Your balance",
@@ -2000,7 +2059,7 @@
     "kvkk_link": "the personal data protection notice",
     "consent_distance_sales": "Distance Sales Agreement",
     "consent_pre_info": "Pre-Sale Information Form",
-    "consent_prefix": "Before you buy:"
+    "consent_confirm": "I understand and agree."
   },
   "article": {
     "not_found_title": "Article not found | Mentor",
@@ -2091,7 +2150,7 @@
     "edit": "Edit",
     "coach_chip": "Your coach",
     "generating": "Your coach is preparing a note for you…",
-    "premium_nudge": "The Premium coach leaves a note tailored to your goal →",
+    "premium_nudge": "Leave a coach note on your goal",
     "page_title": "Goal Board",
     "page_subtitle": "Write your goal, city, and reason; your coach and dashboard will motivate you around it.",
     "browse_open": "Open goal and search",

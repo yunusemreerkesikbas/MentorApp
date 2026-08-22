@@ -15,3 +15,21 @@ export const adminRefundSchema = z.object({
   reason: z.string().trim().min(1).max(200),
 });
 export type AdminRefundInput = z.infer<typeof adminRefundSchema>;
+
+/** Admin catalog edit. `id` and `periodMonths` stay immutable. */
+export const adminUpdatePlanSchema = z
+  .object({
+    name: z.string().trim().min(1).max(80).optional(),
+    priceMinor: z.number().int().positive().max(10_000_000).optional(),
+    trialDays: z.number().int().min(0).max(365).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine(
+    (value) =>
+      value.name !== undefined ||
+      value.priceMinor !== undefined ||
+      value.trialDays !== undefined ||
+      value.isActive !== undefined,
+    { message: "At least one field is required" },
+  );
+export type AdminUpdatePlanInput = z.infer<typeof adminUpdatePlanSchema>;

@@ -1,12 +1,11 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { I18nContext } from "nestjs-i18n";
-import type { CoachPlanDraftDto } from "@mentor/types";
+import { PremiumFeatureId, type CoachPlanDraftDto } from "@mentor/types";
 import type { RequestUser } from "../../../common/auth/current-user";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { FeatureFlag } from "../../../common/config/config.catalog";
-import { EntitlementService } from "../../payments/application/entitlement.service";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
 import {
   AiUsageFeature,
@@ -18,6 +17,7 @@ import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { promptLocale } from "../domain/prompt-locale";
+import { PremiumFeatureGateService } from "./premium-feature-gate.service";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -34,7 +34,7 @@ export class PlanDraftService {
     private readonly context: ContextBuilder,
     private readonly usage: AiUsageRepository,
     private readonly config: ConfigRegistryService,
-    private readonly entitlement: EntitlementService,
+    private readonly featureGate: PremiumFeatureGateService,
     private readonly budget: AiBudgetGuard,
   ) {}
 
@@ -43,13 +43,11 @@ export class PlanDraftService {
       throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
     }
 
-    const ent = await this.entitlement.getEntitlement(user.id, user.roles);
-    if (!ent.isPremium) {
-      throw new DomainError(
-        ErrorCode.PAYMENT_PREMIUM_REQUIRED,
-        HttpStatus.FORBIDDEN,
-      );
-    }
+    await this.featureGate.assertAllowed(
+      user.id,
+      user.roles,
+      PremiumFeatureId.PLAN_AI,
+    );
 
     const [dailyLimit, usedToday] = await Promise.all([
       this.config.get("ai.plan_draft.daily_limit"),

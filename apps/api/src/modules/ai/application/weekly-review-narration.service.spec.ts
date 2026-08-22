@@ -142,6 +142,7 @@ describe("WeeklyReviewNarrationService", () => {
       { find, upsert } as never,
       { append: vi.fn(async () => undefined) } as never,
       { assertWithinBudget: vi.fn(async () => undefined) } as never,
+      { isAllowed: vi.fn(async () => false) } as never,
     );
   });
 

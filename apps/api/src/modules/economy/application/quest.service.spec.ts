@@ -110,7 +110,9 @@ function service(options: {
     grant: vi.fn(async () => undefined),
     grantInServiceTx: vi.fn(async () => {
       if (options.grantShouldFail) throw new Error("grant failed");
+      return true;
     }),
+    publishXpChanged: vi.fn(async () => undefined),
   };
 
   return {
@@ -474,6 +476,37 @@ describe("QuestService", () => {
 
     expect(subject.economy.grantInServiceTx).toHaveBeenCalledTimes(1);
     expect(subject.rows).toHaveLength(0);
+    expect(subject.economy.publishXpChanged).not.toHaveBeenCalled();
+  });
+
+  it("publishes an XP change only after the quest transaction commits", async () => {
+    const order: string[] = [];
+    const subject = service({ signals: { hasDonePlanTask: true } });
+    subject.quests.withServiceTx.mockImplementationOnce(async (fn) => {
+      const result = await fn({});
+      order.push("commit");
+      return result;
+    });
+    subject.economy.publishXpChanged.mockImplementationOnce(async () => {
+      order.push("publish");
+    });
+
+    await subject.service.evaluateAndGrant("user-1");
+
+    expect(order).toEqual(["commit", "publish"]);
+    expect(subject.economy.publishXpChanged).toHaveBeenCalledWith("user-1");
+  });
+
+  it("does not publish when the transaction callback finishes but commit fails", async () => {
+    const subject = service({ signals: { hasDonePlanTask: true } });
+    subject.quests.withServiceTx.mockImplementationOnce(async (fn) => {
+      await fn({});
+      throw new Error("commit failed");
+    });
+
+    await subject.service.evaluateAndGrant("user-1");
+
+    expect(subject.economy.publishXpChanged).not.toHaveBeenCalled();
   });
 
   it("does not evaluate or grant quests while economy is disabled", async () => {

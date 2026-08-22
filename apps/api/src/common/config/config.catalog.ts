@@ -505,6 +505,96 @@ export const CONFIG_CATALOG = {
     3,
     "Evidence channels required for the weekly Cosmic Maestro title.",
   ),
+  "ai.features.coach.chat.free_enabled": flag(
+    false,
+    "Allow free users a capped AI coach chat taste.",
+  ),
+  "ai.features.coach.chat.free_limit": aiCount(
+    1,
+    100000,
+    "Free-user coach chat messages per day when the taste flag is on.",
+  ),
+  "ai.features.photo.categorize.free_enabled": flag(
+    false,
+    "Allow free users a capped photo→topic categorization taste.",
+  ),
+  "ai.features.photo.categorize.free_limit": aiCount(
+    1,
+    100000,
+    "Free-user photo categorizations per 30-day window when the taste flag is on.",
+  ),
+  "ai.features.plan.ai.free_enabled": flag(
+    false,
+    "Allow free users a capped AI plan draft/adaptation taste.",
+  ),
+  "ai.features.plan.ai.free_limit": aiCount(
+    1,
+    100000,
+    "Free-user plan AI calls per day when the taste flag is on.",
+  ),
+  "ai.features.mood.reflection.free_enabled": flag(
+    false,
+    "Allow free users a capped mood AI reflection taste.",
+  ),
+  "ai.features.mood.reflection.free_limit": aiCount(
+    1,
+    100000,
+    "Free-user mood reflections per day when the taste flag is on.",
+  ),
+  "ai.features.ghost.narration.free_enabled": flag(
+    false,
+    "Allow free users a capped ghost AI narration taste.",
+  ),
+  "ai.features.ghost.narration.free_limit": aiCount(
+    1,
+    100000,
+    "Free-user ghost narrations per day when the taste flag is on.",
+  ),
+  "ai.features.vision.note.free_enabled": flag(
+    false,
+    "Allow free users a capped vision-board AI note taste.",
+  ),
+  "ai.features.vision.note.free_limit": aiCount(
+    1,
+    100000,
+    "Free-user vision notes per day when the taste flag is on.",
+  ),
+  "ai.features.session.reflection.free_enabled": flag(
+    false,
+    "Allow free users a capped session AI reflection taste.",
+  ),
+  "ai.features.session.reflection.free_limit": aiCount(
+    1,
+    100000,
+    "Free-user session reflections per day when the taste flag is on.",
+  ),
+  "ai.features.weekly.narration.free_enabled": flag(
+    false,
+    "Allow free users a capped weekly AI narration taste.",
+  ),
+  "ai.features.weekly.narration.free_limit": aiCount(
+    1,
+    100000,
+    "Free-user weekly narrations per 7-day window when the taste flag is on.",
+  ),
+  "ai.features.daily.greeting.free_enabled": flag(
+    false,
+    "Allow free users a capped daily AI greeting taste.",
+  ),
+  "ai.features.daily.greeting.free_limit": aiCount(
+    1,
+    100000,
+    "Free-user daily greetings per day when the taste flag is on.",
+  ),
+  "ai.features.deep.analysis.free_enabled": flag(
+    false,
+    "Allow free users a capped deep-analysis unlock without coin.",
+  ),
+  "ai.features.deep.analysis.free_limit": aiCount(
+    1,
+    100000,
+    "Free-user deep-analysis unlocks per 7-day window when the taste flag is on.",
+  ),
 } as const satisfies Record<string, ConfigEntryDef>;
 
 export type ConfigKey = keyof typeof CONFIG_CATALOG;

@@ -41,6 +41,27 @@ export class PlansRepository {
     const rows = await exec.select().from(plans).where(eq(plans.id, id)).limit(1);
     return rows[0];
   }
+
+  async findAll(): Promise<PlanRow[]> {
+    return this.db.select().from(plans);
+  }
+
+  async update(
+    id: string,
+    patch: {
+      name?: string;
+      priceMinor?: number;
+      trialDays?: number;
+      isActive?: boolean;
+    },
+  ): Promise<PlanRow | undefined> {
+    const rows = await this.db
+      .update(plans)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(eq(plans.id, id))
+      .returning();
+    return rows[0];
+  }
 }
 
 @Injectable()

@@ -5,6 +5,7 @@ import { INVOICE_PORT } from "../../shared/ports/invoice.port";
 import { PAYMENTS_PORT } from "../../shared/ports/payments.port";
 import { IdentityModule } from "../identity/identity.module";
 import { EntitlementService } from "./application/entitlement.service";
+import { FeaturePolicyService } from "./application/feature-policy.service";
 import { SubscriptionsService } from "./application/subscriptions.service";
 import { WebhookService } from "./application/webhook.service";
 import { DisabledPaymentsAdapter } from "./infrastructure/adapters/disabled-payments.adapter";
@@ -33,6 +34,7 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
     SubscriptionsRepository,
     PaymentEventsRepository,
     SubscriptionsService,
+    FeaturePolicyService,
     EntitlementService,
     WebhookService,
     PremiumGuard,

@@ -47,10 +47,56 @@ export interface EntitlementDto {
   reason: string;
 }
 
+/** Code-owned premium surfaces. Admins toggle free taste; they cannot invent ids. */
+export const PremiumFeatureId = {
+  COACH_CHAT: "coach.chat",
+  PHOTO_CATEGORIZE: "photo.categorize",
+  PLAN_AI: "plan.ai",
+  MOOD_REFLECTION: "mood.reflection",
+  GHOST_NARRATION: "ghost.narration",
+  VISION_NOTE: "vision.note",
+  SESSION_REFLECTION: "session.reflection",
+  WEEKLY_NARRATION: "weekly.narration",
+  DAILY_GREETING: "daily.greeting",
+  DEEP_ANALYSIS: "deep.analysis",
+} as const;
+export type PremiumFeatureId =
+  (typeof PremiumFeatureId)[keyof typeof PremiumFeatureId];
+
+export const PREMIUM_FEATURE_IDS = [
+  PremiumFeatureId.COACH_CHAT,
+  PremiumFeatureId.PHOTO_CATEGORIZE,
+  PremiumFeatureId.PLAN_AI,
+  PremiumFeatureId.MOOD_REFLECTION,
+  PremiumFeatureId.GHOST_NARRATION,
+  PremiumFeatureId.VISION_NOTE,
+  PremiumFeatureId.SESSION_REFLECTION,
+  PremiumFeatureId.WEEKLY_NARRATION,
+  PremiumFeatureId.DAILY_GREETING,
+  PremiumFeatureId.DEEP_ANALYSIS,
+] as const satisfies readonly PremiumFeatureId[];
+
+export const FeaturePolicyWindow = {
+  DAY: "day",
+  WEEK: "week",
+  MONTH: "month",
+} as const;
+export type FeaturePolicyWindow =
+  (typeof FeaturePolicyWindow)[keyof typeof FeaturePolicyWindow];
+
+/** Policy only — remaining quota is enforced on the action, not this DTO. */
+export interface FeaturePolicyDto {
+  id: PremiumFeatureId;
+  freeEnabled: boolean;
+  limit: number;
+  window: FeaturePolicyWindow;
+}
+
 /** GET /v1/subscription response. */
 export interface SubscriptionView {
   subscription: SubscriptionDto | null;
   entitlement: EntitlementDto;
+  features: Record<PremiumFeatureId, FeaturePolicyDto>;
 }
 
 /** POST /v1/subscription/checkout response. */

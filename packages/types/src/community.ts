@@ -73,11 +73,67 @@ export interface AchievementCelebrationsDto {
   celebrations: AchievementCelebrationDto[];
 }
 
-/** XP tier snapshot. `tier` is 1-based; `nextAt` is the XP needed for the next tier (null at top). */
+export const JourneyLevelKey = {
+  SPARK: "spark",
+  TRAIL: "trail",
+  COMPASS: "compass",
+  CYCLE: "cycle",
+  RHYTHM: "rhythm",
+  FLOW: "flow",
+  ROOT: "root",
+  WING: "wing",
+  HORIZON: "horizon",
+  LANTERN: "lantern",
+  STAR: "star",
+  CONSTELLATION: "constellation",
+} as const;
+export type JourneyLevelKey = (typeof JourneyLevelKey)[keyof typeof JourneyLevelKey];
+
+export const JourneyLevelChapterId = {
+  AWAKENING: "awakening",
+  HARMONY: "harmony",
+  DEEPENING: "deepening",
+  SHARED_LIGHT: "shared_light",
+} as const;
+export type JourneyLevelChapterId =
+  (typeof JourneyLevelChapterId)[keyof typeof JourneyLevelChapterId];
+
+export type JourneyLevelCelebrationKind = "INTRODUCTION" | "LEVEL_UP";
+
+export interface JourneyLevelCelebrationView {
+  id: string;
+  kind: JourneyLevelCelebrationKind;
+  tier: number;
+  key: JourneyLevelKey;
+  chapter: JourneyLevelChapterId;
+  unlockedAt: string;
+}
+
+export interface JourneyLevelCelebrationsDto {
+  celebrations: JourneyLevelCelebrationView[];
+}
+
+export interface CommunityLevelProgress {
+  /** XP earned since entering the current tier. */
+  current: number;
+  /** XP required to travel through the current tier. */
+  target: number;
+  remaining: number;
+  /** Ready-to-render integer percentage in the inclusive 0..100 range. */
+  percent: number;
+}
+
+/** Backend-derived XP journey snapshot. `tier` is 1-based; next fields are null at the top. */
 export interface CommunityLevelView {
   tier: number;
+  /** Raw append-only ledger balance, retained for backward compatibility. */
   xp: number;
   nextAt: number | null;
+  key: JourneyLevelKey;
+  chapter: JourneyLevelChapterId;
+  currentAt: number;
+  nextKey: JourneyLevelKey | null;
+  progress: CommunityLevelProgress | null;
 }
 
 /**

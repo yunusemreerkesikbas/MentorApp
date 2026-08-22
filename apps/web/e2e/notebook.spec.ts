@@ -1084,6 +1084,11 @@ test("denemeden gelen öğrenci ekleme formunu deneme bağlı bulur", async ({
   await expect.poll(() => api.createdEntries.length).toBe(1);
   // The column has existed since the table was created with nothing ever filling it.
   expect(api.createdEntries[0]).toMatchObject({ mockExamId, source: "OWN" });
+
+  // The handoff is single-use. Left in the bar it fires again on the next refresh, reopening the
+  // form and stamping this exam onto whatever the student files next — attributing later mistakes
+  // to an old sitting.
+  await expect.poll(() => new URL(page.url()).search).toBe("");
 });
 
 test("dizin kayıtları listeler, derse göre daraltır ve sayfaya yerleştirir", async ({
@@ -1181,4 +1186,19 @@ test("uzak barındırıcıdaki foto dizinde render edilebiliyor", async ({ page 
 
   await expect(page.getByText("Problemler")).toBeVisible();
   expect(api.pageErrors).toEqual([]);
+});
+
+test("tekrar bağlantısı desteyi açar ve parametresini tüketir", async ({
+  page,
+}) => {
+  const due = [makeEntry({ reviewCount: 2 })];
+  await mockNotebookApi(page, { due, overview: { dueCount: 1, entryCount: 1 } });
+
+  // What the push notification opens.
+  await page.goto("/yanlis-defteri?review=due");
+
+  await expect(page.getByText("Bu sefer çözebildin mi?")).toBeVisible();
+  // Closing the deck and refreshing should leave the student where they closed it, not reopen the
+  // review they just dismissed.
+  await expect.poll(() => new URL(page.url()).search).toBe("");
 });

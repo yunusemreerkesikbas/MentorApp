@@ -106,6 +106,7 @@ describe("admin fine sub-roles RBAC (e2e)", () => {
   it("SUPPORT: can list users, cannot read config, cannot refund", async () => {
     expect((await request(app.getHttpServer()).get("/v1/admin/users").set(auth("support"))).status).toBe(200);
     expect((await request(app.getHttpServer()).get("/v1/admin/config").set(auth("support"))).status).toBe(403);
+    expect((await request(app.getHttpServer()).get("/v1/admin/plans").set(auth("support"))).status).toBe(403);
     const refund = await request(app.getHttpServer())
       .post(`/v1/admin/users/${targetId}/subscription/refund`)
       .set(auth("support"))
@@ -117,6 +118,7 @@ describe("admin fine sub-roles RBAC (e2e)", () => {
     expect(
       (await request(app.getHttpServer()).get(`/v1/admin/users/${targetId}/subscription`).set(auth("finance"))).status,
     ).toBe(200);
+    expect((await request(app.getHttpServer()).get("/v1/admin/plans").set(auth("finance"))).status).toBe(200);
     const refund = await request(app.getHttpServer())
       .post(`/v1/admin/users/${targetId}/subscription/refund`)
       .set(auth("finance"))

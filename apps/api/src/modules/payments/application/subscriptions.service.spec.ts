@@ -61,6 +61,7 @@ describe("SubscriptionsService payment availability", () => {
       {} as never,
       {} as never,
       {} as never,
+      { listPolicies: vi.fn(async () => ({})) } as never,
       {} as never,
       config as never,
       paymentProvider as never,
@@ -84,5 +85,53 @@ describe("SubscriptionsService payment availability", () => {
       service.checkout({ id: "user-1", email: "user@example.com" }, plan.id),
     ).rejects.toMatchObject({ code: ErrorCode.PAYMENT_DISABLED, httpStatus: 503 });
     expect(paymentProvider.createCheckout).not.toHaveBeenCalled();
+  });
+});
+
+describe("SubscriptionsService plan catalog admin", () => {
+  it("updates editable fields and leaves periodMonths locked", async () => {
+    const existing = {
+      id: "premium-monthly",
+      name: "Premium Monthly",
+      periodMonths: 1,
+      priceMinor: 24900,
+      currency: "TRY",
+      trialDays: 7,
+      isActive: true,
+    };
+    const plansRepo = {
+      findById: vi.fn().mockResolvedValue(existing),
+      update: vi.fn(async (_id: string, patch: Record<string, unknown>) => ({
+        ...existing,
+        ...patch,
+      })),
+    };
+    const service = new SubscriptionsService(
+      {} as never,
+      plansRepo as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      { listPolicies: vi.fn() } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    const updated = await service.updatePlan("premium-monthly", {
+      name: "Premium Aylık",
+      priceMinor: 29900,
+    });
+    expect(updated).toMatchObject({
+      id: "premium-monthly",
+      name: "Premium Aylık",
+      periodMonths: 1,
+      priceMinor: 29900,
+    });
+    expect(plansRepo.update).toHaveBeenCalledWith("premium-monthly", {
+      name: "Premium Aylık",
+      priceMinor: 29900,
+    });
   });
 });

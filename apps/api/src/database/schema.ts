@@ -2798,6 +2798,57 @@ export const userAchievements = pgTable(
   ],
 );
 
+/* ================= Community · journey-level celebration delivery =================
+ * At most one row per reached tier. Rows are immutable except for their first resolution;
+ * unresolved lower rows may be superseded when a later tier is reached before display.
+ * =================================================================================== */
+export const userJourneyLevelCelebrations = pgTable(
+  "user_journey_level_celebrations",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "set null" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tier: smallint("tier").notNull(),
+    /** INTRODUCTION | LEVEL_UP */
+    kind: text("kind").notNull(),
+    unlockedAt: timestamp("unlocked_at", { withTimezone: true }).notNull(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    /** SHOWN | SUPERSEDED; null while pending. */
+    resolution: text("resolution"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("user_journey_level_celebrations_user_tier_unique_idx").on(
+      t.userId,
+      t.tier,
+    ),
+    index("user_journey_level_celebrations_user_unlocked_idx").on(
+      t.userId,
+      t.unlockedAt,
+    ),
+    index("user_journey_level_celebrations_org_user_idx").on(t.orgId, t.userId),
+    check("user_journey_level_celebrations_tier_chk", sql`${t.tier} between 1 and 12`),
+    check(
+      "user_journey_level_celebrations_kind_chk",
+      sql`${t.kind} in ('INTRODUCTION', 'LEVEL_UP')`,
+    ),
+    check(
+      "user_journey_level_celebrations_resolution_chk",
+      sql`${t.resolution} is null or ${t.resolution} in ('SHOWN', 'SUPERSEDED')`,
+    ),
+    check(
+      "user_journey_level_celebrations_resolution_pair_chk",
+      sql`(${t.resolvedAt} is null and ${t.resolution} is null) or (${t.resolvedAt} is not null and ${t.resolution} is not null)`,
+    ),
+  ],
+);
+
 /** Explicit, idempotent completion of a READY weekly review. Coaching owns this evidence. */
 export const weeklyReviewCompletions = pgTable(
   "weekly_review_completions",
