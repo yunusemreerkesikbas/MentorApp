@@ -104,6 +104,7 @@ export function ToastProvider({ children, renderLeading }: ToastProviderProps) {
         variant: options.variant ?? "info",
         duration,
         leading: options.leading,
+        action: options.action,
         dismissLabel: options.dismissLabel,
         createdAt: Date.now(),
       };

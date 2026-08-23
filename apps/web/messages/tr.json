@@ -899,7 +899,6 @@
     "chip_premium": "Premium",
     "chip_unavailable": "Şu an kullanılamıyor",
     "chip_free": "Ücretsiz",
-    "chip_cancel": "Dönem sonunda iptal",
     "reason_free": "Ücretsiz",
     "reason_active": "Aktif",
     "reason_trialing": "Deneme",
@@ -958,6 +957,11 @@
     "subscribe": "Koçunu yanına al",
     "close": "Kapat",
     "loading": "Yükleniyor…"
+  },
+  "campaign": {
+    "eyebrow": "7 gün ücretsiz deneme",
+    "title": "Koçunu yanına al, yolda yalnız yürüme",
+    "cta_aria": "Premium denemeyi aç"
   },
   "plan": {
     "title": "Çalışma Planı",
@@ -1642,6 +1646,8 @@
     "index_status_healed": "İyileşti",
     "index_place_on_page": "Sayfaya yerleştir",
     "index_already_placed": "Zaten sayfada",
+    "index_pick": "{card} kartını seç",
+    "index_study_picked": "Seçilen {count} kartı çalış",
     "index_load_more": "{count} kayıt daha",
     "index_empty": "Bu filtreyle kayıt yok.",
     "error_index_load": "Kayıtlar yüklenemedi.",
@@ -1677,6 +1683,9 @@
     "add_prelabelling": "AI öneriyor…",
     "add_note_label": "Not (isteğe bağlı)",
     "add_submit": "Deftere ekle",
+    "add_scheduled_title": "Deftere eklendi",
+    "add_scheduled_message": "{days} gün sonra tekrar destende karşına çıkacak.",
+    "add_scheduled_study": "Şimdi çalış",
     "add_cancel": "Vazgeç",
     "review_title": "Tekrar zamanı",
     "review_subtitle": "Soruya bir daha bak, sonra dürüstçe işaretle.",
@@ -1747,6 +1756,7 @@
     "edit_undo": "Geri al",
     "edit_delete": "Seçileni sil",
     "edit_resize": "Boyutlandır",
+    "item_study": "Çalış",
     "edit_rotate": "Döndür",
     "paper": {
       "ruled": "Çizgili",
@@ -1937,7 +1947,6 @@
     "title": "Sınava kalan",
     "day_unit": "gün",
     "today": "Bugün",
-    "source_prefix": "Kaynak:",
     "no_calendar": "Resmi sınav takvimi henüz yayımlanmadı. Bilgi merkezinden duyurulduğunda geri sayım burada görünecek.",
     "no_exam_type": "Sınav tarihi henüz ayarlanmadı. Profilden sınav türünü seçtiğinde geri sayım burada görünecek.",
     "select_exam": "Sınav türünü seç"

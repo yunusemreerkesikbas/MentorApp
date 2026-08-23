@@ -94,6 +94,8 @@ export interface NotebookSidePanelProps {
   indexRefreshKey: number;
   onOpenEntry: (entry: NotebookEntryDto) => void;
   onPlaceEntry: (entry: NotebookEntryDto) => void;
+  /** Study a chosen set now, whatever their schedule says — see `NotebookIndexPanel`. */
+  onStudyEntries: (entries: NotebookEntryDto[]) => void;
   onSetPaper: (paper: NotebookPaper) => void;
   onPatchText: (patch: Partial<VisionBoardTextItem>) => void;
   onCheckpoint: () => void;
@@ -135,6 +137,7 @@ export function NotebookSidePanel({
   indexRefreshKey,
   onOpenEntry,
   onPlaceEntry,
+  onStudyEntries,
   onSetPaper,
   onPatchText,
   onCheckpoint,
@@ -284,6 +287,7 @@ export function NotebookSidePanel({
           refreshKey={indexRefreshKey}
           onOpen={onOpenEntry}
           onPlace={onPlaceEntry}
+          onStudy={onStudyEntries}
         />
       </Panel>
     );

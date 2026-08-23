@@ -23,8 +23,8 @@ import {
 } from "@/lib/community-coach-bridge";
 import { SubscriptionContentSkeleton } from "./subscription-content-skeleton";
 import {
+  heroChipKey,
   listSubscriptionFacts,
-  subscriptionStatusKey,
   type SubscriptionFact,
   type SubscriptionFactId,
 } from "./subscription-facts";
@@ -232,6 +232,7 @@ export function SubscriptionShell() {
   const heroTitle = plan?.name ?? (ent?.isPremium ? t("chip_premium") : t("chip_free"));
   const canCancel = hasOpenSub && !sub?.cancelAtPeriodEnd;
   const showSummary = facts.length > 0 || canCancel || reason !== "NONE";
+  const heroChip = heroChipKey(reason, Boolean(sub?.cancelAtPeriodEnd));
 
   function factValue(fact: SubscriptionFact): string {
     switch (fact.id) {
@@ -287,17 +288,10 @@ export function SubscriptionShell() {
                   </p>
                 ) : null}
               </div>
-              {reason !== "NONE" ? (
-                <div className="flex shrink-0 flex-col items-end gap-2">
-                  <Chip size="sm" className="!normal-case">
-                    {t(subscriptionStatusKey(reason))}
-                  </Chip>
-                  {sub?.cancelAtPeriodEnd ? (
-                    <Chip size="sm" className="!normal-case">
-                      {t("chip_cancel")}
-                    </Chip>
-                  ) : null}
-                </div>
+              {heroChip ? (
+                <Chip size="sm" className="!normal-case">
+                  {t(heroChip)}
+                </Chip>
               ) : null}
             </div>
 

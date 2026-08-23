@@ -92,6 +92,16 @@ export type SubscriptionStatusCopyKey =
   | "reason_staff"
   | "reason_incomplete";
 
+/** Hero shows at most one chip. Cancel is already in the facts list — no second badge. */
+export function heroChipKey(
+  reason: string | undefined,
+  cancelAtPeriodEnd: boolean,
+): SubscriptionStatusCopyKey | null {
+  if (!reason || reason === "NONE") return null;
+  if (cancelAtPeriodEnd || reason === "CANCELED_PERIOD") return null;
+  return subscriptionStatusKey(reason);
+}
+
 export function subscriptionStatusKey(
   reason: string | undefined,
 ): SubscriptionStatusCopyKey {

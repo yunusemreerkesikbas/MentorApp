@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -50,14 +45,10 @@ import {
 import { NotebookPageStage } from "@/components/notebook/notebook-page-stage";
 import { NotebookInkLayer } from "@/components/notebook/notebook-ink-layer";
 import { useInkDraw } from "@/components/notebook/use-ink-draw";
-import {
-} from "@/lib/notebook-ink";
+import {} from "@/lib/notebook-ink";
 import { NotebookInkToolbar } from "./notebook-ink-toolbar";
 import { useNotebookInkSettings } from "./use-notebook-ink-settings";
-import {
-  NotebookRailActiveFill,
-  RAIL_CATEGORIES,
-} from "./notebook-rail-items";
+import { NotebookRailActiveFill, RAIL_CATEGORIES } from "./notebook-rail-items";
 import {
   AUTOSAVE_DELAY_MS,
   COVER_MAX_WIDTH_PX,
@@ -104,6 +95,8 @@ import {
 import { useNotebookPage } from "./use-notebook-page";
 import { NotebookContentSkeleton } from "./notebook-content-skeleton";
 import { NotebookReviewPanel } from "./notebook-review-panel";
+import { useMentorToast } from "@/lib/mentor-toast";
+import { reviewFeedback } from "@/lib/notebook-review-deck";
 import { NotebookEntryEditDialog } from "./notebook-entry-edit-dialog";
 import { NotebookRemoveChoiceDialog } from "./notebook-remove-choice-dialog";
 
@@ -128,6 +121,7 @@ interface ExamContext {
  */
 export function NotebookShell() {
   const t = useTranslations("notebook");
+  const toast = useMentorToast();
   const reduceMotion = useReducedMotion();
 
   const [view, setView] = useState<View>({ kind: "cover" });
@@ -226,7 +220,9 @@ export function NotebookShell() {
    */
   const [indexRefreshKey, setIndexRefreshKey] = useState(0);
   /** The card whose labels are being corrected, or which is about to be deleted for good. */
-  const [editingEntry, setEditingEntry] = useState<NotebookEntryDto | null>(null);
+  const [editingEntry, setEditingEntry] = useState<NotebookEntryDto | null>(
+    null,
+  );
   /**
    * A card selected on the page with the trash pressed: the student has to say which "delete" they
    * meant, because until now the button silently meant the weaker one and the card came back the
@@ -236,6 +232,14 @@ export function NotebookShell() {
     itemId: string;
     entry: NotebookEntryDto;
   } | null>(null);
+  /**
+   * Cards the student chose to go over now, rather than the ones the schedule offered.
+   *
+   * Its own state next to `singleReview` because the two end differently: a single card opened from
+   * a page closes the moment it is answered, while a session the student assembled walks its own
+   * deck to the end like the due one does.
+   */
+  const [studyDeck, setStudyDeck] = useState<NotebookEntryDto[] | null>(null);
   const [singleReview, setSingleReview] = useState<NotebookEntryDto | null>(
     null,
   );
@@ -612,6 +616,41 @@ export function NotebookShell() {
     });
   }, [leftPage, rightPage]);
 
+  /**
+   * The entry behind an item on a page, or null for anything that is not an entry card.
+   *
+   * The page document stores placement and an `entryId`; the meta that came with the page stores
+   * what that id means. Two callers need the join — opening a card and offering to study it — and
+   * neither should be resolving ids inline.
+   */
+  const entryForItem = useCallback(
+    (side: Side, item: NotebookPageItem): NotebookEntryDto | null => {
+      if (item.kind !== "entry") return null;
+      const meta = side === "left" ? leftMeta : rightMeta;
+      return meta?.entries.find((entry) => entry.id === item.entryId) ?? null;
+    },
+    [leftMeta, rightMeta],
+  );
+
+  /**
+   * The "study this card" button the selection overlay draws under a selected entry.
+   *
+   * Double-clicking the card has always opened it, and nobody has ever found that. Only entry
+   * items get one — a sticker or a note has nothing to review.
+   */
+  const studyActionFor = useCallback(
+    (side: Side, item: NotebookPageItem) => {
+      const entry = entryForItem(side, item);
+      if (!entry) return undefined;
+      return {
+        label: t("item_study"),
+        icon: <History aria-hidden size={13} />,
+        onClick: () => setSingleReview(entry),
+      };
+    },
+    [entryForItem, t],
+  );
+
   const handleItemDoubleClick = useCallback(
     (side: Side, item: NotebookPageItem) => {
       if (item.kind === "entry") {
@@ -670,8 +709,28 @@ export function NotebookShell() {
       // Placing from the index is the opposite: the student is browsing a list and may well place
       // another, so that path deliberately leaves the panel open.
       setDetailCollapsed(true);
+
+      /*
+       * Say when the card comes back.
+       *
+       * Filing a mistake scheduled it two days out and told nobody, so the review deck stayed empty
+       * and the feature read as broken: "I added a question and nothing happened." The card was
+       * always there, waiting for the gap that makes the recall worth measuring — this is that gap,
+       * said out loud. The action is for the student who does not want to wait; it opens the card
+       * now, and answering it early cannot promote it (the server reads the card's own due date).
+       */
+      const feedback = reviewFeedback(entry);
+      if (feedback?.kind !== "due") return;
+      toast.success({
+        title: t("add_scheduled_title"),
+        message: t("add_scheduled_message", { days: feedback.days }),
+        action: {
+          label: t("add_scheduled_study"),
+          onClick: () => setSingleReview(entry),
+        },
+      });
     },
-    [placeEntryOnPage],
+    [placeEntryOnPage, t, toast],
   );
 
   /**
@@ -750,8 +809,8 @@ export function NotebookShell() {
 
   /** Ids already on one of the two open pages — what the index checks before offering to place. */
   const placedEntryIds = new Set(
-    [...leftPage.state.doc.items, ...rightPage.state.doc.items].flatMap((item) =>
-      item.kind === "entry" ? [item.entryId] : [],
+    [...leftPage.state.doc.items, ...rightPage.state.doc.items].flatMap(
+      (item) => (item.kind === "entry" ? [item.entryId] : []),
     ),
   );
 
@@ -773,22 +832,31 @@ export function NotebookShell() {
     [placeEntryOnPage],
   );
 
-  const handleReviewed = useCallback((updated: NotebookEntryDto) => {
-    setDue((current) => current.filter((entry) => entry.id !== updated.id));
-    handleEntryPatched(updated);
-    setOverview((current) =>
-      current
-        ? {
-            ...current,
-            dueCount: Math.max(0, current.dueCount - 1),
-            healedCount:
-              updated.status === "HEALED"
-                ? current.healedCount + 1
-                : current.healedCount,
-          }
-        : current,
-    );
-  }, [handleEntryPatched]);
+  const handleReviewed = useCallback(
+    (updated: NotebookEntryDto) => {
+      // Only a card that was actually due leaves the day's counter. Answering one early — opened
+      // from a page, or picked for a study session — used to tick the counter down too, so the
+      // notebook reported clearing a card from a deck it had never been in.
+      const wasDue = due.some((entry) => entry.id === updated.id);
+      setDue((current) => current.filter((entry) => entry.id !== updated.id));
+      handleEntryPatched(updated);
+      setOverview((current) =>
+        current
+          ? {
+              ...current,
+              dueCount: wasDue
+                ? Math.max(0, current.dueCount - 1)
+                : current.dueCount,
+              healedCount:
+                updated.status === "HEALED"
+                  ? current.healedCount + 1
+                  : current.healedCount,
+            }
+          : current,
+      );
+    },
+    [due, handleEntryPatched],
+  );
 
   if (!overview && !error) return <NotebookContentSkeleton />;
 
@@ -864,7 +932,21 @@ export function NotebookShell() {
       : { width: fitBox.width, height: fitBox.height };
 
   return (
-    <div className="flex min-h-[100dvh] flex-col gap-3 px-1 pb-4 pt-2 sm:px-2 sm:pb-6 sm:pt-3 lg:pb-8 lg:pt-3">
+    /*
+     * A definite height on desktop, not just a floor.
+     *
+     * `min-h` alone is why the page scrolled: `useFitSize` measures a box further down and
+     * `fitWithin` sizes the spread to fit *its height* — with no ceiling anywhere above it that
+     * height is whatever the book asks for, so the fit only ever binds on width and the book runs
+     * off the bottom of the window. The whole fitting machinery is there to stop exactly that, and
+     * it needs one real number to work from. This is that number.
+     *
+     * It also gives the side panel a height to divide, which is what makes its `overflow-y-auto`
+     * live rather than decorative.
+     *
+     * Mobile keeps the floor: there the panel is a half-height sheet and the page really does scroll.
+     */
+    <div className="flex min-h-[100dvh] flex-col gap-3 px-1 pb-4 pt-2 sm:px-2 sm:pb-6 sm:pt-3 lg:h-[100dvh] lg:min-h-0 lg:overflow-hidden lg:pb-8 lg:pt-3">
       <FormError message={error} />
 
       {/* The strip: the whole reason the notebook is a habit and not an archive. A compact pill,
@@ -897,6 +979,15 @@ export function NotebookShell() {
           onReviewed={handleReviewed}
           onEntryUpdated={handleEntryPatched}
           onClose={() => setReviewing(false)}
+        />
+      ) : studyDeck ? (
+        <NotebookReviewPanel
+          entries={studyDeck}
+          // No auto-close and no `onEdit`: this is a deck, and the panel walks it to the end the
+          // same way it walks the due one.
+          onReviewed={handleReviewed}
+          onEntryUpdated={handleEntryPatched}
+          onClose={() => setStudyDeck(null)}
         />
       ) : singleReview ? (
         <NotebookReviewPanel
@@ -965,68 +1056,72 @@ export function NotebookShell() {
           <>
             <LayoutGroup id="notebook-rail">
               <nav
-              aria-label={t("sidebar_nav")}
-              className="mentor-scrollarea flex shrink-0 gap-1 overflow-x-auto rounded-[var(--radius-card)] border px-2 py-2 lg:w-16 lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:px-1 lg:py-3"
-              style={{
-                backgroundColor: "var(--color-surface)",
-                borderColor:
-                  "color-mix(in srgb, var(--color-main) 10%, transparent)",
-              }}
-            >
-              {RAIL_CATEGORIES.map(({ id, icon: Icon, labelKey }) => {
-                // "Çiz" has no panel to expand — `openCategory` always collapses the side panel
-                // for it — so its pressed state can't depend on `detailCollapsed` the way every
-                // other rail button's does, or it would never look pressed at all.
-                const active = activeRail === id;
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => openCategory(id)}
-                    className="relative flex min-h-11 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] px-1 py-1.5 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:min-w-0"
-                    style={{
-                      color: active
-                        ? "var(--color-btn-label)"
-                        : "var(--color-secondary)",
-                    }}
-                  >
-                    {active ? (
-                      <NotebookRailActiveFill reduceMotion={reduceMotion} />
-                    ) : null}
-                    <Icon aria-hidden size={20} className="relative z-[1]" />
-                    <span className="relative z-[1] leading-tight">
-                      {t(labelKey)}
-                    </span>
-                  </button>
-                );
-              })}
-              {/*
+                aria-label={t("sidebar_nav")}
+                className="mentor-scrollarea flex shrink-0 gap-1 overflow-x-auto rounded-[var(--radius-card)] border px-2 py-2 lg:w-16 lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:px-1 lg:py-3"
+                style={{
+                  backgroundColor: "var(--color-surface)",
+                  borderColor:
+                    "color-mix(in srgb, var(--color-main) 10%, transparent)",
+                }}
+              >
+                {RAIL_CATEGORIES.map(({ id, icon: Icon, labelKey }) => {
+                  // "Çiz" has no panel to expand — `openCategory` always collapses the side panel
+                  // for it — so its pressed state can't depend on `detailCollapsed` the way every
+                  // other rail button's does, or it would never look pressed at all.
+                  const active = activeRail === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => openCategory(id)}
+                      className="relative flex min-h-11 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] px-1 py-1.5 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:min-w-0"
+                      style={{
+                        color: active
+                          ? "var(--color-btn-label)"
+                          : "var(--color-secondary)",
+                      }}
+                    >
+                      {active ? (
+                        <NotebookRailActiveFill reduceMotion={reduceMotion} />
+                      ) : null}
+                      <Icon aria-hidden size={20} className="relative z-[1]" />
+                      <span className="relative z-[1] leading-tight">
+                        {t(labelKey)}
+                      </span>
+                    </button>
+                  );
+                })}
+                {/*
                 Not a category: clicking places a note on the page and starts typing right away.
                 It still gets the same pressed look as its rail neighbours while that note's
                 inline editor is open — otherwise this button is the one rail icon that never
                 visibly reacts to being clicked, which reads as broken next to Sticker/Kağıt/Çiz.
               */}
-              <button
-                type="button"
-                aria-pressed={activeRail === "note"}
-                onClick={handleAddNote}
-                className="relative flex min-h-11 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] px-1 py-1.5 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:min-w-0"
-                style={{
-                  color:
-                    activeRail === "note"
-                      ? "var(--color-btn-label)"
-                      : "var(--color-secondary)",
-                }}
-              >
-                {activeRail === "note" ? (
-                  <NotebookRailActiveFill reduceMotion={reduceMotion} />
-                ) : null}
-                <StickyNote aria-hidden size={20} className="relative z-[1]" />
-                <span className="relative z-[1] leading-tight">
-                  {t("sidebar_note")}
-                </span>
-              </button>
+                <button
+                  type="button"
+                  aria-pressed={activeRail === "note"}
+                  onClick={handleAddNote}
+                  className="relative flex min-h-11 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] px-1 py-1.5 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:min-w-0"
+                  style={{
+                    color:
+                      activeRail === "note"
+                        ? "var(--color-btn-label)"
+                        : "var(--color-secondary)",
+                  }}
+                >
+                  {activeRail === "note" ? (
+                    <NotebookRailActiveFill reduceMotion={reduceMotion} />
+                  ) : null}
+                  <StickyNote
+                    aria-hidden
+                    size={20}
+                    className="relative z-[1]"
+                  />
+                  <span className="relative z-[1] leading-tight">
+                    {t("sidebar_note")}
+                  </span>
+                </button>
               </nav>
             </LayoutGroup>
 
@@ -1040,7 +1135,18 @@ export function NotebookShell() {
                   animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
                   exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -8 }}
                   transition={boardChromeTransition}
-                  className="relative flex min-h-0 max-h-[50vh] w-full shrink-0 flex-col rounded-[var(--radius-card)] border lg:max-h-none lg:w-96"
+                  /*
+                    A ceiling on the panel, not on the page.
+                    `lg:max-h-none` let a long list grow the whole shell — the page has a floor
+                    (`min-h-[100dvh]`) and no ceiling, so nothing downstream had a height to divide
+                    and every `overflow-y-auto` under here was dead code.
+                    The ceiling belongs here rather than on the shell: the shell's height is what
+                    `useFitSize` measures to fit the spread, and capping *that* made the measurement
+                    collapse to the fallback width — the book rendered at its max size and got
+                    clipped top and bottom by the very overflow rule meant to tame the panel.
+                    Bounding the panel alone leaves the book's sizing exactly as it was.
+                  */
+                  className="relative flex min-h-0 max-h-[50vh] w-full shrink-0 flex-col rounded-[var(--radius-card)] border lg:max-h-[100dvh] lg:w-96"
                   style={{
                     backgroundColor: "var(--color-surface)",
                     borderColor:
@@ -1084,6 +1190,7 @@ export function NotebookShell() {
                           placedEntryIds={placedEntryIds}
                           indexRefreshKey={indexRefreshKey}
                           onOpenEntry={setSingleReview}
+                          onStudyEntries={setStudyDeck}
                           onPlaceEntry={(entry) => void handlePlaceEntry(entry)}
                           selectedText={
                             focused.selected?.kind === "text"
@@ -1116,7 +1223,16 @@ export function NotebookShell() {
           </>
         ) : null}
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center gap-2">
+        {/* The spread's breathing room, and it has to live here rather than on the measured box
+            below: `useFitSize` reads a bounding rect, which includes padding, so padding down there
+            would be handed to the book as room it may grow into. One level up it is room the book
+            never sees — the fit box simply comes out shorter.
+
+            Proportional rather than a pixel step. The fit is height-driven, so the margin has to be
+            a share of the window or it disappears: 16px looked like nothing against a 900px spread
+            and read as "full screen" all over again. 3vh top and bottom scales with the screen it
+            is framing, which is what a margin is for. */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center gap-2 lg:py-[3vh]">
           {isSpread ? (
             <div
               className="flex w-full items-center gap-1"
@@ -1223,6 +1339,22 @@ export function NotebookShell() {
                 // only ever derives the HEIGHT from that already-definite width.
                 maxWidth: fitted.width || notebookMaxWidthPx,
                 aspectRatio: notebookRatio,
+                /*
+                 * The height limit CSS can enforce on its own, and the measurement cannot.
+                 *
+                 * `maxWidth` only fits the book when `fitted.width` holds a real number; until the
+                 * first measurement lands — or if it never does — the fallback is a fixed pixel
+                 * ceiling that knows nothing about the window, and the book renders taller than the
+                 * space it is in. That is the state the notebook was stuck in: the spread filled the
+                 * viewport and ignored the margin above it, because the margin only ever shrank the
+                 * box being measured, and no measurement was reaching the width.
+                 *
+                 * With `aspect-ratio` set, `max-height` shrinks the width with it, so the ratio
+                 * survives. It makes the fit a property of the layout rather than of a hook: the
+                 * book cannot outgrow its container even for one frame, and the padding around it
+                 * finally means something.
+                 */
+                maxHeight: "100%",
                 // The depth the cover swings through. The turning leaf carries its own, tighter one.
                 perspective: reduceMotion ? undefined : 1800,
               }}
@@ -1408,6 +1540,7 @@ export function NotebookShell() {
                                       )}
                                       resizeLabel={t("edit_resize")}
                                       rotateLabel={t("edit_rotate")}
+                                      action={studyActionFor(mobileSide, item)}
                                     />
                                   )
                                 }
@@ -1499,6 +1632,7 @@ export function NotebookShell() {
                                         )}
                                         resizeLabel={t("edit_resize")}
                                         rotateLabel={t("edit_rotate")}
+                                        action={studyActionFor("left", item)}
                                       />
                                     )
                                   }
@@ -1588,6 +1722,7 @@ export function NotebookShell() {
                                         )}
                                         resizeLabel={t("edit_resize")}
                                         rotateLabel={t("edit_rotate")}
+                                        action={studyActionFor("right", item)}
                                       />
                                     )
                                   }

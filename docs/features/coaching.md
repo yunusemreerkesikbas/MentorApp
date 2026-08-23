@@ -145,6 +145,14 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Panel geri sayım ikonu + kaynak satırı (2026-08-24)** — `CountdownCard` (DataCard sarmalayıcı)
+  Lucide takvim yerine `public/img/hourglass.svg` kullanır; “Kaynak: ÖSYM ↗” alt satırı kalkar
+  (tarih hâlâ caption’da, resmi kaynak Bilgi’de durur). SVG’den beyaz zemin ve gölge elipsi
+  alındı. İkon kuyusu yok: maske + `--color-main` (açıkta `#111`, karanlıkta `#f4f4f5`),
+  boy 40px (`h-10`, Puhu `sm` ölçeği). Kullanım: `/panel` sağ sütun. Gotcha: asset web
+  `public/img` altında; ui paketi `/img/hourglass.svg` yolunu bekler. İlgili:
+  `countdown-card.tsx`, `panel-shell.tsx`, `hourglass.svg`.
+
 - **Premium kilit rozetleri (2026-08-22)** — Panel günlük selamı ve mood yansıması, analiz ghost
   teaser'ı ve seans sonrası yansıma kilitliyken paywall açar. İlgili: `premium-lock-nudge.tsx`,
   `use-daily-greeting.ts`, `mood-checkin.tsx`, `session-done-state.tsx`.
@@ -2998,3 +3006,163 @@ pnpm --filter @mentor/api test
   İlgili: `mistake-notebook.service.ts` (+spec, 4 test), `mistake-notebook.repository.ts`,
   `packages/validation/src/coaching.ts`, `notebook-entry-edit-dialog.tsx`, `notebook-index-panel.tsx`,
   `messages/{tr,en}.json`.
+
+- **Erken çalışma + ekleme anında zamanlama bilgisi (2026-08-23, APP-046)** — Kullanıcı gerçek bir
+  kusur bildirdi: "deftere yeni soru ekledim, tekrar destesinde gözükmedi." Doğru: `createEntry`
+  kaydı `firstReviewAt()` ile **2 gün sonrasına** zamanlıyor ve bunu kimseye söylemiyor. Aralık
+  doğru (soruyu ekledikten 10 saniye sonra kendine sormak hiçbir şey ölçmez, cevabı az önce baktığın
+  için biliyorsun) ama sessizlik özelliği bozuk gösteriyordu. Hatırlatma tarafı zaten otomatikti
+  (`notebook-review-reminder.service.ts`); eksik olan manuel kapıydı.
+  **(A) `advanceReview` artık kartın vadesini görüyor** ve nesne parametreye geçti
+  (`{reviewCount, solved, dueAt, status, now}`). Vadesi gelmemiş kart çalışıldığında: **çözdüm →
+  hiçbir şey değişmez** (aralığın ölçtüğü şey cevabın boşluğu atlatıp atlatmadığı, boşluk yoksa
+  ölçülecek bir şey de yok — aksi halde bir kartı bir öğleden sonrada 21 güne tırmandırıp
+  "öğrenildi" demek mümkün olurdu); **çözemedim + kart destede → 2 güne çekilir** (bilmediğini
+  keşfetmek ne zaman olursa olsun gerçek bilgi); **çözemedim + kart arşivde/iyileşmiş → hiçbir şey**
+  (öğrencinin bilerek desteden çıkardığı kart, geçerken verilen bir cevapla dirilmemeli). Kritik
+  tasarım kararı: **istemci bunu söylemiyor.** Sunucu `now < nextReviewAt` ile kendisi anlıyor,
+  yani hiçbir istemci hak etmediği terfiyi talep edemiyor — yeni alan, yeni bayrak, yeni uç nokta yok.
+  `ReviewOutcome.status` `ARCHIVED`'ı da kabul edecek şekilde genişledi, çünkü erken cevap kartı
+  bulduğu gibi bırakıyor. **(B) Ekleme sonrası toast:** "Deftere eklendi · {n} gün sonra tekrar
+  destende karşına çıkacak" + **"Şimdi çalış"** eylemi (kartı tek kartlık tekrarda açıyor). Gün sayısı
+  `reviewFeedback` ile sunucunun döndürdüğü tarihten — merdivenin istemci tarafında ikinci bir kopyası
+  yok. Bunun için `@mentor/ui` toast'una toplamalı `action?: {label, onClick}` eklendi: **tek** eylem,
+  çünkü iki düğmeli bir toast, engellemeyi unutmuş bir dialogdur; basınca toast kapanıyor.
+  **Ertelendi (C):** manuel çalışmanın diğer giriş noktaları — indeks panelinde çoklu seçim +
+  "seçilenleri çalış", kart ayarlarında "şimdi çalış", sayfadaki seçili öğe için "çalış" düğmesi.
+  Sayfadaki fotoğrafa **çift tıklamak** zaten tek kartlık tekrarı açıyor ama keşfedilebilir değil.
+  İlgili: `notebook-review.policy.ts` (+spec, 4 yeni test), `mistake-notebook.service.ts` (+spec),
+  `packages/ui/src/components/toast/{types.ts,toast-provider.tsx,toast-item.tsx}`,
+  `notebook-shell.tsx`, `messages/{tr,en}.json`.
+
+- **Manuel çalışma: seçerek deste kurma ve sayfadan tek dokunuş (2026-08-23, APP-046)** — C parçası.
+  Uygularken **iki maddesi gereksiz çıktı ve yapılmadı:** (1) kart ayarlarındaki "şimdi çalış" —
+  `NotebookEntryEditDialog`'a tek giriş `singleReview` panelinin dişli düğmesi, yani oraya varmışsan
+  zaten o kartı çalışıyorsun; (2) indeks panelinde tek kart çalışma — satıra dokunmak zaten
+  `onOpen → setSingleReview` ile tek kartlık tekrarı açıyor. Geriye gerçekten eksik olan ikisi kaldı.
+  **İndeks panelinde çoklu seçim:** her satıra gerçek bir `<input type="checkbox">` (ekran okuyucuya
+  seçili durumunu platformun kendisi söylüyor), seçim varken beliren "Seçilen {n} kartı çalış".
+  Seçimler **id ile** tutuluyor, indeksle değil — liste sayfalı ve filtreli, indeks ikisi de
+  değiştiğinde başka bir kartı gösterir; filtre değişince seçimler temizleniyor, yoksa öğrencinin
+  artık göremediği kartlarla oturum başlardı. Buton yalnızca seçim varken çiziliyor: ömrünü disabled
+  geçiren bir kontrol, zaten üç filtre boyundaki bir panele eklenmez. **Sayfadaki seçili karta
+  "Çalış" düğmesi:** `SelectionOverlay`'e toplamalı `action?: {label, icon, onClick}` slotu eklendi
+  (vision board hiçbir şey geçmiyor — bu bir slot, özellik değil). Kart zaten **çift tıklamayla**
+  açılıyordu; çift tıklama kimsenin bulduğu bir şey değil. Düğme kutunun altında, döndürme tutamağının
+  karşısında; `pointerdown` ve `click` durduruluyor, yoksa sahne onu sürükleme başlangıcı sayardı.
+  Shell'de `studyDeck` state'i `singleReview`'ün yanında ayrı duruyor, çünkü ikisi farklı bitiyor:
+  sayfadan açılan tek kart cevaplanınca kapanır, öğrencinin kurduğu deste kendi sonuna kadar yürür.
+  **Yol boyunca bir hata düzeltildi:** `handleReviewed` her cevapta `dueCount`'u azaltıyordu; vadesi
+  gelmemiş bir kartı erken çalışmak da sayacı düşürüyor, yani defter hiç girmediği bir desteden kart
+  temizlediğini iddia ediyordu. Artık yalnızca kart gerçekten `due` listesindeyse azalıyor.
+  İlgili: `notebook-index-panel.tsx`, `notebook-side-panel.tsx`, `notebook-shell.tsx`,
+  `components/stage/selection-overlay.tsx`, `messages/{tr,en}.json`.
+
+- **Kart boyutlandırma, "Çalış" düğmesinin tonu ve panel kaydırması (2026-08-23, APP-046)** —
+  Kullanıcı ekran görüntüsüyle dört madde bildirdi; üçü yapıldı (sayfalar arası taşıma ayrı tura).
+  **(1) Boyutlandırma.** `nextEntrySlot` en-boy oranını *zaten* kullanıyordu ama yarım: genişlik hep
+  sabit `ENTRY_WIDTH`, yükseklik `width/aspect` hesaplanıp 180–420'ye **kırpılıyordu**. Yalnızca
+  yüksekliği kırpmak kutunun oranını değiştiriyor ve `object-contain`'e doldurulacak bir boşluk
+  bırakıyor — defterdeki siyah bantların kaynağı buydu, `aspect` ölçülemediğinde (sabit 300) ise
+  bant devasa oluyordu. Artık sınıra takılınca **iki boyut birden ölçekleniyor**: kart küçülüyor,
+  şekli hiç değişmiyor. Genişlik yine sert sınır (yazı alanı), o yüzden panorama bir foto minimum
+  yükseklikten de kısa kalabiliyor. Dar kalan kart yazı alanında **ortalanıyor** — sola sabitken
+  sağında büyüyen bir boşluk bırakıyordu ve bu hata gibi okunuyor. `y` artık sabit adım değil,
+  **yerleştirilmiş kartların gerçek altı**; sabit adım değişken yüksekliklerde aynı anda hem
+  çakışıyor hem boşluk bırakıyordu (kodda bunun "sonraya" notu duruyordu, iş bu turda geldi).
+  Eski "stacks each card below the previous one" testi sabit-adım varsayımını kodluyordu ve yeni
+  kuralla düştü; test **yeni sözleşmeyi** ifade edecek şekilde yeniden yazıldı, üstüne oran/ölçek/
+  ortalama/metin-only için dört test daha (9/9). **(2) "Çalış" düğmesi** dolu accent hapken yüzey
+  üzerine ince accent kenarlıklı 32px'lik bir çipe indi: dolu haliyle sayfaya sonradan konmuş yabancı
+  bir nesne gibi duruyordu, şimdi asıldığı seçim çerçevesinin bir parçası gibi okunuyor.
+  **(3) Kenar panelinin kaydırmaması gerçek bir hataydı ve paneller suçsuzdu:** zincir (`Panel` →
+  `h-full min-h-0 overflow-y-auto`) doğruydu, kök kapta `min-h-[100dvh]` vardı — **taban var, tavan
+  yok**. Uzun bir liste tüm kabuğu büyütüyor, aşağıdaki `flex-1 min-h-0` bölüştürecek bir yükseklik
+  bulamıyor ve alttaki her `overflow-y-auto` ölü koda dönüyordu; diğer paneller kısa olduğu için
+  yıllardır görünmemişti. Masaüstünde gerçek yükseklik verildi (`lg:h-[100dvh] lg:min-h-0
+  lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bir sayfa ve sayfa
+  gerçekten kayıyor. Uygulama kabuğu masaüstünde yalnızca `padding-left` ekliyor, üstten pay yok,
+  yani `100dvh` doğru ölçü.
+  **Ertelendi:** sayfalar arası içerik taşıma. İki sayfa iki ayrı doküman, jest katmanı vision board
+  ile ortak; sürükleyip diğer sayfaya bırakmak iki sahnenin dikdörtgenlerini, koordinat çevirisini ve
+  iki dokümanın birden kaydını gerektiriyor — ortak katmana dokunduğu için kendi turunu hak ediyor.
+  **Kaydırma vs sığdırma — dört denemede öğrenilen ders.** Kök kap `min-h-[100dvh]` idi: taban var,
+  tavan yok. Sonucu iki katlıydı — yan panel kendi içinde kaymak yerine tüm kabuğu büyütüyordu, *ve*
+  `useFitSize`/`fitWithin` düzeneği (tek işi yayılımı görüntü alanına sığdırmak) çalışacak kesin bir
+  yükseklik bulamadığı için yalnızca genişliğe göre sığdırıyor, defter pencerenin altından taşıyordu.
+  Yani sayfa kaydırması bir tasarım tercihi değil, **eksik bir sayının yan etkisiydi.**
+  Denemeler: (1) `lg:h-[100dvh]` — **aslında doğruydu**, sığdırma düzgün çalıştı, tek eksiği kenar
+  payıydı; (2) panik refleksiyle `max-h-[100dvh]` tavanına geçildi — **çok daha kötü**: tavan
+  yüksekliği belirsiz bırakıyor, ölçüm sıfıra düşünce kod `fitted.width || notebookMaxWidthPx` ile
+  sabit azami genişliğe geri düşüyor ve `justify-center` taşan kitabı iki yönden birden taşırıyor
+  (kullanıcının gördüğü üstten *ve* alttan kırpılma buydu); (3) tavan panele taşındı, defter eski
+  haline döndü ama sayfa yine kaydı; (4) birinci denemeye dönüldü ve asıl eksik eklendi: kenar payı.
+  Pay **ölçülen kutuya konamaz** — `getBoundingClientRect` dolguyu içerir, yani orada verilen dolgu
+  kitaba "büyüyebileceğin yer" diye sunulur. Bir seviye yukarı, sahne kolonuna kondu (`lg:py-4`):
+  orada fit kutusu kısalıyor ve kitap o boşluğu hiç görmüyor. Panelin tavanı da (`lg:max-h-[100dvh]`)
+  emniyet kemeri olarak bırakıldı. Mobil taban aynen kaldı — orada panel yarım ekran bir sayfa ve
+  sayfa gerçekten kayıyor.
+  **(5) Ve asıl teşhis, doğru soruyu sorunca geldi:** dolgu 16px'ten `3vh`'ye çıkarıldığında kitap
+  **hiç değişmedi**. Dolguya tepkisiz bir kutu, boyutunu dolgunun kısalttığı ölçümden almıyor
+  demektir — yani `fitted.width` sıfır, kod `|| notebookMaxWidthPx` ile pencereyi hiç bilmeyen sabit
+  bir piksel tavanına düşüyor ve kitap her koşulda o boyutta çiziliyordu. Tam yükseklik ve dolguya
+  duyarsızlık aynı tek sebebin iki yüzüydü. Çözüm ölçümü beşinci kez tahmin etmek değil, **sığdırmayı
+  JS'e bağımlı olmaktan çıkarmak** oldu: kitabın kutusuna `maxHeight: "100%"`. `aspect-ratio` zaten
+  ayarlı olduğu için tarayıcı genişliği de birlikte küçültüyor, oran korunuyor. Artık sığma bir
+  hook'un değil düzenin özelliği — kitap kabını tek kare için bile aşamıyor ve etrafındaki pay
+  nihayet bir anlam taşıyor. `fitWithin` yerinde duruyor; ölçüm geldiğinde daha isabetli bir genişlik
+  veriyor, gelmediğinde CSS zaten güvende.
+  Ders: ölçüm yapan bir düzeneğin ölçtüğü kutuyu değiştirerek düzen hatası çözülmez; bir denemeyi
+  "başarısız" diye kenara atmadan önce şikâyetin ne olduğunu tam okumak gerekir (birinci denemenin
+  tek kusuru bir dolguydu); ve "değişiklik hiç görünmüyor" bir hayal kırıklığı değil, **teşhisin
+  kendisidir** — beş turdur aranan cevabı tek başına verdi.
+  Aynı turda sayfadaki eski kartların yeniden ölçülmesi konuşuldu ama **yapılmadı**: kullanıcı yeni
+  eklenen görsellerin doğru boyutlandığını doğruladı, yani bantlı kartlar eski yerleşimin kaydedilmiş
+  ölçüleri; geriye dönük düzeltme kimsenin istemediği bir düzen değişikliği olurdu.
+  İlgili: `notebook-layout.ts` (+spec, 9 test), `selection-overlay.tsx`, `notebook-shell.tsx`.
+
+- **Cilt yeniden tasarlandı: gümüş halkalardan siyah tel sarıma (2026-08-23, APP-046)** — Kullanıcı
+  bir referans görselle geldi. Mevcut cilt iki yönden yanlıştı. **Renk:** `--notebook-wire-*` soluk
+  gümüştü (`#e4e7ee`/`#9aa3b4`) ve krem kâğıt üstünde neredeyse hiç kontrastı yoktu — kitabı bir arada
+  tutan tek donanım parçası değil, bir dizi silik oval gibi okunuyordu. Siyah lake telin iki ucuna
+  çekildi (`#1e222b` / `#8b93a4`); parlaklık onu basılı bir çizgi olmaktan, koyuluk ise metal
+  yapmaktan sorumlu. **Ritim:** halkalar `RING_STEP * 6` aralıkla, yani tam bir halka boyu arayla
+  duruyordu; sonuç zincir çit görüntüsü. Gerçek sarım sıkıdır — turlar arasındaki boşluk bir turun
+  kesri kadardır, tamamı kadar değil. Yeni `RING_TILE = RING_STEP * 3.2` sabiti hem kapak cildinde
+  hem açılımın cildinde kullanılıyor: ikisi tek defter olmak zorunda ve elle ayarlanmış iki ayrı
+  aralık bir sonraki düzenlemede birbirinden ayrılır. Tel kalınlığı 0.32'den 0.38'e, delikler 0.8'den
+  0.62'ye indi (sıkı sarımda delik de küçüktür), halka yüksekliği artık döşemenin oranı (`RING_TILE *
+  0.42`) — yani ritim değiştiğinde halka kendiliğinden onunla ölçekleniyor, ikinci bir sayı gerekmiyor.
+  Değişiklik uygulamayı açmadan görülebilsin diye koddaki birebir sayılarla eski/yeni karşılaştırmalı
+  bir statik önizleme üretildi (repoya girmedi).
+  **Takip: kapalı halkalar boruya dönüşüyordu.** Sıkı sarıma geçince halkaların sol ve sağ uçları
+  dikeyde üst üste binip iki kesintisiz çizgi oluşturdu; cilt tel gibi değil **boru** gibi okunmaya
+  başladı. Sebep sıklık değil, halkanın kapalı olmasıydı: kapalı bir ilmek bobinin *yandan* görünüşü.
+  Önden bakıldığında telin uzak yarısı kâğıdın arkasındadır ve göz yalnızca bir delikten çıkıp
+  diğerine dalan bir **yay** görür. Her halka artık turun ön yarısı. Yarım, clip ya da elle yazılmış
+  path ile değil, **`pathLength` + tek dash** ile kesiliyor: buradaki geometri yüzde cinsinden
+  (halkalar genişliği yayılımın yüzdesi olan bir oluğu geçmek zorunda) ve SVG path verisi yüzde kabul
+  etmiyor. Elipsi 100 birime normalize edip 50'lik tek bir dash vermek, elipsin gerçek boyutu ne
+  olursa olsun tam olarak üst yarıyı seçiyor. Uçlara `strokeLinecap="round"` — kesilmiş tel ucu.
+  Oluğun kendi gölgelendirmesi de yumuşatıldı (0.18 → 0.11): dudakların tek işi kâğıdın dikişe doğru
+  kıvrıldığını söylemek, eski şiddetinde kendisi koyu bir sütun çiziyor ve kapalı halkaların
+  yaptığı boruya ekleniyordu.
+  **İkinci takip: yatık yay, ince oluk, yakın yapraklar.** Yay `50 50`'den **`42 58`**'e indi ve
+  `ARC_OFFSET = 46` ile elipsin tepesine ortalandı — görünen aralık 54→96, saat on iki 75. Dash ile
+  ofset tek bir çift halinde adlandırıldı, çünkü biri değişince diğeri onunla hareket etmek zorunda;
+  ayrı ayrı ayarlanırsa yay tepeye değil bir yana kayar. `SPINE_GUTTER` **34 → 20**: dikiş 34'te
+  kendi başına bir sütun olacak kadar genişti, artık iki yaprağın arasındaki ince bir kanal.
+  Halkaların açıklığı bu sayının **yüzdesi** olduğu için oluğu daraltmak onları da daraltıyordu;
+  `rx` 34% → 50%, delikler 23/77% → 8/92% ile telin mutlak açıklığı korundu ve delikler kâğıdın
+  üstünde, gerçek bir defterin zımbaladığı yere geldi. Bu üç yüzde birbirine bağlı — biri
+  diğerleri olmadan oynatılırsa tel, geçmesi gereken deliklere ulaşamadan bitiyor; kod bunu söylüyor.
+  **Kapak cildi hizalandı.** Renk, ritim (`RING_TILE`), kalınlık (`WIRE_GAUGE`) ve yay (`ARC_DASH`
+  /`ARC_OFFSET`) zaten paylaşılıyordu; ayrışan tek şey halkanın kendi kabındaki ölçüsüydü — kapak
+  halkası **ham birimle** (`rx={RING_STEP * 1.35}`) çizilen son parçaydı. Sonuç: açılımın halkaları
+  dikişle birlikte ölçeklenirken kapağınkiler tek bir sabit boyda kalıyordu, yani aynı defterin iki
+  cildi birbirinden ayrı yaşıyordu. Kapak halkası da yüzdeye geçirildi (`cx 34% / rx 46%`), yüksekliği
+  açılımınkiyle aynı orana (`RING_TILE * 0.42`) ve deliği aynı yarıçapa (`RING_STEP * 0.62`) çekildi.
+  Kapakta tek delik olması fark değil, doğrusu bu: önden bakınca yalnızca ön kapak zımbalı görünür,
+  açılımda ise tel iki yaprağı birden deler.
+  İlgili: `packages/ui/src/theme.css`, `notebook-surface.tsx`.
+

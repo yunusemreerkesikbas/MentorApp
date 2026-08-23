@@ -386,7 +386,15 @@ export class MistakeNotebookService {
       const existing = await this.notebook.findEntry(tx, userId, entryId);
       if (!existing)
         throw new NotFoundError({ reason: "notebook_entry_missing" });
-      const outcome = advanceReview(existing.reviewCount, solved, now);
+      // The card's own due date decides whether this is a scheduled review or an early one; the
+      // client never says which, so it cannot claim a promotion it did not wait for.
+      const outcome = advanceReview({
+        reviewCount: existing.reviewCount,
+        solved,
+        dueAt: existing.nextReviewAt,
+        status: existing.status as "ACTIVE" | "HEALED" | "ARCHIVED",
+        now,
+      });
       const updated = await this.notebook.recordReview(
         tx,
         userId,

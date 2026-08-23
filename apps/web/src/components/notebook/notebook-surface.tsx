@@ -23,8 +23,27 @@ const LINE_STEP = "3.4cqw";
 const SPIRAL_WIDTH = "7cqw";
 /** One ring per this much height. Keyed to width so the binding scales with the page, not the view. */
 const RING_STEP = 5.6;
+/**
+ * The tile a single ring repeats in — the coil's pitch.
+ *
+ * At six steps the rings sat a full ring apart and the binding read as a row of separate hoops, or
+ * a chain-link fence stood on end. A real coil is wound tight: the gap between turns is a fraction
+ * of a turn, not a whole one. Named and shared because the cover's binding and the spread's coil
+ * have to line up as the same notebook — two hand-tuned pitches drift apart on the next edit.
+ */
+const RING_TILE = RING_STEP * 3.2;
 /** Wire gauge. Named because the cover's binding and the spread's coil must stay the same notebook. */
-const WIRE_GAUGE = RING_STEP * 0.32;
+const WIRE_GAUGE = RING_STEP * 0.38;
+
+/**
+ * How much of a turn is in front of the paper, on an ellipse normalised to 100 units.
+ *
+ * 42 rather than a full half: a flatter arc, closer to what the eye actually catches of a wound
+ * coil. The offset centres that arc on the top of the ellipse — the visible run is 54→96, and 75 is
+ * twelve o'clock. Change the dash and this has to move with it, which is why they are one pair.
+ */
+const ARC_DASH = "42 58";
+const ARC_OFFSET = 46;
 
 /**
  * Spread geometry, in the page canvas's own units, so the shell's aspect ratio, the spine's width
@@ -34,9 +53,13 @@ const WIRE_GAUGE = RING_STEP * 0.32;
  * Deliberately tight. A real spiral notebook opened flat has its two sheets almost touching, punched
  * right at their inner edges, with a compact coil running up the seam — the gutter is a channel, not
  * a gap. Widen this and the rings stretch to span it, which reads as a chain link fence rather than
- * as binding.
+ * as binding; at 34 the seam itself had enough width to read as a column of its own.
+ *
+ * The rings' span is a percentage of this, so narrowing the channel narrows them too — the ring and
+ * hole percentages below are set against this number, and moving one without the others leaves the
+ * wire ending short of the holes it is supposed to thread.
  */
-export const SPINE_GUTTER = 34;
+export const SPINE_GUTTER = 20;
 const SPREAD_SPAN = NOTEBOOK_PAGE_CANVAS.width * 2 + SPINE_GUTTER;
 export const PAGE_PERCENT = (NOTEBOOK_PAGE_CANVAS.width / SPREAD_SPAN) * 100;
 export const SPINE_PERCENT = (SPINE_GUTTER / SPREAD_SPAN) * 100;
@@ -50,7 +73,8 @@ export const PAPERS: Record<NotebookPaper, CSSProperties> = {
     backgroundImage: `repeating-linear-gradient(180deg, transparent 0 calc(${LINE_STEP} - 1px), var(--notebook-rule) calc(${LINE_STEP} - 1px) ${LINE_STEP}), repeating-linear-gradient(90deg, transparent 0 calc(${LINE_STEP} - 1px), var(--notebook-rule) calc(${LINE_STEP} - 1px) ${LINE_STEP})`,
   },
   dotted: {
-    backgroundImage: "radial-gradient(var(--notebook-rule) 1px, transparent 1.4px)",
+    backgroundImage:
+      "radial-gradient(var(--notebook-rule) 1px, transparent 1.4px)",
     backgroundSize: `${LINE_STEP} ${LINE_STEP}`,
   },
   plain: {},
@@ -58,6 +82,17 @@ export const PAPERS: Record<NotebookPaper, CSSProperties> = {
 
 /**
  * The wire binding.
+ *
+ * Every ring is drawn as the *front half* of a turn, not a closed loop. A closed loop is what a coil
+ * looks like from the side; from the front, the far half is behind the paper and you see an arc that
+ * rises out of one punch hole and dives into the other. Drawn closed and wound tight, the loops'
+ * left and right extremes line up down the page into two unbroken verticals — the binding stopped
+ * reading as wire and started reading as a pipe.
+ *
+ * The half is cut with `pathLength` + a dash, not with a clip or a hand-written path: the geometry
+ * here is in percentages (the rings have to span a gutter whose width is a percentage of the
+ * spread), and SVG path data cannot take those. Normalising the ellipse to 100 units lets one dash
+ * of 50 select exactly the upper half, whatever the ellipse's real size turns out to be.
  *
  * An SVG `<pattern>` rather than a stack of elements or a repeating gradient: the pattern tiles
  * itself to whatever height the page ends up at, so nothing has to count rings or measure the
@@ -104,36 +139,48 @@ function SpiralBinding() {
         <pattern
           id={ring}
           width="100%"
-          height={RING_STEP * 6}
+          height={RING_TILE}
           patternUnits="userSpaceOnUse"
         >
-          {/* The coil: a full loop, centred just past the page edge so most of it bulges outward. */}
+          {/* The front half of a turn, bulging past the cover's own edge — the same arc the spread's
+              binding draws, sized against this column instead of the gutter. It was the one piece of
+              the coil still measured in raw units while everything around it moved to percentages,
+              so the cover's rings stayed one fixed size while the spread's tracked the seam: two
+              bindings drifting apart on the same notebook. */}
           <ellipse
-            cx="30%"
-            cy={RING_STEP * 3}
-            rx={RING_STEP * 1.35}
-            ry={RING_STEP * 1.05}
+            cx="34%"
+            cy={RING_TILE / 2}
+            rx="46%"
+            ry={RING_TILE * 0.42}
             fill="none"
             stroke={`url(#${wire})`}
             strokeWidth={WIRE_GAUGE}
+            strokeLinecap="round"
+            pathLength={100}
+            strokeDasharray={ARC_DASH}
+            strokeDashoffset={ARC_OFFSET}
           />
           {/* Specular highlight — offset up-left of the coil's own centre, not concentric with it. */}
           <ellipse
-            cx="27%"
-            cy={RING_STEP * 2.8}
-            rx={RING_STEP * 1.35}
-            ry={RING_STEP * 1.05}
+            cx="33%"
+            cy={RING_TILE / 2 - RING_STEP * 0.22}
+            rx="46%"
+            ry={RING_TILE * 0.42}
             fill="none"
+            strokeLinecap="round"
+            pathLength={100}
+            strokeDasharray={ARC_DASH}
+            strokeDashoffset={ARC_OFFSET}
             stroke="var(--notebook-wire-light)"
             strokeWidth={WIRE_GAUGE * 0.3}
             strokeOpacity="0.6"
           />
           {/* The punched hole, painted last so the coil visibly threads through it. */}
           <ellipse
-            cx="64%"
-            cy={RING_STEP * 3}
-            rx={RING_STEP * 0.85}
-            ry={RING_STEP * 0.85}
+            cx="70%"
+            cy={RING_TILE / 2}
+            rx={RING_STEP * 0.62}
+            ry={RING_STEP * 0.62}
             fill={`url(#${hole})`}
           />
         </pattern>
@@ -179,40 +226,56 @@ export function NotebookSpine() {
         // The channel between the sheets, not a hole through to the app background: paper, shaded
         // darkest at each lip where the page curves down into the binding.
         backgroundColor: "var(--notebook-paper)",
+        // Softer than it was. The lips only need to say the paper curves down into the seam; at the
+        // old strength the shading itself drew a dark column, which added to the pipe the closed
+        // rings were already making.
         backgroundImage:
-          "linear-gradient(90deg, rgba(0,0,0,0.18), rgba(0,0,0,0.06) 42%, rgba(0,0,0,0.06) 58%, rgba(0,0,0,0.18))",
+          "linear-gradient(90deg, rgba(0,0,0,0.11), rgba(0,0,0,0.03) 42%, rgba(0,0,0,0.03) 58%, rgba(0,0,0,0.11))",
       }}
     >
       <svg
         width="200%"
         height="100%"
-        style={{ position: "absolute", top: 0, left: "-50%", pointerEvents: "none" }}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: "-50%",
+          pointerEvents: "none",
+        }}
       >
         <defs>
           <BindingDefs wire={wire} hole={hole} />
           <pattern
             id={ring}
             width="100%"
-            height={RING_STEP * 6}
+            height={RING_TILE}
             patternUnits="userSpaceOnUse"
           >
             {/* One ring, arcing across the gutter and just past the hole on either side. */}
             <ellipse
               cx="50%"
-              cy={RING_STEP * 3}
-              rx="34%"
-              ry={RING_STEP * 1.15}
+              cy={RING_TILE / 2}
+              rx="50%"
+              ry={RING_TILE * 0.42}
               fill="none"
               stroke={`url(#${wire})`}
               strokeWidth={WIRE_GAUGE}
+              strokeLinecap="round"
+              pathLength={100}
+              strokeDasharray={ARC_DASH}
+              strokeDashoffset={ARC_OFFSET}
             />
             {/* Specular highlight, offset up-left of the coil rather than concentric with it. */}
             <ellipse
               cx="49%"
-              cy={RING_STEP * 2.75}
-              rx="34%"
-              ry={RING_STEP * 1.15}
+              cy={RING_TILE / 2 - RING_STEP * 0.22}
+              rx="50%"
+              ry={RING_TILE * 0.42}
               fill="none"
+              strokeLinecap="round"
+              pathLength={100}
+              strokeDasharray={ARC_DASH}
+              strokeDashoffset={ARC_OFFSET}
               stroke="var(--notebook-wire-light)"
               strokeWidth={WIRE_GAUGE * 0.3}
               strokeOpacity="0.6"
@@ -221,17 +284,17 @@ export function NotebookSpine() {
                 just inside the ring's own span puts them on the pages' punched edges, where a real
                 notebook punches them, rather than out in the middle of the paper. */}
             <ellipse
-              cx="23%"
-              cy={RING_STEP * 3}
-              rx={RING_STEP * 0.8}
-              ry={RING_STEP * 0.8}
+              cx="8%"
+              cy={RING_TILE / 2}
+              rx={RING_STEP * 0.62}
+              ry={RING_STEP * 0.62}
               fill={`url(#${hole})`}
             />
             <ellipse
-              cx="77%"
-              cy={RING_STEP * 3}
-              rx={RING_STEP * 0.8}
-              ry={RING_STEP * 0.8}
+              cx="92%"
+              cy={RING_TILE / 2}
+              rx={RING_STEP * 0.62}
+              ry={RING_STEP * 0.62}
               fill={`url(#${hole})`}
             />
           </pattern>

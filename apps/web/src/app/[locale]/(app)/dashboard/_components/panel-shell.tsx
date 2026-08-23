@@ -57,6 +57,7 @@ import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import { PremiumCampaignBanner } from "@/components/premium/premium-campaign-banner";
 import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { useDailyGreeting } from "@/lib/use-daily-greeting";
@@ -554,21 +555,17 @@ export function PanelShell({ initialData }: PanelShellProps) {
                 daysRemaining={data.countdown.daysRemaining}
                 examName={data.countdown.examName}
                 examDateLabel={data.countdown.examDateLabel}
-                source={{
-                  label: data.countdown.source,
-                  url: data.countdown.sourceUrl,
-                }}
                 labels={{
                   remaining: countdownT("title"),
                   dayUnit: countdownT("day_unit"),
                   today: countdownT("today"),
-                  sourcePrefix: countdownT("source_prefix"),
                 }}
               />
             ) : (
               <CountdownPlaceholder />
             )}
           </motion.div>
+          <PremiumCampaignBanner />
           <motion.div variants={staggerItemVariants}>
             <VisionBoardCard />
           </motion.div>

@@ -125,7 +125,7 @@ toggle slot keeps the plain Sun/Moon icon button.
 
 **Runtime:** `html.dark` overrides the same `--color-*` CSS variables. New UI must use those tokens — never `bg-white`, `#fff`, or `dark:bg-black`. Tailwind `dark:` is an escape hatch only when a value cannot be a token.
 
-**Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`).
+**Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`), `.premium-campaign-banner` (committed cyan→slate campaign wash + quiet grain; pins light-canvas ink so `html.dark` does not invert the banner).
 
 ---
 
@@ -249,6 +249,7 @@ Same light: pastel matte, rounded forms, soft shadow, light ground. Final art is
 | `CompanionEmpty` | Empty list/chart | `visuals/` and/or Puhu + copy + CTA |
 | `MomentHero` | Koç hub / milestone | Full-bleed Puhu poster |
 | `PromoSoft` | Earned premium taste | Pastel surface + short copy — no guilt |
+| `CampaignPromo` | Free-user premium nudge | Compact rail card (not a page hero): token gradient + gift art + trial copy — no fake discount, no shame |
 
 ### 8.5 `visuals/` naming
 
@@ -327,8 +328,8 @@ deliberate presence cue, disabled under reduced motion.
   Desktop rail is 240px with sentence-case labels. A top-right `PanelLeft` control
   collapses it to a 52px icon strip (same width as the analysis history rail).
   Hover/focus on a rail icon reveals the link name. Preference persists via the
-  `mentor-sidebar` cookie (no expanded flash on reload). `/hedef/pano` keeps this
-  collapsed rail visible (does not hide AppNav).
+  `mentor-sidebar` cookie (no expanded flash on reload). `/hedef/pano` and
+  community keep this collapsed rail visible (do not hide AppNav).
 - Single-column → multi-column (main + right rail) where product needs it.
 - Hover: `shadow-card-hover` on interactive elevated cards; focus: `focus-ring`.
 

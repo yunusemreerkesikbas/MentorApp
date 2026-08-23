@@ -63,6 +63,17 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **Premium kampanya banner (2026-08-23)** — Paylaşılan `PremiumCampaignBanner`: sol hediye
+  (`upgrade-premium-2.svg`), sağda 7 gün deneme + koç vurgusu, cyan→charcoal linear wash
+  (`.premium-campaign-banner`, tema takip etmez). Tıklayınca paywall açılır. Yalnız
+  `!isPremium` kullanıcıda görünür; fetch hata/premium ise gizlenir. Panelde sağ sütunda,
+  geri sayımın altında yatay kart: solda `campaign.png` (şeffaf zemin), sağda deneme + başlık.
+  Sahte indirim yok. Kullanım: başka sayfaya da aynı bileşeni koy. Gotcha: çizim beyaz olduğu
+  için zemin kenardan flood-fill ile alındı; orijinal `campaign.jpg` duruyor. xl altı aside
+  alta düşer. Hover: kart etrafında cyan hale yok; cam yansıması (`mentor-campaign-sheen`)
+  arka arkaya iki geçiş, döngü yok. `prefers-reduced-motion` süpürmeyi kapatır.
+  İlgili: `premium-campaign-banner.tsx`, `panel-shell.tsx`, `theme.css`.
+
 - **Achievement kutlama katmanı (2026-08-18)** — Uygulama kabuğu açılışta ve SSE sonrasında unseen
   başarıları yakalar; canlı başarıları sırayla, backfill'i tek özet olarak gösterir. Kapatma başarılı
   acknowledge sonrasında ilerler; hata halinde yeniden denenebilir. `prefers-reduced-motion` yalnız
@@ -81,9 +92,9 @@ http://localhost:3000/panel               # daily ritual hub
   toggle; wordmark, identity, economy, notifications, and language stay in the
   expanded rail. Hover/focus on a rail icon shows the link name. Preference
   persists in the `mentor-sidebar` cookie with a pre-paint bootstrap so reload
-  does not flash the wide rail. `/hedef/pano` keeps the collapsed rail (does not
-  hide AppNav); leaving restores the cookie. Usage: any `(app)` screen that
-  shows AppNav (not community workspace). Gotcha: content padding is
+  does not flash the wide rail. `/hedef/pano` and community keep the collapsed
+  rail (do not hide AppNav); leaving restores the cookie. Usage: any `(app)`
+  screen that shows AppNav. Gotcha: content padding is
   `var(--app-sidebar-width)` via `.mentor-app-shell`, not `lg:pl-60`.
   Related: `app-nav.tsx`, `app-sidebar.ts`, `use-app-sidebar.ts`,
   `(app)/layout.tsx`, `[locale]/layout.tsx`, `globals.css`.
@@ -108,7 +119,8 @@ http://localhost:3000/panel               # daily ritual hub
 
 - **Hedef panosu keeps collapsed AppNav (2026-08-15)** — `/hedef/pano` no longer
   hides the desktop sidebar. The 52px icon rail stays visible (locked collapsed,
-  cookie unchanged) so leaving the editor restores the previous width. Mobile
+  cookie unchanged) so leaving the editor restores the previous width. Community
+  uses the same collapsed-on-entry rail but still allows expand. Mobile
   editor chrome stays full-bleed (no tab bar / header / coach FAB). Usage: open
   the collage editor from `/hedef`. Related: `layout.tsx`, `app-nav.tsx`,
   `app-sidebar.ts`.
@@ -139,7 +151,7 @@ http://localhost:3000/panel               # daily ritual hub
 
 - **Community token pass (2026-08-15)** — Community workspace stopped re-locking light
   `--color-*` hex. Feed/zone/profile/question surfaces + header/sidebar use theme tokens.
-  Theme toggle is in the community header (AppNav stays hidden). Related:
+  Theme and notifications live on AppNav. Related:
   `docs/features/community.md`.
 
 - **Plan token pass (2026-08-15)** — Plan calendar/timeline + shared dialog/field primitives
@@ -154,7 +166,7 @@ http://localhost:3000/panel               # daily ritual hub
   `[locale]/layout.tsx` so the first paint matches the cookie. Sidebar footer toggle (Sun/Moon)
   next to the language switch; rail uses surface/border tokens and a 200ms color transition
   (`motion-reduce` instant). Usage: desktop sidebar → moon/sun; reload keeps the choice. Gotcha:
-  community workspace hides `AppNav` — toggle is in the community header; mobile
+  community keeps collapsed `AppNav` (theme lamp stays on the rail); mobile
   `(app)` header now has the same moon/sun; `/ayarlar` has appearance pills;
   `/giris` / `/kayit` / `/onboarding` have card/step-header toggles. Related:
   `apps/web/src/lib/theme.ts`, `use-theme.ts`, `theme-toggle.tsx`, `app-nav.tsx`,
@@ -436,7 +448,7 @@ http://localhost:3000/panel               # daily ritual hub
   Boşta 4–7 sn'de bir kırpar; kırpmanın bir kısmı rastgele sağa/sola bakış taşır. Sekme gizliyken
   kırpma yeniden kuyruğa alınır, hiçbir şey ekran dışında oynamaz. **Kullanım:** `<ThemeLamp variant="rail" />` (52px dar sidebar, yalnız lamba)
   ve `<ThemeLampFooter>` (açık panel, Puhu + bakış alanı tüm footer); diğer dört toggle noktası sade
-  `ThemeToggle` ile kaldı (auth/onboarding/community). Mobil `(app)` başlığı `MobileThemeLamp`
+  `ThemeToggle` ile kaldı (auth/onboarding). Mobil `(app)` başlığı `MobileThemeLamp`
   kullanır: in-flow slot `size-11` (eski güneş/ay ile aynı), sahne header'ın üst kenarına
   hizalanır — abajur 64px barın içinde, Puhu (~48px) alt kenardan içeri sarkar. Dokunma
   hover yerine geçer: basılı tutunca kanat kalkar, bırakınca ip çekilir. Idle kırpma/bakış

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { EntitlementDto, PlanDto, SubscriptionDto } from "@mentor/types";
-import { listSubscriptionFacts, subscriptionStatusKey } from "./subscription-facts";
+import {
+  heroChipKey,
+  listSubscriptionFacts,
+  subscriptionStatusKey,
+} from "./subscription-facts";
 
 const plan: PlanDto = {
   id: "premium-monthly",
@@ -115,5 +119,18 @@ describe("subscriptionStatusKey", () => {
     expect(subscriptionStatusKey("ACTIVE")).toBe("reason_active");
     expect(subscriptionStatusKey("STAFF")).toBe("reason_staff");
     expect(subscriptionStatusKey(undefined)).toBe("reason_free");
+  });
+});
+
+describe("heroChipKey", () => {
+  it("keeps a single status chip while the plan is running", () => {
+    expect(heroChipKey("ACTIVE", false)).toBe("reason_active");
+    expect(heroChipKey("TRIALING", false)).toBe("reason_trialing");
+  });
+
+  it("hides the chip once cancel is already in the facts list", () => {
+    expect(heroChipKey("ACTIVE", true)).toBeNull();
+    expect(heroChipKey("CANCELED_PERIOD", false)).toBeNull();
+    expect(heroChipKey("CANCELED_PERIOD", true)).toBeNull();
   });
 });

@@ -69,6 +69,16 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+- **Kampanya banner (2026-08-23)** — Panelde ücretsiz kullanıcıya paylaşılan premium
+  kampanya (`PremiumCampaignBanner`), sağ sütunda `campaign.jpg` + deneme metni.
+  CTA paywall modal.
+  İndirim uydurulmaz; 7 gün deneme + koç vurgusu. İlgili: `premium-campaign-banner.tsx`,
+  [web-shell.md](./web-shell.md).
+
+- **`/abonelik` iptal çipi (2026-08-23)** — İptal sonrası sağ üstte iki chip yok. İptal
+  zaten satırlarda (erişim bitiş + yenileme durur); hero en fazla bir durum çipi gösterir.
+  İlgili: `subscription-facts.ts`, `subscription-shell.tsx`.
+
 - **`/abonelik` yönetim kartı (2026-08-22)** — Sayfa başlığı, alt başlık ve “Panele dön”
   kalktı. Üstte plan adı + ücret + durum çipi; altında sol etiket / sağ değer satırları
   (`<dl>`): ücret, dönem, başlangıç, deneme bitiş, dönem başlangıcı, sonraki yenileme **veya**

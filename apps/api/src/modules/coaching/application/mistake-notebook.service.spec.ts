@@ -383,6 +383,22 @@ describe("MistakeNotebookService", () => {
   });
 
   describe("reviewEntry", () => {
+    it("gives no promotion for a card answered before it was due", async () => {
+      // `makeEntryRow` is due in the past; this one is not. Nothing about the schedule may move —
+      // the client cannot ask for this either way, the server reads the card's own date.
+      const later = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+      ctx.repo.entries.set(
+        ENTRY,
+        makeEntryRow({ reviewCount: 1, nextReviewAt: later }),
+      );
+
+      const dto = await ctx.service.reviewEntry(USER, ENTRY, true);
+
+      expect(dto.reviewCount).toBe(1);
+      expect(dto.nextReviewAt).toBe(later.toISOString());
+      expect(dto.lastReviewedAt).not.toBeNull();
+    });
+
     it("climbs a rung when solved", async () => {
       ctx.repo.entries.set(ENTRY, makeEntryRow({ reviewCount: 0 }));
       const dto = await ctx.service.reviewEntry(USER, ENTRY, true);
