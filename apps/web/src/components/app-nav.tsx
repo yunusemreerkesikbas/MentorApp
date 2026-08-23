@@ -19,6 +19,8 @@ import {
   APP_SIDEBAR_COLLAPSED_PX,
   applyAppSidebar,
   isBoardEditorPath,
+  isCommunityPath,
+  isDefaultCollapsedSidebarPath,
   parseAppSidebarCookie,
 } from "@/lib/app-sidebar";
 import { useAuth } from "@/lib/auth-context";
@@ -111,6 +113,7 @@ export function AppNav() {
   }, []);
 
   const isBoardEditor = isBoardEditorPath(pathname);
+  const hideMobileChrome = isBoardEditor || isCommunityPath(pathname);
 
   return (
     <>
@@ -121,7 +124,7 @@ export function AppNav() {
         user={user}
       />
 
-      {isBoardEditor ? null : (
+      {hideMobileChrome ? null : (
         <header className="fixed inset-x-0 top-0 z-20 flex h-16 items-center gap-3 overflow-visible border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] px-4 backdrop-blur transition-colors duration-200 motion-reduce:transition-none lg:hidden">
           {user ? (
             <MobileIdentity premium={premium} user={user} />
@@ -145,7 +148,7 @@ export function AppNav() {
         </header>
       )}
 
-      {isBoardEditor ? null : (
+      {hideMobileChrome ? null : (
         <nav
           className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 lg:hidden"
           aria-label={t("aria_label")}
@@ -154,7 +157,7 @@ export function AppNav() {
         </nav>
       )}
 
-      {!pathname.startsWith("/coach") && !isBoardEditor ? <DesktopCoachFab /> : null}
+      {!pathname.startsWith("/coach") && !hideMobileChrome ? <DesktopCoachFab /> : null}
     </>
   );
 }
@@ -172,14 +175,31 @@ function DesktopSidebar({
 }) {
   const t = useTranslations("nav");
   const forceCollapsed = isBoardEditorPath(pathname);
+  const startsCollapsed = isDefaultCollapsedSidebarPath(pathname);
   const { open: storedOpen, setOpen } = useAppSidebar();
-  const open = forceCollapsed ? false : storedOpen;
+  const [sessionOpen, setSessionOpen] = useState<boolean | null>(null);
+  const open = forceCollapsed
+    ? false
+    : sessionOpen !== null
+      ? sessionOpen
+      : startsCollapsed
+        ? false
+        : storedOpen;
 
   useLayoutEffect(() => {
-    if (!forceCollapsed) return;
+    if (!startsCollapsed) {
+      setSessionOpen(null);
+      return;
+    }
     applyAppSidebar(false);
+    setSessionOpen(null);
     return () => applyAppSidebar(parseAppSidebarCookie(document.cookie));
-  }, [forceCollapsed]);
+  }, [startsCollapsed]);
+
+  function handleSetOpen(next: boolean) {
+    setSessionOpen(next);
+    setOpen(next);
+  }
 
   return (
     <aside
@@ -198,7 +218,7 @@ function DesktopSidebar({
         {forceCollapsed ? null : (
           <button
             type="button"
-            onClick={() => setOpen(true)}
+            onClick={() => handleSetOpen(true)}
             className={sidebarIconBtn}
             aria-expanded={open}
             aria-label={t("sidebar_expand")}
@@ -245,7 +265,7 @@ function DesktopSidebar({
           </Link>
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={() => handleSetOpen(false)}
             className={sidebarIconBtn}
             aria-expanded={open}
             aria-label={t("sidebar_collapse")}

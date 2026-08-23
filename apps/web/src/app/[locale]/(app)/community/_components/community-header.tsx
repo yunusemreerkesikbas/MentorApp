@@ -2,11 +2,9 @@
 import { Menu, MessageCircle } from "lucide-react";
 
 import { useTranslations } from "next-intl";
-import { NotificationBell } from "@mentor/ui";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { CircularBackLink } from "@/components/circular-back-link";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { AuthorAvatar } from "./author-avatar";
 import { CommunitySearch } from "./community-search";
 import { useZoneDrawer } from "./zone-drawer-context";
@@ -26,6 +24,7 @@ export function CommunityHeader() {
           href={isMemberProfile ? "/community" : "/dashboard"}
           label={isMemberProfile ? t("back") : common("dialog.close")}
           icon={isMemberProfile ? "chevron" : "close"}
+          className="community-header__close"
         />
         <Link href="/community" className="community-header__wordmark community-header__wordmark--desktop">
           <span className="community-header__mark" aria-hidden>
@@ -51,12 +50,6 @@ export function CommunityHeader() {
       <CommunitySearch />
 
       <div className="community-header__actions">
-        <NotificationBell
-          label={common("notifications_label")}
-          unreadLabel={common("notifications_unread_label")}
-          desktopSide="right"
-        />
-        <ThemeToggle />
         {user ? (
           <Link
             href={

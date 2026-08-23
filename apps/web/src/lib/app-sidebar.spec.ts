@@ -8,6 +8,8 @@ import {
   APP_SIDEBAR_EXPANDED_PX,
   DEFAULT_APP_SIDEBAR_OPEN,
   isBoardEditorPath,
+  isCommunityPath,
+  isDefaultCollapsedSidebarPath,
   parseAppSidebarCookie,
 } from "./app-sidebar";
 
@@ -39,12 +41,31 @@ describe("isBoardEditorPath", () => {
   });
 });
 
+describe("isCommunityPath", () => {
+  it("matches canonical and public community URLs", () => {
+    expect(isCommunityPath("/community")).toBe(true);
+    expect(isCommunityPath("/community/feed")).toBe(true);
+    expect(isCommunityPath("/topluluk")).toBe(true);
+    expect(isCommunityPath("/en/topluluk/akis")).toBe(true);
+    expect(isCommunityPath("/dashboard")).toBe(false);
+  });
+});
+
+describe("isDefaultCollapsedSidebarPath", () => {
+  it("collapses the desktop AppNav on the board editor and community", () => {
+    expect(isDefaultCollapsedSidebarPath("/hedef/pano")).toBe(true);
+    expect(isDefaultCollapsedSidebarPath("/community")).toBe(true);
+    expect(isDefaultCollapsedSidebarPath("/plan")).toBe(false);
+  });
+});
+
 describe("APP_SIDEBAR_BOOTSTRAP_SCRIPT", () => {
-  it("applies data-app-sidebar from the cookie or the board editor path", () => {
+  it("applies data-app-sidebar from the cookie, board editor, or community path", () => {
     expect(APP_SIDEBAR_BOOTSTRAP_SCRIPT).toContain(APP_SIDEBAR_COOKIE);
     expect(APP_SIDEBAR_BOOTSTRAP_SCRIPT).toContain(`==="${APP_SIDEBAR_COLLAPSED_VALUE}"`);
     expect(APP_SIDEBAR_BOOTSTRAP_SCRIPT).toContain("dataset.appSidebar");
     expect(APP_SIDEBAR_BOOTSTRAP_SCRIPT).toContain("hedef\\/pano");
+    expect(APP_SIDEBAR_BOOTSTRAP_SCRIPT).toContain("community|topluluk");
   });
 });
 

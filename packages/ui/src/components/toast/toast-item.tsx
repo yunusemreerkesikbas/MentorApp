@@ -68,6 +68,26 @@ export function ToastItem({
               {toast.message}
             </p>
           ) : null}
+          {/* Under the text, not beside the dismiss button: it is a thing to do, not a way out.
+              Acting also dismisses — the toast has said its piece and the user has answered it. */}
+          {toast.action ? (
+            <button
+              type="button"
+              onClick={() => {
+                toast.action?.onClick();
+                onDismiss(toast.id);
+              }}
+              className="mt-1.5 inline-flex min-h-9 cursor-pointer items-center rounded-[var(--radius-card)] px-2 text-sm font-bold outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+              style={{
+                color: "var(--color-accent)",
+                backgroundColor: "var(--color-accent-soft)",
+                fontFamily: "var(--font-body)",
+                marginLeft: "-0.5rem",
+              }}
+            >
+              {toast.action.label}
+            </button>
+          ) : null}
         </div>
         <button
           type="button"

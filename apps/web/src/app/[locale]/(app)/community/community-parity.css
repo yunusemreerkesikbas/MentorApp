@@ -61,6 +61,8 @@
   letter-spacing: -0.025em;
 }
 
+.community-header .community-header__close { display: none; }
+
 .community-header__wordmark--mobile { display: none; }
 
 .community-header__wordmark--mobile {
@@ -68,6 +70,7 @@
   height: 44px;
   justify-content: center;
   border-radius: 10px;
+  cursor: pointer;
   transition: background-color 180ms ease-out, box-shadow 180ms ease-out;
 }
 
@@ -649,6 +652,7 @@
   }
 
   .community-header__brand { padding: 0 10px; }
+  .community-header .community-header__close { display: grid; }
   .community-header__wordmark--desktop { display: none; }
   .community-header__wordmark--mobile { display: flex; }
   .community-header__search { height: 40px; margin: 0; }
@@ -661,7 +665,6 @@
 }
 
 @media (max-width: 560px) {
-  .community-header__actions > :first-child { display: none; }
   .community-header__search { padding: 0 11px; }
 
   .community-search-panel {

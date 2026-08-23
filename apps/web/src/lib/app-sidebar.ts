@@ -15,12 +15,23 @@ export function isBoardEditorPath(pathname: string): boolean {
   return /(?:^|\/)(?:vision-board\/board|hedef\/pano)\/?$/.test(pathname);
 }
 
+/** Canonical `/community` or public `/topluluk` (optional locale prefix and nested routes). */
+export function isCommunityPath(pathname: string): boolean {
+  return /(?:^|\/)(?:community|topluluk)(?:\/|$)/.test(pathname);
+}
+
+/** Routes that open the desktop AppNav collapsed (board editor + community). */
+export function isDefaultCollapsedSidebarPath(pathname: string): boolean {
+  return isBoardEditorPath(pathname) || isCommunityPath(pathname);
+}
+
 /**
  * Blocking bootstrap — runs before paint so `--app-sidebar-width` matches the
  * cookie and the first frame is not an expanded flash. Keep in sync with
- * `parseAppSidebarCookie`. `/hedef/pano` always starts collapsed (no cookie write).
+ * `parseAppSidebarCookie`. `/hedef/pano` and community always start collapsed
+ * (no cookie write).
  */
-export const APP_SIDEBAR_BOOTSTRAP_SCRIPT = `(function(){try{var p=location.pathname;var board=/(?:^|\\/)(?:vision-board\\/board|hedef\\/pano)\\/?$/.test(p);var m=document.cookie.match(/(?:^|; )${APP_SIDEBAR_COOKIE}=([^;]*)/);if(board||(m&&decodeURIComponent(m[1])==="${APP_SIDEBAR_COLLAPSED_VALUE}"))document.documentElement.dataset.appSidebar="${APP_SIDEBAR_COLLAPSED_VALUE}"}catch(e){}})();`;
+export const APP_SIDEBAR_BOOTSTRAP_SCRIPT = `(function(){try{var p=location.pathname;var collapsed=/(?:^|\\/)(?:vision-board\\/board|hedef\\/pano)\\/?$/.test(p)||/(?:^|\\/)(?:community|topluluk)(?:\\/|$)/.test(p);var m=document.cookie.match(/(?:^|; )${APP_SIDEBAR_COOKIE}=([^;]*)/);if(collapsed||(m&&decodeURIComponent(m[1])==="${APP_SIDEBAR_COLLAPSED_VALUE}"))document.documentElement.dataset.appSidebar="${APP_SIDEBAR_COLLAPSED_VALUE}"}catch(e){}})();`;
 
 export function parseAppSidebarCookie(
   cookieSource: string | null | undefined,

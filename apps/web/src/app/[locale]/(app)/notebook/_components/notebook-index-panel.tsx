@@ -41,6 +41,14 @@ export interface NotebookIndexPanelProps {
   refreshKey: number;
   onOpen: (entry: NotebookEntryDto) => void;
   onPlace: (entry: NotebookEntryDto) => void;
+  /**
+   * Study a set of cards now, whatever their schedule says.
+   *
+   * The deck is what is due today; this is the other half — "let me go over these five before the
+   * exam". Answering early cannot promote a card (the server reads its own due date), so this is a
+   * way to practise, not a way to climb the ladder faster.
+   */
+  onStudy: (entries: NotebookEntryDto[]) => void;
 }
 
 export function NotebookIndexPanel({
@@ -49,6 +57,7 @@ export function NotebookIndexPanel({
   refreshKey,
   onOpen,
   onPlace,
+  onStudy,
 }: NotebookIndexPanelProps) {
   const t = useTranslations("notebook");
   const reactId = useId();
@@ -59,6 +68,16 @@ export function NotebookIndexPanel({
   const [subjectRef, setSubjectRef] = useState("");
   const [errorType, setErrorType] = useState("");
   const [status, setStatus] = useState("");
+  /**
+   * Ids ticked for a study session, by id rather than by row: the list is paginated and filterable,
+   * and an index would point at a different card the moment either changes.
+   */
+  const [picked, setPicked] = useState<ReadonlySet<string>>(
+    () => new Set<string>(),
+  );
+
+  /** Ticks are only meaningful against the list that produced them. */
+  const clearPicks = useCallback(() => setPicked(new Set<string>()), []);
   const [items, setItems] = useState<NotebookEntryDto[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -99,6 +118,9 @@ export function NotebookIndexPanel({
         setPage(1);
         setError(null);
         setLoaded(true);
+        // A tick means "this card"; a new filter is a new list, and carrying ticks across would
+        // start a session with cards the student can no longer see.
+        clearPicks();
       })
       .catch(() => {
         if (!cancelled) setError(t("error_index_load"));
@@ -106,7 +128,7 @@ export function NotebookIndexPanel({
     return () => {
       cancelled = true;
     };
-  }, [fetchPage, refreshKey, t]);
+  }, [clearPicks, fetchPage, refreshKey, t]);
 
   function loadMore() {
     setBusy(true);
@@ -203,11 +225,34 @@ export function NotebookIndexPanel({
             key={entry.id}
             entry={entry}
             placed={placedEntryIds.has(entry.id)}
+            picked={picked.has(entry.id)}
+            onPick={() =>
+              setPicked((current) => {
+                const next = new Set(current);
+                if (next.has(entry.id)) next.delete(entry.id);
+                else next.add(entry.id);
+                return next;
+              })
+            }
             onOpen={() => onOpen(entry)}
             onPlace={() => onPlace(entry)}
           />
         ))}
       </div>
+
+      {/* Only once something is ticked. An always-there "study 0 cards" button is a control that
+          spends its life disabled, and this panel is already three filters tall. */}
+      {picked.size > 0 ? (
+        <NotebookCompactButton
+          fullWidth
+          onClick={() => {
+            onStudy(items.filter((entry) => picked.has(entry.id)));
+            clearPicks();
+          }}
+        >
+          {t("index_study_picked", { count: picked.size })}
+        </NotebookCompactButton>
+      ) : null}
 
       {items.length < total ? (
         <NotebookCompactButton
@@ -226,11 +271,15 @@ export function NotebookIndexPanel({
 function IndexRow({
   entry,
   placed,
+  picked,
+  onPick,
   onOpen,
   onPlace,
 }: {
   entry: NotebookEntryDto;
   placed: boolean;
+  picked: boolean;
+  onPick: () => void;
   onOpen: () => void;
   onPlace: () => void;
 }) {
@@ -239,6 +288,15 @@ function IndexRow({
 
   return (
     <div className="flex items-center gap-2">
+      {/* A real checkbox, not a styled div: it is the one control here that has to announce a
+          checked state, and the platform already does that in every screen reader. */}
+      <input
+        type="checkbox"
+        checked={picked}
+        onChange={onPick}
+        aria-label={t("index_pick", { card: label })}
+        className="size-4 shrink-0 cursor-pointer accent-[var(--color-accent)]"
+      />
       <button
         type="button"
         onClick={onOpen}

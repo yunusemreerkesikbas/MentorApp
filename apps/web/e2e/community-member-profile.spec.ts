@@ -174,9 +174,14 @@ test("üye profili responsive hero, aksiyonlar ve seviye panelini korur", async 
         .first()
         .evaluate((element) => getComputedStyle(element).boxShadow),
     ).toContain("0px 0px 0px 1px");
-    await expect(
-      page.locator(".community-header").getByRole("link", { name: "Topluluk" }),
-    ).toHaveAttribute("href", "/topluluk");
+    const headerBack = page
+      .locator(".community-header")
+      .getByRole("link", { name: "Topluluk" });
+    if (viewport.width < 1024) {
+      await expect(headerBack).toHaveAttribute("href", "/topluluk");
+    } else {
+      await expect(headerBack).toHaveCount(0);
+    }
     await expect(
       page.locator(".profile-hero").getByRole("link", { name: "Topluluk" }),
     ).toHaveCount(0);

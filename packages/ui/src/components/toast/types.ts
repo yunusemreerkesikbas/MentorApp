@@ -14,6 +14,13 @@ export interface ToastShowOptions {
   dismissLabel: string;
   /** Optional id for dedupe/replace. */
   id?: string;
+  /**
+   * One thing the toast lets you do about what it just told you.
+   *
+   * Singular on purpose: a toast is a passing remark, and a remark with two buttons is a dialog
+   * that forgot to block. Pressing it dismisses the toast — the toast has said its piece.
+   */
+  action?: { label: string; onClick: () => void };
 }
 
 export interface ToastRecord extends Required<
@@ -24,6 +31,7 @@ export interface ToastRecord extends Required<
   variant: ToastVariant;
   duration: number;
   leading?: React.ReactNode;
+  action?: { label: string; onClick: () => void };
   /** Set when exit animation starts. */
   exiting?: boolean;
   createdAt: number;

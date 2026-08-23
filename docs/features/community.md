@@ -149,7 +149,7 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   chips/podium fade, mini-leaderboard, thread/composer/comment rows, coach bridge,
   zone drawer canvas, and profile/saved dividers follow the theme. Photo lightbox,
   composer overlay, and attachment remove-on-image stay white-on-dark. Usage: flip
-  the community header theme toggle; leftover chips and hover wells should invert
+  the AppNav theme lamp; leftover chips and hover wells should invert
   with `html.dark`. Gotcha: `--community-blue` CTAs keep `text-white` (progress
   exception). Related: `leaderboard-screen.tsx`, `mini-leaderboard.tsx`,
   `community-coach-bridge.tsx`, `docs/features/web-shell.md`.
@@ -157,9 +157,9 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 - **Theme token pass (2026-08-15)** — Community workspace no longer locks light hex on
   `--color-*`. Surfaces inherit `html` / `html.dark` (`--color-surface`, `--color-border`,
   `--color-btn-label`). Soft community wells (blue/coral/green) mix against surface.
-  Header search/sidebar/profile chrome follow the same tokens. Theme toggle sits in the
-  community header (AppNav is hidden here). Lightbox/photo overlays stay white-on-dark.
-  Usage: flip moon/sun in the community header; cookie `mentor-theme` persists. Gotcha:
+  Header search/sidebar/profile chrome follow the same tokens. Theme and
+  notifications live on AppNav (collapsed rail lamp + expanded bell). Lightbox/photo overlays stay white-on-dark.
+  Usage: flip the AppNav lamp; cookie `mentor-theme` persists. Gotcha:
   `--community-canvas` is `--color-bg`, not a separate light gray. Related:
   `community-parity.css`, `community-header.tsx`, feed/zone/profile shells,
   `docs/features/web-shell.md`.
@@ -735,3 +735,13 @@ community-header}.tsx}`, `feed/_components/global-composer.tsx`, `messages/{tr,e
   yüzeyine eşitlendi; mevcut medya edit endpoint'i tarafından değiştirilmez. İlgili:
   `composer-body-field.tsx`, `global-composer.tsx`, `thread-item.tsx`,
   `community-post-actions.spec.ts`.
+  **Masaüstü AppNav toplulukta kapalı açılır (2026-08-23):** Kanal listesi
+  değişmedi. Panel sidebar'ı (`app-nav.tsx`) artık toplulukta gizlenmez;
+  `/hedef/pano` gibi yerinde kalır ve 52 px kapalı rail ile açılır. Cookie
+  yazılmaz; sayfadan çıkınca önceki genişlik geri gelir. Kullanıcı rail'deki
+  mevcut `PanelLeft` ile genişletebilir. Mobilde AppNav header/tab yine yok
+  (topluluk kendi chrome'unu kullanır). Community header'dan bildirim zili ve
+  tema düğmesi kaldırıldı — ikisi AppNav'da (rail lambası / açık panel zili).
+  Header close/geri yalnız mobilde kalır (`<lg`); masaüstünde AppNav çıkış yoludur.
+  Kullanım: `/topluluk` → solda dar AppNav + kanal sidebar. İlgili:
+  `app-nav.tsx`, `app-sidebar.ts`, `community-header.tsx`, `(app)/layout.tsx`.

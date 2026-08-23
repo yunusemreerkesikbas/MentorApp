@@ -18,13 +18,19 @@ import {
 /** Clear of the spiral binding and the margin rule (7cqw + 5cqw of the page width). */
 export const ENTRY_LEFT = Math.round(NOTEBOOK_PAGE_CANVAS.width * 0.16);
 export const ENTRY_WIDTH = Math.round(NOTEBOOK_PAGE_CANVAS.width * 0.74);
-/** Fallback for a text-only mistake, and the step the next slot's `y` is still measured in — see
- *  `nextEntrySlot`'s own note on why a photo's real height isn't threaded through that math too. */
+/** A text-only mistake has no ratio to follow, so it gets the one shape that is not a photo's. */
 export const ENTRY_HEIGHT = 300;
-/** A placed photo's height is derived from its own ratio at `ENTRY_WIDTH`, clamped to this range so
- *  a very tall or very wide photo still reads as one card rather than a sliver or a banner. */
-const ENTRY_PHOTO_HEIGHT_MIN = 180;
+/**
+ * How tall a placed photo may get before it is scaled down.
+ *
+ * The limit is on the card's *size*, never on its shape: hitting it shrinks both sides together, so
+ * a tall page photo lands smaller rather than squashed. Clamping the height alone — which is what
+ * this used to do — left a box whose ratio was not the photo's, and `object-contain` filled the
+ * difference with bars. That is where the black edges in the notebook came from.
+ */
 const ENTRY_PHOTO_HEIGHT_MAX = 420;
+/** Below this a card is a strip nobody can read; a very wide panorama is scaled to fit it instead. */
+const ENTRY_PHOTO_HEIGHT_MIN = 180;
 const ENTRY_TOP = 90;
 const ENTRY_GAP = 40;
 
@@ -51,35 +57,60 @@ export interface EntrySlot {
  * the user starts dragging, and at that point *they* own the layout and we should not second-guess
  * it by hunting for gaps.
  *
- * `aspect` (the uploaded photo's own width/height) sizes the slot to match it — `object-contain`
- * inside a box shaped like the photo has nothing to letterbox, where the old fixed `ENTRY_HEIGHT`
- * forced every photo, portrait or landscape, into the same landscape-ish box and let big black bars
- * show through on anything portrait (most exam pages). `y` still steps by the fixed `ENTRY_HEIGHT`
- * rather than each card's own real height: getting that right needs summing every existing entry's
- * placed height, which is a bigger change than this fix asked for, and the existing "they can
- * rearrange later" placement philosophy already treats a placed slot as a starting point, not a
- * final layout.
+ * `aspect` (the photo's own width/height) shapes the slot. A card is never given a ratio that is
+ * not the photo's: when the derived height runs past `ENTRY_PHOTO_HEIGHT_MAX`, the width comes down
+ * with it. The old version clamped the height on its own, which quietly changed the box's shape and
+ * handed `object-contain` a gap to letterbox — every portrait exam photo sat between black bars.
+ *
+ * `y` walks the real heights of the cards already placed, not a fixed step. With variable heights a
+ * fixed step is wrong in both directions at once: it overlaps the tall ones and leaves a hole under
+ * the short ones.
  */
 export function nextEntrySlot(
   items: NotebookPageItem[],
   aspect?: number | null,
 ): EntrySlot | null {
-  const used = items.filter((item) => item.kind === "entry").length;
-  if (used >= ENTRIES_PER_PAGE) return null;
+  const entries = items.filter((item) => item.kind === "entry");
+  if (entries.length >= ENTRIES_PER_PAGE) return null;
 
   const highestZ = items.reduce((max, item) => Math.max(max, item.z), 0);
-  const height = aspect
-    ? Math.round(
-        Math.min(ENTRY_PHOTO_HEIGHT_MAX, Math.max(ENTRY_PHOTO_HEIGHT_MIN, ENTRY_WIDTH / aspect)),
-      )
-    : ENTRY_HEIGHT;
+
+  let width = ENTRY_WIDTH;
+  let height = ENTRY_HEIGHT;
+  if (aspect && aspect > 0) {
+    height = ENTRY_WIDTH / aspect;
+    if (height > ENTRY_PHOTO_HEIGHT_MAX) {
+      height = ENTRY_PHOTO_HEIGHT_MAX;
+      width = height * aspect;
+    } else if (height < ENTRY_PHOTO_HEIGHT_MIN) {
+      height = ENTRY_PHOTO_HEIGHT_MIN;
+      width = height * aspect;
+    }
+    // A panorama scaled up to the minimum height can end up wider than the writing area; the width
+    // is the hard limit, so it wins and the card simply ends up shorter than the minimum.
+    if (width > ENTRY_WIDTH) {
+      width = ENTRY_WIDTH;
+      height = ENTRY_WIDTH / aspect;
+    }
+    width = Math.round(width);
+    height = Math.round(height);
+  }
+
+  // Where the last card actually ends, which is not `count × step` once heights vary.
+  const bottom = entries.reduce(
+    (lowest, item) => Math.max(lowest, item.y + item.height),
+    ENTRY_TOP - ENTRY_GAP,
+  );
+
   return {
-    x: ENTRY_LEFT,
-    y: ENTRY_TOP + used * (ENTRY_HEIGHT + ENTRY_GAP),
-    width: ENTRY_WIDTH,
+    // Centred in the writing area rather than pinned left: a card narrower than `ENTRY_WIDTH` hung
+    // off the margin rule with a growing gap on its right, which reads as a mistake.
+    x: Math.round(ENTRY_LEFT + (ENTRY_WIDTH - width) / 2),
+    y: Math.round(bottom + ENTRY_GAP),
+    width,
     height,
     // Alternating tilt, so consecutive cards do not lean the same way.
-    rotation: used % 2 === 0 ? -0.8 : 0.9,
+    rotation: entries.length % 2 === 0 ? -0.8 : 0.9,
     z: highestZ + 1,
   };
 }

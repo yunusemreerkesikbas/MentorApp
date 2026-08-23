@@ -899,7 +899,6 @@
     "chip_premium": "Premium",
     "chip_unavailable": "Currently unavailable",
     "chip_free": "Free",
-    "chip_cancel": "Cancels at period end",
     "reason_free": "Free",
     "reason_active": "Active",
     "reason_trialing": "Trial",
@@ -958,6 +957,11 @@
     "subscribe": "Bring the coach along",
     "close": "Close",
     "loading": "Loading…"
+  },
+  "campaign": {
+    "eyebrow": "7-day free trial",
+    "title": "Bring the coach along — don't walk it alone",
+    "cta_aria": "Open the Premium trial"
   },
   "plan": {
     "title": "Study Plan",
@@ -1642,6 +1646,8 @@
     "index_status_healed": "Healed",
     "index_place_on_page": "Place on the page",
     "index_already_placed": "Already on the page",
+    "index_pick": "Select {card}",
+    "index_study_picked": "Study {count} selected cards",
     "index_load_more": "{count} more entries",
     "index_empty": "No entries match this filter.",
     "error_index_load": "The entries could not be loaded.",
@@ -1677,6 +1683,9 @@
     "add_prelabelling": "AI is suggesting…",
     "add_note_label": "Note (optional)",
     "add_submit": "Add to the notebook",
+    "add_scheduled_title": "Added to your notebook",
+    "add_scheduled_message": "It comes back in your review deck in {days} days.",
+    "add_scheduled_study": "Study it now",
     "add_cancel": "Cancel",
     "review_title": "Review time",
     "review_subtitle": "Look at the question again, then answer honestly.",
@@ -1747,6 +1756,7 @@
     "edit_undo": "Undo",
     "edit_delete": "Delete selected",
     "edit_resize": "Resize",
+    "item_study": "Study",
     "edit_rotate": "Rotate",
     "paper": {
       "ruled": "Ruled",
@@ -1937,7 +1947,6 @@
     "title": "Time to exam",
     "day_unit": "days",
     "today": "Today",
-    "source_prefix": "Source:",
     "no_calendar": "The official exam calendar hasn't been published yet. The countdown will appear here once it's announced in the Knowledge Center.",
     "no_exam_type": "Your exam date isn't set yet. The countdown will appear here once you pick your exam type in your profile.",
     "select_exam": "Choose exam type"
