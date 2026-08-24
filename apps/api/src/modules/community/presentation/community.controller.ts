@@ -41,8 +41,9 @@ export class CommunityController {
   getProfile(
     @CurrentUser() user: RequestUser,
     @Param("username") username: string,
+    @I18nLang() locale: string,
   ): Promise<PublicProfile> {
-    return this.community.getPublicProfile(username, user.id);
+    return this.community.getPublicProfile(username, user.id, locale);
   }
 
   @Get("profile/:username/achievements")

@@ -5,6 +5,7 @@ import type {
   AchievementCelebrationsDto,
   AchievementCollectionDto,
   AchievementId,
+  AchievementShowcaseView,
   AchievementSource,
 } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
@@ -13,6 +14,7 @@ import { StreakService } from "../../coaching/application/streak.service";
 import { UsersService } from "../../identity/application/users.service";
 import {
   buildAchievementCollection,
+  buildAchievementShowcase,
   groupAchievementCelebrations,
   type EarnedAchievement,
 } from "../domain/achievement-collection";
@@ -69,6 +71,18 @@ export class AchievementService {
     });
     const views = new Map(collection.items.map((item) => [item.id, item]));
     return { celebrations: groupAchievementCelebrations(rows.map(toEarned), views) };
+  }
+
+  async getShowcase(
+    userId: string,
+    viewerId: string,
+    locale: string,
+  ): Promise<AchievementShowcaseView> {
+    const rows = await this.repository.listByUser(viewerId, userId);
+    return buildAchievementShowcase({
+      earned: rows.map(toEarned),
+      translate: (key) => this.translate(key, locale),
+    });
   }
 
   async celebrate(userId: string, achievementIds: AchievementId[]): Promise<void> {

@@ -53,6 +53,11 @@ export interface AchievementView {
   progress: AchievementProgress | null;
 }
 
+export interface AchievementShowcaseView {
+  earnedCount: number;
+  items: AchievementView[];
+}
+
 export interface AchievementCollectionSummary {
   earnedCount: number;
   totalCount: number;
@@ -179,6 +184,8 @@ export interface PublicProfile {
   username: string;
   /** Global rollout gate; clients hide achievement surfaces while false. */
   achievementsEnabled: boolean;
+  /** Most recently earned public achievements; null while the achievement rollout is disabled. */
+  achievementShowcase: AchievementShowcaseView | null;
   avatarUrl: string | null;
   examType: string | null;
   /** ISO — drives "member since". */

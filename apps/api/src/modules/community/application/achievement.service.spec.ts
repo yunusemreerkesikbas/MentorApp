@@ -44,7 +44,7 @@ function setup(enabled = true) {
     i18n as never,
     events as never,
   );
-  return { service, repository, events };
+  return { service, repository, i18n, events };
 }
 
 describe("AchievementService", () => {
@@ -69,6 +69,30 @@ describe("AchievementService", () => {
     expect(result.ownerView).toBe(false);
     expect(result.items).toHaveLength(1);
     expect(result.items[0]?.progress).toBeNull();
+  });
+
+  it("builds a localized public showcase from a viewer-safe earned-achievement read", async () => {
+    const { service, repository, i18n } = setup();
+    i18n.translate.mockImplementation((key: string, { lang }: { lang: string }) => `${lang}:${key}`);
+    repository.listByUser.mockResolvedValue([
+      {
+        achievementId: "first_step",
+        source: "BACKFILL",
+        earnedAt: new Date("2026-08-18T10:00:00.000Z"),
+        celebratedAt: null,
+      },
+    ]);
+    await expect(service.getShowcase("target", "viewer", "en")).resolves.toEqual({
+      earnedCount: 1,
+      items: [
+        expect.objectContaining({
+          title: "en:achievements.items.first_step.title",
+          status: "EARNED",
+          earnedAt: "2026-08-18T10:00:00.000Z",
+        }),
+      ],
+    });
+    expect(repository.listByUser).toHaveBeenCalledWith("viewer", "target");
   });
 
   it("stores awards as backfill and emits no public event while exposure is disabled", async () => {

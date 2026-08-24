@@ -67,6 +67,15 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Başarı vitrini (2026-08-25)** — Açık achievement rollout'unda herkese açık profil yanıtı,
+  en yeni en fazla üç kanonik kazanımı backend-lokalize `achievementShowcase` içinde ve toplam
+  kazanım sayısıyla taşır. Geçmişten backfill edilen kazanımlar ilk kazanım tarihine göre sıralanır;
+  aynı anda kazanılanlarda sabit katalog sırası kullanılır, bilinmeyen eski kimlikler gösterilmez.
+  Kullanım: mevcut `GET /v1/community/profile/:username` yanıtındaki vitrini doğrudan göster.
+  Gotcha: flag kapalıyken alan her zaman `null`; açık ama kazanım yokken `{ earnedCount: 0, items: [] }`.
+  İlgili: `achievement-collection.ts`, `achievement.service.ts`, `community.service.ts`,
+  `packages/types/community.ts`.
+
 - **Premium kimlik işareti (2026-08-22)** — Üyelik, avatar köşesine rozet basmak yerine ismin
   yanındaki amber taç ile gösterilir. “Premium” yazısı chrome’da yok (yalnız `aria-label`).
   Mavi doğrulama tiki e-postaya aittir; ödül kurdelesi / doygun gradyan yok. Yüzeyler: sidebar /
