@@ -67,25 +67,25 @@ export function AchievementShowcase({
             </Link>
           ) : null}
         </div>
-        <div className="mt-3 flex flex-wrap justify-center gap-3 xl:justify-start">
-          {showcase.items.map((achievement) => (
-            <button
-              key={achievement.id}
-              type="button"
-              aria-label={t("showcase_earned_aria", {
-                title: achievement.title,
-              })}
-              onClick={(event) => handleOpen(achievement, event.currentTarget)}
-              className="grid size-16 place-items-center rounded-[var(--radius-card)] p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            >
-              <AchievementArt
-                artKey={achievement.artKey}
-                alt=""
-                className="size-full object-contain"
-              />
-            </button>
-          ))}
-        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap justify-center gap-3">
+        {showcase.items.map((achievement) => (
+          <button
+            key={achievement.id}
+            type="button"
+            aria-label={t("showcase_earned_aria", {
+              title: achievement.title,
+            })}
+            onClick={(event) => handleOpen(achievement, event.currentTarget)}
+            className="grid size-16 place-items-center rounded-[var(--radius-card)] p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          >
+            <AchievementArt
+              artKey={achievement.artKey}
+              alt=""
+              className="size-full object-contain"
+            />
+          </button>
+        ))}
       </div>
       <AnimatePresence onExitComplete={handleExitComplete}>
         {selected ? (

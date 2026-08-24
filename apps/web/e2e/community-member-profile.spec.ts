@@ -817,6 +817,17 @@ test("profil, API'nin sıraladığı yolculuk izlerini erişilebilir detay ve t�
     expect(box!.height).toBeGreaterThanOrEqual(44);
   }
 
+  const showcaseBox = await showcase.boundingBox();
+  const firstTriggerBox = await triggers.nth(0).boundingBox();
+  const lastTriggerBox = await triggers.nth(2).boundingBox();
+  expect(showcaseBox).not.toBeNull();
+  expect(firstTriggerBox).not.toBeNull();
+  expect(lastTriggerBox).not.toBeNull();
+  const triggerGroupCenter =
+    (firstTriggerBox!.x + lastTriggerBox!.x + lastTriggerBox!.width) / 2;
+  const showcaseCenter = showcaseBox!.x + showcaseBox!.width / 2;
+  expect(Math.abs(triggerGroupCenter - showcaseCenter)).toBeLessThanOrEqual(2);
+
   const trigger = triggers.nth(0);
   await trigger.focus();
   await trigger.press("Enter");
