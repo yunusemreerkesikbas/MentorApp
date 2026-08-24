@@ -1,7 +1,7 @@
-import { Suspense } from "react";
-import { getTranslations, setRequestLocale } from "next-intl/server";
-import { SessionHistoryPage } from "../_components/session-history-page";
+import { setRequestLocale } from "next-intl/server";
+import { redirect } from "@/i18n/navigation";
 
+/** `/seans/gecmis` folded into the session sidebar — keep the URL for old bookmarks. */
 export default async function StudySessionGecmisPage({
   params,
 }: {
@@ -9,16 +9,5 @@ export default async function StudySessionGecmisPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const translate = await getTranslations("common");
-  return (
-    <Suspense
-      fallback={
-        <main className="mx-auto flex min-h-[40vh] w-full max-w-lg items-center justify-center px-5 py-8">
-          <p style={{ color: "var(--color-secondary)" }}>{translate("loading")}</p>
-        </main>
-      }
-    >
-      <SessionHistoryPage />
-    </Suspense>
-  );
+  redirect({ href: "/study-session", locale });
 }

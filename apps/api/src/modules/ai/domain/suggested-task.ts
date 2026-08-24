@@ -69,30 +69,39 @@ export function extractMemoryCandidate(text: string): {
   }
 }
 
+function parseTaskPayload(raw: string): SuggestedTask | null {
+  try {
+    const parsed = JSON.parse(raw) as { title?: unknown; subject?: unknown };
+    const title = typeof parsed.title === "string" ? parsed.title.trim().slice(0, TITLE_MAX) : "";
+    if (!title) return null;
+    const subject =
+      typeof parsed.subject === "string" && parsed.subject.trim()
+        ? parsed.subject.trim().slice(0, SUBJECT_MAX)
+        : null;
+    return { title, subject };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Trailing TASK with a missing `>>` and/or an extra `}` — seen live on session reflection.
+ * End-anchored so a TASK in the middle of FOLLOWUP/MEMORY is left for the ordered loop.
+ */
+const MARKER_DANGLING_END_RE = /\s*<<TASK\s*(\{(?:(?!>>)[\s\S])*?\})\s*\}*\s*$/;
+
 /**
  * Parse + strip the trailing task marker. Invalid/broken JSON is silently ignored — the marker is
  * still removed so the user never sees it.
  */
 export function extractSuggestedTask(text: string): { text: string; task: SuggestedTask | null } {
-  const match = MARKER_END_RE.exec(text);
+  const match = MARKER_END_RE.exec(text) ?? MARKER_DANGLING_END_RE.exec(text);
   if (!match) return { text, task: null };
 
-  const clean = text.slice(0, match.index).trimEnd();
-  let task: SuggestedTask | null = null;
-  try {
-    const parsed = JSON.parse(match[1]!) as { title?: unknown; subject?: unknown };
-    const title = typeof parsed.title === "string" ? parsed.title.trim().slice(0, TITLE_MAX) : "";
-    if (title) {
-      const subject =
-        typeof parsed.subject === "string" && parsed.subject.trim()
-          ? parsed.subject.trim().slice(0, SUBJECT_MAX)
-          : null;
-      task = { title, subject };
-    }
-  } catch {
-    // Broken JSON — strip the marker, suggest nothing.
-  }
-  return { text: clean, task };
+  return {
+    text: text.slice(0, match.index).trimEnd(),
+    task: parseTaskPayload(match[1]!),
+  };
 }
 
 /**

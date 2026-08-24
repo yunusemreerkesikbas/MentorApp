@@ -1471,6 +1471,10 @@
   "session": {
     "title": "Çalışma Seansı",
     "subtitle": "Odaklan, molanı al, serini koru.",
+    "loading": "Seans hazırlanıyor…",
+    "history_open": "Son seansları aç",
+    "history_collapse": "Son seansları gizle",
+    "subject_none": "Ders seç",
     "paused": "Duraklatıldı",
     "focusing": "Odaklan",
     "break_label": "Mola",
@@ -1511,11 +1515,7 @@
     "history_load_more": "Daha fazla göster",
     "history_load_more_error": "Daha fazla seans yüklenemedi.",
     "history_plan_task": "Plandan: {title}",
-    "history_page_title": "Seans geçmişi",
-    "history_view_all": "Tümünü gör",
     "history_filter_all": "Tümü",
-    "history_back": "Seansa dön",
-    "history_loading": "Seans geçmişi yükleniyor…",
     "history_empty_filtered": "Bu filtrelerle seans yok.",
     "history_date_filter_label": "Tarih aralığı",
     "history_subject_filter_label": "Konu filtresi",
@@ -1979,8 +1979,7 @@
     "track_rain": "Hafif yağmur",
     "track_warm": "Sıcak pad",
     "mute": "Müziği sessize al",
-    "unmute": "Müziği aç",
-    "preview_hint": "Seçtiğin parça kısa önizlenir. Ses seviyesi cihazından ayarlanır."
+    "unmute": "Müziği aç"
   },
   "journey_levels": {
     "title": "Yolculuk seviyesi",

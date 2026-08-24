@@ -1,6 +1,7 @@
 "use client";
+import { History, PanelLeft } from "lucide-react";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -12,15 +13,19 @@ import type {
 } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
 import { Card } from "@mentor/ui";
+import {
+  HistorySideDrawer,
+  HistorySideRail,
+} from "@/components/history-side-panel";
 import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
 import { trackCoachEvent } from "@/lib/analytics";
 import { parsePlanTaskContextFromParams } from "@/lib/plan-study-session-link";
 import { readActiveSession, resolveResume } from "@/lib/session-persistence";
 import { SessionAmbientPicker } from "./session-ambient-picker";
-import { SessionAmbientToggle } from "./session-ambient-toggle";
-import { SessionControls } from "./session-controls";
 import { SessionBuddyCard } from "./session-buddy-card";
+import { SessionControls } from "./session-controls";
 import { SessionDoneState } from "./session-done-state";
+import { SessionFocusBackdrop } from "./session-focus-backdrop";
 import { SessionFocusGoalCard } from "./session-focus-goal-card";
 import { SessionHistory } from "./session-history";
 import { SessionSubjectPicker } from "./session-subject-picker";
@@ -32,6 +37,9 @@ const DEFAULT_PRESETS: SessionPresetDto[] = [
   { id: "25_5", label: "25 / 5 dk", focusMinutes: 25, breakMinutes: 5 },
   { id: "50_10", label: "50 / 10 dk", focusMinutes: 50, breakMinutes: 10 },
 ];
+
+const railIconBtn =
+  "inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
 
 function parseInitialMinutes(
   presetParam: string | null,
@@ -94,30 +102,6 @@ function unwrapTodayResponse(response: unknown): TodayPanelResponse {
     response) as TodayPanelResponse;
 }
 
-/** Calm pastel backdrop for the immersive focus/break view (DESIGN.md blobs, softened). */
-function ImmersiveBackdrop() {
-  return (
-    <div
-      aria-hidden
-      className="absolute inset-0 overflow-hidden"
-      style={{ backgroundColor: "var(--color-bg)" }}
-    >
-      <div
-        className="absolute -left-24 -top-24 h-96 w-96 rounded-full opacity-30 blur-[150px]"
-        style={{ backgroundColor: "#FF2DAB" }}
-      />
-      <div
-        className="absolute top-1/3 -right-32 h-[28rem] w-[28rem] rounded-full opacity-50 blur-[150px]"
-        style={{ backgroundColor: "#9BC1FB" }}
-      />
-      <div
-        className="absolute -bottom-32 left-1/4 h-96 w-96 rounded-full opacity-50 blur-[150px]"
-        style={{ backgroundColor: "#BDEBFF" }}
-      />
-    </div>
-  );
-}
-
 function SetupStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-1 flex-col items-center gap-0.5">
@@ -157,6 +141,21 @@ function PlanTaskContextChip({ title }: { title: string }) {
   );
 }
 
+function TimerChrome({
+  left,
+  right,
+}: {
+  left: ReactNode;
+  right: ReactNode;
+}) {
+  return (
+    <div className="flex w-full items-center justify-between gap-3">
+      <div className="min-w-0">{left}</div>
+      <div className="min-w-0">{right}</div>
+    </div>
+  );
+}
+
 /**
  * Pomodoro session UI — setup dial (idle), immersive focus/break, done summary.
  */
@@ -174,7 +173,6 @@ export function StudySessionShell() {
   const autoStartExisting = searchParams.get("autostart") === "1";
   const sourceParam = searchParams.get("source");
   const coachSessionTrackedRef = useRef(false);
-  // Resume context (subject / plan-task chips) survives a reload alongside the timer.
   const [restored] = useState(readRestorableRecord);
   const [subject, setSubject] = useState<string | null>(() =>
     subjectParam?.trim() ? subjectParam.trim() : (restored?.subject ?? null),
@@ -203,6 +201,8 @@ export function StudySessionShell() {
     QuestProgressView[] | null
   >(null);
   const [streakBaseline, setStreakBaseline] = useState<number | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [railOpen, setRailOpen] = useState(true);
 
   const timer = useSessionTimer({
     initialMinutes: parseInitialMinutes(presetParam, minutesParam),
@@ -215,8 +215,6 @@ export function StudySessionShell() {
     autoStartExisting,
   });
 
-  // Fetched on mount and re-fetched whenever the timer returns to idle, so the
-  // focus-goal progress reflects the session that just finished.
   const timerPhase = timer.phase;
   useEffect(() => {
     if (timerPhase !== "idle") return;
@@ -274,7 +272,6 @@ export function StudySessionShell() {
 
   const ambient = useSessionAmbientSound({ phase, isPaused });
 
-  // Countdown in the tab title while focus/break runs (visible from other tabs).
   const initialTitleRef = useRef<string | null>(null);
   useEffect(() => {
     initialTitleRef.current ??= document.title;
@@ -357,34 +354,12 @@ export function StudySessionShell() {
         exit: { opacity: 0, y: -6, transition: { duration: 0.15 } },
       };
 
-  const subjectChip = subject ? (
-    <span
-      className="rounded-[var(--radius-card)] px-3 py-1 text-xs font-bold uppercase tracking-wide"
-      style={{
-        backgroundColor:
-          "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-        color: "var(--color-chip-text)",
-        fontFamily: "var(--font-body)",
-      }}
-    >
-      {subject}
-    </span>
-  ) : null;
-
   const planTaskTitle = planTaskContext.taskTitle;
   const planTaskChip = planTaskTitle ? (
     <PlanTaskContextChip
       title={t("from_plan_task", { title: planTaskTitle })}
     />
   ) : null;
-
-  const contextChips =
-    subjectChip || planTaskChip ? (
-      <div className="flex max-w-full flex-wrap items-center justify-center gap-2">
-        {planTaskChip}
-        {subjectChip}
-      </div>
-    ) : null;
 
   const phaseLabel =
     phase === "break"
@@ -427,17 +402,61 @@ export function StudySessionShell() {
     </div>
   );
 
-  // Immersive focus/break view — covers the app nav (z-30 over the z-20 shell).
+  const ambientPicker = (
+    <SessionAmbientPicker
+      trackId={ambient.trackId}
+      muted={ambient.muted}
+      onTrackIdChange={ambient.setTrackId}
+      onToggleMute={ambient.toggleMute}
+    />
+  );
+
+  const timerRing = (
+    <SessionTimerRing
+      phase={phase}
+      focusMinutes={focusMinutes}
+      breakMinutes={breakMinutes}
+      secondsLeft={secondsLeft}
+      presets={presets}
+      selectedPresetId={selectedPresetId}
+      onMinutesChange={handleMinutesChange}
+      onPresetSelect={handlePresetSelect}
+    />
+  );
+
+  const sessionControls = (
+    <SessionControls
+      phase={phase}
+      busy={busy}
+      isPaused={isPaused}
+      onStart={() => void handleStartSession()}
+      onTogglePause={togglePause}
+      onComplete={() => void finalize("COMPLETED")}
+      onAbandon={() => void finalize("ABANDONED")}
+      onSkipBreak={skipBreak}
+    />
+  );
+
   if (phase === "focus" || phase === "break") {
     return (
-      <div className="fixed inset-0 z-30 flex flex-col items-center justify-center px-5 py-8">
-        <ImmersiveBackdrop />
+      <div className="session-focus-theme fixed inset-0 z-30 flex flex-col items-center justify-center px-5 py-8">
+        <SessionFocusBackdrop />
         <motion.div
           key={phase}
           className="relative flex w-full max-w-sm flex-col items-center gap-6"
           {...phaseMotion}
         >
-          {contextChips}
+          <TimerChrome
+            left={
+              <SessionSubjectPicker
+                value={subject ?? ""}
+                onChange={(v) => setSubject(v.trim() ? v.trim() : null)}
+                readOnly
+              />
+            }
+            right={ambientPicker}
+          />
+          {planTaskChip}
           <p
             className="text-sm font-semibold uppercase tracking-wide"
             style={{
@@ -447,156 +466,141 @@ export function StudySessionShell() {
           >
             {phaseLabel}
           </p>
-          <SessionTimerRing
-            phase={phase}
-            focusMinutes={focusMinutes}
-            breakMinutes={breakMinutes}
-            secondsLeft={secondsLeft}
-            presets={presets}
-            selectedPresetId={selectedPresetId}
-            onMinutesChange={handleMinutesChange}
-            onPresetSelect={handlePresetSelect}
-          />
-          <div className="flex items-center justify-center gap-3">
-            {ambient.trackId !== "off" ? (
-              <SessionAmbientToggle
-                muted={ambient.muted}
-                onToggleMute={ambient.toggleMute}
-              />
-            ) : null}
-            <SessionControls
-              phase={phase}
-              busy={busy}
-              isPaused={isPaused}
-              onStart={() => void handleStartSession()}
-              onTogglePause={togglePause}
-              onComplete={() => void finalize("COMPLETED")}
-              onAbandon={() => void finalize("ABANDONED")}
-              onSkipBreak={skipBreak}
-            />
-          </div>
+          {timerRing}
+          {sessionControls}
         </motion.div>
       </div>
     );
   }
 
+  if (phase === "done") {
+    return (
+      <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-5 py-8 lg:px-8 lg:py-10">
+        <h1 className="sr-only">{t("title")}</h1>
+        <Card className="flex flex-col items-center gap-5 px-5 py-8 sm:px-8 sm:py-10">
+          <SessionDoneState
+            focusElapsed={focusElapsed}
+            sessionId={session?.id ?? null}
+            subject={subject}
+            questBaseline={questBaseline}
+            streakBaseline={streakBaseline}
+            countsAsFocusSession={session?.countsAsFocusSession ?? true}
+            sessionStatus={session?.status ?? null}
+            planTaskAutoCompleted={session?.planTaskAutoCompleted ?? false}
+            onSubmitFeedback={recordFeedback}
+            onReset={handleReset}
+          />
+        </Card>
+      </main>
+    );
+  }
+
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-5 py-8 lg:px-8 lg:py-10">
-      <motion.header
-        {...(reduceMotion
-          ? {}
-          : {
-              initial: { opacity: 0, y: 8 },
-              animate: {
-                opacity: 1,
-                y: 0,
-                transition: { duration: 0.3, ease: "easeOut" as const },
-              },
-            })}
-      >
-        <h1
-          className="text-3xl font-bold"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          {t("title")}
-        </h1>
-        <p
-          className="mt-1 text-base"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {t("subtitle")}
-        </p>
-        {focusingNow !== null && (
-          <p
-            className="mt-2 flex items-center gap-1.5 text-sm"
-            style={{ color: "var(--color-secondary)" }}
+    <main
+      className="flex w-full min-h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] flex-col lg:h-[calc(100dvh-4rem)] lg:min-h-0 lg:flex-row lg:overflow-hidden"
+      aria-label={t("title")}
+    >
+      <h1 className="sr-only">{t("title")}</h1>
+      <HistorySideRail
+        title={t("history_title")}
+        railOpen={railOpen}
+        onRailOpenChange={setRailOpen}
+        expandLabel={t("history_open")}
+        collapseLabel={t("history_collapse")}
+        testId="session-history-rail"
+        collapsedActions={
+          <button
+            type="button"
+            onClick={() => setRailOpen(true)}
+            className={railIconBtn}
+            aria-label={t("history_title")}
+            data-testid="session-history-rail-list"
           >
-            <span
+            <History
+              className="size-5"
+              style={{ color: "var(--color-main)" }}
+              strokeWidth={2.25}
               aria-hidden
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: "var(--color-progress)" }}
             />
-            {t("focusing_now", { count: focusingNow })}
-          </p>
-        )}
-      </motion.header>
+          </button>
+        }
+      >
+        <SessionHistory />
+      </HistorySideRail>
 
-      {presetNotice && (
-        <p
-          className="text-sm"
-          style={{ color: "var(--color-secondary)" }}
-          role="status"
-        >
-          {presetNotice}
-        </p>
-      )}
+      <div className="flex min-w-0 flex-1 flex-col lg:min-h-0 lg:overflow-y-auto">
+        <div className="flex items-center gap-2 px-5 pt-4 pb-1 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setHistoryOpen(true)}
+            className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+            aria-label={t("history_open")}
+            data-testid="session-history-open"
+          >
+            <PanelLeft
+              className="size-5"
+              style={{ color: "var(--color-main)" }}
+              strokeWidth={2.25}
+              aria-hidden
+            />
+          </button>
+        </div>
 
-      <Card className="flex flex-col items-center gap-5 px-5 py-8 sm:px-8 sm:py-10">
-        <AnimatePresence mode="wait">
-          {phase === "idle" && (
+        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-5 py-6 lg:px-8 lg:py-10">
+          {presetNotice && (
+            <p
+              className="mb-4 text-sm"
+              style={{ color: "var(--color-secondary)" }}
+              role="status"
+            >
+              {presetNotice}
+            </p>
+          )}
+
+          <AnimatePresence mode="wait">
             <motion.div
               key="idle"
               className="flex w-full flex-col items-center gap-5"
               {...phaseMotion}
             >
-              <SessionSubjectPicker
-                value={subject ?? ""}
-                onChange={(v) => setSubject(v.trim() ? v.trim() : null)}
+              <TimerChrome
+                left={
+                  <SessionSubjectPicker
+                    value={subject ?? ""}
+                    onChange={(v) => setSubject(v.trim() ? v.trim() : null)}
+                  />
+                }
+                right={ambientPicker}
               />
-              {planTaskChip ? (
-                <div className="flex w-full justify-center">{planTaskChip}</div>
-              ) : null}
-              <SessionAmbientPicker
-                trackId={ambient.trackId}
-                onTrackIdChange={ambient.setTrackId}
-              />
-              <SessionTimerRing
-                phase={phase}
-                focusMinutes={focusMinutes}
-                breakMinutes={breakMinutes}
-                secondsLeft={secondsLeft}
-                presets={presets}
-                selectedPresetId={selectedPresetId}
-                onMinutesChange={handleMinutesChange}
-                onPresetSelect={handlePresetSelect}
-              />
+              {planTaskChip}
+              {timerRing}
               {setupSummary}
-              <SessionControls
-                phase={phase}
-                busy={busy}
-                isPaused={isPaused}
-                onStart={() => void handleStartSession()}
-                onTogglePause={togglePause}
-                onComplete={() => void finalize("COMPLETED")}
-                onAbandon={() => void finalize("ABANDONED")}
-                onSkipBreak={skipBreak}
-              />
+              {sessionControls}
+              {focusingNow !== null ? (
+                <p
+                  className="flex items-center gap-1.5 text-center text-sm"
+                  style={{ color: "var(--color-secondary)" }}
+                >
+                  <span
+                    aria-hidden
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: "var(--color-progress)" }}
+                  />
+                  {t("focusing_now", { count: focusingNow })}
+                </p>
+              ) : null}
             </motion.div>
-          )}
+          </AnimatePresence>
 
-          {phase === "done" && (
-            <motion.div key="done" className="w-full" {...phaseMotion}>
-              <SessionDoneState
-                focusElapsed={focusElapsed}
-                sessionId={session?.id ?? null}
-                subject={subject}
-                questBaseline={questBaseline}
-                streakBaseline={streakBaseline}
-                countsAsFocusSession={session?.countsAsFocusSession ?? true}
-                sessionStatus={session?.status ?? null}
-                planTaskAutoCompleted={session?.planTaskAutoCompleted ?? false}
-                onSubmitFeedback={recordFeedback}
-                onReset={handleReset}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </Card>
+        </div>
+      </div>
 
-      {phase === "idle" && (
+      <aside
+        className="flex w-full shrink-0 flex-col gap-4 px-5 pb-8 lg:h-full lg:w-72 lg:overflow-y-auto lg:border-l lg:p-4"
+        style={{
+          borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)",
+        }}
+      >
         <SessionFocusGoalCard
           focusGoal={focusGoal}
           onGoalChange={(goalMinutes) =>
@@ -606,9 +610,17 @@ export function StudySessionShell() {
             }))
           }
         />
-      )}
-      {phase === "idle" && <SessionBuddyCard />}
-      {phase === "idle" && <SessionHistory />}
+        <SessionBuddyCard />
+      </aside>
+
+      <HistorySideDrawer
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        title={t("history_title")}
+        testId="session-history-drawer"
+      >
+        <SessionHistory />
+      </HistorySideDrawer>
     </main>
   );
 }

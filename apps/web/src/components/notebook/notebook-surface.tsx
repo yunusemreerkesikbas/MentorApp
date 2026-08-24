@@ -63,6 +63,14 @@ export const SPINE_GUTTER = 20;
 const SPREAD_SPAN = NOTEBOOK_PAGE_CANVAS.width * 2 + SPINE_GUTTER;
 export const PAGE_PERCENT = (NOTEBOOK_PAGE_CANVAS.width / SPREAD_SPAN) * 100;
 export const SPINE_PERCENT = (SPINE_GUTTER / SPREAD_SPAN) * 100;
+/**
+ * An open spread's width/height.
+ *
+ * Exported because the loading skeleton has to reserve exactly this shape: a skeleton that guesses
+ * the book's proportions is a layout that jumps the moment the real one arrives, which is the one
+ * thing a skeleton exists to prevent.
+ */
+export const SPREAD_RATIO = SPREAD_SPAN / NOTEBOOK_PAGE_CANVAS.height;
 
 /** Exported so the sidebar's paper picker can render a live swatch per option, not just a label. */
 export const PAPERS: Record<NotebookPaper, CSSProperties> = {

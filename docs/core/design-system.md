@@ -48,7 +48,7 @@ pnpm --filter @mentor/web dev       # http://localhost:3000
 | `PlanListItem` | adapts Nuton list item (335×56) |
 | `MoodPicker` | 1–5 radiogroup |
 | `ProgressBar` | trend bars (no chart library — DESIGN has no chart primitive) |
-| `CircularTimerRing` | SVG progress ring + drag/touch dial (5–120 dk) for `/seans` |
+| `CircularTimerRing` | SVG progress ring + drag/touch dial (5–120 dk) for `/seans`; countdown ticks + progress |
 | `FormError` | shared inline error (no magic `--color-error` / hex) |
 | `ToastProvider` · `useToast` | Stitch overlay stack (max 3, portal `z-[100]`, auto-dismiss, mobile top-center / desktop top-right) |
 | `DialogProvider` · `useDialog` | Stitch modal (single dialog, portal backdrop `z-[60]` / panel `z-[70]`; presets `confirm` / `info` / `promo`) |

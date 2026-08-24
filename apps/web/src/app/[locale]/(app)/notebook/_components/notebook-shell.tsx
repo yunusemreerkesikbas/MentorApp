@@ -1232,7 +1232,7 @@ export function NotebookShell() {
             a share of the window or it disappears: 16px looked like nothing against a 900px spread
             and read as "full screen" all over again. 3vh top and bottom scales with the screen it
             is framing, which is what a margin is for. */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col items-center gap-2 lg:py-[3vh]">
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center gap-2 lg:py-[2vh]">
           {isSpread ? (
             <div
               className="flex w-full items-center gap-1"
@@ -1771,27 +1771,21 @@ export function NotebookShell() {
 
           {/*
             Pagination-style controls: an icon each side of the label, not a text button each side —
-            the label alone already says where you are. No `mt-auto` here on purpose — the notebook
-            above is the column's one `flex-grow` item and already claims every pixel its siblings
-            don't use, so an auto margin on this row would only compete with that for the same free
-            space (auto margins are resolved before flex-grow, so it would win and starve the
-            notebook to zero height). This row simply renders at its natural size right after it.
+            the label alone already says where you are.
 
-            `sticky bottom-0` is the safety net: under normal sizing (the whole point of `useFitSize`
-            above) this row already sits right at the bottom of the viewport and `sticky` is a no-op
-            — but if anything ever DOES make the page taller than one screen again, `fixed` would
-            pull this row clean out of the column's flex flow (letting the notebook grow to fill the
-            space it left behind and render underneath it) where `sticky` doesn't: it stays a normal
-            flow item, sized and placed exactly as before, and only clamps to the viewport's bottom
-            edge once scrolling would otherwise carry it past it. Transparent background on purpose —
-            each button already carries its own `--color-surface` circle, and the row itself pinning
-            over scrolled content should read as floating controls, not a solid bar.
+            Out of the column's flow and floating over the foot of the spread. In flow this was a
+            real row with real height, and every pixel of it came straight out of the book:
+            `useFitSize` measures what this row and the toolbar leave behind, so a control strip
+            nobody looks at was quietly making the notebook smaller. Absolute, it costs nothing and
+            the book grows into the space — which is most of where the extra size came from.
 
-            `size-11` (44px) is DESIGN.md's touch-target floor — shrunk further and it stops being a
-            reliable tap target on mobile, so the vertical budget is reclaimed elsewhere (tighter
-            gap/padding here) rather than from these.
+            `pointer-events-none` on the strip, with the buttons opting back in: it spans the full
+            width, and the thing underneath it is a live page the student drags cards around on.
+
+            `size-11` (44px) is DESIGN.md's touch-target floor — shrunk further it stops being a
+            reliable tap target on mobile.
           */}
-          <div className="sticky bottom-0 z-10 flex w-full items-center justify-center gap-3 pt-1 pb-1">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex w-full items-center justify-center gap-3 pb-1 [&>*]:pointer-events-auto">
             <button
               type="button"
               aria-label={t("previous_page")}

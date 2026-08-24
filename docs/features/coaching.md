@@ -3166,3 +3166,83 @@ pnpm --filter @mentor/api test
   açılımda ise tel iki yaprağı birden deler.
   İlgili: `packages/ui/src/theme.css`, `notebook-surface.tsx`.
 
+- **Yaprak çevirme: gerçek kıvrım denendi, geri alındı, kazanımlar kaldı (2026-08-24, APP-046)** —
+  Kullanıcı "gerçek yaprak kıvırma olsun, kıvrılırken yaprak boyutunda hareket etsin, taşan zaten
+  `overflow:hidden` ile gizleniyor" dedi. Yaprak on dikey **dilime** bölündü, her dilim bir öncekinin
+  serbest kenarına menteşelendi (katlanır metre), açı `(i/n)^1.5` ile serbest kenara doğru arttı.
+  Yaprak dikken ikna ediciydi; **yatınca dağıldı** — ve bir sayfa zamanının çoğunu yatarak geçiriyor.
+  İki kusur, ikisi de tekniğin içinden çözülemez:
+  **(a) Dikişlerde kırık.** Komşu dilimler izleyiciye farklı açılarda durur, perspektif her birini
+  farklı kısaltır ve yatay çizgiler her dikişte kırılır. Yaprak yattıkça kırık açılır. Dilim sayısını
+  artırmak kırığı küçültür, dikişi çoğaltır; azaltmak tersi.
+  **(b) Gölgelendirme hizalanmaz.** Yaprak boyu bir gradyan on parçaya bölünüp hizalanmak zorunda; üstelik
+  arka yüz kendi `rotateY(180deg)`'siyle **aynalanıyor**, yani pencerelenen gradyan her dilimin içinde
+  ters çıkıyor. Düz tintlere geçmek aynalama sorununu çözdü ama **bandın kendisi oldu**: bu ölçekte on
+  basamak, bir düşüş gibi değil on basamak gibi okunuyor.
+  Ara teşhislerden biri kalıcı bilgi: bükülme dönüşün ortasında zirve yapınca dilimlerin bir kısmı
+  90°'nin altında (ön yüz), bir kısmı üstünde (arka yüz) kalıyor ve yan yana iki farklı yüz şerit
+  üretiyor — dönemli olarak beliren bir çizim bozukluğunun sebebi genelde çizimde değil zamanlamadadır.
+  **Karar: rijit levhaya dönüldü.** Sahte kıvrımın dikişi, kırığı ve bandı yok; ölçülen sonuç, dilimli
+  hali önceki halden *daha kötü* yapıyordu. Deneyden sağ çıkanlar bedeli olmayanlar: yaprak artık
+  `LIFT_PX` ile kitaptan **kalkıyor** (kullanıcının işaret ettiği "yaprak boyutunda hareket", taşan
+  yeri kitabın kendi `overflow`'u kırpıyor) ve **iki yüzü de çizgili** — gerçek bir defter yaprağı iki
+  tarafından da çizgilidir; boş arka yüz, yaprağın dönüşün ortasında malzeme değiştirmesi demekti.
+  Gerçek deformasyon WebGL/canvas ister; ikisi de etkileşimli sahnelerimizin yaşadığı DOM'a sahip
+  olmak ister. Denemenin her aşaması için, uygulanan halin birebir kopyası olan bir önizleme üretildi
+  — tarayıcıda oturum açmadan karşılaştırma yapmanın tek yolu buydu.
+  İlgili: `notebook-page-turn.tsx`.
+
+- **Seans idle 3 kolon + focus overlay redesign (2026-08-24)** — `/seans` kurulum ekranı artık
+  analizdeki gibi 3 kolon: solda paylaşılan `HistorySideRail` / mobilde `HistorySideDrawer` (son
+  seanslar + “Tümünü gör”), ortada timer, sağda günlük odak hedefi + yol arkadaşı (tek instance;
+  mobilde timer’ın altında). Sayfa başlığı / subtitle kalktı (`sr-only` `h1` duruyor). Ders ve
+  odak müziği timer’ın üst köşelerinde pill dropdown; `preview_hint` metni yok (idle’da 5 sn
+  preview hook’ta duruyor). Focus/break overlay `.session-focus-theme` (DESIGN.md §2.5 istisnası):
+  `/visuals/session-focus-bg.webp` + wash, yoksa blob fallback, timer arkasında CSS damla/ripple.
+  Müzik focus’ta da değişir; ders pill’i salt okunur (subject PATCH yok). Kontroller yatay
+  `[X] [pause] [✓]`; ayrı mute dairesi kalktı (mute dropdown içinde). `CircularTimerRing`
+  countdown’da 60 tick (12 majör) + kalın progress. Arkadaşla birlikte çalışma redesign’ı bu
+  turda yok. Kullanım: `/seans` — idle’da kolonlar, Başla ile immersive overlay. Gotcha: görsel
+  henüz yoksa blob fallback; `html.dark` overlay’i tersine çevirmez. İlgili:
+  `study-session-shell.tsx`, `session-history.tsx`, `session-subject-picker.tsx`,
+  `session-ambient-picker.tsx`, `session-focus-backdrop.tsx`, `session-content-skeleton.tsx`,
+  `circular-timer-ring.tsx`, `packages/ui/src/theme.css`, `DESIGN.md`, `messages/{tr,en}.json`.
+
+- **Seans idle kolon sıkılaştırma (2026-08-24)** — Sol rail artık desktop’ta analiz gibi
+  `lg:h-[calc(100dvh-4rem)]` tavanıyla full-height. “Daha fazla göster” kalktı; rail son 8 seansı
+  gösterir, footer’da yalnız “Tümünü gör”. Satırlar analiz listesi yoğunluğunda (circle/chip yok,
+  dakika + konu + durum + tarih). Timer `+/−` ve preset pill’ler token yüzeyi/kenar (`--color-surface`
+  / `--color-btn`), hardcoded `bg-white/70` yok. Yol arkadaşı kartı dar kolonda dikey: kimlik ayrı,
+  Dürt / Birlikte çalış / Ayrıl altta full-width. İlgili: `study-session-shell.tsx`,
+  `session-history.tsx`, `session-history-row.tsx`, `session-timer-ring.tsx`,
+  `session-buddy-card.tsx`, `circular-timer-ring.tsx`.
+
+- **Koç notu sızıntısı + timer ticks + sidebar geçmiş (2026-08-24)** — Seans bitişindeki koç
+  notu `<<TASK{...}}` (kapanış `>>` yok, fazla `}`) ham metin olarak sızıyordu: reflection artık
+  `extractReplyMarkers` ile strip + recover ediyor; cache hit de aynı. FE `sanitizeCoachDisplayText`
+  + `recoverSuggestedTask` ikinci hat. Timer setup’ta da focus’taki 60 tick + parlayan progress
+  var; hızlı çevirince görünen kare çerçeve `outline-none` + `rounded-full` focus ring. Son seanslar
+  rail/drawer full-height; “Tümünü gör” ve `/seans/gecmis` sayfası yok (eski URL `/seans`’a
+  yönlenir). Tarih/konu filtreleri + “Daha fazla göster” sidebar içinde. Kullanım: `/seans` idle
+  rail. Gotcha: bozuk `<<TASK` JSON’u parse edilemezse kart çıkmaz, metin yine temizlenir.
+  İlgili: `suggested-task.ts`, `session-reflection.service.ts`, `coach-reply-markers.ts`,
+  `circular-timer-ring.tsx`, `session-history.tsx`, `study-session-shell.tsx`,
+  `study-session/history/page.tsx`.
+
+- **Skeleton, defter boyutu ve sayfa göstergesi (2026-08-24, APP-046)** — Üçü de aynı şeye bağlandı:
+  dikey bütçe. **Sayfa göstergesi akıştan çıkarıldı** (`sticky` → `absolute`, spread'in ayağında
+  yüzüyor). Akıştayken gerçek yüksekliği olan bir satırdı ve o yüksekliğin her pikseli doğrudan
+  defterden gidiyordu: `useFitSize` bu satırın ve araç çubuğunun geriye bıraktığını ölçüyor, yani
+  kimsenin bakmadığı bir kontrol şeridi defteri sessizce küçültüyordu. Şerit `pointer-events-none`,
+  butonlar tek tek geri açılıyor — şerit tam genişlikte ve altındaki şey öğrencinin kart sürüklediği
+  canlı bir sayfa. Sahne kolonunun dolgusu da `3vh`'den `2vh`'ye indi. **Skeleton yeniden yazıldı ve
+  asıl kusuru şekildi:** portre *tek sayfa* ayırıyordu (`max-w-md`, 1080/1440), oysa gelen şey bir
+  **açılım** — boyunun bir buçuk katı genişlikte; ayrıca ray ve yan panel hiç yoktu, dolayısıyla
+  gerçek içerik gelince tüm düzen yana kayıyordu. Yanlış yer ayıran bir skeleton hiç olmamasından
+  kötüdür: bir düzen vaat edip sözünü bozar. Yeni skeleton kabuğun çerçevesini birebir taklit ediyor
+  (aynı dış dolgu, masaüstünde aynı sabit yükseklik, aynı ray genişliği, aynı panel genişliği) ve
+  kitabın kutusu tahminle değil **`SPREAD_RATIO`** ile türetiliyor — bu sabit `notebook-surface`'tan
+  export edildi, çünkü skeleton'ın oranı elle yazılırsa `SPINE_GUTTER` ilk değiştiğinde ikisi
+  birbirinden ayrılır.
+  İlgili: `notebook-content-skeleton.tsx`, `notebook-shell.tsx`, `notebook-surface.tsx`.
+

@@ -12,6 +12,7 @@ Runtime path: `/visuals/{filename}`
 | `plan-empty.webp` | Plan empty / nudge |
 | `analiz-empty.webp` | Analiz chart / list empty |
 | `bilgi-category.webp` | Knowledge category thumb (optional) |
+| `session-focus-bg.webp` | `/seans` focus/break overlay atmosphere (1920×1080, dark charcoal + Mentor pink/blue/cyan fog). Missing file → blob fallback. |
 
 Prefer WebP, transparent or light ground, soft-3D matching Puhu lighting (pastel matte, soft shadow).
 Keep files lean (~200KB target).

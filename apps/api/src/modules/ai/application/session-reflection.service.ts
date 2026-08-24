@@ -10,7 +10,7 @@ import { SessionService } from "../../coaching/application/session.service";
 import { PremiumFeatureId } from "@mentor/types";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
 import { AiUsageFeature, buildSessionReflectionPrompt, estimateCostMicros } from "../domain/ai.constants";
-import { extractSuggestedTask } from "../domain/suggested-task";
+import { extractReplyMarkers } from "../domain/suggested-task";
 import { ContextBuilder } from "./context-builder.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
@@ -68,10 +68,13 @@ export class SessionReflectionService {
       session.aiReflection &&
       (await this.sessions.getAiReflectionLocale(user.id, sessionId)) === locale
     ) {
+      const cached = extractReplyMarkers(session.aiReflection);
       return {
-        reflection: session.aiReflection,
+        reflection: cached.text,
         model: "cache",
-        ...(session.aiSuggestedTask ? { suggestedTask: session.aiSuggestedTask } : {}),
+        ...(session.aiSuggestedTask ?? cached.task
+          ? { suggestedTask: session.aiSuggestedTask ?? cached.task }
+          : {}),
       };
     }
 
@@ -89,7 +92,7 @@ export class SessionReflectionService {
 
     await this.budget.assertWithinBudget();
     const result = await this.llm.complete({ system, user: userMsg });
-    const { text, task } = extractSuggestedTask(result.text);
+    const { text, task } = extractReplyMarkers(result.text);
 
     await this.usage.append({
       userId: user.id,

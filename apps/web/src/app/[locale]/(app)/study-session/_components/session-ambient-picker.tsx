@@ -1,4 +1,5 @@
 "use client";
+import { ChevronDown, Music2, Volume2, VolumeX } from "lucide-react";
 
 import { useTranslations } from "next-intl";
 import {
@@ -6,10 +7,17 @@ import {
   type AmbientTrackId,
   isAmbientTrackId,
 } from "@/lib/ambient-tracks";
+import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
+import {
+  SESSION_CHROME_PILL_CLASS,
+  SESSION_CHROME_PILL_STYLE,
+} from "./session-chrome-pill";
 
 export interface SessionAmbientPickerProps {
   trackId: AmbientTrackId;
+  muted: boolean;
   onTrackIdChange: (trackId: AmbientTrackId) => void;
+  onToggleMute: () => void;
 }
 
 const TRACK_LABEL_KEYS: Record<AmbientTrackId, string> = {
@@ -19,51 +27,72 @@ const TRACK_LABEL_KEYS: Record<AmbientTrackId, string> = {
   warm: "track_warm",
 };
 
+/**
+ * Pill dropdown for ambient track + mute (idle and focus).
+ */
 export function SessionAmbientPicker({
   trackId,
+  muted,
   onTrackIdChange,
+  onToggleMute,
 }: SessionAmbientPickerProps) {
   const translate = useTranslations("session_ambient");
+  const trackLabel = translate(TRACK_LABEL_KEYS[trackId]);
 
   return (
-    <div className="flex w-full flex-col gap-1.5">
-      <label
-        htmlFor="session-ambient-track"
-        className="text-sm font-medium"
-        style={{ color: "var(--color-body)", fontFamily: "var(--font-body)" }}
-      >
-        {translate("picker_label")}
-      </label>
-      <select
-        id="session-ambient-track"
-        value={trackId}
-        onChange={(e) => {
-          const value = e.target.value;
-          if (isAmbientTrackId(value)) onTrackIdChange(value);
-        }}
-        className="w-full rounded-[var(--radius-card)] border px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2"
-        style={{
-          borderColor: "var(--color-progress-track)",
-          backgroundColor: "var(--color-surface)",
-          color: "var(--color-main)",
-          fontFamily: "var(--font-body)",
-        }}
-      >
-        {AMBIENT_TRACK_IDS.map((id) => (
-          <option key={id} value={id}>
-            {translate(TRACK_LABEL_KEYS[id])}
-          </option>
-        ))}
-      </select>
-
-      {trackId !== "off" ? (
-        <p
-          className="text-xs"
-          style={{ color: "var(--color-secondary)", fontFamily: "var(--font-body)" }}
+    <PopoverMenu
+      align="right"
+      panelRole="menu"
+      menuClassName="min-w-[13rem]"
+      trigger={({ open, setOpen, menuId }) => (
+        <button
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-controls={open ? menuId : undefined}
+          aria-label={translate("picker_label")}
+          onClick={() => setOpen(!open)}
+          className={SESSION_CHROME_PILL_CLASS}
+          style={SESSION_CHROME_PILL_STYLE}
         >
-          {translate("preview_hint")}
-        </p>
+          <Music2 className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
+          <span className="min-w-0 truncate">{trackLabel}</span>
+          <ChevronDown
+            className={`size-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
+            strokeWidth={2.25}
+            aria-hidden
+            style={{ color: "var(--color-secondary)" }}
+          />
+        </button>
+      )}
+    >
+      {AMBIENT_TRACK_IDS.map((id) => (
+        <PopoverMenuItem
+          key={id}
+          selected={trackId === id}
+          onClick={() => {
+            if (isAmbientTrackId(id)) onTrackIdChange(id);
+          }}
+        >
+          {translate(TRACK_LABEL_KEYS[id])}
+        </PopoverMenuItem>
+      ))}
+      {trackId !== "off" ? (
+        <PopoverMenuItem
+          role="menuitem"
+          onClick={onToggleMute}
+          closeOnClick={false}
+        >
+          <span className="flex items-center gap-2">
+            {muted ? (
+              <VolumeX className="size-4" aria-hidden />
+            ) : (
+              <Volume2 className="size-4" aria-hidden />
+            )}
+            {muted ? translate("unmute") : translate("mute")}
+          </span>
+        </PopoverMenuItem>
       ) : null}
-    </div>
+    </PopoverMenu>
   );
 }

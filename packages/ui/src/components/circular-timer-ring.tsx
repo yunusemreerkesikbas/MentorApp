@@ -11,6 +11,8 @@ import {
   DEFAULT_TIMER_STEP,
   formatCountdown,
   minutesFromAngle,
+  TIMER_TICK_COUNT,
+  timerTickLine,
 } from "./circular-timer-ring.utils.js";
 
 export type CircularTimerRingMode = "setup" | "countdown";
@@ -31,12 +33,14 @@ export interface CircularTimerRingProps {
   size?: number;
 }
 
-const RING_STROKE = 8;
+const RING_STROKE_SETUP = 8;
+const RING_STROKE_COUNTDOWN = 10;
 const HANDLE_RADIUS = 12;
 
 /**
  * Circular focus timer (DESIGN.md progress tokens: track #C3D9FD, fill #55ACEE).
- * Setup: drag/touch/keyboard to pick duration. Countdown: read-only progress ring.
+ * Setup: drag/touch/keyboard to pick duration (ticks + progress like countdown).
+ * Countdown: read-only progress ring.
  */
 export function CircularTimerRing({
   mode,
@@ -53,8 +57,10 @@ export function CircularTimerRing({
   const labelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
+  const ringStroke =
+    mode === "countdown" ? RING_STROKE_COUNTDOWN : RING_STROKE_SETUP;
 
-  const radius = (size - RING_STROKE) / 2 - HANDLE_RADIUS;
+  const radius = (size - ringStroke) / 2 - HANDLE_RADIUS;
   const cx = size / 2;
   const cy = size / 2;
   const circumference = 2 * Math.PI * radius;
@@ -139,8 +145,8 @@ export function CircularTimerRing({
     <div className={`flex flex-col items-center gap-3 ${className ?? ""}`}>
       <div
         ref={rootRef}
-        className={`relative select-none ${interactive ? "cursor-grab touch-none active:cursor-grabbing" : ""}`}
-        style={{ width: size, height: size }}
+        className={`relative select-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${interactive ? "cursor-grab touch-none active:cursor-grabbing" : ""}`}
+        style={{ width: size, height: size, WebkitTapHighlightColor: "transparent" }}
         role={interactive ? "slider" : undefined}
         aria-label={interactive ? "Odak süresi" : undefined}
         aria-labelledby={interactive ? labelId : undefined}
@@ -174,19 +180,35 @@ export function CircularTimerRing({
           <circle
             cx={cx}
             cy={cy}
-            r={radius - RING_STROKE / 2}
+            r={radius - ringStroke / 2}
             fill={`url(#${labelId}-fill)`}
             className={
               mode === "countdown" ? "mentor-timer-breathe" : undefined
             }
           />
+          {Array.from({ length: TIMER_TICK_COUNT }, (_, index) => {
+            const tick = timerTickLine(index, cx, cy, radius);
+            return (
+              <line
+                key={index}
+                x1={tick.x1}
+                y1={tick.y1}
+                x2={tick.x2}
+                y2={tick.y2}
+                stroke="var(--color-main)"
+                strokeOpacity={tick.major ? 0.45 : 0.22}
+                strokeWidth={tick.major ? 2 : 1}
+                strokeLinecap="round"
+              />
+            );
+          })}
           <circle
             cx={cx}
             cy={cy}
             r={radius}
             fill="none"
             stroke="var(--color-progress-track)"
-            strokeWidth={RING_STROKE}
+            strokeWidth={ringStroke}
           />
           <circle
             cx={cx}
@@ -194,12 +216,16 @@ export function CircularTimerRing({
             r={radius}
             fill="none"
             stroke="var(--color-progress)"
-            strokeWidth={RING_STROKE}
+            strokeWidth={ringStroke}
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={dashOffset}
             transform={`rotate(-90 ${cx} ${cy})`}
             className="motion-reduce:transition-none transition-[stroke-dashoffset] duration-1000 ease-linear"
+            style={{
+              filter:
+                "drop-shadow(0 0 6px color-mix(in srgb, var(--color-progress) 55%, transparent))",
+            }}
           />
           {mode === "countdown" && (
             <circle
@@ -259,9 +285,11 @@ export function CircularTimerRing({
           <button
             type="button"
             aria-label={`${step} dakika azalt`}
-            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full border border-white bg-white/70 text-xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full text-xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
             style={{
               color: "var(--color-main)",
+              backgroundColor: "var(--color-surface)",
+              border: "1px solid var(--color-border)",
               boxShadow: "var(--shadow-card)",
             }}
             onClick={() => nudge(-step)}
@@ -271,9 +299,11 @@ export function CircularTimerRing({
           <button
             type="button"
             aria-label={`${step} dakika artır`}
-            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full border border-white bg-white/70 text-xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full text-xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
             style={{
               color: "var(--color-main)",
+              backgroundColor: "var(--color-surface)",
+              border: "1px solid var(--color-border)",
               boxShadow: "var(--shadow-card)",
             }}
             onClick={() => nudge(step)}
@@ -292,4 +322,6 @@ export {
   clampMinutes,
   formatCountdown,
   minutesFromAngle,
+  timerTickLine,
+  TIMER_TICK_COUNT,
 } from "./circular-timer-ring.utils.js";

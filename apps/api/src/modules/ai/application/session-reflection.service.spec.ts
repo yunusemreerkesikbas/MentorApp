@@ -189,6 +189,33 @@ describe("SessionReflectionService", () => {
     );
   });
 
+  it("strips a malformed <<TASK>> (missing >>) so the marker never reaches the client", async () => {
+    complete.mockResolvedValue({
+      text: 'Tebrikler, ritmin güzel.\n<<TASK{"title":"mola teknikleri","subject":""}}',
+      promptTokens: 12,
+      completionTokens: 10,
+      model: "fake",
+    });
+    const res = await service.reflect(USER, SESSION_ID);
+    expect(res.reflection).toBe("Tebrikler, ritmin güzel.");
+    expect(res.reflection).not.toContain("<<TASK");
+    expect(res.suggestedTask).toEqual({ title: "mola teknikleri", subject: null });
+  });
+
+  it("strips a leaked <<TASK from a cached reflection", async () => {
+    getAiReflectionLocale.mockResolvedValue("tr");
+    getById.mockResolvedValue(
+      baseSession({
+        aiReflection: 'Önceki seans yansıması.\n<<TASK{"title":"mola teknikleri","subject":""}}',
+      }),
+    );
+    const res = await service.reflect(USER, SESSION_ID);
+    expect(res.reflection).toBe("Önceki seans yansıması.");
+    expect(res.reflection).not.toContain("<<TASK");
+    expect(res.suggestedTask).toEqual({ title: "mola teknikleri", subject: null });
+    expect(complete).not.toHaveBeenCalled();
+  });
+
   it("extracts and strips <<TASK>> then caches suggestedTask", async () => {
     complete.mockResolvedValue({
       text: 'İyi tempoydu; yarın aynı konuda 10 soru çöz.\n<<TASK{"title":"Mat: 10 soru","subject":"Matematik"}>>',
