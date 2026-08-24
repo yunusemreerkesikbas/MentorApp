@@ -21,9 +21,23 @@ import { PAGE_PERCENT, PAPERS } from "./notebook-surface";
  * can read. If a flying page ever needs its own items, that is the change: fetch `left±2` eagerly and
  * render a non-interactive `NotebookPageStage` into the two faces below.
  *
- * ponytail: the curl is shading, not geometry — a rigid sheet plus a sheen/crease gradient and a
- * softened leading edge. True per-column deformation (the paper visibly bowing) needs WebGL or a
- * canvas page-flip library, and both want to own the DOM our interactive stages already live in.
+ * ponytail: the curl is shading, not geometry — a rigid sheet, a sheen/crease gradient, a lift out
+ * of the binding and a bow. Bending it for real was tried: a chain of ten vertical slices, each
+ * hinged on the free edge of the one before it, like a folding rule. It reads convincingly while the
+ * leaf stands up and falls apart once it lies down, which is where a turning page spends most of its
+ * time. Two artefacts, neither fixable from inside the technique:
+ *
+ * - Neighbouring slices sit at different angles to the viewer, so perspective foreshortens each one
+ *   differently and the horizontal rulings kink at every seam. Flattening the sheet hides it; laying
+ *   it down opens it. More slices shrink each kink and add seams; fewer do the opposite.
+ * - Any shading has to be cut into ten pieces that line up, and the back face is mirrored by its own
+ *   `rotateY(180deg)`, so a windowed gradient comes out reversed inside each slice. Flat per-slice
+ *   tints avoid that and become the banding themselves — ten steps read as ten steps on a surface
+ *   this large, not as a falloff.
+ *
+ * Real deformation needs WebGL or a canvas page-flip library, and both want to own the DOM our
+ * interactive stages already live in. What survived the experiment is everything that cost nothing:
+ * the leaf lifts off the book, and both of its faces are ruled the way a real page is.
  *
  * `single` (mobile): only one leaf of the spread is ever visible at a time there, so the flying
  * sheet is the full width of its slot rather than one of two page-percent columns, and it always
@@ -48,6 +62,9 @@ export const PAGE_TURN_SECONDS = 0.78;
  */
 const TURN_PERSPECTIVE = 1400;
 
+/** How far the leaf lifts off the book at the top of its arc. Clipped by the book's own overflow. */
+const LIFT_PX = 14;
+
 /**
  * Front face: a dark crease where the sheet bends into the spine, and a bright sheen along the free
  * edge that lifts — the two cues that make a flat rectangle read as a curled page.
@@ -59,7 +76,7 @@ const FRONT_SHEEN = {
     "linear-gradient(to left, rgba(0,0,0,0.24), rgba(0,0,0,0) 16%, rgba(0,0,0,0) 60%, rgba(255,255,255,0.55) 89%, rgba(0,0,0,0.14) 100%)",
 };
 
-/** Back face: the underside of paper — no ruling, no binding, just the grey falloff of the curl. */
+/** Back face: the underside of the sheet — the grey falloff of the curl, over the same ruling. */
 const BACK_SHADE = {
   forward:
     "linear-gradient(to right, rgba(0,0,0,0.30), rgba(0,0,0,0.14) 45%, rgba(0,0,0,0.04) 100%)",
@@ -77,7 +94,12 @@ export interface NotebookPageTurnProps {
   onDone: () => void;
 }
 
-export function NotebookPageTurn({ dir, paper, single, onDone }: NotebookPageTurnProps) {
+export function NotebookPageTurn({
+  dir,
+  paper,
+  single,
+  onDone,
+}: NotebookPageTurnProps) {
   const forward = dir > 0;
   // Single mode's leaf is always the same physical shape (left-bound, free edge on the right), so
   // it reuses exactly the "forward" geometry below regardless of which way `dir` points.
@@ -115,7 +137,11 @@ export function NotebookPageTurn({ dir, paper, single, onDone }: NotebookPageTur
         }}
         initial={{ opacity: 0 }}
         animate={{ opacity: [0, 1, 0] }}
-        transition={{ duration: PAGE_TURN_SECONDS, times: [0, 0.55, 1], ease: "easeInOut" }}
+        transition={{
+          duration: PAGE_TURN_SECONDS,
+          times: [0, 0.55, 1],
+          ease: "easeInOut",
+        }}
       />
 
       <motion.div
@@ -127,14 +153,33 @@ export function NotebookPageTurn({ dir, paper, single, onDone }: NotebookPageTur
           width: leafWidth,
           transformOrigin: origin,
           transformStyle: "preserve-3d",
+          // The ruling is sized in `cqw`, and `cqw` resolves against the nearest container — so it
+          // has to be declared once here, on the whole leaf. Declared per slice (as it was when the
+          // sheet was one rigid face) every slice becomes its own container and the lines come out
+          // ten times too dense, because each slice is a tenth of a page wide.
+          containerType: "inline-size",
         }}
-        initial={{ rotateY: 0, scaleY: 1 }}
+        initial={{ rotateY: 0, scaleY: 1, z: 0 }}
         // `scaleY` is the bow: a sheet standing on its edge is momentarily shorter than one lying
-        // flat, and without it the turn reads as a rigid door rather than paper.
-        animate={{ rotateY: forward ? -180 : 180, scaleY: [1, 0.952, 1] }}
+        // flat. `z` lifts the whole leaf off the book at the top of its arc — a page being turned
+        // rises out of the binding rather than sweeping flat across it.
+        animate={{
+          rotateY: forward ? -180 : 180,
+          scaleY: [1, 0.952, 1],
+          z: [0, LIFT_PX, 0],
+        }}
         transition={{
           rotateY: { duration: PAGE_TURN_SECONDS, ease: [0.45, 0.05, 0.25, 1] },
-          scaleY: { duration: PAGE_TURN_SECONDS, times: [0, 0.5, 1], ease: "easeInOut" },
+          scaleY: {
+            duration: PAGE_TURN_SECONDS,
+            times: [0, 0.5, 1],
+            ease: "easeInOut",
+          },
+          z: {
+            duration: PAGE_TURN_SECONDS,
+            times: [0, 0.5, 1],
+            ease: "easeInOut",
+          },
         }}
         onAnimationComplete={onDone}
       >
@@ -144,18 +189,23 @@ export function NotebookPageTurn({ dir, paper, single, onDone }: NotebookPageTur
             inset: 0,
             backfaceVisibility: "hidden",
             overflow: "hidden",
-            // The ruling below is sized in `cqw`, exactly as on a real page surface.
-            containerType: "inline-size",
             backgroundColor: "var(--notebook-paper)",
             boxShadow: "var(--notebook-page-shadow)",
             // The free edge softens as it lifts; the hinged edge stays square against the spine.
             borderRadius: frontRadius,
           }}
         >
-          <div aria-hidden style={{ position: "absolute", inset: 0, ...PAPERS[paper] }} />
           <div
             aria-hidden
-            style={{ position: "absolute", inset: 0, backgroundImage: FRONT_SHEEN[key] }}
+            style={{ position: "absolute", inset: 0, ...PAPERS[paper] }}
+          />
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage: FRONT_SHEEN[key],
+            }}
           />
         </div>
 
@@ -165,12 +215,28 @@ export function NotebookPageTurn({ dir, paper, single, onDone }: NotebookPageTur
             inset: 0,
             backfaceVisibility: "hidden",
             transform: "rotateY(180deg)",
+            overflow: "hidden",
             backgroundColor: "var(--notebook-paper)",
-            backgroundImage: BACK_SHADE[key],
             boxShadow: "var(--notebook-page-shadow)",
             borderRadius: backRadius,
           }}
-        />
+        >
+          {/* Ruled, like the front: a notebook page is ruled on both sides, and a blank underside
+              was the loudest thing about the old turn — the leaf changed material halfway round.
+              Mirrored by this face's own rotation, which horizontal rulings cannot show. */}
+          <div
+            aria-hidden
+            style={{ position: "absolute", inset: 0, ...PAPERS[paper] }}
+          />
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage: BACK_SHADE[key],
+            }}
+          />
+        </div>
       </motion.div>
     </div>
   );

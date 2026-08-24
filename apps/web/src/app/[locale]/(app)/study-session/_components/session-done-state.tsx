@@ -12,6 +12,7 @@ import { SuggestedTaskCard } from "@/components/suggested-task-card";
 import { useStreakCelebration } from "@/components/streak-celebration";
 import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
 import { requestSessionReflection } from "@/lib/coach";
+import { recoverSuggestedTask, sanitizeCoachDisplayText } from "@/lib/coach-reply-markers";
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { fetchSubscriptionView } from "@/lib/subscription-view";
@@ -169,8 +170,15 @@ export function SessionDoneState({
         return;
       }
       const res = await requestSessionReflection(sessionId);
-      if (res.reflection) setReflection(res.reflection);
-      if (res.suggestedTask) setSuggestedTask(res.suggestedTask);
+      if (res.reflection) {
+        setReflection(sanitizeCoachDisplayText(res.reflection));
+      }
+      if (res.suggestedTask) {
+        setSuggestedTask(res.suggestedTask);
+      } else if (res.reflection) {
+        const recovered = recoverSuggestedTask(res.reflection);
+        if (recovered) setSuggestedTask(recovered);
+      }
     } catch {
       /* Free / AI disabled / network — stay silent (§4 #5). */
     } finally {

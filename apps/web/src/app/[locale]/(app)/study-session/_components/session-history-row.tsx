@@ -12,6 +12,8 @@ export interface SessionHistoryRowProps {
   index: number;
   minutesLabel: string;
   statusLabel: string;
+  /** Analysis-rail density for the session sidebar / drawer. */
+  compact?: boolean;
 }
 
 export function SessionHistoryRow({
@@ -19,6 +21,7 @@ export function SessionHistoryRow({
   index,
   minutesLabel,
   statusLabel,
+  compact = false,
 }: SessionHistoryRowProps) {
   const t = useTranslations("session");
   const locale = useLocale();
@@ -34,6 +37,47 @@ export function SessionHistoryRow({
   const emoji = session.sessionMood ? EFFORT_EMOJI[session.sessionMood] : null;
   const abandoned = session.status === "ABANDONED";
   const minutes = Math.round(session.actualFocusSeconds / 60);
+  const subject = session.subject?.trim() ?? "";
+
+  if (compact) {
+    return (
+      <li>
+        <div
+          className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[10px] px-2.5 py-2"
+        >
+          <div className="min-w-0">
+            <p
+              className="truncate text-sm font-semibold"
+              style={{
+                color: "var(--color-main)",
+                fontFamily: "var(--font-heading)",
+              }}
+            >
+              {minutesLabel}
+              {subject ? (
+                <span
+                  className="ml-1.5 font-medium"
+                  style={{ color: "var(--color-secondary)" }}
+                >
+                  {subject}
+                </span>
+              ) : null}
+            </p>
+            <p className="truncate text-xs" style={{ color: "var(--color-secondary)" }}>
+              {statusLabel}
+            </p>
+          </div>
+          <time
+            dateTime={session.startedAt}
+            className="shrink-0 text-right text-xs tabular-nums"
+            style={{ color: "var(--color-secondary)" }}
+          >
+            {dateLabel}
+          </time>
+        </div>
+      </li>
+    );
+  }
 
   return (
     <li
@@ -68,9 +112,9 @@ export function SessionHistoryRow({
           >
             {minutesLabel}
           </span>
-          {session.subject ? (
+          {subject ? (
             <Chip className="max-w-[9rem] truncate px-2 py-0.5 text-[10px] font-bold uppercase">
-              {session.subject}
+              {subject}
             </Chip>
           ) : null}
           {session.planTaskTitle ? (

@@ -1471,6 +1471,10 @@
   "session": {
     "title": "Study Session",
     "subtitle": "Focus, take your break, stay composed.",
+    "loading": "Preparing your session…",
+    "history_open": "Open recent sessions",
+    "history_collapse": "Hide recent sessions",
+    "subject_none": "Choose subject",
     "paused": "Paused",
     "focusing": "Focus",
     "break_label": "Break",
@@ -1511,11 +1515,7 @@
     "history_load_more": "Load more",
     "history_load_more_error": "Could not load more sessions.",
     "history_plan_task": "From plan: {title}",
-    "history_page_title": "Session history",
-    "history_view_all": "View all",
     "history_filter_all": "All",
-    "history_back": "Back to session",
-    "history_loading": "Loading session history…",
     "history_empty_filtered": "No sessions match these filters.",
     "history_date_filter_label": "Date range",
     "history_subject_filter_label": "Subject filter",
@@ -1979,8 +1979,7 @@
     "track_rain": "Light rain",
     "track_warm": "Warm pad",
     "mute": "Mute music",
-    "unmute": "Unmute music",
-    "preview_hint": "Your selection plays a short preview. Adjust loudness with your device volume."
+    "unmute": "Unmute music"
   },
   "journey_levels": {
     "title": "Journey level",

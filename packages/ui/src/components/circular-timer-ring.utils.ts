@@ -4,6 +4,31 @@ export const DEFAULT_TIMER_MIN = 5;
 export const DEFAULT_TIMER_MAX = 120;
 export const DEFAULT_TIMER_STEP = 5;
 
+export const TIMER_TICK_COUNT = 60;
+export const TIMER_MAJOR_TICK_EVERY = 5;
+export const TIMER_TICK_MAJOR_LENGTH = 12;
+export const TIMER_TICK_MINOR_LENGTH = 7;
+export const TIMER_TICK_OUTER_INSET = 2;
+
+export function timerTickLine(
+  index: number,
+  cx: number,
+  cy: number,
+  radius: number,
+): { x1: number; y1: number; x2: number; y2: number; major: boolean } {
+  const major = index % TIMER_MAJOR_TICK_EVERY === 0;
+  const angle = ((index / TIMER_TICK_COUNT) * 360 - 90) * (Math.PI / 180);
+  const outer = radius - TIMER_TICK_OUTER_INSET;
+  const inner = radius - (major ? TIMER_TICK_MAJOR_LENGTH : TIMER_TICK_MINOR_LENGTH);
+  return {
+    x1: cx + inner * Math.cos(angle),
+    y1: cy + inner * Math.sin(angle),
+    x2: cx + outer * Math.cos(angle),
+    y2: cy + outer * Math.sin(angle),
+    major,
+  };
+}
+
 /** Angle in degrees from 12 o'clock, clockwise (0–360). */
 export function angleFromPointer(
   clientX: number,

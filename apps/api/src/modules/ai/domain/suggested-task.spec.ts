@@ -37,6 +37,14 @@ describe("extractSuggestedTask", () => {
     const { task } = extractSuggestedTask('Y. <<TASK{"title":"Deneme çöz"}>>');
     expect(task).toEqual({ title: "Deneme çöz", subject: null });
   });
+
+  it("recovers a malformed trailing marker (extra }, missing >>)", () => {
+    const { text, task } = extractSuggestedTask(
+      'Tebrikler!\n<<TASK{"title":"mola teknikleri","subject":""}}',
+    );
+    expect(text).toBe("Tebrikler!");
+    expect(task).toEqual({ title: "mola teknikleri", subject: null });
+  });
 });
 
 describe("createTaskMarkerFilter", () => {
@@ -161,6 +169,15 @@ describe("extractReplyMarkers", () => {
     expect(out.text).toBe("Yanıt.");
     expect(out.text).not.toContain("<<");
     expect(out.followUps).toEqual([]); // unparseable — dropped, not guessed
+  });
+
+  it("never leaks a malformed TASK missing >> (session reflection, live)", () => {
+    const out = extractReplyMarkers(
+      'Tebrikler!\n<<TASK{"title":"mola teknikleri","subject":""}}',
+    );
+    expect(out.text).toBe("Tebrikler!");
+    expect(out.text).not.toContain("<<TASK");
+    expect(out.task).toEqual({ title: "mola teknikleri", subject: null });
   });
 
   it("handles a single marker and plain text", () => {

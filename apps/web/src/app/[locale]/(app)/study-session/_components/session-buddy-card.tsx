@@ -106,7 +106,7 @@ export function SessionBuddyCard() {
       type="button"
       disabled={busy}
       onClick={onClick}
-      className="text-xs font-semibold disabled:opacity-50"
+      className="min-h-11 cursor-pointer text-sm font-semibold disabled:opacity-50"
       style={{ color: tone === "accent" ? "var(--color-progress)" : "var(--color-secondary)" }}
     >
       {label}
@@ -114,7 +114,7 @@ export function SessionBuddyCard() {
   );
 
   return (
-    <Card className="flex flex-col gap-3 px-5 py-4">
+    <Card className="flex flex-col gap-4 px-4 py-4">
       <span
         className="text-[11px] font-semibold uppercase tracking-wide"
         style={{ color: "var(--color-secondary)" }}
@@ -123,10 +123,10 @@ export function SessionBuddyCard() {
       </span>
 
       {active ? (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-start gap-3">
             <AuthorAvatar name={active.partner.displayName} size={40} src={active.partner.avatarUrl} />
-            <div className="min-w-0 flex-1 leading-tight">
+            <div className="min-w-0 flex-1 leading-snug">
               <p
                 className="truncate text-sm font-bold"
                 style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
@@ -135,7 +135,7 @@ export function SessionBuddyCard() {
               </p>
               {active.partnerStudyingNow ? (
                 <p
-                  className="flex items-center gap-1.5 text-xs font-semibold"
+                  className="mt-1 flex items-center gap-1.5 text-xs font-semibold"
                   style={{ color: "var(--color-success)" }}
                 >
                   <span
@@ -146,7 +146,7 @@ export function SessionBuddyCard() {
                   {t("buddy_studying_now")}
                 </p>
               ) : (
-                <p className="text-xs tabular-nums" style={{ color: "var(--color-secondary)" }}>
+                <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--color-secondary)" }}>
                   {t("buddy_active_stats", {
                     minutes: active.focusMinutesToday,
                     days: active.currentStreak,
@@ -154,79 +154,87 @@ export function SessionBuddyCard() {
                 </p>
               )}
             </div>
-            <div className="flex shrink-0 items-center gap-3">
+          </div>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              disabled={busy || !active.canNudge}
+              onClick={() =>
+                void run(nudgeBuddy, {
+                  title: t("buddy_nudge_sent_title"),
+                  message: t("buddy_nudge_sent_message", { name: active.partner.displayName }),
+                })
+              }
+              className="min-h-11 w-full cursor-pointer rounded-[var(--radius-card)] text-sm font-semibold disabled:opacity-40"
+              style={{
+                backgroundColor: "var(--color-surface-container)",
+                color: "var(--color-main)",
+              }}
+            >
+              {t("buddy_nudge")}
+            </button>
+            {!active.partnerStudyingNow ? (
               <button
                 type="button"
                 disabled={busy || !active.canNudge}
                 onClick={() =>
-                  void run(nudgeBuddy, {
-                    title: t("buddy_nudge_sent_title"),
-                    message: t("buddy_nudge_sent_message", { name: active.partner.displayName }),
+                  void run(inviteBuddyToStudy, {
+                    title: t("buddy_invite_study_sent_title"),
+                    message: t("buddy_invite_study_sent_message", { name: active.partner.displayName }),
                   })
                 }
-                className="rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+                className="min-h-11 w-full cursor-pointer rounded-[var(--radius-card)] text-sm font-semibold disabled:opacity-40"
                 style={{
-                  backgroundColor: "color-mix(in srgb, var(--color-chip) 30%, transparent)",
+                  backgroundColor:
+                    "color-mix(in srgb, var(--color-progress) 16%, var(--color-surface))",
                   color: "var(--color-main)",
                 }}
               >
-                {t("buddy_nudge")}
+                {t("buddy_invite_study")}
               </button>
+            ) : null}
+            <div className="flex justify-center">
               {endConfirm
                 ? textButton(t("buddy_end_confirm"), () => void run(endBuddy), "accent")
                 : textButton(t("buddy_end"), () => setEndConfirm(true))}
             </div>
           </div>
-          {/* Partner already studying → the presence dot is the cue to join; no invite needed. */}
-          {!active.partnerStudyingNow ? (
-            <button
-              type="button"
-              disabled={busy || !active.canNudge}
-              onClick={() =>
-                void run(inviteBuddyToStudy, {
-                  title: t("buddy_invite_study_sent_title"),
-                  message: t("buddy_invite_study_sent_message", { name: active.partner.displayName }),
-                })
-              }
-              className="w-full rounded-full px-3 py-2 text-xs font-semibold disabled:opacity-40"
-              style={{
-                backgroundColor: "color-mix(in srgb, var(--color-progress) 14%, transparent)",
-                color: "var(--color-main)",
-              }}
-            >
-              {t("buddy_invite_study")}
-            </button>
-          ) : null}
         </div>
       ) : incoming.length > 0 || outgoing ? (
-        <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-4">
           {incoming.map((req) => (
-            <div key={req.id} className="flex items-center gap-3">
-              <AuthorAvatar name={req.partner.displayName} size={32} src={req.partner.avatarUrl} />
-              <p className="min-w-0 flex-1 truncate text-sm" style={{ color: "var(--color-main)" }}>
-                <span className="font-bold">{req.partner.displayName}</span>{" "}
-                {t("buddy_incoming_suffix")}
-              </p>
-              <div className="flex shrink-0 items-center gap-3">
+            <div key={req.id} className="flex flex-col gap-2">
+              <div className="flex items-start gap-3">
+                <AuthorAvatar name={req.partner.displayName} size={36} src={req.partner.avatarUrl} />
+                <p className="min-w-0 flex-1 text-sm leading-relaxed" style={{ color: "var(--color-main)" }}>
+                  <span className="font-bold">{req.partner.displayName}</span>{" "}
+                  {t("buddy_incoming_suffix")}
+                </p>
+              </div>
+              <div className="flex items-center gap-4 px-0.5">
                 {textButton(t("buddy_accept"), () => void run(() => acceptBuddyRequest(req.id)), "accent")}
                 {textButton(t("buddy_decline"), () => void run(() => deleteBuddyRequest(req.id)))}
               </div>
             </div>
           ))}
           {outgoing ? (
-            <div className="flex items-center gap-3">
-              <AuthorAvatar
-                name={outgoing.partner.displayName}
-                size={32}
-                src={outgoing.partner.avatarUrl}
-              />
-              <p
-                className="min-w-0 flex-1 truncate text-sm"
-                style={{ color: "var(--color-secondary)" }}
-              >
-                {t("buddy_outgoing", { name: outgoing.partner.displayName })}
-              </p>
-              {textButton(t("buddy_cancel"), () => void run(() => deleteBuddyRequest(outgoing.id)))}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-start gap-3">
+                <AuthorAvatar
+                  name={outgoing.partner.displayName}
+                  size={36}
+                  src={outgoing.partner.avatarUrl}
+                />
+                <p
+                  className="min-w-0 flex-1 text-sm leading-relaxed"
+                  style={{ color: "var(--color-secondary)" }}
+                >
+                  {t("buddy_outgoing", { name: outgoing.partner.displayName })}
+                </p>
+              </div>
+              <div className="px-0.5">
+                {textButton(t("buddy_cancel"), () => void run(() => deleteBuddyRequest(outgoing.id)))}
+              </div>
             </div>
           ) : null}
         </div>
