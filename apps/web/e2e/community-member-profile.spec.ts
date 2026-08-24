@@ -792,6 +792,15 @@ test("profil, API'nin sıraladığı yolculuk izlerini erişilebilir detay ve t�
   await expect(showcase).toBeVisible();
   const triggers = showcase.getByRole("button");
   await expect(triggers).toHaveCount(3);
+  const showcaseImages = showcase.locator("img");
+  await expect(showcaseImages).toHaveCount(3);
+  for (const image of [
+    showcaseImages.nth(0),
+    showcaseImages.nth(1),
+    showcaseImages.nth(2),
+  ]) {
+    await expect(image).toHaveAttribute("sizes", "64px");
+  }
   await expect(triggers.nth(0)).toHaveAccessibleName(
     "Haftanı Dinledin kazanıldı",
   );

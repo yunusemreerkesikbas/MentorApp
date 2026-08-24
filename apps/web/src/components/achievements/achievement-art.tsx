@@ -11,11 +11,13 @@ export function AchievementArt({
   alt,
   priority = false,
   className,
+  sizes = "(max-width: 640px) 42vw, 180px",
 }: {
   artKey: AchievementId;
   alt: string;
   priority?: boolean;
   className?: string;
+  sizes?: string;
 }) {
   const [failedArtKey, setFailedArtKey] = useState<AchievementId | null>(null);
   const failed = failedArtKey === artKey;
@@ -26,7 +28,7 @@ export function AchievementArt({
       alt={alt}
       width={1024}
       height={1024}
-      sizes="(max-width: 640px) 42vw, 180px"
+      sizes={sizes}
       priority={priority}
       onError={() => setFailedArtKey(artKey)}
       className={className}

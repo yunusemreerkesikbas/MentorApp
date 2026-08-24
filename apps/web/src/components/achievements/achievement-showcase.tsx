@@ -83,6 +83,7 @@ export function AchievementShowcase({
               artKey={achievement.artKey}
               alt=""
               className="size-full object-contain"
+              sizes="64px"
             />
           </button>
         ))}
