@@ -2552,6 +2552,9 @@
     }
   },
   "achievements": {
+    "showcase_title": "Yolculuktan İzler",
+    "showcase_view_all": "Tümünü gör",
+    "showcase_earned_aria": "{title} kazanıldı",
     "public_empty": "Henüz paylaşılmış bir başarı yok.",
     "collection_title": "Koleksiyonun",
     "collection_count": "{earned} / {total}",

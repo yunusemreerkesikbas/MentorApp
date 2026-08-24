@@ -28,6 +28,7 @@ const profile: PublicProfile = {
   displayName: "Ayşe Yılmaz",
   username: "ayse",
   achievementsEnabled: false,
+  achievementShowcase: null,
   avatarUrl: "https://cdn.test/ayse.svg",
   examType: "KPSS",
   createdAt: "2026-01-01T00:00:00.000Z",
@@ -52,6 +53,43 @@ const profile: PublicProfile = {
   isPremium: true,
   isFollowing: false,
   buddyStatus: "none",
+};
+
+const achievementShowcase = {
+  earnedCount: 4,
+  // The API owns this newest-first order; the client renders it as received.
+  items: [
+    {
+      id: "week_reflected" as const,
+      title: "Haftanı Dinledin",
+      description: "Haftanın sesini duymak için durdun.",
+      unlockHint: "Haftanı dinlemek için kısa bir değerlendirme yap.",
+      artKey: "week_reflected" as const,
+      status: "EARNED" as const,
+      earnedAt: "2026-08-21T10:00:00.000Z",
+      progress: null,
+    },
+    {
+      id: "rhythm_found" as const,
+      title: "Ritmi Yakaladın",
+      description: "Yedi günlük çalışma ritmini yakaladın.",
+      unlockHint: "Yedi günlük çalışma ritmine ulaş.",
+      artKey: "rhythm_found" as const,
+      status: "EARNED" as const,
+      earnedAt: "2026-08-19T10:00:00.000Z",
+      progress: null,
+    },
+    {
+      id: "first_step" as const,
+      title: "İlk Adım",
+      description: "İlk geçerli odak oturumunu tamamladın.",
+      unlockHint: "İlk geçerli odak oturumunu tamamla.",
+      artKey: "first_step" as const,
+      status: "EARNED" as const,
+      earnedAt: "2026-08-18T10:00:00.000Z",
+      progress: null,
+    },
+  ],
 };
 
 const achievementCollection: AchievementCollectionDto = {
@@ -740,6 +778,109 @@ test("başarı bilgi kartı dış alana tıklanınca kapanır", async ({ page })
   await expect(trigger).toBeFocused();
 });
 
+test("profil, API'nin sıraladığı yolculuk izlerini erişilebilir detay ve tümü bağlantısıyla gösterir", async ({
+  page,
+}) => {
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.goto("/topluluk/uye/showcase_user");
+
+  const showcase = page.getByRole("region", { name: "Yolculuktan İzler" });
+  await expect(showcase).toBeVisible();
+  const triggers = showcase.getByRole("button");
+  await expect(triggers).toHaveCount(3);
+  await expect(triggers.nth(0)).toHaveAccessibleName(
+    "Haftanı Dinledin kazanıldı",
+  );
+  await expect(triggers.nth(1)).toHaveAccessibleName(
+    "Ritmi Yakaladın kazanıldı",
+  );
+  await expect(triggers.nth(2)).toHaveAccessibleName("İlk Adım kazanıldı");
+  await expect(showcase.getByText("Haftanı Dinledin", { exact: true })).toHaveCount(0);
+  await expect(showcase.getByRole("link", { name: "Tümünü gör" })).toHaveAttribute(
+    "href",
+    "/topluluk/uye/showcase_user?tab=achievements",
+  );
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    )
+    .toBe(true);
+
+  for (const trigger of [triggers.nth(0), triggers.nth(1), triggers.nth(2)]) {
+    const box = await trigger.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.width).toBeGreaterThanOrEqual(44);
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+  }
+
+  const trigger = triggers.nth(0);
+  await trigger.focus();
+  await trigger.press("Enter");
+  const detail = page.getByRole("dialog", { name: "Haftanı Dinledin" });
+  await expect(detail).toBeVisible();
+  await expect(detail.getByText("Haftanın sesini duymak için durdun.")).toBeVisible();
+  await expect(detail.getByText("21.08.2026 tarihinde kazanıldı")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(detail).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
+test("boş veya devre dışı başarı gösterimi profil başlığında yer kaplamaz", async ({
+  page,
+}) => {
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.goto("/topluluk/uye/ayse");
+
+  await expect(
+    page.getByRole("region", { name: "Yolculuktan İzler" }),
+  ).toHaveCount(0);
+
+  await page.goto("/topluluk/uye/empty_showcase");
+
+  await expect(
+    page.getByRole("region", { name: "Yolculuktan İzler" }),
+  ).toHaveCount(0);
+});
+
+test("tümünü gör bağlantısı yalnızca üçten fazla kazanımda görünür", async ({
+  page,
+}) => {
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.goto("/topluluk/uye/three_showcase");
+
+  const showcase = page.getByRole("region", { name: "Yolculuktan İzler" });
+  await expect(showcase).toBeVisible();
+  await expect(showcase.getByRole("button")).toHaveCount(3);
+  await expect(showcase.getByRole("link", { name: "Tümünü gör" })).toHaveCount(0);
+});
+
+test("showcase chrome'u İngilizce rota için yerelleştirilir", async ({ page }) => {
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.goto("/en/community/member/showcase_user");
+
+  const showcase = page.getByRole("region", { name: "Traces of the Journey" });
+  await expect(showcase).toBeVisible();
+  await expect(
+    showcase.getByRole("link", { name: "View all" }),
+  ).toHaveAttribute("href", "/en/community/member/showcase_user?tab=achievements");
+});
+
 async function mockProfileApi(page: Page) {
   await page.route("https://cdn.test/missing.svg", async (route) => {
     await route.fulfill({ status: 404, body: "" });
@@ -769,6 +910,33 @@ async function mockProfileApi(page: Page) {
     if (method === "GET" && path === "/v1/users/me") return json(route, viewer);
     if (method === "GET" && path === "/v1/community/profile/ayse")
       return json(route, profile);
+    if (method === "GET" && path === "/v1/community/profile/showcase_user") {
+      return json(route, {
+        ...profile,
+        userId: "showcase-member",
+        username: "showcase_user",
+        achievementsEnabled: true,
+        achievementShowcase,
+      });
+    }
+    if (method === "GET" && path === "/v1/community/profile/three_showcase") {
+      return json(route, {
+        ...profile,
+        userId: "three-showcase-member",
+        username: "three_showcase",
+        achievementsEnabled: true,
+        achievementShowcase: { ...achievementShowcase, earnedCount: 3 },
+      });
+    }
+    if (method === "GET" && path === "/v1/community/profile/empty_showcase") {
+      return json(route, {
+        ...profile,
+        userId: "empty-showcase-member",
+        username: "empty_showcase",
+        achievementsEnabled: true,
+        achievementShowcase: { earnedCount: 0, items: [] },
+      });
+    }
     if (method === "GET" && path === "/v1/community/profile/broken") {
       return json(route, {
         ...profile,

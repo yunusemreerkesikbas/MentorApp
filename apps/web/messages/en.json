@@ -2552,6 +2552,9 @@
     }
   },
   "achievements": {
+    "showcase_title": "Traces of the Journey",
+    "showcase_view_all": "View all",
+    "showcase_earned_aria": "{title} earned",
     "public_empty": "No achievements have been shared yet.",
     "collection_title": "Your collection",
     "collection_count": "{earned} / {total}",

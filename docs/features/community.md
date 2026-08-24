@@ -67,6 +67,14 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Profil başarı vitrini (2026-08-25)** — Açık ve dolu `achievementShowcase`, biyografi/website
+  alanının altında üçe kadar görsel rozetle gösterilir; rozet adı, kazanım bilgisi ve tarih yalnız
+  erişilebilir isimde ya da açılan bilgi kartında yer alır. Kullanım: rozet bilgi kartını açar;
+  `earnedCount > 3` ise “Tümünü gör” aynı üyenin achievements sekmesine gider. Gotcha: sıralama
+  ve içerik istemcide hesaplanmaz, doğrudan backend yanıtından gelir; boş veya kapalı vitrin hiç
+  render edilmez. İlgili: `achievement-showcase.tsx`, `achievement-detail.tsx`,
+  `achievement-collection.tsx`, `profile-header.tsx`, `community-member-profile.spec.ts`.
+
 - **Başarı vitrini (2026-08-25)** — Açık achievement rollout'unda herkese açık profil yanıtı,
   en yeni en fazla üç kanonik kazanımı backend-lokalize `achievementShowcase` içinde ve toplam
   kazanım sayısıyla taşır. Geçmişten backfill edilen kazanımlar ilk kazanım tarihine göre sıralanır;

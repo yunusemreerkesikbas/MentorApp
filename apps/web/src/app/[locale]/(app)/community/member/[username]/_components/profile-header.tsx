@@ -15,6 +15,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { PublicProfile } from "@mentor/types";
 
+import { AchievementShowcase } from "@/components/achievements/achievement-showcase";
 import { JourneyLevelProfile } from "@/components/journey-levels/journey-level-profile";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 import { PremiumIdentityMark } from "@/components/premium/premium-identity-mark";
@@ -261,6 +262,12 @@ export function ProfileHeader({
           </div>
         ) : null}
       </div>
+
+      <AchievementShowcase
+        showcase={profile.achievementShowcase}
+        username={profile.username}
+        enabled={profile.achievementsEnabled}
+      />
 
       {avatarUrl
         ? createPortal(
