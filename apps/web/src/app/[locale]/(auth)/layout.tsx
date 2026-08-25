@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { setRequestLocale } from "next-intl/server";
-import { PublicFooter } from "@/components/public-footer";
 import { AuthShell } from "./_components/auth-shell";
 
 export default async function AuthLayout({
@@ -12,10 +11,5 @@ export default async function AuthLayout({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return (
-    <>
-      <AuthShell>{children}</AuthShell>
-      <PublicFooter />
-    </>
-  );
+  return <AuthShell>{children}</AuthShell>;
 }

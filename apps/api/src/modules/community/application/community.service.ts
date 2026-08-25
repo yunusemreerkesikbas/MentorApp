@@ -17,6 +17,7 @@ import { UsersService } from "../../identity/application/users.service";
 import { FollowService } from "../../identity/application/follow.service";
 import { BuddyService } from "../../identity/application/buddy.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
+import { AchievementService } from "./achievement.service";
 import { deriveBadges } from "../domain/badges";
 import { previousWindowStart, resolveMovement, windowStart } from "../domain/leaderboard-window";
 
@@ -40,6 +41,7 @@ export class CommunityService {
     private readonly config: ConfigRegistryService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     private readonly entitlement: EntitlementService,
+    private readonly achievements: AchievementService,
   ) {}
 
   async getSummary(userId: string): Promise<CommunitySummary> {
@@ -88,7 +90,7 @@ export class CommunityService {
    * Public profile header (identity + gamification) for another user, resolved by username. Public-safe:
    * NO email/PII; xp/level are already public via the leaderboard. Banned/suspended/unknown → 404.
    */
-  async getPublicProfile(username: string, viewerId: string): Promise<PublicProfile> {
+  async getPublicProfile(username: string, viewerId: string, locale: string): Promise<PublicProfile> {
     const user = await this.users.findByUsername(username);
     if (!user || !user.username || user.status === "BANNED" || user.status === "SUSPENDED") {
       throw new NotFoundError();
@@ -98,7 +100,16 @@ export class CommunityService {
       this.config.get("community.achievements.enabled"),
     ]);
     const isSelf = viewerId === user.id;
-    const [currentStreak, activity, followerCount, followingCount, isFollowing, buddyStatus, entitlement] =
+    const [
+      currentStreak,
+      activity,
+      followerCount,
+      followingCount,
+      isFollowing,
+      buddyStatus,
+      entitlement,
+      achievementShowcase,
+    ] =
       await Promise.all([
         this.streak.getCurrentStreak(user.id),
         this.forum.getAuthorActivity(user.id),
@@ -109,6 +120,9 @@ export class CommunityService {
           ? Promise.resolve("none" as const)
           : this.buddy.getStatusBetween(viewerId, user.id),
         this.entitlement.getEntitlement(user.id, user.roles),
+        achievementsEnabled
+          ? this.achievements.getShowcase(user.id, viewerId, locale)
+          : Promise.resolve(null),
       ]);
     const badges = deriveBadges({
       currentStreak,
@@ -123,6 +137,7 @@ export class CommunityService {
       displayName: user.displayName,
       username: user.username,
       achievementsEnabled,
+      achievementShowcase,
       avatarUrl: user.avatarStorageKey ? this.storage.getPublicUrl(user.avatarStorageKey) : null,
       examType: user.examType,
       createdAt: user.createdAt.toISOString(),

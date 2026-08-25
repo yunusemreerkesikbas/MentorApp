@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { AchievementId, AchievementView } from "@mentor/types";
 import {
   buildAchievementCollection,
+  buildAchievementShowcase,
   groupAchievementCelebrations,
   type EarnedAchievement,
 } from "./achievement-collection";
@@ -100,6 +101,46 @@ describe("achievement collection", () => {
     expect(collection.items.map((item) => item.id)).toEqual(["first_step", "route_drawn"]);
     expect(collection.items.every((item) => item.progress === null)).toBe(true);
     expect(collection.summary).toBeNull();
+  });
+
+  it("shows the three most recently earned canonical achievements in earned order", () => {
+    const showcase = buildAchievementShowcase({
+      earned: [
+        earned("first_step"),
+        { ...earned("route_drawn"), earnedAt: new Date("2026-08-22T10:00:00.000Z") },
+        { ...earned("rhythm_found", "BACKFILL"), earnedAt: new Date("2026-08-22T12:00:00.000Z") },
+        { ...earned("helped_someone"), earnedAt: new Date("2026-08-22T12:00:00.000Z") },
+        { ...earned("week_reflected"), earnedAt: new Date("2026-08-21T10:00:00.000Z") },
+        {
+          ...earned("first_step"),
+          id: "retired_achievement" as AchievementId,
+          earnedAt: new Date("2026-08-23T10:00:00.000Z"),
+        },
+      ],
+      translate: (key) => `en:${key}`,
+    });
+
+    expect(showcase.earnedCount).toBe(5);
+    expect(showcase.items.map((item) => item.id)).toEqual([
+      "rhythm_found",
+      "helped_someone",
+      "route_drawn",
+    ]);
+    expect(showcase.items[0]).toMatchObject({
+      title: "en:achievements.items.rhythm_found.title",
+      description: "en:achievements.items.rhythm_found.description",
+      unlockHint: "en:achievements.items.rhythm_found.unlockHint",
+      status: "EARNED",
+      earnedAt: "2026-08-22T12:00:00.000Z",
+      progress: null,
+    });
+  });
+
+  it("returns an empty showcase when no canonical achievements were earned", () => {
+    expect(buildAchievementShowcase({ earned: [], translate })).toEqual({
+      earnedCount: 0,
+      items: [],
+    });
   });
 
   it("groups unseen backfill rows once while keeping live awards individual", () => {

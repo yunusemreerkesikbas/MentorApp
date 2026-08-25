@@ -2,10 +2,19 @@ import type {
   AchievementCelebrationDto,
   AchievementCollectionDto,
   AchievementId,
+  AchievementShowcaseView,
   AchievementSource,
   AchievementView,
 } from "@mentor/types";
-import { ACHIEVEMENT_DEFINITIONS } from "./achievement-definitions";
+import {
+  ACHIEVEMENT_DEFINITIONS,
+  ACHIEVEMENT_DEFINITION_BY_ID,
+} from "./achievement-definitions";
+
+const SHOWCASE_ITEM_LIMIT = 3;
+const CATALOGUE_POSITION = new Map(
+  ACHIEVEMENT_DEFINITIONS.map((definition, index) => [definition.id, index]),
+);
 
 export interface EarnedAchievement {
   id: AchievementId;
@@ -77,6 +86,37 @@ export function buildAchievementCollection(
       suggestedAchievementId,
     },
   };
+}
+
+export function buildAchievementShowcase(input: {
+  earned: EarnedAchievement[];
+  translate: (key: string) => string;
+}): AchievementShowcaseView {
+  const canonicalEarned = input.earned.filter((award) =>
+    ACHIEVEMENT_DEFINITION_BY_ID.has(award.id),
+  );
+  const items = [...canonicalEarned]
+    .sort((left, right) => {
+      const earnedAtDifference = right.earnedAt.getTime() - left.earnedAt.getTime();
+      if (earnedAtDifference !== 0) return earnedAtDifference;
+      return CATALOGUE_POSITION.get(left.id)! - CATALOGUE_POSITION.get(right.id)!;
+    })
+    .slice(0, SHOWCASE_ITEM_LIMIT)
+    .map((award) => {
+      const definition = ACHIEVEMENT_DEFINITION_BY_ID.get(award.id)!;
+      return {
+        id: definition.id,
+        title: input.translate(definition.titleKey),
+        description: input.translate(definition.descriptionKey),
+        unlockHint: input.translate(definition.unlockHintKey),
+        artKey: definition.artKey,
+        status: "EARNED" as const,
+        earnedAt: award.earnedAt.toISOString(),
+        progress: null,
+      };
+    });
+
+  return { earnedCount: canonicalEarned.length, items };
 }
 
 export function groupAchievementCelebrations(

@@ -38,7 +38,7 @@ export default function LoginPage() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <SectionHeading as="h2" subtitle={translate("subtitle")} className="justify-center text-center">
+      <SectionHeading as="h2" className="justify-center text-center">
         {translate("title")}
       </SectionHeading>
       <Field

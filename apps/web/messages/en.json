@@ -48,12 +48,11 @@
   },
   "auth": {
     "shell": {
-      "tagline": "With you on the road to your exam.",
-      "back_home": "Back to home"
+      "close": "Close",
+      "back_login": "Back to sign in"
     },
     "login": {
       "title": "Sign in",
-      "subtitle": "Sign in to continue.",
       "email": "Email",
       "password": "Password",
       "submit": "Sign in",
@@ -61,21 +60,18 @@
       "register_link": "Create account",
       "forgot_link": "Forgot password"
     },
+    "cookie": {
+      "label": "I accept <link>analytics cookies</link>. (optional)"
+    },
     "google": {
       "or": "or",
       "continue": "Continue with Google"
     },
     "register": {
       "title": "Create account",
-      "subtitle": "Start free — let us be with you on the road to your exam.",
       "name": "Full Name",
-      "username": "Username",
-      "username_placeholder": "example_user",
-      "username_hint": "3-24 characters · lowercase letters, numbers, and underscore.",
       "email": "Email",
       "password": "Password (at least 8 characters, letters + numbers)",
-      "goal": "Your goal (optional)",
-      "goal_placeholder": "e.g. Become a teacher, Law at Marmara…",
       "kvkk": "I have read the <link>personal data protection notice</link> and consent to the processing of my personal data.",
       "kvkk_error": "You must accept the KVKK text to continue.",
       "submit": "Sign up",
@@ -87,23 +83,20 @@
       "subtitle": "We'll send a reset link to your email.",
       "email": "Email",
       "submit": "Send reset link",
-      "success": "If this email is registered, a password reset link has been sent. Check your inbox.",
-      "back_login": "Back to sign in"
+      "success": "If this email is registered, a password reset link has been sent. Check your inbox."
     },
     "verify_email": {
       "title": "Email verification",
       "invalid_link": "Invalid link. Please use the link in your email.",
       "verifying": "Verifying…",
-      "success": "Your email has been verified. Welcome!",
-      "back_login": "Back to sign in"
+      "success": "Your email has been verified. Welcome!"
     },
     "reset_password": {
       "title": "Set new password",
       "invalid_link": "Invalid link. Please use the link in your email.",
       "password": "New password (at least 8 characters, letters + numbers)",
       "submit": "Update password",
-      "success": "Your password has been updated. You can now sign in with your new password.",
-      "back_login": "Back to sign in"
+      "success": "Your password has been updated. You can now sign in with your new password."
     }
   },
   "nav": {
@@ -1651,6 +1644,23 @@
     "index_load_more": "{count} more entries",
     "index_empty": "No entries match this filter.",
     "error_index_load": "The entries could not be loaded.",
+    "paper_section": "Paper",
+    "cover_section": "Cover",
+    "cover_title_label": "Cover title",
+    "cover_color": {
+      "navy": "Navy",
+      "plum": "Plum",
+      "forest": "Forest",
+      "sand": "Sand",
+      "slate": "Slate",
+      "ink": "Ink"
+    },
+    "cover_material": {
+      "cloth": "Cloth",
+      "kraft": "Kraft",
+      "leather": "Leather",
+      "matte": "Matte"
+    },
     "cover_title": "My Mistake Notebook",
     "cover_subtitle": "{entries} mistakes · {healed} healed",
     "cover_open": "Open the notebook",
@@ -2552,6 +2562,9 @@
     }
   },
   "achievements": {
+    "showcase_title": "Traces of the Journey",
+    "showcase_view_all": "View all",
+    "showcase_earned_aria": "{title} earned",
     "public_empty": "No achievements have been shared yet.",
     "collection_title": "Your collection",
     "collection_count": "{earned} / {total}",

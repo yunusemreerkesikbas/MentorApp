@@ -38,6 +38,7 @@ type PageAction =
   | { type: "remove"; id: string }
   | { type: "select"; id: string | null }
   | { type: "setPaper"; paper: NotebookPageDoc["paper"] }
+  | { type: "setCover"; cover: NotebookPageDoc["cover"] }
   | { type: "addStroke"; stroke: NotebookInkStroke }
   | { type: "eraseStrokes"; ids: string[] }
   | { type: "clearInk" }
@@ -124,6 +125,21 @@ export function notebookPageReducer(state: PageState, action: PageAction): PageS
         past: pushHistory(state),
         future: [],
         doc: { ...state.doc, paper: action.paper },
+        dirty: true,
+      };
+
+    /*
+     * No history entry, unlike every other edit here.
+     *
+     * The cover is a property of the book that happens to be stored on this page, not something
+     * drawn on it — undoing a sticker should not also repaint the binding, and a student pressing
+     * undo after changing the cover is undoing the sticker they placed before it. Marked dirty so
+     * the existing autosave carries it, and nothing else.
+     */
+    case "setCover":
+      return {
+        ...state,
+        doc: { ...state.doc, cover: action.cover },
         dirty: true,
       };
 

@@ -959,9 +959,54 @@ export interface NotebookInkStroke {
   points: number[];
 }
 
+/**
+ * The book's cover, as the student chose it.
+ *
+ * Colours and materials are named rather than free-form. A colour picker on a bound notebook is a
+ * way to end up with a lime green book you regret; a short list is a set of covers that all look
+ * like they came off the same shelf.
+ */
+export const NOTEBOOK_COVER_COLORS = [
+  "navy",
+  "plum",
+  "forest",
+  "sand",
+  "slate",
+  "ink",
+] as const;
+export type NotebookCoverColor = (typeof NOTEBOOK_COVER_COLORS)[number];
+
+/** How the cover is finished. Each is a CSS recipe, not an image — see `notebook-surface`. */
+export const NOTEBOOK_COVER_MATERIALS = [
+  "cloth",
+  "kraft",
+  "leather",
+  "matte",
+] as const;
+export type NotebookCoverMaterial = (typeof NOTEBOOK_COVER_MATERIALS)[number];
+
+/** Title cap: it is printed across a cover, not a field anybody should paste an essay into. */
+export const NOTEBOOK_COVER_TITLE_MAX_LENGTH = 40;
+
+export interface NotebookCoverDoc {
+  color: NotebookCoverColor;
+  material: NotebookCoverMaterial;
+  /** Null or absent falls back to the app's own name for the book. */
+  title?: string | null;
+}
+
 export interface NotebookPageDoc {
   version: 1;
   paper: NotebookPaper;
+  /**
+   * The cover, carried on page zero.
+   *
+   * A cover belongs to the book, not to a page, and the notebook has no book-level record to put it
+   * in — the overview is counts, computed. Rather than a migration, a repository and an endpoint for
+   * one enum and one string, it rides in the first page's document, which is jsonb, versioned, and
+   * already saved by a path that works. Optional everywhere; only page zero's copy is ever read.
+   */
+  cover?: NotebookCoverDoc;
   items: NotebookPageItem[];
   /**
    * Freehand ink, a sibling of `items` rather than another item kind.

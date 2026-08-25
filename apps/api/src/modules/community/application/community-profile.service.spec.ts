@@ -3,7 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 import { NotFoundError } from "../../../common/errors/domain-error";
 import { CommunityService } from "./community.service";
 
-function createService({ premium = true, economyEnabled = true } = {}) {
+function createService({
+  premium = true,
+  economyEnabled = true,
+  achievementsEnabled = true,
+} = {}) {
   const users = {
     findByUsername: vi.fn().mockResolvedValue({
       id: "user-1",
@@ -48,10 +52,23 @@ function createService({ premium = true, economyEnabled = true } = {}) {
     isFollowing: vi.fn().mockResolvedValue(false),
   };
   const buddy = { getStatusBetween: vi.fn().mockResolvedValue("none") };
-  const config = { get: vi.fn().mockResolvedValue(economyEnabled) };
+  const config = {
+    get: vi.fn((key: string) =>
+      Promise.resolve(key === "community.achievements.enabled" ? achievementsEnabled : economyEnabled),
+    ),
+  };
   const storage = { getPublicUrl: vi.fn().mockReturnValue("https://cdn.test/ayse.webp") };
   const entitlement = {
     getEntitlement: vi.fn().mockResolvedValue({ isPremium: premium }),
+  };
+  const achievements = {
+    getShowcase: vi.fn().mockResolvedValue({
+      earnedCount: 2,
+      items: [
+        { id: "rhythm_found", title: "Rhythm found", status: "EARNED" },
+        { id: "first_step", title: "First step", status: "EARNED" },
+      ],
+    }),
   };
 
   const service = new CommunityService(
@@ -64,15 +81,16 @@ function createService({ premium = true, economyEnabled = true } = {}) {
     config as never,
     storage as never,
     entitlement as never,
+    achievements as never,
   );
-  return { service, users, economy, entitlement };
+  return { service, users, economy, entitlement, achievements };
 }
 
 describe("CommunityService public profile", () => {
   it("publishes the combined thread and reply activity count", async () => {
     const { service } = createService();
 
-    const profile = await service.getPublicProfile("ayse", "viewer-1");
+    const profile = await service.getPublicProfile("ayse", "viewer-1", "tr");
 
     expect(profile.activityCount).toBe(7);
   });
@@ -80,7 +98,7 @@ describe("CommunityService public profile", () => {
   it("publishes the economy-derived journey level without recalculating it", async () => {
     const { service } = createService();
 
-    const profile = await service.getPublicProfile("ayse", "viewer-1");
+    const profile = await service.getPublicProfile("ayse", "viewer-1", "tr");
 
     expect(profile.level).toMatchObject({
       tier: 3,
@@ -93,7 +111,7 @@ describe("CommunityService public profile", () => {
   it("publishes only the premium boolean from entitlement", async () => {
     const { service, entitlement } = createService({ premium: true });
 
-    const profile = await service.getPublicProfile("ayse", "viewer-1");
+    const profile = await service.getPublicProfile("ayse", "viewer-1", "tr");
 
     expect(entitlement.getEntitlement).toHaveBeenCalledWith("user-1", []);
     expect(profile.isPremium).toBe(true);
@@ -104,7 +122,7 @@ describe("CommunityService public profile", () => {
   it("publishes false for a free member", async () => {
     const { service } = createService({ premium: false });
 
-    const profile = await service.getPublicProfile("ayse", "viewer-1");
+    const profile = await service.getPublicProfile("ayse", "viewer-1", "tr");
 
     expect(profile.isPremium).toBe(false);
   });
@@ -120,7 +138,7 @@ describe("CommunityService public profile", () => {
         status,
       });
 
-      await expect(service.getPublicProfile("ayse", "viewer-1")).rejects.toBeInstanceOf(
+      await expect(service.getPublicProfile("ayse", "viewer-1", "tr")).rejects.toBeInstanceOf(
         NotFoundError,
       );
     },
@@ -129,7 +147,7 @@ describe("CommunityService public profile", () => {
   it("keeps public activity and premium data available while economy is disabled", async () => {
     const { service, economy } = createService({ premium: true, economyEnabled: false });
 
-    const profile = await service.getPublicProfile("ayse", "viewer-1");
+    const profile = await service.getPublicProfile("ayse", "viewer-1", "tr");
 
     expect(profile).toMatchObject({
       activityCount: 7,
@@ -138,5 +156,34 @@ describe("CommunityService public profile", () => {
       level: null,
     });
     expect(economy.getSelfBalance).not.toHaveBeenCalled();
+  });
+
+  it("includes the same localized achievement showcase for profile owners and visitors", async () => {
+    const { service, achievements } = createService();
+
+    const [ownerProfile, visitorProfile] = await Promise.all([
+      service.getPublicProfile("ayse", "user-1", "tr"),
+      service.getPublicProfile("ayse", "viewer-1", "tr"),
+    ]);
+
+    expect(ownerProfile.achievementShowcase).toEqual({
+      earnedCount: 2,
+      items: [
+        { id: "rhythm_found", title: "Rhythm found", status: "EARNED" },
+        { id: "first_step", title: "First step", status: "EARNED" },
+      ],
+    });
+    expect(visitorProfile.achievementShowcase).toEqual(ownerProfile.achievementShowcase);
+    expect(achievements.getShowcase).toHaveBeenNthCalledWith(1, "user-1", "user-1", "tr");
+    expect(achievements.getShowcase).toHaveBeenNthCalledWith(2, "user-1", "viewer-1", "tr");
+  });
+
+  it("returns a null achievement showcase without reading achievements when the rollout is disabled", async () => {
+    const { service, achievements } = createService({ achievementsEnabled: false });
+
+    const profile = await service.getPublicProfile("ayse", "viewer-1", "tr");
+
+    expect(profile.achievementShowcase).toBeNull();
+    expect(achievements.getShowcase).not.toHaveBeenCalled();
   });
 });

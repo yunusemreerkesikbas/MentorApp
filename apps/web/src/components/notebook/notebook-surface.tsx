@@ -3,7 +3,12 @@
 import { useId } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { CSSProperties, ReactNode } from "react";
-import type { NotebookPaper } from "@mentor/types";
+import type {
+  NotebookCoverColor,
+  NotebookCoverDoc,
+  NotebookCoverMaterial,
+  NotebookPaper,
+} from "@mentor/types";
 import { NOTEBOOK_PAGE_CANVAS } from "@mentor/types";
 
 /**
@@ -428,9 +433,75 @@ export function NotebookPageSurface({
   );
 }
 
+/**
+ * The cover palette.
+ *
+ * Literal hex, not theme tokens — the same call the ink pens make, and for the same reason: these
+ * are not surfaces the theme owns, they are content the student picked. A palette that rotated in
+ * dark mode would repaint somebody's burgundy notebook green overnight.
+ *
+ * None of them needs a matching text colour: the title is printed on a cream label plate stuck to
+ * the cover, not on the cover itself, so a new colour can be added here and nothing else.
+ */
+export const COVER_COLORS: Record<NotebookCoverColor, string> = {
+  navy: "#33415c",
+  plum: "#5a3550",
+  forest: "#2f4a3c",
+  sand: "#c9b28f",
+  slate: "#5b6472",
+  ink: "#22262e",
+};
+
+/**
+ * A grain layer, generated rather than fetched.
+ *
+ * `feTurbulence` is what a photograph of leather or kraft would have been here, minus the asset,
+ * the second asset for retina, the bucket and the decode. It is one filter over an empty rect,
+ * inlined as a data URI, and it resolves at whatever size the book happens to be drawn at — which
+ * matters, because the book is sized continuously by `useFitSize` and never lands on a round number.
+ */
+function grain(frequency: number, opacity: number): string {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='${frequency}' numOctaves='3'/></filter><rect width='120' height='120' filter='url(%23g)' opacity='${opacity}'/></svg>`;
+  return `url("data:image/svg+xml,${svg.replace(/"/g, "'").replace(/#/g, "%23")}")`;
+}
+
+/**
+ * How each finish is built, over the flat colour underneath it.
+ *
+ * Ordered front to back, the way `background-image` stacks: the highlight that says "this is a
+ * curved object catching light" always sits on top, the material's own texture under it.
+ */
+export const COVER_MATERIALS: Record<NotebookCoverMaterial, string> = {
+  // The original: a woven cross-hatch, tight enough to read as bookcloth rather than as a pattern.
+  cloth:
+    "radial-gradient(120% 90% at 15% 0%, rgba(255,255,255,0.16), transparent 60%), repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgba(0,0,0,0.05) 0 2px, transparent 2px 4px)",
+  // Coarser and warmer: board stock, with the fibre showing through.
+  kraft: `radial-gradient(120% 90% at 15% 0%, rgba(255,255,255,0.12), transparent 55%), ${grain(
+    0.9,
+    0.5,
+  )}`,
+  // Fine irregular grain plus a broader sheen — the two things that read as hide rather than cloth.
+  leather: `radial-gradient(130% 100% at 20% 0%, rgba(255,255,255,0.2), transparent 62%), linear-gradient(160deg, rgba(0,0,0,0.18), transparent 45%), ${grain(
+    1.6,
+    0.35,
+  )}`,
+  // No texture at all. Somebody will want the plain one, and "no texture" is a finish.
+  matte:
+    "radial-gradient(120% 90% at 18% 0%, rgba(255,255,255,0.13), transparent 58%)",
+};
+
+/** What the book looks like when nobody has chosen anything — the cover it has always had. */
+export const DEFAULT_COVER: NotebookCoverDoc = {
+  color: "navy",
+  material: "cloth",
+};
+
 export interface NotebookCoverProps {
+  /** The app's own name for the book; overridden by whatever the student wrote on the cover. */
   title: string;
   subtitle?: string;
+  /** Absent on a book whose first page has not loaded yet, which is when the default is right. */
+  cover?: NotebookCoverDoc | null;
   children?: ReactNode;
   /** Present → the whole cover opens the book, with the accessible name a screen reader announces. */
   onOpen?: () => void;
@@ -452,9 +523,12 @@ export function NotebookCover({
   title,
   subtitle,
   children,
+  cover,
   onOpen,
   openLabel,
 }: NotebookCoverProps) {
+  const chosen = cover ?? DEFAULT_COVER;
+
   return (
     <div
       role={onOpen ? "button" : undefined}
@@ -478,9 +552,8 @@ export function NotebookCover({
         height: "100%",
         overflow: "hidden",
         cursor: onOpen ? "pointer" : undefined,
-        backgroundColor: "var(--notebook-cover)",
-        backgroundImage:
-          "repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgba(0,0,0,0.05) 0 2px, transparent 2px 4px), radial-gradient(120% 90% at 15% 0%, rgba(255,255,255,0.16), transparent 60%)",
+        backgroundColor: COVER_COLORS[chosen.color],
+        backgroundImage: COVER_MATERIALS[chosen.material],
         boxShadow: "var(--notebook-page-shadow)",
         display: "flex",
         flexDirection: "column",

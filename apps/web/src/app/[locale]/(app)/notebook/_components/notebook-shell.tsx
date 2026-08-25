@@ -33,7 +33,28 @@ import {
   contentControllerSubjectsBySlug,
   usersControllerMe,
 } from "@mentor/api-client";
-import type { AuthUser } from "@mentor/types";
+import type {
+  AuthUser,
+  NotebookCoverDoc,
+  NotebookPageDoc,
+} from "@mentor/types";
+
+/**
+ * The page the cover rides on.
+ *
+ * Zero rather than "the first page" as a concept: the notebook has no book-level record, so the
+ * cover is stored on a page, and it has to be a page that always exists.
+ */
+const COVER_PAGE_INDEX = 0;
+
+/**
+ * How the mobile page slides.
+ *
+ * Faster than the desktop leaf, and not the same kind of motion at all: a leaf turning is an object
+ * with weight and a full second is what sells it, while a page sliding is navigation and anything
+ * over a third of a second reads as the phone being slow.
+ */
+const MOBILE_SLIDE = { duration: 0.32, ease: [0.22, 1, 0.36, 1] } as const;
 import { FormError } from "@/components/form";
 import {
   NotebookCover,
@@ -137,6 +158,14 @@ export function NotebookShell() {
    * column has existed since the table was created with nothing ever filling it.
    */
   const [mockExamId, setMockExamId] = useState<string | null>(null);
+  /**
+   * The book's cover, which lives on page zero.
+   *
+   * Held here rather than read off an open page because the cover is on screen before any page is:
+   * the shell opens on the closed book. One fetch of page zero at mount answers it, and that is the
+   * page the book opens onto anyway.
+   */
+  const [cover, setCover] = useState<NotebookCoverDoc | null>(null);
   /** The rail always has a "current" category; whether its panel is showing is separate. */
   const [activePanel, setActivePanel] = useState<NotebookPanelCategory>("add");
   const [detailCollapsed, setDetailCollapsed] = useState(true);
@@ -190,6 +219,24 @@ export function NotebookShell() {
     onErase: rightPage.eraseStrokes,
     getStrokes: () => rightPage.state.doc.ink,
   });
+
+  /**
+   * The page sliding out, on mobile — a still of what was on screen a moment ago.
+   *
+   * A slide needs two pages: the one leaving and the one arriving. The leaf turn never did, because
+   * the leaf it flew was blank and opaque and the swap happened underneath it. Here the outgoing
+   * half has to still show the old page, and `mobilePage` has already moved on by the time the
+   * animation starts — so the document is kept by reference for the length of the slide. It costs
+   * nothing to hold and nothing to fetch: this is the same object that was being rendered a frame
+   * ago, not a third page pulled from the server.
+   */
+  const [outgoing, setOutgoing] = useState<{
+    seq: number;
+    dir: 1 | -1;
+    doc: NotebookPageDoc;
+    entries: NotebookEntryDto[];
+  } | null>(null);
+  const slideSeq = useRef(0);
 
   /** Below `MOBILE_QUERY`, a spread shows one leaf at a time (`mobileSide`) instead of two. */
   const [isMobile, setIsMobile] = useState(false);
@@ -266,30 +313,35 @@ export function NotebookShell() {
     let cancelled = false;
 
     async function load() {
-      const [overviewResult, dueResult, examResult] = await Promise.allSettled([
-        fetchNotebookOverview(),
-        fetchDueEntries(),
-        (async (): Promise<ExamContext | null> => {
-          const me = (await usersControllerMe()) as unknown as AuthUser;
-          if (!me.examType) return null;
-          const calendar = (await contentControllerCalendarByFamily(
-            me.examType,
-          )) as unknown as ExamCalendarDto | null;
-          const current = calendar?.exam ?? null;
-          if (!current) return null;
-          // Both taxonomies in one round-trip pair: the topic list is small enough to hold whole,
-          // which spares the picker a fetch every time the subject changes.
-          const [subjects, topics] = await Promise.all([
-            contentControllerSubjectsBySlug(current.slug) as unknown as Promise<
-              ExamSubjectDto[]
-            >,
-            fetchExamTopics(current.slug),
-          ]);
-          return { id: current.id, subjects, topics };
-        })(),
-      ]);
+      const [overviewResult, dueResult, examResult, coverResult] =
+        await Promise.allSettled([
+          fetchNotebookOverview(),
+          fetchDueEntries(),
+          (async (): Promise<ExamContext | null> => {
+            const me = (await usersControllerMe()) as unknown as AuthUser;
+            if (!me.examType) return null;
+            const calendar = (await contentControllerCalendarByFamily(
+              me.examType,
+            )) as unknown as ExamCalendarDto | null;
+            const current = calendar?.exam ?? null;
+            if (!current) return null;
+            // Both taxonomies in one round-trip pair: the topic list is small enough to hold whole,
+            // which spares the picker a fetch every time the subject changes.
+            const [subjects, topics] = await Promise.all([
+              contentControllerSubjectsBySlug(
+                current.slug,
+              ) as unknown as Promise<ExamSubjectDto[]>,
+              fetchExamTopics(current.slug),
+            ]);
+            return { id: current.id, subjects, topics };
+          })(),
+          // The cover, which is stored on page zero — the page the book opens onto anyway.
+          fetchNotebookPage(COVER_PAGE_INDEX),
+        ]);
       if (cancelled) return;
 
+      if (coverResult.status === "fulfilled")
+        setCover(coverResult.value.doc.cover ?? null);
       if (overviewResult.status === "fulfilled")
         setOverview(overviewResult.value);
       else setError(t("error_load"));
@@ -434,6 +486,31 @@ export function NotebookShell() {
      themselves would rebuild it every render — and with it the keydown listener it feeds. */
   const leftPaper = leftPage.state.doc.paper;
   const rightPaper = rightPage.state.doc.paper;
+  /**
+   * Freeze what is on screen so it can be slid off it.
+   *
+   * Nothing here schedules the removal — the slide's own `onAnimationComplete` does, keyed by the
+   * same sequence number, so a second page change while the first is still moving replaces the
+   * still instead of racing a timer that would clear the wrong one.
+   */
+  const startSlide = useCallback(
+    (dir: 1 | -1) => {
+      if (reduceMotion) return;
+      slideSeq.current += 1;
+      // Resolved from the two page hooks rather than from `mobilePage`, which is derived further
+      // down the component than this callback is defined. Same expression, no forward reference.
+      const leaving = mobileSide === "left" ? leftPage : rightPage;
+      const leavingMeta = mobileSide === "left" ? leftMeta : rightMeta;
+      setOutgoing({
+        seq: slideSeq.current,
+        dir,
+        doc: leaving.state.doc,
+        entries: leavingMeta?.entries ?? [],
+      });
+    },
+    [leftMeta, leftPage, mobileSide, reduceMotion, rightMeta, rightPage],
+  );
+
   const turn = useCallback(
     (delta: 1 | -1) => {
       setFocusedSide("left");
@@ -450,13 +527,19 @@ export function NotebookShell() {
         !reduceMotion &&
         view.left + delta * 2 >= 0
       ) {
-        flipSeq.current += 1;
-        setFlip({
-          seq: flipSeq.current,
-          dir: delta,
-          paper: delta > 0 ? rightPaper : leftPaper,
-          single: isMobile,
-        });
+        // On mobile the pages slide past each other instead of one turning over: a phone shows
+        // one page at a time, and a book that flips a whole leaf to move one page reads as a
+        // stutter. Which of the two runs is decided here, once, so nothing downstream has to ask.
+        if (isMobile) startSlide(delta);
+        else {
+          flipSeq.current += 1;
+          setFlip({
+            seq: flipSeq.current,
+            dir: delta,
+            paper: delta > 0 ? rightPaper : leftPaper,
+            single: false,
+          });
+        }
       }
 
       setView((current) => {
@@ -468,7 +551,7 @@ export function NotebookShell() {
         return { kind: "spread", left: nextLeft };
       });
     },
-    [view, reduceMotion, leftPaper, rightPaper, isMobile],
+    [view, reduceMotion, leftPaper, rightPaper, isMobile, startSlide],
   );
 
   /**
@@ -485,15 +568,7 @@ export function NotebookShell() {
         const atSpreadEdge =
           dir > 0 ? mobileSide === "right" : mobileSide === "left";
         if (!atSpreadEdge) {
-          if (!reduceMotion) {
-            flipSeq.current += 1;
-            setFlip({
-              seq: flipSeq.current,
-              dir,
-              paper: dir > 0 ? rightPaper : leftPaper,
-              single: true,
-            });
-          }
+          startSlide(dir);
           setMobileSide(dir > 0 ? "right" : "left");
           return;
         }
@@ -501,7 +576,7 @@ export function NotebookShell() {
       turn(dir);
       if (isMobile) setMobileSide(dir > 0 ? "left" : "right");
     },
-    [isMobile, view, mobileSide, reduceMotion, leftPaper, rightPaper, turn],
+    [isMobile, view, mobileSide, startSlide, turn],
   );
 
   useEffect(() => {
@@ -832,6 +907,37 @@ export function NotebookShell() {
     [placeEntryOnPage],
   );
 
+  /**
+   * Persist a cover change.
+   *
+   * Two paths, because page zero may or may not be one of the two open pages. Open, it goes through
+   * that page's own reducer and rides the autosave that is already running — anything else would
+   * race it, and the loser overwrites the winner. Closed, its document is fetched fresh and saved
+   * back: fresher than a copy taken at mount, which by then may be minutes and several edits old.
+   */
+  const handleCover = useCallback(
+    async (next: NotebookCoverDoc) => {
+      setCover(next);
+      const openSide =
+        leftMeta?.pageIndex === COVER_PAGE_INDEX
+          ? leftPage
+          : rightMeta?.pageIndex === COVER_PAGE_INDEX
+            ? rightPage
+            : null;
+      if (openSide) {
+        openSide.dispatch({ type: "setCover", cover: next });
+        return;
+      }
+      try {
+        const page = await fetchNotebookPage(COVER_PAGE_INDEX);
+        await saveNotebookPage(COVER_PAGE_INDEX, { ...page.doc, cover: next });
+      } catch {
+        setError(t("error_save"));
+      }
+    },
+    [leftMeta, leftPage, rightMeta, rightPage, t],
+  );
+
   const handleReviewed = useCallback(
     (updated: NotebookEntryDto) => {
       // Only a card that was actually due leaves the day's counter. Answering one early — opened
@@ -902,7 +1008,12 @@ export function NotebookShell() {
   };
   const spreadFade = reduceMotion
     ? { duration: 0.15 }
-    : { duration: PAGE_TURN_SECONDS * 0.8, ease: "easeInOut" as const };
+    : isMobile
+      ? // Instant on mobile. The crossfade exists to hide the swap under a turning leaf, and there
+        // is no leaf here — the pages slide past each other, and a fade on top of a slide is two
+        // transitions competing to describe the same move.
+        { duration: 0 }
+      : { duration: PAGE_TURN_SECONDS * 0.8, ease: "easeInOut" as const };
   const pageLabel = !isSpread
     ? t("cover_label")
     : isMobile
@@ -1185,6 +1296,8 @@ export function NotebookShell() {
                         <NotebookSidePanel
                           category={activePanel}
                           paper={focused.state.doc.paper}
+                          cover={cover}
+                          onCover={(next) => void handleCover(next)}
                           exam={exam}
                           mockExamId={mockExamId}
                           placedEntryIds={placedEntryIds}
@@ -1432,7 +1545,8 @@ export function NotebookShell() {
                     }}
                   >
                     <NotebookCover
-                      title={t("cover_title")}
+                      cover={cover}
+                      title={cover?.title?.trim() || t("cover_title")}
                       subtitle={t("cover_subtitle", {
                         entries: overview?.entryCount ?? 0,
                         healed: overview?.healedCount ?? 0,
@@ -1457,6 +1571,38 @@ export function NotebookShell() {
                       overflow: "hidden",
                     }}
                   >
+                    {/* The page that just left, held still and slid off. Rendered outside the
+                        presence below on purpose: that one swaps a live subtree, and a live subtree
+                        cannot show the old page — `mobilePage` has already switched to the other
+                        side's document by the time this runs. This is a photograph of it. No pointer
+                        callbacks reach the stage, which is what makes it inert (`NotebookPageStage`
+                        derives that from the props it receives). */}
+                    {isMobile && outgoing ? (
+                      <motion.div
+                        key={`outgoing-${outgoing.seq}`}
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0"
+                        style={{ zIndex: 3 }}
+                        initial={{ x: 0 }}
+                        animate={{ x: outgoing.dir > 0 ? "-100%" : "100%" }}
+                        transition={MOBILE_SLIDE}
+                        onAnimationComplete={() =>
+                          setOutgoing((current) =>
+                            current?.seq === outgoing.seq ? null : current,
+                          )
+                        }
+                      >
+                        <NotebookPageSurface paper={outgoing.doc.paper}>
+                          <NotebookPageStage
+                            items={outgoing.doc.items}
+                            entries={outgoing.entries}
+                            dueIds={dueIds}
+                          />
+                          <NotebookInkLayer strokes={outgoing.doc.ink} />
+                        </NotebookPageSurface>
+                      </motion.div>
+                    ) : null}
+
                     <AnimatePresence initial={false}>
                       <motion.div
                         // Mobile's key also carries `mobileSide`: flipping within a spread has no
@@ -1479,7 +1625,19 @@ export function NotebookShell() {
                         }}
                       >
                         {isMobile ? (
-                          <div className="h-full w-full">
+                          <motion.div
+                            className="h-full w-full"
+                            // No entrance on the very first render, and none when nothing is
+                            // leaving: `false` means "start where you are", which is what a page
+                            // that was not reached by turning should do.
+                            initial={
+                              outgoing
+                                ? { x: outgoing.dir > 0 ? "100%" : "-100%" }
+                                : false
+                            }
+                            animate={{ x: 0 }}
+                            transition={MOBILE_SLIDE}
+                          >
                             <NotebookPageSurface
                               paper={mobilePage.state.doc.paper}
                             >
@@ -1562,7 +1720,7 @@ export function NotebookShell() {
                                 }
                               />
                             </NotebookPageSurface>
-                          </div>
+                          </motion.div>
                         ) : (
                           <>
                             {/* Bound on its right edge: this page's punched margin faces the spine. */}

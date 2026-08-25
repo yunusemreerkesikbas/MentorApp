@@ -67,6 +67,21 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Yolculuktan İzler vitrini (2026-08-25)** — Achievement rollout'u açıkken
+  `GET /v1/community/profile/:username`, herkese açık profil yanıtında toplam kazanım sayısını ve
+  backend'in otomatik seçtiği en yeni en fazla üç kanonik kazanımı lokalize `achievementShowcase`
+  içinde taşır. Sıralama özgün `earnedAt` tarihine göredir; geçmişten backfill edilenlerde ilk
+  kazanım tarihi, eşitlikte sabit katalog sırası kullanılır; bilinmeyen/eskimiş kimlikler dışarıda
+  bırakılır. Biyografi/website altında görsel rozetler gösterilir; rozet bilgi kartı adı, kazanım
+  bilgisi ve tarihi açar, `earnedCount > 3` ise “Tümünü gör” aynı üyenin
+  `/community/member/[username]?tab=achievements` rotasına gider. Gotcha: sıralama ve içerik
+  istemcide hesaplanmaz; flag kapalıyken alan `null`, açık ama kazanım yokken
+  `{ earnedCount: 0, items: [] }` olur ve vitrin render edilmez. İlgili: API
+  `achievement-collection.ts`, `achievement.service.ts`, `community.service.ts`,
+  `community-profile.service.spec.ts`, `packages/types/src/community.ts`; web
+  `achievement-showcase.tsx`, `achievement-detail.tsx`, `achievement-collection.tsx`,
+  `profile-header.tsx`, `community-member-profile.spec.ts`, `messages/{tr,en}.json`.
+
 - **Premium kimlik işareti (2026-08-22)** — Üyelik, avatar köşesine rozet basmak yerine ismin
   yanındaki amber taç ile gösterilir. “Premium” yazısı chrome’da yok (yalnız `aria-label`).
   Mavi doğrulama tiki e-postaya aittir; ödül kurdelesi / doygun gradyan yok. Yüzeyler: sidebar /

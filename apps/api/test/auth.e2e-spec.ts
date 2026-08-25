@@ -95,6 +95,17 @@ describe("identity (e2e)", () => {
     expect(res.body.code).toBe("AUTH_USERNAME_IN_USE");
   });
 
+  it("allows signup without username (web collects it in onboarding)", async () => {
+    const res = await request(app.getHttpServer()).post("/v1/auth/signup").send({
+      email: `nousername-${email}`,
+      password,
+      displayName: "No Username",
+      kvkkAccepted: true,
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.user.username).toBeNull();
+  });
+
   it("rejects signup without KVKK consent (validation)", async () => {
     const res = await request(app.getHttpServer()).post("/v1/auth/signup").send({
       email: `x${email}`,

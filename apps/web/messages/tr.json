@@ -48,12 +48,11 @@
   },
   "auth": {
     "shell": {
-      "tagline": "Sınav yolunda yanında.",
-      "back_home": "Ana sayfaya dön"
+      "close": "Kapat",
+      "back_login": "Girişe dön"
     },
     "login": {
       "title": "Giriş yap",
-      "subtitle": "Devam etmek için giriş yap.",
       "email": "E-posta",
       "password": "Şifre",
       "submit": "Giriş yap",
@@ -61,21 +60,18 @@
       "register_link": "Hesap oluştur",
       "forgot_link": "Şifremi unuttum"
     },
+    "cookie": {
+      "label": "<link>Analitik çerez</link> kullanımını kabul ediyorum. (opsiyonel)"
+    },
     "google": {
       "or": "veya",
       "continue": "Google ile devam et"
     },
     "register": {
       "title": "Hesap oluştur",
-      "subtitle": "Ücretsiz başla — sınav yolunda yanında olalım.",
       "name": "Ad Soyad",
-      "username": "Kullanıcı adı",
-      "username_placeholder": "ornek_kullanici",
-      "username_hint": "3-24 karakter · küçük harf, rakam ve alt çizgi.",
       "email": "E-posta",
       "password": "Şifre (en az 8 karakter, harf + rakam)",
-      "goal": "Hedefin (opsiyonel)",
-      "goal_placeholder": "Örn. Öğretmen olmak, Marmara Hukuk…",
       "kvkk": "<link>KVKK aydınlatma metnini</link> okudum, kişisel verilerimin işlenmesini kabul ediyorum.",
       "kvkk_error": "Devam etmek için KVKK metnini kabul etmelisin.",
       "submit": "Kayıt ol",
@@ -87,23 +83,20 @@
       "subtitle": "E-postana sıfırlama bağlantısı göndeririz.",
       "email": "E-posta",
       "submit": "Sıfırlama bağlantısı gönder",
-      "success": "Bu e-posta kayıtlıysa, şifre sıfırlama bağlantısı gönderildi. Gelen kutunu kontrol et.",
-      "back_login": "Girişe dön"
+      "success": "Bu e-posta kayıtlıysa, şifre sıfırlama bağlantısı gönderildi. Gelen kutunu kontrol et."
     },
     "verify_email": {
       "title": "E-posta doğrulama",
       "invalid_link": "Geçersiz bağlantı. Lütfen e-postandaki bağlantıyı kullan.",
       "verifying": "Doğrulanıyor…",
-      "success": "E-postan doğrulandı. Hoş geldin!",
-      "back_login": "Girişe dön"
+      "success": "E-postan doğrulandı. Hoş geldin!"
     },
     "reset_password": {
       "title": "Yeni şifre belirle",
       "invalid_link": "Geçersiz bağlantı. Lütfen e-postandaki bağlantıyı kullan.",
       "password": "Yeni şifre (en az 8 karakter, harf + rakam)",
       "submit": "Şifreyi güncelle",
-      "success": "Şifren güncellendi. Artık yeni şifrenle giriş yapabilirsin.",
-      "back_login": "Girişe dön"
+      "success": "Şifren güncellendi. Artık yeni şifrenle giriş yapabilirsin."
     }
   },
   "nav": {
@@ -1651,6 +1644,23 @@
     "index_load_more": "{count} kayıt daha",
     "index_empty": "Bu filtreyle kayıt yok.",
     "error_index_load": "Kayıtlar yüklenemedi.",
+    "paper_section": "Kağıt",
+    "cover_section": "Kapak",
+    "cover_title_label": "Kapak yazısı",
+    "cover_color": {
+      "navy": "Lacivert",
+      "plum": "Bordo",
+      "forest": "Yeşil",
+      "sand": "Kum",
+      "slate": "Gri",
+      "ink": "Siyah"
+    },
+    "cover_material": {
+      "cloth": "Kumaş",
+      "kraft": "Kraft",
+      "leather": "Deri",
+      "matte": "Düz"
+    },
     "cover_title": "Yanlış Defterim",
     "cover_subtitle": "{entries} yanlış · {healed} tanesi iyileşti",
     "cover_open": "Defteri aç",
@@ -2552,6 +2562,9 @@
     }
   },
   "achievements": {
+    "showcase_title": "Yolculuktan İzler",
+    "showcase_view_all": "Tümünü gör",
+    "showcase_earned_aria": "{title} kazanıldı",
     "public_empty": "Henüz paylaşılmış bir başarı yok.",
     "collection_title": "Koleksiyonun",
     "collection_count": "{earned} / {total}",
