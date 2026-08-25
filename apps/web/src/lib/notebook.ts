@@ -1,4 +1,6 @@
 import type {
+  CreateNotebookInput,
+  NotebookDto,
   NotebookEntryDto,
   Paginated,
   NotebookImageUploadUrlDto,
@@ -6,6 +8,8 @@ import type {
   NotebookPageDoc,
   NotebookPageDto,
   NotebookPrelabelDto,
+  NotebookSummaryDto,
+  UpdateNotebookInput,
 } from "@mentor/types";
 import {
   NOTEBOOK_IMAGE_MAX_BYTES,
@@ -40,17 +44,63 @@ export async function fetchNotebookOverview(): Promise<NotebookOverviewDto> {
   )) as NotebookOverviewDto;
 }
 
-export async function fetchNotebookPage(index: number): Promise<NotebookPageDto> {
-  return (await http<NotebookPageDto>(
-    `/v1/coaching/notebook/pages/${index}`,
-  )) as NotebookPageDto;
+export async function fetchNotebooks(
+  page = 1,
+  pageSize = 12,
+): Promise<Paginated<NotebookSummaryDto>> {
+  return (await http<Paginated<NotebookSummaryDto>>(
+    `/v1/coaching/notebooks?page=${page}&pageSize=${pageSize}`,
+  )) as Paginated<NotebookSummaryDto>;
+}
+
+export async function createNotebook(
+  input: CreateNotebookInput,
+): Promise<NotebookDto> {
+  return (await http<NotebookDto>("/v1/coaching/notebooks", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })) as NotebookDto;
+}
+
+export async function fetchNotebook(id: string): Promise<NotebookDto> {
+  return (await http<NotebookDto>(
+    `/v1/coaching/notebooks/${id}`,
+  )) as NotebookDto;
+}
+
+export async function updateNotebook(
+  id: string,
+  input: UpdateNotebookInput,
+): Promise<NotebookDto> {
+  return (await http<NotebookDto>(`/v1/coaching/notebooks/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  })) as NotebookDto;
+}
+
+export async function deleteNotebook(id: string): Promise<void> {
+  await http(`/v1/coaching/notebooks/${id}`, { method: "DELETE" });
+}
+
+export async function fetchNotebookPage(
+  index: number,
+  notebookId?: string,
+): Promise<NotebookPageDto> {
+  const path = notebookId
+    ? `/v1/coaching/notebooks/${notebookId}/pages/${index}`
+    : `/v1/coaching/notebook/pages/${index}`;
+  return (await http<NotebookPageDto>(path)) as NotebookPageDto;
 }
 
 export async function saveNotebookPage(
   index: number,
   doc: NotebookPageDoc,
+  notebookId?: string,
 ): Promise<NotebookPageDto> {
-  return (await http<NotebookPageDto>(`/v1/coaching/notebook/pages/${index}`, {
+  const path = notebookId
+    ? `/v1/coaching/notebooks/${notebookId}/pages/${index}`
+    : `/v1/coaching/notebook/pages/${index}`;
+  return (await http<NotebookPageDto>(path, {
     method: "PUT",
     body: JSON.stringify({ doc }),
   })) as NotebookPageDto;

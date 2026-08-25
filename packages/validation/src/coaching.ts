@@ -695,23 +695,6 @@ export const notebookPageDocSchema = z
   .object({
     version: z.literal(1),
     paper: z.enum(NOTEBOOK_PAPERS),
-    /*
-     * Optional, not defaulted, and that is deliberate: absent means "this page is not carrying a
-     * cover", which is true of every page but the first. Defaulting it would write a cover into all
-     * forty documents and make the one that matters indistinguishable from the thirty-nine that
-     * don't.
-     */
-    cover: z
-      .object({
-        color: z.enum(NOTEBOOK_COVER_COLORS),
-        material: z.enum(NOTEBOOK_COVER_MATERIALS),
-        title: z
-          .string()
-          .trim()
-          .max(NOTEBOOK_COVER_TITLE_MAX_LENGTH)
-          .nullish(),
-      })
-      .optional(),
     items: z.array(notebookPageItemSchema).max(NOTEBOOK_PAGE_MAX_ITEMS),
     /*
      * Defaulted, not optional, and that default is the whole backward-compatibility story: every
@@ -786,6 +769,64 @@ export const notebookPageIndexSchema = z.coerce
 
 export const putNotebookPageSchema = z.object({ doc: notebookPageDocSchema });
 export type PutNotebookPageInput = z.infer<typeof putNotebookPageSchema>;
+
+export const notebookCoverStyleSchema = z.object({
+  color: z.enum(NOTEBOOK_COVER_COLORS),
+  material: z.enum(NOTEBOOK_COVER_MATERIALS),
+});
+
+export const listNotebooksQuerySchema = paginationQuerySchema.extend({
+  pageSize: z.coerce.number().int().min(1).max(12).default(12),
+});
+export type ListNotebooksQuery = z.infer<typeof listNotebooksQuerySchema>;
+
+const notebookSubjectFieldsSchema = z
+  .object({
+    examId: z.string().uuid().nullish(),
+    subjectRef: z.string().trim().min(1).max(120).nullish(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.subjectRef && !value.examId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "subject_requires_exam",
+        path: ["examId"],
+      });
+    }
+  });
+
+export const createNotebookSchema = z
+  .object({
+    title: z.string().trim().min(1).max(NOTEBOOK_COVER_TITLE_MAX_LENGTH),
+    examId: z.string().uuid().nullish(),
+    subjectRef: z.string().trim().min(1).max(120).nullish(),
+    cover: notebookCoverStyleSchema.default({
+      color: "navy",
+      material: "cloth",
+    }),
+  })
+  .superRefine((value, ctx) => {
+    const result = notebookSubjectFieldsSchema.safeParse(value);
+    for (const issue of result.success ? [] : result.error.issues)
+      ctx.addIssue(issue);
+  });
+export type CreateNotebookInput = z.infer<typeof createNotebookSchema>;
+
+export const updateNotebookSchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(1)
+      .max(NOTEBOOK_COVER_TITLE_MAX_LENGTH)
+      .nullable()
+      .optional(),
+    examId: z.string().uuid().nullable().optional(),
+    subjectRef: z.string().trim().min(1).max(120).nullable().optional(),
+    cover: notebookCoverStyleSchema.optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, "empty_patch");
+export type UpdateNotebookInput = z.infer<typeof updateNotebookSchema>;
 
 /**
  * Subject/topic are optional at creation: the student may add the photo first and label it after,

@@ -51,6 +51,11 @@ export const routing = defineRouting({
       en: "/subscription/result",
     },
     "/notebook": { tr: "/yanlis-defteri", en: "/notebook" },
+    "/notebooks": { tr: "/defterlerim", en: "/notebooks" },
+    "/notebooks/[notebookId]": {
+      tr: "/defterlerim/[notebookId]",
+      en: "/notebooks/[notebookId]",
+    },
     "/vision-board": { tr: "/hedef", en: "/vision-board" },
     /** Collage editor. `/hedef` stays the data step (map + goal form); this is the optional canvas. */
     "/vision-board/board": { tr: "/hedef/pano", en: "/vision-board/board" },

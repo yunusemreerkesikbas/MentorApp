@@ -76,7 +76,9 @@ const calendar: ExamCalendarDto = {
   daysToExam: 120,
 } as unknown as ExamCalendarDto;
 
-function makeEntry(overrides: Partial<NotebookEntryDto> = {}): NotebookEntryDto {
+function makeEntry(
+  overrides: Partial<NotebookEntryDto> = {},
+): NotebookEntryDto {
   return {
     id: "33333333-3333-4333-8333-333333333333",
     mockExamId: null,
@@ -144,12 +146,25 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
   const deletes: string[] = [];
   const indexQueries: Array<Record<string, string | null>> = [];
 
+  const defaultNotebook: NotebookOverviewDto["notebook"] = {
+    id: "99999999-9999-4999-8999-999999999999",
+    kind: "MISTAKE",
+    examId: null,
+    subjectRef: null,
+    subjectName: null,
+    title: null,
+    cover: { color: "navy", material: "cloth" },
+    pageCount: 1,
+    dueCount: 0,
+    updatedAt: "2026-08-25T10:00:00.000Z",
+  };
   const overview: NotebookOverviewDto = {
     pageCount: 1,
     entryCount: 0,
     dueCount: 0,
     healedCount: 0,
     ...options.overview,
+    notebook: options.overview?.notebook ?? defaultNotebook,
   };
   const seededPages = options.pages ?? {};
   const allSeededEntries = Object.values(seededPages).flatMap((p) => p.entries);
@@ -180,7 +195,13 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
     // App-shell chrome. Without these the notification bell reads `.items` off an empty 204 and
     // takes the whole page down with it — which is exactly what this file caught first time out.
     if (method === "GET" && path === "/v1/notifications") {
-      return json(route, { items: [], total: 0, page: 1, pageSize: 20, unreadCount: 0 });
+      return json(route, {
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 20,
+        unreadCount: 0,
+      });
     }
     if (method === "POST" && path === "/v1/notifications/stream-token") {
       return json(route, { token: "test-stream" });
@@ -193,10 +214,16 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
         body: "",
       });
     }
-    if (method === "GET" && path === "/v1/content/exams/by-type/KPSS/calendar") {
+    if (
+      method === "GET" &&
+      path === "/v1/content/exams/by-type/KPSS/calendar"
+    ) {
       return json(route, calendar);
     }
-    if (method === "GET" && path === `/v1/content/exams/${exam.slug}/subjects`) {
+    if (
+      method === "GET" &&
+      path === `/v1/content/exams/${exam.slug}/subjects`
+    ) {
       return json(route, subjects);
     }
     if (method === "GET" && path === `/v1/content/exams/${exam.slug}/topics`) {
@@ -260,7 +287,9 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
         }),
       );
     }
-    const entryMatch = path.match(/\/v1\/coaching\/notebook\/entries\/([^/]+)$/);
+    const entryMatch = path.match(
+      /\/v1\/coaching\/notebook\/entries\/([^/]+)$/,
+    );
     if (method === "DELETE" && entryMatch) {
       deletes.push(entryMatch[1]!);
       return json(route, null, 204);
@@ -354,7 +383,9 @@ test("yan panel her zaman açık: yanlış eklenir, hata tipi zorunlu, ders/konu
   await page.getByRole("button", { name: "Defteri aç" }).click();
 
   // No "arrange the page" toggle to click first — the rail is already there, collapsed.
-  await expect(page.getByRole("button", { name: "Sayfayı düzenle" })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Sayfayı düzenle" }),
+  ).toHaveCount(0);
   await page.getByRole("button", { name: "Ekle" }).click();
 
   // The one required field: with no error type the form cannot be submitted.
@@ -380,7 +411,9 @@ test("yan panel her zaman açık: yanlış eklenir, hata tipi zorunlu, ders/konu
 
   // Placement is autosaved on the focused side — left (index 0) by default — with nothing asking
   // the user to press save.
-  await expect.poll(() => api.savedPages.length, { timeout: 5_000 }).toBeGreaterThan(0);
+  await expect
+    .poll(() => api.savedPages.length, { timeout: 5_000 })
+    .toBeGreaterThan(0);
   const saved = api.savedPages.find((entry) => entry.index === 0);
   expect(saved).toBeDefined();
   const doc = saved!.doc as { items: Array<{ kind: string }> };
@@ -398,11 +431,15 @@ test("konu seçici derse göre daralır", async ({ page }) => {
   // `MenuSelect` renders its options in a popover next to the trigger, not inside it, so the
   // options are only in the DOM while the menu is open and are queried from the page.
   await page.getByLabel("Konu").click();
-  await expect(page.getByRole("option", { name: "Kurtuluş Savaşı" })).toHaveCount(1);
+  await expect(
+    page.getByRole("option", { name: "Kurtuluş Savaşı" }),
+  ).toHaveCount(1);
   await expect(page.getByRole("option", { name: "Problemler" })).toHaveCount(0);
 });
 
-test("tekrar şeridi açılır, çözülen kart iyileşir ve şerit boşalır", async ({ page }) => {
+test("tekrar şeridi açılır, çözülen kart iyileşir ve şerit boşalır", async ({
+  page,
+}) => {
   // The strip and the review panel work off the due list directly and never need the book to be
   // open, so no page needs seeding here — only the due-strip test below does that.
   const due = [makeEntry({ reviewCount: 2 })];
@@ -433,22 +470,32 @@ test("ikinci kez kaçırılan soruda topluluk teklif edilir, telif uyarısıyla"
 }) => {
   // reviewCount > 0 means the student had already got this one right once.
   const due = [makeEntry({ reviewCount: 2 })];
-  await mockNotebookApi(page, { due, overview: { dueCount: 1, entryCount: 1 } });
+  await mockNotebookApi(page, {
+    due,
+    overview: { dueCount: 1, entryCount: 1 },
+  });
 
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: /1 soru tekrar zamanı/ }).click();
   await page.getByRole("button", { name: "Yine çözemedim" }).click();
 
-  await expect(page.getByText("Bu soru seni ikinci kez yakaladı")).toBeVisible();
+  await expect(
+    page.getByText("Bu soru seni ikinci kez yakaladı"),
+  ).toBeVisible();
   await expect(page.getByText(/telifli olabilir/)).toBeVisible();
-  await expect(page.getByRole("link", { name: "Toplulukta sor" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Toplulukta sor" }),
+  ).toBeVisible();
 });
 
 test("tekrar kartı çevrilir: soru önde, hata tipi ve not arkada", async ({
   page,
 }) => {
   const due = [makeEntry({ reviewCount: 2, note: "İşlem hatası yaptım" })];
-  await mockNotebookApi(page, { due, overview: { dueCount: 1, entryCount: 1 } });
+  await mockNotebookApi(page, {
+    due,
+    overview: { dueCount: 1, entryCount: 1 },
+  });
 
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: /1 soru tekrar zamanı/ }).click();
@@ -513,7 +560,9 @@ test("çift tıkla kart açılır ve sol sayfadaki bir kart sağ sayfayı etkile
   await expect(page.getByText("1 / 1")).toHaveCount(0);
 });
 
-test("sidebar sticker ekler, sayfaya yapıştırır ve otomatik kaydeder", async ({ page }) => {
+test("sidebar sticker ekler, sayfaya yapıştırır ve otomatik kaydeder", async ({
+  page,
+}) => {
   const api = await mockNotebookApi(page);
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: "Defteri aç" }).click();
@@ -524,7 +573,9 @@ test("sidebar sticker ekler, sayfaya yapıştırır ve otomatik kaydeder", async
   // is a substring match by default.
   await page.getByRole("button", { name: "Yıldız", exact: true }).click();
 
-  await expect.poll(() => api.savedPages.length, { timeout: 5_000 }).toBeGreaterThan(0);
+  await expect
+    .poll(() => api.savedPages.length, { timeout: 5_000 })
+    .toBeGreaterThan(0);
   const firstSave = api.savedPages.find((entry) => entry.index === 0);
   expect(firstSave).toBeDefined();
   const doc = firstSave!.doc as { items: Array<{ kind: string }> };
@@ -535,7 +586,9 @@ test("sidebar sticker ekler, sayfaya yapıştırır ve otomatik kaydeder", async
   await expect
     .poll(
       () => {
-        const latest = api.savedPages.filter((entry) => entry.index === 0).at(-1) as {
+        const latest = api.savedPages
+          .filter((entry) => entry.index === 0)
+          .at(-1) as {
           doc: { items: unknown[] };
         };
         return latest.doc.items.length;
@@ -559,7 +612,9 @@ test("not: tıklayınca sayfa üzerinde düzenlenebilir alan açılır; boş bı
   await editor.fill("Bir daha köklü ifade unutma");
   await editor.blur();
 
-  await expect.poll(() => api.savedPages.length, { timeout: 5_000 }).toBeGreaterThan(0);
+  await expect
+    .poll(() => api.savedPages.length, { timeout: 5_000 })
+    .toBeGreaterThan(0);
   const saved = api.savedPages.find((entry) => entry.index === 0);
   const doc = saved!.doc as { items: Array<{ kind: string; text?: string }> };
   const notes = doc.items.filter((item) => item.kind === "text");
@@ -571,7 +626,8 @@ test("not: tıklayınca sayfa üzerinde düzenlenebilir alan açılır; boş bı
   await page.getByLabel("Not metni").blur();
   await expect
     .poll(() => {
-      const latest = api.savedPages.filter((entry) => entry.index === 0).at(-1)!.doc as {
+      const latest = api.savedPages.filter((entry) => entry.index === 0).at(-1)!
+        .doc as {
         items: Array<{ kind: string }>;
       };
       return latest.items.filter((item) => item.kind === "text").length;
@@ -630,7 +686,10 @@ test("fotoğraflı kart sadece görseli gösterir; tıklayınca tam ekran önizl
  * them can answer the questions this covers: does a real drag on a real page produce ink, does the
  * ink reach the server, and does the eraser find what the pen left.
  */
-async function drawOn(page: Page, box: { x: number; y: number; width: number; height: number }) {
+async function drawOn(
+  page: Page,
+  box: { x: number; y: number; width: number; height: number },
+) {
   // A curve, not a straight line: simplification collapses collinear samples, so a straight drag
   // would still pass with a broken smoothing step.
   const startX = box.x + box.width * 0.3;
@@ -658,7 +717,9 @@ test("çizim modunda sayfaya kalemle çizilir, geri/ileri alınır ve kaydedilir
 
   // Nothing drawn yet, so there is nothing to undo or clear.
   await expect(toolbar.getByRole("button", { name: "Geri al" })).toBeDisabled();
-  await expect(toolbar.getByRole("button", { name: "Çizimleri sil" })).toBeDisabled();
+  await expect(
+    toolbar.getByRole("button", { name: "Çizimleri sil" }),
+  ).toBeDisabled();
 
   await toolbar.getByRole("button", { name: "Fosforlu kalem" }).click();
   await toolbar.getByRole("button", { name: "Renkler" }).click();
@@ -676,9 +737,13 @@ test("çizim modunda sayfaya kalemle çizilir, geri/ileri alınır ve kaydedilir
   await expect(toolbar.getByRole("button", { name: "Geri al" })).toBeEnabled();
 
   // It autosaves onto the left page, carrying the pen it was drawn with.
-  await expect.poll(() => api.savedPages.length, { timeout: 5_000 }).toBeGreaterThan(0);
+  await expect
+    .poll(() => api.savedPages.length, { timeout: 5_000 })
+    .toBeGreaterThan(0);
   const saved = api.savedPages.filter((entry) => entry.index === 0).at(-1);
-  const doc = saved!.doc as { ink: Array<{ tool: string; color: string; points: number[] }> };
+  const doc = saved!.doc as {
+    ink: Array<{ tool: string; color: string; points: number[] }>;
+  };
   expect(doc.ink).toHaveLength(1);
   expect(doc.ink[0]!.tool).toBe("highlighter");
   expect(doc.ink[0]!.color).toBe("#ffd600");
@@ -740,7 +805,6 @@ async function json(route: Route, body: unknown, status = 200): Promise<void> {
   });
 }
 
-
 test("deste her kartı sırayla sorar, hiçbirini atlamaz", async ({ page }) => {
   const due = [
     makeEntry({ id: "aaaaaaaa-1111-4111-8111-111111111111", topicName: "Bir" }),
@@ -784,7 +848,10 @@ test("liste ders başlıklarıyla gruplar, karta atlar ve cevaplananı kilitler"
       topicName: "Kümeler",
     }),
   ];
-  await mockNotebookApi(page, { due, overview: { dueCount: 3, entryCount: 3 } });
+  await mockNotebookApi(page, {
+    due,
+    overview: { dueCount: 3, entryCount: 3 },
+  });
 
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: /3 soru tekrar zamanı/ }).click();
@@ -814,7 +881,10 @@ test("takılan kart topluluğa devredilirken kayıt kimliğini taşır", async (
   page,
 }) => {
   const due = [makeEntry({ reviewCount: 2 })];
-  await mockNotebookApi(page, { due, overview: { dueCount: 1, entryCount: 1 } });
+  await mockNotebookApi(page, {
+    due,
+    overview: { dueCount: 1, entryCount: 1 },
+  });
 
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: /1 soru tekrar zamanı/ }).click();
@@ -822,10 +892,9 @@ test("takılan kart topluluğa devredilirken kayıt kimliğini taşır", async (
 
   // Without the id the handoff is one-way: the student asks, the thread is never attached, and the
   // card's "answered in the community" state can never happen.
-  await expect(page.getByRole("link", { name: "Toplulukta sor" })).toHaveAttribute(
-    "href",
-    `/topluluk/akis?notebookEntry=${due[0]!.id}`,
-  );
+  await expect(
+    page.getByRole("link", { name: "Toplulukta sor" }),
+  ).toHaveAttribute("href", `/topluluk/akis?notebookEntry=${due[0]!.id}`);
 });
 
 test("not kart arkasında düzenlenir; düzenlerken karta tıklamak çevirmez", async ({
@@ -865,7 +934,10 @@ test("deste sonu ne yapıldığını özetler", async ({ page }) => {
     makeEntry({ id: "bbbbbbbb-1111-4111-8111-111111111111", topicName: "İki" }),
     makeEntry({ id: "cccccccc-1111-4111-8111-111111111111", topicName: "Üç" }),
   ];
-  await mockNotebookApi(page, { due, overview: { dueCount: 3, entryCount: 3 } });
+  await mockNotebookApi(page, {
+    due,
+    overview: { dueCount: 3, entryCount: 3 },
+  });
 
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: /3 soru tekrar zamanı/ }).click();
@@ -881,7 +953,6 @@ test("deste sonu ne yapıldığını özetler", async ({ page }) => {
   await expect(page.getByText(/Kalan 1 kart tekrar döngüsünde/)).toBeVisible();
 });
 
-
 test("çözüm kartın arkasında görünür ve tekrar sırasında yazılabilir", async ({
   page,
 }) => {
@@ -891,7 +962,8 @@ test("çözüm kartın arkasında görünür ve tekrar sırasında yazılabilir"
       note: "Payda eşitlemeyi atladım, sonra da sadeleştirmeyi unuttum.",
       solutionStorageKey: "notebook/u/solution.png",
       solutionUrl: "/img/welcome-hero.png",
-      solutionNote: "Önce ortak payda, sonra sadeleştirme; kök varsa içeri almadan önce işaret.",
+      solutionNote:
+        "Önce ortak payda, sonra sadeleştirme; kök varsa içeri almadan önce işaret.",
     }),
   ];
   const api = await mockNotebookApi(page, {
@@ -908,11 +980,12 @@ test("çözüm kartın arkasında görünür ve tekrar sırasında yazılabilir"
   const flip = page.getByRole("button", { name: "Çevir" });
   await expect(flip).toBeVisible();
   await flip.click();
-  await expect(page.getByRole("button", { name: "Soruya dön" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-  await expect(page.getByRole("button", { name: "Çözümü büyüt" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Soruya dön" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByRole("button", { name: "Çözümü büyüt" }),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Çözümü düzenle" }).click();
   const field = page.getByLabel("Çözümü düzenle");
@@ -925,32 +998,40 @@ test("çözüm kartın arkasında görünür ve tekrar sırasında yazılabilir"
     body: { solutionNote: "Önce paydaları eşitle, sonra sadeleştir." },
   });
   // Patched in place: the note field beside it is untouched and the card never left the deck.
-  await expect(page.getByText("Önce paydaları eşitle, sonra sadeleştir.")).toBeVisible();
+  await expect(
+    page.getByText("Önce paydaları eşitle, sonra sadeleştir."),
+  ).toBeVisible();
 });
 
 test("ders filtresi desteyi daraltır ve biten ders günü bitirmez", async ({
   page,
 }) => {
   const due = [
-    makeEntry({ id: "aaaaaaaa-1111-4111-8111-111111111111", topicName: "Problemler" }),
-    makeEntry({ id: "bbbbbbbb-1111-4111-8111-111111111111", topicName: "Kümeler" }),
+    makeEntry({
+      id: "aaaaaaaa-1111-4111-8111-111111111111",
+      topicName: "Problemler",
+    }),
+    makeEntry({
+      id: "bbbbbbbb-1111-4111-8111-111111111111",
+      topicName: "Kümeler",
+    }),
     makeEntry({
       id: "cccccccc-1111-4111-8111-111111111111",
       subjectName: "Tarih",
       topicName: "Kurtuluş Savaşı",
     }),
   ];
-  await mockNotebookApi(page, { due, overview: { dueCount: 3, entryCount: 3 } });
+  await mockNotebookApi(page, {
+    due,
+    overview: { dueCount: 3, entryCount: 3 },
+  });
 
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: /3 soru tekrar zamanı/ }).click();
   await page.getByRole("button", { name: "Listeyi aç" }).click();
 
   // Two Matematik cards out of three: the deck narrows, the counter follows it.
-  await page
-    .getByRole("button", { name: "Sadece bunu çalış" })
-    .first()
-    .click();
+  await page.getByRole("button", { name: "Sadece bunu çalış" }).first().click();
   await expect(page.getByText("Matematik · 1 / 2")).toBeVisible();
 
   await page.getByRole("button", { name: "Çözebildim" }).click();
@@ -1016,10 +1097,14 @@ test("çöp kutusu hangi silme olduğunu sorar; sayfadan kaldırmak kaydı silme
   await expect(page.getByText("Bu kartı ne yapalım?")).toBeVisible();
   await page.getByRole("button", { name: "Sadece sayfadan kaldır" }).click();
 
-  await expect.poll(() => api.savedPages.length, { timeout: 5_000 }).toBeGreaterThan(0);
+  await expect
+    .poll(() => api.savedPages.length, { timeout: 5_000 })
+    .toBeGreaterThan(0);
   expect(api.deletes).toEqual([]);
   // Still due: taking a card off the paper is arranging, not deleting.
-  await expect(page.getByRole("button", { name: /1 soru tekrar zamanı/ })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /1 soru tekrar zamanı/ }),
+  ).toBeVisible();
 });
 
 test("defterden silmek kaydı, kartı ve tekrar şeridini birlikte götürür", async ({
@@ -1042,18 +1127,25 @@ test("defterden silmek kaydı, kartı ve tekrar şeridini birlikte götürür", 
   // The card leaves the page document too. Left behind it would be an invisible box that still
   // selects and drags — `StageItem` renders a deleted entry as nothing, which hides the debris.
   await expect
-    .poll(() => {
-      const last = [...api.savedPages].reverse().find((p) => p.index === 0);
-      const doc = last?.doc as { items: Array<{ kind: string }> } | undefined;
-      return doc?.items.filter((item) => item.kind === "entry").length ?? -1;
-    }, { timeout: 5_000 })
+    .poll(
+      () => {
+        const last = [...api.savedPages].reverse().find((p) => p.index === 0);
+        const doc = last?.doc as { items: Array<{ kind: string }> } | undefined;
+        return doc?.items.filter((item) => item.kind === "entry").length ?? -1;
+      },
+      { timeout: 5_000 },
+    )
     .toBe(0);
-  await expect(page.getByRole("button", { name: /1 soru tekrar zamanı/ })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: /1 soru tekrar zamanı/ }),
+  ).toHaveCount(0);
 });
 
 test("kart önizlemesinden hata tipi düzeltilir", async ({ page }) => {
   const entry = makeEntry({ reviewCount: 2 });
-  const api = await mockNotebookApi(page, { pages: { 0: seededEntryPage(entry) } });
+  const api = await mockNotebookApi(page, {
+    pages: { 0: seededEntryPage(entry) },
+  });
 
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: "Defteri aç" }).click();
@@ -1124,11 +1216,14 @@ test("dizin kayıtları listeler, derse göre daraltır ve sayfaya yerleştirir"
   // twice, because `handleCreated` would happily add a second identical card.
   await page.getByRole("button", { name: "Sayfaya yerleştir" }).click();
   await expect
-    .poll(() => {
-      const last = [...api.savedPages].reverse().find((p) => p.index === 0);
-      const doc = last?.doc as { items: Array<{ kind: string }> } | undefined;
-      return doc?.items.filter((item) => item.kind === "entry").length ?? -1;
-    }, { timeout: 5_000 })
+    .poll(
+      () => {
+        const last = [...api.savedPages].reverse().find((p) => p.index === 0);
+        const doc = last?.doc as { items: Array<{ kind: string }> } | undefined;
+        return doc?.items.filter((item) => item.kind === "entry").length ?? -1;
+      },
+      { timeout: 5_000 },
+    )
     .toBe(2);
   await expect(
     page.getByRole("button", { name: "Zaten sayfada" }),
@@ -1162,8 +1257,9 @@ test("sayfadan kaldırılan kayıt dizinden bulunup silinebilir", async ({
   await expect.poll(() => api.deletes).toEqual([entry.id]);
 });
 
-
-test("uzak barındırıcıdaki foto dizinde render edilebiliyor", async ({ page }) => {
+test("uzak barındırıcıdaki foto dizinde render edilebiliyor", async ({
+  page,
+}) => {
   /*
    * Production photos come from the R2 public bucket. The app configures no
    * `images.remotePatterns`, so `next/image` refuses that host unless the call passes
@@ -1192,7 +1288,10 @@ test("tekrar bağlantısı desteyi açar ve parametresini tüketir", async ({
   page,
 }) => {
   const due = [makeEntry({ reviewCount: 2 })];
-  await mockNotebookApi(page, { due, overview: { dueCount: 1, entryCount: 1 } });
+  await mockNotebookApi(page, {
+    due,
+    overview: { dueCount: 1, entryCount: 1 },
+  });
 
   // What the push notification opens.
   await page.goto("/yanlis-defteri?review=due");

@@ -875,7 +875,11 @@ export type NotebookErrorType = (typeof NOTEBOOK_ERROR_TYPES)[number];
  * `ARCHIVED` = the student put it away without solving it. Nothing is ever deleted on review —
  * the wall is a healing map, and a healed card staying visible is the point.
  */
-export const NOTEBOOK_ENTRY_STATUSES = ["ACTIVE", "HEALED", "ARCHIVED"] as const;
+export const NOTEBOOK_ENTRY_STATUSES = [
+  "ACTIVE",
+  "HEALED",
+  "ARCHIVED",
+] as const;
 export type NotebookEntryStatus = (typeof NOTEBOOK_ENTRY_STATUSES)[number];
 
 /**
@@ -988,25 +992,53 @@ export type NotebookCoverMaterial = (typeof NOTEBOOK_COVER_MATERIALS)[number];
 /** Title cap: it is printed across a cover, not a field anybody should paste an essay into. */
 export const NOTEBOOK_COVER_TITLE_MAX_LENGTH = 40;
 
-export interface NotebookCoverDoc {
+export interface NotebookCoverStyle {
   color: NotebookCoverColor;
   material: NotebookCoverMaterial;
-  /** Null or absent falls back to the app's own name for the book. */
+}
+
+/** @deprecated Book metadata now carries title separately. */
+export type NotebookCoverDoc = NotebookCoverStyle & { title?: string | null };
+
+export const NOTEBOOK_KINDS = ["MISTAKE", "CUSTOM"] as const;
+export type NotebookKind = (typeof NOTEBOOK_KINDS)[number];
+
+export interface NotebookSummaryDto {
+  id: string;
+  kind: NotebookKind;
+  examId: string | null;
+  subjectRef: string | null;
+  subjectName: string | null;
+  /** Null only for the system notebook; clients render their translated default title. */
+  title: string | null;
+  cover: NotebookCoverStyle;
+  pageCount: number;
+  /** Populated for the system notebook and zero for custom notebooks. */
+  dueCount: number;
+  updatedAt: string;
+}
+
+export interface NotebookDto extends NotebookSummaryDto {
+  createdAt: string;
+}
+
+export interface CreateNotebookInput {
+  title: string;
+  examId?: string | null;
+  subjectRef?: string | null;
+  cover: NotebookCoverStyle;
+}
+
+export interface UpdateNotebookInput {
   title?: string | null;
+  examId?: string | null;
+  subjectRef?: string | null;
+  cover?: NotebookCoverStyle;
 }
 
 export interface NotebookPageDoc {
   version: 1;
   paper: NotebookPaper;
-  /**
-   * The cover, carried on page zero.
-   *
-   * A cover belongs to the book, not to a page, and the notebook has no book-level record to put it
-   * in — the overview is counts, computed. Rather than a migration, a repository and an endpoint for
-   * one enum and one string, it rides in the first page's document, which is jsonb, versioned, and
-   * already saved by a path that works. Optional everywhere; only page zero's copy is ever read.
-   */
-  cover?: NotebookCoverDoc;
   items: NotebookPageItem[];
   /**
    * Freehand ink, a sibling of `items` rather than another item kind.
@@ -1060,6 +1092,7 @@ export interface NotebookEntryDto {
 
 /** Cover screen payload: enough to render the cover and the "bugün tekrar" strip, nothing more. */
 export interface NotebookOverviewDto {
+  notebook: NotebookSummaryDto;
   pageCount: number;
   entryCount: number;
   dueCount: number;

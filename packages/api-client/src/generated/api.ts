@@ -179,6 +179,10 @@ export interface LinkNotebookThreadDto { [key: string]: unknown }
 
 export interface PutNotebookPageDto { [key: string]: unknown }
 
+export interface CreateNotebookDto { [key: string]: unknown }
+
+export interface UpdateNotebookDto { [key: string]: unknown }
+
 export interface CreateZoneDto { [key: string]: unknown }
 
 export interface AssignOwnerDto { [key: string]: unknown }
@@ -4557,6 +4561,309 @@ export const mistakeNotebookControllerDeleteEntry = async (id: string, options?:
 
 
 
+export type mockExamControllerUpdateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mockExamControllerUpdateResponseSuccess = (mockExamControllerUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mockExamControllerUpdateResponse = (mockExamControllerUpdateResponseSuccess)
+
+export const getMockExamControllerUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/mock-exams/${id}`
+}
+
+export const mockExamControllerUpdate = async (id: string,
+    updateMockExamDto: UpdateMockExamDto, options?: RequestInit): Promise<mockExamControllerUpdateResponse> => {
+  
+  return http<mockExamControllerUpdateResponse>(getMockExamControllerUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateMockExamDto,)
+  }
+);}
+
+
+
+export type mockExamControllerRemoveResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type mockExamControllerRemoveResponseSuccess = (mockExamControllerRemoveResponse204) & {
+  headers: Headers;
+};
+;
+
+export type mockExamControllerRemoveResponse = (mockExamControllerRemoveResponseSuccess)
+
+export const getMockExamControllerRemoveUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/mock-exams/${id}`
+}
+
+export const mockExamControllerRemove = async (id: string, options?: RequestInit): Promise<mockExamControllerRemoveResponse> => {
+  
+  return http<mockExamControllerRemoveResponse>(getMockExamControllerRemoveUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type mistakeNotebookControllerGetOverviewResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mistakeNotebookControllerGetOverviewResponseSuccess = (mistakeNotebookControllerGetOverviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerGetOverviewResponse = (mistakeNotebookControllerGetOverviewResponseSuccess)
+
+export const getMistakeNotebookControllerGetOverviewUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebook`
+}
+
+export const mistakeNotebookControllerGetOverview = async ( options?: RequestInit): Promise<mistakeNotebookControllerGetOverviewResponse> => {
+  
+  return http<mistakeNotebookControllerGetOverviewResponse>(getMistakeNotebookControllerGetOverviewUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mistakeNotebookControllerListDueResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mistakeNotebookControllerListDueResponseSuccess = (mistakeNotebookControllerListDueResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerListDueResponse = (mistakeNotebookControllerListDueResponseSuccess)
+
+export const getMistakeNotebookControllerListDueUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebook/reviews/due`
+}
+
+export const mistakeNotebookControllerListDue = async ( options?: RequestInit): Promise<mistakeNotebookControllerListDueResponse> => {
+  
+  return http<mistakeNotebookControllerListDueResponse>(getMistakeNotebookControllerListDueUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mistakeNotebookControllerListEntriesResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mistakeNotebookControllerListEntriesResponseSuccess = (mistakeNotebookControllerListEntriesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerListEntriesResponse = (mistakeNotebookControllerListEntriesResponseSuccess)
+
+export const getMistakeNotebookControllerListEntriesUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebook/entries`
+}
+
+export const mistakeNotebookControllerListEntries = async ( options?: RequestInit): Promise<mistakeNotebookControllerListEntriesResponse> => {
+  
+  return http<mistakeNotebookControllerListEntriesResponse>(getMistakeNotebookControllerListEntriesUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mistakeNotebookControllerCreateEntryResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type mistakeNotebookControllerCreateEntryResponseSuccess = (mistakeNotebookControllerCreateEntryResponse201) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerCreateEntryResponse = (mistakeNotebookControllerCreateEntryResponseSuccess)
+
+export const getMistakeNotebookControllerCreateEntryUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebook/entries`
+}
+
+export const mistakeNotebookControllerCreateEntry = async (createNotebookEntryDto: CreateNotebookEntryDto, options?: RequestInit): Promise<mistakeNotebookControllerCreateEntryResponse> => {
+  
+  return http<mistakeNotebookControllerCreateEntryResponse>(getMistakeNotebookControllerCreateEntryUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createNotebookEntryDto,)
+  }
+);}
+
+
+
+export type mistakeNotebookControllerCreateUploadUrlResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type mistakeNotebookControllerCreateUploadUrlResponseSuccess = (mistakeNotebookControllerCreateUploadUrlResponse201) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerCreateUploadUrlResponse = (mistakeNotebookControllerCreateUploadUrlResponseSuccess)
+
+export const getMistakeNotebookControllerCreateUploadUrlUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebook/entries/image-upload-url`
+}
+
+export const mistakeNotebookControllerCreateUploadUrl = async (notebookImageUploadUrlDto: NotebookImageUploadUrlDto, options?: RequestInit): Promise<mistakeNotebookControllerCreateUploadUrlResponse> => {
+  
+  return http<mistakeNotebookControllerCreateUploadUrlResponse>(getMistakeNotebookControllerCreateUploadUrlUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      notebookImageUploadUrlDto,)
+  }
+);}
+
+
+
+export type mistakeNotebookControllerUpdateEntryResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mistakeNotebookControllerUpdateEntryResponseSuccess = (mistakeNotebookControllerUpdateEntryResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerUpdateEntryResponse = (mistakeNotebookControllerUpdateEntryResponseSuccess)
+
+export const getMistakeNotebookControllerUpdateEntryUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coaching/notebook/entries/${id}`
+}
+
+export const mistakeNotebookControllerUpdateEntry = async (id: string,
+    updateNotebookEntryDto: UpdateNotebookEntryDto, options?: RequestInit): Promise<mistakeNotebookControllerUpdateEntryResponse> => {
+  
+  return http<mistakeNotebookControllerUpdateEntryResponse>(getMistakeNotebookControllerUpdateEntryUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateNotebookEntryDto,)
+  }
+);}
+
+
+
+export type mistakeNotebookControllerDeleteEntryResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type mistakeNotebookControllerDeleteEntryResponseSuccess = (mistakeNotebookControllerDeleteEntryResponse204) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerDeleteEntryResponse = (mistakeNotebookControllerDeleteEntryResponseSuccess)
+
+export const getMistakeNotebookControllerDeleteEntryUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coaching/notebook/entries/${id}`
+}
+
+export const mistakeNotebookControllerDeleteEntry = async (id: string, options?: RequestInit): Promise<mistakeNotebookControllerDeleteEntryResponse> => {
+  
+  return http<mistakeNotebookControllerDeleteEntryResponse>(getMistakeNotebookControllerDeleteEntryUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
 export type mistakeNotebookControllerReviewEntryResponse200 = {
   data: void
   status: 200
@@ -4684,6 +4991,246 @@ export const mistakeNotebookControllerPutPage = async (index: number,
     putNotebookPageDto: PutNotebookPageDto, options?: RequestInit): Promise<mistakeNotebookControllerPutPageResponse> => {
   
   return http<mistakeNotebookControllerPutPageResponse>(getMistakeNotebookControllerPutPageUrl(index),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      putNotebookPageDto,)
+  }
+);}
+
+
+
+export type notebooksControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type notebooksControllerListResponseSuccess = (notebooksControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerListResponse = (notebooksControllerListResponseSuccess)
+
+export const getNotebooksControllerListUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebooks`
+}
+
+export const notebooksControllerList = async ( options?: RequestInit): Promise<notebooksControllerListResponse> => {
+  
+  return http<notebooksControllerListResponse>(getNotebooksControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type notebooksControllerCreateResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type notebooksControllerCreateResponseSuccess = (notebooksControllerCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerCreateResponse = (notebooksControllerCreateResponseSuccess)
+
+export const getNotebooksControllerCreateUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebooks`
+}
+
+export const notebooksControllerCreate = async (createNotebookDto: CreateNotebookDto, options?: RequestInit): Promise<notebooksControllerCreateResponse> => {
+  
+  return http<notebooksControllerCreateResponse>(getNotebooksControllerCreateUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createNotebookDto,)
+  }
+);}
+
+
+
+export type notebooksControllerGetResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type notebooksControllerGetResponseSuccess = (notebooksControllerGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerGetResponse = (notebooksControllerGetResponseSuccess)
+
+export const getNotebooksControllerGetUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coaching/notebooks/${id}`
+}
+
+export const notebooksControllerGet = async (id: string, options?: RequestInit): Promise<notebooksControllerGetResponse> => {
+  
+  return http<notebooksControllerGetResponse>(getNotebooksControllerGetUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type notebooksControllerUpdateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type notebooksControllerUpdateResponseSuccess = (notebooksControllerUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerUpdateResponse = (notebooksControllerUpdateResponseSuccess)
+
+export const getNotebooksControllerUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coaching/notebooks/${id}`
+}
+
+export const notebooksControllerUpdate = async (id: string,
+    updateNotebookDto: UpdateNotebookDto, options?: RequestInit): Promise<notebooksControllerUpdateResponse> => {
+  
+  return http<notebooksControllerUpdateResponse>(getNotebooksControllerUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateNotebookDto,)
+  }
+);}
+
+
+
+export type notebooksControllerDeleteResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type notebooksControllerDeleteResponseSuccess = (notebooksControllerDeleteResponse204) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerDeleteResponse = (notebooksControllerDeleteResponseSuccess)
+
+export const getNotebooksControllerDeleteUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coaching/notebooks/${id}`
+}
+
+export const notebooksControllerDelete = async (id: string, options?: RequestInit): Promise<notebooksControllerDeleteResponse> => {
+  
+  return http<notebooksControllerDeleteResponse>(getNotebooksControllerDeleteUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type notebooksControllerGetPageResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type notebooksControllerGetPageResponseSuccess = (notebooksControllerGetPageResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerGetPageResponse = (notebooksControllerGetPageResponseSuccess)
+
+export const getNotebooksControllerGetPageUrl = (id: string,
+    index: number,) => {
+
+
+  
+
+  return `/v1/coaching/notebooks/${id}/pages/${index}`
+}
+
+export const notebooksControllerGetPage = async (id: string,
+    index: number, options?: RequestInit): Promise<notebooksControllerGetPageResponse> => {
+  
+  return http<notebooksControllerGetPageResponse>(getNotebooksControllerGetPageUrl(id,index),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type notebooksControllerPutPageResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type notebooksControllerPutPageResponseSuccess = (notebooksControllerPutPageResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerPutPageResponse = (notebooksControllerPutPageResponseSuccess)
+
+export const getNotebooksControllerPutPageUrl = (id: string,
+    index: number,) => {
+
+
+  
+
+  return `/v1/coaching/notebooks/${id}/pages/${index}`
+}
+
+export const notebooksControllerPutPage = async (id: string,
+    index: number,
+    putNotebookPageDto: PutNotebookPageDto, options?: RequestInit): Promise<notebooksControllerPutPageResponse> => {
+  
+  return http<notebooksControllerPutPageResponse>(getNotebooksControllerPutPageUrl(id,index),
   {      
     ...options,
     method: 'PUT',

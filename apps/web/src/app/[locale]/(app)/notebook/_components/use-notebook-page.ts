@@ -38,7 +38,6 @@ type PageAction =
   | { type: "remove"; id: string }
   | { type: "select"; id: string | null }
   | { type: "setPaper"; paper: NotebookPageDoc["paper"] }
-  | { type: "setCover"; cover: NotebookPageDoc["cover"] }
   | { type: "addStroke"; stroke: NotebookInkStroke }
   | { type: "eraseStrokes"; ids: string[] }
   | { type: "clearInk" }
@@ -53,7 +52,10 @@ function pushHistory(state: PageState): NotebookPageDoc[] {
   return [...state.past, state.doc].slice(-MAX_HISTORY);
 }
 
-export function notebookPageReducer(state: PageState, action: PageAction): PageState {
+export function notebookPageReducer(
+  state: PageState,
+  action: PageAction,
+): PageState {
   switch (action.type) {
     case "replace":
       // Loading a page is not an edit — it resets history rather than becoming undoable.
@@ -129,21 +131,6 @@ export function notebookPageReducer(state: PageState, action: PageAction): PageS
       };
 
     /*
-     * No history entry, unlike every other edit here.
-     *
-     * The cover is a property of the book that happens to be stored on this page, not something
-     * drawn on it — undoing a sticker should not also repaint the binding, and a student pressing
-     * undo after changing the cover is undoing the sticker they placed before it. Marked dirty so
-     * the existing autosave carries it, and nothing else.
-     */
-    case "setCover":
-      return {
-        ...state,
-        doc: { ...state.doc, cover: action.cover },
-        dirty: true,
-      };
-
-    /*
      * One checkpoint per finished stroke, unlike `patch`. A stroke is a whole gesture already —
      * the pointer plumbing accumulates samples in its own state and only reaches the reducer when
      * the pen lifts — so one undo step per stroke is exactly what a drawer expects.
@@ -164,7 +151,9 @@ export function notebookPageReducer(state: PageState, action: PageAction): PageS
     case "eraseStrokes": {
       if (action.ids.length === 0) return state;
       const doomed = new Set(action.ids);
-      const remaining = state.doc.ink.filter((stroke) => !doomed.has(stroke.id));
+      const remaining = state.doc.ink.filter(
+        (stroke) => !doomed.has(stroke.id),
+      );
       // Erasing over blank paper is a no-op, not an undo step that appears to do nothing.
       if (remaining.length === state.doc.ink.length) return state;
       return {

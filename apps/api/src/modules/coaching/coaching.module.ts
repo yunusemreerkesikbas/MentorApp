@@ -39,6 +39,7 @@ import { PreferenceScenarioRepository } from "./infrastructure/preference-scenar
 import { CoachingErasureRepository } from "./infrastructure/coaching-erasure.repository";
 import { CoachingController } from "./presentation/coaching.controller";
 import { MistakeNotebookController } from "./presentation/mistake-notebook.controller";
+import { NotebooksController } from "./presentation/notebooks.controller";
 import { MockExamController } from "./presentation/mock-exam.controller";
 import { PlanTaskController } from "./presentation/plan-task.controller";
 import { StudySessionController } from "./presentation/study-session.controller";
@@ -58,6 +59,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     StudySessionController,
     MockExamController,
     MistakeNotebookController,
+    NotebooksController,
   ],
   providers: [
     PlanService,

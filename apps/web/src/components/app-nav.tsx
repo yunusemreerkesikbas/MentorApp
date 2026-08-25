@@ -21,6 +21,7 @@ import {
   isBoardEditorPath,
   isCommunityPath,
   isDefaultCollapsedSidebarPath,
+  isImmersiveEditorPath,
   parseAppSidebarCookie,
 } from "@/lib/app-sidebar";
 import { useAuth } from "@/lib/auth-context";
@@ -45,17 +46,34 @@ const TAB_EASE = [0.22, 1, 0.36, 1] as const;
 const NAV_ITEMS = [
   { href: "/dashboard", labelKey: "home", icon: House },
   { href: "/plan", labelKey: "plan", icon: Calendar },
-  { href: "/coach", labelKey: "coach", icon: MessageCircle, sidebarExclude: true },
+  {
+    href: "/coach",
+    labelKey: "coach",
+    icon: MessageCircle,
+    sidebarExclude: true,
+  },
   { href: "/analysis", labelKey: "analysis", icon: ChartColumn },
   { href: "/knowledge", labelKey: "knowledge", icon: BookOpen },
   /* Sidebar-only for now: the mobile tab pill is full at five, and the notebook's own return
      path is the review notification, not a tab the user hunts for. */
-  { href: "/notebook", labelKey: "notebook", icon: NotebookPen, sidebarOnly: true },
+  {
+    href: "/notebooks",
+    labelKey: "notebook",
+    icon: NotebookPen,
+    sidebarOnly: true,
+  },
   { href: "/community", labelKey: "community", icon: Users, sidebarOnly: true },
-  { href: "/settings", labelKey: "settings", icon: Settings, sidebarOnly: true },
+  {
+    href: "/settings",
+    labelKey: "settings",
+    icon: Settings,
+    sidebarOnly: true,
+  },
 ] as const;
 
-const TAB_ITEMS = NAV_ITEMS.filter((i) => !("sidebarOnly" in i && i.sidebarOnly));
+const TAB_ITEMS = NAV_ITEMS.filter(
+  (i) => !("sidebarOnly" in i && i.sidebarOnly),
+);
 const SIDEBAR_ITEMS = NAV_ITEMS.filter(
   (i) => !("sidebarExclude" in i && i.sidebarExclude),
 );
@@ -112,8 +130,8 @@ export function AppNav() {
     };
   }, []);
 
-  const isBoardEditor = isBoardEditorPath(pathname);
-  const hideMobileChrome = isBoardEditor || isCommunityPath(pathname);
+  const hideMobileChrome =
+    isImmersiveEditorPath(pathname) || isCommunityPath(pathname);
 
   return (
     <>

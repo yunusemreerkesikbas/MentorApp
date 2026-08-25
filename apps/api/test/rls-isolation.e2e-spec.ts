@@ -23,6 +23,8 @@ describe("RLS isolation (e2e)", () => {
   let probe: Pool; // NOSUPERUSER NOBYPASSRLS — the connection the policies actually filter
   let idA = "";
   let idB = "";
+  let notebookA = "";
+  let notebookB = "";
   let forumThreadA = "";
   let forumThreadB = "";
   let activeTagId = "";
@@ -91,6 +93,22 @@ describe("RLS isolation (e2e)", () => {
     };
     idA = await mkUser("a");
     idB = await mkUser("b");
+
+    const seededNotebooks = await admin.query<{ id: string; user_id: string }>(
+      `insert into notebooks (user_id, kind)
+       values ($1, 'MISTAKE'), ($2, 'MISTAKE')
+       returning id, user_id`,
+      [idA, idB],
+    );
+    notebookA = seededNotebooks.rows.find((row) => row.user_id === idA)!.id;
+    notebookB = seededNotebooks.rows.find((row) => row.user_id === idB)!.id;
+    await admin.query(
+      `insert into notebook_pages (user_id, notebook_id, page_index, doc)
+       values
+         ($1, $2, 0, '{"version":1,"paper":"ruled","items":[],"ink":[]}'::jsonb),
+         ($3, $4, 0, '{"version":1,"paper":"grid","items":[],"ink":[]}'::jsonb)`,
+      [idA, notebookA, idB, notebookB],
+    );
 
     for (const id of [idA, idB]) {
       await admin.query(
@@ -189,6 +207,8 @@ describe("RLS isolation (e2e)", () => {
     "coach_profiles",
     "coach_memory_facts",
     "ledger_entries",
+    "notebooks",
+    "notebook_pages",
   ];
 
   it.each(TABLES)("as user A, B's %s rows are invisible", async (table) => {
@@ -244,6 +264,28 @@ describe("RLS isolation (e2e)", () => {
       [idB],
     );
     expect(res.rows[0].n).toBeGreaterThan(0);
+  });
+
+  it("rejects a page that names the current user but belongs to another user's notebook", async () => {
+    await expect(
+      asProbe({ userId: idA }, (c) =>
+        c.query(
+          `insert into notebook_pages (user_id, notebook_id, page_index, doc)
+           values ($1, $2, 9, '{"version":1,"paper":"plain","items":[],"ink":[]}'::jsonb)`,
+          [idA, notebookB],
+        ),
+      ),
+    ).rejects.toMatchObject({ code: "23503" });
+
+    const own = await asProbe({ userId: idA }, (c) =>
+      c.query(
+        `insert into notebook_pages (user_id, notebook_id, page_index, doc)
+         values ($1, $2, 9, '{"version":1,"paper":"plain","items":[],"ink":[]}'::jsonb)
+         returning id`,
+        [idA, notebookA],
+      ),
+    );
+    expect(own.rowCount).toBe(1);
   });
 
   it("forum_tags exposes only active tags to authenticated users and none without context", async () => {

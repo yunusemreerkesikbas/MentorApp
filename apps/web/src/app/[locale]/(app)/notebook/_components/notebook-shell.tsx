@@ -40,14 +40,6 @@ import type {
 } from "@mentor/types";
 
 /**
- * The page the cover rides on.
- *
- * Zero rather than "the first page" as a concept: the notebook has no book-level record, so the
- * cover is stored on a page, and it has to be a page that always exists.
- */
-const COVER_PAGE_INDEX = 0;
-
-/**
  * How the mobile page slides.
  *
  * Faster than the desktop leaf, and not the same kind of motion at all: a leaf turning is an object
@@ -98,9 +90,11 @@ import { clearSpentQueryParam } from "@/lib/spent-query-param";
 import {
   deleteNotebookEntry,
   fetchDueEntries,
+  fetchNotebook,
   fetchNotebookOverview,
   fetchNotebookPage,
   saveNotebookPage,
+  updateNotebook,
 } from "@/lib/notebook";
 import {
   createNoteItem,
@@ -140,7 +134,7 @@ interface ExamContext {
  * side rather than made to juggle two documents internally, which keeps each hook exactly as small
  * as it was for the single-page shell.
  */
-export function NotebookShell() {
+export function NotebookShell({ notebookId }: { notebookId?: string }) {
   const t = useTranslations("notebook");
   const toast = useMentorToast();
   const reduceMotion = useReducedMotion();
@@ -158,16 +152,12 @@ export function NotebookShell() {
    * column has existed since the table was created with nothing ever filling it.
    */
   const [mockExamId, setMockExamId] = useState<string | null>(null);
-  /**
-   * The book's cover, which lives on page zero.
-   *
-   * Held here rather than read off an open page because the cover is on screen before any page is:
-   * the shell opens on the closed book. One fetch of page zero at mount answers it, and that is the
-   * page the book opens onto anyway.
-   */
+  /** Book-level metadata, composed for the existing cover controls. */
   const [cover, setCover] = useState<NotebookCoverDoc | null>(null);
   /** The rail always has a "current" category; whether its panel is showing is separate. */
-  const [activePanel, setActivePanel] = useState<NotebookPanelCategory>("add");
+  const [activePanel, setActivePanel] = useState<NotebookPanelCategory>(
+    notebookId ? "sticker" : "add",
+  );
   const [detailCollapsed, setDetailCollapsed] = useState(true);
   /** The one text item currently being typed into, in place, on whichever side it lives. */
   const [editingText, setEditingText] = useState<{
@@ -313,38 +303,55 @@ export function NotebookShell() {
     let cancelled = false;
 
     async function load() {
-      const [overviewResult, dueResult, examResult, coverResult] =
-        await Promise.allSettled([
-          fetchNotebookOverview(),
-          fetchDueEntries(),
-          (async (): Promise<ExamContext | null> => {
-            const me = (await usersControllerMe()) as unknown as AuthUser;
-            if (!me.examType) return null;
-            const calendar = (await contentControllerCalendarByFamily(
-              me.examType,
-            )) as unknown as ExamCalendarDto | null;
-            const current = calendar?.exam ?? null;
-            if (!current) return null;
-            // Both taxonomies in one round-trip pair: the topic list is small enough to hold whole,
-            // which spares the picker a fetch every time the subject changes.
-            const [subjects, topics] = await Promise.all([
-              contentControllerSubjectsBySlug(
-                current.slug,
-              ) as unknown as Promise<ExamSubjectDto[]>,
-              fetchExamTopics(current.slug),
-            ]);
-            return { id: current.id, subjects, topics };
-          })(),
-          // The cover, which is stored on page zero — the page the book opens onto anyway.
-          fetchNotebookPage(COVER_PAGE_INDEX),
-        ]);
+      if (notebookId) {
+        try {
+          const notebook = await fetchNotebook(notebookId);
+          if (cancelled) return;
+          setOverview({
+            notebook,
+            pageCount: notebook.pageCount,
+            entryCount: 0,
+            dueCount: 0,
+            healedCount: 0,
+          });
+          setCover({ ...notebook.cover, title: notebook.title });
+        } catch {
+          if (!cancelled) setError(t("error_load"));
+        }
+        return;
+      }
+
+      const [overviewResult, dueResult, examResult] = await Promise.allSettled([
+        fetchNotebookOverview(),
+        fetchDueEntries(),
+        (async (): Promise<ExamContext | null> => {
+          const me = (await usersControllerMe()) as unknown as AuthUser;
+          if (!me.examType) return null;
+          const calendar = (await contentControllerCalendarByFamily(
+            me.examType,
+          )) as unknown as ExamCalendarDto | null;
+          const current = calendar?.exam ?? null;
+          if (!current) return null;
+          // Both taxonomies in one round-trip pair: the topic list is small enough to hold whole,
+          // which spares the picker a fetch every time the subject changes.
+          const [subjects, topics] = await Promise.all([
+            contentControllerSubjectsBySlug(current.slug) as unknown as Promise<
+              ExamSubjectDto[]
+            >,
+            fetchExamTopics(current.slug),
+          ]);
+          return { id: current.id, subjects, topics };
+        })(),
+      ]);
       if (cancelled) return;
 
-      if (coverResult.status === "fulfilled")
-        setCover(coverResult.value.doc.cover ?? null);
-      if (overviewResult.status === "fulfilled")
+      if (overviewResult.status === "fulfilled") {
         setOverview(overviewResult.value);
-      else setError(t("error_load"));
+        setCover({
+          ...overviewResult.value.notebook.cover,
+          title: overviewResult.value.notebook.title,
+        });
+      } else setError(t("error_load"));
 
       if (dueResult.status === "fulfilled") {
         setDue(dueResult.value);
@@ -382,7 +389,7 @@ export function NotebookShell() {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [notebookId, t]);
 
   // Fetch both facing pages together: neither needs the other's answer, and chaining them would
   // make the right page visibly pop in a beat after the left one.
@@ -391,7 +398,10 @@ export function NotebookShell() {
     let cancelled = false;
     const { left } = view;
 
-    Promise.all([fetchNotebookPage(left), fetchNotebookPage(left + 1)])
+    Promise.all([
+      fetchNotebookPage(left, notebookId),
+      fetchNotebookPage(left + 1, notebookId),
+    ])
       .then(([leftData, rightData]) => {
         if (cancelled) return;
         setLeftMeta(leftData);
@@ -406,7 +416,7 @@ export function NotebookShell() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- dispatch identities are stable
-  }, [view, t]);
+  }, [view, t, notebookId]);
 
   /*
    * Autosave rather than a save button: the user came here to review, and a page that silently
@@ -426,26 +436,26 @@ export function NotebookShell() {
     const index = view.left;
     const doc = leftPage.state.doc;
     const timer = setTimeout(() => {
-      saveNotebookPage(index, doc)
+      saveNotebookPage(index, doc, notebookId)
         .then(() => leftPage.dispatch({ type: "saved" }))
         .catch(() => undefined);
     }, AUTOSAVE_DELAY_MS);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- dispatch identity is stable
-  }, [leftPage.state.dirty, leftPage.state.doc, view]);
+  }, [leftPage.state.dirty, leftPage.state.doc, view, notebookId]);
 
   useEffect(() => {
     if (view.kind !== "spread" || !rightPage.state.dirty) return;
     const index = view.left + 1;
     const doc = rightPage.state.doc;
     const timer = setTimeout(() => {
-      saveNotebookPage(index, doc)
+      saveNotebookPage(index, doc, notebookId)
         .then(() => rightPage.dispatch({ type: "saved" }))
         .catch(() => undefined);
     }, AUTOSAVE_DELAY_MS);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- dispatch identity is stable
-  }, [rightPage.state.dirty, rightPage.state.doc, view]);
+  }, [rightPage.state.dirty, rightPage.state.doc, view, notebookId]);
 
   /**
    * The vision board's "Kaydet" button, for the same reason it has one: an autosave that just
@@ -460,14 +470,16 @@ export function NotebookShell() {
     try {
       await Promise.all([
         leftPage.state.dirty
-          ? saveNotebookPage(view.left, leftPage.state.doc).then(() =>
-              leftPage.dispatch({ type: "saved" }),
+          ? saveNotebookPage(view.left, leftPage.state.doc, notebookId).then(
+              () => leftPage.dispatch({ type: "saved" }),
             )
           : null,
         rightPage.state.dirty
-          ? saveNotebookPage(view.left + 1, rightPage.state.doc).then(() =>
-              rightPage.dispatch({ type: "saved" }),
-            )
+          ? saveNotebookPage(
+              view.left + 1,
+              rightPage.state.doc,
+              notebookId,
+            ).then(() => rightPage.dispatch({ type: "saved" }))
           : null,
       ]);
     } finally {
@@ -480,6 +492,7 @@ export function NotebookShell() {
     leftPage.state.doc,
     rightPage.state.dirty,
     rightPage.state.doc,
+    notebookId,
   ]);
 
   /* Read off the hooks up front: `turn` needs only the two papers, and depending on the hook objects
@@ -907,35 +920,28 @@ export function NotebookShell() {
     [placeEntryOnPage],
   );
 
-  /**
-   * Persist a cover change.
-   *
-   * Two paths, because page zero may or may not be one of the two open pages. Open, it goes through
-   * that page's own reducer and rides the autosave that is already running — anything else would
-   * race it, and the loser overwrites the winner. Closed, its document is fetched fresh and saved
-   * back: fresher than a copy taken at mount, which by then may be minutes and several edits old.
-   */
+  /** Persist book-level cover metadata independently from page autosave. */
   const handleCover = useCallback(
     async (next: NotebookCoverDoc) => {
+      const id = overview?.notebook.id;
+      if (!id) return;
+      const previous = cover;
       setCover(next);
-      const openSide =
-        leftMeta?.pageIndex === COVER_PAGE_INDEX
-          ? leftPage
-          : rightMeta?.pageIndex === COVER_PAGE_INDEX
-            ? rightPage
-            : null;
-      if (openSide) {
-        openSide.dispatch({ type: "setCover", cover: next });
-        return;
-      }
       try {
-        const page = await fetchNotebookPage(COVER_PAGE_INDEX);
-        await saveNotebookPage(COVER_PAGE_INDEX, { ...page.doc, cover: next });
+        const updated = await updateNotebook(id, {
+          title: next.title?.trim() || null,
+          cover: { color: next.color, material: next.material },
+        });
+        setOverview((current) =>
+          current ? { ...current, notebook: updated } : current,
+        );
+        setCover({ ...updated.cover, title: updated.title });
       } catch {
+        setCover(previous);
         setError(t("error_save"));
       }
     },
-    [leftMeta, leftPage, rightMeta, rightPage, t],
+    [cover, overview?.notebook.id, t],
   );
 
   const handleReviewed = useCallback(
@@ -1175,7 +1181,9 @@ export function NotebookShell() {
                     "color-mix(in srgb, var(--color-main) 10%, transparent)",
                 }}
               >
-                {RAIL_CATEGORIES.map(({ id, icon: Icon, labelKey }) => {
+                {RAIL_CATEGORIES.filter(
+                  ({ id }) => !notebookId || (id !== "add" && id !== "index"),
+                ).map(({ id, icon: Icon, labelKey }) => {
                   // "Çiz" has no panel to expand — `openCategory` always collapses the side panel
                   // for it — so its pressed state can't depend on `detailCollapsed` the way every
                   // other rail button's does, or it would never look pressed at all.
@@ -1546,11 +1554,21 @@ export function NotebookShell() {
                   >
                     <NotebookCover
                       cover={cover}
-                      title={cover?.title?.trim() || t("cover_title")}
-                      subtitle={t("cover_subtitle", {
-                        entries: overview?.entryCount ?? 0,
-                        healed: overview?.healedCount ?? 0,
-                      })}
+                      title={
+                        cover?.title?.trim() ||
+                        overview?.notebook.title ||
+                        t("cover_title")
+                      }
+                      subtitle={
+                        notebookId
+                          ? t("cover_custom_subtitle", {
+                              pages: overview?.pageCount ?? 0,
+                            })
+                          : t("cover_subtitle", {
+                              entries: overview?.entryCount ?? 0,
+                              healed: overview?.healedCount ?? 0,
+                            })
+                      }
                       onOpen={() => goPage(1)}
                       openLabel={t("cover_open")}
                     />

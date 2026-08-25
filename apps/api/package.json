@@ -11,6 +11,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint \"src/**/*.ts\"",
     "test": "vitest run",
+    "test:unit": "vitest run --config vitest.unit.config.ts",
     "test:live:openai": "vitest run --config vitest.live.config.ts",
     "test:eval:openai": "vitest run --config vitest.eval.config.ts",
     "test:watch": "vitest",

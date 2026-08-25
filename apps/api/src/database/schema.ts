@@ -1263,6 +1263,50 @@ export const mistakeNotebookEntries = pgTable(
   ],
 );
 
+/** User-owned notebook collection. The MISTAKE row is the protected system book. */
+export const notebooks = pgTable(
+  "notebooks",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    /** MISTAKE | CUSTOM. */
+    kind: text("kind").notNull(),
+    /** SOFT ref → content.exams. */
+    examId: uuid("exam_id"),
+    /** SOFT ref → content subject slug. */
+    subjectRef: text("subject_ref"),
+    /** Null only for the system notebook, whose display title is localized by the client. */
+    title: text("title"),
+    coverColor: text("cover_color").notNull().default("navy"),
+    coverMaterial: text("cover_material").notNull().default("cloth"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("notebooks_one_mistake_per_user_idx")
+      .on(t.userId)
+      .where(sql`${t.kind} = 'MISTAKE'`),
+    uniqueIndex("notebooks_id_user_unique_idx").on(t.id, t.userId),
+    index("notebooks_user_updated_idx").on(t.userId, t.updatedAt),
+    check("notebooks_kind_check", sql`${t.kind} IN ('MISTAKE', 'CUSTOM')`),
+    check(
+      "notebooks_title_check",
+      sql`(${t.title} IS NULL AND ${t.kind} = 'MISTAKE') OR char_length(${t.title}) BETWEEN 1 AND 40`,
+    ),
+  ],
+);
+
 /**
  * One row per notebook page. Unlike the vision board's single document per user, a notebook grows
  * without bound — saving one page must not rewrite the whole book, and turning to a page must not
@@ -1271,8 +1315,8 @@ export const mistakeNotebookEntries = pgTable(
  * `doc` shape is owned by `notebookPageDocSchema` (@mentor/validation): `{ version, paper, items }`
  * where an item is an entry reference, a sticker or a text block. Entry *content* is never in here.
  */
-export const mistakeNotebookPages = pgTable(
-  "mistake_notebook_pages",
+export const notebookPages = pgTable(
+  "notebook_pages",
   {
     id: uuid("id")
       .primaryKey()
@@ -1280,6 +1324,7 @@ export const mistakeNotebookPages = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    notebookId: uuid("notebook_id").notNull(),
     pageIndex: integer("page_index").notNull(),
     doc: jsonb("doc").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -1289,7 +1334,18 @@ export const mistakeNotebookPages = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [uniqueIndex("mistake_notebook_pages_user_idx").on(t.userId, t.pageIndex)],
+  (t) => [
+    uniqueIndex("notebook_pages_notebook_page_idx").on(
+      t.notebookId,
+      t.pageIndex,
+    ),
+    index("notebook_pages_user_idx").on(t.userId),
+    foreignKey({
+      name: "notebook_pages_notebook_user_fk",
+      columns: [t.notebookId, t.userId],
+      foreignColumns: [notebooks.id, notebooks.userId],
+    }).onDelete("cascade"),
+  ],
 );
 
 /* ===================== W4 · payments =====================

@@ -10,6 +10,7 @@ import {
   isBoardEditorPath,
   isCommunityPath,
   isDefaultCollapsedSidebarPath,
+  isImmersiveEditorPath,
   parseAppSidebarCookie,
 } from "./app-sidebar";
 
@@ -48,6 +49,17 @@ describe("isCommunityPath", () => {
     expect(isCommunityPath("/topluluk")).toBe(true);
     expect(isCommunityPath("/en/topluluk/akis")).toBe(true);
     expect(isCommunityPath("/dashboard")).toBe(false);
+  });
+});
+
+describe("isImmersiveEditorPath", () => {
+  it("matches notebook detail and legacy notebook editors without matching the collection", () => {
+    expect(isImmersiveEditorPath("/notebooks/notebook-id")).toBe(true);
+    expect(isImmersiveEditorPath("/defterlerim/notebook-id")).toBe(true);
+    expect(isImmersiveEditorPath("/en/notebook")).toBe(true);
+    expect(isImmersiveEditorPath("/yanlis-defteri")).toBe(true);
+    expect(isImmersiveEditorPath("/notebooks")).toBe(false);
+    expect(isImmersiveEditorPath("/defterlerim")).toBe(false);
   });
 });
 

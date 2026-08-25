@@ -114,6 +114,28 @@ describe("account erasure (e2e)", () => {
       .send({ mood: 4 })
       .expect(200);
 
+    for (const [auth, label] of [
+      [asA, "A"],
+      [asB, "B"],
+    ] as const) {
+      await request(app.getHttpServer()).get("/v1/coaching/notebooks").set(auth).expect(200);
+      const notebook = await request(app.getHttpServer())
+        .post("/v1/coaching/notebooks")
+        .set(auth)
+        .send({
+          title: `Erasure notebook ${label}`,
+          examId: null,
+          subjectRef: null,
+          cover: { color: "navy", material: "cloth" },
+        });
+      expect(notebook.status).toBe(201);
+      await request(app.getHttpServer())
+        .put(`/v1/coaching/notebooks/${notebook.body.id}/pages/0`)
+        .set(auth)
+        .send({ doc: { version: 1, paper: "ruled", items: [], ink: [] } })
+        .expect(200);
+    }
+
     // --- AI trace (SQL seed — the chat API is premium/coin-gated) -----------
     await svc(async (c) => {
       const conv = await c.query(
@@ -283,6 +305,13 @@ describe("account erasure (e2e)", () => {
     });
     expect(mood.struggle_note).toBeNull();
     expect(mood.ai_reflection).toBeNull();
+  });
+
+  it("coaching: owned notebooks and their pages are erased by cascade", async () => {
+    expect(await countRows("notebooks", "user_id=$1", [idA])).toBe(0);
+    expect(await countRows("notebook_pages", "user_id=$1", [idA])).toBe(0);
+    expect(await countRows("notebooks", "user_id=$1", [idB])).toBeGreaterThan(0);
+    expect(await countRows("notebook_pages", "user_id=$1", [idB])).toBeGreaterThan(0);
   });
 
   it("ai: coach conversations and messages are gone (regression)", async () => {

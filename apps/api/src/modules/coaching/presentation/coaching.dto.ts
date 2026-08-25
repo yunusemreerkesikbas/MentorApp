@@ -5,13 +5,16 @@ import {
   createMoodCheckinSchema,
   createMockExamSchema,
   createNotebookEntrySchema,
+  createNotebookSchema,
   createPlanTaskSchema,
   linkNotebookThreadSchema,
   listNotebookEntriesQuerySchema,
+  listNotebooksQuerySchema,
   notebookImageUploadUrlSchema,
   putNotebookPageSchema,
   reviewNotebookEntrySchema,
   updateNotebookEntrySchema,
+  updateNotebookSchema,
   listMockExamsQuerySchema,
   listMoodCheckinsQuerySchema,
   listPlanTasksQuerySchema,
@@ -68,6 +71,11 @@ export class RefreshPreferenceSimulationDto extends createZodDto(
 export class CreateNotebookEntryDto extends createZodDto(
   createNotebookEntrySchema,
 ) {}
+export class CreateNotebookDto extends createZodDto(createNotebookSchema) {}
+export class UpdateNotebookDto extends createZodDto(updateNotebookSchema) {}
+export class ListNotebooksQueryDto extends createZodDto(
+  listNotebooksQuerySchema,
+) {}
 export class ListNotebookEntriesQueryDto extends createZodDto(
   listNotebookEntriesQuerySchema,
 ) {}
@@ -78,9 +86,9 @@ export class ReviewNotebookEntryDto extends createZodDto(
   reviewNotebookEntrySchema,
 ) {}
 export class PutNotebookPageDto extends createZodDto(putNotebookPageSchema) {}
-export class LinkNotebookThreadDto extends createZodDto(linkNotebookThreadSchema) {}
+export class LinkNotebookThreadDto extends createZodDto(
+  linkNotebookThreadSchema,
+) {}
 export class NotebookImageUploadUrlDto extends createZodDto(
   notebookImageUploadUrlSchema,
 ) {}
-
-

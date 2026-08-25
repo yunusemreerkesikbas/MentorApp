@@ -15,6 +15,15 @@ export function isBoardEditorPath(pathname: string): boolean {
   return /(?:^|\/)(?:vision-board\/board|hedef\/pano)\/?$/.test(pathname);
 }
 
+/** Full-screen editors whose controls must not sit underneath the mobile app chrome. */
+export function isImmersiveEditorPath(pathname: string): boolean {
+  return (
+    isBoardEditorPath(pathname) ||
+    /(?:^|\/)(?:notebook|yanlis-defteri)\/?$/.test(pathname) ||
+    /(?:^|\/)(?:notebooks|defterlerim)\/[^/]+\/?$/.test(pathname)
+  );
+}
+
 /** Canonical `/community` or public `/topluluk` (optional locale prefix and nested routes). */
 export function isCommunityPath(pathname: string): boolean {
   return /(?:^|\/)(?:community|topluluk)(?:\/|$)/.test(pathname);
