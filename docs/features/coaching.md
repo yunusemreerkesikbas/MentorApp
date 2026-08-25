@@ -3295,3 +3295,161 @@ pnpm --filter @mentor/api test
   sürükleniyor, sayfa üzerinde yatay bir sürükleme "kartı taşı" mı "sayfayı çevir" mi belirsiz kalır.
   İlgili: `notebook-shell.tsx`.
 
+- **Defterlerim koleksiyonu (2026-08-25)** — `coaching` içine kullanıcıya ait `notebooks` üst
+  kaynağı eklendi. `/defterlerim` (`/notebooks`) sistem **Yanlış Defteri**ni sabit ilk kartta ve
+  custom defterleri son kullanıma göre 12’li sayfalama ile gösterir; kullanıcı genel veya mevcut
+  sınav taksonomisinden tek derse bağlı defter oluşturabilir, düzenleyebilir ve silebilir. İlk
+  custom defter başarıyla oluşturulunca editöre geçilir. Custom editörde yalnız not, sticker,
+  kalem, kâğıt/kapak, undo/redo ve autosave vardır; fotoğraf, yanlış kartı, arama/tekrar, AI ve dosya
+  eki yoktur. API de custom sayfadaki `entry` item’ını `400` ile reddeder; sistem defteri silme
+  `403`, sahip olunmayan defter `404` olur.
+
+  Migration mevcut her kullanıcı için tek `MISTAKE` kaydı açar, eski
+  `mistake_notebook_pages` tablosunu `notebook_pages` olarak yeniden adlandırır, sayfaları sistem
+  defterine bağlar ve sayfa 0’daki `cover` başlık/renk/malzeme verisini kitap metadata’sına kayıpsız
+  taşıdıktan sonra JSON’dan kaldırır. Sayfalar custom defter silinince cascade olur; KVKK hesap
+  silme artık koleksiyon kökünü siler. Yeni kullanıcıda sistem defteri koleksiyon veya legacy
+  yanlış-defteri erişiminde idempotent oluşturulur. `/v1/coaching/notebook/**` uçları korunur;
+  overview yalnız additive `notebook` metadata alanı kazanır ve custom sayfalar yanlış/tekrar
+  sayaçlarına girmez. Önceki “kapak sayfa 0 JSON’unda saklanır” timeline kararı bu geliştirmeyle
+  sona ermiştir.
+
+  İlgili: `0084_unknown_old_lace.sql`, `schema.ts`, `mistake-notebook.repository.ts`,
+  `mistake-notebook.service.ts`, `notebooks.controller.ts`, `packages/{types,validation}`,
+  `apps/web/src/lib/notebook.ts`, `notebooks/`, `notebook-shell.tsx`, `app-nav.tsx`,
+  `routing.ts`, `messages/{tr,en}.json`.
+
+- **Defterlerim release hardening (2026-08-25)** — `0084`, sayfanın `notebook_id` ile başka
+  kullanıcının `user_id` değerini birleştirmesini artık veritabanı seviyesinde de reddeder:
+  `notebooks(id,user_id)` benzersiz anahtarı ve `notebook_pages(notebook_id,user_id)` composite FK
+  birlikte çalışır; mevcut repository sahiplik filtresi ve RLS ikinci/üçüncü koruma olarak kalır.
+  Migration provası her çalıştırmada benzersiz geçici veritabanı açar, `0083` sonuna kadar legacy
+  durumu kurar, kapak/sayfa taşımasını ve `0085` zincirini doğrular, yalnız kendi veritabanını
+  `finally` içinde siler. Gerçek Postgres HTTP E2E paketi plural CRUD, legacy delegasyon,
+  taksonomi, sahiplik, RLS, cascade, sayaç ayrışması ve KVKK silmeyi kapsar.
+
+  Web'de create/delete sonrasında koleksiyon sunucudan yeniden ilk sayfaya alınır; yükleme devamı
+  ve silme hataları mevcut kartları bozmadan inline yeniden deneme sunar. Dialog ilk alan odağı,
+  44px hedefler, focus ring ve reduced-motion doğrulandı. Mobil defter editörü tam ekran chrome
+  kullanır; böylece üst navigasyon editör araçlarının dokunma alanını kapatmaz.
+
+  **Rollout checklist (deploy bu PR'nin parçası değil):**
+
+  1. Staging yedeği/PITR ve uygulama sürümünü kaydet; aktif migration'ın `0083` olduğunu doğrula.
+  2. `0084`ü uygula. Salt-okunur smoke sorgularıyla kullanıcı başına tek `MISTAKE`, toplam
+     `notebook_pages`, boşta kalan sayfa ve `doc ? 'cover'` sayılarını kontrol et; çapraz kullanıcı
+     eşleşmesi sıfır olmalı.
+  3. Additive API'yi çıkar; plural CRUD, legacy overview/page ve sahiplik `404` smoke'larını çalıştır.
+  4. Web'i çıkar; TR/EN koleksiyon, create/edit/delete, load-more retry ve custom autosave smoke'larını
+     masaüstü/mobilde tamamla.
+  5. Çalışma masası açılacaksa `0085`i uygula, API/web'i çıkar ve ancak smoke sonrası
+     `coaching.study_rooms.enabled` bayrağını etkinleştir. Production'da aynı sırayı tekrarla.
+  6. Sorunda uygulamayı önceki sürüme döndür; additive şemayı yerinde bırak. Eski tablo modeline
+     dönüş SQL'i çalıştırma; gözlenen veriyle forward-fix migration hazırla.
+
+  `0084` sonrası smoke sorguları (dördü de `0` dönmeli):
+
+  ```sql
+  SELECT count(*) FROM (
+    SELECT u.id FROM users u LEFT JOIN notebooks n ON n.user_id = u.id AND n.kind = 'MISTAKE'
+    GROUP BY u.id HAVING count(n.id) <> 1
+  ) users_without_exactly_one_system_notebook;
+  SELECT count(*) FROM notebook_pages p LEFT JOIN notebooks n ON n.id = p.notebook_id
+  WHERE n.id IS NULL;
+  SELECT count(*) FROM notebook_pages p JOIN notebooks n ON n.id = p.notebook_id
+  WHERE p.user_id <> n.user_id;
+  SELECT count(*) FROM notebook_pages WHERE doc ? 'cover';
+  ```
+
+  İlgili: `notebook-collection-migration.spec.ts`, `notebook-migration.e2e-spec.ts`,
+  `notebooks.e2e-spec.ts`, `rls-isolation.e2e-spec.ts`, `account-erasure.e2e-spec.ts`,
+  `notebooks-shell.tsx`, `e2e/notebooks.spec.ts`, `app-sidebar.ts`.
+
+- **Çalışma masası — Dilim 1: çekirdek (2026-08-25)** — `/seans`'taki birlikte-çalışma akışı
+  username ile arkadaş eklemeye dayanıyordu (karşı tarafın kullanıcı adını bilmeyi + kabul beklemeyi
+  gerektirir, cold-start'ta ölü). Yerine **davet kodlu, temalı, kalıcı çalışma masası** geldi:
+  kurucu masayı açar, `MASA-XXXXXX` kodunu paylaşır, gelen kişi kodla katılır. Buddy silinmedi —
+  rolü daraldı: **buddy = asenkron hesap verebilirlik**, **masa = eş zamanlı birlikte çalışma**
+  (buddy kartındaki çakışan iki yüzey Dilim 3'te kaldırılacak).
+
+  **Sayaç hiç değişmedi.** Masa yalnızca zemin + koltuk + "kim şu an odakta" sinyali katıyor;
+  herkes kendi Pomodorosunu tutuyor (body-doubling). Masada çalışmaya başlamak `/seans?room=<id>`'e
+  yönlendirir, yani uygulamada tek bir timer implementasyonu kalır.
+
+  **Presence yeni altyapı istemedi.** `study_sessions_self_or_service` politikası SERVICE rolüne tam
+  okuma verdiği için bir masanın tüm koltukları `findRunningByRooms` ile **tek indexli sorguda**
+  geliyor (`study_sessions_room_status_idx` + mevcut `runningNow` stale koruması). WebSocket, Redis
+  ve heartbeat yok; istemci 30 sn'de bir poll ediyor.
+
+  **Üyelik ≠ oturma.** Kişi başı **3 aktif** masa üyeliği var ama aynı anda tek koltuk: hangi masada
+  oturulduğunu `study_sessions.room_id` belirler. Üç masaya üye biri seans başlattığında yalnız
+  seçtiği masada canlı görünür, diğerlerinde koltuğu soluk kalır. Bu kolon ayrıca masa geçmişini de
+  bedavaya veriyor (masa kapanınca `set null` — seans kaydı korunur, yalnız etiketini kaybeder).
+
+  **Arşiv cron'u bilinçli olarak yok.** Kota `study_rooms.last_active_at > now() - 60 gün`
+  filtresiyle sayılıyor; ölü masa kotayı yemiyor, silinmiyor da — yeniden oturulunca canlanıyor.
+  `archived_at` kolonu ve sweep job'ı eklenmedi.
+
+  **Bilinçli v1 sınırları:** sohbet ve tepki yok (roadmap §257 "sohbet kısıtlı"; moderasyon
+  maliyeti sıfır kalsın diye hiç açılmadı) · ekonomiye dokunulmadı, masada çalışmak da tek başına
+  çalışmak da aynı XP'yi verir, coin yok (§106) · **ban listesi yok**, çıkarılan üye aynı kodla geri
+  dönebilir, sahibin kodu da yenilemesi gerekir (ban Faz-2 public odalarla gelecek) · mola sunucuya
+  bildirilmiyor, koltuk "18 dk'dır masada" der, "molada" demez · masa seçimi seans **başlarken**
+  yapılır, ortasında değiştirilemez.
+
+  **Gotcha:** `study_rooms` / `study_room_members` tablolarında **RLS politikası yok** — satırlar
+  doğası gereği cross-user okunuyor; repo SERVICE context'te çalışır ve açık WHERE ile scope'lanır
+  (`buddy_pairs` / `user_follows` ile aynı güven modeli). Yarışabilecek her şey (katılma =
+  kapasite + kota, ayrılma = sahiplik devri, kapasite düşürme) masa satırına `select … for update`
+  kilidi alan tek bir transaction içinde. Özellik `coaching.study_rooms.enabled` bayrağının
+  arkasında ve varsayılanı `false`; her uç `assertEnabled()`'dan geçer.
+
+  İlgili: `0085_unknown_newton_destine.sql`, `schema.ts`, `study-room.{service,repository}.ts`,
+  `study-room.controller.ts`, `study-session.repository.ts` (`findRunningByRooms`),
+  `session.service.ts` (start'ta üyelik doğrulaması + `touchLastActive`),
+  `coaching-erasure.service.ts` (KVKK: üyelik hard delete, sahiplik devri),
+  `config.catalog.ts`, `packages/{types,validation}`, `apps/web/src/lib/study-rooms.ts`,
+  `study-room-theme.ts`, `session-room-list.tsx`, `room-shell.tsx`, `study-session-shell.tsx`,
+  `use-session-timer.ts`, `routing.ts`, `messages/{tr,en}.json`.
+
+- **Çalışma masası — Dilim 2: tema (2026-08-25)** — Masa artık düz grid değil: tema zemini + masanın
+  etrafına dizilmiş koltuklar. Üç tema (Kütüphane/Kafe/Ev) hem zemini hem varsayılan ambient parçayı
+  belirliyor.
+
+  **Koltuklar yay uzunluğuna göre dağıtılıyor, açıya göre değil** (`room-seat-layout.ts`). Elips
+  parametresini eşit adımlarla ilerletmek yalnızca çemberde doğru sonuç verir; uzun bir masada
+  koltukları kısa kenarların uçlarında kümeler ve uzun kenarları boş bırakır. Çevreyi sabit hızla
+  yürümek bir kümülatif-uzunluk tablosuna mal oluyor ama her kapasite (2–10) tek formülle, elle
+  çizilmiş yerleşim olmadan çalışıyor — "kurucu koltuk sayısını seçer" kararını ucuzlatan şey bu.
+  Test bunu **bağımsız integrasyonla** ölçüyor: koltuklar arası kenar uzunluğu farkı <%1, naive açı
+  adımının onda birinden az.
+
+  **Tema renkleri DESIGN token'larından `color-mix` ile türetiliyor** (`study-room-theme.ts`), sabit
+  hex yok — üç tema paletle birlikte güncelleniyor ve dark mode'da okunur kalıyor. Aynı renkler
+  arkaplan görseli yokken/yüklenemezken **fallback zemin** olarak da iş görüyor, yani oda hiçbir
+  zaman boş dikdörtgen değil.
+
+  **Odak ekranı masaya dönüyor:** `SessionFocusBackdrop` opsiyonel `roomTheme` alıyor ve odada
+  başlatılan seansta solo zemin yerine odanın zeminini gösteriyor; halkalar (ripple) iki durumda da
+  duruyor, böylece odak modu tek bir şey gibi okunuyor. Sayaç yine hiç değişmedi.
+
+  **Gotcha — ambient tohumlaması saklanan tercihi ezmez.** Tema, ambient parçayı yalnızca kullanıcı
+  o cihazda **hiç** tercih belirtmemişse dolduruyor (`localStorage` anahtarının varlığına bakılır;
+  "off" değeri tek başına yeterli sinyal değil, çünkü "hiç seçmedi" ile "sessizi seçti" aynı değeri
+  üretiyor). Öneri state'e yazılmıyor, türetiliyor — yani kendi başına kalıcı tercihe dönüşmüyor.
+  `toggleMute` çalan parça üzerinden işliyor (aksi hâlde tema tohumlu parça sessize alınamazdı) ve
+  o dokunuş tercihi kalıcılaştırıyor — çünkü sessize almak, çalan parça hakkında açık bir seçimdir.
+
+  **Gotcha — zemin görseli `priority` olmak zorunda.** İlk hâlinde `RoomBackdrop` görseli lazy
+  yüklüyordu; dosya olmadığı için istek hiç atılmıyor, dolayısıyla `onError` hiç tetiklenmiyor ve
+  fallback ölü kod kalıyordu (oda yine doğru görünüyordu çünkü zemin `img`'in altında boyanıyor —
+  ama tesadüfen). Tarayıcı doğrulamasında yakalandı; `priority` eklendi. Tam ekran zemin lazy
+  yüklenmemeli: hem geç oturur hem hata yolu erişilemez kalır.
+
+  **Eksik:** `public/visuals/room-{library,cafe,home}-bg.webp` dosyaları **henüz yok**. Bu ortamda
+  görsel üretimi (text-to-image) kapalı olduğu için üretilemedi; kod fallback zeminle çalışıyor ve
+  dosyalar sonradan bırakıldığında kod değişikliği gerekmiyor. Üretim promptu plan dosyasında.
+
+  İlgili: `room-seat-layout.{ts,spec.ts}`, `room-seats.tsx`, `room-backdrop.tsx`, `room-shell.tsx`,
+  `session-focus-backdrop.tsx`, `use-session-ambient-sound.ts`, `study-room-theme.ts`,
+  `study-session-shell.tsx`.

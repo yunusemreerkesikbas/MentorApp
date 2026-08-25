@@ -9,6 +9,7 @@ import type {
   FocusGoalDto,
   QuestProgressView,
   SessionPresetDto,
+  StudyRoomTheme,
   TodayPanelResponse,
 } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
@@ -21,6 +22,8 @@ import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
 import { trackCoachEvent } from "@/lib/analytics";
 import { parsePlanTaskContextFromParams } from "@/lib/plan-study-session-link";
 import { readActiveSession, resolveResume } from "@/lib/session-persistence";
+import { getStudyRoom } from "@/lib/study-rooms";
+import { STUDY_ROOM_AMBIENT } from "@/lib/study-room-theme";
 import { SessionAmbientPicker } from "./session-ambient-picker";
 import { SessionBuddyCard } from "./session-buddy-card";
 import { SessionControls } from "./session-controls";
@@ -28,6 +31,7 @@ import { SessionDoneState } from "./session-done-state";
 import { SessionFocusBackdrop } from "./session-focus-backdrop";
 import { SessionFocusGoalCard } from "./session-focus-goal-card";
 import { SessionHistory } from "./session-history";
+import { SessionRoomList } from "./session-room-list";
 import { SessionSubjectPicker } from "./session-subject-picker";
 import { SessionTimerRing } from "./session-timer-ring";
 import { useSessionAmbientSound } from "./use-session-ambient-sound";
@@ -170,6 +174,8 @@ export function StudySessionShell() {
   const taskTitleParam = searchParams.get("taskTitle");
   const taskIdParam = searchParams.get("taskId");
   const sessionIdParam = searchParams.get("sessionId");
+  /** Set by "bu masada çalış" on the room page — the seat this session will occupy. */
+  const roomIdParam = searchParams.get("room");
   const autoStartExisting = searchParams.get("autostart") === "1";
   const sourceParam = searchParams.get("source");
   const coachSessionTrackedRef = useRef(false);
@@ -203,6 +209,28 @@ export function StudySessionShell() {
   const [streakBaseline, setStreakBaseline] = useState<number | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(true);
+  // Name the table behind `?room=`, so the idle screen can say where this session will be seated.
+  // The id travels with the name: rendering is gated on it matching, which is why switching rooms
+  // never flashes the previous table's name and the effect needs no synchronous reset.
+  const [seatedRoom, setSeatedRoom] = useState<
+    { id: string; name: string; theme: StudyRoomTheme } | null
+  >(null);
+  useEffect(() => {
+    if (!roomIdParam) return;
+    let active = true;
+    getStudyRoom(roomIdParam)
+      .then((room) => {
+        if (active) setSeatedRoom({ id: room.id, name: room.name, theme: room.theme });
+      })
+      // Room unreadable (flag off, membership gone) → no chip; the API is still the gate on start.
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [roomIdParam]);
+
+  /** Theme of the table this session sits at — drives the focus ground and the ambient hint. */
+  const roomTheme = seatedRoom?.id === roomIdParam ? (seatedRoom?.theme ?? null) : null;
 
   const timer = useSessionTimer({
     initialMinutes: parseInitialMinutes(presetParam, minutesParam),
@@ -211,6 +239,7 @@ export function StudySessionShell() {
     subject,
     planTaskId: planTaskContext.taskId,
     planTaskTitle: planTaskContext.taskTitle,
+    roomId: roomIdParam,
     existingSessionId: sessionIdParam,
     autoStartExisting,
   });
@@ -270,7 +299,11 @@ export function StudySessionShell() {
     reset,
   } = timer;
 
-  const ambient = useSessionAmbientSound({ phase, isPaused });
+  const ambient = useSessionAmbientSound({
+    phase,
+    isPaused,
+    suggestedTrackId: roomTheme ? STUDY_ROOM_AMBIENT[roomTheme] : null,
+  });
 
   const initialTitleRef = useRef<string | null>(null);
   useEffect(() => {
@@ -361,6 +394,11 @@ export function StudySessionShell() {
     />
   ) : null;
 
+  const roomChip =
+    seatedRoom && seatedRoom.id === roomIdParam ? (
+      <PlanTaskContextChip title={seatedRoom.name} />
+    ) : null;
+
   const phaseLabel =
     phase === "break"
       ? t("break_label")
@@ -440,7 +478,7 @@ export function StudySessionShell() {
   if (phase === "focus" || phase === "break") {
     return (
       <div className="session-focus-theme fixed inset-0 z-30 flex flex-col items-center justify-center px-5 py-8">
-        <SessionFocusBackdrop />
+        <SessionFocusBackdrop roomTheme={roomTheme} />
         <motion.div
           key={phase}
           className="relative flex w-full max-w-sm flex-col items-center gap-6"
@@ -457,6 +495,7 @@ export function StudySessionShell() {
             right={ambientPicker}
           />
           {planTaskChip}
+          {roomChip}
           <p
             className="text-sm font-semibold uppercase tracking-wide"
             style={{
@@ -573,6 +612,7 @@ export function StudySessionShell() {
                 right={ambientPicker}
               />
               {planTaskChip}
+              {roomChip}
               {timerRing}
               {setupSummary}
               {sessionControls}
@@ -610,6 +650,7 @@ export function StudySessionShell() {
             }))
           }
         />
+        <SessionRoomList />
         <SessionBuddyCard />
       </aside>
 

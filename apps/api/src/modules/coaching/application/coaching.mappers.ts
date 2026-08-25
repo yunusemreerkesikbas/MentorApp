@@ -94,6 +94,7 @@ export function toStudySessionDto(
     subject: row.subject,
     planTaskId: row.planTaskId ?? null,
     planTaskTitle: extras?.planTaskTitle ?? null,
+    roomId: row.roomId ?? null,
     startedAt: row.startedAt.toISOString(),
     endedAt: row.endedAt ? row.endedAt.toISOString() : null,
     actualFocusSeconds: row.actualFocusSeconds,

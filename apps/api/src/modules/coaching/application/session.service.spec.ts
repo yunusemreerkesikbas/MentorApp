@@ -21,6 +21,7 @@ function makeService(
   sessionsRepo: Record<string, ReturnType<typeof vi.fn> | unknown>,
   opts?: {
     planTasks?: Record<string, ReturnType<typeof vi.fn> | unknown>;
+    rooms?: Record<string, ReturnType<typeof vi.fn> | unknown>;
     activity?: Record<string, ReturnType<typeof vi.fn> | unknown>;
     events?: { emit: ReturnType<typeof vi.fn> };
     config?: { get: ReturnType<typeof vi.fn> };
@@ -30,6 +31,11 @@ function makeService(
     fakeDb,
     { closeStaleOpenSessions: vi.fn(), ...sessionsRepo } as never,
     { acquireUserLock: vi.fn(), findById: vi.fn(), ...opts?.planTasks } as never,
+    {
+      isMember: vi.fn(async () => true),
+      touchLastActive: vi.fn(),
+      ...opts?.rooms,
+    } as never,
     (opts?.activity ?? {}) as never,
     (opts?.events ?? { emit: () => {} }) as never,
     (opts?.config ?? { get: vi.fn(async () => 300) }) as never,

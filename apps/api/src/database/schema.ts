@@ -878,6 +878,14 @@ export const studySessions = pgTable(
     planTaskId: uuid("plan_task_id").references(() => planTasks.id, {
       onDelete: "set null",
     }),
+    /**
+     * Study room this session is seated at; null = solo. Chosen at start and NOT changeable
+     * mid-session — this column is what makes "member of 3 rooms, seated in 1" work, and it
+     * doubles as the room presence source and the per-room study history.
+     */
+    roomId: uuid("room_id").references(() => studyRooms.id, {
+      onDelete: "set null",
+    }),
     /** Post-session micro check-in: subjective effort/mood 1-3 (😩😐🙂); null until captured. */
     sessionMood: integer("session_mood"),
     /** Optional post-session "what challenged you" free-text signal for the AI; null when blank. */
@@ -898,7 +906,91 @@ export const studySessions = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("study_sessions_user_started_idx").on(t.userId, t.startedAt)],
+  (t) => [
+    index("study_sessions_user_started_idx").on(t.userId, t.startedAt),
+    // Room presence: every open session of one room in a single indexed scan.
+    index("study_sessions_room_status_idx").on(t.roomId, t.status),
+  ],
+);
+
+/**
+ * A study room ("masa") — a persistent, themed, invite-code table people co-work at.
+ * Body-doubling only: everyone keeps their own Pomodoro; the room contributes the shared
+ * ground, the seats and the "who is focusing right now" signal. No chat, no shared timer.
+ *
+ * Presence is NOT stored here — it is derived from `study_sessions.room_id` + status, so a
+ * room needs no heartbeat, socket or Redis. `last_active_at` is bumped when someone sits
+ * down and exists only so dormant rooms stop counting against a user's room quota
+ * (no archive column, no sweep job — a dormant room revives the moment someone sits again).
+ *
+ * Runs in SERVICE context, scoped by the WHERE clause — same trust model as `buddy_pairs`
+ * and `user_follows` (rows are cross-user by nature, so no RLS policy).
+ */
+export const studyRooms = pgTable(
+  "study_rooms",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    ownerUserId: uuid("owner_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** LIBRARY | CAFE | HOME (StudyRoomTheme) — drives the backdrop and the default ambient track. */
+    theme: text("theme").notNull(),
+    /** Seat count chosen by the owner; can grow freely but never below the current member count. */
+    capacity: integer("capacity").notNull(),
+    inviteCode: text("invite_code").notNull(),
+    /** PRIVATE only in v1; PUBLIC (cohort-scoped discovery) is the Phase-2 slice. */
+    visibility: text("visibility").notNull().default("PRIVATE"),
+    /** Bumped when a member starts a session here; drives the dormant-room quota filter. */
+    lastActiveAt: timestamp("last_active_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("study_rooms_invite_code_unique_idx").on(t.inviteCode),
+    index("study_rooms_owner_idx").on(t.ownerUserId),
+    check("study_rooms_capacity_range", sql`${t.capacity} between 2 and 10`),
+  ],
+);
+
+/**
+ * Room membership — persistent, not per-session. Being a member means holding a seat at the
+ * table; actually sitting in it is `study_sessions.room_id`. `joined_at` doubles as the
+ * ownership succession order: when the owner leaves, the earliest member takes over.
+ */
+export const studyRoomMembers = pgTable(
+  "study_room_members",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    roomId: uuid("room_id")
+      .notNull()
+      .references(() => studyRooms.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** OWNER | MEMBER (StudyRoomRole). Exactly one OWNER per room. */
+    role: text("role").notNull().default("MEMBER"),
+    joinedAt: timestamp("joined_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("study_room_members_pair_unique_idx").on(t.roomId, t.userId),
+    // Drives "my rooms" + the per-user room quota check.
+    index("study_room_members_user_idx").on(t.userId),
+    // Seat list + succession order.
+    index("study_room_members_room_joined_idx").on(t.roomId, t.joinedAt),
+  ],
 );
 
 /** Per-day activity ledger — the source for read-time streak derivation. */

@@ -191,6 +191,10 @@ export const CONFIG_CATALOG = {
     false,
     "Runtime gate for the free YKS 3D campus and preference comparison beta.",
   ),
+  "coaching.study_rooms.enabled": flag(
+    false,
+    "Gate for themed invite-code study rooms (masa) on the session screen.",
+  ),
   "identity.verification_email.resend_limit": identityCount(
     1,
     100,
@@ -609,6 +613,7 @@ export const FeatureFlag = {
   GOOGLE_OAUTH_ENABLED: "identity.google_oauth.enabled",
   SIGNUP_ENABLED: "signup.enabled",
   PREFERENCE_SIMULATION_ENABLED: "coaching.preference_simulation.enabled",
+  STUDY_ROOMS_ENABLED: "coaching.study_rooms.enabled",
 } as const satisfies Record<string, ConfigKey>;
 
 export function isConfigKey(key: string): key is ConfigKey {

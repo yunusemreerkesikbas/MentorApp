@@ -163,6 +163,12 @@ export interface UpdateStudySessionDto { [key: string]: unknown }
 
 export interface SessionFeedbackDto { [key: string]: unknown }
 
+export interface CreateStudyRoomDto { [key: string]: unknown }
+
+export interface JoinStudyRoomDto { [key: string]: unknown }
+
+export interface UpdateStudyRoomDto { [key: string]: unknown }
+
 export interface CreateMockExamDto { [key: string]: unknown }
 
 export interface UpdateMockExamDto { [key: string]: unknown }
@@ -4184,6 +4190,309 @@ export const studySessionControllerRecordFeedback = async (id: string,
 
 
 
+export type studyRoomControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type studyRoomControllerListResponseSuccess = (studyRoomControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerListResponse = (studyRoomControllerListResponseSuccess)
+
+export const getStudyRoomControllerListUrl = () => {
+
+
+  
+
+  return `/v1/study-rooms`
+}
+
+export const studyRoomControllerList = async ( options?: RequestInit): Promise<studyRoomControllerListResponse> => {
+  
+  return http<studyRoomControllerListResponse>(getStudyRoomControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type studyRoomControllerCreateResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type studyRoomControllerCreateResponseSuccess = (studyRoomControllerCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerCreateResponse = (studyRoomControllerCreateResponseSuccess)
+
+export const getStudyRoomControllerCreateUrl = () => {
+
+
+  
+
+  return `/v1/study-rooms`
+}
+
+export const studyRoomControllerCreate = async (createStudyRoomDto: CreateStudyRoomDto, options?: RequestInit): Promise<studyRoomControllerCreateResponse> => {
+  
+  return http<studyRoomControllerCreateResponse>(getStudyRoomControllerCreateUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createStudyRoomDto,)
+  }
+);}
+
+
+
+export type studyRoomControllerJoinResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type studyRoomControllerJoinResponseSuccess = (studyRoomControllerJoinResponse201) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerJoinResponse = (studyRoomControllerJoinResponseSuccess)
+
+export const getStudyRoomControllerJoinUrl = () => {
+
+
+  
+
+  return `/v1/study-rooms/join`
+}
+
+export const studyRoomControllerJoin = async (joinStudyRoomDto: JoinStudyRoomDto, options?: RequestInit): Promise<studyRoomControllerJoinResponse> => {
+  
+  return http<studyRoomControllerJoinResponse>(getStudyRoomControllerJoinUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      joinStudyRoomDto,)
+  }
+);}
+
+
+
+export type studyRoomControllerDetailResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type studyRoomControllerDetailResponseSuccess = (studyRoomControllerDetailResponse200) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerDetailResponse = (studyRoomControllerDetailResponseSuccess)
+
+export const getStudyRoomControllerDetailUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/study-rooms/${id}`
+}
+
+export const studyRoomControllerDetail = async (id: string, options?: RequestInit): Promise<studyRoomControllerDetailResponse> => {
+  
+  return http<studyRoomControllerDetailResponse>(getStudyRoomControllerDetailUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type studyRoomControllerUpdateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type studyRoomControllerUpdateResponseSuccess = (studyRoomControllerUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerUpdateResponse = (studyRoomControllerUpdateResponseSuccess)
+
+export const getStudyRoomControllerUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/study-rooms/${id}`
+}
+
+export const studyRoomControllerUpdate = async (id: string,
+    updateStudyRoomDto: UpdateStudyRoomDto, options?: RequestInit): Promise<studyRoomControllerUpdateResponse> => {
+  
+  return http<studyRoomControllerUpdateResponse>(getStudyRoomControllerUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateStudyRoomDto,)
+  }
+);}
+
+
+
+export type studyRoomControllerCloseResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type studyRoomControllerCloseResponseSuccess = (studyRoomControllerCloseResponse204) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerCloseResponse = (studyRoomControllerCloseResponseSuccess)
+
+export const getStudyRoomControllerCloseUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/study-rooms/${id}`
+}
+
+export const studyRoomControllerClose = async (id: string, options?: RequestInit): Promise<studyRoomControllerCloseResponse> => {
+  
+  return http<studyRoomControllerCloseResponse>(getStudyRoomControllerCloseUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type studyRoomControllerRotateCodeResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type studyRoomControllerRotateCodeResponseSuccess = (studyRoomControllerRotateCodeResponse201) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerRotateCodeResponse = (studyRoomControllerRotateCodeResponseSuccess)
+
+export const getStudyRoomControllerRotateCodeUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/study-rooms/${id}/code`
+}
+
+export const studyRoomControllerRotateCode = async (id: string, options?: RequestInit): Promise<studyRoomControllerRotateCodeResponse> => {
+  
+  return http<studyRoomControllerRotateCodeResponse>(getStudyRoomControllerRotateCodeUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type studyRoomControllerLeaveResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type studyRoomControllerLeaveResponseSuccess = (studyRoomControllerLeaveResponse204) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerLeaveResponse = (studyRoomControllerLeaveResponseSuccess)
+
+export const getStudyRoomControllerLeaveUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/study-rooms/${id}/members/me`
+}
+
+export const studyRoomControllerLeave = async (id: string, options?: RequestInit): Promise<studyRoomControllerLeaveResponse> => {
+  
+  return http<studyRoomControllerLeaveResponse>(getStudyRoomControllerLeaveUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type studyRoomControllerRemoveMemberResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type studyRoomControllerRemoveMemberResponseSuccess = (studyRoomControllerRemoveMemberResponse204) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerRemoveMemberResponse = (studyRoomControllerRemoveMemberResponseSuccess)
+
+export const getStudyRoomControllerRemoveMemberUrl = (id: string,
+    userId: string,) => {
+
+
+  
+
+  return `/v1/study-rooms/${id}/members/${userId}`
+}
+
+export const studyRoomControllerRemoveMember = async (id: string,
+    userId: string, options?: RequestInit): Promise<studyRoomControllerRemoveMemberResponse> => {
+  
+  return http<studyRoomControllerRemoveMemberResponse>(getStudyRoomControllerRemoveMemberUrl(id,userId),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
 export type mockExamControllerCreateResponse201 = {
   data: void
   status: 201
@@ -4284,276 +4593,6 @@ export const mockExamControllerGetById = async (id: string, options?: RequestIni
   {      
     ...options,
     method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type mockExamControllerUpdateResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type mockExamControllerUpdateResponseSuccess = (mockExamControllerUpdateResponse200) & {
-  headers: Headers;
-};
-;
-
-export type mockExamControllerUpdateResponse = (mockExamControllerUpdateResponseSuccess)
-
-export const getMockExamControllerUpdateUrl = (id: string,) => {
-
-
-  
-
-  return `/v1/mock-exams/${id}`
-}
-
-export const mockExamControllerUpdate = async (id: string,
-    updateMockExamDto: UpdateMockExamDto, options?: RequestInit): Promise<mockExamControllerUpdateResponse> => {
-  
-  return http<mockExamControllerUpdateResponse>(getMockExamControllerUpdateUrl(id),
-  {      
-    ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateMockExamDto,)
-  }
-);}
-
-
-
-export type mockExamControllerRemoveResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type mockExamControllerRemoveResponseSuccess = (mockExamControllerRemoveResponse204) & {
-  headers: Headers;
-};
-;
-
-export type mockExamControllerRemoveResponse = (mockExamControllerRemoveResponseSuccess)
-
-export const getMockExamControllerRemoveUrl = (id: string,) => {
-
-
-  
-
-  return `/v1/mock-exams/${id}`
-}
-
-export const mockExamControllerRemove = async (id: string, options?: RequestInit): Promise<mockExamControllerRemoveResponse> => {
-  
-  return http<mockExamControllerRemoveResponse>(getMockExamControllerRemoveUrl(id),
-  {      
-    ...options,
-    method: 'DELETE'
-    
-    
-  }
-);}
-
-
-
-export type mistakeNotebookControllerGetOverviewResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type mistakeNotebookControllerGetOverviewResponseSuccess = (mistakeNotebookControllerGetOverviewResponse200) & {
-  headers: Headers;
-};
-;
-
-export type mistakeNotebookControllerGetOverviewResponse = (mistakeNotebookControllerGetOverviewResponseSuccess)
-
-export const getMistakeNotebookControllerGetOverviewUrl = () => {
-
-
-  
-
-  return `/v1/coaching/notebook`
-}
-
-export const mistakeNotebookControllerGetOverview = async ( options?: RequestInit): Promise<mistakeNotebookControllerGetOverviewResponse> => {
-  
-  return http<mistakeNotebookControllerGetOverviewResponse>(getMistakeNotebookControllerGetOverviewUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type mistakeNotebookControllerListDueResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type mistakeNotebookControllerListDueResponseSuccess = (mistakeNotebookControllerListDueResponse200) & {
-  headers: Headers;
-};
-;
-
-export type mistakeNotebookControllerListDueResponse = (mistakeNotebookControllerListDueResponseSuccess)
-
-export const getMistakeNotebookControllerListDueUrl = () => {
-
-
-  
-
-  return `/v1/coaching/notebook/reviews/due`
-}
-
-export const mistakeNotebookControllerListDue = async ( options?: RequestInit): Promise<mistakeNotebookControllerListDueResponse> => {
-  
-  return http<mistakeNotebookControllerListDueResponse>(getMistakeNotebookControllerListDueUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type mistakeNotebookControllerCreateUploadUrlResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type mistakeNotebookControllerCreateUploadUrlResponseSuccess = (mistakeNotebookControllerCreateUploadUrlResponse201) & {
-  headers: Headers;
-};
-;
-
-export type mistakeNotebookControllerCreateUploadUrlResponse = (mistakeNotebookControllerCreateUploadUrlResponseSuccess)
-
-export const getMistakeNotebookControllerCreateUploadUrlUrl = () => {
-
-
-  
-
-  return `/v1/coaching/notebook/entries/image-upload-url`
-}
-
-export const mistakeNotebookControllerCreateUploadUrl = async (notebookImageUploadUrlDto: NotebookImageUploadUrlDto, options?: RequestInit): Promise<mistakeNotebookControllerCreateUploadUrlResponse> => {
-  
-  return http<mistakeNotebookControllerCreateUploadUrlResponse>(getMistakeNotebookControllerCreateUploadUrlUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      notebookImageUploadUrlDto,)
-  }
-);}
-
-
-
-export type mistakeNotebookControllerCreateEntryResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type mistakeNotebookControllerCreateEntryResponseSuccess = (mistakeNotebookControllerCreateEntryResponse201) & {
-  headers: Headers;
-};
-;
-
-export type mistakeNotebookControllerCreateEntryResponse = (mistakeNotebookControllerCreateEntryResponseSuccess)
-
-export const getMistakeNotebookControllerCreateEntryUrl = () => {
-
-
-  
-
-  return `/v1/coaching/notebook/entries`
-}
-
-export const mistakeNotebookControllerCreateEntry = async (createNotebookEntryDto: CreateNotebookEntryDto, options?: RequestInit): Promise<mistakeNotebookControllerCreateEntryResponse> => {
-  
-  return http<mistakeNotebookControllerCreateEntryResponse>(getMistakeNotebookControllerCreateEntryUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      createNotebookEntryDto,)
-  }
-);}
-
-
-
-export type mistakeNotebookControllerUpdateEntryResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type mistakeNotebookControllerUpdateEntryResponseSuccess = (mistakeNotebookControllerUpdateEntryResponse200) & {
-  headers: Headers;
-};
-;
-
-export type mistakeNotebookControllerUpdateEntryResponse = (mistakeNotebookControllerUpdateEntryResponseSuccess)
-
-export const getMistakeNotebookControllerUpdateEntryUrl = (id: string,) => {
-
-
-  
-
-  return `/v1/coaching/notebook/entries/${id}`
-}
-
-export const mistakeNotebookControllerUpdateEntry = async (id: string,
-    updateNotebookEntryDto: UpdateNotebookEntryDto, options?: RequestInit): Promise<mistakeNotebookControllerUpdateEntryResponse> => {
-  
-  return http<mistakeNotebookControllerUpdateEntryResponse>(getMistakeNotebookControllerUpdateEntryUrl(id),
-  {      
-    ...options,
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      updateNotebookEntryDto,)
-  }
-);}
-
-
-
-export type mistakeNotebookControllerDeleteEntryResponse204 = {
-  data: void
-  status: 204
-}
-    
-export type mistakeNotebookControllerDeleteEntryResponseSuccess = (mistakeNotebookControllerDeleteEntryResponse204) & {
-  headers: Headers;
-};
-;
-
-export type mistakeNotebookControllerDeleteEntryResponse = (mistakeNotebookControllerDeleteEntryResponseSuccess)
-
-export const getMistakeNotebookControllerDeleteEntryUrl = (id: string,) => {
-
-
-  
-
-  return `/v1/coaching/notebook/entries/${id}`
-}
-
-export const mistakeNotebookControllerDeleteEntry = async (id: string, options?: RequestInit): Promise<mistakeNotebookControllerDeleteEntryResponse> => {
-  
-  return http<mistakeNotebookControllerDeleteEntryResponse>(getMistakeNotebookControllerDeleteEntryUrl(id),
-  {      
-    ...options,
-    method: 'DELETE'
     
     
   }

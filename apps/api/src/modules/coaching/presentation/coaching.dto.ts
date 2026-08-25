@@ -32,28 +32,58 @@ import {
   visionBoardImageUploadUrlSchema,
   weeklyReviewQuerySchema,
   completeWeeklyReviewSchema,
+  createStudyRoomSchema,
+  updateStudyRoomSchema,
+  joinStudyRoomSchema,
 } from "@mentor/validation";
 import { createZodDto } from "../../../common/validation/zod-dto";
 
 export class CreatePlanTaskDto extends createZodDto(createPlanTaskSchema) {}
 /** Body for POST /v1/plan-tasks/bulk (user-confirmed batch add — e.g. accepted coach draft). */
-export class BulkCreatePlanTasksDto extends createZodDto(bulkCreatePlanTasksSchema) {}
-export class ApplyPlanAdaptationDto extends createZodDto(applyPlanAdaptationSchema) {}
+export class BulkCreatePlanTasksDto extends createZodDto(
+  bulkCreatePlanTasksSchema,
+) {}
+export class ApplyPlanAdaptationDto extends createZodDto(
+  applyPlanAdaptationSchema,
+) {}
 export class UpdatePlanTaskDto extends createZodDto(updatePlanTaskSchema) {}
-export class ListPlanTasksQueryDto extends createZodDto(listPlanTasksQuerySchema) {}
-export class PlanTaskCalendarQueryDto extends createZodDto(planTaskCalendarQuerySchema) {}
-export class StartStudySessionDto extends createZodDto(startStudySessionSchema) {}
-export class UpdateStudySessionDto extends createZodDto(updateStudySessionSchema) {}
+export class ListPlanTasksQueryDto extends createZodDto(
+  listPlanTasksQuerySchema,
+) {}
+export class PlanTaskCalendarQueryDto extends createZodDto(
+  planTaskCalendarQuerySchema,
+) {}
+export class StartStudySessionDto extends createZodDto(
+  startStudySessionSchema,
+) {}
+export class UpdateStudySessionDto extends createZodDto(
+  updateStudySessionSchema,
+) {}
 export class SessionFeedbackDto extends createZodDto(sessionFeedbackSchema) {}
-export class ListStudySessionsQueryDto extends createZodDto(listStudySessionsQuerySchema) {}
-export class CreateMoodCheckinDto extends createZodDto(createMoodCheckinSchema) {}
-export class ListMoodCheckinsQueryDto extends createZodDto(listMoodCheckinsQuerySchema) {}
+export class ListStudySessionsQueryDto extends createZodDto(
+  listStudySessionsQuerySchema,
+) {}
+export class CreateStudyRoomDto extends createZodDto(createStudyRoomSchema) {}
+export class UpdateStudyRoomDto extends createZodDto(updateStudyRoomSchema) {}
+export class JoinStudyRoomDto extends createZodDto(joinStudyRoomSchema) {}
+export class CreateMoodCheckinDto extends createZodDto(
+  createMoodCheckinSchema,
+) {}
+export class ListMoodCheckinsQueryDto extends createZodDto(
+  listMoodCheckinsQuerySchema,
+) {}
 export class AnalysisQueryDto extends createZodDto(analysisQuerySchema) {}
-export class WeeklyReviewQueryDto extends createZodDto(weeklyReviewQuerySchema) {}
-export class CompleteWeeklyReviewDto extends createZodDto(completeWeeklyReviewSchema) {}
+export class WeeklyReviewQueryDto extends createZodDto(
+  weeklyReviewQuerySchema,
+) {}
+export class CompleteWeeklyReviewDto extends createZodDto(
+  completeWeeklyReviewSchema,
+) {}
 export class CreateMockExamDto extends createZodDto(createMockExamSchema) {}
 export class UpdateMockExamDto extends createZodDto(updateMockExamSchema) {}
-export class ListMockExamsQueryDto extends createZodDto(listMockExamsQuerySchema) {}
+export class ListMockExamsQueryDto extends createZodDto(
+  listMockExamsQuerySchema,
+) {}
 export class UpsertVisionDto extends createZodDto(upsertVisionSchema) {}
 /** Body for PUT /v1/coaching/vision/board — the whole collage document, replaced wholesale. */
 export class PutVisionBoardDto extends createZodDto(putVisionBoardSchema) {}

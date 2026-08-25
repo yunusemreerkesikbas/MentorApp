@@ -8,6 +8,7 @@ import { NotebookForumListener } from "./application/notebook-forum.listener";
 import { MockExamService } from "./application/mock-exam.service";
 import { PlanService } from "./application/plan.service";
 import { SessionService } from "./application/session.service";
+import { StudyRoomService } from "./application/study-room.service";
 import { StreakService } from "./application/streak.service";
 import { TodayService } from "./application/today.service";
 import { VisionService } from "./application/vision.service";
@@ -28,6 +29,7 @@ import { MoodCheckinRepository } from "./infrastructure/mood-checkin.repository"
 import { PlanTaskRepository } from "./infrastructure/plan-task.repository";
 import { StreakFreezeRepository } from "./infrastructure/streak-freeze.repository";
 import { StreakStateRepository } from "./infrastructure/streak-state.repository";
+import { StudyRoomRepository } from "./infrastructure/study-room.repository";
 import { StudySessionRepository } from "./infrastructure/study-session.repository";
 import { MistakeNotebookRepository } from "./infrastructure/mistake-notebook.repository";
 import { MockExamRepository } from "./infrastructure/mock-exam.repository";
@@ -42,6 +44,7 @@ import { MistakeNotebookController } from "./presentation/mistake-notebook.contr
 import { NotebooksController } from "./presentation/notebooks.controller";
 import { MockExamController } from "./presentation/mock-exam.controller";
 import { PlanTaskController } from "./presentation/plan-task.controller";
+import { StudyRoomController } from "./presentation/study-room.controller";
 import { StudySessionController } from "./presentation/study-session.controller";
 
 /**
@@ -57,6 +60,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     CoachingController,
     PlanTaskController,
     StudySessionController,
+    StudyRoomController,
     MockExamController,
     MistakeNotebookController,
     NotebooksController,
@@ -67,6 +71,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     NotebookForumListener,
     DailyQuestSignalService,
     SessionService,
+    StudyRoomService,
     StreakService,
     MoodService,
     MockExamService,
@@ -83,6 +88,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     CoachingErasureRepository,
     PlanTaskRepository,
     StudySessionRepository,
+    StudyRoomRepository,
     MistakeNotebookRepository,
     MockExamRepository,
     MockExamPhotoRepository,
@@ -110,6 +116,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     MoodService,
     PlanService,
     SessionService,
+    StudyRoomService,
     VisionService,
     WeeklyReviewService,
     PreferenceSimulationService,
@@ -117,13 +124,3 @@ import { StudySessionController } from "./presentation/study-session.controller"
   ],
 })
 export class CoachingModule {}
-
-
-
-
-
-
-
-
-
-

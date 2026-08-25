@@ -161,6 +161,21 @@
 
 > Status: ✅ live · 🟡 partially live (some slices shipped) · ⏳ coming in MVP · ⛔ later phase. A new endpoint → update this catalog + OpenAPI + the matching feature-doc timeline.
 
+> Notebook collection catalog addition (2026-08-25): coaching owns paginated
+> `GET/POST /v1/coaching/notebooks`, owned item `GET/PATCH/DELETE
+/v1/coaching/notebooks/:id`, and page `GET/PUT
+/v1/coaching/notebooks/:id/pages/:index`. The protected `MISTAKE` notebook is system-first;
+> `CUSTOM` notebooks are free-form note/ink/sticker books with an optional taxonomy-verified
+> subject. Legacy `/v1/coaching/notebook/**` remains backward-compatible and delegates to the
+> system notebook.
+
+> Study-room catalog addition (2026-08-25): authenticated, feature-gated `GET/POST
+> /v1/study-rooms`, `POST /v1/study-rooms/join`, member detail `GET /v1/study-rooms/:id`,
+> owner update/close `PATCH/DELETE /v1/study-rooms/:id`, invite rotation `POST
+> /v1/study-rooms/:id/code`, self-leave `DELETE /v1/study-rooms/:id/members/me`, and owner member
+> removal `DELETE /v1/study-rooms/:id/members/:userId`. The room labels an existing personal
+> study session; it does not introduce a second timer or chat transport.
+
 > **Health probes** (`/v1/health`, `/v1/health/ready`) use the **terminus** response shape
 > (`{ status, info, error, details }`), not the `ApiError` envelope — they are infra for orchestrators,
 > outside the API contract. The global filter passes them through unchanged.

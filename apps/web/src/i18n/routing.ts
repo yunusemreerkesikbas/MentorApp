@@ -31,6 +31,11 @@ export const routing = defineRouting({
       tr: "/seans/gecmis",
       en: "/study-session/history",
     },
+    /** Study room ("masa") — the shared ground a group co-works at. */
+    "/study-session/rooms/[id]": {
+      tr: "/seans/masa/[id]",
+      en: "/study-session/rooms/[id]",
+    },
     "/coach": { tr: "/koc", en: "/coach" },
     "/coach/chat": { tr: "/koc/sohbet", en: "/coach/chat" },
     "/analysis": { tr: "/analiz", en: "/analysis" },

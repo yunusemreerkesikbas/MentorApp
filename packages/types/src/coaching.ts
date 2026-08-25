@@ -109,6 +109,8 @@ export interface StudySessionDto {
   subject: string | null;
   /** Plan task this session was started from; null when not linked. */
   planTaskId: string | null;
+  /** Study room this session is seated at; null = solo. Fixed at start. */
+  roomId: string | null;
   /** Resolved plan task title when listed with join; null when unlinked or on write responses. */
   planTaskTitle: string | null;
   startedAt: string; // ISO datetime
@@ -154,6 +156,49 @@ export interface CountdownDto {
   examDateLabel: string;
   source: string;
   sourceUrl: string;
+}
+
+/* ------------------------------- study rooms ---------------------------------- */
+
+export type StudyRoomTheme = "LIBRARY" | "CAFE" | "HOME";
+export type StudyRoomRole = "OWNER" | "MEMBER";
+
+/** Room card for the "Masalarım" list — cheap counts only, no seat detail. */
+export interface StudyRoomDto {
+  id: string;
+  name: string;
+  theme: StudyRoomTheme;
+  capacity: number;
+  /** Persistent members holding a seat (the "3" in 3/10). */
+  memberCount: number;
+  /** Members with an open session in THIS room right now (the "çalışan sayısı"). */
+  activeCount: number;
+  role: StudyRoomRole;
+  /** False once nobody has sat down for `STUDY_ROOM_DORMANT_DAYS`; excluded from the quota. */
+  isActive: boolean;
+}
+
+/**
+ * One seat. `isSeated` is the member↔presence distinction: a member of three rooms shows as
+ * seated in at most one. Effort only — focus minutes and subject, never exam results (§4).
+ */
+export interface StudyRoomSeatDto {
+  userId: string;
+  displayName: string;
+  username: string | null;
+  avatarUrl: string | null;
+  role: StudyRoomRole;
+  isSeated: boolean;
+  /** Minutes since this member sat down; null when not seated. */
+  seatedMinutes: number | null;
+  /** Subject of the open session; null when not seated or none chosen. */
+  subject: string | null;
+}
+
+export interface StudyRoomDetailDto extends StudyRoomDto {
+  /** Only sent to the owner — members share the room, not the ability to re-invite. */
+  inviteCode: string | null;
+  seats: StudyRoomSeatDto[];
 }
 
 /** Pomodoro presets (plan §3 Slice 2: "25_5" | "50_10"). */
