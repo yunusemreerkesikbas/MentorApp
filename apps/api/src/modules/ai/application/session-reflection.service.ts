@@ -69,12 +69,11 @@ export class SessionReflectionService {
       (await this.sessions.getAiReflectionLocale(user.id, sessionId)) === locale
     ) {
       const cached = extractReplyMarkers(session.aiReflection);
+      const suggestedTask = session.aiSuggestedTask ?? cached.task ?? undefined;
       return {
         reflection: cached.text,
         model: "cache",
-        ...(session.aiSuggestedTask ?? cached.task
-          ? { suggestedTask: session.aiSuggestedTask ?? cached.task }
-          : {}),
+        ...(suggestedTask ? { suggestedTask } : {}),
       };
     }
 

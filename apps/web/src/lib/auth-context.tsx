@@ -37,13 +37,13 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-/** Network blips / Nest cold boot / --watch recompile — cover ~30s, not ~900ms. */
+/** Network blips / nest --watch recompile — cover ~30s. */
 const NETWORK_RETRY_MAX = 8;
 function networkRetryDelayMs(attempt: number): number {
   return Math.min(500 * 2 ** (attempt - 1), 8_000);
 }
 
-/** Module-scoped so React Strict Mode remounts share one /auth/refresh flight. */
+/** Shared so Strict Mode remounts don't start a second /auth/refresh storm. */
 let refreshInFlight: Promise<AuthSession> | null = null;
 
 /**
@@ -100,16 +100,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (sessionVersionRef.current === startedAtVersion) applySession(session);
         return;
       } catch (err) {
-        // Only a real HTTP error (ApiClientError, e.g. 401/expired cookie) → anonymous.
-        // A "Failed to fetch" TypeError means the API is briefly unreachable (dev boot /
-        // watch recompile) — retry instead of dropping a possibly-valid session.
         const isNetworkError = !(err instanceof ApiClientError);
         const stillCurrent = sessionVersionRef.current === startedAtVersion;
         if (isNetworkError && stillCurrent && attempt < NETWORK_RETRY_MAX) {
           await new Promise((r) => setTimeout(r, networkRetryDelayMs(attempt)));
           continue;
         }
-        // Stale refresh must not erase a newer login/signup.
         if (stillCurrent) clearSession();
         return;
       }

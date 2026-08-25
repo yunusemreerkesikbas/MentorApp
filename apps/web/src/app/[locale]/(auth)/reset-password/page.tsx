@@ -6,7 +6,6 @@ import { Suspense, useState, type FormEvent } from "react";
 import { authControllerResetPassword } from "@mentor/api-client";
 import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, FormSuccess, SubmitButton } from "@/components/form";
-import { AuthNavLink } from "../_components/auth-nav-link";
 
 function ResetPasswordForm() {
   const t = useTranslations("auth.reset_password");
@@ -41,10 +40,7 @@ function ResetPasswordForm() {
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <SectionHeading as="h2">{t("title")}</SectionHeading>
       {done ? (
-        <>
-          <FormSuccess message={t("success")} />
-          <AuthNavLink href="/login">{t("back_login")}</AuthNavLink>
-        </>
+        <FormSuccess message={t("success")} />
       ) : (
         <>
           <Field

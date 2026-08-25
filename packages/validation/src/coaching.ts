@@ -5,6 +5,9 @@
 import { z } from "zod";
 import {
   CAREER_GROUPS,
+  NOTEBOOK_COVER_COLORS,
+  NOTEBOOK_COVER_MATERIALS,
+  NOTEBOOK_COVER_TITLE_MAX_LENGTH,
   NOTEBOOK_ENTRY_STATUSES,
   NOTEBOOK_ERROR_TYPES,
   NOTEBOOK_INK_TOOLS,
@@ -692,6 +695,23 @@ export const notebookPageDocSchema = z
   .object({
     version: z.literal(1),
     paper: z.enum(NOTEBOOK_PAPERS),
+    /*
+     * Optional, not defaulted, and that is deliberate: absent means "this page is not carrying a
+     * cover", which is true of every page but the first. Defaulting it would write a cover into all
+     * forty documents and make the one that matters indistinguishable from the thirty-nine that
+     * don't.
+     */
+    cover: z
+      .object({
+        color: z.enum(NOTEBOOK_COVER_COLORS),
+        material: z.enum(NOTEBOOK_COVER_MATERIALS),
+        title: z
+          .string()
+          .trim()
+          .max(NOTEBOOK_COVER_TITLE_MAX_LENGTH)
+          .nullish(),
+      })
+      .optional(),
     items: z.array(notebookPageItemSchema).max(NOTEBOOK_PAGE_MAX_ITEMS),
     /*
      * Defaulted, not optional, and that default is the whole backward-compatibility story: every

@@ -5,12 +5,16 @@ import { useTranslations } from "next-intl";
 import type {
   ExamSubjectDto,
   ExamTopicDto,
+  NotebookCoverDoc,
   NotebookEntryDto,
   NotebookPaper,
   VisionBoardTextItem,
   VisionSticker,
 } from "@mentor/types";
 import {
+  NOTEBOOK_COVER_COLORS,
+  NOTEBOOK_COVER_MATERIALS,
+  NOTEBOOK_COVER_TITLE_MAX_LENGTH,
   NOTEBOOK_PAPERS,
   VISION_STICKERS,
   VISION_TEXT_FONTS,
@@ -21,7 +25,12 @@ import {
   FONT_DISPLAY_NAMES,
   FONT_STACKS,
 } from "@/components/vision-board/board-item-view";
-import { PAPERS } from "@/components/notebook/notebook-surface";
+import {
+  COVER_COLORS,
+  COVER_MATERIALS,
+  DEFAULT_COVER,
+  PAPERS,
+} from "@/components/notebook/notebook-surface";
 import { NotebookAddPanel } from "./notebook-add-panel";
 import { NotebookIndexPanel } from "./notebook-index-panel";
 
@@ -77,6 +86,9 @@ export type NotebookPanelCategory =
 export interface NotebookSidePanelProps {
   category: NotebookPanelCategory;
   paper: NotebookPaper;
+  /** The book's cover, read from page zero. Null while that page is still loading. */
+  cover: NotebookCoverDoc | null;
+  onCover: (next: NotebookCoverDoc) => void;
   exam: {
     id: string;
     subjects: ExamSubjectDto[];
@@ -128,6 +140,8 @@ function StickerPreview({ asset }: { asset: VisionSticker }) {
 export function NotebookSidePanel({
   category,
   paper,
+  cover,
+  onCover,
   exam,
   selectedText,
   onCreated,
@@ -317,6 +331,12 @@ export function NotebookSidePanel({
 
   return (
     <Panel>
+      <span
+        className="text-xs font-bold"
+        style={{ color: "var(--color-secondary)" }}
+      >
+        {t("paper_section")}
+      </span>
       <div className="flex flex-col gap-2">
         {NOTEBOOK_PAPERS.map((value) => {
           const active = value === paper;
@@ -357,7 +377,133 @@ export function NotebookSidePanel({
           );
         })}
       </div>
+
+      <CoverSection cover={cover} onCover={onCover} />
     </Panel>
+  );
+}
+
+/**
+ * The book's own cover: colour, finish, and what is written on the label.
+ *
+ * In the paper panel rather than a rail item of its own. Both are "what this notebook is made of",
+ * and a fifth rail button for a setting somebody touches once would cost every student a permanent
+ * inch of the rail to save one of them a scroll.
+ *
+ * Every swatch is drawn with the recipe the cover itself uses (`COVER_COLORS`, `COVER_MATERIALS`),
+ * so a preview cannot drift from the thing it previews — the same reason the paper swatches above
+ * render through `PAPERS`.
+ */
+function CoverSection({
+  cover,
+  onCover,
+}: {
+  cover: NotebookCoverDoc | null;
+  onCover: (next: NotebookCoverDoc) => void;
+}) {
+  const t = useTranslations("notebook");
+  const current = cover ?? DEFAULT_COVER;
+
+  return (
+    <div
+      className="flex flex-col gap-3 pt-3"
+      style={{
+        borderTop:
+          "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
+      }}
+    >
+      <span
+        className="text-xs font-bold"
+        style={{ color: "var(--color-secondary)" }}
+      >
+        {t("cover_section")}
+      </span>
+
+      <div className="flex flex-wrap gap-2">
+        {NOTEBOOK_COVER_COLORS.map((value) => {
+          const active = value === current.color;
+          return (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={active}
+              aria-label={t(`cover_color.${value}`)}
+              title={t(`cover_color.${value}`)}
+              onClick={() => onCover({ ...current, color: value })}
+              className="size-9 cursor-pointer rounded-full outline-none transition-transform duration-150 hover:scale-105 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+              style={{
+                backgroundColor: COVER_COLORS[value],
+                // The ring, not a tick: a tick on a dark swatch needs its own colour rule per
+                // swatch, and the ring reads at a glance across all six.
+                boxShadow: active
+                  ? "0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-accent)"
+                  : "inset 0 0 0 1px rgba(0,0,0,0.25)",
+              }}
+            />
+          );
+        })}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {NOTEBOOK_COVER_MATERIALS.map((value) => {
+          const active = value === current.material;
+          return (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onCover({ ...current, material: value })}
+              className="flex min-h-9 cursor-pointer items-center gap-2 rounded-[var(--radius-card)] border py-1 pl-1 pr-2.5 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              style={{
+                color: "var(--color-main)",
+                borderColor: active
+                  ? "var(--color-accent)"
+                  : "color-mix(in srgb, var(--color-main) 12%, transparent)",
+                backgroundColor: active
+                  ? "var(--color-accent-soft)"
+                  : "var(--color-surface)",
+              }}
+            >
+              {/* Shown in the colour that is actually selected, so the finishes are compared on the
+                  cover the student is choosing them for rather than on a stand-in. */}
+              <span
+                aria-hidden
+                className="size-7 shrink-0 rounded"
+                style={{
+                  backgroundColor: COVER_COLORS[current.color],
+                  backgroundImage: COVER_MATERIALS[value],
+                }}
+              />
+              {t(`cover_material.${value}`)}
+            </button>
+          );
+        })}
+      </div>
+
+      <label className="flex flex-col gap-1">
+        <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
+          {t("cover_title_label")}
+        </span>
+        {/* Blank is a real answer, not an empty field: clearing it puts the app's own name back on
+            the cover rather than leaving the book untitled. */}
+        <input
+          type="text"
+          value={current.title ?? ""}
+          maxLength={NOTEBOOK_COVER_TITLE_MAX_LENGTH}
+          placeholder={t("cover_title")}
+          onChange={(event) =>
+            onCover({ ...current, title: event.target.value || null })
+          }
+          className="min-h-11 rounded-[var(--radius-card)] border px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{
+            color: "var(--color-main)",
+            backgroundColor: "var(--color-surface)",
+            borderColor:
+              "color-mix(in srgb, var(--color-main) 12%, transparent)",
+          }}
+        />
+      </label>
+    </div>
   );
 }
 

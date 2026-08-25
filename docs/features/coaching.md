@@ -3246,3 +3246,52 @@ pnpm --filter @mentor/api test
   birbirinden ayrılır.
   İlgili: `notebook-content-skeleton.tsx`, `notebook-shell.tsx`, `notebook-surface.tsx`.
 
+- **Kapak özelleştirme: renk, malzeme, kapak yazısı (2026-08-25, APP-046)** — Kullanıcı sordu:
+  görsel mi, SVG/CSS mi? Cevap **CSS + tek SVG filtresi**, üç gerekçeyle: kapak zaten CSS ve kodda
+  gerekçesi yazılıydı; defter `useFitSize` ile sürekli ölçekleniyor, yani raster bir görsel için
+  birden çok boy üretmek gerekir ve yine de büyük ekranda yumuşar; ve seçicideki önizlemeler **gerçek
+  tariflerle** çizilince önizleme ile kapak asla ayrışamaz — kağıt seçicisinin `PAPERS` üzerinden
+  yaptığının aynısı. Görselin kazanacağı tek yer fotoğrafik gren; onu `feTurbulence` ile üretilen,
+  satır içi data-URI olarak gömülü tek bir gürültü katmanı karşılıyor (asset yok, decode yok, her
+  boyutta net). **Renkler literal hex, tema tokenı değil** — mürekkep kalemlerinin de gerekçesi bu:
+  bunlar temanın sahip olduğu yüzeyler değil, kullanıcının seçtiği içerik; karanlık modda dönen bir
+  palet birinin bordo defterini yeşile boyardı. Kapak yazısı krem bir **etiket plakasında** duruyor,
+  doğrudan kapağa basılmıyor — bu yüzden renk başına ayrı yazı rengi kuralı gerekmedi ve palete yeni
+  renk eklemek tek satır. **Depolama:** kitap seviyesinde kayıt yok (`NotebookOverviewDto` sadece
+  sayaç), `paper` ise sayfa başına. Kapak, **0. sayfanın jsonb dokümanında** isteğe bağlı bir alan
+  olarak duruyor: migration yok, repository yok, uç nokta yok — mevcut kaydetme yolu çalışıyor.
+  Alan `optional`, `default`'lu değil: yokluğu "bu sayfa kapak taşımıyor" demek ve bu kırk sayfanın
+  otuz dokuzu için doğru; defaultlamak, önemli olan tek kopyayı diğerlerinden ayırt edilemez yapardı.
+  **Yazma iki yollu**, çünkü 0. sayfa açık olabilir de olmayabilir de: açıksa kendi reducer'ından
+  geçip zaten çalışan otomatik kayda biniyor (aksi halde ikisi yarışır ve kaybeden kazananın üzerine
+  yazar), kapalıysa dokümanı **taze çekilip** geri kaydediliyor — mount'ta alınmış bir kopya o ana
+  kadar dakikalarca eskimiş olabilir. Reducer'daki `setCover` bilerek **geçmiş kaydı tutmuyor**:
+  kapak sayfaya çizilen bir şey değil, kitabın bir özelliği; sticker'ı geri alan biri cildi yeniden
+  boyamak istemiyor. Test, sürüklenmenin gerçekten olabileceği tek yeri tutuyor: enum'a değer eklenip
+  tarifi unutulduğunda kapak sessizce boyasız çizilir, derleyici bunu yakalamaz.
+  İlgili: `packages/types/src/coaching.ts`, `packages/validation/src/coaching.ts`,
+  `notebook-surface.tsx` (+`notebook-cover.spec.ts`), `notebook-side-panel.tsx`,
+  `use-notebook-page.ts`, `notebook-shell.tsx`, `messages/{tr,en}.json`.
+
+- **Mobilde yaprak çevirme yerine slayt geçişi (2026-08-25, APP-046)** — Mobil zaten tek yaprak
+  gösteriyordu (`isMobile` + `mobileSide`); değişen şey geçişin kendisi. Telefon tek sayfa gösterirken
+  koca bir yaprağı çevirip tek sayfa ilerlemek tereddüt gibi okunuyor; sayfalar birbirinin yanından
+  kayıp geçmeli. **Asıl zorluk şuydu:** yaprak çevirme, içeriğin *altında* değişmesine izin veriyor —
+  uçan yaprak boş ve opak, değişimi örtüyor. Slaytta ise çıkan sayfanın **eski içeriğini** göstermesi
+  gerekiyor, oysa `mobilePage` sayfa değiştiği anda diğer tarafın dokümanına geçiyor; mevcut
+  `AnimatePresence` de çıkan alt ağacı canlı tuttuğu için o da yeni içeriği çiziyordu. Yani iki slayt
+  da aynı sayfayı gösterirdi. Çözüm çıkan sayfanın **fotoğrafı**: `doc` + `entries` referansı bir
+  kereliğine saklanıp etkileşimsiz bir katman olarak çiziliyor (`NotebookPageStage`'e hiçbir pointer
+  callback'i verilmiyor, etkileşimsizliği bundan türetiyor). Ek istek yok — bu, bir kare önce zaten
+  çizilmekte olan nesne; sayfa-çevirme yorumunun reddettiği şey "üçüncü ve dördüncü sayfayı
+  **çekmek**"ti, bu değil. Temizlik `onAnimationComplete`'te ve **sıra numarasıyla**: ilk kayma
+  bitmeden ikinci sayfa değişimi olursa fotoğraf değiştiriliyor, yanlış olanı silecek bir zamanlayıcı
+  yarışmıyor. Süre 320 ms — masaüstündeki 780 ms yaprak ağırlığı olan bir nesneyi satıyor, kayma ise
+  navigasyon ve üçte bir saniyeyi geçince telefon yavaş sanılıyor. Crossfade mobilde sıfırlandı: o
+  fade, değişimi dönen yaprağın altında gizlemek içindi ve artık yaprak yok — kaymanın üstüne fade,
+  aynı hareketi anlatmaya çalışan iki geçiş demek. `startSlide` `mobilePage` yerine iki sayfa
+  hook'undan türetiyor, çünkü o değişken bileşende bu callback'ten sonra tanımlı (TDZ). **Parmakla
+  sürükleyerek sayfa değiştirme bilerek eklenmedi:** mobil sahnede kartlar zaten parmakla
+  sürükleniyor, sayfa üzerinde yatay bir sürükleme "kartı taşı" mı "sayfayı çevir" mi belirsiz kalır.
+  İlgili: `notebook-shell.tsx`.
+

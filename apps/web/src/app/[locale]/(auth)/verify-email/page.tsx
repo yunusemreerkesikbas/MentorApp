@@ -6,7 +6,6 @@ import { Suspense, useEffect, useState } from "react";
 import { authControllerVerifyEmail } from "@mentor/api-client";
 import { SectionHeading } from "@mentor/ui";
 import { FormError, FormSuccess } from "@/components/form";
-import { AuthNavLink } from "../_components/auth-nav-link";
 
 function VerifyEmail() {
   const t = useTranslations("auth.verify_email");
@@ -46,7 +45,6 @@ function VerifyEmail() {
           {state === "error" && <FormError message={error} />}
         </>
       )}
-      <AuthNavLink href="/login">{t("back_login")}</AuthNavLink>
     </div>
   );
 }

@@ -3,12 +3,13 @@
 import Script from "next/script";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { ANALYTICS_CONSENT_KEY } from "./analytics";
+import { isPublicConsentBannerPath } from "./consent-banner-path";
 
 type Consent = "accepted" | "rejected" | null;
 
-interface ConsentContextValue {
+export interface ConsentContextValue {
   consent: Consent;
   accept: () => void;
   reject: () => void;
@@ -46,6 +47,8 @@ function clearGaCookies(): void {
 
 export function AnalyticsConsentProvider({ children }: { children: ReactNode }) {
   const translate = useTranslations("analyticsConsent");
+  const pathname = usePathname();
+  const hideBanner = !isPublicConsentBannerPath(pathname);
   const [consent, setConsent] = useState<Consent>(null);
   /** False until localStorage is read — avoids flashing the banner on every load. */
   const [hydrated, setHydrated] = useState(false);
@@ -97,7 +100,7 @@ export function AnalyticsConsentProvider({ children }: { children: ReactNode }) 
           onLoad={initializeGa}
         />
       )}
-      {measurementId && hydrated && consent === null && (
+      {measurementId && hydrated && consent === null && !hideBanner && (
         <section
           role="dialog"
           aria-label={translate("title")}

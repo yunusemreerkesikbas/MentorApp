@@ -5,7 +5,6 @@ import { useState, type FormEvent } from "react";
 import { authControllerForgotPassword } from "@mentor/api-client";
 import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, FormSuccess, SubmitButton } from "@/components/form";
-import { AuthNavLink } from "../_components/auth-nav-link";
 
 export default function ForgotPasswordPage() {
   const t = useTranslations("auth.forgot_password");
@@ -48,7 +47,6 @@ export default function ForgotPasswordPage() {
           <SubmitButton busy={busy}>{t("submit")}</SubmitButton>
         </>
       )}
-      <AuthNavLink href="/login">{t("back_login")}</AuthNavLink>
     </form>
   );
 }
