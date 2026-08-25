@@ -60,23 +60,6 @@ export class IdentityEventsListener {
     );
   }
 
-  @OnEvent(IdentityEventTopic.BUDDY_STUDY_INVITE)
-  async onBuddyStudyInvite(e: BuddyEvent): Promise<void> {
-    if (e.recipientId === e.actorId) return;
-    await this.createBuddyNotification(
-      e,
-      "Birlikte çalışma daveti",
-      `${e.actorDisplayName} seninle çalışmak istiyor — sen de bir seansa başla 🔥`,
-    );
-    // Modal cue on top of the durable notification. Queued briefly when the recipient has
-    // no open stream, so focusing/opening the tab moments later still pops the invite.
-    this.notifications.pushRealtimeEvent(
-      e.recipientId,
-      "study_invite",
-      { actorName: e.actorDisplayName },
-      REALTIME_QUEUE_TTL_MS,
-    );
-  }
 
   private async createBuddyNotification(
     e: BuddyEvent,

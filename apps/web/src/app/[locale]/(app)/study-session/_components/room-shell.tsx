@@ -6,7 +6,8 @@ import { ArrowLeft, Copy, RefreshCw } from "lucide-react";
 import type { StudyRoomDetailDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Card } from "@mentor/ui";
-import { Link, useRouter } from "@/i18n/navigation";
+import { useLocale } from "next-intl";
+import { Link, getPathname, useRouter } from "@/i18n/navigation";
 import {
   closeStudyRoom,
   getStudyRoom,
@@ -34,6 +35,7 @@ type State =
  */
 export function RoomShell({ roomId }: { roomId: string }) {
   const t = useTranslations("session_room");
+  const locale = useLocale();
   const router = useRouter();
   const { error: showErrorToast, success: showSuccessToast } = useMentorToast();
   const [state, setState] = useState<State>({ status: "loading" });
@@ -79,12 +81,20 @@ export function RoomShell({ roomId }: { roomId: string }) {
     }
   };
 
-  const copyCode = async (code: string) => {
+  /**
+   * A link, not a bare code: pasted into a chat it works for someone who has never opened the
+   * app (sign-up happens on the way, and they land at this table afterwards). Built through
+   * `getPathname` so the shared URL is already in the reader's locale.
+   */
+  const inviteLink = (code: string) =>
+    `${window.location.origin}${getPathname({ href: { pathname: "/join-room", query: { kod: code } }, locale })}`;
+
+  const copyLink = async (code: string) => {
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(inviteLink(code));
       showSuccessToast({ title: t("invite_copied"), duration: 2000 });
     } catch {
-      // Clipboard denied (insecure context / permission) — the code is on screen to read.
+      // Clipboard denied (insecure context / permission) — the code is on screen to read out.
     }
   };
 
@@ -167,8 +177,8 @@ export function RoomShell({ roomId }: { roomId: string }) {
               {room.inviteCode}
             </code>
             <IconAction
-              label={t("invite_copy")}
-              onClick={() => void copyCode(room.inviteCode!)}
+              label={t("invite_copy_link")}
+              onClick={() => void copyLink(room.inviteCode!)}
               icon={<Copy className="size-4" strokeWidth={2.25} aria-hidden />}
             />
             <IconAction

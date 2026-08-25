@@ -36,6 +36,11 @@ export const routing = defineRouting({
       tr: "/seans/masa/[id]",
       en: "/study-session/rooms/[id]",
     },
+    /**
+     * Invite-link landing. Short on purpose (it gets pasted into chats) and outside the app
+     * shell, so it can greet someone who has never signed in.
+     */
+    "/join-room": { tr: "/masaya-katil", en: "/join-room" },
     "/coach": { tr: "/koc", en: "/coach" },
     "/coach/chat": { tr: "/koc/sohbet", en: "/coach/chat" },
     "/analysis": { tr: "/analiz", en: "/analysis" },

@@ -85,21 +85,35 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **Auth sheet panel reveal (2026-08-25)** — `/giris` / `/kayit` / nested auth sheet now uses
+  transitions.dev **panel reveal** (`.t-panel-slide`): slides up from below on enter
+  (`--panel-translate-y: 100%`), slides down + fade + blur on leave. Login/signup success and
+  Google start wait for `--panel-close-dur` before navigating. Login↔signup and forgot/reset/verify
+  stay on the open sheet (layout persists). Reduced-motion zeroes the transition.
+  Open is transform-only at 680ms (`translate3d` by `100dvh`, not `%` of the
+  sheet — `%` plus blur made it look like it scaled up and jittered while height
+  settled). Login/signup avoid `useSearchParams` so the form is not an empty
+  Suspense hole. Usage: welcome → `/giris` sheet rises; successful sign-in sheet
+  drops then `/panel` or `/baslangic`. Related: `auth-shell.tsx`, `globals.css`.
 - **Auth sheet chrome + signup sadeleştirme (2026-08-25)** — `/giris`, `/kayit`, şifre sıfırlama
   ve e-posta doğrulama artık centered kart değil: mobilde alta yaslı bottom-sheet (slide-up),
   desktop’ta ortalanmış kart. Theme toggle auth’tan kalktı (varsayılan tema). Login/signup
   subtitle’ları ve signup’taki kullanıcı adı + hedef alanları kaldırıldı — username onboarding
   `ProfileStep`’te, hedef `GoalStep`’te kalır (unique hâlâ `AUTH_USERNAME_IN_USE`). KVKK
   checkbox kayıtta durur; Yasal footer gizlenir. Analytics cookie banner yalnız public
-  yüzeylerde (landing, bilgi, yasal, forum) çıkar — auth, onboarding ve app’te yok.
+  yüzeylerde (bilgi yazısı, yasal, forum) çıkar — welcome `/`, auth, onboarding ve app’te yok.
   Yalnız `/kayit`’te opsiyonel analitik checkbox vardır (işaretli `accept`, değilse `reject`);
   girişte yok. Analytics kaydı zorunlu değil — KVKK rızası ayrı ve zorunlu kalır.
   Forgot/reset/verify “Girişe dön” text linki sheet header’daki ikona taşındı.
-  Usage: mobil `/giris`/`/kayit` sheet + X (`lg:hidden`); nested sayfalar chevron → `/giris`
-  (desktop dahil); desktop login/signup’da close yok. `/kayit` sonrası username yoksa
+  Usage: `/giris` ve `/kayit`’te close yok, başlık ortalı; nested sayfalar chevron → `/giris`
+  (desktop dahil). `/kayit` sonrası username yoksa
   `/baslangic`. Gotcha: API `signup.username` optional kaldı; Google kaydı zaten
   onboarding’e düşer. Related: `auth-shell.tsx`, `auth-paths.ts`, `signup/page.tsx`,
   `analytics-consent.tsx`, `(auth)/layout.tsx`.
+- **Welcome `/` cookie banner kapalı (2026-08-25)** — `localhost:3000` welcome slaytlarında
+  analitik çerez modalı çıkıyordu çünkü `/` public landing sayılıyordu. Welcome onboarding
+  chrome’u; banner yalnız `/knowledge/[slug]`, `/legal/*`, `/forum/*`. Usage: `/` → Atla /
+  slayt, modal yok. Related: `consent-banner-path.ts`.
 
 - **Onboarding light/dark surfaces (2026-08-15)** — Wizard card, avatar well, and exam
   pills use `--color-surface` / `--color-border`. Selected exam check uses
@@ -260,11 +274,11 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   TCP (or 120s). Gotcha: if API is intentionally down, FE still starts after 120s; session may
   stay `loading` up to ~30s of retries before anonymous. Related: `wait-for-port.mjs`,
   `apps/web/src/lib/auth-context.tsx`, `apps/admin/src/contentApi/authProvider.tsx`.
-- **Dev boot — wait until API is up (2026-08-25)** — 120s `starting anyway` opened Next while
-  Nest was still compiling → `ERR_CONNECTION_REFUSED` on `/v1/auth/refresh`. `wait-for-port` now
-  waits until `:3001` accepts TCP (no start-anyway). Usage: `pnpm dev` — web stays on
-  "waiting for :3001" until the API logs `Mentor API → …`. FE-only: skip the wait with
-  `pnpm --filter @mentor/web exec next dev --port 3000`. Related: `wait-for-port.mjs`.
+- **Dev boot — API and web run separately (2026-08-25)** — `pnpm dev` started Next while Nest
+  was still compiling (or failing TypeScript), so `/giris` hit `ERR_CONNECTION_REFUSED` on
+  `/v1/auth/refresh`. The compile blocker was `SessionReflectionDto.suggestedTask` rejecting
+  `null`. Usage: two terminals — `pnpm --filter @mentor/api dev` then
+  `pnpm --filter @mentor/web dev` after `Mentor API → …`. Related: `session-reflection.service.ts`.
 
 - **Hesabımı sil — self-service KVKK (2026-07-14)** — Dilim 13'te bütünsel silme makinesi kurulmuştu
   ama yalnız admin tetikleyebiliyordu; "unutulma hakkı" veri sahibinin kendisine ait. Yeni

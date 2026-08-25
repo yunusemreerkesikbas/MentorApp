@@ -2308,6 +2308,35 @@
         ]
       }
     },
+    "/v1/coaching/weekly-review/completion": {
+      "put": {
+        "operationId": "CoachingController_completeWeeklyReview",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteWeeklyReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
     "/v1/coaching/mood-checkins": {
       "post": {
         "operationId": "CoachingController_upsertMood",
@@ -3319,16 +3348,33 @@
         ]
       }
     },
-    "/v1/coaching/notebook/entries/image-upload-url": {
+    "/v1/coaching/notebook/entries": {
+      "get": {
+        "operationId": "MistakeNotebookController_listEntries",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      },
       "post": {
-        "operationId": "MistakeNotebookController_createUploadUrl",
+        "operationId": "MistakeNotebookController_createEntry",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NotebookImageUploadUrlDto"
+                "$ref": "#/components/schemas/CreateNotebookEntryDto"
               }
             }
           }
@@ -3348,16 +3394,16 @@
         ]
       }
     },
-    "/v1/coaching/notebook/entries": {
+    "/v1/coaching/notebook/entries/image-upload-url": {
       "post": {
-        "operationId": "MistakeNotebookController_createEntry",
+        "operationId": "MistakeNotebookController_createUploadUrl",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateNotebookEntryDto"
+                "$ref": "#/components/schemas/NotebookImageUploadUrlDto"
               }
             }
           }
@@ -4113,6 +4159,35 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AttachmentUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "forum"
+        ]
+      }
+    },
+    "/v1/forum/attachments/copy": {
+      "post": {
+        "operationId": "ForumThreadController_copyAttachment",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyAttachmentDto"
               }
             }
           }
@@ -6349,6 +6424,63 @@
         ]
       }
     },
+    "/v1/admin/plans": {
+      "get": {
+        "operationId": "AdminPlansController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/plans/{id}": {
+      "patch": {
+        "operationId": "AdminPlansController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/admin/metrics": {
       "get": {
         "operationId": "AdminMetricsController_overview",
@@ -6663,6 +6795,130 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/v1/community/profile/{username}/achievements": {
+      "get": {
+        "operationId": "CommunityController_getAchievements",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/v1/community/achievements/unseen": {
+      "get": {
+        "operationId": "CommunityController_getUnseenAchievements",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/v1/community/achievements/celebrated": {
+      "post": {
+        "operationId": "CommunityController_celebrateAchievements",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CelebrateAchievementsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/v1/community/journey-levels/unseen": {
+      "get": {
+        "operationId": "CommunityController_getUnseenJourneyLevels",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "community"
+        ]
+      }
+    },
+    "/v1/community/journey-levels/celebrated": {
+      "post": {
+        "operationId": "CommunityController_celebrateJourneyLevel",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CelebrateJourneyLevelDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
             "description": ""
           }
         },
@@ -7361,6 +7617,10 @@
         "type": "object",
         "properties": {}
       },
+      "CompleteWeeklyReviewDto": {
+        "type": "object",
+        "properties": {}
+      },
       "CreateMoodCheckinDto": {
         "type": "object",
         "properties": {}
@@ -7481,6 +7741,10 @@
         "type": "object",
         "properties": {}
       },
+      "CopyAttachmentDto": {
+        "type": "object",
+        "properties": {}
+      },
       "CreateThreadDto": {
         "type": "object",
         "properties": {}
@@ -7553,6 +7817,10 @@
         "type": "object",
         "properties": {}
       },
+      "UpdatePlanDto": {
+        "type": "object",
+        "properties": {}
+      },
       "ReviewForumTagSuggestionDto": {
         "type": "object",
         "properties": {}
@@ -7566,6 +7834,14 @@
         "properties": {}
       },
       "SetFeaturedThreadDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CelebrateAchievementsDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CelebrateJourneyLevelDto": {
         "type": "object",
         "properties": {}
       },

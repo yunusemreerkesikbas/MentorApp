@@ -67,20 +67,18 @@ export class StudyRoomService {
 
   async create(userId: string, input: CreateStudyRoomInput): Promise<StudyRoomDetailDto> {
     await this.assertEnabled();
-    const active = await this.rooms.countActiveMembershipsForUser(
+    const result = await this.rooms.createWithOwner(
       userId,
-      STUDY_ROOM_DORMANT_DAYS,
+      {
+        name: input.name,
+        theme: input.theme,
+        capacity: input.capacity,
+        inviteCode: await this.reserveCode(),
+      },
+      { quota: STUDY_ROOM_QUOTA, dormantDays: STUDY_ROOM_DORMANT_DAYS },
     );
-    if (active >= STUDY_ROOM_QUOTA) {
-      throw new DomainError(ErrorCode.COACHING_ROOM_QUOTA_EXCEEDED, HttpStatus.CONFLICT);
-    }
-    const room = await this.rooms.createWithOwner(userId, {
-      name: input.name,
-      theme: input.theme,
-      capacity: input.capacity,
-      inviteCode: await this.reserveCode(),
-    });
-    return this.getDetail(userId, room.id);
+    if (!result.ok) throw joinError(result.reason);
+    return this.getDetail(userId, result.room.id);
   }
 
   /** "Masalarım" — one presence query covers every room in the list. */
@@ -128,13 +126,9 @@ export class StudyRoomService {
     patch: UpdateStudyRoomInput,
   ): Promise<StudyRoomDetailDto> {
     await this.assertEnabled();
-    await this.requireOwner(userId, roomId);
-    const result = await this.rooms.updateRoom(roomId, patch);
+    const result = await this.rooms.updateRoom(userId, roomId, patch);
     if (!result.ok) {
-      throw new DomainError(
-        ErrorCode.COACHING_ROOM_CAPACITY_BELOW_MEMBERS,
-        HttpStatus.CONFLICT,
-      );
+      throw ownerMutationError(result.reason);
     }
     return this.getDetail(userId, roomId);
   }
@@ -142,8 +136,8 @@ export class StudyRoomService {
   /** Rotate a leaked code. Memberships are unaffected — they hang off rows, not the code. */
   async rotateInviteCode(userId: string, roomId: string): Promise<StudyRoomDetailDto> {
     await this.assertEnabled();
-    await this.requireOwner(userId, roomId);
-    await this.rooms.setInviteCode(roomId, await this.reserveCode());
+    const result = await this.rooms.setInviteCode(userId, roomId, await this.reserveCode());
+    if (!result.ok) throw ownerMutationError(result.reason);
     return this.getDetail(userId, roomId);
   }
 
@@ -163,13 +157,13 @@ export class StudyRoomService {
    */
   async removeMember(userId: string, roomId: string, targetUserId: string): Promise<void> {
     await this.assertEnabled();
-    await this.requireOwner(userId, roomId);
     if (targetUserId === userId) {
       // Removing yourself is "leave" — it carries succession semantics the owner path lacks.
       await this.leave(userId, roomId);
       return;
     }
-    const result = await this.rooms.removeMember(roomId, targetUserId);
+    const result = await this.rooms.removeMemberAsOwner(userId, roomId, targetUserId);
+    if (!result.ok) throw ownerMutationError(result.reason);
     if (!result.removed) {
       throw new DomainError(ErrorCode.COACHING_ROOM_NOT_MEMBER, HttpStatus.NOT_FOUND);
     }
@@ -177,9 +171,27 @@ export class StudyRoomService {
 
   async close(userId: string, roomId: string): Promise<void> {
     await this.assertEnabled();
-    await this.requireOwner(userId, roomId);
     // Memberships cascade; past sessions keep their history and lose only the room label.
-    await this.rooms.deleteRoom(roomId);
+    const result = await this.rooms.deleteRoom(userId, roomId);
+    if (!result.ok) throw ownerMutationError(result.reason);
+  }
+
+  /**
+   * Fan-out targets for "someone sat down at your table": the room's name plus every member
+   * except the actor. No flag check — a seated session can only exist while rooms are on.
+   * Returns null when the room vanished between the event and the listener.
+   */
+  async getNotificationTargets(
+    roomId: string,
+    actorId: string,
+  ): Promise<{ roomName: string; memberIds: string[] } | null> {
+    const room = await this.rooms.findById(roomId);
+    if (!room) return null;
+    const members = await this.rooms.listMembers(roomId);
+    return {
+      roomName: room.name,
+      memberIds: members.map((m) => m.userId).filter((id) => id !== actorId),
+    };
   }
 
   // --- internals -------------------------------------------------------------
@@ -187,14 +199,6 @@ export class StudyRoomService {
   private async requireRoom(roomId: string): Promise<StudyRoomRow> {
     const room = await this.rooms.findById(roomId);
     if (!room) throw new DomainError(ErrorCode.COACHING_ROOM_NOT_FOUND, HttpStatus.NOT_FOUND);
-    return room;
-  }
-
-  private async requireOwner(userId: string, roomId: string): Promise<StudyRoomRow> {
-    const room = await this.requireRoom(roomId);
-    if (room.ownerUserId !== userId) {
-      throw new DomainError(ErrorCode.COACHING_ROOM_NOT_OWNER, HttpStatus.FORBIDDEN);
-    }
     return room;
   }
 
@@ -274,4 +278,19 @@ function joinError(reason: "code_invalid" | "already_member" | "full" | "quota_e
     case "quota_exceeded":
       return new DomainError(ErrorCode.COACHING_ROOM_QUOTA_EXCEEDED, HttpStatus.CONFLICT);
   }
+}
+
+function ownerMutationError(
+  reason: "not_found" | "not_owner" | "capacity_below_members",
+): DomainError {
+  if (reason === "not_found") {
+    return new DomainError(ErrorCode.COACHING_ROOM_NOT_FOUND, HttpStatus.NOT_FOUND);
+  }
+  if (reason === "not_owner") {
+    return new DomainError(ErrorCode.COACHING_ROOM_NOT_OWNER, HttpStatus.FORBIDDEN);
+  }
+  return new DomainError(
+    ErrorCode.COACHING_ROOM_CAPACITY_BELOW_MEMBERS,
+    HttpStatus.CONFLICT,
+  );
 }

@@ -11,7 +11,7 @@ import type {
   NotificationListDto,
   UserNotificationDto,
 } from "@mentor/types";
-import { NotificationDrawerProvider, useDialog } from "@mentor/ui";
+import { NotificationDrawerProvider } from "@mentor/ui";
 import { PuhuImage } from "@/components/puhu-image";
 import { AchievementCelebration } from "@/components/achievements/achievement-celebration";
 import { JourneyLevelCelebration } from "@/components/journey-levels/journey-level-celebration";
@@ -74,10 +74,8 @@ const CATEGORY_FALLBACK: Record<NotificationCategory, string> = {
 /** Web-layer wrapper: fetches data, injects i18n labels and Puhu icons. */
 export function NotificationDrawerShell({ children }: NotificationDrawerShellProps) {
   const t = useTranslations("notifications");
-  const tSession = useTranslations("session");
   const tJourney = useTranslations("journey_levels");
   const router = useRouter();
-  const dialog = useDialog();
   const [data, setData] = useState<NotificationListDto>(EMPTY);
   const [achievementCelebrations, setAchievementCelebrations] = useState<AchievementCelebrationDto[]>([]);
   const [journeyLevelCelebrations, setJourneyLevelCelebrations] = useState<JourneyLevelCelebrationView[]>([]);
@@ -121,26 +119,6 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
     });
   }, []);
 
-  // Live "study together" invite → attention-grabbing modal. Kept in a ref so the SSE
-  // connection (below) never reconnects when dialog/router/locale change. Fires only on a
-  // real-time push — never on history load — so a stale invite can't pop hours later.
-  const showStudyInviteRef = useRef<(actorName: string) => void>(() => {});
-  useEffect(() => {
-    showStudyInviteRef.current = (actorName: string) => {
-      void dialog
-        .promo({
-          title: tSession("buddy_invite_modal_title", { name: actorName }),
-          message: tSession("buddy_invite_modal_body"),
-          primaryLabel: tSession("buddy_invite_modal_start"),
-          linkLabel: tSession("buddy_invite_modal_later"),
-          closeLabel: t("close"),
-        })
-        .then((result) => {
-          if (result === "primary") router.push("/study-session");
-        });
-    };
-  });
-
   // SSE: real-time bell updates — connect once on mount, reconnect on visibility
   useEffect(() => {
     const apiBase = apiBaseUrl();
@@ -155,18 +133,14 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
         if (cancelled) return; // cleanup ran while awaiting token
         es = new EventSource(`${apiBase}/v1/notifications/stream?token=${token}`);
         es.onmessage = (ev: MessageEvent) => {
-          // Branch on the typed payload: a live study-invite opens a modal (in addition
-          // to the drawer refresh); every event still refreshes the bell.
-          let payload: { event?: string; actorName?: string } | null = null;
+          // Branch on the typed payload; every event also refreshes the bell.
+          let payload: { event?: string } | null = null;
           try {
             payload = JSON.parse(ev.data as string);
           } catch {
             payload = null; // heartbeat sends an empty frame — nothing to do
           }
           if (!payload?.event) return;
-          if (payload.event === "study_invite" && payload.actorName) {
-            showStudyInviteRef.current(payload.actorName);
-          }
           if (
             payload.event === "achievement_awarded" ||
             payload.event === "journey_level_unlocked"

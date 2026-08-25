@@ -27,9 +27,9 @@ export interface StudyRoomMemberWithUserRow {
 const VISIBLE_USER = sql`${users.status} not in ('BANNED', 'SUSPENDED')`;
 
 /**
- * Study rooms + memberships. Runs in SERVICE context, scoped by explicit WHERE clauses —
- * same trust model as `buddy_pairs` / `user_follows` (room rows are cross-user by nature,
- * so there is no RLS policy to lean on; the caller id is always the authenticated user).
+ * Study rooms + memberships. Runs in SERVICE context, scoped by explicit WHERE clauses and
+ * protected by service-only RLS. Room rows are cross-user by nature; caller authorization still
+ * belongs to the repository transaction rather than a self-only database policy.
  *
  * Anything that must not race — join (capacity + quota), leave (ownership succession) — takes
  * a `select … for update` lock on the room row inside a single transaction.
@@ -42,8 +42,16 @@ export class StudyRoomRepository {
   async createWithOwner(
     ownerUserId: string,
     data: { name: string; theme: string; capacity: number; inviteCode: string },
-  ): Promise<StudyRoomRow> {
+    opts: { quota: number; dormantDays: number },
+  ): Promise<
+    | { ok: true; room: StudyRoomRow }
+    | { ok: false; reason: "quota_exceeded" }
+  > {
     return withServiceContext(this.db, async (tx) => {
+      await this.lockUserQuota(tx, ownerUserId);
+      if ((await this.countActiveMemberships(tx, ownerUserId, opts.dormantDays)) >= opts.quota) {
+        return { ok: false as const, reason: "quota_exceeded" as const };
+      }
       const rows = await tx
         .insert(studyRooms)
         .values({ ownerUserId, ...data })
@@ -52,7 +60,7 @@ export class StudyRoomRepository {
       await tx
         .insert(studyRoomMembers)
         .values({ roomId: room.id, userId: ownerUserId, role: "OWNER" });
-      return room;
+      return { ok: true as const, room };
     });
   }
 
@@ -116,6 +124,7 @@ export class StudyRoomRepository {
     | { ok: false; reason: "code_invalid" | "already_member" | "full" | "quota_exceeded" }
   > {
     return withServiceContext(this.db, async (tx) => {
+      await this.lockUserQuota(tx, userId);
       const locked = await tx
         .select()
         .from(studyRooms)
@@ -194,11 +203,19 @@ export class StudyRoomRepository {
 
   /** Owner edit. Capacity is re-checked against the live member count under the room lock. */
   async updateRoom(
+    actorUserId: string,
     roomId: string,
     patch: { name?: string; theme?: string; capacity?: number },
-  ): Promise<{ ok: true; room: StudyRoomRow } | { ok: false; reason: "capacity_below_members" }> {
+  ): Promise<
+    | { ok: true; room: StudyRoomRow }
+    | { ok: false; reason: "not_found" | "not_owner" | "capacity_below_members" }
+  > {
     return withServiceContext(this.db, async (tx) => {
-      await tx.select().from(studyRooms).where(eq(studyRooms.id, roomId)).limit(1).for("update");
+      const room = await this.lockRoom(tx, roomId);
+      if (!room) return { ok: false as const, reason: "not_found" as const };
+      if (room.ownerUserId !== actorUserId) {
+        return { ok: false as const, reason: "not_owner" as const };
+      }
       if (patch.capacity !== undefined) {
         const members = await this.countMembers(tx, roomId);
         if (patch.capacity < members) {
@@ -214,21 +231,69 @@ export class StudyRoomRepository {
     });
   }
 
-  async setInviteCode(roomId: string, inviteCode: string): Promise<StudyRoomRow | undefined> {
+  async setInviteCode(
+    actorUserId: string,
+    roomId: string,
+    inviteCode: string,
+  ): Promise<
+    | { ok: true; room: StudyRoomRow }
+    | { ok: false; reason: "not_found" | "not_owner" }
+  > {
     return withServiceContext(this.db, async (tx) => {
+      const room = await this.lockRoom(tx, roomId);
+      if (!room) return { ok: false as const, reason: "not_found" as const };
+      if (room.ownerUserId !== actorUserId) {
+        return { ok: false as const, reason: "not_owner" as const };
+      }
       const rows = await tx
         .update(studyRooms)
         .set({ inviteCode, updatedAt: new Date() })
         .where(eq(studyRooms.id, roomId))
         .returning();
-      return rows[0];
+      return { ok: true as const, room: rows[0]! };
     });
   }
 
-  async deleteRoom(roomId: string): Promise<void> {
-    await withServiceContext(this.db, (tx) =>
-      tx.delete(studyRooms).where(eq(studyRooms.id, roomId)),
-    );
+  async removeMemberAsOwner(
+    actorUserId: string,
+    roomId: string,
+    targetUserId: string,
+  ): Promise<
+    | { ok: true; removed: boolean }
+    | { ok: false; reason: "not_found" | "not_owner" }
+  > {
+    return withServiceContext(this.db, async (tx) => {
+      const room = await this.lockRoom(tx, roomId);
+      if (!room) return { ok: false as const, reason: "not_found" as const };
+      if (room.ownerUserId !== actorUserId) {
+        return { ok: false as const, reason: "not_owner" as const };
+      }
+      const deleted = await tx
+        .delete(studyRoomMembers)
+        .where(
+          and(
+            eq(studyRoomMembers.roomId, roomId),
+            eq(studyRoomMembers.userId, targetUserId),
+          ),
+        )
+        .returning({ id: studyRoomMembers.id });
+      return { ok: true as const, removed: deleted.length > 0 };
+    });
+  }
+
+  async deleteRoom(
+    actorUserId: string,
+    roomId: string,
+  ): Promise<{ ok: true } | { ok: false; reason: "not_found" | "not_owner" }> {
+    return withServiceContext(this.db, async (tx) => {
+      const room = await this.lockRoom(tx, roomId);
+      if (!room) return { ok: false as const, reason: "not_found" as const };
+      if (room.ownerUserId !== actorUserId) {
+        return { ok: false as const, reason: "not_owner" as const };
+      }
+      await tx.delete(studyRooms).where(eq(studyRooms.id, roomId));
+      return { ok: true as const };
+    });
   }
 
   /** Bump the dormancy anchor when a member sits down (called from the session start tx). */
@@ -311,11 +376,23 @@ export class StudyRoomRepository {
     return rows[0]?.count ?? 0;
   }
 
-  /** Public wrapper so the service can enforce the quota before creating a room. */
-  countActiveMembershipsForUser(userId: string, dormantDays: number): Promise<number> {
-    return withServiceContext(this.db, (tx) =>
-      this.countActiveMemberships(tx, userId, dormantDays),
+  private async lockUserQuota(tx: DatabaseTx, userId: string): Promise<void> {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${userId}, 0))`,
     );
+  }
+
+  private async lockRoom(
+    tx: DatabaseTx,
+    roomId: string,
+  ): Promise<StudyRoomRow | undefined> {
+    const rows = await tx
+      .select()
+      .from(studyRooms)
+      .where(eq(studyRooms.id, roomId))
+      .limit(1)
+      .for("update");
+    return rows[0];
   }
 
   private selectForUser(tx: DatabaseTx, userId: string): Promise<StudyRoomWithMembershipRow[]> {

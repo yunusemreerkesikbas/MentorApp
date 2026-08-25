@@ -2,8 +2,6 @@
 import "./instrument";
 import "reflect-metadata";
 
-import { appendFileSync } from "node:fs";
-
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
@@ -30,33 +28,10 @@ function corsOrigins(config: ConfigService<Env, true>): string[] {
   return Array.from(new Set([appUrl, "http://localhost:3000", "http://localhost:3002"]));
 }
 
-function dbg(message: string, data: Record<string, unknown> = {}, hypothesisId = "F"): void {
-  try {
-    appendFileSync(
-      "c:/Users/emreerkesikbas/Documents/MentorApp/debug-24f38f.log",
-      `${JSON.stringify({
-        sessionId: "24f38f",
-        runId: "api-boot",
-        hypothesisId,
-        location: "apps/api/src/main.ts",
-        message,
-        data,
-        timestamp: Date.now(),
-      })}\n`,
-    );
-  } catch {
-    /* debug ingest must not block boot */
-  }
-}
-
-dbg("main loaded", { pid: process.pid });
-
 async function bootstrap(): Promise<void> {
-  dbg("NestFactory.create start");
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true, // buffer until pino logger is attached
   });
-  dbg("NestFactory.create done");
   app.useLogger(app.get(Logger));
 
   const config: ConfigService<Env, true> = app.get(ConfigService);
@@ -93,12 +68,7 @@ async function bootstrap(): Promise<void> {
 
   const port = config.get("PORT", { infer: true });
   await app.listen(port);
-  dbg("listen done", { port }, "I");
   app.get(Logger).log(`Mentor API → http://localhost:${port}/v1`);
 }
 
-void bootstrap().catch((err: unknown) => {
-  const e = err instanceof Error ? err : new Error(String(err));
-  dbg("bootstrap threw", { name: e.name, errMessage: e.message }, "G");
-  throw err;
-});
+void bootstrap();

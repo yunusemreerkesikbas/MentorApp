@@ -6,6 +6,7 @@ import { getPathname } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { apiBaseUrl } from "@/lib/api-base";
 import { fetchGoogleAuthEnabled } from "@/lib/google-auth";
+import { useAuthSheetExit } from "./auth-shell";
 
 interface GoogleAuthButtonProps {
   mode: "login" | "signup";
@@ -42,7 +43,8 @@ function GoogleLogo() {
 export function GoogleAuthButton({ mode, onBeforeStart }: GoogleAuthButtonProps) {
   const locale = useLocale();
   const t = useTranslations("auth.google");
-  const [enabled, setEnabled] = useState(false);
+  const exitThen = useAuthSheetExit();
+  const [enabled, setEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -58,7 +60,9 @@ export function GoogleAuthButton({ mode, onBeforeStart }: GoogleAuthButtonProps)
     };
   }, []);
 
-  if (!enabled) return null;
+  if (enabled === false) return null;
+
+  const pending = enabled !== true;
 
   function handleClick() {
     if (onBeforeStart && !onBeforeStart()) return;
@@ -71,11 +75,14 @@ export function GoogleAuthButton({ mode, onBeforeStart }: GoogleAuthButtonProps)
       }),
     });
     if (mode === "signup") params.set("kvkkAccepted", "true");
-    window.location.assign(`${apiBaseUrl()}/v1/auth/google/start?${params.toString()}`);
+    const href = `${apiBaseUrl()}/v1/auth/google/start?${params.toString()}`;
+    exitThen(() => {
+      window.location.assign(href);
+    });
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3" aria-hidden={pending || undefined}>
       <div className="flex items-center gap-3" aria-hidden>
         <span className="h-px flex-1" style={dividerStyle} />
         <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
@@ -87,7 +94,8 @@ export function GoogleAuthButton({ mode, onBeforeStart }: GoogleAuthButtonProps)
         type="button"
         aria-label={t("continue")}
         onClick={handleClick}
-        className="mx-auto flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border bg-[var(--color-surface)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] motion-reduce:transition-none"
+        disabled={pending}
+        className={`mx-auto flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border bg-[var(--color-surface)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface)] motion-reduce:transition-none ${pending ? "invisible" : ""}`}
         style={{
           borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",
         }}

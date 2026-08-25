@@ -28,6 +28,7 @@ import {
   CoachingEventTopic,
   DailyPlanCompleted,
   FirstSessionOfDay,
+  StudyRoomSessionStarted,
   StudySessionCompleted,
   PlanTaskCompleted,
 } from "../domain/coaching.events";
@@ -247,6 +248,13 @@ export class SessionService {
         planTaskId: input.planTaskId ?? null,
         roomId: input.roomId ?? null,
       });
+      // Only a seated start is worth announcing — solo starts have nobody waiting on them.
+      if (input.roomId) {
+        this.events.emit(
+          CoachingEventTopic.SESSION_STARTED,
+          new StudyRoomSessionStarted(userId, input.roomId),
+        );
+      }
       return toStudySessionDto(row, minFocusSeconds);
     });
   }

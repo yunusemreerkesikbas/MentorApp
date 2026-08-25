@@ -38,9 +38,9 @@ domain logic + persistence and exposes setters the AI module calls.
   multi-table writes (task/session ↔ `daily_activity`) are atomic. Don't open a second tx inside a repo.
 - **AI seam (workstreams §2):** AI never writes coaching tables — it calls `MoodService.
 setTodayAiReflection`, `MockExamService.setLatestGhostNarration`, `VisionService.setAiNote` and the
-explicitly approved `PlanService.createFromAiCoach` / `SessionService.startFromAiCoach` public seams.
-`CoachEvidenceService` is the only Mentor V2 read boundary and returns aggregates without raw task,
-mood/session note, identity or forum text.
+  explicitly approved `PlanService.createFromAiCoach` / `SessionService.startFromAiCoach` public seams.
+  `CoachEvidenceService` is the only Mentor V2 read boundary and returns aggregates without raw task,
+  mood/session note, identity or forum text.
 
 ## Tutorials / Guides
 
@@ -174,10 +174,9 @@ pnpm --filter @mentor/api test
   `!overview` iken iskelet gösteriyor. İskeletten doğrudan spread'e geçiyor. Düzeltilecek bir şey
   yoktu; iddia doğrulanmadan yapılmıştı.
 
-
 - **`notebook-shell.tsx` bölündü — ve nerede durulduğu (2026-08-22)** — Dosya 1846 satıra çıkmıştı.
-  Bölmenin kuralı şuydu: *taşınan her parça kendi durumunu da götürmeli; bir parçayı ayırmak on yeni
-  prop gerektiriyorsa dikiş orada değildir.* Kural uygulanınca çıkan sonuç, planlanandan **daha
+  Bölmenin kuralı şuydu: _taşınan her parça kendi durumunu da götürmeli; bir parçayı ayırmak on yeni
+  prop gerektiriyorsa dikiş orada değildir._ Kural uygulanınca çıkan sonuç, planlanandan **daha
   küçük** oldu ve bu kayda değer.
 
   **Çıkanlar (üçü de bileşen durumuna sıfır bağımlı):**
@@ -191,24 +190,23 @@ pnpm --filter @mentor/api test
   **1846 → 1694 satır.**
 
   **Çıkmayanlar, ölçülmüş gerekçesiyle:**
-  *Ray JSX'i* (~235 satır) ayrılırsa 20'den fazla prop ister — `activeRail`, `openCategory`,
+  _Ray JSX'i_ (~235 satır) ayrılırsa 20'den fazla prop ister — `activeRail`, `openCategory`,
   `focused`in tamamı, `saving`/`saveNow`, iki sayfanın dirty bayrakları, yan panelin kendi props'ları.
   Bu ayırma değil, prop taşımacılığı olurdu.
-  *Veri yükleme efekti* dokuz setter'a dokunuyor ve beşi UI durumu (`setView`, `setActivePanel`,
+  _Veri yükleme efekti_ dokuz setter'a dokunuyor ve beşi UI durumu (`setView`, `setActivePanel`,
   `setDetailCollapsed`, `setReviewing`, `setMockExamId`). Temiz bir `useNotebookData` ancak URL
-  niyetini *döndürüp* UI sonucunu kabuğa bırakarak olurdu — ki o da URL'i mount'ta senkron okumayı
+  niyetini _döndürüp_ UI sonucunu kabuğa bırakarak olurdu — ki o da URL'i mount'ta senkron okumayı
   gerektirir, yani **davranış değişikliği**. Saf bir refactor turunda bunu yapmak, "davranış
   değişmedi, kanıtı e2e" cümlesini yalan yapardı.
-  *Diyalog bloğu* (~62 satır) on beş prop ister; hepsi kabuğun kendi durumu.
+  _Diyalog bloğu_ (~62 satır) on beş prop ister; hepsi kabuğun kendi durumu.
 
   Kalan 1694 satır hâlâ büyük, ama bir tuval editörünün kabuğu gerçekten çok sayıda birbirine bağlı
   durum tutuyor; onu zorla bölmek dosyayı küçültüp kodu kötüleştirirdi. Davranışın değişmediğinin
   kanıtı 36 e2e senaryosunun yeşil kalması.
 
-
 - **Fix: tekrar destesi uzak barındırıcıdaki fotoğrafta çöküyordu (2026-08-22)** — "Tekrar zamanı"
-  çipine basınca dev'de runtime hata: *"Invalid src prop … hostname pub-….r2.dev is not configured
-  under images"*. Sebep bende: flashcard'a geçerken soru fotoğrafını düz bir `<img>`'den
+  çipine basınca dev'de runtime hata: _"Invalid src prop … hostname pub-….r2.dev is not configured
+  under images"_. Sebep bende: flashcard'a geçerken soru fotoğrafını düz bir `<img>`'den
   `next/image`'a çevirmiştim ve `unoptimized`'ı düşürmüştüm. Uygulama `images.remotePatterns`
   **hiç tanımlamıyor**, bu yüzden defterdeki her R2 görseli (`notebook-entry-card`,
   `notebook-image-lightbox`, `notebook-add-panel`) baştan beri `unoptimized` geçiyor; kart yeniden
@@ -223,7 +221,6 @@ pnpm --filter @mentor/api test
   **Ders:** R2'den gelen bir görseli `next/image` ile render eden her yeni çağrı yeri `unoptimized`
   taşımak zorunda; `remotePatterns` eklemek ayrı ve bilinçli bir karar olurdu (bucket host'u
   ortamdan ortama değişiyor).
-
 
 - **Defter dizini: "Ara" paneli (2026-08-22)** — Defterde **hiçbir listeleme yoktu.** Repository'de
   `listEntriesByIds` (sayfalar), `listDueEntries` (deste) ve analiz için toplu sinyaller vardı;
@@ -261,7 +258,6 @@ pnpm --filter @mentor/api test
   (+spec), `packages/validation/src/coaching.ts`, `notebook-{shell,side-panel,add-panel}.tsx`,
   `lib/notebook{,-image-aspect}.ts`, `e2e/notebook.spec.ts`.
 
-
 - **Kaydı silme/düzenleme, deneme→defter köprüsü, push deep-link ölçümü (2026-08-22)** —
   Uçları çağıranlarla karşılaştırınca **üçüncü kez** aynı kalıp çıktı: `DELETE /entries/:id`, istemci
   sarmalayıcısı, R2 fotoğraf temizliği ve testi hazırdı, **hiçbir UI çağırmıyordu.** Üç ayrı yüzü
@@ -297,13 +293,12 @@ pnpm --filter @mentor/api test
   `notebook-shell.tsx`, `notebook-{add,side}-panel.tsx`, `notebook-review-panel.tsx`,
   `analysis-{shell,tab-entry}.tsx`, `e2e/{notebook,analysis}.spec.ts`, `analysis.fixture.ts`.
 
-
 - **Ders bazlı deste + topluluktaki soruyu deftere alma (2026-08-21)** — Destede filtre: liste
   başlıklarındaki "Sadece bunu çalış" desteyi tek derse indiriyor, "Tüm dersler" geri alıyor.
   Filtre **türetiliyor, kopyalanmıyor** (`fullDeck` state + `subjectFilter` → `deck`); kopyalansa
   not düzenleme yaması ikisinden öğrencinin bakmadığına yazardı. `answered` id bazlı olduğu için
   filtre boyunca korunuyor.
-  **Gotcha:** liste artık *tüm* desteyi gösteriyor (ders değiştirmenin yolu o), ama deste filtreli
+  **Gotcha:** liste artık _tüm_ desteyi gösteriyor (ders değiştirmenin yolu o), ama deste filtreli
   olabiliyor — yani indeks iki tarafta farklı kartı işaret ediyordu. `onPick` id alıyor;
   filtre dışındaki bir karta atlamak filtreyi kaldırıyor, çünkü öğrenci onu işaret etti.
   **İkinci gotcha:** filtreli deste bitince `index` -1 oluyor ve eski kod "Bugünlük bu kadar"
@@ -325,7 +320,6 @@ pnpm --filter @mentor/api test
   İlgili: `notebook-review-{panel,list}.tsx`, `question-shell.tsx`, `notebook-add-dialog.tsx` (yeni),
   `e2e/notebook{,-community-bridge}.spec.ts`, `messages/{tr,en}.json`.
 
-
 - **Flashcard'ın arkasına çözüm alanı (2026-08-21)** — Kart arkası hata tipini, tekrar sayısını ve
   öğrencinin notunu taşıyordu ama **sorunun cevabını taşımıyordu**; bir flashcard'ın arkası tanımı
   gereği cevaptır. İlk beyin fırtınasında "ayrı PR" diye ertelenmişti, kart arkası da o alana yer
@@ -337,7 +331,7 @@ pnpm --filter @mentor/api test
   seni ikinci kez yakaladığı anda öğrenilir.
 
   **En kritik gotcha, sessiz veri kaybıydı:** `listAllReferencedImageKeys` orphan süpürgesinin
-  *whitelist*'i — `cleanupOrphanImages` `notebook/` altında bu sorgunun saymadığı ne varsa siliyor.
+  _whitelist_'i — `cleanupOrphanImages` `notebook/` altında bu sorgunun saymadığı ne varsa siliyor.
   Çözüm fotoğrafı aynı prefix'i paylaştığı için, kolon o sorguya eklenmese her kayıtlı cevap grace
   süresi dolunca silinecekti. Anahtar toplama saf bir fonksiyona (`notebookEntryImageKeys`) çıkarıldı
   ve kendi spec'i var; süpürgenin çözüm fotoğrafını koruduğu service seviyesinde de test ediliyor.
@@ -349,8 +343,8 @@ pnpm --filter @mentor/api test
   yani guard'sız bir kayıt başkasının R2 objesini gösterebilir ve `getPublicUrl` onu her okumada geri
   verirdi. `assertOwnStorageKey` olarak ayrıldı, iki foto kolonu da ondan geçiyor.
 
-  **Guardrail (§4):** çözüm öğrencinin *kendi* kaydı; AI çözüm üretmiyor ve çözüm fotoğrafına
-  pre-label vision pass'i **bilerek koşulmuyor** — vision bir *soruyu* okuyup dersini tahmin eder,
+  **Guardrail (§4):** çözüm öğrencinin _kendi_ kaydı; AI çözüm üretmiyor ve çözüm fotoğrafına
+  pre-label vision pass'i **bilerek koşulmuyor** — vision bir _soruyu_ okuyup dersini tahmin eder,
   cevap anahtarına koşmak ona "çözüm ne diyor" diye sormak olurdu.
 
   **Tasarım:** `NoteField` iki alanın paylaştığı `EditableField`'a genelleşti (aynı kuyu, aynı açık
@@ -364,7 +358,6 @@ pnpm --filter @mentor/api test
   (+specler), `packages/{types,validation}`, `notebook-add-panel.tsx`, `notebook-review-{card,panel}.tsx`,
   `e2e/notebook.spec.ts`, `messages/{tr,en}.json`.
 
-
 - **Tekrar destesi tasarım geçişi + uygulama genelinde çip kontrast hatası (2026-08-21)** — Deste
   her ekran, iki tema ve iki viewport için ekran görüntüsüyle tarandı; çıkan dört sorunun ikisi
   erişilebilirlik hatasıydı.
@@ -377,7 +370,7 @@ pnpm --filter @mentor/api test
   ~2:1'e düşüyordu. `--color-btn-label` zaten tam bunun için var — light'ta beyaz, dark'ta koyu ink.
   Kaydırma sırasında çıkan doğrulama etiketi de aynı düzeltmeyi aldı.
   **(3) Kart arkasının %70'i boştu:** dört kısa satır sabit 4:5 kutunun tepesine yığılıyor, öğrencinin
-  *yazdığı* tek şey olan not ise o boşlukta kaybolan ince bir satır oluyordu. Artık üç bant var —
+  _yazdığı_ tek şey olan not ise o boşlukta kaybolan ince bir satır oluyordu. Artık üç bant var —
   başlık, meta çipleri, ve kalan yüksekliği dolduran bir not kuyusu; "Not ekle" de böylece yazı alanı
   gibi okunuyor. Tekrar sayısı da hata tipiyle aynı pill biçimini aldı ama nötr dolguyla: renkli olan
   öğrencinin seçtiği sınıflandırma, diğeri karta dair bir olgu.
@@ -426,7 +419,7 @@ pnpm --filter @mentor/api test
   tazeliyor ama kaydı due listesinden **düşürmüyor**.
 
   **Deste sonu özeti:** "3 karttan 2 tanesini çözdün" + kalan varsa "tekrar döngüsünde". Deste
-  *sırasında* sayaç olmaması kararı duruyor (AGENTS.md §0) — bitişteki tek seferlik özet her dürüst
+  _sırasında_ sayaç olmaması kararı duruyor (AGENTS.md §0) — bitişteki tek seferlik özet her dürüst
   "çözemedim"i fiyatlandırmıyor, kaçırılanlar da yanlış olarak değil rotasyonda kalan kart olarak
   anlatılıyor.
   **Yeni e2e dosyası** `notebook-community-bridge.spec.ts` köprünün topluluk yarısını sürüyor (defter
@@ -440,7 +433,7 @@ pnpm --filter @mentor/api test
   açtığı `NotebookReviewPanel` tek yüzlü bir foto önizlemesiydi: ders/konu, hata tipi, tekrar sayısı
   ve not fotoğrafın sol üstünde **sürekli** duruyordu, aksiyonlar da alt gradient barda fotoğrafın
   üstüne biniyordu. İkisi de somut zarar veriyordu — etiketler öğrenci soruya bakmadan yarı cevabı
-  veriyor (bu ekranın tek işi ipuçsuz hatırlama; ipucu veren tekrar *tanımayı* ölçer), gradient bar
+  veriyor (bu ekranın tek işi ipuçsuz hatırlama; ipucu veren tekrar _tanımayı_ ölçer), gradient bar
   da okunması gereken alanı kapatıyordu.
 
   **Yeni model:** ön yüz sadece soru, tıklayınca kart çevriliyor, bağlam arkada. Sağa/sola kaydırma
@@ -482,14 +475,14 @@ pnpm --filter @mentor/api test
   yaptığı şey yönelim ("yedi kart, dördü Matematik"), tek kartlık deste bunu asla gösteremez.
 
   Bunu yazarken **gerçek bir hata çıktı ve önce e2e ile kanıtlandı**: panel `entries` prop'unu, yani
-  shell'in *canlı* due listesini geziyordu; `handleReviewed` cevaplanan kaydı o diziden çıkarırken
+  shell'in _canlı_ due listesini geziyordu; `handleReviewed` cevaplanan kaydı o diziden çıkarırken
   panel bağımsız olarak `index + 1` yapıyordu, dolayısıyla **her cevap bir sonraki kartı atlıyordu**
   (3 kartta "Bir" cevaplanınca doğrudan "Üç" geliyor, "İki" hiç sorulmuyordu). Düzeltme: deste
   panel açılırken bir kez anlık görüntüleniyor (`useState(entries)`) ve bir daha karıştırılmıyor;
   hangi kartların hâlâ due olduğu shell'in kendi meselesi. İmleç artık `index + 1` değil
   `nextUnansweredIndex(...)` — listeden atlama serbest olduğu için "sıradaki" ancak "henüz
   cevaplanmamış sıradaki" olabilir, ve deste sonuna gelince başa sarıp atlanmışları topluyor.
-  Deste ancak `-1` dönünce bitiyor; cevap *sayısına* bakmak, bir kart iki kez cevaplandığında
+  Deste ancak `-1` dönünce bitiyor; cevap _sayısına_ bakmak, bir kart iki kez cevaplandığında
   günü erken bitirirdi.
 
   Bu yüzden liste, bu oturumda cevaplanmış kartları çek işaretiyle gösterip **tıklanamaz** yapıyor:
@@ -505,14 +498,11 @@ pnpm --filter @mentor/api test
 - **`PUT /coaching/notebook/pages/:index` "Geçersiz istek" 400 fix (2026-08-21)** — bir sayfa
   `entry` item'ı içerdiğinde her zaman `BAD_REQUEST` ile başarısız oluyordu, `details` alanı yok
   (yani bir `DomainError` değildi). Kök neden `mistake-notebook.repository.ts`'deki
-  `listEntriesByIds`: `sql\`${entries.id} = ANY(${entryIds})\`` ham SQL'i, drizzle'ın bir JS
-  dizisini Postgres array literal'ına serileştirmemesi yüzünden `22P02 malformed array literal`
-  atıyordu — bu SQLSTATE `mapPostgresError`'da genel `BAD_REQUEST`'e eşleniyor, o yüzden hata hem
-  Zod şemasını hem ownership kontrolünü geçmiş gibi görünüyordu (ikisi de gerçekten geçiyordu).
-  Fix: `sql\`ANY(...)\`` yerine drizzle'ın `inArray()` helper'ı — doğru parametrelenmiş `IN (...)`
-  üretiyor. Gerçek DB'ye karşı (drizzle repository'si doğrudan import edilerek) doğrulandı. Usage:
-  deftere fotoğraflı bir yanlış eklenip sayfaya yerleştirildiğinde tetiklenir. Related:
-  `mistake-notebook.repository.ts`.
+  `listEntriesByIds`: `sql\`${entries.id} = ANY(${entryIds})\``ham SQL'i, drizzle'ın bir JS
+dizisini Postgres array literal'ına serileştirmemesi yüzünden`22P02 malformed array literal`atıyordu — bu SQLSTATE`mapPostgresError`'da genel `BAD_REQUEST`'e eşleniyor, o yüzden hata hem
+Zod şemasını hem ownership kontrolünü geçmiş gibi görünüyordu (ikisi de gerçekten geçiyordu).
+Fix: `sql\`ANY(...)\``yerine drizzle'ın`inArray()`helper'ı — doğru parametrelenmiş`IN (...)`üretiyor. Gerçek DB'ye karşı (drizzle repository'si doğrudan import edilerek) doğrulandı. Usage:
+deftere fotoğraflı bir yanlış eklenip sayfaya yerleştirildiğinde tetiklenir. Related:`mistake-notebook.repository.ts`.
 
 - **Yanlış defteri rail chrome motion (2026-08-21)** — Category/Not pills share a
   `layoutId` so the active fill travels between neighbours (vision-board editor nav).
@@ -657,17 +647,17 @@ pnpm --filter @mentor/api test
   `.mentor-tr-map > path` olmalı. Hover kartı pin→card geçişinde 140ms grace +
   kart üzerinde `pointer-events` ile kapanıyor. Sol panel viewport yüksekliğine
   kilitli (`h-[100dvh-header]` + `overflow-y-auto`); uzun program listesi
-  haritayı uzatmıyor.   Program satırları chip-mor arka plansız; dropdown gibi
+  haritayı uzatmıyor. Program satırları chip-mor arka plansız; dropdown gibi
   `hover:bg-black/4`, ad + sakin meta (puan türü · kontenjan · taban). Tek arama
   alanı: üniversite açıkken yerel bölüm filtresi (ikinci bar yok); geri yalnız
-  `ArrowLeft` ikon.   Hover kart tıklanınca pin ile aynı sidebar detayı açılır;
+  `ArrowLeft` ikon. Hover kart tıklanınca pin ile aynı sidebar detayı açılır;
   üniversite adının altında şehir (harita üzeri il etiketi değil). Sidebar
   arama satırı hover → haritada `data-preview` il highlight; tıklayınca şehir
-  active + pin spotlight hover card + kampüs paneli.   Üniversite arama hit'inde
+  active + pin spotlight hover card + kampüs paneli. Üniversite arama hit'inde
   `cityCode`/`cityName` API'den gelir (`UniversitySearchHitDto`) — FE geo grafiğini
   tersine aramaz (mobil hazırlığı). Geo arama aktifken harita pin'leri sonuçlara
   göre filtrelenir: şehir hit → o ildeki tüm kampüsler; üniversite/bölüm hit →
-  yalnızca ilgili kampüsler; arama bitince tüm pin'ler geri gelir.   YKS haritasında
+  yalnızca ilgili kampüsler; arama bitince tüm pin'ler geri gelir. YKS haritasında
   sağ altta ÖSYM kaynak notu + YKS kılavuz linki (OSM attribution solda kalır).
   Pin tıklanınca hover card spotlight/`active` kalır (arama focus ile aynı).
   Mobil pin ölçeği `1.35` (desktop `0.95`); zoom’da `unit^0.35` ile büyür
@@ -1774,7 +1764,7 @@ pnpm --filter @mentor/api test
   kolon yerine üç açık kolon — tip güvenli, sorgusu okunur, hangisinin dolduğu sınav türünden belli.
   **Çapa unvan, kurum ikincil.** Kadro tek bir yerleştirme dönemine ait geçici bir ilandır; "hedefim
   şu kadro" altı ay sonra anlamsız bir satıra dönerdi. Unvan kalıcıdır.
-  `KpssBrowser` `MapBrowser`'ın *varyantı değil, muadili*: YKS hedefi şehir → üniversite → program
+  `KpssBrowser` `MapBrowser`'ın _varyantı değil, muadili_: YKS hedefi şehir → üniversite → program
   zinciriyle daralır, KPSS hedefi ise şehirden bağımsız bir unvandır. İkisini tek bileşene sokmak
   her dal için bir prop demekti. `vision-board-shell` içindeki bağlantı tek bir üçlü koşul.
   **Servis tarafı:** üniversitede olduğu gibi client'a güvenilmez — `VisionService.upsert`
@@ -1828,7 +1818,7 @@ pnpm --filter @mentor/api test
   `messages/{tr,en}.json`.
 
 - **Unvan listesi katlandı + seçili unvan haritayı süzüyor (2026-08-03)** — Ekran görüntüsünde
-  MÜHENDİS hedef olarak seçiliyken Ankara pininde **199** yazıyordu: o, Ankara'nın *tüm* ilanları.
+  MÜHENDİS hedef olarak seçiliyken Ankara pininde **199** yazıyordu: o, Ankara'nın _tüm_ ilanları.
   Filtre yalnız **yazarken** çalışıyordu, unvanı **seçince** çalışmıyordu — yani ekran "hedefin
   mühendislik" derken haritada mühendislikle ilgisi olmayan bir sayı gösteriyordu.
   `city-counts` artık `titleId` de alıyor ve **id ile tam eşleşme** yapıyor; ada göre eşleşseydi
@@ -1881,7 +1871,7 @@ pnpm --filter @mentor/api test
   `use-kpss-targets.ts`.
 
 - **Hedef panosu → kolaj panosu: veri + kontrat (2026-08-05, PR 1/3)** — Hedef bugüne kadar
-  *veriydi* (başlık + kariyer enum'ı + 4 referans id'si). Artık kullanıcının kendi görsellerini ve
+  _veriydi_ (başlık + kariyer enum'ı + 4 referans id'si). Artık kullanıcının kendi görsellerini ve
   metinlerini yerleştirdiği bir **kolaj** taşıyabiliyor. Bu PR yalnız backend + sözleşme; editör
   (PR 2) ve stil/export/panel kartı (PR 3) ayrı.
   **Tek `vision_boards.board jsonb` kolonu** (`0075_vision_board_document.sql`) —
@@ -1907,7 +1897,7 @@ pnpm --filter @mentor/api test
   fotoğraf public URL'iyle sonsuza kadar kalırdı. (2) `coaching-erasure.repository` satırı silmeden
   **önce** `board->items` key'lerini okuyor; jsonb dışında bu objelere işaret eden hiçbir şey yok,
   satır gidince bir daha bulunamazlardı.
-  **Gotcha 1 (mimari):** orphan diff'i başta `updateBoard`'dan *sonra* `before.board` okuyordu ve
+  **Gotcha 1 (mimari):** orphan diff'i başta `updateBoard`'dan _sonra_ `before.board` okuyordu ve
   test fake'i aynı objeyi döndürdüğü için hiçbir şey silinmedi. Gerçek Drizzle detached satır
   döndürdüğü için üretimde çalışırdı — yani sessizce repository'nin obje kimliğine bağlıydı.
   Eski key seti artık yazmadan **önce** snapshot'lanıyor.
@@ -1935,7 +1925,7 @@ pnpm --filter @mentor/api test
   tam ekran editörde de panel kartındaki küçük önizlemede de ResizeObserver olmadan doğru render
   ediliyor. `cqw` konteynerin **genişliğinin** payı olduğu ve sahnenin oranı sabit olduğu için her
   iki eksen de canvas genişliğine bölünüyor.
-  **`BoardStage` tek render kaynağı.** Editör seçim çerçevesini ve tutamakları sahnenin *etrafına*
+  **`BoardStage` tek render kaynağı.** Editör seçim çerçevesini ve tutamakları sahnenin _etrafına_
   sarıyor, içine değil — iki ayrı renderer yazılsaydı sapma yalnızca "panom panelde bozuk görünüyor"
   olarak ortaya çıkardı.
   **Tek pointer sistemi** (`use-item-gesture` + saf `board-gesture-math`). framer-motion `drag`
@@ -1991,7 +1981,7 @@ pnpm --filter @mentor/api test
   **Fontlar `document.fonts.ready` beklenerek** ölçülüyor — web font inmeden ölçüm yapmak metni
   fallback yüze göre sarar ve PNG ekrandakinden farklı dizilir.
   **Tainted canvas sessizce yutulmuyor:** `BoardExportTaintedError` ayrı bir mesaj gösteriyor
-  ("görseller indirmeye kapalı geldi"), çünkü boş bir PNG döndürmek kullanıcıya *kendi panosunun*
+  ("görseller indirmeye kapalı geldi"), çünkü boş bir PNG döndürmek kullanıcıya _kendi panosunun_
   bozuk olduğunu düşündürürdü. R2 public bucket'ında CORS şart.
   **`el yazısı` fontu (Caveat) yalnız pano metinlerinde** — uygulama kroması tek DESIGN.md ailesinde
   kalıyor. Kolajın arayüzün sesinden farklı bir sese ihtiyacı var, chrome'un yok.
@@ -2074,17 +2064,17 @@ pnpm --filter @mentor/api test
   `foto → ders/konu kategorize` özelliği emekliye ayrıldı ve yerine **yanlış defteri** geldi.
   Gerekçe: kategorize öğrenciye **zaten bildiği** şeyi söylüyordu (yanlış yaptığı dersi ve konuyu
   öğrenci bilir), üstüne premium kotasını bir etiketleme işine yakıyordu. Öğrencinin bilmediği ve
-  kayıt tutmadığı şey **hata tipi** — "Problemler'de 8 yanlış" bilgisi *"konuyu tekrar et"*
-  dedirtir (çoğu zaman yanlış karar, boşa giden hafta), *"8 yanlışın 6'sı dikkat hatası"* bilgisi
-  *"konu tamam, yavaşla"* dedirtir.
+  kayıt tutmadığı şey **hata tipi** — "Problemler'de 8 yanlış" bilgisi _"konuyu tekrar et"_
+  dedirtir (çoğu zaman yanlış karar, boşa giden hafta), _"8 yanlışın 6'sı dikkat hatası"_ bilgisi
+  _"konu tamam, yavaşla"_ dedirtir.
   **Veri modeli — bilerek ikiye bölünmüş:** `mistake_notebook_entries` öğrencinin yanlış hakkında
-  *söylediği* şeyi tutar (kolon, çünkü iki sorgu var: cron `next_review_at`'i tarıyor, analiz
-  `error_type`'ı topluyor); `mistake_notebook_pages` sadece *nereye koyduğunu* tutar (sorgulanmıyor
+  _söylediği_ şeyi tutar (kolon, çünkü iki sorgu var: cron `next_review_at`'i tarıyor, analiz
+  `error_type`'ı topluyor); `mistake_notebook_pages` sadece _nereye koyduğunu_ tutar (sorgulanmıyor
   → sayfa başına tek jsonb). Vision board'un aksine kullanıcı başına tek doküman **değil**: defter
   sınırsız büyür, tek sayfayı kaydetmek tüm kitabı yeniden yazmamalı. `mock_exam_id` nullable +
   `ON DELETE SET NULL` — yanlışların çoğu deneme dışında yakalanıyor, deneme silinince ondan
   çıkarılan ders silinmemeli. Migration `0077` elle yazıldı (0074/0075'teki gerekçe: `drizzle-kit
-  generate` hâlâ 0074 öncesi snapshot'a diff atıyor; ayrıca RLS üretemiyor).
+generate` hâlâ 0074 öncesi snapshot'a diff atıyor; ayrıca RLS üretemiyor).
   **Defter görseli CSS + inline SVG, raster asset yok** — `board-stage.tsx:22` kuralı koyuyor:
   arka planlar prosedürel, çünkü canvas exporter'ı her birini yeniden üretmek zorunda. Spiral bir
   SVG `<pattern>`; kendini sayfa yüksekliğine tile ediyor, yani hiçbir yerde ring sayılmıyor veya
@@ -2132,7 +2122,7 @@ pnpm --filter @mentor/api test
   birden karşılayacak hâle getirmek `use-notebook-page`'in 60 satırından pahalıya gelirdi. Defter
   reducer'ı tek yönlü geçmiş tutuyor (undo var, redo yok — sayfa saniyeler içinde düzenleniyor).
   **Gotcha:** `patch` **checkpoint almıyor**. Sürükleme saniyede onlarca patch atıyor; her birini
-  anlık görüntülemek geçmişi neredeyse aynı 100 dokümanla doldururdu — jest, hareket *başlarken*
+  anlık görüntülemek geçmişi neredeyse aynı 100 dokümanla doldururdu — jest, hareket _başlarken_
   tam bir checkpoint alıyor (`use-item-gesture` içindeki `drag.moved` kapısı). Undo, o dokümanda
   hiç var olmamış seçimi de düşürüyor; ikisi de testle çivilendi.
   Düzenleme modunda karta dokunmak **seçiyor, açmıyor** — yoksa her sürükleme denemesi tekrar
@@ -2159,7 +2149,7 @@ pnpm --filter @mentor/api test
   logluyor: `emitAsync` accept'in içinde await ediliyor, burada fırlatmak zaten commit olmuş bir
   accept'i 500'lerdi. `markThreadAnswered` **çoğul**: iki öğrenci aynı soruyu bağlayabilir, ikisinin
   de kartı cevabı hak eder.
-  **Gotcha — `source` girdinin ne *anlama geldiğini* değil, sorunun nereden geldiğini söyler.**
+  **Gotcha — `source` girdinin ne _anlama geldiğini_ değil, sorunun nereden geldiğini söyler.**
   Topluluktan gelen soru deftere ancak kullanıcının kendi "ben de çözemedim" beyanıyla giriyor, yani
   zayıflık haritasına `OWN` gibi sayılıyor. Sadece ilginç bulduğu şey forum'un kendi bookmark'ına
   ait; buraya alınsa harita başkalarının eksiklerini anlatmaya başlardı.
@@ -2344,7 +2334,7 @@ pnpm --filter @mentor/api test
   (4) **Üç animasyon eklendi/derinleştirildi.** (a) **Kağıt tipi** (çizgili↔kareli↔noktalı↔düz) artık
   anında sıçramıyor, `AnimatePresence` ile `paper`'a keyed 0.3s çapraz solma — çizgi deseni sayfanın
   dokusunun kendisi, tek karede takas edilmesi "render hatası" gibi okunuyordu; kırmızı marj çizgisi de
-  ait olduğu desenle birlikte gidiyor. Opaklık geçişi zaten hareketin *azaltılmış* alternatifi olduğu
+  ait olduğu desenle birlikte gidiyor. Opaklık geçişi zaten hareketin _azaltılmış_ alternatifi olduğu
   için ayrı `prefers-reduced-motion` dalı yok. (b) **Kapak** artık crossfade değil, gerçek kapak gibi
   **sol kenarından (spine) menteşeli** açılıyor/kapanıyor (`rotateY` 0↔-105°, sarmalayıcıda
   `perspective:1800`) — yapraklarla aynı eksen, aynı easing, dolayısıyla "aynı nesne" hissi.
@@ -2357,7 +2347,7 @@ pnpm --filter @mentor/api test
 - **Yaprak kıvrılırken taşıyordu, `overflow:hidden` geri kondu (2026-08-15, APP-042)** — Bu turun asıl
   hatası boyut/bütçe değil, bir regresyondu: `NotebookPageTurn`'ü eklerken sarmalayıcı `spread-container`
   için "artık spread'in kendisi taşımıyor, o yüzden `overflow:hidden` gereksiz" diye düşünülmüştü — ama
-  uçan yaprak `perspective` + `rotateY` + `scaleY` ile döndüğü için kendi kutusunun *mürekkep taşması*
+  uçan yaprak `perspective` + `rotateY` + `scaleY` ile döndüğü için kendi kutusunun _mürekkep taşması_
   ("ink overflow") ekrana onun kutusundan büyük çiziliyordu, kırpan hiçbir şey olmadığı için tarayıcı
   bunu kaydırılabilir alan sayıp **body'yi kaydırıyordu**. Düzeltme: `spread-container`'a
   `overflow:hidden` geri kondu — hem sürükle-çevir spread'ini hem uçan yaprağı (kendi kırpması yok)
@@ -2371,7 +2361,7 @@ pnpm --filter @mentor/api test
   `VisionBoardTextItem` (font, boyut, satır/harf aralığı, arka plan "plaka" rengi, döndürme — hepsi
   şemada var), sadece hiç yüzeye çıkmıyordu; `NotebookTextInlineEditor`'daki eski not "notebook
   exposes no font/colour controls" artık geçersiz.
-  (1) **`NotebookPanelCategory`'ye `"text"` eklendi.** "Not" ekleme rail'de ayrı bir *eylem* olarak
+  (1) **`NotebookPanelCategory`'ye `"text"` eklendi.** "Not" ekleme rail'de ayrı bir _eylem_ olarak
   kalıyor (kategori değil — sayfaya anında yerleşip satır-içi düzenlemeye giriyor, board'un `addText`'i
   gibi); yeni "text" kategorisinin kendi ekleme butonu yok, sadece seçili notun font/boyut/plaka/
   satır aralığı/harf aralığı/döndürme kontrollerini gösteriyor. Not seçili değilken kısa bir ipucu
@@ -2484,11 +2474,11 @@ pnpm --filter @mentor/api test
   (sütunun `items-center`'ı çocuğu geniş olsa bile ortalar, taşırmaz-hale getirmez) — dar telefonda
   yaprak sağdan taşıyordu (X ekseni).
   (2) Bunu "iç/dış kutu" ayrımıyla düzeltmeye çalışırken (`width:auto;height:auto;aspect-ratio;
-  max-width;max-height:100%`) statik bir HTML test sayfasında **gerçekten ölçüldü** (kod tabanına
+max-width;max-height:100%`) statik bir HTML test sayfasında **gerçekten ölçüldü** (kod tabanına
   hiç girmeden `apps/web/public/` altında geçici bir dosyayla) ve iki gerçek bulgu çıktı:
   boş içerikli bir kutuda `width:auto;height:auto` + `aspect-ratio` **0×0'a çöküyor** (flex satır
   yönünde ana eksen içerik-tabanlı boyutlanıyor, boş kutunun içeriği de 0); ve `width:min(100%,cap);
-  height:auto;aspect-ratio;max-height:100%` kombinasyonunda `max-height` devreye girince oran
+height:auto;aspect-ratio;max-height:100%` kombinasyonunda `max-height` devreye girince oran
   **korunmuyor, kutu eziliyordu** (genişlik sabit kalıp yükseklik kırpılıyor) — yani düz bir
   `<div>`'in `aspect-ratio`'su, bir `<img>`'in `max-width`/`max-height` içinde oranını koruyarak
   küçülmesi gibi davranmıyor.
@@ -2519,13 +2509,13 @@ pnpm --filter @mentor/api test
   yazılan `dvh` SAYISIYDI. Şimdi: `useFitSize` `useLayoutEffect` + anlık `getBoundingClientRect()`
   ile (ResizeObserver'ın ilk callback'ini beklemeden, boyamadan ÖNCE) dış kutuyu ölçüyor;
   `fitWithin`'in sonucu SADECE `maxWidth`'e besleniyor (`width:"100%" maxWidth:<ölçülen>
-  aspectRatio:R` — `width`/`height`'e değil), ölçüm gelmeden önceki tek kare için de düz piksel
+aspectRatio:R` — `width`/`height`'e değil), ölçüm gelmeden önceki tek kare için de düz piksel
   tavanına (`notebookMaxWidthPx`) düşen bir `||` yedeği var — yani hiçbir zaman 0 genişlikte
   render olmuyor.
   **İki ayrı izole test ile doğrulandı** (`apps/web/public/` altında geçici dosyalar, sonra silindi):
   (a) `width:auto;height:auto;aspect-ratio` gerçekten 0×0'a çöktüğü ve `max-height` ile ezildiği
   ayrı ayrı gösterildi (5. turun neden yanlış olduğunun kanıtı); (b) `width:100%;maxWidth:<ölçülen>;
-  aspectRatio` — dış kutu normal (uzun) VE aşırı kısa (60px) iki senaryoda da — hiçbir zaman 0×0'a
+aspectRatio` — dış kutu normal (uzun) VE aşırı kısa (60px) iki senaryoda da — hiçbir zaman 0×0'a
   çökmedi, hiçbir eksende taşmadı, oranı her zaman korudu.
   **Ders, altıncı kez tekrarlanmasın diye altı çizili:** `aspect-ratio` sadece TEK yönde (bilinen
   boyuttan bilinmeyene) güvenilir; iki `auto` boyutla veya `max-height` ile "iki yönlü sıkıştırma"
@@ -2587,7 +2577,7 @@ pnpm --filter @mentor/api test
   kayıtlarda bindirilecek görsel olmadığı için bilgi düz bir blok olarak kalıyor. Butonlar
   `NotebookCompactButton`'a taşındı (aşağıya bak).
   (2) **`NotebookCompactButton` paylaşılan bileşene çıkarıldı** (`components/notebook/
-  notebook-compact-button.tsx`) — bir önceki turda `notebook-add-panel.tsx`'e yerel yazılmıştı,
+notebook-compact-button.tsx`) — bir önceki turda `notebook-add-panel.tsx`'e yerel yazılmıştı,
   şimdi `notebook-review-panel.tsx` de aynı ihtiyacı duyunca kopyalamak yerine paylaşıldı. Yeni bir
   `ghost` varyant eklendi (üçüncü, düşük öncelikli eylem — "Sonra devam ederim" — için, dolgu/kenarlık
   yok).
@@ -2649,7 +2639,7 @@ pnpm --filter @mentor/api test
   doldurmaz (dikey fotoğraf kutuyu enine, yatay fotoğraf boyuna taşırır); kutunun kendi arka planı
   olmayınca üstteki bilgi kutusu ve alttaki butonlar KUTUYA göre konumlanıp fotoğrafın değil, çıplak
   siyah backdrop'un üstünde havada asılı gibi duruyordu. `var(--color-bg)` + `rounded-[var(--radius-
-  card)]` verildi — artık tek parça bir "fotoğraf kartı" gibi okunuyor.
+card)]` verildi — artık tek parça bir "fotoğraf kartı" gibi okunuyor.
   (2) **`NotebookEntryCard`'ın hover overlay'i küçültüldü** — sayfanın kendi `DetailLines`
   ölçeğiyle kıyaslanınca oransız büyüktü (küçük bir thumbnail üstünde büyük başlıklar gibi
   duruyordu): chip 3cqw→2.3cqw, başlık 3.4cqw→2.6cqw, not/durum satırları 2.8cqw→2.1cqw, iç boşluk
@@ -2705,7 +2695,7 @@ pnpm --filter @mentor/api test
   çizdiğin mürekkebin üzerine sticker kaydıramazsın. Gerçek kağıtta da kaydıramazsın.
 
   **Migration yok, ama `.default([])` tek başına yetmedi.** `doc` zaten jsonb olduğu için yazma
-  şemasına alan eklemek yetiyor sanılabilir; **yetmiyor**. `.default([])` sadece *girişte* çalışır.
+  şemasına alan eklemek yetiyor sanılabilir; **yetmiyor**. `.default([])` sadece _girişte_ çalışır.
   `getPage` depodaki değeri doğrudan `as NotebookPageDoc` ile geçiriyordu, yani çizimden önce
   kaydedilmiş her sayfa istemciye `ink: undefined` dönerdi ve defter mevcut tüm kullanıcılarda
   patlardı. Düzeltme okuma tarafında: `{ ...EMPTY_PAGE, ...stored }`. Bunu **typecheck değil, akıl
@@ -2733,7 +2723,7 @@ pnpm --filter @mentor/api test
   "redo would be a button nobody presses" gerekçesi düzenleme için doğruydu, çizim için değil: dakikada
   onlarca strok atılıyor ve birini kurtarmak için üçünü geri almak sıradan bir istek.
   **E2E'nin yakaladığı gerçek hata:** tepsi `z-20` ile masaüstü koç FAB'ının (`fixed bottom-6
-  right-6 z-30`) altında kalıyordu; koçun balonu tepsinin sağ ucundaki renk ve gizle butonlarının
+right-6 z-30`) altında kalıyordu; koçun balonu tepsinin sağ ucundaki renk ve gizle butonlarının
   tam üstüne düşüyor ve gerçek bir tıklama hedefi olduğu için onları yutuyordu. Gözle bakınca
   "renk butonu bazen çalışmıyor" gibi görünür — üstelik sadece koçun söyleyecek bir şeyi olduğunda.
   Tepsi `z-[35]`'e alındı: app krom bandı (20–30) ile overlay bandının (40+) arasına bilerek
@@ -2769,7 +2759,7 @@ pnpm --filter @mentor/api test
   görünümü bırakmamak için hepsi, sadece tekrar paneli değil. **(2) Jest ipucu metni kaldırıldı**
   (`review_deck_hint` / `review_flip_hint` çevirileri de silindi): kaydırmayı kelimeyle anlatıyordu,
   artık kaydırmanın kendisi renkle anlatıyor. **(3) Verdict butonlarına ikon eklendi** (`RotateCcw` /
-  `Check`) — *ikon-only'ye geçilmedi*: ✓/✗ tek başına "doğru cevap bu mu?" diye okunabilir, bu bir
+  `Check`) — _ikon-only'ye geçilmedi_: ✓/✗ tek başına "doğru cevap bu mu?" diye okunabilir, bu bir
   değerlendirme seçimi. **(4) Prev/next okları geri geldi.** APP-044'te "cevapsız gezinme kendi
   içinde amaçsız navigasyon" diye kaldırılmışlardı; pratikte kartı **dürüstçe erteleme** yolu
   kalmamıştı (liste görünümü yalnızca deste büyükse açılıyor). Tek `step(delta)` iki oku da sürüyor,
@@ -2795,7 +2785,7 @@ pnpm --filter @mentor/api test
   bir dialog'un içinde üstünde yer var.
   **İkinci takip: ikon çakışması + üst kontrollerde tooltip.** Kullanıcı kartın sağ üstündeki çevirme
   ikonuyla "yine çözemedim" ikonunun neredeyse aynı göründüğünü bildirdi — ikisi de `RotateCw`/`RotateCcw`
-  ailesindendi, yani aynı glif aynanmış haliyle iki *farklı* eylemi temsil ediyordu. Çevirme
+  ailesindendi, yani aynı glif aynanmış haliyle iki _farklı_ eylemi temsil ediyordu. Çevirme
   `FlipHorizontal2` oldu (metafor zaten döndürme değil, çevirme), kart arkasındaki tekrar sayacı da
   `Repeat` aldı; böylece `RotateCw` karttan tamamen kalktı ve "geri dön" ailesi yalnızca verdict'e ait.
   `OverlayControl` (liste / ayarlar / kapat) ve `CardControl` (büyüt / çevir) `DeckButton` ile aynı
@@ -2811,7 +2801,7 @@ pnpm --filter @mentor/api test
   nesneydi: öğrenci elinde bir deste tutuyor ve destede kart, kenarları okunarak bulunur — dizinine
   bakarak değil. **`STACK_OVERLAP_PX = 20`**: 64px dilim, 44px görünür bant (hâlâ geçerli dokunma
   hedefi, tek satır başlık sığıyor). `zIndex` sırayla artıyor, yoksa tarayıcının boyama sırası tersini
-  yapıyor ve her dilim üstündekinin *arkasına* giriyor — bu da yığın değil sekme görüntüsü veriyor.
+  yapıyor ve her dilim üstündekinin _arkasına_ giriyor — bu da yığın değil sekme görüntüsü veriyor.
   **Gölge yukarı bakıyor** (`0 -8px 18px -10px`): bir dilimin kanıtlaması gereken şey üstündeki kartın
   onun üzerinde durduğu; aşağı bakan gölge örtüldüğü yere düşer, kimse görmez. Aktif kart sadece
   renklendirilmiyor, `scale-[1.03]` + çift yönlü gölge ile **yığından kaldırılıyor** — dokuz benzer
@@ -2824,7 +2814,7 @@ pnpm --filter @mentor/api test
   tıklanamaz — aynı kartı iki kez cevaplamak aralık merdivenini sıfırlardı.
   **Takip: yatay kayma + gerçek perspektif.** Kullanıcı ekran görüntüsünde destenin ayağında bir
   **yatay kaydırma çubuğu** gösterdi. Sebep CSS'in az bilinen kuralı: `overflow-y:auto` tek başına x
-  eksenini `visible` bırakır, tarayıcı da onu `auto`'ya *hesaplar* — aktif kartın `scale-[1.03]`
+  eksenini `visible` bırakır, tarayıcı da onu `auto`'ya _hesaplar_ — aktif kartın `scale-[1.03]`
   taşması da bunu tetikliyordu. `overflow-x-clip` eklendi ve `scale` atıldı. Yerine **`translateZ(34px)`**:
   kart iki boyutta büyütülmüyor, destenin eğildiği eksende okuyucuya doğru **kaldırılıyor**; bedava,
   çünkü onu büyük gösteren perspektif zaten yığının içinde. Transform `li`'de, butonda değil — yoksa
@@ -2835,10 +2825,10 @@ pnpm --filter @mentor/api test
   bir diorama değil, okunacak bir liste. Doğrulama için gerçek CSS'in birebir kopyası olan 9 kartlık
   statik bir mockup üretildi (repoya girmedi).
   **Takip: kaybolan filtre + kaldırılan sayaç.** Kullanıcı çiplerin hiç görünmediğini bildirdi.
-  Koşul `subjects.length > 1` idi; destesinde iki Türkçe + bir *etiketsiz* kart vardı, yani ders
+  Koşul `subjects.length > 1` idi; destesinde iki Türkçe + bir _etiketsiz_ kart vardı, yani ders
   sayısı 1 ve çipler hiç çizilmedi — oysa "Türkçe" filtresi orada anlamlı, etiketsiz kartı eliyor.
   Koşul **grup** sayısına çevrildi: `subjects.length + (etiketsiz var mı ? 1 : 0) > 1`. Etiketsizler
-  hâlâ kendi çipini almıyor (filtre o değeri ifade edemiyor), ama artık *sayılıyor*. Listenin
+  hâlâ kendi çipini almıyor (filtre o değeri ifade edemiyor), ama artık _sayılıyor_. Listenin
   üstündeki **"N kart kaldı" çipi kaldırıldı** (`review_list_remaining` çevirisi de silindi): deste
   artık sayının kendisi — dokuz dilim, ikisi tikli — yani satır, resmin zaten gösterdiğini okuyan bir
   altyazıydı ve tam olarak filtre çiplerinin durması gereken yerde duruyordu.
@@ -2850,13 +2840,13 @@ pnpm --filter @mentor/api test
   açılırken bir kez derse göre sıralıyor. Grup içinde sıra bozulmuyor, gruplar arasında ilk-görülme
   sırası korunuyor (alfabetik sıralamak, fonksiyonun kimsenin istemediği bir öncelik icat etmesi
   olurdu); etiketsizler ilk etiketsiz kartın konumunda kendi grubunu tutuyor. İki birim testi eklendi.
-  Ayrıca bu, filtrenin *asıl* riskini de siliyor: öğrenciyi hâlâ tekrarı gelmiş kartlar dururken
+  Ayrıca bu, filtrenin _asıl_ riskini de siliyor: öğrenciyi hâlâ tekrarı gelmiş kartlar dururken
   "bugünlük bitti" ekranına düşürebilme ihtimali. Silinenler: `subjectFilter` state'i, `applyFilter`,
   `fullDeck`/`remainingAll` ikiliği, çip satırı, `FilterChip`, `SubjectDonePanel`, `review_progress`
   önündeki ders adı ön eki ve `review_list_all_subjects` + `review_subject_done_*` çevirileri.
   **Takip: hover artık Z ekseninde.** Dilimler `hover:-translate-y-1` ile sayfa düzleminde yukarı
   kayıyordu; deste eğik olduğu için bu "kart yükseliyor" değil "satır kayıyor" gibi duruyordu. Artık
-  bu yığındaki *her* kalkış Z'de: hover `translate-z-[24px]`, aktif kart zaten 34px'te ve hover'da
+  bu yığındaki _her_ kalkış Z'de: hover `translate-z-[24px]`, aktif kart zaten 34px'te ve hover'da
   50px'e **daha da yükseliyor** (hover değerine düşmüyor). Üç durum tek class dizisinde, çünkü
   inline `transform` hover'ı ezerdi. Butonun kendi kalkışı kaldırıldı — yükselen kartın içinde ayrıca
   kayan bir buton, tek kart değil iki hareket eden şey gibi okunuyor. Klavye için `focus-within`
@@ -2866,7 +2856,7 @@ pnpm --filter @mentor/api test
   üretildiği `@tailwindcss/cli` ile tek dosya taranarak çıktı CSS'inden kontrol edildi.
   **Takip: deste kendini dağıtıyor.** Liste görünümüne geçiş sert bir kesmeydi — bir an önce tek kart
   varken aniden dokuz dilim. Artık kartlar sırayla, `staggerChildren: 0.045` ile aşağıdan ve arkadan
-  (`y: 24, z: -90`) yığının *içine* kayarak giriyor; üstüne fade ile binmiyor, aynı Z ekseninden
+  (`y: 24, z: -90`) yığının _içine_ kayarak giriyor; üstüne fade ile binmiyor, aynı Z ekseninden
   geliyor. **45ms destenin kendi uzunluğundan seçildi:** dokuz kart 400ms'lik gecikmeyle iniyor, yani
   bir dizinin tek hareket olmaktan çıkıp beklenen bir kuyruğa dönüştüğü ~500ms sınırının altında.
   Elli kartlık deste bir üst sınır isterdi; elli kartlık tekrar günü ayrı bir problem. `reduceMotion`
@@ -2880,7 +2870,7 @@ pnpm --filter @mentor/api test
   oynadı" diye hata kaydı olur. Katmanlar `remaining`'e bakıyor, bir kart kalmışken iki kart daha
   varmış gibi yapmıyor. **Ön yüz artık `accent-soft`, arka yüz `surface`:** iki yüzü aynı renk olan
   bir flashcard'da dönüş inecek bir yer bulamıyor — kart 90°'de kenara geliyor ve hangi yüzün geldiğini
-  anlamanın tek yolu okumak oluyor. Rengi *ön* yüz taşıyor, çünkü bakman istenen yüz o. Arkadaki
+  anlamanın tek yolu okumak oluyor. Rengi _ön_ yüz taşıyor, çünkü bakman istenen yüz o. Arkadaki
   deste katmanları da aynı tinti alıyor: onlar sıradaki kartların ön yüzü. **Yakalanan regresyon:**
   `secondary-text` (#666) artık `accent-soft` (#C3D9FD) üstüne düşüyordu — 3.9:1, DESIGN.md'nin okunur
   metin için istediği 4.5'in altında; `color-mix(main 72%)` ile değiştirildi, iki temada da rahat geçiyor.
@@ -2888,7 +2878,7 @@ pnpm --filter @mentor/api test
   "hangi yüz yukarıda" sorusunu metinden önce cevaplamak; fotoğraflı kartta bu soru zaten içerikle
   cevaplı (bir yüzde fotoğraf, diğerinde yazı), dolayısıyla orada renk bilgi taşımıyor — sadece
   fotoğrafın dövüşmek zorunda kaldığı renkli bir çerçeve ve fotoğrafın kendi beyazıyla sert bir bant
-  üretiyordu. **Metin-only ön yüzde kalıyor:** orada iki yüz de yazı ve onları ayıran *tek* şey renk.
+  üretiyordu. **Metin-only ön yüzde kalıyor:** orada iki yüz de yazı ve onları ayıran _tek_ şey renk.
   Arkadaki deste katmanları da `surface`'a döndü (renksiz kartın arkasında renkli bir yığın tutarsızlık
   olurdu) ve opaklıkları 0.45 / 0.7'ye çıkarıldı — onları kart yapan şey dolgu değil, eğim.
   İlgili: `notebook-review-list.tsx`, `notebook-review-panel.tsx`, `notebook-review-card.tsx`,
@@ -2924,7 +2914,7 @@ pnpm --filter @mentor/api test
 - **Özet ekranı zenginleşti + topluluğa devir artık bir şey taşıyor (2026-08-22, APP-046)** —
   Kullanıcı iki ekran görüntüsüyle geldi: özet satırı çıplaktı ("Etiketsiz · dikkat hatası") ve
   "Topluluğa sor"a basınca composer **bomboş** açılıyordu. İkincinin sebebi: devir yalnızca
-  `?notebookEntry=<id>` taşıyor, composer o id ile sadece thread oluştuktan *sonra*
+  `?notebookEntry=<id>` taşıyor, composer o id ile sadece thread oluştuktan _sonra_
   `linkNotebookThread` çağırıyor — açılışta doldurulacak veri yok, üstelik modal defterden gelindiğini
   bile söylemiyor. Kartı çekemiyor da: **tek kayıt döndüren endpoint yok**, sadece sayfalı liste.
   Çözüm `lib/notebook-handoff.ts`: defter, elindeki kaydın etiketlerini çıkarken `sessionStorage`'a
@@ -2964,7 +2954,7 @@ pnpm --filter @mentor/api test
   nesneyi iki kayıt paylaşırsa kart silindiğinde thread'in görseli aylar sonra sessizce kırılır.
   İki limit de 5 MB olduğu için `headObject` gerekmedi. **Bir güvenlik hatası yakalandı ve teste
   bağlandı:** desen template literal içinde kurulduğu için `\.` tek ters bölüye düşmüştü ve regex'te
-  `.` *herhangi bir karakter* demek — `…f8Xpng` png diye geçerdi. Düzeltildi; düzeltmeyi geri alınca
+  `.` _herhangi bir karakter_ demek — `…f8Xpng` png diye geçerdi. Düzeltildi; düzeltmeyi geri alınca
   kırmızıya dönen bir regresyon testi eklendi. **İstemci:** `useForumImagePicker` yeni bir öğe türü
   aldı (`kind: "ready"` — yüklenmesi gereken bir `File`'ı olmayan, zaten depoda duran ek); `uploadAll`
   onu geçiriyor, `AttachmentPreviewStrip` dosya dalına düşüp `p.file`'da çakılmasın diye
@@ -3060,7 +3050,7 @@ pnpm --filter @mentor/api test
 
 - **Kart boyutlandırma, "Çalış" düğmesinin tonu ve panel kaydırması (2026-08-23, APP-046)** —
   Kullanıcı ekran görüntüsüyle dört madde bildirdi; üçü yapıldı (sayfalar arası taşıma ayrı tura).
-  **(1) Boyutlandırma.** `nextEntrySlot` en-boy oranını *zaten* kullanıyordu ama yarım: genişlik hep
+  **(1) Boyutlandırma.** `nextEntrySlot` en-boy oranını _zaten_ kullanıyordu ama yarım: genişlik hep
   sabit `ENTRY_WIDTH`, yükseklik `width/aspect` hesaplanıp 180–420'ye **kırpılıyordu**. Yalnızca
   yüksekliği kırpmak kutunun oranını değiştiriyor ve `object-contain`'e doldurulacak bir boşluk
   bırakıyor — defterdeki siyah bantların kaynağı buydu, `aspect` ölçülemediğinde (sabit 300) ise
@@ -3080,14 +3070,14 @@ pnpm --filter @mentor/api test
   yok**. Uzun bir liste tüm kabuğu büyütüyor, aşağıdaki `flex-1 min-h-0` bölüştürecek bir yükseklik
   bulamıyor ve alttaki her `overflow-y-auto` ölü koda dönüyordu; diğer paneller kısa olduğu için
   yıllardır görünmemişti. Masaüstünde gerçek yükseklik verildi (`lg:h-[100dvh] lg:min-h-0
-  lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bir sayfa ve sayfa
+lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bir sayfa ve sayfa
   gerçekten kayıyor. Uygulama kabuğu masaüstünde yalnızca `padding-left` ekliyor, üstten pay yok,
   yani `100dvh` doğru ölçü.
   **Ertelendi:** sayfalar arası içerik taşıma. İki sayfa iki ayrı doküman, jest katmanı vision board
   ile ortak; sürükleyip diğer sayfaya bırakmak iki sahnenin dikdörtgenlerini, koordinat çevirisini ve
   iki dokümanın birden kaydını gerektiriyor — ortak katmana dokunduğu için kendi turunu hak ediyor.
   **Kaydırma vs sığdırma — dört denemede öğrenilen ders.** Kök kap `min-h-[100dvh]` idi: taban var,
-  tavan yok. Sonucu iki katlıydı — yan panel kendi içinde kaymak yerine tüm kabuğu büyütüyordu, *ve*
+  tavan yok. Sonucu iki katlıydı — yan panel kendi içinde kaymak yerine tüm kabuğu büyütüyordu, _ve_
   `useFitSize`/`fitWithin` düzeneği (tek işi yayılımı görüntü alanına sığdırmak) çalışacak kesin bir
   yükseklik bulamadığı için yalnızca genişliğe göre sığdırıyor, defter pencerenin altından taşıyordu.
   Yani sayfa kaydırması bir tasarım tercihi değil, **eksik bir sayının yan etkisiydi.**
@@ -3095,7 +3085,7 @@ pnpm --filter @mentor/api test
   payıydı; (2) panik refleksiyle `max-h-[100dvh]` tavanına geçildi — **çok daha kötü**: tavan
   yüksekliği belirsiz bırakıyor, ölçüm sıfıra düşünce kod `fitted.width || notebookMaxWidthPx` ile
   sabit azami genişliğe geri düşüyor ve `justify-center` taşan kitabı iki yönden birden taşırıyor
-  (kullanıcının gördüğü üstten *ve* alttan kırpılma buydu); (3) tavan panele taşındı, defter eski
+  (kullanıcının gördüğü üstten _ve_ alttan kırpılma buydu); (3) tavan panele taşındı, defter eski
   haline döndü ama sayfa yine kaydı; (4) birinci denemeye dönüldü ve asıl eksik eklendi: kenar payı.
   Pay **ölçülen kutuya konamaz** — `getBoundingClientRect` dolguyu içerir, yani orada verilen dolgu
   kitaba "büyüyebileceğin yer" diye sunulur. Bir seviye yukarı, sahne kolonuna kondu (`lg:py-4`):
@@ -3132,12 +3122,12 @@ pnpm --filter @mentor/api test
   hem açılımın cildinde kullanılıyor: ikisi tek defter olmak zorunda ve elle ayarlanmış iki ayrı
   aralık bir sonraki düzenlemede birbirinden ayrılır. Tel kalınlığı 0.32'den 0.38'e, delikler 0.8'den
   0.62'ye indi (sıkı sarımda delik de küçüktür), halka yüksekliği artık döşemenin oranı (`RING_TILE *
-  0.42`) — yani ritim değiştiğinde halka kendiliğinden onunla ölçekleniyor, ikinci bir sayı gerekmiyor.
+0.42`) — yani ritim değiştiğinde halka kendiliğinden onunla ölçekleniyor, ikinci bir sayı gerekmiyor.
   Değişiklik uygulamayı açmadan görülebilsin diye koddaki birebir sayılarla eski/yeni karşılaştırmalı
   bir statik önizleme üretildi (repoya girmedi).
   **Takip: kapalı halkalar boruya dönüşüyordu.** Sıkı sarıma geçince halkaların sol ve sağ uçları
   dikeyde üst üste binip iki kesintisiz çizgi oluşturdu; cilt tel gibi değil **boru** gibi okunmaya
-  başladı. Sebep sıklık değil, halkanın kapalı olmasıydı: kapalı bir ilmek bobinin *yandan* görünüşü.
+  başladı. Sebep sıklık değil, halkanın kapalı olmasıydı: kapalı bir ilmek bobinin _yandan_ görünüşü.
   Önden bakıldığında telin uzak yarısı kâğıdın arkasındadır ve göz yalnızca bir delikten çıkıp
   diğerine dalan bir **yay** görür. Her halka artık turun ön yarısı. Yarım, clip ya da elle yazılmış
   path ile değil, **`pathLength` + tek dash** ile kesiliyor: buradaki geometri yüzde cinsinden
@@ -3183,7 +3173,7 @@ pnpm --filter @mentor/api test
   90°'nin altında (ön yüz), bir kısmı üstünde (arka yüz) kalıyor ve yan yana iki farklı yüz şerit
   üretiyor — dönemli olarak beliren bir çizim bozukluğunun sebebi genelde çizimde değil zamanlamadadır.
   **Karar: rijit levhaya dönüldü.** Sahte kıvrımın dikişi, kırığı ve bandı yok; ölçülen sonuç, dilimli
-  hali önceki halden *daha kötü* yapıyordu. Deneyden sağ çıkanlar bedeli olmayanlar: yaprak artık
+  hali önceki halden _daha kötü_ yapıyordu. Deneyden sağ çıkanlar bedeli olmayanlar: yaprak artık
   `LIFT_PX` ile kitaptan **kalkıyor** (kullanıcının işaret ettiği "yaprak boyutunda hareket", taşan
   yeri kitabın kendi `overflow`'u kırpıyor) ve **iki yüzü de çizgili** — gerçek bir defter yaprağı iki
   tarafından da çizgilidir; boş arka yüz, yaprağın dönüşün ortasında malzeme değiştirmesi demekti.
@@ -3220,14 +3210,14 @@ pnpm --filter @mentor/api test
 - **Koç notu sızıntısı + timer ticks + sidebar geçmiş (2026-08-24)** — Seans bitişindeki koç
   notu `<<TASK{...}}` (kapanış `>>` yok, fazla `}`) ham metin olarak sızıyordu: reflection artık
   `extractReplyMarkers` ile strip + recover ediyor; cache hit de aynı. FE `sanitizeCoachDisplayText`
-  + `recoverSuggestedTask` ikinci hat. Timer setup’ta da focus’taki 60 tick + parlayan progress
-  var; hızlı çevirince görünen kare çerçeve `outline-none` + `rounded-full` focus ring. Son seanslar
-  rail/drawer full-height; “Tümünü gör” ve `/seans/gecmis` sayfası yok (eski URL `/seans`’a
-  yönlenir). Tarih/konu filtreleri + “Daha fazla göster” sidebar içinde. Kullanım: `/seans` idle
-  rail. Gotcha: bozuk `<<TASK` JSON’u parse edilemezse kart çıkmaz, metin yine temizlenir.
-  İlgili: `suggested-task.ts`, `session-reflection.service.ts`, `coach-reply-markers.ts`,
-  `circular-timer-ring.tsx`, `session-history.tsx`, `study-session-shell.tsx`,
-  `study-session/history/page.tsx`.
+  - `recoverSuggestedTask` ikinci hat. Timer setup’ta da focus’taki 60 tick + parlayan progress
+    var; hızlı çevirince görünen kare çerçeve `outline-none` + `rounded-full` focus ring. Son seanslar
+    rail/drawer full-height; “Tümünü gör” ve `/seans/gecmis` sayfası yok (eski URL `/seans`’a
+    yönlenir). Tarih/konu filtreleri + “Daha fazla göster” sidebar içinde. Kullanım: `/seans` idle
+    rail. Gotcha: bozuk `<<TASK` JSON’u parse edilemezse kart çıkmaz, metin yine temizlenir.
+    İlgili: `suggested-task.ts`, `session-reflection.service.ts`, `coach-reply-markers.ts`,
+    `circular-timer-ring.tsx`, `session-history.tsx`, `study-session-shell.tsx`,
+    `study-session/history/page.tsx`.
 
 - **Skeleton, defter boyutu ve sayfa göstergesi (2026-08-24, APP-046)** — Üçü de aynı şeye bağlandı:
   dikey bütçe. **Sayfa göstergesi akıştan çıkarıldı** (`sticky` → `absolute`, spread'in ayağında
@@ -3236,7 +3226,7 @@ pnpm --filter @mentor/api test
   kimsenin bakmadığı bir kontrol şeridi defteri sessizce küçültüyordu. Şerit `pointer-events-none`,
   butonlar tek tek geri açılıyor — şerit tam genişlikte ve altındaki şey öğrencinin kart sürüklediği
   canlı bir sayfa. Sahne kolonunun dolgusu da `3vh`'den `2vh`'ye indi. **Skeleton yeniden yazıldı ve
-  asıl kusuru şekildi:** portre *tek sayfa* ayırıyordu (`max-w-md`, 1080/1440), oysa gelen şey bir
+  asıl kusuru şekildi:** portre _tek sayfa_ ayırıyordu (`max-w-md`, 1080/1440), oysa gelen şey bir
   **açılım** — boyunun bir buçuk katı genişlikte; ayrıca ray ve yan panel hiç yoktu, dolayısıyla
   gerçek içerik gelince tüm düzen yana kayıyordu. Yanlış yer ayıran bir skeleton hiç olmamasından
   kötüdür: bir düzen vaat edip sözünü bozar. Yeni skeleton kabuğun çerçevesini birebir taklit ediyor
@@ -3276,7 +3266,7 @@ pnpm --filter @mentor/api test
 - **Mobilde yaprak çevirme yerine slayt geçişi (2026-08-25, APP-046)** — Mobil zaten tek yaprak
   gösteriyordu (`isMobile` + `mobileSide`); değişen şey geçişin kendisi. Telefon tek sayfa gösterirken
   koca bir yaprağı çevirip tek sayfa ilerlemek tereddüt gibi okunuyor; sayfalar birbirinin yanından
-  kayıp geçmeli. **Asıl zorluk şuydu:** yaprak çevirme, içeriğin *altında* değişmesine izin veriyor —
+  kayıp geçmeli. **Asıl zorluk şuydu:** yaprak çevirme, içeriğin _altında_ değişmesine izin veriyor —
   uçan yaprak boş ve opak, değişimi örtüyor. Slaytta ise çıkan sayfanın **eski içeriğini** göstermesi
   gerekiyor, oysa `mobilePage` sayfa değiştiği anda diğer tarafın dokümanına geçiyor; mevcut
   `AnimatePresence` de çıkan alt ağacı canlı tuttuğu için o da yeni içeriği çiziyordu. Yani iki slayt
@@ -3453,3 +3443,50 @@ pnpm --filter @mentor/api test
   İlgili: `room-seat-layout.{ts,spec.ts}`, `room-seats.tsx`, `room-backdrop.tsx`, `room-shell.tsx`,
   `session-focus-backdrop.tsx`, `use-session-ambient-sound.ts`, `study-room-theme.ts`,
   `study-session-shell.tsx`.
+
+- **Çalışma masası — Dilim 3: davet linki + masa bildirimi (2026-08-25)** — Masa artık kendi
+  başına yayılıyor ve kendi kendini haber veriyor.
+
+  **Davet linki.** `/masaya-katil?kod=MASA-XXXXXX` (`/join-room`) sohbete yapıştırılabilir bir
+  bağlantı; masa sayfasındaki kopyala butonu artık çıplak kod yerine bu linki veriyor
+  (`getPathname` ile okuyanın diline göre üretiliyor). Sayfa **bilerek `(app)` grubunun dışında**:
+  o layout anonim ziyaretçiyi doğrudan `/login`'e atıyor, oysa davet linkinin bütün anlamı
+  uygulamayı hiç açmamış birine çalışması. Dört yol: girişli+onboarding tamam → katıl ve masaya
+  in · onboarding yarım → daveti park et, önce onboarding · anonim → daveti park et, `/kayit?next=`
+  · kod yok/geçersiz/zaten üye → kendini açıklayan ekran.
+
+  **Gotcha — `?next=` tek başına yetmiyor.** Yeni kullanıcı kayıt → onboarding → uygulama
+  yolundan geçiyor ve query string o sıçramayı atlatamıyor. Bu yüzden davet ayrıca
+  `sessionStorage`'a park ediliyor (`pending-invite.ts`) ve **onboarding'in bitiş butonunda**
+  (`complete-step.tsx` `handleGoPanel`) tüketiliyor. İlk denemede yanlış yere — wizard'ın
+  "zaten onboarded" guard'ına — bağlamıştım; tarayıcı testinde yakalandı, kullanıcı panele
+  düşüyordu.
+
+  **Gotcha — `next` bir açık yönlendirme yüzeyidir.** `safeNextPath` yalnız aynı-köken mutlak
+  yolları geçiriyor: şema, `//host`, ters bölü (tarayıcı `//`'a normalize edebilir) ve kontrol
+  karakterleri temizlenmiyor, **reddediliyor**. `sessionStorage` kullanıcı tarafından
+  yazılabilir olduğu için okurken de yeniden doğrulanıyor.
+
+  **Masa bildirimi.** Yeni `CoachingEventTopic.SESSION_STARTED` (yalnız `roomId` varken emit
+  edilir — solo başlangıcı bekleyen kimse yok) → `StudyRoomActivityListener` masadaki diğer
+  üyelere "Masada biri var" sessiz zil bildirimi düşürür, linki doğrudan masaya gider.
+  `NotificationDeliveryRepository.tryRecord` ile **(alıcı, masa, aktör, gün)** başına tek
+  bildirim: üst üste beş pomodoro masayı bir kez uyandırır. Uçtan uca best-effort — bildirim
+  hatası seans başlatmayı asla kırmaz.
+
+  **Neden modal değil:** biri oturması bir *davet* değil, bir *sinyal*. On kişilik masada her
+  oturuşta diyalog açmak, odanın var olma sebebi olan odağı baltalar.
+
+  **Silinen: buddy "birlikte çalışalım" daveti.** Sadece bir buton değildi — endpoint
+  (`POST /v1/buddy/study-invite`), `BuddyService.sendStudyInvite`, `BUDDY_STUDY_INVITE` event'i,
+  kalıcı bildirim, canlı SSE ipucu (`pushRealtimeEvent("study_invite")`) ve istemcideki modal
+  zinciriydi. Eş zamanlı birlikte çalışma artık masanın işi (brainstorming'deki rol ayrımı), tek
+  giriş noktası da o butondu; erişilemez kod bırakmamak için zincirin tamamı kaldırıldı. Buddy
+  kartındaki **kullanıcı adıyla davet kutusu** da gitti — kohort önerileri kaldı. İlgili 11 i18n
+  anahtarı temizlendi.
+
+  İlgili: `coaching.events.ts` (`StudyRoomSessionStarted`), `session.service.ts`,
+  `study-room.service.ts` (`getNotificationTargets`), `study-room-activity.listener.{ts,spec.ts}`,
+  `join-room/` (sayfa + shell), `pending-invite.ts`, `post-auth-destination.{ts,spec.ts}`,
+  `complete-step.tsx`, `(auth)/{login,signup}/page.tsx`, `room-shell.tsx`, `routing.ts`,
+  `session-buddy-card.tsx`, `notification-drawer-shell.tsx`, `messages/{tr,en}.json`.

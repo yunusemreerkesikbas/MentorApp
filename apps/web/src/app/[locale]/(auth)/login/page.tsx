@@ -6,8 +6,9 @@ import { useState, type FormEvent } from "react";
 import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
-import { postAuthDestination } from "@/lib/post-auth-destination";
+import { postAuthDestination, readAuthNextParam } from "@/lib/post-auth-destination";
 import { AuthNavLink } from "../_components/auth-nav-link";
+import { useAuthSheetExit } from "../_components/auth-shell";
 import { GoogleAuthButton } from "../_components/google-auth-button";
 
 export default function LoginPage() {
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const ui = useTranslations("common");
   const { login } = useAuth();
   const router = useRouter();
+  const exitThen = useAuthSheetExit();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -28,17 +30,19 @@ export default function LoginPage() {
         email: String(data.get("email")),
         password: String(data.get("password")),
       });
-      router.push(postAuthDestination(user));
+      exitThen(() => {
+        // @ts-expect-error -- a validated internal path, transported as a plain string.
+        router.push(postAuthDestination(user, readAuthNextParam()));
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-    } finally {
       setBusy(false);
     }
   }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <SectionHeading as="h2" className="justify-center text-center">
+      <SectionHeading as="h2" className="items-center text-center">
         {translate("title")}
       </SectionHeading>
       <Field

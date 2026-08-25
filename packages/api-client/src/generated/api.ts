@@ -137,6 +137,8 @@ export interface DeepAnalysisDto { [key: string]: unknown }
 
 export interface RedeemInviteDto { [key: string]: unknown }
 
+export interface CompleteWeeklyReviewDto { [key: string]: unknown }
+
 export interface CreateMoodCheckinDto { [key: string]: unknown }
 
 export interface UpsertVisionDto { [key: string]: unknown }
@@ -197,6 +199,8 @@ export interface ApproveMemberDto { [key: string]: unknown }
 
 export interface AttachmentUploadUrlDto { [key: string]: unknown }
 
+export interface CopyAttachmentDto { [key: string]: unknown }
+
 export interface CreateThreadDto { [key: string]: unknown }
 
 export interface CreateAnswerDto { [key: string]: unknown }
@@ -233,6 +237,8 @@ export interface UpsertExamEventDto { [key: string]: unknown }
 
 export interface RefundSubscriptionDto { [key: string]: unknown }
 
+export interface UpdatePlanDto { [key: string]: unknown }
+
 export interface ReviewForumTagSuggestionDto { [key: string]: unknown }
 
 export interface AdminForumTagCreateDto { [key: string]: unknown }
@@ -240,6 +246,10 @@ export interface AdminForumTagCreateDto { [key: string]: unknown }
 export interface AdminForumTagUpdateDto { [key: string]: unknown }
 
 export interface SetFeaturedThreadDto { [key: string]: unknown }
+
+export interface CelebrateAchievementsDto { [key: string]: unknown }
+
+export interface CelebrateJourneyLevelDto { [key: string]: unknown }
 
 export interface PushSubscribeDto { [key: string]: unknown }
 
@@ -3448,6 +3458,40 @@ export const coachingControllerGetWeeklyReview = async (params: CoachingControll
 
 
 
+export type coachingControllerCompleteWeeklyReviewResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type coachingControllerCompleteWeeklyReviewResponseSuccess = (coachingControllerCompleteWeeklyReviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerCompleteWeeklyReviewResponse = (coachingControllerCompleteWeeklyReviewResponseSuccess)
+
+export const getCoachingControllerCompleteWeeklyReviewUrl = () => {
+
+
+  
+
+  return `/v1/coaching/weekly-review/completion`
+}
+
+export const coachingControllerCompleteWeeklyReview = async (completeWeeklyReviewDto: CompleteWeeklyReviewDto, options?: RequestInit): Promise<coachingControllerCompleteWeeklyReviewResponse> => {
+  
+  return http<coachingControllerCompleteWeeklyReviewResponse>(getCoachingControllerCompleteWeeklyReviewUrl(),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      completeWeeklyReviewDto,)
+  }
+);}
+
+
+
 export type coachingControllerUpsertMoodResponse200 = {
   data: void
   status: 200
@@ -5649,6 +5693,40 @@ export const forumThreadControllerAttachmentUploadUrl = async (attachmentUploadU
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       attachmentUploadUrlDto,)
+  }
+);}
+
+
+
+export type forumThreadControllerCopyAttachmentResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type forumThreadControllerCopyAttachmentResponseSuccess = (forumThreadControllerCopyAttachmentResponse201) & {
+  headers: Headers;
+};
+;
+
+export type forumThreadControllerCopyAttachmentResponse = (forumThreadControllerCopyAttachmentResponseSuccess)
+
+export const getForumThreadControllerCopyAttachmentUrl = () => {
+
+
+  
+
+  return `/v1/forum/attachments/copy`
+}
+
+export const forumThreadControllerCopyAttachment = async (copyAttachmentDto: CopyAttachmentDto, options?: RequestInit): Promise<forumThreadControllerCopyAttachmentResponse> => {
+  
+  return http<forumThreadControllerCopyAttachmentResponse>(getForumThreadControllerCopyAttachmentUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      copyAttachmentDto,)
   }
 );}
 
@@ -8284,6 +8362,74 @@ export const adminSubscriptionControllerCancel = async (userId: string, options?
 
 
 
+export type adminPlansControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminPlansControllerListResponseSuccess = (adminPlansControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminPlansControllerListResponse = (adminPlansControllerListResponseSuccess)
+
+export const getAdminPlansControllerListUrl = () => {
+
+
+  
+
+  return `/v1/admin/plans`
+}
+
+export const adminPlansControllerList = async ( options?: RequestInit): Promise<adminPlansControllerListResponse> => {
+  
+  return http<adminPlansControllerListResponse>(getAdminPlansControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminPlansControllerUpdateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminPlansControllerUpdateResponseSuccess = (adminPlansControllerUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminPlansControllerUpdateResponse = (adminPlansControllerUpdateResponseSuccess)
+
+export const getAdminPlansControllerUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/admin/plans/${id}`
+}
+
+export const adminPlansControllerUpdate = async (id: string,
+    updatePlanDto: UpdatePlanDto, options?: RequestInit): Promise<adminPlansControllerUpdateResponse> => {
+  
+  return http<adminPlansControllerUpdateResponse>(getAdminPlansControllerUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updatePlanDto,)
+  }
+);}
+
+
+
 export type adminMetricsControllerOverviewResponse200 = {
   data: void
   status: 200
@@ -8747,6 +8893,173 @@ export const communityControllerGetProfile = async (username: string, options?: 
     method: 'GET'
     
     
+  }
+);}
+
+
+
+export type communityControllerGetAchievementsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type communityControllerGetAchievementsResponseSuccess = (communityControllerGetAchievementsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type communityControllerGetAchievementsResponse = (communityControllerGetAchievementsResponseSuccess)
+
+export const getCommunityControllerGetAchievementsUrl = (username: string,) => {
+
+
+  
+
+  return `/v1/community/profile/${username}/achievements`
+}
+
+export const communityControllerGetAchievements = async (username: string, options?: RequestInit): Promise<communityControllerGetAchievementsResponse> => {
+  
+  return http<communityControllerGetAchievementsResponse>(getCommunityControllerGetAchievementsUrl(username),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type communityControllerGetUnseenAchievementsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type communityControllerGetUnseenAchievementsResponseSuccess = (communityControllerGetUnseenAchievementsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type communityControllerGetUnseenAchievementsResponse = (communityControllerGetUnseenAchievementsResponseSuccess)
+
+export const getCommunityControllerGetUnseenAchievementsUrl = () => {
+
+
+  
+
+  return `/v1/community/achievements/unseen`
+}
+
+export const communityControllerGetUnseenAchievements = async ( options?: RequestInit): Promise<communityControllerGetUnseenAchievementsResponse> => {
+  
+  return http<communityControllerGetUnseenAchievementsResponse>(getCommunityControllerGetUnseenAchievementsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type communityControllerCelebrateAchievementsResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type communityControllerCelebrateAchievementsResponseSuccess = (communityControllerCelebrateAchievementsResponse204) & {
+  headers: Headers;
+};
+;
+
+export type communityControllerCelebrateAchievementsResponse = (communityControllerCelebrateAchievementsResponseSuccess)
+
+export const getCommunityControllerCelebrateAchievementsUrl = () => {
+
+
+  
+
+  return `/v1/community/achievements/celebrated`
+}
+
+export const communityControllerCelebrateAchievements = async (celebrateAchievementsDto: CelebrateAchievementsDto, options?: RequestInit): Promise<communityControllerCelebrateAchievementsResponse> => {
+  
+  return http<communityControllerCelebrateAchievementsResponse>(getCommunityControllerCelebrateAchievementsUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      celebrateAchievementsDto,)
+  }
+);}
+
+
+
+export type communityControllerGetUnseenJourneyLevelsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type communityControllerGetUnseenJourneyLevelsResponseSuccess = (communityControllerGetUnseenJourneyLevelsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type communityControllerGetUnseenJourneyLevelsResponse = (communityControllerGetUnseenJourneyLevelsResponseSuccess)
+
+export const getCommunityControllerGetUnseenJourneyLevelsUrl = () => {
+
+
+  
+
+  return `/v1/community/journey-levels/unseen`
+}
+
+export const communityControllerGetUnseenJourneyLevels = async ( options?: RequestInit): Promise<communityControllerGetUnseenJourneyLevelsResponse> => {
+  
+  return http<communityControllerGetUnseenJourneyLevelsResponse>(getCommunityControllerGetUnseenJourneyLevelsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type communityControllerCelebrateJourneyLevelResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type communityControllerCelebrateJourneyLevelResponseSuccess = (communityControllerCelebrateJourneyLevelResponse204) & {
+  headers: Headers;
+};
+;
+
+export type communityControllerCelebrateJourneyLevelResponse = (communityControllerCelebrateJourneyLevelResponseSuccess)
+
+export const getCommunityControllerCelebrateJourneyLevelUrl = () => {
+
+
+  
+
+  return `/v1/community/journey-levels/celebrated`
+}
+
+export const communityControllerCelebrateJourneyLevel = async (celebrateJourneyLevelDto: CelebrateJourneyLevelDto, options?: RequestInit): Promise<communityControllerCelebrateJourneyLevelResponse> => {
+  
+  return http<communityControllerCelebrateJourneyLevelResponse>(getCommunityControllerCelebrateJourneyLevelUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      celebrateJourneyLevelDto,)
   }
 );}
 

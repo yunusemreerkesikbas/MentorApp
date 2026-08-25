@@ -17,6 +17,7 @@ import { SessionReturnReminderHandler } from "./application/handlers/session-ret
 import { JobHandlersRegistrar } from "./application/job-handlers.registrar";
 import { JobRunnerService } from "./application/job-runner.service";
 import { BuddyActivityListener } from "./application/listeners/buddy-activity.listener";
+import { StudyRoomActivityListener } from "./application/listeners/study-room-activity.listener";
 import { CoachingEventsListener } from "./application/listeners/coaching-events.listener";
 import { ForumEventsListener } from "./application/listeners/forum-events.listener";
 import { IdentityEventsListener } from "./application/listeners/identity-events.listener";
@@ -60,6 +61,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     PaymentsEventsListener,
     CoachingEventsListener,
     BuddyActivityListener,
+    StudyRoomActivityListener,
     ForumEventsListener,
     IdentityEventsListener,
     JourneyLevelEventsListener,

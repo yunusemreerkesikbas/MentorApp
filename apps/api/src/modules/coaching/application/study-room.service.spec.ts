@@ -33,17 +33,17 @@ const memberRow = (userId: string, role: string, over: Record<string, unknown> =
 });
 
 const makeRooms = () => ({
-  createWithOwner: vi.fn().mockResolvedValue(roomRow()),
+  createWithOwner: vi.fn().mockResolvedValue({ ok: true, room: roomRow() }),
   findById: vi.fn().mockResolvedValue(roomRow()),
   findByInviteCode: vi.fn().mockResolvedValue(undefined),
   listForUser: vi.fn().mockResolvedValue([]),
   listMembers: vi.fn().mockResolvedValue([memberRow(OWNER, "OWNER"), memberRow(MEMBER, "MEMBER")]),
   joinByCode: vi.fn().mockResolvedValue({ ok: true, room: roomRow() }),
   removeMember: vi.fn().mockResolvedValue({ removed: true, roomDeleted: false, newOwnerId: null }),
+  removeMemberAsOwner: vi.fn().mockResolvedValue({ ok: true, removed: true }),
   updateRoom: vi.fn().mockResolvedValue({ ok: true, room: roomRow() }),
-  setInviteCode: vi.fn().mockResolvedValue(roomRow()),
-  deleteRoom: vi.fn().mockResolvedValue(undefined),
-  countActiveMembershipsForUser: vi.fn().mockResolvedValue(0),
+  setInviteCode: vi.fn().mockResolvedValue({ ok: true, room: roomRow() }),
+  deleteRoom: vi.fn().mockResolvedValue({ ok: true }),
 });
 
 const makeSessions = (presence: unknown[] = []) => ({
@@ -89,20 +89,24 @@ describe("StudyRoomService", () => {
   describe("create", () => {
     it("rejects a fourth active room", async () => {
       const { svc, rooms } = make();
-      rooms.countActiveMembershipsForUser.mockResolvedValue(STUDY_ROOM_QUOTA);
+      rooms.createWithOwner.mockResolvedValue({
+        ok: false,
+        reason: "quota_exceeded",
+      });
       await expectDomainError(
         svc.create(OWNER, { name: "x", theme: "HOME", capacity: 4 }),
         ErrorCode.COACHING_ROOM_QUOTA_EXCEEDED,
       );
-      expect(rooms.createWithOwner).not.toHaveBeenCalled();
+      expect(rooms.createWithOwner).toHaveBeenCalledTimes(1);
     });
 
     it("counts only non-dormant rooms against the quota", async () => {
       const { svc, rooms } = make();
       await svc.create(OWNER, { name: "x", theme: "HOME", capacity: 4 });
-      expect(rooms.countActiveMembershipsForUser).toHaveBeenCalledWith(
+      expect(rooms.createWithOwner).toHaveBeenCalledWith(
         OWNER,
-        STUDY_ROOM_DORMANT_DAYS,
+        expect.any(Object),
+        { quota: STUDY_ROOM_QUOTA, dormantDays: STUDY_ROOM_DORMANT_DAYS },
       );
     });
 
@@ -201,12 +205,29 @@ describe("StudyRoomService", () => {
 
   describe("owner-only actions", () => {
     it.each([
-      ["update", (svc: StudyRoomService) => svc.update(MEMBER, ROOM, { name: "yeni" })],
-      ["rotateInviteCode", (svc: StudyRoomService) => svc.rotateInviteCode(MEMBER, ROOM)],
-      ["close", (svc: StudyRoomService) => svc.close(MEMBER, ROOM)],
-      ["removeMember", (svc: StudyRoomService) => svc.removeMember(MEMBER, ROOM, OWNER)],
-    ])("refuses %s from a non-owner", async (_name, run) => {
-      const { svc } = make();
+      [
+        "updateRoom",
+        (rooms: ReturnType<typeof makeRooms>) => rooms.updateRoom,
+        (svc: StudyRoomService) => svc.update(MEMBER, ROOM, { name: "yeni" }),
+      ],
+      [
+        "setInviteCode",
+        (rooms: ReturnType<typeof makeRooms>) => rooms.setInviteCode,
+        (svc: StudyRoomService) => svc.rotateInviteCode(MEMBER, ROOM),
+      ],
+      [
+        "deleteRoom",
+        (rooms: ReturnType<typeof makeRooms>) => rooms.deleteRoom,
+        (svc: StudyRoomService) => svc.close(MEMBER, ROOM),
+      ],
+      [
+        "removeMemberAsOwner",
+        (rooms: ReturnType<typeof makeRooms>) => rooms.removeMemberAsOwner,
+        (svc: StudyRoomService) => svc.removeMember(MEMBER, ROOM, OWNER),
+      ],
+    ])("refuses %s from a non-owner", async (_method, mutation, run) => {
+      const { svc, rooms } = make();
+      mutation(rooms).mockResolvedValue({ ok: false, reason: "not_owner" });
       await expectDomainError(run(svc), ErrorCode.COACHING_ROOM_NOT_OWNER);
     });
 

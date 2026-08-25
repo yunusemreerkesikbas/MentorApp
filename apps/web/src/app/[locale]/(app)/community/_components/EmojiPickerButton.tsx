@@ -43,6 +43,7 @@ export function EmojiPickerButton({
   const t = useTranslations("community");
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<React.CSSProperties>();
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const pendingCaretRef = useRef<number | null>(null);
@@ -75,7 +76,6 @@ export function EmojiPickerButton({
 
   useEffect(() => {
     if (!open) return;
-    updatePosition();
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
       if (!panelRef.current?.contains(target) && !triggerRef.current?.contains(target)) setOpen(false);
@@ -118,8 +118,17 @@ export function EmojiPickerButton({
     onValueChange(result.value);
   };
 
-  const portalTarget = triggerRef.current?.closest("dialog") ??
-    (typeof document === "undefined" ? null : document.body);
+  const handleTriggerClick = () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    setPortalTarget(trigger.closest("dialog") ?? document.body);
+    updatePosition();
+    setOpen(true);
+  };
 
   return (
     <>
@@ -130,7 +139,7 @@ export function EmojiPickerButton({
         aria-label={t("emoji_add")}
         aria-expanded={open}
         aria-haspopup="dialog"
-        onClick={() => setOpen((current) => !current)}
+        onClick={handleTriggerClick}
         className="grid size-11 place-items-center rounded-full text-[var(--color-secondary)] transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       >
         <Smile size={20} aria-hidden />

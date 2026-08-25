@@ -30,4 +30,14 @@ CREATE INDEX "study_room_members_room_joined_idx" ON "study_room_members" USING 
 CREATE UNIQUE INDEX "study_rooms_invite_code_unique_idx" ON "study_rooms" USING btree ("invite_code");--> statement-breakpoint
 CREATE INDEX "study_rooms_owner_idx" ON "study_rooms" USING btree ("owner_user_id");--> statement-breakpoint
 ALTER TABLE "study_sessions" ADD CONSTRAINT "study_sessions_room_id_study_rooms_id_fk" FOREIGN KEY ("room_id") REFERENCES "public"."study_rooms"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "study_sessions_room_status_idx" ON "study_sessions" USING btree ("room_id","status");
+CREATE INDEX "study_sessions_room_status_idx" ON "study_sessions" USING btree ("room_id","status");--> statement-breakpoint
+ALTER TABLE "study_rooms" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "study_rooms" FORCE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE POLICY "study_rooms_service_all" ON "study_rooms" FOR ALL
+  USING (current_setting('app.role', true) = 'SERVICE')
+  WITH CHECK (current_setting('app.role', true) = 'SERVICE');--> statement-breakpoint
+ALTER TABLE "study_room_members" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "study_room_members" FORCE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE POLICY "study_room_members_service_all" ON "study_room_members" FOR ALL
+  USING (current_setting('app.role', true) = 'SERVICE')
+  WITH CHECK (current_setting('app.role', true) = 'SERVICE');

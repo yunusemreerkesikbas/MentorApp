@@ -408,7 +408,7 @@ global-composer}.tsx`, `lib/{forum,analytics}.ts`, `messages/{tr,en}.json`.
   kalıcı iskelet yerine **hata + "Yenile"** butonu (`failedWindows` seti; retry pencereyi setten çıkarıp
   refetch tetikler) — sessiz yutma yok. (3) Servis kataloğu (`api.md §6`) yeni `/v1/community/leaderboard`
   endpoint'iyle güncellendi. Devnote: repo `docs/devnotes/` kullanmıyor → feature-timeline konvansiyonu
-  (bu dosya) geçerli. Açık kalan düşük-öncelik follow-up'lar: `wait-for-port.mjs` soket timeout'u,
+  (bu dosya) geçerli. Açık kalan düşük-öncelik follow-up'lar:
   `WindowTabs` klavye ok-navigasyonu (roving tabindex), `MEDAL` sabiti dup'ı, FE yüzdelik hesabının
   backend'e taşınması. _(APP-018)_
 - **Leaderboard Faz 3 — zaman sekmeleri + Europe/Istanbul (APP-018)** — Tam sayfaya Bugün/Hafta/Tüm zamanlar
@@ -760,3 +760,13 @@ community-header}.tsx}`, `feed/_components/global-composer.tsx`, `messages/{tr,e
   Header close/geri yalnız mobilde kalır (`<lg`); masaüstünde AppNav çıkış yoludur.
   Kullanım: `/topluluk` → solda dar AppNav + kanal sidebar. İlgili:
   `app-nav.tsx`, `app-sidebar.ts`, `community-header.tsx`, `(app)/layout.tsx`.
+
+- **Yol arkadaşının rolü daraldı (2026-08-25)** — Çalışma masası gelince buddy'nin **eş zamanlı**
+  yarısı masaya devredildi; buddy artık yalnız **asenkron hesap verebilirlik**: partnerin bugünkü
+  odak dakikası, serisi, "şu an çalışıyor" sinyali ve dürtme. Kaldırılanlar: `/seans` buddy
+  kartındaki **kullanıcı adıyla davet kutusu** (kohort önerileri duruyor) ve **"birlikte
+  çalışalım" daveti** — buton, `POST /v1/buddy/study-invite`, `BuddyService.sendStudyInvite`,
+  `IdentityEventTopic.BUDDY_STUDY_INVITE`, kalıcı bildirim, canlı SSE ipucu ve istemci modal'ı
+  dahil tüm zincir. Gerekçe: kullanıcı adı bilmek ve kabul beklemek, davet kodunun ortadan
+  kaldırdığı sürtünmenin ta kendisiydi; aynı işi iki yerde tutmak rolleri yeniden bulandırırdı.
+  Detay ve masa tarafı → [coaching](./coaching.md).

@@ -48,6 +48,7 @@ export function NotebooksShell() {
   const [loadMoreError, setLoadMoreError] = useState(false);
   const [error, setError] = useState(false);
   const [failedDelete, setFailedDelete] = useState<NotebookSummaryDto | null>(null);
+  const [deleteSyncError, setDeleteSyncError] = useState(false);
   const [form, setForm] = useState<NotebookSummaryDto | "new" | null>(null);
   const [exam, setExam] = useState<ExamChoice | null>(null);
 
@@ -122,6 +123,7 @@ export function NotebooksShell() {
 
   async function remove(item: NotebookSummaryDto) {
     setFailedDelete(null);
+    setDeleteSyncError(false);
     const accepted = await confirm({
       title: t("delete_title", { title: item.title ?? "" }),
       message: t("delete_message"),
@@ -131,9 +133,25 @@ export function NotebooksShell() {
     if (!accepted) return;
     try {
       await deleteNotebook(item.id);
-      await loadFirst();
     } catch {
       setFailedDelete(item);
+      return;
+    }
+
+    setItems((current) => current.filter((currentItem) => currentItem.id !== item.id));
+    setTotal((current) => Math.max(0, current - 1));
+    await resyncAfterDelete();
+  }
+
+  async function resyncAfterDelete() {
+    setDeleteSyncError(false);
+    try {
+      const result = await fetchNotebooks(1);
+      setItems(result.items);
+      setTotal(result.total);
+      setPage(1);
+    } catch {
+      setDeleteSyncError(true);
     }
   }
 
@@ -210,6 +228,21 @@ export function NotebooksShell() {
               <button
                 type="button"
                 onClick={() => void remove(failedDelete)}
+                className="min-h-11 rounded-[var(--radius-button)] border border-[var(--color-border)] px-4 font-semibold text-[var(--color-main)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              >
+                {t("retry")}
+              </button>
+            </div>
+          ) : null}
+          {deleteSyncError ? (
+            <div
+              role="alert"
+              className="mx-auto flex flex-wrap items-center justify-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-secondary)]"
+            >
+              <span>{t("delete_sync_error")}</span>
+              <button
+                type="button"
+                onClick={() => void resyncAfterDelete()}
                 className="min-h-11 rounded-[var(--radius-button)] border border-[var(--color-border)] px-4 font-semibold text-[var(--color-main)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
               >
                 {t("retry")}

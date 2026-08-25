@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import type { ExamType } from "@mentor/types";
 import { Chip } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
+import { consumePendingInvite } from "@/lib/pending-invite";
 import { OnboardingStepLayout } from "../onboarding-step-layout";
 import type { GoalSummary } from "./goal-step";
 
@@ -23,7 +24,12 @@ export function CompleteStep({
 
   function handleGoPanel() {
     onFinish();
-    router.push("/dashboard");
+    // An invite link followed before signing up resumes here: the query string did not survive
+    // signup → onboarding, but the parked path did, so the newcomer lands at the table that
+    // brought them rather than on a panel that means nothing to them yet.
+    const pendingInvite = consumePendingInvite();
+    // @ts-expect-error -- a validated internal path, transported as a plain string.
+    router.push(pendingInvite ?? "/dashboard");
   }
 
   /**

@@ -234,6 +234,24 @@ describe("study rooms (e2e)", () => {
     expect((await joinRoom("owner", fourth.inviteCode)).status).toBe(201);
   });
 
+  it("serializes concurrent creates so the active-room quota cannot be exceeded", async () => {
+    expect((await createRoom("owner", { name: "Birinci", capacity: 4 })).status).toBe(201);
+    expect((await createRoom("owner", { name: "İkinci", capacity: 4 })).status).toBe(201);
+
+    const results = await Promise.all([
+      createRoom("owner", { name: "Paralel A", capacity: 4 }),
+      createRoom("owner", { name: "Paralel B", capacity: 4 }),
+    ]);
+
+    expect(results.map((result) => result.status).sort()).toEqual([201, 409]);
+    const conflict = results.find((result) => result.status === 409)!;
+    expect(conflict.body.code).toBe("COACHING_ROOM_QUOTA_EXCEEDED");
+
+    const list = await request(app.getHttpServer()).get("/v1/study-rooms").set(as("owner"));
+    expect(list.status).toBe(200);
+    expect(list.body).toHaveLength(3);
+  });
+
   it("rotates the invite code without disturbing members", async () => {
     const room = (await createRoom("owner", { capacity: 3 })).body;
     expect((await joinRoom("member", room.inviteCode)).status).toBe(201);

@@ -214,37 +214,6 @@ describe("BuddyService.nudge", () => {
   });
 });
 
-describe("BuddyService.sendStudyInvite", () => {
-  it("records the poke and emits BUDDY_STUDY_INVITE to the partner", async () => {
-    const { svc, pairs, events } = make();
-    pairs.findActiveByUser.mockResolvedValue(activePair());
-
-    await svc.sendStudyInvite("uA");
-
-    expect(pairs.recordNudge).toHaveBeenCalledWith("pair1", "requester", expect.any(Date));
-    expect(events.emit).toHaveBeenCalledWith(
-      "identity.buddy.study-invite",
-      expect.objectContaining({ recipientId: "uB", actorId: "uA" }),
-    );
-  });
-
-  it("shares the nudge cooldown → 429 inside the window", async () => {
-    const { svc, pairs, events } = make();
-    pairs.findActiveByUser.mockResolvedValue(
-      activePair({ requesterLastNudgeAt: new Date(Date.now() - BUDDY_NUDGE_COOLDOWN_MS / 2) }),
-    );
-    await expect(svc.sendStudyInvite("uA")).rejects.toMatchObject({
-      code: ErrorCode.SOCIAL_BUDDY_NUDGE_COOLDOWN,
-    });
-    expect(events.emit).not.toHaveBeenCalled();
-  });
-
-  it("404s when there is no active pairing", async () => {
-    const { svc } = make();
-    await expect(svc.sendStudyInvite("uA")).rejects.toBeInstanceOf(NotFoundError);
-  });
-});
-
 describe("BuddyService.end / deleteRequest", () => {
   it("ends silently and deletes requests scoped to the caller", async () => {
     const { svc, pairs, events } = make();

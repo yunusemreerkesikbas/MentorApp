@@ -6,7 +6,7 @@
  * All values are server-computed and ready to display: the countdown days come from the
  * verified content calendar (guardrail §4 #1), the streak from daily activity, and every
  * user-facing line is backend-localized (no AI on these surfaces — §4 #5).
-*/
+ */
 
 import type { ForumCoachIntent } from "./forum.js";
 
@@ -512,7 +512,14 @@ export const VISION_BOARD_FRAMES = ["wood", "gallery", "none"] as const;
 export type VisionBoardFrame = (typeof VISION_BOARD_FRAMES)[number];
 
 /** Board backgrounds; textures are procedural (gradients/dots), so canvas can redraw them. */
-export const VISION_BOARD_TEXTURES = ["cork", "paper", "grid", "linen", "dots", "stripes"] as const;
+export const VISION_BOARD_TEXTURES = [
+  "cork",
+  "paper",
+  "grid",
+  "linen",
+  "dots",
+  "stripes",
+] as const;
 export type VisionBoardTexture = (typeof VISION_BOARD_TEXTURES)[number];
 
 /** Per-image chrome. A preset enum, not free-form borders — every value must be canvas-drawable. */
@@ -680,7 +687,12 @@ export interface VisionBoardTextItem extends VisionBoardItemBase {
   lineHeight: number;
   letterSpacing: number;
   /** The dark label plate behind quotes/tags. `null` = transparent text. */
-  background: { color: string; opacity: number; padding: number; radius: number } | null;
+  background: {
+    color: string;
+    opacity: number;
+    padding: number;
+    radius: number;
+  } | null;
   /**
    * Set on the block seeded from the goal itself. Cleared the moment the user edits it, which is
    * how a later goal change knows it may refresh this text without overwriting their words.

@@ -35,8 +35,3 @@ export async function endBuddy(): Promise<void> {
 export async function nudgeBuddy(): Promise<void> {
   await http("/v1/buddy/nudge", { method: "POST" });
 }
-
-/** Invite the active partner to study together now (shares the nudge cooldown). */
-export async function inviteBuddyToStudy(): Promise<void> {
-  await http("/v1/buddy/study-invite", { method: "POST" });
-}

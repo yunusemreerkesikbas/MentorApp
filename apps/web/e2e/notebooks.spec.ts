@@ -72,12 +72,15 @@ function json(route: Route, body: unknown, status = 200) {
 interface MockApiOptions {
   initialCustoms?: NotebookDto[];
   failPageTwoOnce?: boolean;
+  failFirstPageAfterDeleteOnce?: boolean;
 }
 
 async function mockApi(page: Page, options: MockApiOptions = {}) {
   let customs = [...(options.initialCustoms ?? [])];
   let failPageTwo = options.failPageTwoOnce ?? false;
-  const state = { listCalls: 0, pagePuts: 0 };
+  let failFirstPageAfterDelete = options.failFirstPageAfterDeleteOnce ?? false;
+  let deleted = false;
+  const state = { listCalls: 0, pagePuts: 0, deleteCalls: 0 };
 
   await page.addInitScript(() =>
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
@@ -135,6 +138,10 @@ async function mockApi(page: Page, options: MockApiOptions = {}) {
     if (method === "GET" && path === "/v1/coaching/notebooks") {
       state.listCalls += 1;
       const requestedPage = Number(url.searchParams.get("page") ?? 1);
+      if (requestedPage === 1 && deleted && failFirstPageAfterDelete) {
+        failFirstPageAfterDelete = false;
+        return json(route, { code: "TEMPORARY_ERROR", message: "temporary" }, 503);
+      }
       if (requestedPage === 2 && failPageTwo) {
         failPageTwo = false;
         return json(route, { code: "TEMPORARY_ERROR", message: "temporary" }, 503);
@@ -183,6 +190,8 @@ async function mockApi(page: Page, options: MockApiOptions = {}) {
       return json(route, updated);
     }
     if (method === "DELETE" && path === `/v1/coaching/notebooks/${CUSTOM_ID}`) {
+      state.deleteCalls += 1;
+      deleted = true;
       customs = customs.filter((item) => item.id !== CUSTOM_ID);
       return json(route, null, 204);
     }
@@ -289,6 +298,38 @@ test("daha fazla hatası yeniden denenir ve mutation sonrası sayfalama server i
   await expect(page.getByRole("heading", { name: "Yeni Eklenen" })).toBeVisible();
   const createButton = page.getByRole("button", { name: "Yeni defter" });
   expect((await createButton.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+});
+
+test("silme başarılıyken liste yenileme tekrarı ikinci DELETE göndermez", async ({ page }) => {
+  const custom: NotebookDto = {
+    id: CUSTOM_ID,
+    kind: "CUSTOM",
+    title: "Silinecek Defter",
+    examId: null,
+    subjectRef: null,
+    subjectName: null,
+    cover: { color: "navy", material: "cloth" },
+    pageCount: 0,
+    dueCount: 0,
+    createdAt: "2026-08-25T10:00:00.000Z",
+    updatedAt: "2026-08-25T10:00:00.000Z",
+  };
+  const state = await mockApi(page, {
+    initialCustoms: [custom],
+    failFirstPageAfterDeleteOnce: true,
+  });
+  await page.goto("/defterlerim");
+
+  await page.getByRole("button", { name: "Silinecek Defter defterini sil" }).click();
+  await page.getByRole("button", { name: "Defteri sil" }).click();
+
+  const syncAlert = page.getByRole("alert").filter({ hasText: "Defter silindi" });
+  await expect(syncAlert).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Silinecek Defter" })).toHaveCount(0);
+
+  await syncAlert.getByRole("button", { name: "Yeniden dene" }).click();
+  await expect(syncAlert).toHaveCount(0);
+  expect(state.deleteCalls).toBe(1);
 });
 
 test("İngilizce route reduced-motion altında koleksiyonu erişilebilir gösterir", async ({ page }) => {

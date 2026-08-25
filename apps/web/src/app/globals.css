@@ -352,6 +352,40 @@ html.mentor-sheet-open {
   animation: sheet-exit 240ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
+/* Auth sheet — viewport travel only (not % of self). Blur/opacity made it look
+   like it scaled up while height was still settling. */
+.auth-sheet {
+  --panel-open-dur: 680ms;
+  --panel-close-dur: 420ms;
+  --panel-ease: cubic-bezier(0.25, 0.82, 0.32, 1);
+  width: 100%;
+  transform-origin: bottom center;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+.auth-sheet[data-open="true"] {
+  animation: auth-sheet-enter var(--panel-open-dur) var(--panel-ease) both;
+}
+.auth-sheet[data-open="false"] {
+  animation: auth-sheet-leave var(--panel-close-dur) var(--panel-ease) both;
+}
+@keyframes auth-sheet-enter {
+  from { transform: translate3d(0, 100dvh, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+@keyframes auth-sheet-leave {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, 100dvh, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-sheet,
+  .auth-sheet[data-open="true"],
+  .auth-sheet[data-open="false"] {
+    animation: none !important;
+    transform: none;
+  }
+}
+
 /* Plan date sheet — react-day-picker overrides (DESIGN.md tokens) */
 .mentor-plan-day-picker-wrap {
   border: 1px solid color-mix(in srgb, var(--color-main) 12%, transparent);

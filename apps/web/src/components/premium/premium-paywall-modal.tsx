@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState, type ComponentType } from "react";
+import { useEffect, useId, useState, useSyncExternalStore, type ComponentType } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
@@ -67,6 +67,10 @@ const BENEFITS = [
   }>;
 }[];
 
+const subscribeToClientMount = () => () => {};
+const getClientMountedSnapshot = () => true;
+const getServerMountedSnapshot = () => false;
+
 interface PremiumPaywallModalProps {
   sourceFeature?: PremiumFeatureId;
   onClose: () => void;
@@ -82,7 +86,11 @@ export function PremiumPaywallModal({
   const locale = useLocale();
   const titleId = useId();
   const reduceMotion = useReducedMotion();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    subscribeToClientMount,
+    getClientMountedSnapshot,
+    getServerMountedSnapshot,
+  );
   const [loading, setLoading] = useState(true);
   const [plans, setPlans] = useState<PlanDto[]>([]);
   const [view, setView] = useState<SubscriptionView | null>(null);
@@ -91,10 +99,6 @@ export function PremiumPaywallModal({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     document.documentElement.classList.add("mentor-dialog-open");

@@ -88,15 +88,6 @@ export class BuddyService {
     await this.emitBuddyEvent(IdentityEventTopic.BUDDY_NUDGED, userId, pair.otherUserId);
   }
 
-  /**
-   * Invite the active partner to study together now. Same 404/429 semantics as nudge;
-   * shares the poke cooldown (one nudge-or-invite per window — anti-spam, no extra state).
-   */
-  async sendStudyInvite(userId: string): Promise<void> {
-    const pair = await this.pokeBuddy(userId);
-    await this.emitBuddyEvent(IdentityEventTopic.BUDDY_STUDY_INVITE, userId, pair.otherUserId);
-  }
-
   /** Shared poke: resolve active pair, enforce the per-direction cooldown, record it. */
   private async pokeBuddy(userId: string): Promise<BuddyPairWithUserRow> {
     const pair = await this.pairs.findActiveByUser(userId);

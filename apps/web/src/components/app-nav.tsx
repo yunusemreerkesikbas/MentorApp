@@ -1,5 +1,17 @@
 "use client";
-import { BookOpen, Calendar, ChartColumn, Coins, Gem, House, MessageCircle, NotebookPen, PanelLeft, Settings, Users } from "lucide-react";
+import {
+  BookOpen,
+  Calendar,
+  ChartColumn,
+  Coins,
+  Gem,
+  House,
+  MessageCircle,
+  NotebookPen,
+  PanelLeft,
+  Settings,
+  Users,
+} from "lucide-react";
 
 import { useEffect, useLayoutEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
@@ -11,7 +23,11 @@ import { subscriptionsControllerGetMine } from "@mentor/api-client";
 
 import { LanguageToggle } from "@/components/language-toggle";
 import { PremiumIdentityMark } from "@/components/premium/premium-identity-mark";
-import { ThemeLamp, ThemeLampFooter, MobileThemeLamp } from "@/components/theme-lamp/theme-lamp";
+import {
+  ThemeLamp,
+  ThemeLampFooter,
+  MobileThemeLamp,
+} from "@/components/theme-lamp/theme-lamp";
 import { DesktopCoachFab } from "@/components/desktop-coach-fab";
 import { UserAvatar } from "@/components/user-avatar";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -150,7 +166,10 @@ export function AppNav() {
             <Link
               href="/dashboard"
               className="text-xl font-bold"
-              style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+              style={{
+                color: "var(--color-main)",
+                fontFamily: "var(--font-heading)",
+              }}
             >
               Mentor
             </Link>
@@ -175,7 +194,9 @@ export function AppNav() {
         </nav>
       )}
 
-      {!pathname.startsWith("/coach") && !hideMobileChrome ? <DesktopCoachFab /> : null}
+      {!pathname.startsWith("/coach") && !hideMobileChrome ? (
+        <DesktopCoachFab />
+      ) : null}
     </>
   );
 }
@@ -195,7 +216,14 @@ function DesktopSidebar({
   const forceCollapsed = isBoardEditorPath(pathname);
   const startsCollapsed = isDefaultCollapsedSidebarPath(pathname);
   const { open: storedOpen, setOpen } = useAppSidebar();
-  const [sessionOpen, setSessionOpen] = useState<boolean | null>(null);
+  const [sessionOverride, setSessionOverride] = useState<{
+    startsCollapsed: boolean;
+    open: boolean;
+  } | null>(null);
+  const sessionOpen =
+    sessionOverride?.startsCollapsed === startsCollapsed
+      ? sessionOverride.open
+      : null;
   const open = forceCollapsed
     ? false
     : sessionOpen !== null
@@ -205,17 +233,13 @@ function DesktopSidebar({
         : storedOpen;
 
   useLayoutEffect(() => {
-    if (!startsCollapsed) {
-      setSessionOpen(null);
-      return;
-    }
+    if (!startsCollapsed) return;
     applyAppSidebar(false);
-    setSessionOpen(null);
     return () => applyAppSidebar(parseAppSidebarCookie(document.cookie));
   }, [startsCollapsed]);
 
   function handleSetOpen(next: boolean) {
-    setSessionOpen(next);
+    setSessionOverride({ startsCollapsed, open: next });
     setOpen(next);
   }
 
@@ -258,7 +282,8 @@ function DesktopSidebar({
         <div
           className="mt-auto flex justify-center border-t"
           style={{
-            borderColor: "color-mix(in srgb, var(--color-secondary) 24%, transparent)",
+            borderColor:
+              "color-mix(in srgb, var(--color-secondary) 24%, transparent)",
           }}
         >
           <ThemeLamp variant="rail" />
@@ -294,11 +319,7 @@ function DesktopSidebar({
         </div>
 
         {user ? (
-          <SidebarIdentity
-            balance={balance}
-            premium={premium}
-            user={user}
-          />
+          <SidebarIdentity balance={balance} premium={premium} user={user} />
         ) : null}
 
         <div className="mt-2 flex flex-col gap-1">
@@ -385,7 +406,9 @@ function MobileTabLink({
           }}
           whileHover={reduceMotion ? undefined : { scale: 1.05 }}
           whileTap={tap}
-          transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: TAB_EASE }}
+          transition={
+            reduceMotion ? { duration: 0 } : { duration: 0.2, ease: TAB_EASE }
+          }
         >
           <Icon size={20} strokeWidth={active ? 2.4 : 2.15} aria-hidden />
         </motion.span>
@@ -409,7 +432,9 @@ function MobileTabLink({
           reduceMotion || active ? undefined : { color: "var(--color-main)" }
         }
         whileTap={tap}
-        transition={reduceMotion ? { duration: 0 } : { duration: 0.18, ease: TAB_EASE }}
+        transition={
+          reduceMotion ? { duration: 0 } : { duration: 0.18, ease: TAB_EASE }
+        }
       >
         {active ? (
           <motion.span
@@ -483,7 +508,11 @@ function SidebarIdentity({
         >
           {greeting}
         </p>
-        <IdentityName className="mt-1" name={user.displayName} premium={premium} />
+        <IdentityName
+          className="mt-1"
+          name={user.displayName}
+          premium={premium}
+        />
       </div>
       {balance ? (
         <div className="mt-3">
@@ -536,7 +565,11 @@ function AvatarLink({
       aria-label={t("profile_link")}
       className="relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
     >
-      <UserAvatar name={user.displayName} size={avatarSize} src={user.avatarUrl} />
+      <UserAvatar
+        name={user.displayName}
+        size={avatarSize}
+        src={user.avatarUrl}
+      />
     </Link>
   );
 }
@@ -631,7 +664,13 @@ function CollapsedNavLink({
   );
 }
 
-function NavIcon({ icon: Icon, active }: { icon: LucideIcon; active: boolean }) {
+function NavIcon({
+  icon: Icon,
+  active,
+}: {
+  icon: LucideIcon;
+  active: boolean;
+}) {
   return <Icon size={22} strokeWidth={active ? 2.25 : 2} aria-hidden />;
 }
 
@@ -642,7 +681,10 @@ function formatCompact(value: number) {
   }).format(value);
 }
 
-function greetingKeyForHour(): "greeting_morning" | "greeting_day" | "greeting_evening" {
+function greetingKeyForHour():
+  | "greeting_morning"
+  | "greeting_day"
+  | "greeting_evening" {
   const hour = new Date().getHours();
   if (hour < 12) return "greeting_morning";
   if (hour < 18) return "greeting_day";
