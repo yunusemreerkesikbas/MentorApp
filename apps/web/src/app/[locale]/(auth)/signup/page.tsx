@@ -7,7 +7,7 @@ import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
 import { useAuth } from "@/lib/auth-context";
-import { postAuthDestination } from "@/lib/post-auth-destination";
+import { postAuthDestination, readAuthNextParam } from "@/lib/post-auth-destination";
 import { useAnalyticsConsent } from "@/lib/analytics-consent";
 import {
   applyAuthAnalyticsChoice,
@@ -16,6 +16,7 @@ import {
 } from "@/lib/auth-analytics-choice";
 import { AuthCookieConsent } from "../_components/auth-cookie-consent";
 import { AuthNavLink } from "../_components/auth-nav-link";
+import { useAuthSheetExit } from "../_components/auth-shell";
 import { GoogleAuthButton } from "../_components/google-auth-button";
 
 export default function SignupPage() {
@@ -24,6 +25,7 @@ export default function SignupPage() {
   const { signup } = useAuth();
   const { accept, reject } = useAnalyticsConsent();
   const router = useRouter();
+  const exitThen = useAuthSheetExit();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -56,17 +58,19 @@ export default function SignupPage() {
         password: String(data.get("password")),
         kvkkAccepted: true,
       });
-      router.push(postAuthDestination(user));
+      exitThen(() => {
+        // @ts-expect-error -- a validated internal path, transported as a plain string.
+        router.push(postAuthDestination(user, readAuthNextParam()));
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-    } finally {
       setBusy(false);
     }
   }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <SectionHeading as="h2" className="justify-center text-center">
+      <SectionHeading as="h2" className="items-center text-center">
         {translate("title")}
       </SectionHeading>
       <Field

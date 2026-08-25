@@ -12,7 +12,6 @@ import {
   endBuddy,
   getBuddy,
   getBuddySuggestions,
-  inviteBuddyToStudy,
   nudgeBuddy,
   sendBuddyRequest,
 } from "@/lib/buddy";
@@ -78,8 +77,9 @@ export function SessionBuddyCard() {
     }
   };
 
-  // Request by username (from suggestions or the invite input). Returns success so the
-  // input can clear itself; the card flips to outgoing-pending via load() on success.
+  // Request a buddy from the cohort suggestion list. Returns success so the caller can react;
+  // the card flips to outgoing-pending via load(). (The username invite box moved to study
+  // rooms — finding someone by handle was exactly the friction the invite code removes.)
   const requestByUsername = async (username: string): Promise<boolean> => {
     setBusy(true);
     try {
@@ -89,7 +89,7 @@ export function SessionBuddyCard() {
     } catch (err) {
       showErrorToast({
         title: t("buddy_action_error_title"),
-        message: err instanceof ApiClientError ? err.body.message : t("buddy_invite_not_found"),
+        message: err instanceof ApiClientError ? err.body.message : undefined,
         duration: 3000,
       });
       return false;
@@ -173,26 +173,6 @@ export function SessionBuddyCard() {
             >
               {t("buddy_nudge")}
             </button>
-            {!active.partnerStudyingNow ? (
-              <button
-                type="button"
-                disabled={busy || !active.canNudge}
-                onClick={() =>
-                  void run(inviteBuddyToStudy, {
-                    title: t("buddy_invite_study_sent_title"),
-                    message: t("buddy_invite_study_sent_message", { name: active.partner.displayName }),
-                  })
-                }
-                className="min-h-11 w-full cursor-pointer rounded-[var(--radius-card)] text-sm font-semibold disabled:opacity-40"
-                style={{
-                  backgroundColor:
-                    "color-mix(in srgb, var(--color-progress) 16%, var(--color-surface))",
-                  color: "var(--color-main)",
-                }}
-              >
-                {t("buddy_invite_study")}
-              </button>
-            ) : null}
             <div className="flex justify-center">
               {endConfirm
                 ? textButton(t("buddy_end_confirm"), () => void run(endBuddy), "accent")
@@ -246,9 +226,8 @@ export function SessionBuddyCard() {
 }
 
 /**
- * Empty state: a username invite box (always) + same-cohort suggestions with one-tap
- * request. When there's no one to suggest, a quiet community link sits below the box.
- * `onRequest` returns success so the invite input can clear itself.
+ * Empty state: same-cohort suggestions with a one-tap request. When there's no one to suggest,
+ * a quiet community link takes its place.
  */
 function BuddyEmptyState({
   busy,
@@ -259,7 +238,6 @@ function BuddyEmptyState({
 }) {
   const t = useTranslations("session");
   const [suggestions, setSuggestions] = useState<BuddyUserRef[] | null>(null);
-  const [inviteValue, setInviteValue] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -275,53 +253,10 @@ function BuddyEmptyState({
     };
   }, []);
 
-  const submitInvite = async () => {
-    const username = inviteValue.trim().replace(/^@+/, "");
-    if (!username || busy) return;
-    const ok = await onRequest(username);
-    if (ok) setInviteValue("");
-  };
-
-  const inviteBox = (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        void submitInvite();
-      }}
-      className="flex flex-col gap-2"
-    >
-      <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-        {t("buddy_invite_title")}
-      </p>
-      <div className="flex items-center gap-2">
-        <input
-          type="text"
-          value={inviteValue}
-          onChange={(e) => setInviteValue(e.target.value)}
-          placeholder={t("buddy_invite_placeholder")}
-          aria-label={t("buddy_invite_title")}
-          autoComplete="off"
-          className="min-w-0 flex-1 rounded-[var(--radius-card)] border bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2"
-          style={{ borderColor: "var(--color-progress-track)", color: "var(--color-main)" }}
-        />
-        <button
-          type="submit"
-          disabled={busy || !inviteValue.trim()}
-          className="shrink-0 rounded-full px-3 py-2 text-xs font-semibold disabled:opacity-50"
-          style={{ backgroundColor: "var(--color-progress)", color: "var(--color-bg)" }}
-        >
-          {t("buddy_invite_action")}
-        </button>
-      </div>
-    </form>
-  );
-
   const hasSuggestions = suggestions !== null && suggestions.length > 0;
 
   return (
     <div className="flex flex-col gap-4">
-      {inviteBox}
-
       {hasSuggestions ? (
         <div className="flex flex-col gap-3">
           <p className="text-sm" style={{ color: "var(--color-secondary)" }}>

@@ -67,12 +67,11 @@ describe("IdentityEventsListener", () => {
     actorUsername: "alice",
   };
 
-  it("notifies buddy request / accept / nudge / study-invite, naming the actor and linking to /study-session", async () => {
+  it("notifies buddy request / accept / nudge, naming the actor and linking to /study-session", async () => {
     await listener.onBuddyRequested(buddyEvent);
     await listener.onBuddyAccepted(buddyEvent);
     await listener.onBuddyNudged(buddyEvent);
-    await listener.onBuddyStudyInvite(buddyEvent);
-    expect(notifications.createInApp).toHaveBeenCalledTimes(4);
+    expect(notifications.createInApp).toHaveBeenCalledTimes(3);
     for (const call of notifications.createInApp.mock.calls) {
       expect(call[0]).toBe("uB");
       expect(call[1]).toBe("FORUM");
@@ -86,13 +85,4 @@ describe("IdentityEventsListener", () => {
     await expect(listener.onBuddyNudged(buddyEvent)).resolves.toBeUndefined();
   });
 
-  it("study-invite pushes a 'study_invite' cue with the actor name, queued for an offline recipient", async () => {
-    await listener.onBuddyStudyInvite(buddyEvent);
-    expect(notifications.pushRealtimeEvent).toHaveBeenCalledWith(
-      "uB",
-      "study_invite",
-      { actorName: "Alice" },
-      REALTIME_QUEUE_TTL_MS, // survives a recipient who isn't connected yet
-    );
-  });
 });

@@ -8,7 +8,6 @@ export const AUTH_PATHS = [
 ] as const;
 
 const AUTH_PATH_SET = new Set<string>(AUTH_PATHS);
-const CLOSE_PATHS = new Set<string>(["/login", "/signup"]);
 
 export function isAuthPath(pathname: string): boolean {
   return AUTH_PATH_SET.has(pathname);
@@ -16,10 +15,10 @@ export function isAuthPath(pathname: string): boolean {
 
 export function authShellNav(pathname: string): {
   href: "/" | "/login";
-  icon: "close" | "chevron";
+  icon: "chevron" | "none";
 } {
-  if (CLOSE_PATHS.has(pathname)) {
-    return { href: "/", icon: "close" };
+  if (pathname === "/login" || pathname === "/signup") {
+    return { href: "/", icon: "none" };
   }
   return { href: "/login", icon: "chevron" };
 }

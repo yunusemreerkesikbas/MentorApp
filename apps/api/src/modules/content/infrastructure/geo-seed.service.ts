@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
-import { appendFileSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { GEO_REGIONS, UNIVERSITY_KINDS } from "@mentor/types";
 import { GeoService } from "../application/geo.service";
@@ -121,23 +121,6 @@ export class GeoSeedService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     try {
-      // #region agent log
-      try {
-        appendFileSync(
-          "c:/Users/emreerkesikbas/Documents/MentorApp/debug-24f38f.log",
-          `${JSON.stringify({
-            sessionId: "24f38f",
-            runId: "api-boot",
-            hypothesisId: "G",
-            location: "geo-seed.service.ts:onModuleInit:start",
-            message: "geo seed start",
-            timestamp: Date.now(),
-          })}\n`,
-        );
-      } catch {
-        /* ignore */
-      }
-      // #endregion
       const cities = this.readCities();
       const { universities, source } = this.readUniversities(
         new Set(cities.map((c) => c.code)),
@@ -153,25 +136,6 @@ export class GeoSeedService implements OnModuleInit {
       for (const round of rounds) {
         await this.kpss.seedKpss(round);
       }
-
-      // #region agent log
-      try {
-        appendFileSync(
-          "c:/Users/emreerkesikbas/Documents/MentorApp/debug-24f38f.log",
-          `${JSON.stringify({
-            sessionId: "24f38f",
-            runId: "api-boot",
-            hypothesisId: "G",
-            location: "geo-seed.service.ts:onModuleInit:done",
-            message: "geo seed done",
-            data: { universities: universities.length, rounds: rounds.length },
-            timestamp: Date.now(),
-          })}\n`,
-        );
-      } catch {
-        /* ignore */
-      }
-      // #endregion
 
       this.logger.log(
         universities.length > 0

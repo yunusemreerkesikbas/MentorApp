@@ -23,6 +23,7 @@ export function WelcomeGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (status === "loading") return;
     if (status === "authenticated" && user) {
+      // @ts-expect-error -- a validated internal path, transported as a plain string.
       router.replace(postAuthDestination(user));
       return;
     }

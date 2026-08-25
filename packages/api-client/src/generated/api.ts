@@ -137,6 +137,8 @@ export interface DeepAnalysisDto { [key: string]: unknown }
 
 export interface RedeemInviteDto { [key: string]: unknown }
 
+export interface CompleteWeeklyReviewDto { [key: string]: unknown }
+
 export interface CreateMoodCheckinDto { [key: string]: unknown }
 
 export interface UpsertVisionDto { [key: string]: unknown }
@@ -163,6 +165,12 @@ export interface UpdateStudySessionDto { [key: string]: unknown }
 
 export interface SessionFeedbackDto { [key: string]: unknown }
 
+export interface CreateStudyRoomDto { [key: string]: unknown }
+
+export interface JoinStudyRoomDto { [key: string]: unknown }
+
+export interface UpdateStudyRoomDto { [key: string]: unknown }
+
 export interface CreateMockExamDto { [key: string]: unknown }
 
 export interface UpdateMockExamDto { [key: string]: unknown }
@@ -179,6 +187,10 @@ export interface LinkNotebookThreadDto { [key: string]: unknown }
 
 export interface PutNotebookPageDto { [key: string]: unknown }
 
+export interface CreateNotebookDto { [key: string]: unknown }
+
+export interface UpdateNotebookDto { [key: string]: unknown }
+
 export interface CreateZoneDto { [key: string]: unknown }
 
 export interface AssignOwnerDto { [key: string]: unknown }
@@ -186,6 +198,8 @@ export interface AssignOwnerDto { [key: string]: unknown }
 export interface ApproveMemberDto { [key: string]: unknown }
 
 export interface AttachmentUploadUrlDto { [key: string]: unknown }
+
+export interface CopyAttachmentDto { [key: string]: unknown }
 
 export interface CreateThreadDto { [key: string]: unknown }
 
@@ -223,6 +237,8 @@ export interface UpsertExamEventDto { [key: string]: unknown }
 
 export interface RefundSubscriptionDto { [key: string]: unknown }
 
+export interface UpdatePlanDto { [key: string]: unknown }
+
 export interface ReviewForumTagSuggestionDto { [key: string]: unknown }
 
 export interface AdminForumTagCreateDto { [key: string]: unknown }
@@ -230,6 +246,10 @@ export interface AdminForumTagCreateDto { [key: string]: unknown }
 export interface AdminForumTagUpdateDto { [key: string]: unknown }
 
 export interface SetFeaturedThreadDto { [key: string]: unknown }
+
+export interface CelebrateAchievementsDto { [key: string]: unknown }
+
+export interface CelebrateJourneyLevelDto { [key: string]: unknown }
 
 export interface PushSubscribeDto { [key: string]: unknown }
 
@@ -3438,6 +3458,40 @@ export const coachingControllerGetWeeklyReview = async (params: CoachingControll
 
 
 
+export type coachingControllerCompleteWeeklyReviewResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type coachingControllerCompleteWeeklyReviewResponseSuccess = (coachingControllerCompleteWeeklyReviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerCompleteWeeklyReviewResponse = (coachingControllerCompleteWeeklyReviewResponseSuccess)
+
+export const getCoachingControllerCompleteWeeklyReviewUrl = () => {
+
+
+  
+
+  return `/v1/coaching/weekly-review/completion`
+}
+
+export const coachingControllerCompleteWeeklyReview = async (completeWeeklyReviewDto: CompleteWeeklyReviewDto, options?: RequestInit): Promise<coachingControllerCompleteWeeklyReviewResponse> => {
+  
+  return http<coachingControllerCompleteWeeklyReviewResponse>(getCoachingControllerCompleteWeeklyReviewUrl(),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      completeWeeklyReviewDto,)
+  }
+);}
+
+
+
 export type coachingControllerUpsertMoodResponse200 = {
   data: void
   status: 200
@@ -4180,6 +4234,309 @@ export const studySessionControllerRecordFeedback = async (id: string,
 
 
 
+export type studyRoomControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type studyRoomControllerListResponseSuccess = (studyRoomControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerListResponse = (studyRoomControllerListResponseSuccess)
+
+export const getStudyRoomControllerListUrl = () => {
+
+
+  
+
+  return `/v1/study-rooms`
+}
+
+export const studyRoomControllerList = async ( options?: RequestInit): Promise<studyRoomControllerListResponse> => {
+  
+  return http<studyRoomControllerListResponse>(getStudyRoomControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type studyRoomControllerCreateResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type studyRoomControllerCreateResponseSuccess = (studyRoomControllerCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerCreateResponse = (studyRoomControllerCreateResponseSuccess)
+
+export const getStudyRoomControllerCreateUrl = () => {
+
+
+  
+
+  return `/v1/study-rooms`
+}
+
+export const studyRoomControllerCreate = async (createStudyRoomDto: CreateStudyRoomDto, options?: RequestInit): Promise<studyRoomControllerCreateResponse> => {
+  
+  return http<studyRoomControllerCreateResponse>(getStudyRoomControllerCreateUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createStudyRoomDto,)
+  }
+);}
+
+
+
+export type studyRoomControllerJoinResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type studyRoomControllerJoinResponseSuccess = (studyRoomControllerJoinResponse201) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerJoinResponse = (studyRoomControllerJoinResponseSuccess)
+
+export const getStudyRoomControllerJoinUrl = () => {
+
+
+  
+
+  return `/v1/study-rooms/join`
+}
+
+export const studyRoomControllerJoin = async (joinStudyRoomDto: JoinStudyRoomDto, options?: RequestInit): Promise<studyRoomControllerJoinResponse> => {
+  
+  return http<studyRoomControllerJoinResponse>(getStudyRoomControllerJoinUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      joinStudyRoomDto,)
+  }
+);}
+
+
+
+export type studyRoomControllerDetailResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type studyRoomControllerDetailResponseSuccess = (studyRoomControllerDetailResponse200) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerDetailResponse = (studyRoomControllerDetailResponseSuccess)
+
+export const getStudyRoomControllerDetailUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/study-rooms/${id}`
+}
+
+export const studyRoomControllerDetail = async (id: string, options?: RequestInit): Promise<studyRoomControllerDetailResponse> => {
+  
+  return http<studyRoomControllerDetailResponse>(getStudyRoomControllerDetailUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type studyRoomControllerUpdateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type studyRoomControllerUpdateResponseSuccess = (studyRoomControllerUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerUpdateResponse = (studyRoomControllerUpdateResponseSuccess)
+
+export const getStudyRoomControllerUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/study-rooms/${id}`
+}
+
+export const studyRoomControllerUpdate = async (id: string,
+    updateStudyRoomDto: UpdateStudyRoomDto, options?: RequestInit): Promise<studyRoomControllerUpdateResponse> => {
+  
+  return http<studyRoomControllerUpdateResponse>(getStudyRoomControllerUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateStudyRoomDto,)
+  }
+);}
+
+
+
+export type studyRoomControllerCloseResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type studyRoomControllerCloseResponseSuccess = (studyRoomControllerCloseResponse204) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerCloseResponse = (studyRoomControllerCloseResponseSuccess)
+
+export const getStudyRoomControllerCloseUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/study-rooms/${id}`
+}
+
+export const studyRoomControllerClose = async (id: string, options?: RequestInit): Promise<studyRoomControllerCloseResponse> => {
+  
+  return http<studyRoomControllerCloseResponse>(getStudyRoomControllerCloseUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type studyRoomControllerRotateCodeResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type studyRoomControllerRotateCodeResponseSuccess = (studyRoomControllerRotateCodeResponse201) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerRotateCodeResponse = (studyRoomControllerRotateCodeResponseSuccess)
+
+export const getStudyRoomControllerRotateCodeUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/study-rooms/${id}/code`
+}
+
+export const studyRoomControllerRotateCode = async (id: string, options?: RequestInit): Promise<studyRoomControllerRotateCodeResponse> => {
+  
+  return http<studyRoomControllerRotateCodeResponse>(getStudyRoomControllerRotateCodeUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type studyRoomControllerLeaveResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type studyRoomControllerLeaveResponseSuccess = (studyRoomControllerLeaveResponse204) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerLeaveResponse = (studyRoomControllerLeaveResponseSuccess)
+
+export const getStudyRoomControllerLeaveUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/study-rooms/${id}/members/me`
+}
+
+export const studyRoomControllerLeave = async (id: string, options?: RequestInit): Promise<studyRoomControllerLeaveResponse> => {
+  
+  return http<studyRoomControllerLeaveResponse>(getStudyRoomControllerLeaveUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type studyRoomControllerRemoveMemberResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type studyRoomControllerRemoveMemberResponseSuccess = (studyRoomControllerRemoveMemberResponse204) & {
+  headers: Headers;
+};
+;
+
+export type studyRoomControllerRemoveMemberResponse = (studyRoomControllerRemoveMemberResponseSuccess)
+
+export const getStudyRoomControllerRemoveMemberUrl = (id: string,
+    userId: string,) => {
+
+
+  
+
+  return `/v1/study-rooms/${id}/members/${userId}`
+}
+
+export const studyRoomControllerRemoveMember = async (id: string,
+    userId: string, options?: RequestInit): Promise<studyRoomControllerRemoveMemberResponse> => {
+  
+  return http<studyRoomControllerRemoveMemberResponse>(getStudyRoomControllerRemoveMemberUrl(id,userId),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
 export type mockExamControllerCreateResponse201 = {
   data: void
   status: 201
@@ -4421,35 +4778,34 @@ export const mistakeNotebookControllerListDue = async ( options?: RequestInit): 
 
 
 
-export type mistakeNotebookControllerCreateUploadUrlResponse201 = {
+export type mistakeNotebookControllerListEntriesResponse200 = {
   data: void
-  status: 201
+  status: 200
 }
     
-export type mistakeNotebookControllerCreateUploadUrlResponseSuccess = (mistakeNotebookControllerCreateUploadUrlResponse201) & {
+export type mistakeNotebookControllerListEntriesResponseSuccess = (mistakeNotebookControllerListEntriesResponse200) & {
   headers: Headers;
 };
 ;
 
-export type mistakeNotebookControllerCreateUploadUrlResponse = (mistakeNotebookControllerCreateUploadUrlResponseSuccess)
+export type mistakeNotebookControllerListEntriesResponse = (mistakeNotebookControllerListEntriesResponseSuccess)
 
-export const getMistakeNotebookControllerCreateUploadUrlUrl = () => {
+export const getMistakeNotebookControllerListEntriesUrl = () => {
 
 
   
 
-  return `/v1/coaching/notebook/entries/image-upload-url`
+  return `/v1/coaching/notebook/entries`
 }
 
-export const mistakeNotebookControllerCreateUploadUrl = async (notebookImageUploadUrlDto: NotebookImageUploadUrlDto, options?: RequestInit): Promise<mistakeNotebookControllerCreateUploadUrlResponse> => {
+export const mistakeNotebookControllerListEntries = async ( options?: RequestInit): Promise<mistakeNotebookControllerListEntriesResponse> => {
   
-  return http<mistakeNotebookControllerCreateUploadUrlResponse>(getMistakeNotebookControllerCreateUploadUrlUrl(),
+  return http<mistakeNotebookControllerListEntriesResponse>(getMistakeNotebookControllerListEntriesUrl(),
   {      
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      notebookImageUploadUrlDto,)
+    method: 'GET'
+    
+    
   }
 );}
 
@@ -4484,6 +4840,40 @@ export const mistakeNotebookControllerCreateEntry = async (createNotebookEntryDt
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       createNotebookEntryDto,)
+  }
+);}
+
+
+
+export type mistakeNotebookControllerCreateUploadUrlResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type mistakeNotebookControllerCreateUploadUrlResponseSuccess = (mistakeNotebookControllerCreateUploadUrlResponse201) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerCreateUploadUrlResponse = (mistakeNotebookControllerCreateUploadUrlResponseSuccess)
+
+export const getMistakeNotebookControllerCreateUploadUrlUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebook/entries/image-upload-url`
+}
+
+export const mistakeNotebookControllerCreateUploadUrl = async (notebookImageUploadUrlDto: NotebookImageUploadUrlDto, options?: RequestInit): Promise<mistakeNotebookControllerCreateUploadUrlResponse> => {
+  
+  return http<mistakeNotebookControllerCreateUploadUrlResponse>(getMistakeNotebookControllerCreateUploadUrlUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      notebookImageUploadUrlDto,)
   }
 );}
 
@@ -4684,6 +5074,246 @@ export const mistakeNotebookControllerPutPage = async (index: number,
     putNotebookPageDto: PutNotebookPageDto, options?: RequestInit): Promise<mistakeNotebookControllerPutPageResponse> => {
   
   return http<mistakeNotebookControllerPutPageResponse>(getMistakeNotebookControllerPutPageUrl(index),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      putNotebookPageDto,)
+  }
+);}
+
+
+
+export type notebooksControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type notebooksControllerListResponseSuccess = (notebooksControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerListResponse = (notebooksControllerListResponseSuccess)
+
+export const getNotebooksControllerListUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebooks`
+}
+
+export const notebooksControllerList = async ( options?: RequestInit): Promise<notebooksControllerListResponse> => {
+  
+  return http<notebooksControllerListResponse>(getNotebooksControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type notebooksControllerCreateResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type notebooksControllerCreateResponseSuccess = (notebooksControllerCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerCreateResponse = (notebooksControllerCreateResponseSuccess)
+
+export const getNotebooksControllerCreateUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebooks`
+}
+
+export const notebooksControllerCreate = async (createNotebookDto: CreateNotebookDto, options?: RequestInit): Promise<notebooksControllerCreateResponse> => {
+  
+  return http<notebooksControllerCreateResponse>(getNotebooksControllerCreateUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createNotebookDto,)
+  }
+);}
+
+
+
+export type notebooksControllerGetResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type notebooksControllerGetResponseSuccess = (notebooksControllerGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerGetResponse = (notebooksControllerGetResponseSuccess)
+
+export const getNotebooksControllerGetUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coaching/notebooks/${id}`
+}
+
+export const notebooksControllerGet = async (id: string, options?: RequestInit): Promise<notebooksControllerGetResponse> => {
+  
+  return http<notebooksControllerGetResponse>(getNotebooksControllerGetUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type notebooksControllerUpdateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type notebooksControllerUpdateResponseSuccess = (notebooksControllerUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerUpdateResponse = (notebooksControllerUpdateResponseSuccess)
+
+export const getNotebooksControllerUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coaching/notebooks/${id}`
+}
+
+export const notebooksControllerUpdate = async (id: string,
+    updateNotebookDto: UpdateNotebookDto, options?: RequestInit): Promise<notebooksControllerUpdateResponse> => {
+  
+  return http<notebooksControllerUpdateResponse>(getNotebooksControllerUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateNotebookDto,)
+  }
+);}
+
+
+
+export type notebooksControllerDeleteResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type notebooksControllerDeleteResponseSuccess = (notebooksControllerDeleteResponse204) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerDeleteResponse = (notebooksControllerDeleteResponseSuccess)
+
+export const getNotebooksControllerDeleteUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coaching/notebooks/${id}`
+}
+
+export const notebooksControllerDelete = async (id: string, options?: RequestInit): Promise<notebooksControllerDeleteResponse> => {
+  
+  return http<notebooksControllerDeleteResponse>(getNotebooksControllerDeleteUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type notebooksControllerGetPageResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type notebooksControllerGetPageResponseSuccess = (notebooksControllerGetPageResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerGetPageResponse = (notebooksControllerGetPageResponseSuccess)
+
+export const getNotebooksControllerGetPageUrl = (id: string,
+    index: number,) => {
+
+
+  
+
+  return `/v1/coaching/notebooks/${id}/pages/${index}`
+}
+
+export const notebooksControllerGetPage = async (id: string,
+    index: number, options?: RequestInit): Promise<notebooksControllerGetPageResponse> => {
+  
+  return http<notebooksControllerGetPageResponse>(getNotebooksControllerGetPageUrl(id,index),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type notebooksControllerPutPageResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type notebooksControllerPutPageResponseSuccess = (notebooksControllerPutPageResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerPutPageResponse = (notebooksControllerPutPageResponseSuccess)
+
+export const getNotebooksControllerPutPageUrl = (id: string,
+    index: number,) => {
+
+
+  
+
+  return `/v1/coaching/notebooks/${id}/pages/${index}`
+}
+
+export const notebooksControllerPutPage = async (id: string,
+    index: number,
+    putNotebookPageDto: PutNotebookPageDto, options?: RequestInit): Promise<notebooksControllerPutPageResponse> => {
+  
+  return http<notebooksControllerPutPageResponse>(getNotebooksControllerPutPageUrl(id,index),
   {      
     ...options,
     method: 'PUT',
@@ -5063,6 +5693,40 @@ export const forumThreadControllerAttachmentUploadUrl = async (attachmentUploadU
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       attachmentUploadUrlDto,)
+  }
+);}
+
+
+
+export type forumThreadControllerCopyAttachmentResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type forumThreadControllerCopyAttachmentResponseSuccess = (forumThreadControllerCopyAttachmentResponse201) & {
+  headers: Headers;
+};
+;
+
+export type forumThreadControllerCopyAttachmentResponse = (forumThreadControllerCopyAttachmentResponseSuccess)
+
+export const getForumThreadControllerCopyAttachmentUrl = () => {
+
+
+  
+
+  return `/v1/forum/attachments/copy`
+}
+
+export const forumThreadControllerCopyAttachment = async (copyAttachmentDto: CopyAttachmentDto, options?: RequestInit): Promise<forumThreadControllerCopyAttachmentResponse> => {
+  
+  return http<forumThreadControllerCopyAttachmentResponse>(getForumThreadControllerCopyAttachmentUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      copyAttachmentDto,)
   }
 );}
 
@@ -7698,6 +8362,74 @@ export const adminSubscriptionControllerCancel = async (userId: string, options?
 
 
 
+export type adminPlansControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminPlansControllerListResponseSuccess = (adminPlansControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminPlansControllerListResponse = (adminPlansControllerListResponseSuccess)
+
+export const getAdminPlansControllerListUrl = () => {
+
+
+  
+
+  return `/v1/admin/plans`
+}
+
+export const adminPlansControllerList = async ( options?: RequestInit): Promise<adminPlansControllerListResponse> => {
+  
+  return http<adminPlansControllerListResponse>(getAdminPlansControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminPlansControllerUpdateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminPlansControllerUpdateResponseSuccess = (adminPlansControllerUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminPlansControllerUpdateResponse = (adminPlansControllerUpdateResponseSuccess)
+
+export const getAdminPlansControllerUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/admin/plans/${id}`
+}
+
+export const adminPlansControllerUpdate = async (id: string,
+    updatePlanDto: UpdatePlanDto, options?: RequestInit): Promise<adminPlansControllerUpdateResponse> => {
+  
+  return http<adminPlansControllerUpdateResponse>(getAdminPlansControllerUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updatePlanDto,)
+  }
+);}
+
+
+
 export type adminMetricsControllerOverviewResponse200 = {
   data: void
   status: 200
@@ -8161,6 +8893,173 @@ export const communityControllerGetProfile = async (username: string, options?: 
     method: 'GET'
     
     
+  }
+);}
+
+
+
+export type communityControllerGetAchievementsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type communityControllerGetAchievementsResponseSuccess = (communityControllerGetAchievementsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type communityControllerGetAchievementsResponse = (communityControllerGetAchievementsResponseSuccess)
+
+export const getCommunityControllerGetAchievementsUrl = (username: string,) => {
+
+
+  
+
+  return `/v1/community/profile/${username}/achievements`
+}
+
+export const communityControllerGetAchievements = async (username: string, options?: RequestInit): Promise<communityControllerGetAchievementsResponse> => {
+  
+  return http<communityControllerGetAchievementsResponse>(getCommunityControllerGetAchievementsUrl(username),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type communityControllerGetUnseenAchievementsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type communityControllerGetUnseenAchievementsResponseSuccess = (communityControllerGetUnseenAchievementsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type communityControllerGetUnseenAchievementsResponse = (communityControllerGetUnseenAchievementsResponseSuccess)
+
+export const getCommunityControllerGetUnseenAchievementsUrl = () => {
+
+
+  
+
+  return `/v1/community/achievements/unseen`
+}
+
+export const communityControllerGetUnseenAchievements = async ( options?: RequestInit): Promise<communityControllerGetUnseenAchievementsResponse> => {
+  
+  return http<communityControllerGetUnseenAchievementsResponse>(getCommunityControllerGetUnseenAchievementsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type communityControllerCelebrateAchievementsResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type communityControllerCelebrateAchievementsResponseSuccess = (communityControllerCelebrateAchievementsResponse204) & {
+  headers: Headers;
+};
+;
+
+export type communityControllerCelebrateAchievementsResponse = (communityControllerCelebrateAchievementsResponseSuccess)
+
+export const getCommunityControllerCelebrateAchievementsUrl = () => {
+
+
+  
+
+  return `/v1/community/achievements/celebrated`
+}
+
+export const communityControllerCelebrateAchievements = async (celebrateAchievementsDto: CelebrateAchievementsDto, options?: RequestInit): Promise<communityControllerCelebrateAchievementsResponse> => {
+  
+  return http<communityControllerCelebrateAchievementsResponse>(getCommunityControllerCelebrateAchievementsUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      celebrateAchievementsDto,)
+  }
+);}
+
+
+
+export type communityControllerGetUnseenJourneyLevelsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type communityControllerGetUnseenJourneyLevelsResponseSuccess = (communityControllerGetUnseenJourneyLevelsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type communityControllerGetUnseenJourneyLevelsResponse = (communityControllerGetUnseenJourneyLevelsResponseSuccess)
+
+export const getCommunityControllerGetUnseenJourneyLevelsUrl = () => {
+
+
+  
+
+  return `/v1/community/journey-levels/unseen`
+}
+
+export const communityControllerGetUnseenJourneyLevels = async ( options?: RequestInit): Promise<communityControllerGetUnseenJourneyLevelsResponse> => {
+  
+  return http<communityControllerGetUnseenJourneyLevelsResponse>(getCommunityControllerGetUnseenJourneyLevelsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type communityControllerCelebrateJourneyLevelResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type communityControllerCelebrateJourneyLevelResponseSuccess = (communityControllerCelebrateJourneyLevelResponse204) & {
+  headers: Headers;
+};
+;
+
+export type communityControllerCelebrateJourneyLevelResponse = (communityControllerCelebrateJourneyLevelResponseSuccess)
+
+export const getCommunityControllerCelebrateJourneyLevelUrl = () => {
+
+
+  
+
+  return `/v1/community/journey-levels/celebrated`
+}
+
+export const communityControllerCelebrateJourneyLevel = async (celebrateJourneyLevelDto: CelebrateJourneyLevelDto, options?: RequestInit): Promise<communityControllerCelebrateJourneyLevelResponse> => {
+  
+  return http<communityControllerCelebrateJourneyLevelResponse>(getCommunityControllerCelebrateJourneyLevelUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      celebrateJourneyLevelDto,)
   }
 );}
 

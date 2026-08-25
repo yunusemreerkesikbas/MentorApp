@@ -102,14 +102,28 @@ export function PanelShell({ initialData }: PanelShellProps) {
     useStreakCelebration();
   const searchParams = useSearchParams();
   const mockCelebrationPreviewed = useRef(false);
-  const mockRescueSuccessPreviewed = useRef(false);
-  const [rescueSuccessDays, setRescueSuccessDays] = useState<number | null>(
-    null,
-  );
+  const [rescueSuccessOverride, setRescueSuccessDays] = useState<
+    number | null
+  >();
   const shouldReduceMotion = useReducedMotion();
   const [data, setData] = useState<TodayPanelResponse | null>(
     initialData ?? null,
   );
+  const mockRescueSuccess = searchParams.get("mockStreakRescueSuccess");
+  const parsedMockRescueDays = Number.parseInt(mockRescueSuccess ?? "", 10);
+  const mockRescueSuccessDays =
+    mockRescueSuccess != null &&
+    mockRescueSuccess !== "" &&
+    mockRescueSuccess !== "0" &&
+    mockRescueSuccess !== "false"
+      ? Number.isFinite(parsedMockRescueDays) && parsedMockRescueDays > 0
+        ? parsedMockRescueDays
+        : Math.max(data?.streak.currentStreak ?? 0, 1)
+      : null;
+  const rescueSuccessDays =
+    rescueSuccessOverride === undefined
+      ? mockRescueSuccessDays
+      : rescueSuccessOverride;
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [streakRescue, setStreakRescue] = useState<StreakRescueView | null>(
@@ -251,6 +265,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
     [refreshQuests, refreshStreakRescue, refreshToday, tryCelebrate],
   );
 
+  const currentStreak = data?.streak.currentStreak;
   const handleStreakRescue = useCallback(async () => {
     try {
       await purchaseStreakRescue();
@@ -258,7 +273,10 @@ export function PanelShell({ initialData }: PanelShellProps) {
       const next = await refreshToday({ silent: true });
       notifyEconomyChanged();
       setRescueSuccessDays(
-        Math.max(next?.streak.currentStreak ?? data?.streak.currentStreak ?? 1, 1),
+        Math.max(
+          next?.streak.currentStreak ?? currentStreak ?? 1,
+          1,
+        ),
       );
     } catch (err) {
       toast.error({
@@ -270,7 +288,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
       });
       await refreshStreakRescue();
     }
-  }, [data?.streak.currentStreak, refreshStreakRescue, refreshToday, t, toast]);
+  }, [currentStreak, refreshStreakRescue, refreshToday, t, toast]);
 
   const moodCheckin = useMoodCheckin({
     initial: data?.mood ?? null,
@@ -292,20 +310,6 @@ export function PanelShell({ initialData }: PanelShellProps) {
         : Math.max(data?.streak.currentStreak ?? 0, 1);
     previewCelebrate(days);
   }, [data?.streak.currentStreak, previewCelebrate, searchParams]);
-
-  // Dev/QA: `?mockStreakRescueSuccess=1` (or days) opens the rescue success sheet.
-  useEffect(() => {
-    if (mockRescueSuccessPreviewed.current) return;
-    const raw = searchParams.get("mockStreakRescueSuccess");
-    if (raw == null || raw === "" || raw === "0" || raw === "false") return;
-    mockRescueSuccessPreviewed.current = true;
-    const parsed = Number.parseInt(raw, 10);
-    const days =
-      Number.isFinite(parsed) && parsed > 0
-        ? parsed
-        : Math.max(data?.streak.currentStreak ?? 0, 1);
-    setRescueSuccessDays(days);
-  }, [data?.streak.currentStreak, searchParams]);
 
   useEffect(() => {
     let active = true;
@@ -546,6 +550,30 @@ export function PanelShell({ initialData }: PanelShellProps) {
           <motion.div variants={staggerItemVariants}>
             <CoachNextActionCard today={data} surface="dashboard" />
           </motion.div>
+
+          <motion.div variants={staggerItemVariants} className="lg:hidden">
+            <Link
+              href="/notebooks"
+              className="flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            >
+              <BookOpen
+                aria-hidden
+                className="size-5 text-[var(--color-accent)]"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold text-[var(--color-main)]">
+                  {t("notebooks_quick_title")}
+                </span>
+                <span className="block text-sm text-[var(--color-secondary)]">
+                  {t("notebooks_quick_copy")}
+                </span>
+              </span>
+              <ArrowRight
+                aria-hidden
+                className="size-4 shrink-0 text-[var(--color-secondary)]"
+              />
+            </Link>
+          </motion.div>
         </section>
 
         <aside className="min-w-0 space-y-5">
@@ -602,7 +630,11 @@ function MoodCoachNote({
 
   if (reflecting) {
     return (
-      <p className="text-sm" role="status" style={{ color: "var(--color-secondary)" }}>
+      <p
+        className="text-sm"
+        role="status"
+        style={{ color: "var(--color-secondary)" }}
+      >
         {t("coach_thinking")}
       </p>
     );
@@ -653,7 +685,8 @@ function DailyRhythmCard({
   // Premium: the coach's daily greeting (cached per user+day) replaces the static line;
   // free / error keeps the calm fallback copy.
   const { openPaywall } = usePremiumPaywall();
-  const { greeting: dailyGreeting, locked: greetingLocked } = useDailyGreeting();
+  const { greeting: dailyGreeting, locked: greetingLocked } =
+    useDailyGreeting();
   const doneCount = tasks.filter((task) =>
     completedStatuses.includes(task.status),
   ).length;
@@ -926,7 +959,9 @@ function MetricTile({
         <span className="block text-xs font-bold text-[var(--color-secondary)]">
           {label}
         </span>
-        <span className="block truncate text-base font-bold text-[var(--color-main)]">{value}</span>
+        <span className="block truncate text-base font-bold text-[var(--color-main)]">
+          {value}
+        </span>
       </span>
     </>
   );

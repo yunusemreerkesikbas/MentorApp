@@ -4,7 +4,7 @@
   "private": true,
   "description": "Mentor B2C web — Next.js (responsive + SEO wedge). The main MVP product.",
   "scripts": {
-    "dev": "node ../../scripts/wait-for-port.mjs 3001 && next dev --port 3000",
+    "dev": "next dev --port 3000",
     "build": "next build",
     "build:map": "node scripts/build-turkey-map.mjs",
     "assets:check:achievements": "node scripts/validate-achievement-assets.mjs",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { AUTH_ANALYTICS_FIELD } from "@/lib/auth-analytics-choice";
@@ -10,11 +10,8 @@ import { useAnalyticsConsent } from "@/lib/analytics-consent";
 export function AuthCookieConsent() {
   const t = useTranslations("auth.cookie");
   const { consent } = useAnalyticsConsent();
-  const [checked, setChecked] = useState(false);
-
-  useEffect(() => {
-    if (consent === "accepted") setChecked(true);
-  }, [consent]);
+  const [userChoice, setUserChoice] = useState<boolean | null>(null);
+  const checked = userChoice ?? consent === "accepted";
 
   return (
     <label
@@ -25,7 +22,7 @@ export function AuthCookieConsent() {
         type="checkbox"
         name={AUTH_ANALYTICS_FIELD}
         checked={checked}
-        onChange={(event) => setChecked(event.target.checked)}
+        onChange={(event) => setUserChoice(event.target.checked)}
         className="mt-1 h-5 w-5 shrink-0"
       />
       <span>

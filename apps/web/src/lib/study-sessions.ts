@@ -15,8 +15,12 @@ import {
  * Swagger response types API-wide), we assert the known DTO shape here — in one place — so the
  * components stay cast-free. Mirrors the `plan-tasks.ts` wrapper pattern.
  */
+/**
+ * `roomId` (sit down at a study room) is widened here because the generated client still
+ * predates it; it collapses back into the generated input once the client is regenerated.
+ */
 export async function startStudySession(
-  input: Parameters<typeof studySessionControllerStart>[0],
+  input: Parameters<typeof studySessionControllerStart>[0] & { roomId?: string },
 ): Promise<StudySessionDto> {
   return (await studySessionControllerStart(input)) as unknown as StudySessionDto;
 }

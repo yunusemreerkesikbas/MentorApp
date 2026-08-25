@@ -8,6 +8,7 @@ export const CoachingEventTopic = {
   MOOD_LOW:          "coaching.mood-low",
   FIRST_SESSION:     "coaching.first-session",
   SESSION_COMPLETED: "coaching.session-completed",
+  SESSION_STARTED:   "coaching.session-started",
   PLAN_COMPLETED:    "coaching.plan-completed",
   PLAN_TASK_COMPLETED: "coaching.plan-task-completed",
   PLAN_TASK_CREATED: "coaching.plan-task-created",
@@ -35,6 +36,17 @@ export class MoodLow {
 
 export class FirstSessionOfDay {
   constructor(readonly userId: string) {}
+}
+
+/**
+ * Emitted when a session STARTS seated at a study room (solo starts emit nothing — nobody is
+ * waiting on them). Carries the room so listeners need no extra lookup to scope the fan-out.
+ */
+export class StudyRoomSessionStarted {
+  constructor(
+    readonly userId: string,
+    readonly roomId: string,
+  ) {}
 }
 
 /** Emitted whenever a study session is finalized as COMPLETED (every session, not just first-of-day). */

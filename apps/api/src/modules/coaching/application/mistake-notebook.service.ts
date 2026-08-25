@@ -2,16 +2,22 @@ import { randomUUID } from "node:crypto";
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import type {
+  CreateNotebookInput,
+  NotebookDto,
   NotebookEntryDto,
   NotebookImageUploadUrlDto,
+  NotebookKind,
   Paginated,
   NotebookOverviewDto,
   NotebookPageDoc,
   NotebookPageDto,
+  NotebookSummaryDto,
+  UpdateNotebookInput,
 } from "@mentor/types";
 import {
   NOTEBOOK_IMAGE_MAX_BYTES,
   NOTEBOOK_IMAGE_MIMES,
+  type ListNotebooksQuery,
   notebookPageIndexSchema,
   type CreateNotebookEntryInput,
   type ListNotebookEntriesQuery,
@@ -19,6 +25,7 @@ import {
   type UpdateNotebookEntryInput,
 } from "@mentor/validation";
 import {
+  ForbiddenError,
   NotFoundError,
   ValidationFailedError,
 } from "../../../common/errors/domain-error";
@@ -38,6 +45,7 @@ import {
 import {
   MistakeNotebookRepository,
   type MistakeNotebookEntryRow,
+  type NotebookSummaryRow,
 } from "../infrastructure/mistake-notebook.repository";
 
 /** Public prefix all notebook photos live under; the orphan sweep lists exactly this. */
@@ -97,12 +105,139 @@ export class MistakeNotebookService {
     @Optional() private readonly events?: EventEmitter2,
   ) {}
 
+  async listNotebooks(
+    actor: { userId: string; orgId: string | null },
+    query: ListNotebooksQuery,
+  ): Promise<Paginated<NotebookSummaryDto>> {
+    const result = await withUserContext(
+      this.db,
+      { userId: actor.userId },
+      async (tx) => {
+        await this.notebook.ensureMistakeNotebook(
+          tx,
+          actor.userId,
+          actor.orgId,
+        );
+        return this.notebook.listNotebooks(tx, actor.userId, query, new Date());
+      },
+    );
+    return {
+      items: await this.toNotebookDtos(result.items),
+      total: result.total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
+  }
+
+  async createNotebook(
+    actor: { userId: string; orgId: string | null },
+    input: CreateNotebookInput,
+  ): Promise<NotebookDto> {
+    await this.assertNotebookSubject(
+      input.examId ?? null,
+      input.subjectRef ?? null,
+    );
+    const row = await withUserContext(this.db, { userId: actor.userId }, (tx) =>
+      this.notebook.createNotebook(tx, actor.userId, actor.orgId, {
+        examId: input.examId ?? null,
+        subjectRef: input.subjectRef ?? null,
+        title: input.title.trim(),
+        coverColor: input.cover.color,
+        coverMaterial: input.cover.material,
+      }),
+    );
+    return this.toNotebookDto(row);
+  }
+
+  async getNotebook(userId: string, notebookId: string): Promise<NotebookDto> {
+    const row = await withUserContext(this.db, { userId }, (tx) =>
+      this.notebook.findNotebook(tx, userId, notebookId),
+    );
+    if (!row) throw new NotFoundError({ reason: "notebook_missing" });
+    return this.toNotebookDto(row);
+  }
+
+  async updateNotebook(
+    userId: string,
+    notebookId: string,
+    input: UpdateNotebookInput,
+  ): Promise<NotebookDto> {
+    const row = await withUserContext(this.db, { userId }, async (tx) => {
+      const current = await this.notebook.findNotebook(tx, userId, notebookId);
+      if (!current) throw new NotFoundError({ reason: "notebook_missing" });
+      if (current.kind === "CUSTOM" && input.title === null) {
+        throw new ValidationFailedError({
+          reason: "custom_notebook_title_required",
+        });
+      }
+      if (
+        current.kind === "MISTAKE" &&
+        (input.examId !== undefined || input.subjectRef !== undefined)
+      ) {
+        throw new ForbiddenError({ reason: "system_notebook_scope_protected" });
+      }
+
+      const examId = input.examId === undefined ? current.examId : input.examId;
+      const subjectRef =
+        input.subjectRef === undefined ? current.subjectRef : input.subjectRef;
+      await this.assertNotebookSubject(examId, subjectRef);
+      return this.notebook.updateNotebook(tx, userId, notebookId, {
+        ...(input.title === undefined
+          ? {}
+          : { title: input.title === null ? null : input.title.trim() }),
+        ...(input.examId === undefined ? {} : { examId: input.examId }),
+        ...(input.subjectRef === undefined
+          ? {}
+          : { subjectRef: input.subjectRef }),
+        ...(input.cover
+          ? {
+              coverColor: input.cover.color,
+              coverMaterial: input.cover.material,
+            }
+          : {}),
+      });
+    });
+    if (!row) throw new NotFoundError({ reason: "notebook_missing" });
+    return this.toNotebookDto(row);
+  }
+
+  async deleteNotebook(userId: string, notebookId: string): Promise<void> {
+    await withUserContext(this.db, { userId }, async (tx) => {
+      const current = await this.notebook.findNotebook(tx, userId, notebookId);
+      if (!current) throw new NotFoundError({ reason: "notebook_missing" });
+      if (current.kind === "MISTAKE") {
+        throw new ForbiddenError({ reason: "system_notebook_protected" });
+      }
+      await this.notebook.deleteNotebook(tx, userId, notebookId);
+    });
+  }
+
   async getOverview(userId: string): Promise<NotebookOverviewDto> {
     const now = new Date();
-    const counts = await withUserContext(this.db, { userId }, (tx) =>
-      this.notebook.countsFor(tx, userId, now),
+    const { counts, notebook } = await withUserContext(
+      this.db,
+      { userId },
+      async (tx) => {
+        const system = await this.notebook.ensureMistakeNotebook(
+          tx,
+          userId,
+          null,
+        );
+        return {
+          counts: await this.notebook.countsFor(tx, userId, now, system.id),
+          notebook: await this.notebook.findNotebook(tx, userId, system.id),
+        };
+      },
     );
-    return counts;
+    const metadata = await this.toNotebookDto(notebook!);
+    return {
+      ...counts,
+      notebook: {
+        ...metadata,
+        pageCount: counts.pageCount,
+        dueCount: counts.dueCount,
+      },
+    };
   }
 
   /**
@@ -113,12 +248,30 @@ export class MistakeNotebookService {
    * "does this page exist" would put the book's structure in two places.
    */
   async getPage(userId: string, pageIndex: number): Promise<NotebookPageDto> {
+    const system = await withUserContext(this.db, { userId }, (tx) =>
+      this.notebook.ensureMistakeNotebook(tx, userId, null),
+    );
+    return this.getNotebookPage(userId, system.id, pageIndex);
+  }
+
+  async getNotebookPage(
+    userId: string,
+    notebookId: string,
+    pageIndex: number,
+  ): Promise<NotebookPageDto> {
     assertPageIndex(pageIndex);
     const { doc, entries } = await withUserContext(
       this.db,
       { userId },
       async (tx) => {
-        const row = await this.notebook.findPage(tx, userId, pageIndex);
+        const book = await this.notebook.findNotebook(tx, userId, notebookId);
+        if (!book) throw new NotFoundError({ reason: "notebook_missing" });
+        const row = await this.notebook.findPage(
+          tx,
+          userId,
+          notebookId,
+          pageIndex,
+        );
         /*
          * Spread over the empty page rather than casting the stored value straight across. The
          * write schema defaults new fields, but that only runs on the way in — a row written
@@ -154,17 +307,36 @@ export class MistakeNotebookService {
     pageIndex: number,
     doc: NotebookPageDocInput,
   ): Promise<NotebookPageDto> {
+    const system = await withUserContext(this.db, { userId }, (tx) =>
+      this.notebook.ensureMistakeNotebook(tx, userId, null),
+    );
+    return this.putNotebookPage(userId, system.id, pageIndex, doc);
+  }
+
+  async putNotebookPage(
+    userId: string,
+    notebookId: string,
+    pageIndex: number,
+    doc: NotebookPageDocInput,
+  ): Promise<NotebookPageDto> {
     assertPageIndex(pageIndex);
     const entryIds = doc.items.flatMap((item) =>
       item.kind === "entry" ? [item.entryId] : [],
     );
 
     const entries = await withUserContext(this.db, { userId }, async (tx) => {
+      const book = await this.notebook.findNotebook(tx, userId, notebookId);
+      if (!book) throw new NotFoundError({ reason: "notebook_missing" });
+      if (book.kind === "CUSTOM" && entryIds.length > 0) {
+        throw new ValidationFailedError({
+          reason: "custom_notebook_entry_forbidden",
+        });
+      }
       const owned = await this.notebook.listEntriesByIds(tx, userId, entryIds);
       if (owned.length !== entryIds.length) {
         throw new ValidationFailedError({ reason: "unknown_entry_ref" });
       }
-      await this.notebook.upsertPage(tx, userId, pageIndex, doc);
+      await this.notebook.upsertPage(tx, userId, notebookId, pageIndex, doc);
       return owned;
     });
 
@@ -172,6 +344,49 @@ export class MistakeNotebookService {
       pageIndex,
       doc: doc as NotebookPageDoc,
       entries: await this.toEntryDtos(entries),
+    };
+  }
+
+  private async assertNotebookSubject(
+    examId: string | null,
+    subjectRef: string | null,
+  ): Promise<void> {
+    if (!subjectRef) return;
+    if (!examId)
+      throw new ValidationFailedError({ reason: "subject_requires_exam" });
+    const subjects = await this.content.getValidSubjectSlugsForExam(examId);
+    if (!subjects.has(subjectRef)) {
+      throw new ValidationFailedError({ reason: "unknown_subject_ref" });
+    }
+  }
+
+  private async toNotebookDtos(
+    rows: NotebookSummaryRow[],
+  ): Promise<NotebookSummaryDto[]> {
+    return Promise.all(rows.map((row) => this.toNotebookDto(row)));
+  }
+
+  private async toNotebookDto(row: NotebookSummaryRow): Promise<NotebookDto> {
+    const subjects = row.examId
+      ? await this.content.listExamSubjectsByExamId(row.examId)
+      : [];
+    return {
+      id: row.id,
+      kind: row.kind as NotebookKind,
+      examId: row.examId,
+      subjectRef: row.subjectRef,
+      subjectName:
+        subjects.find((subject) => subject.slug === row.subjectRef)?.name ??
+        null,
+      title: row.title,
+      cover: {
+        color: row.coverColor as NotebookDto["cover"]["color"],
+        material: row.coverMaterial as NotebookDto["cover"]["material"],
+      },
+      pageCount: row.pageCount,
+      dueCount: row.dueCount,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
     };
   }
 
@@ -210,8 +425,9 @@ export class MistakeNotebookService {
       input.topicRef,
     );
 
-    const row = await withUserContext(this.db, { userId }, (tx) =>
-      this.notebook.createEntry(tx, userId, {
+    const row = await withUserContext(this.db, { userId }, async (tx) => {
+      await this.notebook.ensureMistakeNotebook(tx, userId, null);
+      return this.notebook.createEntry(tx, userId, {
         examId: input.examId,
         mockExamId: input.mockExamId ?? null,
         storageKey: input.storageKey ?? null,
@@ -226,8 +442,8 @@ export class MistakeNotebookService {
         source: input.source,
         communityThreadId: input.communityThreadId ?? null,
         nextReviewAt: firstReviewAt(),
-      }),
-    );
+      });
+    });
     const [dto] = await this.toEntryDtos([row]);
     return dto!;
   }

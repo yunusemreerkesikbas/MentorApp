@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import { CoachingErasureRepository } from "../infrastructure/coaching-erasure.repository";
+import { StudyRoomRepository } from "../infrastructure/study-room.repository";
 
 /**
  * KVKK erasure for the coaching module (W2). Admin calls this via the user anonymize flow — coaching
@@ -18,11 +19,16 @@ export class CoachingErasureService {
 
   constructor(
     private readonly repo: CoachingErasureRepository,
+    private readonly rooms: StudyRoomRepository,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
 
   async eraseUserData(userId: string): Promise<void> {
     const { photoStorageKeys } = await this.repo.eraseUserData(userId);
+
+    // Room memberships are relational PII ("who studies with whom") — hard-deleted, like buddy
+    // pairs. Owned rooms pass to the earliest remaining member so co-workers don't lose the table.
+    await this.rooms.deleteAllForUser(userId);
 
     const results = await Promise.allSettled(
       photoStorageKeys.map((key) => this.storage.deleteObject(key)),

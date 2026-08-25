@@ -15,12 +15,34 @@ import {
 import type { DatabaseTx } from "../../../database/drizzle";
 import {
   mistakeNotebookEntries,
-  mistakeNotebookPages,
+  notebookPages,
+  notebooks as notebookTable,
 } from "../../../database/schema";
 
 export type MistakeNotebookEntryRow =
   typeof mistakeNotebookEntries.$inferSelect;
-export type MistakeNotebookPageRow = typeof mistakeNotebookPages.$inferSelect;
+export type MistakeNotebookPageRow = typeof notebookPages.$inferSelect;
+export type NotebookRow = typeof notebookTable.$inferSelect;
+export type NotebookSummaryRow = NotebookRow & {
+  pageCount: number;
+  dueCount: number;
+};
+
+export interface CreateNotebookRow {
+  examId: string | null;
+  subjectRef: string | null;
+  title: string;
+  coverColor: string;
+  coverMaterial: string;
+}
+
+export interface UpdateNotebookRow {
+  examId?: string | null;
+  subjectRef?: string | null;
+  title?: string | null;
+  coverColor?: string;
+  coverMaterial?: string;
+}
 
 export interface CreateNotebookEntryRow {
   examId: string;
@@ -78,6 +100,156 @@ export interface NotebookCounts {
 /** Data access for the mistake notebook (entries + per-page layout documents). */
 @Injectable()
 export class MistakeNotebookRepository {
+  async ensureMistakeNotebook(
+    tx: DatabaseTx,
+    userId: string,
+    orgId: string | null,
+  ): Promise<NotebookRow> {
+    await tx
+      .insert(notebookTable)
+      .values({ userId, orgId, kind: "MISTAKE" })
+      .onConflictDoNothing();
+    const rows = await tx
+      .select()
+      .from(notebookTable)
+      .where(
+        and(
+          eq(notebookTable.userId, userId),
+          eq(notebookTable.kind, "MISTAKE"),
+        ),
+      )
+      .limit(1);
+    return rows[0]!;
+  }
+
+  async listNotebooks(
+    tx: DatabaseTx,
+    userId: string,
+    query: { page: number; pageSize: number },
+    now: Date = new Date(),
+  ): Promise<{ items: NotebookSummaryRow[]; total: number }> {
+    const where = eq(notebookTable.userId, userId);
+    const [items, totalRows] = await Promise.all([
+      tx
+        .select({
+          id: notebookTable.id,
+          userId: notebookTable.userId,
+          orgId: notebookTable.orgId,
+          kind: notebookTable.kind,
+          examId: notebookTable.examId,
+          subjectRef: notebookTable.subjectRef,
+          title: notebookTable.title,
+          coverColor: notebookTable.coverColor,
+          coverMaterial: notebookTable.coverMaterial,
+          createdAt: notebookTable.createdAt,
+          updatedAt: notebookTable.updatedAt,
+          pageCount: sql<number>`(
+            SELECT count(*)::int FROM ${notebookPages}
+            WHERE ${notebookPages.notebookId} = ${notebookTable.id}
+          )`.mapWith(Number),
+          dueCount:
+            sql<number>`CASE WHEN ${notebookTable.kind} = 'MISTAKE' THEN (
+            SELECT count(*)::int FROM ${mistakeNotebookEntries}
+            WHERE ${mistakeNotebookEntries.userId} = ${userId}
+              AND ${mistakeNotebookEntries.nextReviewAt} IS NOT NULL
+              AND ${mistakeNotebookEntries.nextReviewAt} <= ${now}
+          ) ELSE 0 END`.mapWith(Number),
+        })
+        .from(notebookTable)
+        .where(where)
+        .orderBy(
+          sql`CASE WHEN ${notebookTable.kind} = 'MISTAKE' THEN 0 ELSE 1 END`,
+          desc(notebookTable.updatedAt),
+        )
+        .limit(query.pageSize)
+        .offset((query.page - 1) * query.pageSize),
+      tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(notebookTable)
+        .where(where),
+    ]);
+    return {
+      items: items as NotebookSummaryRow[],
+      total: totalRows[0]?.count ?? 0,
+    };
+  }
+
+  async createNotebook(
+    tx: DatabaseTx,
+    userId: string,
+    orgId: string | null,
+    input: CreateNotebookRow,
+  ): Promise<NotebookSummaryRow> {
+    const rows = await tx
+      .insert(notebookTable)
+      .values({ userId, orgId, kind: "CUSTOM", ...input })
+      .returning();
+    return { ...rows[0]!, pageCount: 0, dueCount: 0 };
+  }
+
+  async findNotebook(
+    tx: DatabaseTx,
+    userId: string,
+    notebookId: string,
+  ): Promise<NotebookSummaryRow | undefined> {
+    const rows = await tx
+      .select({
+        id: notebookTable.id,
+        userId: notebookTable.userId,
+        orgId: notebookTable.orgId,
+        kind: notebookTable.kind,
+        examId: notebookTable.examId,
+        subjectRef: notebookTable.subjectRef,
+        title: notebookTable.title,
+        coverColor: notebookTable.coverColor,
+        coverMaterial: notebookTable.coverMaterial,
+        createdAt: notebookTable.createdAt,
+        updatedAt: notebookTable.updatedAt,
+        pageCount: sql<number>`(
+          SELECT count(*)::int FROM ${notebookPages}
+          WHERE ${notebookPages.notebookId} = ${notebookTable.id}
+        )`.mapWith(Number),
+        dueCount: sql<number>`0`.mapWith(Number),
+      })
+      .from(notebookTable)
+      .where(
+        and(eq(notebookTable.id, notebookId), eq(notebookTable.userId, userId)),
+      )
+      .limit(1);
+    return rows[0] as NotebookSummaryRow | undefined;
+  }
+
+  async updateNotebook(
+    tx: DatabaseTx,
+    userId: string,
+    notebookId: string,
+    patch: UpdateNotebookRow,
+  ): Promise<NotebookSummaryRow | undefined> {
+    const rows = await tx
+      .update(notebookTable)
+      .set({ ...patch, updatedAt: sql`now()` })
+      .where(
+        and(eq(notebookTable.id, notebookId), eq(notebookTable.userId, userId)),
+      )
+      .returning();
+    if (!rows[0]) return undefined;
+    return this.findNotebook(tx, userId, notebookId);
+  }
+
+  async deleteNotebook(
+    tx: DatabaseTx,
+    userId: string,
+    notebookId: string,
+  ): Promise<NotebookRow | undefined> {
+    const rows = await tx
+      .delete(notebookTable)
+      .where(
+        and(eq(notebookTable.id, notebookId), eq(notebookTable.userId, userId)),
+      )
+      .returning();
+    return rows[0];
+  }
+
   async createEntry(
     tx: DatabaseTx,
     userId: string,
@@ -264,6 +436,7 @@ export class MistakeNotebookRepository {
     tx: DatabaseTx,
     userId: string,
     now: Date,
+    notebookId: string,
   ): Promise<NotebookCounts> {
     const [entries] = await tx
       .select({
@@ -281,8 +454,13 @@ export class MistakeNotebookRepository {
       .where(eq(mistakeNotebookEntries.userId, userId));
     const [pages] = await tx
       .select({ pageCount: count() })
-      .from(mistakeNotebookPages)
-      .where(eq(mistakeNotebookPages.userId, userId));
+      .from(notebookPages)
+      .where(
+        and(
+          eq(notebookPages.userId, userId),
+          eq(notebookPages.notebookId, notebookId),
+        ),
+      );
     return {
       entryCount: entries?.entryCount ?? 0,
       dueCount: entries?.dueCount ?? 0,
@@ -294,36 +472,45 @@ export class MistakeNotebookRepository {
   async findPage(
     tx: DatabaseTx,
     userId: string,
+    notebookId: string,
     pageIndex: number,
   ): Promise<MistakeNotebookPageRow | undefined> {
     const rows = await tx
       .select()
-      .from(mistakeNotebookPages)
+      .from(notebookPages)
       .where(
         and(
-          eq(mistakeNotebookPages.userId, userId),
-          eq(mistakeNotebookPages.pageIndex, pageIndex),
+          eq(notebookPages.userId, userId),
+          eq(notebookPages.notebookId, notebookId),
+          eq(notebookPages.pageIndex, pageIndex),
         ),
       )
       .limit(1);
     return rows[0];
   }
 
-  /** Upsert on (user_id, page_index) — the client saves a page it may or may not have created. */
+  /** Upsert on (notebook_id, page_index) and mark the book as recently used. */
   async upsertPage(
     tx: DatabaseTx,
     userId: string,
+    notebookId: string,
     pageIndex: number,
     doc: unknown,
   ): Promise<MistakeNotebookPageRow> {
     const rows = await tx
-      .insert(mistakeNotebookPages)
-      .values({ userId, pageIndex, doc })
+      .insert(notebookPages)
+      .values({ userId, notebookId, pageIndex, doc })
       .onConflictDoUpdate({
-        target: [mistakeNotebookPages.userId, mistakeNotebookPages.pageIndex],
+        target: [notebookPages.notebookId, notebookPages.pageIndex],
         set: { doc, updatedAt: sql`now()` },
       })
       .returning();
+    await tx
+      .update(notebookTable)
+      .set({ updatedAt: sql`now()` })
+      .where(
+        and(eq(notebookTable.id, notebookId), eq(notebookTable.userId, userId)),
+      );
     return rows[0]!;
   }
 

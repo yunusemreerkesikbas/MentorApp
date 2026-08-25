@@ -6,6 +6,7 @@ const USER = "11111111-1111-4111-8111-111111111111";
 describe("CoachingErasureService", () => {
   let eraseUserData: ReturnType<typeof vi.fn>;
   let deleteObject: ReturnType<typeof vi.fn>;
+  let deleteRoomMemberships: ReturnType<typeof vi.fn>;
   let service: CoachingErasureService;
 
   beforeEach(() => {
@@ -13,8 +14,10 @@ describe("CoachingErasureService", () => {
       photoStorageKeys: ["photos/a.jpg", "photos/b.jpg"],
     }));
     deleteObject = vi.fn(async () => undefined);
+    deleteRoomMemberships = vi.fn(async () => undefined);
     service = new CoachingErasureService(
       { eraseUserData } as never,
+      { deleteAllForUser: deleteRoomMemberships } as never,
       { deleteObject } as never,
     );
   });
@@ -46,5 +49,11 @@ describe("CoachingErasureService", () => {
     await service.eraseUserData(USER);
 
     expect(deleteObject).not.toHaveBeenCalled();
+  });
+
+  it("erases study-room memberships (relational PII — who studies with whom)", async () => {
+    await service.eraseUserData(USER);
+
+    expect(deleteRoomMemberships).toHaveBeenCalledWith(USER);
   });
 });

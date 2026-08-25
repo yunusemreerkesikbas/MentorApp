@@ -11,6 +11,7 @@ const ENTRY = "88888888-8888-4888-8888-888888888888";
 const ITEM = "99999999-9999-4999-8999-999999999999";
 const STROKE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const THREAD = "12121212-1212-4212-8212-121212121212";
+const NOTEBOOK = "13131313-1313-4313-8313-131313131313";
 
 const fakeDb = {
   transaction: async <T>(cb: (tx: unknown) => Promise<T>): Promise<T> =>
@@ -49,6 +50,34 @@ function makeRepoFake() {
   return {
     entries,
     pages,
+    ensureMistakeNotebook: async () => ({
+      id: NOTEBOOK,
+      userId: USER,
+      orgId: null,
+      kind: "MISTAKE",
+      examId: null,
+      subjectRef: null,
+      title: null,
+      coverColor: "navy",
+      coverMaterial: "cloth",
+      createdAt: new Date("2026-08-14T09:00:00.000Z"),
+      updatedAt: new Date("2026-08-14T09:00:00.000Z"),
+    }),
+    findNotebook: async () => ({
+      id: NOTEBOOK,
+      userId: USER,
+      orgId: null,
+      kind: "MISTAKE",
+      examId: null,
+      subjectRef: null,
+      title: null,
+      coverColor: "navy",
+      coverMaterial: "cloth",
+      createdAt: new Date("2026-08-14T09:00:00.000Z"),
+      updatedAt: new Date("2026-08-14T09:00:00.000Z"),
+      pageCount: pages.size,
+      dueCount: 0,
+    }),
     createEntry: async (
       _tx: unknown,
       userId: string,
@@ -110,13 +139,19 @@ function makeRepoFake() {
       healedCount: 0,
       pageCount: 0,
     }),
-    findPage: async (_tx: unknown, _userId: string, index: number) => {
+    findPage: async (
+      _tx: unknown,
+      _userId: string,
+      _notebookId: string,
+      index: number,
+    ) => {
       const doc = pages.get(index);
       return doc ? { doc } : undefined;
     },
     upsertPage: async (
       _tx: unknown,
       _userId: string,
+      _notebookId: string,
       index: number,
       doc: unknown,
     ) => {

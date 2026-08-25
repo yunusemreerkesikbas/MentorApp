@@ -442,7 +442,7 @@ function EmptyPanel({
   action: string;
 }) {
   return (
-    <div className="flex min-h-28 items-start gap-3 rounded-[10px] p-4 text-[var(--color-secondary)]">
+    <div className="flex min-h-28 items-start gap-3 rounded-[10px] bg-[var(--community-blue-soft)] p-4 text-[var(--color-secondary)]">
       <span className="mt-0.5 shrink-0 text-[var(--community-blue-ink)]">{icon}</span>
       <div>
         <p className="text-sm leading-6 text-[var(--color-body-text)]">{body}</p>

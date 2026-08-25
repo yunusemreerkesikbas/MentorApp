@@ -341,7 +341,10 @@ export const publicHolidays = pgTable(
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("public_holidays_country_date_unique_idx").on(t.country, t.holidayDate),
+    uniqueIndex("public_holidays_country_date_unique_idx").on(
+      t.country,
+      t.holidayDate,
+    ),
     index("public_holidays_country_date_idx").on(t.country, t.holidayDate),
   ],
 );
@@ -431,8 +434,12 @@ export const cities = pgTable("cities", {
   slug: text("slug").notNull().unique(),
   /** GeoRegion — one of the seven geographic regions; groups the accessible province list. */
   region: text("region").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 /**
@@ -470,8 +477,12 @@ export const universities = pgTable(
     source: text("source").notNull(),
     sourceUrl: text("source_url").notNull(),
     verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("universities_slug_unique_idx").on(t.slug),
@@ -511,8 +522,12 @@ export const programs = pgTable(
     source: text("source").notNull(),
     sourceUrl: text("source_url").notNull(),
     verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index("programs_university_idx").on(t.universityId),
@@ -539,11 +554,18 @@ export const programScores = pgTable(
     scoreYear: smallint("score_year").notNull(),
     minScore: numeric("min_score", { precision: 9, scale: 5 }),
     successRank: integer("success_rank"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
-    uniqueIndex("program_scores_program_year_idx").on(t.programCode, t.scoreYear),
+    uniqueIndex("program_scores_program_year_idx").on(
+      t.programCode,
+      t.scoreYear,
+    ),
   ],
 );
 
@@ -586,8 +608,12 @@ export const referenceDatasets = pgTable(
     source: text("source").notNull(),
     sourceUrl: text("source_url").notNull(),
     verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("reference_datasets_kind_period_idx").on(t.kind, t.period),
@@ -614,8 +640,12 @@ export const titles = pgTable("titles", {
   source: text("source").notNull(),
   sourceUrl: text("source_url").notNull(),
   verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 /**
@@ -634,8 +664,12 @@ export const institutions = pgTable("institutions", {
   source: text("source").notNull(),
   sourceUrl: text("source_url").notNull(),
   verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 /**
@@ -685,8 +719,12 @@ export const kpssPostings = pgTable(
     source: text("source").notNull(),
     sourceUrl: text("source_url").notNull(),
     verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     primaryKey({
@@ -878,6 +916,14 @@ export const studySessions = pgTable(
     planTaskId: uuid("plan_task_id").references(() => planTasks.id, {
       onDelete: "set null",
     }),
+    /**
+     * Study room this session is seated at; null = solo. Chosen at start and NOT changeable
+     * mid-session — this column is what makes "member of 3 rooms, seated in 1" work, and it
+     * doubles as the room presence source and the per-room study history.
+     */
+    roomId: uuid("room_id").references(() => studyRooms.id, {
+      onDelete: "set null",
+    }),
     /** Post-session micro check-in: subjective effort/mood 1-3 (😩😐🙂); null until captured. */
     sessionMood: integer("session_mood"),
     /** Optional post-session "what challenged you" free-text signal for the AI; null when blank. */
@@ -898,7 +944,91 @@ export const studySessions = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("study_sessions_user_started_idx").on(t.userId, t.startedAt)],
+  (t) => [
+    index("study_sessions_user_started_idx").on(t.userId, t.startedAt),
+    // Room presence: every open session of one room in a single indexed scan.
+    index("study_sessions_room_status_idx").on(t.roomId, t.status),
+  ],
+);
+
+/**
+ * A study room ("masa") — a persistent, themed, invite-code table people co-work at.
+ * Body-doubling only: everyone keeps their own Pomodoro; the room contributes the shared
+ * ground, the seats and the "who is focusing right now" signal. No chat, no shared timer.
+ *
+ * Presence is NOT stored here — it is derived from `study_sessions.room_id` + status, so a
+ * room needs no heartbeat, socket or Redis. `last_active_at` is bumped when someone sits
+ * down and exists only so dormant rooms stop counting against a user's room quota
+ * (no archive column, no sweep job — a dormant room revives the moment someone sits again).
+ *
+ * Runs in SERVICE context, scoped by the WHERE clause — same trust model as `buddy_pairs`
+ * and `user_follows` (rows are cross-user by nature, so no RLS policy).
+ */
+export const studyRooms = pgTable(
+  "study_rooms",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    ownerUserId: uuid("owner_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** LIBRARY | CAFE | HOME (StudyRoomTheme) — drives the backdrop and the default ambient track. */
+    theme: text("theme").notNull(),
+    /** Seat count chosen by the owner; can grow freely but never below the current member count. */
+    capacity: integer("capacity").notNull(),
+    inviteCode: text("invite_code").notNull(),
+    /** PRIVATE only in v1; PUBLIC (cohort-scoped discovery) is the Phase-2 slice. */
+    visibility: text("visibility").notNull().default("PRIVATE"),
+    /** Bumped when a member starts a session here; drives the dormant-room quota filter. */
+    lastActiveAt: timestamp("last_active_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("study_rooms_invite_code_unique_idx").on(t.inviteCode),
+    index("study_rooms_owner_idx").on(t.ownerUserId),
+    check("study_rooms_capacity_range", sql`${t.capacity} between 2 and 10`),
+  ],
+);
+
+/**
+ * Room membership — persistent, not per-session. Being a member means holding a seat at the
+ * table; actually sitting in it is `study_sessions.room_id`. `joined_at` doubles as the
+ * ownership succession order: when the owner leaves, the earliest member takes over.
+ */
+export const studyRoomMembers = pgTable(
+  "study_room_members",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    roomId: uuid("room_id")
+      .notNull()
+      .references(() => studyRooms.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** OWNER | MEMBER (StudyRoomRole). Exactly one OWNER per room. */
+    role: text("role").notNull().default("MEMBER"),
+    joinedAt: timestamp("joined_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("study_room_members_pair_unique_idx").on(t.roomId, t.userId),
+    // Drives "my rooms" + the per-user room quota check.
+    index("study_room_members_user_idx").on(t.userId),
+    // Seat list + succession order.
+    index("study_room_members_room_joined_idx").on(t.roomId, t.joinedAt),
+  ],
 );
 
 /** Per-day activity ledger — the source for read-time streak derivation. */
@@ -1189,7 +1319,7 @@ export const mockExamPhotoCategorizations = pgTable(
  *
  * These are columns, not another jsonb document, because two queries need them: the review job
  * scans `next_review_at`, and the analysis tab aggregates `error_type`. Placement on the page is
- * the other half and *does* stay in jsonb — see `mistakeNotebookPages`.
+ * the other half and *does* stay in jsonb — see `notebookPages`.
  *
  * `mock_exam_id` is nullable and ON DELETE SET NULL on purpose: most mistakes are caught while
  * studying, not in a mock exam, and deleting an exam must not delete the lessons drawn from it.
@@ -1246,7 +1376,9 @@ export const mistakeNotebookEntries = pgTable(
      */
     communityThreadId: uuid("community_thread_id"),
     /** Set by the `forum.answer.accepted` listener — the card has a verified answer waiting. */
-    communityAnsweredAt: timestamp("community_answered_at", { withTimezone: true }),
+    communityAnsweredAt: timestamp("community_answered_at", {
+      withTimezone: true,
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1263,6 +1395,50 @@ export const mistakeNotebookEntries = pgTable(
   ],
 );
 
+/** User-owned notebook collection. The MISTAKE row is the protected system book. */
+export const notebooks = pgTable(
+  "notebooks",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    /** MISTAKE | CUSTOM. */
+    kind: text("kind").notNull(),
+    /** SOFT ref → content.exams. */
+    examId: uuid("exam_id"),
+    /** SOFT ref → content subject slug. */
+    subjectRef: text("subject_ref"),
+    /** Null only for the system notebook, whose display title is localized by the client. */
+    title: text("title"),
+    coverColor: text("cover_color").notNull().default("navy"),
+    coverMaterial: text("cover_material").notNull().default("cloth"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("notebooks_one_mistake_per_user_idx")
+      .on(t.userId)
+      .where(sql`${t.kind} = 'MISTAKE'`),
+    uniqueIndex("notebooks_id_user_unique_idx").on(t.id, t.userId),
+    index("notebooks_user_updated_idx").on(t.userId, t.updatedAt),
+    check("notebooks_kind_check", sql`${t.kind} IN ('MISTAKE', 'CUSTOM')`),
+    check(
+      "notebooks_title_check",
+      sql`(${t.title} IS NULL AND ${t.kind} = 'MISTAKE') OR char_length(${t.title}) BETWEEN 1 AND 40`,
+    ),
+  ],
+);
+
 /**
  * One row per notebook page. Unlike the vision board's single document per user, a notebook grows
  * without bound — saving one page must not rewrite the whole book, and turning to a page must not
@@ -1271,8 +1447,8 @@ export const mistakeNotebookEntries = pgTable(
  * `doc` shape is owned by `notebookPageDocSchema` (@mentor/validation): `{ version, paper, items }`
  * where an item is an entry reference, a sticker or a text block. Entry *content* is never in here.
  */
-export const mistakeNotebookPages = pgTable(
-  "mistake_notebook_pages",
+export const notebookPages = pgTable(
+  "notebook_pages",
   {
     id: uuid("id")
       .primaryKey()
@@ -1280,6 +1456,7 @@ export const mistakeNotebookPages = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    notebookId: uuid("notebook_id").notNull(),
     pageIndex: integer("page_index").notNull(),
     doc: jsonb("doc").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -1289,7 +1466,18 @@ export const mistakeNotebookPages = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [uniqueIndex("mistake_notebook_pages_user_idx").on(t.userId, t.pageIndex)],
+  (t) => [
+    uniqueIndex("notebook_pages_notebook_page_idx").on(
+      t.notebookId,
+      t.pageIndex,
+    ),
+    index("notebook_pages_user_idx").on(t.userId),
+    foreignKey({
+      name: "notebook_pages_notebook_user_fk",
+      columns: [t.notebookId, t.userId],
+      foreignColumns: [notebooks.id, notebooks.userId],
+    }).onDelete("cascade"),
+  ],
 );
 
 /* ===================== W4 · payments =====================
@@ -2024,14 +2212,22 @@ export const forumTagSuggestions = pgTable(
     requestedName: text("requested_name").notNull(),
     normalizedSlug: text("normalized_slug").notNull(),
     status: text("status").notNull().default("PENDING"),
-    suggestedBy: uuid("suggested_by").references(() => users.id, { onDelete: "set null" }),
+    suggestedBy: uuid("suggested_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
     resolvedTagId: uuid("resolved_tag_id").references(() => forumTags.id, {
       onDelete: "set null",
     }),
-    reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+    reviewedBy: uuid("reviewed_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     check(
@@ -2178,7 +2374,11 @@ export const forumHelpfulVotes = pgTable(
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("forum_helpful_votes_unique_idx").on(t.targetType, t.targetId, t.userId),
+    uniqueIndex("forum_helpful_votes_unique_idx").on(
+      t.targetType,
+      t.targetId,
+      t.userId,
+    ),
     index("forum_helpful_votes_target_idx").on(t.targetType, t.targetId),
   ],
 );
@@ -2533,7 +2733,9 @@ export const aiDailyGreetings = pgTable(
 export const programCatalogDatasets = pgTable(
   "program_catalog_datasets",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     examType: text("exam_type").notNull(),
     version: varchar("version", { length: 80 }).notNull(),
     guideYear: smallint("guide_year").notNull(),
@@ -2543,40 +2745,71 @@ export const programCatalogDatasets = pgTable(
     sourceUrl: text("source_url").notNull(),
     verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
     isActive: boolean("is_active").notNull().default(false),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("program_catalog_datasets_version_idx").on(t.version),
     uniqueIndex("program_catalog_datasets_active_exam_idx")
       .on(t.examType)
       .where(sql`${t.isActive} = true`),
-    check("program_catalog_datasets_years_chk", sql`${t.guideYear} >= ${t.placementYear}`),
-    check("program_catalog_datasets_limit_chk", sql`${t.officialPreferenceLimit} > 0`),
+    check(
+      "program_catalog_datasets_years_chk",
+      sql`${t.guideYear} >= ${t.placementYear}`,
+    ),
+    check(
+      "program_catalog_datasets_limit_chk",
+      sql`${t.officialPreferenceLimit} > 0`,
+    ),
   ],
 );
 
 export const campusExperiences = pgTable(
   "campus_experiences",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     universityId: uuid("university_id")
       .notNull()
       .references(() => universities.id, { onDelete: "cascade" }),
     coverageStatus: text("coverage_status").notNull(),
     renderMode: text("render_mode").notNull(),
-    initialLatitude: numeric("initial_latitude", { precision: 9, scale: 6 }).notNull(),
-    initialLongitude: numeric("initial_longitude", { precision: 9, scale: 6 }).notNull(),
-    initialAltitude: numeric("initial_altitude", { precision: 10, scale: 2 }).notNull(),
-    initialHeading: numeric("initial_heading", { precision: 6, scale: 2 }).notNull(),
+    initialLatitude: numeric("initial_latitude", {
+      precision: 9,
+      scale: 6,
+    }).notNull(),
+    initialLongitude: numeric("initial_longitude", {
+      precision: 9,
+      scale: 6,
+    }).notNull(),
+    initialAltitude: numeric("initial_altitude", {
+      precision: 10,
+      scale: 2,
+    }).notNull(),
+    initialHeading: numeric("initial_heading", {
+      precision: 6,
+      scale: 2,
+    }).notNull(),
     initialTilt: numeric("initial_tilt", { precision: 5, scale: 2 }).notNull(),
-    initialRange: numeric("initial_range", { precision: 10, scale: 2 }).notNull(),
+    initialRange: numeric("initial_range", {
+      precision: 10,
+      scale: 2,
+    }).notNull(),
     source: text("source").notNull(),
     sourceUrl: text("source_url").notNull(),
     verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
     isEnabled: boolean("is_enabled").notNull().default(false),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("campus_experiences_university_idx").on(t.universityId),
@@ -2598,7 +2831,9 @@ export const campusExperiences = pgTable(
 export const campusPois = pgTable(
   "campus_pois",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     campusExperienceId: uuid("campus_experience_id")
       .notNull()
       .references(() => campusExperiences.id, { onDelete: "cascade" }),
@@ -2617,11 +2852,18 @@ export const campusPois = pgTable(
     position: smallint("position").notNull(),
     sourceUrl: text("source_url").notNull(),
     verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
-    uniqueIndex("campus_pois_experience_slug_idx").on(t.campusExperienceId, t.slug),
+    uniqueIndex("campus_pois_experience_slug_idx").on(
+      t.campusExperienceId,
+      t.slug,
+    ),
     uniqueIndex("campus_pois_experience_position_idx").on(
       t.campusExperienceId,
       t.position,
@@ -2633,7 +2875,9 @@ export const campusPois = pgTable(
 export const preferenceScenarios = pgTable(
   "preference_scenarios",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -2648,8 +2892,12 @@ export const preferenceScenarios = pgTable(
     rankDil: integer("rank_dil"),
     rankTyt: integer("rank_tyt"),
     revision: integer("revision").notNull().default(1),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("preference_scenarios_user_idx").on(t.userId),
@@ -2662,7 +2910,9 @@ export const preferenceScenarios = pgTable(
 export const preferenceScenarioItems = pgTable(
   "preference_scenario_items",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     scenarioId: uuid("scenario_id")
       .notNull()
       .references(() => preferenceScenarios.id, { onDelete: "cascade" }),
@@ -2686,10 +2936,15 @@ export const preferenceScenarioItems = pgTable(
     source: text("source").notNull(),
     sourceUrl: text("source_url").notNull(),
     verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
-    uniqueIndex("preference_scenario_items_position_idx").on(t.scenarioId, t.position),
+    uniqueIndex("preference_scenario_items_position_idx").on(
+      t.scenarioId,
+      t.position,
+    ),
     uniqueIndex("preference_scenario_items_program_idx").on(
       t.scenarioId,
       t.programCode,
@@ -2706,42 +2961,61 @@ export const preferenceScenarioItems = pgTable(
 export const forumPolls = pgTable(
   "forum_polls",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     threadId: uuid("thread_id")
       .notNull()
       .references(() => forumThreads.id, { onDelete: "cascade" }),
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("forum_polls_thread_unique_idx").on(t.threadId),
     index("forum_polls_ends_idx").on(t.endsAt),
-    check("forum_polls_ends_after_created_chk", sql`${t.endsAt} > ${t.createdAt}`),
+    check(
+      "forum_polls_ends_after_created_chk",
+      sql`${t.endsAt} > ${t.createdAt}`,
+    ),
   ],
 );
 
 export const forumPollOptions = pgTable(
   "forum_poll_options",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     pollId: uuid("poll_id")
       .notNull()
       .references(() => forumPolls.id, { onDelete: "cascade" }),
     text: varchar("text", { length: 25 }).notNull(),
     position: smallint("position").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
-    uniqueIndex("forum_poll_options_poll_position_idx").on(t.pollId, t.position),
+    uniqueIndex("forum_poll_options_poll_position_idx").on(
+      t.pollId,
+      t.position,
+    ),
     uniqueIndex("forum_poll_options_poll_id_id_idx").on(t.pollId, t.id),
-    check("forum_poll_options_position_chk", sql`${t.position} between 0 and 3`),
+    check(
+      "forum_poll_options_position_chk",
+      sql`${t.position} between 0 and 3`,
+    ),
   ],
 );
 
 export const forumPollVotes = pgTable(
   "forum_poll_votes",
   {
-    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
     pollId: uuid("poll_id")
       .notNull()
       .references(() => forumPolls.id, { onDelete: "cascade" }),
@@ -2749,7 +3023,9 @@ export const forumPollVotes = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     uniqueIndex("forum_poll_votes_poll_user_idx").on(t.pollId, t.userId),
@@ -2772,7 +3048,9 @@ export const userAchievements = pgTable(
     id: uuid("id")
       .primaryKey()
       .default(sql`gen_random_uuid()`),
-    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "set null" }),
+    orgId: uuid("org_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -2793,7 +3071,10 @@ export const userAchievements = pgTable(
     ),
     index("user_achievements_user_earned_idx").on(t.userId, t.earnedAt),
     index("user_achievements_org_user_idx").on(t.orgId, t.userId),
-    check("user_achievements_source_chk", sql`${t.source} in ('LIVE', 'BACKFILL')`),
+    check(
+      "user_achievements_source_chk",
+      sql`${t.source} in ('LIVE', 'BACKFILL')`,
+    ),
     check("user_achievements_rule_version_chk", sql`${t.ruleVersion} > 0`),
   ],
 );
@@ -2808,7 +3089,9 @@ export const userJourneyLevelCelebrations = pgTable(
     id: uuid("id")
       .primaryKey()
       .default(sql`gen_random_uuid()`),
-    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "set null" }),
+    orgId: uuid("org_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -2833,7 +3116,10 @@ export const userJourneyLevelCelebrations = pgTable(
       t.unlockedAt,
     ),
     index("user_journey_level_celebrations_org_user_idx").on(t.orgId, t.userId),
-    check("user_journey_level_celebrations_tier_chk", sql`${t.tier} between 1 and 12`),
+    check(
+      "user_journey_level_celebrations_tier_chk",
+      sql`${t.tier} between 1 and 12`,
+    ),
     check(
       "user_journey_level_celebrations_kind_chk",
       sql`${t.kind} in ('INTRODUCTION', 'LEVEL_UP')`,
@@ -2871,6 +3157,9 @@ export const weeklyReviewCompletions = pgTable(
       t.examId,
       t.weekStart,
     ),
-    index("weekly_review_completions_user_completed_idx").on(t.userId, t.completedAt),
+    index("weekly_review_completions_user_completed_idx").on(
+      t.userId,
+      t.completedAt,
+    ),
   ],
 );

@@ -28,11 +28,13 @@ import {
   CoachingEventTopic,
   DailyPlanCompleted,
   FirstSessionOfDay,
+  StudyRoomSessionStarted,
   StudySessionCompleted,
   PlanTaskCompleted,
 } from "../domain/coaching.events";
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
 import { PlanTaskRepository } from "../infrastructure/plan-task.repository";
+import { StudyRoomRepository } from "../infrastructure/study-room.repository";
 import { StudySessionRepository } from "../infrastructure/study-session.repository";
 import { toStudySessionDto } from "./coaching.mappers";
 import type { CoachRhythmEvidence } from "../domain/coach-evidence";
@@ -51,6 +53,7 @@ export class SessionService {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly sessions: StudySessionRepository,
     private readonly planTasks: PlanTaskRepository,
+    private readonly rooms: StudyRoomRepository,
     private readonly activity: DailyActivityRepository,
     private readonly events: EventEmitter2,
     private readonly config: ConfigRegistryService,
@@ -228,6 +231,14 @@ export class SessionService {
           throw new DomainError(ErrorCode.COACHING_TASK_NOT_FOUND, HttpStatus.NOT_FOUND);
         }
       }
+      // Sitting down at a room: membership is the only gate, and the seat is fixed for the
+      // whole session (changing tables mid-focus would mean two rooms showing the same person).
+      if (input.roomId) {
+        if (!(await this.rooms.isMember(tx, input.roomId, userId))) {
+          throw new DomainError(ErrorCode.COACHING_ROOM_NOT_MEMBER, HttpStatus.FORBIDDEN);
+        }
+        await this.rooms.touchLastActive(tx, input.roomId);
+      }
       const row = await this.sessions.create(tx, {
         userId,
         startedAt,
@@ -235,7 +246,15 @@ export class SessionService {
         plannedFocusMinutes,
         subject: input.subject ?? null,
         planTaskId: input.planTaskId ?? null,
+        roomId: input.roomId ?? null,
       });
+      // Only a seated start is worth announcing — solo starts have nobody waiting on them.
+      if (input.roomId) {
+        this.events.emit(
+          CoachingEventTopic.SESSION_STARTED,
+          new StudyRoomSessionStarted(userId, input.roomId),
+        );
+      }
       return toStudySessionDto(row, minFocusSeconds);
     });
   }

@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { and, desc, eq, getTableColumns, gte, isNotNull, isNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
 import { planTasks, studySessions } from "../../../database/schema";
 import { StudySessionStatus } from "../domain/coaching.constants";
@@ -34,6 +34,14 @@ export interface RecentSummaryRow {
   count7d: number;
   focusSeconds7d: number;
   recentRows: { subject: string | null; struggleNote: string | null }[];
+}
+
+/** One seated member of a room (see {@link StudySessionRepository.findRunningByRooms}). */
+export interface RoomPresenceRow {
+  roomId: string;
+  userId: string;
+  startedAt: Date;
+  subject: string | null;
 }
 
 export interface CoachRhythmRow {
@@ -336,6 +344,29 @@ export class StudySessionRepository {
       .where(and(eq(studySessions.userId, userId), runningNow(graceMinutes)))
       .limit(1);
     return rows.length > 0;
+  }
+
+  /**
+   * Everyone currently seated at the given rooms, in one indexed scan
+   * (`study_sessions_room_status_idx` + the `runningNow` bound). This is the whole of room
+   * presence — no heartbeat table, no socket. Cross-user, so callers run it in SERVICE context
+   * (`study_sessions_self_or_service` allows it).
+   */
+  async findRunningByRooms(
+    tx: DatabaseTx,
+    roomIds: string[],
+    graceMinutes: number,
+  ): Promise<RoomPresenceRow[]> {
+    if (roomIds.length === 0) return [];
+    return tx
+      .select({
+        roomId: sql<string>`${studySessions.roomId}`,
+        userId: studySessions.userId,
+        startedAt: studySessions.startedAt,
+        subject: studySessions.subject,
+      })
+      .from(studySessions)
+      .where(and(inArray(studySessions.roomId, roomIds), runningNow(graceMinutes)));
   }
 
   async countCompleted(tx: DatabaseTx, userId: string, minFocusSeconds: number): Promise<number> {

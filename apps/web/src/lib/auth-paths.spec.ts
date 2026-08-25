@@ -15,9 +15,9 @@ describe("isAuthPath", () => {
 });
 
 describe("authShellNav", () => {
-  it("closes login and signup to home (mobile sheet only)", () => {
-    expect(authShellNav("/login")).toEqual({ href: "/", icon: "close" });
-    expect(authShellNav("/signup")).toEqual({ href: "/", icon: "close" });
+  it("has no header icon on login and signup", () => {
+    expect(authShellNav("/login")).toEqual({ href: "/", icon: "none" });
+    expect(authShellNav("/signup")).toEqual({ href: "/", icon: "none" });
   });
 
   it("returns nested auth screens to login", () => {

@@ -78,9 +78,25 @@ function shouldPlayAudio(
   );
 }
 
+/** Whether the user has ever expressed an ambient preference on this device. */
+function hasStoredPreference(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
 export interface UseSessionAmbientSoundOptions {
   phase: SessionPhase;
   isPaused: boolean;
+  /**
+   * Track a study room's theme suggests (library → soft, café → warm, home → rain). Only fills
+   * a preference the user has never set: an explicit "Sessiz" is a real choice and must survive
+   * walking into a room. Nothing is persisted until the user acts on it.
+   */
+  suggestedTrackId?: AmbientTrackId | null;
 }
 
 export interface UseSessionAmbientSoundResult {
@@ -93,6 +109,7 @@ export interface UseSessionAmbientSoundResult {
 export function useSessionAmbientSound({
   phase,
   isPaused,
+  suggestedTrackId = null,
 }: UseSessionAmbientSoundOptions): UseSessionAmbientSoundResult {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const loadedSrcRef = useRef<string | null>(null);
@@ -103,6 +120,18 @@ export function useSessionAmbientSound({
   const [preference, setPreference] = useState<AmbientSoundPreference>(() =>
     readPreference(),
   );
+  /** Captured once, next to the preference it qualifies: has the user ever chosen a track? */
+  const [hasOwnPreference] = useState(hasStoredPreference);
+
+  /**
+   * The track actually playing. A room's theme only fills a genuinely blank preference — an
+   * explicit "Sessiz" is a real choice and survives walking into a room. Derived rather than
+   * written into state, so the suggestion never becomes a stored preference on its own.
+   */
+  const trackId: AmbientTrackId =
+    suggestedTrackId && !hasOwnPreference && preference.trackId === "off"
+      ? suggestedTrackId
+      : preference.trackId;
 
   useEffect(() => {
     phaseRef.current = phase;
@@ -190,14 +219,14 @@ export function useSessionAmbientSound({
   }, [phase, clearPreview]);
 
   useEffect(() => {
-    syncAudioSrc(preference.trackId);
-  }, [preference.trackId, syncAudioSrc]);
+    syncAudioSrc(trackId);
+  }, [trackId, syncAudioSrc]);
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !ambientTrackSrc(preference.trackId)) return;
+    if (!audio || !ambientTrackSrc(trackId)) return;
 
-    if (shouldPlayAudio(phase, isPaused, preference.trackId, preference.muted)) {
+    if (shouldPlayAudio(phase, isPaused, trackId, preference.muted)) {
       void audio.play().catch(() => {
         // Autoplay blocked without gesture — Başla click should unlock
       });
@@ -207,7 +236,7 @@ export function useSessionAmbientSound({
     if (previewActiveRef.current) return;
 
     audio.pause();
-  }, [phase, isPaused, preference.trackId, preference.muted]);
+  }, [phase, isPaused, trackId, preference.muted]);
 
   const setTrackId = useCallback(
     (trackId: AmbientTrackId) => {
@@ -235,8 +264,10 @@ export function useSessionAmbientSound({
 
   const toggleMute = useCallback(() => {
     setPreference((prev) => {
-      if (prev.trackId === "off") return prev;
-      const next = { ...prev, muted: !prev.muted };
+      // Acts on the track that is actually playing, so muting works on a room-suggested one
+      // too — and that mute is the moment the suggestion becomes the user's own preference.
+      if (trackId === "off") return prev;
+      const next = { trackId, muted: !prev.muted };
       writePreference(next);
 
       const audio = audioRef.current;
@@ -252,11 +283,11 @@ export function useSessionAmbientSound({
 
       return next;
     });
-  }, [phase, isPaused]);
+  }, [phase, isPaused, trackId]);
 
 
   return {
-    trackId: preference.trackId,
+    trackId,
     muted: preference.muted,
     setTrackId,
     toggleMute,

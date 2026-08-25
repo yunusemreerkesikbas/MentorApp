@@ -32,28 +32,8 @@ export default function EventsEditor({ slug, events, onChange }: {
 }) {
     const [f, setF] = useState(() => formFromEvents(events, "EXAM_DATE"));
     useEffect(() => {
-        const hydrated = formFromEvents(events, "EXAM_DATE");
-        // #region agent log
-        fetch("http://127.0.0.1:7497/ingest/21f8ef43-7e17-46b1-8c00-47111ca62dd3", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "54e609" },
-            body: JSON.stringify({
-                sessionId: "54e609",
-                runId: "post-fix",
-                hypothesisId: "H2",
-                location: "EventsEditor.tsx:init",
-                message: "EventsEditor form hydrated from events",
-                data: {
-                    slug,
-                    formType: hydrated.type,
-                    formEventAt: hydrated.eventAt,
-                    tableExamDate: events.find((e) => e.type === "EXAM_DATE")?.eventAt ?? null,
-                },
-                timestamp: Date.now(),
-            }),
-        }).catch(() => {});
-        // #endregion
-    }, [events, slug]);
+        setF((p) => formFromEvents(events, p.type));
+    }, [events]);
     const [busy, setBusy] = useState(false);
     const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((p) => ({ ...p, [k]: e.target.value }));
 
@@ -70,30 +50,6 @@ export default function EventsEditor({ slug, events, onChange }: {
                 verifiedAt: new Date(f.verifiedAt).toISOString(),
             };
             const { data } = await apiClient.post<{ events: AdminExamEvent[] }>(`/admin/content/exams/${encodeURIComponent(slug)}/events`, payload);
-            // #region agent log
-            fetch("http://127.0.0.1:7497/ingest/21f8ef43-7e17-46b1-8c00-47111ca62dd3", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "54e609" },
-                body: JSON.stringify({
-                    sessionId: "54e609",
-                    runId: "pre-fix",
-                    hypothesisId: "H3",
-                    location: "EventsEditor.tsx:submit",
-                    message: "Admin event POST response",
-                    data: {
-                        slug,
-                        payload,
-                        responseEventCount: data?.events?.length ?? null,
-                        responseEvents: (data?.events ?? []).map((e) => ({
-                            type: e.type,
-                            eventAt: e.eventAt,
-                            verifiedBy: e.verifiedBy,
-                        })),
-                    },
-                    timestamp: Date.now(),
-                }),
-            }).catch(() => {});
-            // #endregion
             onChange(data.events);
             await Swal.fire({ icon: "success", title: "Etkinlik kaydedildi", timer: 1000, showConfirmButton: false });
         } catch (err) {

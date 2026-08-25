@@ -247,6 +247,8 @@ export const startStudySessionSchema = z
     subject: z.string().trim().min(1).max(80).nullish(),
     /** When starting from a plan task deep-link; must belong to the current user. */
     planTaskId: z.string().uuid().optional(),
+    /** Sit down at a study room; omitted = solo. Must be a room the user is a member of. */
+    roomId: z.string().uuid().optional(),
     /** ISO datetime; defaults to server "now" when omitted. */
     startedAt: z.string().datetime({ offset: true }).optional(),
   })
@@ -300,6 +302,59 @@ export const listStudySessionsQuerySchema = paginationQuerySchema
 export type ListStudySessionsQuery = z.infer<
   typeof listStudySessionsQuerySchema
 >;
+
+/* ------------------------------- study rooms ---------------------------------- */
+
+/** Room backdrop themes. Each maps to a default ambient track on the client. */
+export const STUDY_ROOM_THEMES = ["LIBRARY", "CAFE", "HOME"] as const;
+export const STUDY_ROOM_ROLES = ["OWNER", "MEMBER"] as const;
+
+/** Seat bounds — 10 is where avatars stop being readable on a phone. */
+export const STUDY_ROOM_CAPACITY_MIN = 2;
+export const STUDY_ROOM_CAPACITY_MAX = 10;
+/** Active rooms one user may belong to. Dormant rooms don't count (see `studyRooms.lastActiveAt`). */
+export const STUDY_ROOM_QUOTA = 3;
+/** A room stops counting against the quota after this long without anyone sitting down. */
+export const STUDY_ROOM_DORMANT_DAYS = 60;
+
+export const studyRoomCapacitySchema = z.coerce
+  .number()
+  .int()
+  .min(STUDY_ROOM_CAPACITY_MIN)
+  .max(STUDY_ROOM_CAPACITY_MAX);
+
+export const studyRoomNameSchema = z.string().trim().min(1).max(40);
+
+/** `MASA-` + 6 uppercase hex chars (see the room service's generator). Input is upper-cased. */
+export const studyRoomInviteCodeSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^MASA-[0-9A-F]{6}$/, { message: "invalid_invite_code" });
+
+export const createStudyRoomSchema = z.object({
+  name: studyRoomNameSchema,
+  theme: z.enum(STUDY_ROOM_THEMES),
+  capacity: studyRoomCapacitySchema,
+});
+export type CreateStudyRoomInput = z.infer<typeof createStudyRoomSchema>;
+
+/** Owner-only edit. At least one field must be present — an empty PATCH is a client bug. */
+export const updateStudyRoomSchema = z
+  .object({
+    name: studyRoomNameSchema.optional(),
+    theme: z.enum(STUDY_ROOM_THEMES).optional(),
+    capacity: studyRoomCapacitySchema.optional(),
+  })
+  .refine((v) => Object.values(v).some((field) => field !== undefined), {
+    message: "empty_update",
+  });
+export type UpdateStudyRoomInput = z.infer<typeof updateStudyRoomSchema>;
+
+export const joinStudyRoomSchema = z.object({
+  code: studyRoomInviteCodeSchema,
+});
+export type JoinStudyRoomInput = z.infer<typeof joinStudyRoomSchema>;
 
 /* ---------------------------------- mood -------------------------------------- */
 
@@ -695,23 +750,6 @@ export const notebookPageDocSchema = z
   .object({
     version: z.literal(1),
     paper: z.enum(NOTEBOOK_PAPERS),
-    /*
-     * Optional, not defaulted, and that is deliberate: absent means "this page is not carrying a
-     * cover", which is true of every page but the first. Defaulting it would write a cover into all
-     * forty documents and make the one that matters indistinguishable from the thirty-nine that
-     * don't.
-     */
-    cover: z
-      .object({
-        color: z.enum(NOTEBOOK_COVER_COLORS),
-        material: z.enum(NOTEBOOK_COVER_MATERIALS),
-        title: z
-          .string()
-          .trim()
-          .max(NOTEBOOK_COVER_TITLE_MAX_LENGTH)
-          .nullish(),
-      })
-      .optional(),
     items: z.array(notebookPageItemSchema).max(NOTEBOOK_PAGE_MAX_ITEMS),
     /*
      * Defaulted, not optional, and that default is the whole backward-compatibility story: every
@@ -786,6 +824,64 @@ export const notebookPageIndexSchema = z.coerce
 
 export const putNotebookPageSchema = z.object({ doc: notebookPageDocSchema });
 export type PutNotebookPageInput = z.infer<typeof putNotebookPageSchema>;
+
+export const notebookCoverStyleSchema = z.object({
+  color: z.enum(NOTEBOOK_COVER_COLORS),
+  material: z.enum(NOTEBOOK_COVER_MATERIALS),
+});
+
+export const listNotebooksQuerySchema = paginationQuerySchema.extend({
+  pageSize: z.coerce.number().int().min(1).max(12).default(12),
+});
+export type ListNotebooksQuery = z.infer<typeof listNotebooksQuerySchema>;
+
+const notebookSubjectFieldsSchema = z
+  .object({
+    examId: z.string().uuid().nullish(),
+    subjectRef: z.string().trim().min(1).max(120).nullish(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.subjectRef && !value.examId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "subject_requires_exam",
+        path: ["examId"],
+      });
+    }
+  });
+
+export const createNotebookSchema = z
+  .object({
+    title: z.string().trim().min(1).max(NOTEBOOK_COVER_TITLE_MAX_LENGTH),
+    examId: z.string().uuid().nullish(),
+    subjectRef: z.string().trim().min(1).max(120).nullish(),
+    cover: notebookCoverStyleSchema.default({
+      color: "navy",
+      material: "cloth",
+    }),
+  })
+  .superRefine((value, ctx) => {
+    const result = notebookSubjectFieldsSchema.safeParse(value);
+    for (const issue of result.success ? [] : result.error.issues)
+      ctx.addIssue(issue);
+  });
+export type CreateNotebookInput = z.infer<typeof createNotebookSchema>;
+
+export const updateNotebookSchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(1)
+      .max(NOTEBOOK_COVER_TITLE_MAX_LENGTH)
+      .nullable()
+      .optional(),
+    examId: z.string().uuid().nullable().optional(),
+    subjectRef: z.string().trim().min(1).max(120).nullable().optional(),
+    cover: notebookCoverStyleSchema.optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, "empty_patch");
+export type UpdateNotebookInput = z.infer<typeof updateNotebookSchema>;
 
 /**
  * Subject/topic are optional at creation: the student may add the photo first and label it after,

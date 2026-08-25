@@ -31,6 +31,16 @@ export const routing = defineRouting({
       tr: "/seans/gecmis",
       en: "/study-session/history",
     },
+    /** Study room ("masa") — the shared ground a group co-works at. */
+    "/study-session/rooms/[id]": {
+      tr: "/seans/masa/[id]",
+      en: "/study-session/rooms/[id]",
+    },
+    /**
+     * Invite-link landing. Short on purpose (it gets pasted into chats) and outside the app
+     * shell, so it can greet someone who has never signed in.
+     */
+    "/join-room": { tr: "/masaya-katil", en: "/join-room" },
     "/coach": { tr: "/koc", en: "/coach" },
     "/coach/chat": { tr: "/koc/sohbet", en: "/coach/chat" },
     "/analysis": { tr: "/analiz", en: "/analysis" },
@@ -51,6 +61,11 @@ export const routing = defineRouting({
       en: "/subscription/result",
     },
     "/notebook": { tr: "/yanlis-defteri", en: "/notebook" },
+    "/notebooks": { tr: "/defterlerim", en: "/notebooks" },
+    "/notebooks/[notebookId]": {
+      tr: "/defterlerim/[notebookId]",
+      en: "/notebooks/[notebookId]",
+    },
     "/vision-board": { tr: "/hedef", en: "/vision-board" },
     /** Collage editor. `/hedef` stays the data step (map + goal form); this is the optional canvas. */
     "/vision-board/board": { tr: "/hedef/pano", en: "/vision-board/board" },

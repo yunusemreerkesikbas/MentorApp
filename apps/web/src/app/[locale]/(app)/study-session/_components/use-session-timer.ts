@@ -33,6 +33,8 @@ export interface UseSessionTimerOptions {
   planTaskId?: string | null;
   /** Optional plan task title — only persisted so the chip survives a reload. */
   planTaskTitle?: string | null;
+  /** Study room to sit down at; null = solo. Fixed at start — no table-hopping mid-focus. */
+  roomId?: string | null;
   /** Session already created by an explicitly accepted coach action. */
   existingSessionId?: string | null;
   /** Enter focus immediately for the accepted coach action. */
@@ -81,6 +83,7 @@ export function useSessionTimer(
     subject = null,
     planTaskId = null,
     planTaskTitle = null,
+    roomId = null,
     existingSessionId = null,
     autoStartExisting = false,
   } = options;
@@ -325,9 +328,11 @@ export function useSessionTimer(
       const trimmedPlanTaskId = planTaskId?.trim()
         ? planTaskId.trim()
         : undefined;
+      const trimmedRoomId = roomId?.trim() ? roomId.trim() : undefined;
       const shared = {
         subject: trimmedSubject,
         ...(trimmedPlanTaskId ? { planTaskId: trimmedPlanTaskId } : {}),
+        ...(trimmedRoomId ? { roomId: trimmedRoomId } : {}),
       };
       const started = await startStudySession(
         preset === "custom"
@@ -346,7 +351,7 @@ export function useSessionTimer(
     } finally {
       setBusy(false);
     }
-  }, [focusMinutes, subject, planTaskId, beginPhase, showSessionError]);
+  }, [focusMinutes, subject, planTaskId, roomId, beginPhase, showSessionError]);
 
   const finalize = useCallback(
     async (status: "COMPLETED" | "ABANDONED") => {
