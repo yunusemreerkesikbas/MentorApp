@@ -32,6 +32,19 @@ export const AUTOSAVE_DELAY_MS = 900;
 
 export const NOTEBOOK_MAX_WIDTH_PX = 1680;
 export const COVER_MAX_WIDTH_PX = 760;
+/**
+ * Overlay chrome above the book. Product z-index scale (impeccable): overlay < rail < ink < panel.
+ * Pagination / due / undo-save sit on the page; the rail and panel float over it.
+ */
+export const NOTEBOOK_Z = {
+  overlay: 20,
+  rail: 30,
+  ink: 35,
+  panel: 40,
+} as const;
+
+/** Same stadium radius as the ink tray (`rounded-[50px]`). */
+export const NOTEBOOK_TRAY_RADIUS_CLASS = "rounded-[50px]";
 /** A single leaf, shown below `MOBILE_QUERY` instead of a two-page spread — the cover's own page
  *  ratio (one page, no gutter), just a tighter pixel ceiling for a phone-sized screen. */
 export const MOBILE_LEAF_MAX_WIDTH_PX = 480;

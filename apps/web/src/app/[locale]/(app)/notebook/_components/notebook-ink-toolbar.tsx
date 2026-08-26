@@ -22,14 +22,15 @@ import {
   type InkToolId,
 } from "@/lib/notebook-ink";
 import { boardChromeTransition } from "../../vision-board/board/_components/board-chrome-motion";
+import { NOTEBOOK_TRAY_RADIUS_CLASS } from "./notebook-shell-layout";
 
 /**
  * The drawing toolbar: a tray of pens that slides sideways to the colour and size strips.
  *
  * Sliding rows rather than stacked panels or popovers. The tray is anchored over the notebook, so
  * anything that grew downward would cover the page you are drawing on and anything that grew
- * upward would cover the page too — sideways is the one direction with nothing behind it. It also
- * means the tray never changes height, so the notebook above it never reflows mid-drawing.
+ * upward would cover the page too — sideways is the one direction with nothing behind it. Strip
+ * switches keep a stable height; hide/show is a clip-reveal to a 44px circle.
  *
  * Dark surface on purpose, and the one place in the app that does not take `--color-surface`: the
  * pens are drawn as physical objects lying on a tray, and a white tray under a white-inked pen
@@ -300,55 +301,9 @@ export function NotebookInkToolbar({
           exit: { opacity: 0, x: -from },
         };
 
-  // Collapse/expand swap through one AnimatePresence so the closing tray shrinks away to nothing
-  // and the opening one grows in from nothing, instead of the two states hard-cutting into each
-  // other. Pure scale, no travel — it reads as the tray itself shrinking/growing, not sliding.
-  const openClose = reduceMotion
-    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
-    : {
-        initial: { opacity: 0, scale: 0 },
-        animate: { opacity: 1, scale: 1 },
-        exit: { opacity: 0, scale: 0 },
-      };
-
-  if (collapsed) {
-    return (
-      <>
-        <div
-          ref={constraintsRef}
-          aria-hidden
-          className="pointer-events-none fixed inset-0"
-        />
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key="collapsed"
-            drag
-            dragMomentum={false}
-            dragElastic={0}
-            dragConstraints={constraintsRef}
-            {...openClose}
-            transition={boardChromeTransition}
-            className="pointer-events-auto flex items-center rounded-full p-1"
-            style={{
-              backgroundColor: TRAY_BG,
-              border: `1px solid ${TRAY_BORDER}`,
-            }}
-          >
-            <button
-              type="button"
-              aria-label={t("show_tools")}
-              title={t("show_tools")}
-              onClick={() => setCollapsed(false)}
-              className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-              style={{ color: CONTROL_FG }}
-            >
-              <InkPenArt tool={tool} color={color} size={34} />
-            </button>
-          </motion.div>
-        </AnimatePresence>
-      </>
-    );
-  }
+  // One tray, clip-reveal: collapsed is a 44px circle; open grows width/height to the strip.
+  // The pen face sits on an opaque disc so the first control cannot leak through the circle.
+  const trayMotion = reduceMotion ? { duration: 0 } : boardChromeTransition;
 
   return (
     <>
@@ -357,23 +312,27 @@ export function NotebookInkToolbar({
         aria-hidden
         className="pointer-events-none fixed inset-0"
       />
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key="expanded"
-          role="toolbar"
-          aria-label={t("toolbar")}
-          drag
-          dragMomentum={false}
-          dragElastic={0}
-          dragConstraints={constraintsRef}
-          {...openClose}
-          transition={boardChromeTransition}
-          className="pointer-events-auto overflow-hidden rounded-[50px]"
-          style={{
-            backgroundColor: TRAY_BG,
-            border: `1px solid ${TRAY_BORDER}`,
-          }}
-        >
+      <motion.div
+        role="toolbar"
+        aria-label={t("toolbar")}
+        drag
+        dragMomentum={false}
+        dragElastic={0}
+        dragConstraints={constraintsRef}
+        initial={false}
+        animate={{
+          width: collapsed ? "2.75rem" : "max-content",
+          height: collapsed ? "2.75rem" : "auto",
+        }}
+        transition={trayMotion}
+        className={`pointer-events-auto relative overflow-hidden ${NOTEBOOK_TRAY_RADIUS_CLASS}`}
+        style={{
+          backgroundColor: TRAY_BG,
+          border: `1px solid ${TRAY_BORDER}`,
+          maxWidth: "min(92vw, 720px)",
+        }}
+      >
+        <div inert={collapsed} aria-hidden={collapsed}>
           <AnimatePresence mode="wait" initial={false}>
             {strip === "tools" ? (
               <motion.div
@@ -611,8 +570,27 @@ export function NotebookInkToolbar({
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>
-      </AnimatePresence>
+        </div>
+        <motion.button
+          type="button"
+          aria-hidden={!collapsed}
+          tabIndex={collapsed ? 0 : -1}
+          aria-label={t("show_tools")}
+          title={t("show_tools")}
+          onClick={() => setCollapsed(false)}
+          initial={false}
+          animate={{ opacity: collapsed ? 1 : 0 }}
+          transition={trayMotion}
+          className="absolute top-0 left-0 z-[1] inline-flex size-11 cursor-pointer items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{
+            color: CONTROL_FG,
+            backgroundColor: TRAY_BG,
+            pointerEvents: collapsed ? "auto" : "none",
+          }}
+        >
+          <InkPenArt tool={tool} color={color} size={34} />
+        </motion.button>
+      </motion.div>
     </>
   );
 }

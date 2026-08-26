@@ -770,3 +770,43 @@ community-header}.tsx}`, `feed/_components/global-composer.tsx`, `messages/{tr,e
   dahil tüm zincir. Gerekçe: kullanıcı adı bilmek ve kabul beklemek, davet kodunun ortadan
   kaldırdığı sürtünmenin ta kendisiydi; aynı işi iki yerde tutmak rolleri yeniden bulandırırdı.
   Detay ve masa tarafı → [coaching](./coaching.md).
+
+- **Yol arkadaşı önerileri artık birlikte çalışmaya dayanıyor (2026-08-26)** — Öneri listesi
+  `suggestCohortPeers` ile kuruluyordu: *aynı `examType` + ACTIVE + username var → `ORDER BY
+  created_at DESC LIMIT 5`*. Yani "seninle aynı sınava giren **en son kaydolmuş 5 kişi**" —
+  ortak geçmiş, aktiflik, ritim yok; soğuk arama listesi. Yerine **gerçekten birlikte çalıştığın
+  kişiler** geldi: aynı masada, **çakışan zaman aralığında** seans yapmış olanlar, birlikte seans
+  sayısına göre sıralı, son 60 gün.
+
+  Bu sinyal masa özelliğinin ürünü: `study_sessions.room_id` olmadan kimin kiminle çalıştığı
+  bilinemiyordu. Sorgu `study_sessions` üzerinde tek self-join
+  (`StudySessionRepository.listCoWorkers`). **`count(distinct mine.id)`** kullanılıyor — join
+  satırı değil: karşı taraf senin bir seansın boyunca üç pomodoro yaptıysa bu bir ortak seanstır,
+  üç değil.
+
+  **Kompozisyon `community`'de:** sıralama sinyali `coaching`'de, uygunluk `identity`'de; ikisini
+  birden okuyabilen tek yer burası. `BuddyService.getSuggestionCandidates` (kohort taraması) yerini
+  `filterEligibleCandidates(viewerId, ids)` aldı — identity artık **uygunluğa** karar veriyor,
+  **sıralamaya** değil; gelen sıra korunuyor. `suggestCohortPeers` **silinmedi**: forum kullanıyor.
+
+  **İstek/onay mekanizması bilerek korundu.** Sorun "istek göndermek" değil, listede tanımadığın
+  birinin olmasıydı; buddy karşılıklı rızaya dayanan bir hesap verebilirlik ilişkisi (§4 güven
+  çizgisi) ve dört kez birlikte çalıştığın birine istek atmak zaten doğal.
+
+  **Gotcha — agregat timestamp'i drizzle dönüştürmez.** `max(started_at)` ham bir `sql` parçası
+  olduğu için sütun mapper'ı uygulanmıyor; node-postgres **string** döndürüyor, `sql<Date>`
+  bildirimi yalan oluyordu ve servisteki `.toISOString()` 500 veriyordu. Repository artık dönüşü
+  `new Date(...)` ile normalize ediyor. Unit testler yakalayamazdı (repo mock'u gerçek `Date`
+  veriyordu) — **e2e yakaladı**.
+
+  **UI:** kartta `@handle` kalktı (kimse artık yazmıyor), yerine **öneri gerekçesi** geldi
+  ("4 kez birlikte çalıştınız"). Satır iki katmana ayrıldı: 288px kenar çubuğunda avatar + isim +
+  handle + buton aynı satırda isme ~96px bırakıyor ve neredeyse herkesi kırpıyordu; şimdi 173px ve
+  kırpma yok. Öneri sayısı 5 → **3** (liste artık sıcak). Ortak geçmiş yoksa `/topluluk` linki
+  yerine **"önce bir masaya otur"** metni — masa, yol arkadaşlığının giriş kapısı.
+
+  İlgili: `study-session.repository.ts` (`listCoWorkers`), `session.service.ts`
+  (`listRecentCoWorkers`), `buddy-view.service.ts`, `buddy.service.ts`
+  (`filterEligibleCandidates`), `users.repository.ts` (`listPublicByIds`), `buddy.controller.ts`,
+  `packages/types` (`BuddySuggestionRef`), `session-buddy-card.tsx`, `lib/buddy.ts`,
+  `messages/{tr,en}.json`, `study-rooms.e2e-spec.ts`.

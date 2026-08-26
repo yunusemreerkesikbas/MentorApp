@@ -1,12 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
-import { ArrowLeft, Copy, RefreshCw } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { ArrowLeft, Check, Copy, MoreHorizontal, RefreshCw, X } from "lucide-react";
 import type { StudyRoomDetailDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Card } from "@mentor/ui";
-import { useLocale } from "next-intl";
 import { Link, getPathname, useRouter } from "@/i18n/navigation";
 import {
   closeStudyRoom,
@@ -18,7 +16,7 @@ import { useMentorToast } from "@/lib/mentor-toast";
 import { RoomBackdrop } from "./room-backdrop";
 import { RoomSeats } from "./room-seats";
 
-/** Presence poll. Matches the room list; cheap because the API answers it in one indexed query. */
+/** Presence poll. Cheap because the API answers it in one indexed query. */
 const REFRESH_MS = 30_000;
 
 type State =
@@ -27,11 +25,16 @@ type State =
   | { status: "ready"; room: StudyRoomDetailDto };
 
 /**
- * The shared table: the themed ground, the seats around it with live "who is focusing" state,
- * and the owner's invite code.
+ * The room, as a place rather than a card: the themed stage fills the content area and the
+ * controls float over it. The app nav stays put — you can leave the table without leaving the
+ * app, which is why this is not a `fixed inset-0` overlay like focus mode.
  *
- * The Pomodoro itself is untouched — starting work at the table hands off to the session screen
- * with `?room=`, so there is exactly one timer implementation in the app.
+ * Hierarchy is deliberate. One primary action ("sit down here"); inviting lives on the empty
+ * chairs where the gap actually is; destructive actions hide in an overflow menu. The old
+ * layout gave a once-per-room invite card more visual weight than the thing people came for.
+ *
+ * The Pomodoro is untouched — sitting down hands off to the session screen with `?room=`, so
+ * there is exactly one timer implementation in the app.
  */
 export function RoomShell({ roomId }: { roomId: string }) {
   const t = useTranslations("session_room");
@@ -40,6 +43,8 @@ export function RoomShell({ roomId }: { roomId: string }) {
   const { error: showErrorToast, success: showSuccessToast } = useMentorToast();
   const [state, setState] = useState<State>({ status: "loading" });
   const [busy, setBusy] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [confirming, setConfirming] = useState<"leave" | "close" | null>(null);
 
   const load = useCallback(() => {
@@ -83,8 +88,7 @@ export function RoomShell({ roomId }: { roomId: string }) {
 
   /**
    * A link, not a bare code: pasted into a chat it works for someone who has never opened the
-   * app (sign-up happens on the way, and they land at this table afterwards). Built through
-   * `getPathname` so the shared URL is already in the reader's locale.
+   * app. Built through `getPathname` so the shared URL is already in the reader's locale.
    */
   const inviteLink = (code: string) =>
     `${window.location.origin}${getPathname({ href: { pathname: "/join-room", query: { kod: code } }, locale })}`;
@@ -113,186 +117,313 @@ export function RoomShell({ roomId }: { roomId: string }) {
 
   const { room } = state;
   const isOwner = room.role === "OWNER";
+  const seatedSubjects = room.seats
+    .filter((s) => s.isSeated && s.subject)
+    .map((s) => s.subject!)
+    .slice(0, 3);
 
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-col gap-5 px-5 py-6 lg:py-10">
-      <BackLink label={t("back_to_session")} />
+    <main
+      className="room-stage relative flex min-h-screen flex-col overflow-hidden"
+      data-room-theme={room.theme}
+    >
+      <RoomBackdrop theme={room.theme} />
 
-      <header className="flex flex-col gap-1">
-        <h1
-          className="text-xl font-bold"
-          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-        >
-          {room.name}
-        </h1>
-        <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-          {t("theme_" + room.theme)} ·{" "}
-          {t("seats", { filled: room.memberCount, capacity: room.capacity })}
-        </p>
-      </header>
+      {/* --- floating chrome --------------------------------------------------- */}
+      <div className="relative z-10 flex items-start justify-between gap-3 px-5 pt-5 lg:px-8">
+        <BackLink label={t("back_to_session")} onStage />
 
-      {/* The room itself: themed ground, with the table and its seats laid over it in DOM. */}
-      <div
-        className="relative overflow-hidden rounded-[var(--radius-card)]"
-        style={{ boxShadow: "var(--shadow-card)" }}
-      >
-        <RoomBackdrop theme={room.theme} />
-        <div className="relative px-4 py-5">
-          <RoomSeats seats={room.seats} capacity={room.capacity} theme={room.theme} />
-          <p
-            className="mt-2 text-center text-sm font-semibold"
-            style={{ color: "var(--color-secondary)" }}
+        <div className="min-w-0 flex-1 text-center">
+          <h1
+            className="truncate text-lg font-bold lg:text-xl"
+            style={{ color: "var(--room-ink)", fontFamily: "var(--font-heading)" }}
           >
-            {room.activeCount > 0
-              ? t("working_count", { count: room.activeCount })
-              : t("nobody_working")}
+            {room.name}
+          </h1>
+          {/* Live status as the subtitle — presence is the reason to be here, not a footnote. */}
+          <p
+            className="mt-0.5 flex items-center justify-center gap-1.5 text-sm"
+            style={{ color: "var(--room-ink-soft)" }}
+          >
+            {room.activeCount > 0 ? (
+              <>
+                <span
+                  aria-hidden
+                  className="size-2 rounded-full"
+                  style={{ backgroundColor: "var(--room-accent)" }}
+                />
+                <span className="truncate font-semibold" style={{ color: "var(--room-ink)" }}>
+                  {t("working_count", { count: room.activeCount })}
+                </span>
+                {seatedSubjects.length > 0 ? (
+                  <span className="hidden truncate sm:inline">· {seatedSubjects.join(", ")}</span>
+                ) : null}
+              </>
+            ) : (
+              <span className="truncate">{t("nobody_working")}</span>
+            )}
           </p>
         </div>
+
+        <RoomMenu
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          label={t("room_menu")}
+          items={[
+            isOwner && room.inviteCode
+              ? { key: "invite", label: t("invite_title"), onSelect: () => setInviteOpen(true) }
+              : null,
+            isOwner
+              ? {
+                  key: "close",
+                  label: confirming === "close" ? t("close_confirm") : t("close_room"),
+                  destructive: true,
+                  onSelect: () =>
+                    confirming === "close"
+                      ? void run(() => closeStudyRoom(room.id)).then(
+                          (ok) => ok && router.replace("/study-session"),
+                        )
+                      : setConfirming("close"),
+                }
+              : {
+                  key: "leave",
+                  label: confirming === "leave" ? t("leave_confirm") : t("leave"),
+                  destructive: true,
+                  onSelect: () =>
+                    confirming === "leave"
+                      ? void run(() => leaveStudyRoom(room.id)).then(
+                          (ok) => ok && router.replace("/study-session"),
+                        )
+                      : setConfirming("leave"),
+                },
+          ]}
+        />
       </div>
 
-      <Link
-        href={{ pathname: "/study-session", query: { room: room.id } }}
-        className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] text-sm font-semibold"
-        style={{ backgroundColor: "var(--color-progress)", color: "var(--color-bg)" }}
-      >
-        {t("start_here")}
-      </Link>
+      {/* --- the room --------------------------------------------------------- */}
+      <div className="relative z-10 flex flex-1 items-center justify-center px-5 py-4">
+        <RoomSeats
+          seats={room.seats}
+          capacity={room.capacity}
+          onInvite={isOwner && room.inviteCode ? () => setInviteOpen(true) : undefined}
+        />
+      </div>
 
-      {isOwner && room.inviteCode ? (
-        <Card className="flex flex-col gap-3 px-4 py-4">
-          <span
-            className="text-[11px] font-semibold uppercase tracking-wide"
-            style={{ color: "var(--color-secondary)" }}
-          >
-            {t("invite_title")}
-          </span>
-          <div className="flex items-center gap-2">
-            <code
-              className="min-w-0 flex-1 truncate rounded-[var(--radius-card)] px-3 py-2 text-sm font-bold tracking-wider"
-              style={{
-                backgroundColor: "var(--color-surface-container)",
-                color: "var(--color-main)",
-              }}
-            >
-              {room.inviteCode}
-            </code>
-            <IconAction
-              label={t("invite_copy_link")}
-              onClick={() => void copyLink(room.inviteCode!)}
-              icon={<Copy className="size-4" strokeWidth={2.25} aria-hidden />}
-            />
-            <IconAction
-              label={t("invite_rotate")}
-              disabled={busy}
-              onClick={() =>
-                void run(async () => {
-                  const updated = await rotateStudyRoomCode(room.id);
-                  setState({ status: "ready", room: updated });
-                }, t("invite_rotated"))
-              }
-              icon={<RefreshCw className="size-4" strokeWidth={2.25} aria-hidden />}
-            />
-          </div>
-          <p className="text-xs leading-relaxed" style={{ color: "var(--color-secondary)" }}>
-            {t("invite_hint")}
-          </p>
-        </Card>
+      {/* --- one primary action ------------------------------------------------ */}
+      <div className="relative z-10 flex justify-center px-5 pb-8 lg:pb-10">
+        <Link
+          href={{ pathname: "/study-session", query: { room: room.id } }}
+          className="flex min-h-[3.25rem] w-full max-w-sm items-center justify-center rounded-full px-6 text-base font-bold shadow-[var(--shadow-card)] transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--room-accent)] motion-reduce:transition-none motion-reduce:hover:scale-100"
+          style={{ backgroundColor: "var(--room-accent)", color: "var(--room-ground-to)" }}
+        >
+          {t("start_here")}
+        </Link>
+      </div>
+
+      {inviteOpen && room.inviteCode ? (
+        <InviteSheet
+          code={room.inviteCode}
+          busy={busy}
+          onClose={() => setInviteOpen(false)}
+          onCopy={() => void copyLink(room.inviteCode!)}
+          onRotate={() =>
+            void run(async () => {
+              const updated = await rotateStudyRoomCode(room.id);
+              setState({ status: "ready", room: updated });
+            }, t("invite_rotated"))
+          }
+        />
       ) : null}
-
-      <div className="flex justify-center">
-        {isOwner ? (
-          confirming === "close" ? (
-            <TextAction
-              label={t("close_confirm")}
-              tone="accent"
-              disabled={busy}
-              onClick={() =>
-                void run(() => closeStudyRoom(room.id)).then(
-                  (ok) => ok && router.replace("/study-session"),
-                )
-              }
-            />
-          ) : (
-            <TextAction label={t("close_room")} onClick={() => setConfirming("close")} />
-          )
-        ) : confirming === "leave" ? (
-          <TextAction
-            label={t("leave_confirm")}
-            tone="accent"
-            disabled={busy}
-            onClick={() =>
-              void run(() => leaveStudyRoom(room.id)).then(
-                (ok) => ok && router.replace("/study-session"),
-              )
-            }
-          />
-        ) : (
-          <TextAction label={t("leave")} onClick={() => setConfirming("leave")} />
-        )}
-      </div>
     </main>
   );
 }
 
-function BackLink({ label }: { label: string }) {
+function BackLink({ label, onStage }: { label: string; onStage?: boolean }) {
   return (
     <Link
       href="/study-session"
-      className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold"
-      style={{ color: "var(--color-secondary)" }}
+      aria-label={label}
+      title={label}
+      className="inline-flex size-11 shrink-0 items-center justify-center rounded-full transition-opacity duration-200 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+      style={
+        onStage
+          ? {
+              backgroundColor: "var(--room-scrim)",
+              color: "var(--room-ink)",
+              opacity: 0.85,
+            }
+          : { color: "var(--color-secondary)" }
+      }
     >
-      <ArrowLeft className="size-4" strokeWidth={2.25} aria-hidden />
-      {label}
+      <ArrowLeft className="size-5" strokeWidth={2.25} aria-hidden />
     </Link>
   );
 }
 
-function IconAction({
-  label,
-  icon,
-  onClick,
-  disabled,
-}: {
+interface MenuItem {
+  key: string;
   label: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
+  onSelect: () => void;
+  destructive?: boolean;
+}
+
+/** Destructive room actions, out of the way. Closing a table should take intent, not a stray tap. */
+function RoomMenu({
+  open,
+  onOpenChange,
+  label,
+  items,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  label: string;
+  items: (MenuItem | null | false)[];
 }) {
+  const visible = items.filter((i): i is MenuItem => Boolean(i));
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      disabled={disabled}
-      onClick={onClick}
-      className="inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] disabled:opacity-50"
-      style={{ backgroundColor: "var(--color-surface-container)", color: "var(--color-main)" }}
-    >
-      {icon}
-    </button>
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        aria-label={label}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => onOpenChange(!open)}
+        className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full transition-opacity duration-200 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+        style={{ backgroundColor: "var(--room-scrim)", color: "var(--room-ink)", opacity: 0.85 }}
+      >
+        <MoreHorizontal className="size-5" strokeWidth={2.25} aria-hidden />
+      </button>
+      {open ? (
+        <>
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            className="fixed inset-0 z-10 cursor-default"
+            onClick={() => onOpenChange(false)}
+          />
+          <div
+            role="menu"
+            className="absolute right-0 z-20 mt-2 min-w-[12rem] overflow-hidden rounded-[var(--radius-card)] shadow-[var(--shadow-card-hover)]"
+            style={{ backgroundColor: "var(--color-surface)" }}
+          >
+            {visible.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  item.onSelect();
+                  if (!item.destructive) onOpenChange(false);
+                }}
+                className="block min-h-11 w-full cursor-pointer px-4 text-left text-sm font-semibold transition-colors duration-200 hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] motion-reduce:transition-none"
+                style={{ color: item.destructive ? "var(--color-danger)" : "var(--color-main)" }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
+    </div>
   );
 }
 
-function TextAction({
-  label,
-  onClick,
-  tone = "quiet",
-  disabled,
+/** Invite, on demand. It is a once-per-room job, so it does not get a permanent slot. */
+function InviteSheet({
+  code,
+  busy,
+  onClose,
+  onCopy,
+  onRotate,
 }: {
-  label: string;
-  onClick: () => void;
-  tone?: "accent" | "quiet";
-  disabled?: boolean;
+  code: string;
+  busy: boolean;
+  onClose: () => void;
+  onCopy: () => void;
+  onRotate: () => void;
 }) {
+  const t = useTranslations("session_room");
+  const [copied, setCopied] = useState(false);
+
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className="min-h-11 cursor-pointer text-sm font-semibold disabled:opacity-50"
-      style={{ color: tone === "accent" ? "var(--color-progress)" : "var(--color-secondary)" }}
-    >
-      {label}
-    </button>
+    <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center">
+      <button
+        type="button"
+        aria-label={t("cancel")}
+        className="absolute inset-0 cursor-default"
+        style={{ backgroundColor: "color-mix(in srgb, #000 45%, transparent)" }}
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("invite_title")}
+        className="relative m-4 w-full max-w-md rounded-[var(--radius-card)] p-5 shadow-[var(--shadow-card-hover)]"
+        style={{ backgroundColor: "var(--color-surface)" }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <h2
+            className="text-base font-bold"
+            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+          >
+            {t("invite_title")}
+          </h2>
+          <button
+            type="button"
+            aria-label={t("cancel")}
+            onClick={onClose}
+            className="inline-flex size-9 cursor-pointer items-center justify-center rounded-full"
+            style={{ color: "var(--color-secondary)" }}
+          >
+            <X className="size-4" strokeWidth={2.25} aria-hidden />
+          </button>
+        </div>
+
+        <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--color-secondary)" }}>
+          {t("invite_hint")}
+        </p>
+
+        <code
+          className="mt-4 block truncate rounded-[var(--radius-card)] px-3 py-3 text-center text-lg font-bold tracking-[0.2em]"
+          style={{ backgroundColor: "var(--color-surface-container)", color: "var(--color-main)" }}
+        >
+          {code}
+        </code>
+
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              onCopy();
+              setCopied(true);
+            }}
+            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-card)] text-sm font-bold"
+            style={{ backgroundColor: "var(--color-progress)", color: "var(--color-bg)" }}
+          >
+            {copied ? (
+              <Check className="size-4" strokeWidth={2.5} aria-hidden />
+            ) : (
+              <Copy className="size-4" strokeWidth={2.25} aria-hidden />
+            )}
+            {copied ? t("invite_copied") : t("invite_copy_link")}
+          </button>
+          <button
+            type="button"
+            aria-label={t("invite_rotate")}
+            title={t("invite_rotate")}
+            disabled={busy}
+            onClick={() => {
+              setCopied(false);
+              onRotate();
+            }}
+            className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] disabled:opacity-50"
+            style={{ backgroundColor: "var(--color-surface-container)", color: "var(--color-main)" }}
+          >
+            <RefreshCw className="size-4" strokeWidth={2.25} aria-hidden />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

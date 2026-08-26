@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { authShellNav, isAuthPath } from "./auth-paths";
+import { authShellShowsBack, isAuthPath } from "./auth-paths";
 
 describe("isAuthPath", () => {
   it("matches auth route group pathnames", () => {
@@ -14,24 +14,15 @@ describe("isAuthPath", () => {
   });
 });
 
-describe("authShellNav", () => {
-  it("has no header icon on login and signup", () => {
-    expect(authShellNav("/login")).toEqual({ href: "/", icon: "none" });
-    expect(authShellNav("/signup")).toEqual({ href: "/", icon: "none" });
+describe("authShellShowsBack", () => {
+  it("hides the header on login and signup", () => {
+    expect(authShellShowsBack("/login")).toBe(false);
+    expect(authShellShowsBack("/signup")).toBe(false);
   });
 
-  it("returns nested auth screens to login", () => {
-    expect(authShellNav("/forgot-password")).toEqual({
-      href: "/login",
-      icon: "chevron",
-    });
-    expect(authShellNav("/reset-password")).toEqual({
-      href: "/login",
-      icon: "chevron",
-    });
-    expect(authShellNav("/verify-email")).toEqual({
-      href: "/login",
-      icon: "chevron",
-    });
+  it("shows a back control on nested auth screens", () => {
+    expect(authShellShowsBack("/forgot-password")).toBe(true);
+    expect(authShellShowsBack("/reset-password")).toBe(true);
+    expect(authShellShowsBack("/verify-email")).toBe(true);
   });
 });

@@ -77,7 +77,6 @@ export default function SignupPage() {
         label={translate("name")}
         name="displayName"
         autoComplete="name"
-        autoFocus
         required
         minLength={2}
       />

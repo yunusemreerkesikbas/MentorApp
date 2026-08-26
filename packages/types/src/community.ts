@@ -232,6 +232,16 @@ export interface BuddyUserRef {
   avatarUrl: string | null;
 }
 
+/**
+ * A suggested buddy: someone the viewer has actually sat at a study room with. The counters are
+ * the reason the suggestion exists, and the card shows them instead of a handle — "4 kez birlikte
+ * çalıştınız" earns the request in a way "@someone, same exam" never did.
+ */
+export interface BuddySuggestionRef extends BuddyUserRef {
+  sessionsTogether: number;
+  lastTogetherAt: string; // ISO
+}
+
 /** An incoming/outgoing pending buddy request. */
 export interface BuddyRequestRef {
   id: string;

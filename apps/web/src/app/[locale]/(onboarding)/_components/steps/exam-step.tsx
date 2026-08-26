@@ -29,14 +29,10 @@ export function ExamStep({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const EXAM_OPTIONS: {
-    value: ExamType;
-    label: string;
-    description: string;
-  }[] = [
-    { value: "KPSS", label: "KPSS", description: examCopy("kpss_desc") },
-    { value: "YKS", label: "YKS", description: examCopy("yks_desc") },
-    { value: "LGS", label: "LGS", description: examCopy("lgs_desc") },
+  const EXAM_OPTIONS: { value: ExamType; label: string }[] = [
+    { value: "KPSS", label: "KPSS" },
+    { value: "YKS", label: "YKS" },
+    { value: "LGS", label: "LGS" },
   ];
 
   // Only KPSS splits, and the split is not optional: the three guides sit on different dates and
@@ -75,7 +71,6 @@ export function ExamStep({
       step={1}
       mascot="default"
       title={t("title")}
-      subtitle={t("subtitle")}
       onBack={onBack}
       primaryLabel={t("continue")}
       onPrimary={() => void handleContinue()}
@@ -92,7 +87,6 @@ export function ExamStep({
           <OptionButton
             key={opt.value}
             label={opt.label}
-            description={opt.description}
             active={selected === opt.value}
             disabled={saving}
             reduceMotion={Boolean(reduceMotion)}
@@ -115,7 +109,6 @@ export function ExamStep({
               <OptionButton
                 key={value}
                 label={examCopy(`variant.${value}`)}
-                description={examCopy(`variant_desc.${value}`)}
                 active={variant === value}
                 disabled={saving}
                 reduceMotion={Boolean(reduceMotion)}
@@ -132,14 +125,12 @@ export function ExamStep({
 /** Shared radio tile — the family and the KPSS level are the same choice at two depths. */
 function OptionButton({
   label,
-  description,
   active,
   disabled,
   reduceMotion,
   onClick,
 }: {
   label: string;
-  description: string;
   active: boolean;
   disabled: boolean;
   reduceMotion: boolean;
@@ -166,14 +157,9 @@ function OptionButton({
       }
       transition={{ duration: 0.2 }}
     >
-      <div className="flex flex-col gap-0.5">
-        <span className="text-base font-bold" style={{ color: "var(--color-main)" }}>
-          {label}
-        </span>
-        <span className="text-sm" style={{ color: "var(--color-secondary)" }}>
-          {description}
-        </span>
-      </div>
+      <span className="text-base font-bold" style={{ color: "var(--color-main)" }}>
+        {label}
+      </span>
       {active ? (
         <span
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-[var(--color-btn-label)]"

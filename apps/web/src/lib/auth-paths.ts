@@ -13,12 +13,7 @@ export function isAuthPath(pathname: string): boolean {
   return AUTH_PATH_SET.has(pathname);
 }
 
-export function authShellNav(pathname: string): {
-  href: "/" | "/login";
-  icon: "chevron" | "none";
-} {
-  if (pathname === "/login" || pathname === "/signup") {
-    return { href: "/", icon: "none" };
-  }
-  return { href: "/login", icon: "chevron" };
+/** Login/signup have no header control; nested auth screens go back to login. */
+export function authShellShowsBack(pathname: string): boolean {
+  return pathname !== "/login" && pathname !== "/signup";
 }

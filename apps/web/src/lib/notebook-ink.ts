@@ -8,7 +8,7 @@ import type { NotebookInkStroke, NotebookInkTool } from "@mentor/types";
  * `src/**\/*.spec.ts` in a Node environment, so this is the layer that can actually be tested.
  * The pointer plumbing lives in `use-ink-draw.ts` and the rendering in `notebook-ink-layer.tsx`.
  *
- * Coordinates throughout are the notebook page's own 1080×1440 design space, never screen px.
+ * Coordinates throughout are the notebook page's own 1080×1527 A4 design space, never screen px.
  */
 
 /** `[x, y, pressure]` per sample — see `NotebookInkStroke` for why the stored array is flat. */

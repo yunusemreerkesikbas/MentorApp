@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { useEffect, type ReactNode } from "react";
 import { AppNav } from "@/components/app-nav";
-import { isBoardEditorPath, isCommunityPath } from "@/lib/app-sidebar";
+import { hidesMobileAppChrome } from "@/lib/app-sidebar";
 import { MOBILE_TAB_BAR_PADDING_CLASS } from "@/lib/app-shell";
 import { useAuth } from "@/lib/auth-context";
 import { NotificationDrawerShell } from "@/lib/notification-drawer-shell";
@@ -23,9 +23,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const t = useTranslations("panel");
-  const isCommunityWorkspace = isCommunityPath(pathname);
-  const isBoardEditorWorkspace = isBoardEditorPath(pathname);
-  const hideMobileTabOffset = isCommunityWorkspace || isBoardEditorWorkspace;
+  const hideMobileTabOffset = hidesMobileAppChrome(pathname);
 
   useEffect(() => {
     if (status === "anonymous") router.replace("/login");

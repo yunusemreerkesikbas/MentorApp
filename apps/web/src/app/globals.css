@@ -352,37 +352,29 @@ html.mentor-sheet-open {
   animation: sheet-exit 240ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
-/* Auth sheet — viewport travel only (not % of self). Blur/opacity made it look
-   like it scaled up while height was still settling. */
+/* Auth sheet — slide by measured height; transition starts only after travel is set. */
 .auth-sheet {
-  --panel-open-dur: 680ms;
-  --panel-close-dur: 420ms;
-  --panel-ease: cubic-bezier(0.25, 0.82, 0.32, 1);
+  --auth-sheet-travel: 100vh;
+  --auth-sheet-open-dur: 680ms;
+  --auth-sheet-close-dur: 420ms;
+  --auth-sheet-ease: cubic-bezier(0.25, 0.82, 0.32, 1);
   width: 100%;
-  transform-origin: bottom center;
-  backface-visibility: hidden;
-  will-change: transform;
+  transform: translate3d(0, var(--auth-sheet-travel), 0);
 }
-.auth-sheet[data-open="true"] {
-  animation: auth-sheet-enter var(--panel-open-dur) var(--panel-ease) both;
+.auth-sheet[data-animated="true"][data-open="true"] {
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--auth-sheet-open-dur) var(--auth-sheet-ease);
 }
-.auth-sheet[data-open="false"] {
-  animation: auth-sheet-leave var(--panel-close-dur) var(--panel-ease) both;
-}
-@keyframes auth-sheet-enter {
-  from { transform: translate3d(0, 100dvh, 0); }
-  to { transform: translate3d(0, 0, 0); }
-}
-@keyframes auth-sheet-leave {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(0, 100dvh, 0); }
+.auth-sheet[data-animated="true"][data-open="false"] {
+  transform: translate3d(0, var(--auth-sheet-travel), 0);
+  transition: transform var(--auth-sheet-close-dur) var(--auth-sheet-ease);
 }
 @media (prefers-reduced-motion: reduce) {
   .auth-sheet,
-  .auth-sheet[data-open="true"],
-  .auth-sheet[data-open="false"] {
-    animation: none !important;
-    transform: none;
+  .auth-sheet[data-animated="true"][data-open="true"],
+  .auth-sheet[data-animated="true"][data-open="false"] {
+    transform: none !important;
+    transition: none !important;
   }
 }
 

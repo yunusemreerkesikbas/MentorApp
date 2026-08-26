@@ -125,6 +125,12 @@ http://localhost:3000/panel               # daily ritual hub
   the collage editor from `/hedef`. Related: `layout.tsx`, `app-nav.tsx`,
   `app-sidebar.ts`.
 
+- **Notebook keeps mobile app chrome (2026-08-26)** — `/yanlis-defteri` is not
+  `hidesMobileAppChrome`; header + tab bar stay. Collage editor and community
+  still replace them. Pen FAB stays at the top with due/save under it; pager
+  uses the gap above the tab bar. Related: `app-nav.tsx`, `app-sidebar.ts`,
+  `layout.tsx`, `notebook-shell.tsx`.
+
 - **Vision-board token pass (2026-08-15)** — `/hedef` map chrome + `/hedef/pano` editor
   chrome follow `--color-surface` / `--color-btn-label`. Canvas stays collage-native.
   Related: `docs/features/coaching.md`.
@@ -167,9 +173,9 @@ http://localhost:3000/panel               # daily ritual hub
   next to the language switch; rail uses surface/border tokens and a 200ms color transition
   (`motion-reduce` instant). Usage: desktop sidebar → moon/sun; reload keeps the choice. Gotcha:
   community keeps collapsed `AppNav` (theme lamp stays on the rail); mobile
-  `(app)` header now has the same moon/sun; `/ayarlar` has appearance pills;
-  `/giris` / `/kayit` / `/onboarding` have card/step-header toggles. Related:
-  `apps/web/src/lib/theme.ts`, `use-theme.ts`, `theme-toggle.tsx`, `app-nav.tsx`,
+  `(app)` header now has the same moon/sun; `/ayarlar` has appearance pills.
+  Auth and onboarding headers no longer toggle theme. Related:
+  `apps/web/src/lib/theme.ts`, `use-theme.ts`, `app-nav.tsx`,
   `packages/ui/src/theme.css`, `DESIGN.md` §2.5.
 
 - **Chrome typography → Plus Jakarta Sans (2026-08-10)** — App chrome heading/body family
@@ -447,8 +453,8 @@ http://localhost:3000/panel               # daily ritual hub
   Puhu'nun kutusudur (`sceneRef`), dock'un değil.
   Boşta 4–7 sn'de bir kırpar; kırpmanın bir kısmı rastgele sağa/sola bakış taşır. Sekme gizliyken
   kırpma yeniden kuyruğa alınır, hiçbir şey ekran dışında oynamaz. **Kullanım:** `<ThemeLamp variant="rail" />` (52px dar sidebar, yalnız lamba)
-  ve `<ThemeLampFooter>` (açık panel, Puhu + bakış alanı tüm footer); diğer dört toggle noktası sade
-  `ThemeToggle` ile kaldı (auth/onboarding). Mobil `(app)` başlığı `MobileThemeLamp`
+  ve `<ThemeLampFooter>` (açık panel, Puhu + bakış alanı tüm footer); sade `ThemeToggle`
+  auth/onboarding’den kalktı — tema Ayarlar → Görünüm ve sidebar/mobil lambada. Mobil `(app)` başlığı `MobileThemeLamp`
   kullanır: in-flow slot `size-11` (eski güneş/ay ile aynı), sahne header'ın üst kenarına
   hizalanır — abajur 64px barın içinde, Puhu (~48px) alt kenardan içeri sarkar. Dokunma
   hover yerine geçer: basılı tutunca kanat kalkar, bırakınca ip çekilir. Idle kırpma/bakış

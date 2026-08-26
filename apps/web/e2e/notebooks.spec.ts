@@ -231,7 +231,8 @@ test("koleksiyondan ders defteri oluşturulur, serbest editör açılır ve deft
   );
   await page.getByRole("button", { name: "Yeni defter" }).click();
   await page.getByLabel("Defter adı").fill("Matematik Notlarım");
-  await page.getByLabel("Ders (isteğe bağlı)").selectOption("matematik");
+  await page.getByLabel("Ders (isteğe bağlı)").click();
+  await page.getByRole("option", { name: "Matematik" }).click();
   await page.getByRole("button", { name: "Kaydet" }).click();
 
   await expect(page).toHaveURL(new RegExp(`/defterlerim/${CUSTOM_ID}$`));

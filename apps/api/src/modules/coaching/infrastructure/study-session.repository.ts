@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { and, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { DatabaseTx } from "../../../database/drizzle";
 import { planTasks, studySessions } from "../../../database/schema";
 import { StudySessionStatus } from "../domain/coaching.constants";
@@ -34,6 +35,14 @@ export interface RecentSummaryRow {
   count7d: number;
   focusSeconds7d: number;
   recentRows: { subject: string | null; struggleNote: string | null }[];
+}
+
+/** Someone the user has actually shared a table with (see {@link StudySessionRepository.listCoWorkers}). */
+export interface CoWorkerRow {
+  userId: string;
+  /** How many of the VIEWER's sessions this person overlapped — "kaç kez birlikte çalıştınız". */
+  sessionsTogether: number;
+  lastTogetherAt: Date;
 }
 
 /** One seated member of a room (see {@link StudySessionRepository.findRunningByRooms}). */
@@ -367,6 +376,57 @@ export class StudySessionRepository {
       })
       .from(studySessions)
       .where(and(inArray(studySessions.roomId, roomIds), runningNow(graceMinutes)));
+  }
+
+  /**
+   * People the user has genuinely co-worked with: seated at the same room over an overlapping
+   * stretch of time. This is the signal study rooms created — before `study_sessions.room_id`
+   * there was no way to know who anyone had actually studied alongside.
+   *
+   * Counts DISTINCT sessions of the viewer's, not join rows: a partner who ran three Pomodoros
+   * across one of your sessions shared one session with you, not three.
+   *
+   * Cross-user by nature, so callers run it in SERVICE context.
+   */
+  async listCoWorkers(
+    tx: DatabaseTx,
+    userId: string,
+    sinceDays: number,
+    limit: number,
+  ): Promise<CoWorkerRow[]> {
+    const mine = alias(studySessions, "mine");
+    const theirs = alias(studySessions, "theirs");
+    const sessionsTogether = sql<number>`count(distinct ${mine.id})::int`;
+    // Typed as the driver actually returns it: an aggregate is a raw fragment, so drizzle does
+    // not apply the timestamp column mapper and node-postgres hands back a string. Normalised
+    // to a Date below so callers never have to know that.
+    const lastTogetherAt = sql<string | Date>`max(${theirs.startedAt})`;
+
+    const rows = await tx
+      .select({ userId: theirs.userId, sessionsTogether, lastTogetherAt })
+      .from(mine)
+      .innerJoin(
+        theirs,
+        and(
+          eq(theirs.roomId, mine.roomId),
+          ne(theirs.userId, mine.userId),
+          // Open sessions count as running up to now, so someone at the table right now counts.
+          sql`${theirs.startedAt} < coalesce(${mine.endedAt}, now())`,
+          sql`${mine.startedAt} < coalesce(${theirs.endedAt}, now())`,
+        ),
+      )
+      .where(
+        and(
+          eq(mine.userId, userId),
+          isNotNull(mine.roomId),
+          sql`${mine.startedAt} > now() - ${sinceDays} * interval '1 day'`,
+        ),
+      )
+      .groupBy(theirs.userId)
+      .orderBy(desc(sessionsTogether), desc(lastTogetherAt))
+      .limit(limit);
+
+    return rows.map((row) => ({ ...row, lastTogetherAt: new Date(row.lastTogetherAt) }));
   }
 
   async countCompleted(tx: DatabaseTx, userId: string, minFocusSeconds: number): Promise<number> {

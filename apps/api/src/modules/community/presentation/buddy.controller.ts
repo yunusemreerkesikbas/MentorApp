@@ -1,13 +1,17 @@
 import { Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { BuddyUserRef, BuddyViewDto } from "@mentor/types";
+import type { BuddySuggestionRef, BuddyUserRef, BuddyViewDto } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { BuddyService } from "../../identity/application/buddy.service";
 import { BuddyViewService } from "../application/buddy-view.service";
 
-/** How many buddy suggestions the /study-session empty-state list requests. */
-const BUDDY_SUGGESTION_LIMIT = 5;
+/**
+ * How many buddy suggestions the /study-session empty-state list requests. Three, not five:
+ * the list is now people you have actually studied with, so it is short by nature — and three
+ * rows fit the sidebar column without truncating anyone's name.
+ */
+const BUDDY_SUGGESTION_LIMIT = 3;
 
 /**
  * Study-buddy (yol arkadaşı) surface. Mutations delegate to identity's BuddyService;
@@ -28,7 +32,7 @@ export class BuddyController {
   }
 
   @Get("suggestions")
-  getSuggestions(@CurrentUser() user: RequestUser): Promise<BuddyUserRef[]> {
+  getSuggestions(@CurrentUser() user: RequestUser): Promise<BuddySuggestionRef[]> {
     return this.view.getSuggestions(user.id, BUDDY_SUGGESTION_LIMIT);
   }
 

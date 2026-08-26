@@ -1,39 +1,31 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { LoaderCircle, Pencil, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { LoaderCircle, Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type {
   AuthUser,
   ExamCalendarDto,
   ExamSubjectDto,
-  NotebookCoverColor,
-  NotebookCoverMaterial,
   NotebookDto,
   NotebookSummaryDto,
 } from "@mentor/types";
-import { NOTEBOOK_COVER_COLORS, NOTEBOOK_COVER_MATERIALS } from "@mentor/types";
 import {
   contentControllerCalendarByFamily,
   contentControllerSubjectsBySlug,
   usersControllerMe,
 } from "@mentor/api-client";
+import { Button } from "@mentor/ui";
 import { NotebookCover } from "@/components/notebook/notebook-surface";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useMentorDialog } from "@/lib/mentor-dialog";
-import {
-  createNotebook,
-  deleteNotebook,
-  fetchNotebooks,
-  updateNotebook,
-} from "@/lib/notebook";
+import { deleteNotebook, fetchNotebooks } from "@/lib/notebook";
+import { NotebookFormDialog } from "./notebook-form-dialog";
 
 interface ExamChoice {
   id: string;
   subjects: ExamSubjectDto[];
 }
-
-const DEFAULT_COVER = { color: "navy", material: "cloth" } as const;
 
 export function NotebooksShell() {
   const t = useTranslations("notebooks");
@@ -183,14 +175,10 @@ export function NotebooksShell() {
             {t("subtitle")}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setForm("new")}
-          className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-btn)] px-4 font-semibold text-[var(--color-btn-label)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        >
+        <Button type="button" onClick={() => setForm("new")}>
           <Plus aria-hidden size={18} />
           {t("create")}
-        </button>
+        </Button>
       </header>
 
       {loading ? <NotebookGridSkeleton /> : null}
@@ -392,226 +380,5 @@ function NotebookGridSkeleton() {
         </div>
       ))}
     </div>
-  );
-}
-
-function NotebookFormDialog({
-  current,
-  exam,
-  onClose,
-  onSaved,
-}: {
-  current: NotebookSummaryDto | null;
-  exam: ExamChoice | null;
-  onClose: () => void;
-  onSaved: (saved: NotebookDto) => void;
-}) {
-  const t = useTranslations("notebooks.form");
-  const notebookT = useTranslations("notebook");
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const titleInputRef = useRef<HTMLInputElement>(null);
-  const [title, setTitle] = useState(current?.title ?? "");
-  const [subjectRef, setSubjectRef] = useState(current?.subjectRef ?? "");
-  const [color, setColor] = useState<NotebookCoverColor>(
-    current?.cover.color ?? DEFAULT_COVER.color,
-  );
-  const [material, setMaterial] = useState<NotebookCoverMaterial>(
-    current?.cover.material ?? DEFAULT_COVER.material,
-  );
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    dialogRef.current?.showModal();
-    titleInputRef.current?.focus();
-  }, []);
-
-  const subjects = [...(exam?.subjects ?? [])];
-  if (
-    current?.subjectRef &&
-    !subjects.some((subject) => subject.slug === current.subjectRef)
-  ) {
-    subjects.push({
-      slug: current.subjectRef,
-      name: current.subjectName ?? current.subjectRef,
-    } as ExamSubjectDto);
-  }
-
-  async function submit(event: React.FormEvent) {
-    event.preventDefault();
-    setSaving(true);
-    setError(false);
-    try {
-      const selectedExamId = subjectRef
-        ? current?.examId && subjectRef === current.subjectRef
-          ? current.examId
-          : (exam?.id ?? null)
-        : null;
-      const saved = current
-        ? await updateNotebook(current.id, {
-            title,
-            examId: selectedExamId,
-            subjectRef: subjectRef || null,
-            cover: { color, material },
-          })
-        : await createNotebook({
-            title,
-            examId: selectedExamId,
-            subjectRef: subjectRef || null,
-            cover: { color, material },
-          });
-      onSaved(saved);
-    } catch {
-      setError(true);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <dialog
-      ref={dialogRef}
-      onCancel={onClose}
-      className="m-auto w-[min(92vw,34rem)] rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-0 text-[var(--color-main)] shadow-[var(--shadow-modal)] backdrop:bg-black/40"
-    >
-      <form
-        onSubmit={(event) => void submit(event)}
-        className="flex max-h-[90dvh] flex-col"
-      >
-        <header className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-4">
-          <h2 className="text-xl font-bold">
-            {current ? t("edit_title") : t("create_title")}
-          </h2>
-          <button
-            type="button"
-            disabled={saving}
-            onClick={onClose}
-            aria-label={t("close")}
-            className="flex size-11 items-center justify-center rounded-full focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          >
-            <X aria-hidden />
-          </button>
-        </header>
-        <div className="mentor-scrollarea flex flex-col gap-5 overflow-y-auto p-5">
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">
-            {t("title_label")}
-            <input
-              ref={titleInputRef}
-              disabled={saving}
-              required
-              minLength={1}
-              maxLength={40}
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              className="min-h-11 rounded-[var(--radius-input)] border border-[var(--color-border)] bg-[var(--color-background)] px-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">
-            {t("subject_label")}
-            <select
-              value={subjectRef}
-              disabled={saving}
-              onChange={(event) => setSubjectRef(event.target.value)}
-              className="min-h-11 rounded-[var(--radius-input)] border border-[var(--color-border)] bg-[var(--color-background)] px-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            >
-              <option value="">{t("subject_none")}</option>
-              {subjects.map((subject) => (
-                <option key={subject.slug} value={subject.slug}>
-                  {subject.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <fieldset className="flex flex-col gap-2">
-            <legend className="text-sm font-semibold">
-              {t("color_label")}
-            </legend>
-            <div className="flex flex-wrap gap-2">
-              {NOTEBOOK_COVER_COLORS.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  disabled={saving}
-                  aria-pressed={color === value}
-                  aria-label={notebookT(`cover_color.${value}`)}
-                  onClick={() => setColor(value)}
-                  className="min-h-11 rounded-full border px-3 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                  style={{
-                    borderColor:
-                      color === value
-                        ? "var(--color-accent)"
-                        : "var(--color-border)",
-                    background:
-                      color === value
-                        ? "var(--color-accent-soft)"
-                        : "var(--color-surface)",
-                  }}
-                >
-                  {notebookT(`cover_color.${value}`)}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-          <fieldset className="flex flex-col gap-2">
-            <legend className="text-sm font-semibold">
-              {t("material_label")}
-            </legend>
-            <div className="flex flex-wrap gap-2">
-              {NOTEBOOK_COVER_MATERIALS.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  disabled={saving}
-                  aria-pressed={material === value}
-                  onClick={() => setMaterial(value)}
-                  className="min-h-11 rounded-[var(--radius-button)] border px-3 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                  style={{
-                    borderColor:
-                      material === value
-                        ? "var(--color-accent)"
-                        : "var(--color-border)",
-                    background:
-                      material === value
-                        ? "var(--color-accent-soft)"
-                        : "var(--color-surface)",
-                  }}
-                >
-                  {notebookT(`cover_material.${value}`)}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-          {error ? (
-            <p role="alert" className="text-sm text-[var(--color-danger)]">
-              {t("error")}
-            </p>
-          ) : null}
-        </div>
-        <footer className="flex justify-end gap-3 border-t border-[var(--color-border)] p-4">
-          <button
-            type="button"
-            disabled={saving}
-            onClick={onClose}
-            className="min-h-11 rounded-[var(--radius-button)] border border-[var(--color-border)] px-4 font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60"
-          >
-            {t("cancel")}
-          </button>
-          <button
-            type="submit"
-            disabled={saving || title.trim().length === 0}
-            className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-button)] bg-[var(--color-btn)] px-5 font-semibold text-[var(--color-btn-label)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60"
-          >
-            {saving ? (
-              <LoaderCircle
-                aria-hidden
-                size={18}
-                className="animate-spin motion-reduce:animate-none"
-              />
-            ) : null}
-            {t("save")}
-          </button>
-        </footer>
-      </form>
-    </dialog>
   );
 }

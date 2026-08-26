@@ -85,16 +85,18 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
-- **Auth sheet panel reveal (2026-08-25)** — `/giris` / `/kayit` / nested auth sheet now uses
-  transitions.dev **panel reveal** (`.t-panel-slide`): slides up from below on enter
-  (`--panel-translate-y: 100%`), slides down + fade + blur on leave. Login/signup success and
-  Google start wait for `--panel-close-dur` before navigating. Login↔signup and forgot/reset/verify
-  stay on the open sheet (layout persists). Reduced-motion zeroes the transition.
-  Open is transform-only at 680ms (`translate3d` by `100dvh`, not `%` of the
-  sheet — `%` plus blur made it look like it scaled up and jittered while height
-  settled). Login/signup avoid `useSearchParams` so the form is not an empty
-  Suspense hole. Usage: welcome → `/giris` sheet rises; successful sign-in sheet
-  drops then `/panel` or `/baslangic`. Related: `auth-shell.tsx`, `globals.css`.
+- **Onboarding açıklama metinleri kaldırıldı (2026-08-26)** — `/baslangic` profil ve sınav
+  adımlarındaki yardımcı alt yazılar (kullanıcı adı/fotoğraf, JPEG/PNG 2 MB, sınav ailesi
+  açılımı, KPSS düzey açıklamaları) kalktı; başlıklar ve seçenek etiketleri duruyor.
+  Related: `profile-step.tsx`, `exam-step.tsx`.
+- **Onboarding theme toggle kaldırıldı (2026-08-26)** — Signup sonrası `/baslangic` header’ındaki
+  güneş/ay düğmesi kalktı (auth ile aynı). Tema Ayarlar → Görünüm’de. Related:
+  `onboarding-step-layout.tsx`.
+- **Auth sheet slide (2026-08-25)** — `/giris` / `/kayit` / nested auth use a bottom sheet
+  that slides up by its measured height after layout. Login/signup have no header control;
+  forgot/reset/verify chevron → `/giris`. Successful sign-in and Google start wait for the
+  close slide before navigating. Login↔signup stay on the open sheet. Reduced-motion skips
+  the transition. Related: `auth-shell.tsx`, `globals.css`, `auth-paths.ts`.
 - **Auth sheet chrome + signup sadeleştirme (2026-08-25)** — `/giris`, `/kayit`, şifre sıfırlama
   ve e-posta doğrulama artık centered kart değil: mobilde alta yaslı bottom-sheet (slide-up),
   desktop’ta ortalanmış kart. Theme toggle auth’tan kalktı (varsayılan tema). Login/signup
@@ -117,8 +119,8 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 - **Onboarding light/dark surfaces (2026-08-15)** — Wizard card, avatar well, and exam
   pills use `--color-surface` / `--color-border`. Selected exam check uses
-  `--color-btn` / `--color-btn-label`. Theme toggle sits in the step header
-  (no AppNav). Usage: `/onboarding` → moon/sun. Related:
+  `--color-btn` / `--color-btn-label`. Theme toggle was removed from the step header
+  (switch in Settings → Appearance). Usage: `/onboarding`. Related:
   `onboarding-step-layout.tsx`, `profile-step.tsx`, `exam-step.tsx`,
   `docs/features/web-shell.md`.
 

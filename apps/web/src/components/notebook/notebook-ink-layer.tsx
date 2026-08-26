@@ -10,7 +10,7 @@ import { INK_TOOLS, strokeToPath } from "@/lib/notebook-ink";
  * The ink on a page: one SVG in the page's own design space, sitting above the item stage.
  *
  * SVG rather than `<canvas>` because the surface it covers is already a scaled design space —
- * `NotebookPageStage` places every item in 1080×1440 units and lets the container size decide the
+ * `NotebookPageStage` places every item in 1080×1527 A4 units and lets the container size decide the
  * pixels. A canvas would need its backing store resized and every stroke repainted on each layout
  * change, and would come out soft on a high-DPI screen unless that were handled too. A `viewBox`
  * gets all of it for free, and stays sharp when the page is printed or zoomed.

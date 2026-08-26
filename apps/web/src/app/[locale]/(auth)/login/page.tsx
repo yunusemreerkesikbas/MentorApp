@@ -50,7 +50,6 @@ export default function LoginPage() {
         name="email"
         type="email"
         autoComplete="email"
-        autoFocus
         required
       />
       <Field

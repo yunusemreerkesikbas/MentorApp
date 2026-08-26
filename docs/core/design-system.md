@@ -35,13 +35,13 @@ pnpm --filter @mentor/web dev       # http://localhost:3000
 - **Add a primitive:** create `packages/ui/src/components/<name>.tsx`, export from `index.ts`, rebuild.
   Cite its DESIGN.md/Nuton basis in the file. Broadly reusable widgets live here; only stateful
   containers are page-local in `apps/web`.
-- **Consume:** `import { Card, Button, Chip, TextField, SectionHeading } from '@mentor/ui'`.
+- **Consume:** `import { Card, Button, Chip, ChoiceChip, Modal, TextField, SectionHeading } from '@mentor/ui'`.
 
 ## Primitives (selection)
 
 | Primitive | Purpose |
 |---|---|
-| `Card` · `Button` · `Chip` · `TextField` · `SectionHeading` | core building blocks |
+| `Card` · `Button` · `Chip` · `ChoiceChip` · `TextField` · `SectionHeading` | core building blocks |
 | `DataCard` | §4 #1 data-card render (official facts, sourced) |
 | `CountdownCard` | calm countdown (blue accent — no alarm-red) |
 | `StreakBadge` | anti-shaming streak display |
@@ -52,6 +52,7 @@ pnpm --filter @mentor/web dev       # http://localhost:3000
 | `FormError` | shared inline error (no magic `--color-error` / hex) |
 | `ToastProvider` · `useToast` | Stitch overlay stack (max 3, portal `z-[100]`, auto-dismiss, mobile top-center / desktop top-right) |
 | `DialogProvider` · `useDialog` | Stitch modal (single dialog, portal backdrop `z-[60]` / panel `z-[70]`; presets `confirm` / `info` / `promo`) |
+| `Modal` | Native `<dialog>` form/content shell (title, close, body, footer). Not the confirm stack. |
 | `BottomSheetProvider` · `useBottomSheet` | Stitch bottom sheet (portal backdrop `z-[40]` / panel `z-[50]`; layouts `action` \| `filter`; presets `actionSheet()` / `filterSheet()`) |
 | `Skeleton` · `SkeletonGroup` | **Animation-only** loading shimmer (`mentor-skeleton-shimmer`) + enter fade (`mentor-skeleton-enter`); page composes layout in `*-content-skeleton.tsx` |
 
@@ -115,6 +116,13 @@ N/A (UI package, not REST).
 - **Skeleton animation primitives** — `packages/ui/src/components/skeleton/` + `theme.css`
   (`.mentor-skeleton-shimmer`, `.mentor-skeleton-enter`). Animation/a11y global; each web screen
   owns `*-content-skeleton.tsx` layout. *(0068.)*
+- **ChoiceChip + form Modal (2026-08-26)** — `Chip` stays a static violet tag. Selectable
+  options use `ChoiceChip` (`pill` | `default`, selected = `--color-accent-soft` + accent
+  border). Form surfaces use `Modal` (native `<dialog>` top layer, title/close/body/footer);
+  `DialogProvider` remains confirm/info/promo only. `TextField` accepts `ref` for initial
+  focus. Rebuild `@mentor/ui` after pulling. Related: `choice-chip.tsx`, `modal.tsx`,
+  `text-field.tsx`.
+
 - **Card follows theme (2026-08-15)** — `Card` uses `--color-surface` / `--color-border` /
   `--color-surface-translucent` instead of `bg-white`. Panel is the first consumer pass.
 - **Light/dark theme tokens (2026-08-15)** — `html.dark` overrides `--color-*` / `--shadow-*` /
@@ -129,8 +137,7 @@ N/A (UI package, not REST).
 - **`@mentor/ui` is consumed as compiled `dist/`** — after editing/adding a component you **must
   rebuild** (`pnpm --filter @mentor/ui build`) before `apps/web` typecheck picks it up.
 - **No chart primitive** in DESIGN.md → trend/analysis UIs use `ProgressBar` bars, not a chart library.
-- **Overlay primitives:** `Toast`, `Dialog`, and `BottomSheet` are implemented; `drawer` (notifications
-  use a bespoke panel), `popover`, `coach-bubble` still pending or bespoke (Stitch designs in `.stitch/`).
+- **Overlay primitives:** `Toast`, `Dialog` (confirm stack), `Modal` (form/content `<dialog>`), and `BottomSheet` are implemented; notification `drawer`, `popover`, `coach-bubble` still pending or bespoke (Stitch designs in `.stitch/`).
 - **`TextField` is single-line** → multi-line input (forum composer) uses a token-styled `<textarea>`.
 - **Toast:** rebuild `@mentor/ui` after changes; mount `ToastProvider` once at root (not per layout);
   viewport portals to `document.body` at `z-[100]`; `dismissLabel` is required on raw `useToast().show()`
@@ -138,6 +145,11 @@ N/A (UI package, not REST).
 - **Dialog:** single open dialog (no stack); toast stays above dialog (`z-[100]` vs `z-[60]`/`z-[70]`);
   `confirm()` resolves `false` on cancel/ESC (backdrop disabled); use `useMentorDialog()` for i18n +
   default error icon / Puhu hero; `@mentor/ui` requires `react-dom` peer for portal viewports.
+- **Modal:** native `<dialog>` via `showModal()`; do not use `method="dialog"` (callers
+  `preventDefault` on submit). Escape/backdrop are no-ops while `closeDisabled`. Distinct from
+  `DialogProvider` — do not put forms in `confirm()`/`show()`.
+- **ChoiceChip:** not a replacement for `Chip`. Unselected rim is `color-mix(main 12%)` because
+  light `--color-border` is white and would vanish on `--color-surface`.
 - **Bottom sheet:** single open sheet; z below dialog so delete confirm stacks correctly; scroll lock
   via `html.mentor-sheet-open`; desktop uses centered panel (not bottom-anchored); drag handle is
   visual-only in MVP (no swipe dismiss).

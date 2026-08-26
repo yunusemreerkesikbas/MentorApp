@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { BuddyUserRef, BuddyViewDto } from "@mentor/types";
+import type { BuddySuggestionRef, BuddyViewDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Card } from "@mentor/ui";
-import { Link } from "@/i18n/navigation";
 import {
   acceptBuddyRequest,
   deleteBuddyRequest,
@@ -237,7 +236,7 @@ function BuddyEmptyState({
   onRequest: (username: string) => Promise<boolean>;
 }) {
   const t = useTranslations("session");
-  const [suggestions, setSuggestions] = useState<BuddyUserRef[] | null>(null);
+  const [suggestions, setSuggestions] = useState<BuddySuggestionRef[] | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -262,25 +261,32 @@ function BuddyEmptyState({
           <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
             {t("buddy_suggest_title")}
           </p>
-          <ul className="flex flex-col gap-2.5">
+          <ul className="flex flex-col gap-3">
             {suggestions.map((u) => (
-              <li key={u.userId} className="flex items-center gap-3">
-                <AuthorAvatar name={u.displayName} size={36} src={u.avatarUrl} />
-                <div className="min-w-0 flex-1 leading-tight">
-                  <p className="truncate text-sm font-semibold" style={{ color: "var(--color-main)" }}>
-                    {u.displayName}
-                  </p>
-                  {u.username ? (
-                    <p className="truncate text-xs" style={{ color: "var(--color-secondary)" }}>
-                      @{u.username}
+              <li key={u.userId} className="flex flex-col gap-2">
+                {/* Two rows, not one: in the 288px sidebar a name, a handle and a button on the
+                    same line left ~90px for the name and truncated almost everyone. */}
+                <div className="flex items-center gap-3">
+                  <AuthorAvatar name={u.displayName} size={36} src={u.avatarUrl} />
+                  <div className="min-w-0 flex-1 leading-tight">
+                    <p
+                      className="truncate text-sm font-semibold"
+                      style={{ color: "var(--color-main)" }}
+                      title={u.displayName}
+                    >
+                      {u.displayName}
                     </p>
-                  ) : null}
+                    {/* The reason they are here, in place of the handle nobody types any more. */}
+                    <p className="truncate text-xs" style={{ color: "var(--color-secondary)" }}>
+                      {t("buddy_together_count", { count: u.sessionsTogether })}
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
                   disabled={busy || !u.username}
                   onClick={() => u.username && void onRequest(u.username)}
-                  className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                  className="min-h-11 w-full cursor-pointer rounded-[var(--radius-card)] text-sm font-semibold disabled:opacity-50"
                   style={{
                     backgroundColor: "color-mix(in srgb, var(--color-progress) 14%, transparent)",
                     color: "var(--color-main)",
@@ -293,14 +299,11 @@ function BuddyEmptyState({
           </ul>
         </div>
       ) : suggestions !== null ? (
-        // Suggestions resolved empty → a quiet path to find someone in the community.
-        <Link
-          href="/community"
-          className="w-fit text-sm font-semibold hover:underline"
-          style={{ color: "var(--color-progress)" }}
-        >
-          {t("buddy_empty_cta")}
-        </Link>
+        // Nobody to suggest yet: a buddy is earned at a table, so point there rather than at a
+        // directory of strangers.
+        <p className="text-sm leading-relaxed" style={{ color: "var(--color-secondary)" }}>
+          {t("buddy_empty_hint")}
+        </p>
       ) : null}
     </div>
   );
