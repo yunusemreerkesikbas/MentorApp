@@ -2782,9 +2782,7 @@
     "title": "Bildirimler",
     "mark_all_read": "Tümünü okundu işaretle",
     "close": "Kapat",
-    "tab_all": "TÜMÜ",
-    "tab_coach": "KOÇ",
-    "tab_plan": "PLAN",
+    "tab_all": "Tümü",
     "empty_title": "Henüz bildirim yok",
     "empty_body": "Planına başladığında burada görürsün",
     "bell_label": "Bildirimleri aç",
@@ -2795,6 +2793,10 @@
     "unread_label": "okunmamış",
     "mark_read": "Okundu işaretle",
     "mark_unread": "Okunmadı işaretle",
-    "delete_item": "Bildirimi sil"
+    "delete_item": "Bildirimi sil",
+    "tab_unread": "Okunmamış",
+    "group_today": "Bugün",
+    "group_this_week": "Bu hafta",
+    "group_earlier": "Daha eski"
   }
 }

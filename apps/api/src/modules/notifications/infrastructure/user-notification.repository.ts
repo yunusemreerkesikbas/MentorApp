@@ -30,6 +30,27 @@ export class UserNotificationRepository {
     return rows[0] ?? null;
   }
 
+  /**
+   * Bulk insert for broadcast fan-out. `onConflictDoNothing` leans on the partial unique index
+   * on (user_id, dedupe_key), so a retried dispatch job silently skips already-notified users.
+   * Returns the rows that were actually created (i.e. who to ping over SSE).
+   */
+  async createMany(
+    tx: DatabaseTx,
+    rows: Array<{
+      userId: string;
+      category: NotificationCategory;
+      title: string;
+      body: string;
+      linkUrl?: string;
+      dedupeKey?: string;
+      data?: Record<string, unknown>;
+    }>,
+  ): Promise<UserNotificationRow[]> {
+    if (rows.length === 0) return [];
+    return tx.insert(userNotifications).values(rows).onConflictDoNothing().returning();
+  }
+
   async listByUser(
     tx: DatabaseTx,
     userId: string,

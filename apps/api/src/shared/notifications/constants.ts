@@ -14,6 +14,7 @@ export const JobName = {
   SEND_PUSH: "notifications.send-push",
   DISPATCH_DAILY_REMINDERS: "notifications.dispatch-daily-reminders",
   SESSION_RETURN_REMINDER: "notifications.session-return-reminder",
+  DISPATCH_ANNOUNCEMENT: "notifications.dispatch-announcement",
 } as const;
 export type JobName = (typeof JobName)[keyof typeof JobName];
 

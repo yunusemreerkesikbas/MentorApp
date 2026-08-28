@@ -88,10 +88,48 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 | `POST /v1/notifications/stream-token` | Issue a 60s one-time SSE token (JWT) |
 | `GET /v1/notifications/stream?token=` | SSE stream — push `new_notification` events (token-auth, public route) |
 | `POST /v1/notifications/session-return-reminder` | Opt-in soft return (~24h in-app + push; body optional `subject`) |
+| `GET /v1/admin/announcements?page=` | List team-authored broadcasts (SUPER_ADMIN) |
+| `POST /v1/admin/announcements` | Create a DRAFT broadcast (SUPER_ADMIN, audited) |
+| `POST /v1/admin/announcements/:id/send` | Queue the fan-out; `{ scheduledAt? }` (SUPER_ADMIN, audited) |
+| `DELETE /v1/admin/announcements/:id` | Delete a DRAFT (SUPER_ADMIN, audited; 204) |
 | `GET /v1/admin/config` | List config catalog + effective values (SUPER_ADMIN) |
 | `PATCH /v1/admin/config/:key` | Update a config/flag value (SUPER_ADMIN, audited) |
 
 ## Geliştirmeler (timeline)
+
+- **Bildirim drawer redesign (APP-053, 2026-08-28)** — Satır anatomisi yeniden kuruldu. **Kategori
+  ikonu artık çıplak** (18px, kategori renginde): 40px daire + border + `color-mix` dolgu kaldırıldı
+  — her satırın en ağır işareti en az bilgi taşıyan konteynerdi ve aynı kategoriden ardışık
+  satırlarda göz başlıkları değil daire kolonunu takip ediyordu. **Okunmadı sinyali üçten ikiye
+  indi**: kalın başlık + sağda nokta (sol nokta ile satır bg tint'i kalktı; bg zaten panelle aynı
+  `--color-surface` olduğu için ölü koddu). Satır dolgusu opak kalır — swipe aksiyonlarını örten
+  şey odur, okunmadı ipucu değil. **Başlık `truncate` → `line-clamp-2`**, gövde `line-clamp-1`,
+  zaman damgası kendi meta satırına indi; başlık artık kesilmiyor. **Sekmeler kategori değil okuma
+  durumu filtresi**: `Tümü / Okunmamış` (`NotificationTab = "ALL" | "UNREAD"`). Altı kategori 380px
+  panele sığmıyordu ve strip zaten COACH/PLAN'da donmuş, CONTENT/FORUM/ACHIEVEMENT/SYSTEM'i sessizce
+  gizliyordu. **Zaman grupları** (`Bugün / Bu hafta / Daha eski`) sticky başlıklarla; `groupByRecency`
+  render sırasında türetilir, state yok. Header'daki uzun "Tümünü okundu işaretle" linki `CheckCheck`
+  ikon butonuna dönüştü. Yoğunluk: mobilde ~4.5 → ~8 satır. İlgili: `notification-drawer-item.tsx`,
+  `notification-drawer-panel.tsx`, `types.ts`, `notification-drawer-shell.tsx`.
+  - **İkon renk haritası düzeltildi:** `--color-accent` `--color-progress`'in birebir aliası
+    (`#55acee`) olduğu için **ACHIEVEMENT ve FORUM aynı renkte** çiziliyordu; `PLAN` ise token değil
+    hardcoded `#4A80D8` taşıyordu. ACHIEVEMENT → `--color-star` (amber), PLAN → `--color-progress`.
+    Çıplak ikona geçince renk tek ayırt edici olmasın diye kategoriyi **glif taşır** (WCAG 1.4.1).
+
+- **Admin duyuru sistemi (APP-053, 2026-08-28)** — Ekibin panelden yazdığı ilk bildirim yolu.
+  `announcements` tablosu (migration `0086`, RLS SERVICE/ADMIN) + `AnnouncementService` notifications
+  modülünde; `AdminAnnouncementsController` (SUPER_ADMIN, audited) servisi tüketir — admin tabloya
+  dokunmaz (workstreams §3). Yeni `SYSTEM` kategorisi (`category` text olduğu için migration yok).
+  Gönderim `notifications.dispatch-announcement` job'ına düşer: `UsersService.listAnnouncementRecipients`
+  ile 500'lük keyset sayfası çeker, `user_notifications`'a toplu insert eder ve batch doluysa kendini
+  cursor ile yeniden kuyruğa atar. `dedupeKey = "announcement:{id}"` mevcut `(user_id, dedupe_key)`
+  partial unique index'ine yaslandığı için tekrar çalışan job ikinci bildirim üretmez. Zamanlama ayrı
+  scheduler istemez — `scheduledAt` doğrudan job'ın `runAt`'i olur (`session-return-reminder` deseni).
+  Kanal **yalnız in-app**: push/e-posta yok. Kullanım: admin `/announcements` → taslak oluştur → gönder;
+  zil SSE ile anında güncellenir. Gotcha: `linkUrl` Zod sınırında `^/(?!/)` ile internal path'e
+  kilitli — drawer `router.push(linkUrl)` çağrısını doğrulamadan yaptığı için mutlak URL saklı
+  open-redirect olurdu. İlgili: `announcement.service.ts`, `announcement-dispatch.handler.ts`,
+  `announcement.repository.ts`, `admin-announcements.controller.ts`.
 
 - **Gece Yolculuğu canlı kutlama sinyali (2026-08-22)** — Community yeni bir kalıcı `LEVEL_UP`
   kaydı oluşturduğunda Notifications yalnız SSE üzerinden `journey_level_unlocked` sinyali
@@ -216,6 +254,17 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 - **SSE heartbeat** — 25s `interval()` keeps proxy connections alive; Nginx default is 60s idle timeout.
 - **Streak broken fires once per reset** — `StreakService` compares persisted `existing.currentStreak` vs newly derived. Event emits only when it drops to 0. Strict Mode double-invoke in dev may fire twice; harmless (two identical notifications).
 
+- **Duyuru `linkUrl` yalnız internal path** — `notification-drawer-shell` link'i doğrulamadan
+  `router.push` eder; admin metni bir trust boundary olduğundan kısıt Zod şemasında zorunlu.
+- **Duyuru fan-out'u zincirlenmiş job'lardır** — 500 alıcı/tur. Tavan iş süresi (bellek değil);
+  kullanıcı tablosu birkaç dakikalık zinciri aşarsa aynı identity seam'i arkasında set-based
+  `INSERT … SELECT`'e geç.
+- **Drawer sekmeleri kategori filtresi değil** — `Tümü / Okunmamış`. Yeni bir kategori eklemek
+  sekme/i18n bakımı gerektirmez; kategoriyi satırdaki ikon taşır.
+- **`--color-accent` = `--color-progress`** (ikisi de `#55acee`). İkon/rozet renklerinde ikisini
+  farklı sanıp yan yana kullanma — aynı çıkarlar.
+- **`SYSTEM` kategorisinin ayrı drawer sekmesi yok** — `CONTENT`/`FORUM`/`ACHIEVEMENT` gibi "Tümü"
+  altında görünür — sekmeler okuma durumuna göre filtrelediği için bu kalıcı bir tasarım kararı.
 - **Cron endpoints are `@Public()`** but require `x-cron-secret` or `Authorization: Bearer <CRON_SECRET>`.
 - **`withServiceContext` runs inside job claim/complete** — unit tests must mock `db.transaction` with
   `tx.execute`.
@@ -235,6 +284,13 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Backlog
 
+- **Duyuru sonrası sıradaki tetikleyiciler** (öncelik sırası): sınav takvimi geri sayımı
+  (`exam_events.EXAM_DATE`'e 30/7/1 gün kala, `examType` bazlı) · ödeme/trial in-app bildirimi
+  (`payments-events.listener` şu an yalnız e-posta atıyor) · yeni içerik yayını (`CONTENT` kategorisi
+  tanımlı ama hiçbir yerde üretilmiyor) · 90 günlük inbox purge (`deleteOlderThan` yazılmış, hiç
+  çağrılmıyor).
+- Duyuru için push/e-posta kanalları · premium/free ve tekil kullanıcı hedefleme · kategori bazlı
+  bildirim tercihi (`notification_preferences` migration'ı) · duyuru okunma oranı metriği.
 - Re-validate overrides on read against the (possibly evolved) catalog schema · cache the in-flight
   load promise · optionally Turkish catalog descriptions · multi-instance cache invalidation (pub/sub).
 

@@ -266,3 +266,21 @@ export interface AuditEntry {
     ip: string | null;
     createdAt: string;
 }
+
+// GET /admin/announcements — team-authored broadcast (in-app only, W5 notifications).
+export type AnnouncementAudience =
+    | { kind: "ALL" }
+    | { kind: "EXAM_TYPE"; examType: "KPSS" | "YKS" | "LGS" };
+
+export interface AdminAnnouncement {
+    id: string;
+    title: string;
+    body: string;
+    linkUrl: string | null;
+    audience: AnnouncementAudience;
+    status: "DRAFT" | "SENDING" | "SENT";
+    scheduledAt: string | null;
+    sentAt: string | null;
+    recipientCount: number;
+    createdAt: string;
+}

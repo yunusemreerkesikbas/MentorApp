@@ -1,4 +1,5 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
+import { AnnouncementDispatchHandler } from "./handlers/announcement-dispatch.handler";
 import { SendEmailHandler } from "./handlers/send-email.handler";
 import { SendPushHandler } from "./handlers/send-push.handler";
 import { SessionReturnReminderHandler } from "./handlers/session-return-reminder.handler";
@@ -13,6 +14,7 @@ export class JobHandlersRegistrar implements OnModuleInit {
     private readonly sendEmail: SendEmailHandler,
     private readonly sendPush: SendPushHandler,
     private readonly sessionReturn: SessionReturnReminderHandler,
+    private readonly announcementDispatch: AnnouncementDispatchHandler,
   ) {}
 
   onModuleInit(): void {
@@ -20,6 +22,9 @@ export class JobHandlersRegistrar implements OnModuleInit {
     this.runner.registerHandler(JobName.SEND_PUSH, (p) => this.sendPush.handle(p));
     this.runner.registerHandler(JobName.SESSION_RETURN_REMINDER, (p) =>
       this.sessionReturn.handle(p),
+    );
+    this.runner.registerHandler(JobName.DISPATCH_ANNOUNCEMENT, (p) =>
+      this.announcementDispatch.handle(p),
     );
   }
 }

@@ -8,6 +8,8 @@ import {
   adminRefundSchema,
   adminUpdatePlanSchema,
   auditLogQuerySchema,
+  createAnnouncementSchema,
+  sendAnnouncementSchema,
   economyAdjustSchema,
   searchUsersQuerySchema,
   setFeaturedThreadSchema,
@@ -36,3 +38,5 @@ export class AdminForumTagCreateDto extends createZodDto(adminForumTagCreateSche
 export class AdminForumTagUpdateDto extends createZodDto(adminForumTagUpdateSchema) {}
 export class ReviewForumTagSuggestionDto extends createZodDto(reviewForumTagSuggestionDtoSchema) {}
 export class SetFeaturedThreadDto extends createZodDto(setFeaturedThreadSchema) {}
+export class CreateAnnouncementDto extends createZodDto(createAnnouncementSchema) {}
+export class SendAnnouncementDto extends createZodDto(sendAnnouncementSchema) {}

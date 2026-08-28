@@ -1,5 +1,5 @@
 "use client";
-import { X } from "lucide-react";
+import { CheckCheck, X } from "lucide-react";
 
 import type * as React from "react";
 import { createPortal } from "react-dom";
@@ -32,14 +32,52 @@ export interface NotificationDrawerPanelProps {
 
 const CLOSE_ANIMATION_MS = 220;
 
+/**
+ * Read-state filter, not a category filter — the row icon already carries the category, and a
+ * per-category strip could not fit (or stay maintained as) six entries in a 380px panel.
+ */
 const TABS: {
   id: NotificationTab;
   labelKey: keyof NotificationDrawerLabels;
 }[] = [
   { id: "ALL", labelKey: "tabAll" },
-  { id: "COACH", labelKey: "tabCoach" },
-  { id: "PLAN", labelKey: "tabPlan" },
+  { id: "UNREAD", labelKey: "tabUnread" },
 ];
+
+type RecencyGroup = "today" | "week" | "earlier";
+
+const GROUP_LABEL_KEY: Record<RecencyGroup, keyof NotificationDrawerLabels> = {
+  today: "groupToday",
+  week: "groupThisWeek",
+  earlier: "groupEarlier",
+};
+
+const DAY_MS = 86_400_000;
+
+function recencyGroup(iso: string, now: number): RecencyGroup {
+  const age = now - new Date(iso).getTime();
+  if (age < DAY_MS) return "today";
+  if (age < 7 * DAY_MS) return "week";
+  return "earlier";
+}
+
+/**
+ * Bucket an already-sorted (newest-first) list into recency runs. Derived during render — no
+ * state, no effect. Empty buckets are dropped so a list of only old items shows one heading.
+ */
+export function groupByRecency(
+  items: UserNotificationDto[],
+  now: number = Date.now(),
+): { key: RecencyGroup; items: UserNotificationDto[] }[] {
+  const groups: { key: RecencyGroup; items: UserNotificationDto[] }[] = [];
+  for (const item of items) {
+    const key = recencyGroup(item.createdAt, now);
+    const last = groups[groups.length - 1];
+    if (last?.key === key) last.items.push(item);
+    else groups.push({ key, items: [item] });
+  }
+  return groups;
+}
 
 export function NotificationDrawerPanel({
   isOpen,
@@ -108,7 +146,8 @@ export function NotificationDrawerPanel({
   }
 
   const visibleItems =
-    activeTab === "ALL" ? items : items.filter((n) => n.category === activeTab);
+    activeTab === "ALL" ? items : items.filter((n) => n.readAt === null);
+  const groups = groupByRecency(visibleItems);
 
   if (!mounted) return null;
   if (!isOpen && !closing) return null;
@@ -187,13 +226,12 @@ export function NotificationDrawerPanel({
               <button
                 type="button"
                 onClick={onMarkAllRead}
-                className="text-xs font-bold transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-1"
-                style={{
-                  color: "var(--color-progress)",
-                  fontFamily: "var(--font-body)",
-                }}
+                aria-label={labels.markAllRead}
+                title={labels.markAllRead}
+                className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-1"
+                style={{ color: "var(--color-progress)" }}
               >
-                {labels.markAllRead}
+                <CheckCheck size={18} aria-hidden />
               </button>
             )}
             <button
@@ -276,17 +314,31 @@ export function NotificationDrawerPanel({
                   </p>
                 </div>
               ))
-            : visibleItems.map((n) => (
-                <NotificationDrawerItem
-                  key={n.id}
-                  notification={n}
-                  onMarkRead={onMarkRead}
-                  onMarkUnread={onMarkUnread}
-                  onDelete={onDelete}
-                  onClickItem={onClickItem}
-                  renderIcon={renderIcon}
-                  labels={labels}
-                />
+            : groups.map((group) => (
+                <section key={group.key}>
+                  <h3
+                    className="sticky top-0 z-10 px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-widest"
+                    style={{
+                      backgroundColor: "var(--color-surface)",
+                      fontFamily: "var(--font-heading)",
+                      color: "var(--color-secondary)",
+                    }}
+                  >
+                    {labels[GROUP_LABEL_KEY[group.key]] as string}
+                  </h3>
+                  {group.items.map((n) => (
+                    <NotificationDrawerItem
+                      key={n.id}
+                      notification={n}
+                      onMarkRead={onMarkRead}
+                      onMarkUnread={onMarkUnread}
+                      onDelete={onDelete}
+                      onClickItem={onClickItem}
+                      renderIcon={renderIcon}
+                      labels={labels}
+                    />
+                  ))}
+                </section>
               ))}
         </div>
       </div>

@@ -12,6 +12,7 @@ import { AdminUsersService } from "./application/admin-users.service";
 import { AdminAuditRepository } from "./infrastructure/admin-audit.repository";
 import { AdminUsersRepository } from "./infrastructure/admin-users.repository";
 import { AdminAuditInterceptor } from "./presentation/admin-audit.interceptor";
+import { AdminAnnouncementsController } from "./presentation/admin-announcements.controller";
 import { AdminConfigController } from "./presentation/admin-config.controller";
 import { AdminContentController } from "./presentation/admin-content.controller";
 import { AdminEconomyController } from "./presentation/admin-economy.controller";
@@ -51,6 +52,7 @@ import { AdminForumController } from "./presentation/admin-forum.controller";
     AdminPlansController,
     AdminMetricsController,
     AdminForumController,
+    AdminAnnouncementsController,
   ],
   providers: [
     AdminUsersService,

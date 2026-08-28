@@ -1,7 +1,12 @@
 import type * as React from "react";
 import type { NotificationCategory, UserNotificationDto } from "@mentor/types";
 
-export type NotificationTab = "ALL" | NotificationCategory;
+/**
+ * Read-state filter, not a category filter. Categories are carried by the row icon, so the tab
+ * strip stays at two entries no matter how many categories exist (it used to list COACH/PLAN and
+ * silently hid CONTENT/FORUM/ACHIEVEMENT/SYSTEM).
+ */
+export type NotificationTab = "ALL" | "UNREAD";
 export type NotificationDrawerDesktopSide = "left" | "right";
 
 export interface NotificationDrawerLabels {
@@ -12,8 +17,11 @@ export interface NotificationDrawerLabels {
   deleteItem: string;
   close: string;
   tabAll: string;
-  tabCoach: string;
-  tabPlan: string;
+  tabUnread: string;
+  /** Recency group headings shown between rows. */
+  groupToday: string;
+  groupThisWeek: string;
+  groupEarlier: string;
   emptyTitle: string;
   emptyBody: string;
   timeJustNow: string;

@@ -3971,3 +3971,49 @@ lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bi
 
   İlgili: `room-backdrop-slide.tsx` (yeni), `room-theme-switcher.tsx`, `room-shell.tsx`,
   `study-session-shell.tsx`, `session-focus-backdrop.tsx`.
+
+- **Seans/oda UI turu 3: tek üst çubuk, sabit tema genişliği, geçmiş filtreleri, davet
+  sayfası, ev temasının solukluğu (2026-08-28)** —
+
+  **Bug (benim hatam): ev teması soluk görünüyordu, bilinçli değildi.** `RoomBackdrop`'un
+  peçesi `--room-ground-to`'yu `veilPercent` oranında karıştırıyordu. O token aynı zamanda
+  yedek zemin ve koltuk etiketlerinin halosu, dolayısıyla **açık bir odada açık olmak
+  zorunda** — ve karanlık odayı atmosferik yapan aynı %58, açık odayı ağartıyordu. Peçe
+  kütüphane (koyu) tek temayken ayarlanmıştı. Artık her temanın **kendi `--room-veil`
+  rengi ve alfası** var; `veilPercent` bir karışım oranı değil, o alfanın çarpanı. Ev'inki
+  diğerlerinin yarısı (0.5'e karşı 0.95): açık zemin + koyu mürekkepli bir oda okunabilirlik
+  için soluklaştırılmak zorunda değil, etiket halosu o işi zaten yapıyor.
+
+  **Ders seçici, tema ve ses tek üst çubukta.** Üçü de "nerede ve nasıl çalışıyorum"un
+  cevabı; ayrı satırlardaydılar çünkü tema kontrolü sonradan geldi ve kendi satırını aldı.
+  `TimerChrome` bileşeni tamamen kalktı — var oluş sebebi bu iki kontrolü ayrı tutmaktı.
+  Daralınca **sarıyor, sıkışmıyor**: telefonda üç kontrol yan yana sığmaz ve ezilmiş bir
+  seçici ikinci satırdan kötüdür.
+
+  **Tema etiketi sabit genişlikte (`w-[6.5rem]`).** "Ev" 2, "Kütüphane" 9 karakter; otomatik
+  genişlikte kontrolün tamamı imlecin altında yeniden boyutlanıyordu — basmak üzere olduğun
+  ok yer değiştiriyordu.
+
+  **Geçmiş filtreleri iki chip satırından iki `<select>`'e indi.** 288px'lik rayda chip'ler
+  tek bir seans görünmeden önce dört satır yiyordu; filtre, filtrelenen şeyden büyüktü.
+  Native `<select>` tek satır, platformun kendi seçicisini açıyor (klavye ve ekran okuyucu
+  zaten doğru, telefonda düzgün bir sheet) ve ders sayısı arttıkça bedavaya büyüyor — chip
+  satırının kötüleştiği yer tam olarak orasıydı. `appearance-none` platform okunu da
+  götürdüğü için ok geri çizildi (`pointer-events-none`).
+
+  **"Daha fazla göster" sessizleşti.** Kenar çubuğunun dibindeki tam genişlikte dolu buton,
+  sayfanın karşısındaki "Başla" ile aynı dikkati talep ediyordu; oysa yaptığı şey sekiz satır
+  daha açmak. Artık chevron'lu, ortalanmış, sessiz bir devam kontrolü.
+
+  **Davet sayfası: kopyala kodun üstünde, ikon olarak.** Altındaki tam genişlikte birincil
+  buton kopyalamayı diyaloğun ana olayı gibi gösteriyor, **kodu** — birine sesli okuyacağın
+  şeyi — onun alt yazısı durumuna düşürüyordu. Tek satır: kod ve onu alan ikon.
+  **Yenile butonu kaldı ama rütbesi indi.** Bir grup sohbetine sızmış bağlantıyı iptal etmenin
+  **tek yolu** o; kaldırmak bir butonu değil bir yeteneği silmek olurdu. Ama nadir ve hafif
+  yıkıcı bir aksiyon, kopyalamayla aynı ağırlıkta durmasının anlamı yoktu. Artık etiketli bir
+  metin butonu — çıplak bir yenile glifi "herkesin eski bağlantısı çalışmayı bırakacak"
+  demiyor.
+
+  İlgili: `packages/ui/src/theme.css` (`--room-veil`), `room-backdrop.tsx`,
+  `room-theme-switcher.tsx`, `study-session-shell.tsx`, `session-history.tsx`,
+  `room-shell.tsx`.
