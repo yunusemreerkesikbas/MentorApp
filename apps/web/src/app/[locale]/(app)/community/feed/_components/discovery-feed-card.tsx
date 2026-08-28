@@ -281,7 +281,7 @@ export function DiscoveryFeedCard({
       ) : null}
 
       {!compact && item.attachments.length > 0 ? (
-        <AttachmentGallery attachments={item.attachments} />
+        <AttachmentGallery attachments={item.attachments} compactSingle />
       ) : null}
 
       <div className="mt-1 flex w-full items-center gap-1">

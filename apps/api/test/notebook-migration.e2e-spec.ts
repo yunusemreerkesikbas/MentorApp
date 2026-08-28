@@ -32,11 +32,18 @@ describe("notebook collection migration rehearsal", () => {
         process.env.TEST_DATABASE_URL ??
         "postgres://mentor:mentor@localhost:5433/mentor_test";
       const database = `mentor_nb_migration_${Date.now()}`;
+      const probeRole = `mentor_nb_rls_${Date.now()}`;
       const admin = new Pool({ connectionString: databaseUrl(baseUrl, "postgres") });
       let target: Pool | undefined;
+      let probeRoleCreated = false;
 
       try {
         await admin.query(`CREATE DATABASE "${database}"`);
+        await admin.query(
+          `CREATE ROLE "${probeRole}" NOLOGIN NOSUPERUSER NOBYPASSRLS`,
+        );
+        probeRoleCreated = true;
+        await admin.query(`GRANT "${probeRole}" TO CURRENT_USER`);
         target = new Pool({ connectionString: databaseUrl(baseUrl, database) });
         await applyFiles(target, migrationFilesThrough(83));
 
@@ -133,6 +140,129 @@ describe("notebook collection migration rehearsal", () => {
           "SELECT to_regclass('public.study_rooms')::text AS table_name",
         );
         expect(chain.rows[0]?.table_name).toBe("study_rooms");
+
+        const rlsFlags = await target.query<{
+          relname: string;
+          relrowsecurity: boolean;
+          relforcerowsecurity: boolean;
+        }>(
+          `SELECT relname, relrowsecurity, relforcerowsecurity
+           FROM pg_class
+           WHERE relname = ANY($1::text[])
+           ORDER BY relname`,
+          [["study_room_members", "study_rooms"]],
+        );
+        expect(rlsFlags.rows).toEqual([
+          {
+            relname: "study_room_members",
+            relrowsecurity: true,
+            relforcerowsecurity: true,
+          },
+          {
+            relname: "study_rooms",
+            relrowsecurity: true,
+            relforcerowsecurity: true,
+          },
+        ]);
+        const roleFlags = await target.query<{
+          rolcanlogin: boolean;
+          rolsuper: boolean;
+          rolbypassrls: boolean;
+        }>(
+          `SELECT rolcanlogin, rolsuper, rolbypassrls
+           FROM pg_roles WHERE rolname = $1`,
+          [probeRole],
+        );
+        expect(roleFlags.rows[0]).toEqual({
+          rolcanlogin: false,
+          rolsuper: false,
+          rolbypassrls: false,
+        });
+
+        const room = await target.query<{ id: string }>(
+          `INSERT INTO study_rooms
+             (owner_user_id, name, theme, capacity, invite_code)
+           VALUES ($1, 'RLS Probe', 'LIBRARY', 4, 'MASA-RLSP01')
+           RETURNING id`,
+          [userA],
+        );
+        await target.query(
+          `INSERT INTO study_room_members (room_id, user_id, role)
+           VALUES ($1, $2, 'OWNER')`,
+          [room.rows[0]!.id, userA],
+        );
+        await target.query(`GRANT USAGE ON SCHEMA public TO "${probeRole}"`);
+        await target.query(
+          `GRANT SELECT, INSERT, UPDATE, DELETE
+           ON study_rooms, study_room_members TO "${probeRole}"`,
+        );
+
+        const probe = await target.connect();
+        try {
+          await probe.query("BEGIN");
+          await probe.query(`SET LOCAL ROLE "${probeRole}"`);
+          const identity = await probe.query<{
+            current_user: string;
+            session_user: string;
+          }>("SELECT current_user, session_user");
+          expect(identity.rows[0]).toMatchObject({ current_user: probeRole });
+          expect(identity.rows[0]?.session_user).not.toBe(probeRole);
+          await probe.query("SELECT set_config('app.user_id', $1, true)", [userA]);
+          const hidden = await probe.query<{ rooms: number; members: number }>(
+            `SELECT
+               (SELECT count(*)::int FROM study_rooms) AS rooms,
+               (SELECT count(*)::int FROM study_room_members) AS members`,
+          );
+          expect(hidden.rows[0]).toEqual({ rooms: 0, members: 0 });
+          await probe.query("SAVEPOINT denied_room");
+          await expect(
+            probe.query(
+              `INSERT INTO study_rooms
+                 (owner_user_id, name, theme, capacity, invite_code)
+               VALUES ($1, 'Denied', 'HOME', 4, 'MASA-RLSP02')`,
+              [userA],
+            ),
+          ).rejects.toMatchObject({ code: "42501" });
+          await probe.query("ROLLBACK TO SAVEPOINT denied_room");
+
+          await probe.query("SAVEPOINT denied_member");
+          await expect(
+            probe.query(
+              `INSERT INTO study_room_members (room_id, user_id, role)
+               VALUES ($1, $2, 'MEMBER')`,
+              [room.rows[0]!.id, userB],
+            ),
+          ).rejects.toMatchObject({ code: "42501" });
+          await probe.query("ROLLBACK TO SAVEPOINT denied_member");
+          await probe.query("ROLLBACK");
+
+          await probe.query("BEGIN");
+          await probe.query(`SET LOCAL ROLE "${probeRole}"`);
+          await probe.query("SELECT set_config('app.role', 'SERVICE', true)");
+          const visible = await probe.query<{ rooms: number; members: number }>(
+            `SELECT
+               (SELECT count(*)::int FROM study_rooms) AS rooms,
+               (SELECT count(*)::int FROM study_room_members) AS members`,
+          );
+          expect(visible.rows[0]).toEqual({ rooms: 1, members: 1 });
+          const inserted = await probe.query<{ id: string }>(
+            `INSERT INTO study_rooms
+               (owner_user_id, name, theme, capacity, invite_code)
+             VALUES ($1, 'Allowed', 'HOME', 4, 'MASA-RLSP03')
+             RETURNING id`,
+            [userA],
+          );
+          expect(inserted.rows).toHaveLength(1);
+          const insertedMember = await probe.query<{ id: string }>(
+            `INSERT INTO study_room_members (room_id, user_id, role)
+             VALUES ($1, $2, 'MEMBER') RETURNING id`,
+            [inserted.rows[0]!.id, userB],
+          );
+          expect(insertedMember.rows).toHaveLength(1);
+        } finally {
+          await probe.query("ROLLBACK").catch(() => undefined);
+          probe.release();
+        }
       } finally {
         await target?.end();
         await admin.query(
@@ -140,6 +270,9 @@ describe("notebook collection migration rehearsal", () => {
           [database],
         );
         await admin.query(`DROP DATABASE IF EXISTS "${database}"`);
+        if (probeRoleCreated) {
+          await admin.query(`DROP ROLE IF EXISTS "${probeRole}"`);
+        }
         await admin.end();
       }
     },

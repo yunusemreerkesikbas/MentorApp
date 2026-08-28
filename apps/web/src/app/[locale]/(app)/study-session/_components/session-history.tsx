@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { ChevronDown } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import type { StudySessionDto } from "@mentor/types";
-import { Button, Skeleton, skeletonStaggerStyle } from "@mentor/ui";
+import { Skeleton, skeletonStaggerStyle } from "@mentor/ui";
 import {
   type HistoryDatePreset,
   historyDateRange,
@@ -30,12 +31,56 @@ function distinctSubjects(items: StudySessionDto[]): string[] {
   return subjects;
 }
 
+/** "Bugün" / "Dün" / "28 Ağustos" — a heading, so the year is noise until it is not today. */
+function dayLabel(
+  dayKey: string,
+  locale: string,
+  t: (key: string) => string,
+): string {
+  const day = new Date(dayKey);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (day.toDateString() === today.toDateString()) return t("history_date_today");
+  if (day.toDateString() === yesterday.toDateString()) return t("history_day_yesterday");
+  return day.toLocaleDateString(locale, {
+    day: "numeric",
+    month: "long",
+    // A session from last year would otherwise read as this year's same date.
+    ...(day.getFullYear() === today.getFullYear() ? {} : { year: "numeric" }),
+  });
+}
+
+/**
+ * Sessions bucketed by the day they started, newest day first.
+ *
+ * The rail used to repeat the date on every row, which made four half-finished 0-minute
+ * sessions from the same afternoon look like four copies of one row. The date belongs to the
+ * day, not to each attempt — hoisting it frees the row to show the time instead, which is the
+ * thing that actually tells them apart.
+ *
+ * Bucketed by LOCAL calendar day (`toDateString`), not by a UTC slice: a 01:30 session is
+ * still last night to the person who sat through it.
+ */
+function groupByDay(items: StudySessionDto[]): { key: string; items: StudySessionDto[] }[] {
+  const groups: { key: string; items: StudySessionDto[] }[] = [];
+  for (const item of items) {
+    const key = new Date(item.startedAt).toDateString();
+    const last = groups[groups.length - 1];
+    // The API already returns newest-first, so a run of the same day is always contiguous.
+    if (last?.key === key) last.items.push(item);
+    else groups.push({ key, items: [item] });
+  }
+  return groups;
+}
+
 /**
  * Finalized sessions for the /study-session history rail / drawer.
  * Pagination and date/subject filters stay inside the sidebar — there is no history page.
  */
 export function SessionHistory() {
   const t = useTranslations("session");
+  const locale = useLocale();
   const [sessions, setSessions] = useState<StudySessionDto[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -122,43 +167,35 @@ export function SessionHistory() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div
-        className="flex flex-wrap gap-1.5"
-        role="group"
-        aria-label={t("history_date_filter_label")}
-      >
-        {DATE_PRESETS.map((preset) => (
-          <FilterChip
-            key={preset}
-            pressed={datePreset === preset}
-            onClick={() => setDatePreset(preset)}
-            label={t(`history_date_${preset}`)}
+      {/*
+        Two native selects instead of two wrapping chip rows. In a 288px rail the chips took
+        four lines before a single session was visible — the filters were bigger than the
+        thing being filtered. A `<select>` is one line, opens the platform's own picker
+        (already keyboard- and screen-reader-correct, and a proper sheet on a phone), and
+        grows for free as subjects accumulate, which is exactly where the chip row got worse.
+      */}
+      <div className="flex gap-1.5">
+        <FilterSelect
+          label={t("history_date_filter_label")}
+          value={datePreset}
+          onChange={(value) => setDatePreset(value as HistoryDatePreset)}
+          options={DATE_PRESETS.map((preset) => ({
+            value: preset,
+            label: t(`history_date_${preset}`),
+          }))}
+        />
+        {filterSubjects.length > 0 ? (
+          <FilterSelect
+            label={t("history_subject_filter_label")}
+            value={selectedSubject ?? ""}
+            onChange={(value) => setSelectedSubject(value === "" ? null : value)}
+            options={[
+              { value: "", label: t("history_filter_all") },
+              ...filterSubjects.map((subject) => ({ value: subject, label: subject })),
+            ]}
           />
-        ))}
+        ) : null}
       </div>
-
-      {filterSubjects.length > 0 ? (
-        <div
-          className="flex flex-wrap gap-1.5"
-          role="group"
-          aria-label={t("history_subject_filter_label")}
-        >
-          <FilterChip
-            pressed={selectedSubject === null}
-            onClick={() => setSelectedSubject(null)}
-            label={t("history_filter_all")}
-          />
-          {filterSubjects.map((subject) => (
-            <FilterChip
-              key={subject}
-              pressed={selectedSubject === subject}
-              onClick={() => setSelectedSubject(subject)}
-              label={subject}
-              truncate
-            />
-          ))}
-        </div>
-      ) : null}
 
       {state === "loading" ? (
         <div className="flex flex-col gap-0.5" aria-hidden>
@@ -192,32 +229,60 @@ export function SessionHistory() {
 
       {state === "ready" && sessions.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <ul className="flex flex-col gap-0.5">
-            {sessions.map((s, i) => {
-              const abandoned = s.status === "ABANDONED";
-              return (
-                <SessionHistoryRow
-                  key={s.id}
-                  session={s}
-                  index={i}
-                  compact
-                  minutesLabel={t("minutes_value", {
-                    minutes: Math.round(s.actualFocusSeconds / 60),
+          <div className="flex flex-col gap-3">
+            {groupByDay(sessions).map((group) => (
+              <section key={group.key} className="flex flex-col gap-0.5">
+                <h3
+                  className="px-2.5 pb-0.5 text-[11px] font-bold uppercase tracking-wide"
+                  style={{ color: "var(--color-secondary)", fontFamily: "var(--font-heading)" }}
+                >
+                  {dayLabel(group.key, locale, t)}
+                </h3>
+                <ul className="flex flex-col gap-0.5">
+                  {group.items.map((s, i) => {
+                    const abandoned = s.status === "ABANDONED";
+                    return (
+                      <SessionHistoryRow
+                        key={s.id}
+                        session={s}
+                        index={i}
+                        compact
+                        minutesLabel={t("minutes_value", {
+                          minutes: Math.round(s.actualFocusSeconds / 60),
+                        })}
+                        statusLabel={
+                          abandoned ? t("history_abandoned") : t("history_completed")
+                        }
+                      />
+                    );
                   })}
-                  statusLabel={abandoned ? t("history_abandoned") : t("history_completed")}
-                />
-              );
-            })}
-          </ul>
+                </ul>
+              </section>
+            ))}
+          </div>
           {loadMoreError ? (
             <p className="px-1 text-sm" style={{ color: "var(--color-secondary)" }} role="status">
               {t("history_load_more_error")}
             </p>
           ) : null}
+          {/* A quiet continuation of the list, not a call to action. A full-width filled
+              button at the bottom of a sidebar competes with "Başla" across the page for the
+              same attention, and this only reveals eight more rows. */}
           {hasMore ? (
-            <Button variant="secondary" fullWidth busy={loadingMore} onClick={() => void loadMore()}>
+            <button
+              type="button"
+              disabled={loadingMore}
+              onClick={() => void loadMore()}
+              className="mt-1 inline-flex min-h-9 cursor-pointer items-center justify-center gap-1 self-center rounded-full px-3 text-xs font-bold transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-50 motion-reduce:transition-none"
+              style={{ color: "var(--color-secondary)" }}
+            >
               {t("history_load_more")}
-            </Button>
+              <ChevronDown
+                className={`size-4 ${loadingMore ? "animate-pulse" : ""}`}
+                strokeWidth={2.5}
+                aria-hidden
+              />
+            </button>
           ) : null}
         </div>
       ) : null}
@@ -225,35 +290,50 @@ export function SessionHistory() {
   );
 }
 
-function FilterChip({
-  pressed,
-  onClick,
+/**
+ * A labelled native `<select>` styled to the app's chip language. The visible control carries
+ * its own accessible name through `aria-label`, so the filter reads correctly without a
+ * separate label row eating a line of the rail.
+ */
+function FilterSelect({
   label,
-  truncate = false,
+  value,
+  onChange,
+  options,
 }: {
-  pressed: boolean;
-  onClick: () => void;
   label: string;
-  truncate?: boolean;
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={pressed}
-      className={`cursor-pointer rounded-[var(--radius-card)] border px-2.5 py-1 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${truncate ? "max-w-[7.5rem] truncate" : ""}`}
-      style={{
-        backgroundColor: pressed
-          ? "var(--color-main)"
-          : "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-        color: pressed ? "var(--color-surface)" : "var(--color-chip-text)",
-        borderColor: pressed
-          ? "var(--color-main)"
-          : "color-mix(in srgb, var(--color-chip-text) 18%, transparent)",
-        fontFamily: "var(--font-body)",
-      }}
-    >
-      {label}
-    </button>
+    <div className="relative min-w-0 flex-1">
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full cursor-pointer appearance-none rounded-[var(--radius-card)] border py-1.5 pr-7 pl-2.5 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        style={{
+          backgroundColor: "color-mix(in srgb, var(--color-chip) 30%, transparent)",
+          color: "var(--color-chip-text)",
+          borderColor: "color-mix(in srgb, var(--color-chip-text) 18%, transparent)",
+          fontFamily: "var(--font-body)",
+        }}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      {/* `appearance-none` removes the platform arrow along with the platform skin, so the
+          affordance has to be drawn back; `pointer-events-none` keeps the select clickable. */}
+      <ChevronDown
+        className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2"
+        style={{ color: "var(--color-chip-text)" }}
+        strokeWidth={2.5}
+        aria-hidden
+      />
+    </div>
   );
 }

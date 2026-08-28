@@ -13,7 +13,14 @@ import { formatBytes } from "@/lib/format-bytes";
  * swipe + dots across all images of the post). Lives inside clickable feed rows, so interactions
  * stop propagation to avoid triggering the row's navigation.
  */
-export function AttachmentGallery({ attachments }: { attachments: Attachment[] }) {
+export function AttachmentGallery({
+  attachments,
+  compactSingle = false,
+}: {
+  attachments: Attachment[];
+  /** Feed cards crop one tall image to a stable preview; the lightbox stays uncropped. */
+  compactSingle?: boolean;
+}) {
   const t = useTranslations("community");
   const reduceMotion = useReducedMotion();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
@@ -65,7 +72,7 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
                 e.stopPropagation();
                 setActiveIndex(i);
               }}
-              className={`relative block min-h-0 cursor-pointer overflow-hidden rounded-[30px] border border-[color-mix(in_srgb,var(--color-main)_20%,transparent)] bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${single ? "w-full" : "h-full aspect-[16/9] w-4/5 shrink-0 snap-start md:aspect-auto md:w-full md:shrink md:[scroll-snap-align:none]"} ${span}`}
+              className={`relative block min-h-0 cursor-pointer overflow-hidden rounded-[30px] border border-[color-mix(in_srgb,var(--color-main)_20%,transparent)] bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${single ? `w-full ${compactSingle ? "aspect-[4/3]" : ""}` : "h-full aspect-[16/9] w-4/5 shrink-0 snap-start md:aspect-auto md:w-full md:shrink md:[scroll-snap-align:none]"} ${span}`}
             >
               {/* Storage URL (not next/image — dev fake endpoint + R2 aren't in the image config). */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -73,7 +80,13 @@ export function AttachmentGallery({ attachments }: { attachments: Attachment[] }
                 src={resolveApiUrl(a.url)}
                 alt=""
                 loading="lazy"
-                className={single ? "h-auto w-full object-contain" : "h-full w-full object-cover object-center"}
+                className={
+                  single
+                    ? compactSingle
+                      ? "h-full w-full object-cover object-top"
+                      : "h-auto w-full object-contain"
+                    : "h-full w-full object-cover object-center"
+                }
               />
             </button>
           );

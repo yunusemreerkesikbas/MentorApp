@@ -129,9 +129,8 @@ export class MistakeNotebookRepository {
     now: Date = new Date(),
   ): Promise<{ items: NotebookSummaryRow[]; total: number }> {
     const where = eq(notebookTable.userId, userId);
-    const [items, totalRows] = await Promise.all([
-      tx
-        .select({
+    const items = await tx
+      .select({
           id: notebookTable.id,
           userId: notebookTable.userId,
           orgId: notebookTable.orgId,
@@ -143,10 +142,6 @@ export class MistakeNotebookRepository {
           coverMaterial: notebookTable.coverMaterial,
           createdAt: notebookTable.createdAt,
           updatedAt: notebookTable.updatedAt,
-          pageCount: sql<number>`(
-            SELECT count(*)::int FROM ${notebookPages}
-            WHERE ${notebookPages.notebookId} = ${notebookTable.id}
-          )`.mapWith(Number),
           dueCount:
             sql<number>`CASE WHEN ${notebookTable.kind} = 'MISTAKE' THEN (
             SELECT count(*)::int FROM ${mistakeNotebookEntries}
@@ -161,15 +156,25 @@ export class MistakeNotebookRepository {
           sql`CASE WHEN ${notebookTable.kind} = 'MISTAKE' THEN 0 ELSE 1 END`,
           desc(notebookTable.updatedAt),
         )
-        .limit(query.pageSize)
-        .offset((query.page - 1) * query.pageSize),
-      tx
-        .select({ count: sql<number>`count(*)::int` })
-        .from(notebookTable)
-        .where(where),
-    ]);
+      .limit(query.pageSize)
+      .offset((query.page - 1) * query.pageSize);
+    const totalRows = await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(notebookTable)
+      .where(where);
+    const pageCountRows = await tx
+      .select({ notebookId: notebookPages.notebookId, pageCount: count() })
+      .from(notebookPages)
+      .where(eq(notebookPages.userId, userId))
+      .groupBy(notebookPages.notebookId);
+    const pageCounts = new Map(
+      pageCountRows.map((row) => [row.notebookId, row.pageCount]),
+    );
     return {
-      items: items as NotebookSummaryRow[],
+      items: items.map((item) => ({
+        ...item,
+        pageCount: pageCounts.get(item.id) ?? 0,
+      })) as NotebookSummaryRow[],
       total: totalRows[0]?.count ?? 0,
     };
   }
@@ -205,10 +210,6 @@ export class MistakeNotebookRepository {
         coverMaterial: notebookTable.coverMaterial,
         createdAt: notebookTable.createdAt,
         updatedAt: notebookTable.updatedAt,
-        pageCount: sql<number>`(
-          SELECT count(*)::int FROM ${notebookPages}
-          WHERE ${notebookPages.notebookId} = ${notebookTable.id}
-        )`.mapWith(Number),
         dueCount: sql<number>`0`.mapWith(Number),
       })
       .from(notebookTable)
@@ -216,7 +217,18 @@ export class MistakeNotebookRepository {
         and(eq(notebookTable.id, notebookId), eq(notebookTable.userId, userId)),
       )
       .limit(1);
-    return rows[0] as NotebookSummaryRow | undefined;
+    const row = rows[0];
+    if (!row) return undefined;
+    const [pages] = await tx
+      .select({ pageCount: count() })
+      .from(notebookPages)
+      .where(
+        and(
+          eq(notebookPages.userId, userId),
+          eq(notebookPages.notebookId, notebookId),
+        ),
+      );
+    return { ...row, pageCount: pages?.pageCount ?? 0 } as NotebookSummaryRow;
   }
 
   async updateNotebook(

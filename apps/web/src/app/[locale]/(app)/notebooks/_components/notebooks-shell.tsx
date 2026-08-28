@@ -312,7 +312,7 @@ function NotebookCard({
   return (
     <article className="group relative rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)]">
       {item.kind === "CUSTOM" ? (
-        <div className="absolute end-2 top-2 z-10 flex rounded-full bg-[var(--color-surface)] shadow-[var(--shadow-card)]">
+        <div className="absolute end-2 top-2 z-10 flex rounded-full bg-[var(--color-surface)] opacity-100 shadow-[var(--shadow-card)] transition-opacity duration-150 motion-reduce:transition-none [@media(hover:hover)]:pointer-events-none [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:pointer-events-auto [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:pointer-events-auto [@media(hover:hover)]:group-hover:opacity-100">
           <button
             type="button"
             aria-label={t("edit", { title })}
@@ -348,7 +348,7 @@ function NotebookCard({
             </p>
           </div>
           {item.subjectName ? (
-            <span className="shrink-0 rounded-full bg-[var(--color-accent-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--color-main)]">
+            <span className="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold text-[var(--color-main)]">
               {item.subjectName}
             </span>
           ) : null}

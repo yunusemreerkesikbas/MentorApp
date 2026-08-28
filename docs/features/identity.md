@@ -85,6 +85,24 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **Auth hang on signup (2026-08-28)** — Same rim sandwich as login, now also on
+  `/signup` (`/kayit`). `displayName` and `email` look down; password covers.
+  Checkboxes stay idle. The signup form is still hang-agnostic — focus is captured
+  on the sheet. Related: `auth-paths.ts`, `auth-hang-choreography.ts`.
+- **Auth hang Puhu sprites (2026-08-28)** — Login sheet companion art lives at
+  `apps/web/public/mascot/puhu/auth/` (`hang-rest` / `blink` / `gaze-left` / `gaze-right` /
+  `look-down` / `cover`). Magenta-keyed, shared 384×384 canvas, not trimmed per frame.
+  `cover` uses both wings over both lenses. Wired on `/login` only: Puhu sits on the sheet
+  rim. Two copies sandwich the sheet face: the body sits behind so the baked
+  white cut (the “underline”) is hidden by the card; a front copy uses clip-path
+  insets so the side hands sit on the rim (CSS mask luminance hid them). Idle bob (4px / 2s, same idea as
+  `.mentor-puhu-bounce`) pauses while a field is focused. Email focus →
+  look-down, password focus → cover, `prefers-reduced-motion` freezes idle on rest (focus
+  still swaps). Focus is captured on the sheet from `input[name=email|password]` so the
+  login form stays hang-agnostic. Signup is a later slice. Usage: focus the fields. Gotcha:
+  do not put the sprite inside the scroll area — `overflow-hidden` clips the hang. Login
+  `main` keeps `padding-top: HANG_OVERHANG_PX` so the hang can sit above the rim. Related:
+  `auth-shell.tsx`, `auth-hang-puhu.tsx`, `auth-hang-choreography.ts`.
 - **Onboarding açıklama metinleri kaldırıldı (2026-08-26)** — `/baslangic` profil ve sınav
   adımlarındaki yardımcı alt yazılar (kullanıcı adı/fotoğraf, JPEG/PNG 2 MB, sınav ailesi
   açılımı, KPSS düzey açıklamaları) kalktı; başlıklar ve seçenek etiketleri duruyor.

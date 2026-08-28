@@ -478,15 +478,37 @@ html.dark {
  * controls sit legibly on a bright parchment room and a dark café alike.
  */
 .room-stage {
-  --room-ground-from: #f6f1e7;
-  --room-ground-to: #ede4d3;
+  /* ponytail: LIBRARY's shipped artwork (`room-library-bg.webp`) is a dim, lamp-lit
+     reading room — NOT the bright parchment the first token pass assumed. Ink stays
+     dark-on-light only if the ground is light; here it made seat labels ("Yunus E.",
+     "Davet et") near-invisible, and the light veil washed the artwork grey on top of
+     it. Ground + ink now match the picture that actually ships. */
+  color-scheme: dark;
+  --room-ground-from: #3a2e23;
+  --room-ground-to: #241b14;
   --room-table: #8b6f47;
-  --room-table-edge: #6f5636;
+  --room-table-edge: #2a1f16;
   --room-chair: #c9b896;
-  --room-ink: #2e2a22;
-  --room-ink-soft: #6b6154;
+  --room-ink: #f7f0e4;
+  --room-ink-soft: #cdb99f;
   --room-accent: #2e7d54;
-  --room-scrim: rgba(255, 255, 255, 0.72);
+  --room-scrim: rgba(26, 20, 15, 0.66);
+  /* The primary CTA is brand blue in EVERY room, not the room's accent: "sit down here"
+     is the same action wherever you are, and a button that changes colour per theme is a
+     button people have to re-learn. `--room-accent` still owns the room's own signals —
+     the seated avatar's ring, focus rings. Defined on the stage (not read from
+     `--color-progress`) so it never follows the app's light/dark cookie, same rule as the
+     rest of this block. Dark ink, not white: white on #55acee is ~2.4:1. */
+  --room-cta: #55acee;
+  --room-cta-ink: #0f2233;
+  /*
+   * Veil over the room photograph. Its own colour AND its own strength per theme, because
+   * `--room-ground-to` could not be both: that token is the fallback ground and the halo
+   * behind seat labels, so on a light room it has to be light — and reusing it as the veil
+   * meant a light room got bleached by the exact percentage that made a dark room moody.
+   * The caller's `veilPercent` is now a multiplier on this alpha, not a mix ratio.
+   */
+  --room-veil: rgba(36, 27, 20, 0.95);
 }
 
 .room-stage[data-room-theme="CAFE"] {
@@ -500,6 +522,7 @@ html.dark {
   --room-ink-soft: #c2ac9c;
   --room-accent: #e8a87c;
   --room-scrim: rgba(23, 17, 16, 0.66);
+  --room-veil: rgba(23, 17, 16, 0.95);
 }
 
 .room-stage[data-room-theme="HOME"] {
@@ -512,6 +535,9 @@ html.dark {
   --room-ink-soft: #665c7c;
   --room-accent: #55acee;
   --room-scrim: rgba(255, 255, 255, 0.7);
+  /* Half the others': a bright room with dark ink does not need to be washed pale to carry
+     text — the label halo already does that job, and at full strength the artwork vanished. */
+  --room-veil: rgba(227, 218, 241, 0.5);
 }
 
 /* One seated avatar breathing — presence you can feel without reading a sentence. */

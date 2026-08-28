@@ -1118,7 +1118,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
       <button
         type="button"
         onClick={() => setReviewing(true)}
-        className="inline-flex max-w-[min(100%-1rem,20rem)] shrink-0 cursor-pointer items-center gap-2 rounded-full px-3.5 py-2 shadow-[var(--shadow-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-3.5 py-2 shadow-[var(--shadow-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         style={{ backgroundColor: "var(--color-accent-soft)" }}
       >
         <History

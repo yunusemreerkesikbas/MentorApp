@@ -3315,15 +3315,48 @@ lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bi
   birlikte çalışır; mevcut repository sahiplik filtresi ve RLS ikinci/üçüncü koruma olarak kalır.
   Migration provası her çalıştırmada benzersiz geçici veritabanı açar, `0083` sonuna kadar legacy
   durumu kurar, kapak/sayfa taşımasını ve `0085` zincirini doğrular, yalnız kendi veritabanını
-  `finally` içinde siler. Gerçek Postgres HTTP E2E paketi plural CRUD, legacy delegasyon,
-  taksonomi, sahiplik, RLS, cascade, sayaç ayrışması ve KVKK silmeyi kapsar.
+  `finally` içinde siler. `0085` sonrasında benzersiz `NOSUPERUSER/NOBYPASSRLS` probe rolüyle
+  kullanıcı context'inin oda/üyelik satırlarını okuyamadığı ve yazamadığı, `SERVICE` context'inin
+  ise iki tabloyu okuyup yazabildiği gerçek PostgreSQL üzerinde kanıtlanır; geçici rol de cleanup'ta
+  silinir. Gerçek Postgres HTTP E2E paketi plural CRUD, legacy delegasyon, taksonomi, sahiplik,
+  RLS, cascade, sayaç ayrışması ve KVKK silmeyi kapsar.
 
   Web'de create/delete sonrasında koleksiyon sunucudan yeniden ilk sayfaya alınır; yükleme devamı
   ve silme hataları mevcut kartları bozmadan inline yeniden deneme sunar. Dialog ilk alan odağı,
   44px hedefler, focus ring ve reduced-motion doğrulandı. Mobil defter editörü tam ekran chrome
   kullanır; böylece üst navigasyon editör araçlarının dokunma alanını kapatmaz. DELETE başarılı
   olup liste yenileme başarısız olduğunda defter yerelden kaldırılır ve yeniden deneme yalnız ilk
-  sayfayı eşitler; silme isteği ikinci kez gönderilmez.
+  sayfayı eşitler; silme isteği ikinci kez gönderilmez. Bu regresyon harici dev sunucusunu kabul
+  eden Playwright `baseURL` override'ı ile stale production build'e ihtiyaç duymadan desktop ve
+  mobil viewportlarda doğrulanır; varsayılan CI `next start :3100` davranışı değişmez.
+
+  Defter oluşturma/düzenleme formunun ortak `@mentor/ui` modalı Framer Motion ile merkezden sakin
+  bir ölçek/opaklık geçişi kullanır; kapanış tamamlanmadan dialog DOM'dan ayrılmaz ve işletim
+  sisteminin reduced-motion tercihi animasyonu kapatır. Custom defter kartlarındaki düzenle/sil
+  aksiyonları hover destekleyen cihazlarda kart hover'ı veya klavye odağıyla görünür, dokunmatik
+  cihazlarda ise erişilebilir kalmak için sürekli gösterilir. İlgili: `packages/ui/src/components/modal.tsx`,
+  `notebooks-shell.tsx`.
+
+  Koleksiyon ve tekil defter sorguları sayfa sayılarını forced RLS altında correlated alt sorgudan
+  okumak yerine kullanıcıya ait sayfaları tek bir toplu `GROUP BY notebook_id` sorgusuyla hesaplar.
+  Böylece dolu sistem Yanlış Defteri kartının `0 sayfa` görünmesi giderilir; N+1 oluşmadan repository
+  sahiplik filtresi ve RLS birlikte korunur. İlgili: `mistake-notebook.repository.ts`,
+  `notebooks.e2e-spec.ts`.
+
+  Yanlış Defteri tekrar akışının tamamlandı, yarıda bırakıldı ve ikinci kez takılma ekranları ortak
+  bir highlight-summary diliyle yenilendi. Duruma göre nötr, başarı veya yardım vurgulu başlık alanı;
+  tek aksiyon hiyerarşisi ve kart içine kart görünümü oluşturmayan sade kaçırılanlar listesi kullanılır.
+  Uzun listeler modal içinde kayar; mobil ölçüler, tema tokenları, 44px hedefler ve reduced-motion
+  davranışı korunur. İlgili: `notebook-review-panel.tsx`.
+
+  Özet içindeki “Yine takıldıkların” satırında görsel ve metin alanı artık mevcut soru lightbox'ını
+  açar; “Topluluğa sor” ayrı bağlantı olarak aynı entry handoff verisiyle topluluk composer'ına
+  yönlendirir. Fotoğrafı olmayan kayıtta yanıltıcı önizleme aksiyonu gösterilmez.
+
+  Yanlış Defteri handoff'uyla topluluk feed'ine taşınan dikey soru fotoğrafları feed kartını artık
+  doğal oranıyla aşırı uzatmaz: tek görsel feed'de `4:3` ve üstten odaklı kompakt önizleme kullanır.
+  Detay/cevap/yorum galerileri doğal oranı, lightbox ise kırpılmamış tam görseli korur. İlgili:
+  `attachment-gallery.tsx`, `discovery-feed-card.tsx`.
 
   **Rollout checklist (deploy bu PR'nin parçası değil):**
 
@@ -3584,3 +3617,357 @@ lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bi
 
   İlgili: `theme.css` (`.room-stage`, `room-seat-breathe`), `room-shell.tsx`, `room-seats.tsx`,
   `room-backdrop.tsx`, `messages/{tr,en}.json`.
+
+- **Çalışma masası — hareket + tema karuseli + Masalarım (2026-08-26)** — Üç iş, ikisi aynı kökten:
+  tema seçimi artık masa kurma akışının kendisi.
+
+  **Tema karuseli (`room-theme-carousel.tsx`).** `<select>` yerine içinden geçilen bir oda:
+  prev/next okları, dokunmatikte sürükleme, klavyede ok tuşları. Her geçişte **bütün sahne kayar**
+  — zemin, masa, isim — çünkü seçilen şey bir atmosfer; açılır liste onu veritabanı değerine
+  çeviriyordu. Yön (`direction`) tema ile aynı olayda set ediliyor, böylece çıkan ve giren slayt
+  odanın hangi yöne gittiği konusunda anlaşıyor.
+
+  **Gotcha — kapsam iki yerde gerekiyor.** Oklar ve noktalar animasyonlu elemanın *dışında*
+  yaşıyor; dış sarmalayıcıya `.room-stage` verilmezse `--room-*` ailesi tanımsız kalıyordu.
+  Slayt kendi kapsamını da koruyor: aksi hâlde çıkan tema, giderken yeni temanın rengine
+  atlıyordu.
+
+  **Gotcha — ref'i render'da okumak.** İlk sürümde yön bir `useRef`'te tutuluyordu ve `initial`/
+  `exit` prop'ları onu render sırasında okuyordu (React ihlali, lint yakaladı). State zaten aynı
+  olayda set edildiği ve batch'lendiği için ref gereksizdi.
+
+  **Masa kurma sheet'e taşındı.** Önceden 288px'lik kenar çubuğunda üç üst üste alan vardı ve
+  tema görünmüyordu. Şimdi: karusel banner, ad alanı, ve koltuk sayısı için **stepper** (aralık
+  2–10; klavye açmaya değmez). Ortak `RoomSheet` kabuğu (mobilde alt sheet, `sm` üstünde ortalı
+  dialog; Escape kapatır, gövde kaydırması kilitlenir) kur/katıl/davet/tema akışlarının hepsinde
+  kullanılıyor.
+
+  **Masalarım yeniden tasarlandı:** her satır kendi temasının **swatch**'ini taşıyor (sahnenin
+  token'larıyla, küçültülmüş masa dahil), canlı çalışan sayısı yeşil rozette, satırlar stagger ile
+  geliyor. Liste artık kayıt değil, yer listesi gibi okunuyor.
+
+  **Masa sayfası hareketleri:** zemin tema değişiminde çapraz geçiş yapıyor (anlık atlamıyor),
+  masa yerine oturuyor, koltuklar sırayla iniyor — odaya girmek "oda doluyor" gibi okunuyor.
+  Sahip artık taşma menüsünden **temayı değiştirebiliyor**; aynı karusel, ve seçim anında
+  kaydediliyor (karusel sonucu zaten gösterdiği için Kaydet butonu kullanıcıya gördüğü şeyi
+  onaylatmaktan başka iş yapmazdı).
+
+  Hepsi `useReducedMotion` ile korumalı: hareket düşer, değişim kalır (§9.1).
+
+  İlgili: `room-theme-carousel.tsx`, `room-sheet.tsx`, `room-create-sheet.tsx`,
+  `session-room-list.tsx`, `room-shell.tsx`, `room-seats.tsx`, `messages/{tr,en}.json`.
+
+- **Çalışma masası — tema değiştirme sheet'siz (2026-08-26)** — "Temayı değiştir" modal'ı
+  kaldırıldı; tema artık başlığın hemen altında, prev/next okları arasında — bir tıkla değişiyor
+  (önceden menü → öğe → sheet → ok, dört adımdı). Sahibe göre gösterim: okları yalnız sahip
+  görüyor, üye tema adını salt görüyor (eski menü öğesiyle aynı yetki sınırı).
+
+  **Presence metni ("Şu an kimse çalışmıyor") o satırdan kalktı, geri getirilmedi.** Bir odanın
+  chrome'a ayırabileceği tek satır vardı ve tema orada duracaktı; koltuklardaki canlı halka zaten
+  kimin orada olduğunu bir cümleden daha iyi anlatıyor. Kasıtlı kayıp, unutulmuş değil.
+
+  İlgili: `room-shell.tsx` (`changeTheme`, inline tema switcher), `messages/{tr,en}.json`
+  (`theme_change`/`nobody_working`/`working_count` orphan oldu, kaldırıldı).
+
+- **Çalışma masası — kütüphane masa/sandalye görselleri entegre edildi (2026-08-27)** —
+  Kullanıcının ürettiği `library.webp`/`library-desk.webp`/`library-chair.webp`
+  `public/visuals/room-library-{bg,table,seat}.webp` olarak proje konvansiyonuna taşındı.
+  `RoomSeats` artık görsel varsa onu kullanıyor, yoksa (tema henüz asset'siz veya 404) mevcut
+  CSS elipse/kutucuğa düşüyor — `RoomBackdrop`'takiyle aynı `onError` deseni. Masa **tek,
+  kapasiteden bağımsız** bir görsel (CSS `scale` yerine `object-contain` ile kutuya sığdırılıyor);
+  sandalye **radyal simetrik tek görsel**, 2-10 koltuğun hepsinde rotasyonsuz tekrar kullanılıyor.
+
+  **Bulunan hata — `sizes` prop'u rem kabul etmiyor.** `sizes="34rem"` / `sizes="4rem"` Next.js
+  image optimizer tarafından ayrıştırılamıyor, ikisi de en büyük cihaz kovasına (`w=3840`)
+  düşüyordu — 64px'lik bir sandalye ikonu için 3840px genişliğinde görsel istemek gereksiz
+  yavaşlık. `px` değerlerine (`"544px"`, `"96px"`) çevrildi, `srcset` artık `w=32`'den başlıyor.
+
+  **Bulunan tasarım sorunu — sandalye halkası avatarın altında kayboluyor.** Sandalye çerçevesi
+  64px (`size-16`), avatar 40px → geriye kalan görünür kadife/ahşap halka ~10-12px. Boş koltukta
+  (avatar yok) tam disk net görünüyor; dolu koltukta bu ince halka avatarın kendi border'ıyla
+  karışıp görünmez oluyordu. 80px'e (`size-20`) çıkarıldı — avatar boyutu (uygulamanın her
+  yerinde aynı) değişmedi, sadece sandalyeye nefes payı verildi.
+
+  İlgili: `room-seats.tsx`, `study-room-theme.ts` (`STUDY_ROOM_TABLE_SRC`, `STUDY_ROOM_SEAT_SRC`),
+  `public/visuals/room-library-{bg,table,seat}.webp`.
+
+- **Çalışma odası — okunabilirlik ve ölçek düzeltmesi (2026-08-28)** —
+  **Kök neden: token seti ile gerçekte gelen görsel birbirini tutmuyordu.** `.room-stage`
+  varsayılanı (LIBRARY) "aydınlık parşömen oda" varsayıyordu — `--room-ink: #2e2a22` koyu
+  mürekkep, `--room-ground-to: #ede4d3` açık zemin. Ama entegre edilen `room-library-bg.webp`
+  loş, lamba ışıklı bir okuma odası. Sonuç: koyu metin koyu zeminde kayboluyor ("Yunus E.",
+  "Davet et" okunmuyordu), üstüne `RoomBackdrop`'un %26 veil'i açık `--room-ground-to` ile
+  boyandığı için görseli de griye çalıyordu. Token bloğu görsele uyduruldu (koyu zemin, açık
+  mürekkep, koyu scrim, `color-scheme: dark`). Ders: bir tema hem renk hem görsel taşıyorsa
+  ikisi tek commit'te doğrulanmalı — biri diğerini sessizce okunamaz yapabiliyor.
+
+  **Ölçek: kare sahne yalnızca genişlikten sınırlanmıştı.** `max-w-[34rem]` (544px) sabitti;
+  full-bleed arka planın devasa kitaplıklarının ortasında masa oyuncak gibi kalıyordu.
+  `max-w-[min(46rem,78vh)]` — kare olduğu için hangi eksen önce biterse ona uyuyor. Sandalyeler
+  `lg:size-28`, etiket kolonu `w-[7.5rem]`, metinler 13/11px → `text-sm`/`text-xs`. Her etiket
+  odanın kendi zemin rengiyle (`--room-ground-to`) halo alıyor: loş kütüphanede koyu, aydınlık
+  evde açık — tek kural, üç tema.
+
+  **CTA artık her odada marka mavisi (`--room-cta`).** Eskiden `--room-accent` okunuyordu, yani
+  buton kütüphanede yeşil / kafede amber / evde maviydi. "Bu masaya otur" her yerde aynı
+  aksiyon; rengi odaya göre değişen birincil buton her odada yeniden öğreniliyor. `--room-accent`
+  odanın kendi sinyallerinde kaldı (oturan avatarın nefes alan halkası, focus ring'ler).
+  Mürekkep beyaz değil koyu (`#0f2233`): beyaz-üstü-#55acee ~2.4:1 ile AA'yı geçmiyor.
+  Token stage'de tanımlı, `--color-progress`'ten okunmuyor — sahne uygulamanın light/dark
+  cookie'sini takip etmemeli (DESIGN.md §2.5 istisnası).
+
+  İlgili: `packages/ui/src/theme.css` (`.room-stage`), `room-seats.tsx`, `room-shell.tsx`.
+
+- **Çalışma odası — masa ölçeği, tema geçiş hatası, mobil dikey masa, tema önizleme
+  (2026-08-28)** —
+
+  **Bug: tema değiştirince masa/sandalye CSS çizimine düşüyor, sayfa yenileyince düzeliyordu.**
+  `RoomSeats` görsel hatasını iki boolean'da tutuyordu (`tableImageFailed`, `seatImageFailed`).
+  Henüz asset'i olmayan bir temaya (CAFE/HOME) geçmek `onError` ile bunları `true` yapıyor,
+  kütüphaneye dönmek **geri almıyordu** — bileşen unmount olana kadar (yani reload'a kadar)
+  fallback'te kalıyordu. Artık hata **kaynak bazında** (`failedSrc: string[]`) tutuluyor:
+  asset'i olan tema, olmayandan etkilenmiyor ve 404 alan bir src bir daha istenmiyor.
+  Aynı tuzak `RoomThemeCarousel`'de de vardı (karusel zaten temalar arasında geziyor), aynı
+  şekilde çözüldü — orada state slaytın değil **ebeveynin** üstünde durmak zorunda, çünkü slayt
+  `key={value}` ile her adımda remount oluyor.
+
+  **Masa büyütüldü.** Elips yarıçapları %26/19 → %30/22. Koltuk yörüngesi %42/37'ye açıldı;
+  aradaki boşluk keyfi değil, "sandalye + etiketi sığsın" mesafesi.
+
+  **Mobilde masa dik duruyor.** `(max-width: 639px)` altında `LAYOUT.portrait` devreye giriyor:
+  elips dikey (%17/30), koltuklar uzun kenarlara diziliyor, sandalyeler 64px'e iniyor. Masa
+  görseli **aynı dosya**, `rotate(90deg)` ile — tam tepeden bakış olduğu için bir masayı
+  döndürmek fiziksel olarak anlamlı, perspektifli bir çizimde olmazdı. Görsel kutusu
+  döndürülmeden ÖNCE yatay kuruluyor (`TableImage`); dikey kutuya `object-contain` uygulayıp
+  sonra döndürmek geniş görseli önce şeride sıkıştırırdı. Sahne her iki yönde de **kare**
+  kalıyor: `seatPositions` yay uzunluğunu x ve y'yi aynı birimde sayarak ölçüyor, bu da ancak
+  genişliğin %1'i ile yüksekliğin %1'i aynı piksel olduğunda doğru.
+
+  **Yeni masa modalındaki tema önizlemesi artık gerçek oda fotoğrafı.** Öncesinde CSS'le
+  çizilmiş jenerik bir elipsti — "Kütüphane" ile "Kafe"yi ayırt ettiren tek şey zemin rengiydi,
+  ki bir atmosfer seçimi için dayanak değil. CSS çizimi fallback olarak duruyor, yani asset'i
+  olmayan tema boş panel göstermiyor. `CAFE`/`HOME` (ve opsiyonel kütüphane v2) için üretim
+  promptları: [`room-theme-visual-prompts.md`](./room-theme-visual-prompts.md). Dosyaları
+  `public/visuals/` altına doğru adla bırakmak yeterli, kod değişikliği gerekmiyor.
+
+  İlgili: `room-seats.tsx`, `room-theme-carousel.tsx`, `room-theme-visual-prompts.md`.
+
+- **Çalışma odası — masa ölçeği (asıl neden), sabit CTA, seans sayfasıyla süreklilik
+  (2026-08-28)** —
+
+  **Masa neden hâlâ küçüktü: `object-contain` + kare asset.** Yarıçapları büyütmek işe
+  yaramadı çünkü sorun yarıçaplarda değildi. `room-library-table.webp` **1254×1254 kare**
+  (oval, şeffaf kutunun içine çizilmiş), ama görsel kutusu ovalin kendi oranlarına göre yatay
+  kuruluyordu (%60×%44). `object-contain` kare bir görseli yatay kutuya **kısa kenardan**
+  sığdırır — yani %44'ten. Genişlik hiçbir şey yapmıyordu. Kutu kareye çevrildi (`tableBox`),
+  görsel artık tam `tableBox` kadar render ediliyor: masaüstü %66, mobil %64. Yan fayda:
+  rotasyon bedava, kare kutunun dönmeden önceki ve sonraki ayak izi aynı.
+
+  **CTA artık `absolute`, akışta değil.** Oda etrafına bakılan bir yer; oradan çıkan tek yol
+  bakarken yerinde durmalı. Akışta olduğu için sahnenin yüksekliğiyle sürükleniyordu ve
+  telefonda tab bar'ın altına düşüp tamamen kayboluyordu. Ayrıca `<main>` `min-h-screen`
+  kullanıyordu — uygulamanın kendi chrome'unu yok sayan bir ölçü; repodaki standart viewport
+  aritmetiğine çevrildi (`100dvh-4rem-80px-safe-area`, `lg:` üstünde tam ekran).
+  **Butonun kendisi kaldırılmadı:** boş sandalyedeki `+` ikonu *davet et* (yalnız sahip için),
+  "otur" değil. İkisi ayrı aksiyon; sandalyeye tıklamayı "otur" yapmak sahibin davet yolunu
+  götürürdü.
+
+  **Odadan seansa geçerken tema bağlamı kopuyordu.** "Bu masada çalışmaya başla" →
+  `/study-session?room=` sizi düz bir ekrana bırakıyordu, odanın adı bir çipe inmiş oluyordu —
+  az önce seçtiğiniz yerden çıkmıştınız. Odak modu odayı zaten geri getiriyordu
+  (`SessionFocusBackdrop`); eksik olan **tek parça aradaki idle ekranıydı**. Artık `?room=`
+  varken idle ekranı da `RoomBackdrop` giyiyor. Veil oda sayfasındakinden ağır (%58): burada
+  zeminin üstünde koltuk değil gerçek uygulama chrome'u var (kartlar, seçiciler, geçmiş rayı)
+  ve onlar app token'larıyla okunuyor. **Seçilmeyen yol:** timer'ı tamamen odanın içine taşımak
+  daha bütünlüklü his verirdi ama iki ekranın state'ini birleştirmek demek — zemin düzeldikten
+  sonra ayrı iş.
+
+  **"Masalarım" satırındaki tema göstergesi gerçek oda fotoğrafı oldu.** Token washı + bej bir
+  hap şeklindeydi: "bir masa" çizimi, hangi oda olduğunu söylemiyordu — oysa gerçek fotoğraf iki
+  bileşen ötede zaten kullanılıyordu. Token çizimi fallback olarak duruyor. Burada tek boolean
+  yeterli (sahne ve karuselin aksine): bir satırın teması altından değişmiyor, dolayısıyla
+  hata almış bir src tekrar görünür hale gelemiyor.
+
+  İlgili: `room-seats.tsx`, `room-shell.tsx`, `study-session-shell.tsx`, `session-room-list.tsx`.
+
+- **Seans ekranı odanın içine taşındı: tema switcher, sade görünüm, sahne geçişi (2026-08-28)** —
+
+  **Tema switcher artık iki sayfanın ortak bileşeni** (`room-theme-switcher.tsx`). Oda
+  sayfasında zaten vardı; seans ekranı da artık odanın *içi* olduğuna göre temayı oradan da
+  değiştirebilmek gerekiyordu. Kopyalamak yerine çıkarıldı — "sonraki tema hangisi" mantığının
+  iki kopyası tam olarak zamanla birbirinden ayrılan cinsten. `canChange` (yalnız sahip, API
+  kuralıyla aynı) devre dışı ok yerine bileşeni düz etikete indiriyor: üyeye bir aksiyon
+  yasaklanmıyor, orada onun için aksiyon yok.
+
+  **"Sade görünüm" düğmesi.** Oda zemini kapanır, masada oturuyor olmanın geri kalanı (isim,
+  ambient, timer, `?room=` ile başlayan seans) aynen kalır. Odak modu da bundan etkileniyor —
+  yani düğme "eski sade hâl"in tamamını geri getiriyor. **Kasıtlı olarak state, ayar değil:**
+  temalı oda kimi için atmosfer kimi için dikkat dağıtıcı ve bu oturumluk bir ruh hali;
+  yönetilecek bir tercih daha eklemek yerine ziyaret bitince sıfırlanıyor.
+  Switcher `--room-*` okuduğu için `room-stage` burada da scope'lanmak zorunda; zemin kapalıyken
+  iki token app token'ına yeniden yönlendiriliyor — bej bir `--room-ink-soft` lamba ışığındaki
+  zemin için seçilmişti, sade yüzeyde işi yok.
+
+  **Sahne geçişi: karart, sonra aç.** "Bu masada çalışmaya başla" artık önce perdeyi indiriyor
+  (280 ms siyaha fade), sonra `router.push` ediyor; seans ekranı da siyahtan açılıyor. Masaya
+  oturmak bir sahne değişimi, sayfa yüklemesi değil — sert kesme insanı odadan atılmış gibi
+  hissettiriyordu. Buton hâlâ gerçek bir `<a>`: orta tık / ctrl+tık / "yeni sekmede aç"
+  doğrudan geçiyor, `prefers-reduced-motion` fade'i tamamen atlıyor (aksi halde sebepsiz bir
+  siyah ekran olurdu). Süre `ROOM_CURTAIN_MS` olarak **`study-room-theme.ts`'de**: iki ekrandan
+  birinden diğerine import etmek, tek bir tam sayı için o sayfanın tüm bundle'ını ötekine
+  taşıyordu.
+
+  **Koltuktaki avatar sandalyeyle birlikte büyüyor** (`AVATAR_PX`: 34 / 44 / 60px, sandalye
+  64 / 80 / 112'ye karşılık). Avatarı uygulama genelindeki 40px'e sabitlemek hataydı — burada
+  bir yazar künyesi değil, bir insan; sandalye büyüdükçe yüz döşemenin içinde kaybolan bir
+  minyatüre dönüşmüştü. Yarısı civarı: daha küçüğü tanınmıyor, daha büyüğü sandalyeyi mobilya
+  olmaktan çıkarıyor.
+
+  İlgili: `room-theme-switcher.tsx` (yeni), `room-shell.tsx`, `study-session-shell.tsx`,
+  `room-seats.tsx`, `study-room-theme.ts`, `messages/{tr,en}.json` (`plain_view_on/off`).
+
+- **Tema artık masalara özel değil: solo seansın da bir odası var (2026-08-28)** —
+  Tek başına çalışmak da bir yerde çalışmaktır; düz koyu ekran ancak bekleme odası anlamında
+  bir "yer"di. Seans ekranı artık `?room=` olmasa da temalı: masadaysan **masanın teması**
+  kazanıyor (o odanın misafirisin, dekoratörü değil), değilsen kendi kaydettiğin sahne.
+  Tema switcher her durumda görünüyor — solo iken oklar herkeste açık, masadayken yalnızca
+  sahipte (API kuralının aynası).
+
+  **"Sade görünüm" opt-out olarak kaldı** ve artık o da kalıcı: tema varsayılan hale gelince
+  ikisi de gerçek birer tercih oldu, tercihler de reload'dan sağ çıkmak zorunda.
+  `mentor_session_scene` altında **cihaz-yerel** tutuluyor: hangi odada çalışmayı sevdiğin şu an
+  nerede oturduğunun özelliği, hesabının değil — ve her ok basışına bir API yazması değmez.
+
+  **`useSyncExternalStore`, "effect içinde oku" değil** (`session-scene.ts`). Sunucuda
+  `localStorage` yok, dolayısıyla kayıtlı değer ilk render olamaz; React'in server-snapshot
+  el sıkışması bunu söylemenin desteklenen yolu. Effect'ten state'e okumak aynı şeyi fazladan
+  bir render ve bir lint hatasıyla yapıyordu (`react-hooks/set-state-in-effect`). Snapshot
+  referansla karşılaştırıldığı için depodan bir kez okunup önbelleğe alınıyor — her çağrıda
+  yeni nesne döndürmek sonsuz render demek. Depodaki değer ayrıca **doğrulanıyor**: kullanıcı
+  yazabildiği bir alan ve eski bir build'den kalma tema id'si asset haritalarını `undefined`
+  ile indeksler.
+
+  **Dokunulmayan:** ambient sesin tema önerisi hâlâ yalnızca gerçek masalara bağlı
+  (`STUDY_ROOM_AMBIENT`). Solo temaya da bağlamak tutarlı olurdu ama ambient'e hiç dokunmamış
+  mevcut kullanıcıların varsayılan sesini sessizce değiştirirdi — ayrı bir karar.
+
+  İlgili: `session-scene.ts` (yeni), `study-session-shell.tsx`.
+
+- **Tema çubuğu en üste, geri gelmeyen zemin, "sade görünüm" ikonu (2026-08-28)** —
+
+  **Bug: temalar arasında gezip kütüphaneye dönünce zemin gelmiyordu.** Aynı `onError`
+  tuzağının son kopyası `RoomBackdrop`'ta duruyordu — tek bir `visualFailed` boolean'ı.
+  Asset'i olmayan bir temaya adım atmak onu `true` yapıyor, geri dönmek **geri almıyordu**.
+  `RoomSeats` ve karusel için daha önce düzeltilmişti, üçüncüsü gözden kaçmıştı; artık üçü de
+  kaynak bazında (`failedSrc`). **Ders:** `onError` ile beslenen bir "başarısız" bayrağı, o
+  bileşenin ömrü boyunca kaynağı değişebiliyorsa neredeyse her zaman yanlıştır.
+
+  **Alttaki siyah şerit: `main` masaüstünde viewport'tan 4rem kısaydı.** Seans kabuğu
+  `lg:h-[calc(100dvh-4rem)]` kullanıyordu; o 4rem **mobil üst bar** için ve kabuk zaten
+  `pt-16 lg:pt-0` ile onu hallediyor — masaüstünde üst bar yok. Reponun kendi sabiti de bunu
+  söylüyor (`MOBILE_BELOW_APP_CHROME_HEIGHT_CLASS` → `lg:h-[100dvh]`). Hata baştan beri
+  vardı, sadece sayfa zemini `--color-bg` iken görünmüyordu; fotoğraf gelince ortaya çıktı.
+  `lg:h-[100dvh]` yapıldı.
+
+  **Tema çubuğu artık kolonun en üstünde**, "Ders seç / Sessiz" satırının da üstünde — nerede
+  olduğun, neyi zamanladığından önce gelir. Hem idle hem odak ekranında.
+
+  **"Sade görünüm" ikonu değişti: `ImageOff` → `Focus` / `Wallpaper`.** Eskisi üstü çizili bir
+  görsel simgesiydi, yani evrensel "bu resim yüklenemedi" işareti — çalışan bir arka planın
+  yanına konulabilecek en yanlış şey, ekran görüntüsünde de bozuk görünmesinin sebebi buydu.
+  Yeni ikonlar **ne alacağını** söylüyor: `Focus` odayı kaldırır, `Wallpaper` geri getirir.
+  Buton 44px'e çıkarıldı (şeffaf daire — yalnız glif görünür, dokunma hedefi dürüst olur).
+
+  İlgili: `room-backdrop.tsx`, `study-session-shell.tsx`.
+
+- **Seans ekranı UI turu: tema çubuğu, dakika adımlayıcı, geçmiş rayı, özet paneli
+  (2026-08-28)** —
+
+  **Tema çubuğu gerçekten en üstte.** Önceki turda "kolonun ilk çocuğu" yapmıştım ama o kolon
+  `justify-center` — dikey ortalanmış bir düzende ilk çocuk ekranın ortasıdır. Artık ortalanan
+  bloğun **dışında**: idle'da içerik kolonunun üstünde, odak modunda overlay'in üst kenarına
+  `absolute` ile sabit.
+
+  **Butonları belirginleştirdik ama ağırlaştırmadık.** Bu bir sahne kontrolü, birincil aksiyon
+  değil — bu ekranda bağıracak tek şey "Başla". Çıplak 24px oklar bir fotoğrafın üstünde
+  dekorasyon gibi okunuyordu; eksik olan **okunabilirlik ve dokunma alanıydı, ağırlık değil.**
+  Çözüm: `--room-scrim` hapı (okları tek ve açıkça tıklanabilir bir nesnede toplar) + oklar
+  36px. Sade görünümde `--room-scrim` de app token'ına yeniden yönlendiriliyor.
+
+  **Dakika +/− butonları kalıyor.** Halka bir sürükleme hedefi; bunlar aynı sayıya giden hassas
+  ve **sürüklemesiz** tek yol. Kaldırmak dakikayı yalnız-sürükleme yapardı ki bu herkes için
+  kullanılabilir bir kontrol değil. **Ortalama sorunu ise gerçekti:** `−` (U+2212) ile `+`
+  farklı dikey metriklerde oturuyor ve `text-xl`'in satır kutusunu miras alıyorlardı — metin
+  butonu birini ortalayıp diğerini asla ortalayamaz. Lucide `Minus`/`Plus` ile değiştirildi:
+  kendi viewBox'ında ortalı, uygulamanın geri kalanıyla aynı çizgi kalınlığı.
+  (`packages/ui/circular-timer-ring.tsx` — tek tüketicisi seans halkası, API değişmedi.)
+
+  **"Son seanslar" günlere bölündü.** Ray her satırda tarihi tekrarlıyordu; aynı öğleden sonra
+  yarım kalmış dört adet 0 dakikalık seans, tek bir satırın dört kopyası gibi görünüyordu.
+  Tarih **güne** ait, her denemeye değil: başlığa çıkarıldı, satır artık **saati** gösteriyor —
+  denemeleri birbirinden ayıran şey o. Gruplama **yerel takvim gününe** göre (`toDateString`),
+  UTC dilimine göre değil: 01:30'daki bir seans, oturup çalışan kişi için hâlâ dün gece.
+  Başlıklar "Bugün / Dün / 28 Ağustos" (yıl yalnızca farklıysa). Satırlara hover yüzeyi
+  eklendi — tarihler yukarı çıkınca satırların ayrı birer öğe olarak okunması için bir kenara
+  ihtiyaç kalmıştı.
+
+  **Odak/Mola/Tahmini bitiş paneli artık `Card`.** Chip washı (`--color-chip` %18) oda fotoğrafı
+  arkasına gelince görünmez oluyordu; ayrıca burası bir sayı paneli, chip değil. Sağdaki "Yol
+  arkadaşın" ve odak hedefi kartlarıyla aynı yüzey — kenarlık, radius ve tek gölge token'ı
+  bileşenin kendisinden geliyor.
+
+  İlgili: `study-session-shell.tsx`, `room-theme-switcher.tsx`, `session-history.tsx`,
+  `session-history-row.tsx`, `packages/ui/src/components/circular-timer-ring.tsx`,
+  `messages/{tr,en}.json` (`history_day_yesterday`).
+
+- **Üç temanın da görselleri geldi — `/img/seans-theme/` (2026-08-28)** —
+  Dokuz dosya (`room-{library,cafe,home}-{bg,table,seat}.webp`) eklendi ve yollar bağlandı.
+  Üç dosyanın adı şemadan sapıyordu (`cafe-bg`, `cafe-seat`, `library-seat`), hizalandı —
+  şema `study-room-theme.ts`'in üç haritasının tamamının dayandığı şey; yeni bir tema **üç
+  dosya, sıfır kod** demek olsun diye.
+
+  **Klasör bilinçli bir istisna.** `public/visuals/README.md` düz klasör istiyor ("no domain
+  subfolders"), ama burası yalnızca **set olarak anlamlı** dokuz dosya: bir tema zemin VE masa
+  VE sandalyedir, dördüncü tema üç dosya daha getirir. README'ye not düşüldü. Eski v1
+  kütüphane kopyaları `/visuals/` altından silindi — aynı asset'in iki yolda durması tam olarak
+  sürüklenmeye davetiye.
+
+  **Ölçümle doğrulandı (`git`e değil, dosyalara bakarak):**
+  - Altı masa/sandalye dosyası da **1254×1254 kare** ve alfa sınır kutusu kareyi dolduruyor
+    (%99–100 genişlik). Kütüphane masasının haftalarca "oyuncak gibi" görünmesine yol açan
+    şeffaf kenar boşluğu **gitti** — `object-contain` artık kutunun tamamını kullanıyor.
+  - Kütüphane masası %68 yükseklikte dolu; bu doğru, oval doğal olarak enden kısa.
+  - Zeminlerin merkez parlaklığı: kafe 31/255, kütüphane 94/255, ev 124/255.
+
+  **Token doğrulaması — üçü de tutuyor, değişiklik gerekmedi.** Kafe ve kütüphane koyu zemin +
+  açık mürekkep; ev açık zemin + koyu mürekkep ve görseli de açık-orta çıkmış. (Ev için prompt
+  "loş akşam lambası" istemişti, gelen görsel daha aydınlık — ama HOME token seti zaten açık
+  zemin varsaydığı için tutarlı.) Bu eşleşme bir kez kaçtığında koltuk etiketleri okunmaz
+  oluyor; kütüphanede tam olarak bu yaşanmıştı.
+
+  İlgili: `study-room-theme.ts`, `public/img/seans-theme/*`, `public/visuals/README.md`.
+
+- **Tema geçişi artık kayarak — çapraz solma değil (2026-08-28)** —
+  Çapraz solma "bu resim değiştirildi" der; kayma "sonraki odaya döndün" der ve okların
+  gerçekte söylediği şey bu. Zaten oluşturma modalindeki tema karuseli böyle davranıyordu, üç
+  yüzey artık aynı dili konuşuyor.
+
+  **Yön kontrolden gelir, liste sırasından değil.** `RoomThemeSwitcher` artık `onChange(next,
+  direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat ediyor —
+  indeks farkına baksaydık sarma anında yön ters dönerdi.
+
+  Tek bileşen (`room-backdrop-slide.tsx`) üç yerde: oda sayfası, seans idle ekranı ve odak modu
+  (tema çubuğu orada da var). `initial={false}` — odaya varmak zemini hiçbir yerden kaydırmaz,
+  ilk tema sadece bulunduğun yerdir; yalnızca **değişim** seyahat eder.
+  `prefers-reduced-motion` çapraz solmaya düşüyor: değişim görünür kalmalı, sadece yol
+  almamalı.
+
+  Seans idle ekranındaki sarmalayıcıya `overflow-hidden` eklendi — çıkan oda kenarın dışına
+  kayıyor ve kırpma olmadan animasyon boyunca sayfaya yatay kaydırma çubuğu düşürüyordu.
+
+  **Kapsam dışı bırakılan:** masa ve sandalye görselleri hâlâ anında değişiyor, yalnızca zemin
+  kayıyor. Sahnenin tamamını kaydırmak koltuk yerleşimini de taşımak demek; siluetler temalar
+  arası neredeyse aynı olduğu için takas göze çarpmıyor. Rahatsız ederse ayrı iş.
+
+  İlgili: `room-backdrop-slide.tsx` (yeni), `room-theme-switcher.tsx`, `room-shell.tsx`,
+  `study-session-shell.tsx`, `session-focus-backdrop.tsx`.

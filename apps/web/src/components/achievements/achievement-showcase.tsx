@@ -68,7 +68,7 @@ export function AchievementShowcase({
           ) : null}
         </div>
       </div>
-      <div className="mt-3 flex flex-wrap justify-center gap-3">
+      <div className="mt-4 flex flex-wrap justify-start gap-4">
         {showcase.items.map((achievement) => (
           <button
             key={achievement.id}
@@ -77,13 +77,13 @@ export function AchievementShowcase({
               title: achievement.title,
             })}
             onClick={(event) => handleOpen(achievement, event.currentTarget)}
-            className="grid size-16 place-items-center rounded-[var(--radius-card)] p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            className="grid size-20 place-items-center rounded-[var(--radius-card)] p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           >
             <AchievementArt
               artKey={achievement.artKey}
               alt=""
               className="size-full object-contain"
-              sizes="64px"
+              sizes="80px"
             />
           </button>
         ))}

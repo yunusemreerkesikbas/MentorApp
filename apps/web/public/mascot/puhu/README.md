@@ -42,6 +42,38 @@ of raised wing on the right, which is why `OWL_ART` measures the *resting* body 
 
 Gaze changes hide behind a blink so two pupil positions never dissolve through each other.
 
+## Auth hang scene (`auth/`)
+
+Login-sheet companion. Puhu peeks over the sheet rim; sprites crossfade like the lamp set.
+Same canvas, **do not trim individually**. `--max=384`.
+
+| File                   | Content                                              | Canvas    | Content box        |
+| ---------------------- | ---------------------------------------------------- | --------- | ------------------ |
+| `hang-rest.png`        | Eyes open, looking ahead, both wings on the rim      | 384 × 384 | 228 × 181 @ 78,15  |
+| `hang-blink.png`       | Neutral closed lids, same hang                       | 384 × 384 | 228 × 181 @ 78,15  |
+| `hang-gaze-left.png`   | Pupils toward viewer's left                          | 384 × 384 | 228 × 181 @ 78,15  |
+| `hang-gaze-right.png`  | Pupils toward viewer's right                         | 384 × 384 | 228 × 181 @ 78,15  |
+| `hang-look-down.png`   | Looking down at the form                             | 384 × 384 | 230 × 180 @ 77,17  |
+| `hang-cover.png`       | Both wings cover both lenses (password)              | 384 × 384 | 232 × 173 @ 76,16  |
+
+`cover` is wider/shorter because the wings leave the rim and come up to the glasses — same
+reason lamp `reach` does not share `rest`'s box. Measure the **resting** hang body for layout;
+let `cover` overflow that box.
+
+Layout pins the **wing / baked-rim band** (canvas row 160 on `hang-rest`, not the
+alpha-box bottom at y=195) to the sheet edge. The sheet **face** (background,
+radius, shadow) sits in front of the body copy and behind a clip-path wing copy —
+that hides the straight cut under Puhu and leaves only the hands on the rim.
+
+Login and signup wire the set via `useAuthHang` (`auth-shell.tsx`). Name/email focus →
+`look-down`, password focus → `cover`, idle blink/gaze otherwise.
+
+Pipeline (from a magenta `#FF00FF` export):
+
+```bash
+node apps/web/scripts/key-alpha.mjs raw.png out.png --key=ff00ff --hard=70 --soft=150 --max=384
+```
+
 ### Regenerating
 
 Generate on a solid **magenta (`#FF00FF`)** background — no colour in Puhu's palette is close to

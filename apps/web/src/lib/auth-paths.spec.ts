@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { authShellShowsBack, isAuthPath } from "./auth-paths";
+import { authShellShowsBack, authShellShowsHang, isAuthPath } from "./auth-paths";
 
 describe("isAuthPath", () => {
   it("matches auth route group pathnames", () => {
@@ -24,5 +24,13 @@ describe("authShellShowsBack", () => {
     expect(authShellShowsBack("/forgot-password")).toBe(true);
     expect(authShellShowsBack("/reset-password")).toBe(true);
     expect(authShellShowsBack("/verify-email")).toBe(true);
+  });
+});
+
+describe("authShellShowsHang", () => {
+  it("shows the hang mascot on login and signup", () => {
+    expect(authShellShowsHang("/login")).toBe(true);
+    expect(authShellShowsHang("/signup")).toBe(true);
+    expect(authShellShowsHang("/forgot-password")).toBe(false);
   });
 });

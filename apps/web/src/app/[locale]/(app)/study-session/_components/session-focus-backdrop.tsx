@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import type { StudyRoomTheme } from "@mentor/types";
-import { RoomBackdrop } from "./room-backdrop";
+import { RoomBackdropSlide } from "./room-backdrop-slide";
 
 export const SESSION_FOCUS_BG_SRC = "/visuals/session-focus-bg.webp";
 
@@ -17,15 +17,18 @@ export const SESSION_FOCUS_BG_SRC = "/visuals/session-focus-bg.webp";
  */
 export function SessionFocusBackdrop({
   roomTheme = null,
+  /** Travel direction for a theme change made from inside focus mode. */
+  themeDirection = 1,
 }: {
   roomTheme?: StudyRoomTheme | null;
+  themeDirection?: 1 | -1;
 }) {
   const [visualFailed, setVisualFailed] = useState(false);
 
   return (
     <div aria-hidden className="absolute inset-0 overflow-hidden">
       {roomTheme ? (
-        <RoomBackdrop theme={roomTheme} veilPercent={42} />
+        <RoomBackdropSlide theme={roomTheme} direction={themeDirection} veilPercent={42} />
       ) : (
         <>
           {visualFailed ? (

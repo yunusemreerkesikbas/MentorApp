@@ -67,6 +67,21 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **X-benzeri Topluluk light palette (2026-08-28)** — Light temadaki sıcak gri sidebar ve görünmez
+  beyaz ayırıcılar, yalnız `.community-workspace` kapsamında soğuk beyaz yüzeyler, mavi-gri ince
+  sınırlar ve daha net sosyal mavi vurgu ile değiştirildi. Kartlar light temada gölge yerine flat
+  separator kullanır; dark tema kendi tokenlarını korur. İlgili: `community-parity.css`.
+
+- **Profil achievement vitrini ölçeği (2026-08-28)** — Üye profilindeki “Yolculuktan İzler”
+  rozetleri, dekoratif ikon gibi kalmaması için 80 px etkileşim alanına büyütüldü; görünür sanat
+  alanı genişletilip üçlü mobil dizilimin rahat aralığı korundu. İlgili: `achievement-showcase.tsx`.
+
+- **Global composer açılış geçişi (2026-08-28)** — Akıştaki hızlı paylaşım alanı odaklandığında
+  dış kartı ölçeklemek yerine, Twitter benzeri lokal bir geçişle hedef-kitle seçenekleri ve yazı
+  alanı kısa bir ease-out hareketiyle açılıp kapanır. Hareket azaltma tercihi etkinse geçiş devre
+  dışı kalır. Metin alanının odak yüzeyi tasarım sistemi radius tokenını kullanır ve odak halkası
+  artık köşeleri takip eder. İlgili: `global-composer.tsx`, `composer-body-field.tsx`.
+
 - **Yolculuktan İzler vitrini (2026-08-25)** — Achievement rollout'u açıkken
   `GET /v1/community/profile/:username`, herkese açık profil yanıtında toplam kazanım sayısını ve
   backend'in otomatik seçtiği en yeni en fazla üç kanonik kazanımı lokalize `achievementShowcase`

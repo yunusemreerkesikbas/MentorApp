@@ -15,11 +15,40 @@
   --community-green: var(--color-success);
   --community-green-soft: color-mix(in srgb, var(--color-success) 16%, var(--color-surface));
   --community-canvas: var(--color-bg);
+  --community-sidebar: var(--color-surface-container);
   --radius-card: 13px;
   min-height: 100vh;
   background: var(--community-canvas);
   color: var(--color-main);
   font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* X-inspired light workspace: cool neutrals, crisp separators, flat surfaces. */
+html:not(.dark) .community-workspace {
+  --color-main: #0f1419;
+  --color-body: #0f1419;
+  --color-body-text: #0f1419;
+  --color-secondary: #536471;
+  --color-surface-container: #f7f9f9;
+  --color-border: #eff3f4;
+  --color-btn: #1d9bf0;
+  --color-btn-label: #ffffff;
+  --color-progress: #1d9bf0;
+  --color-progress-track: #cfd9de;
+  --color-focus-ring: #1d9bf0;
+  --color-accent: #1d9bf0;
+  --color-soft: #f7f9f9;
+  --color-chip: #e8f5fd;
+  --color-chip-text: #0f6fae;
+  --community-blue: #1d9bf0;
+  --community-blue-hover: #1a8cd8;
+  --community-blue-soft: #e8f5fd;
+  --community-blue-border: #c5e5f8;
+  --community-blue-ink: #0f6fae;
+  --community-canvas: #ffffff;
+  --community-sidebar: #ffffff;
+  --shadow-card: none;
+  --shadow-card-hover: none;
 }
 
 .community-workspace :where(button, input, textarea, select) {
@@ -555,7 +584,7 @@
   height: calc(100vh - 72px);
   overflow-y: auto;
   border-right: 1px solid var(--color-border);
-  background: var(--color-surface-container);
+  background: var(--community-sidebar);
   padding: 20px 0 28px;
 }
 

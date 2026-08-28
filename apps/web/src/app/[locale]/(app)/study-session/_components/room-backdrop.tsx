@@ -22,14 +22,25 @@ export function RoomBackdrop({
   theme: StudyRoomTheme;
   veilPercent?: number;
 }) {
-  const [visualFailed, setVisualFailed] = useState(false);
+  /**
+   * Which artwork 404'd, BY SOURCE. A single `visualFailed` boolean was the last copy of a bug
+   * already fixed in `RoomSeats` and the theme carousel: stepping onto a theme whose art has
+   * not shipped flipped it, and stepping back never flipped it off — so the library came back
+   * with no ground until something remounted this component. Keyed by src, a theme that has
+   * art is unaffected by one that does not, and a failed src is never re-requested.
+   */
+  const [failedSrc, setFailedSrc] = useState<readonly string[]>([]);
+  const src = STUDY_ROOM_BACKDROP_SRC[theme];
 
   return (
     // Self-scoping: focus mode renders this inside `.session-focus-theme`, so the room token
     // family has to travel with the component rather than rely on an ancestor.
+    // `aria-hidden` only removes this from the a11y tree — it does not stop the browser's
+    // hit-test, so without `pointer-events-none` this full-bleed decorative stack would sit in
+    // front of (or tie-break above, on equal z-index) every floating control on the stage.
     <div
       aria-hidden
-      className="room-stage absolute inset-0 overflow-hidden"
+      className="room-stage pointer-events-none absolute inset-0 overflow-hidden"
       data-room-theme={theme}
     >
       <div
@@ -39,9 +50,9 @@ export function RoomBackdrop({
             "radial-gradient(120% 90% at 50% 8%, var(--room-ground-from) 0%, var(--room-ground-to) 100%)",
         }}
       />
-      {visualFailed ? null : (
+      {failedSrc.includes(src) ? null : (
         <Image
-          src={STUDY_ROOM_BACKDROP_SRC[theme]}
+          src={src}
           alt=""
           fill
           // Eager: this is the ground, not content. Lazy-loading would both pop the artwork in
@@ -50,14 +61,15 @@ export function RoomBackdrop({
           priority
           sizes="100vw"
           className="object-cover"
-          onError={() => setVisualFailed(true)}
+          onError={() => setFailedSrc((prev) => (prev.includes(src) ? prev : [...prev, src]))}
         />
       )}
+      {/* `veilPercent` scales the theme's OWN veil rather than mixing its ground colour: a
+          light room and a dark room need opposite veils, and one shared percentage of
+          `--room-ground-to` gave the light one a bleach bath. */}
       <div
         className="absolute inset-0"
-        style={{
-          backgroundColor: `color-mix(in srgb, var(--room-ground-to) ${veilPercent}%, transparent)`,
-        }}
+        style={{ backgroundColor: "var(--room-veil)", opacity: veilPercent / 100 }}
       />
       {/* Vignette: pulls the eye to the table and darkens the edges the chrome floats over. */}
       <div
