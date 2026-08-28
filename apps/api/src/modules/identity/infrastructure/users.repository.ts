@@ -147,6 +147,27 @@ export class UsersRepository {
     });
   }
 
+  /**
+   * Service-scoped: public display fields for a set of ids, BANNED/SUSPENDED users dropped.
+   * Result order is not meaningful — callers hold their own ranking and index by id.
+   */
+  async listPublicByIds(ids: string[]): Promise<CohortPeer[]> {
+    if (ids.length === 0) return [];
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select({
+          userId: users.id,
+          displayName: sql<string>`coalesce(${users.displayName}, '')`,
+          username: sql<string>`${users.username}`,
+          avatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
+        })
+        .from(users)
+        .where(
+          and(inArray(users.id, ids), eq(users.status, "ACTIVE"), isNotNull(users.username)),
+        ),
+    );
+  }
+
   async createService(data: NewUser): Promise<UserRow> {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx.insert(users).values(data).returning();

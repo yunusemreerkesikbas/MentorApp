@@ -24,28 +24,35 @@ const make = (opts: {
   incoming?: unknown[];
   focusMinutes?: number;
   streak?: number;
-  suggestions?: unknown[];
+  coWorkers?: unknown[];
+  eligible?: string[];
+  profiles?: unknown[];
   studyingNow?: boolean;
 } = {}) => {
   const buddy = {
     getActivePair: vi.fn(async () => opts.active),
     getOutgoingPending: vi.fn(async () => opts.outgoing),
     listIncomingPending: vi.fn(async () => opts.incoming ?? []),
-    getSuggestionCandidates: vi.fn(async () => opts.suggestions ?? []),
+    filterEligibleCandidates: vi.fn(
+      async (_viewer: string, ids: string[]) => opts.eligible ?? ids,
+    ),
   };
   const sessions = {
     getTodayFocusMinutes: vi.fn(async () => opts.focusMinutes ?? 0),
     isStudyingNow: vi.fn(async () => opts.studyingNow ?? false),
+    listRecentCoWorkers: vi.fn(async () => opts.coWorkers ?? []),
   };
   const streak = { getCurrentStreak: vi.fn(async () => opts.streak ?? 0) };
   const storage = { getPublicUrl: (k: string) => `https://cdn/${k}` };
+  const users = { listPublicByIds: vi.fn(async () => opts.profiles ?? []) };
   const svc = new BuddyViewService(
     buddy as never,
     sessions as never,
     streak as never,
+    users as never,
     storage as never,
   );
-  return { svc, buddy, sessions, streak };
+  return { svc, buddy, sessions, streak, users };
 };
 
 describe("BuddyViewService.getView", () => {
@@ -109,19 +116,78 @@ describe("BuddyViewService.getView", () => {
 });
 
 describe("BuddyViewService.getSuggestions", () => {
-  it("maps cohort candidates to public-safe refs with resolved avatar URLs", async () => {
-    const { svc } = make({
-      suggestions: [
-        { userId: "uB", displayName: "Bob", username: "bob", avatarStorageKey: "avatars/bob.png" },
-        { userId: "uC", displayName: "Cem", username: "cem", avatarStorageKey: null },
+  const coWorker = (userId: string, sessionsTogether: number, day: string) => ({
+    userId,
+    sessionsTogether,
+    lastTogetherAt: new Date(day),
+  });
+  const profile = (userId: string, displayName: string, avatarStorageKey: string | null) => ({
+    userId,
+    displayName,
+    username: displayName.toLowerCase(),
+    avatarStorageKey,
+  });
+
+  it("suggests people the viewer has co-worked with, most-shared first", async () => {
+    const { svc, sessions } = make({
+      coWorkers: [
+        coWorker("uB", 4, "2026-08-20T10:00:00Z"),
+        coWorker("uC", 1, "2026-08-19T10:00:00Z"),
       ],
+      profiles: [profile("uC", "Cem", null), profile("uB", "Bob", "avatars/bob.png")],
     });
 
-    const result = await svc.getSuggestions("me", 5);
+    const result = await svc.getSuggestions("me", 3);
 
+    // Ranking comes from coaching; the profile lookup must not reorder it.
     expect(result).toEqual([
-      { userId: "uB", displayName: "Bob", username: "bob", avatarUrl: "https://cdn/avatars/bob.png" },
-      { userId: "uC", displayName: "Cem", username: "cem", avatarUrl: null },
+      {
+        userId: "uB",
+        displayName: "Bob",
+        username: "bob",
+        avatarUrl: "https://cdn/avatars/bob.png",
+        sessionsTogether: 4,
+        lastTogetherAt: "2026-08-20T10:00:00.000Z",
+      },
+      {
+        userId: "uC",
+        displayName: "Cem",
+        username: "cem",
+        avatarUrl: null,
+        sessionsTogether: 1,
+        lastTogetherAt: "2026-08-19T10:00:00.000Z",
+      },
     ]);
+    // Over-fetched so eligibility exclusions cannot empty the list.
+    expect(sessions.listRecentCoWorkers).toHaveBeenCalledWith("me", 60, 12);
+  });
+
+  it("drops candidates identity rules out, then caps at the limit", async () => {
+    const { svc } = make({
+      coWorkers: [
+        coWorker("uB", 3, "2026-08-20T10:00:00Z"),
+        coWorker("uC", 2, "2026-08-20T10:00:00Z"),
+        coWorker("uD", 1, "2026-08-20T10:00:00Z"),
+      ],
+      eligible: ["uC", "uD"],
+      profiles: [profile("uC", "Cem", null), profile("uD", "Deniz", null)],
+    });
+
+    expect((await svc.getSuggestions("me", 1)).map((r) => r.userId)).toEqual(["uC"]);
+  });
+
+  it("returns nothing when the viewer has never shared a table", async () => {
+    const { svc, buddy } = make({ coWorkers: [] });
+    expect(await svc.getSuggestions("me", 3)).toEqual([]);
+    // No point asking identity about an empty list.
+    expect(buddy.filterEligibleCandidates).not.toHaveBeenCalled();
+  });
+
+  it("skips a candidate whose profile disappeared (banned meanwhile)", async () => {
+    const { svc } = make({
+      coWorkers: [coWorker("uB", 2, "2026-08-20T10:00:00Z"), coWorker("uC", 1, "2026-08-20T10:00:00Z")],
+      profiles: [profile("uC", "Cem", null)],
+    });
+    expect((await svc.getSuggestions("me", 3)).map((r) => r.userId)).toEqual(["uC"]);
   });
 });

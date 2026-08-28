@@ -810,25 +810,16 @@
     },
     "exam_settings": {
       "title": "Sınav türü",
-      "subtitle": "Resmi sınav tarihi bilgi merkezinden gelir; burada hedef sınav ailesini seçiyorsun.",
       "aria_label": "Sınav türü",
       "saved": "Kaydedildi",
       "saved_toast_title": "Sınav türü kaydedildi",
       "saved_toast_message": "Geri sayım ve içerikler buna göre güncellenecek.",
       "save_error": "Kaydedilemedi.",
-      "kpss_desc": "Kamu Personeli Seçme Sınavı",
-      "yks_desc": "Yükseköğretim Kurumları Sınavı",
-      "lgs_desc": "Liselere Geçiş Sistemi",
       "variant_label": "KPSS öğrenim düzeyin",
       "variant": {
         "LISANS": "Lisans",
         "ONLISANS": "Önlisans",
         "ORTAOGRETIM": "Ortaöğretim"
-      },
-      "variant_desc": {
-        "LISANS": "4 yıllık fakülte mezunu ya da son sınıf",
-        "ONLISANS": "2 yıllık meslek yüksekokulu mezunu",
-        "ORTAOGRETIM": "Lise mezunu"
       }
     },
     "account": {
@@ -1548,7 +1539,6 @@
     "goal_save_error_message": "Biraz sonra tekrar dene.",
     "buddy_title": "Yol arkadaşın",
     "buddy_empty": "Bir yol arkadaşıyla birbirinizi yolda tutun.",
-    "buddy_empty_cta": "Topluluktan birini davet et →",
     "buddy_active_stats": "bugün {minutes} dk odak · {days} gün seri",
     "buddy_studying_now": "şu an odakta",
     "buddy_nudge": "Dürt 👋",
@@ -1562,8 +1552,10 @@
     "buddy_outgoing": "{name} yanıtını bekliyor",
     "buddy_cancel": "İptal et",
     "buddy_action_error_title": "İşlem tamamlanamadı",
-    "buddy_suggest_title": "Sana uygun yol arkadaşları",
+    "buddy_suggest_title": "Birlikte çalıştıkların",
     "buddy_suggest_action": "İstek gönder",
+    "buddy_together_count": "{count} kez birlikte çalıştınız",
+    "buddy_empty_hint": "Bir masada birlikte çalıştığın kişiler burada belirir. Önce bir masaya otur — yol arkadaşlığı orada başlar.",
     "focusing_now": "Şu an seninle birlikte {count} kişi odaklanıyor",
     "share_cta": "Bugünü paylaş",
     "share_text": "Bugün Mentor'da {minutes} dakika odaklandım 🎯",
@@ -2051,6 +2043,9 @@
     "seat_focusing": "{minutes} dk'dır masada",
     "seat_idle": "Şu an masada değil",
     "seat_empty": "Boş koltuk",
+    "room_menu": "Masa menüsü",
+    "invite_seat": "Davet et",
+    "seat_focusing_short": "{minutes} dk",
     "seat_owner": "Masa sahibi",
     "leave": "Masadan ayrıl",
     "leave_confirm": "Ayrılmayı onayla",
@@ -2228,14 +2223,12 @@
     },
     "profile": {
       "title": "Seni nasıl çağıralım?",
-      "subtitle": "Toplulukta ve koç ekranlarında görünecek kullanıcı adını seç. Fotoğraf istersen şimdi ekleyebilirsin.",
       "username_label": "Kullanıcı adı",
       "username_placeholder": "ornek_kullanici",
       "username_hint": "3-24 karakter · küçük harf, rakam ve alt çizgi.",
       "avatar_label": "Profil fotoğrafı",
       "avatar_change": "Fotoğraf seç",
       "avatar_remove": "Kaldır",
-      "avatar_hint": "İsteğe bağlı · JPEG/PNG · en fazla 2 MB",
       "avatar_type_error": "Yalnızca JPEG veya PNG yükleyebilirsin.",
       "avatar_too_big": "Profil fotoğrafı 2 MB altında olmalı.",
       "avatar_upload_error": "Profil fotoğrafı yüklenemedi.",
@@ -2245,7 +2238,6 @@
     },
     "exam": {
       "title": "Hangi sınava hazırlanıyorsun?",
-      "subtitle": "Resmî tarih bilgi merkezinden gelir; burada hedef sınav ailesini seçiyorsun.",
       "continue": "Devam",
       "save_error": "Kaydedilemedi."
     },

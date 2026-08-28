@@ -19,7 +19,6 @@ const makePairs = () => ({
 const makeUsers = () => ({
   findByUsernameService: vi.fn(),
   findByIdService: vi.fn().mockResolvedValue({ displayName: "Alice", username: "alice" }),
-  suggestCohortPeers: vi.fn().mockResolvedValue([]),
 });
 const makeEvents = () => ({ emit: vi.fn() });
 
@@ -225,47 +224,32 @@ describe("BuddyService.end / deleteRequest", () => {
   });
 });
 
-describe("BuddyService.getSuggestionCandidates", () => {
-  const peer = (id: string) => ({
-    userId: id,
-    displayName: id,
-    username: id,
-    avatarStorageKey: null,
+describe("BuddyService.filterEligibleCandidates", () => {
+  it("keeps the caller's ranking and drops anyone already related or paired", async () => {
+    const { svc, pairs } = make();
+    pairs.listRelatedOrActivelyPairedIds.mockResolvedValue(["b"]);
+
+    // Order in = order out: identity decides eligibility, community decides ranking.
+    expect(await svc.filterEligibleCandidates("viewer", ["c", "a", "b"])).toEqual(["c", "a"]);
+    expect(pairs.listRelatedOrActivelyPairedIds).toHaveBeenCalledWith("viewer", ["c", "a", "b"]);
   });
 
-  it("returns cohort peers filtered by the buddy-relation exclusion set", async () => {
-    const { svc, pairs, users } = make();
-    users.findByIdService.mockResolvedValue({ examType: "KPSS" });
-    users.suggestCohortPeers.mockResolvedValue([peer("a"), peer("b"), peer("c")]);
-    pairs.listRelatedOrActivelyPairedIds.mockResolvedValue(["b"]); // b already related/active
-
-    const result = await svc.getSuggestionCandidates("viewer", 5);
-
-    expect(users.suggestCohortPeers).toHaveBeenCalledWith("KPSS", ["viewer"], 20); // limit*4 buffer
-    expect(result.map((p) => p.userId)).toEqual(["a", "c"]);
-  });
-
-  it("caps the result at the requested limit", async () => {
-    const { svc, users } = make();
-    users.suggestCohortPeers.mockResolvedValue([peer("a"), peer("b"), peer("c")]);
-    const result = await svc.getSuggestionCandidates("viewer", 2);
-    expect(result).toHaveLength(2);
+  it("never suggests the viewer to themselves", async () => {
+    const { svc } = make();
+    expect(await svc.filterEligibleCandidates("viewer", ["viewer", "a"])).toEqual(["a"]);
   });
 
   it("returns empty when the viewer already has an active buddy", async () => {
-    const { svc, pairs, users } = make();
+    const { svc, pairs } = make();
     pairs.findActiveByUser.mockResolvedValue(activePair());
-    const result = await svc.getSuggestionCandidates("viewer", 5);
-    expect(result).toEqual([]);
-    expect(users.suggestCohortPeers).not.toHaveBeenCalled();
+    expect(await svc.filterEligibleCandidates("viewer", ["a"])).toEqual([]);
+    expect(pairs.listRelatedOrActivelyPairedIds).not.toHaveBeenCalled();
   });
 
-  it("passes a null examType when the viewer has none", async () => {
-    const { svc, users } = make();
-    users.findByIdService.mockResolvedValue({ examType: null });
-    users.suggestCohortPeers.mockResolvedValue([]);
-    await svc.getSuggestionCandidates("viewer", 5);
-    expect(users.suggestCohortPeers).toHaveBeenCalledWith(null, ["viewer"], 20);
+  it("short-circuits on an empty candidate list", async () => {
+    const { svc, pairs } = make();
+    expect(await svc.filterEligibleCandidates("viewer", [])).toEqual([]);
+    expect(pairs.findActiveByUser).not.toHaveBeenCalled();
   });
 });
 

@@ -467,3 +467,73 @@ html.dark {
     will-change: auto;
   }
 }
+
+/*
+ * Study room stage — a scoped "place" surface, the same kind of exception as
+ * `.session-focus-theme` (DESIGN.md §2.5). Each theme paints its own room, so the stage
+ * never follows the light/dark cookie: a café is dim at noon and a library is bright at
+ * midnight. Every value below is scoped to `--room-*`; nothing leaks into app tokens.
+ *
+ * `--room-ink` is the contract the floating chrome reads, which is what lets one set of
+ * controls sit legibly on a bright parchment room and a dark café alike.
+ */
+.room-stage {
+  --room-ground-from: #f6f1e7;
+  --room-ground-to: #ede4d3;
+  --room-table: #8b6f47;
+  --room-table-edge: #6f5636;
+  --room-chair: #c9b896;
+  --room-ink: #2e2a22;
+  --room-ink-soft: #6b6154;
+  --room-accent: #2e7d54;
+  --room-scrim: rgba(255, 255, 255, 0.72);
+}
+
+.room-stage[data-room-theme="CAFE"] {
+  color-scheme: dark;
+  --room-ground-from: #2a1f1a;
+  --room-ground-to: #171110;
+  --room-table: #4a3428;
+  --room-table-edge: #2f2019;
+  --room-chair: #5c4436;
+  --room-ink: #f5ede6;
+  --room-ink-soft: #c2ac9c;
+  --room-accent: #e8a87c;
+  --room-scrim: rgba(23, 17, 16, 0.66);
+}
+
+.room-stage[data-room-theme="HOME"] {
+  --room-ground-from: #f3eff9;
+  --room-ground-to: #e3daf1;
+  --room-table: #7c6f97;
+  --room-table-edge: #5e5476;
+  --room-chair: #c3b8dc;
+  --room-ink: #2a2438;
+  --room-ink-soft: #665c7c;
+  --room-accent: #55acee;
+  --room-scrim: rgba(255, 255, 255, 0.7);
+}
+
+/* One seated avatar breathing — presence you can feel without reading a sentence. */
+@keyframes room-seat-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px var(--room-accent), 0 0 0 6px transparent;
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px var(--room-accent),
+      0 0 0 10px color-mix(in srgb, var(--room-accent) 22%, transparent);
+  }
+}
+
+.room-seat-live {
+  animation: room-seat-breathe 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-seat-live {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--room-accent);
+  }
+}

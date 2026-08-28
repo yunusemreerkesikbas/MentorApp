@@ -951,10 +951,11 @@ export const NOTEBOOK_SOURCES = ["OWN", "COMMUNITY"] as const;
 export type NotebookSource = (typeof NOTEBOOK_SOURCES)[number];
 
 /**
- * A page, not a wall: 3:4 portrait against the vision board's 3:2. Same absolute-px-in-a-fixed-
- * design-space trick as `VISION_BOARD_CANVAS`, so one document renders identically at any width.
+ * A page, not a wall: ISO A4 portrait (210∶297) against the vision board's 3:2. Width stays 1080
+ * so existing item X coordinates do not shift; height grew from the old 3:4 (1440) to 1527.
+ * Same absolute-px-in-a-fixed-design-space trick as `VISION_BOARD_CANVAS`.
  */
-export const NOTEBOOK_PAGE_CANVAS = { width: 1080, height: 1440 } as const;
+export const NOTEBOOK_PAGE_CANVAS = { width: 1080, height: 1527 } as const;
 
 /** Paper under the items. Procedural like the board textures — CSS gradients, no raster asset. */
 export const NOTEBOOK_PAPERS = ["ruled", "grid", "dotted", "plain"] as const;
@@ -996,7 +997,7 @@ export const NOTEBOOK_INK_TOOLS = [
 export type NotebookInkTool = (typeof NOTEBOOK_INK_TOOLS)[number];
 
 /**
- * One drawn line, in the page's own 1080×1440 design space — so ink lands where it was drawn at
+ * One drawn line, in the page's own 1080×1527 design space — so ink lands where it was drawn at
  * any container width, exactly like every item.
  *
  * The eraser is not a tool that gets stored: it removes whole strokes, so what it leaves behind is

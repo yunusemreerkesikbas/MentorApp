@@ -11,7 +11,7 @@ import {
  * mistake happens right after getting one wrong, which is the worst moment to ask somebody to do
  * layout. They can rearrange later — the placement only has to be somewhere sensible.
  *
- * All numbers are absolute px in the 1080×1440 design space, the same convention the board items
+ * All numbers are absolute px in the 1080×1527 (A4) design space, the same convention the board items
  * use, so nothing here needs to know the rendered size.
  */
 

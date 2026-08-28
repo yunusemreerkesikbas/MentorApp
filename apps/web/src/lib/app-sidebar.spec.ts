@@ -11,6 +11,7 @@ import {
   isCommunityPath,
   isDefaultCollapsedSidebarPath,
   isImmersiveEditorPath,
+  hidesMobileAppChrome,
   parseAppSidebarCookie,
 } from "./app-sidebar";
 
@@ -60,6 +61,16 @@ describe("isImmersiveEditorPath", () => {
     expect(isImmersiveEditorPath("/yanlis-defteri")).toBe(true);
     expect(isImmersiveEditorPath("/notebooks")).toBe(false);
     expect(isImmersiveEditorPath("/defterlerim")).toBe(false);
+  });
+});
+
+describe("hidesMobileAppChrome", () => {
+  it("hides header and tabs on the collage editor and community, not the notebook", () => {
+    expect(hidesMobileAppChrome("/hedef/pano")).toBe(true);
+    expect(hidesMobileAppChrome("/community")).toBe(true);
+    expect(hidesMobileAppChrome("/yanlis-defteri")).toBe(false);
+    expect(hidesMobileAppChrome("/defterlerim/notebook-id")).toBe(false);
+    expect(hidesMobileAppChrome("/plan")).toBe(false);
   });
 });
 

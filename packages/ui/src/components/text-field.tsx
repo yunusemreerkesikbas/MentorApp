@@ -10,6 +10,7 @@ export interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputEleme
   error?: string | null;
   /** On a `type="password"` field, renders a show/hide toggle with these localized labels. */
   revealLabels?: { show: string; hide: string };
+  ref?: React.Ref<HTMLInputElement>;
 }
 
 /**
@@ -25,6 +26,7 @@ export function TextField({
   revealLabels,
   type,
   id,
+  ref,
   ...rest
 }: TextFieldProps) {
   const reactId = useId();
@@ -52,6 +54,7 @@ export function TextField({
       <div className="relative">
         <input
           {...rest}
+          ref={ref}
           id={inputId}
           type={effectiveType}
           aria-invalid={error ? true : undefined}

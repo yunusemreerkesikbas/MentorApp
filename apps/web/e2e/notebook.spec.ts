@@ -118,6 +118,12 @@ async function pickOption(page: Page, field: string, option: string) {
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 
+/** Mobile collapses the page-tool rail to a pen circle; expand it before tapping Ekle/Çiz/…. */
+async function ensureNotebookToolsOpen(page: Page) {
+  const show = page.getByRole("button", { name: "Araçları göster" });
+  if (await show.isVisible()) await show.click();
+}
+
 function emptyPage(index: number): NotebookPageDto {
   return {
     pageIndex: index,
@@ -386,6 +392,7 @@ test("yan panel her zaman açık: yanlış eklenir, hata tipi zorunlu, ders/konu
   await expect(
     page.getByRole("button", { name: "Sayfayı düzenle" }),
   ).toHaveCount(0);
+  await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Ekle" }).click();
 
   // The one required field: with no error type the form cannot be submitted.
@@ -424,6 +431,7 @@ test("konu seçici derse göre daralır", async ({ page }) => {
   await mockNotebookApi(page);
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: "Defteri aç" }).click();
+  await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Ekle" }).click();
 
   await pickOption(page, "Ders", "Tarih");
@@ -566,6 +574,7 @@ test("sidebar sticker ekler, sayfaya yapıştırır ve otomatik kaydeder", async
   const api = await mockNotebookApi(page);
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: "Defteri aç" }).click();
+  await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Sticker" }).click();
 
   // The full vision-board sticker set, not a shortlist — each one keeps its own translated name.
@@ -606,6 +615,7 @@ test("not: tıklayınca sayfa üzerinde düzenlenebilir alan açılır; boş bı
   await page.getByRole("button", { name: "Defteri aç" }).click();
 
   // No sidebar form: the note lands directly on the page, already in edit mode.
+  await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Not" }).click();
   const editor = page.getByLabel("Not metni");
   await expect(editor).toBeFocused();
@@ -622,6 +632,7 @@ test("not: tıklayınca sayfa üzerinde düzenlenebilir alan açılır; boş bı
   expect(notes[0]!.text).toBe("Bir daha köklü ifade unutma");
 
   // A second note, left empty, must never be persisted — the schema requires non-empty text.
+  await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Not" }).click();
   await page.getByLabel("Not metni").blur();
   await expect
@@ -711,6 +722,7 @@ test("çizim modunda sayfaya kalemle çizilir, geri/ileri alınır ve kaydedilir
 
   // `exact` matters here: role-name matching is a substring match by default, and "Çiz" is a
   // prefix of the tray's own "Çizimleri sil".
+  await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Çiz", exact: true }).click();
   const toolbar = page.getByRole("toolbar", { name: "Çizim araçları" });
   await expect(toolbar).toBeVisible();
@@ -728,7 +740,7 @@ test("çizim modunda sayfaya kalemle çizilir, geri/ileri alınır ve kaydedilir
   // the pens and the undo/redo controls are on the strip behind this one.
   await toolbar.getByRole("button", { name: "Geri", exact: true }).click();
 
-  const surface = page.locator("svg[viewBox='0 0 1080 1440']").first();
+  const surface = page.locator("svg[viewBox='0 0 1080 1527']").first();
   const box = (await surface.boundingBox())!;
   await drawOn(page, box);
 
@@ -768,10 +780,11 @@ test("silgi çizilen mürekkebi kaldırır, çizim modu kart sürüklemeyi kapat
   await page.getByRole("button", { name: "Defteri aç" }).click();
   // `exact` matters here: role-name matching is a substring match by default, and "Çiz" is a
   // prefix of the tray's own "Çizimleri sil".
+  await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Çiz", exact: true }).click();
 
   const toolbar = page.getByRole("toolbar", { name: "Çizim araçları" });
-  const surface = page.locator("svg[viewBox='0 0 1080 1440']").first();
+  const surface = page.locator("svg[viewBox='0 0 1080 1527']").first();
   const box = (await surface.boundingBox())!;
 
   await drawOn(page, box);
@@ -785,6 +798,7 @@ test("silgi çizilen mürekkebi kaldırır, çizim modu kart sürüklemeyi kapat
   // Leaving draw mode hands the pages back to the arranging tools, and the tray goes away.
   // `exact` matters here: role-name matching is a substring match by default, and "Çiz" is a
   // prefix of the tray's own "Çizimleri sil".
+  await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Çiz", exact: true }).click();
   await expect(toolbar).toHaveCount(0);
 
@@ -1203,6 +1217,7 @@ test("dizin kayıtları listeler, derse göre daraltır ve sayfaya yerleştirir"
 
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: "Defteri aç" }).click();
+  await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Ara", exact: true }).click();
 
   // Both are listed — including the one that is on no page, which neither the book nor the deck
@@ -1247,6 +1262,7 @@ test("sayfadan kaldırılan kayıt dizinden bulunup silinebilir", async ({
   await page.getByRole("button", { name: "Seçileni sil" }).click();
   await page.getByRole("button", { name: "Sadece sayfadan kaldır" }).click();
 
+  await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Ara", exact: true }).click();
   await page.getByText("Problemler").click();
 
@@ -1278,6 +1294,7 @@ test("uzak barındırıcıdaki foto dizinde render edilebiliyor", async ({
 
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: "Defteri aç" }).click();
+  await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Ara", exact: true }).click();
 
   await expect(page.getByText("Problemler")).toBeVisible();

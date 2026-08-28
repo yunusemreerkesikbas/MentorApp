@@ -8,6 +8,8 @@ import { UserRole } from "@mentor/types";
 
 const RUN = Date.now();
 const PASSWORD = "Sifre1234";
+/** `users_username_format_check` caps handles at 24 chars, so the run suffix stays short. */
+const handle = (label: string) => `rooms${label}${String(RUN).slice(-8)}`;
 
 /**
  * Study rooms ("masa") e2e against a real Postgres. Covers the parts that only exist inside
@@ -104,6 +106,14 @@ describe("study rooms (e2e)", () => {
         UserRole.ADMIN,
         admin.id,
       ]);
+      // Onboarding assigns a username in the real app; buddy suggestions require one because
+      // the request endpoint addresses people by handle.
+      for (const label of ["owner", "member", "outsider"]) {
+        await c.query("update users set username = $1 where id = $2", [
+          handle(label),
+          users[label]!.id,
+        ]);
+      }
     });
     const login = await request(app.getHttpServer())
       .post("/v1/auth/login")
@@ -339,6 +349,64 @@ describe("study rooms (e2e)", () => {
 
     const rows = await pool.query("select 1 from study_rooms where id = $1", [room.id]);
     expect(rows.rowCount).toBe(0);
+  });
+
+  it("suggests a buddy only after two people actually shared the table", async () => {
+    const suggestions = (who: string) =>
+      request(app.getHttpServer()).get("/v1/buddy/suggestions").set(as(who));
+
+    const room = (await createRoom("owner", { capacity: 3 })).body;
+    expect((await joinRoom("member", room.inviteCode)).status).toBe(201);
+
+    // Members of the same room, but nobody has sat down: sharing a room is not co-working.
+    expect((await suggestions("owner")).body).toEqual([]);
+
+    // The owner works alone at the table — still nothing to suggest.
+    expect((await startSession("owner", { preset: "25_5", roomId: room.id })).status).toBe(201);
+    expect((await suggestions("member")).body).toEqual([]);
+
+    // Now the member sits down while the owner's session is still open → overlap.
+    expect((await startSession("member", { preset: "25_5", roomId: room.id })).status).toBe(201);
+
+    const forMember = (await suggestions("member")).body;
+    expect(forMember).toHaveLength(1);
+    expect(forMember[0].userId).toBe(users.owner!.id);
+    expect(forMember[0].sessionsTogether).toBe(1);
+    expect(forMember[0].lastTogetherAt).toBeTruthy();
+    // Effort-only, public-safe fields — no email, no exam results.
+    expect(Object.keys(forMember[0]).sort()).toEqual([
+      "avatarUrl",
+      "displayName",
+      "lastTogetherAt",
+      "sessionsTogether",
+      "userId",
+      "username",
+    ]);
+
+    // Symmetric: the owner sees the member too.
+    expect((await suggestions("owner")).body.map((s: { userId: string }) => s.userId)).toEqual([
+      users.member!.id,
+    ]);
+  });
+
+  it("stops suggesting someone once a buddy request exists between them", async () => {
+    const room = (await createRoom("owner", { capacity: 3 })).body;
+    await joinRoom("member", room.inviteCode);
+    await startSession("owner", { preset: "25_5", roomId: room.id });
+    await startSession("member", { preset: "25_5", roomId: room.id });
+    expect((await request(app.getHttpServer()).get("/v1/buddy/suggestions").set(as("owner"))).body)
+      .toHaveLength(1);
+
+    const sent = await request(app.getHttpServer())
+      .post(`/v1/buddy/requests/${handle("member")}`)
+      .set(as("owner"));
+    expect(sent.status).toBe(201);
+
+    // A pending request is a relation — the person leaves the suggestion list for both sides.
+    expect((await request(app.getHttpServer()).get("/v1/buddy/suggestions").set(as("owner"))).body)
+      .toEqual([]);
+    expect((await request(app.getHttpServer()).get("/v1/buddy/suggestions").set(as("member"))).body)
+      .toEqual([]);
   });
 
   it("keeps past sessions after the room is closed, minus the room label", async () => {

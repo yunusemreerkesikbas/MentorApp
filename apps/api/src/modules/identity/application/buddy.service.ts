@@ -9,17 +9,10 @@ import {
   type BuddyPairRow,
   type BuddyPairWithUserRow,
 } from "../infrastructure/buddy.repository";
-import {
-  UsersRepository,
-  type CohortPeer,
-  type UserRow,
-} from "../infrastructure/users.repository";
+import { UsersRepository, type UserRow } from "../infrastructure/users.repository";
 
 /** Nudge cooldown per direction — allows a morning + evening nudge, kills spam. */
 export const BUDDY_NUDGE_COOLDOWN_MS = 4 * 60 * 60 * 1000;
-
-/** Over-fetch factor so the cohort pool survives buddy-relation exclusions. */
-const SUGGESTION_POOL_FACTOR = 4;
 
 /**
  * Study-buddy pairing (identity owns it — a user↔user relation like follows; community
@@ -103,26 +96,23 @@ export class BuddyService {
   }
 
   /**
-   * Same-exam-cohort candidates for the "yol arkadaşı bul" surface, excluding the
-   * viewer, anyone already related to them, and anyone who already has an active
-   * buddy (can't pair). Empty when the viewer already has an active buddy.
+   * Narrow a caller's ranked candidate list to people the viewer can actually pair with:
+   * not themselves, not already related (pending either way / already paired), and not someone
+   * who is already someone else's buddy. Empty when the viewer already has a buddy.
+   *
+   * identity owns the *eligibility*, not the *ranking* — the list arrives ordered by whoever
+   * built it (today: community, from shared study-room sessions), and that order is preserved.
    */
-  async getSuggestionCandidates(viewerId: string, limit: number): Promise<CohortPeer[]> {
+  async filterEligibleCandidates(
+    viewerId: string,
+    candidateIds: string[],
+  ): Promise<string[]> {
+    if (candidateIds.length === 0) return [];
     if (await this.pairs.findActiveByUser(viewerId)) return [];
-    const viewer = await this.usersRepo.findByIdService(viewerId);
-    const pool = await this.usersRepo.suggestCohortPeers(
-      viewer?.examType ?? null,
-      [viewerId],
-      limit * SUGGESTION_POOL_FACTOR,
-    );
-    if (pool.length === 0) return [];
     const excluded = new Set(
-      await this.pairs.listRelatedOrActivelyPairedIds(
-        viewerId,
-        pool.map((p) => p.userId),
-      ),
+      await this.pairs.listRelatedOrActivelyPairedIds(viewerId, candidateIds),
     );
-    return pool.filter((p) => !excluded.has(p.userId)).slice(0, limit);
+    return candidateIds.filter((id) => id !== viewerId && !excluded.has(id));
   }
 
   // --- reads consumed by community (buddy view + public profile) ---

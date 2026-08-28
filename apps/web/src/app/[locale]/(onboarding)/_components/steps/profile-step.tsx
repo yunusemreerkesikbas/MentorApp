@@ -166,7 +166,6 @@ export function ProfileStep({
       step={1}
       mascot="winking"
       title={t("title")}
-      subtitle={t("subtitle")}
       onBack={onBack}
       primaryLabel={t("continue")}
       primaryFormId={PROFILE_FORM_ID}
@@ -233,9 +232,6 @@ export function ProfileStep({
                 </button>
               ) : null}
             </div>
-            <p className="mt-1 text-xs leading-snug text-[var(--color-secondary)]">
-              {t("avatar_hint")}
-            </p>
           </div>
         </div>
       </form>

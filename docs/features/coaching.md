@@ -3321,7 +3321,9 @@ lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bi
   Web'de create/delete sonrasında koleksiyon sunucudan yeniden ilk sayfaya alınır; yükleme devamı
   ve silme hataları mevcut kartları bozmadan inline yeniden deneme sunar. Dialog ilk alan odağı,
   44px hedefler, focus ring ve reduced-motion doğrulandı. Mobil defter editörü tam ekran chrome
-  kullanır; böylece üst navigasyon editör araçlarının dokunma alanını kapatmaz.
+  kullanır; böylece üst navigasyon editör araçlarının dokunma alanını kapatmaz. DELETE başarılı
+  olup liste yenileme başarısız olduğunda defter yerelden kaldırılır ve yeniden deneme yalnız ilk
+  sayfayı eşitler; silme isteği ikinci kez gönderilmez.
 
   **Rollout checklist (deploy bu PR'nin parçası değil):**
 
@@ -3387,12 +3389,14 @@ lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bi
   bildirilmiyor, koltuk "18 dk'dır masada" der, "molada" demez · masa seçimi seans **başlarken**
   yapılır, ortasında değiştirilemez.
 
-  **Gotcha:** `study_rooms` / `study_room_members` tablolarında **RLS politikası yok** — satırlar
-  doğası gereği cross-user okunuyor; repo SERVICE context'te çalışır ve açık WHERE ile scope'lanır
-  (`buddy_pairs` / `user_follows` ile aynı güven modeli). Yarışabilecek her şey (katılma =
-  kapasite + kota, ayrılma = sahiplik devri, kapasite düşürme) masa satırına `select … for update`
-  kilidi alan tek bir transaction içinde. Özellik `coaching.study_rooms.enabled` bayrağının
-  arkasında ve varsayılanı `false`; her uç `assertEnabled()`'dan geçer.
+  **Güvenlik ve yarışlar:** `study_rooms` / `study_room_members` yalnız SERVICE context'e izin veren
+  `ENABLE + FORCE RLS` politikalarıyla korunur; kullanıcı görünürlüğü repository'nin açık sahiplik
+  ve üyelik filtrelerinde kalır. Katılma kapasitesi ile sahip mutation'ları masa satırına
+  `select … for update` kilidi alan tek transaction içinde doğrulanır. Kullanıcının aktif masa
+  kotası create/join boyunca kullanıcı kimliğinden türetilen transaction advisory lock ile
+  serileştirilir; iki paralel istek 3-masa sınırını birlikte aşamaz. Özellik
+  `coaching.study_rooms.enabled` bayrağının arkasında ve varsayılanı `false`; her uç
+  `assertEnabled()`'dan geçer.
 
   İlgili: `0085_unknown_newton_destine.sql`, `schema.ts`, `study-room.{service,repository}.ts`,
   `study-room.controller.ts`, `study-session.repository.ts` (`findRunningByRooms`),
@@ -3490,3 +3494,93 @@ lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bi
   `join-room/` (sayfa + shell), `pending-invite.ts`, `post-auth-destination.{ts,spec.ts}`,
   `complete-step.tsx`, `(auth)/{login,signup}/page.tsx`, `room-shell.tsx`, `routing.ts`,
   `session-buddy-card.tsx`, `notification-drawer-shell.tsx`, `messages/{tr,en}.json`.
+
+- **Yeni defter formu Nuton primitive’lere bağlandı (2026-08-26)** — Koleksiyon create/edit
+  dialogu `@mentor/ui` `Modal` + `TextField` + `Button` ve web `MenuSelect` ile kuruldu.
+  Vazgeç ghost, Kaydet primary/`busy`. Kullanım: `/defterlerim` → Yeni defter veya kart
+  düzenle. Gotcha: ders alanı native `<select>` değil; e2e `option` role ile seçer.
+  `DialogProvider` confirm yığınına form konmaz. İlgili: `notebook-form-dialog.tsx`,
+  `notebooks-shell.tsx`, `choice-chip.tsx`, `modal.tsx`, `e2e/notebooks.spec.ts`.
+
+- **Kapak rengi/malzeme swatch (2026-08-26)** — Formdaki kapak seçimi metin chip değil;
+  defter yan panelindeki metin-arka-plan swatch sırası: renk daire (`size-5` nokta).
+  Malzeme dururken 44px kare doku örneği (seçili rengin üstünde `COVER_MATERIALS`) —
+  20px dairede kumaş/kraft/deri/düz ayrılmıyordu; hover’da büyütmek dokunmatikte
+  işe yaramaz. İsim (Kumaş/Kraft/Deri/Düz) renklerle aynı hover/focus tooltip’inde;
+  doku `overflow-hidden` iç katmanda, yoksa isim kesilir. İlgili: `notebook-form-dialog.tsx`.
+
+- **Defter A4 + overlay chrome (2026-08-26)** — Sayfa tuvali 1080×1440 (3:4) → 1080×1527
+  (ISO A4 210∶297); mevcut öğelerin X’i kaymaz, altta boş kâğıt açılır. Desktop chrome
+  (tekrar chip, undo/sil/Kaydet, araç rail, detay paneli, sayfa okları) defterin üzerine
+  biner — kolon/satır olarak yer kaplamaz, paneli açmak kitabı küçültmez. Mobil rail
+  hâlâ akışta (yaprağı kapatmamak için). Dış padding 8px; immersif editörde tab-bar
+  `pb` kalkıyor (AppNav zaten gizliydi). Kullanım: `/yanlis-defteri` veya
+  `/defterlerim/:id`. Gotcha: e2e ink `viewBox` 1080×1527. İlgili: `notebook-shell.tsx`,
+  `notebook-shell-layout.ts`, `notebook-content-skeleton.tsx`, `coaching.ts`
+  (`NOTEBOOK_PAGE_CANVAS`), `(app)/layout.tsx`.
+
+- **Defter mobil chrome (2026-08-26)** — Header + alt tab notebook’ta geri geldi: defter günlük
+  alışkanlık, pano editörü gibi tam ekran değil (`hidesMobileAppChrome` yalnız pano + topluluk).
+  Mobil araç rail varsayılan kalem dairesi (çizim tray’deki gizle ile aynı scale açılış);
+  Ekle/Sticker satırı tıklanınca genişler. Yükseklik `100dvh - header - tab`. Kullanım: telefonda
+  defteri aç, kaleme bas. Gotcha: e2e önce `Araçları göster`. İlgili: `app-nav.tsx`,
+  `app-sidebar.ts`, `notebook-rail-items.tsx`, `notebook-shell.tsx`, `e2e/notebook.spec.ts`.
+
+- **Defter mobil alt krom (2026-08-26)** — Üstte kalem FAB; tekrar chip + undo/sil/Kaydet onun
+  hemen alt satırında (sayfanın en altına değil). Sayfa okları defter–tab boşluğunda — kâğıt
+  üstünde kartları kapatmasın. Masaüstü overlay aynı. Kapakta yalnız chip (üstte) + pager.
+  Kullanım: telefonda kalemin altında Kaydet, altta Sayfa. İlgili: `notebook-shell.tsx`,
+  `notebook-content-skeleton.tsx`.
+
+- **Defter araç rail kapsül (2026-08-26)** — Mobil açılış scale değil: kalem dairesinden
+  `width`/`height` clip-reveal (framer-motion). Kapalı dairede opak kalem diski — ilk araç
+  (Ekle) sızmasın. Ink tray aynı animasyon. Radius `rounded-[50px]`. Kullanım: kaleme bas,
+  pill sağa büyür; Çiz gizle aynı. Gotcha: kapalıyken satır `inert`. İlgili:
+  `notebook-rail-items.tsx`, `notebook-ink-toolbar.tsx`, `notebook-shell-layout.ts`.
+
+- **Defter skeleton kapak (2026-08-26)** — Yükleme iskeleti açık spread değil kapak: A4 oranı
+  (`COVER_RATIO`), `sm` kırılımı (`MOBILE_QUERY` ile aynı; eskiden `lg` tablet’te mobil krom
+  bırakıyordu). Mobil: due üstte, pager defter–tab boşluğunda. Desktop: due + pager defterin
+  üzerinde. Kalem/Kaydet yok — kapak gelince kaybolmasın. İlgili:
+  `notebook-content-skeleton.tsx`, `notebook-surface.tsx`.
+
+- **Çalışma masası — sahne redesign (2026-08-26)** — Masa sayfası karttan **yere** dönüştü.
+  Öncesinde: 1660px ekranda 512px'lik kolon, bej bir kutu içinde gri elips ve zar zor görünen
+  kesik çizgili halkalar; 1/4 doluyken sakin değil bozuk görünüyordu. İsim yine kırpılıyordu
+  ("Yunus Emre Erke…"), ve masa başına bir kez yapılan **davet kartı sayfanın en büyük kartıydı**.
+
+  **DESIGN.md'nin kendi istisna deseniyle genişletildi, yok sayılmadı.** Sistem zaten temayı
+  takip etmeyen kapsamlı yüzeyler tanımlıyor (§2.5: `.session-focus-theme`, `.weekly-recap-theme`,
+  `.premium-paywall-theme`). Masa da öyle bir yüzey: `packages/ui/src/theme.css` içinde
+  `.room-stage` + `[data-room-theme]` ile kendi **`--room-*`** ailesi var. Kafe öğle vakti de
+  loştur, kütüphane gece yarısı da aydınlıktır — sahne açık/koyu çerezini takip etmez. Yüzen
+  chrome tek bir sözleşme okur: **`--room-ink`**; aydınlık kütüphane ile loş kafede aynı
+  kontrollerin okunur kalmasını sağlayan şey bu.
+
+  **Masa artık mobilya gibi okunuyor:** üst yüzey + kenar (iki kaydırılmış elips) + temas gölgesi
+  + vinyet. Koltuklar **sandalye**: avatarın arkasında yuvarlatılmış sırtlık, boş sandalye de
+  sandalye gibi görünüyor — "kesik çizgili daire" gibi render hatası gibi değil.
+
+  **Boş sandalye davet kontrolüdür.** Sahibe boş sandalyeye basmak davet sayfasını açar. Kalıcı
+  davet kartı kaldırıldı: eylem, boşluğun *olduğu* yerde yaşıyor ve birincil CTA ile yarışmıyor.
+  Yıkıcı eylemler (ayrıl / masayı kapat) taşma menüsüne indi — masa kapatmak niyet istemeli.
+
+  **Presence altyazı oldu, dipnot değil:** başlıkta canlı nokta + "2 kişi çalışıyor · Matematik,
+  Tarih". Oturan avatarda `room-seat-live` nefes halkası; `prefers-reduced-motion` altında
+  animasyon durur, halka kalır (ödül korunur, hareket düşer — §9.1).
+
+  **İsim kırpması kaynağında çözüldü:** sandalye etiketi "Yunus E." biçiminde kısaltılıyor, tam ad
+  `title`'da. Sabit genişlikli sandalye sayesinde kapasite değişse de etiket bozulmuyor.
+
+  **Kabuğu kaplamıyor:** `fixed inset-0` değil, içerik alanını dolduran `relative min-h-screen`.
+  Kenar çubuğu ve tab bar yerinde kalır — odadan çıkmadan gezinilebilir (odak modundan kasıtlı
+  fark).
+
+  **Not:** `ui-ux-pro-max` skill'inin önerdiği yön (Liquid Glass + teal/turuncu + Lora/Raleway)
+  bilerek alınmadı; aracın kendi etiketi "Performance: Moderate-Poor / Accessibility: text
+  contrast" diyor ve sayaç dönerken bakılan bir yüzeyde `backdrop-filter` + düşük kontrast yanlış
+  yön. Araçtan alınan şey UX kontrol listesi oldu (reduced-motion, başlık hiyerarşisi, 44px
+  hedefler, empty state).
+
+  İlgili: `theme.css` (`.room-stage`, `room-seat-breathe`), `room-shell.tsx`, `room-seats.tsx`,
+  `room-backdrop.tsx`, `messages/{tr,en}.json`.

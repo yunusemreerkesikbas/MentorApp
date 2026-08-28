@@ -35,7 +35,10 @@ import {
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
 import { PlanTaskRepository } from "../infrastructure/plan-task.repository";
 import { StudyRoomRepository } from "../infrastructure/study-room.repository";
-import { StudySessionRepository } from "../infrastructure/study-session.repository";
+import {
+  StudySessionRepository,
+  type CoWorkerRow,
+} from "../infrastructure/study-session.repository";
 import { toStudySessionDto } from "./coaching.mappers";
 import type { CoachRhythmEvidence } from "../domain/coach-evidence";
 import { hasSevenFullIstanbulDaysBetween } from "../domain/achievement-evidence";
@@ -143,6 +146,19 @@ export class SessionService {
   async isStudyingNow(userId: string): Promise<boolean> {
     return withUserContext(this.db, { userId }, (tx) =>
       this.sessions.hasActiveSession(tx, userId, ACTIVE_SESSION_GRACE_MINUTES),
+    );
+  }
+
+  /**
+   * People the user has actually co-worked with at a study room, most-shared first. The buddy
+   * suggestion list is built from this instead of a cohort scan: "we have sat at the same table"
+   * is a far better reason to pair up than "we registered for the same exam".
+   *
+   * SERVICE context — the rows belong to other users by definition.
+   */
+  listRecentCoWorkers(userId: string, sinceDays: number, limit: number): Promise<CoWorkerRow[]> {
+    return withServiceContext(this.db, (tx) =>
+      this.sessions.listCoWorkers(tx, userId, sinceDays, limit),
     );
   }
 

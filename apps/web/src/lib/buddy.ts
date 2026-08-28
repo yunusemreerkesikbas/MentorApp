@@ -1,4 +1,4 @@
-import type { BuddyUserRef, BuddyViewDto } from "@mentor/types";
+import type { BuddySuggestionRef, BuddyViewDto } from "@mentor/types";
 import { http } from "@mentor/api-client";
 
 /**
@@ -10,9 +10,9 @@ export async function getBuddy(): Promise<BuddyViewDto> {
   return (await http<BuddyViewDto>("/v1/buddy")) as BuddyViewDto;
 }
 
-/** Same-cohort candidates for the empty-state "find a buddy" list. */
-export async function getBuddySuggestions(): Promise<BuddyUserRef[]> {
-  return (await http<BuddyUserRef[]>("/v1/buddy/suggestions")) as BuddyUserRef[];
+/** People the viewer has actually co-worked with at a study room, most-shared first. */
+export async function getBuddySuggestions(): Promise<BuddySuggestionRef[]> {
+  return (await http<BuddySuggestionRef[]>("/v1/buddy/suggestions")) as BuddySuggestionRef[];
 }
 
 export async function sendBuddyRequest(username: string): Promise<void> {

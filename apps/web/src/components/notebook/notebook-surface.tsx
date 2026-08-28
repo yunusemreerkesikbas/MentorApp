@@ -23,7 +23,7 @@ import { NOTEBOOK_PAGE_CANVAS } from "@mentor/types";
  * measuring anything — same trick the board stage uses.
  */
 
-/** Ruling rhythm in the 1080×1440 design space, expressed against the page's own width. */
+/** Ruling rhythm in the 1080×1527 A4 design space, expressed against the page's own width. */
 const LINE_STEP = "3.4cqw";
 const SPIRAL_WIDTH = "7cqw";
 /** One ring per this much height. Keyed to width so the binding scales with the page, not the view. */
@@ -76,6 +76,9 @@ export const SPINE_PERCENT = (SPINE_GUTTER / SPREAD_SPAN) * 100;
  * thing a skeleton exists to prevent.
  */
 export const SPREAD_RATIO = SPREAD_SPAN / NOTEBOOK_PAGE_CANVAS.height;
+/** Closed cover / single mobile leaf — same canvas, one page, no gutter. */
+export const COVER_RATIO =
+  NOTEBOOK_PAGE_CANVAS.width / NOTEBOOK_PAGE_CANVAS.height;
 
 /** Exported so the sidebar's paper picker can render a live swatch per option, not just a label. */
 export const PAPERS: Record<NotebookPaper, CSSProperties> = {

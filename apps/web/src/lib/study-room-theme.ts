@@ -30,33 +30,6 @@ export const STUDY_ROOM_BACKDROP_SRC: Record<StudyRoomTheme, string> = {
   HOME: "/visuals/room-home-bg.webp",
 };
 
-export interface StudyRoomGround {
-  /** Room floor/wall wash behind everything. */
-  ground: string;
-  /** The tabletop the seats sit around. */
-  table: string;
-}
-
-/**
- * Theme colours built from DESIGN tokens with `color-mix`, so all three themes retune with the
- * palette and stay legible in dark mode. This is also the fallback ground when a backdrop
- * illustration is missing or fails to load — the room is never a blank rectangle.
- */
-export const STUDY_ROOM_GROUND: Record<StudyRoomTheme, StudyRoomGround> = {
-  LIBRARY: {
-    ground: "color-mix(in srgb, var(--color-star) 10%, var(--color-surface-container))",
-    table: "color-mix(in srgb, var(--color-main) 10%, var(--color-surface))",
-  },
-  CAFE: {
-    ground: "color-mix(in srgb, var(--color-streak) 14%, var(--color-surface-container))",
-    table: "color-mix(in srgb, var(--color-streak) 34%, var(--color-main))",
-  },
-  HOME: {
-    ground: "color-mix(in srgb, var(--color-chip) 18%, var(--color-surface-container))",
-    table: "color-mix(in srgb, var(--color-thumb-violet) 30%, var(--color-surface))",
-  },
-};
-
 export function isStudyRoomTheme(value: string): value is StudyRoomTheme {
   return (STUDY_ROOM_THEME_IDS as readonly string[]).includes(value);
 }

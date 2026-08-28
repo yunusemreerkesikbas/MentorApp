@@ -810,25 +810,16 @@
     },
     "exam_settings": {
       "title": "Exam type",
-      "subtitle": "Official exam date comes from the knowledge hub; here you choose your target exam family.",
       "aria_label": "Exam type",
       "saved": "Saved",
       "saved_toast_title": "Exam type saved",
       "saved_toast_message": "Countdown and content will update to match.",
       "save_error": "Could not save.",
-      "kpss_desc": "Civil Servant Selection Exam",
-      "yks_desc": "Higher Education Institutions Exam",
-      "lgs_desc": "High School Transition System",
       "variant_label": "Your KPSS level",
       "variant": {
         "LISANS": "Bachelor's",
         "ONLISANS": "Associate",
         "ORTAOGRETIM": "High school"
-      },
-      "variant_desc": {
-        "LISANS": "Four-year degree, or in your final year",
-        "ONLISANS": "Two-year vocational degree",
-        "ORTAOGRETIM": "High school diploma"
       }
     },
     "account": {
@@ -1548,7 +1539,6 @@
     "goal_save_error_message": "Please try again in a moment.",
     "buddy_title": "Your study buddy",
     "buddy_empty": "Keep each other on track with a study buddy.",
-    "buddy_empty_cta": "Invite someone from the community →",
     "buddy_active_stats": "{minutes} min focus today · {days}-day streak",
     "buddy_studying_now": "focusing now",
     "buddy_nudge": "Nudge 👋",
@@ -1562,8 +1552,10 @@
     "buddy_outgoing": "Waiting for {name} to respond",
     "buddy_cancel": "Cancel",
     "buddy_action_error_title": "Something went wrong",
-    "buddy_suggest_title": "Study buddies that fit you",
+    "buddy_suggest_title": "People you have studied with",
     "buddy_suggest_action": "Send request",
+    "buddy_together_count": "You have studied together {count} times",
+    "buddy_empty_hint": "People you have studied with at a table show up here. Sit at a table first — that is where a study buddy starts.",
     "focusing_now": "{count} people are focusing with you right now",
     "share_cta": "Share today",
     "share_text": "I focused for {minutes} minutes on Mentor today 🎯",
@@ -2051,6 +2043,9 @@
     "seat_focusing": "{minutes} min at the table",
     "seat_idle": "Not at the table right now",
     "seat_empty": "Empty seat",
+    "room_menu": "Room menu",
+    "invite_seat": "Invite",
+    "seat_focusing_short": "{minutes} min",
     "seat_owner": "Room owner",
     "leave": "Leave room",
     "leave_confirm": "Confirm leaving",
@@ -2228,14 +2223,12 @@
     },
     "profile": {
       "title": "What should we call you?",
-      "subtitle": "Choose the username shown in community and coach surfaces. You can add a photo now if you want.",
       "username_label": "Username",
       "username_placeholder": "example_user",
       "username_hint": "3-24 characters · lowercase letters, numbers, and underscore.",
       "avatar_label": "Profile photo",
       "avatar_change": "Choose photo",
       "avatar_remove": "Remove",
-      "avatar_hint": "Optional · JPEG/PNG · up to 2 MB",
       "avatar_type_error": "You can only upload JPEG or PNG.",
       "avatar_too_big": "Profile photo must be under 2 MB.",
       "avatar_upload_error": "Could not upload profile photo.",
@@ -2245,7 +2238,6 @@
     },
     "exam": {
       "title": "Which exam are you preparing for?",
-      "subtitle": "Official dates come from the knowledge hub; here you choose your target exam family.",
       "continue": "Continue",
       "save_error": "Couldn't save."
     },

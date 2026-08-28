@@ -34,10 +34,9 @@ import { Link, usePathname } from "@/i18n/navigation";
 import {
   APP_SIDEBAR_COLLAPSED_PX,
   applyAppSidebar,
+  hidesMobileAppChrome,
   isBoardEditorPath,
-  isCommunityPath,
   isDefaultCollapsedSidebarPath,
-  isImmersiveEditorPath,
   parseAppSidebarCookie,
 } from "@/lib/app-sidebar";
 import { useAuth } from "@/lib/auth-context";
@@ -146,8 +145,7 @@ export function AppNav() {
     };
   }, []);
 
-  const hideMobileChrome =
-    isImmersiveEditorPath(pathname) || isCommunityPath(pathname);
+  const hideMobileChrome = hidesMobileAppChrome(pathname);
 
   return (
     <>

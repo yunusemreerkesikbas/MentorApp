@@ -1,8 +1,10 @@
 "use client";
 
-import { ListFilter, PanelTop, Pen, Plus, Smile } from "lucide-react";
+import type { ReactNode } from "react";
+import { ChevronsDownUp, ListFilter, PanelTop, Pen, Plus, Smile } from "lucide-react";
 import { motion } from "framer-motion";
 import { boardChromeTransition } from "../../vision-board/board/_components/board-chrome-motion";
+import { NOTEBOOK_TRAY_RADIUS_CLASS } from "./notebook-shell-layout";
 import type { NotebookPanelCategory } from "./notebook-side-panel";
 
 /**
@@ -60,5 +62,87 @@ export function NotebookRailActiveFill({
       style={{ backgroundColor: "var(--color-btn)" }}
       transition={boardChromeTransition}
     />
+  );
+}
+
+/**
+ * Mobile page-tool rail. Collapsed it is the ink tray's pen circle; tap grows the pill to full
+ * width (clip-reveal, not scale) so the icon row slides out of the circle instead of popping.
+ */
+export function NotebookMobileToolRail({
+  open,
+  reduceMotion,
+  navLabel,
+  showLabel,
+  hideLabel,
+  onOpen,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  reduceMotion: boolean | null;
+  navLabel: string;
+  showLabel: string;
+  hideLabel: string;
+  onOpen: () => void;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const trayStyle = {
+    backgroundColor: "var(--color-surface)",
+    borderColor: "color-mix(in srgb, var(--color-main) 10%, transparent)",
+    boxShadow: "var(--shadow-card)",
+  } as const;
+
+  return (
+    <div className="w-full min-w-0 [container-type:inline-size]">
+      <motion.nav
+        aria-label={navLabel}
+        initial={false}
+        animate={{
+          width: open ? "100%" : "2.75rem",
+          height: open ? "auto" : "2.75rem",
+        }}
+        transition={reduceMotion ? { duration: 0 } : boardChromeTransition}
+        className={`relative overflow-hidden border ${NOTEBOOK_TRAY_RADIUS_CLASS}`}
+        style={trayStyle}
+      >
+        <div
+          inert={!open}
+          aria-hidden={!open}
+          className="flex w-[100cqw] max-w-[100cqw] items-center px-1 py-0.5"
+        >
+          {children}
+          <button
+            type="button"
+            tabIndex={open ? 0 : -1}
+            aria-label={hideLabel}
+            onClick={onClose}
+            className="relative flex size-11 shrink-0 cursor-pointer items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            style={{ color: "var(--color-secondary)" }}
+          >
+            <ChevronsDownUp aria-hidden size={18} />
+          </button>
+        </div>
+        <motion.button
+          type="button"
+          aria-hidden={open}
+          tabIndex={open ? -1 : 0}
+          aria-label={showLabel}
+          onClick={onOpen}
+          initial={false}
+          animate={{ opacity: open ? 0 : 1 }}
+          transition={reduceMotion ? { duration: 0 } : boardChromeTransition}
+          className="absolute top-0 left-0 z-[1] inline-flex size-11 cursor-pointer items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{
+            color: "var(--color-main)",
+            backgroundColor: "var(--color-surface)",
+            pointerEvents: open ? "none" : "auto",
+          }}
+        >
+          <Pen aria-hidden size={18} />
+        </motion.button>
+      </motion.nav>
+    </div>
   );
 }

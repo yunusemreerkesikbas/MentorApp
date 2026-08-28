@@ -96,7 +96,7 @@ export function useInkDraw({
     });
   }, []);
 
-  /** Screen px → the page's own 1080×1440 space. Returns null past the edge of the page. */
+  /** Screen px → the page's own 1080×1527 A4 space. Returns null past the edge of the page. */
   const toDesign = useCallback(
     (rect: DOMRect, clientX: number, clientY: number) => {
       const x = ((clientX - rect.left) / rect.width) * NOTEBOOK_PAGE_CANVAS.width;

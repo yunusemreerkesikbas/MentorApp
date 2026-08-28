@@ -61,7 +61,11 @@ import { useInkDraw } from "@/components/notebook/use-ink-draw";
 import {} from "@/lib/notebook-ink";
 import { NotebookInkToolbar } from "./notebook-ink-toolbar";
 import { useNotebookInkSettings } from "./use-notebook-ink-settings";
-import { NotebookRailActiveFill, RAIL_CATEGORIES } from "./notebook-rail-items";
+import {
+  NotebookMobileToolRail,
+  NotebookRailActiveFill,
+  RAIL_CATEGORIES,
+} from "./notebook-rail-items";
 import {
   AUTOSAVE_DELAY_MS,
   COVER_MAX_WIDTH_PX,
@@ -70,10 +74,13 @@ import {
   MOBILE_LEAF_MAX_WIDTH_PX,
   MOBILE_QUERY,
   NOTEBOOK_MAX_WIDTH_PX,
+  NOTEBOOK_TRAY_RADIUS_CLASS,
+  NOTEBOOK_Z,
   useFitSize,
   type Side,
   type View,
 } from "./notebook-shell-layout";
+import { MOBILE_BELOW_APP_CHROME_HEIGHT_CLASS } from "@/lib/app-shell";
 import {
   boardChromeFastTransition,
   boardChromeTransition,
@@ -229,8 +236,13 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
   const slideSeq = useRef(0);
 
   /** Below `MOBILE_QUERY`, a spread shows one leaf at a time (`mobileSide`) instead of two. */
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window === "undefined"
+      ? false
+      : window.matchMedia(MOBILE_QUERY).matches,
+  );
   const [mobileSide, setMobileSide] = useState<Side>("left");
+  const [mobileRailOpen, setMobileRailOpen] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_QUERY);
     const sync = () => setIsMobile(mq.matches);
@@ -631,6 +643,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
           leftPage.dispatch({ type: "select", id: null });
           rightPage.dispatch({ type: "select", id: null });
           setEditingText(null);
+          setMobileRailOpen(false);
         }
         return;
       }
@@ -1048,6 +1061,198 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
       ? fitWithin(fitBox, notebookRatio, notebookMaxWidthPx)
       : { width: fitBox.width, height: fitBox.height };
 
+  const railButtons = (
+    <>
+      {RAIL_CATEGORIES.filter(
+        ({ id }) => !notebookId || (id !== "add" && id !== "index"),
+      ).map(({ id, icon: Icon, labelKey }) => {
+        const active = activeRail === id;
+        return (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={active}
+            onClick={() => openCategory(id)}
+            className="relative flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0 rounded-[var(--radius-card)] px-0 py-1 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:flex-none lg:gap-0.5 lg:px-1 lg:py-1.5"
+            style={{
+              color: active
+                ? "var(--color-btn-label)"
+                : "var(--color-secondary)",
+            }}
+          >
+            {active ? (
+              <NotebookRailActiveFill reduceMotion={reduceMotion} />
+            ) : null}
+            <Icon aria-hidden size={20} className="relative z-[1]" />
+            <span className="relative z-[1] w-full truncate text-center leading-none">
+              {t(labelKey)}
+            </span>
+          </button>
+        );
+      })}
+      <button
+        type="button"
+        aria-pressed={activeRail === "note"}
+        onClick={handleAddNote}
+        className="relative flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0 rounded-[var(--radius-card)] px-0 py-1 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:flex-none lg:gap-0.5 lg:px-1 lg:py-1.5"
+        style={{
+          color:
+            activeRail === "note"
+              ? "var(--color-btn-label)"
+              : "var(--color-secondary)",
+        }}
+      >
+        {activeRail === "note" ? (
+          <NotebookRailActiveFill reduceMotion={reduceMotion} />
+        ) : null}
+        <StickyNote aria-hidden size={20} className="relative z-[1]" />
+        <span className="relative z-[1] w-full truncate text-center leading-none">
+          {t("sidebar_note")}
+        </span>
+      </button>
+    </>
+  );
+
+  const dueChip =
+    overview && overview.dueCount > 0 ? (
+      <button
+        type="button"
+        onClick={() => setReviewing(true)}
+        className="inline-flex max-w-[min(100%-1rem,20rem)] shrink-0 cursor-pointer items-center gap-2 rounded-full px-3.5 py-2 shadow-[var(--shadow-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        style={{ backgroundColor: "var(--color-accent-soft)" }}
+      >
+        <History
+          aria-hidden
+          size={16}
+          style={{ color: "var(--color-accent)" }}
+        />
+        <span
+          className="text-sm font-bold"
+          style={{ color: "var(--color-main)" }}
+        >
+          {t("due_strip", { count: overview.dueCount })}
+        </span>
+      </button>
+    ) : null;
+
+  const undoButton = (
+    <button
+      type="button"
+      aria-label={t("edit_undo")}
+      disabled={!focused.canUndo}
+      onClick={() => focused.dispatch({ type: "undo" })}
+      className="inline-flex size-10 cursor-pointer items-center justify-center rounded-full outline-none transition-colors hover:bg-[var(--color-surface-container)] disabled:cursor-not-allowed disabled:opacity-35 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+      style={{
+        color: "var(--color-main)",
+        backgroundColor: "var(--color-surface)",
+        boxShadow: "var(--shadow-card)",
+      }}
+    >
+      <Undo2 aria-hidden size={17} />
+    </button>
+  );
+
+  const deleteButton = (
+    <button
+      type="button"
+      aria-label={t("edit_delete")}
+      disabled={focused.selected == null}
+      onClick={() => {
+        const item = focused.selected;
+        if (!item) return;
+        if (item.kind !== "entry") {
+          focused.dispatch({ type: "remove", id: item.id });
+          return;
+        }
+        const meta = focused === leftPage ? leftMeta : rightMeta;
+        const entry = meta?.entries.find(
+          (candidate) => candidate.id === item.entryId,
+        );
+        if (!entry) {
+          focused.dispatch({ type: "remove", id: item.id });
+          return;
+        }
+        setRemovingItem({ itemId: item.id, entry });
+      }}
+      className="inline-flex size-10 cursor-pointer items-center justify-center rounded-full outline-none transition-colors hover:bg-[var(--color-surface-container)] disabled:cursor-not-allowed disabled:opacity-35 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+      style={{
+        color: "var(--color-main)",
+        backgroundColor: "var(--color-surface)",
+        boxShadow: "var(--shadow-card)",
+      }}
+    >
+      <Trash2 aria-hidden size={17} />
+    </button>
+  );
+
+  const saveButton = (
+    <button
+      type="button"
+      disabled={saving || (!leftPage.state.dirty && !rightPage.state.dirty)}
+      aria-busy={saving || undefined}
+      onClick={() => void saveNow()}
+      className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-[var(--color-btn-label)] outline-none disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+      style={{
+        backgroundColor: "var(--color-btn)",
+        boxShadow: "var(--shadow-card)",
+      }}
+    >
+      {saving ? (
+        <LoaderCircle
+          aria-hidden
+          size={13}
+          className="animate-spin motion-reduce:animate-none"
+        />
+      ) : null}
+      {t("save")}
+    </button>
+  );
+
+  const pageNav = (
+    <div className="flex items-center justify-center gap-2">
+      <button
+        type="button"
+        aria-label={t("previous_page")}
+        onClick={() => goPage(-1)}
+        className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full border outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        style={{
+          borderColor:
+            "color-mix(in srgb, var(--color-main) 15%, transparent)",
+          color: "var(--color-main)",
+          backgroundColor: "var(--color-surface)",
+          boxShadow: "var(--shadow-card)",
+        }}
+      >
+        <ChevronLeft aria-hidden size={18} />
+      </button>
+      <span
+        className="rounded-full px-2 py-1 text-sm tabular-nums"
+        style={{
+          color: "var(--color-secondary)",
+          backgroundColor: "var(--color-surface)",
+          boxShadow: "var(--shadow-card)",
+        }}
+      >
+        {pageLabel}
+      </span>
+      <button
+        type="button"
+        aria-label={t("next_page")}
+        onClick={() => goPage(1)}
+        className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full border outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        style={{
+          borderColor:
+            "color-mix(in srgb, var(--color-main) 15%, transparent)",
+          color: "var(--color-main)",
+          backgroundColor: "var(--color-surface)",
+          boxShadow: "var(--shadow-card)",
+        }}
+      >
+        <ChevronRight aria-hidden size={18} />
+      </button>
+    </div>
+  );
+
   return (
     /*
      * A definite height on desktop, not just a floor.
@@ -1063,32 +1268,10 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
      *
      * Mobile keeps the floor: there the panel is a half-height sheet and the page really does scroll.
      */
-    <div className="flex min-h-[100dvh] flex-col gap-3 px-1 pb-4 pt-2 sm:px-2 sm:pb-6 sm:pt-3 lg:h-[100dvh] lg:min-h-0 lg:overflow-hidden lg:pb-8 lg:pt-3">
+    <div
+      className={`flex flex-col gap-2 p-2 overflow-hidden ${MOBILE_BELOW_APP_CHROME_HEIGHT_CLASS}`}
+    >
       <FormError message={error} />
-
-      {/* The strip: the whole reason the notebook is a habit and not an archive. A compact pill,
-          not a full-width card — this is a one-tap shortcut into review, not a status report, and
-          a slim shape keeps it reading as an action rather than a block to skim past. */}
-      {overview && overview.dueCount > 0 ? (
-        <button
-          type="button"
-          onClick={() => setReviewing(true)}
-          className="inline-flex w-fit cursor-pointer items-center gap-2 self-start rounded-full px-3.5 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{ backgroundColor: "var(--color-accent-soft)" }}
-        >
-          <History
-            aria-hidden
-            size={16}
-            style={{ color: "var(--color-accent)" }}
-          />
-          <span
-            className="text-sm font-bold"
-            style={{ color: "var(--color-main)" }}
-          >
-            {t("due_strip", { count: overview.dueCount })}
-          </span>
-        </button>
-      ) : null}
 
       {reviewing ? (
         <NotebookReviewPanel
@@ -1163,86 +1346,52 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
         onClose={() => setPreviewEntry(null)}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+      <div className="relative flex min-h-0 flex-1 flex-col gap-2">
         {/*
-          Icon rail + expandable panel, mirroring the vision board's editor chrome: the rail
-          decides WHAT you're placing, the panel holds the controls for it. It only exists once a
-          spread is open — the cover has nothing to arrange yet.
+          Icon rail + expandable panel. Desktop: overlay on the book so opening a tool does not
+          shrink the page. Mobile: in-flow strip above the book — overlaying a phone-sized leaf
+          would cover the writing surface.
         */}
         {isSpread ? (
           <>
-            <LayoutGroup id="notebook-rail">
-              <nav
-                aria-label={t("sidebar_nav")}
-                className="mentor-scrollarea flex shrink-0 gap-1 overflow-x-auto rounded-[var(--radius-card)] border px-2 py-2 lg:w-16 lg:flex-col lg:overflow-y-auto lg:overflow-x-visible lg:px-1 lg:py-3"
-                style={{
-                  backgroundColor: "var(--color-surface)",
-                  borderColor:
-                    "color-mix(in srgb, var(--color-main) 10%, transparent)",
-                }}
-              >
-                {RAIL_CATEGORIES.filter(
-                  ({ id }) => !notebookId || (id !== "add" && id !== "index"),
-                ).map(({ id, icon: Icon, labelKey }) => {
-                  // "Çiz" has no panel to expand — `openCategory` always collapses the side panel
-                  // for it — so its pressed state can't depend on `detailCollapsed` the way every
-                  // other rail button's does, or it would never look pressed at all.
-                  const active = activeRail === id;
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => openCategory(id)}
-                      className="relative flex min-h-11 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] px-1 py-1.5 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:min-w-0"
-                      style={{
-                        color: active
-                          ? "var(--color-btn-label)"
-                          : "var(--color-secondary)",
-                      }}
-                    >
-                      {active ? (
-                        <NotebookRailActiveFill reduceMotion={reduceMotion} />
-                      ) : null}
-                      <Icon aria-hidden size={20} className="relative z-[1]" />
-                      <span className="relative z-[1] leading-tight">
-                        {t(labelKey)}
-                      </span>
-                    </button>
-                  );
-                })}
-                {/*
-                Not a category: clicking places a note on the page and starts typing right away.
-                It still gets the same pressed look as its rail neighbours while that note's
-                inline editor is open — otherwise this button is the one rail icon that never
-                visibly reacts to being clicked, which reads as broken next to Sticker/Kağıt/Çiz.
-              */}
-                <button
-                  type="button"
-                  aria-pressed={activeRail === "note"}
-                  onClick={handleAddNote}
-                  className="relative flex min-h-11 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] px-1 py-1.5 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:min-w-0"
+            {isMobile ? (
+              <div className="flex shrink-0 flex-col gap-2">
+                <NotebookMobileToolRail
+                  open={mobileRailOpen}
+                  reduceMotion={reduceMotion}
+                  navLabel={t("sidebar_nav")}
+                  showLabel={t("draw.show_tools")}
+                  hideLabel={t("draw.hide_tools")}
+                  onOpen={() => setMobileRailOpen(true)}
+                  onClose={() => setMobileRailOpen(false)}
+                >
+                  <LayoutGroup id="notebook-rail">{railButtons}</LayoutGroup>
+                </NotebookMobileToolRail>
+                <div className="flex flex-wrap items-center gap-2">
+                  {dueChip}
+                  <div className="ms-auto flex shrink-0 items-center gap-1">
+                    {undoButton}
+                    {deleteButton}
+                    {saveButton}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <LayoutGroup id="notebook-rail">
+                <nav
+                  aria-label={t("sidebar_nav")}
+                  className={`mentor-scrollarea flex shrink-0 gap-0 overflow-x-auto border px-1 py-1 lg:absolute lg:top-1/2 lg:left-2 lg:w-16 lg:-translate-y-1/2 lg:flex-col lg:gap-1 lg:overflow-x-visible lg:overflow-y-auto lg:px-1 lg:py-3 lg:shadow-[var(--shadow-card)] ${NOTEBOOK_TRAY_RADIUS_CLASS}`}
                   style={{
-                    color:
-                      activeRail === "note"
-                        ? "var(--color-btn-label)"
-                        : "var(--color-secondary)",
+                    backgroundColor: "var(--color-surface)",
+                    borderColor:
+                      "color-mix(in srgb, var(--color-main) 10%, transparent)",
+                    zIndex: NOTEBOOK_Z.rail,
                   }}
                 >
-                  {activeRail === "note" ? (
-                    <NotebookRailActiveFill reduceMotion={reduceMotion} />
-                  ) : null}
-                  <StickyNote
-                    aria-hidden
-                    size={20}
-                    className="relative z-[1]"
-                  />
-                  <span className="relative z-[1] leading-tight">
-                    {t("sidebar_note")}
-                  </span>
-                </button>
-              </nav>
-            </LayoutGroup>
+                  {railButtons}
+                </nav>
+              </LayoutGroup>
+            )}
 
             <AnimatePresence initial={false}>
               {!detailCollapsed ? (
@@ -1265,11 +1414,12 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                     clipped top and bottom by the very overflow rule meant to tame the panel.
                     Bounding the panel alone leaves the book's sizing exactly as it was.
                   */
-                  className="relative flex min-h-0 max-h-[50vh] w-full shrink-0 flex-col rounded-[var(--radius-card)] border lg:max-h-[100dvh] lg:w-96"
+                  className="relative flex min-h-0 max-h-[50vh] w-full shrink-0 flex-col rounded-[var(--radius-card)] border lg:absolute lg:top-2 lg:bottom-2 lg:left-20 lg:max-h-none lg:w-96 lg:shadow-[var(--shadow-card)]"
                   style={{
                     backgroundColor: "var(--color-surface)",
                     borderColor:
                       "color-mix(in srgb, var(--color-main) 10%, transparent)",
+                    zIndex: NOTEBOOK_Z.panel,
                   }}
                 >
                   <button
@@ -1342,111 +1492,21 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
               ) : null}
             </AnimatePresence>
           </>
+        ) : isMobile && dueChip ? (
+          <div className="flex shrink-0">{dueChip}</div>
         ) : null}
 
-        {/* The spread's breathing room, and it has to live here rather than on the measured box
-            below: `useFitSize` reads a bounding rect, which includes padding, so padding down there
-            would be handed to the book as room it may grow into. One level up it is room the book
-            never sees — the fit box simply comes out shorter.
-
-            Proportional rather than a pixel step. The fit is height-driven, so the margin has to be
-            a share of the window or it disappears: 16px looked like nothing against a 900px spread
-            and read as "full screen" all over again. 3vh top and bottom scales with the screen it
-            is framing, which is what a margin is for. */}
-        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center gap-2 lg:py-[2vh]">
-          {isSpread ? (
-            <div
-              className="flex w-full items-center gap-1"
-              // Matches the notebook's own measured width, not just its ceiling — otherwise this
-              // row stays desktop-wide while the notebook beneath it shrinks to fit a short window.
-              style={{ maxWidth: fitted.width || notebookMaxWidthPx }}
-            >
-              <button
-                type="button"
-                aria-label={t("edit_undo")}
-                disabled={!focused.canUndo}
-                onClick={() => focused.dispatch({ type: "undo" })}
-                className="inline-flex size-10 cursor-pointer items-center justify-center rounded-full outline-none transition-colors hover:bg-[var(--color-surface-container)] disabled:cursor-not-allowed disabled:opacity-35 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
-                style={{ color: "var(--color-main)" }}
-              >
-                <Undo2 aria-hidden size={17} />
-              </button>
-              <button
-                type="button"
-                aria-label={t("edit_delete")}
-                disabled={focused.selected == null}
-                onClick={() => {
-                  const item = focused.selected;
-                  if (!item) return;
-                  // Stickers and notes live only on the page — there is no second meaning of
-                  // "delete" for them, so they go straight away as they always have.
-                  if (item.kind !== "entry") {
-                    focused.dispatch({ type: "remove", id: item.id });
-                    return;
-                  }
-                  const meta = focused === leftPage ? leftMeta : rightMeta;
-                  const entry = meta?.entries.find(
-                    (candidate) => candidate.id === item.entryId,
-                  );
-                  if (!entry) {
-                    focused.dispatch({ type: "remove", id: item.id });
-                    return;
-                  }
-                  setRemovingItem({ itemId: item.id, entry });
-                }}
-                className="inline-flex size-10 cursor-pointer items-center justify-center rounded-full outline-none transition-colors hover:bg-[var(--color-surface-container)] disabled:cursor-not-allowed disabled:opacity-35 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
-                style={{ color: "var(--color-main)" }}
-              >
-                <Trash2 aria-hidden size={17} />
-              </button>
-
-              {/* Mirrors the vision board's own toolbar: an "unsaved" text, not an error banner —
-                  a failed autosave and a pending one look identical here on purpose (see the
-                  autosave effects above), and "Kaydet" is the visible, immediate retry. */}
-              <div className="ms-auto flex items-center gap-2">
-                {leftPage.state.dirty || rightPage.state.dirty ? (
-                  <span
-                    className="text-xs"
-                    style={{ color: "var(--color-secondary)" }}
-                  >
-                    {t("unsaved")}
-                  </span>
-                ) : null}
-                <button
-                  type="button"
-                  disabled={
-                    saving || (!leftPage.state.dirty && !rightPage.state.dirty)
-                  }
-                  aria-busy={saving || undefined}
-                  onClick={() => void saveNow()}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-[var(--color-btn-label)] outline-none disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                  style={{ backgroundColor: "var(--color-btn)" }}
-                >
-                  {saving ? (
-                    <LoaderCircle
-                      aria-hidden
-                      size={13}
-                      className="animate-spin motion-reduce:animate-none"
-                    />
-                  ) : null}
-                  {t("save")}
-                </button>
-              </div>
-            </div>
-          ) : null}
-
+        {/*
+          Desktop chrome overlays the book. Mobile: pen + due/save sit above the leaf; pager
+          uses the gap above the tab bar so page arrows do not cover cards.
+        */}
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center">
           {/*
-            Two boxes, two different jobs. The OUTER box is a flex item in the column above (`flex-1
-            min-h-0`, own width forced to `w-full` since the column's `items-center` would otherwise
-            shrink-wrap it): it receives a real, fully definite width AND height — whatever the
-            toolbar row and pagination row (its two siblings) leave behind, computed by flexbox
-            itself, on both axes. `fitRef` measures that box (see `useFitSize` above).
-
-            The INNER box's `maxWidth` is the exact pixel value `fitWithin` computes from that
-            measurement — the widest the notebook's ratio can be without its *height* exceeding the
-            outer box — falling back to a plain pixel ceiling for the one frame before any
-            measurement exists. `aspectRatio` then derives the height from that width, never the
-            other way — see the comment on `useFitSize` for why that direction matters.
+            Two boxes, two different jobs. The OUTER box is a flex item (`flex-1 min-h-0`, width
+            forced to `w-full` since the column's `items-center` would otherwise shrink-wrap it):
+            it receives a real, fully definite width AND height from flexbox. `fitRef` measures
+            that box. The INNER box's `maxWidth` is the `fitWithin` result; `aspectRatio` derives
+            height from that already-definite width.
           */}
           <div
             ref={fitRef}
@@ -1480,6 +1540,40 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                 perspective: reduceMotion ? undefined : 1800,
               }}
             >
+              {!isMobile && dueChip ? (
+                <div
+                  className="absolute top-2 left-2"
+                  style={{ zIndex: NOTEBOOK_Z.overlay }}
+                >
+                  {dueChip}
+                </div>
+              ) : null}
+
+              {isSpread && !isMobile ? (
+                <div
+                  className="pointer-events-none absolute inset-x-0 top-2 flex items-start justify-end gap-1 px-2 [&>*]:pointer-events-auto"
+                  style={{ zIndex: NOTEBOOK_Z.overlay }}
+                >
+                  {undoButton}
+                  {deleteButton}
+                  <div className="flex items-center gap-2">
+                    {leftPage.state.dirty || rightPage.state.dirty ? (
+                      <span
+                        className="rounded-full px-2 py-1 text-xs"
+                        style={{
+                          color: "var(--color-secondary)",
+                          backgroundColor: "var(--color-surface)",
+                          boxShadow: "var(--shadow-card)",
+                        }}
+                      >
+                        {t("unsaved")}
+                      </span>
+                    ) : null}
+                    {saveButton}
+                  </div>
+                </div>
+              ) : null}
+
               {/*
               Floats over the notebook's own top edge rather than sitting in flow above it (pushed
               the whole book down and shrank it — `useFitSize` measures the OUTER box, so a taller
@@ -1493,7 +1587,12 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                 {drawing ? (
                   <div
                     key="ink-toolbar"
-                    className="pointer-events-none absolute inset-x-0 top-2 z-[35] flex justify-center px-2 sm:top-3"
+                    className={
+                      isMobile
+                        ? "pointer-events-none absolute inset-x-0 top-2 flex justify-center px-2"
+                        : "pointer-events-none absolute inset-x-0 top-14 flex justify-center px-2 sm:top-16"
+                    }
+                    style={{ zIndex: NOTEBOOK_Z.ink }}
                   >
                     <NotebookInkToolbar
                       tool={ink.tool}
@@ -1942,62 +2041,21 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                   </motion.div>
                 )}
               </AnimatePresence>
+              {!isMobile ? (
+                <div
+                  className="pointer-events-none absolute inset-x-0 bottom-2 flex w-full items-center justify-center [&>*]:pointer-events-auto"
+                  style={{ zIndex: NOTEBOOK_Z.overlay }}
+                >
+                  {pageNav}
+                </div>
+              ) : null}
             </div>
           </div>
-
-          {/*
-            Pagination-style controls: an icon each side of the label, not a text button each side —
-            the label alone already says where you are.
-
-            Out of the column's flow and floating over the foot of the spread. In flow this was a
-            real row with real height, and every pixel of it came straight out of the book:
-            `useFitSize` measures what this row and the toolbar leave behind, so a control strip
-            nobody looks at was quietly making the notebook smaller. Absolute, it costs nothing and
-            the book grows into the space — which is most of where the extra size came from.
-
-            `pointer-events-none` on the strip, with the buttons opting back in: it spans the full
-            width, and the thing underneath it is a live page the student drags cards around on.
-
-            `size-11` (44px) is DESIGN.md's touch-target floor — shrunk further it stops being a
-            reliable tap target on mobile.
-          */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex w-full items-center justify-center gap-3 pb-1 [&>*]:pointer-events-auto">
-            <button
-              type="button"
-              aria-label={t("previous_page")}
-              onClick={() => goPage(-1)}
-              className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full border outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-              style={{
-                borderColor:
-                  "color-mix(in srgb, var(--color-main) 15%, transparent)",
-                color: "var(--color-main)",
-                backgroundColor: "var(--color-surface)",
-              }}
-            >
-              <ChevronLeft aria-hidden size={18} />
-            </button>
-            <span
-              className="text-sm tabular-nums"
-              style={{ color: "var(--color-secondary)" }}
-            >
-              {pageLabel}
-            </span>
-            <button
-              type="button"
-              aria-label={t("next_page")}
-              onClick={() => goPage(1)}
-              className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full border outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-              style={{
-                borderColor:
-                  "color-mix(in srgb, var(--color-main) 15%, transparent)",
-                color: "var(--color-main)",
-                backgroundColor: "var(--color-surface)",
-              }}
-            >
-              <ChevronRight aria-hidden size={18} />
-            </button>
-          </div>
         </div>
+
+        {isMobile ? (
+          <div className="flex shrink-0 justify-center">{pageNav}</div>
+        ) : null}
       </div>
     </div>
   );

@@ -15,7 +15,7 @@ export function isBoardEditorPath(pathname: string): boolean {
   return /(?:^|\/)(?:vision-board\/board|hedef\/pano)\/?$/.test(pathname);
 }
 
-/** Full-screen editors whose controls must not sit underneath the mobile app chrome. */
+/** Full-screen editors (notebook + collage) — used for editor-specific layout, not app chrome. */
 export function isImmersiveEditorPath(pathname: string): boolean {
   return (
     isBoardEditorPath(pathname) ||
@@ -27,6 +27,14 @@ export function isImmersiveEditorPath(pathname: string): boolean {
 /** Canonical `/community` or public `/topluluk` (optional locale prefix and nested routes). */
 export function isCommunityPath(pathname: string): boolean {
   return /(?:^|\/)(?:community|topluluk)(?:\/|$)/.test(pathname);
+}
+
+/**
+ * Surfaces that replace the app header + tab bar on mobile.
+ * The notebook keeps them: it is a daily habit inside the app, not a canvas that needs the chrome gone.
+ */
+export function hidesMobileAppChrome(pathname: string): boolean {
+  return isBoardEditorPath(pathname) || isCommunityPath(pathname);
 }
 
 /** Routes that open the desktop AppNav collapsed (board editor + community). */
