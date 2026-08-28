@@ -103,6 +103,28 @@ export class UsersRepository {
       .limit(limit));
   }
 
+  /**
+   * Keyset page of broadcast recipients (W5 announcements). Same shape as the achievement
+   * backfill above: ACTIVE users ordered by id so a fan-out job can resume from a cursor.
+   * `examType` null = every exam cohort.
+   */
+  async listAnnouncementRecipients(
+    examType: string | null,
+    afterId: string | null,
+    limit: number,
+  ): Promise<Array<{ id: string }>> {
+    return withServiceContext(this.db, (tx) => tx
+      .select({ id: users.id })
+      .from(users)
+      .where(and(
+        eq(users.status, "ACTIVE"),
+        examType ? eq(users.examType, examType) : undefined,
+        afterId ? gt(users.id, afterId) : undefined,
+      ))
+      .orderBy(asc(users.id))
+      .limit(limit));
+  }
+
   /** Public-safe identity search consumed by forum discovery; never selects email or other PII. */
   async searchPublicUsers(q: string, limit: number): Promise<PublicUserSearchRow[]> {
     return withServiceContext(this.db, async (tx) => {

@@ -81,6 +81,11 @@ http://localhost:3000/panel               # daily ritual hub
   `pnpm --filter @mentor/web assets:check:achievements` 12 adet 1024×1024 alfa WebP'yi doğrular.
   İlgili: `notification-drawer-shell.tsx`, `components/achievements/**`.
 
+- **Notification drawer redesign (2026-08-28)** — Çıplak kategori ikonu (daire/dolgu yok),
+  okunmadı = kalın başlık + sağda nokta, başlık 2 satır / gövde 1 satır, `Tümü / Okunmamış`
+  sekmeleri ve `Bugün / Bu hafta / Daha eski` sticky grupları. Zil, SSE ve swipe aksiyonları
+  değişmedi. Detay + gotcha: `docs/features/notifications.md` timeline.
+
 - **Notification drawer + toast token pass (2026-08-18)** — Drawer panel, unread
   rows, and toast cards follow `--color-surface` / `--color-border`. Related:
   `docs/features/notifications.md`.

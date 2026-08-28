@@ -11,6 +11,7 @@ import { CoachingModule } from "../coaching/coaching.module";
 import { IdentityModule } from "../identity/identity.module";
 import { DailyReminderService } from "./application/daily-reminder.service";
 import { NotebookReviewReminderService } from "./application/notebook-review-reminder.service";
+import { AnnouncementDispatchHandler } from "./application/handlers/announcement-dispatch.handler";
 import { SendEmailHandler } from "./application/handlers/send-email.handler";
 import { SendPushHandler } from "./application/handlers/send-push.handler";
 import { SessionReturnReminderHandler } from "./application/handlers/session-return-reminder.handler";
@@ -24,9 +25,11 @@ import { IdentityEventsListener } from "./application/listeners/identity-events.
 import { JourneyLevelEventsListener } from "./application/listeners/journey-level-events.listener";
 import { AchievementEventsListener } from "./application/listeners/achievement-events.listener";
 import { PaymentsEventsListener } from "./application/listeners/payments-events.listener";
+import { AnnouncementService } from "./application/announcement.service";
 import { NotificationsService } from "./application/notifications.service";
 import { NotificationsErasureService } from "./application/notifications-erasure.service";
 import { SessionReturnReminderService } from "./application/session-return-reminder.service";
+import { AnnouncementRepository } from "./infrastructure/announcement.repository";
 import { JobRepository } from "./infrastructure/job.repository";
 import { NotificationDeliveryRepository } from "./infrastructure/notification-delivery.repository";
 import { NotificationPreferencesRepository } from "./infrastructure/notification-preferences.repository";
@@ -53,7 +56,9 @@ import { NotificationsController } from "./presentation/notifications.controller
     SendEmailHandler,
     SendPushHandler,
     SessionReturnReminderHandler,
+    AnnouncementDispatchHandler,
     NotificationsService,
+    AnnouncementService,
     NotificationsErasureService,
     DailyReminderService,
     NotebookReviewReminderService,
@@ -70,6 +75,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     PushSubscriptionRepository,
     NotificationDeliveryRepository,
     UserNotificationRepository,
+    AnnouncementRepository,
     CronSecretGuard,
     LoggerEmailAdapter,
     PostmarkEmailAdapter,
@@ -89,6 +95,13 @@ import { NotificationsController } from "./presentation/notifications.controller
     },
     { provide: PUSH_PORT, useClass: WebPushAdapter },
   ],
-  exports: [JOB_QUEUE_PORT, EMAIL_PORT, JobRunnerService, NotificationsErasureService],
+  exports: [
+    JOB_QUEUE_PORT,
+    EMAIL_PORT,
+    JobRunnerService,
+    NotificationsErasureService,
+    // Consumed by AdminAnnouncementsController (module is @Global — no import needed there).
+    AnnouncementService,
+  ],
 })
 export class NotificationsModule {}

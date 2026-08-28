@@ -1695,6 +1695,46 @@ export const userNotifications = pgTable(
   ],
 );
 
+/**
+ * Team-authored broadcast. The admin panel writes the row; a `notifications.dispatch-announcement`
+ * job fans it out into `user_notifications` (category SYSTEM, dedupe key `announcement:{id}`) so a
+ * retried or replayed job never double-notifies. Read state is per user on the notification row —
+ * there is deliberately no `announcement_reads` table. RLS: SERVICE/ADMIN only (cross-user).
+ */
+export const announcements = pgTable(
+  "announcements",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    /** Internal path only — validated at the Zod boundary (the web drawer pushes it verbatim). */
+    linkUrl: text("link_url"),
+    /** AnnouncementAudience: { kind: "ALL" } | { kind: "EXAM_TYPE", examType } */
+    audience: jsonb("audience").$type<Record<string, unknown>>().notNull(),
+    /** DRAFT | SENDING | SENT */
+    status: text("status").notNull().default("DRAFT"),
+    /** When set, the dispatch job's `runAt` (the queue already schedules; no extra scheduler). */
+    scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    recipientCount: integer("recipient_count").notNull().default(0),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("announcements_created_idx").on(t.createdAt),
+    check("announcements_status_check", sql`${t.status} IN ('DRAFT', 'SENDING', 'SENT')`),
+  ],
+);
+
 /* ================================ W6 · admin ================================
  * admin_audit_log: every admin mutation (who/what/when) — append-only (§9), never
  * updated, never deleted. Written by AdminAuditInterceptor in SERVICE context.

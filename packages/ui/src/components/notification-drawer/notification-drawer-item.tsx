@@ -99,15 +99,17 @@ export function NotificationDrawerItem({
 
   return (
     <div
-      className="relative overflow-hidden border-b"
-      style={{ borderColor: "var(--color-border)" }}
+      className="relative overflow-hidden border-b last:border-b-0"
+      style={{
+        borderColor: "color-mix(in srgb, var(--color-main) 7%, transparent)",
+      }}
     >
       {/* ── Left action (swipe right → mark read/unread) ── */}
       <div
         aria-hidden
         className="absolute inset-y-0 left-0 flex w-[52px] items-center justify-center"
         style={{
-          backgroundColor: "var(--color-progress, #55acee)",
+          backgroundColor: "var(--color-progress)",
           opacity: revealingLeft ? 1 : 0,
           transition: "opacity 150ms ease",
         }}
@@ -146,11 +148,13 @@ export function NotificationDrawerItem({
         </span>
       </div>
 
-      {/* ── Content (slides) ── */}
+      {/* ── Content (slides) ──
+          The fill stays opaque in both read states: it is what hides the swipe actions
+          underneath, not an unread cue. Unread is signalled by the bold title + right dot. */}
       <div
-        className="group relative flex cursor-pointer gap-3 px-4 py-3 focus-visible:outline-none"
+        className="group relative flex cursor-pointer gap-3 px-4 py-3 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,var(--color-surface))] focus-visible:outline-none"
         style={{
-          backgroundColor: isUnread ? "var(--color-surface)" : "transparent",
+          backgroundColor: "var(--color-surface)",
           transform: `translateX(${offsetX}px)`,
           willChange: "transform",
           transition:
@@ -179,7 +183,7 @@ export function NotificationDrawerItem({
           <button
             type="button"
             aria-label={isUnread ? labels.markRead : labels.markUnread}
-            className="absolute inset-y-0 left-0 w-[52px]"
+            className="absolute inset-y-0 left-0 z-10 w-[52px]"
             onClick={(e) => {
               e.stopPropagation();
               handleMarkToggle();
@@ -190,7 +194,7 @@ export function NotificationDrawerItem({
           <button
             type="button"
             aria-label={labels.deleteItem}
-            className="absolute inset-y-0 right-0 w-[60px]"
+            className="absolute inset-y-0 right-0 z-10 w-[60px]"
             onClick={(e) => {
               e.stopPropagation();
               handleDelete();
@@ -198,32 +202,15 @@ export function NotificationDrawerItem({
           />
         )}
 
-        {/* Unread dot */}
-        {isUnread && (
-          <span
-            aria-hidden
-            className="absolute left-3 top-4 h-2 w-2 shrink-0 rounded-full"
-            style={{ backgroundColor: "var(--color-progress)" }}
-          />
-        )}
-
-        {/* Category icon */}
-        <div
-          className="ml-3 mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)]"
-          style={{
-            backgroundColor: isUnread
-              ? "color-mix(in srgb, var(--color-chip) 30%, transparent)"
-              : "color-mix(in srgb, var(--color-main) 8%, transparent)",
-          }}
-        >
+        {/* Category icon — bare glyph, no chip. The container used to be a 40px filled circle,
+            which made every row's heaviest mark the one carrying the least information. */}
+        <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
           {renderIcon ? (
             renderIcon(notification.category)
           ) : (
             <Bell
-              size={20}
-              color={
-                isUnread ? "var(--color-chip-text)" : "var(--color-secondary)"
-              }
+              size={18}
+              color="var(--color-secondary)"
               strokeWidth={2}
               aria-hidden
             />
@@ -231,10 +218,10 @@ export function NotificationDrawerItem({
         </div>
 
         {/* Text content */}
-        <div className="min-w-0 flex-1 pt-0.5">
-          <div className="mb-0.5 flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-2">
             <p
-              className="truncate text-sm leading-snug"
+              className="line-clamp-2 flex-1 text-sm leading-snug"
               style={{
                 fontFamily: "var(--font-body)",
                 fontWeight: isUnread ? 700 : 400,
@@ -245,18 +232,16 @@ export function NotificationDrawerItem({
             >
               {notification.title}
             </p>
-            <span
-              className="shrink-0 text-[11px] leading-none"
-              style={{
-                fontFamily: "var(--font-body)",
-                color: "var(--color-secondary)",
-              }}
-            >
-              {relativeTime(notification.createdAt, labels)}
-            </span>
+            {isUnread && (
+              <span
+                aria-hidden
+                className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+                style={{ backgroundColor: "var(--color-progress)" }}
+              />
+            )}
           </div>
           <p
-            className="line-clamp-2 text-sm leading-snug"
+            className="line-clamp-1 text-sm leading-snug"
             style={{
               fontFamily: "var(--font-body)",
               color: "var(--color-secondary)",
@@ -264,10 +249,23 @@ export function NotificationDrawerItem({
           >
             {notification.body}
           </p>
+          <span
+            className="mt-1 block text-[11px] leading-none"
+            style={{
+              fontFamily: "var(--font-body)",
+              color: "var(--color-secondary)",
+            }}
+          >
+            {relativeTime(notification.createdAt, labels)}
+          </span>
         </div>
 
-        {/* Desktop action buttons (hidden on mobile, visible on hover) */}
-        <div className="ml-1 hidden shrink-0 items-center gap-1 self-center opacity-0 transition-opacity group-hover:opacity-100 lg:flex">
+        {/* Desktop action buttons — absolutely positioned over an opaque pill so they cover the
+            unread dot on hover instead of fighting it for the same column. */}
+        <div
+          className="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-[var(--radius-card)] px-1 py-1 opacity-0 shadow-[var(--shadow-card)] transition-opacity group-hover:opacity-100 lg:flex"
+          style={{ backgroundColor: "var(--color-surface)" }}
+        >
           <button
             type="button"
             aria-label={isUnread ? labels.markRead : labels.markUnread}
@@ -275,7 +273,7 @@ export function NotificationDrawerItem({
               e.stopPropagation();
               handleMarkToggle();
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2"
+            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             style={{ color: "var(--color-progress)" }}
           >
             {isUnread ? (
@@ -291,7 +289,7 @@ export function NotificationDrawerItem({
               e.stopPropagation();
               handleDelete();
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,transparent)] focus-visible:outline-none focus-visible:ring-2"
+            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-danger)_12%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             style={{ color: "var(--color-danger)" }}
           >
             <Trash2 size={15} strokeWidth={2} />

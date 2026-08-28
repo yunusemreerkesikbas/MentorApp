@@ -2782,9 +2782,7 @@
     "title": "Notifications",
     "mark_all_read": "Mark all as read",
     "close": "Close",
-    "tab_all": "ALL",
-    "tab_coach": "COACH",
-    "tab_plan": "PLAN",
+    "tab_all": "All",
     "empty_title": "No notifications yet",
     "empty_body": "You'll see updates here when your plan kicks off",
     "bell_label": "Open notifications",
@@ -2795,6 +2793,10 @@
     "unread_label": "unread",
     "mark_read": "Mark as read",
     "mark_unread": "Mark as unread",
-    "delete_item": "Delete notification"
+    "delete_item": "Delete notification",
+    "tab_unread": "Unread",
+    "group_today": "Today",
+    "group_this_week": "This week",
+    "group_earlier": "Earlier"
   }
 }

@@ -1,5 +1,5 @@
 "use client";
-import { Award, Brain, FileText, ListCheck, MessageCircle } from "lucide-react";
+import { Award, Brain, FileText, ListCheck, Megaphone, MessageCircle } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -39,21 +39,28 @@ const ICON_BY_CATEGORY = {
   CONTENT: FileText,
   FORUM: MessageCircle,
   ACHIEVEMENT: Award,
+  SYSTEM: Megaphone,
 };
 
+/**
+ * The glyph is the primary category carrier (never colour alone — WCAG 1.4.1); colour only adds
+ * emphasis. Tokens only: `--color-accent` is an alias of `--color-progress`, so ACHIEVEMENT and
+ * FORUM used to render in the identical blue, and PLAN carried a hard-coded hex.
+ */
 const ICON_COLOR_BY_CATEGORY: Record<NotificationCategory, string> = {
   COACH: "var(--color-chip-text)",
-  PLAN: "#4A80D8",
+  PLAN: "var(--color-progress)",
   CONTENT: "var(--color-secondary)",
   FORUM: "var(--color-progress)",
-  ACHIEVEMENT: "var(--color-accent)",
+  ACHIEVEMENT: "var(--color-star)",
+  SYSTEM: "var(--color-main)",
 };
 
 function CategoryIcon({ category }: { category: NotificationCategory }) {
   const Icon = ICON_BY_CATEGORY[category];
 
   return (
-    <Icon size={20} color={ICON_COLOR_BY_CATEGORY[category]} strokeWidth={2} aria-hidden />
+    <Icon size={18} color={ICON_COLOR_BY_CATEGORY[category]} strokeWidth={2} aria-hidden />
   );
 }
 
@@ -69,6 +76,7 @@ const CATEGORY_FALLBACK: Record<NotificationCategory, string> = {
   CONTENT: "/knowledge",
   FORUM: "/community",
   ACHIEVEMENT: "/community",
+  SYSTEM: "/dashboard",
 };
 
 /** Web-layer wrapper: fetches data, injects i18n labels and Puhu icons. */
@@ -288,8 +296,10 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
         deleteItem: t("delete_item"),
         close: t("close"),
         tabAll: t("tab_all"),
-        tabCoach: t("tab_coach"),
-        tabPlan: t("tab_plan"),
+        tabUnread: t("tab_unread"),
+        groupToday: t("group_today"),
+        groupThisWeek: t("group_this_week"),
+        groupEarlier: t("group_earlier"),
         emptyTitle: t("empty_title"),
         emptyBody: t("empty_body"),
         timeJustNow: t("time_just_now"),

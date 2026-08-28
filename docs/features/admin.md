@@ -73,7 +73,7 @@ targetId, before, after })` for rich diffs.
 | Subscription/economy view | `SUPPORT, FINANCE` |
 | Refund/cancel/economy adjust | `FINANCE` |
 | Metrics | `SUPPORT, FINANCE` |
-| Config/flags | `SUPER_ADMIN` |
+| Config/flags · duyuru (broadcast) | `SUPER_ADMIN` |
 
 (`ADMIN` and `SUPER_ADMIN` are full-access umbrellas — bypass every `@Roles`.)
 
@@ -93,8 +93,17 @@ targetId, before, after })` for rich diffs.
 | `GET /admin/metrics` | KPI snapshot (read-only, no audit) |
 | `GET /admin/metrics/economy` | Coin/XP faucet + sink breakdown, float, faucet reach (read-only) |
 | `GET /admin/config` · `PATCH /admin/config/:key` | Config/flag editor (SUPER_ADMIN) |
+| `GET/POST /admin/announcements` · `POST …/:id/send` · `DELETE …/:id` | Duyuru (broadcast) editörü (SUPER_ADMIN, audited) |
 
 ## Geliştirmeler (timeline)
+
+- **Duyuru (broadcast) ekranı (APP-053, 2026-08-28)** — `/announcements` sayfası: taslak oluştur
+  (başlık/metin/opsiyonel internal link/hedef kitle), listeden gönder veya zamanla, taslağı sil.
+  Hedef kitle "Tüm kullanıcılar" veya tek sınav tipi (KPSS/YKS/LGS). Gönderim geri alınamaz olduğu
+  için her zaman SweetAlert onayı ister ve hedef kitleyi metinde tekrarlar. Yalnız `SUPER_ADMIN`
+  (config editörüyle aynı blast radius). Tablo ve fan-out notifications modülünde yaşar; admin
+  `AnnouncementService`'i tüketir. Audit: `announcement.create/send/delete`. Detay + gotcha:
+  [notifications.md](./notifications.md) timeline.
 
 - **Plan kataloğu (2026-08-22)** — `GET/PATCH /v1/admin/plans` (FINANCE). Bootstrap `/plans`
   sayfası ad, kuruş fiyat, deneme günü ve aktifliği kaydeder. Fiyat yalnız yeni checkout'a yansır;

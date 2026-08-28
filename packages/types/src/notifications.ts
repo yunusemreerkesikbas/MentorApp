@@ -16,7 +16,14 @@ export interface PushSubscriptionInput {
 
 // --- In-app notification inbox (W5 extension) ---
 
-export type NotificationCategory = "COACH" | "PLAN" | "CONTENT" | "FORUM" | "ACHIEVEMENT";
+export type NotificationCategory =
+  | "COACH"
+  | "PLAN"
+  | "CONTENT"
+  | "FORUM"
+  | "ACHIEVEMENT"
+  /** Team-authored broadcast from the admin panel (W5 announcements). */
+  | "SYSTEM";
 
 export interface UserNotificationDto {
   id: string;
@@ -41,4 +48,26 @@ export interface SessionReturnReminderDto {
   alreadyScheduled: boolean;
   /** ISO datetime when the reminder job is due (null when alreadyScheduled). */
   runAt: string | null;
+}
+
+// --- Admin announcements (team-authored broadcast → SYSTEM notifications) ---
+
+export type AnnouncementAudience =
+  | { kind: "ALL" }
+  | { kind: "EXAM_TYPE"; examType: "KPSS" | "YKS" | "LGS" };
+
+/** DRAFT → SENDING (job queued/fanning out) → SENT. */
+export type AnnouncementStatus = "DRAFT" | "SENDING" | "SENT";
+
+export interface AdminAnnouncementDto {
+  id: string;
+  title: string;
+  body: string;
+  linkUrl: string | null;
+  audience: AnnouncementAudience;
+  status: AnnouncementStatus;
+  scheduledAt: string | null;
+  sentAt: string | null;
+  recipientCount: number;
+  createdAt: string;
 }

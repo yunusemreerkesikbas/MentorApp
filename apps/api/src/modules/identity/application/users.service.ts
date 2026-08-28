@@ -57,6 +57,11 @@ export class UsersService {
     return this.usersRepo.listActiveAchievementCandidates(afterId, limit);
   }
 
+  /** Broadcast recipients for the W5 announcement fan-out (notifications owns the seam). */
+  listAnnouncementRecipients(examType: string | null, afterId: string | null, limit: number) {
+    return this.usersRepo.listAnnouncementRecipients(examType, afterId, limit);
+  }
+
   /**
    * Cohort peers for follow-suggestion cold-start (forum orchestrates): recent active users in the
    * viewer's exam-type cohort, excluding `excludeIds`. Empty when the viewer is unknown.

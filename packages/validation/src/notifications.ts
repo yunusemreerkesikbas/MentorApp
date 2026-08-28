@@ -34,6 +34,7 @@ export const notificationCategorySchema = z.enum([
   "CONTENT",
   "FORUM",
   "ACHIEVEMENT",
+  "SYSTEM",
 ]);
 export type NotificationCategoryInput = z.infer<typeof notificationCategorySchema>;
 
