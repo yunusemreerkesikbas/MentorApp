@@ -1,5 +1,6 @@
 "use client";
 
+import { Minus, Plus } from "lucide-react";
 import type * as React from "react";
 import { useCallback, useId, useRef } from "react";
 import {
@@ -280,12 +281,23 @@ export function CircularTimerRing({
         </div>
       </div>
 
+      {/*
+        The ring is a drag target; these are the precise, non-drag way to the same number —
+        and the only one that works without a pointer you can swing accurately. Removing them
+        would make the minutes drag-only, which is not an operable control for everyone.
+
+        Glyphs, not characters. `−` (U+2212) and `+` sit on different vertical metrics and
+        inherit `text-xl`'s line box, so a text button centres one of them and never both —
+        that visible half-pixel drift was the icons looking "off" inside the circles. An SVG
+        pair is centred by its own viewBox and matches the stroke weight of every other icon
+        in the app.
+      */}
       {interactive && (
         <div className="flex items-center gap-3">
           <button
             type="button"
             aria-label={`${step} dakika azalt`}
-            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full text-xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
             style={{
               color: "var(--color-main)",
               backgroundColor: "var(--color-surface)",
@@ -294,12 +306,12 @@ export function CircularTimerRing({
             }}
             onClick={() => nudge(-step)}
           >
-            −
+            <Minus className="size-5" strokeWidth={2.5} aria-hidden />
           </button>
           <button
             type="button"
             aria-label={`${step} dakika artır`}
-            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full text-xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
             style={{
               color: "var(--color-main)",
               backgroundColor: "var(--color-surface)",
@@ -308,7 +320,7 @@ export function CircularTimerRing({
             }}
             onClick={() => nudge(step)}
           >
-            +
+            <Plus className="size-5" strokeWidth={2.5} aria-hidden />
           </button>
         </div>
       )}

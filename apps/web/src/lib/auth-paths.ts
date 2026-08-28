@@ -17,3 +17,8 @@ export function isAuthPath(pathname: string): boolean {
 export function authShellShowsBack(pathname: string): boolean {
   return pathname !== "/login" && pathname !== "/signup";
 }
+
+/** Hang-Puhu sits on the login and signup sheets. */
+export function authShellShowsHang(pathname: string): boolean {
+  return pathname === "/login" || pathname === "/signup";
+}

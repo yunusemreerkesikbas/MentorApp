@@ -1561,7 +1561,8 @@
     "share_text": "I focused for {minutes} minutes on Mentor today 🎯",
     "share_text_with_streak": "I focused for {minutes} minutes on Mentor today 🎯 {days}-day streak!",
     "share_copied_title": "Copied to clipboard",
-    "share_error_title": "Couldn't share"
+    "share_error_title": "Couldn't share",
+    "history_day_yesterday": "Yesterday"
   },
   "knowledge": {
     "loading": "Loading…",
@@ -2021,14 +2022,17 @@
     "join_submit": "Join",
     "empty": "No rooms yet. Share the code of a room you create, or join with a code you were given.",
     "seats": "{filled}/{capacity}",
-    "working_count": "Studying now: {count}",
-    "nobody_working": "Nobody is studying right now",
     "dormant": "Quiet for a while",
     "open": "Open room",
     "create_title": "New room",
     "name_label": "Room name",
     "name_placeholder": "Early Birds",
     "theme_label": "Theme",
+    "theme_prev": "Previous theme",
+    "theme_next": "Next theme",
+    "capacity_less": "One seat fewer",
+    "capacity_more": "One seat more",
+    "capacity_hint": "seats",
     "theme_LIBRARY": "Library",
     "theme_CAFE": "Café",
     "theme_HOME": "Home",
@@ -2066,7 +2070,9 @@
     "join_failed_already_member": "You are already at this table.",
     "join_failed_error": "We could not join the room. Try again in a moment?",
     "invite_copy_link": "Copy invite link",
-    "not_found": "This room was not found."
+    "not_found": "This room was not found.",
+    "plain_view_on": "Plain view",
+    "plain_view_off": "Room view"
   },
   "journey_levels": {
     "title": "Journey level",
@@ -2094,24 +2100,84 @@
       "future": "ahead"
     },
     "chapters": {
-      "awakening": { "name": "Awakening", "label": "Chapter I · Awakening" },
-      "harmony": { "name": "Harmony", "label": "Chapter II · Harmony" },
-      "deepening": { "name": "Deepening", "label": "Chapter III · Deepening" },
-      "shared_light": { "name": "Shared Light", "label": "Chapter IV · Shared Light" }
+      "awakening": {
+        "name": "Awakening",
+        "label": "Chapter I · Awakening"
+      },
+      "harmony": {
+        "name": "Harmony",
+        "label": "Chapter II · Harmony"
+      },
+      "deepening": {
+        "name": "Deepening",
+        "label": "Chapter III · Deepening"
+      },
+      "shared_light": {
+        "name": "Shared Light",
+        "label": "Chapter IV · Shared Light"
+      }
     },
     "levels": {
-      "spark": { "name": "Spark", "destination": "Spark", "story": "The first light of your journey has appeared." },
-      "trail": { "name": "Trail", "destination": "Trail", "story": "Your steps are beginning to leave a path." },
-      "compass": { "name": "Compass", "destination": "Compass", "story": "You are beginning to find your own direction." },
-      "cycle": { "name": "Cycle", "destination": "Cycle", "story": "Your repetitions are settling into a calm order." },
-      "rhythm": { "name": "Rhythm", "destination": "Rhythm", "story": "Effort is becoming a natural part of your days." },
-      "flow": { "name": "Flow", "destination": "Flow", "story": "You are continuing your journey with greater confidence." },
-      "root": { "name": "Root", "destination": "Root", "story": "Your effort is more than a passing enthusiasm." },
-      "wing": { "name": "Wing", "destination": "Wing", "story": "What you have gathered is giving you room to move." },
-      "horizon": { "name": "Horizon", "destination": "Horizon", "story": "You can now see not only today, but the road ahead." },
-      "lantern": { "name": "Lantern", "destination": "Lantern", "story": "Your own light is accompanying others on their way." },
-      "star": { "name": "Star", "destination": "Star", "story": "Your presence brings direction and courage to the journey." },
-      "constellation": { "name": "Constellation", "destination": "Constellation", "story": "Beyond shining alone, you are creating meaning together." }
+      "spark": {
+        "name": "Spark",
+        "destination": "Spark",
+        "story": "The first light of your journey has appeared."
+      },
+      "trail": {
+        "name": "Trail",
+        "destination": "Trail",
+        "story": "Your steps are beginning to leave a path."
+      },
+      "compass": {
+        "name": "Compass",
+        "destination": "Compass",
+        "story": "You are beginning to find your own direction."
+      },
+      "cycle": {
+        "name": "Cycle",
+        "destination": "Cycle",
+        "story": "Your repetitions are settling into a calm order."
+      },
+      "rhythm": {
+        "name": "Rhythm",
+        "destination": "Rhythm",
+        "story": "Effort is becoming a natural part of your days."
+      },
+      "flow": {
+        "name": "Flow",
+        "destination": "Flow",
+        "story": "You are continuing your journey with greater confidence."
+      },
+      "root": {
+        "name": "Root",
+        "destination": "Root",
+        "story": "Your effort is more than a passing enthusiasm."
+      },
+      "wing": {
+        "name": "Wing",
+        "destination": "Wing",
+        "story": "What you have gathered is giving you room to move."
+      },
+      "horizon": {
+        "name": "Horizon",
+        "destination": "Horizon",
+        "story": "You can now see not only today, but the road ahead."
+      },
+      "lantern": {
+        "name": "Lantern",
+        "destination": "Lantern",
+        "story": "Your own light is accompanying others on their way."
+      },
+      "star": {
+        "name": "Star",
+        "destination": "Star",
+        "story": "Your presence brings direction and courage to the journey."
+      },
+      "constellation": {
+        "name": "Constellation",
+        "destination": "Constellation",
+        "story": "Beyond shining alone, you are creating meaning together."
+      }
     }
   },
   "economy": {
@@ -2662,18 +2728,54 @@
     "history_body": "{count} achievements reflecting your earlier effort were added to your collection.",
     "continue": "Continue my journey",
     "celebration_items": {
-      "first_step": { "eyebrow": "Your journey has begun", "body": "You didn't wait to feel ready; you took the first step. The path is yours now." },
-      "route_drawn": { "eyebrow": "Your path is taking shape", "body": "You did more than think about where to go; you drew yourself a route forward." },
-      "dream_space_created": { "eyebrow": "Your dream is in sight", "body": "You made room in your life for the dream in your mind. Now you have a direction to return to." },
-      "rhythm_found": { "eyebrow": "Your rhythm is forming", "body": "For seven days, you kept coming back for yourself. This is more than one day now; it's your rhythm." },
-      "rhythm_kept": { "eyebrow": "Your rhythm is with you", "body": "You stayed with your path for thirty days. The rhythm you built is now a strong part of you." },
-      "returned_to_path": { "eyebrow": "Your path was waiting", "body": "A pause didn't end your journey. Today, you returned to yourself right where you left off." },
-      "route_renewed": { "eyebrow": "Your route fits you", "body": "Instead of clinging to the plan, you renewed it around what you need. That's how you own your path." },
-      "starting_point_set": { "eyebrow": "You saw where you stand", "body": "You recorded your first mock exam. Now you'll be able to see how far you travel." },
-      "mistake_revisited": { "eyebrow": "You looked once more", "body": "You returned to a mistake and looked again. Sometimes, that's exactly where learning deepens." },
-      "week_reflected": { "eyebrow": "You listened to yourself", "body": "You paused to hear what your week was telling you. Your next step is a little clearer now." },
-      "first_hello": { "eyebrow": "You left your first mark here", "body": "You shared your first words with the community. You no longer have to walk this path alone." },
-      "helped_someone": { "eyebrow": "Your words reached someone", "body": "Something you shared helped another learner. Sometimes a little support carries us a long way." }
+      "first_step": {
+        "eyebrow": "Your journey has begun",
+        "body": "You didn't wait to feel ready; you took the first step. The path is yours now."
+      },
+      "route_drawn": {
+        "eyebrow": "Your path is taking shape",
+        "body": "You did more than think about where to go; you drew yourself a route forward."
+      },
+      "dream_space_created": {
+        "eyebrow": "Your dream is in sight",
+        "body": "You made room in your life for the dream in your mind. Now you have a direction to return to."
+      },
+      "rhythm_found": {
+        "eyebrow": "Your rhythm is forming",
+        "body": "For seven days, you kept coming back for yourself. This is more than one day now; it's your rhythm."
+      },
+      "rhythm_kept": {
+        "eyebrow": "Your rhythm is with you",
+        "body": "You stayed with your path for thirty days. The rhythm you built is now a strong part of you."
+      },
+      "returned_to_path": {
+        "eyebrow": "Your path was waiting",
+        "body": "A pause didn't end your journey. Today, you returned to yourself right where you left off."
+      },
+      "route_renewed": {
+        "eyebrow": "Your route fits you",
+        "body": "Instead of clinging to the plan, you renewed it around what you need. That's how you own your path."
+      },
+      "starting_point_set": {
+        "eyebrow": "You saw where you stand",
+        "body": "You recorded your first mock exam. Now you'll be able to see how far you travel."
+      },
+      "mistake_revisited": {
+        "eyebrow": "You looked once more",
+        "body": "You returned to a mistake and looked again. Sometimes, that's exactly where learning deepens."
+      },
+      "week_reflected": {
+        "eyebrow": "You listened to yourself",
+        "body": "You paused to hear what your week was telling you. Your next step is a little clearer now."
+      },
+      "first_hello": {
+        "eyebrow": "You left your first mark here",
+        "body": "You shared your first words with the community. You no longer have to walk this path alone."
+      },
+      "helped_someone": {
+        "eyebrow": "Your words reached someone",
+        "body": "Something you shared helped another learner. Sometimes a little support carries us a long way."
+      }
     }
   },
   "notifications": {

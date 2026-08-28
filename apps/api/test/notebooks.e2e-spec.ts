@@ -209,6 +209,16 @@ describe("notebook collection (e2e)", () => {
     expect(overview.body.notebook.id).toBe(systemA);
     expect(overview.body.pageCount).toBe(1);
     expect(overview.body.notebook.pageCount).toBe(1);
+
+    const collection = await request(app.getHttpServer())
+      .get("/v1/coaching/notebooks?page=1&pageSize=12")
+      .set(authA());
+    expect(collection.status).toBe(200);
+    expect(collection.body.items[0]).toMatchObject({
+      id: systemA,
+      kind: "MISTAKE",
+      pageCount: 1,
+    });
   });
 
   it("deletes custom pages by cascade", async () => {

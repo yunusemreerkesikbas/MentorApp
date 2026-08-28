@@ -11,6 +11,7 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { ForumTagView, ThreadView, ZoneView } from "@mentor/types";
 import { forumPollInputSchema, type ForumPollInput } from "@mentor/validation";
 import { ApiClientError } from "@mentor/api-client";
@@ -104,6 +105,7 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [manualQuestionOpen, setManualQuestionOpen] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   /*
    * Handoff from the mistake notebook: a card the student missed twice, whose question they are
@@ -411,25 +413,39 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
             size={40}
           />
           <div className="min-w-0 flex-1">
-            {presentation.showAudience && presentation.showTypeSelector ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <AudienceSelector
-                  zones={eligibleZones}
-                  value={zoneId}
-                  onChange={(next) => {
-                    setZoneId(next);
-                    setError(null);
-                    setExpanded(true);
+            <AnimatePresence initial={false}>
+              {presentation.showAudience && presentation.showTypeSelector ? (
+                <motion.div
+                  key="composer-options"
+                  initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{
+                    duration: reduceMotion ? 0 : 0.15,
+                    ease: [0.22, 1, 0.36, 1],
                   }}
-                  disabled={busy}
-                />
-                <ComposerTypeSelector
-                  value={mode}
-                  onChange={changeMode}
-                  disabled={busy}
-                />
-              </div>
-            ) : null}
+                  className="overflow-hidden"
+                >
+                  <div className="flex flex-wrap items-center gap-2 pb-1">
+                    <AudienceSelector
+                      zones={eligibleZones}
+                      value={zoneId}
+                      onChange={(next) => {
+                        setZoneId(next);
+                        setError(null);
+                        setExpanded(true);
+                      }}
+                      disabled={busy}
+                    />
+                    <ComposerTypeSelector
+                      value={mode}
+                      onChange={changeMode}
+                      disabled={busy}
+                    />
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
 
             {presentation.showQuestionTitle ? (
               <input
@@ -452,7 +468,16 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
             ) : null}
 
             {presentation.showBody ? (
-              <div className="relative">
+              <motion.div
+                layout={reduceMotion ? false : "size"}
+                transition={{
+                  layout: {
+                    duration: reduceMotion ? 0 : 0.15,
+                    ease: [0.22, 1, 0.36, 1],
+                  },
+                }}
+                className="relative rounded-[var(--radius-card)]"
+              >
                 <ComposerBodyField
                   id="global-thread-body"
                   label={t("composer_content")}
@@ -527,7 +552,7 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
                     onSelect={selectHashtag}
                   />
                 ) : null}
-              </div>
+              </motion.div>
             ) : null}
 
             <input

@@ -55,15 +55,18 @@ const calendar = {
   daysToExam: 120,
 } as unknown as ExamCalendarDto;
 
-const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
-  "access-control-allow-credentials": "true",
-};
+function corsHeaders(route: Route) {
+  return {
+    "access-control-allow-origin":
+      route.request().headers()["origin"] ?? "http://localhost:3100",
+    "access-control-allow-credentials": "true",
+  };
+}
 
 function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({
     status,
-    headers: corsHeaders,
+    headers: corsHeaders(route),
     contentType: "application/json",
     body: body === null ? "" : JSON.stringify(body),
   });
@@ -112,7 +115,7 @@ async function mockApi(page: Page, options: MockApiOptions = {}) {
       return route.fulfill({
         status: 200,
         contentType: "text/event-stream",
-        headers: corsHeaders,
+        headers: corsHeaders(route),
         body: "",
       });
     }
@@ -328,7 +331,12 @@ test("silme başarılıyken liste yenileme tekrarı ikinci DELETE göndermez", a
   await expect(syncAlert).toBeVisible();
   await expect(page.getByRole("heading", { name: "Silinecek Defter" })).toHaveCount(0);
 
-  await syncAlert.getByRole("button", { name: "Yeniden dene" }).click();
+  const callsAfterFailedSync = state.listCalls;
+  const retryButton = syncAlert.getByRole("button", { name: "Yeniden dene" });
+  await retryButton.focus();
+  await expect(retryButton).toBeFocused();
+  await retryButton.press("Enter");
+  await expect.poll(() => state.listCalls).toBeGreaterThan(callsAfterFailedSync);
   await expect(syncAlert).toHaveCount(0);
   expect(state.deleteCalls).toBe(1);
 });

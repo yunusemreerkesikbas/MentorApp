@@ -1,8 +1,9 @@
 "use client";
 
 import { X } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import type * as React from "react";
-import { useId, useLayoutEffect, useRef } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 
 export interface ModalProps {
   title: string;
@@ -40,6 +41,8 @@ export function Modal({
 }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const reduceMotion = useReducedMotion();
+  const [closing, setClosing] = useState(false);
 
   useLayoutEffect(() => {
     const node = dialogRef.current;
@@ -50,7 +53,11 @@ export function Modal({
 
   function handleCancel(event: React.SyntheticEvent<HTMLDialogElement>) {
     event.preventDefault();
-    if (!closeDisabled) onClose();
+    requestClose();
+  }
+
+  function requestClose() {
+    if (!closeDisabled && !closing) setClosing(true);
   }
 
   const chrome = (
@@ -72,7 +79,7 @@ export function Modal({
         <button
           type="button"
           disabled={closeDisabled}
-          onClick={onClose}
+          onClick={requestClose}
           aria-label={closeLabel}
           className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full outline-none transition-colors duration-150 hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
           style={{ color: "var(--color-main)" }}
@@ -97,10 +104,19 @@ export function Modal({
   const shellClass = `flex max-h-[90dvh] flex-col ${className ?? ""}`;
 
   return (
-    <dialog
+    <motion.dialog
       ref={dialogRef}
       aria-labelledby={titleId}
       onCancel={handleCancel}
+      initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }}
+      animate={closing ? { opacity: 0, scale: 0.96 } : { opacity: 1, scale: 1 }}
+      transition={{
+        duration: reduceMotion ? 0 : closing ? 0.15 : 0.25,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      onAnimationComplete={() => {
+        if (closing) onClose();
+      }}
       className="m-auto w-[min(92vw,32rem)] rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-0 text-[var(--color-main)] shadow-[var(--shadow-card)] backdrop:bg-[color-mix(in_srgb,var(--color-main)_40%,transparent)]"
     >
       {onSubmit ? (
@@ -110,6 +126,6 @@ export function Modal({
       ) : (
         <div className={shellClass}>{chrome}</div>
       )}
-    </dialog>
+    </motion.dialog>
   );
 }

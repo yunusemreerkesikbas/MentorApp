@@ -1,7 +1,7 @@
 "use client";
-import { History, PanelLeft } from "lucide-react";
+import { Focus, History, PanelLeft, Wallpaper } from "lucide-react";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -22,12 +22,20 @@ import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
 import { trackCoachEvent } from "@/lib/analytics";
 import { parsePlanTaskContextFromParams } from "@/lib/plan-study-session-link";
 import { readActiveSession, resolveResume } from "@/lib/session-persistence";
-import { getStudyRoom } from "@/lib/study-rooms";
-import { STUDY_ROOM_AMBIENT } from "@/lib/study-room-theme";
+import { getStudyRoom, updateStudyRoom } from "@/lib/study-rooms";
+import { ROOM_CURTAIN_MS, STUDY_ROOM_AMBIENT } from "@/lib/study-room-theme";
+import {
+  getServerSessionScene,
+  getSessionScene,
+  setSessionScene,
+  subscribeSessionScene,
+} from "@/lib/session-scene";
 import { SessionAmbientPicker } from "./session-ambient-picker";
 import { SessionBuddyCard } from "./session-buddy-card";
 import { SessionControls } from "./session-controls";
 import { SessionDoneState } from "./session-done-state";
+import { RoomBackdropSlide } from "./room-backdrop-slide";
+import { RoomThemeSwitcher } from "./room-theme-switcher";
 import { SessionFocusBackdrop } from "./session-focus-backdrop";
 import { SessionFocusGoalCard } from "./session-focus-goal-card";
 import { SessionHistory } from "./session-history";
@@ -145,27 +153,16 @@ function PlanTaskContextChip({ title }: { title: string }) {
   );
 }
 
-function TimerChrome({
-  left,
-  right,
-}: {
-  left: ReactNode;
-  right: ReactNode;
-}) {
-  return (
-    <div className="flex w-full items-center justify-between gap-3">
-      <div className="min-w-0">{left}</div>
-      <div className="min-w-0">{right}</div>
-    </div>
-  );
-}
-
 /**
  * Pomodoro session UI — setup dial (idle), immersive focus/break, done summary.
  */
 export function StudySessionShell() {
   const reduceMotion = useReducedMotion();
   const t = useTranslations("session");
+  // The room controls on this screen are shared with the room page and read ITS namespace —
+  // `t` above is `session`, and reaching into it for a `session_room` key is how the plain-view
+  // button shipped throwing MISSING_MESSAGE.
+  const tRoom = useTranslations("session_room");
   const locale = useLocale();
   const searchParams = useSearchParams();
   const presetParam = searchParams.get("preset");
@@ -213,14 +210,41 @@ export function StudySessionShell() {
   // The id travels with the name: rendering is gated on it matching, which is why switching rooms
   // never flashes the previous table's name and the effect needs no synchronous reset.
   const [seatedRoom, setSeatedRoom] = useState<
-    { id: string; name: string; theme: StudyRoomTheme } | null
+    { id: string; name: string; theme: StudyRoomTheme; isOwner: boolean } | null
   >(null);
+  const [themeBusy, setThemeBusy] = useState(false);
+  /** Which way the ground travels on the next theme change — set by the arrow you pressed. */
+  const [themeDirection, setThemeDirection] = useState<1 | -1>(1);
+  /**
+   * The scene for a session that is NOT seated at a table, plus the "sade görünüm" opt-out
+   * that applies either way. Studying alone is still studying somewhere; the plain dark screen
+   * was only ever the absence of a decision. Defaults render on the server and are replaced
+   * after mount — reading `localStorage` during render would be a hydration mismatch.
+   */
+  const scene = useSyncExternalStore(
+    subscribeSessionScene,
+    getSessionScene,
+    getServerSessionScene,
+  );
+  /**
+   * The other half of the room page's cut-to-black: arriving seated, the screen fades UP from
+   * black instead of appearing under you. Seeded from the URL at first render so there is no
+   * frame of lit screen before the curtain mounts, and dropped from the tree once it has
+   * played — a `pointer-events-none` sheet at `z-50` is still a sheet at `z-50`.
+   */
+  const [curtain, setCurtain] = useState(() => Boolean(roomIdParam));
   useEffect(() => {
     if (!roomIdParam) return;
     let active = true;
     getStudyRoom(roomIdParam)
       .then((room) => {
-        if (active) setSeatedRoom({ id: room.id, name: room.name, theme: room.theme });
+        if (active)
+          setSeatedRoom({
+            id: room.id,
+            name: room.name,
+            theme: room.theme,
+            isOwner: room.role === "OWNER",
+          });
       })
       // Room unreadable (flag off, membership gone) → no chip; the API is still the gate on start.
       .catch(() => {});
@@ -229,8 +253,15 @@ export function StudySessionShell() {
     };
   }, [roomIdParam]);
 
-  /** Theme of the table this session sits at — drives the focus ground and the ambient hint. */
+  /** Theme of the table this session sits at, when there is one. Drives the ambient hint. */
   const roomTheme = seatedRoom?.id === roomIdParam ? (seatedRoom?.theme ?? null) : null;
+  /**
+   * The room you are in. A table's own theme wins — you are that room's guest, not its
+   * decorator — and otherwise it is your own saved scene.
+   */
+  const activeTheme = roomTheme ?? scene.theme;
+  /** …and what actually gets painted, once "sade görünüm" has had its say. */
+  const groundTheme = scene.plain ? null : activeTheme;
 
   const timer = useSessionTimer({
     initialMinutes: parseInitialMinutes(presetParam, minutesParam),
@@ -394,10 +425,99 @@ export function StudySessionShell() {
     />
   ) : null;
 
-  const roomChip =
-    seatedRoom && seatedRoom.id === roomIdParam ? (
-      <PlanTaskContextChip title={seatedRoom.name} />
-    ) : null;
+  const changeRoomTheme = (next: StudyRoomTheme) => {
+    if (!seatedRoom || themeBusy) return;
+    setThemeBusy(true);
+    updateStudyRoom(seatedRoom.id, { theme: next })
+      .then((room) => setSeatedRoom((prev) => (prev ? { ...prev, theme: room.theme } : prev)))
+      // Owner-only on the API too; a rejected change simply leaves the room as it was.
+      .catch(() => {})
+      .finally(() => setThemeBusy(false));
+  };
+
+  /**
+   * Where this session is happening, and the two things you can do about it without getting up:
+   * change the room, or turn the scenery off.
+   *
+   * Always rendered, not only when seated. The switcher is the same control as the room page —
+   * you should be able to change the room from anywhere you are standing in it — and a solo
+   * session is standing in one too; only the name chip is specific to a table.
+   *
+   * Who may turn the arrows: your own scene is always yours, a table's theme belongs to its
+   * owner (the API's rule, mirrored here). `room-stage` has to be scoped on this wrapper
+   * because the switcher reads `--room-*`; with the ground off, those two tokens are re-pointed
+   * at app tokens — a beige `--room-ink-soft` was chosen to sit on a lamp-lit floor and has no
+   * business on the plain surface.
+   */
+  const seated = seatedRoom && seatedRoom.id === roomIdParam ? seatedRoom : null;
+  /**
+   * One bar instead of two rows. Subject, room and sound are all answers to "where and how am
+   * I working" — they were split only because the theme control arrived later and got its own
+   * line. Wraps rather than shrinks: on a phone three controls do not fit across, and a
+   * squashed picker is worse than a second line.
+   */
+  const topBar = (subjectPicker: ReactNode) => (
+    <div
+      className="room-stage flex w-full flex-col items-center gap-2"
+      data-room-theme={activeTheme}
+      style={
+        scene.plain
+          ? ({
+              "--room-ink-soft": "var(--color-secondary)",
+              "--room-accent": "var(--color-progress)",
+              "--room-scrim": "var(--color-surface-translucent)",
+            } as React.CSSProperties)
+          : undefined
+      }
+    >
+      {seated ? <PlanTaskContextChip title={seated.name} /> : null}
+      <div className="flex w-full flex-wrap items-center justify-center gap-2">
+        {subjectPicker}
+        {/*
+          A scrim pill, not heavier buttons. This is scenery control, not the primary action —
+          the one thing on this screen that should shout is "Başla". Bare arrows on a
+          photograph read as decoration, so what they were missing was legibility and a hit
+          area, not weight: the pill groups them into one obviously-interactive object.
+        */}
+        <div
+          className="flex items-center gap-1 rounded-full py-0.5 pr-0.5 pl-1"
+          style={{ backgroundColor: "var(--room-scrim)" }}
+        >
+        <RoomThemeSwitcher
+          theme={activeTheme}
+          canChange={seated ? seated.isOwner : true}
+          busy={themeBusy}
+          onChange={(next, direction) => {
+            setThemeDirection(direction);
+            if (seated) changeRoomTheme(next);
+            else setSessionScene({ theme: next });
+          }}
+        />
+        <button
+          type="button"
+          aria-pressed={scene.plain}
+          aria-label={tRoom(scene.plain ? "plain_view_off" : "plain_view_on")}
+          title={tRoom(scene.plain ? "plain_view_off" : "plain_view_on")}
+          onClick={() => setSessionScene({ plain: !scene.plain })}
+          // The icon names what you GET, not what you have: `Focus` takes the room away,
+          // `Wallpaper` brings it back. The old `ImageOff` was an image glyph with a slash
+          // through it — the universal "this picture failed to load", which is exactly the
+          // wrong thing to put next to a working background. 44px target on a transparent
+          // circle: the hit area is honest even though only the glyph is visible.
+          className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-opacity duration-200 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--room-accent)] motion-reduce:transition-none"
+          style={{ color: "var(--room-ink-soft)", opacity: 0.8 }}
+        >
+            {scene.plain ? (
+              <Wallpaper className="size-[18px]" strokeWidth={2} aria-hidden />
+            ) : (
+              <Focus className="size-[18px]" strokeWidth={2} aria-hidden />
+            )}
+          </button>
+        </div>
+        {ambientPicker}
+      </div>
+    </div>
+  );
 
   const phaseLabel =
     phase === "break"
@@ -411,13 +531,10 @@ export function StudySessionShell() {
   ).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 
   const setupSummary = (
-    <div
-      className="flex w-full items-center rounded-[var(--radius-card)] px-1 py-2.5"
-      style={{
-        backgroundColor:
-          "color-mix(in srgb, var(--color-chip) 18%, transparent)",
-      }}
-    >
+    // Same surface as "Yol arkadaşın" and the focus-goal card on the right: a tinted chip
+    // wash was invisible once a room photo sat behind it, and this is a panel of numbers, not
+    // a chip. `Card` carries the border, radius and single shadow token with it.
+    <Card className="flex w-full items-center px-2 py-3">
       <SetupStat
         label={t("summary_focus")}
         value={t("minutes_value", { minutes: focusMinutes })}
@@ -437,7 +554,7 @@ export function StudySessionShell() {
         style={{ backgroundColor: "var(--color-progress-track)" }}
       />
       <SetupStat label={t("summary_finish")} value={estimatedFinish} />
-    </div>
+    </Card>
   );
 
   const ambientPicker = (
@@ -478,24 +595,24 @@ export function StudySessionShell() {
   if (phase === "focus" || phase === "break") {
     return (
       <div className="session-focus-theme fixed inset-0 z-30 flex flex-col items-center justify-center px-5 py-8">
-        <SessionFocusBackdrop roomTheme={roomTheme} />
+        <SessionFocusBackdrop roomTheme={groundTheme} themeDirection={themeDirection} />
+        {/* Where you are sits at the top edge of the room, not stacked into the timer column:
+            in a vertically centred layout "first child" is the middle of the screen. */}
+        <div className="absolute inset-x-0 top-0 z-10 mx-auto flex w-full max-w-lg justify-center px-5 pt-5">
+          {topBar(
+            <SessionSubjectPicker
+              value={subject ?? ""}
+              onChange={(v) => setSubject(v.trim() ? v.trim() : null)}
+              readOnly
+            />,
+          )}
+        </div>
         <motion.div
           key={phase}
           className="relative flex w-full max-w-sm flex-col items-center gap-6"
           {...phaseMotion}
         >
-          <TimerChrome
-            left={
-              <SessionSubjectPicker
-                value={subject ?? ""}
-                onChange={(v) => setSubject(v.trim() ? v.trim() : null)}
-                readOnly
-              />
-            }
-            right={ambientPicker}
-          />
           {planTaskChip}
-          {roomChip}
           <p
             className="text-sm font-semibold uppercase tracking-wide"
             style={{
@@ -536,10 +653,36 @@ export function StudySessionShell() {
 
   return (
     <main
-      className="flex w-full min-h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] flex-col lg:h-[calc(100dvh-4rem)] lg:min-h-0 lg:flex-row lg:overflow-hidden"
+      className="relative isolate flex w-full min-h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] flex-col lg:h-[100dvh] lg:min-h-0 lg:flex-row lg:overflow-hidden"
       aria-label={t("title")}
     >
       <h1 className="sr-only">{t("title")}</h1>
+      {/*
+        Arriving from "sit at this table" used to drop you on a plain screen with the room's
+        name reduced to a chip — you had walked out of the place you just chose. Focus mode
+        already put the room back (`SessionFocusBackdrop`); the missing piece was only the idle
+        screen in between. Heavier veil than the room page: here the ground sits behind real
+        app chrome (cards, pickers, history rail) rather than seats, and those read on app
+        tokens. `isolate` keeps the `-z-10` from escaping past this main.
+      */}
+      {groundTheme ? (
+        // `overflow-hidden`: the outgoing room slides out past the edge, and without a clip it
+        // would drag a horizontal scrollbar onto the page for the length of the animation.
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+          <RoomBackdropSlide theme={groundTheme} direction={themeDirection} veilPercent={58} />
+        </div>
+      ) : null}
+      {curtain && !reduceMotion ? (
+        <motion.div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-50"
+          style={{ backgroundColor: "#000" }}
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: ROOM_CURTAIN_MS / 1000, ease: "easeOut" }}
+          onAnimationComplete={() => setCurtain(false)}
+        />
+      ) : null}
       <HistorySideRail
         title={t("history_title")}
         railOpen={railOpen}
@@ -568,6 +711,16 @@ export function StudySessionShell() {
       </HistorySideRail>
 
       <div className="flex min-w-0 flex-1 flex-col lg:min-h-0 lg:overflow-y-auto">
+        {/* Outside the centred column below: that column is `justify-center`, so anything
+            inside it lands mid-screen no matter how early it appears in the markup. */}
+        <div className="mx-auto flex w-full max-w-lg justify-center px-5 pt-5 lg:px-8 lg:pt-6">
+          {topBar(
+            <SessionSubjectPicker
+              value={subject ?? ""}
+              onChange={(v) => setSubject(v.trim() ? v.trim() : null)}
+            />,
+          )}
+        </div>
         <div className="flex items-center gap-2 px-5 pt-4 pb-1 lg:hidden">
           <button
             type="button"
@@ -602,17 +755,7 @@ export function StudySessionShell() {
               className="flex w-full flex-col items-center gap-5"
               {...phaseMotion}
             >
-              <TimerChrome
-                left={
-                  <SessionSubjectPicker
-                    value={subject ?? ""}
-                    onChange={(v) => setSubject(v.trim() ? v.trim() : null)}
-                  />
-                }
-                right={ambientPicker}
-              />
               {planTaskChip}
-              {roomChip}
               {timerRing}
               {setupSummary}
               {sessionControls}

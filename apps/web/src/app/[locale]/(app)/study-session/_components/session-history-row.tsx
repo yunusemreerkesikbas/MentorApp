@@ -42,9 +42,9 @@ export function SessionHistoryRow({
   if (compact) {
     return (
       <li>
-        <div
-          className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[10px] px-2.5 py-2"
-        >
+        {/* Hover surface: the rail is a list of separate attempts, and with the dates hoisted
+            into day headings the rows needed some other edge to read as individual items. */}
+        <div className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-[10px] px-2.5 py-2 transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] motion-reduce:transition-none">
           <div className="min-w-0">
             <p
               className="truncate text-sm font-semibold"
@@ -71,8 +71,10 @@ export function SessionHistoryRow({
             dateTime={session.startedAt}
             className="shrink-0 text-right text-xs tabular-nums"
             style={{ color: "var(--color-secondary)" }}
+            // The day is the section heading now; the time is what separates 14:05 from 14:40.
+            title={`${dateLabel} ${timeLabel}`}
           >
-            {dateLabel}
+            {timeLabel}
           </time>
         </div>
       </li>

@@ -90,7 +90,7 @@ export function ComposerBodyField({
         aria-expanded={autocomplete?.expanded}
         aria-controls={autocomplete?.expanded ? autocomplete.controls : undefined}
         aria-activedescendant={autocomplete?.expanded ? autocomplete.activeDescendant : undefined}
-        className={`${compact ? "min-h-11 resize-none" : "min-h-[128px] resize-y"} ${minimal ? "border-0 bg-transparent px-0 py-2" : "rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-soft)] p-4"} text-[15px] font-normal leading-[1.55] text-[var(--color-body-text)] [font-family:var(--font-body)] outline-none placeholder:text-[var(--color-secondary)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]`}
+        className={`${compact ? "min-h-11 resize-none" : "min-h-[128px] resize-y"} ${minimal ? "rounded-[var(--radius-card)] border-0 bg-transparent px-2 py-2" : "rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-soft)] p-4"} text-[15px] font-normal leading-[1.55] text-[var(--color-body-text)] [font-family:var(--font-body)] outline-none placeholder:text-[var(--color-secondary)] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]`}
       />
       <div className="flex min-h-11 items-center justify-between">
         <div className="flex items-center gap-1">

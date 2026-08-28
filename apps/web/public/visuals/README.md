@@ -23,3 +23,7 @@ Use `EmptyState` (`apps/web/src/components/empty-state.tsx`) with `visualSrc="/v
 Missing file → component shows a pastel placeholder; layout does not break.
 
 Puhu companions stay under `/mascot/puhu/` — do not mix character variants into this folder.
+
+Study-room artwork stays under `/img/seans-theme/` — nine files that only mean anything as a
+set (backdrop + table + chair per theme), so they get a folder instead of this flat drop.
+Paths are resolved in `src/lib/study-room-theme.ts`.

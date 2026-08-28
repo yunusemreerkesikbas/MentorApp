@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import {
+  BookOpenCheck,
   CalendarClock,
   Check,
   FileText,
@@ -10,6 +11,7 @@ import {
   ChevronRight,
   LayoutList,
   LoaderCircle,
+  MessageCircle,
   RotateCcw,
   Settings2,
   Sparkles,
@@ -18,7 +20,7 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { NotebookEntryDto } from "@mentor/types";
-import { Button, SectionHeading } from "@mentor/ui";
+import { Button } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
 import { NotebookCompactButton } from "@/components/notebook/notebook-compact-button";
@@ -341,11 +343,9 @@ export function NotebookReviewPanel({
             // Same column as the cards. At `max-w-xl` these two screens were 160px wider than the
             // deck they interrupt, so the modal visibly changed shape at exactly the two moments
             // the student is being told something.
-            className={`flex ${REVIEW_CARD_WIDTH} flex-col overflow-hidden rounded-[var(--radius-card)]`}
+            className={`mentor-scrollarea flex max-h-[min(82dvh,42rem)] ${REVIEW_CARD_WIDTH} flex-col overflow-y-auto rounded-[var(--radius-card)]`}
             style={{
               background: "var(--color-surface)",
-              border:
-                "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
               boxShadow: "var(--shadow-card)",
             }}
             onClick={(event) => event.stopPropagation()}
@@ -360,6 +360,7 @@ export function NotebookReviewPanel({
                 // to skip, so this is the number that makes "atlanan" mean anything at all.
                 skipped={deck.length - outcomes.length}
                 onClose={onClose}
+                onPreview={setZoomed}
               />
             )}
           </div>
@@ -720,19 +721,43 @@ function StuckPanel({
 }) {
   const t = useTranslations("notebook");
   return (
-    <div className="flex flex-col gap-4 p-6">
-      <SectionHeading as="h2" subtitle={t("stuck_subtitle")}>
-        {t("stuck_title")}
-      </SectionHeading>
+    <div className="flex flex-col">
+      <div
+        className="flex flex-col items-center gap-3 px-6 pb-5 pt-7 text-center"
+        style={{
+          backgroundColor:
+            "color-mix(in srgb, var(--color-accent) 12%, var(--color-surface))",
+        }}
+      >
+        <span className="grid size-10 place-items-center text-[var(--color-accent)]">
+          <MessageCircle aria-hidden size={30} strokeWidth={2} />
+        </span>
+        <div className="flex max-w-sm flex-col gap-1.5">
+          <h2 className="text-balance text-xl font-bold text-[var(--color-main)]">
+            {t("stuck_title")}
+          </h2>
+          <p className="text-pretty text-sm leading-relaxed text-[var(--color-secondary)]">
+            {t("stuck_subtitle")}
+          </p>
+        </div>
+      </div>
+      <div className="flex flex-col gap-4 p-5 sm:p-6">
+        <MissedRow entry={entry} showCommunityAction={false} />
       {/*
         A handoff, not a silent post. Which zone a question belongs in depends on what the user has
         joined, and publishing on somebody's behalf from a side panel is the wrong shape for an
         action that puts their photo in front of strangers -- copyright warning included.
       */}
-      <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-        {t("stuck_copyright")}
-      </p>
-      <div className="flex flex-wrap gap-2">
+        <p
+          className="text-pretty rounded-[var(--radius-card)] px-3 py-2.5 text-xs leading-relaxed"
+          style={{
+            color: "var(--color-secondary)",
+            backgroundColor: "var(--color-surface-container)",
+          }}
+        >
+          {t("stuck_copyright")}
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row-reverse">
         {/*
           The entry id rides along so the question the student is about to ask can be linked back
           to this card. Until now the handoff dropped them at the community with nothing carried
@@ -761,14 +786,16 @@ function StuckPanel({
                   : undefined,
             })
           }
-          className="flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-4 text-sm font-bold text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius-card)] px-4 text-sm font-bold text-[var(--color-btn-label)] outline-none transition-opacity duration-150 hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
           style={{ backgroundColor: "var(--color-btn)" }}
         >
+          <MessageCircle aria-hidden size={17} />
           {t("stuck_ask")}
         </Link>
         <NotebookCompactButton variant="secondary" large onClick={onSkip}>
           {t("stuck_skip")}
         </NotebookCompactButton>
+        </div>
       </div>
     </div>
   );
@@ -793,12 +820,14 @@ function DonePanel({
   outcomes,
   skipped,
   onClose,
+  onPreview,
 }: {
   total: number;
   outcomes: readonly { entry: NotebookEntryDto; solved: boolean }[];
   /** Cards left in the deck — always 0 unless the student walked out mid-session. */
   skipped: number;
   onClose: () => void;
+  onPreview: (entry: NotebookEntryDto) => void;
 }) {
   const t = useTranslations("notebook");
   const solved = outcomes.filter((outcome) => outcome.solved).length;
@@ -811,7 +840,7 @@ function DonePanel({
   const unfinished = skipped > 0;
 
   return (
-    <div className="flex flex-col gap-4 p-6">
+    <div className="flex flex-col">
       {/* The count *is* the subtitle. "Tekrar edilecek soru kalmadı" said the same thing one line
           above "3 karttan 2 tanesini çözdün", so the screen opened by telling the student the same
           news twice — once vaguely, once with the numbers. */}
@@ -819,18 +848,38 @@ function DonePanel({
           is a scoreline read out to someone who just told the truth about a card they missed — and
           on a one-card deck it is the entire screen. With nothing solved it says what happens next
           instead, which is the honest half of the same fact and the half that is actually useful. */}
-      <SectionHeading
-        as="h2"
-        subtitle={
+      <div
+        className={
           unfinished
-            ? t("review_exit_summary", { answered: outcomes.length, skipped })
-            : solved > 0
-              ? t("review_done_summary", { total, solved })
-              : t("review_done_none", { count: outcomes.length })
+            ? "flex flex-col gap-1.5 border-b border-[var(--color-border)] px-5 py-5 text-left sm:px-6"
+            : "flex flex-col items-center gap-3 px-6 pb-5 pt-7 text-center"
         }
+        style={{
+          backgroundColor: unfinished
+            ? "var(--color-surface)"
+            : "color-mix(in srgb, var(--color-success) 12%, var(--color-surface))",
+        }}
       >
-        {unfinished ? t("review_exit_title") : t("review_done_title")}
-      </SectionHeading>
+        {!unfinished ? (
+          <span className="grid size-10 place-items-center text-[var(--color-success)]">
+            <BookOpenCheck aria-hidden size={30} strokeWidth={2} />
+          </span>
+        ) : null}
+        <div className={`flex max-w-sm flex-col gap-1.5 ${unfinished ? "items-start" : "items-center"}`}>
+          <h2 className="text-balance text-xl font-bold text-[var(--color-main)]">
+            {unfinished ? t("review_exit_title") : t("review_done_title")}
+          </h2>
+          <p className="text-pretty text-sm leading-relaxed text-[var(--color-secondary)]">
+            {unfinished
+              ? t("review_exit_summary", { answered: outcomes.length, skipped })
+              : solved > 0
+                ? t("review_done_summary", { total, solved })
+                : t("review_done_none", { count: outcomes.length })}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4 p-5 sm:p-6">
 
       {/* Its own band, not a line of text. A card leaving the rotation is the rarest thing that
           happens in this feature — three correct answers spread over a month — and it is the only
@@ -852,22 +901,31 @@ function DonePanel({
       ) : null}
 
       {missed.length > 0 ? (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col">
           <span
-            className="text-xs font-bold"
+            className="mb-1 text-xs font-bold"
             style={{ color: "var(--color-secondary)" }}
           >
             {t("review_done_missed_title")}
           </span>
           {missed.map((entry) => (
-            <MissedRow key={entry.id} entry={entry} />
+            <MissedRow
+              key={entry.id}
+              entry={entry}
+              onPreview={() => onPreview(entry)}
+            />
           ))}
         </div>
       ) : null}
 
-      <Button fullWidth onClick={onClose}>
+      <Button
+        fullWidth
+        variant={unfinished ? "secondary" : "primary"}
+        onClick={onClose}
+      >
         {t("review_close")}
       </Button>
+      </div>
     </div>
   );
 }
@@ -875,9 +933,9 @@ function DonePanel({
 /**
  * One card that caught the student again — what it was, when it comes back, and the way out.
  *
- * The row *is* the link, for a card nobody has asked about yet. `StuckPanel` already offers this
- * mid-deck on a second miss, but only for the one card and only in the moment; here it is the whole
- * list, at the point where the student has stopped answering and can actually consider it. A card
+ * The thumbnail and label reopen the question photo; the community handoff is a separate link.
+ * Keeping those targets separate matters here: inspecting the question must not publish intent or
+ * navigate away, while “Topluluğa sor” must still carry the exact card into the composer. A card
  * that already has a thread is not offered again — it is waiting on an answer, not on them.
  *
  * The photo carries the identity. Half these rows say "Etiketsiz" — a card filed in a hurry with no
@@ -885,7 +943,15 @@ function DonePanel({
  * *that* question. The return day is here for the same reason it is on the deck: the card is
  * scheduled, not spent, and the summary is the last chance to say so.
  */
-function MissedRow({ entry }: { entry: NotebookEntryDto }) {
+function MissedRow({
+  entry,
+  showCommunityAction = true,
+  onPreview,
+}: {
+  entry: NotebookEntryDto;
+  showCommunityAction?: boolean;
+  onPreview?: () => void;
+}) {
   const t = useTranslations("notebook");
   const errorTypeLabel = t(`error_type.${entry.errorType}`);
   const label =
@@ -893,10 +959,10 @@ function MissedRow({ entry }: { entry: NotebookEntryDto }) {
     t("card_unlabelled");
   const feedback = reviewFeedback(entry);
 
-  const body = (
+  const previewContent = (
     <>
       <span
-        className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius-card)]"
+        className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius-card)]"
         style={{ backgroundColor: "var(--color-surface)" }}
       >
         {entry.url ? (
@@ -904,7 +970,7 @@ function MissedRow({ entry }: { entry: NotebookEntryDto }) {
             src={entry.url}
             alt=""
             fill
-            sizes="40px"
+            sizes="48px"
             className="object-cover"
             unoptimized
           />
@@ -936,51 +1002,55 @@ function MissedRow({ entry }: { entry: NotebookEntryDto }) {
         </span>
       </span>
 
-      {!entry.communityThreadId ? (
-        <span
-          className="shrink-0 text-xs font-bold"
-          style={{ color: "var(--color-accent)" }}
-        >
-          {t("review_done_ask")}
-        </span>
-      ) : null}
     </>
   );
 
   const shell =
-    "flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] px-3 py-2";
-  const style = { backgroundColor: "var(--color-surface-container)" } as const;
-
-  if (entry.communityThreadId) {
-    return (
-      <div className={shell} style={style}>
-        {body}
-      </div>
-    );
-  }
+    "flex min-h-14 items-center gap-3 border-b border-[var(--color-border)] px-1 py-2.5 last:border-b-0";
 
   return (
-    <Link
-      href={{ pathname: "/community/feed", query: { notebookEntry: entry.id } }}
-      // Left on the way out, read on arrival. The composer has no way to look this card up — there
-      // is no endpoint for a single entry — and this screen is holding it already.
-      onClick={() =>
-        putNotebookHandoff({
-          entryId: entry.id,
-          label,
-          errorTypeLabel,
-          // Only the question. The solution photo stays in the notebook: posting the answer key
-          // alongside the question is not asking for help, it is answering yourself in public.
-          photo:
-            entry.storageKey && entry.url
-              ? { storageKey: entry.storageKey, url: entry.url }
-              : undefined,
-        })
-      }
-      className={`${shell} outline-none transition-colors duration-150 hover:bg-[var(--color-accent-soft)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none`}
-      style={style}
-    >
-      {body}
-    </Link>
+    <div className={shell}>
+      {entry.url && onPreview ? (
+        <button
+          type="button"
+          aria-label={t("card_preview_aria", { type: errorTypeLabel })}
+          onClick={onPreview}
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-[var(--radius-card)] text-left outline-none transition-colors duration-150 hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+        >
+          {previewContent}
+        </button>
+      ) : (
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          {previewContent}
+        </div>
+      )}
+
+      {showCommunityAction && !entry.communityThreadId ? (
+        <Link
+          href={{
+            pathname: "/community/feed",
+            query: { notebookEntry: entry.id },
+          }}
+          // Left on the way out, read on arrival. The composer has no way to look this card up —
+          // there is no endpoint for a single entry — and this screen is holding it already.
+          onClick={() =>
+            putNotebookHandoff({
+              entryId: entry.id,
+              label,
+              errorTypeLabel,
+              // Only the question. The solution photo stays in the notebook: posting the answer
+              // key alongside the question is not asking for help, it is answering yourself.
+              photo:
+                entry.storageKey && entry.url
+                  ? { storageKey: entry.storageKey, url: entry.url }
+                  : undefined,
+            })
+          }
+          className="flex min-h-11 shrink-0 items-center rounded-[var(--radius-card)] px-2 text-xs font-bold text-[var(--color-accent)] outline-none transition-colors duration-150 hover:bg-[var(--color-accent-soft)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+        >
+          {t("review_done_ask")}
+        </Link>
+      ) : null}
+    </div>
   );
 }

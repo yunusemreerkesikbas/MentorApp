@@ -1,9 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowLeft, Check, Copy, MoreHorizontal, RefreshCw, X } from "lucide-react";
-import type { StudyRoomDetailDto } from "@mentor/types";
+import {
+  ArrowLeft,
+  Check,
+  Copy,
+  MoreHorizontal,
+  RefreshCw,
+  X,
+} from "lucide-react";
+import type { StudyRoomDetailDto, StudyRoomTheme } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Link, getPathname, useRouter } from "@/i18n/navigation";
 import {
@@ -11,13 +19,17 @@ import {
   getStudyRoom,
   leaveStudyRoom,
   rotateStudyRoomCode,
+  updateStudyRoom,
 } from "@/lib/study-rooms";
+import { ROOM_CURTAIN_MS } from "@/lib/study-room-theme";
 import { useMentorToast } from "@/lib/mentor-toast";
-import { RoomBackdrop } from "./room-backdrop";
+import { RoomBackdropSlide } from "./room-backdrop-slide";
 import { RoomSeats } from "./room-seats";
+import { RoomThemeSwitcher } from "./room-theme-switcher";
 
 /** Presence poll. Cheap because the API answers it in one indexed query. */
 const REFRESH_MS = 30_000;
+
 
 type State =
   | { status: "loading" }
@@ -38,6 +50,7 @@ type State =
  */
 export function RoomShell({ roomId }: { roomId: string }) {
   const t = useTranslations("session_room");
+  const reduceMotion = useReducedMotion();
   const locale = useLocale();
   const router = useRouter();
   const { error: showErrorToast, success: showSuccessToast } = useMentorToast();
@@ -46,6 +59,10 @@ export function RoomShell({ roomId }: { roomId: string }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [confirming, setConfirming] = useState<"leave" | "close" | null>(null);
+  /** Set while the cut-to-black plays, so the CTA cannot be fired twice into one navigation. */
+  const [leaving, setLeaving] = useState(false);
+  /** Which way the ground travels on the next theme change — set by the arrow you pressed. */
+  const [themeDirection, setThemeDirection] = useState<1 | -1>(1);
 
   const load = useCallback(() => {
     getStudyRoom(roomId)
@@ -117,52 +134,64 @@ export function RoomShell({ roomId }: { roomId: string }) {
 
   const { room } = state;
   const isOwner = room.role === "OWNER";
-  const seatedSubjects = room.seats
-    .filter((s) => s.isSeated && s.subject)
-    .map((s) => s.subject!)
-    .slice(0, 3);
+
+  /**
+   * Right there under the name, not behind a menu: the theme is the thing about a room a
+   * visitor notices first, so changing it should cost one tap, not four (menu → item → sheet →
+   * arrow). Presence used to live in this same spot ("Şu an kimse çalışmıyor"); it moved out
+   * because a room only has one line of chrome to spare and the seats already show who's
+   * there — a glowing avatar says it better than a sentence does.
+   */
+  const applyTheme = (next: StudyRoomTheme, direction: 1 | -1) => {
+    if (!isOwner || busy) return;
+    setThemeDirection(direction);
+    void run(async () => {
+      const updated = await updateStudyRoom(room.id, { theme: next });
+      setState({ status: "ready", room: updated });
+    });
+  };
 
   return (
     <main
-      className="room-stage relative flex min-h-screen flex-col overflow-hidden"
+      // `min-h-screen` ignored the app's own chrome, so on a phone the bottom of the room —
+      // the CTA included — sat underneath the tab bar. Same viewport arithmetic the rest of
+      // the app uses (see `analysis-shell`, `coach-chat-shell`).
+      className="room-stage relative flex min-h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] flex-col overflow-hidden lg:min-h-screen"
       data-room-theme={room.theme}
     >
-      <RoomBackdrop theme={room.theme} />
+      <RoomBackdropSlide theme={room.theme} direction={themeDirection} />
 
       {/* --- floating chrome --------------------------------------------------- */}
-      <div className="relative z-10 flex items-start justify-between gap-3 px-5 pt-5 lg:px-8">
+      <motion.div
+        className="relative z-20 flex items-start justify-between gap-3 px-5 pt-5 lg:px-8"
+        initial={reduceMotion ? false : { opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
         <BackLink label={t("back_to_session")} onStage />
 
         <div className="min-w-0 flex-1 text-center">
           <h1
             className="truncate text-lg font-bold lg:text-xl"
-            style={{ color: "var(--room-ink)", fontFamily: "var(--font-heading)" }}
+            style={{
+              color: "var(--room-ink)",
+              fontFamily: "var(--font-heading)",
+              textShadow: "0 1px 4px var(--room-ground-to)",
+            }}
           >
             {room.name}
           </h1>
-          {/* Live status as the subtitle — presence is the reason to be here, not a footnote. */}
-          <p
-            className="mt-0.5 flex items-center justify-center gap-1.5 text-sm"
-            style={{ color: "var(--room-ink-soft)" }}
-          >
-            {room.activeCount > 0 ? (
-              <>
-                <span
-                  aria-hidden
-                  className="size-2 rounded-full"
-                  style={{ backgroundColor: "var(--room-accent)" }}
-                />
-                <span className="truncate font-semibold" style={{ color: "var(--room-ink)" }}>
-                  {t("working_count", { count: room.activeCount })}
-                </span>
-                {seatedSubjects.length > 0 ? (
-                  <span className="hidden truncate sm:inline">· {seatedSubjects.join(", ")}</span>
-                ) : null}
-              </>
-            ) : (
-              <span className="truncate">{t("nobody_working")}</span>
-            )}
-          </p>
+          {/* Theme switcher, right where the presence line used to sit. Arrows only for the
+              owner — a member can see the theme but not change it, same as the old menu item.
+              Shared with the seated session screen, which now shows the same control. */}
+          <div className="mt-0.5">
+            <RoomThemeSwitcher
+              theme={room.theme}
+              canChange={isOwner}
+              busy={busy}
+              onChange={applyTheme}
+            />
+          </div>
         </div>
 
         <RoomMenu
@@ -198,27 +227,66 @@ export function RoomShell({ roomId }: { roomId: string }) {
                 },
           ]}
         />
-      </div>
+      </motion.div>
 
       {/* --- the room --------------------------------------------------------- */}
-      <div className="relative z-10 flex flex-1 items-center justify-center px-5 py-4">
+      {/* Bottom padding reserves the pinned CTA's strip so a low seat never lands under it. */}
+      <div className="relative z-0 flex flex-1 items-center justify-center px-5 pt-4 pb-28 lg:pb-32">
         <RoomSeats
           seats={room.seats}
           capacity={room.capacity}
+          theme={room.theme}
           onInvite={isOwner && room.inviteCode ? () => setInviteOpen(true) : undefined}
         />
       </div>
 
       {/* --- one primary action ------------------------------------------------ */}
-      <div className="relative z-10 flex justify-center px-5 pb-8 lg:pb-10">
+      <motion.div
+        // Pinned, not in flow: the room is a place you look around, and the one way out of it
+        // has to stay put while you do. In flow it drifted with the stage's height and, on a
+        // phone, fell off the bottom entirely.
+        className="absolute inset-x-0 bottom-0 z-20 flex justify-center px-5 pb-6 lg:pb-10"
+        initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.32, delay: 0.1, ease: "easeOut" }}
+      >
+        {/*
+          A link that waits for the lights to go down. Sitting down is a change of scene, not a
+          page load: hard-cutting from a lit room to the timer screen read as being ejected.
+          Still a real `<a>` — middle-click, ctrl-click and "open in new tab" go straight
+          through (`defaultPrevented` is never touched for those), and `prefers-reduced-motion`
+          skips the fade entirely rather than sitting on a black screen for no reason.
+        */}
         <Link
           href={{ pathname: "/study-session", query: { room: room.id } }}
-          className="flex min-h-[3.25rem] w-full max-w-sm items-center justify-center rounded-full px-6 text-base font-bold shadow-[var(--shadow-card)] transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--room-accent)] motion-reduce:transition-none motion-reduce:hover:scale-100"
-          style={{ backgroundColor: "var(--room-accent)", color: "var(--room-ground-to)" }}
+          onClick={(e) => {
+            if (reduceMotion || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+            e.preventDefault();
+            if (leaving) return;
+            setLeaving(true);
+            window.setTimeout(
+              () => router.push({ pathname: "/study-session", query: { room: room.id } }),
+              ROOM_CURTAIN_MS,
+            );
+          }}
+          className="flex min-h-[3.25rem] w-full max-w-sm items-center justify-center rounded-full px-6 text-base font-bold shadow-[var(--shadow-card)] transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--room-ink)] motion-reduce:transition-none motion-reduce:hover:scale-100"
+          style={{ backgroundColor: "var(--room-cta)", color: "var(--room-cta-ink)" }}
         >
           {t("start_here")}
         </Link>
-      </div>
+      </motion.div>
+
+      {/* The curtain. `z-50` clears the invite sheet; nothing on the stage should outlive it. */}
+      {leaving ? (
+        <motion.div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 z-50"
+          style={{ backgroundColor: "#000" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: ROOM_CURTAIN_MS / 1000, ease: "easeIn" }}
+        />
+      ) : null}
 
       {inviteOpen && room.inviteCode ? (
         <InviteSheet
@@ -299,7 +367,7 @@ function RoomMenu({
             type="button"
             aria-hidden
             tabIndex={-1}
-            className="fixed inset-0 z-10 cursor-default"
+            className="fixed inset-0 z-20 cursor-default"
             onClick={() => onOpenChange(false)}
           />
           <div
@@ -384,45 +452,61 @@ function InviteSheet({
           {t("invite_hint")}
         </p>
 
-        <code
-          className="mt-4 block truncate rounded-[var(--radius-card)] px-3 py-3 text-center text-lg font-bold tracking-[0.2em]"
-          style={{ backgroundColor: "var(--color-surface-container)", color: "var(--color-main)" }}
+        {/*
+          Copy lives ON the code, not under it. A full-width primary button below made copying
+          look like the dialog's main event and pushed the code — the thing you might read out
+          loud to someone — into being a caption for it. One row: the code, and the icon that
+          takes it.
+        */}
+        <div
+          className="mt-4 flex items-center gap-2 rounded-[var(--radius-card)] py-2 pr-2 pl-3"
+          style={{ backgroundColor: "var(--color-surface-container)" }}
         >
-          {code}
-        </code>
-
-        <div className="mt-3 flex items-center gap-2">
+          <code
+            className="min-w-0 flex-1 truncate text-center text-lg font-bold tracking-[0.2em]"
+            style={{ color: "var(--color-main)" }}
+          >
+            {code}
+          </code>
           <button
             type="button"
+            aria-label={copied ? t("invite_copied") : t("invite_copy_link")}
+            title={copied ? t("invite_copied") : t("invite_copy_link")}
             onClick={() => {
               onCopy();
               setCopied(true);
             }}
-            className="flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-card)] text-sm font-bold"
-            style={{ backgroundColor: "var(--color-progress)", color: "var(--color-bg)" }}
+            className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+            style={{ color: copied ? "var(--color-progress)" : "var(--color-main)" }}
           >
             {copied ? (
-              <Check className="size-4" strokeWidth={2.5} aria-hidden />
+              <Check className="size-5" strokeWidth={2.5} aria-hidden />
             ) : (
-              <Copy className="size-4" strokeWidth={2.25} aria-hidden />
+              <Copy className="size-5" strokeWidth={2.25} aria-hidden />
             )}
-            {copied ? t("invite_copied") : t("invite_copy_link")}
-          </button>
-          <button
-            type="button"
-            aria-label={t("invite_rotate")}
-            title={t("invite_rotate")}
-            disabled={busy}
-            onClick={() => {
-              setCopied(false);
-              onRotate();
-            }}
-            className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] disabled:opacity-50"
-            style={{ backgroundColor: "var(--color-surface-container)", color: "var(--color-main)" }}
-          >
-            <RefreshCw className="size-4" strokeWidth={2.25} aria-hidden />
           </button>
         </div>
+
+        {/*
+          Rotate stays, demoted. It is the ONLY way to revoke a link that has leaked into a
+          group chat, so removing it would remove the capability, not just a button — but it is
+          a rare, mildly destructive action and had no business sitting at the same weight as
+          copy. Now it is a labelled text button: what it does is written out, because a bare
+          refresh glyph does not say "everyone's old link stops working".
+        */}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            setCopied(false);
+            onRotate();
+          }}
+          className="mt-3 inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full px-2 text-xs font-semibold transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-50 motion-reduce:transition-none"
+          style={{ color: "var(--color-secondary)" }}
+        >
+          <RefreshCw className="size-3.5" strokeWidth={2.25} aria-hidden />
+          {t("invite_rotate")}
+        </button>
       </div>
     </div>
   );

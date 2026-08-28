@@ -1,6 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
 const nodeExecutable = JSON.stringify(process.execPath);
+const externalBaseUrl = process.env.PLAYWRIGHT_BASE_URL?.trim() || undefined;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -9,7 +10,7 @@ export default defineConfig({
   reporter: [["list"], ["html", { open: "never" }]],
   outputDir: "test-results",
   use: {
-    baseURL: "http://localhost:3100",
+    baseURL: externalBaseUrl ?? "http://localhost:3100",
     browserName: "chromium",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
@@ -18,9 +19,11 @@ export default defineConfig({
     { name: "mobile-chromium", use: { viewport: { width: 375, height: 812 } } },
     { name: "desktop-chromium", use: { viewport: { width: 1280, height: 800 } } },
   ],
-  webServer: {
-    command: `${nodeExecutable} node_modules/next/dist/bin/next start --hostname localhost --port 3100`,
-    url: "http://localhost:3100/sw.js",
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: externalBaseUrl
+    ? undefined
+    : {
+        command: `${nodeExecutable} node_modules/next/dist/bin/next start --hostname localhost --port 3100`,
+        url: "http://localhost:3100/sw.js",
+        reuseExistingServer: !process.env.CI,
+      },
 });
