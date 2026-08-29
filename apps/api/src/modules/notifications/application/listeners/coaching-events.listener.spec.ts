@@ -12,11 +12,11 @@ const fakeDb = {
 } as never;
 
 function makeListener() {
-  const createInApp = vi.fn(async () => undefined);
+  const createFromTemplate = vi.fn(async () => undefined);
   return {
-    createInApp,
+    createFromTemplate,
     listener: new CoachingEventsListener(
-      { createInApp } as never,
+      { createFromTemplate } as never,
       fakeDb,
       { tryRecord: vi.fn(async () => true) } as never,
     ),
@@ -25,17 +25,17 @@ function makeListener() {
 
 describe("CoachingEventsListener deep-links", () => {
   it("routes low mood and completed plan notifications to the dashboard", async () => {
-    const { listener, createInApp } = makeListener();
+    const { listener, createFromTemplate } = makeListener();
     await listener.onMoodLow(new MoodLow("u1", 2));
     await listener.onPlanCompleted(new DailyPlanCompleted("u1", 3));
 
-    expect(createInApp.mock.calls[0]?.[4]).toBe("/dashboard");
-    expect(createInApp.mock.calls[1]?.[4]).toBe("/dashboard");
+    expect(createFromTemplate.mock.calls[0]?.[3]).toBe("/dashboard");
+    expect(createFromTemplate.mock.calls[1]?.[3]).toBe("/dashboard");
   });
 
   it("keeps the first-session continuation on study-session", async () => {
-    const { listener, createInApp } = makeListener();
+    const { listener, createFromTemplate } = makeListener();
     await listener.onFirstSession(new FirstSessionOfDay("u1"));
-    expect(createInApp.mock.calls[0]?.[4]).toBe("/study-session");
+    expect(createFromTemplate.mock.calls[0]?.[3]).toBe("/study-session");
   });
 });

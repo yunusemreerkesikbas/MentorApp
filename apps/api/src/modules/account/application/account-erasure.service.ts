@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { NotFoundError } from "../../../common/errors/domain-error";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import { AiErasureService } from "../../ai/application/ai-erasure.service";
+import { AdsErasureService } from "../../ads/application/ads-erasure.service";
 import { CoachingErasureService } from "../../coaching/application/coaching-erasure.service";
 import { ForumErasureService } from "../../forum/application/forum-erasure.service";
 import { SocialErasureService } from "../../identity/application/social-erasure.service";
@@ -40,6 +41,7 @@ export class AccountErasureService {
     private readonly tokens: TokenService,
     private readonly subscriptions: SubscriptionsService,
     private readonly aiErasure: AiErasureService,
+    private readonly adsErasure: AdsErasureService,
     private readonly coachingErasure: CoachingErasureService,
     private readonly forumErasure: ForumErasureService,
     private readonly socialErasure: SocialErasureService,
@@ -56,6 +58,7 @@ export class AccountErasureService {
 
     // 2. Behavioral data, module by module (each owns its own tables).
     await this.aiErasure.eraseUserData(userId);
+    await this.adsErasure.eraseUserData(userId);
     await this.coachingErasure.eraseUserData(userId);
     await this.forumErasure.eraseUserData(userId);
     await this.socialErasure.eraseUserData(userId);

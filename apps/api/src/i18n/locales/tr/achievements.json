@@ -14,9 +14,9 @@
     "helped_someone": { "title": "Birine İyi Geldin", "description": "Bir katkın başka bir öğrenciye yardımcı oldu.", "unlockHint": "Bir katkın başka bir öğrenci tarafından faydalı bulunsun." }
   },
   "notification": {
-    "title": "Yeni bir başarı kazandın",
-    "body": "{title} artık başarı koleksiyonunda.",
+    "title": "Yeni bir ışık yandı",
+    "body": "{title} artık seninle.",
     "backfillTitle": "Geçmiş emeklerin de burada",
-    "backfillBody": "Daha önce tamamladığın {count} başarı koleksiyonuna eklendi."
+    "backfillBody": "Daha önce verdiğin emeğin karşılığı olan {count} başarı da burada."
   }
 }

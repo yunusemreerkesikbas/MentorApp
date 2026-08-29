@@ -76,6 +76,12 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **2026-08-29 — Bilgi makalesi contextual envanteri** — Güven bloğu ve read-complete sentinel
+  sonrasında, ürün CTA'sından önce tek limited banner yerleşimi eklendi. No-fill collapse olur;
+  sticky/overlay/tekrarlı içerik arası slot yoktur.
+
+- **Yoldaşlık sesi Dalga 4 — bilgi / takvim empty (2026-08-29)** — `knowledge.articles_empty_*`, `calendar_pending_*`, `no_exam_*` companion: editoryal boşluk, Puhu şakası yok, resmi tarih paraphrase yok. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: doğrulanmış makale yok = “yakında eklenecek” değil. İlgili: `apps/web/messages/{tr,en}.json`.
+
 - **Exam calendar seed no longer overwrites admin edits (2026-08-16)** — startup seed
   called `upsertExam` / `upsertEvent` on every API boot, so W6 calendar edits on
   `/content/exams/:slug` reset to `exams.seed.json` whenever the API restarted (Nest

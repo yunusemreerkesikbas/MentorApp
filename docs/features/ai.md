@@ -102,6 +102,8 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **Yoldaşlık sesi Dalga 2 — koç sohbeti (2026-08-28)** — Koç sohbeti (LLM + kural fallback) companion kaydına bağlandı; Puhu yalnız chrome'da (boş sohbet, FAB, onboarding, paywall, haftalık recap host). V2 persona TR/EN: sen, kısa cümle, suçluluk yok, Puhu imzası yok, en fazla bir emoji yalnız hafif anda. V1 `coachSystemBase(locale)` EN kullanıcıya artık TR gövde göndermiyor; mood/selam/seans/ghost/vizyon/plan-draft aynı ağız. `coaching.mood.SERIOUS_DISTRESS` ve resmî bilgi kuralları dokunulmadı. Kullanım: `docs/copy/voice.md`. Gotcha: haftalık recap Puhu host'u sohbete sızmaz; V1 bağlam etiketleri (BAĞLAM) hâlâ TR. İlgili: `mentor-v2-prompt.ts`, `ai.constants.ts`, `coaching.json`.
+
 - **Kilit rozetleri (2026-08-22)** — Mood / ghost / günlük selam / seans yansıması web'de kilit
   CTA ile paywall'a bağlandı. API politikası değişmedi; `free_enabled` varsayılan kapalı.
   İlgili: `premium-lock-nudge.tsx`, `use-daily-greeting.ts`.

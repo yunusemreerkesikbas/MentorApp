@@ -14,6 +14,7 @@ import { ArticleBackNav } from "./article-back-nav";
 import { ArticleMarkdown } from "./article-markdown";
 import { ArticleTrustFooter } from "./article-trust-footer";
 import { trackArticleEvent } from "@/lib/analytics";
+import { ContextualAdSlot } from "@/components/ads/contextual-ad-slot";
 
 /** Client article body — motion + trust chrome + Coach handoff. */
 export function ArticleContent({
@@ -155,6 +156,8 @@ export function ArticleContent({
           <ArticleMarkdown body={article.body} format={article.bodyFormat} />
         </Card>
         <ArticleTrustFooter />
+        <div ref={readSentinel} aria-hidden />
+        <ContextualAdSlot examType={article.family as import("@mentor/types").ExamType} />
         <Card className="mt-4">
           <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -197,7 +200,6 @@ export function ArticleContent({
             </Link>
           </div>
         </Card>
-        <div ref={readSentinel} aria-hidden="true" />
       </motion.div>
     </motion.article>
   );

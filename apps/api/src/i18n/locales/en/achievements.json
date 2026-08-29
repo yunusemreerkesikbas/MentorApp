@@ -14,9 +14,9 @@
     "helped_someone": { "title": "You Helped Someone", "description": "One of your contributions helped another learner.", "unlockHint": "Have one of your contributions marked as helpful by another learner." }
   },
   "notification": {
-    "title": "You earned a new achievement",
-    "body": "{title} is now in your achievement collection.",
+    "title": "A new light came on",
+    "body": "{title} is with you now.",
     "backfillTitle": "Your past effort is here too",
-    "backfillBody": "{count} achievements you completed before are now in your collection."
+    "backfillBody": "{count} achievements from earlier effort are here too."
   }
 }

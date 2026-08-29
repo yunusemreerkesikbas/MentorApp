@@ -183,6 +183,15 @@ export interface AdminMetrics {
         repeatUsers7d: number;
         repeatRate7d: number;
     };
+    ads: {
+        created: number;
+        rewarded: number;
+        closed: number;
+        expired: number;
+        rejected: number;
+        uniqueUsers: number;
+        coinGranted: number;
+    };
     generatedAt: string;
 }
 

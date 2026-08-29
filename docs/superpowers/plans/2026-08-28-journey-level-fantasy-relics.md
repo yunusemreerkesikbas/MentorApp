@@ -1,5 +1,10 @@
 # Gece Yolculuğu Fantastik Relik Ailesi Implementation Plan
 
+> **İPTAL EDİLDİ (2026-08-29) — BU PLANI UYGULAMAYIN.** Seviye rozetleri
+> `public/img/levels/{levelKey}.webp` stok görsel setine geçti; Task 3'ün hedeflediği
+> `journey-level-asset-validator.mjs` ve kardeş scriptleri silindi. Detay:
+> [`docs/features/community.md`](../../features/community.md) 2026-08-29 girdisi.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Produce and atomically integrate a complete 12-level fantasy relic family that remains readable from 48 px to 176 px without AI-slop ornament density.

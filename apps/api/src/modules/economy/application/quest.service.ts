@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { I18nService } from "nestjs-i18n";
 import { Currency, type QuestProgressView } from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -11,8 +12,10 @@ import { StreakService } from "../../coaching/application/streak.service";
 import { UsersService } from "../../identity/application/users.service";
 import { SubscriptionsService } from "../../payments/application/subscriptions.service";
 import { EconomyService } from "./economy.service";
+import { resolveEconomyLang } from "./economy-lang";
 import { InviteRepository } from "../infrastructure/invite.repository";
 import { QuestRepository } from "../infrastructure/quest.repository";
+import { resolveQuestCardCopy } from "../domain/quest-copy";
 import {
   QUEST_CATALOG,
   QUEST_PERIOD_ONCE,
@@ -41,6 +44,7 @@ export class QuestService {
     private readonly economy: EconomyService,
     private readonly quests: QuestRepository,
     private readonly config: ConfigRegistryService,
+    private readonly i18n: I18nService,
   ) {}
 
   /**
@@ -174,6 +178,9 @@ export class QuestService {
         !cfg.disabledIds.has(q.id) &&
         (q.id !== "daily.focus-goal-met" || signals.dailyFocusGoalMinutes != null),
     );
+    const lang = resolveEconomyLang();
+    const t = (key: string, args: Record<string, unknown> = {}) =>
+      String(this.i18n.translate(`economy.${key}`, { lang, args }));
     return visible.map((q) => {
       const periodKey = this.periodKey(q, signals);
       const row = byKey.get(progressKey(q.id, periodKey));
@@ -181,14 +188,15 @@ export class QuestService {
         q.rewardUnit === "XP" ? xpReward(q, cfg) : q.rewardUnit === "COIN" ? coinReward(q, cfg) : 0;
       const hasTarget = q.progressTarget != null || q.targetConfigKey != null;
       const target = hasTarget ? questTarget(q, cfg.targets) : undefined;
+      const copy = resolveQuestCardCopy(t, q.id, target != null ? { target } : {});
       return {
         id: q.id,
         category: q.category,
         period: q.period,
         periodKey,
         type: q.type,
-        title: target != null ? q.title.replace("{target}", String(target)) : q.title,
-        badgeLabel: q.badgeLabel,
+        title: copy.title,
+        badgeLabel: copy.badgeLabel,
         action: q.action,
         rewardUnit: q.rewardUnit,
         rewardAmount,

@@ -33,7 +33,10 @@ describe("DailyReminderService", () => {
     const deliveries = {
       tryRecord: vi.fn().mockResolvedValue(overrides.emailDedupeOk ?? true),
     };
-    const notificationsService = { createInApp: vi.fn().mockResolvedValue(undefined) };
+    const notificationsService = {
+      createFromTemplate: vi.fn().mockResolvedValue(undefined),
+      resolveCopy: vi.fn().mockReturnValue({ title: "t", body: "b" }),
+    };
 
     const service = new DailyReminderService(
       db,

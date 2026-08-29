@@ -15,6 +15,7 @@ import { HealthModule } from "./health/health.module";
 import { AppI18nModule } from "./i18n/i18n.module";
 import { AccountModule } from "./modules/account/account.module";
 import { AdminModule } from "./modules/admin/admin.module";
+import { AdsModule } from "./modules/ads/ads.module";
 import { AiModule } from "./modules/ai/ai.module";
 import { CoachingModule } from "./modules/coaching/coaching.module";
 import { CommunityModule } from "./modules/community/community.module";
@@ -54,6 +55,7 @@ import { buildLoggerConfig } from "./observability/logger.config";
     HealthModule,
     AccountModule,
     AdminModule,
+    AdsModule,
     AiModule,
     CoachingModule,
     CommunityModule,

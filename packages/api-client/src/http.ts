@@ -29,8 +29,8 @@ export class ApiClientError extends Error {
 
 /** Locale-aware fallback for malformed/unexpected API responses. */
 const FALLBACK_MESSAGES: Record<string, string> = {
-  en: "An unexpected error occurred.",
-  tr: "Beklenmeyen bir hata oluştu.",
+  en: "Something went sideways. Let's try again in a moment.",
+  tr: "Bir şey ters gitti. Biraz sonra bir daha deneyelim.",
 };
 
 function getFallbackMessage(): string {

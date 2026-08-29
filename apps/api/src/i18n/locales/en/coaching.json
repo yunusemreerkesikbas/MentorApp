@@ -1,15 +1,15 @@
 {
   "mood": {
-    "VERY_LOW": "I know today feels heavy. Be gentle with yourself — a small break is part of progress too. I'm here with you.",
+    "VERY_LOW": "I know today is heavy. Be gentle with yourself — a small pause is still part of the road. I'm here.",
     "SERIOUS_DISTRESS": "You do not have to carry this alone. Contact someone you trust now; if you may hurt yourself, call your local emergency number or go to the nearest emergency department.",
-    "LOW": "Hard days happen. Just take one small step today and leave the rest for tomorrow. I'm here.",
-    "OKAY": "You're doing fine. Accept today as it is and do what you can — that's enough.",
-    "GOOD": "Your energy is up, great! Carry this motivation into today's plan — you'll get a lot done.",
-    "GREAT": "So glad you feel amazing! Use this momentum to give yourself a strong push today."
+    "LOW": "Hard days happen. One small step today is enough; leave the rest for tomorrow. I'm here.",
+    "OKAY": "Today is today. Do what you can — that's enough. I'm here.",
+    "GOOD": "Your energy is here. Carry it into one small step today — that's enough.",
+    "GREAT": "It's coming from inside today. Put that into one step; the rest can follow."
   },
   "motivation": {
-    "START": "Take one small step today — that's enough. I'm here with you.",
-    "GOING": "Your consistency is going great. Let's keep it up today — I'm with you."
+    "START": "Take one small step today — that's enough. I'm here.",
+    "GOING": "Your rhythm is holding. One small step today is enough. I'm here."
   },
   "coachEvidence": {
     "todayPlan": "You completed {done}/{total} tasks in today's plan ({completionRate} percent). Subject distribution: {subjects}.",
@@ -58,7 +58,7 @@
     }
   },
   "mentorV2": {
-    "calibration": "To support you in a way that genuinely fits, let me clarify one thing first: when things get hard, do you want calm support, a balanced approach, or direct action? You can skip this step.",
+    "calibration": "When it gets hard, how should I stay: calm first, balanced, or a direct step? Skipping this is fine.",
     "createTask": "Add to plan",
     "openPlanAdaptation": "Lighten the plan together",
     "startSession": "Start the suggested task session",
@@ -69,8 +69,8 @@
   "nextAction": {
     "START_TASK": {
       "title": "Start with {taskTitle}",
-      "message": "This is today's one small step. Let's begin when you are ready.",
-      "lowMoodMessage": "Focus only on this small step today. Keeping it short is okay."
+      "message": "This is today's one small step. I'm here when you're ready.",
+      "lowMoodMessage": "Only this small step today. Keeping it short is fine."
     },
     "ADD_TASK": {
       "title": "Add one task for today",
@@ -78,7 +78,7 @@
     },
     "DAY_COMPLETE": {
       "title": "Today's plan is complete",
-      "message": "That is enough for today. Notice your effort and rest."
+      "message": "That's enough for today. Notice the effort, then rest."
     }
   },
   "planAdaptation": {

@@ -86,6 +86,10 @@ No analytics or Sentry payload from this feature contains ranks, program codes, 
 
 ## Geliştirmeler (timeline)
 
+- **Yoldaşlık sesi Dalga 5 — kayıt hatası (2026-08-29)** — Tercih `save_state.ERROR` companion: “Kaydedilemedi” → “Şimdi kaydolmadı.” Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: resmi katalog satırları dokunulmadı. İlgili: `apps/web/messages/{tr,en}.json`.
+
+- **Yoldaşlık sesi Dalga 4 — tercih arama empty (2026-08-29)** — Tercih sim `search.empty` companion: “Buna uyan bir sonuç yok.” (şakasız). Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: resmi puan/kontenjan satırları dokunulmadı. İlgili: `apps/web/messages/{tr,en}.json`.
+
 - **2026-08-08 — Türkiye Photorealistic 3D kapsamı nedeniyle rollout durduruldu:** gerçek Google
   anahtarıyla yapılan Selçuk smoke testinde yalnız terrain/uydu görünümü elde edildi. Google'ın
   güncel coverage sözleşmesine göre bina ve ağaç yüzey mesh'i dünya genelinde değil, yalnız

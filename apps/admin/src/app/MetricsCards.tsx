@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, type ReactNode } from "react";
-import { FiUsers, FiUserPlus, FiCreditCard, FiDollarSign, FiGift, FiAward, FiRepeat } from "react-icons/fi";
+import { FiUsers, FiUserPlus, FiCreditCard, FiDollarSign, FiGift, FiAward, FiRepeat, FiPlayCircle } from "react-icons/fi";
 import apiClient from "@/lib/apiClient";
 import { useAuth } from "@/contentApi/authProvider";
 import { canSee } from "@/lib/roles";
@@ -87,6 +87,15 @@ export default function MetricsCards() {
                 <Kpi icon={<FiRepeat size={20} />} value={m.coaching.repeatUsers7d} label="2+ farklı günde seans" />
                 <Kpi icon={<FiRepeat size={20} />} value={repeatPct} label="7 günlük tekrar oranı" />
             </div>
+
+            <h6 className="mb-2 mt-3 text-muted">Reklam görevleri</h6>
+            <div className="row g-4">
+                <Kpi icon={<FiPlayCircle size={20} />} value={m.ads.rewarded} label="Tamamlanan reklam" />
+                <Kpi icon={<FiUsers size={20} />} value={m.ads.uniqueUsers} label="Benzersiz kullanıcı" />
+                <Kpi icon={<FiAward size={20} />} value={m.ads.coinGranted} label="Reklamdan verilen Coin" />
+                <Kpi icon={<FiPlayCircle size={20} />} value={`${m.ads.closed}/${m.ads.expired + m.ads.rejected}`} label="Kapanan / hatalı" />
+            </div>
+            <a className="d-inline-block mt-2 fs-12" href="https://admanager.google.com/" target="_blank" rel="noreferrer">Gelir ve eCPM için Google Ad Manager’ı aç ↗</a>
         </div>
     );
 }

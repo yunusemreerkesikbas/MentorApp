@@ -16,6 +16,25 @@ const AUDIENCE_OPTIONS = [
     { value: "LGS", label: "Sadece LGS" },
 ] as const;
 
+/** Companion-register starters — sen, no guilt. Student-facing; see docs/copy/voice.md. */
+const VOICE_EXAMPLES = [
+    {
+        label: "Yeni özellik",
+        title: "Yeni bir ritim başladı",
+        body: "Çalışma odaları açıldı. İstersen bir masaya otur — yalnız çalışmak zorunda değilsin.",
+    },
+    {
+        label: "Bakım",
+        title: "Kısa bir bakım",
+        body: "Bu gece kısa bir bakım olacak. Yarın yine buradayız.",
+    },
+    {
+        label: "Hatırlatma",
+        title: "Haftanın küçük notu",
+        body: "Bu hafta defterine dönmek için güzel bir gün. Beş dakika yeter.",
+    },
+] as const;
+
 type AudienceValue = (typeof AUDIENCE_OPTIONS)[number]["value"];
 
 function toAudience(value: AudienceValue): AnnouncementAudience {
@@ -158,7 +177,9 @@ export default function AnnouncementsPage() {
                         <h5 className="mb-0">Yeni duyuru</h5>
                         <p className="mb-0 fs-12 text-muted">
                             Uygulama içi bildirim olarak iletilir (push/e-posta gönderilmez). Önce taslak
-                            oluşturun, sonra listeden gönderin.
+                            oluşturun, sonra listeden gönderin. Öğrenciye <strong>sen</strong> diye hitap
+                            et; suçlama, FOMO ve &quot;kaçırdın&quot; yok. Resmi duyurularda sakin yoldaş
+                            kaydı — şaka yok.
                         </p>
                     </div>
                     <div className="card-body">
@@ -172,6 +193,21 @@ export default function AnnouncementsPage() {
                                     onChange={(event) => setTitle(event.target.value)}
                                 />
                                 <div className="fs-12 text-muted">{title.length}/120</div>
+                                <div className="d-flex flex-wrap gap-2 mt-2">
+                                    {VOICE_EXAMPLES.map((example) => (
+                                        <button
+                                            key={example.label}
+                                            type="button"
+                                            className="btn btn-sm btn-outline-secondary"
+                                            onClick={() => {
+                                                setTitle(example.title);
+                                                setBody(example.body);
+                                            }}
+                                        >
+                                            Örnek: {example.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                             <div className="col-md-4">
                                 <label className="form-label">Hedef kitle</label>

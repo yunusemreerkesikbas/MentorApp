@@ -97,6 +97,21 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **Bildirim ve ritüel sesi Dalga 1 (APP-054, 2026-08-28)** — Öğrenciye giden bildirim, e-posta,
+  push ve kutlama/toast metinleri tek bir ses kılavuzuna bağlandı: [`docs/copy/voice.md`](../copy/voice.md)
+  (Puhu kutlama/davette, isimsiz yoldaş ciddi anda; her zaman **sen**). Hardcoded TR cümleler
+  `apps/api/src/i18n/locales/{tr,en}/notifications.json` kataloğuna taşındı.
+  `NotificationsCopyService` + `NotificationsService.createFromTemplate` yazma anında title/body
+  doldurur ve `data.templateKey` + `data.args` saklar; `toDto` şablon varsa okuma anında yeniden
+  çevirir (dil değişimi / ses güncellemesi). Eski inbox satırları (templateKey yok) olduğu gibi kalır.
+  E-posta cümleleri aynı katalogdan (`notifications.email.*`); HTML iskeleti Postmark adapter'da.
+  Web: drawer boş hali, panel toast/streak, seans “yarın hatırlat”, başarı kutlama chrome.
+  Admin duyuru formu yoldaş-kaydı ipucu + 3 örnek şablon verir; serbest metin kalır.
+  Kullanım: yeni şablon = katalog + `NotificationCopyKey` + `createFromTemplate`; listener'a cümle
+  yazma. Gotcha: distress/`coaching.mood.SERIOUS_DISTRESS` dokunulmaz; resmi duyuru şaka yapmaz;
+  cron/push locale yoksa `tr`. İlgili: `notifications-copy.service.ts`, `notification-copy.ts`,
+  `postmark-email.adapter.ts`, `docs/copy/voice.md`.
+
 - **Bildirim drawer redesign (APP-053, 2026-08-28)** — Satır anatomisi yeniden kuruldu. **Kategori
   ikonu artık çıplak** (18px, kategori renginde): 40px daire + border + `color-mix` dolgu kaldırıldı
   — her satırın en ağır işareti en az bilgi taşıyan konteynerdi ve aynı kategoriden ardışık
@@ -272,7 +287,10 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 - **Daily reminders dedupe** via `notification_deliveries` key `daily-reminder:{userId}:{YYYY-MM-DD}`.
 - **Session return reminder** uses `+24h` UTC (not user TZ); may land near the daily reminder window —
   different copy/opt-in; user TZ = backlog. SCHEDULE channel dedupe is per target UTC day.
-- **AI contextual notifications are out of scope** (W3); copy is fixed Turkish templates only.
+- **AI contextual notifications are out of scope** (W3); copy is fixed templates in
+  `notifications.json` (TR/EN), not LLM-generated. Voice rules: [`docs/copy/voice.md`](../copy/voice.md).
+- **Inbox rows without `data.templateKey` keep stored title/body** — legacy copy is not migrated;
+  90-day purge (backlog) is the eventual cleanup.
 - **Cache is per-process** → a flag change is instant on the instance that served the PATCH; other
   instances pick it up on next cold read. MVP = 1 instance, so fine; Phase 2 = pub/sub or short TTL.
 - **Catalog is the source of truth** — never insert `config_overrides` rows by hand for keys absent

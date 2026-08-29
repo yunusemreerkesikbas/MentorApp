@@ -1,0 +1,114 @@
+{
+  "ledger": {
+    "questReward": {
+      "title": "Görev hakkı"
+    },
+    "aiChatSpend": {
+      "title": "Koç sohbet hakkı kullanıldı",
+      "description": "Koç sohbetinde kazanılmış hak kullanıldı."
+    },
+    "aiChatRefund": {
+      "title": "Koç sohbet hakkı iade edildi",
+      "description": "Kullanılamayan sohbet hakkı hesabına geri işlendi."
+    },
+    "streakFreeze": {
+      "title": "Seri kurtarma",
+      "description": "Kaçırılan gün coin ile donduruldu, serin korundu."
+    },
+    "streakFreezeRefund": {
+      "title": "Seri kurtarma iadesi",
+      "description": "Uygulanamayan dondurma hesabına iade edildi."
+    },
+    "inviteConverted": {
+      "title": "Davet hakkı",
+      "description": "Davetin aktif olunca hesabına hak işlendi."
+    },
+    "inviteReversal": {
+      "title": "Davet hakkı geri alındı",
+      "description": "İade edilen abonelik nedeniyle davet hakkı düşüldü."
+    },
+    "deepAnalysis": {
+      "title": "Derin analiz açıldı",
+      "description": "Haftalık derin analiz raporu coin ile açıldı."
+    },
+    "community": {
+      "title": "Topluluk katkısı",
+      "description": "Toplulukta katkın için XP işlendi."
+    },
+    "fallback": {
+      "title": "Ekonomi hareketi",
+      "description": "Hesabında bir {unit} hareketi işlendi."
+    }
+  },
+  "quests": {
+    "daily": {
+      "plan-task-done": {
+        "title": "Bugünün planından 1 görev tamamla",
+        "badge": "Ritim"
+      },
+      "focus-session-completed": {
+        "title": "1 odak seansı bitir",
+        "badge": "Odak"
+      },
+      "focus-goal-met": {
+        "title": "Günlük odak hedefine ulaş",
+        "badge": "Odak"
+      },
+      "mood-checkin": {
+        "title": "Bugünkü ruh halini işaretle",
+        "badge": "Duygu"
+      }
+    },
+    "weekly": {
+      "effort-allowance": {
+        "title": "Bu hafta {target} gün aktif ol",
+        "ledgerTitle": "Haftalık aktif gün hedefi",
+        "badge": "Ritim"
+      },
+      "focus-sessions": {
+        "title": "Bu hafta {target} odak seansı tamamla",
+        "badge": "Odak"
+      },
+      "plan-tasks": {
+        "title": "Bu hafta {target} plan görevi tamamla",
+        "badge": "Plan"
+      },
+      "streak-full-week": {
+        "title": "Haftanın 7 gününde aktif ol",
+        "badge": "Ritim"
+      }
+    },
+    "onboarding": {
+      "profile-setup": {
+        "title": "Profilini tamamla (sınav seç)",
+        "badge": "Başlangıç"
+      },
+      "email-verified": {
+        "title": "E-posta adresini doğrula",
+        "badge": "Başlangıç"
+      },
+      "first-subscription": {
+        "title": "İlk aboneliğini başlat",
+        "badge": "Başlangıç"
+      },
+      "invite-redeemed": {
+        "title": "Bir davet kodu kullan",
+        "badge": "Başlangıç"
+      }
+    },
+    "milestone": {
+      "streak": {
+        "title": "{days} günlük ritme ulaş",
+        "badge": "Kilometre"
+      },
+      "focus_sessions": {
+        "title": "{count} odak seansı tamamla",
+        "badge": "Odak"
+      },
+      "plan_tasks": {
+        "title": "{count} plan görevi tamamla",
+        "badge": "Plan"
+      }
+    }
+  }
+}

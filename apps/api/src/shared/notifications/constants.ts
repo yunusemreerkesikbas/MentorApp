@@ -28,6 +28,15 @@ export const EmailTemplate = {
 } as const;
 export type EmailTemplate = (typeof EmailTemplate)[keyof typeof EmailTemplate];
 
+/** Maps `EmailTemplate` ids to `notifications.email.*` i18n keys. */
+export const EMAIL_COPY_KEY: Record<string, string> = {
+  "identity.verify-email": "identityVerifyEmail",
+  "identity.reset-password": "identityResetPassword",
+  "payments.dunning": "paymentsDunning",
+  "payments.subscription-welcome": "paymentsWelcome",
+  "coaching.daily-reminder": "dailyReminder",
+};
+
 /** Delivery / schedule template ids (notification_deliveries.template — not only email). */
 export const DeliveryTemplate = {
   SESSION_RETURN: "coaching.session-return",

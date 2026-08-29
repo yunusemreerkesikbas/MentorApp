@@ -79,6 +79,10 @@ const envSchema = z.object({
 
   // Error monitoring — Sentry (§8)
   SENTRY_DSN: z.string().url().optional(),
+
+  // Google Ad Manager — public inventory paths, never credentials.
+  GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT: z.string().min(1).optional(),
+  GAM_DASHBOARD_REWARDED_COIN_AD_UNIT: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -18,5 +18,6 @@ export * from "./payments.js";
 export * from "./notifications.js";
 export * from "./social.js";
 export * from "./community.js";
+export * from "./ads.js";
 
 export { z };

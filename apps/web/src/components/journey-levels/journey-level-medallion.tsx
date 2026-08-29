@@ -1,16 +1,20 @@
+import { Lock } from "lucide-react";
+import Image from "next/image";
 import type { JourneyLevelKey } from "@mentor/types";
 
 interface JourneyLevelMedallionProps {
-  tier: number;
   levelKey: JourneyLevelKey;
   current?: boolean;
   future?: boolean;
   className?: string;
 }
 
-/** Numbered fallback used until the complete 12-piece SVG family passes its release gate. */
+/**
+ * Level badge artwork in a circular frame. Artwork path is derived from the level key
+ * (`public/img/levels/{key}.webp`), mirroring `AchievementArt`. Locked levels stay readable
+ * but desaturated behind a lock pill, matching `AchievementCollection`.
+ */
 export function JourneyLevelMedallion({
-  tier,
   levelKey,
   current = false,
   future = false,
@@ -19,41 +23,35 @@ export function JourneyLevelMedallion({
   return (
     <span
       data-journey-level-key={levelKey}
-      aria-hidden="true"
-      className={`relative inline-grid shrink-0 place-items-center ${className} ${future ? "opacity-45" : ""}`}
+      className={`relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full ${
+        current
+          ? "border-[3px] border-[var(--color-progress)]"
+          : "border-2 border-[var(--color-border)]"
+      } ${className}`}
     >
-      <svg viewBox="0 0 80 80" className="absolute inset-0 size-full">
-        <path
-          d="M40 3 70 20v40L40 77 10 60V20Z"
-          fill={
-            current
-              ? "var(--color-progress)"
-              : future
-                ? "transparent"
-                : "color-mix(in srgb, var(--color-progress-track) 55%, var(--color-btn))"
-          }
-          stroke={
-            future
-              ? "color-mix(in srgb, var(--color-btn-label) 72%, transparent)"
-              : current
-                ? "var(--color-progress-track)"
-                : "var(--color-btn-label)"
-          }
-          strokeWidth={current ? "3" : "2"}
+      <Image
+        src={`/img/levels/${levelKey}.webp`}
+        alt=""
+        aria-hidden="true"
+        width={384}
+        height={384}
+        sizes="176px"
+        className={`size-full object-cover ${future ? "opacity-35 grayscale" : ""}`}
+      />
+      {future ? (
+        <span className="absolute inset-0 grid place-items-center" aria-hidden="true">
+          <span className="rounded-full bg-[var(--color-surface)] p-1.5 text-[var(--color-secondary)] shadow-[var(--shadow-card)]">
+            <Lock size={16} />
+          </span>
+        </span>
+      ) : (
+        /* ponytail: one flat tint pulls 12 stock illustrations that share no palette into
+           something that reads as a set. Drop it if bespoke artwork ever lands. */
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 bg-[color-mix(in_srgb,var(--color-progress)_18%,transparent)]"
         />
-        <path
-          d="M40 10 64 24v32L40 70 16 56V24Z"
-          fill="none"
-          stroke="color-mix(in srgb, var(--color-btn-label) 45%, transparent)"
-          strokeWidth="1"
-        />
-      </svg>
-      <span
-        className={`relative text-xl font-extrabold tabular-nums ${current ? "text-white" : "text-[var(--color-btn-label)]"}`}
-      >
-        {tier}
-      </span>
+      )}
     </span>
   );
 }
-

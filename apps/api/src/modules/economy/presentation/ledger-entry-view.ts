@@ -1,20 +1,12 @@
 import { Currency, type EconomyLedgerEntryView } from "@mentor/types";
 import { EconomyLedger } from "../domain/economy.constants";
-import { QUEST_CATALOG } from "../domain/quest.catalog";
+import { resolveQuestLedgerDescription, type QuestCopyFn } from "../domain/quest-copy";
 import type { LedgerRow } from "../infrastructure/ledger.repository";
 
-// Ledger rows outlive config: strip the `{target}` placeholder instead of resolving it
-// ("Bu hafta {target} odak seansı tamamla" → "Bu hafta odak seansı tamamla"). Quests whose
-// stripped title reads broken supply an explicit `ledgerTitle`.
-const questTitles = new Map(
-  QUEST_CATALOG.map((quest) => [
-    `quest.${quest.id}`,
-    quest.ledgerTitle ?? quest.title.replace(/\{target\}\s?/, ""),
-  ]),
-);
+export type LedgerCopyFn = QuestCopyFn;
 
-export function toLedgerEntryView(row: LedgerRow): EconomyLedgerEntryView {
-  const display = displayFor(row);
+export function toLedgerEntryView(row: LedgerRow, t: LedgerCopyFn): EconomyLedgerEntryView {
+  const display = displayFor(row, t);
   return {
     id: row.id,
     unit: row.unit as EconomyLedgerEntryView["unit"],
@@ -28,60 +20,63 @@ export function toLedgerEntryView(row: LedgerRow): EconomyLedgerEntryView {
   };
 }
 
-function displayFor(row: LedgerRow): { title: string; description: string } {
-  const questTitle = questTitles.get(row.reason);
-  if (questTitle) return { title: "Görev ödülü", description: questTitle };
+function displayFor(row: LedgerRow, t: LedgerCopyFn): { title: string; description: string } {
+  if (row.reason.startsWith("quest.")) {
+    const description = resolveQuestLedgerDescription(t, row.reason.slice("quest.".length));
+    if (description) return { title: t("ledger.questReward.title"), description };
+  }
 
   if (row.reason === EconomyLedger.AI_CHAT_SPEND_REASON) {
     return {
-      title: "Koç sohbet hakkı kullanıldı",
-      description: "Koç sohbetinde kazanılmış hak kullanıldı.",
+      title: t("ledger.aiChatSpend.title"),
+      description: t("ledger.aiChatSpend.description"),
     };
   }
   if (row.reason === EconomyLedger.AI_CHAT_REFUND_REASON) {
     return {
-      title: "Koç sohbet hakkı iade edildi",
-      description: "Kullanılamayan sohbet hakkı hesabına geri işlendi.",
+      title: t("ledger.aiChatRefund.title"),
+      description: t("ledger.aiChatRefund.description"),
     };
   }
   if (row.reason === EconomyLedger.STREAK_FREEZE_SPEND_REASON) {
     return {
-      title: "Seri kurtarma",
-      description: "Kaçırılan gün coin ile donduruldu, serin korundu.",
+      title: t("ledger.streakFreeze.title"),
+      description: t("ledger.streakFreeze.description"),
     };
   }
   if (row.reason === EconomyLedger.STREAK_FREEZE_REFUND_REASON) {
     return {
-      title: "Seri kurtarma iadesi",
-      description: "Uygulanamayan dondurma hesabına iade edildi.",
+      title: t("ledger.streakFreezeRefund.title"),
+      description: t("ledger.streakFreezeRefund.description"),
     };
   }
   if (row.reason === EconomyLedger.INVITE_CONVERTED_REASON) {
     return {
-      title: "Davet ödülü",
-      description: "Davetin aktifleştikçe hesabına hak işlendi.",
+      title: t("ledger.inviteConverted.title"),
+      description: t("ledger.inviteConverted.description"),
     };
   }
   if (row.reason === EconomyLedger.INVITE_REVERSAL_REASON) {
     return {
-      title: "Davet ödülü geri alındı",
-      description: "İade edilen abonelik nedeniyle davet ödülü düşüldü.",
+      title: t("ledger.inviteReversal.title"),
+      description: t("ledger.inviteReversal.description"),
     };
   }
   if (row.reason === EconomyLedger.DEEP_ANALYSIS_SPEND_REASON) {
     return {
-      title: "Derin analiz açıldı",
-      description: "Haftalık derin analiz raporu coin ile açıldı.",
+      title: t("ledger.deepAnalysis.title"),
+      description: t("ledger.deepAnalysis.description"),
     };
   }
   if (row.reason === "forum.answer.accepted" || row.reason === "forum.thread.posted") {
     return {
-      title: "Topluluk katkısı",
-      description: "Toplulukta katkın için XP işlendi.",
+      title: t("ledger.community.title"),
+      description: t("ledger.community.description"),
     };
   }
+  const unit = row.unit === Currency.XP ? "XP" : "Coin";
   return {
-    title: "Ekonomi hareketi",
-    description: `Hesabında bir ${row.unit === Currency.XP ? "XP" : "Coin"} hareketi işlendi.`,
+    title: t("ledger.fallback.title"),
+    description: t("ledger.fallback.description", { unit }),
   };
 }

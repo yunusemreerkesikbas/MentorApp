@@ -1,6 +1,11 @@
 import type * as React from "react";
 
-export type ToastVariant = "success" | "error" | "info" | "coach";
+/**
+ * Status of the thing that just happened — not a mood. `warning` covers refusals that are not
+ * failures (a limit reached, an unsupported file): red would overstate them and the product tone
+ * is anti-shaming (AGENTS.md §0). The former `coach` variant is gone — it had zero call sites.
+ */
+export type ToastVariant = "success" | "error" | "warning" | "info";
 
 export interface ToastShowOptions {
   title: string;
@@ -8,7 +13,7 @@ export interface ToastShowOptions {
   variant?: ToastVariant;
   /** Auto-dismiss duration in ms. Default 5000. 0 = manual dismiss only. */
   duration?: number;
-  /** Overrides variant default leading content (e.g. Puhu mascot from web). */
+  /** Overrides the variant default leading content (web supplies the status icon). */
   leading?: React.ReactNode;
   /** Localized dismiss button label for screen readers. */
   dismissLabel: string;
@@ -44,8 +49,8 @@ export interface ToastContextValue {
   dismissAll: () => void;
   success: (options: Omit<ToastShowOptions, "variant">) => string;
   error: (options: Omit<ToastShowOptions, "variant">) => string;
+  warning: (options: Omit<ToastShowOptions, "variant">) => string;
   info: (options: Omit<ToastShowOptions, "variant">) => string;
-  coach: (options: Omit<ToastShowOptions, "variant">) => string;
 }
 
 export const TOAST_MAX_STACK = 3;

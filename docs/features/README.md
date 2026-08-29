@@ -16,6 +16,7 @@
 | Notifications | `modules/notifications` | ✅ | [notifications.md](./notifications.md) |
 | Admin | `modules/admin` | ✅ | [admin.md](./admin.md) |
 | Economy | `modules/economy` | ✅ | [economy.md](./economy.md) |
+| Ads | `modules/ads` | 🟡 | [ads.md](./ads.md) |
 | Forum | `modules/forum` | ✅ | [forum.md](./forum.md) |
 
 ## Cross-cutting

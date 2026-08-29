@@ -26,6 +26,7 @@ import { JourneyLevelEventsListener } from "./application/listeners/journey-leve
 import { AchievementEventsListener } from "./application/listeners/achievement-events.listener";
 import { PaymentsEventsListener } from "./application/listeners/payments-events.listener";
 import { AnnouncementService } from "./application/announcement.service";
+import { NotificationsCopyService } from "./application/notifications-copy.service";
 import { NotificationsService } from "./application/notifications.service";
 import { NotificationsErasureService } from "./application/notifications-erasure.service";
 import { SessionReturnReminderService } from "./application/session-return-reminder.service";
@@ -58,6 +59,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     SessionReturnReminderHandler,
     AnnouncementDispatchHandler,
     NotificationsService,
+    NotificationsCopyService,
     AnnouncementService,
     NotificationsErasureService,
     DailyReminderService,

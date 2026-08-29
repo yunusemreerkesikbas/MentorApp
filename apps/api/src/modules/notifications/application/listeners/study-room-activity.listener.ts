@@ -10,6 +10,7 @@ import { UsersRepository } from "../../../identity/infrastructure/users.reposito
 import { DRIZZLE } from "../../../../database/database.constants";
 import type { Database } from "../../../../database/drizzle";
 import { withServiceContext } from "../../../../database/rls";
+import { NotificationCopyKey } from "../../domain/notification-copy";
 import { NotificationDeliveryRepository } from "../../infrastructure/notification-delivery.repository";
 import { NotificationsService } from "../notifications.service";
 
@@ -64,12 +65,12 @@ export class StudyRoomActivityListener {
       if (!ok) continue;
 
       await this.notifications
-        .createInApp(
+        .createFromTemplate(
           recipientId,
           "FORUM",
-          "Masada biri var",
-          `${actor.displayName} "${targets.roomName}" masasına oturdu — sen de katıl 🔥`,
+          NotificationCopyKey.STUDY_ROOM_SESSION_STARTED,
           `/study-session/rooms/${event.roomId}`,
+          { args: { name: actor.displayName, roomName: targets.roomName } },
         )
         .catch((err: unknown) =>
           this.logger.warn(

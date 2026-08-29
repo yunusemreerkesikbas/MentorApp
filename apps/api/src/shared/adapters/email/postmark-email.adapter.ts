@@ -1,7 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { I18nService } from "nestjs-i18n";
 import type { Env } from "../../../config/env.validation";
 import type { EmailPort } from "../../ports/email.port";
+import { EMAIL_COPY_KEY } from "../../notifications/constants";
 import { assertSafeHttpUrl, escapeHtml } from "./email-html.util";
 
 interface PostmarkResponse {
@@ -9,15 +11,24 @@ interface PostmarkResponse {
   Message?: string;
 }
 
+function emailLang(vars: Record<string, unknown>): string {
+  const raw = String(vars.lang ?? "tr").toLowerCase();
+  return raw.startsWith("en") ? "en" : "tr";
+}
+
 /**
  * Postmark transactional email adapter (§8).
  * Falls back to logging when POSTMARK_TOKEN is unset (local dev).
+ * Student-facing sentences live in `notifications.email.*` i18n — HTML is only a skeleton.
  */
 @Injectable()
 export class PostmarkEmailAdapter implements EmailPort {
   private readonly logger = new Logger(PostmarkEmailAdapter.name);
 
-  constructor(private readonly config: ConfigService<Env, true>) {}
+  constructor(
+    private readonly config: ConfigService<Env, true>,
+    private readonly i18n: I18nService,
+  ) {}
 
   async sendTransactional(input: {
     to: string;
@@ -32,9 +43,11 @@ export class PostmarkEmailAdapter implements EmailPort {
 
     const from =
       this.config.get("POSTMARK_FROM", { infer: true }) ?? "noreply@mentor.app";
-    const subject = this.subjectForTemplate(input.template);
-    const htmlBody = this.renderHtml(input.template, input.variables ?? {});
-    const textBody = this.renderText(input.template, input.variables ?? {});
+    const vars = input.variables ?? {};
+    const lang = emailLang(vars);
+    const copy = this.emailCopy(input.template, vars, lang);
+    const htmlBody = this.renderHtml(input.template, vars, copy);
+    const textBody = this.renderText(input.template, vars, copy);
 
     const res = await fetch("https://api.postmarkapp.com/email", {
       method: "POST",
@@ -46,7 +59,7 @@ export class PostmarkEmailAdapter implements EmailPort {
       body: JSON.stringify({
         From: from,
         To: input.to,
-        Subject: subject,
+        Subject: copy.subject,
         HtmlBody: htmlBody,
         TextBody: textBody,
         MessageStream: "outbound",
@@ -59,42 +72,52 @@ export class PostmarkEmailAdapter implements EmailPort {
     }
   }
 
-  private subjectForTemplate(template: string): string {
-    const map: Record<string, string> = {
-      "identity.verify-email": "Mentor — E-posta doğrulama",
-      "identity.reset-password": "Mentor — Şifre sıfırlama",
-      "payments.dunning": "Mentor — Ödeme hatırlatması",
-      "payments.subscription-welcome": "Mentor — Premium'a hoş geldin",
-      "coaching.daily-reminder": "Mentor — Bugün bir adım at",
+  private emailCopy(template: string, vars: Record<string, unknown>, lang: string) {
+    const key = EMAIL_COPY_KEY[template] ?? "fallback";
+    const args = { name: String(vars.displayName ?? "") };
+    return {
+      subject: this.t(`notifications.email.${key}.subject`, args, lang),
+      greeting: this.optional(`notifications.email.${key}.greeting`, args, lang),
+      body: this.t(`notifications.email.${key}.body`, args, lang),
+      cta: this.optional(`notifications.email.${key}.cta`, args, lang),
     };
-    return map[template] ?? "Mentor";
   }
 
-  private renderHtml(template: string, vars: Record<string, unknown>): string {
+  private t(key: string, args: Record<string, unknown>, lang: string): string {
+    return String(this.i18n.translate(key, { lang, args }));
+  }
+
+  private optional(key: string, args: Record<string, unknown>, lang: string): string {
+    const value = this.t(key, args, lang);
+    return value.startsWith("notifications.email.") ? "" : value;
+  }
+
+  private renderHtml(
+    template: string,
+    vars: Record<string, unknown>,
+    copy: { greeting: string; body: string; cta: string },
+  ): string {
+    const greeting = copy.greeting ? `<p>${escapeHtml(copy.greeting)}</p>` : "";
+    const body = `<p>${escapeHtml(copy.body)}</p>`;
     if (template === "identity.verify-email" || template === "identity.reset-password") {
       const link = assertSafeHttpUrl(String(vars.link ?? ""));
-      const name = escapeHtml(String(vars.displayName ?? ""));
       const href = link ? ` href="${escapeHtml(link)}"` : "";
-      return `<p>Merhaba ${name},</p><p><a${href}>Bağlantıya tıkla</a></p>`;
+      const cta = escapeHtml(copy.cta || copy.body);
+      return `${greeting}${body}<p><a${href}>${cta}</a></p>`;
     }
-    if (template === "payments.dunning") {
-      return `<p>Ödeme işlemin tamamlanamadı. Lütfen abonelik ayarlarını kontrol et.</p>`;
-    }
-    if (template === "coaching.daily-reminder") {
-      const name = escapeHtml(String(vars.displayName ?? ""));
-      return `<p>Merhaba ${name},</p><p>Bugün kendine küçük bir adım ayırmak ister misin? Seninle buradayız.</p>`;
-    }
-    return `<p>Mentor bildirimi</p>`;
+    return `${greeting}${body}`;
   }
 
-  private renderText(template: string, vars: Record<string, unknown>): string {
+  private renderText(
+    template: string,
+    vars: Record<string, unknown>,
+    copy: { greeting: string; body: string },
+  ): string {
+    const lead = [copy.greeting, copy.body].filter(Boolean).join(" ");
     if (template === "identity.verify-email" || template === "identity.reset-password") {
       const link = assertSafeHttpUrl(String(vars.link ?? ""));
-      return `Merhaba ${String(vars.displayName ?? "")}, bağlantı: ${link || "(geçersiz bağlantı)"}`;
+      return `${lead} ${link || ""}`.trim();
     }
-    if (template === "coaching.daily-reminder") {
-      return `Merhaba ${String(vars.displayName ?? "")}, bugün kendine küçük bir adım ayırmak ister misin?`;
-    }
-    return "Mentor bildirimi";
+    return lead;
   }
 }

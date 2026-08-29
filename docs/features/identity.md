@@ -85,6 +85,8 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **Yoldaşlık sesi Dalga 5 — auth invalid_link (2026-08-29)** — `verify_email` / `reset_password` `invalid_link` companion: “Lütfen” kalktı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: KVKK ve ödeme gerçeği dokunulmadı. İlgili: `apps/web/messages/{tr,en}.json`.
+
 - **Auth hang on signup (2026-08-28)** — Same rim sandwich as login, now also on
   `/signup` (`/kayit`). `displayName` and `email` look down; password covers.
   Checkboxes stay idle. The signup form is still hang-agnostic — focus is captured

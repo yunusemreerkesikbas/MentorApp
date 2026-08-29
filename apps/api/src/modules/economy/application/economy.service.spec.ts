@@ -13,6 +13,15 @@ interface Row extends NewLedgerEntry {
 /** In-memory ledger fake (append-only; ref dedupe; balance = sum). */
 function makeRepoFake() {
   const rows: Row[] = [];
+  const reservations: Array<{
+    userId: string;
+    amount: number;
+    source: string;
+    refId: string;
+    status: "ACTIVE" | "SETTLED" | "RELEASED";
+    expiresAt: Date;
+    createdAt: Date;
+  }> = [];
   /** Ordered trace of repo calls — lets tests assert lock-before-check-before-append (F1). */
   const trace: string[] = [];
   const sum = (pred: (r: Row) => boolean) =>
@@ -28,6 +37,7 @@ function makeRepoFake() {
   });
   return {
     rows,
+    reservations,
     trace,
     // The enforced-grant path runs check+append inside withServiceTx; the fake just runs the fn.
     withServiceTx: async <T>(fn: (tx: unknown) => Promise<T>) => fn({}),
@@ -56,6 +66,43 @@ function makeRepoFake() {
           r.createdBy == null &&
           !(CORRECTION_REASONS as readonly string[]).includes(r.reason),
       );
+    },
+    activeCoinReservationAmountSince: async (
+      userId: string,
+      since: Date,
+      now: Date,
+    ) =>
+      reservations
+        .filter(
+          (r) =>
+            r.userId === userId &&
+            r.status === "ACTIVE" &&
+            r.expiresAt > now &&
+            r.createdAt >= since,
+        )
+        .reduce((total, r) => total + r.amount, 0),
+    insertCoinReservation: async (entry: {
+      userId: string;
+      amount: number;
+      source: string;
+      refId: string;
+      expiresAt: Date;
+    }) => {
+      if (reservations.some((r) => r.source === entry.source && r.refId === entry.refId)) {
+        return false;
+      }
+      reservations.push({ ...entry, status: "ACTIVE", createdAt: new Date() });
+      return true;
+    },
+    findCoinReservation: async (source: string, refId: string) =>
+      reservations.find((r) => r.source === source && r.refId === refId),
+    setCoinReservationStatus: async (
+      source: string,
+      refId: string,
+      status: "SETTLED" | "RELEASED",
+    ) => {
+      const row = reservations.find((r) => r.source === source && r.refId === refId);
+      if (row) row.status = status;
     },
     coinChatSpendsSince: async (userId: string, reason?: string) =>
       rows.filter(
@@ -330,5 +377,78 @@ describe("EconomyService", () => {
     const reversed = await service().reverse("u1", REVERSE_OPTS);
     expect(reversed).toBe(0);
     expect(repo.rows).toHaveLength(0);
+  });
+
+  it("counts an active reward reservation against the organic daily cap", async () => {
+    const svc = service({ ...CAPS, "economy.coin.daily_cap": 10 });
+    const tx = {} as never;
+
+    await svc.reserveCoinGrantInServiceTx(
+      "u1",
+      5,
+      {
+        source: "ad_reward",
+        refId: "session-1",
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+      tx,
+    );
+
+    await expect(
+      svc.grant("u1", Currency.COIN, 6, { reason: "quest.weekly" }),
+    ).rejects.toMatchObject({ code: ErrorCode.ECONOMY_LIMIT_EXCEEDED });
+  });
+
+  it("settles a reserved reward into the append-only ledger exactly once", async () => {
+    const svc = service();
+    const tx = {} as never;
+    const reservation = {
+      source: "ad_reward",
+      refId: "session-2",
+      expiresAt: new Date(Date.now() + 60_000),
+    };
+    await svc.reserveCoinGrantInServiceTx("u1", 5, reservation, tx);
+
+    await svc.settleCoinGrantInServiceTx(
+      "u1",
+      {
+        source: reservation.source,
+        refId: reservation.refId,
+        reason: "ad.reward.completed",
+        ledgerRefType: "ad_reward",
+        ledgerRefId: reservation.refId,
+      },
+      tx,
+    );
+    await svc.settleCoinGrantInServiceTx(
+      "u1",
+      {
+        source: reservation.source,
+        refId: reservation.refId,
+        reason: "ad.reward.completed",
+        ledgerRefType: "ad_reward",
+        ledgerRefId: reservation.refId,
+      },
+      tx,
+    );
+
+    expect((await svc.getAdminBalance("u1")).coinConfirmed).toBe(5);
+    expect(repo.reservations[0]?.status).toBe("SETTLED");
+  });
+
+  it("releases an unfinished reservation so later earnings can use the capacity", async () => {
+    const svc = service({ ...CAPS, "economy.coin.daily_cap": 10 });
+    const tx = {} as never;
+    const reservation = {
+      source: "ad_reward",
+      refId: "session-3",
+      expiresAt: new Date(Date.now() + 60_000),
+    };
+    await svc.reserveCoinGrantInServiceTx("u1", 5, reservation, tx);
+    await svc.releaseCoinGrantInServiceTx("u1", reservation, tx);
+
+    await expect(
+      svc.grant("u1", Currency.COIN, 10, { reason: "quest.weekly" }),
+    ).resolves.toMatchObject({ coinConfirmed: 10 });
   });
 });

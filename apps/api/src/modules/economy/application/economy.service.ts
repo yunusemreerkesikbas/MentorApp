@@ -48,6 +48,21 @@ export interface ReverseOptions {
   refId: string;
 }
 
+export interface CoinGrantReservationOptions {
+  source: string;
+  refId: string;
+  expiresAt: Date;
+  orgId?: string | null;
+}
+
+export interface SettleCoinGrantOptions {
+  source: string;
+  refId: string;
+  reason: string;
+  ledgerRefType: string;
+  ledgerRefId: string;
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -114,12 +129,21 @@ export class EconomyService {
         if (minXp > 0 && (await this.repo.balanceService(userId, tx)).xp < minXp) {
           throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
         }
-        const earnedDay = await this.repo.coinEarnedSince(userId, new Date(now - DAY_MS), tx);
-        if (earnedDay + amount > dailyCap) {
+        const nowDate = new Date(now);
+        const dayStart = new Date(now - DAY_MS);
+        const weekStart = new Date(now - 7 * DAY_MS);
+        const [earnedDay, reservedDay] = await Promise.all([
+          this.repo.coinEarnedSince(userId, dayStart, tx),
+          this.repo.activeCoinReservationAmountSince(userId, dayStart, nowDate, tx),
+        ]);
+        if (earnedDay + reservedDay + amount > dailyCap) {
           throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
         }
-        const earnedWeek = await this.repo.coinEarnedSince(userId, new Date(now - 7 * DAY_MS), tx);
-        if (earnedWeek + amount > weeklyCap) {
+        const [earnedWeek, reservedWeek] = await Promise.all([
+          this.repo.coinEarnedSince(userId, weekStart, tx),
+          this.repo.activeCoinReservationAmountSince(userId, weekStart, nowDate, tx),
+        ]);
+        if (earnedWeek + reservedWeek + amount > weeklyCap) {
           throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
         }
         return this.repo.append(entry, tx);
@@ -127,6 +151,106 @@ export class EconomyService {
       return exec ? run(exec) : this.repo.withServiceTx(run);
     }
     return this.repo.append(entry, exec);
+  }
+
+  /** Reserve capped organic Coin without writing spendable value to the immutable ledger. */
+  async reserveCoinGrantInServiceTx(
+    userId: string,
+    amount: number,
+    opts: CoinGrantReservationOptions,
+    tx: DatabaseTx,
+  ): Promise<void> {
+    if (amount <= 0 || opts.expiresAt <= new Date()) {
+      throw new DomainError(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST);
+    }
+
+    await this.repo.acquireUserLock(userId, tx);
+    const existing = await this.repo.findCoinReservation(opts.source, opts.refId, tx);
+    if (existing) {
+      if (existing.userId !== userId || existing.amount !== amount) {
+        throw new DomainError(ErrorCode.BAD_REQUEST, HttpStatus.CONFLICT);
+      }
+      return;
+    }
+
+    const [minXp, dailyCap, weeklyCap] = await Promise.all([
+      this.config.get("economy.coin.min_xp_for_coin"),
+      this.config.get("economy.coin.daily_cap"),
+      this.config.get("economy.coin.weekly_cap"),
+    ]);
+    if (minXp > 0 && (await this.repo.balanceService(userId, tx)).xp < minXp) {
+      throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
+    const now = new Date();
+    const dayStart = new Date(now.getTime() - DAY_MS);
+    const weekStart = new Date(now.getTime() - 7 * DAY_MS);
+    const [earnedDay, reservedDay, earnedWeek, reservedWeek] = await Promise.all([
+      this.repo.coinEarnedSince(userId, dayStart, tx),
+      this.repo.activeCoinReservationAmountSince(userId, dayStart, now, tx),
+      this.repo.coinEarnedSince(userId, weekStart, tx),
+      this.repo.activeCoinReservationAmountSince(userId, weekStart, now, tx),
+    ]);
+    if (earnedDay + reservedDay + amount > dailyCap || earnedWeek + reservedWeek + amount > weeklyCap) {
+      throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
+    await this.repo.insertCoinReservation(
+      {
+        orgId: opts.orgId ?? null,
+        userId,
+        amount,
+        source: opts.source,
+        refId: opts.refId,
+        expiresAt: opts.expiresAt,
+      },
+      tx,
+    );
+  }
+
+  /** Settle a reservation into one idempotent ledger grant inside the caller-owned transaction. */
+  async settleCoinGrantInServiceTx(
+    userId: string,
+    opts: SettleCoinGrantOptions,
+    tx: DatabaseTx,
+  ): Promise<void> {
+    await this.repo.acquireUserLock(userId, tx);
+    const reservation = await this.repo.findCoinReservation(opts.source, opts.refId, tx);
+    if (!reservation || reservation.userId !== userId || reservation.status === "RELEASED") {
+      throw new DomainError(ErrorCode.BAD_REQUEST, HttpStatus.CONFLICT);
+    }
+    if (reservation.status === "ACTIVE" && reservation.expiresAt <= new Date()) {
+      await this.repo.setCoinReservationStatus(opts.source, opts.refId, "RELEASED", tx);
+      throw new DomainError(ErrorCode.BAD_REQUEST, HttpStatus.GONE);
+    }
+
+    await this.grantInTx(
+      userId,
+      Currency.COIN,
+      reservation.amount,
+      {
+        reason: opts.reason,
+        refType: opts.ledgerRefType,
+        refId: opts.ledgerRefId,
+        enforceLimits: false,
+      },
+      tx,
+    );
+    if (reservation.status === "ACTIVE") {
+      await this.repo.setCoinReservationStatus(opts.source, opts.refId, "SETTLED", tx);
+    }
+  }
+
+  /** Release unused capacity after close, no-fill or expiry. Idempotent. */
+  async releaseCoinGrantInServiceTx(
+    userId: string,
+    opts: Pick<CoinGrantReservationOptions, "source" | "refId">,
+    tx: DatabaseTx,
+  ): Promise<void> {
+    await this.repo.acquireUserLock(userId, tx);
+    const reservation = await this.repo.findCoinReservation(opts.source, opts.refId, tx);
+    if (!reservation || reservation.userId !== userId || reservation.status !== "ACTIVE") return;
+    await this.repo.setCoinReservationStatus(opts.source, opts.refId, "RELEASED", tx);
   }
 
   /** Publish only after a caller-owned transaction has committed its XP ledger row. */
@@ -157,6 +281,11 @@ export class EconomyService {
   }
   getAdminLedger(userId: string, limit: number): Promise<LedgerRow[]> {
     return this.repo.listService(userId, limit);
+  }
+
+  /** KVKK cleanup for mutable reservation control rows; append-only ledger is intentionally kept. */
+  eraseCoinGrantReservations(userId: string): Promise<void> {
+    return this.repo.eraseCoinReservationsForUser(userId);
   }
 
   /**

@@ -54,6 +54,7 @@ describe("Mentor V2 prompt", () => {
     });
 
     expect(prompt).toContain("mentor-yol arkadaşı");
+    expect(prompt).toContain("Puhu değilsin");
     expect(prompt).toContain("Bugünkü planın 1/3 tamamlandı.");
     expect(prompt).toContain("STUDY_TIME=EVENING");
     expect(prompt).not.toContain("Son 28 günde");
@@ -67,8 +68,9 @@ describe("Mentor V2 prompt", () => {
       memories: [],
       memoryEnabled: false,
     });
-    expect(prompt).toContain("mentor and steady companion");
+    expect(prompt).toContain("unnamed mentor-companion");
     expect(prompt).not.toContain("mentor-yol arkadaşı");
+    expect(prompt).not.toContain("Sen Mentor");
     expect(prompt).not.toContain("<<MEMORY");
   });
 

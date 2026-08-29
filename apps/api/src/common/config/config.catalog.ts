@@ -26,6 +26,7 @@ export const ConfigCategory = {
   IDENTITY: "identity",
   NOTIFICATIONS: "notifications",
   FORUM: "forum",
+  ADS: "ads",
 } as const;
 
 export const ConfigValueType = {
@@ -158,7 +159,41 @@ const forumCount = (def: number, min: number, max: number, description: string):
   description,
 });
 
+const adsFlag = (def: boolean, description: string): ConfigEntryDef => ({
+  category: ConfigCategory.ADS,
+  type: ConfigValueType.BOOLEAN,
+  schema: z.boolean(),
+  default: def,
+  sensitive: false,
+  description,
+});
+
+const adsCount = (def: number, min: number, max: number, description: string): ConfigEntryDef => ({
+  category: ConfigCategory.ADS,
+  type: ConfigValueType.NUMBER,
+  schema: z.number().int().min(min).max(max),
+  default: def,
+  sensitive: true,
+  description,
+});
+
 export const CONFIG_CATALOG = {
+  "ads.enabled": adsFlag(false, "Global advertising kill-switch."),
+  "ads.display.enabled": adsFlag(false, "Enable contextual display inventory."),
+  "ads.rewarded.enabled": adsFlag(false, "Enable voluntary rewarded advertising."),
+  "ads.placement.knowledge_article_end.enabled": adsFlag(
+    false,
+    "Enable the single contextual slot at the end of a knowledge article.",
+  ),
+  "ads.placement.dashboard_rewarded_coin.enabled": adsFlag(
+    false,
+    "Enable the voluntary dashboard Coin reward offer.",
+  ),
+  "ads.rewarded.web.reward_coin": adsCount(5, 1, 50, "Coin granted for one completed web ad."),
+  "ads.rewarded.web.daily_limit": adsCount(2, 0, 10, "Completed rewarded ads per user per day."),
+  "ads.rewarded.web.cooldown_seconds": adsCount(900, 0, 86400, "Delay between rewarded ads."),
+  "ads.rewarded.web.session_ttl_seconds": adsCount(300, 30, 900, "Reward session lifetime."),
+  "ads.rewarded.web.rollout_percent": adsCount(0, 0, 100, "Stable Free-user rollout percentage."),
   "ai.enabled": flag(
     true,
     "Global AI kill-switch (§4/§8) — turn off all AI features.",

@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AiModule } from "../ai/ai.module";
+import { AdsModule } from "../ads/ads.module";
 import { CoachingModule } from "../coaching/coaching.module";
 import { ForumModule } from "../forum/forum.module";
 import { IdentityModule } from "../identity/identity.module";
@@ -18,7 +19,7 @@ import { AccountController } from "./presentation/account.controller";
  */
 @Module({
   // NotificationsModule is @Global — its NotificationsErasureService resolves without an import here.
-  imports: [IdentityModule, AiModule, CoachingModule, PaymentsModule, ForumModule],
+  imports: [IdentityModule, AiModule, AdsModule, CoachingModule, PaymentsModule, ForumModule],
   controllers: [AccountController],
   providers: [AccountErasureService],
   exports: [AccountErasureService],
