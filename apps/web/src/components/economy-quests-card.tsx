@@ -137,6 +137,10 @@ export function EconomyQuestsCard({
           reduceMotion={reduceMotion ?? false}
         />
 
+        <p className="mt-3 text-sm font-medium text-[var(--color-secondary)]">
+          {translate("quests_subtitle")}
+        </p>
+
         {nextQuest ? (
           <button
             type="button"

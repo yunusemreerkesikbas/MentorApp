@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import type {
   CommunityLevelView,
@@ -10,6 +12,7 @@ import type {
 import { JourneyLevelGuide } from "./journey-level-guide";
 import { JourneyLevelMedallion } from "./journey-level-medallion";
 import { JourneyLevelProgressBar } from "./journey-level-progress";
+import { JourneySpotlightScene } from "./spotlight/journey-spotlight-scene";
 
 type LevelNameKey = `levels.${JourneyLevelKey}.${"name" | "story"}`;
 type ChapterLabelKey = `chapters.${JourneyLevelChapterId}.label`;
@@ -23,6 +26,7 @@ export function JourneyLevelProfile({
 }) {
   const t = useTranslations("journey_levels");
   const locale = useLocale();
+  const [spotlightOpen, setSpotlightOpen] = useState(false);
   const name = t(`levels.${level.key}.name` as LevelNameKey);
   const story = t(`levels.${level.key}.story` as LevelNameKey);
   const chapterLabel = t(`chapters.${level.chapter}.label` as ChapterLabelKey);
@@ -35,7 +39,20 @@ export function JourneyLevelProfile({
       </div>
 
       <div className="mt-4 flex items-center gap-3.5">
-        <JourneyLevelMedallion levelKey={level.key} current className="size-20" />
+        {/* Only the owner gets the scene: a cinematic reads "you earned this", which is the wrong
+            sentence on someone else's profile. */}
+        {isOwner ? (
+          <button
+            type="button"
+            onClick={() => setSpotlightOpen(true)}
+            aria-label={t("spotlight_open", { name })}
+            className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-soft)]"
+          >
+            <JourneyLevelMedallion levelKey={level.key} current className="size-20" />
+          </button>
+        ) : (
+          <JourneyLevelMedallion levelKey={level.key} current className="size-20" />
+        )}
         <div className="min-w-0">
           <p className="text-xl font-bold leading-7 text-[var(--color-main)]">
             {t("level_title", { tier: level.tier, name })}
@@ -70,6 +87,17 @@ export function JourneyLevelProfile({
           {t("complete_message")}
         </p>
       ) : null}
+
+      <AnimatePresence>
+        {spotlightOpen ? (
+          <JourneySpotlightScene
+            key="journey-spotlight"
+            mode="replay"
+            level={level}
+            onClose={() => setSpotlightOpen(false)}
+          />
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

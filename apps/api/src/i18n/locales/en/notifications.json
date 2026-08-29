@@ -3,11 +3,11 @@
     "streakBroken": {
       "register": "companion",
       "title": "We'll be here tomorrow",
-      "body": "Your {days}-day streak paused — the path didn't. One small step today is enough."
+      "body": "Your {days}-day streak paused. The path didn't. One small step today is enough."
     },
     "streakMilestone7": {
       "register": "puhu",
-      "title": "{days} days — rhythm begins",
+      "title": "{days} days. Rhythm begins",
       "body": "You've come back for seven days. This isn't one day anymore; it's your rhythm."
     },
     "streakMilestone14": {
@@ -22,7 +22,7 @@
     },
     "streakMilestone100": {
       "register": "puhu",
-      "title": "{days} days — remarkable",
+      "title": "{days} days. Remarkable",
       "body": "This steadfastness is part of your path now. We're with you."
     },
     "moodLow": {
@@ -108,12 +108,12 @@
     "buddyAccepted": {
       "register": "puhu",
       "title": "Your invite was accepted",
-      "body": "{name} said yes — you're path buddies now."
+      "body": "{name} said yes. You're path buddies now."
     },
     "buddyNudged": {
       "register": "puhu",
       "title": "A nudge from your buddy",
-      "body": "{name} nudged you — a session today?"
+      "body": "{name} nudged you. A session today?"
     },
     "buddyFirstSession": {
       "register": "puhu",
@@ -128,29 +128,29 @@
   },
   "email": {
     "identityVerifyEmail": {
-      "subject": "Mentor — Confirm your email",
+      "subject": "Mentor: Confirm your email",
       "greeting": "Hi {name},",
-      "body": "One tap is enough — your account is waiting.",
+      "body": "One tap is enough. Your account is waiting.",
       "cta": "Confirm my email"
     },
     "identityResetPassword": {
-      "subject": "Mentor — Reset your password",
+      "subject": "Mentor: Reset your password",
       "greeting": "Hi {name},",
       "body": "Use the link below whenever you're ready to set a new password.",
       "cta": "Reset my password"
     },
     "paymentsDunning": {
-      "subject": "Mentor — Payment didn't go through",
+      "subject": "Mentor: Payment didn't go through",
       "greeting": "Hi {name},",
       "body": "The payment didn't complete. A look at your subscription settings is enough to keep Premium going."
     },
     "paymentsWelcome": {
-      "subject": "Mentor — Welcome to Premium",
+      "subject": "Mentor: Welcome to Premium",
       "greeting": "Hi {name},",
-      "body": "Your coach is with you now. Take a small step today — we'll carry the rest together."
+      "body": "Your coach is with you now. Take a small step today. We'll carry the rest together."
     },
     "dailyReminder": {
-      "subject": "Mentor — Take a step today",
+      "subject": "Mentor: Take a step today",
       "greeting": "Hi {name},",
       "body": "Want to set aside a small step for yourself today? We're right here with you."
     },

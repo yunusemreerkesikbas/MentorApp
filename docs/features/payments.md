@@ -69,6 +69,8 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+- **Yoldaşlık sesi Dalga 17 — form kontrol et (2026-08-29)** — Checkout `desc_error` companion: kart “kontrol et” kalktı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). İlgili: `apps/web/messages/{tr,en}.json`.
+
 - **Kampanya banner (2026-08-23)** — Panelde ücretsiz kullanıcıya paylaşılan premium
   kampanya (`PremiumCampaignBanner`), sağ sütunda `campaign.jpg` + deneme metni.
   CTA paywall modal.

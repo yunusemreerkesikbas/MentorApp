@@ -123,7 +123,7 @@ export default async function PublicArticlePage({ params }: PageProps) {
   };
 
   return (
-    <PublicChrome loginLabel={translate("login")}>
+    <PublicChrome loginLabel={translate("login")} panelLabel={translate("panel")}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(articleJsonLd) }}

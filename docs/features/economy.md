@@ -74,6 +74,14 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+- **Yoldaşlık sesi Dalga 19 — hak tavanı (2026-08-29)** — `ECONOMY_LIMIT_EXCEEDED` companion: “Hak sınırı doldu.” / “The rights limit is used up.” Kazanım fiili yok. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: kod `ECONOMY_LIMIT_EXCEEDED` durdu; günlük/haftalık tavan aynı. İlgili: `apps/api/src/i18n/locales/{tr,en}/errors.json`.
+
+- **Yoldaşlık sesi Dalga 11 — rewarded reklam (2026-08-29)** — `ads.rewarded` companion hak (`Lütfen`/`ödül`/`kazan` kalktı). Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: leaderboard durdu. İlgili: `apps/web/messages/{tr,en}.json`.
+
+- **Yoldaşlık sesi Dalga 10 — seri kurtarma (2026-08-29)** — Panel `streak_rescue_*` teklif companion hak, başarı Puhu. Coin maliyeti aynı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: ads `Lütfen` ve leaderboard durdu. İlgili: `apps/web/messages/{tr,en}.json`.
+
+- **Yoldaşlık sesi Dalga 9 — görev chrome (2026-08-29)** — `quests_subtitle` companion hak (`XP kazan` kalktı), görev sheet’te görünür; panel/seans `quest_reward_*` toast Puhu (“Bu da tamam” / `{reward} seninle.`). `+N XP`/`Coin` satırları durdu. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: seri kurtarma FOMO ve ads `Lütfen` bu dalgada değil. İlgili: `apps/web/messages/{tr,en}.json`, `economy-quests-card.tsx`.
+
 - **Seviye rozeti SVG kontratı kaldırıldı (2026-08-29)** — 2026-08-22 girdisindeki
   "gelecekteki SVG ailesi için `assets:check:journey-levels`" cümlesi **artık geçersiz**. Seviye
   rozetleri raster WebP'ye geçti (`public/img/levels/{levelKey}.webp`), planlanan bespoke relic

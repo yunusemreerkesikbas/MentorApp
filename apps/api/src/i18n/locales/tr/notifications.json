@@ -7,7 +7,7 @@
     },
     "streakMilestone7": {
       "register": "puhu",
-      "title": "{days} gün — ritim başladı",
+      "title": "{days} gün. Ritim başladı",
       "body": "Yedi gündür dönüyorsun. Bu artık bir gün değil, senin ritmin."
     },
     "streakMilestone14": {
@@ -22,7 +22,7 @@
     },
     "streakMilestone100": {
       "register": "puhu",
-      "title": "{days} gün — inanılmaz",
+      "title": "{days} gün. İnanılmaz",
       "body": "Bu kararlılık artık yolunun parçası. Yanındayız."
     },
     "moodLow": {
@@ -108,12 +108,12 @@
     "buddyAccepted": {
       "register": "puhu",
       "title": "Davetin kabul edildi",
-      "body": "{name} kabul etti — artık yol arkadaşısınız."
+      "body": "{name} kabul etti. Artık yol arkadaşın."
     },
     "buddyNudged": {
       "register": "puhu",
       "title": "Yol arkadaşından dürtme",
-      "body": "{name} seni dürttü — bugün bir seansa var mısın?"
+      "body": "{name} seni dürttü. Bugün bir seansa var mısın?"
     },
     "buddyFirstSession": {
       "register": "puhu",
@@ -128,29 +128,29 @@
   },
   "email": {
     "identityVerifyEmail": {
-      "subject": "Mentor — E-postanı doğrula",
+      "subject": "Mentor: E-postanı doğrula",
       "greeting": "Merhaba {name},",
-      "body": "Bir dokunuş yeter — hesabın seni bekliyor.",
+      "body": "Bir dokunuş yeter. Hesabın seni bekliyor.",
       "cta": "E-postamı doğrula"
     },
     "identityResetPassword": {
-      "subject": "Mentor — Şifreni yenile",
+      "subject": "Mentor: Şifreni yenile",
       "greeting": "Merhaba {name},",
       "body": "Şifreni yenilemek için aşağıdaki bağlantı yeterli.",
       "cta": "Şifremi yenile"
     },
     "paymentsDunning": {
-      "subject": "Mentor — Ödeme tamamlanamadı",
+      "subject": "Mentor: Ödeme tamamlanamadı",
       "greeting": "Merhaba {name},",
       "body": "Ödeme tamamlanamadı. Premium'un durmasın diye ayarlardan bir bakman yeterli."
     },
     "paymentsWelcome": {
-      "subject": "Mentor — Premium'a hoş geldin",
+      "subject": "Mentor: Premium'a hoş geldin",
       "greeting": "Merhaba {name},",
-      "body": "Koçun artık yanında. Bugün küçük bir adım at — gerisini birlikte taşırız."
+      "body": "Koçun artık yanında. Bugün küçük bir adım at. Gerisini birlikte taşırız."
     },
     "dailyReminder": {
-      "subject": "Mentor — Bugün bir adım at",
+      "subject": "Mentor: Bugün bir adım at",
       "greeting": "Merhaba {name},",
       "body": "Bugün kendine küçük bir adım ayırmak ister misin? Seninle buradayız."
     },

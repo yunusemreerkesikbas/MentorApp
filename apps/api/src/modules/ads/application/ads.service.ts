@@ -14,14 +14,13 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import type { Env } from "../../../config/env.validation";
+import { ContentService } from "../../content/application/content.service";
 import { EconomyService } from "../../economy/application/economy.service";
 import { UsersService } from "../../identity/application/users.service";
 import { EntitlementService } from "../../payments/application/entitlement.service";
-import { evaluateAdPolicy } from "../domain/ad-policy";
+import { evaluateAdPolicy, istanbulDayStart } from "../domain/ad-policy";
 import { AD_PLACEMENTS, ADS_REWARD_REASON, ADS_REWARD_SOURCE } from "../domain/ads.constants";
 import { AdRewardSessionRepository, type AdRewardSessionRow } from "../infrastructure/ad-reward-session.repository";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class AdsService {
@@ -32,6 +31,7 @@ export class AdsService {
     private readonly entitlements: EntitlementService,
     private readonly users: UsersService,
     private readonly economy: EconomyService,
+    private readonly content: ContentService,
   ) {}
 
   private adUnitPath(placementId: AdPlacementId): string | null {
@@ -42,7 +42,14 @@ export class AdsService {
 
   private async placement(
     placementId: AdPlacementId,
-    context: { userId: string | null; roles?: string[]; examType: ExamType | null; countryCode: string | null },
+    context: {
+      userId: string | null;
+      roles?: string[];
+      examType: ExamType | null;
+      contentExamType?: ExamType | null;
+      contextVerified?: boolean;
+      countryCode: string | null;
+    },
   ): Promise<AdPlacementView> {
     const placement = AD_PLACEMENTS[placementId];
     const [globalEnabled, formatEnabled, placementEnabled, rolloutPercent, entitlement] = await Promise.all([
@@ -61,12 +68,16 @@ export class AdsService {
       format: placement.format,
       countryCode: context.countryCode,
       examType: context.examType,
+      contentExamType: context.contentExamType,
       isPremium: entitlement.isPremium,
       userId: context.userId,
       rolloutPercent,
     });
     const adUnitPath = this.adUnitPath(placementId);
-    const reason: AdEligibilityReason = !decision.enabled
+    const contextUnverified = placement.format === "DISPLAY" && context.contextVerified === false;
+    const reason: AdEligibilityReason = contextUnverified
+      ? "CONTEXT_UNVERIFIED"
+      : !decision.enabled
       ? decision.reason!
       : adUnitPath
         ? "ELIGIBLE"
@@ -74,36 +85,77 @@ export class AdsService {
     return {
       id: placement.id,
       format: placement.format,
-      enabled: decision.enabled && Boolean(adUnitPath),
+      enabled: !contextUnverified && decision.enabled && Boolean(adUnitPath),
       reason,
       provider: "GOOGLE_AD_MANAGER",
-      adUnitPath,
+      adUnitPath: contextUnverified ? null : adUnitPath,
       audienceTreatment: decision.audienceTreatment,
       limitedAds: true,
       sizes: placement.sizes,
     };
   }
 
-  getPublicPlacement(placementId: AdPlacementId, examType: ExamType | null, countryCode: string | null) {
+  async getPublicPlacement(
+    placementId: AdPlacementId,
+    contentSlug: string | null,
+    _legacyExamType: ExamType | null,
+    countryCode: string | null,
+  ) {
     if (placementId !== AdPlacementId.KNOWLEDGE_ARTICLE_END) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    return this.placement(placementId, { userId: null, examType, countryCode });
+    const contentContext = await this.resolveContentContext(placementId, contentSlug);
+    return this.placement(placementId, {
+      userId: null,
+      examType: null,
+      contentExamType: contentContext.examType,
+      contextVerified: contentContext.verified,
+      countryCode,
+    });
   }
 
   async getPlacement(
     placementId: AdPlacementId,
     userId: string,
     roles: string[],
+    contentSlug: string | null,
     countryCode: string | null,
   ) {
-    const profile = await this.users.getDiscoveryProfile(userId);
+    const [profile, contentContext] = await Promise.all([
+      this.users.getDiscoveryProfile(userId),
+      this.resolveContentContext(placementId, contentSlug),
+    ]);
     return this.placement(placementId, {
       userId,
       roles,
       examType: profile.examType as ExamType | null,
+      contentExamType: contentContext.examType,
+      contextVerified: contentContext.verified,
       countryCode,
     });
+  }
+
+  private async resolveContentContext(
+    placementId: AdPlacementId,
+    contentSlug: string | null,
+  ): Promise<{ verified: boolean; examType: ExamType | null }> {
+    if (AD_PLACEMENTS[placementId].format !== "DISPLAY") {
+      return { verified: true, examType: null };
+    }
+    if (!contentSlug) return { verified: false, examType: null };
+    try {
+      const article = await this.content.getInfoArticleBySlug(contentSlug);
+      return { verified: true, examType: article.family as ExamType };
+    } catch (error) {
+      if (
+        error instanceof DomainError &&
+        (error.code === ErrorCode.CONTENT_ARTICLE_NOT_FOUND ||
+          error.code === ErrorCode.VALIDATION_ERROR)
+      ) {
+        return { verified: false, examType: null };
+      }
+      throw error;
+    }
   }
 
   async getRewardOffer(
@@ -115,7 +167,7 @@ export class AdsService {
     if (placementId !== AdPlacementId.DASHBOARD_REWARDED_COIN) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    const base = await this.getPlacement(placementId, userId, roles, countryCode);
+    const base = await this.getPlacement(placementId, userId, roles, null, countryCode);
     await this.expireAbandonedSessions(userId);
     const [rewardCoin, dailyLimit, cooldownSeconds] = await Promise.all([
       this.config.get("ads.rewarded.web.reward_coin"),
@@ -124,7 +176,7 @@ export class AdsService {
     ]);
     const now = new Date();
     const [rewardedToday, latest, active] = await Promise.all([
-      this.repo.rewardedCountSince(userId, placementId, new Date(now.getTime() - DAY_MS)),
+      this.repo.rewardedCountSince(userId, placementId, istanbulDayStart(now)),
       this.repo.latestRewarded(userId, placementId),
       this.repo.findActive(userId, placementId, now),
     ]);
@@ -167,7 +219,11 @@ export class AdsService {
     placementId: AdPlacementId,
     user: { id: string; roles: string[]; orgId: string | null },
     countryCode: string | null,
+    idempotencyKey?: string,
   ): Promise<AdRewardSessionView> {
+    const requestKey = idempotencyKey ?? randomUUID();
+    const existing = await this.repo.findByIdempotencyKey(user.id, requestKey);
+    if (existing) return this.toSession(existing);
     const offer = await this.getRewardOffer(placementId, user.id, user.roles, countryCode);
     if (!offer.eligible) {
       throw new DomainError(ErrorCode.ADS_NOT_ELIGIBLE, HttpStatus.UNPROCESSABLE_ENTITY, { reason: offer.reason });
@@ -182,10 +238,16 @@ export class AdsService {
     const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
     const row = await this.repo.withServiceTx(async (tx) => {
       await this.repo.acquireUserLock(user.id, tx);
-      const [rewardedToday, latest] = await Promise.all([
-        this.repo.rewardedCountSince(user.id, placementId, new Date(now.getTime() - DAY_MS), tx),
-        this.repo.latestRewarded(user.id, placementId, tx),
-      ]);
+      const replay = await this.repo.findByIdempotencyKey(user.id, requestKey, tx);
+      if (replay) return replay;
+      // A node-postgres transaction owns one client; queries on that client must stay sequential.
+      const rewardedToday = await this.repo.rewardedCountSince(
+        user.id,
+        placementId,
+        istanbulDayStart(now),
+        tx,
+      );
+      const latest = await this.repo.latestRewarded(user.id, placementId, tx);
       if (rewardedToday >= dailyLimit) {
         throw new DomainError(ErrorCode.ADS_NOT_ELIGIBLE, HttpStatus.CONFLICT, { reason: "DAILY_LIMIT_REACHED" });
       }
@@ -207,6 +269,7 @@ export class AdsService {
         userId: user.id,
         placementId,
         rewardCoin: offer.rewardCoin,
+        idempotencyKey: requestKey,
         expiresAt,
       }, tx);
     });
@@ -252,6 +315,48 @@ export class AdsService {
       return { ...session, status: "CLOSED" as const };
     });
     return this.toSession(row);
+  }
+
+  async expireDueSessions(limit = 200): Promise<{ expired: number }> {
+    const boundedLimit = Math.min(200, Math.max(1, Math.trunc(limit)));
+    const now = new Date();
+    const candidates = await this.repo.listExpiredCandidates(now, boundedLimit);
+    const userIds = [...new Set(candidates.map((candidate) => candidate.userId))];
+    let expired = 0;
+
+    for (const userId of userIds) {
+      if (expired >= boundedLimit) break;
+      expired += await this.repo.withServiceTx(async (tx) => {
+        await this.repo.acquireUserLock(userId, tx);
+        const sessions = await this.repo.lockExpiredForUser(
+          userId,
+          now,
+          boundedLimit - expired,
+          tx,
+        );
+        let count = 0;
+        for (const session of sessions) {
+          await this.economy.releaseCoinGrantInServiceTx(
+            userId,
+            { source: ADS_REWARD_SOURCE, refId: session.id },
+            tx,
+          );
+          if (
+            await this.repo.setStatus(
+              session.id,
+              "CREATED",
+              "EXPIRED",
+              tx,
+              "SESSION_EXPIRED",
+            )
+          ) {
+            count += 1;
+          }
+        }
+        return count;
+      });
+    }
+    return { expired };
   }
 
   private toSession(row: AdRewardSessionRow): AdRewardSessionView {

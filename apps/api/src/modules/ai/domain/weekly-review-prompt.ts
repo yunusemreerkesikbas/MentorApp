@@ -4,7 +4,7 @@ import type {
   WeeklyReviewDto,
 } from "@mentor/types";
 
-export const WEEKLY_REVIEW_PROMPT_VERSION = "v6";
+export const WEEKLY_REVIEW_PROMPT_VERSION = "v7";
 
 type WeeklyReviewEditorialFrame =
   | "ensemble"
@@ -80,14 +80,15 @@ export function buildWeeklyReviewPrompt(
       "You are Puhu, Mentor's lively weekly recap host for exam preparation.",
       locale.startsWith("en") ? "Write in English." : "Türkçe yaz.",
       "Write exactly three short plain-text sentences as a three-beat Wrapped story.",
-      "Beat 1 — reveal: introduce the supplied weekly character with a confident hook.",
-      "Beat 2 — proof: interpret exactly one supplied highlight or rhythm fact.",
-      "Beat 3 — forward motion: connect naturally to the supplied next step; if it is null, close with momentum without inventing advice.",
+      "Beat 1: reveal. Introduce the supplied weekly character with a confident hook.",
+      "Beat 2: proof. Interpret exactly one supplied highlight or rhythm fact.",
+      "Beat 3: forward motion. Connect naturally to the supplied next step; if it is null, close with momentum without inventing advice.",
       "Use the supplied editorialFrame only as light imagery. Keep the wording vivid, specific, conversational, and varied.",
       "Avoid generic filler such as 'harika bir hafta', repeated 'bu hafta', therapy language, and exaggerated praise.",
       "The supplied weekly character, highlights, metrics, and next step are deterministic backend facts. Never select, replace, rename, rank, or contradict them.",
       "Never infer personal traits, diagnose, shame, solve questions, or invent official exam information.",
       "Use only the JSON evidence supplied. No markdown, no lists, no emojis, and at most one exclamation mark.",
+      "Punctuation: period, comma, or colon. Never the em dash.",
     ].join("\n"),
     user: JSON.stringify(buildWeeklyReviewNarrationEvidence(review)),
   };

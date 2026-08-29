@@ -45,15 +45,17 @@ function journey(
 }
 
 describe("buildCelebrationQueue", () => {
-  it("orders live achievements and level-ups chronologically", () => {
+  /* The spotlight scene is a lights-out takeover, so it plays last however the timestamps fall —
+     otherwise the run peaks in the middle and fizzles out on the quieter achievement cards. */
+  it("keeps the level-up behind achievements even when it happened first", () => {
     const queue = buildCelebrationQueue(
       [achievement("first_step", "2026-08-22T12:02:00.000Z")],
       [journey("level-5", "2026-08-22T12:01:00.000Z")],
     );
 
     expect(queue.map((item) => item.type)).toEqual([
-      "journey-level",
       "achievement",
+      "journey-level",
     ]);
   });
 
@@ -70,7 +72,7 @@ describe("buildCelebrationQueue", () => {
     ]);
   });
 
-  it("puts achievement history after live items and introduction last", () => {
+  it("plays live achievements, then history, then the level-up, then the introduction", () => {
     const queue = buildCelebrationQueue(
       [
         achievement(
@@ -81,26 +83,32 @@ describe("buildCelebrationQueue", () => {
         achievement("first_step", "2026-08-22T12:04:00.000Z"),
       ],
       [
-        journey(
-          "introduction",
-          "2026-08-22T12:00:00.000Z",
-          "INTRODUCTION",
-        ),
+        journey("introduction", "2026-08-22T12:00:00.000Z", "INTRODUCTION"),
         journey("level-5", "2026-08-22T12:05:00.000Z"),
+      ],
+    );
+
+    expect(queue.map((item) => item.celebration.kind)).toEqual([
+      "ACHIEVEMENT",
+      "BACKFILL_SUMMARY",
+      "LEVEL_UP",
+      "INTRODUCTION",
+    ]);
+  });
+
+  it("orders several level-ups chronologically inside their own group", () => {
+    const queue = buildCelebrationQueue(
+      [],
+      [
+        journey("level-6", "2026-08-22T12:09:00.000Z"),
+        journey("level-5", "2026-08-22T12:01:00.000Z"),
       ],
     );
 
     expect(
       queue.map((item) =>
-        item.type === "achievement"
-          ? item.celebration.kind
-          : item.celebration.kind,
+        item.type === "journey-level" ? item.celebration.id : item.type,
       ),
-    ).toEqual([
-      "ACHIEVEMENT",
-      "LEVEL_UP",
-      "BACKFILL_SUMMARY",
-      "INTRODUCTION",
-    ]);
+    ).toEqual(["level-5", "level-6"]);
   });
 });

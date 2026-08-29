@@ -649,7 +649,7 @@ test("kilitli başarılar gridde sade kalır ve ilerlemeyi bilgi kartında açı
     .click();
   const detail = page.getByRole("dialog", { name: "Ritmi Yakaladın" });
   await expect(
-    detail.getByText("Nasıl kazanılır?", { exact: true }),
+    detail.getByText("Nasıl uyanır?", { exact: true }),
   ).toBeVisible();
   await expect(
     detail.getByText("Yedi günlük çalışma ritmine ulaş."),
@@ -675,7 +675,7 @@ test("profil sahibi koleksiyon özetini görür ve sıradaki keşiften bilgi kar
   ).toHaveAttribute("aria-valuenow", "0");
 
   const suggestion = page.getByRole("button", {
-    name: /Sıradaki keşif.*Ritmi Yakaladın.*Nasıl kazanılır?/,
+    name: /Sıradaki keşif.*Ritmi Yakaladın.*Nasıl uyanır?/,
   });
   await suggestion.click();
   const detail = page.getByRole("dialog", { name: "Ritmi Yakaladın" });
@@ -802,12 +802,12 @@ test("profil, API'nin sıraladığı yolculuk izlerini erişilebilir detay ve t�
     await expect(image).toHaveAttribute("sizes", "64px");
   }
   await expect(triggers.nth(0)).toHaveAccessibleName(
-    "Haftanı Dinledin kazanıldı",
+    "Haftanı Dinledin seninle",
   );
   await expect(triggers.nth(1)).toHaveAccessibleName(
-    "Ritmi Yakaladın kazanıldı",
+    "Ritmi Yakaladın seninle",
   );
-  await expect(triggers.nth(2)).toHaveAccessibleName("İlk Adım kazanıldı");
+  await expect(triggers.nth(2)).toHaveAccessibleName("İlk Adım seninle");
   await expect(showcase.getByText("Haftanı Dinledin", { exact: true })).toHaveCount(0);
   await expect(showcase.getByRole("link", { name: "Tümünü gör" })).toHaveAttribute(
     "href",
@@ -843,7 +843,7 @@ test("profil, API'nin sıraladığı yolculuk izlerini erişilebilir detay ve t�
   const detail = page.getByRole("dialog", { name: "Haftanı Dinledin" });
   await expect(detail).toBeVisible();
   await expect(detail.getByText("Haftanın sesini duymak için durdun.")).toBeVisible();
-  await expect(detail.getByText("21.08.2026 tarihinde kazanıldı")).toBeVisible();
+  await expect(detail.getByText("21.08.2026 tarihinde seninle")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(detail).toBeHidden();
   await expect(trigger).toBeFocused();

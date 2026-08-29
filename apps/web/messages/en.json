@@ -41,15 +41,15 @@
       "title": "You're not alone on the road to your exam.",
       "title_lead": "On the exam road",
       "title_emphasis": "you're not alone.",
-      "subtitle": "Not a knowledge platform — a companionship platform that understands you, keeps you going, and never leaves you alone."
+      "subtitle": "A companionship platform that understands you, keeps you going, and never leaves you alone."
     },
     "slide2": {
       "title": "Puhu walks with you.",
-      "subtitle": "Plan, worry, today's step. Official dates come from editorial content — never made up."
+      "subtitle": "Plan, worry, today's step. Official dates come from editorial content, never made up."
     },
     "slide3": {
       "title": "Together with the community.",
-      "subtitle": "Ask questions, share experiences — move forward without feeling alone on your exam journey."
+      "subtitle": "Ask questions, share experiences. Move forward without feeling alone on your exam journey."
     }
   },
   "auth": {
@@ -88,7 +88,7 @@
       "subtitle": "We'll send a reset link to your email.",
       "email": "Email",
       "submit": "Send reset link",
-      "success": "If this email is registered, a password reset link has been sent. Check your inbox."
+      "success": "If this email is registered, a reset link is on its way. Have a look in your inbox."
     },
     "verify_email": {
       "title": "Email verification",
@@ -150,9 +150,9 @@
     "quests_banner_cta": "Continue",
     "quests_banner_progress": "{completed}/{total} quests",
     "ritual_quest_label": "Today's quest",
-    "quest_reward_single_title": "Quest completed",
-    "quest_reward_multi_title": "Quests completed",
-    "quest_reward_message": "You earned {reward}",
+    "quest_reward_single_title": "That's done too",
+    "quest_reward_multi_title": "Those are done too",
+    "quest_reward_message": "{reward} is with you now.",
     "metric_plan": "Plan",
     "metric_focus": "Focus",
     "metric_focus_value": "{minutes} min",
@@ -170,17 +170,17 @@
     "streak_helper": "Missing one day is not the end of the world.",
     "streak_session_cta": "Start a focus session",
     "freeze_short": "{count} freeze rights",
-    "streak_rescue_hint": "A missed day cut your streak short. Freeze it with coins to win the streak back.",
-    "streak_rescue_modal_title": "Rescue your streak?",
-    "streak_rescue_cta": "Rescue your streak",
+    "streak_rescue_hint": "Yesterday sat empty. Freeze it with coin and the streak stays.",
+    "streak_rescue_modal_title": "Freeze the missed day",
+    "streak_rescue_cta": "Freeze the day",
     "streak_rescue_later": "Not now",
-    "streak_rescue_confirm": "Are you sure? {cost} coins will be spent",
-    "streak_rescue_insufficient_title": "Not enough coins",
-    "streak_rescue_insufficient": "You need {cost} coins to rescue your streak. Complete quests to earn them.",
+    "streak_rescue_confirm": "{cost} coin will be spent.",
+    "streak_rescue_insufficient_title": "Not enough right",
+    "streak_rescue_insufficient": "Freezing needs {cost} coin. A right can land from quests.",
     "streak_rescue_insufficient_cta": "See quests",
     "streak_rescue_insufficient_ok": "OK",
-    "streak_rescue_success_title": "Streak rescued! 🔥",
-    "streak_rescue_success_message": "The missed day is frozen — your streak continues where it left off.",
+    "streak_rescue_success_title": "Your streak stayed.",
+    "streak_rescue_success_message": "The missed day is frozen. The road didn't stop.",
     "streak_rescue_error_title": "Couldn't rescue the streak",
     "streak_rescue_error_message": "Something went sideways. Let's try again in a moment.",
     "week_mon": "Mon",
@@ -380,7 +380,7 @@
     "not_authorized": "You don't have access to this page.",
     "sidebar_title": "Mentor",
     "drawer_open": "Channels",
-    "board_open": "Leaderboard",
+    "board_open": "Effort board",
     "board_close": "Close",
     "zone_info": "Zone info",
     "pinned_posts": "Pinned",
@@ -433,12 +433,12 @@
     "badge_night_owl_description": "You contributed to the community at night.",
     "badge_motivator_description": "Your posts helped others keep going.",
     "badge_newcomer_description": "You recently joined the community.",
-    "leaderboard_title": "Top effort this week",
+    "leaderboard_title": "This week's effort",
     "leaderboard_you": "You",
-    "leaderboard_empty": "No one has earned XP this week yet. Be the first.",
-    "leaderboard_you_none": "You haven't earned XP this week yet. Join in and claim your spot.",
+    "leaderboard_empty": "No trace this week yet. A small step wakes this place.",
+    "leaderboard_you_none": "No trace from you this week yet. A small step is enough.",
     "leaderboard_xp": "{count} XP",
-    "rank_page_title": "Leaderboard",
+    "rank_page_title": "Effort board",
     "rank_back": "Back",
     "rank_see_all": "See all",
     "rank_window_label": "Time range",
@@ -447,20 +447,20 @@
     "rank_alltime": "All time",
     "rank_new": "new",
     "rank_move_up": "Moved up",
-    "rank_move_down": "Moved down",
+    "rank_move_down": "Down",
     "rank_move_same": "Unchanged",
     "rank_reset": "Resets in {time}",
     "rank_reset_soon": "Resets soon",
     "rank_reset_dh": "{days}d {hours}h",
     "rank_reset_hm": "{hours}h {minutes}m",
-    "rank_you_standing": "Your standing",
-    "rank_list_title": "Full ranking",
-    "rank_banner_top1": "You're on top — leading this week! 🔥",
-    "rank_banner_top3": "You're on the podium, great work!",
-    "rank_banner_top10": "You're in the top 10 — brilliant!",
-    "rank_banner_keep": "You earned {xp} XP this week. Keep it up!",
-    "rank_banner_first": "Earn your first XP this week and claim your spot.",
-    "rank_percentile": "Ahead of {pct}% of participants",
+    "rank_you_standing": "Your effort",
+    "rank_list_title": "Effort list",
+    "rank_banner_top1": "Your effort is with us this week.",
+    "rank_banner_top3": "Your effort is here this week.",
+    "rank_banner_top10": "Your rhythm is holding this week.",
+    "rank_banner_keep": "{xp} XP landed this week. The road didn't stop.",
+    "rank_banner_first": "When you start this week, your effort will sit here.",
+    "rank_percentile": "Your effort is here this week. You're not alone.",
     "hub_nav": "Home",
     "hub_eyebrow": "We keep going together",
     "hub_title": "Community",
@@ -592,7 +592,7 @@
     "notebook_add_action": "I couldn't solve it either",
     "notebook_added": "In your notebook",
     "notebook_add_title": "Take this into your notebook",
-    "notebook_add_subtitle": "Only add it if you couldn't solve it yourself — the notebook maps your weak spots, not other people's.",
+    "notebook_add_subtitle": "Only add it if you couldn't solve it yourself. The notebook maps your weak spots, not other people's.",
     "notebook_add_submit": "Add to the notebook",
     "notebook_add_error": "It could not be added to the notebook.",
     "notebook_handoff_title": "From your notebook",
@@ -619,7 +619,7 @@
     "poll_hours": "Hours",
     "poll_minutes": "Minutes",
     "poll_duration_error": "A poll must run for at least 5 minutes.",
-    "poll_validation_error": "Enter 2–4 different options and check the poll duration.",
+    "poll_validation_error": "Enter 2–4 different options. Have a look at the poll duration too.",
     "poll_remove": "Remove poll",
     "poll_media_conflict_title": "Polls and attachments cannot be combined",
     "poll_media_conflict_message": "Your selected images or files will be removed before adding the poll.",
@@ -660,7 +660,7 @@
   },
   "mood": {
     "title": "How are you today?",
-    "subtitle": "A short check-in. No judgment — I'm here.",
+    "subtitle": "A short check-in. No judgment. I'm here.",
     "ask_later": "Ask me later",
     "checkin_cta": "Check in",
     "wheel_hint": "Drag to spin the wheel.",
@@ -681,28 +681,28 @@
     "title": "Exam Coach",
     "gate": {
       "header_subtitle": "Chat opens with Premium or an earned right.",
-      "rate_limited_subtitle": "Today's right is used up. I'll be here tomorrow — or continue with Premium.",
+      "rate_limited_subtitle": "Today's right is used up. I'll be here tomorrow, or continue with Premium.",
       "insufficient_coin_subtitle": "A small quest, an invite, or Premium. That's how the chat opens.",
-      "default_subtitle": "Chat with Premium — or earn a small right from your profile.",
+      "default_subtitle": "Chat with Premium, or a small right from your profile.",
       "chip_rate_limited": "Daily limit",
       "chip_insufficient": "Rights needed",
       "chip_premium": "Premium",
       "chip_unavailable": "Currently unavailable",
       "heading_rate_limited": "That's enough for today",
-      "heading_insufficient": "Earn rights for coach",
+      "heading_insufficient": "A right for the coach",
       "heading_default": "Your coach is here",
       "upgrade": "Upgrade to Premium",
       "go_profile": "Go to my profile",
       "value_plan": "Personal answers based on your plan",
-      "value_sources": "Sourced info — no fabrication",
+      "value_sources": "Sourced info, no fabrication",
       "value_motivation": "Motivation and study strategy",
       "teaser_title": "What your coach can do",
       "teaser_study": "Study suggestions based on today's plan",
       "teaser_anxiety": "Calm steps for exam anxiety",
       "teaser_subject": "Subject strategy and resource guidance",
       "bubble_default": "Premium or a small earned right opens the chat. I'm here.",
-      "bubble_insufficient": "Complete quests in your profile to earn rights to chat with your coach.",
-      "bubble_rate_limited": "That's enough for today — I'll be here tomorrow, no worries.",
+      "bubble_insufficient": "A quest or invite from your profile. That's where the chat right lands.",
+      "bubble_rate_limited": "That's enough for today. I'll be here tomorrow, no worries.",
       "bubble_dismiss": "Dismiss"
     },
     "hub": {
@@ -746,8 +746,8 @@
       "retry": "Try again"
     },
     "chat": {
-      "empty_hint": "You take the first line — I'm here.",
-      "stream_error": "No reply landed — let's try again in a moment.",
+      "empty_hint": "You take the first line. I'm here.",
+      "stream_error": "No reply landed. Let's try again in a moment.",
       "history_loading": "Loading your chat history…",
       "history_error": "Chat history didn't load just now.",
       "older_history_error": "Older messages could not be loaded.",
@@ -755,7 +755,7 @@
       "history_new_chat": "New chat",
       "load_older": "Load older messages",
       "remaining_hint": "Messages left today: {count}",
-      "remaining_hint_zero": "You're out of messages for today — see you tomorrow."
+      "remaining_hint_zero": "You're out of messages for today. See you tomorrow."
     }
   },
   "profile": {
@@ -801,7 +801,7 @@
       "avatar_too_big": "Profile photo must be under 2 MB.",
       "avatar_upload_error": "Could not upload profile photo.",
       "name_error": "Full name must be 2-64 characters.",
-      "form_error": "Check the full name or username format.",
+      "form_error": "Full name or username doesn't match.",
       "save_error": "Could not save profile.",
       "saved_title": "Profile updated",
       "saved_message": "Your profile details were updated in the app.",
@@ -931,7 +931,7 @@
     "per_month": "/mo",
     "per_months": "/{months} mo",
     "headline": "Walk it with a coach",
-    "headline_coach": "Tell it — the coach stays",
+    "headline_coach": "Tell it. The coach stays",
     "headline_photo": "Show the photo, catch the topic",
     "headline_plan": "Rebuild the plan with the coach",
     "headline_vision": "Leave a coach note on your goal",
@@ -939,7 +939,7 @@
     "headline_mood": "However you feel, the coach hears it",
     "headline_ghost": "Your progress becomes a story",
     "headline_greeting": "Wake up with your coach",
-    "headline_session": "Session over — the coach stays",
+    "headline_session": "Session over. The coach stays",
     "subtitle": "Your plan and ritual stay yours. Premium means someone stays in chat, greeting, and after a session.",
     "benefit_coach": "A coach who stays in chat, greeting, and after a session",
     "benefit_analysis": "Weekly story, ghost narration, and deep analysis",
@@ -951,7 +951,7 @@
   },
   "campaign": {
     "eyebrow": "7-day free trial",
-    "title": "Bring the coach along — don't walk it alone",
+    "title": "Bring the coach along. Don't walk it alone",
     "cta_aria": "Open the Premium trial"
   },
   "plan": {
@@ -1131,10 +1131,10 @@
       "label": "Latest net",
       "last_net": "Latest net: {net}",
       "delta": "Vs. previous attempt: {delta}",
-      "caption": "Your personal net trend — no rankings.",
+      "caption": "Your personal net trend. No rankings.",
       "weak_subject": "Let's strengthen {subject}",
       "new_entry": "Enter new exam",
-      "empty": "No exams yet — leave your first net in Enter, and this wakes up."
+      "empty": "No exams yet. Leave your first net in Enter, and this wakes up."
     },
     "focus": {
       "title": "Your study focus",
@@ -1226,7 +1226,7 @@
     "photo_loading": "Loading photo access…",
     "photo_signals_window": "Photo signals linked only to your last four attempts.",
     "photo_topic_signals_window": "Topic signals linked to your latest 12 attempts in the active exam.",
-    "photo_signals_empty_action": "Add the first wrong-answer photo above — we'll look together.",
+    "photo_signals_empty_action": "Add the first wrong-answer photo above. We'll look together.",
     "recap": {
       "loading": "Preparing your weekly story…",
       "load_error": "Your weekly story could not be loaded.",
@@ -1444,10 +1444,10 @@
       "confirm_cta": "Are you sure? {cost} coins will be spent",
       "unlocked_chip": "Unlocked",
       "premium_chip": "Included in Premium",
-      "unlocked_hint": "This week's deep analysis is ready — fetch it to read.",
+      "unlocked_hint": "This week's deep analysis is ready. Fetch it to read.",
       "fetch_cta": "Get deep analysis",
       "fetching": "Preparing…",
-      "insufficient": "Not enough coins ({balance}/{cost}). Complete quests to earn more.",
+      "insufficient": "Not enough coins ({balance}/{cost}). A right can land from quests.",
       "go_earn": "Go to quests",
       "suggested_title": "Suggested task",
       "action_error": "Something went wrong, you can try again.",
@@ -1485,14 +1485,14 @@
     "streak_kept": "Streak continues: {days} days",
     "streak_started": "You started today's rhythm",
     "from_plan_task": "Working on: \"{title}\"",
-    "too_short_hint": "Short try — didn't count toward your streak, and that's okay.",
+    "too_short_hint": "Short try. Didn't count toward your streak, and that's okay.",
     "checkin_title": "How did this session go?",
     "checkin_note_placeholder": "What challenged you most? (optional)",
     "checkin_note_subject": "How did {subject} go for you? (optional)",
     "checkin_save": "Save",
     "checkin_saved": "Thanks, noted 🌱",
     "reflection_loading": "Your coach is thinking…",
-    "premium_nudge": "Session over — the coach stays",
+    "premium_nudge": "Session over. The coach stays",
     "coach_adaptation_cta": "Lighten your plan with your coach after this hard session",
     "reflection_dismiss": "Dismiss",
     "mood_1": "Struggled",
@@ -1567,7 +1567,7 @@
   "knowledge": {
     "loading": "Loading…",
     "title": "Knowledge Hub",
-    "subtitle": "Official information — sourced and verified content.",
+    "subtitle": "Official information. Sourced and verified content.",
     "retry": "Try again",
     "exam_day": "Exam day",
     "days_remaining": "{days} days until the exam.",
@@ -1578,7 +1578,7 @@
     "calendar_pending_chip": "Calendar pending",
     "calendar_pending_desc": "The official exam calendar is not published yet. It will sit here when announced.",
     "articles_title": "Articles",
-    "articles_subtitle": "Editorial articles — free to read",
+    "articles_subtitle": "Editorial articles. Free to read",
     "articles_empty_chip": "No articles yet",
     "articles_empty_desc": "No verified article for this exam yet.",
     "source_label": "Source",
@@ -1607,7 +1607,7 @@
     "title_success": "Payment successful",
     "title_error": "Something went wrong",
     "desc_success": "Your coach is with you. Premium features are ready to use.",
-    "desc_error": "We couldn't get confirmation from the payment provider. Check your card details and try again.",
+    "desc_error": "We couldn't get confirmation from the payment provider. Have a look at your card details and try again.",
     "back_panel": "Back to dashboard",
     "back_subscription": "Back to subscription"
   },
@@ -1695,7 +1695,7 @@
     "loading": "Loading the notebook",
     "error_type": {
       "UNKNOWN_TOPIC": "I didn't know it",
-      "CARELESS": "I knew it — careless slip",
+      "CARELESS": "I knew it, careless slip",
       "MISREAD": "I misread the question",
       "DISTRACTOR": "I fell for a distractor",
       "TIME": "I ran out of time",
@@ -1777,12 +1777,12 @@
     "index_status_archived": "Not in the deck",
     "entry_delete_confirm": "The entry and its photo are deleted for good. This cannot be undone.",
     "entry_remove_title": "What should happen to this card?",
-    "entry_remove_subtitle": "Taking it off the page does not delete the entry — it comes back when its review is due.",
+    "entry_remove_subtitle": "Taking it off the page does not delete the entry. It comes back when its review is due.",
     "entry_remove_from_page": "Only take it off the page",
     "error_entry_delete": "The entry could not be deleted.",
     "error_review": "The review could not be saved.",
     "error_place": "The mistake was added, but its place on the page could not be saved.",
-    "error_page_full": "This page is full — turn to the next one.",
+    "error_page_full": "This page is full. Turn to the next one.",
     "edit_add_sticker": "Add a sticker",
     "edit_paper": "Paper",
     "edit_undo": "Undo",
@@ -1798,7 +1798,7 @@
     },
     "card_community_answered": "Answered in the community",
     "stuck_title": "This one caught you a second time",
-    "stuck_subtitle": "You do not have to wrestle with it alone — ask the community.",
+    "stuck_subtitle": "You do not have to wrestle with it alone. Ask the community.",
     "stuck_copyright": "Before you share: a photo of a publisher's question may be copyrighted. Describing your own attempt and where you got stuck usually helps more anyway.",
     "stuck_ask": "Ask the community",
     "stuck_skip": "Skip for now",
@@ -1849,7 +1849,7 @@
     "locked_rate_limited_subtitle": "You've reached this month's photo analysis limit. You can try again when the new period starts.",
     "locked_premium_subtitle": "Classifying a wrong-question photo by subject is a Premium feature.",
     "locked_rate_limited_title": "Monthly limit reached",
-    "locked_premium_title": "Photo analysis — Premium",
+    "locked_premium_title": "Photo analysis: Premium",
     "locked_unavailable_title": "Photo analysis is unavailable",
     "locked_unavailable_subtitle": "This feature is temporarily unavailable. You can try again later.",
     "upgrade": "Upgrade to Premium",
@@ -1874,13 +1874,13 @@
     "followups_label": "Follow-up questions",
     "regenerate": "Regenerate reply",
     "input_label": "Write a message to your coach",
-    "input_placeholder": "Write whatever is here — I'm listening.",
+    "input_placeholder": "Write whatever is here. I'm listening.",
     "send": "Send",
-    "disclaimer": "The coach doesn't provide official exam dates/process info — check the Knowledge Center for those.",
+    "disclaimer": "The coach doesn't provide official exam dates/process info. Look in the Knowledge Center for those.",
     "transcript_label": "Coach chat",
-    "empty_prompt": "Puhu is listening. Plan, worry, today's step — whatever it is.",
+    "empty_prompt": "Puhu is listening. Plan, worry, today's step. Whatever it is.",
     "suggestion_1": "What's today's one step?",
-    "suggestion_2": "Anxiety showed up — can we pause?",
+    "suggestion_2": "Anxiety showed up. Can we pause?",
     "suggestion_3": "A small plan for this week",
     "source_label": "Source:",
     "official_card_label": "Time to exam",
@@ -1987,8 +1987,8 @@
     "start_title": "Start your streak today",
     "start_sub": "Even one task starts a streak.",
     "active_title": "{count}-day streak",
-    "active_sub": "You're doing great — keep going.",
-    "freeze_note": "You have {count} streak freeze(s) — miss a day and your streak stays safe."
+    "active_sub": "You're doing great. Keep going.",
+    "freeze_note": "You have {count} streak freeze(s). Miss a day and your streak stays safe."
   },
   "start_session": {
     "title": "Focus time",
@@ -2082,6 +2082,7 @@
     "progress_aria": "{name} level progress",
     "progress_value": "{current} / {target} XP",
     "complete_message": "All the lights are connected; your journey continues.",
+    "spotlight_open": "See the {name} badge under the stage light",
     "guide_open": "Open the Night Journey guide",
     "guide_title": "Night Journey",
     "guide_description": "Each light tells the story of another season of your effort.",
@@ -2119,68 +2120,56 @@
     "levels": {
       "spark": {
         "name": "Spark",
-        "destination": "Spark",
         "story": "The first light of your journey has appeared."
       },
       "trail": {
-        "name": "Trail",
-        "destination": "Trail",
-        "story": "Your steps are beginning to leave a path."
+        "name": "Flame",
+        "story": "The spark caught; it does not go out easily now."
       },
       "compass": {
         "name": "Compass",
-        "destination": "Compass",
         "story": "You are beginning to find your own direction."
       },
       "cycle": {
         "name": "Cycle",
-        "destination": "Cycle",
-        "story": "Your repetitions are settling into a calm order."
+        "story": "You repeat on purpose; the order is settling."
       },
       "rhythm": {
-        "name": "Rhythm",
-        "destination": "Rhythm",
-        "story": "Effort is becoming a natural part of your days."
+        "name": "Pulse",
+        "story": "Your repetitions beat on their own now."
       },
       "flow": {
         "name": "Flow",
-        "destination": "Flow",
-        "story": "You are continuing your journey with greater confidence."
+        "story": "Effort is no longer a separate weight you carry."
       },
       "root": {
         "name": "Root",
-        "destination": "Root",
         "story": "Your effort is more than a passing enthusiasm."
       },
       "wing": {
         "name": "Wing",
-        "destination": "Wing",
         "story": "What you have gathered is giving you room to move."
       },
       "horizon": {
         "name": "Horizon",
-        "destination": "Horizon",
         "story": "You can now see not only today, but the road ahead."
       },
       "lantern": {
         "name": "Lantern",
-        "destination": "Lantern",
         "story": "Your own light is accompanying others on their way."
       },
       "star": {
         "name": "Star",
-        "destination": "Star",
         "story": "Your presence brings direction and courage to the journey."
       },
       "constellation": {
         "name": "Constellation",
-        "destination": "Constellation",
         "story": "Beyond shining alone, you are creating meaning together."
       }
     }
   },
   "economy": {
-    "balance_subtitle": "Earned credit — not cash; used for coach chat and upcoming features.",
+    "balance_subtitle": "Earned credit, not cash. Used for coach chat and upcoming features.",
     "balance_title": "Your balance",
     "xp": "XP",
     "confirmed": "Confirmed credit",
@@ -2207,7 +2196,7 @@
     "redeem_failed": "It didn't save just now.",
     "redeeming": "Saving…",
     "use_code": "Use code",
-    "quests_subtitle": "Complete your daily ritual to earn XP. Starter quests grant rights.",
+    "quests_subtitle": "Today's ritual lives here. Starter steps land a right when they're done.",
     "quests_title": "Quests",
     "quests_progress": "{done}/{total} completed",
     "quests_percent": "{percent}%",
@@ -2226,13 +2215,13 @@
     "quest_reward_xp": "+{count} XP",
     "quest_progress_count": "{current}/{target}",
     "quest_progress_days": "{current}/{target} days",
-    "quest_auto_hint": "It will be processed automatically when completed.",
+    "quest_auto_hint": "When it's done, the right lands on its own.",
     "quest_action_subscription": "Go to subscription",
     "quest_action_invite": "Enter invite code"
   },
   "legal": {
     "last_updated": "Last updated: {date}",
-    "draft_title": "DRAFT — awaiting legal review",
+    "draft_title": "DRAFT: awaiting legal review",
     "draft_body": "This text has not yet been reviewed by counsel. It is not binding and is not the final version.",
     "translation_notice": "This translation is provided for information only. The binding text is the Turkish version of the document.",
     "footer_heading": "Legal",
@@ -2250,6 +2239,7 @@
     "trust_badge": "Verified content",
     "trust_body": "This content has been verified with cited sources by our editorial team. Official processes and dates are taken from the relevant institutions' sources and updated if they change.",
     "login": "Log in",
+    "panel": "Go to dashboard",
     "back_knowledge": "Knowledge Hub",
     "back_home": "Home",
     "coach_title": "Want to explore this topic?",
@@ -2297,7 +2287,7 @@
       "avatar_type_error": "You can only upload JPEG or PNG.",
       "avatar_too_big": "Profile photo must be under 2 MB.",
       "avatar_upload_error": "Could not upload profile photo.",
-      "form_error": "Check the username format.",
+      "form_error": "Username doesn't match.",
       "save_error": "It didn't save just now. Let's try again in a moment.",
       "continue": "Continue"
     },
@@ -2308,7 +2298,7 @@
     },
     "goal": {
       "title": "Remember your goal",
-      "subtitle": "Optional — why are you on this path?",
+      "subtitle": "Optional. Why are you on this path?",
       "hint": "Only your goal is required; city is optional.",
       "save": "Save and continue",
       "skip": "Skip for now",
@@ -2317,7 +2307,7 @@
     "complete": {
       "title": "The road starts here.",
       "subtitle": "Your countdown and today's plan are waiting on the dashboard.",
-      "countdown_teaser": "Your exam countdown is on the dashboard — from the verified official calendar.",
+      "countdown_teaser": "Your exam countdown is on the dashboard. From the verified official calendar.",
       "map_cta": "Mark your goal on the map →",
       "go_panel": "Go to dashboard"
     }
@@ -2703,22 +2693,22 @@
   "achievements": {
     "showcase_title": "Traces of the Journey",
     "showcase_view_all": "View all",
-    "showcase_earned_aria": "{title} earned",
-    "public_empty": "No shared mark yet. When you earn one, it lives here.",
+    "showcase_earned_aria": "{title} is with you",
+    "public_empty": "No shared mark yet. When one lands, it lives here.",
     "collection_title": "Your collection",
     "collection_count": "{earned} / {total}",
     "collection_progress_aria": "Collection progress",
-    "collection_progress_value": "{earned} / {total} achievements earned",
+    "collection_progress_value": "{earned} / {total} achievements with you",
     "next_discovery": "Next discovery",
-    "suggestion_aria": "Next discovery: {title}. How to earn it",
+    "suggestion_aria": "Next discovery: {title}. How it wakes",
     "collection_complete_title": "Collection complete.",
     "collection_complete_body": "Every badge is with you; your journey continues.",
     "locked_aria": "{title} achievement is locked",
-    "how_to_earn": "How to earn it",
+    "how_to_earn": "How it wakes",
     "progress_label": "Your progress",
     "progress_days": "{current} / {target} days",
-    "earned_on": "Earned on {date}",
-    "earned": "Earned",
+    "earned_on": "With you since {date}",
+    "earned": "With you",
     "locked": "Locked",
     "close": "Close",
     "celebration_eyebrow": "A new light came on",
@@ -2781,17 +2771,18 @@
     "label": "Advertisement",
     "rewarded": {
       "eyebrow": "Optional ad task",
-      "title": "Complete the ad and earn {count} Coin",
-      "body": "You have {remaining} chances left today. You won't miss anything if you skip it.",
+      "title": "Finish the ad. {count} Coin lands as a right.",
+      "body": "You have {remaining} left today. Skip it if you want.",
       "cta": "Watch ad",
       "preparing": "Preparing ad",
       "opening": "Opening…",
-      "success": "Done — {count} Coin was added to your account.",
+      "success": "{count} Coin landed on your account.",
       "start_error": "The ad could not open right now. You can try again later.",
-      "complete_error": "The reward could not be confirmed. Please don't retry; support can inspect the record.",
+      "unavailable": "The ad task is not available right now. You can look again later.",
+      "complete_error": "The right could not be confirmed. Don't retry; support can inspect the record.",
       "cooldown": "A new ad task will be ready after {time}.",
       "daily_done": "You've completed today's ad tasks. You can return tomorrow.",
-      "session_active": "Your previous ad session is closing. Check again in a few minutes."
+      "session_active": "Your previous ad session is closing. Look again in a few minutes."
     }
   },
   "notifications": {

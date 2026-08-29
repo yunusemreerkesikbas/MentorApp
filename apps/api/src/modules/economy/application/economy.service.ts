@@ -132,17 +132,23 @@ export class EconomyService {
         const nowDate = new Date(now);
         const dayStart = new Date(now - DAY_MS);
         const weekStart = new Date(now - 7 * DAY_MS);
-        const [earnedDay, reservedDay] = await Promise.all([
-          this.repo.coinEarnedSince(userId, dayStart, tx),
-          this.repo.activeCoinReservationAmountSince(userId, dayStart, nowDate, tx),
-        ]);
+        const earnedDay = await this.repo.coinEarnedSince(userId, dayStart, tx);
+        const reservedDay = await this.repo.activeCoinReservationAmountSince(
+          userId,
+          dayStart,
+          nowDate,
+          tx,
+        );
         if (earnedDay + reservedDay + amount > dailyCap) {
           throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
         }
-        const [earnedWeek, reservedWeek] = await Promise.all([
-          this.repo.coinEarnedSince(userId, weekStart, tx),
-          this.repo.activeCoinReservationAmountSince(userId, weekStart, nowDate, tx),
-        ]);
+        const earnedWeek = await this.repo.coinEarnedSince(userId, weekStart, tx);
+        const reservedWeek = await this.repo.activeCoinReservationAmountSince(
+          userId,
+          weekStart,
+          nowDate,
+          tx,
+        );
         if (earnedWeek + reservedWeek + amount > weeklyCap) {
           throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
         }
@@ -185,12 +191,21 @@ export class EconomyService {
     const now = new Date();
     const dayStart = new Date(now.getTime() - DAY_MS);
     const weekStart = new Date(now.getTime() - 7 * DAY_MS);
-    const [earnedDay, reservedDay, earnedWeek, reservedWeek] = await Promise.all([
-      this.repo.coinEarnedSince(userId, dayStart, tx),
-      this.repo.activeCoinReservationAmountSince(userId, dayStart, now, tx),
-      this.repo.coinEarnedSince(userId, weekStart, tx),
-      this.repo.activeCoinReservationAmountSince(userId, weekStart, now, tx),
-    ]);
+    // The caller-owned transaction has one pg client; keep its queries sequential.
+    const earnedDay = await this.repo.coinEarnedSince(userId, dayStart, tx);
+    const reservedDay = await this.repo.activeCoinReservationAmountSince(
+      userId,
+      dayStart,
+      now,
+      tx,
+    );
+    const earnedWeek = await this.repo.coinEarnedSince(userId, weekStart, tx);
+    const reservedWeek = await this.repo.activeCoinReservationAmountSince(
+      userId,
+      weekStart,
+      now,
+      tx,
+    );
     if (earnedDay + reservedDay + amount > dailyCap || earnedWeek + reservedWeek + amount > weeklyCap) {
       throw new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, HttpStatus.UNPROCESSABLE_ENTITY);
     }

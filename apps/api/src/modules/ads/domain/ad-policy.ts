@@ -17,6 +17,7 @@ export interface AdPolicyInput {
   format: AdFormat;
   countryCode: string | null;
   examType: ExamType | null;
+  contentExamType?: ExamType | null;
   isPremium: boolean;
   userId: string | null;
   rolloutPercent: number;
@@ -77,10 +78,25 @@ function rolloutBucket(userId: string): number {
   return (hash >>> 0) % 100;
 }
 
-function audienceTreatment(examType: ExamType | null): AdAudienceTreatment {
-  if (examType === ExamType.LGS) return "CHILD";
-  if (examType === ExamType.YKS) return "TEEN";
+function audienceTreatment(
+  examType: ExamType | null,
+  contentExamType: ExamType | null = null,
+): AdAudienceTreatment {
+  const contexts = [examType, contentExamType];
+  if (contexts.includes(ExamType.LGS)) return "CHILD";
+  if (contexts.includes(ExamType.YKS)) return "TEEN";
   return "NONE";
+}
+
+const ISTANBUL_UTC_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+/** Start of the current Europe/Istanbul calendar day, expressed as a UTC instant. */
+export function istanbulDayStart(now: Date): Date {
+  const local = new Date(now.getTime() + ISTANBUL_UTC_OFFSET_MS);
+  return new Date(
+    Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) -
+      ISTANBUL_UTC_OFFSET_MS,
+  );
 }
 
 export function evaluateAdPolicy(input: AdPolicyInput): AdPolicyDecision {
@@ -105,6 +121,6 @@ export function evaluateAdPolicy(input: AdPolicyInput): AdPolicyDecision {
   return {
     enabled: true,
     reason: null,
-    audienceTreatment: audienceTreatment(input.examType),
+    audienceTreatment: audienceTreatment(input.examType, input.contentExamType),
   };
 }

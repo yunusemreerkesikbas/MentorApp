@@ -89,6 +89,10 @@ http://localhost:3000/panel               # daily ritual hub
   İlgili: `toast-lead.tsx`, `mentor-toast.ts`, `packages/ui/src/components/toast/*`,
   `board-editor-shell.tsx`.
 
+- **Yoldaşlık sesi Dalga 10 — seri kurtarma (2026-08-29)** — Teklif/yetersiz hak companion (“Günü dondur”, FOMO yok); başarı overlay Puhu (“Serin yerinde.”, 🔥 kalktı). `error_*` D5’te kaldı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: hint+confirm tek dialog gövdesi, aynı ağız. İlgili: `apps/web/messages/{tr,en}.json`, `panel-shell.tsx`, `streak-rescue-success.tsx`.
+
+- **Yoldaşlık sesi Dalga 9 — görev toast (2026-08-29)** — Panel/seans `quest_reward_*` Puhu: “Bu da tamam” / `{reward} seninle.` Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: seri kurtarma FOMO duruyor; miktar formatı `+N XP` aynı. İlgili: `apps/web/messages/{tr,en}.json`, `panel-shell.tsx`, `session-done-state.tsx`.
+
 - **Yoldaşlık sesi Dalga 5 — panel toast (2026-08-29)** — `streak_rescue_error_message` / `task_update_error_message` companion: `Lütfen` kalktı, D3 ağız. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: seri kurtarma FOMO metni bu dalgada değil. İlgili: `apps/web/messages/{tr,en}.json`.
 
 - **Premium kampanya banner (2026-08-23)** — Paylaşılan `PremiumCampaignBanner`: sol hediye
@@ -630,3 +634,11 @@ http://localhost:3000/panel               # daily ritual hub
 - The dashboard-only achievement preview trigger and its synthetic data were removed. Celebration
   modals are now opened only by the real unseen-achievement API and live SSE flow.
 - Related files: `dashboard/_components/panel-shell.tsx`, `lib/notification-drawer-shell.tsx`.
+
+### 2026-08-30 — Public header session consistency
+
+- `PublicChrome` now waits for the silent refresh result instead of briefly presenting an anonymous
+  action. Authenticated visitors see a localized dashboard link; anonymous visitors keep the login
+  link. This applies to knowledge and legal pages that share the public chrome.
+- Related files: `components/public-chrome.tsx`, `knowledge/[slug]/page.tsx`, `legal/[slug]/page.tsx`,
+  `messages/{tr,en}.json`, `e2e/knowledge.spec.ts`.

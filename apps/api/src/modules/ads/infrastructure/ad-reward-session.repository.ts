@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, gt, gte, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, lte, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -41,6 +41,22 @@ export class AdRewardSessionRepository {
     });
   }
 
+  async findByIdempotencyKey(userId: string, idempotencyKey: string, exec?: DatabaseTx) {
+    return this.onService(exec, async (tx) => {
+      const [row] = await tx
+        .select()
+        .from(adRewardSessions)
+        .where(
+          and(
+            eq(adRewardSessions.userId, userId),
+            eq(adRewardSessions.idempotencyKey, idempotencyKey),
+          ),
+        )
+        .limit(1);
+      return row;
+    });
+  }
+
   async findActive(userId: string, placementId: string, now: Date, exec?: DatabaseTx) {
     return this.onService(exec, async (tx) => {
       const [row] = await tx
@@ -72,6 +88,38 @@ export class AdRewardSessionRepository {
           ),
         ),
     );
+  }
+
+  listExpiredCandidates(now: Date, limit: number) {
+    return this.onService(undefined, (tx) =>
+      tx
+        .select({ userId: adRewardSessions.userId })
+        .from(adRewardSessions)
+        .where(
+          and(
+            eq(adRewardSessions.status, "CREATED"),
+            lte(adRewardSessions.expiresAt, now),
+          ),
+        )
+        .orderBy(asc(adRewardSessions.expiresAt), asc(adRewardSessions.userId))
+        .limit(limit),
+    );
+  }
+
+  lockExpiredForUser(userId: string, now: Date, limit: number, tx: DatabaseTx) {
+    return tx
+      .select()
+      .from(adRewardSessions)
+      .where(
+        and(
+          eq(adRewardSessions.userId, userId),
+          eq(adRewardSessions.status, "CREATED"),
+          lte(adRewardSessions.expiresAt, now),
+        ),
+      )
+      .orderBy(asc(adRewardSessions.expiresAt), asc(adRewardSessions.id))
+      .limit(limit)
+      .for("update", { skipLocked: true });
   }
 
   async rewardedCountSince(userId: string, placementId: string, since: Date, exec?: DatabaseTx) {

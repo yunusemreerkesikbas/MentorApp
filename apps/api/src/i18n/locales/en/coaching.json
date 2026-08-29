@@ -1,14 +1,14 @@
 {
   "mood": {
-    "VERY_LOW": "I know today is heavy. Be gentle with yourself — a small pause is still part of the road. I'm here.",
+    "VERY_LOW": "I know today is heavy. Be gentle with yourself. A small pause is still part of the road. I'm here.",
     "SERIOUS_DISTRESS": "You do not have to carry this alone. Contact someone you trust now; if you may hurt yourself, call your local emergency number or go to the nearest emergency department.",
     "LOW": "Hard days happen. One small step today is enough; leave the rest for tomorrow. I'm here.",
-    "OKAY": "Today is today. Do what you can — that's enough. I'm here.",
-    "GOOD": "Your energy is here. Carry it into one small step today — that's enough.",
+    "OKAY": "Today is today. Do what you can, that's enough. I'm here.",
+    "GOOD": "Your energy is here. Carry it into one small step today, that's enough.",
     "GREAT": "It's coming from inside today. Put that into one step; the rest can follow."
   },
   "motivation": {
-    "START": "Take one small step today — that's enough. I'm here.",
+    "START": "Take one small step today, that's enough. I'm here.",
     "GOING": "Your rhythm is holding. One small step today is enough. I'm here."
   },
   "coachEvidence": {
@@ -90,13 +90,13 @@
     "APPLICATION": "For application information, I only share verified Knowledge Hub sources.",
     "RESULT_PLACEMENT": "For result and placement information, I only share verified sources.",
     "PROCESS": "For official processes, I only share verified Knowledge Hub sources.",
-    "UNAVAILABLE": "No verified card or source is currently available for this topic. You can check the Knowledge Hub."
+    "UNAVAILABLE": "No verified card or source is currently available for this topic. You can look in the Knowledge Hub."
   },
   "ghost": {
     "NEW_RECORD": "New record! You beat your best net so far. You've officially left your past self behind.",
-    "BEAT_PREVIOUS": "You beat your last attempt — your past self is behind you now. The momentum is with you.",
-    "TIED": "You're level with your last attempt. Consistency is a win too; one small step puts you ahead.",
-    "BELOW_PREVIOUS": "A little behind this time — it happens. Don't dwell on one attempt; look at your trend. I'm here."
+    "BEAT_PREVIOUS": "You beat your last attempt. Your past self is behind you now. The momentum is with you.",
+    "TIED": "You're level with your last attempt. Consistency held; one small step is enough.",
+    "BELOW_PREVIOUS": "A little behind this time, it happens. Don't dwell on one attempt; look at your trend. I'm here."
   },
   "focus": {
     "PHOTO_SIGNAL": "{subject} appears most often in your wrong-answer photos. Let's add it to your next plan.",
@@ -178,8 +178,8 @@
   },
   "notebook_pattern": {
     "KNOWLEDGE_GAP": "Most of your recent mistakes are topics you did not know. Review genuinely helps here.",
-    "RUSHING": "You know the topic — most of your mistakes are careless slips. Try slowing down and checking rather than re-studying.",
-    "READING": "Most of your mistakes come from misreading the question. Reading the stem twice pays off here.",
+    "RUSHING": "You know the topic. Most of your mistakes are careless slips. Try slowing down and checking rather than re-studying.",
+    "READING": "Most of your mistakes come from misreading the question. Reading the stem twice helps here.",
     "DISTRACTOR": "Distractors are catching you. Try forming your own answer before eliminating options.",
     "TIME_PRESSURE": "Most of your mistakes come from time pressure. Timing yourself per question is a good next step.",
     "SECOND_GUESSING": "You find the right answer and then change it. Trusting your first call is worth a try.",

@@ -7,7 +7,7 @@ import { EffortBoard } from "./effort-board";
 
 /**
  * Mobile/tablet access to the effort board (profile + XP + leaderboard). Below xl the right column
- * can't fit, so a "Sıralama" trigger opens a right slide-in panel — mirrors the left `ZoneDrawer`.
+ * can't fit, so an "Emek panosu" trigger opens a right slide-in panel (mirrors the left `ZoneDrawer`).
  * `EffortBoard` is mounted only on first open (no /community/summary fetch while the drawer is idle).
  */
 export function EffortBoardDrawer() {

@@ -9,8 +9,9 @@ import { configureLimitedPrivacy, withGpt, type GptEvent, type GptSlot } from "@
 
 export function ContextualAdSlot({
   placementId = AdPlacementId.KNOWLEDGE_ARTICLE_END,
+  contentSlug,
   examType,
-}: { placementId?: AdPlacementId; examType?: ExamType }) {
+}: { placementId?: AdPlacementId; contentSlug: string; examType?: ExamType }) {
   const { status } = useAuth();
   const t = useTranslations("ads");
   const reactId = useId();
@@ -23,8 +24,8 @@ export function ContextualAdSlot({
     let slot: GptSlot | null = null;
     let removeRenderListener: (() => void) | null = null;
     void (status === "authenticated"
-      ? fetchAdPlacement(placementId)
-      : fetchPublicAdPlacement(placementId, examType))
+      ? fetchAdPlacement(placementId, contentSlug)
+      : fetchPublicAdPlacement(placementId, contentSlug, examType))
       .then(async (policy) => {
         if (cancelled || !policy.enabled || !policy.adUnitPath) return;
         setRenderState("loading");
@@ -34,7 +35,10 @@ export function ContextualAdSlot({
           const pubads = gpt.pubads();
           pubads.collapseEmptyDivs();
           slot = gpt.defineSlot(policy.adUnitPath!, policy.sizes, slotId)?.addService(pubads) ?? null;
-          if (!slot) return;
+          if (!slot) {
+            setRenderState("empty");
+            return;
+          }
           const onRender = (event: GptEvent) => {
             if (event.slot === slot && !cancelled) setRenderState(event.isEmpty === false ? "filled" : "empty");
           };
@@ -50,7 +54,7 @@ export function ContextualAdSlot({
       removeRenderListener?.();
       if (slot && window.googletag) window.googletag.destroySlots([slot]);
     };
-  }, [examType, placementId, slotId, status]);
+  }, [contentSlug, examType, placementId, slotId, status]);
 
   return (
     <aside aria-label={t("label")} className={renderState === "idle" || renderState === "empty" ? "hidden" : "my-4 flex flex-col items-center"}>

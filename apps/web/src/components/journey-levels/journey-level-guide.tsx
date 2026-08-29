@@ -143,7 +143,7 @@ function JourneyLevelGuideDialog({
     <motion.div
       data-journey-level-guide-backdrop
       role="presentation"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/45 sm:items-center sm:p-4"
       onMouseDown={onClose}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -157,7 +157,7 @@ function JourneyLevelGuideDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
-        className="relative max-h-[90dvh] w-full max-w-3xl overflow-y-auto rounded-[var(--radius-card)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)] sm:p-6"
+        className="relative h-dvh w-full overflow-y-auto bg-[var(--color-surface)] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-[max(20px,env(safe-area-inset-top))] shadow-[var(--shadow-card)] sm:h-auto sm:max-h-[90dvh] sm:max-w-3xl sm:rounded-[var(--radius-card)] sm:px-6 sm:pb-6 sm:pt-6"
         onMouseDown={(event) => event.stopPropagation()}
         initial={{ opacity: 0, y: reduceMotion ? 0 : 20, scale: reduceMotion ? 1 : 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -169,7 +169,7 @@ function JourneyLevelGuideDialog({
           type="button"
           onClick={onClose}
           aria-label={t("close")}
-          className="absolute right-3 top-3 grid size-11 place-items-center rounded-full text-[var(--color-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="absolute right-3 top-[max(12px,env(safe-area-inset-top))] grid size-11 place-items-center rounded-full text-[var(--color-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] sm:top-3"
         >
           <X size={20} aria-hidden="true" />
         </button>
@@ -238,7 +238,10 @@ function JourneyLevelGuideDialog({
             ))}
           </div>
 
-          <section className="rounded-[var(--radius-card)] bg-[var(--color-soft)] p-5 text-center lg:self-start">
+          {/* Detail sits above the chapter grid on mobile so the selected level stays visible
+              without scrolling; on lg it returns to DOM order as the right column. Safe to reorder
+              visually — the panel holds no focusable elements, so tab order is unaffected. */}
+          <section className="order-first rounded-[var(--radius-card)] bg-[var(--color-soft)] p-5 text-center lg:order-none lg:self-start">
             <JourneyLevelMedallion
               levelKey={selectedLevel.key}
               current={selectedLevel.tier === level.tier}

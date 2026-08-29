@@ -195,6 +195,86 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   expect(hubApi.unexpected).toEqual([]);
 });
 
+test("başarılı refresh sonrası public header giriş yerine panele döner", async ({
+  page,
+}) => {
+  const api = await mockKnowledgeApi(page);
+
+  await page.goto(`/bilgi/${article.slug}`);
+
+  await expect(page.getByRole("link", { name: "Panele dön" })).toHaveAttribute(
+    "href",
+    "/panel",
+  );
+  await expect(page.getByRole("link", { name: "Giriş yap" })).toHaveCount(0);
+  expect(api.unexpected).toEqual([]);
+});
+
+test("refresh oturumu yoksa public header giriş bağlantısını korur", async ({
+  page,
+}) => {
+  const api = await mockKnowledgeApi(page, { authenticated: false });
+
+  await page.goto(`/en/knowledge/${article.slug}`);
+
+  await expect(page.getByRole("link", { name: "Log in" })).toHaveAttribute(
+    "href",
+    "/en/login",
+  );
+  await expect(page.getByRole("link", { name: "Go to dashboard" })).toHaveCount(0);
+  expect(api.unexpected).toEqual([]);
+});
+
+test("anonim makale reklamı doğrulanmış slug ile limited ayarları display öncesi uygular", async ({
+  page,
+}) => {
+  await installDisplayGpt(page, false);
+  const api = await mockKnowledgeApi(page, { authenticated: false });
+  let requestedSlug: string | null = null;
+  await page.route(
+    "http://localhost:3001/v1/ads/public/placements/knowledge.article.end**",
+    async (route) => {
+      requestedSlug = new URL(route.request().url()).searchParams.get("contentSlug");
+      await json(route, enabledContextualPlacement);
+    },
+  );
+
+  await page.goto(`/bilgi/${article.slug}`);
+
+  await expect(page.getByRole("complementary", { name: "Reklam" })).toBeVisible();
+  expect(requestedSlug).toBe(article.slug);
+  const log = await page.evaluate(() =>
+    (window as unknown as { __mentorGptLog: string[] }).__mentorGptLog,
+  );
+  expect(log.indexOf("privacy:limited")).toBeLessThan(log.indexOf("display"));
+  expect(log).toContain("sizes:320x100,728x90");
+  expect(api.unexpected).toEqual([]);
+});
+
+test("contextual no-fill alanı çöker; Premium kullanıcı GPT indirmez", async ({
+  page,
+  context,
+}) => {
+  await installDisplayGpt(page, true);
+  await mockKnowledgeApi(page, { authenticated: false });
+  await page.route(
+    "http://localhost:3001/v1/ads/public/placements/knowledge.article.end**",
+    (route) => json(route, enabledContextualPlacement),
+  );
+  await page.goto(`/bilgi/${article.slug}`);
+  await expect(page.getByRole("complementary", { name: "Reklam" })).toBeHidden();
+
+  const premiumPage = await context.newPage();
+  let gptRequests = 0;
+  premiumPage.on("request", (request) => {
+    if (request.url().includes("/tag/js/gpt.js")) gptRequests += 1;
+  });
+  await mockKnowledgeApi(premiumPage);
+  await premiumPage.goto(`/bilgi/${article.slug}`);
+  await premiumPage.waitForTimeout(200);
+  expect(gptRequests).toBe(0);
+});
+
 const subscription: SubscriptionView = {
   subscription: null,
   entitlement: {
@@ -204,6 +284,18 @@ const subscription: SubscriptionView = {
     reason: "ACTIVE",
   },
   features: {} as SubscriptionView["features"],
+};
+
+const enabledContextualPlacement = {
+  id: "knowledge.article.end",
+  format: "DISPLAY",
+  enabled: true,
+  reason: "ELIGIBLE",
+  provider: "GOOGLE_AD_MANAGER",
+  adUnitPath: "/6355419/Travel/Europe/France/Paris",
+  audienceTreatment: "CHILD",
+  limitedAds: true,
+  sizes: [[320, 100], [728, 90]],
 };
 
 const today: TodayPanelResponse = {
@@ -335,8 +427,49 @@ async function mockKnowledgeApi(
     if (method === "GET" && path.startsWith("/v1/economy/")) {
       return json(route, { code: "ECONOMY_DISABLED", message: "Kapalı" }, 404);
     }
+    if (
+      method === "GET" &&
+      [
+        "/v1/community/achievements/unseen",
+        "/v1/community/journey-levels/unseen",
+      ].includes(path)
+    ) {
+      return json(route, []);
+    }
     if (method === "GET" && path === "/v1/subscription") {
       return json(route, subscription);
+    }
+    if (
+      method === "GET" &&
+      path.startsWith("/v1/ads/placements/knowledge.article.end")
+    ) {
+      return json(route, {
+        id: "knowledge.article.end",
+        format: "DISPLAY",
+        enabled: false,
+        reason: "PREMIUM_AD_FREE",
+        provider: "GOOGLE_AD_MANAGER",
+        adUnitPath: null,
+        audienceTreatment: "NONE",
+        limitedAds: true,
+        sizes: [[320, 100], [728, 90]],
+      });
+    }
+    if (
+      method === "GET" &&
+      path.startsWith("/v1/ads/public/placements/knowledge.article.end")
+    ) {
+      return json(route, {
+        id: "knowledge.article.end",
+        format: "DISPLAY",
+        enabled: false,
+        reason: "GLOBAL_DISABLED",
+        provider: "GOOGLE_AD_MANAGER",
+        adUnitPath: null,
+        audienceTreatment: "NONE",
+        limitedAds: true,
+        sizes: [[320, 100], [728, 90]],
+      });
     }
     // Only reached by the "Koçla konuş" hand-off, which lands on the coach chat route.
     if (method === "GET" && path === "/v1/coaching/today") {
@@ -357,7 +490,7 @@ async function mockKnowledgeApi(
 }
 
 const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
+  "access-control-allow-origin": process.env.PLAYWRIGHT_BASE_URL?.trim() || "http://localhost:3100",
   "access-control-allow-credentials": "true",
 };
 
@@ -368,4 +501,46 @@ async function json(route: Route, body: unknown, status = 200): Promise<void> {
     headers: corsHeaders,
     body: body == null ? "" : JSON.stringify(body),
   });
+}
+
+async function installDisplayGpt(page: Page, empty: boolean): Promise<void> {
+  await page.addInitScript((isEmpty) => {
+    const listeners = new Map<string, Array<(event: { slot: object; isEmpty?: boolean }) => void>>();
+    const log: string[] = [];
+    const slot = {};
+    const pubads = {
+      addEventListener(name: string, listener: (event: { slot: object; isEmpty?: boolean }) => void) {
+        listeners.set(name, [...(listeners.get(name) ?? []), listener]);
+      },
+      removeEventListener() {},
+      collapseEmptyDivs() { log.push("collapse"); },
+      setPrivacySettings(settings: { limitedAds?: boolean }) {
+        log.push(settings.limitedAds ? "privacy:limited" : "privacy:other");
+      },
+    };
+    const googletag = {
+      cmd: { push(callback: () => void) { callback(); return 1; } },
+      enums: { OutOfPageFormat: { REWARDED: "REWARDED" } },
+      defineSlot(_path: string, sizes: number[][]) {
+        log.push(`sizes:${sizes.map((size) => size.join("x")).join(",")}`);
+        return { addService: () => slot };
+      },
+      defineOutOfPageSlot: () => null,
+      pubads: () => pubads,
+      enableServices() { log.push("enable"); },
+      display() {
+        log.push("display");
+        setTimeout(() => {
+          for (const listener of listeners.get("slotRenderEnded") ?? []) {
+            listener({ slot, isEmpty });
+          }
+        }, 0);
+      },
+      destroySlots: () => true,
+    };
+    Object.assign(window, { googletag, __mentorGptLog: log });
+  }, empty);
+  await page.route("https://pagead2.googlesyndication.com/tag/js/gpt.js", (route) =>
+    route.fulfill({ status: 200, contentType: "application/javascript", body: "" }),
+  );
 }
